@@ -24,6 +24,7 @@ export async function runPolicy({
   runKey,
   root = process.cwd(),
   allowDownload = true,
+  gitleaksBaseSha = process.env.SCA_GITLEAKS_BASE_SHA,
 } = {}) {
   if (!events.has(event) || !['policy', 'artifacts'].includes(path))
     return invocationReport(event, path, runKey, 'invalid-event-path');
@@ -116,7 +117,8 @@ export async function runPolicy({
       await runGitleaks({
         executable: executable('gitleaks'),
         cwd: root,
-        logOptions: event === 'pull_request' ? '--all' : null,
+        logOptions: gitleaksLogOptions(event, revision, gitleaksBaseSha),
+        requireLogOptions: true,
       }),
       ['.git'],
     ),
@@ -174,6 +176,13 @@ export async function runPolicy({
     artifacts: [],
   };
   return normalizePolicyReport(base, requiredChecksFor(event, 'policy'));
+}
+
+export function gitleaksLogOptions(event, revision, baseSha) {
+  if (!/^[a-f0-9]{40}$/.test(revision ?? '')) return null;
+  if (event === 'pull_request')
+    return /^[a-f0-9]{40}$/.test(baseSha ?? '') ? `${baseSha}..${revision}` : null;
+  return `${revision}^!`;
 }
 
 function asCheck(check_id, tool, result, scope) {

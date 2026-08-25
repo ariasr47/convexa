@@ -204,6 +204,7 @@ test('hosted Syft adapter executes the pinned tool over every synthetic lock ide
     runner: async (executable, args) => {
       invoked = true;
       assert.equal(executable, '/pinned/syft');
+      assert.deepEqual(args.slice(2, 4), ['--select-catalogers', '+javascript-package-cataloger']);
       const root = args[1].slice(4),
         artifacts = [];
       for (const dir of await (await import('node:fs/promises')).readdir(root)) {

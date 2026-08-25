@@ -251,26 +251,45 @@ async function productionAdapter(capabilityId, fixture, tool) {
       await spawnCaptured('git', ['init'], { cwd: root });
       await spawnCaptured('git', ['config', 'user.email', 'probe@example.invalid'], { cwd: root });
       await spawnCaptured('git', ['config', 'user.name', 'Probe'], { cwd: root });
+      await fs.writeFile(path.join(root, 'probe.txt'), 'range-base\n');
+      await spawnCaptured('git', ['add', 'probe.txt'], { cwd: root });
+      await spawnCaptured('git', ['commit', '-m', 'range base'], { cwd: root });
+      const base = await spawnCaptured('git', ['rev-parse', 'HEAD'], { cwd: root });
+      const canary = ['ghp_', '0123456789abcdefghijklmnopqrstuvwx'].join('');
       await fs.writeFile(
         path.join(root, 'probe.txt'),
-        arm === 'pass' ? 'safe\n' : 'AWS_SECRET_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE\n',
+        arm === 'pass' ? 'safe range commit one\n' : `token=${canary}\n`,
       );
       await spawnCaptured('git', ['add', 'probe.txt'], { cwd: root });
-      await spawnCaptured('git', ['commit', '-m', 'probe'], { cwd: root });
+      await spawnCaptured('git', ['commit', '-m', 'range commit one'], { cwd: root });
+      await fs.writeFile(path.join(root, 'probe.txt'), 'safe range commit two\n');
+      await spawnCaptured('git', ['add', 'probe.txt'], { cwd: root });
+      await spawnCaptured('git', ['commit', '-m', 'range commit two'], { cwd: root });
+      const head = await spawnCaptured('git', ['rev-parse', 'HEAD'], { cwd: root });
       return wrap(
-        await runGitleaks({ executable: tool.executable, cwd: root, logOptions: '--all' }),
+        await runGitleaks({
+          executable: tool.executable,
+          cwd: root,
+          logOptions: `${base.output.trim()}..${head.output.trim()}`,
+          requireLogOptions: true,
+        }),
       );
     });
   if (capabilityId === 'trivy.config-json')
     return withFixture('trivy-config', async (root) => {
       if (arm === 'unavailable') return wrap(await runTrivyConfig({ executable: null, cwd: root }));
+      await fs.mkdir(path.join(root, '.github', 'workflows'), { recursive: true });
       await fs.writeFile(
         path.join(root, 'Dockerfile'),
-        'FROM scratch\nCOPY probe.txt /probe.txt\nUSER 65532\n',
+        arm === 'pass'
+          ? `FROM alpine:3.22@sha256:${'a'.repeat(64)}\nUSER 65532\nHEALTHCHECK NONE\n`
+          : 'FROM alpine:latest\nUSER 65532\nHEALTHCHECK NONE\n',
       );
       await fs.writeFile(
-        path.join(root, 'probe.txt'),
-        arm === 'pass' ? 'safe\n' : 'AWS_SECRET_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE\n',
+        path.join(root, '.github', 'workflows', 'ci.yml'),
+        arm === 'pass'
+          ? `jobs:\n  test:\n    steps:\n      - uses: actions/checkout@${'b'.repeat(40)}\n`
+          : 'jobs:\n  test:\n    steps:\n      - uses: actions/checkout@main\n',
       );
       return wrap(await runTrivyConfig({ executable: tool.executable, cwd: root }));
     });
@@ -291,7 +310,9 @@ async function productionAdapter(capabilityId, fixture, tool) {
       );
       await fs.writeFile(
         path.join(root, 'probe.txt'),
-        arm === 'pass' ? 'safe\n' : 'AWS_SECRET_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE\n',
+        arm === 'pass'
+          ? 'safe\n'
+          : `token=${['ghp_', '0123456789abcdefghijklmnopqrstuvwx'].join('')}\n`,
       );
       const archive = path.join(root, 'probe.oci.tar'),
         build = await spawnCaptured(

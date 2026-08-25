@@ -50,6 +50,11 @@ COPY apps/dashboard/nginx.conf /etc/nginx/conf.d/default.conf
 # Built static bundle (includes .br / .gz siblings).
 COPY --from=builder /app/apps/dashboard/dist /usr/share/nginx/html
 
+RUN touch /var/run/nginx.pid /var/run/nginx.lock \
+    && chown nginx:nginx /var/run/nginx.pid /var/run/nginx.lock \
+    && chown -R nginx:nginx /var/cache/nginx /usr/share/nginx/html
+
+USER nginx
 EXPOSE 8080
 
 # Liveness probe: busybox wget against the SPA index.

@@ -117,42 +117,52 @@ export function spawnQualityChildren({
     npmCliPath,
     args: ['exec', '--', 'nx', 'run'],
   });
-  return children.map(
-    ({ target, port }) =>
-      new Promise((resolve) => {
-        let settled = false;
-        const finish = (result) => {
-          if (settled) return;
-          settled = true;
-          resolve({ target, port, invocation_count: 1, ...result });
-        };
-        let child;
-        try {
-          child = spawnFn(invocation.command, [...invocation.args, target, '--skip-nx-cache'], {
-            cwd,
-            shell: false,
-            stdio: 'inherit',
-            env: {
-              ...childEnv,
-              NX_DAEMON: 'false',
-              BROWSER_QUALITY_RUN_ID: runId,
-              BROWSER_QUALITY_SOURCE_REVISION: source,
-              BROWSER_QUALITY_PORT: String(port),
-              BROWSER_QUALITY_WORKERS: '1',
-            },
-          });
-        } catch (error) {
-          finish({ exit_code: 1, status: 'incomplete', error: error.message });
-          return;
-        }
-        child.once('error', (error) =>
-          finish({ exit_code: 1, status: 'incomplete', error: error.message }),
-        );
-        child.once('close', (code) =>
-          finish({ exit_code: code ?? 1, status: code === 0 ? 'pass' : 'fail', error: null }),
-        );
-      }),
-  );
+  return children.map(({ target, port }) => {
+    const workspaceDataKey = crypto
+      .createHash('sha256')
+      .update(`${runId}\0${target}`)
+      .digest('hex');
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (result) => {
+        if (settled) return;
+        settled = true;
+        resolve({ target, port, invocation_count: 1, ...result });
+      };
+      let child;
+      try {
+        child = spawnFn(invocation.command, [...invocation.args, target, '--skip-nx-cache'], {
+          cwd,
+          shell: false,
+          stdio: 'inherit',
+          env: {
+            ...childEnv,
+            NX_DAEMON: 'false',
+            NX_WORKSPACE_DATA_DIRECTORY: path.join(
+              cwd,
+              '.nx',
+              'workspace-data',
+              'browser-quality',
+              workspaceDataKey,
+            ),
+            BROWSER_QUALITY_RUN_ID: runId,
+            BROWSER_QUALITY_SOURCE_REVISION: source,
+            BROWSER_QUALITY_PORT: String(port),
+            BROWSER_QUALITY_WORKERS: '1',
+          },
+        });
+      } catch (error) {
+        finish({ exit_code: 1, status: 'incomplete', error: error.message });
+        return;
+      }
+      child.once('error', (error) =>
+        finish({ exit_code: 1, status: 'incomplete', error: error.message }),
+      );
+      child.once('close', (code) =>
+        finish({ exit_code: code ?? 1, status: code === 0 ? 'pass' : 'fail', error: null }),
+      );
+    });
+  });
 }
 
 export async function runQuality({ spawnOptions = {} } = {}) {

@@ -239,6 +239,32 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
                 match super::resources::sample_pid(std::process::id()) {
                     Ok(resource) => {
                         let life_after = state.lifecycle_probe.snapshot();
+                        #[cfg(target_os = "linux")]
+                        let (resource, life_after) = {
+                            let mut resource = resource;
+                            let mut life_after = life_after;
+                            if lifecycle_is_quiescent(life_after) {
+                                // Request guards can drop just before Hyper closes
+                                // the accepted socket. Give the transport a bounded
+                                // settle point, then use a lower sample only when
+                                // lifecycle remains quiescent; a persistent leak
+                                // stays visible in both samples.
+                                tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                                if let Ok(settled) =
+                                    super::resources::sample_pid(std::process::id())
+                                {
+                                    let settled_life = state.lifecycle_probe.snapshot();
+                                    if lifecycle_is_quiescent(settled_life) {
+                                        resource.handles_or_fds = settled_quiescent_handles(
+                                            resource.handles_or_fds,
+                                            settled.handles_or_fds,
+                                        );
+                                        life_after = settled_life;
+                                    }
+                                }
+                            }
+                            (resource, life_after)
+                        };
                         emit(&ChildEvent::Sample {
                             sequence,
                             child: id,
@@ -307,6 +333,16 @@ fn normalize_handles_or_fds(
                 .max(lifecycle_after.active_sse_tasks),
         )
     }
+}
+
+#[cfg(target_os = "linux")]
+fn lifecycle_is_quiescent(life: crate::services::live_capacity::LifecycleSnapshot) -> bool {
+    life.active_requests == 0 && life.active_subscribers == 0 && life.active_sse_tasks == 0
+}
+
+#[cfg(target_os = "linux")]
+fn settled_quiescent_handles(first: u64, second: u64) -> u64 {
+    first.min(second)
 }
 
 pub fn child_isolated_runtime(
@@ -1829,6 +1865,21 @@ mod protocol_tests {
             tokio_tasks: 0,
         };
         assert_eq!(normalize_handles_or_fds(38, quiet, quiet), 38);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn quiescent_fd_settle_selects_socket_close_but_not_persistent_growth() {
+        assert_eq!(settled_quiescent_handles(49, 17), 17);
+        assert_eq!(settled_quiescent_handles(49, 49), 49);
+        assert!(lifecycle_is_quiescent(
+            crate::services::live_capacity::LifecycleSnapshot {
+                active_requests: 0,
+                active_subscribers: 0,
+                active_sse_tasks: 0,
+                tokio_tasks: 0,
+            }
+        ));
     }
 
     #[test]

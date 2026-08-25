@@ -95,7 +95,7 @@ export async function generateInventoryWithSyft({
         'scan',
         `dir:${root}`,
         '--select-catalogers',
-        'javascript-package-cataloger',
+        '+javascript-package-cataloger',
         '-o',
         'syft-json',
       ],

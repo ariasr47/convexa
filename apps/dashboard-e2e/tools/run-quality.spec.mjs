@@ -160,7 +160,7 @@ test('Windows aggregate uses real shell-free child launches and preserves spawn 
   const fixture = path.join(dir, 'npm-cli-fixture.mjs');
   fs.writeFileSync(
     fixture,
-    `import fs from 'node:fs';\nconst target = process.argv.find((x) => x.startsWith('dashboard-e2e:'));\nconst childRoot = process.env.NX_INVOCATION_ROOT_PID ?? String(process.pid);\nfs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ target, port: process.env.BROWSER_QUALITY_PORT, childRoot, runId: process.env.BROWSER_QUALITY_RUN_ID, marker: process.env.QUALITY_TEST_MARKER, workers: process.env.BROWSER_QUALITY_WORKERS }) + '\\n');\nprocess.exit(target.endsWith(':visual') ? 7 : 0);\n`,
+    `import fs from 'node:fs';\nconst target = process.argv.find((x) => x.startsWith('dashboard-e2e:'));\nconst childRoot = process.env.NX_INVOCATION_ROOT_PID ?? String(process.pid);\nfs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ target, port: process.env.BROWSER_QUALITY_PORT, childRoot, workspaceData: process.env.NX_WORKSPACE_DATA_DIRECTORY, runId: process.env.BROWSER_QUALITY_RUN_ID, marker: process.env.QUALITY_TEST_MARKER, workers: process.env.BROWSER_QUALITY_WORKERS }) + '\\n');\nprocess.exit(target.endsWith(':visual') ? 7 : 0);\n`,
   );
 
   const results = await Promise.all(
@@ -198,12 +198,17 @@ test('Windows aggregate uses real shell-free child launches and preserves spawn 
     'dashboard-e2e:a11y': '4212',
     'dashboard-e2e:visual': '4213',
   });
+  assert.equal(new Set([...logged.values()].map((entry) => entry.workspaceData)).size, 4);
   for (const entry of logged.values()) {
     assert.notEqual(entry.childRoot, 'aggregate-parent');
     assert.match(entry.childRoot, /^\d+$/);
     assert.equal(entry.runId, 'run-spawn-test');
     assert.equal(entry.marker, 'preserved');
     assert.equal(entry.workers, '1');
+    assert.match(
+      entry.workspaceData.replaceAll('\\', '/'),
+      /\/\.nx\/workspace-data\/browser-quality\/[a-f0-9]{64}$/,
+    );
   }
 
   const spawnErrors = await Promise.all(

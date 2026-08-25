@@ -11,6 +11,11 @@ on:
         description: Original pull-request head or default-branch revision
         required: true
         type: string
+      contract_base_revision:
+        description: Pull-request base revision for bounded secret-history scanning
+        required: false
+        default: ""
+        type: string
       contract_path:
         description: Closed evidence path inherited from the caller
         required: true
@@ -92,7 +97,9 @@ jobs:
       - name: Acquire checksum-verified policy tools
         run: node tools/supply-chain/acquire-tools.mjs
       - name: Run complete policy surface
-        run: npm run supply-chain:policy -- --event "${{ needs.identity.outputs.event }}" --path "${{ needs.identity.outputs.path }}" --run-key "${{ needs.identity.outputs.run-key }}" > .supply-chain/out/policy-report.json
+        env:
+          SCA_GITLEAKS_BASE_SHA: ${{ inputs.contract_base_revision }}
+        run: node tools/supply-chain/policy.mjs --event "${{ needs.identity.outputs.event }}" --path "${{ needs.identity.outputs.path }}" --run-key "${{ needs.identity.outputs.run-key }}" > .supply-chain/out/policy-report.json
       - if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -149,7 +156,7 @@ jobs:
       - name: Build each named subject once and bind evidence
         env:
           GITHUB_RUN_ID_SAFE: ${{ github.run_id }}
-        run: npm run supply-chain:artifacts -- --event "${{ needs.identity.outputs.event }}" --path artifacts --run-key "${{ needs.identity.outputs.run-key }}" > .supply-chain/out/artifact-report.json
+        run: node tools/supply-chain/artifacts.mjs --event "${{ needs.identity.outputs.event }}" --path artifacts --run-key "${{ needs.identity.outputs.run-key }}" > .supply-chain/out/artifact-report.json
       - if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

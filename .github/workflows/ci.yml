@@ -23,6 +23,7 @@ jobs:
     with:
       contract_event: ${{ github.event_name == 'pull_request' && 'pull_request' || 'default_branch' }}
       contract_revision: ${{ github.event.pull_request.head.sha || github.sha }}
+      contract_base_revision: ${{ github.event.pull_request.base.sha || github.sha }}
       contract_path: policy
     permissions:
       contents: read
@@ -204,6 +205,9 @@ jobs:
           name: postgres-release-negative-control
           path: ${{ runner.temp }}/postgres-release-negative-control.json
           if-no-files-found: error
+
+      - name: Free debug build space
+        run: cargo clean
 
       # Matches Railway/Docker production image (`--features postgres`).
       - name: Cargo release build (postgres)
