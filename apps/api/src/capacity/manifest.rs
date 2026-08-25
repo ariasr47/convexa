@@ -204,12 +204,26 @@ pub fn manifest(profile: Profile) -> ValidatedManifest {
         ScenarioId::SseCapacityRefusal => OutcomeClass::ExpectedCapacityRefusal,
         _ => OutcomeClass::Accepted,
     };
+    let required = |id| match id {
+        ScenarioId::RestCold => vec!["latencies_ms", "unexpected_errors"],
+        ScenarioId::RestExpectedNotFound => vec!["outcome", "latency_ms"],
+        ScenarioId::RestWarmConcurrent => vec!["latencies_ms", "unexpected_errors"],
+        ScenarioId::RestColdCoalesced => vec!["latencies_ms", "unexpected_errors"],
+        ScenarioId::RestSharedCapacity => vec!["latencies_ms", "unexpected_errors"],
+        ScenarioId::SseCapacityHold => vec!["accepted", "connect_latencies_ms", "hold_seconds", "unexpected_disconnects"],
+        ScenarioId::SseCapacityRefusal => vec!["outcome", "latency_ms"],
+        ScenarioId::SseOrderlyChurn | ScenarioId::SseAbruptDrop => vec!["waves", "accepted_per_wave", "resource_checks"],
+        ScenarioId::MixedSoak => vec!["latencies_ms", "unexpected_errors", "unexpected_disconnects", "resource_samples"],
+        ScenarioId::OptionalComputeFault => vec!["http_status", "iv_rank", "sse_outcome", "core_identity_unchanged", "ai_eval_present"],
+        ScenarioId::OutboundIsolation => vec!["attempts", "inventory"],
+        ScenarioId::PostLoadRecovery => vec!["observed", "children", "aggregate"],
+    };
     let scenarios = ScenarioId::ALL
         .into_iter()
         .map(|id| ScenarioSpec {
             id,
             expected: expected(id),
-            required_observations: vec!["latency".into(), "outcome".into()],
+            required_observations: required(id).into_iter().map(str::to_owned).collect(),
             soak_seconds: if id == ScenarioId::MixedSoak { soak } else { 0 },
         })
         .collect();
