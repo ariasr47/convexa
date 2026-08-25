@@ -62,6 +62,20 @@ impl PriceCache {
             Self::Redis(r) => r.get_price(symbol).await,
         }
     }
+
+    /// Clear the memory-backed harness cache. Production Redis state is never
+    /// touched by the fixture-only stabilization path.
+    pub(crate) async fn clear_harness(&self) -> AppResult<()> {
+        match self {
+            Self::Memory(m) => {
+                m.inner.write().await.clear();
+                Ok(())
+            }
+            Self::Redis(_) => Err(AppError::Config(
+                "capacity harness cannot clear a Redis price cache".into(),
+            )),
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------

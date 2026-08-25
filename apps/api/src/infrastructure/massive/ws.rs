@@ -122,6 +122,12 @@ impl StockStreamHub {
         wanted.iter().filter(|s| !set.contains(*s)).count()
     }
 
+    /// Reset fixture-only subscription bookkeeping after harness priming.
+    /// This is crate-visible so production routes cannot select it.
+    pub(crate) async fn reset_fixture_state(&self) {
+        self.inner.symbols.write().await.clear();
+    }
+
     pub fn shutdown(&self) {
         let _ = self.inner.cmd_tx.send(HubCmd::Shutdown);
     }

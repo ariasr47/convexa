@@ -871,6 +871,13 @@ impl GexCache {
         self.inner.read().await.is_empty()
     }
 
+    /// Clear only the in-process fixture cache.  The capacity harness uses this
+    /// after transport priming so the measured cold/warm preconditions remain
+    /// owned by the workload, not by the sampler stabilization phase.
+    pub(crate) async fn clear(&self) {
+        self.inner.write().await.clear();
+    }
+
     pub async fn metrics_snapshot(&self) -> CacheMetricsSnapshot {
         let entries = self.len().await;
         self.metrics.snapshot(

@@ -68,7 +68,13 @@ pub const fn lane_plans() -> [LanePlan; 5] {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "command", rename_all = "snake_case")]
 pub enum ParentCommand {
-    Sample { sequence: u64 },
+    Prime {
+        rest_concurrency: usize,
+        sse_concurrency: usize,
+    },
+    Sample {
+        sequence: u64,
+    },
     ResetE,
     Shutdown,
 }
@@ -86,6 +92,16 @@ pub enum ChildEvent {
         sequence: u64,
         child: ChildId,
         resource: ResourceSample,
+    },
+    PrimeReady {
+        child: ChildId,
+        rest_concurrency: usize,
+        sse_concurrency: usize,
+        rest_requests: usize,
+        sse_connections: usize,
+        cache_empty: bool,
+        lifecycle_zero: bool,
+        hub_symbols: usize,
     },
     ResetReady {
         child: ChildId,
@@ -161,6 +177,28 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
             }
         };
         match command {
+            ParentCommand::Prime {
+                rest_concurrency,
+                sse_concurrency,
+            } => match prime_loopback(addr, rest_concurrency, sse_concurrency, &state).await {
+                Ok((rest_requests, sse_connections, cache_empty, lifecycle_zero, hub_symbols)) => {
+                    emit(&ChildEvent::PrimeReady {
+                        child: id,
+                        rest_concurrency,
+                        sse_concurrency,
+                        rest_requests,
+                        sse_connections,
+                        cache_empty,
+                        lifecycle_zero,
+                        hub_symbols,
+                    })?
+                }
+                Err(e) => emit(&ChildEvent::Failure {
+                    child: id,
+                    stage: "prime".into(),
+                    reason: e.to_string(),
+                })?,
+            },
             ParentCommand::Sample { sequence } => {
                 match super::resources::sample_pid(std::process::id()) {
                     Ok(resource) => {
@@ -194,6 +232,83 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
         }
     }
     Ok(())
+}
+
+/// Exercise the real loopback transport at the lane's maximum concurrency,
+/// then return the fixture application to an exact cold-cache/lifecycle state.
+/// No response latency or resource sample from this phase is workload evidence.
+async fn prime_loopback(
+    addr: std::net::SocketAddr,
+    rest_concurrency: usize,
+    sse_concurrency: usize,
+    state: &crate::state::AppState,
+) -> anyhow::Result<(usize, usize, bool, bool, usize)> {
+    let concurrency = rest_concurrency.max(sse_concurrency).max(1);
+    let client = reqwest::Client::builder()
+        .pool_max_idle_per_host(concurrency)
+        .build()?;
+    let base = format!("http://{addr}");
+    let mut rest = Vec::with_capacity(rest_concurrency);
+    for _ in 0..rest_concurrency {
+        let client = client.clone();
+        let url = format!("{base}/api/ticker/SYN");
+        rest.push(tokio::spawn(async move { client.get(url).send().await }));
+    }
+    for task in rest {
+        let response = task.await??;
+        anyhow::ensure!(
+            response.status().is_success(),
+            "REST priming returned {}",
+            response.status()
+        );
+        let _ = response.bytes().await?;
+    }
+
+    let mut streams = Vec::with_capacity(sse_concurrency);
+    for _ in 0..sse_concurrency {
+        let client = client.clone();
+        let url = format!("{base}/api/stream/SYN");
+        streams.push(tokio::spawn(async move { client.get(url).send().await }));
+    }
+    let mut responses = Vec::with_capacity(sse_concurrency);
+    for task in streams {
+        let response = task.await??;
+        anyhow::ensure!(
+            response.status().is_success(),
+            "SSE priming returned {}",
+            response.status()
+        );
+        responses.push(response);
+    }
+    // All headers have arrived, so the admission/task/socket high-water mark
+    // has been exercised. Dropping responses closes every loopback stream.
+    drop(responses);
+    tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(2);
+    loop {
+        let life = state.lifecycle_probe.snapshot();
+        if life.active_requests == 0 && life.active_subscribers == 0 && life.active_sse_tasks == 0 {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            anyhow::bail!("priming lifecycle did not drain: {:?}", life);
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+    }
+    // Reset only after all route work has drained; clearing earlier can race a
+    // finishing bundle computation that repopulates the cache.
+    state.gex_cache.clear().await;
+    state.prices.clear_harness().await?;
+    state.stock_hub.reset_fixture_state().await;
+    let life = state.lifecycle_probe.snapshot();
+    Ok((
+        rest_concurrency,
+        sse_concurrency,
+        state.gex_cache.is_empty().await && state.prices.get_price("SYN").await?.is_none(),
+        life.active_requests == 0 && life.active_subscribers == 0 && life.active_sse_tasks == 0,
+        state.stock_hub.symbol_count().await,
+    ))
 }
 
 fn emit(event: &ChildEvent) -> anyhow::Result<()> {
@@ -335,8 +450,41 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
     }
     let mut evidence = BTreeMap::new();
     let mut baselines = BTreeMap::new();
+    let mut baseline_samples: BTreeMap<ChildId, Vec<ResourceSample>> = BTreeMap::new();
+    let mut priming: BTreeMap<ChildId, Value> = BTreeMap::new();
     if launch_error.is_none() {
-        // Three consecutive one-second samples are the stabilized baseline.
+        // Transport/runtime priming runs concurrently across the exact original
+        // children. It is deliberately outside measured evidence and resets all
+        // harness caches/control state before the cold/warm workload begins.
+        let prime_controls: Vec<_> = children
+            .iter()
+            .map(|child| {
+                let (rest_concurrency, sse_concurrency) = prime_plan(child.id);
+                (
+                    child.id,
+                    child.control.clone(),
+                    rest_concurrency,
+                    sse_concurrency,
+                )
+            })
+            .collect();
+        for (_, control, rest_concurrency, sse_concurrency) in &prime_controls {
+            command_control(
+                control,
+                ParentCommand::Prime {
+                    rest_concurrency: *rest_concurrency,
+                    sse_concurrency: *sse_concurrency,
+                },
+            )
+            .await?;
+        }
+        for (id, control, _, _) in prime_controls {
+            let event = receive_prime_control(&control, id).await?;
+            priming.insert(id, serde_json::to_value(event)?);
+        }
+
+        // Three consecutive one-second samples are the stabilized baseline;
+        // the third sample is authoritative, never the first sample.
         for sequence in 0..3u64 {
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             for child in &mut children {
@@ -344,8 +492,16 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
             }
             for child in &mut children {
                 if let Some(resource) = receive_sample(child, sequence).await? {
-                    baselines.entry(child_id(child)).or_insert(resource);
+                    baseline_samples
+                        .entry(child_id(child))
+                        .or_default()
+                        .push(resource);
                 }
+            }
+        }
+        for id in ChildId::ALL {
+            if let Some(sample) = stabilized_sample(baseline_samples.get(&id)) {
+                baselines.insert(id, sample);
             }
         }
         let addresses: BTreeMap<ChildId, std::net::SocketAddr> =
@@ -389,24 +545,34 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
                 evidence.insert(ScenarioId::MixedSoak, json!({"timeout": true}));
             }
         };
-        // All original children remain alive and quiescent for one shared checkpoint.
-        tokio::time::sleep(std::time::Duration::from_secs(30)).await;
-        for (sequence, child) in children.iter_mut().enumerate() {
-            command(
-                child,
-                ParentCommand::Sample {
-                    sequence: 100 + sequence as u64,
-                },
-            )
-            .await?;
-        }
-        let mut current = BTreeMap::new();
-        for (idx, child) in children.iter_mut().enumerate() {
-            if let Some(sample) = receive_sample(child, 100 + idx as u64).await? {
-                current.insert(child_id(child), sample);
+        // Keep the original children quiescent for the same 30-second
+        // checkpoint. The third of three consecutive end-of-window samples is
+        // authoritative, matching baseline stabilization without extending it.
+        tokio::time::sleep(std::time::Duration::from_secs(27)).await;
+        let mut recovery_samples = Vec::with_capacity(3);
+        for round in 0..3_u64 {
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            for (idx, child) in children.iter_mut().enumerate() {
+                command(
+                    child,
+                    ParentCommand::Sample {
+                        sequence: 100 + round * 10 + idx as u64,
+                    },
+                )
+                .await?;
             }
+            let mut tick = BTreeMap::new();
+            for (idx, child) in children.iter_mut().enumerate() {
+                let sequence = 100 + round * 10 + idx as u64;
+                if let Some(sample) = receive_sample(child, sequence).await? {
+                    tick.insert(child_id(child), sample);
+                }
+            }
+            recovery_samples.push(tick);
         }
-        let recovery = recovery_observation(&baselines, &current);
+        let current = recovery_samples.last().cloned().unwrap_or_default();
+        let mut recovery = recovery_observation(&baselines, &current);
+        recovery["checkpoint_samples"] = json!(recovery_samples);
         evidence.insert(ScenarioId::PostLoadRecovery, recovery);
     }
     let mut cleanup_forced = false;
@@ -429,7 +595,14 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
         &evidence,
         launch_error.as_deref(),
         &baselines,
+        &priming,
     );
+    value["summary"]["baseline_stabilization"] = json!({
+        "method": "loopback_transport_runtime_priming_then_third_of_three_consecutive_one_second_samples",
+        "sample_count": 3,
+        "samples": baseline_samples,
+        "priming": priming,
+    });
     value["summary"]["cleanup"]["forced"] = json!(cleanup_forced);
     value["summary"]["cleanup"]["acknowledged"] = json!(acknowledged);
     atomic_replace_value(&report_path(profile), &serde_json::to_vec(&value)?)?;
@@ -437,6 +610,22 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
         anyhow::bail!("capacity workload did not pass")
     }
     Ok(())
+}
+
+fn prime_plan(id: ChildId) -> (usize, usize) {
+    match id {
+        ChildId::A => (16, 32),
+        ChildId::B => (0, 32),
+        ChildId::C => (0, 8),
+        ChildId::D1 => (12, 0),
+        ChildId::D2 | ChildId::D3 => (32, 0),
+        ChildId::E => (1, 1),
+    }
+}
+
+fn stabilized_sample(samples: Option<&Vec<ResourceSample>>) -> Option<ResourceSample> {
+    let samples = samples?;
+    (samples.len() == 3).then(|| samples[2])
 }
 
 fn child_id(child: &RunningChild) -> ChildId {
@@ -490,6 +679,21 @@ async fn receive_sample_control(
         }
         _ => None,
     })
+}
+
+async fn receive_prime_control(
+    control: &std::sync::Arc<tokio::sync::Mutex<ChildControl>>,
+    id: ChildId,
+) -> anyhow::Result<ChildEvent> {
+    let mut child = control.lock().await;
+    let event = tokio::time::timeout(std::time::Duration::from_secs(8), child.events.recv())
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("child {id:?} exited during priming"))?;
+    match event {
+        ChildEvent::PrimeReady { child, .. } if child == id => Ok(event),
+        ChildEvent::Failure { reason, .. } => anyhow::bail!("priming failed: {reason}"),
+        other => anyhow::bail!("unexpected priming event: {other:?}"),
+    }
 }
 
 async fn lifecycle_sample_control(
@@ -802,6 +1006,7 @@ fn build_report_from_evidence(
     evidence: &BTreeMap<ScenarioId, Value>,
     launch_error: Option<&str>,
     baselines: &BTreeMap<ChildId, ResourceSample>,
+    priming: &BTreeMap<ChildId, Value>,
 ) -> Value {
     let mut report = build_report(profile, elapsed_ms);
     let mut failed: Vec<String> = Vec::new();
@@ -837,6 +1042,15 @@ fn build_report_from_evidence(
     if elapsed_ms > 180_000 && profile == Profile::Normal {
         failed.push("normal_profile_deadline".into());
     }
+    let priming_ok = priming.len() == 7
+        && priming.values().all(|row| {
+            row.get("cache_empty").and_then(Value::as_bool) == Some(true)
+                && row.get("lifecycle_zero").and_then(Value::as_bool) == Some(true)
+                && row.get("hub_symbols").and_then(Value::as_u64) == Some(0)
+        });
+    if !priming_ok {
+        failed.push("baseline_priming".into());
+    }
     let all_pass = failed.is_empty() && launch_error.is_none() && baselines.len() == 7;
     report["summary"]["verdict"] = json!(if all_pass { "pass" } else { "did_not_pass" });
     report["summary"]["failed_scenarios"] = json!(failed);
@@ -860,6 +1074,36 @@ mod protocol_tests {
             serde_json::from_str::<ParentCommand>(&encoded).unwrap(),
             command
         );
+    }
+
+    #[test]
+    fn priming_command_and_third_sample_are_explicit() {
+        let command = ParentCommand::Prime {
+            rest_concurrency: 16,
+            sse_concurrency: 32,
+        };
+        assert_eq!(serde_json::to_value(command).unwrap()["command"], "prime");
+        assert_eq!(prime_plan(ChildId::A), (16, 32));
+        assert_eq!(prime_plan(ChildId::B), (0, 32));
+        assert_eq!(prime_plan(ChildId::C), (0, 8));
+        assert_eq!(prime_plan(ChildId::D1), (12, 0));
+        assert_eq!(prime_plan(ChildId::D2), (32, 0));
+        assert_eq!(prime_plan(ChildId::D3), (32, 0));
+        assert_eq!(prime_plan(ChildId::E), (1, 1));
+        let sample = |handles_or_fds| ResourceSample {
+            rss_bytes: 1,
+            handles_or_fds,
+            tokio_tasks: 0,
+            active_requests: 0,
+            active_subscribers: 0,
+            active_sse_tasks: 0,
+        };
+        let samples = vec![sample(157), sample(220), sample(212)];
+        assert_eq!(
+            stabilized_sample(Some(&samples)).unwrap().handles_or_fds,
+            212
+        );
+        assert!(stabilized_sample(Some(&samples[..2].to_vec())).is_none());
     }
 
     #[test]
