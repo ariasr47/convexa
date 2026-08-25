@@ -11,6 +11,15 @@ fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("data/capacity/self-tests")
 }
 
+fn receipt_temp_path(dir: &std::path::Path, name: &str) -> PathBuf {
+    static RECEIPT_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+    dir.join(format!(
+        ".{name}.tmp-{}-{}",
+        std::process::id(),
+        RECEIPT_SEQUENCE.fetch_add(1, Ordering::Relaxed)
+    ))
+}
+
 pub fn run(case: super::CapacitySelfTestCase) -> anyhow::Result<()> {
     let (name, case_name) = match case {
         super::CapacitySelfTestCase::ConnectorPoison => {
@@ -51,7 +60,7 @@ pub fn run(case: super::CapacitySelfTestCase) -> anyhow::Result<()> {
     let path = dir.join(name);
     let mut bytes = serde_json::to_vec(&body)?;
     bytes.push(b'\n');
-    let tmp = dir.join(format!(".{name}.tmp-{}", std::process::id()));
+    let tmp = receipt_temp_path(&dir, name);
     std::fs::write(&tmp, bytes)?;
     std::fs::rename(tmp, path)?;
     if body.get("verdict").and_then(|v| v.as_str()) != Some("pass") {
@@ -289,4 +298,20 @@ fn digest_json(value: &serde_json::Value) -> String {
     let mut h = Sha256::new();
     h.update(bytes);
     hex::encode(h.finalize())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn concurrent_receipts_use_distinct_temporary_paths() {
+        let dir = PathBuf::from("receipts");
+        let first = receipt_temp_path(&dir, "connector-poison.json");
+        let second = receipt_temp_path(&dir, "connector-poison.json");
+
+        assert_ne!(first, second);
+        assert_eq!(first.parent(), Some(dir.as_path()));
+        assert_eq!(second.parent(), Some(dir.as_path()));
+    }
 }

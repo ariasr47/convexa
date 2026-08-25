@@ -2,7 +2,7 @@ use api_rust::capacity::{self_test, CapacitySelfTestCase};
 
 fn receipt(name: &str) -> serde_json::Value {
     let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../data/capacity/self-tests")
+        .join("data/capacity/self-tests")
         .join(name);
     serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap()
 }
