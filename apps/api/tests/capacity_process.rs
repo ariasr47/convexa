@@ -61,3 +61,42 @@ fn workload_uses_real_market_fixture_and_closed_observations() {
     assert_eq!(rows.len(), 13);
     assert!(rows.iter().all(|row| row["observations"].is_object()));
 }
+
+#[test]
+fn retained_report_bytes_have_exactly_one_trailing_lf() {
+    let report = runner::build_report(Profile::Normal, 1);
+    let bytes = runner::canonical_report_bytes(&report).expect("canonical report bytes");
+    assert_eq!(bytes.last(), Some(&b'\n'));
+    assert_eq!(
+        bytes.iter().rev().skip(1).position(|byte| *byte != b'\n'),
+        Some(0)
+    );
+    assert_eq!(bytes.iter().filter(|byte| **byte == b'\n').count(), 1);
+}
+
+#[test]
+fn report_provenance_requires_current_full_revision() {
+    let report = runner::build_report(Profile::Normal, 1);
+    let revision = report["revision"].as_str().expect("revision string");
+    assert_eq!(revision.len(), 40);
+    assert!(revision.bytes().all(|byte| byte.is_ascii_hexdigit()));
+    assert!(runner::valid_revision(revision));
+    assert!(!runner::valid_revision("unknown"));
+    assert!(!runner::valid_revision("deadbeef"));
+}
+
+#[test]
+fn extended_schedule_keeps_sixty_second_hold_and_nine_hundred_samples() {
+    let extended = manifest(Profile::Extended);
+    assert_eq!(extended.scenarios[9].soak_seconds, 900);
+    assert_eq!(runner::sse_hold_seconds(Profile::Extended), 60);
+    assert_eq!(runner::mixed_soak_sample_target(Profile::Extended), 900);
+    assert_eq!(
+        runner::workload_timeout(Profile::Extended),
+        Duration::from_secs(910)
+    );
+    assert_eq!(
+        runner::workload_timeout(Profile::Normal),
+        Duration::from_secs(70)
+    );
+}

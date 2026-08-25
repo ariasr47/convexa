@@ -337,6 +337,65 @@ pub fn workload_fixture_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/market")
 }
 
+/// The closed profile timings are policy inputs shared by scheduling and tests.
+pub const fn sse_hold_seconds(_profile: Profile) -> u64 {
+    60
+}
+
+pub const fn mixed_soak_sample_target(profile: Profile) -> usize {
+    match profile {
+        Profile::Normal => 60,
+        Profile::Extended => 900,
+    }
+}
+
+pub const fn workload_timeout(profile: Profile) -> std::time::Duration {
+    match profile {
+        Profile::Normal => std::time::Duration::from_secs(70),
+        // Ten seconds of bounded scheduling/IPC margin over the 15-minute soak.
+        Profile::Extended => std::time::Duration::from_secs(910),
+    }
+}
+
+fn soak_collection_complete(
+    profile: Profile,
+    workload_finished: bool,
+    sample_count: usize,
+) -> bool {
+    workload_finished && sample_count == mixed_soak_sample_target(profile)
+}
+
+pub fn valid_revision(revision: &str) -> bool {
+    revision.len() == 40 && revision.bytes().all(|byte| byte.is_ascii_hexdigit())
+}
+
+fn target_revision() -> String {
+    let git_revision = std::process::Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|revision| revision.trim().to_owned())
+        .filter(|revision| valid_revision(revision));
+    git_revision
+        .or_else(|| {
+            std::env::var("GIT_COMMIT")
+                .ok()
+                .filter(|revision| valid_revision(revision))
+        })
+        .unwrap_or_default()
+}
+
+pub fn canonical_report_bytes(value: &Value) -> anyhow::Result<Vec<u8>> {
+    let mut bytes = serde_json::to_vec(value)?;
+    while bytes.last() == Some(&b'\n') {
+        bytes.pop();
+    }
+    bytes.push(b'\n');
+    Ok(bytes)
+}
+
 async fn launch_child(
     id: &str,
     fixture_dir: &Path,
@@ -511,11 +570,19 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
         let mut workload = Box::pin(execute_lanes(profile, addresses, b_control, c_control));
         let controls: Vec<_> = children.iter().map(|c| (c.id, c.control.clone())).collect();
         let mut soak_samples = Vec::new();
-        let workload = tokio::time::timeout(std::time::Duration::from_secs(70), async {
+        let workload = tokio::time::timeout(workload_timeout(profile), async {
+            let mut workload_result = None;
             loop {
+                if soak_collection_complete(
+                    profile,
+                    workload_result.is_some(),
+                    soak_samples.len(),
+                ) {
+                    break workload_result.expect("workload completion recorded");
+                }
                 tokio::select! {
-                    result = &mut workload => break result,
-                    _ = tokio::time::sleep(std::time::Duration::from_secs(1)) => {
+                    result = &mut workload, if workload_result.is_none() => workload_result = Some(result),
+                    _ = tokio::time::sleep(std::time::Duration::from_secs(1)), if soak_samples.len() < mixed_soak_sample_target(profile) => {
                         let sequence = 10_000 + soak_samples.len() as u64;
                         let mut tick = BTreeMap::new();
                         for (id, control) in &controls {
@@ -802,11 +869,24 @@ async fn lane_a(
         std::time::Duration::from_secs(2),
     )
     .await?;
-    let hold_secs = if profile == Profile::Normal { 60 } else { 60 };
+    let hold_secs = sse_hold_seconds(profile);
+    let soak_secs = manifest(profile)
+        .scenarios
+        .iter()
+        .find(|scenario| scenario.id == ScenarioId::MixedSoak)
+        .map(|scenario| scenario.soak_seconds)
+        .unwrap_or_default();
     let mut soak_latencies = Vec::new();
-    for _ in 0..hold_secs {
+    let mut held = Some(held);
+    for second in 0..soak_secs {
         let responses = rest_many(addr, vec!["SYN".into(); 16], 16).await;
         soak_latencies.extend(responses.into_iter().map(|r| r.latency));
+        if second + 1 == hold_secs {
+            // The SSE hold is deliberately the first 60 seconds of either
+            // profile; extended evidence continues as mixed REST soak after
+            // this intentional close.
+            drop(held.take());
+        }
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     }
     drop(held);
@@ -1142,6 +1222,26 @@ mod protocol_tests {
         );
         assert!(!pass);
     }
+
+    #[test]
+    fn report_validation_rejects_missing_or_malformed_provenance() {
+        let mut missing = build_report(Profile::Normal, 1);
+        missing.as_object_mut().unwrap().remove("revision");
+        assert!(validate_report_value(&missing).is_err());
+
+        let mut malformed = build_report(Profile::Normal, 1);
+        malformed["revision"] = json!("unknown");
+        assert!(validate_report_value(&malformed).is_err());
+    }
+
+    #[test]
+    fn workload_completion_waits_for_the_final_complete_resource_tick() {
+        assert!(!soak_collection_complete(Profile::Extended, true, 899));
+        assert!(soak_collection_complete(Profile::Extended, true, 900));
+        assert!(!soak_collection_complete(Profile::Normal, true, 59));
+        assert!(soak_collection_complete(Profile::Normal, true, 60));
+        assert!(!soak_collection_complete(Profile::Extended, false, 900));
+    }
 }
 
 pub fn report_path(profile: Profile) -> PathBuf {
@@ -1185,7 +1285,7 @@ pub fn build_report(profile: Profile, elapsed_ms: u64) -> Value {
     json!({
         "schema_version": 1, "feature": "capacity-baseline",
         "profile": match profile { Profile::Normal => "normal", Profile::Extended => "extended" },
-        "profile_version": "1", "seed": 20260820_i64, "revision": option_env!("GIT_COMMIT").unwrap_or("unknown"),
+        "profile_version": "1", "seed": 20260820_i64, "revision": target_revision(),
         "environment": {"os": std::env::consts::OS, "arch": std::env::consts::ARCH,
             "logical_cpus": std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1),
             "rustc": option_env!("RUSTC_VERSION").unwrap_or("unknown"),
@@ -1204,7 +1304,27 @@ fn atomic_replace_value(path: &Path, bytes: &[u8]) -> anyhow::Result<()> {
     // The report module validates the legacy shape; this runner's closed shape is
     // validated here before using the same sibling-temp/rename discipline.
     let value: Value = serde_json::from_slice(bytes)?;
+    validate_report_value(&value)?;
+    let parent = path
+        .parent()
+        .ok_or_else(|| anyhow::anyhow!("report has no parent"))?;
+    std::fs::create_dir_all(parent)?;
+    let tmp = parent.join(format!(
+        ".{}.tmp-{}",
+        path.file_name().unwrap_or_default().to_string_lossy(),
+        std::process::id()
+    ));
+    std::fs::write(&tmp, canonical_report_bytes(&value)?)?;
+    std::fs::rename(tmp, path)?;
+    Ok(())
+}
+
+fn validate_report_value(value: &Value) -> anyhow::Result<()> {
     if value.get("claim").and_then(Value::as_str) != Some(CLAIM)
+        || !value
+            .get("revision")
+            .and_then(Value::as_str)
+            .is_some_and(valid_revision)
         || value
             .get("scenarios")
             .and_then(Value::as_array)
@@ -1219,16 +1339,5 @@ fn atomic_replace_value(path: &Path, bytes: &[u8]) -> anyhow::Result<()> {
     {
         anyhow::bail!("capacity report validation failed")
     }
-    let parent = path
-        .parent()
-        .ok_or_else(|| anyhow::anyhow!("report has no parent"))?;
-    std::fs::create_dir_all(parent)?;
-    let tmp = parent.join(format!(
-        ".{}.tmp-{}",
-        path.file_name().unwrap_or_default().to_string_lossy(),
-        std::process::id()
-    ));
-    std::fs::write(&tmp, bytes)?;
-    std::fs::rename(tmp, path)?;
     Ok(())
 }
