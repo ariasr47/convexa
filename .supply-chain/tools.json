@@ -24,7 +24,7 @@
       "version": "1.0.0",
       "source_kind": "repository",
       "source_locator": "tools/supply-chain/policy/npm-license.mjs",
-      "sha256": "65a85d5caa28446344cc207f7a2864a0a72cd8f78db88a912e1be7ba29fc2c7b",
+      "sha256": "a617fb7abe81e840c7384ee4722ea89da6ed527b529f4c38a51bb325ca2b1177",
       "platform": "linux-x64",
       "capabilities": ["npm-license.spdx-inventory"]
     },

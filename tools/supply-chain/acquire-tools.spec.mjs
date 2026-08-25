@@ -1,9 +1,19 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 
 import { externalExecutablePath } from './acquire-tools.mjs';
+
+test('repository tool manifest hashes match the current checked-in bytes', async () => {
+  const manifest = JSON.parse(await fs.readFile('.supply-chain/tools.json', 'utf8'));
+  for (const tool of manifest.tools.filter((record) => record.source_kind === 'repository')) {
+    const bytes = await fs.readFile(tool.source_locator);
+    const actual = crypto.createHash('sha256').update(bytes).digest('hex');
+    assert.equal(actual, tool.sha256, `${tool.tool_id} repository checksum`);
+  }
+});
 
 test('cargo-deny resolves the executable inside its versioned archive directory', () => {
   const base = path.join('tools', 'cargo-deny', '0.20.2');
