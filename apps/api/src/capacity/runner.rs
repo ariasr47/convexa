@@ -796,7 +796,6 @@ fn recovery_observation(
     json!({"children": children, "aggregate": {"baseline": aggregate_base, "current": aggregate_now, "within_threshold": aggregate_within}, "observed": children.len() == 7 && current.len() == 7})
 }
 
-#[cfg(any())]
 fn percentile(values: &[f64], percentile: f64) -> Option<f64> {
     if values.is_empty() || values.iter().any(|v| !v.is_finite() || *v < 0.0) {
         return None;
@@ -807,7 +806,6 @@ fn percentile(values: &[f64], percentile: f64) -> Option<f64> {
     sorted.get(rank).copied()
 }
 
-#[cfg(any())]
 fn number_array(value: &Value, key: &str) -> Option<Vec<f64>> {
     value
         .get(key)?
@@ -817,14 +815,12 @@ fn number_array(value: &Value, key: &str) -> Option<Vec<f64>> {
         .collect()
 }
 
-#[cfg(any())]
 fn require_observation(failures: &mut Vec<String>, condition: bool, message: &str) {
     if !condition {
         failures.push(message.to_string());
     }
 }
 
-#[cfg(any())]
 fn evaluate_latency(
     observation: &Value,
     failures: &mut Vec<String>,
@@ -859,7 +855,6 @@ fn evaluate_latency(
     }
 }
 
-#[cfg(any())]
 fn valid_resource_tick(tick: &Value) -> bool {
     let baseline = match tick.get("baseline").and_then(Value::as_object) {
         Some(v) => v,
@@ -910,7 +905,6 @@ fn valid_resource_tick(tick: &Value) -> bool {
             .is_some_and(|v| v <= b.get("tokio_tasks").and_then(Value::as_u64).unwrap_or(0) + 8)
 }
 
-#[cfg(any())]
 fn evaluate(id: ScenarioId, observation: &Value, profile: Profile) -> (bool, Vec<String>, Value) {
     let mut failures = Vec::new();
     let mut thresholds = BTreeMap::new();
@@ -1322,24 +1316,31 @@ mod protocol_tests {
     #[test]
     fn evaluator_rejects_missing_and_breached_latency_evidence() {
         let missing = json!({"latencies_ms": [1.0], "unexpected_errors": 0});
-        let (pass, failures, _) = evaluate(ScenarioId::RestCold, &missing, Profile::Normal);
+        let (pass, failures, _) =
+            super::evaluate::evaluate_json(Profile::Normal, ScenarioId::RestCold, &missing);
         assert!(!pass);
-        assert!(failures.iter().any(|f| f.contains("requires 12")));
+        assert!(failures.iter().any(|f| f.contains("latencies_ms.count")));
 
         let breached = json!({"latencies_ms": vec![6000.0; 12], "unexpected_errors": 0});
-        let (pass, failures, _) = evaluate(ScenarioId::RestCold, &breached, Profile::Normal);
+        let (pass, failures, _) =
+            super::evaluate::evaluate_json(Profile::Normal, ScenarioId::RestCold, &breached);
         assert!(!pass);
-        assert!(failures.iter().any(|f| f.contains("above 5000")));
+        assert!(failures.iter().any(|f| f.contains("latencies_ms.max")));
     }
 
     #[test]
     fn evaluator_rejects_incomplete_soak_and_recovery() {
         let soak = json!({"latencies_ms": vec![1.0; 960], "unexpected_errors": 0, "unexpected_disconnects": 0, "resource_samples": []});
-        let (pass, _, _) = evaluate(ScenarioId::MixedSoak, &soak, Profile::Normal);
+        let (pass, _, _) =
+            super::evaluate::evaluate_json(Profile::Normal, ScenarioId::MixedSoak, &soak);
         assert!(!pass);
         let recovery =
             json!({"observed": true, "children": [], "aggregate": {"within_threshold": false}});
-        let (pass, _, _) = evaluate(ScenarioId::PostLoadRecovery, &recovery, Profile::Normal);
+        let (pass, _, _) = super::evaluate::evaluate_json(
+            Profile::Normal,
+            ScenarioId::PostLoadRecovery,
+            &recovery,
+        );
         assert!(!pass);
     }
 }
