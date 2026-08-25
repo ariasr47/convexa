@@ -1,0 +1,25 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "FAIL",
+  "mode": "live",
+  "source": ".spire/clusters/tech/contracts/capacity-baseline/INTERFACE_CONTRACT.md",
+  "base_url": "http://127.0.0.1:52146",
+  "auth": null,
+  "checked_at": "2026-08-25T03:15:23Z",
+  "summary": {
+    "pass": 0,
+    "fail": 1,
+    "total": 1
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/ticker/{ticker}",
+      "verdict": "FAIL",
+      "required_checked": 0,
+      "failures": [
+        "unreachable/error \u2014 HTTP 404 (expected 200)"
+      ]
+    }
+  ]
+}
