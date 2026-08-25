@@ -23,36 +23,6 @@ pub struct FixtureApp {
     pub router: Router,
 }
 
-impl AppState {
-    pub(crate) async fn for_capacity_fixture(input: CapacityAppInput) -> AppResult<Self> {
-        let catalog = load_fixture_dir(&input.fixture_dir)?;
-        if catalog.is_empty() {
-            return Err(crate::error::AppError::Config(
-                "capacity fixture catalog is empty".into(),
-            ));
-        }
-        let mut state = Self::for_tests(
-            crate::services::chain_snapshot::ChainSnapshotStore::memory(),
-            crate::services::session_chain_archive::SessionChainArchive::memory(),
-        )
-        .await?;
-        let cfg = (*state.config).clone();
-        let (hub, _producer, worker) = StockStreamHub::fixture(&cfg);
-        state.massive = None;
-        state.harness_market_data = Some(MarketDataPort::fixture(catalog));
-        state.stock_hub = hub;
-        state.stock_worker = std::sync::Arc::new(worker);
-        state.iv_store = if input.iv_fault {
-            crate::services::iv_store::IvStore::fixture_fail_read()
-        } else {
-            crate::services::iv_store::IvStore::fixture_history(fixture_iv_history())
-        };
-        state.live_capacity = crate::services::live_capacity::LiveCapacity::new(0, 32);
-        state.lifecycle_probe = LifecycleProbe::enabled();
-        Ok(state)
-    }
-}
-
 pub async fn build(input: CapacityAppInput) -> AppResult<FixtureApp> {
     let catalog = load_fixture_dir(&input.fixture_dir)?;
     if catalog.is_empty() {

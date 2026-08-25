@@ -34,7 +34,7 @@ pub enum IvStore {
 }
 
 #[derive(Clone)]
-struct FixtureIvStore {
+pub struct FixtureIvStore {
     samples: Arc<Vec<IvSample>>,
     fail_read: bool,
 }

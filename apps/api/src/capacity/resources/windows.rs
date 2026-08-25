@@ -2,7 +2,7 @@ use super::{ResourceSampler, ResourceSnapshot, SampleError};
 pub struct WindowsSampler;
 impl ResourceSampler for WindowsSampler {
     fn sample_pid(pid: u32) -> Result<ResourceSnapshot, SampleError> {
-        let out = std::process::Command::new("powershell.exe").args(["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", &format!("$p=Get-Process -Id {pid} -ErrorAction Stop; '{pid}`t' + $p.WorkingSet64 + '`t' + $p.Handles")]).output().map_err(|e| SampleError::Unavailable(e.to_string()))?;
+        let out = std::process::Command::new("powershell.exe").args(["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", &format!("$p=Get-Process -Id {pid} -ErrorAction Stop; \"{pid}`t\" + $p.WorkingSet64 + \"`t\" + $p.Handles")]).output().map_err(|e| SampleError::Unavailable(e.to_string()))?;
         if !out.status.success() {
             return Err(SampleError::Unavailable(
                 "sampler exited unsuccessfully".into(),

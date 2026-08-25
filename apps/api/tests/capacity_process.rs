@@ -51,3 +51,13 @@ fn protocol_reset_is_distinct_from_shutdown() {
         serde_json::to_value(shutdown).unwrap()["command"]
     );
 }
+
+#[test]
+fn workload_uses_real_market_fixture_and_closed_observations() {
+    let path = runner::workload_fixture_dir();
+    assert!(path.ends_with("tests\\fixtures\\market") || path.ends_with("tests/fixtures/market"));
+    let report = runner::build_report(Profile::Normal, 1);
+    let rows = report["scenarios"].as_array().unwrap();
+    assert_eq!(rows.len(), 13);
+    assert!(rows.iter().all(|row| row["observations"].is_object()));
+}

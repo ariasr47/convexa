@@ -77,7 +77,7 @@ pub enum ScenarioStatus {
     DidNotPass,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum ChildId {
     A,
     B,

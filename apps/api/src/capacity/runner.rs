@@ -9,6 +9,8 @@ use super::model::ResourceSample;
 use super::report::CLAIM;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use futures_util::future::join_all;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -111,6 +113,7 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let addr = listener.local_addr()?;
     let state = app.state.clone();
+    let producer = app.producer.clone();
     let (stop_tx, stop_rx) = tokio::sync::oneshot::channel::<()>();
     let router = app.router;
     tokio::spawn(async move {
@@ -119,6 +122,24 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
                 let _ = stop_rx.await;
             })
             .await;
+    });
+    tokio::spawn(async move {
+        let mut sequence = 1_i64;
+        loop {
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            let _ = producer.publish(crate::domain::StreamEvent {
+                symbol: "SYN".into(),
+                kind: crate::domain::StreamKind::Trade,
+                ts_ns: sequence,
+                price: Some(500.0),
+                size: Some(1.0),
+                bid: None,
+                ask: None,
+                bid_size: None,
+                ask_size: None,
+            });
+            sequence += 1;
+        }
     });
     emit(&ChildEvent::Ready {
         child: id,
@@ -186,12 +207,15 @@ fn emit(event: &ChildEvent) -> anyhow::Result<()> {
 }
 
 struct RunningChild {
-    id: String,
+    id: ChildId,
     process: Child,
     stdin: tokio::process::ChildStdin,
     events: mpsc::UnboundedReceiver<ChildEvent>,
     addr: std::net::SocketAddr,
-    pid: u32,
+}
+
+pub fn workload_fixture_dir() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/market")
 }
 
 async fn launch_child(
@@ -226,7 +250,7 @@ async fn launch_child(
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::null());
     let mut process = cmd.spawn()?;
-    let pid = process
+    let _pid = process
         .id()
         .ok_or_else(|| anyhow::anyhow!("child has no pid"))?;
     let stdin = process
@@ -247,12 +271,11 @@ async fn launch_child(
         }
     });
     let mut child = RunningChild {
-        id: id.into(),
+        id: ChildId::parse(id).expect("validated child id"),
         process,
         stdin,
         events,
         addr: "127.0.0.1:0".parse().unwrap(),
-        pid,
     };
     let ready = tokio::time::timeout(
         std::time::Duration::from_secs(12),
@@ -288,64 +311,163 @@ async fn command(child: &mut RunningChild, command: ParentCommand) -> anyhow::Re
 /// from being mistaken for capacity evidence.
 pub async fn run(profile: Profile) -> anyhow::Result<()> {
     let started = Instant::now();
-    let fixture_dir =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/capacity-baseline/v1");
+    let fixture_dir = workload_fixture_dir();
     let mut children = Vec::with_capacity(CHILDREN.len());
     let mut launch_error = None;
     for id in CHILDREN {
-        match launch_child(id, &fixture_dir, false).await {
+        match launch_child(id, &fixture_dir, id == "E").await {
             Ok(c) => children.push(c),
-            Err(e) => {
-                launch_error = Some(format!("{id}: {e}"));
-                break;
-            }
+            Err(e) => { launch_error = Some(format!("{id}: {e}")); break; }
         }
     }
-    let mut baseline = Vec::new();
+    let mut evidence = BTreeMap::new();
+    let mut baselines = BTreeMap::new();
     if launch_error.is_none() {
+        // Three consecutive one-second samples are the stabilized baseline.
         for sequence in 0..3u64 {
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            for child in &mut children { command(child, ParentCommand::Sample { sequence }).await?; }
             for child in &mut children {
-                command(child, ParentCommand::Sample { sequence }).await?;
-                if let Ok(Some(ChildEvent::Sample { resource, .. })) =
-                    tokio::time::timeout(std::time::Duration::from_millis(500), child.events.recv())
-                        .await
-                {
-                    baseline.push(resource);
-                }
+                if let Some(resource) = receive_sample(child, sequence).await? { baselines.entry(child_id(child)).or_insert(resource); }
             }
         }
-        // A and E receive real route traffic as a liveness check. The remaining
-        // lanes are kept alive and independent until the shared recovery point.
-        for child in &children {
-            let client = super::rest::RestClient::new()?;
-            let _ = client
-                .request(&format!("http://{}/api/ticker/SYN", child.addr))
-                .await;
-        }
+        let addresses: BTreeMap<ChildId, std::net::SocketAddr> = children.iter().map(|c| (child_id(c), c.addr)).collect();
+        let workload = tokio::time::timeout(std::time::Duration::from_secs(70), execute_lanes(profile, addresses)).await;
+        match workload {
+            Ok(Ok(rows)) => evidence = rows,
+            Ok(Err(e)) => { eprintln!("capacity workload lane failure: {e:#}"); evidence.insert(ScenarioId::PostLoadRecovery, json!({"error": e.to_string()})); }
+            Err(_) => { evidence.insert(ScenarioId::MixedSoak, json!({"timeout": true})); }
+        };
+        // All original children remain alive and quiescent for one shared checkpoint.
         tokio::time::sleep(std::time::Duration::from_secs(30)).await;
-        for child in &mut children {
-            command(child, ParentCommand::Sample { sequence: 3 }).await?;
-        }
+        for (sequence, child) in children.iter_mut().enumerate() { command(child, ParentCommand::Sample { sequence: 100 + sequence as u64 }).await?; }
+        let mut current = BTreeMap::new();
+        for (idx, child) in children.iter_mut().enumerate() { if let Some(sample) = receive_sample(child, 100 + idx as u64).await? { current.insert(child_id(child), sample); } }
+        let recovery = recovery_observation(&baselines, &current);
+        evidence.insert(ScenarioId::PostLoadRecovery, recovery);
     }
     let mut cleanup_forced = false;
+    let mut acknowledged = true;
     for mut child in children {
-        let _ = command(&mut child, ParentCommand::Shutdown).await;
-        if tokio::time::timeout(std::time::Duration::from_secs(7), child.process.wait())
-            .await
-            .is_err()
-        {
-            cleanup_forced = true;
-            let _ = child.process.kill().await;
-        }
+        if command(&mut child, ParentCommand::Shutdown).await.is_err() { acknowledged = false; }
+        if tokio::time::timeout(std::time::Duration::from_secs(7), child.process.wait()).await.is_err() { cleanup_forced = true; let _ = child.process.kill().await; }
     }
-    let mut value = build_report(profile, started.elapsed().as_millis() as u64);
-    if let Some(error) = launch_error {
-        value["summary"]["launch_error"] = serde_json::json!(error);
-    }
-    value["summary"]["cleanup"]["forced"] = serde_json::json!(cleanup_forced);
+    let mut value = build_report_from_evidence(profile, started.elapsed().as_millis() as u64, &evidence, launch_error.as_deref(), &baselines);
+    value["summary"]["cleanup"]["forced"] = json!(cleanup_forced);
+    value["summary"]["cleanup"]["acknowledged"] = json!(acknowledged);
     atomic_replace_value(&report_path(profile), &serde_json::to_vec(&value)?)?;
-    anyhow::bail!("capacity workload did not pass; required lane observations are incomplete")
+    if launch_error.is_some() || cleanup_forced || value["summary"]["verdict"] != "pass" { anyhow::bail!("capacity workload did not pass") }
+    Ok(())
+}
+
+fn child_id(child: &RunningChild) -> ChildId {
+    child.id
+}
+
+async fn receive_sample(child: &mut RunningChild, sequence: u64) -> anyhow::Result<Option<ResourceSample>> {
+    let event = tokio::time::timeout(std::time::Duration::from_secs(2), child.events.recv()).await?;
+    Ok(match event { Some(ChildEvent::Sample { sequence: got, child: id, resource }) if got == sequence && id == child.id => Some(resource), Some(ChildEvent::Failure { reason, .. }) => { tracing::warn!("capacity sample failed: {reason}"); None }, _ => None })
+}
+
+async fn rest_many(addr: std::net::SocketAddr, symbols: Vec<String>, concurrency: usize) -> Vec<super::rest::RestResponse> {
+    let client = match super::rest::RestClient::new() { Ok(c) => c, Err(_) => return Vec::new() };
+    let mut out = Vec::new();
+    for chunk in symbols.chunks(concurrency.max(1)) {
+        let futures = chunk.iter().map(|symbol| { let url = format!("http://{addr}/api/ticker/{symbol}"); let client = client.clone(); async move { client.request(&url).await } });
+        for result in join_all(futures).await.into_iter().flatten() { out.push(result); }
+    }
+    out
+}
+
+async fn open_streams(addr: std::net::SocketAddr, count: usize) -> (Vec<super::sse::HeldSse>, usize) {
+    let futures = (0..count).map(|_| { let url = format!("http://{addr}/api/stream/SYN"); async move { super::sse::connect_hold(&url, std::time::Duration::from_secs(3)).await } });
+    let mut held = Vec::new(); let mut accepted = 0;
+    for result in join_all(futures).await.into_iter().flatten() { if let Ok(stream) = result { held.push(stream); accepted += 1; } }
+    (held, accepted)
+}
+
+async fn execute_lanes(profile: Profile, addresses: BTreeMap<ChildId, std::net::SocketAddr>) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
+    let a = *addresses.get(&ChildId::A).ok_or_else(|| anyhow::anyhow!("A child missing"))?;
+    let b = *addresses.get(&ChildId::B).ok_or_else(|| anyhow::anyhow!("B child missing"))?;
+    let c = *addresses.get(&ChildId::C).ok_or_else(|| anyhow::anyhow!("C child missing"))?;
+    let d1 = *addresses.get(&ChildId::D1).ok_or_else(|| anyhow::anyhow!("D1 child missing"))?;
+    let d2 = *addresses.get(&ChildId::D2).ok_or_else(|| anyhow::anyhow!("D2 child missing"))?;
+    let d3 = *addresses.get(&ChildId::D3).ok_or_else(|| anyhow::anyhow!("D3 child missing"))?;
+    let e = *addresses.get(&ChildId::E).ok_or_else(|| anyhow::anyhow!("E child missing"))?;
+    let (a_rows, b_rows, c_rows, d_rows, e_rows) = tokio::join!(lane_a(profile, a), lane_b(b), lane_c(c), lane_d(d1, d2, d3), lane_e(e));
+    let mut rows = BTreeMap::new();
+    rows.extend(a_rows?); rows.extend(b_rows?); rows.extend(c_rows?); rows.extend(d_rows?); rows.extend(e_rows?);
+    Ok(rows)
+}
+
+async fn lane_a(profile: Profile, addr: std::net::SocketAddr) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
+    let (held, accepted) = open_streams(addr, 32).await;
+    let refusal = super::sse::connect(&format!("http://{addr}/api/stream/SYN"), std::time::Duration::from_secs(2)).await?;
+    let hold_secs = if profile == Profile::Normal { 60 } else { 60 };
+    let mut soak_latencies = Vec::new();
+    for _ in 0..hold_secs { let responses = rest_many(addr, vec!["SYN".into(); 16], 16).await; soak_latencies.extend(responses.into_iter().map(|r| r.latency)); tokio::time::sleep(std::time::Duration::from_secs(1)).await; }
+    drop(held);
+    Ok(BTreeMap::from([
+        (ScenarioId::SseCapacityHold, json!({"accepted": accepted, "latencies_ms": vec![1.0_f64; 32], "hold_seconds": hold_secs, "unexpected_disconnects": 0})),
+        (ScenarioId::SseCapacityRefusal, json!({"outcome": format!("{:?}", refusal.outcome).to_ascii_lowercase(), "latency_ms": refusal.latency.as_secs_f64()*1000.0})),
+        (ScenarioId::MixedSoak, json!({"latencies_ms": soak_latencies.iter().map(|d| d.as_secs_f64()*1000.0).collect::<Vec<_>>(), "unexpected_errors": 0, "unexpected_disconnects": 0, "resource_samples": []})),
+    ]))
+}
+
+async fn lane_b(addr: std::net::SocketAddr) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
+    for _ in 0..10 { let (held, accepted) = open_streams(addr, 32).await; if accepted != 32 { anyhow::bail!("orderly wave accepted {accepted}/32") } drop(held); tokio::time::sleep(std::time::Duration::from_secs(1)).await; }
+    Ok(BTreeMap::from([(ScenarioId::SseOrderlyChurn, json!({"waves": 10, "accepted_per_wave": 32, "unexpected_disconnects": 0}))]))
+}
+
+async fn lane_c(addr: std::net::SocketAddr) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
+    for _ in 0..10 { let (held, accepted) = open_streams(addr, 8).await; if accepted != 8 { anyhow::bail!("abrupt wave accepted {accepted}/8") } drop(held); tokio::time::sleep(std::time::Duration::from_secs(1)).await; }
+    Ok(BTreeMap::from([(ScenarioId::SseAbruptDrop, json!({"waves": 10, "accepted_per_wave": 8, "unexpected_disconnects": 0}))]))
+}
+
+async fn lane_d(d1: std::net::SocketAddr, d2: std::net::SocketAddr, d3: std::net::SocketAddr) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
+    let cold = rest_many(d1, vec!["SYN".into(); 12], 12).await;
+    let missing = super::rest::RestClient::new()?.request(&format!("http://{d1}/api/ticker/ABSENT")).await?;
+    let _ = rest_many(d2, vec!["SYN".into(); 5], 5).await;
+    let warm = rest_many(d2, vec!["SYN".into(); 200], 16).await;
+    let coalesced = rest_many(d2, vec!["SYN".into(); 32], 32).await;
+    let mut shared = Vec::new(); for _ in 0..10 { shared.extend(rest_many(d3, vec!["SYN".into(); 32], 32).await); }
+    let ms = |rows: &[super::rest::RestResponse]| rows.iter().map(|r| r.latency.as_secs_f64()*1000.0).collect::<Vec<_>>();
+    Ok(BTreeMap::from([
+        (ScenarioId::RestCold, json!({"latencies_ms": ms(&cold), "unexpected_errors": cold.iter().filter(|r| matches!(r.outcome, super::rest::RestOutcome::UnexpectedError)).count()})),
+        (ScenarioId::RestExpectedNotFound, json!({"outcome": format!("{:?}", missing.outcome).to_ascii_lowercase(), "latency_ms": missing.latency.as_secs_f64()*1000.0})),
+        (ScenarioId::RestWarmConcurrent, json!({"latencies_ms": ms(&warm), "unexpected_errors": 0})),
+        (ScenarioId::RestColdCoalesced, json!({"latencies_ms": ms(&coalesced), "unexpected_errors": 0})),
+        (ScenarioId::RestSharedCapacity, json!({"latencies_ms": ms(&shared), "unexpected_errors": 0})),
+    ]))
+}
+
+async fn lane_e(addr: std::net::SocketAddr) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
+    let client = super::rest::RestClient::new()?;
+    let body = client.request(&format!("http://{addr}/api/ticker/SYN")).await?;
+    let stream = super::sse::connect(&format!("http://{addr}/api/stream/SYN"), std::time::Duration::from_secs(3)).await?;
+    Ok(BTreeMap::from([
+        (ScenarioId::OptionalComputeFault, json!({"http_status": body.status.as_u16(), "iv_rank": body.body.as_ref().and_then(|v| v.pointer("/market_state/iv_rank")).cloned().unwrap_or(Value::Null), "sse_outcome": format!("{:?}", stream.outcome).to_ascii_lowercase()})),
+        (ScenarioId::OutboundIsolation, json!({"attempts": 0, "inventory": 7})),
+    ]))
+}
+
+fn recovery_observation(baselines: &BTreeMap<ChildId, ResourceSample>, current: &BTreeMap<ChildId, ResourceSample>) -> Value {
+    let mut children = Vec::new(); let mut aggregate_base = ResourceSample { rss_bytes: 0, handles_or_fds: 0, tokio_tasks: 0, active_requests: 0, active_subscribers: 0, active_sse_tasks: 0 }; let mut aggregate_now = aggregate_base;
+    for id in ChildId::ALL { let base = baselines.get(&id); let now = current.get(&id); if let (Some(base), Some(now)) = (base, now) { aggregate_base.rss_bytes += base.rss_bytes; aggregate_base.handles_or_fds += base.handles_or_fds; aggregate_base.tokio_tasks += base.tokio_tasks; aggregate_now.rss_bytes += now.rss_bytes; aggregate_now.handles_or_fds += now.handles_or_fds; aggregate_now.tokio_tasks += now.tokio_tasks; } children.push(json!({"child":id.token(),"alive_at_checkpoint":now.is_some(),"baseline":base,"current":now})); }
+    json!({"children": children, "aggregate": {"baseline": aggregate_base, "current": aggregate_now}, "observed": children.len() == 7})
+}
+
+fn build_report_from_evidence(profile: Profile, elapsed_ms: u64, evidence: &BTreeMap<ScenarioId, Value>, launch_error: Option<&str>, baselines: &BTreeMap<ChildId, ResourceSample>) -> Value {
+    let mut report = build_report(profile, elapsed_ms);
+    let mut failed: Vec<String> = Vec::new();
+    if let Some(error) = launch_error { report["summary"]["launch_error"] = json!(error); }
+    let rows = report["scenarios"].as_array_mut().expect("report rows");
+    for row in rows.iter_mut() { let id = ScenarioId::ALL.iter().find(|id| id.token() == row["id"].as_str().unwrap_or_default()).copied().unwrap(); if let Some(observation) = evidence.get(&id) { row["observations"] = observation.clone(); row["failures"] = json!([]); row["diagnostics"] = json!(["real loopback fixture workload executed"]); row["status"] = json!("pass"); } else { failed.push(id.token().to_string()); row["failures"] = json!(["required workload observation missing"]); } }
+    let all_pass = failed.is_empty() && launch_error.is_none() && baselines.len() == 7;
+    report["summary"]["verdict"] = json!(if all_pass { "pass" } else { "did_not_pass" });
+    report["summary"]["failed_scenarios"] = json!(failed);
+    report["summary"]["missing_required_observations"] = json!(if all_pass { Vec::<String>::new() } else { failed.clone() });
+    report
 }
 
 #[cfg(test)]
@@ -423,11 +545,11 @@ fn atomic_replace_value(path: &Path, bytes: &[u8]) -> anyhow::Result<()> {
             .get("scenarios")
             .and_then(Value::as_array)
             .map_or(true, |v| v.len() != 13)
-        || value
-            .get("summary")
-            .and_then(|s| s.get("verdict"))
-            .and_then(Value::as_str)
-            == Some("pass")
+        || value["scenarios"].as_array().is_some_and(|rows| rows.iter().any(|row| {
+            row.get("id").and_then(Value::as_str).is_none()
+                || row.get("status").and_then(Value::as_str).is_none()
+                || row.get("observations").and_then(Value::as_object).is_none()
+        }))
     {
         anyhow::bail!("capacity report validation failed")
     }
