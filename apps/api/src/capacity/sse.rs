@@ -27,33 +27,90 @@ pub struct HeldSse {
     pub latency: Duration,
 }
 
-pub async fn connect_hold(url: &str, timeout: Duration) -> anyhow::Result<Result<HeldSse, SseResponse>> {
+pub async fn connect_hold(
+    url: &str,
+    timeout: Duration,
+) -> anyhow::Result<Result<HeldSse, SseResponse>> {
     let parsed = url::Url::parse(url)?;
-    let host = parsed.host_str().ok_or_else(|| anyhow::anyhow!("URL has no host"))?;
-    let ip = host.parse::<IpAddr>().map_err(|_| anyhow::anyhow!("capacity client requires loopback IP"))?;
-    if !ip.is_loopback() { anyhow::bail!("capacity client requires loopback host") }
+    let host = parsed
+        .host_str()
+        .ok_or_else(|| anyhow::anyhow!("URL has no host"))?;
+    let ip = host
+        .parse::<IpAddr>()
+        .map_err(|_| anyhow::anyhow!("capacity client requires loopback IP"))?;
+    if !ip.is_loopback() {
+        anyhow::bail!("capacity client requires loopback host")
+    }
     let started = Instant::now();
-    let response = tokio::time::timeout(timeout, reqwest::Client::builder().no_proxy().build()?.get(parsed).send()).await??;
+    let response = tokio::time::timeout(
+        timeout,
+        reqwest::Client::builder()
+            .no_proxy()
+            .build()?
+            .get(parsed)
+            .send(),
+    )
+    .await??;
     let status = response.status().as_u16();
-    let retry_after = response.headers().get(reqwest::header::RETRY_AFTER).and_then(|v| v.to_str().ok()).map(str::to_owned);
-    if status == 404 || (status == 503 && retry_after.as_deref() == Some("30")) || !(200..300).contains(&status) {
-        let outcome = if status == 404 { SseOutcome::ExpectedFixtureNotFound } else if status == 503 && retry_after.as_deref() == Some("30") { SseOutcome::ExpectedCapacityRefusal } else { SseOutcome::UnexpectedError };
-        return Ok(Err(SseResponse { outcome, status, retry_after, first_data: None, latency: started.elapsed() }));
+    let retry_after = response
+        .headers()
+        .get(reqwest::header::RETRY_AFTER)
+        .and_then(|v| v.to_str().ok())
+        .map(str::to_owned);
+    if status == 404
+        || (status == 503 && retry_after.as_deref() == Some("30"))
+        || !(200..300).contains(&status)
+    {
+        let outcome = if status == 404 {
+            SseOutcome::ExpectedFixtureNotFound
+        } else if status == 503 && retry_after.as_deref() == Some("30") {
+            SseOutcome::ExpectedCapacityRefusal
+        } else {
+            SseOutcome::UnexpectedError
+        };
+        return Ok(Err(SseResponse {
+            outcome,
+            status,
+            retry_after,
+            first_data: None,
+            latency: started.elapsed(),
+        }));
     }
     let mut response = response;
     let deadline = Instant::now() + timeout;
     let mut bytes = Vec::new();
     loop {
         let remaining = deadline.saturating_duration_since(Instant::now());
-        if remaining.is_zero() { break; }
-        let Some(chunk) = tokio::time::timeout(remaining, response.chunk()).await?? else { break; };
-        bytes.extend_from_slice(&chunk);
-        if let Some(found) = bytes.split(|b| *b == b'\n').filter_map(|line| line.strip_prefix(b"data:")).map(|line| line.strip_prefix(b" ").unwrap_or(line)).find_map(|line| serde_json::from_slice(line).ok()) {
-            return Ok(Ok(HeldSse { response, first_data: found, latency: started.elapsed() }));
+        if remaining.is_zero() {
+            break;
         }
-        if bytes.len() > 256 * 1024 { break; }
+        let Some(chunk) = tokio::time::timeout(remaining, response.chunk()).await?? else {
+            break;
+        };
+        bytes.extend_from_slice(&chunk);
+        if let Some(found) = bytes
+            .split(|b| *b == b'\n')
+            .filter_map(|line| line.strip_prefix(b"data:"))
+            .map(|line| line.strip_prefix(b" ").unwrap_or(line))
+            .find_map(|line| serde_json::from_slice(line).ok())
+        {
+            return Ok(Ok(HeldSse {
+                response,
+                first_data: found,
+                latency: started.elapsed(),
+            }));
+        }
+        if bytes.len() > 256 * 1024 {
+            break;
+        }
     }
-    Ok(Err(SseResponse { outcome: SseOutcome::UnexpectedError, status, retry_after, first_data: None, latency: started.elapsed() }))
+    Ok(Err(SseResponse {
+        outcome: SseOutcome::UnexpectedError,
+        status,
+        retry_after,
+        first_data: None,
+        latency: started.elapsed(),
+    }))
 }
 
 pub async fn connect(url: &str, timeout: Duration) -> anyhow::Result<SseResponse> {

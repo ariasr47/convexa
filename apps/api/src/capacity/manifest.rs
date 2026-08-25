@@ -210,11 +210,29 @@ pub fn manifest(profile: Profile) -> ValidatedManifest {
         ScenarioId::RestWarmConcurrent => vec!["latencies_ms", "unexpected_errors"],
         ScenarioId::RestColdCoalesced => vec!["latencies_ms", "unexpected_errors"],
         ScenarioId::RestSharedCapacity => vec!["latencies_ms", "unexpected_errors"],
-        ScenarioId::SseCapacityHold => vec!["accepted", "connect_latencies_ms", "hold_seconds", "unexpected_disconnects"],
+        ScenarioId::SseCapacityHold => vec![
+            "accepted",
+            "connect_latencies_ms",
+            "hold_seconds",
+            "unexpected_disconnects",
+        ],
         ScenarioId::SseCapacityRefusal => vec!["outcome", "latency_ms"],
-        ScenarioId::SseOrderlyChurn | ScenarioId::SseAbruptDrop => vec!["waves", "accepted_per_wave", "resource_checks"],
-        ScenarioId::MixedSoak => vec!["latencies_ms", "unexpected_errors", "unexpected_disconnects", "resource_samples"],
-        ScenarioId::OptionalComputeFault => vec!["http_status", "iv_rank", "sse_outcome", "core_identity_unchanged", "ai_eval_present"],
+        ScenarioId::SseOrderlyChurn | ScenarioId::SseAbruptDrop => {
+            vec!["waves", "accepted_per_wave", "resource_checks"]
+        }
+        ScenarioId::MixedSoak => vec![
+            "latencies_ms",
+            "unexpected_errors",
+            "unexpected_disconnects",
+            "resource_samples",
+        ],
+        ScenarioId::OptionalComputeFault => vec![
+            "http_status",
+            "iv_rank",
+            "sse_outcome",
+            "core_identity_unchanged",
+            "ai_eval_present",
+        ],
         ScenarioId::OutboundIsolation => vec!["attempts", "inventory"],
         ScenarioId::PostLoadRecovery => vec!["observed", "children", "aggregate"],
     };

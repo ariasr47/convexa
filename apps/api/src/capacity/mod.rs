@@ -5,6 +5,7 @@
 
 pub mod evaluate;
 pub mod harness_app;
+pub mod identity;
 pub mod manifest;
 pub mod model;
 pub mod report;
