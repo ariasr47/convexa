@@ -209,6 +209,39 @@ jobs:
       - name: Cargo release build (postgres)
         run: cargo build -p api-rust --release --features postgres --locked
 
+  capacity-linux:
+    name: Capacity baseline (Linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install locked Node dependencies
+        run: npm ci
+
+      - name: Build generated API declarations
+        run: npx tsc -p libs/api/tsconfig.lib.json --pretty false
+
+      - name: Install baseline Rust 1.97.1
+        run: |
+          rustup toolchain install 1.97.1 --profile minimal --no-self-update
+          rustup default 1.97.1
+          rustc --version --verbose
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@aa7c1c80a07a27a84c0aa76d0cef0aad3830e330 # v2.7.8
+        with:
+          workspaces: |
+            . -> target
+
       # Fixture-only capacity evidence is intentionally a separate Linux gate. It never
       # contacts production or vendor services and is not a substitute for Windows evidence.
       - name: Capacity focused tests
