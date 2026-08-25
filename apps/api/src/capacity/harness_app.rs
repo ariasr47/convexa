@@ -3,7 +3,7 @@ use crate::error::AppResult;
 use crate::infrastructure::massive::{FixtureStreamProducer, StockStreamHub};
 use crate::routes;
 use crate::services::live_capacity::LifecycleProbe;
-use crate::services::market_data::{load_fixture_dir, MarketDataPort};
+use crate::services::market_data::{load_fixture_file, FixtureCatalog, MarketDataPort};
 use crate::state::AppState;
 use axum::Router;
 use std::net::SocketAddr;
@@ -24,7 +24,15 @@ pub struct FixtureApp {
 }
 
 pub async fn build(input: CapacityAppInput) -> AppResult<FixtureApp> {
-    let catalog = load_fixture_dir(&input.fixture_dir)?;
+    // The capacity root also carries closed manifests and connector oracles;
+    // only the explicitly named market corpus is executable fixture input.
+    let market_path = input.fixture_dir.join("market.json");
+    let mut catalog = FixtureCatalog::default();
+    load_fixture_file(&market_path, &mut catalog)?;
+    let conformance_path = input.fixture_dir.join("conformance.json");
+    if conformance_path.is_file() {
+        load_fixture_file(&conformance_path, &mut catalog)?;
+    }
     if catalog.is_empty() {
         return Err(crate::error::AppError::Config(
             "capacity fixture catalog is empty".into(),
@@ -73,7 +81,7 @@ pub async fn serve(input: CapacityAppInput) -> AppResult<(SocketAddr, oneshot::S
     tokio::spawn(async move {
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
         let _ = producer.publish(StreamEvent {
-            symbol: "SYN".into(),
+            symbol: "SPY".into(),
             kind: StreamKind::Trade,
             ts_ns: 1,
             price: Some(500.0),
@@ -90,7 +98,7 @@ pub async fn serve(input: CapacityAppInput) -> AppResult<(SocketAddr, oneshot::S
 fn fixture_iv_history() -> Vec<quant_engine::IvSample> {
     (0..20)
         .map(|i| quant_engine::IvSample {
-            ticker: "SYN".into(),
+            ticker: "SPY".into(),
             session_date: format!("2026-07-{:02}", i + 1),
             iv_value: 18.0 + i as f64 * 0.25,
             iv_basis: "interpolated_30d".into(),

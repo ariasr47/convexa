@@ -18,6 +18,23 @@ use tokio::process::{Child, Command};
 use tokio::sync::mpsc;
 
 const CHILDREN: [&str; 7] = ["A", "B", "C", "D1", "D2", "D3", "E"];
+const D1_COLD_SYMBOLS: [&str; 12] = [
+    "COLD01", "COLD02", "COLD03", "COLD04", "COLD05", "COLD06", "COLD07", "COLD08", "COLD09",
+    "COLD10", "COLD11", "COLD12",
+];
+const SHARED_SYMBOLS: [&str; 8] = [
+    "SHARE01", "SHARE02", "SHARE03", "SHARE04", "SHARE05", "SHARE06", "SHARE07", "SHARE08",
+];
+const WARM_SYMBOL: &str = "SPY";
+const COALESCED_SYMBOL: &str = "COAL";
+const ABSENT_SYMBOL: &str = "NOFIX";
+const D2_PRIME_SYMBOLS: [&str; 5] = [
+    WARM_SYMBOL,
+    WARM_SYMBOL,
+    WARM_SYMBOL,
+    WARM_SYMBOL,
+    COALESCED_SYMBOL,
+];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LanePlan {
@@ -144,7 +161,7 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
         loop {
             tokio::time::sleep(std::time::Duration::from_millis(100)).await;
             let _ = producer.publish(crate::domain::StreamEvent {
-                symbol: "SYN".into(),
+                symbol: WARM_SYMBOL.into(),
                 kind: crate::domain::StreamKind::Trade,
                 ts_ns: sequence,
                 price: Some(500.0),
@@ -180,7 +197,7 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
             ParentCommand::Prime {
                 rest_concurrency,
                 sse_concurrency,
-            } => match prime_loopback(addr, rest_concurrency, sse_concurrency, &state).await {
+            } => match prime_loopback(id, addr, rest_concurrency, sse_concurrency, &state).await {
                 Ok((rest_requests, sse_connections, cache_empty, lifecycle_zero, hub_symbols)) => {
                     emit(&ChildEvent::PrimeReady {
                         child: id,
@@ -238,6 +255,7 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
 /// then return the fixture application to an exact cold-cache/lifecycle state.
 /// No response latency or resource sample from this phase is workload evidence.
 async fn prime_loopback(
+    child: ChildId,
     addr: std::net::SocketAddr,
     rest_concurrency: usize,
     sse_concurrency: usize,
@@ -249,9 +267,16 @@ async fn prime_loopback(
         .build()?;
     let base = format!("http://{addr}");
     let mut rest = Vec::with_capacity(rest_concurrency);
-    for _ in 0..rest_concurrency {
+    let rest_symbols: Vec<&str> = match child {
+        ChildId::D1 => D1_COLD_SYMBOLS.to_vec(),
+        ChildId::D2 => D2_PRIME_SYMBOLS.to_vec(),
+        ChildId::D3 => SHARED_SYMBOLS.to_vec(),
+        _ => vec![WARM_SYMBOL; rest_concurrency],
+    };
+    for index in 0..rest_concurrency {
         let client = client.clone();
-        let url = format!("{base}/api/ticker/SYN");
+        let symbol = rest_symbols[index % rest_symbols.len()];
+        let url = format!("{base}/api/ticker/{symbol}");
         rest.push(tokio::spawn(async move { client.get(url).send().await }));
     }
     for task in rest {
@@ -267,7 +292,7 @@ async fn prime_loopback(
     let mut streams = Vec::with_capacity(sse_concurrency);
     for _ in 0..sse_concurrency {
         let client = client.clone();
-        let url = format!("{base}/api/stream/SYN");
+        let url = format!("{base}/api/stream/{WARM_SYMBOL}");
         streams.push(tokio::spawn(async move { client.get(url).send().await }));
     }
     let mut responses = Vec::with_capacity(sse_concurrency);
@@ -305,7 +330,7 @@ async fn prime_loopback(
     Ok((
         rest_concurrency,
         sse_concurrency,
-        state.gex_cache.is_empty().await && state.prices.get_price("SYN").await?.is_none(),
+        state.gex_cache.is_empty().await && state.prices.get_price(WARM_SYMBOL).await?.is_none(),
         life.active_requests == 0 && life.active_subscribers == 0 && life.active_sse_tasks == 0,
         state.stock_hub.symbol_count().await,
     ))
@@ -334,7 +359,26 @@ struct ChildControl {
 }
 
 pub fn workload_fixture_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/market")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/capacity-baseline/v1")
+}
+
+pub const fn d1_cold_symbols() -> [&'static str; 12] {
+    D1_COLD_SYMBOLS
+}
+pub const fn shared_symbols() -> [&'static str; 8] {
+    SHARED_SYMBOLS
+}
+pub const fn warm_symbol() -> &'static str {
+    WARM_SYMBOL
+}
+pub const fn coalesced_symbol() -> &'static str {
+    COALESCED_SYMBOL
+}
+pub const fn absent_symbol() -> &'static str {
+    ABSENT_SYMBOL
+}
+pub const fn d2_prime_symbols() -> [&'static str; 5] {
+    D2_PRIME_SYMBOLS
 }
 
 /// The closed profile timings are policy inputs shared by scheduling and tests.
@@ -861,7 +905,7 @@ async fn open_streams(
     count: usize,
 ) -> (Vec<super::sse::HeldSse>, usize, Vec<f64>) {
     let futures = (0..count).map(|_| {
-        let url = format!("http://{addr}/api/stream/SYN");
+        let url = format!("http://{addr}/api/stream/{WARM_SYMBOL}");
         async move { super::sse::connect_hold(&url, std::time::Duration::from_secs(3)).await }
     });
     let mut held = Vec::new();
@@ -941,7 +985,7 @@ async fn lane_a(
     let mut soak_errors = 0;
     let mut held = Some(held);
     for second in 0..soak_secs {
-        let batch = rest_many(addr, vec!["SYN".into(); 16], 16).await;
+        let batch = rest_many(addr, vec![WARM_SYMBOL.into(); 16], 16).await;
         soak_errors += batch.unexpected_errors();
         soak_latencies.extend(batch.responses.into_iter().map(|r| r.latency));
         if second + 1 == hold_secs {
@@ -1028,16 +1072,28 @@ async fn lane_d(
     d2: std::net::SocketAddr,
     d3: std::net::SocketAddr,
 ) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
-    let cold = rest_many(d1, vec!["SYN".into(); 12], 12).await;
+    let cold = rest_many(
+        d1,
+        D1_COLD_SYMBOLS.iter().map(|s| (*s).into()).collect(),
+        12,
+    )
+    .await;
     let missing = super::rest::RestClient::new()?
-        .request(&format!("http://{d1}/api/ticker/ABSENT"))
+        .request(&format!("http://{d1}/api/ticker/{ABSENT_SYMBOL}"))
         .await?;
-    let _ = rest_many(d2, vec!["SYN".into(); 5], 5).await;
-    let warm = rest_many(d2, vec!["SYN".into(); 200], 16).await;
-    let coalesced = rest_many(d2, vec!["SYN".into(); 32], 32).await;
+    let _ = rest_many(d2, vec![WARM_SYMBOL.into(); 5], 5).await;
+    let warm = rest_many(d2, vec![WARM_SYMBOL.into(); 200], 16).await;
+    let coalesced = rest_many(d2, vec![COALESCED_SYMBOL.into(); 32], 32).await;
     let mut shared = RestBatch::default();
     for _ in 0..10 {
-        let batch = rest_many(d3, vec!["SYN".into(); 32], 32).await;
+        let batch = rest_many(
+            d3,
+            (0..32)
+                .map(|index| SHARED_SYMBOLS[index % SHARED_SYMBOLS.len()].into())
+                .collect(),
+            32,
+        )
+        .await;
         shared.transport_errors += batch.transport_errors;
         shared.unexpected_response_errors += batch.unexpected_response_errors;
         shared.responses.extend(batch.responses);
@@ -1074,10 +1130,10 @@ async fn lane_d(
 async fn lane_e(addr: std::net::SocketAddr) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
     let client = super::rest::RestClient::new()?;
     let body = client
-        .request(&format!("http://{addr}/api/ticker/SYN"))
+        .request(&format!("http://{addr}/api/ticker/{WARM_SYMBOL}"))
         .await?;
     let stream = super::sse::connect(
-        &format!("http://{addr}/api/stream/SYN"),
+        &format!("http://{addr}/api/stream/{WARM_SYMBOL}"),
         std::time::Duration::from_secs(3),
     )
     .await?;

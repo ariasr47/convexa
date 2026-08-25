@@ -55,11 +55,44 @@ fn protocol_reset_is_distinct_from_shutdown() {
 #[test]
 fn workload_uses_real_market_fixture_and_closed_observations() {
     let path = runner::workload_fixture_dir();
-    assert!(path.ends_with("tests\\fixtures\\market") || path.ends_with("tests/fixtures/market"));
+    assert!(
+        path.ends_with("tests\\fixtures\\capacity-baseline\\v1")
+            || path.ends_with("tests/fixtures/capacity-baseline/v1")
+    );
     let report = runner::build_report(Profile::Normal, 1);
     let rows = report["scenarios"].as_array().unwrap();
     assert_eq!(rows.len(), 13);
     assert!(rows.iter().all(|row| row["observations"].is_object()));
+}
+
+#[test]
+fn workload_fixture_roles_are_multi_symbol_and_closed() {
+    assert_eq!(runner::d1_cold_symbols().len(), 12);
+    assert_eq!(runner::shared_symbols().len(), 8);
+    assert_eq!(runner::warm_symbol(), "SPY");
+    assert_eq!(runner::coalesced_symbol(), "COAL");
+    assert_eq!(runner::absent_symbol(), "NOFIX");
+    assert!(runner::d2_prime_symbols().contains(&runner::warm_symbol()));
+    assert!(runner::d2_prime_symbols().contains(&runner::coalesced_symbol()));
+    assert!(!runner::d1_cold_symbols().contains(&runner::warm_symbol()));
+    assert!(!runner::shared_symbols().contains(&runner::coalesced_symbol()));
+}
+
+#[test]
+fn workload_fixture_manifest_declares_required_roles() {
+    let path = runner::workload_fixture_dir().join("manifest.json");
+    let value: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    let symbols = value["required_symbols"].as_array().unwrap();
+    for symbol in runner::d1_cold_symbols()
+        .into_iter()
+        .chain(runner::shared_symbols())
+    {
+        assert!(symbols.iter().any(|candidate| candidate == symbol));
+    }
+    assert!(symbols.iter().any(|candidate| candidate == "SPY"));
+    assert!(symbols.iter().any(|candidate| candidate == "COAL"));
+    assert!(!symbols.iter().any(|candidate| candidate == "NOFIX"));
 }
 
 #[test]
