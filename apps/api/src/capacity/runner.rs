@@ -9,8 +9,41 @@ use super::report::CLAIM;
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
+use serde::{Deserialize, Serialize};
+use super::model::ResourceSample;
 
 const CHILDREN: [&str; 7] = ["A", "B", "C", "D1", "D2", "D3", "E"];
+
+/// Versioned private JSONL control protocol. It is intentionally not an HTTP surface.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "command", rename_all = "snake_case")]
+pub enum ParentCommand {
+    Sample { sequence: u64 },
+    ResetE,
+    Shutdown,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "event", rename_all = "snake_case")]
+pub enum ChildEvent {
+    Ready { child: String, pid: u32, addr: std::net::SocketAddr, protocol: u8 },
+    Sample { sequence: u64, child: String, resource: ResourceSample },
+    ResetReady { child: String },
+    ShutdownAck { child: String },
+    Failure { child: String, stage: String, reason: String },
+}
+
+#[cfg(test)]
+mod protocol_tests {
+    use super::*;
+    #[test]
+    fn protocol_is_jsonl_round_trippable_and_tagged() {
+        let command = ParentCommand::Sample { sequence: 7 };
+        let encoded = serde_json::to_string(&command).unwrap();
+        assert_eq!(encoded, r#"{"command":"sample","sequence":7}"#);
+        assert_eq!(serde_json::from_str::<ParentCommand>(&encoded).unwrap(), command);
+    }
+}
 
 pub fn report_path(profile: Profile) -> PathBuf {
     let name = match profile {

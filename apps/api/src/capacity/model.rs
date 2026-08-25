@@ -13,7 +13,7 @@ pub struct ScenarioObservations {
     pub resource_samples: Vec<ResourceSample>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ResourceSample {
     pub rss_bytes: u64,
     pub handles_or_fds: u64,
