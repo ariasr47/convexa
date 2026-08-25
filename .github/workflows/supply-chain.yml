@@ -108,7 +108,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
       - name: Render sanitized policy summary
-        if: always()
+        if: always() && needs.identity.outputs.path == 'policy'
         run: node tools/supply-chain/render-summary.mjs --report .supply-chain/out/policy-report.json --output "$GITHUB_STEP_SUMMARY"
 
   capabilities:

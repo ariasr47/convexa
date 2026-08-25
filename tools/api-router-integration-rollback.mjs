@@ -17,6 +17,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '..');
+const MAX_REPLACEMENT_PATCH_BYTES = 64 * 1024 * 1024;
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const die = (message) => {
   throw new Error(`rollback proof: ${message}`);
@@ -84,7 +85,10 @@ export function proveRollback({
   } catch {
     die('replacement is not a descendant of pre-edit revision');
   }
-  const patch = execFileSync('git', ['diff', '--binary', `${pre}..${replacement}`], { cwd: root });
+  const patch = execFileSync('git', ['diff', '--binary', `${pre}..${replacement}`], {
+    cwd: root,
+    maxBuffer: MAX_REPLACEMENT_PATCH_BYTES,
+  });
   const beforeData = treeDigest(dataPath);
   const worktree = mkdtempSync(join(tmpdir(), 'convexa-router-rollback-'));
   let added = false;

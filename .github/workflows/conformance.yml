@@ -40,6 +40,9 @@ jobs:
       - name: Install locked Node dependencies
         run: npm ci
 
+      - name: Build generated API declarations
+        run: npx tsc -p libs/api/tsconfig.lib.json --pretty false
+
       - name: API contract check
         run: npm run api:contract:check
 
@@ -92,6 +95,9 @@ jobs:
 
       - name: Install locked Node dependencies
         run: npm ci
+
+      - name: Build generated API declarations
+        run: npx tsc -p libs/api/tsconfig.lib.json --pretty false
 
       - name: API contract check
         run: npm run api:contract:check

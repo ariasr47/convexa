@@ -6,3 +6,4 @@ has reached GATE R yet.
 
 | branch | touching | last gate | updated |
 |---|---|---|---|
+| codex/post-merge-ci-repair | `.github/workflows/{conformance,supply-chain}.yml`; rollback proof + workflow guard tests | GATE R | 2026-08-25 |
