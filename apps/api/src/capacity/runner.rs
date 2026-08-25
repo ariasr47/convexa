@@ -1267,7 +1267,8 @@ fn build_report_from_evidence(
             .copied()
             .unwrap();
         if let Some(observation) = evidence.get(&id) {
-            let (pass, failures, thresholds) = evaluate(id, observation, profile);
+            let (pass, failures, thresholds) =
+                super::evaluate::evaluate_json(profile, id, observation);
             row["observations"] = observation.clone();
             row["failures"] = json!(failures);
             row["thresholds"] = thresholds;
