@@ -435,6 +435,10 @@ fn soak_collection_complete(
     workload_finished && sample_count == mixed_soak_sample_target(profile)
 }
 
+fn cadence_deadline(start: tokio::time::Instant, tick: usize) -> tokio::time::Instant {
+    start + std::time::Duration::from_secs(tick as u64)
+}
+
 pub fn valid_revision(revision: &str) -> bool {
     revision.len() == 40 && revision.bytes().all(|byte| byte.is_ascii_hexdigit())
 }
@@ -640,6 +644,7 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
         let mut workload = Box::pin(execute_lanes(profile, addresses, b_control, c_control));
         let controls: Vec<_> = children.iter().map(|c| (c.id, c.control.clone())).collect();
         let mut soak_samples = Vec::new();
+        let sample_cadence_start = tokio::time::Instant::now();
         let workload = tokio::time::timeout(workload_timeout(profile), async {
             let mut workload_result = None;
             loop {
@@ -652,7 +657,7 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
                 }
                 tokio::select! {
                     result = &mut workload, if workload_result.is_none() => workload_result = Some(result),
-                    _ = tokio::time::sleep(std::time::Duration::from_secs(1)), if soak_samples.len() < mixed_soak_sample_target(profile) => {
+                    _ = tokio::time::sleep_until(cadence_deadline(sample_cadence_start, soak_samples.len() + 1)), if soak_samples.len() < mixed_soak_sample_target(profile) => {
                         let sequence = 10_000 + soak_samples.len() as u64;
                         let mut tick = BTreeMap::new();
                         for (id, control) in &controls {
@@ -998,6 +1003,7 @@ async fn lane_a(
     let mut soak_latencies = Vec::new();
     let mut soak_errors = 0;
     let mut held = Some(held);
+    let cadence_start = tokio::time::Instant::now();
     for second in 0..soak_secs {
         let batch = rest_many(addr, vec![WARM_SYMBOL.into(); 16], 16).await;
         soak_errors += batch.unexpected_errors();
@@ -1008,7 +1014,7 @@ async fn lane_a(
             // this intentional close.
             drop(held.take());
         }
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        tokio::time::sleep_until(cadence_deadline(cadence_start, second as usize + 1)).await;
     }
     drop(held);
     Ok(BTreeMap::from([
@@ -1476,6 +1482,20 @@ mod protocol_tests {
         assert!(!soak_collection_complete(Profile::Normal, true, 59));
         assert!(soak_collection_complete(Profile::Normal, true, 60));
         assert!(!soak_collection_complete(Profile::Extended, false, 900));
+    }
+
+    #[test]
+    fn cadence_deadlines_do_not_accumulate_tick_work() {
+        let start = tokio::time::Instant::now();
+        assert_eq!(
+            cadence_deadline(start, 60) - start,
+            std::time::Duration::from_secs(60)
+        );
+        assert_eq!(
+            cadence_deadline(start, 900) - start,
+            std::time::Duration::from_secs(900)
+        );
+        assert!(cadence_deadline(start, 900) > cadence_deadline(start, 899));
     }
 
     #[test]
