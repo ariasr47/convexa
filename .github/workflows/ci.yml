@@ -194,7 +194,7 @@ jobs:
         run: cargo test -p api-rust --features postgres --test postgres_release_safety_postgres --locked -- --nocapture
         env:
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/convexa_test
-          RELEASE_GIT_SHA: ${{ github.sha }}
+          RELEASE_GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           POSTGRES_RELEASE_NEGATIVE_CONTROL_OUT: ${{ runner.temp }}/postgres-release-negative-control.json
 
       - name: Upload PostgreSQL release safety evidence

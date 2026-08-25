@@ -303,7 +303,17 @@ fn env(c: &mut Command, db: &str, p: u16, root: &std::path::Path) {
             String::from("CHAIN_SNAPSHOT_STORE_PATH"),
             root.join("snapshot-ring").to_string_lossy().into_owned(),
         ),
-        (String::from("CHAIN_SNAPSHOT_ENABLED"), String::from("true")),
+        // This suite owns PostgreSQL release behavior, not the separately tested
+        // production filesystem probe. Keep snapshots explicitly off so a disposable
+        // temp root cannot violate the exact production mount contract.
+        (
+            String::from("CHAIN_SNAPSHOT_BACKEND"),
+            String::from("disabled"),
+        ),
+        (
+            String::from("CHAIN_SNAPSHOT_ENABLED"),
+            String::from("false"),
+        ),
         (String::from("WARM_ENABLED"), String::from("false")),
         (String::from("SCAN_ENABLED"), String::from("false")),
         (
@@ -411,7 +421,9 @@ fn cli_fresh_prefix_current_jsonl_and_exit_contract() {
         let n = name("fresh");
         create(&a, &n).await;
         let d = url(&base(), &n);
-        let x = migrate(&d, &[]);
+        // The migration command owns stdout as a strict JSONL protocol even when
+        // dependency tracing is explicitly enabled by an operator.
+        let x = migrate(&d, &[("RUST_LOG", "sqlx::postgres::notice=info")]);
         assert!(x.status.success(), "fresh migration: {:?}", x);
         let xr = records(&x);
         assert_terminal_contract(&xr);

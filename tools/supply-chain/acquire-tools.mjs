@@ -12,6 +12,17 @@ const binaryNames = Object.freeze({
 });
 const sha256 = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
+export function externalExecutablePath(base, record) {
+  if (record.tool_id === 'cargo-deny') {
+    return path.join(
+      base,
+      `cargo-deny-${record.version}-x86_64-unknown-linux-musl`,
+      binaryNames[record.tool_id],
+    );
+  }
+  return path.join(base, binaryNames[record.tool_id]);
+}
+
 export async function loadToolManifest(root = process.cwd()) {
   const manifest = JSON.parse(
     await fs.readFile(path.join(root, '.supply-chain', 'tools.json'), 'utf8'),
@@ -75,7 +86,7 @@ async function verifyOrAcquire(record, { root, allowDownload }) {
   if (process.platform !== 'linux' || process.arch !== 'x64' || record.platform !== 'linux-x64')
     throw new Error('unsupported policy-tool platform');
   const base = path.join(root, '.supply-chain', 'out', 'tools', record.tool_id, record.version);
-  const executable = path.join(base, binaryNames[record.tool_id]);
+  const executable = externalExecutablePath(base, record);
   try {
     await fs.access(executable);
     const version = await spawnCaptured(executable, ['--version']);

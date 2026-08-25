@@ -893,17 +893,17 @@ describe('ai-rec · key-resolution machine (distinct affordance per state)', () 
     expect(screen.queryByRole('option', { name: /^default$/i })).toBeNull();
   });
 
-  it('manual export remains reachable on every powering blocked state (AC-21/29)', async () => {
-    for (const reason of [
-      'no_key',
-      'key_unusable',
-      'key_rejected',
-      'model_not_in_catalog',
-      'oauth_expired',
-      'oauth_unlinked',
-      'subscription_unavailable',
-    ]) {
-      cleanup();
+  it.each([
+    'no_key',
+    'key_unusable',
+    'key_rejected',
+    'model_not_in_catalog',
+    'oauth_expired',
+    'oauth_unlinked',
+    'subscription_unavailable',
+  ])(
+    'manual export remains reachable when powering is blocked by %s (AC-21/29)',
+    async (reason) => {
       const be = installBackend({ rec: recUnavailable(reason) });
       const user = renderApp();
       await settle();
@@ -914,8 +914,8 @@ describe('ai-rec · key-resolution machine (distinct affordance per state)', () 
       expect(be.calls.export).toBe(0);
       await user.click(within(panel()).getAllByRole('button', { name: COPY.action.viewExport })[0]);
       expect(await screen.findByText(EXPORT_HEADER('TSLA'))).toBeInTheDocument();
-    }
-  });
+    },
+  );
 
   it('daily cap: a calm disabled affordance; the export floor still works without a rec call', async () => {
     const be = installBackend({
