@@ -209,9 +209,13 @@ fn emit(event: &ChildEvent) -> anyhow::Result<()> {
 struct RunningChild {
     id: ChildId,
     process: Child,
+    control: std::sync::Arc<tokio::sync::Mutex<ChildControl>>,
+    addr: std::net::SocketAddr,
+}
+
+struct ChildControl {
     stdin: tokio::process::ChildStdin,
     events: mpsc::UnboundedReceiver<ChildEvent>,
-    addr: std::net::SocketAddr,
 }
 
 pub fn workload_fixture_dir() -> PathBuf {
@@ -272,13 +276,12 @@ async fn launch_child(
     let mut child = RunningChild {
         id: ChildId::parse(id).expect("validated child id"),
         process,
-        stdin,
-        events,
+        control: std::sync::Arc::new(tokio::sync::Mutex::new(ChildControl { stdin, events })),
         addr: "127.0.0.1:0".parse().unwrap(),
     };
     let ready = tokio::time::timeout(
         std::time::Duration::from_secs(12),
-        wait_ready(&mut child.events),
+        wait_ready(&mut child.control.lock().await.events),
     )
     .await??;
     child.addr = ready;
@@ -297,6 +300,14 @@ async fn wait_ready(
 }
 
 async fn command(child: &mut RunningChild, command: ParentCommand) -> anyhow::Result<()> {
+    command_control(&child.control, command).await
+}
+
+async fn command_control(
+    control: &std::sync::Arc<tokio::sync::Mutex<ChildControl>>,
+    command: ParentCommand,
+) -> anyhow::Result<()> {
+    let mut child = control.lock().await;
     let mut line = serde_json::to_vec(&command)?;
     line.push(b'\n');
     child.stdin.write_all(&line).await?;
@@ -339,16 +350,34 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
         }
         let addresses: BTreeMap<ChildId, std::net::SocketAddr> =
             children.iter().map(|c| (child_id(c), c.addr)).collect();
-        let (left, right) = children.split_at_mut(2);
-        let b_child = &mut left[1];
-        let c_child = &mut right[0];
-        let workload = tokio::time::timeout(
-            std::time::Duration::from_secs(70),
-            execute_lanes(profile, addresses, b_child, c_child),
-        )
-        .await;
+        let b_control = children[1].control.clone();
+        let c_control = children[2].control.clone();
+        let mut workload = Box::pin(execute_lanes(profile, addresses, b_control, c_control));
+        let controls: Vec<_> = children.iter().map(|c| (c.id, c.control.clone())).collect();
+        let mut soak_samples = Vec::new();
+        let workload = tokio::time::timeout(std::time::Duration::from_secs(70), async {
+            loop {
+                tokio::select! {
+                    result = &mut workload => break result,
+                    _ = tokio::time::sleep(std::time::Duration::from_secs(1)) => {
+                        let sequence = 10_000 + soak_samples.len() as u64;
+                        let mut tick = BTreeMap::new();
+                        for (id, control) in &controls {
+                            command_control(control, ParentCommand::Sample { sequence }).await?;
+                            if let Some(sample) = receive_sample_control(control, *id, sequence).await? { tick.insert(*id, sample); }
+                        }
+                        if tick.len() == CHILDREN.len() { soak_samples.push(tick); }
+                    }
+                }
+            }
+        }).await;
         match workload {
-            Ok(Ok(rows)) => evidence = rows,
+            Ok(Ok(mut rows)) => {
+                if let Some(soak) = rows.get_mut(&ScenarioId::MixedSoak) {
+                    soak["resource_samples"] = json!(soak_samples.iter().map(|tick| json!({"children": tick.iter().map(|(id,s)| json!({"child":id.token(),"sample":s})).collect::<Vec<_>>(), "aggregate": aggregate_samples(tick)})).collect::<Vec<_>>());
+                }
+                evidence = rows
+            }
             Ok(Err(e)) => {
                 eprintln!("capacity workload lane failure: {e:#}");
                 evidence.insert(
@@ -414,10 +443,39 @@ fn child_id(child: &RunningChild) -> ChildId {
     child.id
 }
 
+fn aggregate_samples(samples: &BTreeMap<ChildId, ResourceSample>) -> Value {
+    let mut out = ResourceSample {
+        rss_bytes: 0,
+        handles_or_fds: 0,
+        tokio_tasks: 0,
+        active_requests: 0,
+        active_subscribers: 0,
+        active_sse_tasks: 0,
+    };
+    for s in samples.values() {
+        out.rss_bytes += s.rss_bytes;
+        out.handles_or_fds += s.handles_or_fds;
+        out.tokio_tasks += s.tokio_tasks;
+        out.active_requests += s.active_requests;
+        out.active_subscribers += s.active_subscribers;
+        out.active_sse_tasks += s.active_sse_tasks;
+    }
+    json!(out)
+}
+
 async fn receive_sample(
     child: &mut RunningChild,
     sequence: u64,
 ) -> anyhow::Result<Option<ResourceSample>> {
+    receive_sample_control(&child.control, child.id, sequence).await
+}
+
+async fn receive_sample_control(
+    control: &std::sync::Arc<tokio::sync::Mutex<ChildControl>>,
+    child_id: ChildId,
+    sequence: u64,
+) -> anyhow::Result<Option<ResourceSample>> {
+    let mut child = control.lock().await;
     let event =
         tokio::time::timeout(std::time::Duration::from_secs(2), child.events.recv()).await?;
     Ok(match event {
@@ -425,7 +483,7 @@ async fn receive_sample(
             sequence: got,
             child: id,
             resource,
-        }) if got == sequence && id == child.id => Some(resource),
+        }) if got == sequence && id == child_id => Some(resource),
         Some(ChildEvent::Failure { reason, .. }) => {
             tracing::warn!("capacity sample failed: {reason}");
             None
@@ -434,12 +492,13 @@ async fn receive_sample(
     })
 }
 
-async fn lifecycle_sample(
-    child: &mut RunningChild,
+async fn lifecycle_sample_control(
+    control: &std::sync::Arc<tokio::sync::Mutex<ChildControl>>,
+    id: ChildId,
     sequence: u64,
 ) -> anyhow::Result<Option<ResourceSample>> {
-    command(child, ParentCommand::Sample { sequence }).await?;
-    receive_sample(child, sequence).await
+    command_control(control, ParentCommand::Sample { sequence }).await?;
+    receive_sample_control(control, id, sequence).await
 }
 
 async fn rest_many(
@@ -489,12 +548,18 @@ async fn open_streams(
 async fn execute_lanes(
     profile: Profile,
     addresses: BTreeMap<ChildId, std::net::SocketAddr>,
-    b_child: &mut RunningChild,
-    c_child: &mut RunningChild,
+    b_control: std::sync::Arc<tokio::sync::Mutex<ChildControl>>,
+    c_control: std::sync::Arc<tokio::sync::Mutex<ChildControl>>,
 ) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
     let a = *addresses
         .get(&ChildId::A)
         .ok_or_else(|| anyhow::anyhow!("A child missing"))?;
+    let b = *addresses
+        .get(&ChildId::B)
+        .ok_or_else(|| anyhow::anyhow!("B child missing"))?;
+    let c = *addresses
+        .get(&ChildId::C)
+        .ok_or_else(|| anyhow::anyhow!("C child missing"))?;
     let d1 = *addresses
         .get(&ChildId::D1)
         .ok_or_else(|| anyhow::anyhow!("D1 child missing"))?;
@@ -509,8 +574,8 @@ async fn execute_lanes(
         .ok_or_else(|| anyhow::anyhow!("E child missing"))?;
     let (a_rows, b_rows, c_rows, d_rows, e_rows) = tokio::join!(
         lane_a(profile, a),
-        lane_b(b_child),
-        lane_c(c_child),
+        lane_b(b, b_control),
+        lane_c(c, c_control),
         lane_d(d1, d2, d3),
         lane_e(e)
     );
@@ -557,18 +622,20 @@ async fn lane_a(
     ]))
 }
 
-async fn lane_b(child: &mut RunningChild) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
-    let addr = child.addr;
+async fn lane_b(
+    addr: std::net::SocketAddr,
+    control: std::sync::Arc<tokio::sync::Mutex<ChildControl>>,
+) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
     let mut checks = Vec::new();
     for wave in 0..10 {
-        let before = lifecycle_sample(child, 20_000 + wave * 2).await?;
+        let before = lifecycle_sample_control(&control, ChildId::B, 20_000 + wave * 2).await?;
         let (held, accepted, _) = open_streams(addr, 32).await;
         if accepted != 32 {
             anyhow::bail!("orderly wave accepted {accepted}/32")
         }
         drop(held);
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-        let after = lifecycle_sample(child, 20_001 + wave * 2).await?;
+        let after = lifecycle_sample_control(&control, ChildId::B, 20_001 + wave * 2).await?;
         let returned = before.as_ref().zip(after.as_ref()).is_some_and(|(b, a)| {
             a.active_requests == b.active_requests
                 && a.active_subscribers == b.active_subscribers
@@ -582,18 +649,20 @@ async fn lane_b(child: &mut RunningChild) -> anyhow::Result<BTreeMap<ScenarioId,
     )]))
 }
 
-async fn lane_c(child: &mut RunningChild) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
-    let addr = child.addr;
+async fn lane_c(
+    addr: std::net::SocketAddr,
+    control: std::sync::Arc<tokio::sync::Mutex<ChildControl>>,
+) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
     let mut checks = Vec::new();
     for wave in 0..10 {
-        let before = lifecycle_sample(child, 30_000 + wave * 2).await?;
+        let before = lifecycle_sample_control(&control, ChildId::C, 30_000 + wave * 2).await?;
         let (held, accepted, _) = open_streams(addr, 8).await;
         if accepted != 8 {
             anyhow::bail!("abrupt wave accepted {accepted}/8")
         }
         drop(held);
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-        let after = lifecycle_sample(child, 30_001 + wave * 2).await?;
+        let after = lifecycle_sample_control(&control, ChildId::C, 30_001 + wave * 2).await?;
         let returned = before.as_ref().zip(after.as_ref()).is_some_and(|(b, a)| {
             a.active_requests == b.active_requests
                 && a.active_subscribers == b.active_subscribers
@@ -934,8 +1003,15 @@ fn evaluate(id: ScenarioId, observation: &Value, profile: Profile) -> (bool, Vec
                 observation
                     .get("resource_checks")
                     .and_then(Value::as_array)
-                    .is_some_and(|v| v.len() == 10),
-                "orderly churn lifecycle checks are missing",
+                    .is_some_and(|v| {
+                        v.len() == 10
+                            && v.iter().all(|r| {
+                                r.get("returned_to_baseline").and_then(Value::as_bool) == Some(true)
+                                    && r.get("before").is_some_and(|x| !x.is_null())
+                                    && r.get("after").is_some_and(|x| !x.is_null())
+                            })
+                    }),
+                "orderly churn lifecycle checks are missing or breached",
             );
         }
         ScenarioId::SseAbruptDrop => {
@@ -954,8 +1030,15 @@ fn evaluate(id: ScenarioId, observation: &Value, profile: Profile) -> (bool, Vec
                 observation
                     .get("resource_checks")
                     .and_then(Value::as_array)
-                    .is_some_and(|v| v.len() == 10),
-                "abrupt-drop lifecycle checks are missing",
+                    .is_some_and(|v| {
+                        v.len() == 10
+                            && v.iter().all(|r| {
+                                r.get("returned_to_baseline").and_then(Value::as_bool) == Some(true)
+                                    && r.get("before").is_some_and(|x| !x.is_null())
+                                    && r.get("after").is_some_and(|x| !x.is_null())
+                            })
+                    }),
+                "abrupt-drop lifecycle checks are missing or breached",
             );
         }
         ScenarioId::MixedSoak => {
@@ -987,7 +1070,15 @@ fn evaluate(id: ScenarioId, observation: &Value, profile: Profile) -> (bool, Vec
                 observation
                     .get("resource_samples")
                     .and_then(Value::as_array)
-                    .is_some_and(|v| v.len() >= seconds as usize),
+                    .is_some_and(|v| {
+                        v.len() >= seconds as usize
+                            && v.iter().all(|tick| {
+                                tick.get("children")
+                                    .and_then(Value::as_array)
+                                    .is_some_and(|c| c.len() == 7)
+                                    && tick.get("aggregate").is_some()
+                            })
+                    }),
                 "mixed soak lacks one-second resource samples",
             );
         }
