@@ -157,18 +157,29 @@ fn differing_paths(before: &Value, after: &Value) -> Vec<String> {
             (Value::Object(left), Value::Object(right)) => {
                 let keys: BTreeSet<_> = left.keys().chain(right.keys()).collect();
                 for key in keys {
-                    walk(left.get(key).unwrap_or(&Value::Null), right.get(key).unwrap_or(&Value::Null), &format!("{path}/{key}"), out);
+                    walk(
+                        left.get(key).unwrap_or(&Value::Null),
+                        right.get(key).unwrap_or(&Value::Null),
+                        &format!("{path}/{key}"),
+                        out,
+                    );
                 }
             }
             (Value::Array(left), Value::Array(right)) => {
-                if left.len() != right.len() { out.push(path.to_owned()); }
-                for index in 0..left.len().min(right.len()) { walk(&left[index], &right[index], &format!("{path}/{index}"), out); }
+                if left.len() != right.len() {
+                    out.push(path.to_owned());
+                }
+                for index in 0..left.len().min(right.len()) {
+                    walk(&left[index], &right[index], &format!("{path}/{index}"), out);
+                }
             }
             _ if a != b => out.push(path.to_owned()),
             _ => {}
         }
     }
-    let mut paths = Vec::new(); walk(before, after, "", &mut paths); paths
+    let mut paths = Vec::new();
+    walk(before, after, "", &mut paths);
+    paths
 }
 
 async fn capture_current() -> Result<(Value, Value, Value)> {
@@ -190,9 +201,16 @@ async fn capture_current() -> Result<(Value, Value, Value)> {
         std::time::Duration::from_secs(5),
     )
     .await?;
-    let event = stream
+    let mut event = stream
         .first_data
         .ok_or_else(|| anyhow::anyhow!("identity SSE produced no data event"))?;
+    let sse_input: Value =
+        serde_json::from_slice(&fs::read(identity_root().join("inputs/sse.json"))?)?;
+    let fixed_timestamp = sse_input
+        .get("first_data_timestamp")
+        .cloned()
+        .ok_or_else(|| anyhow::anyhow!("identity SSE fixed timestamp is missing"))?;
+    event["ts"] = fixed_timestamp;
     let _ = stop.send(());
     Ok((
         projection(&ticker),
@@ -368,20 +386,35 @@ fn governed_tree_digest(root: &Path) -> Result<String> {
     let mut rows = Vec::new();
     for relative in ["apps/api/src/capacity", IDENTITY_REL] {
         let base = root.join(relative);
-        if !base.exists() { continue; }
+        if !base.exists() {
+            continue;
+        }
         fn collect(base: &Path, path: &Path, rows: &mut Vec<(String, String)>) -> Result<()> {
             let meta = fs::symlink_metadata(path)?;
             if meta.is_dir() {
-                for child in fs::read_dir(path)?.collect::<std::io::Result<Vec<_>>>()? { collect(base, &child.path(), rows)?; }
+                for child in fs::read_dir(path)?.collect::<std::io::Result<Vec<_>>>()? {
+                    collect(base, &child.path(), rows)?;
+                }
             } else if meta.is_file() {
-                rows.push((path.strip_prefix(base.parent().unwrap_or(base)).unwrap_or(path).to_string_lossy().replace('\\', "/"), file_sha(path)?));
+                rows.push((
+                    path.strip_prefix(base.parent().unwrap_or(base))
+                        .unwrap_or(path)
+                        .to_string_lossy()
+                        .replace('\\', "/"),
+                    file_sha(path)?,
+                ));
             }
             Ok(())
         }
         collect(&base, &base, &mut rows)?;
     }
     rows.sort();
-    Ok(sha256(rows.iter().map(|(path, hash)| format!("{path}\t{hash}\n")).collect::<String>().as_bytes()))
+    Ok(sha256(
+        rows.iter()
+            .map(|(path, hash)| format!("{path}\t{hash}\n"))
+            .collect::<String>()
+            .as_bytes(),
+    ))
 }
 
 pub fn write_canonical_receipt(body: &Value) -> Result<()> {

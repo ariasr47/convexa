@@ -9,7 +9,7 @@
   "reference_test_seam": {"path":"reference-test-seam.patch","sha256":"459b407f57647f195af3c39a4d258b86ee0a5e46d836d333612fc717830160f9"},
   "files": [
     {"path":"inputs/spy.json","sha256":"f350e9a79fd40f83c2ec3625fa45dea5428f99889c9b03dc7770d78bb7e57d1a"},
-    {"path":"inputs/sse.json","sha256":"2faa7eafeccf7679b76904b6045b34ff27f05499d7c36cfdf235912073cc741c"},
+    {"path":"inputs/sse.json","sha256":"72c603757ee25586dc054ee761e74f80603142d80aa9c770bce27a7ab1a79c5a"},
     {"path":"before/ticker.json","sha256":"eb96e97797518db99a563c293c3f05004907c8730f91663ff76174f190148605"},
     {"path":"before/sse.json","sha256":"9c34db6b7d69e37c83fa280bce65c59894ad97517a98ede53c2c29d4daebf6fe"},
     {"path":"before/decision.json","sha256":"9a7846673ce061a9f043d067883199422c389034d7786fd5efdc04e4791c0fe2"}
