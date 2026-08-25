@@ -339,13 +339,35 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
         }
         let addresses: BTreeMap<ChildId, std::net::SocketAddr> =
             children.iter().map(|c| (child_id(c), c.addr)).collect();
-        let workload = tokio::time::timeout(
-            std::time::Duration::from_secs(70),
-            execute_lanes(profile, addresses),
-        )
-        .await;
+        let mut workload = Box::pin(execute_lanes(profile, addresses));
+        let mut soak_samples: Vec<BTreeMap<ChildId, ResourceSample>> = Vec::new();
+        let workload = tokio::time::timeout(std::time::Duration::from_secs(70), async {
+            loop {
+                tokio::select! {
+                    result = &mut workload => break result,
+                    _ = tokio::time::sleep(std::time::Duration::from_secs(1)) => {
+                        let sequence = 10_000 + soak_samples.len() as u64;
+                        for child in &mut children { command(child, ParentCommand::Sample { sequence }).await?; }
+                        let mut tick = BTreeMap::new();
+                        for child in &mut children {
+                            if let Some(resource) = receive_sample(child, sequence).await? { tick.insert(child_id(child), resource); }
+                        }
+                        if tick.len() == CHILDREN.len() { soak_samples.push(tick); }
+                    }
+                }
+            }
+        }).await;
         match workload {
-            Ok(Ok(rows)) => evidence = rows,
+            Ok(Ok(mut rows)) => {
+                let resource_samples = soak_samples.iter().map(|tick| json!({
+                    "children": tick.iter().map(|(id, sample)| json!({"child": id.token(), "sample": sample})).collect::<Vec<_>>(),
+                    "aggregate": aggregate_samples(tick),
+                })).collect::<Vec<_>>();
+                if let Some(soak) = rows.get_mut(&ScenarioId::MixedSoak) {
+                    soak["resource_samples"] = json!(resource_samples);
+                }
+                evidence = rows
+            }
             Ok(Err(e)) => {
                 eprintln!("capacity workload lane failure: {e:#}");
                 evidence.insert(
@@ -409,6 +431,26 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
 
 fn child_id(child: &RunningChild) -> ChildId {
     child.id
+}
+
+fn aggregate_samples(samples: &BTreeMap<ChildId, ResourceSample>) -> Value {
+    let mut aggregate = ResourceSample {
+        rss_bytes: 0,
+        handles_or_fds: 0,
+        tokio_tasks: 0,
+        active_requests: 0,
+        active_subscribers: 0,
+        active_sse_tasks: 0,
+    };
+    for sample in samples.values() {
+        aggregate.rss_bytes += sample.rss_bytes;
+        aggregate.handles_or_fds += sample.handles_or_fds;
+        aggregate.tokio_tasks += sample.tokio_tasks;
+        aggregate.active_requests += sample.active_requests;
+        aggregate.active_subscribers += sample.active_subscribers;
+        aggregate.active_sse_tasks += sample.active_sse_tasks;
+    }
+    json!(aggregate)
 }
 
 async fn receive_sample(
