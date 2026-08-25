@@ -10,6 +10,7 @@
 
 #![recursion_limit = "256"]
 
+pub mod capacity;
 pub mod config;
 pub mod db;
 pub mod domain;
