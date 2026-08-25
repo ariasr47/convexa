@@ -313,7 +313,13 @@ async fn prime_loopback(
                     ""
                 };
                 let url = format!("{base}/api/ticker/{symbol}{query}");
-                rest.push(tokio::spawn(async move { client.get(url).send().await }));
+                rest.push(tokio::spawn(async move {
+                    client
+                        .get(url)
+                        .headers(prime_transport_headers())
+                        .send()
+                        .await
+                }));
             }
             for task in rest.drain(..) {
                 let response = task.await??;
@@ -334,7 +340,13 @@ async fn prime_loopback(
     for _ in 0..sse_concurrency {
         let client = client.clone();
         let url = format!("{base}/api/stream/{WARM_SYMBOL}");
-        streams.push(tokio::spawn(async move { client.get(url).send().await }));
+        streams.push(tokio::spawn(async move {
+            client
+                .get(url)
+                .headers(prime_transport_headers())
+                .send()
+                .await
+        }));
     }
     let mut responses = Vec::with_capacity(sse_concurrency);
     for task in streams {
@@ -433,6 +445,9 @@ pub const fn prime_rest_request_count(child: ChildId, concurrency: usize) -> usi
 }
 pub const fn a_prime_queries() -> [&'static str; 16] {
     A_PRIME_QUERIES
+}
+pub fn prime_transport_headers() -> reqwest::header::HeaderMap {
+    super::rest::loopback_close_headers()
 }
 
 /// The closed profile timings are policy inputs shared by scheduling and tests.

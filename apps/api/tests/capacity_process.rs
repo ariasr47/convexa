@@ -91,6 +91,15 @@ fn workload_fixture_roles_are_multi_symbol_and_closed() {
 }
 
 #[test]
+fn prime_transport_uses_the_measured_close_header() {
+    let headers = runner::prime_transport_headers();
+    assert_eq!(
+        headers.get("connection").and_then(|v| v.to_str().ok()),
+        Some("close")
+    );
+}
+
+#[test]
 fn workload_fixture_manifest_declares_required_roles() {
     let path = runner::workload_fixture_dir().join("manifest.json");
     let value: serde_json::Value =
