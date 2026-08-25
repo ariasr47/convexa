@@ -296,8 +296,8 @@ async fn admit_sse(state: &AppState, symbols: &[String]) -> Result<SubscriberGua
     }
 }
 
-fn market_session() -> &'static str {
-    let et = Utc::now().with_timezone(&New_York);
+pub(crate) fn market_session_at(utc: chrono::DateTime<Utc>) -> &'static str {
+    let et = utc.with_timezone(&New_York);
     if et.weekday().num_days_from_monday() >= 5 {
         // weekend coarse: sat/sun closed except late sun
         if et.weekday().num_days_from_monday() == 6 && et.hour() >= 20 {
@@ -315,6 +315,10 @@ fn market_session() -> &'static str {
     } else {
         "overnight"
     }
+}
+
+fn market_session() -> &'static str {
+    market_session_at(Utc::now())
 }
 
 /// GET /api/stream/prices?symbols=SPY,QQQ — multi-symbol live prices (must register before /{ticker}).

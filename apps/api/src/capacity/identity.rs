@@ -151,6 +151,23 @@ pub fn decision_projection(ticker: &Value) -> Value {
     })
 }
 
+fn apply_fixed_sse_clock(event: &mut Value, input: &Value) -> Result<()> {
+    let fixed_timestamp = input
+        .get("first_data_timestamp")
+        .cloned()
+        .ok_or_else(|| anyhow::anyhow!("identity SSE fixed timestamp is missing"))?;
+    let fixed_utc = input
+        .get("fixed_utc")
+        .and_then(Value::as_str)
+        .ok_or_else(|| anyhow::anyhow!("identity SSE fixed UTC clock is missing"))?;
+    let fixed_utc = chrono::DateTime::parse_from_rfc3339(fixed_utc)
+        .context("parse identity SSE fixed UTC clock")?
+        .with_timezone(&chrono::Utc);
+    event["ts"] = fixed_timestamp;
+    event["market_session"] = crate::routes::market_session_at(fixed_utc).into();
+    Ok(())
+}
+
 fn differing_paths(before: &Value, after: &Value) -> Vec<String> {
     fn walk(a: &Value, b: &Value, path: &str, out: &mut Vec<String>) {
         match (a, b) {
@@ -206,11 +223,7 @@ async fn capture_current() -> Result<(Value, Value, Value)> {
         .ok_or_else(|| anyhow::anyhow!("identity SSE produced no data event"))?;
     let sse_input: Value =
         serde_json::from_slice(&fs::read(identity_root().join("inputs/sse.json"))?)?;
-    let fixed_timestamp = sse_input
-        .get("first_data_timestamp")
-        .cloned()
-        .ok_or_else(|| anyhow::anyhow!("identity SSE fixed timestamp is missing"))?;
-    event["ts"] = fixed_timestamp;
+    apply_fixed_sse_clock(&mut event, &sse_input)?;
     let _ = stop.send(());
     Ok((
         projection(&ticker),
@@ -432,6 +445,21 @@ pub fn write_canonical_receipt(body: &Value) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fixed_sse_clock_controls_timestamp_and_market_session() {
+        let mut event = json!({"ts": 1, "market_session": "premarket"});
+        let input = json!({
+            "first_data_timestamp": 1_787_620_168_000_i64,
+            "fixed_utc": "2026-08-24T00:00:00Z"
+        });
+
+        apply_fixed_sse_clock(&mut event, &input).expect("fixed clock should apply");
+
+        assert_eq!(event["ts"], 1_787_620_168_000_i64);
+        assert_eq!(event["market_session"], "overnight");
+    }
+
     #[test]
     fn revision_is_immutable() {
         assert_eq!(REFERENCE_REVISION.len(), 40);
