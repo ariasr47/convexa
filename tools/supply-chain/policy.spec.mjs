@@ -10,6 +10,7 @@ import { validateExceptions } from './policy/exceptions.mjs';
 import { compareDependencySnapshots, dependencySnapshot } from './policy/lock-integrity.mjs';
 import { combineAudits } from './policy/npm-audit.mjs';
 import {
+  canonicalLockSha256,
   checkLicenseBaseline,
   detectLicenseFromTarball,
   inspectLicenseInventory,
@@ -62,6 +63,16 @@ test('license baseline rejects malformed inventory', () =>
   assert.equal(checkLicenseBaseline(null, []).state, 'blocked'));
 test('license baseline rejects malformed baseline', () =>
   assert.equal(checkLicenseBaseline([], null).state, 'blocked'));
+test('license lock fingerprint is stable across platform line endings', () => {
+  assert.equal(
+    canonicalLockSha256(Buffer.from('{\r\n  "lockfileVersion": 3\r\n}\r\n')),
+    canonicalLockSha256(Buffer.from('{\n  "lockfileVersion": 3\n}\n')),
+  );
+  assert.notEqual(
+    canonicalLockSha256(Buffer.from('{\n  "lockfileVersion": 3\n}\n')),
+    canonicalLockSha256(Buffer.from('{\n  "lockfileVersion": 2\n}\n')),
+  );
+});
 test('canonical integrity-verified MIT license file is detected', async () => {
   const bytes = await npmTar(await fs.readFile('node_modules/union/LICENSE'));
   const result = detectLicenseFromTarball({ tarballBytes: bytes, integrity: sri(bytes) });

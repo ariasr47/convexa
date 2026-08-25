@@ -1,8 +1,12 @@
 import { spawnCaptured } from '../lib/process.mjs';
-export async function runTrivyConfig({ executable, cwd = process.cwd() } = {}) {
+export async function runTrivyConfig({
+  executable,
+  cwd = process.cwd(),
+  runner = spawnCaptured,
+} = {}) {
   if (!executable) return blocked('trivy-unavailable');
   return classify(
-    await spawnCaptured(
+    await runner(
       executable,
       [
         'config',
@@ -10,8 +14,6 @@ export async function runTrivyConfig({ executable, cwd = process.cwd() } = {}) {
         'json',
         '--exit-code',
         '1',
-        '--scanners',
-        'misconfig,secret',
         '--skip-dirs',
         'node_modules',
         '--skip-dirs',
@@ -21,13 +23,20 @@ export async function runTrivyConfig({ executable, cwd = process.cwd() } = {}) {
       { cwd, timeoutMs: 240000 },
     ),
     'configuration',
+    ['Misconfigurations'],
   );
 }
-export async function runTrivyImage({ executable, digest, input, cwd = process.cwd() } = {}) {
+export async function runTrivyImage({
+  executable,
+  digest,
+  input,
+  cwd = process.cwd(),
+  runner = spawnCaptured,
+} = {}) {
   if (!executable || !/^sha256:[a-f0-9]{64}$/.test(digest ?? '') || typeof input !== 'string')
     return blocked('trivy-image-unavailable');
   return classify(
-    await spawnCaptured(
+    await runner(
       executable,
       [
         'image',
@@ -45,11 +54,44 @@ export async function runTrivyImage({ executable, digest, input, cwd = process.c
       { cwd, timeoutMs: 300000, maxOutputBytes: 32 * 1024 * 1024 },
     ),
     'api-image',
+    ['Vulnerabilities', 'Secrets'],
   );
 }
-function classify(run, scope) {
+function classify(run, scope, findingFields) {
   if (run.state === 'blocked') return blocked('trivy-unavailable', run.raw_output_sha256);
-  if (run.raw_exit_code === 0)
+  if (typeof run.output !== 'string' || !run.output.trim())
+    return blocked('trivy-empty-output', run.raw_output_sha256);
+  let report;
+  try {
+    report = JSON.parse(run.output);
+  } catch {
+    return blocked('trivy-json-parse', run.raw_output_sha256);
+  }
+  if (report?.SchemaVersion !== 2) return blocked('trivy-schema-version', run.raw_output_sha256);
+  if (
+    !(report.Results === undefined || report.Results === null || Array.isArray(report.Results)) ||
+    (report.Results ?? []).some(
+      (result) =>
+        !result ||
+        typeof result !== 'object' ||
+        Array.isArray(result) ||
+        findingFields.some(
+          (field) =>
+            result[field] !== undefined && result[field] !== null && !Array.isArray(result[field]),
+        ),
+    )
+  )
+    return blocked('trivy-results-shape', run.raw_output_sha256);
+  const count = (report.Results ?? []).reduce(
+    (total, result) =>
+      total +
+      findingFields.reduce(
+        (subtotal, field) => subtotal + (Array.isArray(result?.[field]) ? result[field].length : 0),
+        0,
+      ),
+    0,
+  );
+  if (run.raw_exit_code === 0 && count === 0)
     return {
       state: 'pass',
       rule_id: `${scope}-clean`,
@@ -57,15 +99,15 @@ function classify(run, scope) {
       count: 0,
       raw_output_sha256: run.raw_output_sha256,
     };
-  if (run.raw_exit_code === 1)
+  if (run.raw_exit_code === 1 && count > 0)
     return {
       state: 'fail',
       rule_id: `${scope}-finding`,
       completion: 'complete',
-      count: 1,
+      count,
       raw_output_sha256: run.raw_output_sha256,
     };
-  return blocked('trivy-malformed', run.raw_output_sha256);
+  return blocked('trivy-exit-count-mismatch', run.raw_output_sha256);
 }
 export function classifyTrivy(result) {
   if (!result || result.unavailable) return blocked('trivy-unavailable');

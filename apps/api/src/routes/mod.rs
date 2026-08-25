@@ -18,6 +18,7 @@ mod research_chain_snapshots;
 mod research_session_books;
 mod scan;
 mod stream;
+pub(crate) use stream::market_session_at;
 mod ticker;
 
 use crate::state::AppState;

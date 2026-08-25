@@ -1,0 +1,6 @@
+{
+  "request": "SPY?min_dte=7&max_dte=45",
+  "fixture_symbol": "SYN",
+  "fixed_utc": "2026-08-24T00:00:00Z",
+  "seed": 1
+}

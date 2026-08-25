@@ -1,0 +1,19 @@
+{
+  "ask": null,
+  "bid": null,
+  "buy_vol": 0.0,
+  "feed": "delayed",
+  "flow_window_s": 300,
+  "gamma_flip": null,
+  "last_trade": null,
+  "live": true,
+  "market_session": "overnight",
+  "mid": 100.0,
+  "net_flow": 0.0,
+  "sell_vol": 0.0,
+  "spot_ts": 0,
+  "spread": null,
+  "tick_age_s": 0,
+  "ticker": "SYN",
+  "ts": 1787620168000
+}

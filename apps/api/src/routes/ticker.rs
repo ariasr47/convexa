@@ -374,7 +374,19 @@ async fn resolve_price_fast(state: &AppState, sym: &str) -> Result<PriceResponse
     }
 
     let t0 = Instant::now();
-    let live = state.massive.fetch_quick_live_price(sym).await?;
+    let live = if let Some(port) = &state.harness_market_data {
+        let bundle = port.resolve(sym, None).await?;
+        crate::domain::LivePrice {
+            symbol: sym.to_owned(),
+            price: bundle.market.current_spot,
+            bid: None,
+            ask: None,
+            ts_ns: bundle.market.timestamp,
+            received_at: bundle.as_of.timestamp(),
+        }
+    } else {
+        state.massive()?.fetch_quick_live_price(sym).await?
+    };
     let ms = t0.elapsed().as_secs_f64() * 1000.0;
     info!(ticker = %sym, price = live.price, ms, "fast stock snapshot price");
 

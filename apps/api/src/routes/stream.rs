@@ -277,7 +277,7 @@ fn capacity_unavailable() -> Response {
 async fn admit_sse(state: &AppState, symbols: &[String]) -> Result<SubscriberGuard, Response> {
     match state
         .live_capacity
-        .admit_and_subscribe(&state.stock_hub, symbols)
+        .admit_and_subscribe_with_probe(&state.stock_hub, symbols, &state.lifecycle_probe)
         .await
     {
         Ok(g) => Ok(g),
@@ -296,8 +296,8 @@ async fn admit_sse(state: &AppState, symbols: &[String]) -> Result<SubscriberGua
     }
 }
 
-fn market_session() -> &'static str {
-    let et = Utc::now().with_timezone(&New_York);
+pub(crate) fn market_session_at(utc: chrono::DateTime<Utc>) -> &'static str {
+    let et = utc.with_timezone(&New_York);
     if et.weekday().num_days_from_monday() >= 5 {
         // weekend coarse: sat/sun closed except late sun
         if et.weekday().num_days_from_monday() == 6 && et.hour() >= 20 {
@@ -315,6 +315,10 @@ fn market_session() -> &'static str {
     } else {
         "overnight"
     }
+}
+
+fn market_session() -> &'static str {
+    market_session_at(Utc::now())
 }
 
 /// GET /api/stream/prices?symbols=SPY,QQQ — multi-symbol live prices (must register before /{ticker}).
@@ -354,8 +358,15 @@ async fn stream_prices_http(
     let prices_cache = state.prices.clone();
 
     let (tx, rx_out) = mpsc::channel::<Result<Event, Infallible>>(32);
+    let lifecycle = state.lifecycle_probe.clone();
     tokio::spawn(async move {
         let _guard = guard;
+        // The response body is the still-open request for an SSE stream. The
+        // middleware guard covers admission/headers; this continuation keeps
+        // the request lifecycle observed until the client disconnects.
+        let _request_guard = lifecycle.request();
+        let _task_guard = lifecycle.tokio_task();
+        let _sse_guard = lifecycle.sse_task();
         let _ = tx.send(Ok(Event::default().comment("connected"))).await;
 
         let mut latest: HashMap<String, (f64, i64)> = HashMap::new();
@@ -459,6 +470,7 @@ async fn stream_ticker_http(
     let feed = state.config.data_feed.as_str().to_string();
     let prices = state.prices.clone();
     let gex_cache = state.gex_cache.clone();
+    let lifecycle = state.lifecycle_probe.clone();
 
     // Seed flip from warm analytics if present.
     let flip0 = gex_cache
@@ -470,6 +482,9 @@ async fn stream_ticker_http(
     let (tx, rx_out) = mpsc::channel::<Result<Event, Infallible>>(16);
     tokio::spawn(async move {
         let _guard = guard;
+        let _request_guard = lifecycle.request();
+        let _tokio_task_guard = lifecycle.tokio_task();
+        let _task_guard = lifecycle.sse_task();
         let _ = tx.send(Ok(Event::default().comment("connected"))).await;
 
         let mut bid = 0.0_f64;

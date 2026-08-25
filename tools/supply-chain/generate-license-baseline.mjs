@@ -1,12 +1,12 @@
 import { spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
-import { inventoryFromLock } from './policy/npm-license.mjs';
+import { canonicalLockSha256, inventoryFromLock } from './policy/npm-license.mjs';
 
 const root = process.cwd();
 const npmBytes = await fs.readFile(`${root}/package-lock.json`),
   cargoBytes = await fs.readFile(`${root}/Cargo.lock`);
-const npmRows = await inventoryFromLock(JSON.parse(npmBytes), sha(npmBytes));
+const npmRows = await inventoryFromLock(JSON.parse(npmBytes), canonicalLockSha256(npmBytes));
 const result = spawnSync(
   'cargo',
   [

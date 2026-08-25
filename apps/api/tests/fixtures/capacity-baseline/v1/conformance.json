@@ -1,0 +1,52 @@
+{
+  "ticker": "SYN",
+  "as_of": "2026-08-01T20:00:00Z",
+  "synchronized_spot": 100,
+  "current_spot": 100,
+  "atm_iv": 0.25,
+  "atm_iv_expiration": "2026-08-21",
+  "atm_iv_dte": 20,
+  "market_phase": "rth",
+  "contracts": [
+    {
+      "strike_price": 105,
+      "contract_type": "call",
+      "open_interest": 1000,
+      "expiration_date": "2026-08-21",
+      "implied_volatility": 0.25,
+      "greeks": {
+        "gamma": 0.02,
+        "delta": 0.4
+      },
+      "volume": 50
+    },
+    {
+      "strike_price": 95,
+      "contract_type": "put",
+      "open_interest": 700,
+      "expiration_date": "2026-08-21",
+      "implied_volatility": 0.26,
+      "greeks": {
+        "gamma": 0.03,
+        "delta": -0.5
+      },
+      "volume": 35
+    }
+  ],
+  "daily_bars": [
+    {
+      "session": "2026-07-31",
+      "close": 99,
+      "high": 100,
+      "low": 98
+    },
+    {
+      "session": "2026-08-01",
+      "close": 100,
+      "high": 101,
+      "low": 99
+    }
+  ],
+  "minutes": [],
+  "trades": []
+}

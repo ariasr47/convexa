@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { CHILDREN, validateChildCatalog } from './lib/aggregate.mjs';
-import { npmInvocation } from './lib/process.mjs';
+import { npmInvocation, spawnCommand } from './lib/process.mjs';
 import { ROOT } from './lib/repository-root.mjs';
 import { hashFile, readSummary } from './lib/summary.mjs';
 
@@ -95,6 +95,45 @@ export function buildQualityReceipt({ runId, source, startedAt, completedAt, chi
   };
 }
 
+export function prepareQualityDashboard({
+  spawnCommandFn = spawnCommand,
+  platform = process.platform,
+  execPath = process.execPath,
+  npmCliPath = path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js'),
+  cwd = ROOT,
+  env = process.env,
+  runId = crypto.randomUUID(),
+} = {}) {
+  const childEnv = { ...env };
+  delete childEnv.NX_INVOCATION_ROOT_PID;
+  const workspaceDataKey = crypto
+    .createHash('sha256')
+    .update(`${runId}\0dashboard-production-build`)
+    .digest('hex');
+  const invocation = npmInvocation({
+    platform,
+    execPath,
+    npmCliPath,
+    args: ['exec', '--', 'nx', 'run', '@convexa/dashboard:build:production', '--skip-nx-cache'],
+  });
+  return spawnCommandFn(invocation.command, invocation.args, {
+    cwd,
+    shell: false,
+    stdio: 'inherit',
+    env: {
+      ...childEnv,
+      NX_DAEMON: 'false',
+      NX_WORKSPACE_DATA_DIRECTORY: path.join(
+        cwd,
+        '.nx',
+        'workspace-data',
+        'browser-quality',
+        workspaceDataKey,
+      ),
+    },
+  });
+}
+
 export function spawnQualityChildren({
   children = CHILDREN,
   spawnFn = spawn,
@@ -105,6 +144,7 @@ export function spawnQualityChildren({
   env = process.env,
   runId = crypto.randomUUID(),
   source = '0'.repeat(40),
+  prebuildStatus,
 } = {}) {
   validateChildCatalog(children);
   const childEnv = { ...env };
@@ -117,42 +157,77 @@ export function spawnQualityChildren({
     npmCliPath,
     args: ['exec', '--', 'nx', 'run'],
   });
-  return children.map(
-    ({ target, port }) =>
-      new Promise((resolve) => {
-        let settled = false;
-        const finish = (result) => {
-          if (settled) return;
-          settled = true;
-          resolve({ target, port, invocation_count: 1, ...result });
-        };
-        let child;
-        try {
-          child = spawnFn(invocation.command, [...invocation.args, target, '--skip-nx-cache'], {
-            cwd,
-            shell: false,
-            stdio: 'inherit',
-            env: {
-              ...childEnv,
-              NX_DAEMON: 'false',
-              BROWSER_QUALITY_RUN_ID: runId,
-              BROWSER_QUALITY_SOURCE_REVISION: source,
-              BROWSER_QUALITY_PORT: String(port),
-              BROWSER_QUALITY_WORKERS: '1',
-            },
-          });
-        } catch (error) {
-          finish({ exit_code: 1, status: 'incomplete', error: error.message });
-          return;
-        }
-        child.once('error', (error) =>
-          finish({ exit_code: 1, status: 'incomplete', error: error.message }),
-        );
-        child.once('close', (code) =>
-          finish({ exit_code: code ?? 1, status: code === 0 ? 'pass' : 'fail', error: null }),
-        );
-      }),
-  );
+  return children.map(({ target, port }) => {
+    const workspaceDataKey = crypto
+      .createHash('sha256')
+      .update(`${runId}\0${target}`)
+      .digest('hex');
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (result) => {
+        if (settled) return;
+        settled = true;
+        resolve({ target, port, invocation_count: 1, ...result });
+      };
+      let child;
+      try {
+        child = spawnFn(invocation.command, [...invocation.args, target, '--skip-nx-cache'], {
+          cwd,
+          shell: false,
+          stdio: 'inherit',
+          env: {
+            ...childEnv,
+            NX_DAEMON: 'false',
+            NX_WORKSPACE_DATA_DIRECTORY: path.join(
+              cwd,
+              '.nx',
+              'workspace-data',
+              'browser-quality',
+              workspaceDataKey,
+            ),
+            BROWSER_QUALITY_RUN_ID: runId,
+            BROWSER_QUALITY_SOURCE_REVISION: source,
+            BROWSER_QUALITY_PORT: String(port),
+            BROWSER_QUALITY_WORKERS: '1',
+            ...(prebuildStatus ? { BROWSER_QUALITY_PREBUILD_STATUS: prebuildStatus } : {}),
+          },
+        });
+      } catch (error) {
+        finish({ exit_code: 1, status: 'incomplete', error: error.message });
+        return;
+      }
+      child.once('error', (error) =>
+        finish({ exit_code: 1, status: 'incomplete', error: error.message }),
+      );
+      child.once('close', (code) =>
+        finish({ exit_code: code ?? 1, status: code === 0 ? 'pass' : 'fail', error: null }),
+      );
+    });
+  });
+}
+
+export async function prepareThenSpawnQualityChildren({
+  prepareFn = prepareQualityDashboard,
+  spawnChildrenFn = spawnQualityChildren,
+  spawnOptions = {},
+  runId = crypto.randomUUID(),
+  source = '0'.repeat(40),
+} = {}) {
+  let preparation;
+  try {
+    preparation = await prepareFn({ ...spawnOptions, runId });
+  } catch (error) {
+    preparation = {
+      exit_code: 1,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+  return spawnChildrenFn({
+    ...spawnOptions,
+    runId,
+    source,
+    prebuildStatus: preparation.exit_code === 0 ? 'pass' : 'fail',
+  });
 }
 
 export async function runQuality({ spawnOptions = {} } = {}) {
@@ -161,7 +236,7 @@ export async function runQuality({ spawnOptions = {} } = {}) {
   const source =
     process.env.BROWSER_QUALITY_SOURCE_REVISION ??
     execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
-  const children = spawnQualityChildren({ ...spawnOptions, runId, source });
+  const children = await prepareThenSpawnQualityChildren({ spawnOptions, runId, source });
   const results = await Promise.allSettled(children);
   const childResults = results.map((result, index) =>
     result.status === 'fulfilled'

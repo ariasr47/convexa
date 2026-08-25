@@ -10,7 +10,11 @@ import { validateExceptions } from './policy/exceptions.mjs';
 import { runGitleaks } from './policy/gitleaks.mjs';
 import { compareDependencySnapshots, dependencySnapshot } from './policy/lock-integrity.mjs';
 import { combineAudits, runNpmAudit } from './policy/npm-audit.mjs';
-import { checkLicenseBaseline, inspectLicenseInventory } from './policy/npm-license.mjs';
+import {
+  canonicalLockSha256,
+  checkLicenseBaseline,
+  inspectLicenseInventory,
+} from './policy/npm-license.mjs';
 import { checkNpmLock } from './policy/npm-lock.mjs';
 import { runTrivyConfig } from './policy/trivy.mjs';
 import { computeRunKey, subjectSetHash } from './run-key.mjs';
@@ -24,6 +28,7 @@ export async function runPolicy({
   runKey,
   root = process.cwd(),
   allowDownload = true,
+  gitleaksBaseSha = process.env.SCA_GITLEAKS_BASE_SHA,
 } = {}) {
   if (!events.has(event) || !['policy', 'artifacts'].includes(path))
     return invocationReport(event, path, runKey, 'invalid-event-path');
@@ -44,7 +49,7 @@ export async function runPolicy({
   const executable = (id) => toolset.resolved.get(id);
   const packageBytes = await fs.readFile(`${root}/package-lock.json`);
   const packageLock = JSON.parse(packageBytes);
-  const packageHash = sha256(packageBytes);
+  const packageHash = canonicalLockSha256(packageBytes);
   const policyFiles = [
     '.supply-chain/policy.json',
     '.supply-chain/license-baseline.json',
@@ -116,7 +121,8 @@ export async function runPolicy({
       await runGitleaks({
         executable: executable('gitleaks'),
         cwd: root,
-        logOptions: event === 'pull_request' ? '--all' : null,
+        logOptions: gitleaksLogOptions(event, revision, gitleaksBaseSha),
+        requireLogOptions: true,
       }),
       ['.git'],
     ),
@@ -174,6 +180,13 @@ export async function runPolicy({
     artifacts: [],
   };
   return normalizePolicyReport(base, requiredChecksFor(event, 'policy'));
+}
+
+export function gitleaksLogOptions(event, revision, baseSha) {
+  if (!/^[a-f0-9]{40}$/.test(revision ?? '')) return null;
+  if (event === 'pull_request')
+    return /^[a-f0-9]{40}$/.test(baseSha ?? '') ? `${baseSha}..${revision}` : null;
+  return `${revision}^!`;
 }
 
 function asCheck(check_id, tool, result, scope) {

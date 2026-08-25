@@ -7,11 +7,21 @@ import test from 'node:test';
 import {
   CAPABILITY_IDS,
   buildCapabilityReceipts,
+  trivyGithubPatCanary,
   validateCapabilityReceiptSet,
 } from './capabilities.mjs';
 import { canonicalSha256 } from './lib/canonical.mjs';
 
 const tool = (id) => ({ tool_id: id, version: '1.0.0', sha256: 'a'.repeat(64) });
+
+test('Trivy policy-fail canary matches the v0.74 built-in GitHub PAT rule', () => {
+  const canary = trivyGithubPatCanary();
+  const prefix = ['gh', 'p_'].join('');
+
+  assert.equal(canary.startsWith(prefix), true);
+  assert.equal(canary.length, prefix.length + 36);
+  assert.match(canary.slice(prefix.length), /^[0-9a-zA-Z]{36}$/);
+});
 
 test('capability harness invokes each real adapter arm and binds tool and fixture hashes', async () => {
   const calls = [];
@@ -89,4 +99,46 @@ test('production fixture bytes affect the receipt hash', async () => {
   await writeFile(fixture, '{"safe":false}\n');
   const second = canonicalSha256(await readFile(fixture));
   assert.notEqual(first, second);
+});
+
+test('capability receipts expose only safe adapter diagnostics', async () => {
+  const secret = 'SCA_DIAGNOSTIC_CANARY_DO_NOT_PUBLISH';
+  const result = await buildCapabilityReceipts({
+    capabilities: ['trivy.api-image-digest-json'],
+    resolveTool: () => tool('trivy'),
+    resolveFixture: async (capabilityId, arm) => ({
+      fixture_id: `${capabilityId}.${arm}`,
+      fixture_sha256: canonicalSha256({ capabilityId, arm }),
+      payload: { arm },
+    }),
+    runAdapter: async (_capabilityId, fixture) => ({
+      exit_code: fixture.payload.arm === 'pass' ? 0 : fixture.payload.arm === 'policy_fail' ? 1 : 2,
+      state:
+        fixture.payload.arm === 'pass'
+          ? 'pass'
+          : fixture.payload.arm === 'policy_fail'
+            ? 'fail'
+            : 'blocked',
+      reason_code:
+        fixture.payload.arm === 'unavailable'
+          ? `unsafe-${secret}`
+          : fixture.payload.arm === 'policy_fail'
+            ? 'api-image-finding'
+            : 'api-image-clean',
+      raw_exit_code:
+        fixture.payload.arm === 'unavailable' ? 17 : fixture.payload.arm === 'policy_fail' ? 1 : 0,
+      raw_output_sha256: 'd'.repeat(64),
+      raw_stdout: secret,
+      raw_stderr: secret,
+      publication_canary_leaked: false,
+    }),
+  });
+
+  assert.equal(result.receipts[0].reason_code, 'api-image-clean');
+  assert.equal(result.receipts[1].reason_code, 'api-image-finding');
+  assert.equal(result.receipts[2].reason_code, 'adapter-reason-unavailable');
+  assert.equal(result.receipts[2].raw_exit_code, 17);
+  assert.doesNotMatch(JSON.stringify(result.receipts), new RegExp(secret));
+  assert.equal('raw_stdout' in result.receipts[2], false);
+  assert.equal('raw_stderr' in result.receipts[2], false);
 });

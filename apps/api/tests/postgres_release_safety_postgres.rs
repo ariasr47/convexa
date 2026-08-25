@@ -7,9 +7,11 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::{
+    collections::HashSet,
     net::TcpListener,
     path::PathBuf,
     process::{Child, Command, Output},
+    sync::{Mutex, OnceLock},
     time::Duration,
 };
 use tokio::time::{sleep, timeout};
@@ -232,8 +234,34 @@ fn migrate(db: &str, extra: &[(&str, &str)]) -> Output {
     c.output().expect("spawn postgres-migrate")
 }
 fn port() -> u16 {
-    let l = TcpListener::bind("127.0.0.1:0").expect("reserve port");
-    l.local_addr().unwrap().port()
+    static ALLOCATED: OnceLock<Mutex<HashSet<u16>>> = OnceLock::new();
+    let allocated = ALLOCATED.get_or_init(|| Mutex::new(HashSet::new()));
+    loop {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("reserve port");
+        let candidate = listener.local_addr().unwrap().port();
+        if allocated.lock().unwrap().insert(candidate) {
+            return candidate;
+        }
+    }
+}
+fn distinct_ports() -> (u16, u16) {
+    let first = port();
+    loop {
+        let second = port();
+        if second != first {
+            return (first, second);
+        }
+    }
+}
+#[test]
+fn simultaneous_serve_port_pair_is_always_distinct() {
+    let mut observed = HashSet::new();
+    for _ in 0..32 {
+        let (x, y) = distinct_ports();
+        assert_ne!(x, y);
+        assert!(observed.insert(x), "test port was reused: {x}");
+        assert!(observed.insert(y), "test port was reused: {y}");
+    }
 }
 fn listener_bound(p: u16) -> bool {
     std::net::TcpStream::connect(("127.0.0.1", p)).is_ok()
@@ -303,7 +331,17 @@ fn env(c: &mut Command, db: &str, p: u16, root: &std::path::Path) {
             String::from("CHAIN_SNAPSHOT_STORE_PATH"),
             root.join("snapshot-ring").to_string_lossy().into_owned(),
         ),
-        (String::from("CHAIN_SNAPSHOT_ENABLED"), String::from("true")),
+        // This suite owns PostgreSQL release behavior, not the separately tested
+        // production filesystem probe. Keep snapshots explicitly off so a disposable
+        // temp root cannot violate the exact production mount contract.
+        (
+            String::from("CHAIN_SNAPSHOT_BACKEND"),
+            String::from("disabled"),
+        ),
+        (
+            String::from("CHAIN_SNAPSHOT_ENABLED"),
+            String::from("false"),
+        ),
         (String::from("WARM_ENABLED"), String::from("false")),
         (String::from("SCAN_ENABLED"), String::from("false")),
         (
@@ -333,7 +371,9 @@ impl Drop for FixtureRoot {
     }
 }
 fn serve(db: &str) -> Running {
-    let p = port();
+    serve_on_port(db, port())
+}
+fn serve_on_port(db: &str, p: u16) -> Running {
     let root = FixtureRoot(std::env::temp_dir().join(name("serve_root")));
     std::fs::create_dir(&root.0).expect("create production storage fixture");
     let mut c = Command::new(bin());
@@ -411,7 +451,9 @@ fn cli_fresh_prefix_current_jsonl_and_exit_contract() {
         let n = name("fresh");
         create(&a, &n).await;
         let d = url(&base(), &n);
-        let x = migrate(&d, &[]);
+        // The migration command owns stdout as a strict JSONL protocol even when
+        // dependency tracing is explicitly enabled by an operator.
+        let x = migrate(&d, &[("RUST_LOG", "sqlx::postgres::notice=info")]);
         assert!(x.status.success(), "fresh migration: {:?}", x);
         let xr = records(&x);
         assert_terminal_contract(&xr);
@@ -719,12 +761,21 @@ fn simultaneous_serve_processes_are_read_only() {
         let d = url(&base(), &n);
         assert!(migrate(&d, &[]).status.success());
         let before = fp(&d).await;
-        let x = serve(&d);
-        let y = serve(&d);
-        assert!(health(x.port).await);
-        assert!(health(y.port).await);
+        let (x_port, y_port) = distinct_ports();
+        let x = serve_on_port(&d, x_port);
+        let y = serve_on_port(&d, y_port);
+        let x_healthy = health(x.port).await;
+        let y_healthy = health(y.port).await;
         let xo = stop(x);
         let yo = stop(y);
+        assert!(
+            x_healthy,
+            "first simultaneous server did not become healthy"
+        );
+        assert!(
+            y_healthy,
+            "second simultaneous server did not become healthy"
+        );
         assert_no_secret_egress(&xo);
         assert_no_secret_egress(&yo);
         assert_eq!(before, fp(&d).await);

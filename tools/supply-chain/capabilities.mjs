@@ -6,7 +6,7 @@ import { verifyOrAcquireTools } from './acquire-tools.mjs';
 import { canonicalSha256 } from './lib/canonical.mjs';
 import { spawnCaptured } from './lib/process.mjs';
 import { normalize } from './normalize.mjs';
-import { subjectDigest } from './oci.mjs';
+import { ociLayoutReference, subjectDigest, withExtractedOciArchive } from './oci.mjs';
 import { runCargoDeny } from './policy/cargo-deny.mjs';
 import { runGitleaks } from './policy/gitleaks.mjs';
 import { runNpmAudit } from './policy/npm-audit.mjs';
@@ -45,6 +45,12 @@ const toolByCapability = Object.freeze({
   'sanitizer.all-publication-channels': 'sanitizer',
 });
 
+export function trivyGithubPatCanary() {
+  // Trivy v0.74's built-in github-pat rule requires a 36-character alphanumeric suffix.
+  // Keep the prefix split in source so this deterministic fake is only assembled in the fixture.
+  return ['gh', 'p_', '0123456789', 'abcdefghijklmnopqrstuvwxyz'].join('');
+}
+
 export async function buildCapabilityReceipts({
   capabilities = CAPABILITY_IDS,
   resolveTool,
@@ -65,7 +71,8 @@ export async function buildCapabilityReceipts({
         actual = {
           exit_code: 2,
           state: 'blocked',
-          raw_exit_code: 2,
+          reason_code: 'adapter-unavailable',
+          raw_exit_code: null,
           raw_output_sha256: canonicalSha256({ reason: 'adapter-unavailable' }),
           publication_canary_leaked: false,
         };
@@ -96,7 +103,8 @@ export async function buildCapabilityReceipts({
         actual_adapter_exit: actual.exit_code,
         expected_state: expectedState,
         actual_state: actual.state,
-        raw_exit_code: actual.raw_exit_code,
+        reason_code: safeReasonCode(actual.reason_code),
+        raw_exit_code: safeToolExitCode(actual.raw_exit_code),
         raw_output_sha256: actual.raw_output_sha256,
         sanitized_evidence_ref: `artifact:capability-receipts#/receipts/${receipts.length}`,
         probe_verdict: matches ? 'pass' : 'capability_stop',
@@ -243,7 +251,16 @@ async function productionAdapter(capabilityId, fixture, tool) {
           ? '[licenses]\nallow=["MIT","Apache-2.0"]\n'
           : '[licenses]\nallow=["Apache-2.0"]\n',
       );
-      return wrap(await runCargoDeny({ executable: tool.executable, cwd: root }));
+      const observation = observeToolRun();
+      return wrap(
+        observation.decorate(
+          await runCargoDeny({
+            executable: tool.executable,
+            cwd: root,
+            runner: observation.runner,
+          }),
+        ),
+      );
     });
   if (capabilityId === 'gitleaks.history-range-json')
     return withFixture('gitleaks', async (root) => {
@@ -251,28 +268,60 @@ async function productionAdapter(capabilityId, fixture, tool) {
       await spawnCaptured('git', ['init'], { cwd: root });
       await spawnCaptured('git', ['config', 'user.email', 'probe@example.invalid'], { cwd: root });
       await spawnCaptured('git', ['config', 'user.name', 'Probe'], { cwd: root });
+      await fs.writeFile(path.join(root, 'probe.txt'), 'range-base\n');
+      await spawnCaptured('git', ['add', 'probe.txt'], { cwd: root });
+      await spawnCaptured('git', ['commit', '-m', 'range base'], { cwd: root });
+      const base = await spawnCaptured('git', ['rev-parse', 'HEAD'], { cwd: root });
+      const canary = ['ghp_', '0123456789abcdefghijklmnopqrstuvwx'].join('');
       await fs.writeFile(
         path.join(root, 'probe.txt'),
-        arm === 'pass' ? 'safe\n' : 'AWS_SECRET_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE\n',
+        arm === 'pass' ? 'safe range commit one\n' : `token=${canary}\n`,
       );
       await spawnCaptured('git', ['add', 'probe.txt'], { cwd: root });
-      await spawnCaptured('git', ['commit', '-m', 'probe'], { cwd: root });
+      await spawnCaptured('git', ['commit', '-m', 'range commit one'], { cwd: root });
+      await fs.writeFile(path.join(root, 'probe.txt'), 'safe range commit two\n');
+      await spawnCaptured('git', ['add', 'probe.txt'], { cwd: root });
+      await spawnCaptured('git', ['commit', '-m', 'range commit two'], { cwd: root });
+      const head = await spawnCaptured('git', ['rev-parse', 'HEAD'], { cwd: root });
+      const observation = observeToolRun();
       return wrap(
-        await runGitleaks({ executable: tool.executable, cwd: root, logOptions: '--all' }),
+        observation.decorate(
+          await runGitleaks({
+            executable: tool.executable,
+            cwd: root,
+            logOptions: `${base.output.trim()}..${head.output.trim()}`,
+            requireLogOptions: true,
+            runner: observation.runner,
+          }),
+        ),
       );
     });
   if (capabilityId === 'trivy.config-json')
     return withFixture('trivy-config', async (root) => {
       if (arm === 'unavailable') return wrap(await runTrivyConfig({ executable: null, cwd: root }));
+      await fs.mkdir(path.join(root, '.github', 'workflows'), { recursive: true });
       await fs.writeFile(
         path.join(root, 'Dockerfile'),
-        'FROM scratch\nCOPY probe.txt /probe.txt\nUSER 65532\n',
+        arm === 'pass'
+          ? `FROM alpine:3.22@sha256:${'a'.repeat(64)}\nUSER 65532\nHEALTHCHECK NONE\n`
+          : 'FROM alpine:latest\nUSER 65532\nHEALTHCHECK NONE\n',
       );
       await fs.writeFile(
-        path.join(root, 'probe.txt'),
-        arm === 'pass' ? 'safe\n' : 'AWS_SECRET_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE\n',
+        path.join(root, '.github', 'workflows', 'ci.yml'),
+        arm === 'pass'
+          ? `jobs:\n  test:\n    steps:\n      - uses: actions/checkout@${'b'.repeat(40)}\n`
+          : 'jobs:\n  test:\n    steps:\n      - uses: actions/checkout@main\n',
       );
-      return wrap(await runTrivyConfig({ executable: tool.executable, cwd: root }));
+      const observation = observeToolRun();
+      return wrap(
+        observation.decorate(
+          await runTrivyConfig({
+            executable: tool.executable,
+            cwd: root,
+            runner: observation.runner,
+          }),
+        ),
+      );
     });
   if (capabilityId === 'trivy.api-image-digest-json')
     return withFixture('trivy-image', async (root) => {
@@ -291,7 +340,7 @@ async function productionAdapter(capabilityId, fixture, tool) {
       );
       await fs.writeFile(
         path.join(root, 'probe.txt'),
-        arm === 'pass' ? 'safe\n' : 'AWS_SECRET_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE\n',
+        arm === 'pass' ? 'safe\n' : `token=${trivyGithubPatCanary()}\n`,
       );
       const archive = path.join(root, 'probe.oci.tar'),
         build = await spawnCaptured(
@@ -310,10 +359,22 @@ async function productionAdapter(capabilityId, fixture, tool) {
           { cwd: root, timeoutMs: 300000 },
         );
       if (build.raw_exit_code !== 0) return blocked();
-      const digest = subjectDigest(await fs.readFile(archive));
-      return wrap(
-        await runTrivyImage({ executable: tool.executable, digest, input: archive, cwd: root }),
-      );
+      const archiveBytes = await fs.readFile(archive),
+        digest = subjectDigest(archiveBytes);
+      return withExtractedOciArchive(archiveBytes, async (layout) => {
+        const observation = observeToolRun();
+        return wrap(
+          observation.decorate(
+            await runTrivyImage({
+              executable: tool.executable,
+              digest,
+              input: ociLayoutReference(layout, digest),
+              cwd: root,
+              runner: observation.runner,
+            }),
+          ),
+        );
+      });
     });
   if (capabilityId.startsWith('syft.')) {
     if (arm === 'unavailable') return blocked();
@@ -334,6 +395,7 @@ async function productionAdapter(capabilityId, fixture, tool) {
       },
       expected =
         arm === 'pass' ? [component] : [component, { ...component, name: 'required-but-omitted' }],
+      observation = observeToolRun(),
       generated = await generateInventoryWithSyft({
         executable: tool.executable,
         subjectId: capabilityId.includes('api-')
@@ -343,15 +405,15 @@ async function productionAdapter(capabilityId, fixture, tool) {
         runner:
           arm === 'policy_fail'
             ? async (executable, args, options) => {
-                const result = await spawnCaptured(executable, args, options);
+                const result = await observation.runner(executable, args, options);
                 if (result.raw_exit_code !== 0) return result;
                 const doc = JSON.parse(result.output);
                 doc.artifacts.pop();
                 return { ...result, output: JSON.stringify(doc) };
               }
-            : spawnCaptured,
+            : observation.runner,
       });
-    return wrap(generated);
+    return wrap(observation.decorate(generated));
   }
   if (capabilityId === 'normalizer.strict-aggregate') {
     const value =
@@ -413,7 +475,8 @@ function wrap(result) {
   return {
     exit_code,
     state,
-    raw_exit_code: exit_code,
+    reason_code: safeReasonCode(result.reason_code ?? result.rule_id),
+    raw_exit_code: safeToolExitCode(result.tool_exit_code ?? result.raw_exit_code),
     raw_output_sha256: canonicalSha256(result),
     publication_canary_leaked: false,
   };
@@ -422,9 +485,31 @@ function blocked() {
   return {
     exit_code: 2,
     state: 'blocked',
-    raw_exit_code: 2,
+    reason_code: 'required-capability-not-executable',
+    raw_exit_code: null,
     raw_output_sha256: canonicalSha256({ reason: 'required-capability-not-executable' }),
     publication_canary_leaked: false,
+  };
+}
+function safeReasonCode(value) {
+  return typeof value === 'string' && /^[a-z0-9][a-z0-9-]{0,95}$/.test(value)
+    ? value
+    : 'adapter-reason-unavailable';
+}
+function safeToolExitCode(value) {
+  return Number.isSafeInteger(value) && value >= 0 && value <= 255 ? value : null;
+}
+function observeToolRun() {
+  let rawExitCode = null;
+  return {
+    async runner(executable, argv, options) {
+      const result = await spawnCaptured(executable, argv, options);
+      rawExitCode = safeToolExitCode(result.raw_exit_code);
+      return result;
+    },
+    decorate(result) {
+      return { ...result, tool_exit_code: rawExitCode };
+    },
   };
 }
 async function withFixture(prefix, fn) {

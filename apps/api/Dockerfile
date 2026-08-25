@@ -57,7 +57,7 @@ RUN touch libs/quant-engine/src/lib.rs apps/api/src/lib.rs apps/api/src/main.rs 
 # ---- runtime ----
 FROM debian:bookworm-20260803-slim@sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 10001 appuser \
     && mkdir -p /app/data \
@@ -70,12 +70,12 @@ COPY apps/api/config/universe.json /app/universe.json
 ENV RUST_LOG=info,api_rust=info \
     HTTP_BIND=0.0.0.0:8000 \
     SCAN_UNIVERSE_PATH=/app/universe.json \
-    AUTH_STORE_PATH=/app/data/auth.json \
     IV_STORE_PATH=/app/data/iv_timeseries.json \
     SCAN_STORE_PATH=/app/data/scan.json \
-    AUTH_COOKIE_SECURE=true \
     POSITIONS_PROVIDER=stub
 
 USER appuser
 EXPOSE 8000
-CMD ["sh", "-c", "export HTTP_BIND=0.0.0.0:${PORT:-8000}; exec /usr/local/bin/api-rust serve"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl --fail --silent --show-error "http://127.0.0.1:${PORT:-8000}/health" > /dev/null || exit 1
+CMD ["sh", "-c", "export AUTH_STORE_PATH=${AUTH_STORE_PATH:-/app/data/auth.json}; export AUTH_COOKIE_SECURE=${AUTH_COOKIE_SECURE:-true}; export HTTP_BIND=0.0.0.0:${PORT:-8000}; exec /usr/local/bin/api-rust serve"]

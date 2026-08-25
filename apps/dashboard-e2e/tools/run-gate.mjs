@@ -34,6 +34,10 @@ const invocation = npmInvocation({
 });
 const artifactRoot = path.join(cwd, 'apps/dashboard-e2e/test-output/playwright', target);
 fs.rmSync(artifactRoot, { recursive: true, force: true });
+if (process.env.BROWSER_QUALITY_PREBUILD_STATUS === 'fail') {
+  console.error('[BLOCKED] browser quality dashboard prebuild failed');
+  process.exit(1);
+}
 const revisionResult = spawnSync('git', ['rev-parse', 'HEAD'], {
   cwd,
   encoding: 'utf8',

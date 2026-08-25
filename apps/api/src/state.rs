@@ -12,7 +12,8 @@ use crate::services::broker::{get_positions_provider, BrokerBookService};
 use crate::services::chain_snapshot::ChainSnapshotStore;
 use crate::services::flight::GexFlight;
 use crate::services::iv_store::IvStore;
-use crate::services::live_capacity::LiveCapacity;
+use crate::services::live_capacity::{LifecycleProbe, LiveCapacity};
+use crate::services::market_data::MarketDataPort;
 use crate::services::scanner::{load_universe, ScanStore, UniverseConfig};
 #[cfg(feature = "postgres")]
 use crate::services::session_chain_archive::body_store::FsBodyStore;
@@ -32,7 +33,9 @@ use tracing::{info, warn};
 pub struct AppState {
     pub config: Arc<Config>,
     pub prices: PriceCache,
-    pub massive: MassiveRestClient,
+    pub massive: Option<MassiveRestClient>,
+    pub(crate) harness_market_data: Option<MarketDataPort>,
+    pub(crate) lifecycle_probe: LifecycleProbe,
     pub gex_cache: GexCache,
     /// Coalesce concurrent analytics computes for the same ticker.
     pub gex_flight: GexFlight,
@@ -66,6 +69,13 @@ pub struct AppState {
 }
 
 impl AppState {
+    pub fn massive(&self) -> AppResult<&MassiveRestClient> {
+        self.massive.as_ref().ok_or_else(|| {
+            crate::error::AppError::Config(
+                "live Massive client unavailable in fixture harness".into(),
+            )
+        })
+    }
     pub async fn new(config: Config) -> AppResult<Self> {
         #[cfg(feature = "postgres")]
         {
@@ -333,7 +343,9 @@ impl AppState {
         Ok(Self {
             config: Arc::new(config),
             prices,
-            massive,
+            massive: Some(massive),
+            harness_market_data: None,
+            lifecycle_probe: LifecycleProbe::disabled(),
             gex_cache,
             gex_flight,
             scan,
@@ -429,7 +441,9 @@ impl AppState {
         Ok(Self {
             config: Arc::new(config),
             prices,
-            massive,
+            massive: Some(massive),
+            harness_market_data: None,
+            lifecycle_probe: LifecycleProbe::disabled(),
             gex_cache,
             gex_flight: GexFlight::new(),
             scan: ScanStore::memory(),
@@ -855,6 +869,13 @@ impl GexCache {
 
     pub async fn is_empty(&self) -> bool {
         self.inner.read().await.is_empty()
+    }
+
+    /// Clear only the in-process fixture cache.  The capacity harness uses this
+    /// after transport priming so the measured cold/warm preconditions remain
+    /// owned by the workload, not by the sampler stabilization phase.
+    pub(crate) async fn clear(&self) {
+        self.inner.write().await.clear();
     }
 
     pub async fn metrics_snapshot(&self) -> CacheMetricsSnapshot {

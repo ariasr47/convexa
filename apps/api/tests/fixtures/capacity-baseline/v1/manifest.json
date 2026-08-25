@@ -1,0 +1,47 @@
+{
+  "version": "capacity-baseline-v1",
+  "files": [
+    {
+      "path": "market.json",
+      "sha256": "885a3bbaecd8779b1a93c5127e95e3caf5d57a0ff6c20ed212a7b5d975466d79",
+      "roles": [
+        "D1:cold:COLD01-COLD12",
+        "SPY:warm_sse",
+        "COAL:coalesced",
+        "D3:shared:SHARE01-SHARE08"
+      ]
+    },
+    {
+      "path": "conformance.json",
+      "sha256": "b97a0984e8ba59866614aa90391c3cd783d6b672d986f4ff17f339bd898b0f20",
+      "roles": [
+        "interface_conformance:SYN"
+      ]
+    }
+  ],
+  "absent_symbol": "NOFIX",
+  "required_symbols": [
+    "SPY",
+    "COAL",
+    "COLD01",
+    "COLD02",
+    "COLD03",
+    "COLD04",
+    "COLD05",
+    "COLD06",
+    "COLD07",
+    "COLD08",
+    "COLD09",
+    "COLD10",
+    "COLD11",
+    "COLD12",
+    "SHARE01",
+    "SHARE02",
+    "SHARE03",
+    "SHARE04",
+    "SHARE05",
+    "SHARE06",
+    "SHARE07",
+    "SHARE08"
+  ]
+}

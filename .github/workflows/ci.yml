@@ -23,6 +23,7 @@ jobs:
     with:
       contract_event: ${{ github.event_name == 'pull_request' && 'pull_request' || 'default_branch' }}
       contract_revision: ${{ github.event.pull_request.head.sha || github.sha }}
+      contract_base_revision: ${{ github.event.pull_request.base.sha || github.sha }}
       contract_path: policy
     permissions:
       contents: read
@@ -35,8 +36,8 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-          filter: tree:0
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
@@ -44,6 +45,9 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Build generated API declarations
+        run: npx tsc -p libs/api/tsconfig.lib.json --pretty false
 
       - name: API contract check
         run: npm run api:contract:check
@@ -94,7 +98,7 @@ jobs:
 
       - name: Upload Chromium browser evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: browser-quality-chromium
           path: apps/dashboard-e2e/test-output/playwright/chromium
@@ -103,7 +107,7 @@ jobs:
 
       - name: Upload compatibility browser evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: browser-quality-compatibility
           path: apps/dashboard-e2e/test-output/playwright/compatibility
@@ -112,7 +116,7 @@ jobs:
 
       - name: Upload accessibility browser evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: browser-quality-accessibility
           path: apps/dashboard-e2e/test-output/playwright/accessibility
@@ -121,7 +125,7 @@ jobs:
 
       - name: Upload visual browser evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: browser-quality-visual
           path: apps/dashboard-e2e/test-output/playwright/visual
@@ -151,6 +155,7 @@ jobs:
           fetch-depth: 0
           filter: tree:0
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
@@ -159,6 +164,9 @@ jobs:
 
       - name: Install locked Node dependencies
         run: npm ci
+
+      - name: Build generated API declarations
+        run: npx tsc -p libs/api/tsconfig.lib.json --pretty false
 
       - name: API contract check
         run: npm run api:contract:check
@@ -187,7 +195,7 @@ jobs:
         run: cargo test -p api-rust --features postgres --test postgres_release_safety_postgres --locked -- --nocapture
         env:
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/convexa_test
-          RELEASE_GIT_SHA: ${{ github.sha }}
+          RELEASE_GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           POSTGRES_RELEASE_NEGATIVE_CONTROL_OUT: ${{ runner.temp }}/postgres-release-negative-control.json
 
       - name: Upload PostgreSQL release safety evidence
@@ -198,6 +206,66 @@ jobs:
           path: ${{ runner.temp }}/postgres-release-negative-control.json
           if-no-files-found: error
 
+      - name: Free debug build space
+        run: cargo clean
+
       # Matches Railway/Docker production image (`--features postgres`).
       - name: Cargo release build (postgres)
         run: cargo build -p api-rust --release --features postgres --locked
+
+  capacity-linux:
+    name: Capacity baseline (Linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install locked Node dependencies
+        run: npm ci
+
+      - name: Build generated API declarations
+        run: npx tsc -p libs/api/tsconfig.lib.json --pretty false
+
+      - name: Install baseline Rust 1.97.1
+        run: |
+          rustup toolchain install 1.97.1 --profile minimal --no-self-update
+          rustup default 1.97.1
+          rustc --version --verbose
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@aa7c1c80a07a27a84c0aa76d0cef0aad3830e330 # v2.7.8
+        with:
+          workspaces: |
+            . -> target
+
+      # Fixture-only capacity evidence is intentionally a separate Linux gate. It never
+      # contacts production or vendor services and is not a substitute for Windows evidence.
+      - name: Capacity focused tests
+        run: |
+          cargo test -p api-rust --test capacity_isolation --locked -- --nocapture
+          node --test tools/capacity-gate.spec.mjs
+
+      - name: Capacity self-tests and normal profile
+        run: |
+          npm run capacity:baseline:self-test:connector-poison
+          npm run capacity:baseline:self-test:optional-fault
+          npm run capacity:baseline:self-test:byte-identity
+          npm run capacity:baseline
+
+      - name: Upload capacity evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: capacity-baseline-linux
+          path: |
+            apps/api/data/capacity/capacity-baseline-normal.json
+            apps/api/data/capacity/self-tests/*.json
+          if-no-files-found: error

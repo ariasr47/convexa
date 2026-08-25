@@ -80,6 +80,13 @@ enum Commands {
         #[arg(long)]
         bind: Option<String>,
     },
+    /// Run the fixture-only capacity baseline.
+    CapacityBaseline {
+        #[arg(long, value_enum, default_value_t = api_rust::capacity::CapacityProfileArg::Normal)]
+        profile: api_rust::capacity::CapacityProfileArg,
+        #[command(subcommand)]
+        action: Option<api_rust::capacity::CapacityAction>,
+    },
     /// Apply the compiled PostgreSQL schema as an explicit release operation.
     #[cfg(feature = "postgres")]
     PostgresMigrate,
@@ -319,6 +326,7 @@ async fn main() -> ExitCode {
     }
     load_dotenv();
     tracing_subscriber::fmt()
+        .with_writer(std::io::stderr)
         .with_env_filter(
             EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
         )
@@ -361,6 +369,9 @@ fn guard_host_mode_before_dotenv() -> Result<
 
 async fn run(cli: Cli) -> anyhow::Result<()> {
     match cli.cmd {
+        Commands::CapacityBaseline { profile, action } => {
+            api_rust::capacity::cli(profile, action).await?;
+        }
         Commands::Fixture { path, json, check } => {
             let cfg = Config::from_env().unwrap_or_else(|_| Config {
                 massive_api_key: String::new(),

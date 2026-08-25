@@ -4,7 +4,13 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { runArtifacts } from './artifacts.mjs';
-import { inspectOciArchive, rawSha256Digest, subjectDigest } from './oci.mjs';
+import {
+  inspectOciArchive,
+  ociLayoutReference,
+  rawSha256Digest,
+  subjectDigest,
+  withExtractedOciArchive,
+} from './oci.mjs';
 import { archiveDirectory, validateTar } from './tar.mjs';
 
 test('dashboard archive is byte-deterministic and validates after safe extraction', async () => {
@@ -56,7 +62,7 @@ test('TAR validator blocks traversal, links, duplicate members, mutable time and
   assert.equal(validateTar(corrupt).rule_id, 'tar-checksum');
 });
 
-test('OCI subject identity comes from verified manifest descriptor, not TAR bytes', () => {
+test('OCI subject identity comes from verified manifest descriptor, not TAR bytes', async () => {
   const config = Buffer.from('{"architecture":"amd64","os":"linux"}'),
     layer = Buffer.from('layer');
   const configDigest = rawSha256Digest(config),
@@ -89,6 +95,18 @@ test('OCI subject identity comes from verified manifest descriptor, not TAR byte
   assert.equal(subjectDigest(archive), manifestDigest);
   assert.notEqual(subjectDigest(archive), rawSha256Digest(archive));
   assert.equal(inspectOciArchive(archive).archive_sha256, rawSha256Digest(archive).slice(7));
+  let extracted;
+  await withExtractedOciArchive(archive, async (layout) => {
+    extracted = layout;
+    assert.deepEqual(JSON.parse(await fs.readFile(path.join(layout, 'oci-layout'), 'utf8')), {
+      imageLayoutVersion: '1.0.0',
+    });
+    assert.deepEqual(
+      await fs.readFile(path.join(layout, 'blobs', 'sha256', layerDigest.slice(7))),
+      layer,
+    );
+  });
+  await assert.rejects(() => fs.stat(extracted), { code: 'ENOENT' });
 });
 
 test('OCI validator blocks descriptor hash, size and child-blob mutations', () => {
@@ -115,6 +133,12 @@ test('OCI validator blocks descriptor hash, size and child-blob mutations', () =
     '',
   );
   assert.throws(() => inspectOciArchive(archive), /oci-child-integrity/);
+});
+
+test('OCI layout scan references bind the verified manifest digest', () => {
+  const digest = `sha256:${'a'.repeat(64)}`;
+  assert.equal(ociLayoutReference('/tmp/layout', digest), `/tmp/layout@${digest}`);
+  assert.throws(() => ociLayoutReference('/tmp/layout', 'sha256:not-a-digest'));
 });
 
 test('artifact command blocks locally and rejects a stale run key before execution', async () => {

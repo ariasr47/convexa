@@ -1,4 +1,7 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { parseTar } from './tar.mjs';
 
 export function rawSha256Digest(bytes) {
@@ -43,6 +46,34 @@ export function inspectOciArchive(bytes) {
 
 export function subjectDigest(bytes) {
   return inspectOciArchive(bytes).subject_digest;
+}
+
+export function ociLayoutReference(layout, digest) {
+  if (typeof layout !== 'string' || !layout || !/^sha256:[0-9a-f]{64}$/.test(digest ?? ''))
+    throw new TypeError('oci-layout-reference');
+  return `${layout}@${digest}`;
+}
+
+export async function withExtractedOciArchive(bytes, operation) {
+  if (typeof operation !== 'function') throw new TypeError('oci-operation');
+  inspectOciArchive(bytes);
+  const entries = parseTar(bytes, { requiredPrefix: '', strict: false });
+  const layout = await fs.mkdtemp(path.join(os.tmpdir(), 'convexa-oci-layout-'));
+  try {
+    for (const entry of entries) {
+      const destination = path.resolve(layout, ...entry.name.split('/').filter(Boolean));
+      if (!destination.startsWith(`${path.resolve(layout)}${path.sep}`))
+        throw new TypeError('oci-extraction-path');
+      if (entry.type === 'directory') await fs.mkdir(destination, { recursive: true });
+      else {
+        await fs.mkdir(path.dirname(destination), { recursive: true });
+        await fs.writeFile(destination, entry.data, { flag: 'wx' });
+      }
+    }
+    return await operation(layout);
+  } finally {
+    await fs.rm(layout, { recursive: true, force: true });
+  }
 }
 function parseJson(bytes, label) {
   if (!bytes) throw new TypeError(`oci-${label}-missing`);
