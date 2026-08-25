@@ -22,7 +22,7 @@
 # ----------------------------------------------------------------------------
 # Stage 1 — builder: install the workspace + build the dashboard through Nx.
 # ----------------------------------------------------------------------------
-FROM node:24-alpine@sha256:d32cdf619f63fe0471182d08996dd516c6275bb5fd31ae06e55a570bd9e1ad43 AS builder
+FROM node:26-alpine@sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019 AS builder
 WORKDIR /app
 
 # Bring in the whole (dockerignore-filtered) workspace, then install. We copy
