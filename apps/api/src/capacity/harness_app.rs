@@ -3,7 +3,9 @@ use crate::error::AppResult;
 use crate::infrastructure::massive::{FixtureStreamProducer, StockStreamHub};
 use crate::routes;
 use crate::services::live_capacity::LifecycleProbe;
-use crate::services::market_data::{load_fixture_file, FixtureCatalog, MarketDataPort};
+use crate::services::market_data::{
+    load_fixture_dir, load_fixture_file, FixtureCatalog, MarketDataPort,
+};
 use crate::state::AppState;
 use axum::Router;
 use std::net::SocketAddr;
@@ -23,16 +25,52 @@ pub struct FixtureApp {
     pub router: Router,
 }
 
-pub async fn build(input: CapacityAppInput) -> AppResult<FixtureApp> {
-    // The capacity root also carries closed manifests and connector oracles;
-    // only the explicitly named market corpus is executable fixture input.
-    let market_path = input.fixture_dir.join("market.json");
+fn load_capacity_catalog(dir: &std::path::Path) -> AppResult<FixtureCatalog> {
+    let marker = dir.join("manifest.json");
+    let dedicated = marker.is_file()
+        && serde_json::from_str::<serde_json::Value>(
+            &std::fs::read_to_string(&marker).unwrap_or_default(),
+        )
+        .ok()
+        .and_then(|value| {
+            value
+                .get("version")
+                .and_then(|v| v.as_str())
+                .map(str::to_owned)
+        })
+        .as_deref()
+            == Some("capacity-baseline-v1");
+    if !dedicated {
+        return load_fixture_dir(dir);
+    }
+    let market_path = dir.join("market.json");
     let mut catalog = FixtureCatalog::default();
     load_fixture_file(&market_path, &mut catalog)?;
-    let conformance_path = input.fixture_dir.join("conformance.json");
+    let conformance_path = dir.join("conformance.json");
     if conformance_path.is_file() {
         load_fixture_file(&conformance_path, &mut catalog)?;
     }
+    Ok(catalog)
+}
+
+fn is_capacity_root(dir: &std::path::Path) -> bool {
+    let marker = dir.join("manifest.json");
+    marker.is_file()
+        && serde_json::from_str::<serde_json::Value>(
+            &std::fs::read_to_string(marker).unwrap_or_default(),
+        )
+        .ok()
+        .and_then(|value| {
+            value
+                .get("version")
+                .and_then(|v| v.as_str())
+                .map(|v| v == "capacity-baseline-v1")
+        })
+        .unwrap_or(false)
+}
+
+pub async fn build(input: CapacityAppInput) -> AppResult<FixtureApp> {
+    let catalog = load_capacity_catalog(&input.fixture_dir)?;
     if catalog.is_empty() {
         return Err(crate::error::AppError::Config(
             "capacity fixture catalog is empty".into(),
@@ -66,6 +104,11 @@ pub async fn build(input: CapacityAppInput) -> AppResult<FixtureApp> {
 }
 
 pub async fn serve(input: CapacityAppInput) -> AppResult<(SocketAddr, oneshot::Sender<()>)> {
+    let stream_symbol = if is_capacity_root(&input.fixture_dir) {
+        "SPY"
+    } else {
+        "SYN"
+    };
     let app = build(input).await?;
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let addr = listener.local_addr()?;
@@ -81,7 +124,7 @@ pub async fn serve(input: CapacityAppInput) -> AppResult<(SocketAddr, oneshot::S
     tokio::spawn(async move {
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
         let _ = producer.publish(StreamEvent {
-            symbol: "SPY".into(),
+            symbol: stream_symbol.into(),
             kind: StreamKind::Trade,
             ts_ns: 1,
             price: Some(500.0),
@@ -97,13 +140,41 @@ pub async fn serve(input: CapacityAppInput) -> AppResult<(SocketAddr, oneshot::S
 
 fn fixture_iv_history() -> Vec<quant_engine::IvSample> {
     (0..20)
-        .map(|i| quant_engine::IvSample {
-            ticker: "SPY".into(),
-            session_date: format!("2026-07-{:02}", i + 1),
-            iv_value: 18.0 + i as f64 * 0.25,
-            iv_basis: "interpolated_30d".into(),
-            basis_dte: 30.0,
-            captured_at: 1_750_000_000.0 + i as f64,
+        .flat_map(|i| {
+            ["SPY", "SYN"]
+                .into_iter()
+                .map(move |ticker| quant_engine::IvSample {
+                    ticker: ticker.into(),
+                    session_date: format!("2026-07-{:02}", i + 1),
+                    iv_value: 18.0 + i as f64 * 0.25,
+                    iv_basis: "interpolated_30d".into(),
+                    basis_dte: 30.0,
+                    captured_at: 1_750_000_000.0 + i as f64,
+                })
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::load_capacity_catalog;
+    use std::path::PathBuf;
+
+    #[test]
+    fn loader_supports_dedicated_and_legacy_fixture_roots() {
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let capacity = load_capacity_catalog(&root.join("tests/fixtures/capacity-baseline/v1"))
+            .expect("capacity corpus");
+        assert!(capacity.symbols().contains(&"SPY".to_owned()));
+        assert!(capacity.symbols().contains(&"COAL".to_owned()));
+        let legacy = load_capacity_catalog(&root.join("tests/fixtures/market"))
+            .expect("legacy market corpus");
+        assert!(legacy.symbols().contains(&"SYN".to_owned()));
+    }
+
+    #[test]
+    fn loader_rejects_invalid_fixture_root() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/does-not-exist");
+        assert!(load_capacity_catalog(&path).is_err());
+    }
 }
