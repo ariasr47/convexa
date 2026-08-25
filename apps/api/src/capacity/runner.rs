@@ -243,12 +243,11 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
                             child: id,
                             resource: ResourceSample {
                                 rss_bytes: resource.rss_bytes,
-                                // Accepted SSE sockets are intentional workload capacity, not
-                                // leaked process handles. Exclude the one-for-one SSE-task
-                                // transport floor so the +8 policy measures residual growth.
-                                handles_or_fds: resource
-                                    .handles_or_fds
-                                    .saturating_sub(life.active_sse_tasks),
+                                handles_or_fds: normalize_handles_or_fds(
+                                    resource.handles_or_fds,
+                                    life.active_requests,
+                                    life.active_sse_tasks,
+                                ),
                                 // SSE workers are reported separately; exclude those transport tasks from
                                 // the general Tokio-task ceiling so the 32-client stream hold does not look
                                 // like a scheduler leak. Any other spawned task remains visible here.
@@ -279,6 +278,24 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
 
 pub const fn child_runtime_limits() -> (usize, usize, u64) {
     (4, 4, 1)
+}
+
+fn normalize_handles_or_fds(
+    observed_handles_or_fds: u64,
+    active_requests: u64,
+    active_sse_tasks: u64,
+) -> u64 {
+    // The sampler sees intentional transport descriptors as well as leaked
+    // descriptors. Linux reports both REST and SSE sockets in /proc/<pid>/fd,
+    // so subtract the complete active-request floor exactly once. Windows
+    // keeps the prior handle policy and removes only the one-for-one SSE task
+    // floor. With no active lifecycle counters, the raw sampler value remains
+    // visible to the unchanged +8 leak threshold.
+    if cfg!(target_os = "linux") {
+        observed_handles_or_fds.saturating_sub(active_requests)
+    } else {
+        observed_handles_or_fds.saturating_sub(active_sse_tasks)
+    }
 }
 
 pub fn child_isolated_runtime(
@@ -1732,6 +1749,21 @@ mod protocol_tests {
             212
         );
         assert!(stabilized_sample(Some(&samples[..2].to_vec())).is_none());
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_fd_normalization_emits_only_residual_growth() {
+        assert_eq!(normalize_handles_or_fds(38, 14, 0), 24);
+        assert_eq!(normalize_handles_or_fds(140, 46, 32), 94);
+        assert_eq!(normalize_handles_or_fds(38, 0, 0), 38);
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn windows_handle_normalization_preserves_sse_only_policy() {
+        assert_eq!(normalize_handles_or_fds(38, 14, 32), 6);
+        assert_eq!(normalize_handles_or_fds(38, 0, 0), 38);
     }
 
     #[test]
