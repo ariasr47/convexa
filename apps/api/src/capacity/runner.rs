@@ -264,32 +264,45 @@ async fn prime_loopback(
     let concurrency = rest_concurrency.max(sse_concurrency).max(1);
     let base = format!("http://{addr}");
     let mut rest = Vec::with_capacity(rest_concurrency);
-    let rest_symbols: Vec<&str> = match child {
-        ChildId::D1 => D1_COLD_SYMBOLS.to_vec(),
-        ChildId::D2 => D2_PRIME_SYMBOLS.to_vec(),
-        ChildId::D3 => SHARED_SYMBOLS.to_vec(),
-        _ => vec![WARM_SYMBOL; rest_concurrency],
+    let rounds: Vec<(Vec<&str>, usize)> = match child {
+        ChildId::A => (0..4)
+            .map(|_| (vec![WARM_SYMBOL; rest_concurrency], rest_concurrency))
+            .collect(),
+        ChildId::D1 => vec![(D1_COLD_SYMBOLS.to_vec(), rest_concurrency)],
+        ChildId::D2 => vec![
+            (vec![WARM_SYMBOL; 5], 5),
+            (vec![WARM_SYMBOL; 200], 16),
+            (vec![COALESCED_SYMBOL; 32], 32),
+        ],
+        ChildId::D3 => vec![(
+            (0..rest_concurrency)
+                .map(|i| SHARED_SYMBOLS[i % SHARED_SYMBOLS.len()])
+                .collect(),
+            rest_concurrency,
+        )],
+        _ => vec![(vec![WARM_SYMBOL; rest_concurrency], rest_concurrency)],
     };
-    for _ in 0..prime_rest_rounds(child) {
+    for (symbols, round_concurrency) in rounds {
         // Match lane A's fresh client lifecycle: each drained round owns and
         // drops one transport pool before the next round begins.
         let client = reqwest::Client::builder()
             .pool_max_idle_per_host(concurrency)
             .build()?;
-        for index in 0..rest_concurrency {
-            let client = client.clone();
-            let symbol = rest_symbols[index % rest_symbols.len()];
-            let url = format!("{base}/api/ticker/{symbol}");
-            rest.push(tokio::spawn(async move { client.get(url).send().await }));
-        }
-        for task in rest.drain(..) {
-            let response = task.await??;
-            anyhow::ensure!(
-                response.status().is_success(),
-                "REST priming returned {}",
-                response.status()
-            );
-            let _ = response.bytes().await?;
+        for chunk in symbols.chunks(round_concurrency.max(1)) {
+            for symbol in chunk {
+                let client = client.clone();
+                let url = format!("{base}/api/ticker/{symbol}");
+                rest.push(tokio::spawn(async move { client.get(url).send().await }));
+            }
+            for task in rest.drain(..) {
+                let response = task.await??;
+                anyhow::ensure!(
+                    response.status().is_success(),
+                    "REST priming returned {}",
+                    response.status()
+                );
+                let _ = response.bytes().await?;
+            }
         }
     }
 
@@ -335,7 +348,7 @@ async fn prime_loopback(
     state.stock_hub.reset_fixture_state().await;
     let life = state.lifecycle_probe.snapshot();
     Ok((
-        rest_concurrency * prime_rest_rounds(child),
+        prime_rest_request_count(child, rest_concurrency),
         sse_concurrency,
         state.gex_cache.is_empty().await && state.prices.get_price(WARM_SYMBOL).await?.is_none(),
         life.active_requests == 0 && life.active_subscribers == 0 && life.active_sse_tasks == 0,
@@ -392,6 +405,13 @@ pub const fn prime_rest_rounds(child: ChildId) -> usize {
         4
     } else {
         1
+    }
+}
+pub const fn prime_rest_request_count(child: ChildId, concurrency: usize) -> usize {
+    match child {
+        ChildId::A => concurrency * 4,
+        ChildId::D2 => 237,
+        _ => concurrency,
     }
 }
 
