@@ -421,7 +421,7 @@ pub const fn absent_symbol() -> &'static str {
 pub const fn d2_prime_symbols() -> [&'static str; 5] {
     D2_PRIME_SYMBOLS
 }
-pub const fn prime_rest_rounds(child: ChildId) -> usize {
+pub const fn prime_rest_rounds(_child: ChildId) -> usize {
     1
 }
 pub const fn prime_rest_request_count(child: ChildId, concurrency: usize) -> usize {
