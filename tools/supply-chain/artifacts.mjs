@@ -112,16 +112,19 @@ export async function runArtifacts({
     return { ...base, rule_id: 'artifact-host-required' };
   const out = path.join(root, '.supply-chain', 'out');
   await fs.mkdir(out, { recursive: true });
+  let stage = 'tool-acquisition';
   try {
     const tools = await verifyOrAcquireTools({ root }),
       syft = tools.resolved.get('syft'),
       trivy = tools.resolved.get('trivy');
     if (!tools.complete || !syft || !trivy) throw new Blocked('artifact-tools-unavailable');
+    stage = 'docker-probe';
     const docker = await runner('docker', ['version', '--format', '{{.Server.Version}}'], {
       cwd: root,
       timeoutMs: 30000,
     });
     if (docker.raw_exit_code !== 0) throw new Blocked('docker-unavailable');
+    stage = 'api-build';
     const apiArchive = path.join(out, 'api-production-image.oci.tar');
     await fs.rm(apiArchive, { force: true });
     const apiBuild = await runner(
@@ -140,19 +143,23 @@ export async function runArtifacts({
       { cwd: root, timeoutMs: 1200000, maxOutputBytes: 4 * 1024 * 1024 },
     );
     if (apiBuild.raw_exit_code !== 0) throw new Blocked('api-build-failed');
+    stage = 'api-read';
     const apiBytes = await fs.readFile(apiArchive),
       apiDigest = subjectDigest(apiBytes);
+    stage = 'dashboard-build';
     const dashboardBuild = await runner('npm', ['run', 'build:dashboard'], {
       cwd: root,
       timeoutMs: 600000,
       maxOutputBytes: 4 * 1024 * 1024,
     });
     if (dashboardBuild.raw_exit_code !== 0) throw new Blocked('dashboard-build-failed');
+    stage = 'dashboard-archive';
     const dashboardArchive = await archiveDirectory(path.join(root, 'apps', 'dashboard', 'dist')),
       dashboardFile = path.join(out, 'dashboard-distribution.tar');
     await fs.writeFile(dashboardFile, dashboardArchive.bytes);
     const dashboardValidation = validateTar(dashboardArchive.bytes);
     if (dashboardValidation.state !== 'pass') throw new Blocked('dashboard-archive-invalid');
+    stage = 'component-derivation';
     const packageLock = JSON.parse(await fs.readFile(path.join(root, 'package-lock.json'))),
       dashboardExpected = deriveNpmComponents({
         lock: packageLock,
@@ -201,6 +208,7 @@ export async function runArtifacts({
         ),
       },
     });
+    stage = 'inventory-evaluation';
     const [apiGenerated, dashboardGenerated, scan] = await Promise.all([
       generateInventoryWithSyft({
         executable: syft,
@@ -229,6 +237,7 @@ export async function runArtifacts({
       scan.state === 'blocked'
     )
       throw new Blocked('artifact-evaluation-unavailable');
+    stage = 'artifact-validation';
     const apiValidation = validateArtifact({
         subject: 'api-production-image',
         bytes: apiBytes,
@@ -243,17 +252,20 @@ export async function runArtifacts({
         expected: dashboardExpected,
         requiredSeeds: DASHBOARD_SEEDS,
       });
+    stage = 'evidence-hash';
     const policySha256 = await policyHash(root),
       sourceInputsSha256 = await sourceHash(root),
       now = new Date().toISOString(),
       buildRunId = environment.GITHUB_RUN_ID_SAFE;
     const apiInventoryBytes = Buffer.from(`${JSON.stringify(apiGenerated.inventory)}\n`),
       dashboardInventoryBytes = Buffer.from(`${JSON.stringify(dashboardGenerated.inventory)}\n`);
+    stage = 'inventory-write';
     await fs.writeFile(path.join(out, 'api-dependency-inventory.cdx.json'), apiInventoryBytes);
     await fs.writeFile(
       path.join(out, 'dashboard-dependency-inventory.cdx.json'),
       dashboardInventoryBytes,
     );
+    stage = 'receipt-build';
     const apiReceipt = receipt({
       subjectId: 'api-production-image',
       kind: 'oci_image',
@@ -288,6 +300,7 @@ export async function runArtifacts({
       archiveValidation: canonicalSha256(dashboardValidation),
       validation: dashboardArtifactValidation.state,
     });
+    stage = 'receipt-write';
     await fs.writeFile(
       path.join(out, 'api-inventory-receipt.json'),
       `${JSON.stringify(apiReceipt)}\n`,
@@ -296,6 +309,7 @@ export async function runArtifacts({
       path.join(out, 'dashboard-inventory-receipt.json'),
       `${JSON.stringify(dashboardReceipt)}\n`,
     );
+    stage = 'aggregate';
     const checks = [
         artifactCheck('api_image', 'trivy', scan),
         artifactCheck('api_dependency_inventory', 'syft', apiValidation),
@@ -327,7 +341,7 @@ export async function runArtifacts({
   } catch (error) {
     return {
       ...base,
-      rule_id: error instanceof Blocked ? error.message : 'artifact-internal-error',
+      rule_id: error instanceof Blocked ? error.message : `artifact-internal-${stage}`,
     };
   }
 }

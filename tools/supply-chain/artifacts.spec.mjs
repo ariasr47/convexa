@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -11,6 +13,7 @@ import {
   subjectDigest,
   withExtractedOciArchive,
 } from './oci.mjs';
+import { runKey } from './run-key.mjs';
 import { archiveDirectory, validateTar } from './tar.mjs';
 
 test('dashboard archive is byte-deterministic and validates after safe extraction', async () => {
@@ -149,6 +152,60 @@ test('artifact command blocks locally and rejects a stale run key before executi
   });
   assert.equal(local.aggregate, 'blocked');
   assert.equal(local.rule_id, 'artifact-input');
+});
+
+test('unexpected artifact failures identify a safe stage without exposing the raw error', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sca-internal-stage-'));
+  try {
+    const toolBytes = Buffer.from('repository tool stub\n');
+    await fs.mkdir(path.join(root, '.supply-chain'));
+    await fs.writeFile(path.join(root, 'tool-stub'), toolBytes);
+    await fs.writeFile(
+      path.join(root, '.supply-chain', 'tools.json'),
+      JSON.stringify({
+        schema_version: 1,
+        tools: ['syft', 'trivy', ...Array.from({ length: 8 }, (_, index) => `stub-${index}`)].map(
+          (tool_id) => ({
+            tool_id,
+            version: 'test',
+            source_kind: 'repository',
+            source_locator: 'tool-stub',
+            sha256: crypto.createHash('sha256').update(toolBytes).digest('hex'),
+            platform: 'all',
+            capabilities: ['test'],
+          }),
+        ),
+      }),
+    );
+    execFileSync('git', ['init'], { cwd: root });
+    execFileSync('git', ['config', 'user.name', 'Convexa Test'], { cwd: root });
+    execFileSync('git', ['config', 'user.email', 'test@convexa.invalid'], { cwd: root });
+    execFileSync('git', ['add', '.'], { cwd: root });
+    execFileSync('git', ['commit', '-m', 'fixture'], { cwd: root });
+    const revision = execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: root,
+      encoding: 'utf8',
+    }).trim();
+    const report = await runArtifacts({
+      event: 'workflow_dispatch',
+      pathName: 'artifacts',
+      runKey: runKey('workflow_dispatch', revision, 'artifacts', [
+        'api-production-image',
+        'dashboard-distribution-archive',
+      ]),
+      root,
+      environment: { GITHUB_ACTIONS: 'true', GITHUB_RUN_ID_SAFE: '1' },
+      platform: 'linux',
+      arch: 'x64',
+      runner: async () => {
+        throw new Error('sensitive runner detail');
+      },
+    });
+    assert.equal(report.rule_id, 'artifact-internal-docker-probe');
+    assert.doesNotMatch(JSON.stringify(report), /sensitive runner detail/);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
 });
 
 function ustar(entries, requiredPrefix = 'dist/') {
