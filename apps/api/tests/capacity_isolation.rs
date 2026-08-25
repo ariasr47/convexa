@@ -155,7 +155,9 @@ fn linux_ci_runs_normal_gate_and_retains_all_four_reports() {
     assert!(ci.contains("npm run capacity:baseline:self-test:connector-poison"));
     assert!(ci.contains("npm run capacity:baseline:self-test:optional-fault"));
     assert!(ci.contains("npm run capacity:baseline:self-test:byte-identity"));
-    assert!(ci.contains("npm run capacity:baseline\n"));
+    assert!(ci
+        .lines()
+        .any(|line| line.trim() == "npm run capacity:baseline"));
     assert!(ci.contains("apps/api/data/capacity/capacity-baseline-normal.json"));
     assert!(ci.contains("apps/api/data/capacity/self-tests/*.json"));
 }
