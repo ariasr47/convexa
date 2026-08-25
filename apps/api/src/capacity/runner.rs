@@ -402,7 +402,7 @@ pub const fn d2_prime_symbols() -> [&'static str; 5] {
 }
 pub const fn prime_rest_rounds(child: ChildId) -> usize {
     if matches!(child, ChildId::A) {
-        4
+        8
     } else {
         1
     }
