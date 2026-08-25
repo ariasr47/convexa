@@ -374,7 +374,7 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
         match workload {
             Ok(Ok(mut rows)) => {
                 if let Some(soak) = rows.get_mut(&ScenarioId::MixedSoak) {
-                    soak["resource_samples"] = json!(soak_samples.iter().map(|tick| json!({"children": tick.iter().map(|(id,s)| json!({"child":id.token(),"sample":s})).collect::<Vec<_>>(), "aggregate": aggregate_samples(tick)})).collect::<Vec<_>>());
+                    soak["resource_samples"] = json!(soak_samples.iter().map(|tick| json!({"baseline": baselines, "children": tick.iter().map(|(id,s)| json!({"child":id.token(),"sample":s})).collect::<Vec<_>>(), "aggregate": aggregate_samples(tick)})).collect::<Vec<_>>());
                 }
                 evidence = rows
             }
@@ -1073,9 +1073,11 @@ fn evaluate(id: ScenarioId, observation: &Value, profile: Profile) -> (bool, Vec
                     .is_some_and(|v| {
                         v.len() >= seconds as usize
                             && v.iter().all(|tick| {
-                                tick.get("children")
-                                    .and_then(Value::as_array)
-                                    .is_some_and(|c| c.len() == 7)
+                                tick.get("baseline").is_some_and(Value::is_object)
+                                    && tick
+                                        .get("children")
+                                        .and_then(Value::as_array)
+                                        .is_some_and(|c| c.len() == 7)
                                     && tick.get("aggregate").is_some()
                             })
                     }),
