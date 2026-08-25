@@ -72,6 +72,16 @@ impl StockStreamHub {
         )
     }
 
+    /// Construct a fixture-only hub. The returned producer is the only way to
+    /// publish events; no vendor worker is started or reachable from this arm.
+    pub fn fixture(cfg: &Config) -> (Self, FixtureStreamProducer, StockStreamWorkerStarter) {
+        let (hub, _worker) = Self::dormant(cfg);
+        let producer = FixtureStreamProducer {
+            inner: Arc::clone(&hub.inner),
+        };
+        (hub, producer, StockStreamWorkerStarter::disabled())
+    }
+
     /// Ensure `symbols` are on the shared socket.
     pub async fn subscribe(&self, symbols: &[String]) -> AppResult<()> {
         let mut up: Vec<String> = symbols
@@ -117,6 +127,47 @@ impl StockStreamHub {
     }
 }
 
+/// Private-child event source for fixture harnesses. It has no network
+/// operations and only forwards caller-supplied events to the existing bus.
+#[derive(Clone)]
+pub struct FixtureStreamProducer {
+    inner: Arc<HubInner>,
+}
+
+#[cfg(test)]
+mod fixture_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn fixture_hub_publishes_without_starting_worker() {
+        let cfg = crate::state::test_stub_config();
+        let (hub, producer, worker) = StockStreamHub::fixture(&cfg);
+        let mut rx = hub.subscribe_events();
+        worker.start();
+        let event = StreamEvent {
+            symbol: "SPY".into(),
+            kind: StreamKind::Trade,
+            ts_ns: 1,
+            price: Some(500.0),
+            size: Some(1.0),
+            bid: None,
+            ask: None,
+            bid_size: None,
+            ask_size: None,
+        };
+        producer
+            .publish(event.clone())
+            .expect("fixture receiver exists");
+        assert_eq!(rx.recv().await.expect("fixture event").symbol, event.symbol);
+    }
+}
+
+impl FixtureStreamProducer {
+    pub fn publish(&self, event: StreamEvent) -> Result<(), StreamEvent> {
+        self.inner.event_tx.send(event).map(|_| ()).map_err(|e| e.0)
+    }
+}
+
 pub struct StockStreamWorker {
     inner: Arc<HubInner>,
     cmd_rx: mpsc::UnboundedReceiver<HubCmd>,
@@ -133,6 +184,12 @@ impl StockStreamWorkerStarter {
     pub fn new(worker: StockStreamWorker) -> Self {
         Self {
             worker: Mutex::new(Some(worker)),
+        }
+    }
+
+    pub fn disabled() -> Self {
+        Self {
+            worker: Mutex::new(None),
         }
     }
     pub fn start(&self) {

@@ -8,4 +8,4 @@ pub mod ws;
 
 pub use market_phase::resolve_gex_spot;
 pub use rest::{MassiveRestClient, QuoteFillCounts, StockFastSnapshot};
-pub use ws::{MassiveStockStream, StockStreamHub, StockStreamWorkerStarter};
+pub use ws::{FixtureStreamProducer, MassiveStockStream, StockStreamHub, StockStreamWorkerStarter};
