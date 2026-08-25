@@ -8,6 +8,10 @@ pub mod manifest;
 pub mod model;
 pub mod report;
 pub mod resources;
+pub mod rest;
+pub mod runner;
+pub mod self_test;
+pub mod sse;
 
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
 pub enum CapacityProfileArg {
@@ -27,11 +31,12 @@ pub async fn cli(
     action: Option<CapacityAction>,
 ) -> anyhow::Result<()> {
     match action {
-        Some(CapacityAction::SelfTest { case }) => {
-            anyhow::bail!("capacity self-test {case:?} is not available in this build")
-        }
-        Some(CapacityAction::Child) => anyhow::bail!("capacity child mode is private"),
-        None => anyhow::bail!("capacity profile {profile:?} runner is not available in this build"),
+        Some(CapacityAction::SelfTest { case }) => self_test::run(case),
+        Some(CapacityAction::Child { .. }) => anyhow::bail!("capacity child mode is private"),
+        None => runner::run(match profile {
+            CapacityProfileArg::Normal => Profile::Normal,
+            CapacityProfileArg::Extended => Profile::Extended,
+        }),
     }
 }
 
@@ -42,7 +47,12 @@ pub enum CapacityAction {
         case: CapacitySelfTestCase,
     },
     #[command(hide = true)]
-    Child,
+    Child {
+        #[arg(long)]
+        child: Option<String>,
+        #[arg(long)]
+        control_fd: Option<u32>,
+    },
 }
 
 pub use manifest::{

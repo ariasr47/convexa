@@ -47,6 +47,31 @@
         "cwd": "{workspaceRoot}"
       },
       "cache": false
+    },
+    "capacity-baseline": {
+      "executor": "nx:run-commands",
+      "options": { "command": "cargo run -p api-rust -- capacity-baseline", "cwd": "{workspaceRoot}" },
+      "cache": false
+    },
+    "capacity-baseline-extended": {
+      "executor": "nx:run-commands",
+      "options": { "command": "cargo run -p api-rust -- capacity-baseline --profile extended", "cwd": "{workspaceRoot}" },
+      "cache": false
+    },
+    "capacity-baseline-self-test-connector-poison": {
+      "executor": "nx:run-commands",
+      "options": { "command": "cargo run -p api-rust -- capacity-baseline self-test --case connector-poison", "cwd": "{workspaceRoot}" },
+      "cache": false
+    },
+    "capacity-baseline-self-test-optional-fault": {
+      "executor": "nx:run-commands",
+      "options": { "command": "cargo run -p api-rust -- capacity-baseline self-test --case optional-fault", "cwd": "{workspaceRoot}" },
+      "cache": false
+    },
+    "capacity-baseline-self-test-byte-identity": {
+      "executor": "nx:run-commands",
+      "options": { "command": "cargo run -p api-rust -- capacity-baseline self-test --case byte-identity", "cwd": "{workspaceRoot}" },
+      "cache": false
     }
   }
 }
