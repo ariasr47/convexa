@@ -349,11 +349,23 @@ pub const fn mixed_soak_sample_target(profile: Profile) -> usize {
     }
 }
 
-pub const fn workload_timeout(profile: Profile) -> std::time::Duration {
+const EXTENDED_WORKLOAD_OVERHEAD_SECONDS: u64 = 60;
+
+pub fn workload_timeout(profile: Profile) -> std::time::Duration {
     match profile {
         Profile::Normal => std::time::Duration::from_secs(70),
-        // Ten seconds of bounded scheduling/IPC margin over the 15-minute soak.
-        Profile::Extended => std::time::Duration::from_secs(910),
+        // The 15-minute soak performs real REST work and one-second IPC
+        // sampling ticks. Keep a bounded 60-second harness margin over the
+        // closed manifest duration; this is not a workload extension.
+        Profile::Extended => {
+            let soak_seconds = manifest(Profile::Extended)
+                .scenarios
+                .iter()
+                .find(|scenario| scenario.id == ScenarioId::MixedSoak)
+                .map(|scenario| scenario.soak_seconds)
+                .expect("extended mixed soak manifest row");
+            std::time::Duration::from_secs(soak_seconds + EXTENDED_WORKLOAD_OVERHEAD_SECONDS)
+        }
     }
 }
 

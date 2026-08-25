@@ -93,7 +93,11 @@ fn extended_schedule_keeps_sixty_second_hold_and_nine_hundred_samples() {
     assert_eq!(runner::mixed_soak_sample_target(Profile::Extended), 900);
     assert_eq!(
         runner::workload_timeout(Profile::Extended),
-        Duration::from_secs(910)
+        Duration::from_secs(960)
+    );
+    assert_eq!(
+        runner::workload_timeout(Profile::Extended),
+        Duration::from_secs(extended.scenarios[9].soak_seconds + 60)
     );
     assert_eq!(
         runner::workload_timeout(Profile::Normal),
