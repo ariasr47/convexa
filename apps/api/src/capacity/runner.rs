@@ -857,6 +857,53 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Exercise the production failure-report path without starting a workload.
+/// This is a private Rust-process control used by the failure matrix; it always
+/// retains a complete did_not_pass report before returning a non-zero result.
+pub async fn run_setup_failure(profile: Profile, stage: &str) -> anyhow::Result<()> {
+    let mut report = build_report(profile, 1);
+    report["summary"]["failure_stage"] = json!(stage);
+    report["summary"]["failed_scenarios"] = json!(ScenarioId::ALL
+        .iter()
+        .map(|id| id.token())
+        .collect::<Vec<_>>());
+    report["summary"]["missing_required_observations"] =
+        report["summary"]["failed_scenarios"].clone();
+    report["summary"]["verdict"] = json!("did_not_pass");
+    atomic_replace_value(&report_path(profile), &serde_json::to_vec(&report)?)?;
+    anyhow::bail!("capacity setup failure: {stage}")
+}
+
+/// Build the same complete report envelope used by the live runner around one
+/// deliberately controlled observation. The matrix tests use this to prove a
+/// breached value and its blocking threshold survive report serialization.
+pub fn controlled_report(profile: Profile, id: ScenarioId, observation: Value) -> Value {
+    let baseline = ResourceSample {
+        rss_bytes: 1,
+        handles_or_fds: 1,
+        tokio_tasks: 0,
+        active_requests: 0,
+        active_subscribers: 0,
+        active_sse_tasks: 0,
+    };
+    let baselines = ChildId::ALL
+        .into_iter()
+        .map(|child| (child, baseline))
+        .collect::<BTreeMap<_, _>>();
+    let priming = ChildId::ALL
+        .into_iter()
+        .map(|child| {
+            (
+                child,
+                json!({"cache_empty": true, "lifecycle_zero": true, "hub_symbols": 0}),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    let mut evidence = BTreeMap::new();
+    evidence.insert(id, observation);
+    build_report_from_evidence(profile, 1, &evidence, None, &baselines, &priming)
+}
+
 fn prime_plan(id: ChildId) -> (usize, usize) {
     match id {
         ChildId::A => (16, 32),

@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 fn root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/capacity/self-tests")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("data/capacity/self-tests")
 }
 
 pub fn run(case: super::CapacitySelfTestCase) -> anyhow::Result<()> {

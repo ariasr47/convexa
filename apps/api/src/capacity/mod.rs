@@ -43,6 +43,9 @@ pub async fn cli(
             fixture_dir.ok_or_else(|| anyhow::anyhow!("fixture directory is required"))?,
             iv_fault,
         ),
+        Some(CapacityAction::Failure { stage }) => {
+            runner::run_setup_failure(Profile::Normal, &stage).await
+        }
         None => {
             runner::run(match profile {
                 CapacityProfileArg::Normal => Profile::Normal,
@@ -67,6 +70,11 @@ pub enum CapacityAction {
         fixture_dir: Option<std::path::PathBuf>,
         #[arg(long, default_value_t = false)]
         iv_fault: bool,
+    },
+    #[command(hide = true)]
+    Failure {
+        #[arg(long)]
+        stage: String,
     },
 }
 
