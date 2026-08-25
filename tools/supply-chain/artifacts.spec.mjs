@@ -6,6 +6,7 @@ import test from 'node:test';
 import { runArtifacts } from './artifacts.mjs';
 import {
   inspectOciArchive,
+  ociLayoutReference,
   rawSha256Digest,
   subjectDigest,
   withExtractedOciArchive,
@@ -132,6 +133,12 @@ test('OCI validator blocks descriptor hash, size and child-blob mutations', () =
     '',
   );
   assert.throws(() => inspectOciArchive(archive), /oci-child-integrity/);
+});
+
+test('OCI layout scan references bind the verified manifest digest', () => {
+  const digest = `sha256:${'a'.repeat(64)}`;
+  assert.equal(ociLayoutReference('/tmp/layout', digest), `/tmp/layout@${digest}`);
+  assert.throws(() => ociLayoutReference('/tmp/layout', 'sha256:not-a-digest'));
 });
 
 test('artifact command blocks locally and rejects a stale run key before execution', async () => {

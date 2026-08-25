@@ -48,6 +48,12 @@ export function subjectDigest(bytes) {
   return inspectOciArchive(bytes).subject_digest;
 }
 
+export function ociLayoutReference(layout, digest) {
+  if (typeof layout !== 'string' || !layout || !/^sha256:[0-9a-f]{64}$/.test(digest ?? ''))
+    throw new TypeError('oci-layout-reference');
+  return `${layout}@${digest}`;
+}
+
 export async function withExtractedOciArchive(bytes, operation) {
   if (typeof operation !== 'function') throw new TypeError('oci-operation');
   inspectOciArchive(bytes);

@@ -6,7 +6,7 @@ import { verifyOrAcquireTools } from './acquire-tools.mjs';
 import { canonicalSha256 } from './lib/canonical.mjs';
 import { spawnCaptured } from './lib/process.mjs';
 import { normalize } from './normalize.mjs';
-import { subjectDigest, withExtractedOciArchive } from './oci.mjs';
+import { ociLayoutReference, subjectDigest, withExtractedOciArchive } from './oci.mjs';
 import { runCargoDeny } from './policy/cargo-deny.mjs';
 import { runGitleaks } from './policy/gitleaks.mjs';
 import { runNpmAudit } from './policy/npm-audit.mjs';
@@ -335,7 +335,12 @@ async function productionAdapter(capabilityId, fixture, tool) {
         digest = subjectDigest(archiveBytes);
       return withExtractedOciArchive(archiveBytes, async (layout) =>
         wrap(
-          await runTrivyImage({ executable: tool.executable, digest, input: layout, cwd: root }),
+          await runTrivyImage({
+            executable: tool.executable,
+            digest,
+            input: ociLayoutReference(layout, digest),
+            cwd: root,
+          }),
         ),
       );
     });
