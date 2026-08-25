@@ -74,7 +74,16 @@ fn workload_fixture_roles_are_multi_symbol_and_closed() {
     assert_eq!(runner::absent_symbol(), "NOFIX");
     assert!(runner::d2_prime_symbols().contains(&runner::warm_symbol()));
     assert!(runner::d2_prime_symbols().contains(&runner::coalesced_symbol()));
-    assert_eq!(runner::prime_rest_rounds(ChildId::A), 8);
+    assert_eq!(runner::prime_rest_rounds(ChildId::A), 1);
+    let queries = runner::a_prime_queries();
+    assert_eq!(queries.len(), 16);
+    assert_eq!(
+        queries
+            .iter()
+            .collect::<std::collections::HashSet<_>>()
+            .len(),
+        16
+    );
     assert_eq!(runner::prime_rest_rounds(ChildId::D1), 1);
     assert_eq!(runner::prime_rest_request_count(ChildId::D2, 32), 237);
     assert!(!runner::d1_cold_symbols().contains(&runner::warm_symbol()));

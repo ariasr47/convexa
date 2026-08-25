@@ -28,6 +28,24 @@ const SHARED_SYMBOLS: [&str; 8] = [
 const WARM_SYMBOL: &str = "SPY";
 const COALESCED_SYMBOL: &str = "COAL";
 const ABSENT_SYMBOL: &str = "NOFIX";
+const A_PRIME_QUERIES: [&str; 16] = [
+    "?min_dte=7&max_dte=45",
+    "?min_dte=7&max_dte=46",
+    "?min_dte=7&max_dte=47",
+    "?min_dte=7&max_dte=48",
+    "?min_dte=7&max_dte=49",
+    "?min_dte=7&max_dte=50",
+    "?min_dte=7&max_dte=51",
+    "?min_dte=7&max_dte=52",
+    "?min_dte=7&max_dte=53",
+    "?min_dte=7&max_dte=54",
+    "?min_dte=7&max_dte=55",
+    "?min_dte=7&max_dte=56",
+    "?min_dte=7&max_dte=57",
+    "?min_dte=7&max_dte=58",
+    "?min_dte=7&max_dte=59",
+    "?min_dte=7&max_dte=60",
+];
 const D2_PRIME_SYMBOLS: [&str; 5] = [
     WARM_SYMBOL,
     WARM_SYMBOL,
@@ -265,9 +283,7 @@ async fn prime_loopback(
     let base = format!("http://{addr}");
     let mut rest = Vec::with_capacity(rest_concurrency);
     let rounds: Vec<(Vec<&str>, usize)> = match child {
-        ChildId::A => (0..8)
-            .map(|_| (vec![WARM_SYMBOL; rest_concurrency], rest_concurrency))
-            .collect(),
+        ChildId::A => vec![(vec![WARM_SYMBOL; rest_concurrency], rest_concurrency)],
         ChildId::D1 => vec![(D1_COLD_SYMBOLS.to_vec(), rest_concurrency)],
         ChildId::D2 => vec![
             (vec![WARM_SYMBOL; 5], 5),
@@ -289,9 +305,14 @@ async fn prime_loopback(
             .pool_max_idle_per_host(concurrency)
             .build()?;
         for chunk in symbols.chunks(round_concurrency.max(1)) {
-            for symbol in chunk {
+            for (index, symbol) in chunk.iter().enumerate() {
                 let client = client.clone();
-                let url = format!("{base}/api/ticker/{symbol}");
+                let query = if child == ChildId::A {
+                    A_PRIME_QUERIES[index]
+                } else {
+                    ""
+                };
+                let url = format!("{base}/api/ticker/{symbol}{query}");
                 rest.push(tokio::spawn(async move { client.get(url).send().await }));
             }
             for task in rest.drain(..) {
@@ -401,18 +422,17 @@ pub const fn d2_prime_symbols() -> [&'static str; 5] {
     D2_PRIME_SYMBOLS
 }
 pub const fn prime_rest_rounds(child: ChildId) -> usize {
-    if matches!(child, ChildId::A) {
-        8
-    } else {
-        1
-    }
+    1
 }
 pub const fn prime_rest_request_count(child: ChildId, concurrency: usize) -> usize {
     match child {
-        ChildId::A => concurrency * 8,
+        ChildId::A => concurrency,
         ChildId::D2 => 237,
         _ => concurrency,
     }
+}
+pub const fn a_prime_queries() -> [&'static str; 16] {
+    A_PRIME_QUERIES
 }
 
 /// The closed profile timings are policy inputs shared by scheduling and tests.
