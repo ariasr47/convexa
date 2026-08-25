@@ -201,3 +201,27 @@ jobs:
       # Matches Railway/Docker production image (`--features postgres`).
       - name: Cargo release build (postgres)
         run: cargo build -p api-rust --release --features postgres --locked
+
+      # Fixture-only capacity evidence is intentionally a separate Linux gate. It never
+      # contacts production or vendor services and is not a substitute for Windows evidence.
+      - name: Capacity focused tests
+        run: |
+          cargo test -p api-rust --test capacity_isolation --locked -- --nocapture
+          node --test tools/capacity-gate.spec.mjs
+
+      - name: Capacity self-tests and normal profile
+        run: |
+          npm run capacity:baseline:self-test:connector-poison
+          npm run capacity:baseline:self-test:optional-fault
+          npm run capacity:baseline:self-test:byte-identity
+          npm run capacity:baseline
+
+      - name: Upload capacity evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: capacity-baseline-linux
+          path: |
+            apps/api/data/capacity/capacity-baseline-normal.json
+            apps/api/data/capacity/self-tests/*.json
+          if-no-files-found: error
