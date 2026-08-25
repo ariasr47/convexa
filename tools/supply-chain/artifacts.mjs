@@ -360,11 +360,20 @@ export async function runArtifacts({
       created_at: now,
     };
   } catch (error) {
+    if (!(error instanceof Blocked)) {
+      process.stderr.write(`artifact internal failure: ${stage} @ ${internalLocation(error)}\n`);
+    }
     return {
       ...base,
       rule_id: error instanceof Blocked ? error.message : `artifact-internal-${stage}`,
     };
   }
+}
+
+function internalLocation(error) {
+  const stack = String(error?.stack ?? '');
+  const match = stack.match(/[\\/]tools[\\/]supply-chain[\\/]([a-z0-9.-]+\.mjs):(\d+):\d+/i);
+  return match ? `${match[1]}:${match[2]}` : 'unknown';
 }
 
 function receipt({
