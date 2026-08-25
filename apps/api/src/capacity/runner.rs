@@ -374,7 +374,7 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
         match workload {
             Ok(Ok(mut rows)) => {
                 if let Some(soak) = rows.get_mut(&ScenarioId::MixedSoak) {
-                    soak["resource_samples"] = json!(soak_samples.iter().map(|tick| json!({"baseline": baselines, "children": tick.iter().map(|(id,s)| json!({"child":id.token(),"sample":s})).collect::<Vec<_>>(), "aggregate": aggregate_samples(tick)})).collect::<Vec<_>>());
+                    soak["resource_samples"] = json!(soak_samples.iter().map(|tick| json!({"baseline": baselines, "baseline_aggregate": aggregate_samples(&baselines), "children": tick.iter().map(|(id,s)| json!({"child":id.token(),"sample":s})).collect::<Vec<_>>(), "aggregate": aggregate_samples(tick)})).collect::<Vec<_>>());
                 }
                 evidence = rows
             }
@@ -855,6 +855,56 @@ fn evaluate_latency(
     }
 }
 
+fn valid_resource_tick(tick: &Value) -> bool {
+    let baseline = match tick.get("baseline").and_then(Value::as_object) {
+        Some(v) => v,
+        None => return false,
+    };
+    let children = match tick.get("children").and_then(Value::as_array) {
+        Some(v) if v.len() == 7 => v,
+        _ => return false,
+    };
+    if !children.iter().all(|row| {
+        let id = row.get("child").and_then(Value::as_str).unwrap_or("");
+        let b = baseline.get(id).and_then(Value::as_object);
+        let s = row.get("sample").and_then(Value::as_object);
+        b.zip(s).is_some_and(|(b, s)| {
+            s.get("rss_bytes").and_then(Value::as_u64).is_some_and(|v| {
+                v <= b.get("rss_bytes").and_then(Value::as_u64).unwrap_or(0) + 128 * 1024 * 1024
+            }) && s
+                .get("handles_or_fds")
+                .and_then(Value::as_u64)
+                .is_some_and(|v| {
+                    v <= b.get("handles_or_fds").and_then(Value::as_u64).unwrap_or(0) + 8
+                })
+                && s.get("tokio_tasks")
+                    .and_then(Value::as_u64)
+                    .is_some_and(|v| {
+                        v <= b.get("tokio_tasks").and_then(Value::as_u64).unwrap_or(0) + 8
+                    })
+        })
+    }) {
+        return false;
+    }
+    let b = match tick.get("baseline_aggregate").and_then(Value::as_object) {
+        Some(v) => v,
+        None => return false,
+    };
+    let s = match tick.get("aggregate").and_then(Value::as_object) {
+        Some(v) => v,
+        None => return false,
+    };
+    s.get("rss_bytes").and_then(Value::as_u64).is_some_and(|v| {
+        v <= b.get("rss_bytes").and_then(Value::as_u64).unwrap_or(0) + 128 * 1024 * 1024
+    }) && s
+        .get("handles_or_fds")
+        .and_then(Value::as_u64)
+        .is_some_and(|v| v <= b.get("handles_or_fds").and_then(Value::as_u64).unwrap_or(0) + 8)
+        && s.get("tokio_tasks")
+            .and_then(Value::as_u64)
+            .is_some_and(|v| v <= b.get("tokio_tasks").and_then(Value::as_u64).unwrap_or(0) + 8)
+}
+
 fn evaluate(id: ScenarioId, observation: &Value, profile: Profile) -> (bool, Vec<String>, Value) {
     let mut failures = Vec::new();
     let mut thresholds = BTreeMap::new();
@@ -1071,18 +1121,51 @@ fn evaluate(id: ScenarioId, observation: &Value, profile: Profile) -> (bool, Vec
                     .get("resource_samples")
                     .and_then(Value::as_array)
                     .is_some_and(|v| {
-                        v.len() >= seconds as usize
-                            && v.iter().all(|tick| {
-                                tick.get("baseline").is_some_and(Value::is_object)
-                                    && tick
-                                        .get("children")
-                                        .and_then(Value::as_array)
-                                        .is_some_and(|c| c.len() == 7)
-                                    && tick.get("aggregate").is_some()
-                            })
+                        v.len() >= seconds as usize && v.iter().all(valid_resource_tick)
                     }),
                 "mixed soak lacks one-second resource samples",
             );
+            if profile == Profile::Extended {
+                let slope = observation
+                    .get("resource_samples")
+                    .and_then(Value::as_array)
+                    .and_then(|rows| {
+                        let ys: Vec<f64> = rows
+                            .iter()
+                            .filter_map(|r| {
+                                r.pointer("/aggregate/rss_bytes")
+                                    .and_then(Value::as_u64)
+                                    .map(|v| v as f64)
+                            })
+                            .collect();
+                        if ys.len() < 2 {
+                            return None;
+                        }
+                        let n = ys.len() as f64;
+                        let mean_x = (n - 1.0) / 2.0;
+                        let mean_y = ys.iter().sum::<f64>() / n;
+                        let den = (0..ys.len())
+                            .map(|i| {
+                                let d = i as f64 - mean_x;
+                                d * d
+                            })
+                            .sum::<f64>();
+                        Some(
+                            (0..ys.len())
+                                .map(|i| (i as f64 - mean_x) * (ys[i] - mean_y))
+                                .sum::<f64>()
+                                / den
+                                * 60.0
+                                / (1024.0 * 1024.0),
+                        )
+                    });
+                thresholds.insert("quiescent_rss_slope_mib_per_min".into(), json!(1.0));
+                require_observation(
+                    &mut failures,
+                    slope.is_some_and(|v| v <= 1.0),
+                    "extended quiescent RSS slope is missing or exceeds 1 MiB/min",
+                );
+            }
         }
         ScenarioId::OptionalComputeFault => {
             require_observation(
