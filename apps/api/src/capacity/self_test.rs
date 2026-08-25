@@ -22,8 +22,13 @@ pub fn run(case: super::CapacitySelfTestCase) -> anyhow::Result<()> {
         super::CapacitySelfTestCase::ConnectorPoison => connector_poison_receipt()?,
         super::CapacitySelfTestCase::OptionalFault => optional_fault_receipt()?,
         super::CapacitySelfTestCase::ByteIdentity => {
-            let runtime = tokio::runtime::Runtime::new()?;
-            match runtime.block_on(super::identity::run_control()) {
+            let result = std::thread::spawn(|| -> anyhow::Result<_> {
+                let runtime = tokio::runtime::Runtime::new()?;
+                runtime.block_on(super::identity::run_control())
+            })
+            .join()
+            .map_err(|_| anyhow::anyhow!("byte-identity worker panicked"))?;
+            match result {
                 Ok(body) => {
                     super::identity::write_canonical_receipt(&body)?;
                     return Ok(());
@@ -247,16 +252,4 @@ fn digest_json(value: &serde_json::Value) -> String {
     let mut h = Sha256::new();
     h.update(bytes);
     hex::encode(h.finalize())
-}
-
-fn write_receipt(name: &str, body: serde_json::Value) -> anyhow::Result<()> {
-    let dir = root();
-    std::fs::create_dir_all(&dir)?;
-    let path = dir.join(name);
-    let mut bytes = serde_json::to_vec(&body)?;
-    bytes.push(b'\n');
-    let tmp = dir.join(format!(".{name}.tmp-{}", std::process::id()));
-    std::fs::write(&tmp, bytes)?;
-    std::fs::rename(tmp, path)?;
-    Ok(())
 }
