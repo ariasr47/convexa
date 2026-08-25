@@ -107,7 +107,7 @@ pub async fn refresh_analytics(state: &AppState, sym: &str) -> Result<AnalyticsS
             state.gex_cache.set(snap.clone()).await;
 
             // Keep price warm alongside GEX for the progressive path.
-            if let Ok(live) = state.massive.fetch_quick_live_price(sym).await {
+            if let Ok(live) = state.massive()?.fetch_quick_live_price(sym).await {
                 let _ = state.prices.set_price(&live).await;
             } else {
                 seed_price_if_empty(state, &snap).await;
@@ -178,16 +178,18 @@ async fn compute_analytics(
     // Each is independently best-effort for HV / VWAP; only the chain is required.
     let want_dp = state.config.include_dark_pool;
     let lookback = state.config.darkpool_lookback_secs;
+    if let Some(port) = &state.harness_market_data {
+        let params = AnalyticsComputeParams { min_dte, max_dte, include_dark_pool: want_dp,
+            block_min_shares: state.config.block_min_shares, ttl_secs: state.config.gex_ttl_for(sym).as_secs(), iv_rank_enabled: true };
+        let snap = compute_from_port(port, sym, None, &params, Some(&state.iv_store)).await?;
+        let vendor = port.resolve(sym, None).await?;
+        return Ok((snap, vendor));
+    }
+    let massive = state.massive()?;
     let (market_res, daily_res, minutes_res, trades_res) = tokio::join!(
-        state.massive.fetch_options_market_state(sym),
-        state.massive.fetch_daily_bars(sym, 400),
-        state.massive.fetch_intraday_bars(sym),
-        async {
-            if want_dp {
-                state.massive.fetch_recent_trades(sym, lookback).await
-            } else {
-                Ok(Vec::new())
-            }
+        massive.fetch_options_market_state(sym), massive.fetch_daily_bars(sym, 400),
+        massive.fetch_intraday_bars(sym), async {
+            if want_dp { massive.fetch_recent_trades(sym, lookback).await } else { Ok(Vec::new()) }
         },
     );
     let vendor_ms = t0.elapsed().as_secs_f64() * 1000.0;

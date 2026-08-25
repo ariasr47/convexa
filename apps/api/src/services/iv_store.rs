@@ -28,13 +28,28 @@ pub struct JsonIvStore {
 #[derive(Clone)]
 pub enum IvStore {
     Json(JsonIvStore),
+    Fixture(Arc<FixtureIvStore>),
     #[cfg(feature = "postgres")]
     Postgres(crate::db::pg_iv::PgIvStore),
+}
+
+#[derive(Clone)]
+struct FixtureIvStore {
+    samples: Arc<Vec<IvSample>>,
+    fail_read: bool,
 }
 
 impl IvStore {
     pub fn open(path: impl AsRef<Path>) -> AppResult<Self> {
         Ok(Self::Json(JsonIvStore::open(path)?))
+    }
+
+    pub(crate) fn fixture_history(samples: Vec<IvSample>) -> Self {
+        Self::Fixture(Arc::new(FixtureIvStore { samples: Arc::new(samples), fail_read: false }))
+    }
+
+    pub(crate) fn fixture_fail_read() -> Self {
+        Self::Fixture(Arc::new(FixtureIvStore { samples: Arc::new(Vec::new()), fail_read: true }))
     }
 
     #[cfg(feature = "postgres")]
@@ -45,6 +60,7 @@ impl IvStore {
     pub fn upsert_if_absent(&self, sample: &IvSample) -> AppResult<()> {
         match self {
             Self::Json(s) => s.upsert_if_absent(sample),
+            Self::Fixture(_) => Ok(()),
             #[cfg(feature = "postgres")]
             Self::Postgres(s) => s.upsert_if_absent(sample),
         }
@@ -53,6 +69,10 @@ impl IvStore {
     pub fn read_recent(&self, ticker: &str, limit: usize) -> AppResult<Vec<IvSample>> {
         match self {
             Self::Json(s) => s.read_recent(ticker, limit),
+            Self::Fixture(s) => {
+                if s.fail_read { return Err(AppError::Config("fixture IV store read fault".into())); }
+                Ok(s.samples.iter().filter(|v| v.ticker.eq_ignore_ascii_case(ticker)).cloned().collect())
+            }
             #[cfg(feature = "postgres")]
             Self::Postgres(s) => s.read_recent(ticker, limit),
         }

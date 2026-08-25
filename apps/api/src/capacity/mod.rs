@@ -4,6 +4,7 @@
 //! process runner and harness are layered on top of these closed model types.
 
 pub mod evaluate;
+pub mod harness_app;
 pub mod manifest;
 pub mod model;
 pub mod report;

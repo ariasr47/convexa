@@ -4,6 +4,7 @@ use std::time::{Duration, Instant};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SseOutcome {
     Accepted,
+    ExpectedFixtureNotFound,
     ExpectedCapacityRefusal,
     UnexpectedError,
 }
@@ -44,6 +45,9 @@ pub async fn connect(url: &str, timeout: Duration) -> anyhow::Result<SseResponse
         .get(reqwest::header::RETRY_AFTER)
         .and_then(|v| v.to_str().ok())
         .map(str::to_owned);
+    if status == 404 {
+        return Ok(SseResponse { outcome: SseOutcome::ExpectedFixtureNotFound, status, retry_after, first_data: None, latency: started.elapsed() });
+    }
     if status == 503 && retry_after.as_deref() == Some("30") {
         return Ok(SseResponse {
             outcome: SseOutcome::ExpectedCapacityRefusal,
@@ -62,14 +66,20 @@ pub async fn connect(url: &str, timeout: Duration) -> anyhow::Result<SseResponse
             latency: started.elapsed(),
         });
     }
-    let bytes = tokio::time::timeout(timeout, response.bytes()).await??;
-    let first_data = bytes
-        .split(|b| *b == b'\n')
-        .map(|line| line.strip_prefix(b"data: "))
-        .flatten()
-        .find_map(|line| serde_json::from_slice(line).ok());
+    let mut response = response;
+    let mut bytes = Vec::new();
+    let deadline = Instant::now() + timeout;
+    let first_data = loop {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() { break None; }
+        let Some(chunk) = tokio::time::timeout(remaining, response.chunk()).await?? else { break None; };
+        bytes.extend_from_slice(&chunk);
+        if bytes.len() > 256 * 1024 { break None; }
+        let found = bytes.split(|b| *b == b'\n').filter_map(|line| line.strip_prefix(b"data: ")).find_map(|line| serde_json::from_slice(line).ok());
+        if found.is_some() { break found; }
+    };
     Ok(SseResponse {
-        outcome: SseOutcome::Accepted,
+        outcome: if first_data.is_some() { SseOutcome::Accepted } else { SseOutcome::UnexpectedError },
         status,
         retry_after,
         first_data,

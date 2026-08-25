@@ -47,7 +47,7 @@ impl RestClient {
         let body = serde_json::from_slice(&bytes).ok();
         let outcome = if status == StatusCode::NOT_FOUND {
             RestOutcome::ExpectedFixtureNotFound
-        } else if status.is_success() {
+        } else if status.is_success() && body.is_some() {
             RestOutcome::Accepted
         } else {
             RestOutcome::UnexpectedError

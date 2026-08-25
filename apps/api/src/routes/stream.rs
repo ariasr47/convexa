@@ -459,6 +459,7 @@ async fn stream_ticker_http(
     let feed = state.config.data_feed.as_str().to_string();
     let prices = state.prices.clone();
     let gex_cache = state.gex_cache.clone();
+    let lifecycle = state.lifecycle_probe.clone();
 
     // Seed flip from warm analytics if present.
     let flip0 = gex_cache
@@ -470,6 +471,7 @@ async fn stream_ticker_http(
     let (tx, rx_out) = mpsc::channel::<Result<Event, Infallible>>(16);
     tokio::spawn(async move {
         let _guard = guard;
+        let _task_guard = lifecycle.sse_task();
         let _ = tx.send(Ok(Event::default().comment("connected"))).await;
 
         let mut bid = 0.0_f64;
