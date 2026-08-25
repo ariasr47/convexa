@@ -9,6 +9,42 @@ pub mod model;
 pub mod report;
 pub mod resources;
 
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+pub enum CapacityProfileArg {
+    Normal,
+    Extended,
+}
+
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+pub enum CapacitySelfTestCase {
+    ConnectorPoison,
+    OptionalFault,
+    ByteIdentity,
+}
+
+pub async fn cli(
+    profile: CapacityProfileArg,
+    action: Option<CapacityAction>,
+) -> anyhow::Result<()> {
+    match action {
+        Some(CapacityAction::SelfTest { case }) => {
+            anyhow::bail!("capacity self-test {case:?} is not available in this build")
+        }
+        Some(CapacityAction::Child) => anyhow::bail!("capacity child mode is private"),
+        None => anyhow::bail!("capacity profile {profile:?} runner is not available in this build"),
+    }
+}
+
+#[derive(Debug, clap::Subcommand)]
+pub enum CapacityAction {
+    SelfTest {
+        #[arg(long, value_enum)]
+        case: CapacitySelfTestCase,
+    },
+    #[command(hide = true)]
+    Child,
+}
+
 pub use manifest::{
     manifest, ChildId, OutcomeClass, PhaseBudget, Profile, ScenarioId, ScenarioStatus,
     ValidatedManifest,
