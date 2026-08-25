@@ -265,7 +265,7 @@ async fn prime_loopback(
     let base = format!("http://{addr}");
     let mut rest = Vec::with_capacity(rest_concurrency);
     let rounds: Vec<(Vec<&str>, usize)> = match child {
-        ChildId::A => (0..4)
+        ChildId::A => (0..8)
             .map(|_| (vec![WARM_SYMBOL; rest_concurrency], rest_concurrency))
             .collect(),
         ChildId::D1 => vec![(D1_COLD_SYMBOLS.to_vec(), rest_concurrency)],
@@ -409,7 +409,7 @@ pub const fn prime_rest_rounds(child: ChildId) -> usize {
 }
 pub const fn prime_rest_request_count(child: ChildId, concurrency: usize) -> usize {
     match child {
-        ChildId::A => concurrency * 4,
+        ChildId::A => concurrency * 8,
         ChildId::D2 => 237,
         _ => concurrency,
     }
