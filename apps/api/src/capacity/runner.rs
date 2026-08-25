@@ -199,6 +199,7 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
         protocol: 1,
     })?;
     let mut lines = BufReader::new(tokio::io::stdin()).lines();
+    let mut last_quiescent_handles: Option<u64> = None;
     while let Some(line) = lines.next_line().await? {
         let command: ParentCommand = match serde_json::from_str(&line) {
             Ok(v) => v,
@@ -242,28 +243,50 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
                         let (resource, life_after) = {
                             let mut resource = resource;
                             let mut life_after = life_after;
-                            if lifecycle_is_quiescent(life_after) {
+                            let fd_jump = lifecycle_is_quiescent(life_after)
+                                && should_settle_quiescent_fd_jump(
+                                    last_quiescent_handles,
+                                    resource.handles_or_fds,
+                                );
+                            let mut settle_lifecycle_quiescent = true;
+                            if fd_jump {
                                 // Request guards can drop just before Hyper closes
-                                // the accepted socket. Give the transport a bounded
-                                // settle point, then use a lower sample only when
-                                // lifecycle remains quiescent; a persistent leak
-                                // stays visible in both samples.
-                                tokio::time::sleep(std::time::Duration::from_millis(
-                                    TRANSPORT_SETTLE_MILLIS,
-                                ))
-                                .await;
-                                if let Ok(settled) =
-                                    super::resources::sample_pid(std::process::id())
-                                {
+                                // the accepted socket. Sample for up to one
+                                // second while counters remain zero;
+                                // a persistent leak stays high in every sample.
+                                let mut settle_samples = vec![resource.handles_or_fds];
+                                let mut settle_life_after = life_after;
+                                for _ in 0..10 {
+                                    tokio::time::sleep(std::time::Duration::from_millis(
+                                        TRANSPORT_SETTLE_MILLIS,
+                                    ))
+                                    .await;
+                                    let Ok(settled) =
+                                        super::resources::sample_pid(std::process::id())
+                                    else {
+                                        break;
+                                    };
                                     let settled_life = state.lifecycle_probe.snapshot();
-                                    if lifecycle_is_quiescent(settled_life) {
-                                        resource.handles_or_fds = settled_quiescent_handles(
-                                            resource.handles_or_fds,
-                                            settled.handles_or_fds,
-                                        );
-                                        life_after = settled_life;
+                                    settle_life_after = settled_life;
+                                    if !lifecycle_is_quiescent(settled_life) {
+                                        settle_lifecycle_quiescent = false;
+                                        break;
                                     }
+                                    settle_samples.push(settled.handles_or_fds);
                                 }
+                                resource.handles_or_fds = settled_handles_or_first(
+                                    resource.handles_or_fds,
+                                    &settle_samples,
+                                    settle_lifecycle_quiescent,
+                                );
+                                if !settle_lifecycle_quiescent {
+                                    life_after = settle_life_after;
+                                }
+                            }
+                            if lifecycle_is_quiescent(life_after) && settle_lifecycle_quiescent {
+                                last_quiescent_handles = Some(resource.handles_or_fds);
+                            } else {
+                                last_quiescent_handles = None;
                             }
                             (resource, life_after)
                         };
@@ -347,8 +370,20 @@ fn lifecycle_is_quiescent(life: crate::services::live_capacity::LifecycleSnapsho
     life.active_requests == 0 && life.active_subscribers == 0 && life.active_sse_tasks == 0
 }
 
-fn settled_quiescent_handles(first: u64, second: u64) -> u64 {
-    first.min(second)
+fn should_settle_quiescent_fd_jump(last: Option<u64>, current: u64) -> bool {
+    cfg!(target_os = "linux") && last.is_some_and(|previous| current > previous)
+}
+
+fn settled_quiescent_handles(samples: &[u64]) -> u64 {
+    samples.iter().copied().min().unwrap_or_default()
+}
+
+fn settled_handles_or_first(first: u64, samples: &[u64], remained_quiescent: bool) -> u64 {
+    if remained_quiescent {
+        settled_quiescent_handles(samples)
+    } else {
+        first
+    }
 }
 
 pub fn child_isolated_runtime(
@@ -1903,8 +1938,10 @@ mod protocol_tests {
 
     #[test]
     fn quiescent_fd_settle_selects_socket_close_but_not_persistent_growth() {
-        assert_eq!(settled_quiescent_handles(49, 17), 17);
-        assert_eq!(settled_quiescent_handles(49, 49), 49);
+        assert_eq!(settled_quiescent_handles(&[49, 49, 49, 17]), 17);
+        assert_eq!(settled_quiescent_handles(&[49, 49, 49]), 49);
+        assert_eq!(settled_handles_or_first(49, &[49, 17], true), 17);
+        assert_eq!(settled_handles_or_first(49, &[49, 17], false), 49);
         assert!(lifecycle_is_quiescent(
             crate::services::live_capacity::LifecycleSnapshot {
                 active_requests: 0,
@@ -1915,10 +1952,25 @@ mod protocol_tests {
         ));
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
-    fn transport_settle_window_is_bounded_below_the_one_second_cadence() {
+    fn linux_fd_jump_requests_extended_settle() {
+        assert!(should_settle_quiescent_fd_jump(Some(17), 49));
+        assert!(!should_settle_quiescent_fd_jump(Some(49), 49));
+        assert!(!should_settle_quiescent_fd_jump(None, 49));
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn windows_fd_jump_keeps_immediate_sampling() {
+        assert!(!should_settle_quiescent_fd_jump(Some(17), 49));
+    }
+
+    #[test]
+    fn transport_settle_probe_interval_and_total_window_are_bounded() {
         assert_eq!(TRANSPORT_SETTLE_MILLIS, 100);
         assert!(TRANSPORT_SETTLE_MILLIS < 1_000);
+        assert_eq!(TRANSPORT_SETTLE_MILLIS * 10, 1_000);
     }
 
     #[test]

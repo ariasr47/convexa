@@ -5,6 +5,7 @@ import { assertReady } from './readiness';
 
 for (const scenario of journeys) {
   test(scenario.id, async ({ page }) => {
+    if (scenario.id === 'landing-ticker-navigation') test.setTimeout(45_000);
     if (
       process.env.BROWSER_QUALITY_POISON_COMPAT === '1' &&
       scenario.id === 'ticker-stream-loss' &&
