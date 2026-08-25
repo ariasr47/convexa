@@ -48,6 +48,7 @@ pub async fn connect_hold(
             .no_proxy()
             .build()?
             .get(parsed)
+            .headers(super::rest::loopback_close_headers())
             .send(),
     )
     .await??;
@@ -131,6 +132,7 @@ pub async fn connect(url: &str, timeout: Duration) -> anyhow::Result<SseResponse
             .no_proxy()
             .build()?
             .get(parsed)
+            .headers(super::rest::loopback_close_headers())
             .send(),
     )
     .await??;
