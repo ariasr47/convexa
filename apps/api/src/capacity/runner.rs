@@ -339,35 +339,16 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
         }
         let addresses: BTreeMap<ChildId, std::net::SocketAddr> =
             children.iter().map(|c| (child_id(c), c.addr)).collect();
-        let mut workload = Box::pin(execute_lanes(profile, addresses));
-        let mut soak_samples: Vec<BTreeMap<ChildId, ResourceSample>> = Vec::new();
-        let workload = tokio::time::timeout(std::time::Duration::from_secs(70), async {
-            loop {
-                tokio::select! {
-                    result = &mut workload => break result,
-                    _ = tokio::time::sleep(std::time::Duration::from_secs(1)) => {
-                        let sequence = 10_000 + soak_samples.len() as u64;
-                        for child in &mut children { command(child, ParentCommand::Sample { sequence }).await?; }
-                        let mut tick = BTreeMap::new();
-                        for child in &mut children {
-                            if let Some(resource) = receive_sample(child, sequence).await? { tick.insert(child_id(child), resource); }
-                        }
-                        if tick.len() == CHILDREN.len() { soak_samples.push(tick); }
-                    }
-                }
-            }
-        }).await;
+        let (left, right) = children.split_at_mut(2);
+        let b_child = &mut left[1];
+        let c_child = &mut right[0];
+        let workload = tokio::time::timeout(
+            std::time::Duration::from_secs(70),
+            execute_lanes(profile, addresses, b_child, c_child),
+        )
+        .await;
         match workload {
-            Ok(Ok(mut rows)) => {
-                let resource_samples = soak_samples.iter().map(|tick| json!({
-                    "children": tick.iter().map(|(id, sample)| json!({"child": id.token(), "sample": sample})).collect::<Vec<_>>(),
-                    "aggregate": aggregate_samples(tick),
-                })).collect::<Vec<_>>();
-                if let Some(soak) = rows.get_mut(&ScenarioId::MixedSoak) {
-                    soak["resource_samples"] = json!(resource_samples);
-                }
-                evidence = rows
-            }
+            Ok(Ok(rows)) => evidence = rows,
             Ok(Err(e)) => {
                 eprintln!("capacity workload lane failure: {e:#}");
                 evidence.insert(
@@ -433,26 +414,6 @@ fn child_id(child: &RunningChild) -> ChildId {
     child.id
 }
 
-fn aggregate_samples(samples: &BTreeMap<ChildId, ResourceSample>) -> Value {
-    let mut aggregate = ResourceSample {
-        rss_bytes: 0,
-        handles_or_fds: 0,
-        tokio_tasks: 0,
-        active_requests: 0,
-        active_subscribers: 0,
-        active_sse_tasks: 0,
-    };
-    for sample in samples.values() {
-        aggregate.rss_bytes += sample.rss_bytes;
-        aggregate.handles_or_fds += sample.handles_or_fds;
-        aggregate.tokio_tasks += sample.tokio_tasks;
-        aggregate.active_requests += sample.active_requests;
-        aggregate.active_subscribers += sample.active_subscribers;
-        aggregate.active_sse_tasks += sample.active_sse_tasks;
-    }
-    json!(aggregate)
-}
-
 async fn receive_sample(
     child: &mut RunningChild,
     sequence: u64,
@@ -471,6 +432,14 @@ async fn receive_sample(
         }
         _ => None,
     })
+}
+
+async fn lifecycle_sample(
+    child: &mut RunningChild,
+    sequence: u64,
+) -> anyhow::Result<Option<ResourceSample>> {
+    command(child, ParentCommand::Sample { sequence }).await?;
+    receive_sample(child, sequence).await
 }
 
 async fn rest_many(
@@ -520,16 +489,12 @@ async fn open_streams(
 async fn execute_lanes(
     profile: Profile,
     addresses: BTreeMap<ChildId, std::net::SocketAddr>,
+    b_child: &mut RunningChild,
+    c_child: &mut RunningChild,
 ) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
     let a = *addresses
         .get(&ChildId::A)
         .ok_or_else(|| anyhow::anyhow!("A child missing"))?;
-    let b = *addresses
-        .get(&ChildId::B)
-        .ok_or_else(|| anyhow::anyhow!("B child missing"))?;
-    let c = *addresses
-        .get(&ChildId::C)
-        .ok_or_else(|| anyhow::anyhow!("C child missing"))?;
     let d1 = *addresses
         .get(&ChildId::D1)
         .ok_or_else(|| anyhow::anyhow!("D1 child missing"))?;
@@ -544,8 +509,8 @@ async fn execute_lanes(
         .ok_or_else(|| anyhow::anyhow!("E child missing"))?;
     let (a_rows, b_rows, c_rows, d_rows, e_rows) = tokio::join!(
         lane_a(profile, a),
-        lane_b(b),
-        lane_c(c),
+        lane_b(b_child),
+        lane_c(c_child),
         lane_d(d1, d2, d3),
         lane_e(e)
     );
@@ -592,33 +557,53 @@ async fn lane_a(
     ]))
 }
 
-async fn lane_b(addr: std::net::SocketAddr) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
-    for _ in 0..10 {
+async fn lane_b(child: &mut RunningChild) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
+    let addr = child.addr;
+    let mut checks = Vec::new();
+    for wave in 0..10 {
+        let before = lifecycle_sample(child, 20_000 + wave * 2).await?;
         let (held, accepted, _) = open_streams(addr, 32).await;
         if accepted != 32 {
             anyhow::bail!("orderly wave accepted {accepted}/32")
         }
         drop(held);
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        let after = lifecycle_sample(child, 20_001 + wave * 2).await?;
+        let returned = before.as_ref().zip(after.as_ref()).is_some_and(|(b, a)| {
+            a.active_requests == b.active_requests
+                && a.active_subscribers == b.active_subscribers
+                && a.active_sse_tasks == b.active_sse_tasks
+        });
+        checks.push(json!({"wave": wave + 1, "before": before, "after": after, "returned_to_baseline": returned}));
     }
     Ok(BTreeMap::from([(
         ScenarioId::SseOrderlyChurn,
-        json!({"waves": 10, "accepted_per_wave": 32, "unexpected_disconnects": 0}),
+        json!({"waves": 10, "accepted_per_wave": 32, "unexpected_disconnects": null, "resource_checks": checks}),
     )]))
 }
 
-async fn lane_c(addr: std::net::SocketAddr) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
-    for _ in 0..10 {
+async fn lane_c(child: &mut RunningChild) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
+    let addr = child.addr;
+    let mut checks = Vec::new();
+    for wave in 0..10 {
+        let before = lifecycle_sample(child, 30_000 + wave * 2).await?;
         let (held, accepted, _) = open_streams(addr, 8).await;
         if accepted != 8 {
             anyhow::bail!("abrupt wave accepted {accepted}/8")
         }
         drop(held);
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        let after = lifecycle_sample(child, 30_001 + wave * 2).await?;
+        let returned = before.as_ref().zip(after.as_ref()).is_some_and(|(b, a)| {
+            a.active_requests == b.active_requests
+                && a.active_subscribers == b.active_subscribers
+                && a.active_sse_tasks == b.active_sse_tasks
+        });
+        checks.push(json!({"wave": wave + 1, "before": before, "after": after, "returned_to_baseline": returned}));
     }
     Ok(BTreeMap::from([(
         ScenarioId::SseAbruptDrop,
-        json!({"waves": 10, "accepted_per_wave": 8, "unexpected_disconnects": 0}),
+        json!({"waves": 10, "accepted_per_wave": 8, "unexpected_disconnects": null, "resource_checks": checks}),
     )]))
 }
 
