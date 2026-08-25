@@ -25,7 +25,8 @@ const families = [
 function fixtureRoot(family, exitCode) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'capacity-gate-'));
   const observed = { family, observed: 123.5, unit: 'ms', threshold: 100, status: exitCode ? 'did_not_pass' : 'pass' };
-  fs.writeFileSync(path.join(root, 'observed.json'), JSON.stringify(observed));
+  const expectedBytes = JSON.stringify(observed);
+  fs.writeFileSync(path.join(root, 'observed.json'), expectedBytes);
   fs.writeFileSync(path.join(root, 'capacity.mjs'), `
     import fs from 'node:fs';
     const result = fs.readFileSync(new URL('./observed.json', import.meta.url), 'utf8');
@@ -42,11 +43,11 @@ function fixtureRoot(family, exitCode) {
     }
   `);
   fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ type: 'module', scripts: { test: 'node aggregate.mjs' }}));
-  return { root, observed };
+  return { root, observed, expectedBytes };
 }
 
 function runDisposable(family, exitCode) {
-  const { root, observed } = fixtureRoot(family, exitCode);
+  const { root, observed, expectedBytes } = fixtureRoot(family, exitCode);
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   const command = process.platform === 'win32' ? (process.env.ComSpec ?? 'cmd.exe') : npm;
   const args = process.platform === 'win32' ? ['/d', '/s', '/c', `${npm} test --silent`] : ['test', '--silent'];
@@ -57,7 +58,10 @@ function runDisposable(family, exitCode) {
   });
   const retainedPath = path.join(root, 'data/capacity.json');
   assert.ok(fs.existsSync(retainedPath), `capacity report missing (status=${result.status}, error=${result.error ?? ''}, stderr=${result.stderr ?? ''})`);
-  const retained = JSON.parse(fs.readFileSync(retainedPath, 'utf8'));
+  const retainedBytes = fs.readFileSync(retainedPath, 'utf8');
+  const byteEqual = retainedBytes === expectedBytes;
+  assert.equal(byteEqual, true, 'observed value/unit/threshold bytes must be retained exactly');
+  const retained = JSON.parse(retainedBytes);
   assert.deepEqual(retained, observed, 'observed value/unit/threshold must be retained byte-for-byte');
   return result.status ?? 1;
 }

@@ -13,10 +13,10 @@ fn runner_report_has_closed_shape_and_thirteen_rows() {
 }
 
 #[test]
-fn executed_isolation_controls_pass_and_unimplemented_identity_fails_closed() {
+fn all_public_self_test_controls_pass() {
     assert!(api_rust::capacity::self_test::run(CapacitySelfTestCase::ConnectorPoison).is_ok());
     assert!(api_rust::capacity::self_test::run(CapacitySelfTestCase::OptionalFault).is_ok());
-    assert!(api_rust::capacity::self_test::run(CapacitySelfTestCase::ByteIdentity).is_err());
+    assert!(api_rust::capacity::self_test::run(CapacitySelfTestCase::ByteIdentity).is_ok());
 }
 
 #[test]

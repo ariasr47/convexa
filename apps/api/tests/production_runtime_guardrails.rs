@@ -172,7 +172,11 @@ async fn production_real_router_transport_cookie_restart_event_and_isolation_mat
         .expect("valid production contract graph");
     let metrics_before = serde_json::to_value(state.gex_cache.metrics_snapshot().await).unwrap();
     let scan_before = serde_json::to_value(state.scan.read_rows(None).await).unwrap();
-    let vendor_before = state.massive.request_count();
+    let vendor_before = state
+        .massive
+        .as_ref()
+        .expect("production runtime always has the Massive adapter")
+        .request_count();
     let hub_before = state.stock_hub.symbol_count().await;
     let subscribers_before = state.live_capacity.subscriber_count();
     let cached_price_before = state.prices.get_price("SPY").await.unwrap();
@@ -236,7 +240,14 @@ async fn production_real_router_transport_cookie_restart_event_and_isolation_mat
         serde_json::to_value(state.scan.read_rows(None).await).unwrap(),
         scan_before
     );
-    assert_eq!(state.massive.request_count(), vendor_before);
+    assert_eq!(
+        state
+            .massive
+            .as_ref()
+            .expect("production runtime always has the Massive adapter")
+            .request_count(),
+        vendor_before
+    );
     assert_eq!(state.stock_hub.symbol_count().await, hub_before);
     assert_eq!(state.live_capacity.subscriber_count(), subscribers_before);
     assert_eq!(

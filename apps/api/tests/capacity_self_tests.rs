@@ -66,6 +66,6 @@ fn optional_fault_preserves_core_and_stream() {
 }
 
 #[test]
-fn identity_control_remains_fail_closed_until_b7() {
-    assert!(self_test::run(CapacitySelfTestCase::ByteIdentity).is_err());
+fn identity_control_passes_with_pinned_reference_evidence() {
+    assert!(self_test::run(CapacitySelfTestCase::ByteIdentity).is_ok());
 }
