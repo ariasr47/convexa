@@ -7,9 +7,11 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::{
+    collections::HashSet,
     net::TcpListener,
     path::PathBuf,
     process::{Child, Command, Output},
+    sync::{Mutex, OnceLock},
     time::Duration,
 };
 use tokio::time::{sleep, timeout};
@@ -232,8 +234,15 @@ fn migrate(db: &str, extra: &[(&str, &str)]) -> Output {
     c.output().expect("spawn postgres-migrate")
 }
 fn port() -> u16 {
-    let l = TcpListener::bind("127.0.0.1:0").expect("reserve port");
-    l.local_addr().unwrap().port()
+    static ALLOCATED: OnceLock<Mutex<HashSet<u16>>> = OnceLock::new();
+    let allocated = ALLOCATED.get_or_init(|| Mutex::new(HashSet::new()));
+    loop {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("reserve port");
+        let candidate = listener.local_addr().unwrap().port();
+        if allocated.lock().unwrap().insert(candidate) {
+            return candidate;
+        }
+    }
 }
 fn distinct_ports() -> (u16, u16) {
     let first = port();
@@ -246,9 +255,12 @@ fn distinct_ports() -> (u16, u16) {
 }
 #[test]
 fn simultaneous_serve_port_pair_is_always_distinct() {
+    let mut observed = HashSet::new();
     for _ in 0..32 {
         let (x, y) = distinct_ports();
         assert_ne!(x, y);
+        assert!(observed.insert(x), "test port was reused: {x}");
+        assert!(observed.insert(y), "test port was reused: {y}");
     }
 }
 fn listener_bound(p: u16) -> bool {
@@ -752,10 +764,18 @@ fn simultaneous_serve_processes_are_read_only() {
         let (x_port, y_port) = distinct_ports();
         let x = serve_on_port(&d, x_port);
         let y = serve_on_port(&d, y_port);
-        assert!(health(x.port).await);
-        assert!(health(y.port).await);
+        let x_healthy = health(x.port).await;
+        let y_healthy = health(y.port).await;
         let xo = stop(x);
         let yo = stop(y);
+        assert!(
+            x_healthy,
+            "first simultaneous server did not become healthy"
+        );
+        assert!(
+            y_healthy,
+            "second simultaneous server did not become healthy"
+        );
         assert_no_secret_egress(&xo);
         assert_no_secret_egress(&yo);
         assert_eq!(before, fp(&d).await);
