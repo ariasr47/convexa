@@ -243,7 +243,12 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
                             child: id,
                             resource: ResourceSample {
                                 rss_bytes: resource.rss_bytes,
-                                handles_or_fds: resource.handles_or_fds,
+                                // Accepted SSE sockets are intentional workload capacity, not
+                                // leaked process handles. Exclude the one-for-one SSE-task
+                                // transport floor so the +8 policy measures residual growth.
+                                handles_or_fds: resource
+                                    .handles_or_fds
+                                    .saturating_sub(life.active_sse_tasks),
                                 tokio_tasks: life.tokio_tasks,
                                 active_requests: life.active_requests,
                                 active_subscribers: life.active_subscribers,
@@ -1392,7 +1397,7 @@ fn scenario(_profile: Profile, id: ScenarioId) -> Value {
     let observations = json!({});
     json!({
         "id": id.token(), "status": "did_not_pass", "expected_outcome": expected,
-        "observations": observations, "thresholds": {"required_observations": spec.required_observations},
+        "observations": observations, "thresholds": {"required_observations": spec.required_observations, "status": {"observed": false, "unit": "boolean", "direction": "=", "threshold": true}},
         "failures": ["workload execution is not implemented; required observations are missing"],
         "diagnostics": ["No child process, loopback client, sampler, or control was executed."]
     })
@@ -1441,7 +1446,7 @@ fn atomic_replace_value(path: &Path, bytes: &[u8]) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn validate_report_value(value: &Value) -> anyhow::Result<()> {
+pub fn validate_report_value(value: &Value) -> anyhow::Result<()> {
     if value.get("claim").and_then(Value::as_str) != Some(CLAIM)
         || !value
             .get("revision")
@@ -1451,11 +1456,47 @@ fn validate_report_value(value: &Value) -> anyhow::Result<()> {
             .get("scenarios")
             .and_then(Value::as_array)
             .map_or(true, |v| v.len() != 13)
+        || value
+            .get("summary")
+            .and_then(Value::as_object)
+            .is_none_or(|summary| {
+                !matches!(
+                    summary.get("verdict").and_then(Value::as_str),
+                    Some("pass" | "did_not_pass")
+                ) || summary.get("elapsed_ms").and_then(Value::as_u64).is_none()
+                    || summary
+                        .get("failed_scenarios")
+                        .and_then(Value::as_array)
+                        .is_none()
+                    || summary
+                        .get("missing_required_observations")
+                        .and_then(Value::as_array)
+                        .is_none()
+                    || summary
+                        .get("forbidden_connector_attempts")
+                        .and_then(Value::as_array)
+                        .is_none()
+                    || summary.get("cleanup").and_then(Value::as_object).is_none()
+            })
         || value["scenarios"].as_array().is_some_and(|rows| {
-            rows.iter().any(|row| {
-                row.get("id").and_then(Value::as_str).is_none()
-                    || row.get("status").and_then(Value::as_str).is_none()
+            rows.iter().enumerate().any(|(index, row)| {
+                row.get("id").and_then(Value::as_str)
+                    != ScenarioId::ALL.get(index).map(|id| id.token())
+                    || !matches!(
+                        row.get("status").and_then(Value::as_str),
+                        Some("pass" | "did_not_pass")
+                    )
+                    || row
+                        .get("expected_outcome")
+                        .and_then(Value::as_str)
+                        .is_none()
                     || row.get("observations").and_then(Value::as_object).is_none()
+                    || row
+                        .get("thresholds")
+                        .and_then(Value::as_object)
+                        .is_none_or(|thresholds| thresholds.get("status").is_none())
+                    || row.get("failures").and_then(Value::as_array).is_none()
+                    || row.get("diagnostics").and_then(Value::as_array).is_none()
             })
         })
     {

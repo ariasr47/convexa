@@ -385,6 +385,174 @@ fn strict_churn(f: &mut Vec<String>, o: &Value, accepted: u64) {
     }
 }
 
+fn resource_number(o: &Value, key: &str) -> Option<u64> {
+    o.get(key).and_then(Value::as_u64)
+}
+
+fn strict_resource_delta(
+    f: &mut Vec<String>,
+    label: &str,
+    baseline: &Value,
+    current: &Value,
+    rss_limit: u64,
+    handle_limit: u64,
+    task_limit: u64,
+) {
+    let Some(base_rss) = resource_number(baseline, "rss_bytes") else {
+        f.push(format!("{label}.baseline.rss_bytes missing or unsupported"));
+        return;
+    };
+    let Some(now_rss) = resource_number(current, "rss_bytes") else {
+        f.push(format!("{label}.rss_bytes missing or unsupported"));
+        return;
+    };
+    let Some(base_handles) = resource_number(baseline, "handles_or_fds") else {
+        f.push(format!(
+            "{label}.baseline.handles_or_fds missing or unsupported"
+        ));
+        return;
+    };
+    let Some(now_handles) = resource_number(current, "handles_or_fds") else {
+        f.push(format!("{label}.handles_or_fds missing or unsupported"));
+        return;
+    };
+    let Some(base_tasks) = resource_number(baseline, "tokio_tasks") else {
+        f.push(format!(
+            "{label}.baseline.tokio_tasks missing or unsupported"
+        ));
+        return;
+    };
+    let Some(now_tasks) = resource_number(current, "tokio_tasks") else {
+        f.push(format!("{label}.tokio_tasks missing or unsupported"));
+        return;
+    };
+    if now_rss > base_rss.saturating_add(rss_limit) {
+        failure(
+            f,
+            &format!("{label}.rss_bytes"),
+            Some(json!(now_rss)),
+            "bytes",
+            "<=",
+            json!(base_rss.saturating_add(rss_limit)),
+        );
+    }
+    if now_handles > base_handles.saturating_add(handle_limit) {
+        failure(
+            f,
+            &format!("{label}.handles_or_fds"),
+            Some(json!(now_handles)),
+            "handles_or_fds",
+            "<=",
+            json!(base_handles.saturating_add(handle_limit)),
+        );
+    }
+    if now_tasks > base_tasks.saturating_add(task_limit) {
+        failure(
+            f,
+            &format!("{label}.tokio_tasks"),
+            Some(json!(now_tasks)),
+            "tasks",
+            "<=",
+            json!(base_tasks.saturating_add(task_limit)),
+        );
+    }
+}
+
+fn strict_soak_resources(f: &mut Vec<String>, o: &Value, expected_samples: usize) {
+    let Some(samples) = o.get("resource_samples").and_then(Value::as_array) else {
+        f.push("resource_samples missing or unsupported".into());
+        return;
+    };
+    if samples.len() != expected_samples {
+        failure(
+            f,
+            "resource_samples.count",
+            Some(json!(samples.len())),
+            "samples",
+            "=",
+            json!(expected_samples),
+        );
+    }
+    for (index, sample) in samples.iter().enumerate() {
+        let Some(baselines) = sample.get("baseline").and_then(Value::as_object) else {
+            f.push(format!(
+                "resource_samples[{index}].baseline missing or unsupported"
+            ));
+            continue;
+        };
+        let Some(children) = sample.get("children").and_then(Value::as_array) else {
+            f.push(format!(
+                "resource_samples[{index}].children missing or unsupported"
+            ));
+            continue;
+        };
+        if children.len() != 7 {
+            f.push(format!(
+                "resource_samples[{index}].children requires 7 children"
+            ));
+        }
+        let mut seen = std::collections::BTreeSet::new();
+        for child in children {
+            let Some(id) = child.get("child").and_then(Value::as_str) else {
+                f.push(format!(
+                    "resource_samples[{index}] child id missing or unsupported"
+                ));
+                continue;
+            };
+            if !seen.insert(id.to_owned()) {
+                f.push(format!("resource_samples[{index}] duplicate child {id}"));
+            }
+            let Some(baseline) = baselines.get(id) else {
+                f.push(format!(
+                    "resource_samples[{index}] baseline missing for child {id}"
+                ));
+                continue;
+            };
+            let Some(current) = child.get("sample") else {
+                f.push(format!(
+                    "resource_samples[{index}] sample missing for child {id}"
+                ));
+                continue;
+            };
+            strict_resource_delta(
+                f,
+                &format!("resource_samples[{index}].child[{id}]"),
+                baseline,
+                current,
+                128 * 1024 * 1024,
+                8,
+                8,
+            );
+        }
+        if seen.len() != 7 {
+            f.push(format!(
+                "resource_samples[{index}] child coverage incomplete"
+            ));
+        }
+        let Some(baseline_aggregate) = sample.get("baseline_aggregate") else {
+            f.push(format!(
+                "resource_samples[{index}].baseline_aggregate missing or unsupported"
+            ));
+            continue;
+        };
+        let Some(aggregate) = sample.get("aggregate") else {
+            f.push(format!(
+                "resource_samples[{index}].aggregate missing or unsupported"
+            ));
+            continue;
+        };
+        strict_resource_delta(
+            f,
+            &format!("resource_samples[{index}].aggregate"),
+            baseline_aggregate,
+            aggregate,
+            128 * 1024 * 1024,
+            8,
+            8,
+        );
+    }
+}
+
 fn strict_recovery(f: &mut Vec<String>, o: &Value) {
     if o.get("observed").and_then(Value::as_bool) != Some(true) {
         failure(
@@ -526,19 +694,7 @@ pub fn evaluate_json(profile: Profile, id: ScenarioId, o: &Value) -> (bool, Vec<
             strict_latency(&mut f, o, "latencies_ms", n * 16, 1000.0, 5000.0);
             exact(&mut f, o, "unexpected_errors", 0);
             exact(&mut f, o, "unexpected_disconnects", 0);
-            if o.get("resource_samples")
-                .and_then(Value::as_array)
-                .is_none_or(|r| r.len() != n)
-            {
-                failure(
-                    &mut f,
-                    "resource_samples",
-                    o.get("resource_samples").cloned(),
-                    "samples",
-                    "=",
-                    json!(n),
-                );
-            }
+            strict_soak_resources(&mut f, o, n);
             if profile == Profile::Extended {
                 let reported = o
                     .get("quiescent_rss_slope_mib_per_min")
@@ -653,12 +809,22 @@ mod tests {
     fn samples_for_slope(mib_per_minute: f64, count: usize) -> Vec<Value> {
         (0..count)
             .map(|index| {
+                let child = json!({"rss_bytes": 100, "handles_or_fds": 10, "tokio_tasks": 4,
+                    "active_requests": 0, "active_subscribers": 0, "active_sse_tasks": 0});
+                let baseline = json!({"A": child, "B": child, "C": child, "D1": child,
+                    "D2": child, "D3": child, "E": child});
+                let children = ["A", "B", "C", "D1", "D2", "D3", "E"].into_iter()
+                    .map(|id| json!({"child": id, "sample": child}))
+                    .collect::<Vec<_>>();
                 json!({
+                    "baseline": baseline,
+                    "baseline_aggregate": {"rss_bytes": 700, "handles_or_fds": 70, "tokio_tasks": 28,
+                        "active_requests": 0, "active_subscribers": 0, "active_sse_tasks": 0},
+                    "children": children,
                     "aggregate": {
-                        "rss_bytes": 100.0 * 1024.0 * 1024.0 + mib_per_minute * 1024.0 * 1024.0 / 60.0 * index as f64,
-                        "active_requests": 0,
-                        "active_subscribers": 0,
-                        "active_sse_tasks": 0
+                        "rss_bytes": (700.0 + mib_per_minute * 1024.0 * 1024.0 / 60.0 * index as f64).round() as u64,
+                        "handles_or_fds": 70, "tokio_tasks": 28,
+                        "active_requests": 0, "active_subscribers": 0, "active_sse_tasks": 0
                     }
                 })
             })
@@ -701,7 +867,8 @@ mod tests {
             "resource_samples": samples_for_slope(0.0, 900),
             "quiescent_rss_slope_mib_per_min": 0.0
         });
-        assert!(evaluate_json(Profile::Extended, ScenarioId::MixedSoak, &passing).0);
+        let (ok, failures, _) = evaluate_json(Profile::Extended, ScenarioId::MixedSoak, &passing);
+        assert!(ok, "{failures:?}");
 
         passing["resource_samples"] = json!(samples_for_slope(1.0004, 900));
         let (passed, failures, _) =
@@ -710,5 +877,57 @@ mod tests {
         assert!(failures
             .iter()
             .any(|failure| failure.contains("quiescent_rss_slope_raw")));
+    }
+
+    fn resource_sample(rss: u64, handles: u64, tasks: u64) -> Value {
+        json!({"rss_bytes": rss, "handles_or_fds": handles, "tokio_tasks": tasks,
+            "active_requests": 0, "active_subscribers": 0, "active_sse_tasks": 0})
+    }
+
+    fn valid_resource_soak() -> Value {
+        let baseline = json!({"A": resource_sample(100, 10, 4), "B": resource_sample(100, 10, 4),
+            "C": resource_sample(100, 10, 4), "D1": resource_sample(100, 10, 4),
+            "D2": resource_sample(100, 10, 4), "D3": resource_sample(100, 10, 4),
+            "E": resource_sample(100, 10, 4)});
+        let children = ["A", "B", "C", "D1", "D2", "D3", "E"]
+            .into_iter()
+            .map(|id| json!({"child": id, "sample": resource_sample(100, 10, 4)}))
+            .collect::<Vec<_>>();
+        json!({"latencies_ms": vec![1.0; 14_400], "unexpected_errors": 0,
+            "unexpected_disconnects": 0, "resource_samples": (0..900).map(|_| json!({
+                "baseline": baseline, "baseline_aggregate": resource_sample(700, 70, 28),
+                "children": children, "aggregate": resource_sample(700, 70, 28)
+            })).collect::<Vec<_>>(), "quiescent_rss_slope_mib_per_min": 0.0})
+    }
+
+    #[test]
+    fn mixed_soak_checks_each_child_and_aggregate_resource_ceiling() {
+        let mut value = valid_resource_soak();
+        let (ok, failures, _) = evaluate_json(Profile::Extended, ScenarioId::MixedSoak, &value);
+        assert!(ok, "{failures:?}");
+        value["resource_samples"][0]["children"][0]["sample"]["handles_or_fds"] = json!(19);
+        let (passed, failures, _) = evaluate_json(Profile::Extended, ScenarioId::MixedSoak, &value);
+        assert!(!passed);
+        assert!(failures
+            .iter()
+            .any(|failure| failure.contains("child[A].handles_or_fds")));
+        value = valid_resource_soak();
+        value["resource_samples"][0]["aggregate"]["tokio_tasks"] = json!(37);
+        let (passed, failures, _) = evaluate_json(Profile::Extended, ScenarioId::MixedSoak, &value);
+        assert!(!passed);
+        assert!(failures
+            .iter()
+            .any(|failure| failure.contains("aggregate.tokio_tasks")));
+    }
+
+    #[test]
+    fn mixed_soak_rejects_missing_or_unsupported_resource_sample() {
+        let mut value = valid_resource_soak();
+        value["resource_samples"][0]["children"][0]["sample"] = json!({"rss_bytes": "unsupported"});
+        let (passed, failures, _) = evaluate_json(Profile::Extended, ScenarioId::MixedSoak, &value);
+        assert!(!passed);
+        assert!(failures
+            .iter()
+            .any(|failure| failure.contains("missing or unsupported")));
     }
 }

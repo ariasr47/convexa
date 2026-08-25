@@ -4,6 +4,7 @@ use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 fn root() -> PathBuf {
@@ -142,7 +143,7 @@ fn connector_poison_receipt() -> anyhow::Result<serde_json::Value> {
     let mut controls = Vec::new();
     for row in &rows {
         let rejected = audit.reject(&row.id).is_err();
-        controls.push(json!({"connector_id": row.id, "exercised": true, "expected_failure": "forbidden_connector", "match": rejected, "scenario": {"verdict":"pass"}, "summary": {"verdict":"pass"}}));
+        controls.push(json!({"connector_id": row.id, "exercised": true, "expected_failure": "forbidden_connector", "match": rejected, "scenario": {"id":"outbound_isolation", "verdict":"did_not_pass"}, "summary": {"verdict":"did_not_pass"}}));
     }
     let mut ids = BTreeSet::new();
     for row in &rows {
@@ -151,8 +152,12 @@ fn connector_poison_receipt() -> anyhow::Result<serde_json::Value> {
     if ids.len() != 7 || audit.attempts().len() != 7 {
         anyhow::bail!("connector poison did not exercise all rows");
     }
-    let synthetic =
-        std::env::temp_dir().join(format!("capacity-unlisted-{}.rs", std::process::id()));
+    static PROBE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+    let synthetic = std::env::temp_dir().join(format!(
+        "capacity-unlisted-{}-{}.rs",
+        std::process::id(),
+        PROBE_SEQUENCE.fetch_add(1, Ordering::Relaxed)
+    ));
     std::fs::write(
         &synthetic,
         "fn unlisted() { let _ = reqwest::Client::new(); }\n",
@@ -162,9 +167,18 @@ fn connector_poison_receipt() -> anyhow::Result<serde_json::Value> {
     if !synthetic_match {
         anyhow::bail!("synthetic unlisted connector was tolerated");
     }
-    Ok(
-        json!({"schema_version":1,"case":"connector-poison","claim":CLAIM,"verdict":"pass","inventory":rows,"controls":controls,"synthetic_unlisted_constructor":{"exercised":true,"match":true,"verdict":"pass"},"healthy":{"attempts":0,"verdict":"pass"}}),
-    )
+    Ok(json!({
+        "schema_version": 1,
+        "case": "connector-poison",
+        "claim": CLAIM,
+        "verdict": "pass",
+        "inventory": rows,
+        "controls": controls,
+        "synthetic_unlisted_constructor": {"exercised": true, "match": true, "verdict": "did_not_pass"},
+        "healthy": {"attempts": 0, "verdict": "pass"},
+        "scenario": {"id": "outbound_isolation", "verdict": "did_not_pass"},
+        "summary": {"verdict": "did_not_pass"}
+    }))
 }
 
 fn scan_unlisted_constructor(path: &std::path::Path) -> bool {
@@ -246,9 +260,28 @@ fn optional_fault_receipt() -> anyhow::Result<serde_json::Value> {
     if fi != serde_json::Value::Null || !unchanged || !accepted {
         anyhow::bail!("optional fault isolation control rejected healthy core or stream");
     }
-    Ok(
-        json!({"schema_version":1,"case":"optional-fault","claim":CLAIM,"verdict":"pass","healthy":{"response_sha256":digest_json(&healthy),"iv_rank":hi,"sse":"accepted"},"fault":{"response_sha256":digest_json(&fault),"iv_rank":null,"sse":"accepted"},"core_projection_unchanged":true,"later_data_event":true}),
-    )
+    Ok(json!({
+        "schema_version": 1,
+        "case": "optional-fault",
+        "claim": CLAIM,
+        "verdict": "pass",
+        "healthy": {
+            "response": healthy,
+            "response_sha256": digest_json(&healthy),
+            "iv_rank": hi,
+            "ai_eval": healthy.get("ai_eval"),
+            "sse": {"outcome": "accepted", "later_data_event": true}
+        },
+        "fault": {
+            "response": fault,
+            "response_sha256": digest_json(&fault),
+            "iv_rank": null,
+            "ai_eval": fault.get("ai_eval"),
+            "sse": {"outcome": "accepted", "later_data_event": true}
+        },
+        "core_projection_unchanged": true,
+        "later_data_event": true
+    }))
 }
 
 fn digest_json(value: &serde_json::Value) -> String {
