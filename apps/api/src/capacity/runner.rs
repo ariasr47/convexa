@@ -262,9 +262,6 @@ async fn prime_loopback(
     state: &crate::state::AppState,
 ) -> anyhow::Result<(usize, usize, bool, bool, usize)> {
     let concurrency = rest_concurrency.max(sse_concurrency).max(1);
-    let client = reqwest::Client::builder()
-        .pool_max_idle_per_host(concurrency)
-        .build()?;
     let base = format!("http://{addr}");
     let mut rest = Vec::with_capacity(rest_concurrency);
     let rest_symbols: Vec<&str> = match child {
@@ -274,6 +271,11 @@ async fn prime_loopback(
         _ => vec![WARM_SYMBOL; rest_concurrency],
     };
     for _ in 0..prime_rest_rounds(child) {
+        // Match lane A's fresh client lifecycle: each drained round owns and
+        // drops one transport pool before the next round begins.
+        let client = reqwest::Client::builder()
+            .pool_max_idle_per_host(concurrency)
+            .build()?;
         for index in 0..rest_concurrency {
             let client = client.clone();
             let symbol = rest_symbols[index % rest_symbols.len()];
@@ -291,6 +293,9 @@ async fn prime_loopback(
         }
     }
 
+    let client = reqwest::Client::builder()
+        .pool_max_idle_per_host(concurrency)
+        .build()?;
     let mut streams = Vec::with_capacity(sse_concurrency);
     for _ in 0..sse_concurrency {
         let client = client.clone();
@@ -330,7 +335,7 @@ async fn prime_loopback(
     state.stock_hub.reset_fixture_state().await;
     let life = state.lifecycle_probe.snapshot();
     Ok((
-        rest_concurrency,
+        rest_concurrency * prime_rest_rounds(child),
         sse_concurrency,
         state.gex_cache.is_empty().await && state.prices.get_price(WARM_SYMBOL).await?.is_none(),
         life.active_requests == 0 && life.active_subscribers == 0 && life.active_sse_tasks == 0,
