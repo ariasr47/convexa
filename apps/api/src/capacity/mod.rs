@@ -7,6 +7,7 @@ pub mod evaluate;
 pub mod manifest;
 pub mod model;
 pub mod report;
+pub mod resources;
 
 pub use manifest::{
     manifest, ChildId, OutcomeClass, PhaseBudget, Profile, ScenarioId, ScenarioStatus,
