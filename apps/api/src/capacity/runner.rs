@@ -796,6 +796,7 @@ fn recovery_observation(
     json!({"children": children, "aggregate": {"baseline": aggregate_base, "current": aggregate_now, "within_threshold": aggregate_within}, "observed": children.len() == 7 && current.len() == 7})
 }
 
+#[cfg(any())]
 fn percentile(values: &[f64], percentile: f64) -> Option<f64> {
     if values.is_empty() || values.iter().any(|v| !v.is_finite() || *v < 0.0) {
         return None;
@@ -806,6 +807,7 @@ fn percentile(values: &[f64], percentile: f64) -> Option<f64> {
     sorted.get(rank).copied()
 }
 
+#[cfg(any())]
 fn number_array(value: &Value, key: &str) -> Option<Vec<f64>> {
     value
         .get(key)?
@@ -815,12 +817,14 @@ fn number_array(value: &Value, key: &str) -> Option<Vec<f64>> {
         .collect()
 }
 
+#[cfg(any())]
 fn require_observation(failures: &mut Vec<String>, condition: bool, message: &str) {
     if !condition {
         failures.push(message.to_string());
     }
 }
 
+#[cfg(any())]
 fn evaluate_latency(
     observation: &Value,
     failures: &mut Vec<String>,
@@ -855,6 +859,7 @@ fn evaluate_latency(
     }
 }
 
+#[cfg(any())]
 fn valid_resource_tick(tick: &Value) -> bool {
     let baseline = match tick.get("baseline").and_then(Value::as_object) {
         Some(v) => v,
@@ -905,6 +910,7 @@ fn valid_resource_tick(tick: &Value) -> bool {
             .is_some_and(|v| v <= b.get("tokio_tasks").and_then(Value::as_u64).unwrap_or(0) + 8)
 }
 
+#[cfg(any())]
 fn evaluate(id: ScenarioId, observation: &Value, profile: Profile) -> (bool, Vec<String>, Value) {
     let mut failures = Vec::new();
     let mut thresholds = BTreeMap::new();
