@@ -22,14 +22,18 @@ pub fn run(case: super::CapacitySelfTestCase) -> anyhow::Result<()> {
         super::CapacitySelfTestCase::ConnectorPoison => connector_poison_receipt()?,
         super::CapacitySelfTestCase::OptionalFault => optional_fault_receipt()?,
         super::CapacitySelfTestCase::ByteIdentity => {
-            return write_receipt(
-                name,
-                json!({
-                    "schema_version": 1, "case": case_name, "claim": CLAIM,
-                    "verdict": "did_not_pass", "failure": "byte-identity control is owned by B7"
-                }),
-            )
-            .and_then(|_| anyhow::bail!("capacity self-test byte-identity is not implemented"))
+            let runtime = tokio::runtime::Runtime::new()?;
+            match runtime.block_on(super::identity::run_control()) {
+                Ok(body) => {
+                    super::identity::write_canonical_receipt(&body)?;
+                    return Ok(());
+                }
+                Err(error) => {
+                    let body = json!({"schema_version":1,"case":case_name,"claim":CLAIM,"verdict":"did_not_pass","failure":error.to_string()});
+                    super::identity::write_canonical_receipt(&body)?;
+                    return Err(error);
+                }
+            }
         }
     };
     let dir = root();

@@ -1,0 +1,6 @@
+{
+  "path": "/api/stream/SYN",
+  "transport": "loopback",
+  "first_data_timestamp": 1750000000000000000,
+  "fixed_utc": "2026-08-24T00:00:00Z"
+}

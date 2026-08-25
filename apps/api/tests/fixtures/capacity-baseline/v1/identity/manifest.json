@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "reference_revision": "c30ed8151b82f847fd75552528dcba30bdca5ae8",
+  "request": "SPY?min_dte=7&max_dte=45",
+  "fixed_utc": "2026-08-24T00:00:00Z",
+  "seed": 1,
+  "runtime_exclusions": ["meta.served_at", "meta.compute_ms", "meta.elapsed_ms", "meta.cache.age_seconds"],
+  "helper": {"path":"capture-helper.rs","sha256":"5515853919afe032682166a557927e83f9be18b62df970b866a0d17c71d50ab8"},
+  "reference_test_seam": {"path":"reference-test-seam.patch","sha256":"459b407f57647f195af3c39a4d258b86ee0a5e46d836d333612fc717830160f9"},
+  "files": [
+    {"path":"inputs/spy.json","sha256":"f350e9a79fd40f83c2ec3625fa45dea5428f99889c9b03dc7770d78bb7e57d1a"},
+    {"path":"inputs/sse.json","sha256":"2faa7eafeccf7679b76904b6045b34ff27f05499d7c36cfdf235912073cc741c"},
+    {"path":"before/ticker.json","sha256":"eb96e97797518db99a563c293c3f05004907c8730f91663ff76174f190148605"},
+    {"path":"before/sse.json","sha256":"9c34db6b7d69e37c83fa280bce65c59894ad97517a98ede53c2c29d4daebf6fe"},
+    {"path":"before/decision.json","sha256":"9a7846673ce061a9f043d067883199422c389034d7786fd5efdc04e4791c0fe2"}
+  ],
+  "api_contract_artifacts": [
+    {"path":"apps/api/openapi/precutover-operation-baseline.json","base_sha256":"2803c58a00f563e6e136056582f1a5682fc05bfe196f501d9e813c48a8b35c8f"},
+    {"path":"apps/api/openapi/convexa.openapi.json","base_sha256":"deec24e279c03c93c2af8da8f5ee3e694f188f5a3cca3ee7ce803f9ac17b9f87"},
+    {"path":"apps/api/openapi/parity-coverage.json","base_sha256":"c7f23f6ca20157d82efeb66f1fdb3662cc5d7a5096c331b29166562e6832c01b"},
+    {"path":"apps/api/openapi/generated-artifacts.manifest.json","base_sha256":"b7b501c2852d433ebf08053b25c13763617d24f48914a08e180ca33b75015949"},
+    {"path":"libs/api/src/generated/schema.ts","base_sha256":"724181c0d47cae9a3a7032eecfa21901c310f1406aab26e9b14735c43a352e9c"}
+  ],
+  "generated_client_baseline": {"entries":["file\tlibs/api/src/generated/schema.ts\n"],"sha256":"262f9c4f4e9fd5641c82b686237d58086c5d7d16a02fd9209821ae86e42bcbe9"},
+  "projection": ["ticker", "sse", "score", "tier", "ai_eval.state_fingerprint", "entry_gate", "local_rules_recommendation"]
+}

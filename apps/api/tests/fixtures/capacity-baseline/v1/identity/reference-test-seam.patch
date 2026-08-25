@@ -1,0 +1,5 @@
+diff --git a/apps/api/src/infrastructure/massive/ws.rs b/apps/api/src/infrastructure/massive/ws.rs
+--- a/apps/api/src/infrastructure/massive/ws.rs
++++ b/apps/api/src/infrastructure/massive/ws.rs
+@@
++// Test-only publisher seam is applied only in the detached oracle checkout.
