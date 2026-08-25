@@ -274,7 +274,7 @@ pub const fn child_runtime_limits() -> (usize, usize, u64) {
 }
 
 pub fn child_isolated_runtime(
-    child: String,
+    child_name: String,
     fixture_dir: PathBuf,
     iv_fault: bool,
 ) -> anyhow::Result<()> {
@@ -288,7 +288,7 @@ pub fn child_isolated_runtime(
                 .thread_keep_alive(std::time::Duration::from_secs(keep_alive_secs))
                 .enable_all()
                 .build()?;
-            runtime.block_on(child(child, fixture_dir, iv_fault))
+            runtime.block_on(child(child_name, fixture_dir, iv_fault))
         })
         .map_err(|error| anyhow::anyhow!("capacity child runtime spawn failed: {error}"))?;
     handle

@@ -38,14 +38,11 @@ pub async fn cli(
             child,
             fixture_dir,
             iv_fault,
-        }) => {
-            runner::child_isolated_runtime(
-                child.ok_or_else(|| anyhow::anyhow!("child id is required"))?,
-                fixture_dir.ok_or_else(|| anyhow::anyhow!("fixture directory is required"))?,
-                iv_fault,
-            )
-            .await
-        }
+        }) => runner::child_isolated_runtime(
+            child.ok_or_else(|| anyhow::anyhow!("child id is required"))?,
+            fixture_dir.ok_or_else(|| anyhow::anyhow!("fixture directory is required"))?,
+            iv_fault,
+        ),
         None => {
             runner::run(match profile {
                 CapacityProfileArg::Normal => Profile::Normal,
