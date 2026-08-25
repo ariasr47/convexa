@@ -243,19 +243,17 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
                         let (resource, life_after) = {
                             let mut resource = resource;
                             let mut life_after = life_after;
-                            let fd_jump = lifecycle_is_quiescent(life_after)
-                                && should_settle_quiescent_fd_jump(
-                                    last_quiescent_handles,
-                                    resource.handles_or_fds,
-                                );
-                            let mut settle_lifecycle_quiescent = true;
+                            let fd_jump = should_settle_fd_jump(
+                                last_quiescent_handles,
+                                resource.handles_or_fds,
+                            );
                             if fd_jump {
                                 // Request guards can drop just before Hyper closes
                                 // the accepted socket. Sample for up to one
-                                // second while counters remain zero;
+                                // second through active -> quiescent transition;
                                 // a persistent leak stays high in every sample.
-                                let mut settle_samples = vec![resource.handles_or_fds];
                                 let mut settle_life_after = life_after;
+                                let mut settle_trace = Vec::new();
                                 for _ in 0..10 {
                                     tokio::time::sleep(std::time::Duration::from_millis(
                                         TRANSPORT_SETTLE_MILLIS,
@@ -268,22 +266,23 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
                                     };
                                     let settled_life = state.lifecycle_probe.snapshot();
                                     settle_life_after = settled_life;
-                                    if !lifecycle_is_quiescent(settled_life) {
-                                        settle_lifecycle_quiescent = false;
+                                    let settled_quiescent = lifecycle_is_quiescent(settled_life);
+                                    settle_trace.push((settled.handles_or_fds, settled_quiescent));
+                                    if !settled_quiescent
+                                        && settle_trace.iter().any(|(_, quiescent)| *quiescent)
+                                    {
                                         break;
                                     }
-                                    settle_samples.push(settled.handles_or_fds);
                                 }
-                                resource.handles_or_fds = settled_handles_or_first(
+                                if let Some(settled_handles) = settled_handles_from_trace(
                                     resource.handles_or_fds,
-                                    &settle_samples,
-                                    settle_lifecycle_quiescent,
-                                );
-                                if !settle_lifecycle_quiescent {
-                                    life_after = settle_life_after;
+                                    &settle_trace,
+                                ) {
+                                    resource.handles_or_fds = settled_handles;
                                 }
+                                life_after = settle_life_after;
                             }
-                            if lifecycle_is_quiescent(life_after) && settle_lifecycle_quiescent {
+                            if lifecycle_is_quiescent(life_after) {
                                 last_quiescent_handles = Some(resource.handles_or_fds);
                             } else {
                                 last_quiescent_handles = None;
@@ -370,20 +369,22 @@ fn lifecycle_is_quiescent(life: crate::services::live_capacity::LifecycleSnapsho
     life.active_requests == 0 && life.active_subscribers == 0 && life.active_sse_tasks == 0
 }
 
-fn should_settle_quiescent_fd_jump(last: Option<u64>, current: u64) -> bool {
+fn should_settle_fd_jump(last: Option<u64>, current: u64) -> bool {
     cfg!(target_os = "linux") && last.is_some_and(|previous| current > previous)
 }
 
-fn settled_quiescent_handles(samples: &[u64]) -> u64 {
-    samples.iter().copied().min().unwrap_or_default()
-}
-
-fn settled_handles_or_first(first: u64, samples: &[u64], remained_quiescent: bool) -> u64 {
-    if remained_quiescent {
-        settled_quiescent_handles(samples)
-    } else {
-        first
+fn settled_handles_from_trace(first: u64, samples: &[(u64, bool)]) -> Option<u64> {
+    let mut minimum = first;
+    let mut reached_quiescence = false;
+    for &(handles, quiescent) in samples {
+        if quiescent {
+            reached_quiescence = true;
+            minimum = minimum.min(handles);
+        } else if reached_quiescence {
+            return None;
+        }
     }
+    reached_quiescence.then_some(minimum)
 }
 
 pub fn child_isolated_runtime(
@@ -1938,10 +1939,22 @@ mod protocol_tests {
 
     #[test]
     fn quiescent_fd_settle_selects_socket_close_but_not_persistent_growth() {
-        assert_eq!(settled_quiescent_handles(&[49, 49, 49, 17]), 17);
-        assert_eq!(settled_quiescent_handles(&[49, 49, 49]), 49);
-        assert_eq!(settled_handles_or_first(49, &[49, 17], true), 17);
-        assert_eq!(settled_handles_or_first(49, &[49, 17], false), 49);
+        assert_eq!(
+            settled_handles_from_trace(49, &[(49, false), (49, false), (17, true)]),
+            Some(17)
+        );
+        assert_eq!(
+            settled_handles_from_trace(49, &[(49, true), (49, true), (49, true)]),
+            Some(49)
+        );
+        assert_eq!(
+            settled_handles_from_trace(49, &[(49, false), (49, false), (49, false)]),
+            None
+        );
+        assert_eq!(
+            settled_handles_from_trace(49, &[(17, true), (49, false)]),
+            None
+        );
         assert!(lifecycle_is_quiescent(
             crate::services::live_capacity::LifecycleSnapshot {
                 active_requests: 0,
@@ -1955,15 +1968,15 @@ mod protocol_tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn linux_fd_jump_requests_extended_settle() {
-        assert!(should_settle_quiescent_fd_jump(Some(17), 49));
-        assert!(!should_settle_quiescent_fd_jump(Some(49), 49));
-        assert!(!should_settle_quiescent_fd_jump(None, 49));
+        assert!(should_settle_fd_jump(Some(17), 49));
+        assert!(!should_settle_fd_jump(Some(49), 49));
+        assert!(!should_settle_fd_jump(None, 49));
     }
 
     #[cfg(target_os = "windows")]
     #[test]
     fn windows_fd_jump_keeps_immediate_sampling() {
-        assert!(!should_settle_quiescent_fd_jump(Some(17), 49));
+        assert!(!should_settle_fd_jump(Some(17), 49));
     }
 
     #[test]
