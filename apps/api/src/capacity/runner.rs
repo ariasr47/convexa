@@ -28,29 +28,14 @@ fn scenario(_profile: Profile, id: ScenarioId) -> Value {
         ScenarioId::SseCapacityRefusal => "expected_capacity_refusal",
         _ => "accepted",
     };
-    let observations = if id == ScenarioId::PostLoadRecovery {
-        json!({
-            "children": CHILDREN.iter().map(|child| json!({
-                "child": child, "alive_at_checkpoint": true,
-                "sampler": if cfg!(windows) { "handles" } else { "file_descriptors" },
-                "pre_load": {"rss_bytes": 0, "handles_or_fds": 0, "tokio_tasks": 0, "active_requests": 0, "active_subscribers": 0, "active_sse_tasks": 0},
-                "current": {"rss_bytes": 0, "handles_or_fds": 0, "tokio_tasks": 0, "active_requests": 0, "active_subscribers": 0, "active_sse_tasks": 0},
-                "delta": {"rss_bytes": 0, "handles_or_fds": 0, "tokio_tasks": 0, "active_requests": 0, "active_subscribers": 0, "active_sse_tasks": 0}
-            })).chain(std::iter::once(json!({
-                "child": "aggregate", "alive_at_checkpoint": true,
-                "sampler": if cfg!(windows) { "handles" } else { "file_descriptors" },
-                "pre_load": {"rss_bytes": 0, "handles_or_fds": 0, "tokio_tasks": 0, "active_requests": 0, "active_subscribers": 0, "active_sse_tasks": 0},
-                "current": {"rss_bytes": 0, "handles_or_fds": 0, "tokio_tasks": 0, "active_requests": 0, "active_subscribers": 0, "active_sse_tasks": 0},
-                "delta": {"rss_bytes": 0, "handles_or_fds": 0, "tokio_tasks": 0, "active_requests": 0, "active_subscribers": 0, "active_sse_tasks": 0}
-            }))).collect::<Vec<_>>()
-        })
-    } else {
-        json!({"count": 1, "latency_ms": [0.001], "outcomes": [expected]})
-    };
+    // A report is retained even when execution is unavailable, but absence of
+    // observations is represented as a failure. Never synthesize measurements.
+    let observations = json!({});
     json!({
-        "id": id.token(), "status": "pass", "expected_outcome": expected,
-        "observations": observations, "thresholds": {}, "failures": [],
-        "diagnostics": []
+        "id": id.token(), "status": "did_not_pass", "expected_outcome": expected,
+        "observations": observations, "thresholds": {},
+        "failures": ["workload execution is not implemented; required observations are missing"],
+        "diagnostics": ["No child process, loopback client, sampler, or control was executed."]
     })
 }
 
@@ -70,9 +55,11 @@ pub fn build_report(profile: Profile, elapsed_ms: u64) -> Value {
             "sampler": if cfg!(windows) {"windows"} else {"linux"},
             "sampler_semantic": if cfg!(windows) {"handles"} else {"file_descriptors"}},
         "claim": CLAIM, "manifest": manifest_value, "scenarios": scenarios,
-        "summary": {"verdict": "pass", "elapsed_ms": elapsed_ms, "failed_scenarios": [],
-            "missing_required_observations": [], "forbidden_connector_attempts": [],
-            "cleanup": {"children": CHILDREN, "acknowledged": true, "forced": false}}
+        "summary": {"verdict": "did_not_pass", "elapsed_ms": elapsed_ms,
+            "failed_scenarios": ScenarioId::ALL.iter().map(|id| id.token()).collect::<Vec<_>>(),
+            "missing_required_observations": ScenarioId::ALL.iter().map(|id| id.token()).collect::<Vec<_>>(),
+            "forbidden_connector_attempts": [],
+            "cleanup": {"children": CHILDREN, "acknowledged": false, "forced": false}}
     })
 }
 
@@ -83,7 +70,7 @@ pub fn run(profile: Profile) -> anyhow::Result<()> {
     let mut canonical = bytes;
     canonical.push(b'\n');
     atomic_replace_value(&report_path(profile), &canonical)?;
-    Ok(())
+    anyhow::bail!("capacity workload did not execute; retained did_not_pass report")
 }
 
 fn atomic_replace_value(path: &Path, bytes: &[u8]) -> anyhow::Result<()> {
@@ -95,6 +82,7 @@ fn atomic_replace_value(path: &Path, bytes: &[u8]) -> anyhow::Result<()> {
             .get("scenarios")
             .and_then(Value::as_array)
             .map_or(true, |v| v.len() != 13)
+        || value.get("summary").and_then(|s| s.get("verdict")).and_then(Value::as_str) == Some("pass")
     {
         anyhow::bail!("capacity report validation failed")
     }

@@ -7,37 +7,19 @@ fn root() -> PathBuf {
 }
 
 pub fn run(case: super::CapacitySelfTestCase) -> anyhow::Result<()> {
-    let (name, body) = match case {
-        super::CapacitySelfTestCase::ConnectorPoison => {
-            let controls = ["massive_rest","massive_websocket","redis","postgres","broker","llm","oauth"]
-                .iter().map(|id| json!({"connector_id":id,"exercised":true,"verdict":"did_not_pass","match":true})).collect::<Vec<_>>();
-            (
-                "connector-poison.json",
-                json!({"schema_version": 1, "case": "connector-poison", "claim": CLAIM,
-                "healthy": {"verdict":"pass","forbidden_connector_attempts":[]}, "controls": controls,
-                "unlisted_inventory_control": {"rejected":true}, "verdict":"pass"}),
-            )
-        }
-        super::CapacitySelfTestCase::OptionalFault => (
-            "optional-fault.json",
-            json!({
-                "schema_version": 1, "case": "optional-fault", "claim": CLAIM,
-                "healthy": {"http_status":200,"market_state":{"iv_rank":{"percentile":50}},"ai_eval":{"ready":true,"state_fingerprint":"fixture"}},
-                "fault": {"http_status":200,"market_state":{"iv_rank":null},"ai_eval":{"ready":true,"state_fingerprint":"fixture"}},
-                "core_projection_match": true, "sse_later_data_event": true, "verdict":"pass"
-            }),
-        ),
-        super::CapacitySelfTestCase::ByteIdentity => (
-            "byte-identity.json",
-            json!({
-                "schema_version": 1, "case": "byte-identity", "claim": CLAIM,
-                "api_contract_check":{"command":"npm run api:contract:check","exit":0,"status":"pass","operations":52},
-                "route_inventory":{"base_count":52,"current_count":52,"additions":[],"removals":[]},
-                "artifacts":[], "generated_inventory":{"base":["file\\tlibs/api/src/generated/schema.ts\\n"],"current":["file\\tlibs/api/src/generated/schema.ts\\n"],"additions":[],"removals":[]},
-                "exclusions":["meta.timings","meta.trace_id","meta.freshness.observed_at","ts"], "verdict":"pass"
-            }),
-        ),
+    let (name, case_name) = match case {
+        super::CapacitySelfTestCase::ConnectorPoison => ("connector-poison.json", "connector-poison"),
+        super::CapacitySelfTestCase::OptionalFault => ("optional-fault.json", "optional-fault"),
+        super::CapacitySelfTestCase::ByteIdentity => ("byte-identity.json", "byte-identity"),
     };
+    // Retain an explicit failure receipt, but never claim a control ran. Each
+    // control needs real fixture execution and measured evidence before it can
+    // return success.
+    let body = json!({
+        "schema_version": 1, "case": case_name, "claim": CLAIM,
+        "verdict": "did_not_pass",
+        "failure": "control execution is not implemented; no measured evidence was collected"
+    });
     let dir = root();
     std::fs::create_dir_all(&dir)?;
     let path = dir.join(name);
@@ -46,5 +28,5 @@ pub fn run(case: super::CapacitySelfTestCase) -> anyhow::Result<()> {
     let tmp = dir.join(format!(".{name}.tmp-{}", std::process::id()));
     std::fs::write(&tmp, bytes)?;
     std::fs::rename(tmp, path)?;
-    Ok(())
+    anyhow::bail!("capacity self-test {case_name} did not execute; retained did_not_pass receipt")
 }
