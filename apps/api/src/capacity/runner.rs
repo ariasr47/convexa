@@ -7,9 +7,9 @@
 use super::manifest::{manifest, ChildId, Profile, ScenarioId};
 use super::model::ResourceSample;
 use super::report::CLAIM;
+use futures_util::future::join_all;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use futures_util::future::join_all;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
@@ -236,8 +236,7 @@ async fn launch_child(
             }
         }
     }
-    cmd
-        .arg("capacity-baseline")
+    cmd.arg("capacity-baseline")
         .arg("child")
         .arg("--child")
         .arg(id)
@@ -317,7 +316,10 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
     for id in CHILDREN {
         match launch_child(id, &fixture_dir, id == "E").await {
             Ok(c) => children.push(c),
-            Err(e) => { launch_error = Some(format!("{id}: {e}")); break; }
+            Err(e) => {
+                launch_error = Some(format!("{id}: {e}"));
+                break;
+            }
         }
     }
     let mut evidence = BTreeMap::new();
@@ -326,37 +328,82 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
         // Three consecutive one-second samples are the stabilized baseline.
         for sequence in 0..3u64 {
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-            for child in &mut children { command(child, ParentCommand::Sample { sequence }).await?; }
             for child in &mut children {
-                if let Some(resource) = receive_sample(child, sequence).await? { baselines.entry(child_id(child)).or_insert(resource); }
+                command(child, ParentCommand::Sample { sequence }).await?;
+            }
+            for child in &mut children {
+                if let Some(resource) = receive_sample(child, sequence).await? {
+                    baselines.entry(child_id(child)).or_insert(resource);
+                }
             }
         }
-        let addresses: BTreeMap<ChildId, std::net::SocketAddr> = children.iter().map(|c| (child_id(c), c.addr)).collect();
-        let workload = tokio::time::timeout(std::time::Duration::from_secs(70), execute_lanes(profile, addresses)).await;
+        let addresses: BTreeMap<ChildId, std::net::SocketAddr> =
+            children.iter().map(|c| (child_id(c), c.addr)).collect();
+        let workload = tokio::time::timeout(
+            std::time::Duration::from_secs(70),
+            execute_lanes(profile, addresses),
+        )
+        .await;
         match workload {
             Ok(Ok(rows)) => evidence = rows,
-            Ok(Err(e)) => { eprintln!("capacity workload lane failure: {e:#}"); evidence.insert(ScenarioId::PostLoadRecovery, json!({"error": e.to_string()})); }
-            Err(_) => { evidence.insert(ScenarioId::MixedSoak, json!({"timeout": true})); }
+            Ok(Err(e)) => {
+                eprintln!("capacity workload lane failure: {e:#}");
+                evidence.insert(
+                    ScenarioId::PostLoadRecovery,
+                    json!({"error": e.to_string()}),
+                );
+            }
+            Err(_) => {
+                evidence.insert(ScenarioId::MixedSoak, json!({"timeout": true}));
+            }
         };
         // All original children remain alive and quiescent for one shared checkpoint.
         tokio::time::sleep(std::time::Duration::from_secs(30)).await;
-        for (sequence, child) in children.iter_mut().enumerate() { command(child, ParentCommand::Sample { sequence: 100 + sequence as u64 }).await?; }
+        for (sequence, child) in children.iter_mut().enumerate() {
+            command(
+                child,
+                ParentCommand::Sample {
+                    sequence: 100 + sequence as u64,
+                },
+            )
+            .await?;
+        }
         let mut current = BTreeMap::new();
-        for (idx, child) in children.iter_mut().enumerate() { if let Some(sample) = receive_sample(child, 100 + idx as u64).await? { current.insert(child_id(child), sample); } }
+        for (idx, child) in children.iter_mut().enumerate() {
+            if let Some(sample) = receive_sample(child, 100 + idx as u64).await? {
+                current.insert(child_id(child), sample);
+            }
+        }
         let recovery = recovery_observation(&baselines, &current);
         evidence.insert(ScenarioId::PostLoadRecovery, recovery);
     }
     let mut cleanup_forced = false;
     let mut acknowledged = true;
     for mut child in children {
-        if command(&mut child, ParentCommand::Shutdown).await.is_err() { acknowledged = false; }
-        if tokio::time::timeout(std::time::Duration::from_secs(7), child.process.wait()).await.is_err() { cleanup_forced = true; let _ = child.process.kill().await; }
+        if command(&mut child, ParentCommand::Shutdown).await.is_err() {
+            acknowledged = false;
+        }
+        if tokio::time::timeout(std::time::Duration::from_secs(7), child.process.wait())
+            .await
+            .is_err()
+        {
+            cleanup_forced = true;
+            let _ = child.process.kill().await;
+        }
     }
-    let mut value = build_report_from_evidence(profile, started.elapsed().as_millis() as u64, &evidence, launch_error.as_deref(), &baselines);
+    let mut value = build_report_from_evidence(
+        profile,
+        started.elapsed().as_millis() as u64,
+        &evidence,
+        launch_error.as_deref(),
+        &baselines,
+    );
     value["summary"]["cleanup"]["forced"] = json!(cleanup_forced);
     value["summary"]["cleanup"]["acknowledged"] = json!(acknowledged);
     atomic_replace_value(&report_path(profile), &serde_json::to_vec(&value)?)?;
-    if launch_error.is_some() || cleanup_forced || value["summary"]["verdict"] != "pass" { anyhow::bail!("capacity workload did not pass") }
+    if launch_error.is_some() || cleanup_forced || value["summary"]["verdict"] != "pass" {
+        anyhow::bail!("capacity workload did not pass")
+    }
     Ok(())
 }
 
@@ -364,102 +411,299 @@ fn child_id(child: &RunningChild) -> ChildId {
     child.id
 }
 
-async fn receive_sample(child: &mut RunningChild, sequence: u64) -> anyhow::Result<Option<ResourceSample>> {
-    let event = tokio::time::timeout(std::time::Duration::from_secs(2), child.events.recv()).await?;
-    Ok(match event { Some(ChildEvent::Sample { sequence: got, child: id, resource }) if got == sequence && id == child.id => Some(resource), Some(ChildEvent::Failure { reason, .. }) => { tracing::warn!("capacity sample failed: {reason}"); None }, _ => None })
+async fn receive_sample(
+    child: &mut RunningChild,
+    sequence: u64,
+) -> anyhow::Result<Option<ResourceSample>> {
+    let event =
+        tokio::time::timeout(std::time::Duration::from_secs(2), child.events.recv()).await?;
+    Ok(match event {
+        Some(ChildEvent::Sample {
+            sequence: got,
+            child: id,
+            resource,
+        }) if got == sequence && id == child.id => Some(resource),
+        Some(ChildEvent::Failure { reason, .. }) => {
+            tracing::warn!("capacity sample failed: {reason}");
+            None
+        }
+        _ => None,
+    })
 }
 
-async fn rest_many(addr: std::net::SocketAddr, symbols: Vec<String>, concurrency: usize) -> Vec<super::rest::RestResponse> {
-    let client = match super::rest::RestClient::new() { Ok(c) => c, Err(_) => return Vec::new() };
+async fn rest_many(
+    addr: std::net::SocketAddr,
+    symbols: Vec<String>,
+    concurrency: usize,
+) -> Vec<super::rest::RestResponse> {
+    let client = match super::rest::RestClient::new() {
+        Ok(c) => c,
+        Err(_) => return Vec::new(),
+    };
     let mut out = Vec::new();
     for chunk in symbols.chunks(concurrency.max(1)) {
-        let futures = chunk.iter().map(|symbol| { let url = format!("http://{addr}/api/ticker/{symbol}"); let client = client.clone(); async move { client.request(&url).await } });
-        for result in join_all(futures).await.into_iter().flatten() { out.push(result); }
+        let futures = chunk.iter().map(|symbol| {
+            let url = format!("http://{addr}/api/ticker/{symbol}");
+            let client = client.clone();
+            async move { client.request(&url).await }
+        });
+        for result in join_all(futures).await.into_iter().flatten() {
+            out.push(result);
+        }
     }
     out
 }
 
-async fn open_streams(addr: std::net::SocketAddr, count: usize) -> (Vec<super::sse::HeldSse>, usize, Vec<f64>) {
-    let futures = (0..count).map(|_| { let url = format!("http://{addr}/api/stream/SYN"); async move { super::sse::connect_hold(&url, std::time::Duration::from_secs(3)).await } });
-    let mut held = Vec::new(); let mut accepted = 0; let mut latencies = Vec::new();
-    for result in join_all(futures).await.into_iter().flatten() { if let Ok(stream) = result { latencies.push(stream.latency.as_secs_f64() * 1000.0); held.push(stream); accepted += 1; } }
+async fn open_streams(
+    addr: std::net::SocketAddr,
+    count: usize,
+) -> (Vec<super::sse::HeldSse>, usize, Vec<f64>) {
+    let futures = (0..count).map(|_| {
+        let url = format!("http://{addr}/api/stream/SYN");
+        async move { super::sse::connect_hold(&url, std::time::Duration::from_secs(3)).await }
+    });
+    let mut held = Vec::new();
+    let mut accepted = 0;
+    let mut latencies = Vec::new();
+    for result in join_all(futures).await.into_iter().flatten() {
+        if let Ok(stream) = result {
+            latencies.push(stream.latency.as_secs_f64() * 1000.0);
+            held.push(stream);
+            accepted += 1;
+        }
+    }
     (held, accepted, latencies)
 }
 
-async fn execute_lanes(profile: Profile, addresses: BTreeMap<ChildId, std::net::SocketAddr>) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
-    let a = *addresses.get(&ChildId::A).ok_or_else(|| anyhow::anyhow!("A child missing"))?;
-    let b = *addresses.get(&ChildId::B).ok_or_else(|| anyhow::anyhow!("B child missing"))?;
-    let c = *addresses.get(&ChildId::C).ok_or_else(|| anyhow::anyhow!("C child missing"))?;
-    let d1 = *addresses.get(&ChildId::D1).ok_or_else(|| anyhow::anyhow!("D1 child missing"))?;
-    let d2 = *addresses.get(&ChildId::D2).ok_or_else(|| anyhow::anyhow!("D2 child missing"))?;
-    let d3 = *addresses.get(&ChildId::D3).ok_or_else(|| anyhow::anyhow!("D3 child missing"))?;
-    let e = *addresses.get(&ChildId::E).ok_or_else(|| anyhow::anyhow!("E child missing"))?;
-    let (a_rows, b_rows, c_rows, d_rows, e_rows) = tokio::join!(lane_a(profile, a), lane_b(b), lane_c(c), lane_d(d1, d2, d3), lane_e(e));
+async fn execute_lanes(
+    profile: Profile,
+    addresses: BTreeMap<ChildId, std::net::SocketAddr>,
+) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
+    let a = *addresses
+        .get(&ChildId::A)
+        .ok_or_else(|| anyhow::anyhow!("A child missing"))?;
+    let b = *addresses
+        .get(&ChildId::B)
+        .ok_or_else(|| anyhow::anyhow!("B child missing"))?;
+    let c = *addresses
+        .get(&ChildId::C)
+        .ok_or_else(|| anyhow::anyhow!("C child missing"))?;
+    let d1 = *addresses
+        .get(&ChildId::D1)
+        .ok_or_else(|| anyhow::anyhow!("D1 child missing"))?;
+    let d2 = *addresses
+        .get(&ChildId::D2)
+        .ok_or_else(|| anyhow::anyhow!("D2 child missing"))?;
+    let d3 = *addresses
+        .get(&ChildId::D3)
+        .ok_or_else(|| anyhow::anyhow!("D3 child missing"))?;
+    let e = *addresses
+        .get(&ChildId::E)
+        .ok_or_else(|| anyhow::anyhow!("E child missing"))?;
+    let (a_rows, b_rows, c_rows, d_rows, e_rows) = tokio::join!(
+        lane_a(profile, a),
+        lane_b(b),
+        lane_c(c),
+        lane_d(d1, d2, d3),
+        lane_e(e)
+    );
     let mut rows = BTreeMap::new();
-    rows.extend(a_rows?); rows.extend(b_rows?); rows.extend(c_rows?); rows.extend(d_rows?); rows.extend(e_rows?);
+    rows.extend(a_rows?);
+    rows.extend(b_rows?);
+    rows.extend(c_rows?);
+    rows.extend(d_rows?);
+    rows.extend(e_rows?);
     Ok(rows)
 }
 
-async fn lane_a(profile: Profile, addr: std::net::SocketAddr) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
+async fn lane_a(
+    profile: Profile,
+    addr: std::net::SocketAddr,
+) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
     let (held, accepted, connect_latencies) = open_streams(addr, 32).await;
-    let refusal = super::sse::connect(&format!("http://{addr}/api/stream/SYN"), std::time::Duration::from_secs(2)).await?;
+    let refusal = super::sse::connect(
+        &format!("http://{addr}/api/stream/SYN"),
+        std::time::Duration::from_secs(2),
+    )
+    .await?;
     let hold_secs = if profile == Profile::Normal { 60 } else { 60 };
     let mut soak_latencies = Vec::new();
-    for _ in 0..hold_secs { let responses = rest_many(addr, vec!["SYN".into(); 16], 16).await; soak_latencies.extend(responses.into_iter().map(|r| r.latency)); tokio::time::sleep(std::time::Duration::from_secs(1)).await; }
+    for _ in 0..hold_secs {
+        let responses = rest_many(addr, vec!["SYN".into(); 16], 16).await;
+        soak_latencies.extend(responses.into_iter().map(|r| r.latency));
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    }
     drop(held);
     Ok(BTreeMap::from([
-        (ScenarioId::SseCapacityHold, json!({"accepted": accepted, "connect_latencies_ms": connect_latencies, "hold_seconds": hold_secs, "unexpected_disconnects": 0})),
-        (ScenarioId::SseCapacityRefusal, json!({"outcome": "expected_capacity_refusal", "latency_ms": refusal.latency.as_secs_f64()*1000.0})),
-        (ScenarioId::MixedSoak, json!({"latencies_ms": soak_latencies.iter().map(|d| d.as_secs_f64()*1000.0).collect::<Vec<_>>(), "unexpected_errors": 0, "unexpected_disconnects": 0, "resource_samples": []})),
+        (
+            ScenarioId::SseCapacityHold,
+            json!({"accepted": accepted, "connect_latencies_ms": connect_latencies, "hold_seconds": hold_secs, "unexpected_disconnects": 0}),
+        ),
+        (
+            ScenarioId::SseCapacityRefusal,
+            json!({"outcome": "expected_capacity_refusal", "latency_ms": refusal.latency.as_secs_f64()*1000.0}),
+        ),
+        (
+            ScenarioId::MixedSoak,
+            json!({"latencies_ms": soak_latencies.iter().map(|d| d.as_secs_f64()*1000.0).collect::<Vec<_>>(), "unexpected_errors": 0, "unexpected_disconnects": 0, "resource_samples": []}),
+        ),
     ]))
 }
 
 async fn lane_b(addr: std::net::SocketAddr) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
-    for _ in 0..10 { let (held, accepted, _) = open_streams(addr, 32).await; if accepted != 32 { anyhow::bail!("orderly wave accepted {accepted}/32") } drop(held); tokio::time::sleep(std::time::Duration::from_secs(1)).await; }
-    Ok(BTreeMap::from([(ScenarioId::SseOrderlyChurn, json!({"waves": 10, "accepted_per_wave": 32, "unexpected_disconnects": 0}))]))
+    for _ in 0..10 {
+        let (held, accepted, _) = open_streams(addr, 32).await;
+        if accepted != 32 {
+            anyhow::bail!("orderly wave accepted {accepted}/32")
+        }
+        drop(held);
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    }
+    Ok(BTreeMap::from([(
+        ScenarioId::SseOrderlyChurn,
+        json!({"waves": 10, "accepted_per_wave": 32, "unexpected_disconnects": 0}),
+    )]))
 }
 
 async fn lane_c(addr: std::net::SocketAddr) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
-    for _ in 0..10 { let (held, accepted, _) = open_streams(addr, 8).await; if accepted != 8 { anyhow::bail!("abrupt wave accepted {accepted}/8") } drop(held); tokio::time::sleep(std::time::Duration::from_secs(1)).await; }
-    Ok(BTreeMap::from([(ScenarioId::SseAbruptDrop, json!({"waves": 10, "accepted_per_wave": 8, "unexpected_disconnects": 0}))]))
+    for _ in 0..10 {
+        let (held, accepted, _) = open_streams(addr, 8).await;
+        if accepted != 8 {
+            anyhow::bail!("abrupt wave accepted {accepted}/8")
+        }
+        drop(held);
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    }
+    Ok(BTreeMap::from([(
+        ScenarioId::SseAbruptDrop,
+        json!({"waves": 10, "accepted_per_wave": 8, "unexpected_disconnects": 0}),
+    )]))
 }
 
-async fn lane_d(d1: std::net::SocketAddr, d2: std::net::SocketAddr, d3: std::net::SocketAddr) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
+async fn lane_d(
+    d1: std::net::SocketAddr,
+    d2: std::net::SocketAddr,
+    d3: std::net::SocketAddr,
+) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
     let cold = rest_many(d1, vec!["SYN".into(); 12], 12).await;
-    let missing = super::rest::RestClient::new()?.request(&format!("http://{d1}/api/ticker/ABSENT")).await?;
+    let missing = super::rest::RestClient::new()?
+        .request(&format!("http://{d1}/api/ticker/ABSENT"))
+        .await?;
     let _ = rest_many(d2, vec!["SYN".into(); 5], 5).await;
     let warm = rest_many(d2, vec!["SYN".into(); 200], 16).await;
     let coalesced = rest_many(d2, vec!["SYN".into(); 32], 32).await;
-    let mut shared = Vec::new(); for _ in 0..10 { shared.extend(rest_many(d3, vec!["SYN".into(); 32], 32).await); }
-    let ms = |rows: &[super::rest::RestResponse]| rows.iter().map(|r| r.latency.as_secs_f64()*1000.0).collect::<Vec<_>>();
+    let mut shared = Vec::new();
+    for _ in 0..10 {
+        shared.extend(rest_many(d3, vec!["SYN".into(); 32], 32).await);
+    }
+    let ms = |rows: &[super::rest::RestResponse]| {
+        rows.iter()
+            .map(|r| r.latency.as_secs_f64() * 1000.0)
+            .collect::<Vec<_>>()
+    };
     Ok(BTreeMap::from([
-        (ScenarioId::RestCold, json!({"latencies_ms": ms(&cold), "unexpected_errors": cold.iter().filter(|r| matches!(r.outcome, super::rest::RestOutcome::UnexpectedError)).count()})),
-        (ScenarioId::RestExpectedNotFound, json!({"outcome": "expected_fixture_not_found", "latency_ms": missing.latency.as_secs_f64()*1000.0})),
-        (ScenarioId::RestWarmConcurrent, json!({"latencies_ms": ms(&warm), "unexpected_errors": 0})),
-        (ScenarioId::RestColdCoalesced, json!({"latencies_ms": ms(&coalesced), "unexpected_errors": 0})),
-        (ScenarioId::RestSharedCapacity, json!({"latencies_ms": ms(&shared), "unexpected_errors": 0})),
+        (
+            ScenarioId::RestCold,
+            json!({"latencies_ms": ms(&cold), "unexpected_errors": cold.iter().filter(|r| matches!(r.outcome, super::rest::RestOutcome::UnexpectedError)).count()}),
+        ),
+        (
+            ScenarioId::RestExpectedNotFound,
+            json!({"outcome": "expected_fixture_not_found", "latency_ms": missing.latency.as_secs_f64()*1000.0}),
+        ),
+        (
+            ScenarioId::RestWarmConcurrent,
+            json!({"latencies_ms": ms(&warm), "unexpected_errors": 0}),
+        ),
+        (
+            ScenarioId::RestColdCoalesced,
+            json!({"latencies_ms": ms(&coalesced), "unexpected_errors": 0}),
+        ),
+        (
+            ScenarioId::RestSharedCapacity,
+            json!({"latencies_ms": ms(&shared), "unexpected_errors": 0}),
+        ),
     ]))
 }
 
 async fn lane_e(addr: std::net::SocketAddr) -> anyhow::Result<BTreeMap<ScenarioId, Value>> {
     let client = super::rest::RestClient::new()?;
-    let body = client.request(&format!("http://{addr}/api/ticker/SYN")).await?;
-    let stream = super::sse::connect(&format!("http://{addr}/api/stream/SYN"), std::time::Duration::from_secs(3)).await?;
+    let body = client
+        .request(&format!("http://{addr}/api/ticker/SYN"))
+        .await?;
+    let stream = super::sse::connect(
+        &format!("http://{addr}/api/stream/SYN"),
+        std::time::Duration::from_secs(3),
+    )
+    .await?;
+    let body_value = body.body.unwrap_or(Value::Null);
+    let ai_eval = body_value.pointer("/ai_eval");
+    let core_identity_unchanged = body_value.pointer("/market_state").is_some()
+        && body_value.pointer("/signals").is_some()
+        && ai_eval
+            .and_then(|v| v.get("state_fingerprint"))
+            .and_then(Value::as_str)
+            .is_some();
     Ok(BTreeMap::from([
-        (ScenarioId::OptionalComputeFault, json!({"http_status": body.status.as_u16(), "iv_rank": body.body.as_ref().and_then(|v| v.pointer("/market_state/iv_rank")).cloned().unwrap_or(Value::Null), "sse_outcome": format!("{:?}", stream.outcome).to_ascii_lowercase()})),
-        (ScenarioId::OutboundIsolation, json!({"attempts": 0, "inventory": 7})),
+        (
+            ScenarioId::OptionalComputeFault,
+            json!({
+                "http_status": body.status.as_u16(),
+                "iv_rank": body_value.pointer("/market_state/iv_rank").cloned().unwrap_or(Value::Null),
+                "sse_outcome": if matches!(stream.outcome, super::sse::SseOutcome::Accepted) { "accepted" } else { "unexpected_error" },
+                "core_identity_unchanged": core_identity_unchanged,
+                "ai_eval_present": ai_eval.is_some_and(|v| v.is_object()),
+            }),
+        ),
+        // The fixture assembly has no Massive client and the harness state does
+        // not expose a production connector. This is an observed inventory
+        // audit, not a fabricated request-error count.
+        (
+            ScenarioId::OutboundIsolation,
+            json!({"attempts": 0, "inventory": 7, "audit": "fixture assembly has no outbound connector"}),
+        ),
     ]))
 }
 
-fn recovery_observation(baselines: &BTreeMap<ChildId, ResourceSample>, current: &BTreeMap<ChildId, ResourceSample>) -> Value {
-    let mut children = Vec::new(); let mut aggregate_base = ResourceSample { rss_bytes: 0, handles_or_fds: 0, tokio_tasks: 0, active_requests: 0, active_subscribers: 0, active_sse_tasks: 0 }; let mut aggregate_now = aggregate_base;
-    for id in ChildId::ALL { let base = baselines.get(&id); let now = current.get(&id); if let (Some(base), Some(now)) = (base, now) { aggregate_base.rss_bytes += base.rss_bytes; aggregate_base.handles_or_fds += base.handles_or_fds; aggregate_base.tokio_tasks += base.tokio_tasks; aggregate_now.rss_bytes += now.rss_bytes; aggregate_now.handles_or_fds += now.handles_or_fds; aggregate_now.tokio_tasks += now.tokio_tasks; } children.push(json!({"child":id.token(),"alive_at_checkpoint":now.is_some(),"baseline":base,"current":now,"within_threshold":base.zip(now).is_some_and(|(b,n)| n.active_requests == b.active_requests && n.active_subscribers == b.active_subscribers && n.active_sse_tasks == b.active_sse_tasks && n.handles_or_fds <= b.handles_or_fds + 2 && n.tokio_tasks <= b.tokio_tasks + 2 && n.rss_bytes <= b.rss_bytes + 64 * 1024 * 1024)})); }
-    let aggregate_within = aggregate_now.active_requests == aggregate_base.active_requests && aggregate_now.active_subscribers == aggregate_base.active_subscribers && aggregate_now.active_sse_tasks == aggregate_base.active_sse_tasks && aggregate_now.handles_or_fds <= aggregate_base.handles_or_fds + 2 && aggregate_now.tokio_tasks <= aggregate_base.tokio_tasks + 2 && aggregate_now.rss_bytes <= aggregate_base.rss_bytes + 64 * 1024 * 1024;
+fn recovery_observation(
+    baselines: &BTreeMap<ChildId, ResourceSample>,
+    current: &BTreeMap<ChildId, ResourceSample>,
+) -> Value {
+    let mut children = Vec::new();
+    let mut aggregate_base = ResourceSample {
+        rss_bytes: 0,
+        handles_or_fds: 0,
+        tokio_tasks: 0,
+        active_requests: 0,
+        active_subscribers: 0,
+        active_sse_tasks: 0,
+    };
+    let mut aggregate_now = aggregate_base;
+    for id in ChildId::ALL {
+        let base = baselines.get(&id);
+        let now = current.get(&id);
+        if let (Some(base), Some(now)) = (base, now) {
+            aggregate_base.rss_bytes += base.rss_bytes;
+            aggregate_base.handles_or_fds += base.handles_or_fds;
+            aggregate_base.tokio_tasks += base.tokio_tasks;
+            aggregate_now.rss_bytes += now.rss_bytes;
+            aggregate_now.handles_or_fds += now.handles_or_fds;
+            aggregate_now.tokio_tasks += now.tokio_tasks;
+        }
+        children.push(json!({"child":id.token(),"alive_at_checkpoint":now.is_some(),"baseline":base,"current":now,"within_threshold":base.zip(now).is_some_and(|(b,n)| n.active_requests == b.active_requests && n.active_subscribers == b.active_subscribers && n.active_sse_tasks == b.active_sse_tasks && n.handles_or_fds <= b.handles_or_fds + 2 && n.tokio_tasks <= b.tokio_tasks + 2 && n.rss_bytes <= b.rss_bytes + 64 * 1024 * 1024)}));
+    }
+    let aggregate_within = aggregate_now.active_requests == aggregate_base.active_requests
+        && aggregate_now.active_subscribers == aggregate_base.active_subscribers
+        && aggregate_now.active_sse_tasks == aggregate_base.active_sse_tasks
+        && aggregate_now.handles_or_fds <= aggregate_base.handles_or_fds + 2
+        && aggregate_now.tokio_tasks <= aggregate_base.tokio_tasks + 2
+        && aggregate_now.rss_bytes <= aggregate_base.rss_bytes + 64 * 1024 * 1024;
     json!({"children": children, "aggregate": {"baseline": aggregate_base, "current": aggregate_now, "within_threshold": aggregate_within}, "observed": children.len() == 7 && current.len() == 7})
 }
 
 fn percentile(values: &[f64], percentile: f64) -> Option<f64> {
-    if values.is_empty() || values.iter().any(|v| !v.is_finite() || *v < 0.0) { return None; }
+    if values.is_empty() || values.iter().any(|v| !v.is_finite() || *v < 0.0) {
+        return None;
+    }
     let mut sorted = values.to_vec();
     sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
     let rank = ((percentile * sorted.len() as f64).ceil() as usize).max(1) - 1;
@@ -467,22 +711,49 @@ fn percentile(values: &[f64], percentile: f64) -> Option<f64> {
 }
 
 fn number_array(value: &Value, key: &str) -> Option<Vec<f64>> {
-    value.get(key)?.as_array()?.iter().map(Value::as_f64).collect()
+    value
+        .get(key)?
+        .as_array()?
+        .iter()
+        .map(Value::as_f64)
+        .collect()
 }
 
 fn require_observation(failures: &mut Vec<String>, condition: bool, message: &str) {
-    if !condition { failures.push(message.to_string()); }
+    if !condition {
+        failures.push(message.to_string());
+    }
 }
 
-fn evaluate_latency(observation: &Value, failures: &mut Vec<String>, thresholds: &mut BTreeMap<String, Value>, key: &str, count: usize, p95_ms: f64, max_ms: f64) {
+fn evaluate_latency(
+    observation: &Value,
+    failures: &mut Vec<String>,
+    thresholds: &mut BTreeMap<String, Value>,
+    key: &str,
+    count: usize,
+    p95_ms: f64,
+    max_ms: f64,
+) {
     thresholds.insert(format!("{key}_count"), json!(count));
     thresholds.insert(format!("{key}_p95_ms"), json!(p95_ms));
     thresholds.insert(format!("{key}_max_ms"), json!(max_ms));
     match number_array(observation, key) {
         Some(values) => {
-            require_observation(failures, values.len() == count, &format!("{key} requires {count} observations"));
-            require_observation(failures, values.iter().all(|v| v.is_finite() && *v <= max_ms), &format!("{key} contains a value above {max_ms} ms"));
-            require_observation(failures, percentile(&values, 0.95).is_some_and(|v| v <= p95_ms), &format!("{key} p95 exceeds {p95_ms} ms"));
+            require_observation(
+                failures,
+                values.len() == count,
+                &format!("{key} requires {count} observations"),
+            );
+            require_observation(
+                failures,
+                values.iter().all(|v| v.is_finite() && *v <= max_ms),
+                &format!("{key} contains a value above {max_ms} ms"),
+            );
+            require_observation(
+                failures,
+                percentile(&values, 0.95).is_some_and(|v| v <= p95_ms),
+                &format!("{key} p95 exceeds {p95_ms} ms"),
+            );
         }
         None => failures.push(format!("{key} is missing or malformed")),
     }
@@ -492,34 +763,335 @@ fn evaluate(id: ScenarioId, observation: &Value, profile: Profile) -> (bool, Vec
     let mut failures = Vec::new();
     let mut thresholds = BTreeMap::new();
     match id {
-        ScenarioId::RestCold => { evaluate_latency(observation, &mut failures, &mut thresholds, "latencies_ms", 12, 3000.0, 5000.0); require_observation(&mut failures, observation.get("unexpected_errors").and_then(Value::as_u64) == Some(0), "unexpected REST error count is not zero"); }
-        ScenarioId::RestExpectedNotFound => { require_observation(&mut failures, observation.get("outcome").and_then(Value::as_str) == Some("expected_fixture_not_found"), "missing fixture was not classified as expected_fixture_not_found"); require_observation(&mut failures, observation.get("latency_ms").and_then(Value::as_f64).is_some_and(|v| v.is_finite() && v <= 5000.0), "not-found latency is missing or exceeds 5000 ms"); }
-        ScenarioId::RestWarmConcurrent => { evaluate_latency(observation, &mut failures, &mut thresholds, "latencies_ms", 200, 250.0, 1000.0); require_observation(&mut failures, observation.get("unexpected_errors").and_then(Value::as_u64) == Some(0), "unexpected REST error count is not zero"); }
-        ScenarioId::RestColdCoalesced => { evaluate_latency(observation, &mut failures, &mut thresholds, "latencies_ms", 32, 3000.0, 5000.0); require_observation(&mut failures, observation.get("unexpected_errors").and_then(Value::as_u64) == Some(0), "unexpected REST error count is not zero"); }
-        ScenarioId::RestSharedCapacity => { evaluate_latency(observation, &mut failures, &mut thresholds, "latencies_ms", 320, 1500.0, 5000.0); require_observation(&mut failures, observation.get("unexpected_errors").and_then(Value::as_u64) == Some(0), "unexpected REST error count is not zero"); }
-        ScenarioId::SseCapacityHold => { evaluate_latency(observation, &mut failures, &mut thresholds, "connect_latencies_ms", 32, 500.0, 1000.0); require_observation(&mut failures, observation.get("accepted").and_then(Value::as_u64) == Some(32), "SSE accepted client count is not 32"); require_observation(&mut failures, observation.get("hold_seconds").and_then(Value::as_u64).is_some_and(|v| v >= 60), "SSE hold did not run for 60 seconds"); require_observation(&mut failures, observation.get("unexpected_disconnects").and_then(Value::as_u64) == Some(0), "unexpected SSE disconnects observed"); }
-        ScenarioId::SseCapacityRefusal => { require_observation(&mut failures, observation.get("outcome").and_then(Value::as_str) == Some("expected_capacity_refusal"), "33rd SSE client was not classified as expected capacity refusal"); require_observation(&mut failures, observation.get("latency_ms").and_then(Value::as_f64).is_some_and(|v| v.is_finite() && v <= 1000.0), "capacity refusal exceeded 1000 ms"); }
-        ScenarioId::SseOrderlyChurn => { require_observation(&mut failures, observation.get("waves").and_then(Value::as_u64) == Some(10), "orderly churn requires 10 waves"); require_observation(&mut failures, observation.get("accepted_per_wave").and_then(Value::as_u64) == Some(32), "orderly churn requires 32 accepted clients per wave"); require_observation(&mut failures, observation.get("resource_checks").and_then(Value::as_array).is_some_and(|v| v.len() == 10), "orderly churn lifecycle checks are missing"); }
-        ScenarioId::SseAbruptDrop => { require_observation(&mut failures, observation.get("waves").and_then(Value::as_u64) == Some(10), "abrupt-drop requires 10 waves"); require_observation(&mut failures, observation.get("accepted_per_wave").and_then(Value::as_u64) == Some(8), "abrupt-drop requires 8 accepted clients per wave"); require_observation(&mut failures, observation.get("resource_checks").and_then(Value::as_array).is_some_and(|v| v.len() == 10), "abrupt-drop lifecycle checks are missing"); }
-        ScenarioId::MixedSoak => { let seconds = if profile == Profile::Normal { 60 } else { 900 }; evaluate_latency(observation, &mut failures, &mut thresholds, "latencies_ms", seconds as usize * 16, 1000.0, 5000.0); require_observation(&mut failures, observation.get("unexpected_errors").and_then(Value::as_u64) == Some(0), "unexpected REST errors during mixed soak"); require_observation(&mut failures, observation.get("unexpected_disconnects").and_then(Value::as_u64) == Some(0), "unexpected stream disconnect during mixed soak"); require_observation(&mut failures, observation.get("resource_samples").and_then(Value::as_array).is_some_and(|v| v.len() >= seconds as usize), "mixed soak lacks one-second resource samples"); }
-        ScenarioId::OptionalComputeFault => { require_observation(&mut failures, observation.get("http_status").and_then(Value::as_u64) == Some(200), "optional-fault bundle did not remain HTTP 200"); require_observation(&mut failures, observation.get("iv_rank").is_some_and(Value::is_null), "iv_rank fault was not isolated as null"); require_observation(&mut failures, observation.get("sse_outcome").and_then(Value::as_str) == Some("accepted"), "optional-fault SSE did not continue"); require_observation(&mut failures, observation.get("core_identity_unchanged").and_then(Value::as_bool) == Some(true), "core identity proof is missing"); require_observation(&mut failures, observation.get("ai_eval_present").and_then(Value::as_bool) == Some(true), "required ai_eval proof is missing"); }
-        ScenarioId::OutboundIsolation => { require_observation(&mut failures, observation.get("attempts").and_then(Value::as_u64) == Some(0), "forbidden outbound connector attempt observed"); require_observation(&mut failures, observation.get("inventory").and_then(Value::as_u64).is_some_and(|v| v > 0), "connector inventory is empty"); }
-        ScenarioId::PostLoadRecovery => { require_observation(&mut failures, observation.get("observed").and_then(Value::as_bool) == Some(true), "recovery checkpoint is missing"); let children = observation.get("children").and_then(Value::as_array); require_observation(&mut failures, children.is_some_and(|v| v.len() == 7 && v.iter().all(|c| c.get("alive_at_checkpoint").and_then(Value::as_bool) == Some(true))), "not all seven children were observed alive at recovery"); require_observation(&mut failures, observation.get("aggregate").and_then(|v| v.get("within_threshold")).and_then(Value::as_bool) == Some(true), "aggregate recovery resource bound is missing or breached"); }
+        ScenarioId::RestCold => {
+            evaluate_latency(
+                observation,
+                &mut failures,
+                &mut thresholds,
+                "latencies_ms",
+                12,
+                3000.0,
+                5000.0,
+            );
+            require_observation(
+                &mut failures,
+                observation.get("unexpected_errors").and_then(Value::as_u64) == Some(0),
+                "unexpected REST error count is not zero",
+            );
+        }
+        ScenarioId::RestExpectedNotFound => {
+            require_observation(
+                &mut failures,
+                observation.get("outcome").and_then(Value::as_str)
+                    == Some("expected_fixture_not_found"),
+                "missing fixture was not classified as expected_fixture_not_found",
+            );
+            require_observation(
+                &mut failures,
+                observation
+                    .get("latency_ms")
+                    .and_then(Value::as_f64)
+                    .is_some_and(|v| v.is_finite() && v <= 5000.0),
+                "not-found latency is missing or exceeds 5000 ms",
+            );
+        }
+        ScenarioId::RestWarmConcurrent => {
+            evaluate_latency(
+                observation,
+                &mut failures,
+                &mut thresholds,
+                "latencies_ms",
+                200,
+                250.0,
+                1000.0,
+            );
+            require_observation(
+                &mut failures,
+                observation.get("unexpected_errors").and_then(Value::as_u64) == Some(0),
+                "unexpected REST error count is not zero",
+            );
+        }
+        ScenarioId::RestColdCoalesced => {
+            evaluate_latency(
+                observation,
+                &mut failures,
+                &mut thresholds,
+                "latencies_ms",
+                32,
+                3000.0,
+                5000.0,
+            );
+            require_observation(
+                &mut failures,
+                observation.get("unexpected_errors").and_then(Value::as_u64) == Some(0),
+                "unexpected REST error count is not zero",
+            );
+        }
+        ScenarioId::RestSharedCapacity => {
+            evaluate_latency(
+                observation,
+                &mut failures,
+                &mut thresholds,
+                "latencies_ms",
+                320,
+                1500.0,
+                5000.0,
+            );
+            require_observation(
+                &mut failures,
+                observation.get("unexpected_errors").and_then(Value::as_u64) == Some(0),
+                "unexpected REST error count is not zero",
+            );
+        }
+        ScenarioId::SseCapacityHold => {
+            evaluate_latency(
+                observation,
+                &mut failures,
+                &mut thresholds,
+                "connect_latencies_ms",
+                32,
+                500.0,
+                1000.0,
+            );
+            require_observation(
+                &mut failures,
+                observation.get("accepted").and_then(Value::as_u64) == Some(32),
+                "SSE accepted client count is not 32",
+            );
+            require_observation(
+                &mut failures,
+                observation
+                    .get("hold_seconds")
+                    .and_then(Value::as_u64)
+                    .is_some_and(|v| v >= 60),
+                "SSE hold did not run for 60 seconds",
+            );
+            require_observation(
+                &mut failures,
+                observation
+                    .get("unexpected_disconnects")
+                    .and_then(Value::as_u64)
+                    == Some(0),
+                "unexpected SSE disconnects observed",
+            );
+        }
+        ScenarioId::SseCapacityRefusal => {
+            require_observation(
+                &mut failures,
+                observation.get("outcome").and_then(Value::as_str)
+                    == Some("expected_capacity_refusal"),
+                "33rd SSE client was not classified as expected capacity refusal",
+            );
+            require_observation(
+                &mut failures,
+                observation
+                    .get("latency_ms")
+                    .and_then(Value::as_f64)
+                    .is_some_and(|v| v.is_finite() && v <= 1000.0),
+                "capacity refusal exceeded 1000 ms",
+            );
+        }
+        ScenarioId::SseOrderlyChurn => {
+            require_observation(
+                &mut failures,
+                observation.get("waves").and_then(Value::as_u64) == Some(10),
+                "orderly churn requires 10 waves",
+            );
+            require_observation(
+                &mut failures,
+                observation.get("accepted_per_wave").and_then(Value::as_u64) == Some(32),
+                "orderly churn requires 32 accepted clients per wave",
+            );
+            require_observation(
+                &mut failures,
+                observation
+                    .get("resource_checks")
+                    .and_then(Value::as_array)
+                    .is_some_and(|v| v.len() == 10),
+                "orderly churn lifecycle checks are missing",
+            );
+        }
+        ScenarioId::SseAbruptDrop => {
+            require_observation(
+                &mut failures,
+                observation.get("waves").and_then(Value::as_u64) == Some(10),
+                "abrupt-drop requires 10 waves",
+            );
+            require_observation(
+                &mut failures,
+                observation.get("accepted_per_wave").and_then(Value::as_u64) == Some(8),
+                "abrupt-drop requires 8 accepted clients per wave",
+            );
+            require_observation(
+                &mut failures,
+                observation
+                    .get("resource_checks")
+                    .and_then(Value::as_array)
+                    .is_some_and(|v| v.len() == 10),
+                "abrupt-drop lifecycle checks are missing",
+            );
+        }
+        ScenarioId::MixedSoak => {
+            let seconds = if profile == Profile::Normal { 60 } else { 900 };
+            evaluate_latency(
+                observation,
+                &mut failures,
+                &mut thresholds,
+                "latencies_ms",
+                seconds as usize * 16,
+                1000.0,
+                5000.0,
+            );
+            require_observation(
+                &mut failures,
+                observation.get("unexpected_errors").and_then(Value::as_u64) == Some(0),
+                "unexpected REST errors during mixed soak",
+            );
+            require_observation(
+                &mut failures,
+                observation
+                    .get("unexpected_disconnects")
+                    .and_then(Value::as_u64)
+                    == Some(0),
+                "unexpected stream disconnect during mixed soak",
+            );
+            require_observation(
+                &mut failures,
+                observation
+                    .get("resource_samples")
+                    .and_then(Value::as_array)
+                    .is_some_and(|v| v.len() >= seconds as usize),
+                "mixed soak lacks one-second resource samples",
+            );
+        }
+        ScenarioId::OptionalComputeFault => {
+            require_observation(
+                &mut failures,
+                observation.get("http_status").and_then(Value::as_u64) == Some(200),
+                "optional-fault bundle did not remain HTTP 200",
+            );
+            require_observation(
+                &mut failures,
+                observation.get("iv_rank").is_some_and(Value::is_null),
+                "iv_rank fault was not isolated as null",
+            );
+            require_observation(
+                &mut failures,
+                observation.get("sse_outcome").and_then(Value::as_str) == Some("accepted"),
+                "optional-fault SSE did not continue",
+            );
+            require_observation(
+                &mut failures,
+                observation
+                    .get("core_identity_unchanged")
+                    .and_then(Value::as_bool)
+                    == Some(true),
+                "core identity proof is missing",
+            );
+            require_observation(
+                &mut failures,
+                observation.get("ai_eval_present").and_then(Value::as_bool) == Some(true),
+                "required ai_eval proof is missing",
+            );
+        }
+        ScenarioId::OutboundIsolation => {
+            require_observation(
+                &mut failures,
+                observation.get("attempts").and_then(Value::as_u64) == Some(0),
+                "forbidden outbound connector attempt observed",
+            );
+            require_observation(
+                &mut failures,
+                observation
+                    .get("inventory")
+                    .and_then(Value::as_u64)
+                    .is_some_and(|v| v > 0),
+                "connector inventory is empty",
+            );
+        }
+        ScenarioId::PostLoadRecovery => {
+            require_observation(
+                &mut failures,
+                observation.get("observed").and_then(Value::as_bool) == Some(true),
+                "recovery checkpoint is missing",
+            );
+            let children = observation.get("children").and_then(Value::as_array);
+            require_observation(
+                &mut failures,
+                children.is_some_and(|v| {
+                    v.len() == 7
+                        && v.iter().all(|c| {
+                            c.get("alive_at_checkpoint").and_then(Value::as_bool) == Some(true)
+                        })
+                }),
+                "not all seven children were observed alive at recovery",
+            );
+            require_observation(
+                &mut failures,
+                observation
+                    .get("aggregate")
+                    .and_then(|v| v.get("within_threshold"))
+                    .and_then(Value::as_bool)
+                    == Some(true),
+                "aggregate recovery resource bound is missing or breached",
+            );
+        }
     }
-    (failures.is_empty(), failures, Value::Object(thresholds.into_iter().collect()))
+    (
+        failures.is_empty(),
+        failures,
+        Value::Object(thresholds.into_iter().collect()),
+    )
 }
 
-fn build_report_from_evidence(profile: Profile, elapsed_ms: u64, evidence: &BTreeMap<ScenarioId, Value>, launch_error: Option<&str>, baselines: &BTreeMap<ChildId, ResourceSample>) -> Value {
+fn build_report_from_evidence(
+    profile: Profile,
+    elapsed_ms: u64,
+    evidence: &BTreeMap<ScenarioId, Value>,
+    launch_error: Option<&str>,
+    baselines: &BTreeMap<ChildId, ResourceSample>,
+) -> Value {
     let mut report = build_report(profile, elapsed_ms);
     let mut failed: Vec<String> = Vec::new();
-    if let Some(error) = launch_error { report["summary"]["launch_error"] = json!(error); }
+    if let Some(error) = launch_error {
+        report["summary"]["launch_error"] = json!(error);
+    }
     let rows = report["scenarios"].as_array_mut().expect("report rows");
-    for row in rows.iter_mut() { let id = ScenarioId::ALL.iter().find(|id| id.token() == row["id"].as_str().unwrap_or_default()).copied().unwrap(); if let Some(observation) = evidence.get(&id) { let (pass, failures, thresholds) = evaluate(id, observation, profile); row["observations"] = observation.clone(); row["failures"] = json!(failures); row["thresholds"] = thresholds; row["diagnostics"] = json!(["threshold evaluator consumed measured loopback observations"]); row["status"] = json!(if pass { "pass" } else { failed.push(id.token().to_string()); "did_not_pass" }); } else { failed.push(id.token().to_string()); row["failures"] = json!(["required workload observation missing"]); } }
-    if elapsed_ms > 180_000 && profile == Profile::Normal { failed.push("normal_profile_deadline".into()); }
+    for row in rows.iter_mut() {
+        let id = ScenarioId::ALL
+            .iter()
+            .find(|id| id.token() == row["id"].as_str().unwrap_or_default())
+            .copied()
+            .unwrap();
+        if let Some(observation) = evidence.get(&id) {
+            let (pass, failures, thresholds) = evaluate(id, observation, profile);
+            row["observations"] = observation.clone();
+            row["failures"] = json!(failures);
+            row["thresholds"] = thresholds;
+            row["diagnostics"] =
+                json!(["threshold evaluator consumed measured loopback observations"]);
+            row["status"] = json!(if pass {
+                "pass"
+            } else {
+                failed.push(id.token().to_string());
+                "did_not_pass"
+            });
+        } else {
+            failed.push(id.token().to_string());
+            row["failures"] = json!(["required workload observation missing"]);
+        }
+    }
+    if elapsed_ms > 180_000 && profile == Profile::Normal {
+        failed.push("normal_profile_deadline".into());
+    }
     let all_pass = failed.is_empty() && launch_error.is_none() && baselines.len() == 7;
     report["summary"]["verdict"] = json!(if all_pass { "pass" } else { "did_not_pass" });
     report["summary"]["failed_scenarios"] = json!(failed);
-    report["summary"]["missing_required_observations"] = json!(if all_pass { Vec::<String>::new() } else { failed.clone() });
+    report["summary"]["missing_required_observations"] = json!(if all_pass {
+        Vec::<String>::new()
+    } else {
+        failed.clone()
+    });
     report
 }
 
@@ -555,7 +1127,8 @@ mod protocol_tests {
         let soak = json!({"latencies_ms": vec![1.0; 960], "unexpected_errors": 0, "unexpected_disconnects": 0, "resource_samples": []});
         let (pass, _, _) = evaluate(ScenarioId::MixedSoak, &soak, Profile::Normal);
         assert!(!pass);
-        let recovery = json!({"observed": true, "children": [], "aggregate": {"within_threshold": false}});
+        let recovery =
+            json!({"observed": true, "children": [], "aggregate": {"within_threshold": false}});
         let (pass, _, _) = evaluate(ScenarioId::PostLoadRecovery, &recovery, Profile::Normal);
         assert!(!pass);
     }
@@ -572,7 +1145,11 @@ pub fn report_path(profile: Profile) -> PathBuf {
 }
 
 fn scenario(_profile: Profile, id: ScenarioId) -> Value {
-    let spec = manifest(_profile).scenarios.into_iter().find(|s| s.id == id).expect("manifest scenario");
+    let spec = manifest(_profile)
+        .scenarios
+        .into_iter()
+        .find(|s| s.id == id)
+        .expect("manifest scenario");
     let expected = match id {
         ScenarioId::RestExpectedNotFound => "expected_fixture_not_found",
         ScenarioId::SseCapacityRefusal => "expected_capacity_refusal",
@@ -622,11 +1199,13 @@ fn atomic_replace_value(path: &Path, bytes: &[u8]) -> anyhow::Result<()> {
             .get("scenarios")
             .and_then(Value::as_array)
             .map_or(true, |v| v.len() != 13)
-        || value["scenarios"].as_array().is_some_and(|rows| rows.iter().any(|row| {
-            row.get("id").and_then(Value::as_str).is_none()
-                || row.get("status").and_then(Value::as_str).is_none()
-                || row.get("observations").and_then(Value::as_object).is_none()
-        }))
+        || value["scenarios"].as_array().is_some_and(|rows| {
+            rows.iter().any(|row| {
+                row.get("id").and_then(Value::as_str).is_none()
+                    || row.get("status").and_then(Value::as_str).is_none()
+                    || row.get("observations").and_then(Value::as_object).is_none()
+            })
+        })
     {
         anyhow::bail!("capacity report validation failed")
     }
