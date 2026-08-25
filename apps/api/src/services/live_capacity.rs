@@ -7,12 +7,97 @@
 //!   many viewers). 0 = off. Over either: 503 + Retry-After, not 429.
 
 use crate::infrastructure::massive::StockStreamHub;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::sync::Mutex as AsyncMutex;
 use tracing::warn;
 
 pub const RETRY_AFTER_SECS: u64 = 30;
 pub const CAPACITY_DETAIL: &str = "Live streaming is at capacity. Try again shortly.";
+
+#[derive(Clone, Default)]
+pub struct LifecycleProbe {
+    inner: Option<Arc<Counters>>,
+}
+
+struct Counters {
+    requests: Arc<AtomicUsize>,
+    subscribers: Arc<AtomicUsize>,
+    sse_tasks: Arc<AtomicUsize>,
+    tokio_tasks: Arc<AtomicUsize>,
+}
+
+#[derive(Debug)]
+pub struct LifecycleGuard {
+    counter: Option<Arc<AtomicUsize>>,
+}
+impl Drop for LifecycleGuard {
+    fn drop(&mut self) {
+        if let Some(c) = &self.counter {
+            c.fetch_sub(1, Ordering::SeqCst);
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LifecycleSnapshot {
+    pub active_requests: u64,
+    pub active_subscribers: u64,
+    pub active_sse_tasks: u64,
+    pub tokio_tasks: u64,
+}
+
+impl LifecycleProbe {
+    pub fn disabled() -> Self {
+        Self { inner: None }
+    }
+    pub(crate) fn enabled() -> Self {
+        Self {
+            inner: Some(Arc::new(Counters {
+                requests: Arc::new(AtomicUsize::new(0)),
+                subscribers: Arc::new(AtomicUsize::new(0)),
+                sse_tasks: Arc::new(AtomicUsize::new(0)),
+                tokio_tasks: Arc::new(AtomicUsize::new(0)),
+            })),
+        }
+    }
+    fn guard(&self, select: fn(&Counters) -> &Arc<AtomicUsize>) -> LifecycleGuard {
+        let counter = self.inner.as_ref().map(|c| {
+            let n = select(c);
+            n.fetch_add(1, Ordering::SeqCst);
+            Arc::clone(n)
+        });
+        LifecycleGuard { counter }
+    }
+    pub fn request(&self) -> LifecycleGuard {
+        self.guard(|c| &c.requests)
+    }
+    pub fn subscriber(&self) -> LifecycleGuard {
+        self.guard(|c| &c.subscribers)
+    }
+    pub fn sse_task(&self) -> LifecycleGuard {
+        self.guard(|c| &c.sse_tasks)
+    }
+    pub fn tokio_task(&self) -> LifecycleGuard {
+        self.guard(|c| &c.tokio_tasks)
+    }
+    pub fn snapshot(&self) -> LifecycleSnapshot {
+        self.inner
+            .as_ref()
+            .map(|c| LifecycleSnapshot {
+                active_requests: c.requests.load(Ordering::SeqCst) as u64,
+                active_subscribers: c.subscribers.load(Ordering::SeqCst) as u64,
+                active_sse_tasks: c.sse_tasks.load(Ordering::SeqCst) as u64,
+                tokio_tasks: c.tokio_tasks.load(Ordering::SeqCst) as u64,
+            })
+            .unwrap_or(LifecycleSnapshot {
+                active_requests: 0,
+                active_subscribers: 0,
+                active_sse_tasks: 0,
+                tokio_tasks: 0,
+            })
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LiveCapacityKind {
@@ -32,6 +117,7 @@ pub struct LiveCapacity {
 #[derive(Debug)]
 pub struct SubscriberGuard {
     subscribers: Arc<Mutex<usize>>,
+    lifecycle: Option<LifecycleGuard>,
 }
 
 impl Drop for SubscriberGuard {
@@ -84,7 +170,19 @@ impl LiveCapacity {
         *n += 1;
         Ok(SubscriberGuard {
             subscribers: Arc::clone(&self.subscribers),
+            lifecycle: None,
         })
+    }
+
+    pub fn try_admit_with_probe(
+        &self,
+        hub_symbol_count: usize,
+        new_symbol_count: usize,
+        probe: &LifecycleProbe,
+    ) -> Result<SubscriberGuard, LiveCapacityKind> {
+        let mut guard = self.try_admit(hub_symbol_count, new_symbol_count)?;
+        guard.lifecycle = Some(probe.subscriber());
+        Ok(guard)
     }
 
     /// Serialize admit against hub state so two new tickers cannot race past max_sessions.
@@ -164,5 +262,25 @@ mod tests {
             cap.try_admit(1, 1).unwrap_err(),
             LiveCapacityKind::Subscribers
         );
+    }
+
+    #[test]
+    fn lifecycle_probe_balances_request_subscriber_and_task() {
+        let probe = LifecycleProbe::enabled();
+        let request = probe.request();
+        let task = probe.sse_task();
+        assert_eq!(probe.snapshot().active_requests, 1);
+        assert_eq!(probe.snapshot().active_sse_tasks, 1);
+        drop(request);
+        drop(task);
+        assert_eq!(probe.snapshot().active_requests, 0);
+        assert_eq!(probe.snapshot().active_sse_tasks, 0);
+    }
+
+    #[test]
+    fn disabled_probe_is_zero_allocation_observation() {
+        let probe = LifecycleProbe::disabled();
+        let _guard = probe.subscriber();
+        assert_eq!(probe.snapshot().active_subscribers, 0);
     }
 }
