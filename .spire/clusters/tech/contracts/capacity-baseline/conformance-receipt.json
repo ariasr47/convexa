@@ -3,9 +3,9 @@
   "verdict": "PASS",
   "mode": "live",
   "source": ".spire/clusters/tech/contracts/capacity-baseline/INTERFACE_CONTRACT.md",
-  "base_url": "http://127.0.0.1:54554",
+  "base_url": "http://127.0.0.1:60736",
   "auth": null,
-  "checked_at": "2026-08-25T04:02:58Z",
+  "checked_at": "2026-08-25T04:40:21Z",
   "summary": {
     "pass": 1,
     "fail": 0,
