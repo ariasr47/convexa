@@ -39,7 +39,7 @@ pub async fn cli(
             fixture_dir,
             iv_fault,
         }) => {
-            runner::child(
+            runner::child_isolated_runtime(
                 child.ok_or_else(|| anyhow::anyhow!("child id is required"))?,
                 fixture_dir.ok_or_else(|| anyhow::anyhow!("fixture directory is required"))?,
                 iv_fault,

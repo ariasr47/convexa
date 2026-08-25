@@ -269,6 +269,33 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
     Ok(())
 }
 
+pub const fn child_runtime_limits() -> (usize, usize, u64) {
+    (4, 4, 1)
+}
+
+pub fn child_isolated_runtime(
+    child: String,
+    fixture_dir: PathBuf,
+    iv_fault: bool,
+) -> anyhow::Result<()> {
+    let (workers, blocking, keep_alive_secs) = child_runtime_limits();
+    let handle = std::thread::Builder::new()
+        .name("capacity-child-runtime".into())
+        .spawn(move || -> anyhow::Result<()> {
+            let runtime = tokio::runtime::Builder::new_multi_thread()
+                .worker_threads(workers)
+                .max_blocking_threads(blocking)
+                .thread_keep_alive(std::time::Duration::from_secs(keep_alive_secs))
+                .enable_all()
+                .build()?;
+            runtime.block_on(child(child, fixture_dir, iv_fault))
+        })
+        .map_err(|error| anyhow::anyhow!("capacity child runtime spawn failed: {error}"))?;
+    handle
+        .join()
+        .map_err(|_| anyhow::anyhow!("capacity child runtime panicked"))?
+}
+
 /// Exercise the real loopback transport at the lane's maximum concurrency,
 /// then return the fixture application to an exact cold-cache/lifecycle state.
 /// No response latency or resource sample from this phase is workload evidence.

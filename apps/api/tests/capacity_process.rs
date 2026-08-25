@@ -100,6 +100,11 @@ fn prime_transport_uses_the_measured_close_header() {
 }
 
 #[test]
+fn child_runtime_has_fixed_capacity_only_limits() {
+    assert_eq!(runner::child_runtime_limits(), (4, 4, 1));
+}
+
+#[test]
 fn workload_fixture_manifest_declares_required_roles() {
     let path = runner::workload_fixture_dir().join("manifest.json");
     let value: serde_json::Value =
