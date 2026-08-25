@@ -74,6 +74,8 @@ fn workload_fixture_roles_are_multi_symbol_and_closed() {
     assert_eq!(runner::absent_symbol(), "NOFIX");
     assert!(runner::d2_prime_symbols().contains(&runner::warm_symbol()));
     assert!(runner::d2_prime_symbols().contains(&runner::coalesced_symbol()));
+    assert_eq!(runner::prime_rest_rounds(ChildId::A), 4);
+    assert_eq!(runner::prime_rest_rounds(ChildId::D1), 1);
     assert!(!runner::d1_cold_symbols().contains(&runner::warm_symbol()));
     assert!(!runner::shared_symbols().contains(&runner::coalesced_symbol()));
 }

@@ -273,20 +273,22 @@ async fn prime_loopback(
         ChildId::D3 => SHARED_SYMBOLS.to_vec(),
         _ => vec![WARM_SYMBOL; rest_concurrency],
     };
-    for index in 0..rest_concurrency {
-        let client = client.clone();
-        let symbol = rest_symbols[index % rest_symbols.len()];
-        let url = format!("{base}/api/ticker/{symbol}");
-        rest.push(tokio::spawn(async move { client.get(url).send().await }));
-    }
-    for task in rest {
-        let response = task.await??;
-        anyhow::ensure!(
-            response.status().is_success(),
-            "REST priming returned {}",
-            response.status()
-        );
-        let _ = response.bytes().await?;
+    for _ in 0..prime_rest_rounds(child) {
+        for index in 0..rest_concurrency {
+            let client = client.clone();
+            let symbol = rest_symbols[index % rest_symbols.len()];
+            let url = format!("{base}/api/ticker/{symbol}");
+            rest.push(tokio::spawn(async move { client.get(url).send().await }));
+        }
+        for task in rest.drain(..) {
+            let response = task.await??;
+            anyhow::ensure!(
+                response.status().is_success(),
+                "REST priming returned {}",
+                response.status()
+            );
+            let _ = response.bytes().await?;
+        }
     }
 
     let mut streams = Vec::with_capacity(sse_concurrency);
@@ -379,6 +381,13 @@ pub const fn absent_symbol() -> &'static str {
 }
 pub const fn d2_prime_symbols() -> [&'static str; 5] {
     D2_PRIME_SYMBOLS
+}
+pub const fn prime_rest_rounds(child: ChildId) -> usize {
+    if matches!(child, ChildId::A) {
+        4
+    } else {
+        1
+    }
 }
 
 /// The closed profile timings are policy inputs shared by scheduling and tests.
