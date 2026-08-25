@@ -124,7 +124,7 @@ jobs:
         with:
           node-version: 24.19.0
           cache: npm
-      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - run: npm ci
       - run: node tools/supply-chain/acquire-tools.mjs
       - name: Execute capability poison set
@@ -150,7 +150,7 @@ jobs:
         with:
           node-version: 24.19.0
           cache: npm
-      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - run: npm ci
       - run: node tools/supply-chain/acquire-tools.mjs
       - name: Build each named subject once and bind evidence
