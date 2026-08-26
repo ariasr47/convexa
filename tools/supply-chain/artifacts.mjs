@@ -112,16 +112,19 @@ export async function runArtifacts({
     return { ...base, rule_id: 'artifact-host-required' };
   const out = path.join(root, '.supply-chain', 'out');
   await fs.mkdir(out, { recursive: true });
+  let stage = 'tool-acquisition';
   try {
     const tools = await verifyOrAcquireTools({ root }),
       syft = tools.resolved.get('syft'),
       trivy = tools.resolved.get('trivy');
     if (!tools.complete || !syft || !trivy) throw new Blocked('artifact-tools-unavailable');
+    stage = 'docker-probe';
     const docker = await runner('docker', ['version', '--format', '{{.Server.Version}}'], {
       cwd: root,
       timeoutMs: 30000,
     });
     if (docker.raw_exit_code !== 0) throw new Blocked('docker-unavailable');
+    stage = 'api-build';
     const apiArchive = path.join(out, 'api-production-image.oci.tar');
     await fs.rm(apiArchive, { force: true });
     const apiBuild = await runner(
@@ -137,22 +140,31 @@ export async function runArtifacts({
         `type=oci,dest=${apiArchive}`,
         '.',
       ],
-      { cwd: root, timeoutMs: 1200000, maxOutputBytes: 4 * 1024 * 1024 },
+      {
+        cwd: root,
+        timeoutMs: 1200000,
+        maxOutputBytes: 4 * 1024 * 1024,
+        outputStream: 'stderr',
+      },
     );
-    if (apiBuild.raw_exit_code !== 0) throw new Blocked('api-build-failed');
+    if (apiBuild.raw_exit_code !== 0) throw new Blocked(classifyApiBuildFailure(apiBuild.output));
+    stage = 'api-read';
     const apiBytes = await fs.readFile(apiArchive),
       apiDigest = subjectDigest(apiBytes);
+    stage = 'dashboard-build';
     const dashboardBuild = await runner('npm', ['run', 'build:dashboard'], {
       cwd: root,
       timeoutMs: 600000,
       maxOutputBytes: 4 * 1024 * 1024,
     });
     if (dashboardBuild.raw_exit_code !== 0) throw new Blocked('dashboard-build-failed');
+    stage = 'dashboard-archive';
     const dashboardArchive = await archiveDirectory(path.join(root, 'apps', 'dashboard', 'dist')),
       dashboardFile = path.join(out, 'dashboard-distribution.tar');
     await fs.writeFile(dashboardFile, dashboardArchive.bytes);
     const dashboardValidation = validateTar(dashboardArchive.bytes);
     if (dashboardValidation.state !== 'pass') throw new Blocked('dashboard-archive-invalid');
+    stage = 'component-derivation';
     const packageLock = JSON.parse(await fs.readFile(path.join(root, 'package-lock.json'))),
       dashboardExpected = deriveNpmComponents({
         lock: packageLock,
@@ -201,6 +213,7 @@ export async function runArtifacts({
         ),
       },
     });
+    stage = 'inventory-evaluation';
     const [apiGenerated, dashboardGenerated, scan] = await Promise.all([
       generateInventoryWithSyft({
         executable: syft,
@@ -229,6 +242,7 @@ export async function runArtifacts({
       scan.state === 'blocked'
     )
       throw new Blocked('artifact-evaluation-unavailable');
+    stage = 'artifact-validation';
     const apiValidation = validateArtifact({
         subject: 'api-production-image',
         bytes: apiBytes,
@@ -243,18 +257,29 @@ export async function runArtifacts({
         expected: dashboardExpected,
         requiredSeeds: DASHBOARD_SEEDS,
       });
+    stage = 'evidence-hash';
     const policySha256 = await policyHash(root),
       sourceInputsSha256 = await sourceHash(root),
       now = new Date().toISOString(),
       buildRunId = environment.GITHUB_RUN_ID_SAFE;
     const apiInventoryBytes = Buffer.from(`${JSON.stringify(apiGenerated.inventory)}\n`),
       dashboardInventoryBytes = Buffer.from(`${JSON.stringify(dashboardGenerated.inventory)}\n`);
+    stage = 'inventory-write';
     await fs.writeFile(path.join(out, 'api-dependency-inventory.cdx.json'), apiInventoryBytes);
     await fs.writeFile(
       path.join(out, 'dashboard-dependency-inventory.cdx.json'),
       dashboardInventoryBytes,
     );
-    const apiReceipt = receipt({
+    stage = 'api-receipt-component-set';
+    const apiComponentSetSha256 = componentSetHash(cargoExpected);
+    stage = 'api-receipt-inventory-hash';
+    const apiInventorySha256 = sha(apiInventoryBytes);
+    stage = 'api-receipt-seeds';
+    const apiRequiredSeedsPresent = API_SEEDS.every((seed) =>
+      cargoExpected.some((component) => component.name === seed),
+    );
+    stage = 'api-receipt-assemble';
+    const apiReceipt = createArtifactReceipt({
       subjectId: 'api-production-image',
       kind: 'oci_image',
       digest: apiDigest,
@@ -262,16 +287,27 @@ export async function runArtifacts({
       runKey,
       buildRunId,
       version: '1.51.0',
-      inventoryBytes: apiInventoryBytes,
+      inventorySha256: apiInventorySha256,
       policySha256,
-      components: cargoExpected,
-      seeds: API_SEEDS,
+      componentCount: cargoExpected.length,
+      componentSetSha256: apiComponentSetSha256,
+      requiredSeedCount: API_SEEDS.length,
+      requiredSeedsPresent: apiRequiredSeedsPresent,
       sourceInputsSha256,
       byteScan: scan.raw_output_sha256,
       archiveValidation: null,
       validation: apiValidation.state,
     });
-    const dashboardReceipt = receipt({
+    stage = 'dashboard-receipt-component-set';
+    const dashboardComponentSetSha256 = componentSetHash(dashboardExpected);
+    stage = 'dashboard-receipt-inventory-hash';
+    const dashboardInventorySha256 = sha(dashboardInventoryBytes);
+    stage = 'dashboard-receipt-seeds';
+    const dashboardRequiredSeedsPresent = DASHBOARD_SEEDS.every((seed) =>
+      dashboardExpected.some((component) => component.name === seed),
+    );
+    stage = 'dashboard-receipt-assemble';
+    const dashboardReceipt = createArtifactReceipt({
       subjectId: 'dashboard-distribution-archive',
       kind: 'file_archive',
       digest: `sha256:${dashboardArchive.digest}`,
@@ -279,15 +315,18 @@ export async function runArtifacts({
       runKey,
       buildRunId,
       version: '1.51.0',
-      inventoryBytes: dashboardInventoryBytes,
+      inventorySha256: dashboardInventorySha256,
       policySha256,
-      components: dashboardExpected,
-      seeds: DASHBOARD_SEEDS,
+      componentCount: dashboardExpected.length,
+      componentSetSha256: dashboardComponentSetSha256,
+      requiredSeedCount: DASHBOARD_SEEDS.length,
+      requiredSeedsPresent: dashboardRequiredSeedsPresent,
       sourceInputsSha256,
       byteScan: null,
       archiveValidation: canonicalSha256(dashboardValidation),
       validation: dashboardArtifactValidation.state,
     });
+    stage = 'receipt-write';
     await fs.writeFile(
       path.join(out, 'api-inventory-receipt.json'),
       `${JSON.stringify(apiReceipt)}\n`,
@@ -296,6 +335,7 @@ export async function runArtifacts({
       path.join(out, 'dashboard-inventory-receipt.json'),
       `${JSON.stringify(dashboardReceipt)}\n`,
     );
+    stage = 'aggregate';
     const checks = [
         artifactCheck('api_image', 'trivy', scan),
         artifactCheck('api_dependency_inventory', 'syft', apiValidation),
@@ -325,14 +365,49 @@ export async function runArtifacts({
       created_at: now,
     };
   } catch (error) {
+    if (!(error instanceof Blocked)) {
+      process.stderr.write(`artifact internal failure: ${stage} @ ${internalLocation(error)}\n`);
+    }
     return {
       ...base,
-      rule_id: error instanceof Blocked ? error.message : 'artifact-internal-error',
+      rule_id: error instanceof Blocked ? error.message : `artifact-internal-${stage}`,
     };
   }
 }
 
-function receipt({
+export function classifyApiBuildFailure(output) {
+  if (typeof output !== 'string') return 'api-build-failed';
+  if (/\breadelf:\s+not found\b/i.test(output)) return 'api-build-tool-readelf';
+  if (/cp: cannot stat ['"]?\/etc\/ssl\/certs\/ca-certificates\.crt/i.test(output))
+    return 'api-build-ca-certificates';
+  if (/error:\s+linking with .+ failed/i.test(output)) return 'api-build-link';
+  const custom = output.match(/error:\s+failed to run custom build command for [`']([^\s`']+)/i);
+  if (custom) {
+    const crate = ['ring', 'aws-lc-sys', 'openssl-sys', 'libsqlite3-sys'].includes(custom[1])
+      ? custom[1]
+      : 'crate';
+    return `api-build-custom-${crate}`;
+  }
+  if (/error\[E\d{4}\]:/i.test(output) || /error:\s+could not compile\b/i.test(output))
+    return 'api-build-rust-compile';
+  const failedProcess = output.match(/ERROR:\s+process [^\r\n]+/i)?.[0] ?? '';
+  if (/rustup target add x86_64-unknown-linux-musl/i.test(failedProcess))
+    return 'api-build-musl-toolchain';
+  if (/cargo build[^\r\n]+x86_64-unknown-linux-musl/i.test(failedProcess))
+    return 'api-build-rust-compile';
+  if (/readelf -l[^\r\n]+x86_64-unknown-linux-musl/i.test(failedProcess))
+    return 'api-build-static-verification';
+  if (/mkdir -p \/runtime\/app\/data/i.test(failedProcess)) return 'api-build-runtime-root';
+  return 'api-build-failed';
+}
+
+function internalLocation(error) {
+  const stack = String(error?.stack ?? '');
+  const match = stack.match(/[\\/]tools[\\/]supply-chain[\\/]([a-z0-9.-]+\.mjs):(\d+):\d+/i);
+  return match ? `${match[1]}:${match[2]}` : 'unknown';
+}
+
+export function createArtifactReceipt({
   subjectId,
   kind,
   digest,
@@ -340,16 +415,17 @@ function receipt({
   runKey,
   buildRunId,
   version,
-  inventoryBytes,
+  inventorySha256,
   policySha256,
-  components,
-  seeds,
+  componentCount,
+  componentSetSha256,
+  requiredSeedCount,
+  requiredSeedsPresent,
   sourceInputsSha256,
   byteScan,
   archiveValidation,
   validation,
 }) {
-  const setHash = componentSetHash(components);
   return {
     schema_version: 1,
     receipt_kind: 'associated_dependency_inventory',
@@ -366,18 +442,18 @@ function receipt({
     subject_bytes_observed_by_generator: false,
     format: 'CycloneDX 1.6 JSON dependency inventory',
     schema_version_declared: '1.6',
-    inventory_sha256: sha(inventoryBytes),
-    policy_sha256,
+    inventory_sha256: inventorySha256,
+    policy_sha256: policySha256,
     validation,
     component_families:
       subjectId === 'api-production-image'
         ? ['convexa-workspace', 'cargo-normal-build']
         : ['convexa-workspace', 'npm-production-closure'],
-    component_count: components.length,
-    component_oracle_sha256: setHash,
-    component_identity_set_sha256: setHash,
-    required_seed_count: seeds.length,
-    required_seeds_present: seeds.every((seed) => components.some((x) => x.name === seed)),
+    component_count: componentCount,
+    component_oracle_sha256: componentSetSha256,
+    component_identity_set_sha256: componentSetSha256,
+    required_seed_count: requiredSeedCount,
+    required_seeds_present: requiredSeedsPresent,
     source_inputs_sha256: sourceInputsSha256,
     byte_scan_evidence_sha256: byteScan,
     archive_validation_sha256: archiveValidation,

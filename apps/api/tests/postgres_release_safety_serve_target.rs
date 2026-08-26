@@ -49,8 +49,9 @@ fn railway_predeploy_binary_is_installed_on_the_standard_executable_path() {
         .next()
         .expect("the pre-deploy command must name an executable");
     let standard_executable = format!("/usr/local/bin/{executable}");
-    let expected_copy =
-        format!("COPY --from=builder /src/target/release/{executable} {standard_executable}");
+    let expected_copy = format!(
+        "COPY --from=builder /src/target/x86_64-unknown-linux-musl/release/{executable} {standard_executable}"
+    );
     let dockerfile = fs::read_to_string(repository_root.join("apps/api/Dockerfile"))
         .expect("apps/api/Dockerfile must be readable");
     let binary_copy_lines: Vec<_> = dockerfile
@@ -58,7 +59,9 @@ fn railway_predeploy_binary_is_installed_on_the_standard_executable_path() {
         .map(str::trim)
         .filter(|line| {
             line.starts_with("COPY --from=builder ")
-                && line.contains(&format!("/target/release/{executable}"))
+                && line.contains(&format!(
+                    "/target/x86_64-unknown-linux-musl/release/{executable}"
+                ))
         })
         .collect();
 
@@ -68,7 +71,7 @@ fn railway_predeploy_binary_is_installed_on_the_standard_executable_path() {
         "the image must install exactly one copy of the Railway executable at {standard_executable} so the bare pre-deploy command resolves it"
     );
     assert!(
-        dockerfile.contains(&format!("exec {standard_executable} serve")),
+        dockerfile.contains(&format!("CMD [\"{standard_executable}\", \"serve\"]")),
         "the runtime command must use the same canonical executable installed for Railway pre-deploy"
     );
 }

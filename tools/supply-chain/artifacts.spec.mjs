@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { runArtifacts } from './artifacts.mjs';
+import { classifyApiBuildFailure, createArtifactReceipt, runArtifacts } from './artifacts.mjs';
 import {
   inspectOciArchive,
   ociLayoutReference,
@@ -11,6 +13,7 @@ import {
   subjectDigest,
   withExtractedOciArchive,
 } from './oci.mjs';
+import { runKey } from './run-key.mjs';
 import { archiveDirectory, validateTar } from './tar.mjs';
 
 test('dashboard archive is byte-deterministic and validates after safe extraction', async () => {
@@ -149,6 +152,125 @@ test('artifact command blocks locally and rejects a stale run key before executi
   });
   assert.equal(local.aggregate, 'blocked');
   assert.equal(local.rule_id, 'artifact-input');
+});
+
+test('artifact receipt maps the computed policy hash into the serialized field', () => {
+  const policySha256 = 'b'.repeat(64);
+  const receipt = createArtifactReceipt({
+    subjectId: 'api-production-image',
+    kind: 'oci_image',
+    digest: `sha256:${'a'.repeat(64)}`,
+    revision: 'c'.repeat(40),
+    runKey: 'd'.repeat(64),
+    buildRunId: '123',
+    version: '1.51.0',
+    inventorySha256: 'e'.repeat(64),
+    policySha256,
+    componentCount: 2,
+    componentSetSha256: 'f'.repeat(64),
+    requiredSeedCount: 1,
+    requiredSeedsPresent: true,
+    sourceInputsSha256: '1'.repeat(64),
+    byteScan: '2'.repeat(64),
+    archiveValidation: null,
+    validation: 'pass',
+  });
+  assert.equal(receipt.policy_sha256, policySha256);
+});
+
+test('API build failures collapse raw Docker output into closed safe categories', () => {
+  assert.equal(
+    classifyApiBuildFailure('error: failed to run custom build command for `ring v0.17.14`'),
+    'api-build-custom-ring',
+  );
+  assert.equal(classifyApiBuildFailure('/bin/sh: 1: readelf: not found'), 'api-build-tool-readelf');
+  assert.equal(
+    classifyApiBuildFailure("cp: cannot stat '/etc/ssl/certs/ca-certificates.crt'"),
+    'api-build-ca-certificates',
+  );
+  assert.equal(
+    classifyApiBuildFailure('error: linking with `cc` failed: exit status: 1'),
+    'api-build-link',
+  );
+  assert.equal(
+    classifyApiBuildFailure(
+      '#18 ERROR: process "/bin/sh -c ! readelf -l target/x86_64-unknown-linux-musl/release/api-rust | grep -q interpreter" did not complete successfully',
+    ),
+    'api-build-static-verification',
+  );
+  assert.equal(
+    classifyApiBuildFailure(
+      '#12 ERROR: process "/bin/sh -c cargo build -p api-rust --target x86_64-unknown-linux-musl" did not complete successfully',
+    ),
+    'api-build-rust-compile',
+  );
+  assert.equal(
+    classifyApiBuildFailure(
+      '#4 ERROR: process "/bin/sh -c apt-get install musl-tools && rustup target add x86_64-unknown-linux-musl" did not complete successfully',
+    ),
+    'api-build-musl-toolchain',
+  );
+  assert.equal(
+    classifyApiBuildFailure(
+      '#19 ERROR: process "/bin/sh -c mkdir -p /runtime/app/data /runtime/etc/ssl/certs" did not complete successfully',
+    ),
+    'api-build-runtime-root',
+  );
+  assert.equal(classifyApiBuildFailure('token=do-not-echo'), 'api-build-failed');
+});
+
+test('unexpected artifact failures identify a safe stage without exposing the raw error', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sca-internal-stage-'));
+  try {
+    const toolBytes = Buffer.from('repository tool stub\n');
+    await fs.mkdir(path.join(root, '.supply-chain'));
+    await fs.writeFile(path.join(root, 'tool-stub'), toolBytes);
+    await fs.writeFile(
+      path.join(root, '.supply-chain', 'tools.json'),
+      JSON.stringify({
+        schema_version: 1,
+        tools: ['syft', 'trivy', ...Array.from({ length: 8 }, (_, index) => `stub-${index}`)].map(
+          (tool_id) => ({
+            tool_id,
+            version: 'test',
+            source_kind: 'repository',
+            source_locator: 'tool-stub',
+            sha256: crypto.createHash('sha256').update(toolBytes).digest('hex'),
+            platform: 'all',
+            capabilities: ['test'],
+          }),
+        ),
+      }),
+    );
+    execFileSync('git', ['init'], { cwd: root });
+    execFileSync('git', ['config', 'user.name', 'Convexa Test'], { cwd: root });
+    execFileSync('git', ['config', 'user.email', 'test@convexa.invalid'], { cwd: root });
+    execFileSync('git', ['add', '.'], { cwd: root });
+    execFileSync('git', ['commit', '-m', 'fixture'], { cwd: root });
+    const revision = execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: root,
+      encoding: 'utf8',
+    }).trim();
+    const report = await runArtifacts({
+      event: 'workflow_dispatch',
+      pathName: 'artifacts',
+      runKey: runKey('workflow_dispatch', revision, 'artifacts', [
+        'api-production-image',
+        'dashboard-distribution-archive',
+      ]),
+      root,
+      environment: { GITHUB_ACTIONS: 'true', GITHUB_RUN_ID_SAFE: '1' },
+      platform: 'linux',
+      arch: 'x64',
+      runner: async () => {
+        throw new Error('sensitive runner detail');
+      },
+    });
+    assert.equal(report.rule_id, 'artifact-internal-docker-probe');
+    assert.doesNotMatch(JSON.stringify(report), /sensitive runner detail/);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
 });
 
 function ustar(entries, requiredPrefix = 'dist/') {

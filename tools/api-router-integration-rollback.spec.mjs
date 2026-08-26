@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -38,3 +39,38 @@ test('rollback refuses an omitted persistence root', () => {
     /--data-dir is required/,
   );
 });
+
+test('rollback accepts a replacement patch larger than the subprocess default buffer', () => {
+  const repository = mkdtempSync(join(tmpdir(), 'convexa-router-large-replacement-'));
+  const data = mkdtempSync(join(tmpdir(), 'convexa-router-large-data-'));
+  try {
+    execFileSync('git', ['init'], { cwd: repository });
+    execFileSync('git', ['config', 'user.name', 'Convexa Test'], { cwd: repository });
+    execFileSync('git', ['config', 'user.email', 'test@convexa.invalid'], { cwd: repository });
+    writeFileSync(join(repository, 'baseline.txt'), 'baseline\n');
+    execFileSync('git', ['add', '.'], { cwd: repository });
+    execFileSync('git', ['commit', '-m', 'baseline'], { cwd: repository });
+    const preRevision = revAt(repository, 'HEAD');
+
+    writeFileSync(join(repository, 'large.bin'), randomBytes(2 * 1024 * 1024));
+    execFileSync('git', ['add', '.'], { cwd: repository });
+    execFileSync('git', ['commit', '-m', 'large replacement'], { cwd: repository });
+    const replacementRevision = revAt(repository, 'HEAD');
+
+    const receipt = proveRollback({
+      root: repository,
+      preRevision,
+      replacementRevision,
+      dataDir: data,
+    });
+    assert.equal(receipt.result, 'PASS');
+    assert.equal(receipt.residual_tracked_changes, 0);
+  } finally {
+    rmSync(repository, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    rmSync(data, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
+});
+
+function revAt(repository, name) {
+  return execFileSync('git', ['rev-parse', name], { cwd: repository, encoding: 'utf8' }).trim();
+}

@@ -174,7 +174,9 @@ impl Config {
         let rest_base =
             env::var("MASSIVE_REST_BASE").unwrap_or_else(|_| "https://api.massive.com".into());
         let redis_url = env::var("REDIS_URL").ok().filter(|s| !s.trim().is_empty());
-        let http_bind = env::var("HTTP_BIND").unwrap_or_else(|_| "0.0.0.0:8000".into());
+        let http_bind_env = env::var("HTTP_BIND").ok();
+        let port_env = env::var("PORT").ok();
+        let http_bind = resolve_http_bind(http_bind_env.as_deref(), port_env.as_deref());
 
         // Base TTL for ad-hoc names; liquid/warm names use the longer tier.
         let gex_cache_ttl_secs = env_u64("GEX_CACHE_TTL_SECS", 10);
@@ -443,6 +445,16 @@ fn env_u64(key: &str, default: u64) -> u64 {
         .unwrap_or(default)
 }
 
+fn resolve_http_bind(http_bind: Option<&str>, port: Option<&str>) -> String {
+    if let Some(bind) = http_bind {
+        return bind.to_string();
+    }
+    match port.filter(|port| !port.is_empty()) {
+        Some(port) => format!("0.0.0.0:{port}"),
+        None => "0.0.0.0:8000".to_string(),
+    }
+}
+
 fn parse_symbol_list(raw: &str) -> Vec<String> {
     let mut out = Vec::new();
     let mut seen = HashSet::new();
@@ -497,6 +509,17 @@ pub fn body_root_conflicts(body_root: &Path, ring: &Path, index: &Path) -> bool 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn http_bind_prefers_explicit_value_then_railway_port_then_default() {
+        assert_eq!(
+            resolve_http_bind(Some("127.0.0.1:9000"), Some("4321")),
+            "127.0.0.1:9000"
+        );
+        assert_eq!(resolve_http_bind(None, Some("4321")), "0.0.0.0:4321");
+        assert_eq!(resolve_http_bind(None, Some("")), "0.0.0.0:8000");
+        assert_eq!(resolve_http_bind(None, None), "0.0.0.0:8000");
+    }
 
     #[test]
     fn parse_symbols() {

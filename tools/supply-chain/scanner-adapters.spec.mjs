@@ -45,13 +45,18 @@ test('production Dockerfiles expose health and run final images as non-root', as
   const dashboard = await fs.readFile('apps/dashboard/Dockerfile', 'utf8');
   const apiEnvironment = api.match(/ENV RUST_LOG=[\s\S]*?POSITIONS_PROVIDER=stub/)?.[0] ?? '';
 
-  assert.match(api, /HEALTHCHECK[\s\S]*?127\.0\.0\.1:\$\{PORT:-8000\}\/health/);
+  assert.match(api, /--target x86_64-unknown-linux-musl/);
+  assert.match(api, /FROM scratch/);
+  assert.match(api, /HEALTHCHECK[\s\S]*?CMD \["\/usr\/local\/bin\/api-rust", "healthcheck"\]/);
   assert.doesNotMatch(apiEnvironment, /AUTH_(?:COOKIE_SECURE|STORE_PATH)=/);
+  assert.doesNotMatch(api, /ENV[^\n]*AUTH_(?:COOKIE_SECURE|STORE_PATH)=/);
+  assert.match(api, /USER 10001:10001/);
   assert.match(
     api,
-    /CMD \["sh", "-c", "[^"]*AUTH_STORE_PATH=\$\{AUTH_STORE_PATH:-\/app\/data\/auth\.json\}/,
+    /COPY --chown=10001:10001 apps\/api\/config\/universe\.json \/app\/universe\.json/,
   );
-  assert.match(api, /USER appuser/);
+  assert.match(api, /CMD \["\/usr\/local\/bin\/api-rust", "serve"\]/);
+  assert.doesNotMatch(api, /apt-get install[\s\S]*?ca-certificates curl/);
 
   assert.match(dashboard, /chown nginx:nginx \/var\/run\/nginx\.pid \/var\/run\/nginx\.lock/);
   assert.match(dashboard, /USER nginx[\s\S]*HEALTHCHECK/);
