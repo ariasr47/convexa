@@ -61,10 +61,14 @@ RUN touch libs/quant-engine/src/lib.rs apps/api/src/lib.rs apps/api/src/main.rs 
     && test -x target/x86_64-unknown-linux-musl/release/api-rust \
     && strip target/x86_64-unknown-linux-musl/release/api-rust
 RUN ! readelf -l target/x86_64-unknown-linux-musl/release/api-rust | grep -q 'Requesting program interpreter'
-RUN mkdir -p /runtime/app/data /runtime/etc/ssl/certs /runtime/tmp \
+RUN mkdir -p /runtime/app/data /runtime/etc/ssl/certs /runtime/tmp /runtime/usr/local/bin \
     && cp /etc/ssl/certs/ca-certificates.crt /runtime/etc/ssl/certs/ca-certificates.crt \
     && chmod 1777 /runtime/tmp \
     && chown -R 10001:10001 /runtime/app
+COPY apps/api/docker-entrypoint.c apps/api/docker-entrypoint.c
+RUN musl-gcc -static -O2 -Wall -Wextra -Werror \
+        -o /runtime/usr/local/bin/convexa-entrypoint apps/api/docker-entrypoint.c \
+    && test -x /runtime/usr/local/bin/convexa-entrypoint
 
 # ---- runtime ----
 FROM scratch
@@ -84,5 +88,6 @@ ENV RUST_LOG=info,api_rust=info \
 USER 10001:10001
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD ["/usr/local/bin/api-rust", "healthcheck"]
+    CMD ["/usr/local/bin/convexa-entrypoint", "/usr/local/bin/api-rust", "healthcheck"]
+ENTRYPOINT ["/usr/local/bin/convexa-entrypoint"]
 CMD ["/usr/local/bin/api-rust", "serve"]

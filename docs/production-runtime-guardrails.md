@@ -17,12 +17,17 @@ This runbook is for the deployment operator. It does not replace the locked feat
 ## Railway volume permissions
 
 Railway mounts a new volume as root, while the production image runs `api-rust` as UID `10001`.
-Bootstrap a new empty volume with one maintenance deployment only:
+The image includes a static, path-restricted bootstrap that can repair only the configured direct
+child of `/data`, then drops to UID/GID `10001` before it starts the API. Bootstrap a new volume or
+repair an existing archive with one maintenance deployment only:
 
-1. Set `RAILWAY_RUN_UID=0` temporarily and deploy the exact release.
-2. Create `SESSION_CHAIN_ARCHIVE_BODY_ROOT`, assign it to `10001:10001`, and restrict it to mode `750`.
-3. Remove `RAILWAY_RUN_UID` and redeploy the same release.
-4. Confirm `/proc/1/status` reports UID/GID `10001` before running the volume drill.
+1. Deploy the exact release containing `convexa-entrypoint` while the service remains UID `10001`.
+2. Set `RAILWAY_RUN_UID=0` temporarily and redeploy that same release. The bootstrap creates the
+   configured archive root when absent, recursively assigns it to `10001:10001`, and drops privileges
+   before executing `api-rust`.
+3. Confirm the API reaches readiness and archive writes succeed, then remove `RAILWAY_RUN_UID` and
+   redeploy the same release normally.
+4. Confirm archive writes still succeed before running the volume drill.
 
 Do not leave the API running as root. The ownership change persists on the volume; subsequent normal deployments remain unprivileged.
 
