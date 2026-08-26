@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { createArtifactReceipt, runArtifacts } from './artifacts.mjs';
+import { classifyApiBuildFailure, createArtifactReceipt, runArtifacts } from './artifacts.mjs';
 import {
   inspectOciArchive,
   ociLayoutReference,
@@ -176,6 +176,23 @@ test('artifact receipt maps the computed policy hash into the serialized field',
     validation: 'pass',
   });
   assert.equal(receipt.policy_sha256, policySha256);
+});
+
+test('API build failures collapse raw Docker output into closed safe categories', () => {
+  assert.equal(
+    classifyApiBuildFailure('error: failed to run custom build command for `ring v0.17.14`'),
+    'api-build-custom-ring',
+  );
+  assert.equal(classifyApiBuildFailure('/bin/sh: 1: readelf: not found'), 'api-build-tool-readelf');
+  assert.equal(
+    classifyApiBuildFailure("cp: cannot stat '/etc/ssl/certs/ca-certificates.crt'"),
+    'api-build-ca-certificates',
+  );
+  assert.equal(
+    classifyApiBuildFailure('error: linking with `cc` failed: exit status: 1'),
+    'api-build-link',
+  );
+  assert.equal(classifyApiBuildFailure('token=do-not-echo'), 'api-build-failed');
 });
 
 test('unexpected artifact failures identify a safe stage without exposing the raw error', async () => {

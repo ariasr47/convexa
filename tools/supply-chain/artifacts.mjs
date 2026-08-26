@@ -140,9 +140,14 @@ export async function runArtifacts({
         `type=oci,dest=${apiArchive}`,
         '.',
       ],
-      { cwd: root, timeoutMs: 1200000, maxOutputBytes: 4 * 1024 * 1024 },
+      {
+        cwd: root,
+        timeoutMs: 1200000,
+        maxOutputBytes: 4 * 1024 * 1024,
+        outputStream: 'stderr',
+      },
     );
-    if (apiBuild.raw_exit_code !== 0) throw new Blocked('api-build-failed');
+    if (apiBuild.raw_exit_code !== 0) throw new Blocked(classifyApiBuildFailure(apiBuild.output));
     stage = 'api-read';
     const apiBytes = await fs.readFile(apiArchive),
       apiDigest = subjectDigest(apiBytes);
@@ -368,6 +373,24 @@ export async function runArtifacts({
       rule_id: error instanceof Blocked ? error.message : `artifact-internal-${stage}`,
     };
   }
+}
+
+export function classifyApiBuildFailure(output) {
+  if (typeof output !== 'string') return 'api-build-failed';
+  if (/\breadelf:\s+not found\b/i.test(output)) return 'api-build-tool-readelf';
+  if (/cp: cannot stat ['"]?\/etc\/ssl\/certs\/ca-certificates\.crt/i.test(output))
+    return 'api-build-ca-certificates';
+  if (/error:\s+linking with .+ failed/i.test(output)) return 'api-build-link';
+  const custom = output.match(/error:\s+failed to run custom build command for [`']([^\s`']+)/i);
+  if (custom) {
+    const crate = ['ring', 'aws-lc-sys', 'openssl-sys', 'libsqlite3-sys'].includes(custom[1])
+      ? custom[1]
+      : 'crate';
+    return `api-build-custom-${crate}`;
+  }
+  if (/error\[E\d{4}\]:/i.test(output) || /error:\s+could not compile\b/i.test(output))
+    return 'api-build-rust-compile';
+  return 'api-build-failed';
 }
 
 function internalLocation(error) {

@@ -59,9 +59,9 @@ COPY apps/api/Cargo.toml apps/api/Cargo.toml
 RUN touch libs/quant-engine/src/lib.rs apps/api/src/lib.rs apps/api/src/main.rs \
     && cargo build -p api-rust --release --features postgres --target x86_64-unknown-linux-musl \
     && test -x target/x86_64-unknown-linux-musl/release/api-rust \
-    && strip target/x86_64-unknown-linux-musl/release/api-rust \
-    && ! readelf -l target/x86_64-unknown-linux-musl/release/api-rust | grep -q 'Requesting program interpreter' \
-    && mkdir -p /runtime/app/data /runtime/etc/ssl/certs /runtime/tmp \
+    && strip target/x86_64-unknown-linux-musl/release/api-rust
+RUN ! readelf -l target/x86_64-unknown-linux-musl/release/api-rust | grep -q 'Requesting program interpreter'
+RUN mkdir -p /runtime/app/data /runtime/etc/ssl/certs /runtime/tmp \
     && cp /etc/ssl/certs/ca-certificates.crt /runtime/etc/ssl/certs/ca-certificates.crt \
     && cp apps/api/config/universe.json /runtime/app/universe.json \
     && chmod 1777 /runtime/tmp \
