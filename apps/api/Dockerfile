@@ -63,7 +63,6 @@ RUN touch libs/quant-engine/src/lib.rs apps/api/src/lib.rs apps/api/src/main.rs 
 RUN ! readelf -l target/x86_64-unknown-linux-musl/release/api-rust | grep -q 'Requesting program interpreter'
 RUN mkdir -p /runtime/app/data /runtime/etc/ssl/certs /runtime/tmp \
     && cp /etc/ssl/certs/ca-certificates.crt /runtime/etc/ssl/certs/ca-certificates.crt \
-    && cp apps/api/config/universe.json /runtime/app/universe.json \
     && chmod 1777 /runtime/tmp \
     && chown -R 10001:10001 /runtime/app
 
@@ -73,6 +72,7 @@ FROM scratch
 WORKDIR /app
 COPY --from=builder /runtime/ /
 COPY --from=builder /src/target/x86_64-unknown-linux-musl/release/api-rust /usr/local/bin/api-rust
+COPY --chown=10001:10001 apps/api/config/universe.json /app/universe.json
 
 ENV RUST_LOG=info,api_rust=info \
     SCAN_UNIVERSE_PATH=/app/universe.json \

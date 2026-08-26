@@ -51,6 +51,10 @@ test('production Dockerfiles expose health and run final images as non-root', as
   assert.doesNotMatch(apiEnvironment, /AUTH_(?:COOKIE_SECURE|STORE_PATH)=/);
   assert.doesNotMatch(api, /ENV[^\n]*AUTH_(?:COOKIE_SECURE|STORE_PATH)=/);
   assert.match(api, /USER 10001:10001/);
+  assert.match(
+    api,
+    /COPY --chown=10001:10001 apps\/api\/config\/universe\.json \/app\/universe\.json/,
+  );
   assert.match(api, /CMD \["\/usr\/local\/bin\/api-rust", "serve"\]/);
   assert.doesNotMatch(api, /apt-get install[\s\S]*?ca-certificates curl/);
 
