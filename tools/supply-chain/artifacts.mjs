@@ -274,7 +274,7 @@ export async function runArtifacts({
       cargoExpected.some((component) => component.name === seed),
     );
     stage = 'api-receipt-assemble';
-    const apiReceipt = receipt({
+    const apiReceipt = createArtifactReceipt({
       subjectId: 'api-production-image',
       kind: 'oci_image',
       digest: apiDigest,
@@ -302,7 +302,7 @@ export async function runArtifacts({
       dashboardExpected.some((component) => component.name === seed),
     );
     stage = 'dashboard-receipt-assemble';
-    const dashboardReceipt = receipt({
+    const dashboardReceipt = createArtifactReceipt({
       subjectId: 'dashboard-distribution-archive',
       kind: 'file_archive',
       digest: `sha256:${dashboardArchive.digest}`,
@@ -376,7 +376,7 @@ function internalLocation(error) {
   return match ? `${match[1]}:${match[2]}` : 'unknown';
 }
 
-function receipt({
+export function createArtifactReceipt({
   subjectId,
   kind,
   digest,
@@ -412,7 +412,7 @@ function receipt({
     format: 'CycloneDX 1.6 JSON dependency inventory',
     schema_version_declared: '1.6',
     inventory_sha256: inventorySha256,
-    policy_sha256,
+    policy_sha256: policySha256,
     validation,
     component_families:
       subjectId === 'api-production-image'

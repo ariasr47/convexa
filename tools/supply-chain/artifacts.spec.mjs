@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { runArtifacts } from './artifacts.mjs';
+import { createArtifactReceipt, runArtifacts } from './artifacts.mjs';
 import {
   inspectOciArchive,
   ociLayoutReference,
@@ -152,6 +152,30 @@ test('artifact command blocks locally and rejects a stale run key before executi
   });
   assert.equal(local.aggregate, 'blocked');
   assert.equal(local.rule_id, 'artifact-input');
+});
+
+test('artifact receipt maps the computed policy hash into the serialized field', () => {
+  const policySha256 = 'b'.repeat(64);
+  const receipt = createArtifactReceipt({
+    subjectId: 'api-production-image',
+    kind: 'oci_image',
+    digest: `sha256:${'a'.repeat(64)}`,
+    revision: 'c'.repeat(40),
+    runKey: 'd'.repeat(64),
+    buildRunId: '123',
+    version: '1.51.0',
+    inventorySha256: 'e'.repeat(64),
+    policySha256,
+    componentCount: 2,
+    componentSetSha256: 'f'.repeat(64),
+    requiredSeedCount: 1,
+    requiredSeedsPresent: true,
+    sourceInputsSha256: '1'.repeat(64),
+    byteScan: '2'.repeat(64),
+    archiveValidation: null,
+    validation: 'pass',
+  });
+  assert.equal(receipt.policy_sha256, policySha256);
 });
 
 test('unexpected artifact failures identify a safe stage without exposing the raw error', async () => {
