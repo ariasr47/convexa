@@ -210,6 +210,61 @@ fn image_and_examples_are_secret_free_and_guard_is_non_vacuous() {
     ));
 }
 
+#[test]
+fn railway_volume_permissions_are_repaired_before_the_api_drops_privileges() {
+    let root = workspace();
+    let dockerfile = fs::read_to_string(root.join("apps/api/Dockerfile")).unwrap();
+    let entrypoint_path = root.join("apps/api/docker-entrypoint.c");
+    assert!(
+        entrypoint_path.is_file(),
+        "scratch image needs a static post-mount ownership bootstrap"
+    );
+    let entrypoint = fs::read_to_string(entrypoint_path).unwrap();
+
+    assert!(
+        dockerfile.contains("musl-gcc -static"),
+        "bootstrap must remain executable in the shell-free scratch image"
+    );
+    assert!(
+        dockerfile.contains("ENTRYPOINT [\"/usr/local/bin/convexa-entrypoint\"]"),
+        "Railway must run the post-mount bootstrap before every command"
+    );
+    assert!(
+        dockerfile.contains("USER 10001:10001"),
+        "the image must remain non-root outside Railway's explicit startup override"
+    );
+    assert!(
+        dockerfile.contains(
+            "CMD [\"/usr/local/bin/convexa-entrypoint\", \"/usr/local/bin/api-rust\", \"healthcheck\"]"
+        ),
+        "container healthcheck must also drop privileges"
+    );
+
+    let validate = entrypoint
+        .find("\"/data/\"")
+        .expect("archive root must be restricted to the Railway volume");
+    let no_symlink_walk = entrypoint
+        .find("FTW_PHYS")
+        .expect("recursive repair must not follow symlinks");
+    let repair = entrypoint
+        .find("lchown")
+        .expect("mounted archive ownership must be repaired recursively");
+    let drop = entrypoint
+        .find("setuid(APP_UID)")
+        .expect("API command must drop to appuser uid");
+    assert!(
+        entrypoint.contains("geteuid() == 0") && entrypoint.contains("is_app_user()"),
+        "bootstrap must accept normal non-root starts and repair only when Railway starts it as root"
+    );
+    let exec = entrypoint
+        .find("execvp")
+        .expect("bootstrap must replace itself with the requested command");
+    assert!(
+        validate < no_symlink_walk && no_symlink_walk < repair && repair < drop && drop < exec,
+        "validate path, repair ownership, drop privileges, then exec"
+    );
+}
+
 fn contains_any(value: &str, canaries: &[&str]) -> bool {
     canaries.iter().any(|canary| value.contains(canary))
 }
