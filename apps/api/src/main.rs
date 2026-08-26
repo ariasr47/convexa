@@ -80,6 +80,8 @@ enum Commands {
         #[arg(long)]
         bind: Option<String>,
     },
+    /// Probe the local HTTP health endpoint for the container runtime.
+    Healthcheck,
     /// Run the fixture-only capacity baseline.
     CapacityBaseline {
         #[arg(long, value_enum, default_value_t = api_rust::capacity::CapacityProfileArg::Normal)]
@@ -574,6 +576,9 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
                 cfg.http_bind = b;
             }
             server::serve(cfg).await?;
+        }
+        Commands::Healthcheck => {
+            run_healthcheck().await?;
         }
         #[cfg(feature = "postgres")]
         Commands::PostgresMigrate => unreachable!("postgres-migrate is dispatched before run"),
@@ -1369,6 +1374,47 @@ fn cmd_fixture(path: &std::path::Path, json_out: bool, check: bool) -> anyhow::R
         }
     }
     Ok(())
+}
+
+fn healthcheck_url(port: Option<&str>) -> String {
+    format!(
+        "http://127.0.0.1:{}/health",
+        port.filter(|port| !port.is_empty()).unwrap_or("8000")
+    )
+}
+
+async fn run_healthcheck() -> anyhow::Result<()> {
+    let port = std::env::var("PORT").ok();
+    reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(4))
+        .build()?
+        .get(healthcheck_url(port.as_deref()))
+        .send()
+        .await?
+        .error_for_status()?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod container_runtime_tests {
+    use super::{healthcheck_url, Cli, Commands};
+    use clap::Parser;
+
+    #[test]
+    fn healthcheck_is_a_dedicated_cli_command() {
+        let cli = Cli::try_parse_from(["api-rust", "healthcheck"]).unwrap();
+        assert!(matches!(cli.cmd, Commands::Healthcheck));
+    }
+
+    #[test]
+    fn healthcheck_uses_the_railway_port_or_the_local_default() {
+        assert_eq!(
+            healthcheck_url(Some("4321")),
+            "http://127.0.0.1:4321/health"
+        );
+        assert_eq!(healthcheck_url(Some("")), "http://127.0.0.1:8000/health");
+        assert_eq!(healthcheck_url(None), "http://127.0.0.1:8000/health");
+    }
 }
 
 fn f64_field(v: &serde_json::Value, key: &str) -> Option<f64> {

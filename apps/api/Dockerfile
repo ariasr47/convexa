@@ -23,6 +23,11 @@
 FROM rust:1-bookworm@sha256:e70e2eec3d495fd5c8e0be74adda86507dfac7f51a724fbf9813ff59b2b247c7 AS builder
 WORKDIR /src
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends musl-tools \
+    && rm -rf /var/lib/apt/lists/* \
+    && rustup target add x86_64-unknown-linux-musl
+
 COPY Cargo.toml Cargo.lock ./
 COPY libs/quant-engine/Cargo.toml libs/quant-engine/Cargo.toml
 COPY apps/api/Cargo.toml apps/api/Cargo.toml
@@ -34,15 +39,17 @@ RUN mkdir -p libs/quant-engine/src libs/quant-engine/benches apps/api/src \
     && printf 'fn main(){}\n' > apps/api/src/main.rs \
     && printf 'pub fn _x(){}\n' > apps/api/src/lib.rs
 
-RUN cargo build -p api-rust --release --features postgres \
+RUN cargo build -p api-rust --release --features postgres --target x86_64-unknown-linux-musl \
     && rm -rf apps/api/src libs/quant-engine/src \
-    && rm -f target/release/api-rust target/release/deps/api_rust* \
-           target/release/deps/libapi_rust* target/release/deps/quant_engine* \
-           target/release/deps/libquant_engine* \
-    && rm -rf target/release/.fingerprint/api-rust-* \
-              target/release/.fingerprint/quant-engine-* \
-              target/release/.fingerprint/libapi_rust* \
-              target/release/.fingerprint/libquant_engine*
+    && rm -f target/x86_64-unknown-linux-musl/release/api-rust \
+           target/x86_64-unknown-linux-musl/release/deps/api_rust* \
+           target/x86_64-unknown-linux-musl/release/deps/libapi_rust* \
+           target/x86_64-unknown-linux-musl/release/deps/quant_engine* \
+           target/x86_64-unknown-linux-musl/release/deps/libquant_engine* \
+    && rm -rf target/x86_64-unknown-linux-musl/release/.fingerprint/api-rust-* \
+              target/x86_64-unknown-linux-musl/release/.fingerprint/quant-engine-* \
+              target/x86_64-unknown-linux-musl/release/.fingerprint/libapi_rust* \
+              target/x86_64-unknown-linux-musl/release/.fingerprint/libquant_engine*
 
 COPY libs/quant-engine/src libs/quant-engine/src
 COPY libs/quant-engine/Cargo.toml libs/quant-engine/Cargo.toml
@@ -50,32 +57,32 @@ COPY apps/api/src apps/api/src
 COPY apps/api/static apps/api/static
 COPY apps/api/Cargo.toml apps/api/Cargo.toml
 RUN touch libs/quant-engine/src/lib.rs apps/api/src/lib.rs apps/api/src/main.rs \
-    && cargo build -p api-rust --release --features postgres \
-    && test -x target/release/api-rust \
-    && strip target/release/api-rust
+    && cargo build -p api-rust --release --features postgres --target x86_64-unknown-linux-musl \
+    && test -x target/x86_64-unknown-linux-musl/release/api-rust \
+    && strip target/x86_64-unknown-linux-musl/release/api-rust \
+    && ! readelf -l target/x86_64-unknown-linux-musl/release/api-rust | grep -q 'Requesting program interpreter' \
+    && mkdir -p /runtime/app/data /runtime/etc/ssl/certs /runtime/tmp \
+    && cp /etc/ssl/certs/ca-certificates.crt /runtime/etc/ssl/certs/ca-certificates.crt \
+    && cp apps/api/config/universe.json /runtime/app/universe.json \
+    && chmod 1777 /runtime/tmp \
+    && chown -R 10001:10001 /runtime/app
 
 # ---- runtime ----
-FROM debian:bookworm-20260803-slim@sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && useradd --create-home --uid 10001 appuser \
-    && mkdir -p /app/data \
-    && chown -R appuser:appuser /app
+FROM scratch
 
 WORKDIR /app
-COPY --from=builder /src/target/release/api-rust /usr/local/bin/api-rust
-COPY apps/api/config/universe.json /app/universe.json
+COPY --from=builder /runtime/ /
+COPY --from=builder /src/target/x86_64-unknown-linux-musl/release/api-rust /usr/local/bin/api-rust
 
 ENV RUST_LOG=info,api_rust=info \
-    HTTP_BIND=0.0.0.0:8000 \
     SCAN_UNIVERSE_PATH=/app/universe.json \
     IV_STORE_PATH=/app/data/iv_timeseries.json \
     SCAN_STORE_PATH=/app/data/scan.json \
-    POSITIONS_PROVIDER=stub
+    POSITIONS_PROVIDER=stub \
+    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-USER appuser
+USER 10001:10001
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD curl --fail --silent --show-error "http://127.0.0.1:${PORT:-8000}/health" > /dev/null || exit 1
-CMD ["sh", "-c", "export AUTH_STORE_PATH=${AUTH_STORE_PATH:-/app/data/auth.json}; export AUTH_COOKIE_SECURE=${AUTH_COOKIE_SECURE:-true}; export HTTP_BIND=0.0.0.0:${PORT:-8000}; exec /usr/local/bin/api-rust serve"]
+    CMD ["/usr/local/bin/api-rust", "healthcheck"]
+CMD ["/usr/local/bin/api-rust", "serve"]
