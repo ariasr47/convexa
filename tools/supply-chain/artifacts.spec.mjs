@@ -192,6 +192,30 @@ test('API build failures collapse raw Docker output into closed safe categories'
     classifyApiBuildFailure('error: linking with `cc` failed: exit status: 1'),
     'api-build-link',
   );
+  assert.equal(
+    classifyApiBuildFailure(
+      '#18 ERROR: process "/bin/sh -c ! readelf -l target/x86_64-unknown-linux-musl/release/api-rust | grep -q interpreter" did not complete successfully',
+    ),
+    'api-build-static-verification',
+  );
+  assert.equal(
+    classifyApiBuildFailure(
+      '#12 ERROR: process "/bin/sh -c cargo build -p api-rust --target x86_64-unknown-linux-musl" did not complete successfully',
+    ),
+    'api-build-rust-compile',
+  );
+  assert.equal(
+    classifyApiBuildFailure(
+      '#4 ERROR: process "/bin/sh -c apt-get install musl-tools && rustup target add x86_64-unknown-linux-musl" did not complete successfully',
+    ),
+    'api-build-musl-toolchain',
+  );
+  assert.equal(
+    classifyApiBuildFailure(
+      '#19 ERROR: process "/bin/sh -c mkdir -p /runtime/app/data /runtime/etc/ssl/certs" did not complete successfully',
+    ),
+    'api-build-runtime-root',
+  );
   assert.equal(classifyApiBuildFailure('token=do-not-echo'), 'api-build-failed');
 });
 

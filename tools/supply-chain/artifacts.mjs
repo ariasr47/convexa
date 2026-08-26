@@ -390,6 +390,14 @@ export function classifyApiBuildFailure(output) {
   }
   if (/error\[E\d{4}\]:/i.test(output) || /error:\s+could not compile\b/i.test(output))
     return 'api-build-rust-compile';
+  const failedProcess = output.match(/ERROR:\s+process [^\r\n]+/i)?.[0] ?? '';
+  if (/rustup target add x86_64-unknown-linux-musl/i.test(failedProcess))
+    return 'api-build-musl-toolchain';
+  if (/cargo build[^\r\n]+x86_64-unknown-linux-musl/i.test(failedProcess))
+    return 'api-build-rust-compile';
+  if (/readelf -l[^\r\n]+x86_64-unknown-linux-musl/i.test(failedProcess))
+    return 'api-build-static-verification';
+  if (/mkdir -p \/runtime\/app\/data/i.test(failedProcess)) return 'api-build-runtime-root';
   return 'api-build-failed';
 }
 
