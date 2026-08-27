@@ -1,9 +1,10 @@
 //! Dedicated off-path liquid-name session ensure worker.
 
 use super::ensure::{
-    ensure_eligible, ensure_one_gated_with_retention, today_et_date, EnsureForceError, EnsureGate,
-    ENSURE_SYMBOLS,
+    ensure_eligible_with_calendar, ensure_one_gated_with_retention, today_et_date,
+    EnsureForceError, EnsureGate, ENSURE_SYMBOLS,
 };
+use super::market_calendar::MarketCalendar;
 use super::store::SessionChainArchive;
 use crate::services::chain_snapshot::ChainSnapshotStore;
 use crate::services::market_data::VendorBundle;
@@ -11,16 +12,15 @@ use crate::state::AppState;
 use chrono::{DateTime, Utc};
 use std::future::Future;
 use std::time::Duration;
-use tracing::info;
+use tracing::{info, warn};
 
 pub fn spawn(state: AppState) {
-    if !state.config.liquid_session_ensure_enabled {
-        info!("liquid session ensure disabled (LIQUID_SESSION_ENSURE_ENABLED=0)");
-        return;
-    }
     if !state.session_archive.is_enabled() {
         info!("liquid session ensure: archive store disabled — worker not started");
         return;
+    }
+    if !state.config.liquid_session_ensure_enabled {
+        info!("liquid session ensure disabled (coverage monitor remains active)");
     }
     let wake = state.ensure_wake.clone();
     tokio::spawn(async move {
@@ -39,9 +39,6 @@ pub fn spawn(state: AppState) {
 }
 
 pub async fn run_ensure_pass(state: &AppState) {
-    if !state.config.liquid_session_ensure_enabled {
-        return;
-    }
     if !state.session_archive.is_enabled() {
         return;
     }
@@ -51,27 +48,42 @@ pub async fn run_ensure_pass(state: &AppState) {
     let ring_enabled = state.chain_snapshots.is_enabled();
     let max_age = Duration::from_secs(state.config.chain_snapshot_max_age_secs);
     let max_per = state.config.chain_snapshot_max_per_symbol;
-    run_ensure_pass_at(
-        &state.session_archive,
-        &state.chain_snapshots,
-        &state.ensure_gate,
-        now,
-        now_secs,
-        archive_enabled,
-        ring_enabled,
-        true,
-        max_age,
-        max_per,
-        |sym| {
-            let state = state.clone();
-            async move {
-                crate::services::analytics::fetch_vendor_bundle_for_ensure(&state, &sym)
-                    .await
-                    .map_err(|e| EnsureForceError::Compute(e.to_string()))
+    if state.config.liquid_session_ensure_enabled {
+        run_ensure_pass_at_with_calendar(
+            &state.session_archive,
+            &state.chain_snapshots,
+            &state.ensure_gate,
+            now,
+            now_secs,
+            archive_enabled,
+            ring_enabled,
+            true,
+            max_age,
+            max_per,
+            state.archive_coverage.calendar(),
+            |sym| {
+                let state = state.clone();
+                async move {
+                    crate::services::analytics::fetch_vendor_bundle_for_ensure(&state, &sym)
+                        .await
+                        .map_err(|e| EnsureForceError::Compute(e.to_string()))
+                }
+            },
+        )
+        .await;
+    }
+    match state
+        .archive_coverage
+        .evaluate(&state.session_archive, now)
+        .await
+    {
+        Ok(rows) => {
+            for (symbol, date, status) in rows {
+                warn!(%symbol, et_date = %date, condition = ?status, checkpoint_et = "10:30:00 America/New_York", observation_started_at_utc = %state.archive_coverage.observation_started_at_utc(), evaluated_at_et = %now.with_timezone(&chrono_tz::America::New_York), command = %format!("cargo run -p api-rust -- archive-coverage-audit --from {0} --to {0}", date), "Session archive incomplete after 10:30:00 ET");
             }
-        },
-    )
-    .await;
+        }
+        Err(e) => warn!(error = %e.reason, "session archive coverage evaluation unavailable"),
+    }
 }
 
 pub(crate) async fn run_ensure_pass_at<F, Fut>(
@@ -90,11 +102,46 @@ pub(crate) async fn run_ensure_pass_at<F, Fut>(
     F: FnMut(String) -> Fut,
     Fut: Future<Output = Result<VendorBundle, EnsureForceError>>,
 {
+    let calendar = MarketCalendar::production().expect("embedded calendar is valid");
+    run_ensure_pass_at_with_calendar(
+        archive,
+        ring,
+        gate,
+        now,
+        now_secs,
+        archive_enabled,
+        ring_enabled,
+        ensure_enabled,
+        max_age,
+        max_per,
+        &calendar,
+        force_compute,
+    )
+    .await;
+}
+
+pub(crate) async fn run_ensure_pass_at_with_calendar<F, Fut>(
+    archive: &SessionChainArchive,
+    ring: &ChainSnapshotStore,
+    gate: &EnsureGate,
+    now: DateTime<Utc>,
+    now_secs: u64,
+    archive_enabled: bool,
+    ring_enabled: bool,
+    ensure_enabled: bool,
+    max_age: Duration,
+    max_per: usize,
+    calendar: &MarketCalendar,
+    mut force_compute: F,
+) where
+    F: FnMut(String) -> Fut,
+    Fut: Future<Output = Result<VendorBundle, EnsureForceError>>,
+{
     if !ensure_enabled || !archive_enabled {
         return;
     }
     for sym in ENSURE_SYMBOLS {
-        if !ensure_eligible(sym, now, archive_enabled) {
+        if !ensure_eligible_with_calendar(sym, now, archive_enabled, calendar).unwrap_or(false) {
             continue;
         }
         let et = today_et_date(now);

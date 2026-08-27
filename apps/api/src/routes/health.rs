@@ -1,10 +1,12 @@
 //! Liveness / readiness + cache metrics.
 
 use crate::openapi::RouteResponse;
+use crate::services::session_chain_archive::{CoveragePolicy, COVERAGE_SYMBOLS};
 use crate::state::AppState;
 use axum::extract::State;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
@@ -213,6 +215,58 @@ pub struct MetricsWire {
     pub gex_cache: HealthCacheMetrics,
     pub operator: MetricsOperator,
     pub metrics_auth: String,
+    pub session_archive_coverage: SessionArchiveCoverageWire,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct SessionArchiveCoverageWire {
+    pub status: String,
+    pub status_detail: Option<String>,
+    pub data_stale: bool,
+    pub activation_et_date: String,
+    pub checkpoint_et: String,
+    pub lookback_eligible_sessions: usize,
+    pub evaluated_at_et: Option<String>,
+    pub last_verified_at_utc: Option<String>,
+    pub range: CoverageRangeWire,
+    pub required_symbols: Vec<String>,
+    pub counts: CoverageCountsWire,
+    pub books: Vec<CoverageBookWire>,
+    pub per_symbol: Vec<CoveragePerSymbolWire>,
+    pub observation: CoverageObservationWire,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct CoverageRangeWire {
+    pub start_et_date: Option<String>,
+    pub end_et_date: Option<String>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct CoverageCountsWire {
+    pub expected: Option<usize>,
+    pub present: Option<usize>,
+    pub readable: Option<usize>,
+    pub missing: Option<usize>,
+    pub unreadable: Option<usize>,
+    pub not_due: Option<usize>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct CoverageBookWire {
+    pub symbol: String,
+    pub et_date: String,
+    pub status: String,
+    pub source_as_of: Option<String>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct CoveragePerSymbolWire {
+    pub symbol: String,
+    pub last_readable_et_date: Option<String>,
+    pub last_readable_source_as_of: Option<String>,
+    pub write_failures_since_observation: u64,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct CoverageObservationWire {
+    pub started_at_utc: String,
+    pub write_failures_total: u64,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct MetricsScope {
@@ -356,6 +410,7 @@ fn contract_metrics_response() -> Response {
             uptime_seconds: 0,
         },
         metrics_auth: "required".into(),
+        session_archive_coverage: empty_coverage_wire(),
     })
     .into_response()
 }
@@ -489,6 +544,7 @@ pub async fn cache_metrics(
         }
     }
     let metrics = state.gex_cache.metrics_snapshot().await;
+    let coverage = coverage_wire(&state).await;
     let board = {
         let scan_rows = state.scan.read_rows(None).await;
         let history_samples = state.scan.count_structure_samples().await;
@@ -512,8 +568,150 @@ pub async fn cache_metrics(
         "gex_cache": metrics,
         "operator": board,
         "metrics_auth": if state.config.metrics_secret_token.is_some() { "required" } else { "open" },
+        "session_archive_coverage": coverage,
     }))
     .into_response()
+}
+
+fn empty_coverage_wire() -> SessionArchiveCoverageWire {
+    let (activation, checkpoint, lookback) = CoveragePolicy::production()
+        .ok()
+        .map(|p| {
+            (
+                p.activation_et_date.to_string(),
+                p.checkpoint_et.format("%H:%M:%S").to_string(),
+                p.runtime_lookback_eligible_sessions,
+            )
+        })
+        .unwrap_or_else(|| ("2026-08-24".into(), "10:30:00".into(), 5));
+    SessionArchiveCoverageWire {
+        status: "unavailable".into(),
+        status_detail: Some("coverage evaluation has not completed".into()),
+        data_stale: false,
+        activation_et_date: activation,
+        checkpoint_et: format!("{} America/New_York", checkpoint),
+        lookback_eligible_sessions: lookback,
+        evaluated_at_et: None,
+        last_verified_at_utc: None,
+        range: CoverageRangeWire {
+            start_et_date: None,
+            end_et_date: None,
+        },
+        required_symbols: COVERAGE_SYMBOLS.iter().map(|s| (*s).into()).collect(),
+        counts: CoverageCountsWire {
+            expected: None,
+            present: None,
+            readable: None,
+            missing: None,
+            unreadable: None,
+            not_due: None,
+        },
+        books: vec![],
+        per_symbol: COVERAGE_SYMBOLS
+            .iter()
+            .map(|s| CoveragePerSymbolWire {
+                symbol: (*s).into(),
+                last_readable_et_date: None,
+                last_readable_source_as_of: None,
+                write_failures_since_observation: 0,
+            })
+            .collect(),
+        observation: CoverageObservationWire {
+            started_at_utc: Utc::now().to_rfc3339(),
+            write_failures_total: 0,
+        },
+    }
+}
+
+async fn coverage_wire(state: &AppState) -> SessionArchiveCoverageWire {
+    use crate::state::CoverageRuntimeResult;
+    let mut out = empty_coverage_wire();
+    out.observation.started_at_utc = state
+        .archive_coverage
+        .observation_started_at_utc()
+        .to_rfc3339();
+    out.observation.write_failures_total = state.archive_coverage.writes.total();
+    for (idx, row) in out.per_symbol.iter_mut().enumerate() {
+        row.write_failures_since_observation = state.archive_coverage.writes.symbol(idx);
+    }
+    let Some(result) = state.archive_coverage.snapshot().await else {
+        return out;
+    };
+    let (evidence, status, detail, stale, range, evaluated) = match result {
+        CoverageRuntimeResult::Current(e) => (
+            Some(e.clone()),
+            "current",
+            None,
+            false,
+            Some(e.range.clone()),
+            Some(e.evaluated_at_utc),
+        ),
+        CoverageRuntimeResult::Failed {
+            last_good,
+            known_range,
+            reason,
+            evaluated_at,
+        } => (
+            last_good,
+            "stale",
+            Some(reason.reason.to_string()),
+            true,
+            known_range,
+            Some(evaluated_at),
+        ),
+    };
+    out.status = status.into();
+    out.status_detail = detail;
+    out.data_stale = stale;
+    out.evaluated_at_et =
+        evaluated.map(|t| t.with_timezone(&chrono_tz::America::New_York).to_rfc3339());
+    if let Some(r) = range {
+        out.range = CoverageRangeWire {
+            start_et_date: Some(r.start.to_string()),
+            end_et_date: Some(r.end.to_string()),
+        };
+    }
+    if let Some(e) = evidence {
+        out.last_verified_at_utc = Some(e.verified_at_utc.to_rfc3339());
+        out.counts = CoverageCountsWire {
+            expected: Some(e.counts.expected),
+            present: Some(e.counts.present),
+            readable: Some(e.counts.readable),
+            missing: Some(e.counts.missing),
+            unreadable: Some(e.counts.unreadable),
+            not_due: Some(e.counts.not_due),
+        };
+        out.books = e
+            .books
+            .into_iter()
+            .map(|b| CoverageBookWire {
+                symbol: b.symbol,
+                et_date: b.et_date.to_string(),
+                status: serde_json::to_value(b.status)
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .into(),
+                source_as_of: b.source_as_of.map(|t| t.to_rfc3339()),
+            })
+            .collect();
+        out.per_symbol = e
+            .last_readable
+            .into_iter()
+            .enumerate()
+            .map(|(idx, b)| CoveragePerSymbolWire {
+                symbol: b.symbol,
+                last_readable_et_date: b.et_date.map(|d| d.to_string()),
+                last_readable_source_as_of: b.source_as_of.map(|t| t.to_rfc3339()),
+                write_failures_since_observation: state.archive_coverage.writes.symbol(idx),
+            })
+            .collect();
+    } else {
+        out.status = "unavailable".into();
+        out.data_stale = false;
+        out.last_verified_at_utc = None;
+    }
+    out
 }
 
 fn empty_metrics_scope() -> Value {

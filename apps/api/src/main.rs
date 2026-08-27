@@ -82,6 +82,13 @@ enum Commands {
     },
     /// Probe the local HTTP health endpoint for the container runtime.
     Healthcheck,
+    /// Read-only inclusive session archive coverage audit.
+    ArchiveCoverageAudit {
+        #[arg(long)]
+        from: String,
+        #[arg(long)]
+        to: String,
+    },
     /// Run the fixture-only capacity baseline.
     CapacityBaseline {
         #[arg(long, value_enum, default_value_t = api_rust::capacity::CapacityProfileArg::Normal)]
@@ -579,6 +586,31 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
         }
         Commands::Healthcheck => {
             run_healthcheck().await?;
+        }
+        Commands::ArchiveCoverageAudit { from, to } => {
+            let cfg = Config::from_env()?;
+            let reader =
+                api_rust::services::session_chain_archive::audit::open_configured(&cfg).await?;
+            let calendar = api_rust::services::session_chain_archive::MarketCalendar::production()
+                .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+            let policy = api_rust::services::session_chain_archive::CoveragePolicy::production()
+                .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+            let from = chrono::NaiveDate::parse_from_str(&from, "%Y-%m-%d")
+                .map_err(|_| anyhow::anyhow!("invalid --from date"))?;
+            let to = chrono::NaiveDate::parse_from_str(&to, "%Y-%m-%d")
+                .map_err(|_| anyhow::anyhow!("invalid --to date"))?;
+            let result = api_rust::services::session_chain_archive::audit::run_audit(
+                &reader,
+                &calendar,
+                &policy,
+                api_rust::services::session_chain_archive::audit::AuditRequest { from, to },
+                chrono::Utc::now(),
+            )
+            .await;
+            print!("{}\n", result.text);
+            if result.exit != ExitCode::SUCCESS {
+                anyhow::bail!("archive coverage audit failed");
+            }
         }
         #[cfg(feature = "postgres")]
         Commands::PostgresMigrate => unreachable!("postgres-migrate is dispatched before run"),

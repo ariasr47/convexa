@@ -3,11 +3,21 @@
 use super::et_date::et_date_from_as_of;
 use super::store::SessionChainArchive;
 use crate::services::chain_snapshot::wire::{as_of_string, ChainSnapshotWire};
+use crate::state::ArchiveWriteTelemetry;
 use tracing::{info, warn};
 
 /// Copy already-serialized ring bytes under `(symbol, et_date)`. Never fails the caller.
 pub async fn archive_session_best_effort(
     archive: &SessionChainArchive,
+    wire: &ChainSnapshotWire,
+    body: &[u8],
+) {
+    archive_session_best_effort_observed(archive, None, wire, body).await;
+}
+
+pub async fn archive_session_best_effort_observed(
+    archive: &SessionChainArchive,
+    telemetry: Option<&ArchiveWriteTelemetry>,
     wire: &ChainSnapshotWire,
     body: &[u8],
 ) {
@@ -25,10 +35,12 @@ pub async fn archive_session_best_effort(
             "session archive appended"
         ),
         Ok(false) => { /* first-wins no-op */ }
-        Err(e) => warn!(
-            error = %e,
-            "session archive write skipped — trader path unchanged"
-        ),
+        Err(e) => {
+            if let Some(t) = telemetry {
+                t.record_failure(&wire.symbol);
+            }
+            warn!(error = %e, symbol = %wire.symbol, "session archive write skipped — trader path unchanged");
+        }
     }
 }
 

@@ -132,6 +132,18 @@ pub async fn serve(config: Config) -> AppResult<()> {
 fn validate_production_profile(
     config: &Config,
 ) -> AppResult<crate::runtime_guardrails::config::ProductionRuntime> {
+    let calendar =
+        crate::services::session_chain_archive::MarketCalendar::production().map_err(|e| {
+            crate::error::AppError::Config(format!("Production startup refused\nCalendar: {e}"))
+        })?;
+    let today = chrono::Utc::now()
+        .with_timezone(&chrono_tz::America::New_York)
+        .date_naive();
+    if today < calendar.domain_start || today > calendar.domain_end {
+        return Err(crate::error::AppError::Config(
+            "Production startup refused\nCalendar: current ET date is outside the checked-in domain.".into(),
+        ));
+    }
     validate_snapshot_storage(config)?;
     use std::collections::HashMap;
     let keys = [
