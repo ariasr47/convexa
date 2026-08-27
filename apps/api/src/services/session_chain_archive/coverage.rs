@@ -276,6 +276,16 @@ pub async fn evaluate<R: LiveArchiveRead>(
                     });
                 }
                 Some(m) => {
+                    if m.symbol != symbol || m.et_date != date.to_string() {
+                        counts.unreadable += 1;
+                        books.push(CoverageBook {
+                            symbol: symbol.into(),
+                            et_date: date,
+                            status: BookCoverageStatus::Unreadable,
+                            source_as_of: None,
+                        });
+                        continue;
+                    }
                     counts.present += 1;
                     let key = (m.symbol.clone(), date, m.source_as_of);
                     let loaded = if cache.enabled {
@@ -388,28 +398,82 @@ mod tests {
     struct Fake {
         metadata: Arc<AtomicUsize>,
         loads: Arc<AtomicUsize>,
+        rows: std::collections::HashMap<
+            (String, NaiveDate),
+            (Option<SessionBookMeta>, Result<StrictBook, CoverageFailure>),
+        >,
     }
     impl LiveArchiveRead for Fake {
         fn metadata<'a>(
             &'a self,
-            _: &'a str,
-            _: NaiveDate,
+            symbol: &'a str,
+            et_date: NaiveDate,
         ) -> BoxFuture<'a, Result<Option<SessionBookMeta>, CoverageFailure>> {
             self.metadata.fetch_add(1, Ordering::SeqCst);
-            Box::pin(async { Ok(None) })
+            let row = self
+                .rows
+                .get(&(symbol.to_string(), et_date))
+                .map(|(m, _)| m.clone())
+                .unwrap_or(None);
+            Box::pin(async move { Ok(row) })
         }
         fn strict_load<'a>(
             &'a self,
-            _: &'a SessionBookMeta,
+            meta: &'a SessionBookMeta,
         ) -> BoxFuture<'a, Result<StrictBook, CoverageFailure>> {
             self.loads.fetch_add(1, Ordering::SeqCst);
-            Box::pin(async {
-                Err(CoverageFailure {
+            let row = self
+                .rows
+                .values()
+                .find(|(m, _)| {
+                    m.as_ref()
+                        .map(|x| (x.symbol.clone(), x.et_date.clone(), x.source_as_of))
+                        == Some((meta.symbol.clone(), meta.et_date.clone(), meta.source_as_of))
+                })
+                .map(|(_, r)| r.clone())
+                .unwrap_or(Err(CoverageFailure {
                     range: None,
                     reason: CoverageFailureReason::Reader,
-                })
-            })
+                }));
+            Box::pin(async move { row })
         }
+    }
+    fn fake(
+        rows: Vec<(
+            &str,
+            &str,
+            Option<SessionBookMeta>,
+            Result<StrictBook, CoverageFailure>,
+        )>,
+    ) -> Fake {
+        Fake {
+            metadata: Arc::new(AtomicUsize::new(0)),
+            loads: Arc::new(AtomicUsize::new(0)),
+            rows: rows
+                .into_iter()
+                .map(|(s, d, m, r)| {
+                    (
+                        (s.into(), NaiveDate::parse_from_str(d, "%Y-%m-%d").unwrap()),
+                        (m, r),
+                    )
+                })
+                .collect(),
+        }
+    }
+    fn meta(s: &str, d: &str, t: DateTime<Utc>) -> SessionBookMeta {
+        SessionBookMeta {
+            symbol: s.into(),
+            et_date: d.into(),
+            source_as_of: t,
+            source: MarketDataSourceKind::Fixture,
+        }
+    }
+    fn good(s: &str, d: &str, t: DateTime<Utc>) -> Result<StrictBook, CoverageFailure> {
+        Ok(StrictBook {
+            symbol: s.into(),
+            et_date: d.into(),
+            source_as_of: t,
+        })
     }
     #[test]
     fn symbols_are_closed() {
@@ -456,11 +520,23 @@ mod tests {
         assert_eq!(r.start, NaiveDate::from_ymd_opt(2026, 8, 24).unwrap());
         assert_eq!(r.end, NaiveDate::from_ymd_opt(2026, 8, 26).unwrap());
     }
+    #[test]
+    fn runtime_range_weekend_ends_on_latest_eligible_session() {
+        let c = MarketCalendar::production().unwrap();
+        let p = CoveragePolicy::production().unwrap();
+        let now = New_York
+            .with_ymd_and_hms(2026, 8, 29, 12, 0, 0)
+            .unwrap()
+            .with_timezone(&Utc);
+        let r = runtime_range(&c, &p, now).unwrap();
+        assert_eq!(r.end, NaiveDate::from_ymd_opt(2026, 8, 28).unwrap());
+    }
     #[tokio::test]
     async fn before_checkpoint_is_not_due_and_does_not_read() {
         let f = Fake {
             metadata: Arc::new(AtomicUsize::new(0)),
             loads: Arc::new(AtomicUsize::new(0)),
+            rows: std::collections::HashMap::new(),
         };
         let c = MarketCalendar::production().unwrap();
         let p = CoveragePolicy::production().unwrap();
@@ -540,6 +616,7 @@ mod tests {
         let f = Fake {
             metadata: Arc::new(AtomicUsize::new(0)),
             loads: Arc::new(AtomicUsize::new(0)),
+            rows: std::collections::HashMap::new(),
         };
         let rt = tokio::runtime::Runtime::new().unwrap();
         let e = rt
@@ -566,5 +643,160 @@ mod tests {
             source_as_of: t,
             source: MarketDataSourceKind::Fixture,
         };
+    }
+    #[tokio::test]
+    async fn after_checkpoint_classifies_missing_readable_and_unreadable_exactly() {
+        let t = Utc.with_ymd_and_hms(2026, 8, 26, 18, 0, 0).unwrap();
+        let d = "2026-08-26";
+        let f = fake(vec![
+            (
+                "SPY",
+                d,
+                None,
+                Err(CoverageFailure {
+                    range: None,
+                    reason: CoverageFailureReason::Reader,
+                }),
+            ),
+            ("QQQ", d, Some(meta("QQQ", d, t)), good("QQQ", d, t)),
+            (
+                "IWM",
+                d,
+                Some(meta("IWM", d, t)),
+                Err(CoverageFailure {
+                    range: None,
+                    reason: CoverageFailureReason::Reader,
+                }),
+            ),
+        ]);
+        let c = MarketCalendar::production().unwrap();
+        let p = CoveragePolicy::production().unwrap();
+        let e = evaluate(
+            &f,
+            &c,
+            &p,
+            CoverageRange {
+                start: NaiveDate::parse_from_str(d, "%Y-%m-%d").unwrap(),
+                end: NaiveDate::parse_from_str(d, "%Y-%m-%d").unwrap(),
+            },
+            t,
+            &mut SuccessVerificationCache::disabled(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            e.counts,
+            CoverageCounts {
+                expected: 3,
+                present: 2,
+                readable: 1,
+                missing: 1,
+                unreadable: 1,
+                not_due: 0
+            }
+        );
+        assert_eq!(
+            e.books
+                .iter()
+                .find(|b| b.symbol == "IWM")
+                .unwrap()
+                .source_as_of,
+            None
+        );
+    }
+    #[tokio::test]
+    async fn strict_identity_mismatch_is_unreadable() {
+        let t = Utc.with_ymd_and_hms(2026, 8, 26, 18, 0, 0).unwrap();
+        let d = "2026-08-26";
+        let f = fake(vec![("SPY", d, Some(meta("SPY", d, t)), good("QQQ", d, t))]);
+        let c = MarketCalendar::production().unwrap();
+        let p = CoveragePolicy::production().unwrap();
+        let e = evaluate(
+            &f,
+            &c,
+            &p,
+            CoverageRange {
+                start: NaiveDate::parse_from_str(d, "%Y-%m-%d").unwrap(),
+                end: NaiveDate::parse_from_str(d, "%Y-%m-%d").unwrap(),
+            },
+            t,
+            &mut SuccessVerificationCache::disabled(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(e.books[0].status, BookCoverageStatus::Unreadable);
+        assert_eq!(e.books[0].source_as_of, None);
+    }
+    #[tokio::test]
+    async fn latest_readable_is_selected_per_symbol_or_absent() {
+        let t = Utc.with_ymd_and_hms(2026, 8, 26, 18, 0, 0).unwrap();
+        let d1 = "2026-08-24";
+        let d2 = "2026-08-25";
+        let f = fake(vec![
+            ("SPY", d1, Some(meta("SPY", d1, t)), good("SPY", d1, t)),
+            ("SPY", d2, Some(meta("SPY", d2, t)), good("SPY", d2, t)),
+            (
+                "QQQ",
+                d1,
+                None,
+                Err(CoverageFailure {
+                    range: None,
+                    reason: CoverageFailureReason::Reader,
+                }),
+            ),
+        ]);
+        let c = MarketCalendar::production().unwrap();
+        let p = CoveragePolicy::production().unwrap();
+        let e = evaluate(
+            &f,
+            &c,
+            &p,
+            CoverageRange {
+                start: NaiveDate::parse_from_str(d1, "%Y-%m-%d").unwrap(),
+                end: NaiveDate::parse_from_str(d2, "%Y-%m-%d").unwrap(),
+            },
+            t,
+            &mut SuccessVerificationCache::disabled(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            e.last_readable[0].et_date,
+            Some(NaiveDate::parse_from_str(d2, "%Y-%m-%d").unwrap())
+        );
+        assert!(e.last_readable[1].et_date.is_none());
+    }
+    #[tokio::test]
+    async fn success_cache_reuses_then_expires_and_changed_timestamp_bypasses() {
+        let t = Utc.with_ymd_and_hms(2026, 8, 26, 18, 0, 0).unwrap();
+        let d = NaiveDate::from_ymd_opt(2026, 8, 26).unwrap();
+        let f = fake(vec![(
+            "SPY",
+            "2026-08-26",
+            Some(meta("SPY", "2026-08-26", t)),
+            good("SPY", "2026-08-26", t),
+        )]);
+        let c = MarketCalendar::production().unwrap();
+        let p = CoveragePolicy::production().unwrap();
+        let r = CoverageRange { start: d, end: d };
+        let mut cache = SuccessVerificationCache::new();
+        let _ = evaluate(&f, &c, &p, r.clone(), t, &mut cache)
+            .await
+            .unwrap();
+        let _ = evaluate(&f, &c, &p, r, t + chrono::Duration::minutes(1), &mut cache)
+            .await
+            .unwrap();
+        assert_eq!(f.loads.load(Ordering::SeqCst), 1);
+        let _ = evaluate(
+            &f,
+            &c,
+            &p,
+            CoverageRange { start: d, end: d },
+            t + chrono::Duration::minutes(6),
+            &mut cache,
+        )
+        .await
+        .unwrap();
+        assert_eq!(f.loads.load(Ordering::SeqCst), 2);
     }
 }

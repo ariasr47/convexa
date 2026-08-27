@@ -1,8 +1,11 @@
 use chrono::{Datelike, NaiveDate, NaiveTime};
 use serde::Deserialize;
+use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 
 const ARTIFACT: &str = include_str!("calendars/xnys_full_day_2026_2035.v1.json");
+const EXPECTED_CLOSURE_SHA256: &str =
+    "0974aa2f17e9b612edfdfae208f5f5437636dee5cedaf887a0a2ae02b580b440";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CalendarError(pub String);
@@ -83,7 +86,7 @@ impl MarketCalendar {
         let mut closed = HashSet::new();
         let mut nominal = HashSet::new();
         let mut per_year = [0usize; 10];
-        for row in a.scheduled_full_day_closures {
+        for row in &a.scheduled_full_day_closures {
             if !names.contains(row.name.as_str())
                 || !obs.contains(row.observance.as_str())
                 || row.nominal_date < a.domain_start
@@ -103,10 +106,12 @@ impl MarketCalendar {
             match row.observance.as_str() {
                 "friday_before"
                     if row.nominal_date.weekday() == chrono::Weekday::Sat
-                        && row.closed_et_date.weekday() == chrono::Weekday::Fri => {}
+                        && row.closed_et_date.weekday() == chrono::Weekday::Fri
+                        && row.closed_et_date == row.nominal_date - chrono::Days::new(1) => {}
                 "monday_after"
                     if row.nominal_date.weekday() == chrono::Weekday::Sun
-                        && row.closed_et_date.weekday() == chrono::Weekday::Mon => {}
+                        && row.closed_et_date.weekday() == chrono::Weekday::Mon
+                        && row.closed_et_date == row.nominal_date + chrono::Days::new(1) => {}
                 "actual" if row.nominal_date == row.closed_et_date => {}
                 _ => {
                     return Err(CalendarError(
@@ -119,6 +124,26 @@ impl MarketCalendar {
         if per_year != [10, 10, 9, 10, 10, 10, 10, 9, 10, 10] {
             return Err(CalendarError(
                 "calendar closure oracle is incomplete".into(),
+            ));
+        }
+        let canonical = a
+            .scheduled_full_day_closures
+            .iter()
+            .map(|row| {
+                format!(
+                    "{}|{}|{}|{}",
+                    row.nominal_date, row.closed_et_date, row.name, row.observance
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let digest = Sha256::digest(canonical.as_bytes())
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>();
+        if digest != EXPECTED_CLOSURE_SHA256 {
+            return Err(CalendarError(
+                "calendar closure oracle does not match approved dates".into(),
             ));
         }
         for row in &a.exceptional_full_day_closures {
