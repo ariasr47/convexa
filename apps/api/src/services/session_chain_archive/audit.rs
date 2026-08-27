@@ -4,6 +4,8 @@ use super::coverage::{evaluate, BookCoverageStatus, CoverageRange, LiveArchiveRe
 use super::et_date::et_date_from_as_of;
 use super::market_calendar::{CoveragePolicy, MarketCalendar};
 use super::store::{SessionBookMeta, SessionChainArchive};
+use crate::config::Config;
+use crate::error::{AppError, AppResult};
 use crate::services::chain_snapshot::wire::deserialize_capture;
 use chrono::{DateTime, NaiveDate, Utc};
 use futures_util::future::BoxFuture;
@@ -12,6 +14,42 @@ use std::process::ExitCode;
 #[derive(Clone)]
 pub struct ProductionLiveArchiveReader {
     archive: SessionChainArchive,
+}
+
+/// Build the audit reader from configured production storage only.
+pub async fn open_configured(config: &Config) -> AppResult<ProductionLiveArchiveReader> {
+    if !config.session_chain_archive_enabled {
+        return Err(AppError::Config("session archive audit is disabled".into()));
+    }
+    let body_root = config
+        .session_chain_archive_body_root
+        .as_deref()
+        .ok_or_else(|| AppError::Config("session archive body root unavailable".into()))?;
+    if body_root.as_os_str().is_empty() {
+        return Err(AppError::Config(
+            "session archive body root unavailable".into(),
+        ));
+    }
+    #[cfg(feature = "postgres")]
+    let bodies = super::body_store::FsBodyStore::open_read_only(body_root)?;
+    #[cfg(feature = "postgres")]
+    if let Some(url) = config
+        .database_url
+        .as_deref()
+        .filter(|url| !url.trim().is_empty())
+    {
+        let pg = crate::db::postgres::Pg::connect(url).await?;
+        return Ok(ProductionLiveArchiveReader::new(
+            SessionChainArchive::open_postgres(pg, bodies),
+        ));
+    }
+    let archive = SessionChainArchive::open_json_read_only(
+        &config.session_chain_archive_store_path,
+        &config.chain_snapshot_store_path,
+        body_root,
+    )
+    .await?;
+    Ok(ProductionLiveArchiveReader::new(archive))
 }
 
 impl ProductionLiveArchiveReader {
@@ -42,12 +80,14 @@ impl LiveArchiveRead for ProductionLiveArchiveReader {
         meta: &'a SessionBookMeta,
     ) -> BoxFuture<'a, Result<super::coverage::StrictBook, super::coverage::CoverageFailure>> {
         Box::pin(async move {
-            let loaded = self.archive.load(&meta.symbol, &meta.et_date).await.map_err(|_| {
-                super::coverage::CoverageFailure {
+            let loaded = self
+                .archive
+                .load(&meta.symbol, &meta.et_date)
+                .await
+                .map_err(|_| super::coverage::CoverageFailure {
                     range: None,
                     reason: super::coverage::CoverageFailureReason::Reader,
-                }
-            })?;
+                })?;
             let Some(loaded) = loaded else {
                 return Err(super::coverage::CoverageFailure {
                     range: None,
@@ -60,12 +100,11 @@ impl LiveArchiveRead for ProductionLiveArchiveReader {
                     reason: super::coverage::CoverageFailureReason::Reader,
                 }
             })?;
-            let wire_et = et_date_from_as_of(wire.as_of).ok_or_else(|| {
-                super::coverage::CoverageFailure {
+            let wire_et =
+                et_date_from_as_of(wire.as_of).ok_or_else(|| super::coverage::CoverageFailure {
                     range: None,
                     reason: super::coverage::CoverageFailureReason::Reader,
-                }
-            })?;
+                })?;
             if wire.symbol != meta.symbol
                 || wire_et != meta.et_date
                 || wire.as_of != meta.source_as_of

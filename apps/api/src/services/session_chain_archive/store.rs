@@ -812,18 +812,40 @@ mod tests {
 
         std::fs::create_dir_all(&index).unwrap();
         std::fs::create_dir_all(&bodies).unwrap();
-        let raw = r#"{"entries":[]}"#;
+        let as_of = Utc.with_ymd_and_hms(2026, 8, 26, 18, 0, 0).unwrap();
+        let (body, source) = body_at("SPY", as_of);
+        let raw = serde_json::json!({"entries": [{
+            "symbol": "SPY",
+            "et_date": "2026-08-26",
+            "source_as_of": as_of_string(as_of),
+            "source_as_of_ns": as_of.timestamp_nanos_opt().unwrap(),
+            "source": source,
+            "body_locator": "",
+            "body_b64": base64::engine::general_purpose::STANDARD.encode(body),
+        }]})
+        .to_string();
         std::fs::write(index.join("SPY.json"), raw).unwrap();
         let before = std::fs::read(index.join("SPY.json")).unwrap();
+        let before_meta = std::fs::metadata(index.join("SPY.json"))
+            .unwrap()
+            .modified()
+            .unwrap();
         let opened = SessionChainArchive::open_json_read_only(&index, &ring, &bodies)
             .await
             .unwrap();
         assert!(opened
-            .metadata("SPY", "2026-08-24")
+            .metadata("SPY", "2026-08-26")
             .await
             .unwrap()
-            .is_none());
+            .is_some());
         assert_eq!(std::fs::read(index.join("SPY.json")).unwrap(), before);
+        assert_eq!(
+            std::fs::metadata(index.join("SPY.json"))
+                .unwrap()
+                .modified()
+                .unwrap(),
+            before_meta
+        );
         assert!(std::fs::read_dir(&bodies).unwrap().next().is_none());
         let _ = std::fs::remove_dir_all(&base);
     }
