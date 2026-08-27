@@ -13,6 +13,7 @@ use axum::http::{header, Request, StatusCode};
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use chrono::{NaiveDate, TimeZone};
+use std::process::Command;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 use tower::ServiceExt;
@@ -57,6 +58,57 @@ fn valid_policy_and_calendar_allow_historical_gaps() {
         .is_eligible(NaiveDate::from_ymd_opt(2026, 7, 3).unwrap())
         .unwrap());
     assert!(policy.runtime_lookback_eligible_sessions >= 5);
+}
+
+#[tokio::test]
+async fn startup_validation_and_worker_order_are_fail_closed() {
+    assert!(CoveragePolicy::new(
+        NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+        chrono::NaiveTime::MIN,
+        0,
+    )
+    .is_err());
+    let artifact = include_str!(
+        "../src/services/session_chain_archive/calendars/xnys_full_day_2026_2035.v1.json"
+    )
+    .replace("XNYS-full-day", "poisoned-calendar");
+    assert!(MarketCalendar::from_json(&artifact).is_err());
+    let source =
+        std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/src/server.rs")).unwrap();
+    let profile = source.find("validate_production_profile").unwrap();
+    let bind = source.find("TcpListener::bind").unwrap();
+    let worker = source.find("ensure_worker::spawn").unwrap();
+    assert!(profile < bind && bind < worker);
+    assert!(production_router(state().await, vec![]).is_ok());
+}
+
+#[test]
+fn cli_malformed_date_has_one_bounded_error_terminal() {
+    let output = Command::new(env!("CARGO_BIN_EXE_api-rust"))
+        .args([
+            "archive-coverage-audit",
+            "--from",
+            "not-a-date",
+            "--to",
+            "2026-08-26",
+        ])
+        .env("APP_ENV", "test")
+        .env("MASSIVE_API_KEY", "fixture")
+        .env("SESSION_CHAIN_ARCHIVE_ENABLED", "true")
+        .output()
+        .expect("run archive audit CLI");
+    assert!(!output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert_eq!(
+        stdout
+            .matches("ERROR — archive coverage could not be checked:")
+            .count(),
+        1
+    );
+    assert!(stdout.contains("No completeness claim was produced."));
+    assert!(!stderr.contains("error:") && !stderr.contains("__SILENT_CLI__"));
+    assert!(!stdout.contains("SESSION_CHAIN_ARCHIVE") && !stdout.contains("C:\\"));
 }
 
 #[tokio::test]
@@ -394,4 +446,37 @@ fn invalid_calendar_domain_is_rejected_and_holiday_is_not_due() {
 #[tokio::test]
 async fn production_router_constructs_with_historical_gap_policy() {
     assert!(production_router(state().await, vec![]).is_ok());
+}
+
+#[test]
+fn protected_trader_and_quant_modules_do_not_import_archive_coverage() {
+    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for relative in [
+        "apps/api/src/routes/ticker.rs",
+        "apps/api/src/routes/stream.rs",
+        "apps/api/src/routes/recommendation.rs",
+        "libs/quant-engine/src",
+    ] {
+        let path = root.join(relative);
+        let files = source_files(&path);
+        for file in files {
+            let source = std::fs::read_to_string(&file).unwrap();
+            assert!(
+                !source.contains("archive_coverage")
+                    && !source.contains("session_archive_coverage"),
+                "protected import in {}",
+                file.display()
+            );
+        }
+    }
+}
+
+fn source_files(path: &std::path::Path) -> Vec<std::path::PathBuf> {
+    if path.is_file() {
+        return vec![path.to_path_buf()];
+    }
+    std::fs::read_dir(path)
+        .unwrap()
+        .flat_map(|entry| source_files(&entry.unwrap().path()))
+        .collect()
 }
