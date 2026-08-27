@@ -5,7 +5,7 @@
   "source": ".spire/clusters/tech/contracts/archive-coverage-guardrails/INTERFACE_CONTRACT.md",
   "base_url": "http://127.0.0.1:8000",
   "auth": null,
-  "checked_at": "2026-08-27T01:34:34Z",
+  "checked_at": "2026-08-27T02:12:23Z",
   "summary": {
     "pass": 1,
     "fail": 0,
