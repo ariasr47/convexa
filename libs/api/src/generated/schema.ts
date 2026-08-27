@@ -1111,6 +1111,36 @@ export interface components {
       strike: number;
       ticker: string;
     };
+    CoverageBookWire: {
+      et_date: string;
+      source_as_of?: string | null;
+      status: string;
+      symbol: string;
+    };
+    CoverageCountsWire: {
+      expected?: number | null;
+      missing?: number | null;
+      not_due?: number | null;
+      present?: number | null;
+      readable?: number | null;
+      unreadable?: number | null;
+    };
+    CoverageObservationWire: {
+      started_at_utc: string;
+      /** Format: int64 */
+      write_failures_total: number;
+    };
+    CoveragePerSymbolWire: {
+      last_readable_et_date?: string | null;
+      last_readable_source_as_of?: string | null;
+      symbol: string;
+      /** Format: int64 */
+      write_failures_since_observation: number;
+    };
+    CoverageRangeWire: {
+      end_et_date?: string | null;
+      start_et_date?: string | null;
+    };
     DarkPoolConfluenceWire: {
       coincides_with: string;
       /** Format: double */
@@ -1659,6 +1689,7 @@ export interface components {
         [key: string]: components['schemas']['MetricsScope'];
       };
       recent_traces: components['schemas']['RecentTrace'][];
+      session_archive_coverage: components['schemas']['SessionArchiveCoverageWire'];
       window: string;
     };
     MomentumStateWire: {
@@ -2076,6 +2107,22 @@ export interface components {
       transition: number;
       /** Format: int32 */
       vol: number;
+    };
+    SessionArchiveCoverageWire: {
+      activation_et_date: string;
+      books: components['schemas']['CoverageBookWire'][];
+      checkpoint_et: string;
+      counts: components['schemas']['CoverageCountsWire'];
+      data_stale: boolean;
+      evaluated_at_et?: string | null;
+      last_verified_at_utc?: string | null;
+      lookback_eligible_sessions: number;
+      observation: components['schemas']['CoverageObservationWire'];
+      per_symbol: components['schemas']['CoveragePerSymbolWire'][];
+      range: components['schemas']['CoverageRangeWire'];
+      required_symbols: string[];
+      status: string;
+      status_detail?: string | null;
     };
     SessionBookHitBody: {
       authorizes: string;
