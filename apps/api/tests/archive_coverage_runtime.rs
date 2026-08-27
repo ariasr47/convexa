@@ -1,6 +1,8 @@
 //! Runtime guardrail flow coverage over state and HTTP boundaries.
 use api_rust::server::production_router;
+use api_rust::services::chain_snapshot::wire::{fixture_probe_bundle, serialize_capture, to_wire};
 use api_rust::services::chain_snapshot::ChainSnapshotStore;
+use api_rust::services::market_data::MarketDataSourceKind;
 use api_rust::services::session_chain_archive::{
     run_ensure_pass, run_ensure_pass_at_with_calendar, CoveragePolicy, EnsureGate, MarketCalendar,
     SessionChainArchive,
@@ -293,23 +295,75 @@ async fn authorization_accepts_bearer_and_header_and_denies_without_coverage() {
     }
 }
 
-#[test]
-fn failed_closed_symbol_writes_are_best_effort_and_symbol_scoped() {
+#[tokio::test]
+async fn failed_closed_symbol_writes_are_best_effort_and_symbol_scoped() {
     let telemetry = ArchiveWriteTelemetry::new();
+    let archive = SessionChainArchive::failing();
+    let as_of = chrono::Utc.with_ymd_and_hms(2026, 8, 26, 15, 0, 0).unwrap();
     for symbol in ["SPY", "QQQ", "IWM", "NVDA"] {
-        telemetry.record_failure(symbol);
+        let wire = to_wire(&fixture_probe_bundle(symbol, as_of));
+        let body = serialize_capture(&wire).unwrap();
+        api_rust::services::session_chain_archive::archive_session_best_effort_observed(
+            &archive,
+            Some(&telemetry),
+            &wire,
+            &body,
+        )
+        .await;
     }
     assert_eq!(telemetry.total(), 3);
     assert_eq!(telemetry.symbol(0), 1);
     assert_eq!(telemetry.symbol(1), 1);
     assert_eq!(telemetry.symbol(2), 1);
+    let source = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/services/session_chain_archive/archive.rs"
+    ))
+    .unwrap();
+    assert!(source.contains("error_class = \"archive_insert_failed\""));
+    assert!(!source.contains("error = %e"));
 }
 
 #[tokio::test]
-async fn fresh_runtime_state_resets_counters_and_observation_boundary() {
+async fn warning_ledger_dedupes_recovery_and_resets_on_fresh_runtime() {
+    let now = chrono::Utc.with_ymd_and_hms(2026, 8, 26, 15, 0, 0).unwrap();
     let first = state().await;
-    first.archive_coverage.writes.record_failure("SPY");
+    let empty = SessionChainArchive::memory();
+    let first_rows = first.archive_coverage.evaluate(&empty, now).await.unwrap();
+    assert!(first_rows
+        .iter()
+        .any(|(s, d, _)| s == "SPY" && *d == NaiveDate::from_ymd_opt(2026, 8, 26).unwrap()));
+    assert!(first
+        .archive_coverage
+        .evaluate(&empty, now)
+        .await
+        .unwrap()
+        .is_empty());
+    let corrupt = SessionChainArchive::memory();
+    corrupt
+        .insert_if_absent(
+            "SPY",
+            "2026-08-26",
+            now,
+            MarketDataSourceKind::Fixture,
+            b"corrupt",
+        )
+        .await
+        .unwrap();
+    let transition = first
+        .archive_coverage
+        .evaluate(&corrupt, now)
+        .await
+        .unwrap();
+    assert!(!transition
+        .iter()
+        .any(|(s, d, _)| s == "SPY" && *d == NaiveDate::from_ymd_opt(2026, 8, 26).unwrap()));
+    tokio::task::yield_now().await;
     let second = state().await;
+    let second_rows = second.archive_coverage.evaluate(&empty, now).await.unwrap();
+    assert!(second_rows
+        .iter()
+        .any(|(s, d, _)| s == "SPY" && *d == NaiveDate::from_ymd_opt(2026, 8, 26).unwrap()));
     assert_eq!(second.archive_coverage.writes.total(), 0);
     assert_ne!(
         first.archive_coverage.observation_started_at_utc(),
