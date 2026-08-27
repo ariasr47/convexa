@@ -293,3 +293,29 @@ docker run --rm -p 8000:8000 \
 Before a release, run the current-revision supply-chain policy and artifact checks described in
 [SUPPLY_CHAIN.md](SUPPLY_CHAIN.md). A pass is required for the eligible GitHub-built evidence; this evidence
 does not identify bytes independently rebuilt or deployed by Railway or Cloudflare.
+## Postgres and API durable-volume capacity
+
+Treat these as two independent capacity signals. Volume usage is not archive-completeness evidence.
+
+| Volume | Warning | Critical | Contains |
+|---|---:|---:|---|
+| Railway Postgres | 70% used | 85% used | application relational state and retained legacy data |
+| Railway API durable data | 70% used | 85% used | session-book bodies, chain snapshots, and local durable files |
+
+At 70% used:
+1. Record used and provisioned capacity for that volume.
+2. Measure contributing directories/tables, recent growth, and estimated runway.
+3. Plan capacity expansion or separately authorize a scoped cleanup.
+
+At 85% used:
+1. Increase that volume's capacity immediately.
+2. Verify the new provisioned capacity and free space after the change.
+3. Re-run the measurement and record the result.
+
+Neither threshold authorizes deleting session books, research evidence, or legacy rows. Cleanup,
+retention changes, and reconstruction are separate changes. To inspect archive completeness without a
+monitoring subscription, run:
+
+`cargo run -p api-rust -- archive-coverage-audit --from YYYY-MM-DD --to YYYY-MM-DD`
+
+The procedure requires only this repository, local process access, and existing Railway access.
