@@ -30,6 +30,16 @@ pub async fn open_configured(config: &Config) -> AppResult<ProductionLiveArchive
             "session archive body root unavailable".into(),
         ));
     }
+    #[cfg(not(feature = "postgres"))]
+    if config
+        .database_url
+        .as_deref()
+        .is_some_and(|url| !url.trim().is_empty())
+    {
+        return Err(AppError::Config(
+            "postgres archive audit requires the postgres feature".into(),
+        ));
+    }
     #[cfg(feature = "postgres")]
     let bodies = super::body_store::FsBodyStore::open_read_only(body_root)?;
     #[cfg(feature = "postgres")]
@@ -248,4 +258,158 @@ fn bounded_reason(reason: &str) -> String {
         .filter(|c| !c.is_control())
         .take(160)
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_config() -> Config {
+        Config {
+            massive_api_key: String::new(),
+            data_feed: crate::config::DataFeed::Delayed,
+            rest_base: "https://api.massive.com".into(),
+            redis_url: None,
+            http_bind: "127.0.0.1:0".into(),
+            gex_cache_ttl_secs: 10,
+            gex_cache_ttl_liquid_secs: 20,
+            warm_symbols: vec![],
+            liquid_symbols: Default::default(),
+            warm_interval_secs: 25,
+            warm_concurrency: 2,
+            warm_enabled: false,
+            scan_enabled: false,
+            scan_universe_path: "universe.json".into(),
+            scan_fast_interval_secs: 30,
+            scan_slow_batch_size: 4,
+            scan_promotion_cap: 2,
+            scan_stale_after_secs: 180,
+            scan_market_hours_only: false,
+            scan_store_path: "scan.sqlite3".into(),
+            scan_database_url: None,
+            auth_store_path: "auth.sqlite3".into(),
+            auth_session_signing_key: "dev".into(),
+            auth_cookie_secure: false,
+            auth_cookie_samesite: "lax".into(),
+            auth_session_idle_secs: 3600,
+            auth_session_absolute_secs: 86400,
+            auth_registration_open: true,
+            auth_demo_seed: None,
+            include_dark_pool: true,
+            darkpool_lookback_secs: 3600,
+            block_min_shares: 5000,
+            iv_store_path: "iv.json".into(),
+            database_url: None,
+            public_rate_limit_per_min: 0,
+            metrics_secret_token: None,
+            chain_snapshot_max_age_secs: 1_209_600,
+            chain_snapshot_max_per_symbol: 48,
+            chain_snapshot_store_path: "chain-snapshots".into(),
+            chain_snapshot_enabled: false,
+            chain_snapshot_backend: crate::config::ChainSnapshotBackend::Disabled,
+            chain_snapshot_backend_explicit: false,
+            session_chain_archive_enabled: true,
+            session_chain_archive_store_path: "archive".into(),
+            session_chain_archive_body_root: None,
+            liquid_session_ensure_enabled: false,
+            max_live_sessions: 0,
+            max_live_subscribers: 0,
+            workspace_root: ".".into(),
+        }
+    }
+
+    #[tokio::test]
+    async fn configured_factory_refuses_disabled_archive() {
+        let mut config = test_config();
+        config.session_chain_archive_enabled = false;
+        assert!(open_configured(&config).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn configured_factory_refuses_missing_body_root_without_creation() {
+        let mut config = test_config();
+        let absent = std::env::temp_dir().join(format!(
+            "archive-audit-factory-{}",
+            Utc::now().timestamp_nanos_opt().unwrap()
+        ));
+        config.session_chain_archive_body_root = Some(absent.clone());
+        assert!(open_configured(&config).await.is_err());
+        assert!(!absent.exists());
+    }
+
+    #[tokio::test]
+    async fn configured_factory_refuses_absent_configured_index_without_creation() {
+        let mut config = test_config();
+        let base = std::env::temp_dir().join(format!(
+            "archive-audit-factory-existing-{}",
+            Utc::now().timestamp_nanos_opt().unwrap()
+        ));
+        let bodies = base.join("bodies");
+        std::fs::create_dir_all(&bodies).unwrap();
+        config.session_chain_archive_body_root = Some(bodies);
+        config.session_chain_archive_store_path = base.join("index");
+        assert!(open_configured(&config).await.is_err());
+        assert!(!config.session_chain_archive_store_path.exists());
+        let _ = std::fs::remove_dir_all(base);
+    }
+
+    #[cfg(not(feature = "postgres"))]
+    #[tokio::test]
+    async fn configured_factory_rejects_postgres_url_without_feature() {
+        let mut config = test_config();
+        config.database_url = Some("postgres://configured-but-unsupported".into());
+        let root = std::env::temp_dir().join(format!(
+            "archive-audit-factory-pg-{}",
+            Utc::now().timestamp_nanos_opt().unwrap()
+        ));
+        std::fs::create_dir_all(&root).unwrap();
+        config.session_chain_archive_body_root = Some(root.clone());
+        let error = match open_configured(&config).await {
+            Ok(_) => panic!("postgres URL unexpectedly accepted without feature"),
+            Err(error) => error.to_string(),
+        };
+        assert!(error.contains("postgres feature"));
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn configured_factory_has_no_mutating_or_arbitrary_path_seam() {
+        let source = include_str!("audit.rs");
+        let body = &source[source.find("pub async fn open_configured").unwrap()
+            ..source.find("impl ProductionLiveArchiveReader").unwrap()];
+        for forbidden in [
+            "AppState::new",
+            "open_json(",
+            "migrate",
+            "seed",
+            "insert",
+            "delete",
+            "prune",
+        ] {
+            assert!(
+                !body.contains(forbidden),
+                "factory contains forbidden {forbidden}"
+            );
+        }
+        assert!(body.contains("config.session_chain_archive_store_path"));
+        assert!(!body.contains("PathBuf") && !body.contains("fixture"));
+    }
+
+    #[test]
+    fn pg_metadata_sql_is_select_only() {
+        let source = include_str!("../../db/pg_session_chain_archive.rs");
+        let start = source.find("pub async fn metadata(").unwrap();
+        let end = source[start..]
+            .find("    pub async fn list(")
+            .map(|offset| start + offset)
+            .unwrap_or(source.len());
+        let method = &source[start..end];
+        assert!(method.contains("SELECT symbol, et_date, source_as_of, source"));
+        for forbidden in ["INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP"] {
+            assert!(
+                !method.contains(forbidden),
+                "metadata SQL contains {forbidden}"
+            );
+        }
+    }
 }

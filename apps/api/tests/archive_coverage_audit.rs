@@ -302,6 +302,52 @@ async fn audit_leaves_files_metadata_tree_and_database_rows_identical() {
     let source = include_str!("../src/db/pg_session_chain_archive.rs");
     assert!(source.contains("SELECT symbol, et_date, source_as_of, source"));
     let _ = std::fs::remove_dir_all(base);
+
+    #[cfg(feature = "postgres")]
+    {
+        let database_url = std::env::var("TEST_DATABASE_URL")
+            .expect("TEST_DATABASE_URL is required: real PostgreSQL fixture is mandatory");
+        let pg = api_rust::db::postgres::Pg::connect(&database_url)
+            .await
+            .expect("connect TEST_DATABASE_URL");
+        let before_rows = sqlx::query_as::<_, (String, String, String, String, Option<String>)>(
+            "SELECT symbol, et_date, source_as_of, source, body_locator FROM session_chain_archive ORDER BY symbol, et_date",
+        )
+        .fetch_all(&pg.pool)
+        .await
+        .expect("snapshot archive rows before audit");
+        let pg_base = std::env::temp_dir().join(format!("archive-audit-pg-{}", std::process::id()));
+        let pg_bodies = pg_base.join("bodies");
+        std::fs::create_dir_all(&pg_bodies).unwrap();
+        let mut config =
+            api_rust::Config::from_env().expect("production config for postgres audit");
+        config.database_url = Some(database_url);
+        config.session_chain_archive_enabled = true;
+        config.session_chain_archive_body_root = Some(pg_bodies.clone());
+        let reader = api_rust::services::session_chain_archive::audit::open_configured(&config)
+            .await
+            .expect("open configured postgres archive read-only");
+        let (calendar, policy, now) = setup();
+        let _ = run_audit(
+            &reader,
+            &calendar,
+            &policy,
+            AuditRequest {
+                from: now.date_naive(),
+                to: now.date_naive(),
+            },
+            now,
+        )
+        .await;
+        let after_rows = sqlx::query_as::<_, (String, String, String, String, Option<String>)>(
+            "SELECT symbol, et_date, source_as_of, source, body_locator FROM session_chain_archive ORDER BY symbol, et_date",
+        )
+        .fetch_all(&pg.pool)
+        .await
+        .expect("snapshot archive rows after audit");
+        assert_eq!(after_rows, before_rows);
+        let _ = std::fs::remove_dir_all(pg_base);
+    }
 }
 
 fn tree_snapshot(root: &std::path::Path) -> Vec<(String, Vec<u8>, u128)> {
