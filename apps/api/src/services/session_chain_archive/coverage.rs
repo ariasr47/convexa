@@ -276,6 +276,7 @@ pub async fn evaluate<R: LiveArchiveRead>(
                     });
                 }
                 Some(m) => {
+                    counts.present += 1;
                     if m.symbol != symbol || m.et_date != date.to_string() {
                         counts.unreadable += 1;
                         books.push(CoverageBook {
@@ -286,7 +287,6 @@ pub async fn evaluate<R: LiveArchiveRead>(
                         });
                         continue;
                     }
-                    counts.present += 1;
                     let key = (m.symbol.clone(), date, m.source_as_of);
                     let loaded = if cache.enabled {
                         cache.entries.get(&key).and_then(|(b, t)| {
@@ -529,7 +529,17 @@ mod tests {
             .unwrap()
             .with_timezone(&Utc);
         let r = runtime_range(&c, &p, now).unwrap();
+        assert_eq!(r.start, NaiveDate::from_ymd_opt(2026, 8, 24).unwrap());
         assert_eq!(r.end, NaiveDate::from_ymd_opt(2026, 8, 28).unwrap());
+        let mut d = r.start;
+        let mut eligible = 0;
+        while d <= r.end {
+            if c.is_eligible(d).unwrap() {
+                eligible += 1;
+            }
+            d = d.succ_opt().unwrap();
+        }
+        assert_eq!(eligible, 5);
     }
     #[tokio::test]
     async fn before_checkpoint_is_not_due_and_does_not_read() {
@@ -604,6 +614,16 @@ mod tests {
             );
         }
         assert_eq!(c.entries.len(), MAX_SUCCESS_CACHE_ENTRIES);
+        let oldest_date = NaiveDate::from_ymd_opt(2026, 8, 1).unwrap();
+        let oldest_key = ("SPY".into(), oldest_date, t);
+        assert!(!c.entries.contains_key(&oldest_key));
+        let newest_date = oldest_date + chrono::Days::new(MAX_SUCCESS_CACHE_ENTRIES as u64);
+        let newest_key = (
+            "SPY".into(),
+            newest_date,
+            t + chrono::Duration::milliseconds(MAX_SUCCESS_CACHE_ENTRIES as i64),
+        );
+        assert!(c.entries.contains_key(&newest_key));
     }
     #[test]
     fn zero_expected_has_empty_books_and_null_last_readable() {
@@ -728,6 +748,41 @@ mod tests {
         assert_eq!(e.books[0].source_as_of, None);
     }
     #[tokio::test]
+    async fn metadata_identity_mismatch_is_present_unreadable_without_body_read() {
+        let t = Utc.with_ymd_and_hms(2026, 8, 26, 18, 0, 0).unwrap();
+        let d = NaiveDate::from_ymd_opt(2026, 8, 26).unwrap();
+        let f = fake(vec![(
+            "SPY",
+            "2026-08-26",
+            Some(meta("QQQ", "2026-08-26", t)),
+            good("QQQ", "2026-08-26", t),
+        )]);
+        let c = MarketCalendar::production().unwrap();
+        let p = CoveragePolicy::production().unwrap();
+        let e = evaluate(
+            &f,
+            &c,
+            &p,
+            CoverageRange { start: d, end: d },
+            t,
+            &mut SuccessVerificationCache::disabled(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(e.counts.expected, 3);
+        assert_eq!(e.counts.present, 1);
+        assert_eq!(e.counts.unreadable, 1);
+        assert_eq!(f.loads.load(Ordering::SeqCst), 0);
+        assert_eq!(
+            e.books
+                .iter()
+                .find(|b| b.symbol == "SPY")
+                .unwrap()
+                .source_as_of,
+            None
+        );
+    }
+    #[tokio::test]
     async fn latest_readable_is_selected_per_symbol_or_absent() {
         let t = Utc.with_ymd_and_hms(2026, 8, 26, 18, 0, 0).unwrap();
         let d1 = "2026-08-24";
@@ -787,6 +842,24 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(f.loads.load(Ordering::SeqCst), 1);
+        let changed = t + chrono::Duration::seconds(1);
+        let f2 = fake(vec![(
+            "SPY",
+            "2026-08-26",
+            Some(meta("SPY", "2026-08-26", changed)),
+            good("SPY", "2026-08-26", changed),
+        )]);
+        let _ = evaluate(
+            &f2,
+            &c,
+            &p,
+            CoverageRange { start: d, end: d },
+            t + chrono::Duration::minutes(2),
+            &mut cache,
+        )
+        .await
+        .unwrap();
+        assert_eq!(f2.loads.load(Ordering::SeqCst), 1);
         let _ = evaluate(
             &f,
             &c,
