@@ -1,0 +1,9 @@
+# archive-coverage-guardrails — brief
+Goal:            Detect a missing or unreadable SPY/QQQ/IWM session book promptly through read-only operator metrics, one deduplicated warning after a defined ET checkpoint, and a local zero-vendor audit command, while documenting storage thresholds and preserving honest provenance for unrecoverable gaps.
+Decision impact: N/A — internal reliability. Improves correctness and incident response: operators can observe the expected/present/missing matrix, identify the last readable book and write-failure count, and receive a failing audit exit before silent coverage loss compounds.
+Feasibility:     pass
+Effort:          M
+Invariant watch: [operator-vs-trader-path-separation], [production-fails-closed], [structural-over-prose-enforcement], [cited-code-is-verified-not-assumed]; preserve best-effort archive isolation from the trader path; no scoring, fingerprint, vendor-fetch, or UI change.
+Context tags:    architecture,backend,observability,decisions,invariants
+Source:          Production audit `docs/research/ARCHIVE_COVERAGE_AUDIT_2026-08-26.md` after the August 24–26 archive-permission incident; follow-up seam from `session-chain-archive`, `liquid-names-session-capture`, and `chain-archive-object-store`.
+Considered:      archive-coverage-guardrails (CHOSEN: H reliability value / M effort; exact 7-of-9 audit proves silent loss); telemetry-slos (culled: broader export/dashboard/alerting program and may require external service setup); remote-archive-body-store (culled: larger storage migration that does not itself detect gaps); partial-history-reconstruction (culled: cannot reproduce exact chain provenance and risks fabricating corpus completeness); ai-rec-lab-p4 (blocked-on 4–6 ET weeks of trustworthy corpus); production capacity work (culled: separate in-flight program and does not explain per-session archive completeness).

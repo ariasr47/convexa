@@ -1,0 +1,39 @@
+{
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/_metrics",
+      "path_params": {},
+      "query": {},
+      "required": {
+        "session_archive_coverage.status": "string",
+        "session_archive_coverage.status_detail": "string|null",
+        "session_archive_coverage.data_stale": "boolean",
+        "session_archive_coverage.activation_et_date": "string",
+        "session_archive_coverage.checkpoint_et": "string",
+        "session_archive_coverage.lookback_eligible_sessions": "number",
+        "session_archive_coverage.evaluated_at_et": "string|null",
+        "session_archive_coverage.last_verified_at_utc": "string|null",
+        "session_archive_coverage.range.start_et_date": "string|null",
+        "session_archive_coverage.range.end_et_date": "string|null",
+        "session_archive_coverage.required_symbols[]": "string",
+        "session_archive_coverage.counts.expected": "number|null",
+        "session_archive_coverage.counts.present": "number|null",
+        "session_archive_coverage.counts.readable": "number|null",
+        "session_archive_coverage.counts.missing": "number|null",
+        "session_archive_coverage.counts.unreadable": "number|null",
+        "session_archive_coverage.counts.not_due": "number|null",
+        "session_archive_coverage.books[].symbol": "string",
+        "session_archive_coverage.books[].et_date": "string",
+        "session_archive_coverage.books[].status": "string",
+        "session_archive_coverage.books[].source_as_of": "string|null",
+        "session_archive_coverage.per_symbol[].symbol": "string",
+        "session_archive_coverage.per_symbol[].last_readable_et_date": "string|null",
+        "session_archive_coverage.per_symbol[].last_readable_source_as_of": "string|null",
+        "session_archive_coverage.per_symbol[].write_failures_since_observation": "number",
+        "session_archive_coverage.observation.started_at_utc": "string",
+        "session_archive_coverage.observation.write_failures_total": "number"
+      }
+    }
+  ]
+}

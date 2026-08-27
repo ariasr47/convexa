@@ -1566,6 +1566,28 @@ presented as hosted evidence.
 - Run the existing hosted aggregate and protected Linux candidate workflow when GitHub runner access
   returns; do not synthesize Linux baselines from Windows.
 
+## 7ar. archive-coverage-guardrails — honest live session-book coverage (SHIPPED + ARCHIVED 2026-08-26)
+
+**What shipped.** Operators can inspect SPY/QQQ/IWM archive coverage for the most recent five eligible
+XNYS sessions through the protected additive `/api/_metrics` object and a strict read-only
+`archive-coverage-audit` CLI. One embedded 2026–2035 full-day calendar governs production and detection;
+missing, unreadable, not-due, stale, and unavailable states remain distinct. Warning dedupe and
+per-process write-failure counters are bounded and restart-honest. Metrics requests perform no archive
+I/O or vendor work; audit cannot create, migrate, mutate, repair, or reconstruct storage. `NO_UI_CHANGE`;
+no paid monitoring service. Contracts at `_archive/archive-coverage-guardrails/`; conformance at
+`state/conformance/archive-coverage-guardrails.json`.
+
+**Verification.** GATE Q PASS 23/0/0. Independent live conformance PASS 1/1 with 27 required fields,
+matching the builder receipt. Dashboard rerun 2,016/2,016; full API and quant regression green. Postgres
+build and audit compile/no-run passed; real-row before/after evidence was not exercised because
+`TEST_DATABASE_URL` was absent. `NOTE: VISUAL_EVIDENCE_UNAVAILABLE` (backend-only feature).
+
+### Seams left open
+- Run the existing PostgreSQL audit row-before/after test against an authorized disposable database.
+- Keep the checked-in XNYS calendar versioned before the 2035 domain ends.
+- Volume alert delivery remains an operator/platform concern; the runbook defines 70%/85% actions
+  without requiring a new subscription.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).

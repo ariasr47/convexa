@@ -1,0 +1,157 @@
+{
+  "conflicts": [
+    {
+      "quote": "Saturdays, Sundays, and recognized full-day US market holidays are not expected sessions.",
+      "source": "pm",
+      "why": "This cannot coexist with the current producer-compatible eligibility mechanism and the brief's no-capture-policy-change constraint: the ensure producer uses a weekday-only rule, so excluding holidays only in the detector makes producer and detector use different calendars, while changing both expands the slice into capture-policy work.",
+      "proposal": "Either keep the existing shared weekday rule for this slice and document holiday false positives, or explicitly authorize one checked-in, maintained US-market calendar capability consumed by both the ensure producer and coverage evaluator.",
+      "kind": "product",
+      "conflict_id": "c90f0ab780767587263a648e1a303575d7b2a7452a8ddfe33d91c4db44d12a48",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Read-only operator coverage evidence for SPY, QQQ, and IWM from the declared activation date through the latest passed checkpoint.",
+      "source": "pm",
+      "why": "Taken literally, this makes the minute runtime evaluation and operator snapshot grow without bound from activation onward, contradicting the same position's stated need for a bounded reporting window and the architecture's bounded filesystem-I/O requirement.",
+      "proposal": "Make runtime metrics cover an owner-chosen bounded recent-session window floored by the activation date, and reserve activation-to-latest or arbitrary historical ranges for the explicit local audit command.",
+      "kind": "product",
+      "conflict_id": "c697d8edea5b9050d2b189887c2b898f5af872edb919348effa4f20557d26d34",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Conformance fixtures and any artifact not proven to be an original live session book are excluded from readable live coverage and cannot change a missing live identity into a pass.",
+      "source": "pm",
+      "why": "No position names a persisted provenance discriminator that proves a decoded book was captured live; symbol, ET date, and source timestamp establish identity and freshness but do not establish origin, so this criterion is not mechanically decidable as written.",
+      "proposal": "Define live provenance structurally as membership in the configured production session-book store while fixtures and reconstructions use separate adapters or namespaces; if mixed-origin storage is allowed, add a closed persisted origin marker and reject unknown origins from live coverage.",
+      "kind": "technical",
+      "conflict_id": "f28fa9077f5bd67d9befe0142618459b4e96a6f4c2c4a892cfe5a09fc50f028b",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "At or after 10:30 a.m. ET, each SPY, QQQ, or IWM identity that is missing or unreadable produces one warning naming the symbol, ET session date, condition, and checkpoint, and repeated checks during the same continuous process run produce no additional warning for that identity.",
+      "source": "pm",
+      "why": "This cannot be met by the architect position's proposed warning key of identity plus failure class: a book observed first as missing and later as unreadable could emit a second warning for the same identity in one process run.",
+      "proposal": "Key warning suppression by symbol-session identity only for the process lifetime; let later classification changes update metrics and audit output without emitting another warning until a new process run.",
+      "kind": "technical",
+      "conflict_id": "5980c27eb0b18c33213100f2e35b3e8e6ea10b99eb79c344f2bffbfe937f2c5f",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "No exchange-holiday calendar expansion in this slice unless the other lanes reject the existing producer-compatible weekday rule.",
+      "source": "architect",
+      "why": "The product position does reject weekday-only eligibility: a recognized full-day US market holiday must produce no expected identity and no warning. Keeping the weekday-only rule would create a false incident on every such holiday and train operators to distrust the guardrail.",
+      "proposal": "Include recognized full-day US market holidays in this slice and require the producer and detector to apply the same zero-vendor session-eligibility rule.",
+      "kind": "product",
+      "conflict_id": "10b3aa28e7ac985b77e7ba8f42654bc55eff3061551b3b745706a8da2b0c091c",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A bounded process-local set keyed by identity plus failure class permits one structured warning for a missing or unreadable identity and suppresses every repeat from later minute ticks.",
+      "source": "architect",
+      "why": "Keying by failure class permits a second warning for the same symbol-date when its condition changes from missing to unreadable during one continuous process run. The product promise is one warning per affected identity per run, with condition changes reflected in the readout rather than creating another alert.",
+      "proposal": "Deduplicate warnings by symbol-date identity for the continuous process run, while allowing the current operator readout to show the identity's latest condition.",
+      "kind": "product",
+      "conflict_id": "1e5b8614d39f1f2e0a0cef5b0868cacace9496209495a6c66be45367450d6358",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Exact checkpoint and lookback values are policy decisions for the other lanes, but invalid dates, an empty window, or values above a compile-time ceiling must be rejected by typed configuration.",
+      "source": "architect",
+      "why": "Rejecting every empty window conflicts with the required audit behavior for a valid selected range containing no eligible sessions, such as a weekend-only or holiday-only range. That state must complete successfully while making no completeness claim.",
+      "proposal": "Reject an invalid date selection or zero-sized runtime policy, but treat a valid inclusive audit range with zero eligible sessions as a successful no-expected-sessions result.",
+      "kind": "technical",
+      "conflict_id": "568491e1bc1c5bec3e9bd34c75fc16da3d18e6112926922ad799d1983bdbc7ce",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The evaluator must reuse the existing `ENSURE_SYMBOLS`, `America/New_York`, and `is_et_weekday` rules from `ensure.rs`, so producer and detector cannot disagree about symbol or weekday eligibility by construction.",
+      "source": "architect",
+      "why": "The PM position requires recognized full-day US market holidays to create neither expected identities nor warnings. Reusing the current weekday-only rule would label a closed-market holiday as expected and could emit a false missing warning, so the operator vocabulary would assert loss that the schedule does not support.",
+      "proposal": "Use one shared, zero-vendor holiday-aware eligibility mechanism for both the ensure producer and the coverage evaluator; if this slice will remain weekday-only, withdraw AC-6 and explicitly accept holiday false warnings instead of presenting them as true gaps.",
+      "kind": "product",
+      "conflict_id": "9c89b57e2e40af48d2d11dbdd02a9ff4b0f67456206f4049e7517bc13ba981cc",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A bounded process-local set keyed by identity plus failure class permits one structured warning for a missing or unreadable identity and suppresses every repeat from later minute ticks.",
+      "source": "architect",
+      "why": "The PM promise is one warning per identity during a continuous process run, not one warning per identity-and-class. If an identity changes from missing to unreadable, this key can emit a second warning in the same run and violate the operator-facing anti-spam promise.",
+      "proposal": "Key warning suppression by symbol and ET date only for the process run; show later class changes in the current coverage readout without emitting another warning. If class-change warnings are desired, change the product promise and copy explicitly.",
+      "kind": "product",
+      "conflict_id": "249c0f77f3782f831f4f7246f4b77adaf36d9734b4b1ebbd6485778a5ea47940",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Coverage begins on the declared production activation date and ends at the latest eligible ET trading session whose checkpoint has passed.",
+      "source": "pm",
+      "why": "The architecture position bounds the runtime window to recent eligible dates, so the operator readout cannot honestly claim that every evaluation covers the whole activation-to-now interval. The PM position also leaves the exact activation date undeclared, making the first expected book unverifiable.",
+      "proposal": "Bind one exact ET activation date and separately define the runtime reporting range. Treat activation as the earliest eligible date, label the bounded range on every runtime readout, and use the range-selectable audit for older dates; otherwise require and price an activation-to-now runtime scan.",
+      "kind": "product",
+      "conflict_id": "4ea6314fa023cf3f581b88e39b3ac64339e57fb898f5a726720445388d14276c",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "What exact ET production activation date should the validated coverage policy bind?"
+    },
+    {
+      "from": "architect",
+      "ask": "How many recent eligible sessions must the runtime operator snapshot cover, distinct from the audit command's explicit range?"
+    },
+    {
+      "from": "architect",
+      "ask": "Does current-run write-failure evidence need a separate count per SPY, QQQ, and IWM, or is one global count plus the affected warning identities sufficient?"
+    },
+    {
+      "from": "architect",
+      "ask": "Should this slice accept weekday compatibility, or is a shared producer-and-detector US-market holiday calendar now authorized despite the stated no-capture-policy-change scope?"
+    },
+    {
+      "from": "pm",
+      "ask": "Can the architecture support one shared recognized-full-day-US-market-holiday rule for both producer and detector without a vendor or network dependency?"
+    },
+    {
+      "from": "pm",
+      "ask": "Should the valid zero-expected audit state end only with `No books were expected in this window.` and a zero exit, or also emit a separate PASS token?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: What exact ET date is the production coverage activation date?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: Is the runtime operator readout a bounded recent window or the full activation-to-now corpus?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: Can one maintained holiday-aware eligibility mechanism drive both the ensure producer and coverage evaluator without a vendor call?"
+    }
+  ],
+  "agree_count": {
+    "architect": 6,
+    "pm": 4,
+    "ux": 3
+  }
+}

@@ -507,6 +507,18 @@ conformance, and volume-replacement receipts.
 
 ## 6. Current feature state (works end-to-end)
 <!-- shard: tags=features,state,observability,darkpool,ghost-trade,dex,personas,metrics -->
+- **Archive coverage guardrails (`archive-coverage-guardrails`, backend/operations, shipped 2026-08-26)** —
+  `GET /api/_metrics` projects an off-request-path immutable coverage snapshot for the most recent five
+  eligible XNYS sessions across SPY/QQQ/IWM. A checked-in 2026–2035 full-day calendar, strict
+  `readable|missing|unreadable|not_due` accounting, bounded warning dedupe, stale/unavailable shapes,
+  per-process write-failure evidence, and a read-only `archive-coverage-audit` CLI expose gaps without
+  vendor calls, repair, scoring/trader-path changes, UI work, or a paid monitoring subscription. Invalid
+  production policy/calendar/archive configuration fails before bind; corpus gaps do not take trading
+  down. Runbook thresholds are 70% warning / 85% critical separately for Postgres and API durable
+  volumes. GATE Q PASS 23/23; independent live conformance PASS 1/1 (27 fields). Real Postgres row
+  execution was environment-limited because `TEST_DATABASE_URL` was absent; Postgres build and audit
+  compile passed. Contracts archived at
+  `.spire/clusters/tech/contracts/_archive/archive-coverage-guardrails/`.
 - **Repository-owned route/OpenAPI integration (`openapi-router-dependency-replacement`, BE + shared client, shipped 2026-08-23)** —
   removed `utoipa-axum` and its transitive unmaintained `paste` dependency while retaining direct
   `utoipa` 5.5.0. One `ContractRouter` graph still owns the same 52 source-derived operations; the
