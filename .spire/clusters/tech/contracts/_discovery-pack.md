@@ -335,6 +335,7 @@ or microservices without a measured bottleneck and a separate owner decision.
 |---|---|---|---|
 | 1 | `production-runtime-guardrails` — fail-closed prod config, restricted CORS, stable/versioned secret keys | backend/infra feature | **SHIPPED + ARCHIVED 2026-08-22** |
 | 2 | `postgres-release-safety` — real Postgres CI, migration serialization/atomicity, release migration command | backend/infra feature | **SHIPPED + ARCHIVED 2026-08-22** |
+| 2a | `chain-snapshot-local-store` — move the bounded full-chain research ring from Postgres BYTEA to the API persistent volume | backend/infra incident feature | **SHIPPED + ARCHIVED 2026-08-24** |
 | 3 | `api-contract-generation` — generated OpenAPI plus checked TypeScript client/types | both-lane tooling feature | **NEXT — owner directed; starts after #2 archive** |
 | 4 | `supply-chain-automation` — dependency updates, review, Rust audit/deny, CodeQL-supported surfaces, image scan, SBOM | CI/security feature | queued after #3 |
 | 5 | `capacity-baseline` — API/SSE load and soak harness with checked thresholds and mocked vendors | backend/test feature | queued after #4 |
@@ -1352,7 +1353,7 @@ decision (Databento Blue Ocean, or Webull supplement).
 ## 7j. Persistent datastore — in-memory → Postgres (SHIPPED + ARCHIVED — backend infra fast-path)
 > [discovery: 31 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 7k. Deploy — Railway + Cloudflare Pages + system-6 go-live review (SHIPPED artifacts; live-deploy owner-applied)
-> [discovery: 67 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+> [discovery: 74 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 7l. Convexa redesign — full FE re-skin to the Figma DS (SHIPPED + ARCHIVED — merged to main)
 > [discovery: 25 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 7m. Ticker UX-polish program + ai-rec structured display (SHIPPED + ARCHIVED — FE-only, catch-up QA)
@@ -1407,6 +1408,8 @@ decision (Databento Blue Ocean, or Webull supplement).
 > [discovery: 17 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 7am. replay-outcome-join — labels on replayed paid books (SHIPPED + ARCHIVED 2026-08-19)
 > [discovery: 16 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7aq. Browser quality gates (SHIPPED + ARCHIVED 2026-08-24 — frontend/repository tooling)
+> [discovery: 22 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).
@@ -1500,7 +1503,7 @@ decision (Databento Blue Ocean, or Webull supplement).
   true multi-session block history needs a heavier batched pull. Future.
 
 ## 9. Resolved decisions (do NOT revisit)
-> [discovery: 129 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+> [discovery: 134 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 # DECISION LEDGER — compounding memory (standing reference)
 
 > How the system gets wiser per feature. The conveyor between a one-off decision and the shared
@@ -1725,4 +1728,4 @@ be exactly it.
   already in Promoted canon.)_
 
 ## Ledger (append-only — one row per binding decision instance)
-> [discovery: 728 lines elided — over the discovery byte budget; read context/DECISION_LEDGER.md for the full section, or memory_query]
+> [discovery: 763 lines elided — over the discovery byte budget; read context/DECISION_LEDGER.md for the full section, or memory_query]

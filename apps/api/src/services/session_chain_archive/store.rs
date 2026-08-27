@@ -154,6 +154,42 @@ impl SessionChainArchive {
         Ok(store)
     }
 
+    /// Opens only existing JSON metadata and body roots. This path is strictly
+    /// read-only: it does not create directories or migrate inline bodies.
+    pub async fn open_json_read_only(
+        dir: &Path,
+        ring_store_path: &Path,
+        body_root: &Path,
+    ) -> AppResult<Self> {
+        if archive_path_conflicts(dir, ring_store_path) {
+            return Err(AppError::Config(
+                "session archive path equals or nests under chain_snapshot_store_path".into(),
+            ));
+        }
+        if body_root.as_os_str().is_empty() {
+            return Err(AppError::Config(
+                "session archive not storing: body root empty".into(),
+            ));
+        }
+        if body_root_conflicts(body_root, ring_store_path, dir) {
+            return Err(AppError::Config(
+                "session archive body root conflicts with ring or index".into(),
+            ));
+        }
+        if !dir.is_dir() {
+            return Err(AppError::Config(
+                "session archive index root unavailable".into(),
+            ));
+        }
+        let bodies = FsBodyStore::open_read_only(body_root)?;
+        let inner = MemoryInner::load_dir(dir)?;
+        Ok(Self::Json(JsonInner {
+            dir: dir.to_path_buf(),
+            inner: Arc::new(RwLock::new(inner)),
+            bodies,
+        }))
+    }
+
     #[cfg(feature = "postgres")]
     pub fn open_postgres(pg: crate::db::postgres::Pg, bodies: FsBodyStore) -> Self {
         info!(backend = "postgres", "session chain archive: postgres");
@@ -231,6 +267,37 @@ impl SessionChainArchive {
             Self::Json(json) => Ok(json.inner.read().await.list(&symbol, limit)),
             #[cfg(feature = "postgres")]
             Self::Postgres(pg) => pg.list(&symbol, limit).await,
+        }
+    }
+
+    /// Metadata-only lookup. No body object is opened.
+    pub async fn metadata(
+        &self,
+        symbol: &str,
+        et_date: &str,
+    ) -> AppResult<Option<SessionBookMeta>> {
+        let symbol = symbol.trim().to_ascii_uppercase();
+        let et_date = et_date.trim();
+        match self {
+            Self::Disabled => Err(AppError::Config("session archive not storing".into())),
+            Self::Failing => Ok(None),
+            Self::Memory(inner) => Ok(inner
+                .read()
+                .await
+                .by_symbol
+                .get(&symbol)
+                .and_then(|rows| rows.get(et_date))
+                .map(StoredRow::meta)),
+            Self::Json(json) => Ok(json
+                .inner
+                .read()
+                .await
+                .by_symbol
+                .get(&symbol)
+                .and_then(|rows| rows.get(et_date))
+                .map(StoredRow::meta)),
+            #[cfg(feature = "postgres")]
+            Self::Postgres(pg) => pg.metadata(&symbol, et_date).await,
         }
     }
 
@@ -727,6 +794,60 @@ mod tests {
             msg.contains("body root") || msg.contains("conflicts") || msg.contains("not storing"),
             "{msg}"
         );
+    }
+
+    #[tokio::test]
+    async fn read_only_json_open_requires_existing_roots_without_migration() {
+        let base = unique_tmp("sca_read_only_open");
+        let index = base.join("index");
+        let ring = base.join("ring");
+        let bodies = base.join("bodies");
+        assert!(
+            SessionChainArchive::open_json_read_only(&index, &ring, &bodies)
+                .await
+                .is_err()
+        );
+        assert!(!index.exists());
+        assert!(!bodies.exists());
+
+        std::fs::create_dir_all(&index).unwrap();
+        std::fs::create_dir_all(&bodies).unwrap();
+        let as_of = Utc.with_ymd_and_hms(2026, 8, 26, 18, 0, 0).unwrap();
+        let (body, source) = body_at("SPY", as_of);
+        let raw = serde_json::json!({"entries": [{
+            "symbol": "SPY",
+            "et_date": "2026-08-26",
+            "source_as_of": as_of_string(as_of),
+            "source_as_of_ns": as_of.timestamp_nanos_opt().unwrap(),
+            "source": source,
+            "body_locator": "",
+            "body_b64": base64::engine::general_purpose::STANDARD.encode(body),
+        }]})
+        .to_string();
+        std::fs::write(index.join("SPY.json"), raw).unwrap();
+        let before = std::fs::read(index.join("SPY.json")).unwrap();
+        let before_meta = std::fs::metadata(index.join("SPY.json"))
+            .unwrap()
+            .modified()
+            .unwrap();
+        let opened = SessionChainArchive::open_json_read_only(&index, &ring, &bodies)
+            .await
+            .unwrap();
+        assert!(opened
+            .metadata("SPY", "2026-08-26")
+            .await
+            .unwrap()
+            .is_some());
+        assert_eq!(std::fs::read(index.join("SPY.json")).unwrap(), before);
+        assert_eq!(
+            std::fs::metadata(index.join("SPY.json"))
+                .unwrap()
+                .modified()
+                .unwrap(),
+            before_meta
+        );
+        assert!(std::fs::read_dir(&bodies).unwrap().next().is_none());
+        let _ = std::fs::remove_dir_all(&base);
     }
 
     #[tokio::test]

@@ -118,6 +118,11 @@ gateway you name.
   the SPEC would have caught.
 - **Model routing (adopted 2026-08-03):** every `.claude/agents/*` file declares its own `model:`, so a
   role's model no longer follows whichever model the conductor happens to be running.
+  **When the host spawn tool inherits the parent model if the model argument is omitted, pass the
+  `model_tiers` identifier explicitly on every de-correlated seat** (QA vs both build lanes, skeptic vs
+  synthesizer, and any verify seat whose tier differs from the lanes it audits). Omitting the argument
+  collapses the pair. Never omit on those seats. Never pass the conductor's model to a seat whose
+  resolved tier differs.
   **The provider's decide tier decides and judges; its execute tier executes** — the three council voices, the R4 synthesizer and QA
   run on the decide tier; the two build lanes run on the execute tier. `spire-tech-council-skeptic` declares a *different* provider-resolved tier from
   `spire-tech-council-synthesizer` by construction, which is what makes S2 an independent check rather than a
@@ -138,11 +143,12 @@ gateway you name.
   chosen idea that seeds the pipeline — output of GATE I), **`SPEC.md`** (the council's synthesized
   design) and **`INTERFACE_CONTRACT.md`** (the FE-to-BE single source of truth; both build lanes bind to
   it), plus `_MANIFEST.md` (§4), the round artifacts under `council/`, and as needed `PLAN.md`,
-  `QA_REPORT.md`, `*_AMENDMENTS_REQUESTED.md` / `RESUME.md`. Ship → move the folder to `_archive/`.
+  `QA_REPORT.md`, `*_AMENDMENTS_REQUESTED.md` / `RESUME.md` / `RESUME-{Task}.md`. Ship → move the folder to `_archive/`.
 
 Pipeline (canonical): **Discovery (GATE I, optional) → Council (GATE C) → Plan (GATE PLAN) →
 {Backend ‖ Frontend} → QA/Verify → Ship** (the two executioners run in parallel, both bound to
-`INTERFACE_CONTRACT.md`; **QA/Verify (GATE Q) gates the ship**). Executioners have **no outbound
+`INTERFACE_CONTRACT.md`; inside a lane, at most **two** path-fenced workers when `PLAN.md`
+`## Independence` marks tasks `yes`; **QA/Verify (GATE Q) gates the ship**). Executioners have **no outbound
 contract** (they ship code), so the next gateway after them is **QA/Verify (GATE Q)**, then
 **SHIP (GATE S)** — QA is a fresh session, never the builder verifying itself.
 
@@ -237,7 +243,7 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 >
 > So GATE I's generative work — harvest → cull → score → cull-to-one — happens **in the conductor**; the
 > discipline that replaces the lane fence is the explicit method below + the decision-impact cull (the
-> same bar that resists shiny features the way the AI gate resists over-trading). The one piece that MAY
+> same bar that resists shiny features: if you cannot name the observable improvement, park it). The one piece that MAY
 > still be delegated is the optional grooming-time feasibility consult to an Architect session (step 3) —
 > a read, not a contract. **Honesty caveat:** because choose-and-route both sit in the conductor, the cull
 > has no independent reviewer; when the conductor is a human this is the human's strategic call (where you
@@ -265,9 +271,10 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
   1. **Harvest** signal from the five sources: deferred items · shipped-feature seams · usage
      friction · downstream-AI quality (strategy/reassessment prompt fit) · lifted data/vendor
      constraints.
-  2. **Decision-impact test** (the cull) — every candidate must answer *"which trading decision
-     does this improve, and how would I observe the improvement?"* Anything that can't answer is
-     **parked, not promoted** (mirrors the AC-observable rule + the AI over-trading gate).
+  2. **Decision-impact test** (the cull) — every candidate must answer *"which user or business
+     decision does this improve, and how would I observe the improvement?"* Anything that can't
+     answer is **parked, not promoted** (mirrors the AC-observable rule). For internal/tooling
+     items, judge on correctness, throughput, or cost and note that the decision-impact test is N/A.
   3. **Feasibility gate** — data coverage / math invariants. An uncertain or heavy item may take a
      **grooming-time feasibility consult** from an Architect session: a one-paragraph
      *buildable / blocked-on* read that only informs the score. This is **NOT** the full Design
@@ -275,8 +282,8 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
      a `BRIEF.md` exists (running the council for un-chosen ideas is the sprawl the cull exists to
      prevent). A blocked item names its blocker (e.g. "needs the vendor decision") and is **not**
      scheduled.
-  4. **Score** the survivors: Value (H/M/L to the trading edge) × Effort (S/M/L); flag any locked
-     invariant it would touch.
+  4. **Score** the survivors: Value (H/M/L) × Effort (S/M/L); flag any locked invariant it would
+     touch.
   5. **Cull to ONE** next feature.
 - **Write:** update `BACKLOG.md` (the full prioritized pool — diverge) **and** create
   `.spire/clusters/tech/contracts/{FEATURE}/BRIEF.md` for the chosen one (converge — see §4a). The created
@@ -311,7 +318,36 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
   Constraints must copy the conformance block verbatim** so both lanes inherit the same binding
   shape. **Revisions within this session continue the SAME planner agent** (§5's loop rule) — a
   fresh spawn per revision pays the cold-start 2–4× over.
-- **Route:** Backend (`ROLE_LAUNCH_PROMPTS.md` §2) and Frontend (§3) **in parallel**.
+- **Route:** Backend (`ROLE_LAUNCH_PROMPTS.md` §2) and Frontend (§3) **in parallel**, then
+  **intra-lane workers** from `PLAN.md` `## Independence` (below).
+
+#### Intra-lane workers (k ≤ 2)
+
+After `PLAN.md` exists, read its `## Independence` table.
+
+- **No table, or zero `Independent: yes` in a lane:** spawn **one** worker for that lane, as
+  today (`ROLE_LAUNCH_PROMPTS.md` §2 or §3). Missing table is not a bounce. `k=2` is a
+  **ceiling**: one eligible `yes` → one spawn, not two.
+- **`Independent: yes` rows whose `Depends on` are done:** spawn at most **two** workers per
+  lane (`k=2`). Same role, same model floor, same contracts. Each launch prompt adds a
+  **Work scope** block: the Task id and the Paths list. The worker may write only those paths
+  (plus colocated tests). Checkpoint to
+  `.spire/clusters/tech/contracts/{FEATURE}/RESUME-{Task}.md`, not `RESUME.md`.
+- **Closer** (`Independent: no`, depends on the other tasks in that lane): spawn **after**
+  those workers join. Backend closer owns serve + `conformance-receipt.json` and does **not**
+  re-implement worker paths. Frontend closer owns leftover visual/serve states only. Never let
+  two workers in one lane both write the receipt.
+- **Overlap:** two `yes` rows in one lane whose Paths intersect (strip trailing `/**` / `/*`;
+  equal or prefix) → GATE Z to the planner **before spawn**. Do not silently merge. A `yes`
+  path containing `{`, `?`, or a non-trailing `*` is the same bounce.
+- **Queue:** if a lane has more than two eligible `yes` tasks, run two, join, then the next
+  eligible pair. Do not raise `k` in this method.
+- **Manifest:** write `Workers:` (Task ids spawned per lane + closer ids, or `n/a` when there
+  was no table / no `yes`). Operator card reports the spawn count.
+- **Join before GATE Q:** every spawned worker has reported done; no `RESUME.md` or
+  `RESUME-*.md` for this feature is `**Resume status:** ACTIVE`. Then GATE Q (one QA, not per
+  worker). Worker resumes are marked consumed by writing `**Resume status:** CONSUMED` on that
+  file (do not wait on `continuity.mjs` classifying `RESUME-{Task}.md` this cycle).
 
 ### GATE M — Math / Infra drift fast-path: Architect → Backend (skip PM + UX)   *(= your Routine B)*
 - **Trigger:** "math drift / fix the calc / schema change / model divergence in {function}."
@@ -398,7 +434,8 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 
 ### GATE Q — QA / Verify (post-executioners → Ship or Bounce)   *(system-2)*
 - **Trigger:** "both lanes built / QA it / verify the feature before ship."
-- **Use when:** the executioners report done — **always before GATE S** (ship now requires a QA pass).
+- **Use when:** the executioners report done — every intra-lane worker has joined and no
+  feature `RESUME.md` / `RESUME-*.md` is ACTIVE — **always before GATE S** (ship now requires a QA pass).
 - **Audit:** `SPEC.md` (§3 the acceptance criteria — the checklist), `INTERFACE_CONTRACT.md`, the
   shipped code in both lanes (`backend.dir` + `frontend.dir`), the BRIEF "Invariant watch" + the
   promoted canon (§5).
@@ -469,6 +506,7 @@ Contracts:
   - INTERFACE_CONTRACT.md      locked | draft | NO_BACKEND_CHANGE | n/a   <- FE-to-BE binding
 Open amendments: none | <file> CONTESTED (owner: <role>)
 QA (GATE Q):  n/a | pending | QA_REPORT PASS | QA_REPORT FAIL (bounced: <owner>)
+Workers:      n/a | backend=[<Task>,…] closer=<Task>; frontend=[<Task>,…] closer=<Task>
 Last gateway:  <GATE id> @ <YYYY-MM-DD>
 ```
 The `Entry` key is deleted (no colon, no value) — there is no entry order under the council.
@@ -480,7 +518,7 @@ Council opens on, so it must stand alone against `PROJECT_CONTEXT.md`. Format:
 ```markdown
 # {FEATURE} — brief
 Goal:            <one short paragraph — becomes {GOAL} in the launch prompt>
-Decision impact: <which trading decision this improves + how it's observed>  (the cull test)
+Decision impact: <which user or business decision this improves + how it's observed; for internal/tooling, N/A + correctness/throughput/cost>  (the cull test)
 Feasibility:     pass | blocked-on: <X>
 Effort:          S | M | L
 Invariant watch: <canonical keys from DECISION_LEDGER.md "Promoted canon" this feature touches (e.g.

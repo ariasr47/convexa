@@ -1507,6 +1507,12 @@ fn register_route_schemas(mut document: OpenApi) -> OpenApi {
     schema!(health::MetricsRateLimitHeadroom);
     schema!(health::RecentTrace);
     schema!(health::MetricsTraceDims);
+    schema!(health::SessionArchiveCoverageWire);
+    schema!(health::CoverageRangeWire);
+    schema!(health::CoverageCountsWire);
+    schema!(health::CoverageBookWire);
+    schema!(health::CoveragePerSymbolWire);
+    schema!(health::CoverageObservationWire);
     schema!(market::MarketWire);
     schema!(market::MarketSetup);
     schema!(market::MarketStrikeProfile);

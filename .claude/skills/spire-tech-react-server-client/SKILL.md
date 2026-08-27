@@ -1,11 +1,13 @@
 ---
 name: spire-tech-react-server-client
-description: Use when the declared stack is React or Next with server components, SSR, or server actions and the work is server/client boundaries, secrets, or serialization. Prefer this over spire-tech-frontend-patterns for boundary focus. Skip pure CSR or non-React stacks.
+description: Use when writing or reviewing React Server Components, SSR, or server actions — server/client boundaries, secrets, or serialization. Triggers on RSC/SSR work. Skip pure CSR and non-React stacks.
+when-to-use: React Server Components, SSR, server actions, use client, serialization, server/client boundary
 ---
 
 # React server/client boundaries
 
 Own **server vs client boundary craft** when the project uses RSC/SSR/server actions. Skip pure CSR.
+Prefer this over `spire-tech-frontend-patterns` for boundary focus.
 
 ## Critical procedure
 

@@ -226,7 +226,42 @@ export function validateCouncilFoldingReceipt(specBody, r2Bodies) {
   return { valid: true, error: null };
 }
 
+export function classifyContractFolder(folder) {
+  const has = (name) => {
+    try {
+      return fs.existsSync(path.join(folder, name));
+    } catch {
+      return false;
+    }
+  };
+  if (has('CHANGE_SPEC.md')) return 'change';
+  if ((has('CULL.md') || has('HARVEST.md')) && !has('_MANIFEST.md')) return 'change';
+  return 'delivery';
+}
+
+function lintChangeFeature(folder, f) {
+  const name = path.basename(folder);
+  const councilDir = path.join(folder, 'council');
+  if (!fs.existsSync(councilDir)) return;
+  for (const entry of fs.readdirSync(councilDir).sort()) {
+    if (!/^R[123]-.*\.md$/.test(entry)) continue;
+    const size = fs.statSync(path.join(councilDir, entry)).size;
+    if (size <= COUNCIL_FILE_BUDGET_BYTES) continue;
+    f.warn(`${name}/council/${entry}`,
+      `${Math.round(size / 1024)}KB exceeds the ${Math.round(COUNCIL_FILE_BUDGET_BYTES / 1024)}KB council `
+      + 'budget — later rounds read every position in full; state positions, not transcripts');
+  }
+}
+
 export function lintFeature(folder, f) {
+  if (classifyContractFolder(folder) === 'change') {
+    lintChangeFeature(folder, f);
+    return;
+  }
+  lintDeliveryFeature(folder, f);
+}
+
+function lintDeliveryFeature(folder, f) {
   const name = path.basename(folder);
   const manPath = path.join(folder, '_MANIFEST.md');
   if (!fs.existsSync(manPath)) {

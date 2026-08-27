@@ -1,11 +1,12 @@
 ---
 name: spire-tech-frontend-patterns
-description: Use when the declared frontend stack is React or Next for general composition/data/server/client/rendering guidance; skip other stacks. Prefer spire-tech-react-composition for API/variant design, spire-tech-react-async-data for fetch/waterfalls, spire-tech-react-server-client for RSC boundaries. Prefer spire-tech-flow-integration-tests for SPEC journey tests on any stack.
+description: Use when writing, reviewing, or refactoring React or Next.js components, pages, data fetching, bundle size, or rendering. Triggers on React UI implementation and performance-shaped frontend work. Skip non-React stacks.
+when-to-use: writing React components, reviewing React/Next.js code, refactoring React UI, Next.js pages, data fetching, bundle optimization, rendering
 ---
 
 # Frontend patterns — React-conditional guidance
 
-Use this skill only when the consumer declares React or Next. Read the project's React version, framework, rendering mode, bundler and canon before applying a rule. Project evidence outranks generic advice.
+Use this skill when writing or reviewing React/Next UI. Confirm the declared React version, framework, rendering mode, bundler and canon before applying a rule. Project evidence outranks generic advice. Prefer `spire-tech-next-best-practices` for Next-framework conventions and bundled docs, `spire-tech-next-cache-components` for Cache Components / instant navigation, `spire-tech-react-composition` for component API/variants, `spire-tech-react-async-data` for fetch/waterfalls, `spire-tech-react-server-client` for RSC boundaries, and `spire-tech-flow-integration-tests` for SPEC journeys.
 
 ## Critical procedure
 

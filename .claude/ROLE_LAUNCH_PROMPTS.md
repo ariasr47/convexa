@@ -78,8 +78,8 @@ context pack, let it write its one contract, then **discard it** (no reuse acros
 | Council R2 (x3 parallel) | the same three, fresh | §1 + `council/R2-critique.md` | `council/R2-{role}.md` |
 | Council R4           | `spire-tech-council-synthesizer` (fresh) | `council/R4-synthesis.md` | `SPEC.md` + `INTERFACE_CONTRACT.md` |
 | Council S2           | `spire-tech-council-skeptic` (fresh; its file declares a different model) | `council/S2-skeptic.md` | `council/S2-findings.md` |
-| Backend (fan-out)    | `spire-tech-backend`   | §2            | server code (binds interface)   |
-| Frontend (fan-out)   | `spire-tech-frontend`  | §3            | UI code (binds interface)       |
+| Backend (lane + intra-lane k≤2) | `spire-tech-backend`   | §2            | server code (binds interface)   |
+| Frontend (lane + intra-lane k≤2) | `spire-tech-frontend`  | §3            | UI code (binds interface)       |
 | QA / Verify (GATE Q) | `spire-tech-qa`          | §4            | QA_REPORT.md                    |
 
 - **Discovery has no subagent:** GATE I (Discovery) runs **inline in the conductor**, not as a spawn —
@@ -146,6 +146,11 @@ Read these files for full context, then implement the backend, acting as a backe
 - .spire/clusters/tech/contracts/{FEATURE}/INTERFACE_CONTRACT.md            (the single source of integration truth)
 - .spire/clusters/tech/contracts/{FEATURE}/SPEC.md                          (§2 architecture + §7 testing strategy — your server work)
 - .spire/clusters/tech/contracts/{FEATURE}/RESUME.md                        (ONLY if present with `**Resume status:** ACTIVE` — a prior lane hit its session budget and checkpointed; continue from exactly where it stopped instead of redoing done work)
+- .spire/clusters/tech/contracts/{FEATURE}/RESUME-{Task}.md                  (ONLY if this spawn has a Work scope Task id and that file is ACTIVE)
+
+If this spawn includes a **Work scope** (Task id + Paths from PLAN.md `## Independence`): write
+only those paths (plus colocated tests). Do not write `conformance-receipt.json` unless this
+spawn is the lane closer. Checkpoint to `RESUME-{Task}.md`, not `RESUME.md`.
 
 Follow the lane boundaries, interface-binding rule, debugging/TDD method, and required conformance-
 receipt exit discipline in your agent definition. Apply them to the feature-specific inputs above;
@@ -159,6 +164,11 @@ Read these files for full context, then implement the frontend, acting as a fron
 - .spire/clusters/tech/contracts/{FEATURE}/INTERFACE_CONTRACT.md            (the single source of integration truth)
 - .spire/clusters/tech/contracts/{FEATURE}/SPEC.md                          (§4 — component states, copy, design direction; your UI work)
 - .spire/clusters/tech/contracts/{FEATURE}/RESUME.md                        (ONLY if present with `**Resume status:** ACTIVE` — a prior lane hit its session budget and checkpointed; continue from exactly where it stopped instead of redoing done work)
+- .spire/clusters/tech/contracts/{FEATURE}/RESUME-{Task}.md                  (ONLY if this spawn has a Work scope Task id and that file is ACTIVE)
+
+If this spawn includes a **Work scope** (Task id + Paths from PLAN.md `## Independence`): write
+only those paths (plus colocated tests). Do not run the full visual/serve closer pass unless this
+spawn is the lane closer. Checkpoint to `RESUME-{Task}.md`, not `RESUME.md`.
 
 Follow the lane boundaries, interface-binding rule, required unit/component/flow-integration test
 floor, degraded-state behavior, and visual-verification exit discipline in your agent definition.
@@ -178,6 +188,8 @@ deliberately NOT one of the builders — no one marks their own homework):
 - .spire/clusters/tech/context/PROJECT_CONTEXT.md                                       (standing ground truth)
 - .spire/clusters/tech/contracts/{FEATURE}/SPEC.md                               (§3 ACCEPTANCE CRITERIA — your checklist)
 - .spire/clusters/tech/contracts/{FEATURE}/INTERFACE_CONTRACT.md                 (integration truth — what BE emits / FE consumes)
+- .spire/clusters/tech/contracts/{FEATURE}/PLAN.md                               (## Independence — join audit when any Independent: yes)
+- .spire/clusters/tech/contracts/{FEATURE}/_MANIFEST.md                          (Workers: line — spawned Task ids + closers, or n/a)
 - .spire/clusters/tech/context/OPEN_THREADS.md §9 ONLY                                    (the "Resolved decisions — do NOT revisit" section: honor those promoted invariants. Read §9; do NOT read §1-§8 — they are open items and shipped history you do not verify against.)
 
 Apply the verification-only boundary in your agent definition: observe every criterion point by
@@ -202,6 +214,9 @@ Method:
   FAIL is a GATE Q FAIL → bounce to Backend.
 - Also check the binding invariants (BRIEF "Invariant watch" + the promoted canon). A green AC list
   over a broken invariant is still a FAIL.
+- When PLAN.md `## Independence` has any Independent: yes, FAIL if `_MANIFEST.md` `Workers:` omits
+  an eligible Task, a lane closer never ran, or any RESUME.md / RESUME-*.md for this feature is
+  still ACTIVE.
 - Re-run the frontend test suite + verify AC coverage per its `Verify by` marking (standing rule — tests
   are part of the FE deliverable): run the configured frontend test command (`project.json` →
   `frontend.test_cmd`, plus any shared-lib test command if a shared client lib was touched); a failing
@@ -233,7 +248,9 @@ Act as the delivery planner for {FEATURE}. Read these files, then produce the im
 - .spire/clusters/tech/contracts/{FEATURE}/_context-pack.md                 (your slice of ground truth; if absent: `node .claude/tools/gates.mjs context_for {FEATURE} --write`)
 
 Follow .claude/plan/PLAN_METHOD.md and write PLAN.md to .spire/clusters/tech/contracts/{FEATURE}/PLAN.md with
-backend, frontend and verification tracks. If the spec cannot be planned as written, stop and
+backend, frontend and verification tracks plus the ## Independence table (Task, Lane, Paths,
+Depends on, Independent). If two Independent:yes rows in one lane would share write paths, fix
+the table; name one closer per lane that has work. If the spec cannot be planned as written, stop and
 report the contradiction — never plan around it.
 ```
 **Loop rule (binding — from the dispatcher-minus-one spec §1.2.3):** this fresh spawn is for the
@@ -247,6 +264,9 @@ construction). A fresh spawn is correct again once the original agent is gone (a
 ### Notes
 - **Backend and Frontend run in parallel** — both bind to the same `INTERFACE_CONTRACT.md`, so neither
   blocks the other. That decoupling is the whole point of the council's R4 Synthesis output.
+  **Inside a lane**, at most two path-fenced workers (`k=2`) when `PLAN.md` `## Independence` marks
+  tasks `Independent: yes` (`ORCHESTRATOR.md` GATE PLAN, Intra-lane workers). Overlap → GATE Z to
+  the planner. No table → one worker per lane.
 - **The Council's R4 Synthesis writes SPEC.md + INTERFACE_CONTRACT.md directly — no compressor step.**
   A fresh synthesis agent (none of the three voices) reads every R1/R2 position and critique plus the
   conductor's R3 decisions, then authors both files as its one write. S2's Critical findings loop back

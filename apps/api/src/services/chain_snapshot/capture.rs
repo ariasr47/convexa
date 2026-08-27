@@ -4,7 +4,9 @@ use super::store::ChainSnapshotStore;
 use super::wire::{as_of_string, serialize_capture, to_wire};
 use crate::error::AppResult;
 use crate::services::market_data::VendorBundle;
-use crate::services::session_chain_archive::{archive_session_best_effort, SessionChainArchive};
+use crate::services::session_chain_archive::{
+    archive_session_best_effort_observed, SessionChainArchive,
+};
 use crate::state::AppState;
 use std::time::Duration;
 use tracing::{info, warn};
@@ -24,12 +26,13 @@ pub async fn capture_best_effort(state: &AppState, bundle: VendorBundle) -> AppR
         warn!("capture not storing");
         return Ok(());
     };
-    capture_into(
+    capture_into_observed(
         store,
         &state.session_archive,
         bundle,
         Duration::from_secs(state.config.chain_snapshot_max_age_secs),
         state.config.chain_snapshot_max_per_symbol,
+        Some(&state.archive_coverage.writes),
     )
     .await
 }
@@ -41,6 +44,17 @@ pub async fn capture_into(
     bundle: VendorBundle,
     max_age: Duration,
     max_per: usize,
+) -> AppResult<()> {
+    capture_into_observed(store, archive, bundle, max_age, max_per, None).await
+}
+
+async fn capture_into_observed(
+    store: &ChainSnapshotStore,
+    archive: &SessionChainArchive,
+    bundle: VendorBundle,
+    max_age: Duration,
+    max_per: usize,
+    telemetry: Option<&crate::state::ArchiveWriteTelemetry>,
 ) -> AppResult<()> {
     if !store.is_enabled() {
         warn!("capture not storing");
@@ -59,7 +73,7 @@ pub async fn capture_into(
         warn!(error = %e, "chain snapshot prune failed");
     }
     // AFTER prune — archive must not delay prune; failure never fails this Ok(())
-    archive_session_best_effort(archive, &wire, &bytes).await;
+    archive_session_best_effort_observed(archive, telemetry, &wire, &bytes).await;
     Ok(())
 }
 

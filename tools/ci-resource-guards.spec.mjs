@@ -2,6 +2,18 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
 
+test('backend CI frees default-feature artifacts before PostgreSQL tests', async () => {
+  const workflow = await fs.readFile('.github/workflows/ci.yml', 'utf8');
+  const defaultTests = workflow.indexOf('- name: Cargo test');
+  const cleanup = workflow.indexOf('- name: Free default-feature debug build space');
+  const postgresGuardrails = workflow.indexOf('- name: Production runtime guardrails (postgres)');
+
+  assert.ok(defaultTests >= 0, 'default-feature Cargo test step is missing');
+  assert.ok(cleanup > defaultTests, 'cleanup must follow the default-feature Rust tests');
+  assert.ok(postgresGuardrails > cleanup, 'cleanup must precede PostgreSQL compilation');
+  assert.match(workflow.slice(cleanup, postgresGuardrails), /run:\s*cargo clean/);
+});
+
 test('backend CI releases debug artifacts before the production build', async () => {
   const workflow = await fs.readFile('.github/workflows/ci.yml', 'utf8');
   const postgresSafety = workflow.indexOf('- name: PostgreSQL release safety');

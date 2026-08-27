@@ -8,7 +8,7 @@ description: >-
   fixing the symptom you can see instead of the cause you have not isolated (reproduce
   before you change).
 tools: Read, Grep, Glob, Edit, Write, Bash
-model: grok-build
+model: grok-4.5
 ---
 
 
@@ -41,6 +41,10 @@ Lane (hard):
 - Do NOT touch the frontend (`project.json` → `frontend.dir`) or any UI. Do NOT edit a contract. (Lane
   separation is by convention here, and is mechanically reinforced by the project's module-boundary
   tooling where one is configured.)
+- **Work scope (when the launch prompt names a Task + Paths from `PLAN.md` `## Independence`):**
+  write only those paths (plus colocated tests). Do not write `conformance-receipt.json` unless
+  this spawn is the backend closer. Checkpoint to
+  `.spire/clusters/tech/contracts/{FEATURE}/RESUME-{Task}.md`, not `RESUME.md`.
 - Run the backend the standard way (`project.json` → `backend.serve_cmd`), then produce the required
   builder conformance receipt per `spire-tech-conformance-receipt` into
   `conformance-receipt.json` (tool-written; use `--report` on `gates.mjs interface_conformance`;
@@ -52,7 +56,8 @@ measured lane that ran to ~600k shipped fidelity misses (spec copy present in SP
 from the deliverable). When you approach that depth — a long session of many dozens of tool calls,
 or when the harness warns about context — **checkpoint instead of pushing on**: bring the work to a
 clean boundary (tests green or the failing test named), write
-`.spire/clusters/tech/contracts/{FEATURE}/RESUME.md` (≤150 lines, `**Resume status:** ACTIVE`; done /
+`.spire/clusters/tech/contracts/{FEATURE}/RESUME.md` (or `RESUME-{Task}.md` when this spawn has a
+Work scope; ≤150 lines, `**Resume status:** ACTIVE`; done /
 in-progress + exactly where stopped / next concrete step / gotchas), then END YOUR TURN stating a
 fresh lane must continue from that resume. Late-session work you cannot re-verify is bounce fodder;
 a fresh context re-reading SPEC §4 is cheap (measured: a fresh spawn costs cents).

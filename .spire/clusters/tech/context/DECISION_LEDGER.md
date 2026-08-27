@@ -981,6 +981,13 @@ be exactly it.
 | `cited-code-is-verified-not-assumed` | browser-quality-gates | S | engine/project/runtime identities and local evidence are recorded exactly; unavailable hosted Ubuntu execution remains NOT RUN rather than inferred from local success | yes |
 | `theme-token-discipline` | browser-quality-gates | S | D7/D8 accessibility repairs use existing mode-aware theme slots; no global token/palette or unrelated presentation amendment was authorized | yes |
 
+| `operator-vs-trader-path-separation` | archive-coverage-guardrails | C | protected metrics projects only an immutable in-memory coverage snapshot; request-time archive I/O, vendor fetch, repair, recompute, mutation, trader routes, SSE, and UI are excluded | yes |
+| `production-fails-closed` | archive-coverage-guardrails | C | invalid production coverage policy, unsupported calendar domain, or unusable required archive location refuses before bind; a later corpus gap remains an operator incident and never takes trading down | yes |
+| `structural-over-prose-enforcement` | archive-coverage-guardrails | C | one shared evaluator, read-only capabilities, closed states, source-boundary guards, and mutation-proved forbidden imports/writes make detector/audit drift or remediation access build-breaking | yes |
+| `cited-code-is-verified-not-assumed` | archive-coverage-guardrails | C | design claims bind to inspected Rust metrics/archive/ensure/CLI/startup seams; implementation divergence requires GATE Z rather than silent adaptation | yes |
+| `shared-session-eligibility-calendar` | archive-coverage-guardrails | C | session producer and coverage detector consume one checked-in, versioned, zero-vendor XNYS full-day eligibility calendar so closed markets cannot become false missing-book incidents | yes |
+| `reconstruction-never-satisfies-live-coverage` | archive-coverage-guardrails | C | fixtures and partial reconstructions live behind separate adapters/namespaces and can never turn a missing original production session book into readable-live coverage | yes |
+
 > **GATE S tally — browser-quality-gates (2026-08-24).** **NO new graduations.** All three
 > binding keys were already promoted canon. `NO_BACKEND_CHANGE`, so no conformance JSON was promoted.
 > Fresh independent QA passed 45/0/0; hosted Ubuntu evidence remains honestly NOT RUN until GitHub

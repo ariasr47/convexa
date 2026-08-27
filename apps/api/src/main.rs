@@ -82,6 +82,13 @@ enum Commands {
     },
     /// Probe the local HTTP health endpoint for the container runtime.
     Healthcheck,
+    /// Read-only inclusive session archive coverage audit.
+    ArchiveCoverageAudit {
+        #[arg(long)]
+        from: String,
+        #[arg(long)]
+        to: String,
+    },
     /// Run the fixture-only capacity baseline.
     CapacityBaseline {
         #[arg(long, value_enum, default_value_t = api_rust::capacity::CapacityProfileArg::Normal)]
@@ -342,7 +349,9 @@ async fn main() -> ExitCode {
     match run(cli).await {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("error: {e:#}");
+            if !e.to_string().starts_with("__SILENT_CLI__") {
+                eprintln!("error: {e:#}");
+            }
             ExitCode::from(1)
         }
     }
@@ -579,6 +588,20 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
         }
         Commands::Healthcheck => {
             run_healthcheck().await?;
+        }
+        Commands::ArchiveCoverageAudit { from, to } => {
+            let cfg = Config::from_env()?;
+            let result = api_rust::services::session_chain_archive::audit::run_configured(
+                &cfg,
+                &from,
+                &to,
+                chrono::Utc::now(),
+            )
+            .await;
+            print!("{}\n", result.text);
+            if result.exit != ExitCode::SUCCESS {
+                anyhow::bail!("__SILENT_CLI__ archive coverage audit failed");
+            }
         }
         #[cfg(feature = "postgres")]
         Commands::PostgresMigrate => unreachable!("postgres-migrate is dispatched before run"),

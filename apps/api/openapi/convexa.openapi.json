@@ -1029,6 +1029,98 @@
         "required": ["ticker", "expiration", "strike", "right", "greeks", "dte"],
         "type": "object"
       },
+      "CoverageBookWire": {
+        "properties": {
+          "et_date": {
+            "type": "string"
+          },
+          "source_as_of": {
+            "type": ["string", "null"]
+          },
+          "status": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          }
+        },
+        "required": ["symbol", "et_date", "status"],
+        "type": "object"
+      },
+      "CoverageCountsWire": {
+        "properties": {
+          "expected": {
+            "minimum": 0,
+            "type": ["integer", "null"]
+          },
+          "missing": {
+            "minimum": 0,
+            "type": ["integer", "null"]
+          },
+          "not_due": {
+            "minimum": 0,
+            "type": ["integer", "null"]
+          },
+          "present": {
+            "minimum": 0,
+            "type": ["integer", "null"]
+          },
+          "readable": {
+            "minimum": 0,
+            "type": ["integer", "null"]
+          },
+          "unreadable": {
+            "minimum": 0,
+            "type": ["integer", "null"]
+          }
+        },
+        "type": "object"
+      },
+      "CoverageObservationWire": {
+        "properties": {
+          "started_at_utc": {
+            "type": "string"
+          },
+          "write_failures_total": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": ["started_at_utc", "write_failures_total"],
+        "type": "object"
+      },
+      "CoveragePerSymbolWire": {
+        "properties": {
+          "last_readable_et_date": {
+            "type": ["string", "null"]
+          },
+          "last_readable_source_as_of": {
+            "type": ["string", "null"]
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "write_failures_since_observation": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": ["symbol", "write_failures_since_observation"],
+        "type": "object"
+      },
+      "CoverageRangeWire": {
+        "properties": {
+          "end_et_date": {
+            "type": ["string", "null"]
+          },
+          "start_et_date": {
+            "type": ["string", "null"]
+          }
+        },
+        "type": "object"
+      },
       "DarkPoolConfluenceWire": {
         "properties": {
           "coincides_with": {
@@ -2757,6 +2849,9 @@
             },
             "type": "array"
           },
+          "session_archive_coverage": {
+            "$ref": "#/components/schemas/SessionArchiveCoverageWire"
+          },
           "window": {
             "type": "string"
           }
@@ -2769,7 +2864,8 @@
           "recent_traces",
           "gex_cache",
           "operator",
-          "metrics_auth"
+          "metrics_auth",
+          "session_archive_coverage"
         ],
         "type": "object"
       },
@@ -4146,6 +4242,76 @@
           }
         },
         "required": ["proximity", "vol", "setups", "transition", "dark_pool", "total"],
+        "type": "object"
+      },
+      "SessionArchiveCoverageWire": {
+        "properties": {
+          "activation_et_date": {
+            "type": "string"
+          },
+          "books": {
+            "items": {
+              "$ref": "#/components/schemas/CoverageBookWire"
+            },
+            "type": "array"
+          },
+          "checkpoint_et": {
+            "type": "string"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/CoverageCountsWire"
+          },
+          "data_stale": {
+            "type": "boolean"
+          },
+          "evaluated_at_et": {
+            "type": ["string", "null"]
+          },
+          "last_verified_at_utc": {
+            "type": ["string", "null"]
+          },
+          "lookback_eligible_sessions": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "observation": {
+            "$ref": "#/components/schemas/CoverageObservationWire"
+          },
+          "per_symbol": {
+            "items": {
+              "$ref": "#/components/schemas/CoveragePerSymbolWire"
+            },
+            "type": "array"
+          },
+          "range": {
+            "$ref": "#/components/schemas/CoverageRangeWire"
+          },
+          "required_symbols": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "status_detail": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": [
+          "status",
+          "data_stale",
+          "activation_et_date",
+          "checkpoint_et",
+          "lookback_eligible_sessions",
+          "range",
+          "required_symbols",
+          "counts",
+          "books",
+          "per_symbol",
+          "observation"
+        ],
         "type": "object"
       },
       "SessionBookHitBody": {

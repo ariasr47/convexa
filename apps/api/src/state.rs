@@ -17,8 +17,13 @@ use crate::services::market_data::MarketDataPort;
 use crate::services::scanner::{load_universe, ScanStore, UniverseConfig};
 #[cfg(feature = "postgres")]
 use crate::services::session_chain_archive::body_store::FsBodyStore;
+use crate::services::session_chain_archive::coverage::{
+    self, BookCoverageStatus, CoverageEvidence, CoverageFailure, CoverageRange, LiveArchiveRead,
+    SuccessVerificationCache, COVERAGE_SYMBOLS,
+};
+use crate::services::session_chain_archive::market_calendar::{CoveragePolicy, MarketCalendar};
 use crate::services::session_chain_archive::{EnsureGate, EnsureWake, SessionChainArchive};
-use chrono::Utc;
+use chrono::{DateTime, NaiveDate, Utc};
 use quant_engine::{Contract, GexResult, Signals};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -27,6 +32,228 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 use tracing::{info, warn};
+
+#[derive(Debug)]
+pub struct ArchiveWriteTelemetry {
+    pub started_at_utc: DateTime<Utc>,
+    pub total: AtomicU64,
+    pub per_symbol: [AtomicU64; 3],
+}
+
+impl ArchiveWriteTelemetry {
+    pub fn new() -> Self {
+        Self {
+            started_at_utc: Utc::now(),
+            total: AtomicU64::new(0),
+            per_symbol: [AtomicU64::new(0), AtomicU64::new(0), AtomicU64::new(0)],
+        }
+    }
+    pub fn record_failure(&self, symbol: &str) {
+        let Some(index) = COVERAGE_SYMBOLS
+            .iter()
+            .position(|s| s.eq_ignore_ascii_case(symbol))
+        else {
+            return;
+        };
+        self.total.fetch_add(1, Ordering::Relaxed);
+        self.per_symbol[index].fetch_add(1, Ordering::Relaxed);
+    }
+    pub fn total(&self) -> u64 {
+        self.total.load(Ordering::Relaxed)
+    }
+    pub fn symbol(&self, index: usize) -> u64 {
+        self.per_symbol[index].load(Ordering::Relaxed)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum CoverageRuntimeResult {
+    Current(CoverageEvidence),
+    Failed {
+        last_good: Option<CoverageEvidence>,
+        known_range: Option<CoverageRange>,
+        reason: CoverageFailure,
+        evaluated_at: DateTime<Utc>,
+    },
+}
+
+#[derive(Clone)]
+pub struct ArchiveCoverageRuntime {
+    policy: CoveragePolicy,
+    calendar: MarketCalendar,
+    snapshot: Arc<RwLock<Option<CoverageRuntimeResult>>>,
+    last_good: Arc<RwLock<Option<CoverageEvidence>>>,
+    cache: Arc<tokio::sync::Mutex<SuccessVerificationCache>>,
+    warnings: Arc<tokio::sync::Mutex<std::collections::HashSet<(String, NaiveDate)>>>,
+    evaluation_attempts: Arc<AtomicU64>,
+    pub writes: Arc<ArchiveWriteTelemetry>,
+}
+
+impl ArchiveCoverageRuntime {
+    pub fn production() -> AppResult<Self> {
+        let policy = CoveragePolicy::production()
+            .map_err(|e| crate::error::AppError::Config(e.to_string()))?;
+        let calendar = MarketCalendar::production()
+            .map_err(|e| crate::error::AppError::Config(e.to_string()))?;
+        Ok(Self::new(policy, calendar))
+    }
+    pub fn new(policy: CoveragePolicy, calendar: MarketCalendar) -> Self {
+        Self {
+            policy,
+            calendar,
+            snapshot: Arc::new(RwLock::new(None)),
+            last_good: Arc::new(RwLock::new(None)),
+            cache: Arc::new(tokio::sync::Mutex::new(SuccessVerificationCache::new())),
+            warnings: Arc::new(tokio::sync::Mutex::new(std::collections::HashSet::new())),
+            evaluation_attempts: Arc::new(AtomicU64::new(0)),
+            writes: Arc::new(ArchiveWriteTelemetry::new()),
+        }
+    }
+    pub fn policy(&self) -> &CoveragePolicy {
+        &self.policy
+    }
+    pub fn calendar(&self) -> &MarketCalendar {
+        &self.calendar
+    }
+    pub fn observation_started_at_utc(&self) -> DateTime<Utc> {
+        self.writes.started_at_utc
+    }
+    #[doc(hidden)]
+    pub fn evaluation_attempts(&self) -> u64 {
+        self.evaluation_attempts.load(Ordering::Relaxed)
+    }
+    pub async fn evaluate(
+        &self,
+        archive: &SessionChainArchive,
+        now: DateTime<Utc>,
+    ) -> Result<Vec<(String, NaiveDate, BookCoverageStatus)>, CoverageFailure> {
+        self.evaluation_attempts.fetch_add(1, Ordering::Relaxed);
+        let range_result = coverage::runtime_range(&self.calendar, &self.policy, now);
+        let range = range_result.as_ref().ok().cloned();
+        let result = if let Some(range) = range.clone() {
+            let mut cache = self.cache.lock().await;
+            let reader = archive_reader(archive);
+            coverage::evaluate(
+                &reader,
+                &self.calendar,
+                &self.policy,
+                range,
+                now,
+                &mut cache,
+            )
+            .await
+        } else {
+            Err(range_result.expect_err("missing runtime range failure"))
+        };
+        match result {
+            Ok(evidence) => {
+                *self.last_good.write().await = Some(evidence.clone());
+                *self.snapshot.write().await =
+                    Some(CoverageRuntimeResult::Current(evidence.clone()));
+                let mut ledger = self.warnings.lock().await;
+                let mut rows = Vec::new();
+                for row in &evidence.books {
+                    if matches!(
+                        row.status,
+                        BookCoverageStatus::Missing | BookCoverageStatus::Unreadable
+                    ) && ledger.insert((row.symbol.clone(), row.et_date))
+                    {
+                        rows.push((row.symbol.clone(), row.et_date, row.status));
+                    }
+                }
+                let dates: std::collections::HashSet<NaiveDate> =
+                    evidence.books.iter().map(|b| b.et_date).collect();
+                ledger.retain(|(_, d)| dates.contains(d));
+                Ok(rows)
+            }
+            Err(failure) => {
+                let last = self.last_good.read().await.clone();
+                *self.snapshot.write().await = Some(CoverageRuntimeResult::Failed {
+                    last_good: last,
+                    known_range: range,
+                    reason: failure.clone(),
+                    evaluated_at: now,
+                });
+                Err(failure)
+            }
+        }
+    }
+    pub async fn snapshot(&self) -> Option<CoverageRuntimeResult> {
+        self.snapshot.read().await.clone()
+    }
+}
+
+// Adapter keeps the runtime facade narrow: only metadata and strict load are visible.
+fn archive_reader<'a>(archive: &'a SessionChainArchive) -> impl LiveArchiveRead + 'a {
+    RuntimeArchiveReader { archive }
+}
+struct RuntimeArchiveReader<'a> {
+    archive: &'a SessionChainArchive,
+}
+impl LiveArchiveRead for RuntimeArchiveReader<'_> {
+    fn metadata<'a>(
+        &'a self,
+        symbol: &'a str,
+        date: NaiveDate,
+    ) -> futures_util::future::BoxFuture<
+        'a,
+        Result<Option<crate::services::session_chain_archive::SessionBookMeta>, CoverageFailure>,
+    > {
+        Box::pin(async move {
+            self.archive
+                .metadata(symbol, &date.to_string())
+                .await
+                .map_err(|_| CoverageFailure {
+                    range: None,
+                    reason: coverage::CoverageFailureReason::Reader,
+                })
+        })
+    }
+    fn strict_load<'a>(
+        &'a self,
+        meta: &'a crate::services::session_chain_archive::SessionBookMeta,
+    ) -> futures_util::future::BoxFuture<'a, Result<coverage::StrictBook, CoverageFailure>> {
+        Box::pin(async move {
+            let loaded = self
+                .archive
+                .load(&meta.symbol, &meta.et_date)
+                .await
+                .map_err(|_| CoverageFailure {
+                    range: None,
+                    reason: coverage::CoverageFailureReason::Reader,
+                })?
+                .ok_or(CoverageFailure {
+                    range: None,
+                    reason: coverage::CoverageFailureReason::Reader,
+                })?;
+            let wire = crate::services::chain_snapshot::wire::deserialize_capture(&loaded.body)
+                .map_err(|_| CoverageFailure {
+                    range: None,
+                    reason: coverage::CoverageFailureReason::Reader,
+                })?;
+            let et = crate::services::session_chain_archive::et_date_from_as_of(wire.as_of).ok_or(
+                CoverageFailure {
+                    range: None,
+                    reason: coverage::CoverageFailureReason::Reader,
+                },
+            )?;
+            if wire.symbol != meta.symbol
+                || et.to_string() != meta.et_date
+                || wire.as_of != meta.source_as_of
+            {
+                return Err(CoverageFailure {
+                    range: None,
+                    reason: coverage::CoverageFailureReason::Reader,
+                });
+            }
+            Ok(coverage::StrictBook {
+                symbol: wire.symbol,
+                et_date: meta.et_date.clone(),
+                source_as_of: wire.as_of,
+            })
+        })
+    }
+}
 
 /// Process-wide state shared by all HTTP handlers.
 #[derive(Clone)]
@@ -63,6 +290,7 @@ pub struct AppState {
     pub ensure_wake: EnsureWake,
     /// `(T, D)` singleflight + Massive spacing for the ensure worker.
     pub ensure_gate: Arc<EnsureGate>,
+    pub archive_coverage: ArchiveCoverageRuntime,
     /// Shared Postgres pool when durable stores are postgres-backed (book sync, etc.).
     #[cfg(feature = "postgres")]
     pub pg: Option<crate::db::postgres::Pg>,
@@ -340,6 +568,7 @@ impl AppState {
             ));
         }
 
+        let archive_coverage = ArchiveCoverageRuntime::production()?;
         Ok(Self {
             config: Arc::new(config),
             prices,
@@ -361,6 +590,7 @@ impl AppState {
             session_archive,
             ensure_wake: EnsureWake::default(),
             ensure_gate: Arc::new(EnsureGate::new()),
+            archive_coverage,
             #[cfg(feature = "postgres")]
             pg,
         })
@@ -459,6 +689,7 @@ impl AppState {
             session_archive,
             ensure_wake: EnsureWake::default(),
             ensure_gate: Arc::new(EnsureGate::new()),
+            archive_coverage: ArchiveCoverageRuntime::production()?,
             #[cfg(feature = "postgres")]
             pg: None,
         })

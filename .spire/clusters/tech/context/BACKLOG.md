@@ -47,8 +47,18 @@ corpus, then we measure it; do **not** buy hist-chain to paper over prune.
 | 5 | `session-corpus-wait` — 4–6 ET weeks of archived session books before a real time-split | wait / gate, not a build | **clock started 2026-08-20** |
 | 6 | `ai-rec-lab-p4` — frozen AI export packs / multi-model lab | pipeline feature (later) | blocked-on boring P2–P3 + #5 |
 | 7 | `chain-archive-object-store` — session bodies off app-Postgres BYTEA | pipeline feature (later) | **SHIPPED 2026-08-20** |
+| 8 | `archive-coverage-guardrails` — detect missing/unreadable daily books without paid monitoring | backend/ops feature | **SHIPPED + ARCHIVED 2026-08-26** |
 
 Do **not** bundle remaining items into one BRIEF. Do **not** start P7 vendor hist-chain.
+
+## Last GATE I — 2026-08-26 (`archive-coverage-guardrails`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Production audit found 7/9 expected live SPY/QQQ/IWM books readable; SPY August 24–25 are exact,
+unrecoverable gaps caused by archive body permission failures. **Chosen →
+`archive-coverage-guardrails`**: read-only coverage metrics, deduplicated post-checkpoint warnings,
+a zero-vendor failing audit command, and Railway volume thresholds. Backend/ops only;
+`NO_UI_CHANGE`, no paid monitoring, no score/fingerprint/vendor-fetch change. Broader telemetry,
+remote body storage, and partial reconstruction remain separate.
 
 ## Program — production-maturity (owner-directed 2026-08-21)
 <!-- atlas: theme=the-machine horizon=now -->

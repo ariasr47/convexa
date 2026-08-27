@@ -186,6 +186,9 @@ jobs:
       - name: Cargo test
         run: cargo test -p api-rust -p quant-engine --locked
 
+      - name: Free default-feature debug build space
+        run: cargo clean
+
       - name: Production runtime guardrails (postgres)
         run: cargo test -p api-rust --features postgres --test production_runtime_guardrails_postgres --locked -- --nocapture
         env:

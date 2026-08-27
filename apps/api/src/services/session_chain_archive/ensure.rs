@@ -2,6 +2,7 @@
 
 use super::archive::archive_session_best_effort;
 use super::et_date::et_date_from_as_of;
+use super::market_calendar::{CalendarError, CoverageError, MarketCalendar};
 use super::store::SessionChainArchive;
 use crate::services::chain_snapshot::wire::{deserialize_capture, serialize_capture, to_wire};
 use crate::services::chain_snapshot::{capture_into, ChainSnapshotStore};
@@ -130,7 +131,7 @@ pub fn should_wake_ensure(sym: &str) -> bool {
     is_ensure_symbol(sym)
 }
 
-/// Same weekday rule as `MarketPhase::classify` (Mon=0…Sun=6; weekend ≥ 5).
+/// Legacy weekday projection retained for callers; calendar-backed eligibility is authoritative.
 pub fn is_et_weekday(now: DateTime<Utc>) -> bool {
     let et = now.with_timezone(&New_York);
     et.weekday().num_days_from_monday() < 5
@@ -141,6 +142,20 @@ pub fn today_et_date(now: DateTime<Utc>) -> String {
     format!("{:04}-{:02}-{:02}", et.year(), et.month(), et.day())
 }
 
+pub fn ensure_eligible_with_calendar(
+    symbol: &str,
+    now: DateTime<Utc>,
+    archive_enabled: bool,
+    calendar: &MarketCalendar,
+) -> Result<bool, CoverageError> {
+    let et_date = now.with_timezone(&New_York).date_naive();
+    calendar
+        .is_eligible(et_date)
+        .map(|eligible| is_ensure_symbol(symbol) && archive_enabled && eligible)
+        .map_err(|e| CalendarError(e.to_string()))
+}
+
+/// Compatibility seam for existing callers; new producer code must use the shared calendar.
 pub fn ensure_eligible(symbol: &str, now: DateTime<Utc>, archive_enabled: bool) -> bool {
     is_ensure_symbol(symbol) && is_et_weekday(now) && archive_enabled
 }
@@ -445,11 +460,12 @@ mod tests {
     #[test]
     fn eligibility_requires_trio_weekday_and_archive_enabled() {
         let mon = Utc.with_ymd_and_hms(2026, 8, 10, 14, 0, 0).unwrap();
-        assert!(ensure_eligible("SPY", mon, true));
-        assert!(!ensure_eligible("SPY", mon, false));
-        assert!(!ensure_eligible("TSLA", mon, true));
+        let calendar = MarketCalendar::production().unwrap();
+        assert!(ensure_eligible_with_calendar("SPY", mon, true, &calendar).unwrap());
+        assert!(!ensure_eligible_with_calendar("SPY", mon, false, &calendar).unwrap());
+        assert!(!ensure_eligible_with_calendar("TSLA", mon, true, &calendar).unwrap());
         let sat = Utc.with_ymd_and_hms(2026, 8, 8, 15, 0, 0).unwrap();
-        assert!(!ensure_eligible("SPY", sat, true));
+        assert!(!ensure_eligible_with_calendar("SPY", sat, true, &calendar).unwrap());
     }
 
     #[test]

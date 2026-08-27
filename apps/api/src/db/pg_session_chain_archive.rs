@@ -75,6 +75,54 @@ impl PgSessionChainArchive {
         Ok(row.is_some())
     }
 
+    pub async fn metadata(
+        &self,
+        symbol: &str,
+        et_date: &str,
+    ) -> AppResult<Option<SessionBookMeta>> {
+        let row = sqlx::query(
+            r#"SELECT symbol, et_date, source_as_of, source
+               FROM session_chain_archive WHERE symbol = $1 AND et_date = $2"#,
+        )
+        .bind(symbol)
+        .bind(et_date)
+        .fetch_optional(&self.pg.pool)
+        .await
+        .map_err(|e| AppError::Config(format!("session_chain_archive metadata: {e}")))?;
+        let Some(r) = row else {
+            return Ok(None);
+        };
+        let source_as_of_s: String = r
+            .try_get("source_as_of")
+            .map_err(|e| AppError::Config(format!("session_chain_archive source_as_of: {e}")))?;
+        let source_as_of = parse_as_of(&source_as_of_s)
+            .map_err(|e| AppError::Config(format!("session_chain_archive source_as_of: {e}")))?;
+        let source_s: String = r
+            .try_get("source")
+            .map_err(|e| AppError::Config(format!("session_chain_archive source: {e}")))?;
+        let source = match source_s.as_str() {
+            "live_massive" => MarketDataSourceKind::LiveMassive,
+            "fixture" => MarketDataSourceKind::Fixture,
+            _ => {
+                return Err(AppError::Config(
+                    "session_chain_archive source is invalid".into(),
+                ))
+            }
+        };
+        let row_symbol: String = r
+            .try_get("symbol")
+            .map_err(|e| AppError::Config(format!("session_chain_archive symbol: {e}")))?;
+        let row_et_date: String = r
+            .try_get("et_date")
+            .map_err(|e| AppError::Config(format!("session_chain_archive et_date: {e}")))?;
+        Ok(Some(SessionBookMeta {
+            symbol: row_symbol,
+            et_date: row_et_date,
+            source_as_of,
+            source,
+        }))
+    }
+
     pub async fn list(
         &self,
         symbol: &str,

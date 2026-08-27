@@ -1,0 +1,23 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "PASS",
+  "mode": "live",
+  "source": ".spire/clusters/tech/contracts/archive-coverage-guardrails/INTERFACE_CONTRACT.md",
+  "base_url": "http://127.0.0.1:8000",
+  "auth": null,
+  "checked_at": "2026-08-27T02:12:23Z",
+  "summary": {
+    "pass": 1,
+    "fail": 0,
+    "total": 1
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/_metrics",
+      "verdict": "PASS",
+      "required_checked": 27,
+      "failures": []
+    }
+  ]
+}

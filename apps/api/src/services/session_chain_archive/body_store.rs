@@ -24,6 +24,18 @@ pub fn mint_body_locator(symbol: &str, et_date: &str, source_as_of_ns: i64) -> S
 }
 
 impl FsBodyStore {
+    /// Opens an already-existing body namespace without creating or changing it.
+    pub fn open_read_only(root: &Path) -> AppResult<Self> {
+        if root.as_os_str().is_empty() || !root.is_dir() {
+            return Err(AppError::Config(
+                "session archive body root unavailable".into(),
+            ));
+        }
+        Ok(Self {
+            root: root.to_path_buf(),
+        })
+    }
+
     /// Validate root is non-empty and usable. Creates `root` itself only after validation —
     /// never invents a different default path.
     pub fn open(root: &Path) -> AppResult<Self> {
@@ -120,6 +132,18 @@ mod tests {
     fn open_rejects_unusable_empty_root_without_create_dir_all_default() {
         let err = FsBodyStore::open(Path::new("")).unwrap_err();
         assert!(!err.to_string().is_empty());
+    }
+
+    #[test]
+    fn read_only_open_requires_existing_directory_without_creation() {
+        let root = std::env::temp_dir().join(format!(
+            "sca_read_only_absent_{}_{}",
+            std::process::id(),
+            Utc::now().timestamp_nanos_opt().unwrap_or(0)
+        ));
+        assert!(!root.exists());
+        assert!(FsBodyStore::open_read_only(&root).is_err());
+        assert!(!root.exists());
     }
 
     #[test]

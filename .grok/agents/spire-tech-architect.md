@@ -7,7 +7,7 @@ description: >-
   artifacts the synthesizer folds (writes no contract). Defining failure mode: asserting a
   mechanism you cannot name ('it will handle that' without the how).
 tools: Read, Grep, Glob, Write
-model: grok-4.5
+model: grok-4.6
 ---
 
 

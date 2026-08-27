@@ -56,12 +56,13 @@ shell command strings are excluded.
 
 ## 4. Kit methods
 
-The twenty-seven installed methods are `spire-tech-acceptance-criteria`, `spire-tech-adversarial-spec-review`,
+The twenty-nine installed methods are `spire-tech-acceptance-criteria`, `spire-tech-adversarial-spec-review`,
 `spire-tech-code-review`, `spire-tech-component-states`, `spire-tech-conformance-receipt`,
 `spire-tech-contract-consume`, `spire-tech-council-critique`, `spire-tech-debugging`,
 `spire-tech-design-review`, `spire-tech-flow-integration-tests`, `spire-tech-frontend-patterns`,
 `spire-tech-independent-conformance`, `spire-tech-interface-conformance`, `spire-tech-invariant-honor`,
 `spire-tech-lane-refusal`, `spire-tech-mechanism-claims`, `spire-tech-microcopy-integrity`,
+`spire-tech-next-best-practices`, `spire-tech-next-cache-components`,
 `spire-tech-react-a11y`, `spire-tech-react-async-data`, `spire-tech-react-composition`,
 `spire-tech-react-performance`, `spire-tech-react-server-client`, `spire-tech-react-testing`,
 `spire-tech-risk-based-verify`, `spire-tech-runtime-observation`, `spire-tech-tdd`, and
