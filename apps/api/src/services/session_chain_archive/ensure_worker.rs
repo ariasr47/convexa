@@ -120,7 +120,8 @@ pub(crate) async fn run_ensure_pass_at<F, Fut>(
     .await;
 }
 
-pub(crate) async fn run_ensure_pass_at_with_calendar<F, Fut>(
+#[doc(hidden)]
+pub async fn run_ensure_pass_at_with_calendar<F, Fut>(
     archive: &SessionChainArchive,
     ring: &ChainSnapshotStore,
     gate: &EnsureGate,

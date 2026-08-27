@@ -19,7 +19,7 @@ pub use ensure::{
     is_et_weekday, maybe_wake, should_wake_ensure, today_et_date, EnsureForceError, EnsureGate,
     EnsureOutcome, EnsureWake, ENSURE_SYMBOLS, MASSIVE_RETRY_SPACING_SECS,
 };
-pub use ensure_worker::run_ensure_pass;
+pub use ensure_worker::{run_ensure_pass, run_ensure_pass_at_with_calendar};
 pub use et_date::{et_date_from_as_of, parse_et_date};
 pub use market_calendar::{CoverageError, CoveragePolicy, MarketCalendar};
 pub use store::{

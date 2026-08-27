@@ -1,12 +1,18 @@
 //! Runtime guardrail flow coverage over state and HTTP boundaries.
 use api_rust::server::production_router;
-use api_rust::services::session_chain_archive::{run_ensure_pass, CoveragePolicy, MarketCalendar};
+use api_rust::services::chain_snapshot::ChainSnapshotStore;
+use api_rust::services::session_chain_archive::{
+    run_ensure_pass, run_ensure_pass_at_with_calendar, CoveragePolicy, EnsureGate, MarketCalendar,
+    SessionChainArchive,
+};
 use api_rust::state::{AppState, ArchiveWriteTelemetry};
 use axum::body::{to_bytes, Body};
 use axum::http::{header, Request, StatusCode};
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use chrono::{NaiveDate, TimeZone};
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::time::Duration;
 use tower::ServiceExt;
 
 async fn state() -> AppState {
@@ -53,10 +59,66 @@ fn valid_policy_and_calendar_allow_historical_gaps() {
 
 #[tokio::test]
 async fn ensure_pass_completes_before_snapshot_is_published() {
+    let source = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/services/session_chain_archive/ensure_worker.rs"
+    ))
+    .unwrap();
+    let ensure = source.find("run_ensure_pass_at_with_calendar(").unwrap();
+    let evaluate = source[ensure..]
+        .find("archive_coverage\n        .evaluate")
+        .unwrap()
+        + ensure;
+    assert!(
+        ensure < evaluate,
+        "production ensure must complete before evaluation"
+    );
     let state = state().await;
-    assert!(state.archive_coverage.snapshot().await.is_none());
     run_ensure_pass(&state).await;
     assert!(state.archive_coverage.snapshot().await.is_some());
+}
+
+#[tokio::test]
+async fn exact_2026_09_07_holiday_skips_ensure_archive_and_warning_identity() {
+    let archive = SessionChainArchive::memory();
+    let ring = ChainSnapshotStore::memory();
+    let gate = EnsureGate::new();
+    let calendar = MarketCalendar::production().unwrap();
+    let holiday = chrono::Utc.with_ymd_and_hms(2026, 9, 7, 15, 0, 0).unwrap();
+    let calls = AtomicU32::new(0);
+    run_ensure_pass_at_with_calendar(
+        &archive,
+        &ring,
+        &gate,
+        holiday,
+        holiday.timestamp() as u64,
+        true,
+        true,
+        true,
+        Duration::from_secs(60),
+        48,
+        &calendar,
+        |_symbol| {
+            calls.fetch_add(1, Ordering::SeqCst);
+            async { unreachable!("holiday") }
+        },
+    )
+    .await;
+    assert!(!calendar.is_eligible(holiday.date_naive()).unwrap());
+    assert_eq!(calls.load(Ordering::SeqCst), 0);
+    for symbol in ["SPY", "QQQ", "IWM"] {
+        assert!(archive
+            .list(symbol, None)
+            .await
+            .unwrap()
+            .iter()
+            .all(|row| row.et_date != "2026-09-07"));
+    }
+    let runtime = api_rust::state::ArchiveCoverageRuntime::production().unwrap();
+    let rows = runtime.evaluate(&archive, holiday).await.unwrap();
+    assert!(rows
+        .iter()
+        .all(|(_, date, _)| *date != NaiveDate::from_ymd_opt(2026, 9, 7).unwrap()));
 }
 
 #[tokio::test]
