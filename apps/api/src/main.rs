@@ -349,7 +349,9 @@ async fn main() -> ExitCode {
     match run(cli).await {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("error: {e:#}");
+            if !e.to_string().starts_with("__SILENT_CLI__") {
+                eprintln!("error: {e:#}");
+            }
             ExitCode::from(1)
         }
     }
@@ -589,27 +591,16 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
         }
         Commands::ArchiveCoverageAudit { from, to } => {
             let cfg = Config::from_env()?;
-            let reader =
-                api_rust::services::session_chain_archive::audit::open_configured(&cfg).await?;
-            let calendar = api_rust::services::session_chain_archive::MarketCalendar::production()
-                .map_err(|e| anyhow::anyhow!(e.to_string()))?;
-            let policy = api_rust::services::session_chain_archive::CoveragePolicy::production()
-                .map_err(|e| anyhow::anyhow!(e.to_string()))?;
-            let from = chrono::NaiveDate::parse_from_str(&from, "%Y-%m-%d")
-                .map_err(|_| anyhow::anyhow!("invalid --from date"))?;
-            let to = chrono::NaiveDate::parse_from_str(&to, "%Y-%m-%d")
-                .map_err(|_| anyhow::anyhow!("invalid --to date"))?;
-            let result = api_rust::services::session_chain_archive::audit::run_audit(
-                &reader,
-                &calendar,
-                &policy,
-                api_rust::services::session_chain_archive::audit::AuditRequest { from, to },
+            let result = api_rust::services::session_chain_archive::audit::run_configured(
+                &cfg,
+                &from,
+                &to,
                 chrono::Utc::now(),
             )
             .await;
             print!("{}\n", result.text);
             if result.exit != ExitCode::SUCCESS {
-                anyhow::bail!("archive coverage audit failed");
+                anyhow::bail!("__SILENT_CLI__ archive coverage audit failed");
             }
         }
         #[cfg(feature = "postgres")]

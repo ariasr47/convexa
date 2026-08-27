@@ -651,14 +651,17 @@ async fn coverage_wire(state: &AppState) -> SessionArchiveCoverageWire {
             known_range,
             reason,
             evaluated_at,
-        } => (
-            last_good,
-            "stale",
-            Some(reason.reason.to_string()),
-            true,
-            known_range,
-            Some(evaluated_at),
-        ),
+        } => {
+            let range = last_good.as_ref().map(|e| e.range.clone()).or(known_range);
+            (
+                last_good,
+                "stale",
+                Some(reason.reason.to_string()),
+                true,
+                range,
+                Some(evaluated_at),
+            )
+        }
     };
     out.status = status.into();
     out.status_detail = detail;

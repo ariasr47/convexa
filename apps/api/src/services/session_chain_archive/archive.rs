@@ -39,7 +39,8 @@ pub async fn archive_session_best_effort_observed(
             if let Some(t) = telemetry {
                 t.record_failure(&wire.symbol);
             }
-            warn!(error = %e, symbol = %wire.symbol, "session archive write skipped — trader path unchanged");
+            let _ = e;
+            warn!(error_class = "archive_insert_failed", symbol = %wire.symbol, "session archive write skipped — trader path unchanged");
         }
     }
 }

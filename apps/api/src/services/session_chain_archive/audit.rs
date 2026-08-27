@@ -145,6 +145,44 @@ pub struct AuditResult {
     pub exit: ExitCode,
 }
 
+/// CLI-facing configured audit. All malformed/configuration/reader failures use the same
+/// single terminal ERROR line as an evaluated audit; no caller needs to inspect internals.
+pub async fn run_configured(
+    config: &Config,
+    from: &str,
+    to: &str,
+    now_utc: DateTime<Utc>,
+) -> AuditResult {
+    let from = match NaiveDate::parse_from_str(from, "%Y-%m-%d") {
+        Ok(v) => v,
+        Err(_) => return error_result("invalid --from date; expected YYYY-MM-DD"),
+    };
+    let to = match NaiveDate::parse_from_str(to, "%Y-%m-%d") {
+        Ok(v) => v,
+        Err(_) => return error_result("invalid --to date; expected YYYY-MM-DD"),
+    };
+    let reader = match open_configured(config).await {
+        Ok(v) => v,
+        Err(_) => return error_result("configured archive storage is unavailable"),
+    };
+    let calendar = match MarketCalendar::production() {
+        Ok(v) => v,
+        Err(_) => return error_result("production calendar configuration is invalid"),
+    };
+    let policy = match CoveragePolicy::production() {
+        Ok(v) => v,
+        Err(_) => return error_result("production coverage policy configuration is invalid"),
+    };
+    run_audit(
+        &reader,
+        &calendar,
+        &policy,
+        AuditRequest { from, to },
+        now_utc,
+    )
+    .await
+}
+
 pub async fn run_audit<R: LiveArchiveRead>(
     reader: &R,
     calendar: &MarketCalendar,

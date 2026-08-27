@@ -121,7 +121,8 @@ impl ArchiveCoverageRuntime {
         archive: &SessionChainArchive,
         now: DateTime<Utc>,
     ) -> Result<Vec<(String, NaiveDate, BookCoverageStatus)>, CoverageFailure> {
-        let range = coverage::runtime_range(&self.calendar, &self.policy, now).ok();
+        let range_result = coverage::runtime_range(&self.calendar, &self.policy, now);
+        let range = range_result.as_ref().ok().cloned();
         let result = if let Some(range) = range.clone() {
             let mut cache = self.cache.lock().await;
             let reader = archive_reader(archive);
@@ -135,10 +136,7 @@ impl ArchiveCoverageRuntime {
             )
             .await
         } else {
-            Err(CoverageFailure {
-                range: None,
-                reason: coverage::CoverageFailureReason::Calendar,
-            })
+            Err(range_result.expect_err("missing runtime range failure"))
         };
         match result {
             Ok(evidence) => {
@@ -148,11 +146,10 @@ impl ArchiveCoverageRuntime {
                 let mut ledger = self.warnings.lock().await;
                 let mut rows = Vec::new();
                 for row in &evidence.books {
-                    if ledger.insert((row.symbol.clone(), row.et_date))
-                        && matches!(
-                            row.status,
-                            BookCoverageStatus::Missing | BookCoverageStatus::Unreadable
-                        )
+                    if matches!(
+                        row.status,
+                        BookCoverageStatus::Missing | BookCoverageStatus::Unreadable
+                    ) && ledger.insert((row.symbol.clone(), row.et_date))
                     {
                         rows.push((row.symbol.clone(), row.et_date, row.status));
                     }
