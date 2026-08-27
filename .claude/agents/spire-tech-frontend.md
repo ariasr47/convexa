@@ -31,6 +31,10 @@ Lane (hard):
 - Do NOT touch server internals or math (`project.json` → `backend.dir`), or any contract. If a needed
   field is missing from the interface, flag it for a GATE Z amendment — do not invent it. (Lane
   separation is mechanically reinforced by the project's module-boundary tooling where one is configured.)
+- **Work scope (when the launch prompt names a Task + Paths from `PLAN.md` `## Independence`):**
+  write only those paths (plus colocated tests). Do not run the full visual/serve closer pass
+  unless this spawn is the frontend closer. Checkpoint to
+  `.spire/clusters/tech/contracts/{FEATURE}/RESUME-{Task}.md`, not `RESUME.md`.
 - **Tests are part of the deliverable (required for every feature).** Use the project's configured
   component-test stack and run it via `project.json` → `frontend.test_cmd` (plus any shared-lib test
   command if you touched a shared client lib); make it GREEN before reporting done. Colocate tests with
@@ -58,7 +62,8 @@ measured lane that ran to ~600k shipped fidelity misses (approved §4 copy prese
 from the render). When you approach that depth — a long session of many dozens of tool calls, or
 when the harness warns about context — **checkpoint instead of pushing on**: bring the work to a
 clean boundary (tests green or the failing test named), write
-`.spire/clusters/tech/contracts/{FEATURE}/RESUME.md` (≤150 lines, `**Resume status:** ACTIVE`; done /
+`.spire/clusters/tech/contracts/{FEATURE}/RESUME.md` (or `RESUME-{Task}.md` when this spawn has a
+Work scope; ≤150 lines, `**Resume status:** ACTIVE`; done /
 in-progress + exactly where stopped / next concrete step / gotchas), then END YOUR TURN stating a
 fresh lane must continue from that resume. Late-session work you cannot re-verify is bounce fodder;
 a fresh context re-reading SPEC §4 is cheap (measured: a fresh spawn costs cents).
@@ -81,6 +86,10 @@ Skills (invoke by trigger — not as one bundle):
   selectors from the rendered state, keep server lifecycle outside the script, run headless.
 - **Only when the stack is React/Next:** `spire-tech-frontend-patterns` for general React attention
   order — never brand authority and never above the project's own canon.
+- **Only when the stack is Next:** `spire-tech-next-best-practices` for version-matched Next
+  conventions via bundled docs / the Next-managed `AGENTS.md` block — never a forked rule table.
+- **Only when the stack is Next and Cache Components, instant navigation, or `"use cache"`:**
+  `spire-tech-next-cache-components`.
 - **Only when React/Next and redesigning component APIs:** `spire-tech-react-composition`.
 - **Only when React/Next and data/fetch/waterfall work:** `spire-tech-react-async-data`.
 - **Only when React/Next with RSC/SSR/server actions:** `spire-tech-react-server-client` (skip pure CSR).

@@ -35,7 +35,7 @@ const HANDOVER_STATUS_RE =
   /^\*\*(?:Continuity status|Handover status|Status):?\*\*:?\s*(LIVE|SUPERSEDED|CONSUMED)\b/im;
 const RESUME_STATUS_RE =
   /^\*\*(?:Resume status|Status):?\*\*:?\s*(ACTIVE|CONSUMED)\b/im;
-const HANDOVER_NAME_RE = /^(?:HANDOVER|handover)(?:-(\d{4}-\d{2}-\d{2}))?(?:\.md)?$/i;
+const HANDOVER_NAME_RE = /^(?:HANDOVER|handover)(?:-(\d{4}-\d{2}-\d{2})(?:-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)?)?(?:\.md)?$/i;
 
 /**
  * @param {string} name
@@ -46,9 +46,6 @@ export function classifyName(name) {
   if (/^RESUME\.md$/i.test(base)) return { kind: 'resume' };
   const m = base.match(HANDOVER_NAME_RE);
   if (m) return { kind: 'handover', date: m[1] ?? null };
-  // HANDOVER- plus ISO date filename (any parent directory)
-  const m2 = base.match(/^HANDOVER-(\d{4}-\d{2}-\d{2})\.md$/i);
-  if (m2) return { kind: 'handover', date: m2[1] };
   return null;
 }
 

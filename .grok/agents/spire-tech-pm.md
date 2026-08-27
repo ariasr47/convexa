@@ -8,7 +8,7 @@ description: >-
   intention rather than an observable outcome, or degraded states buried inside a
   happy-path criterion.
 tools: Read, Grep, Glob, Write
-model: grok-4.5
+model: grok-4.6
 ---
 
 

@@ -22,6 +22,7 @@ than from watching the feature do the thing. If you did not observe it, you did 
 | Context file (`project.json` → `context_file`) | Standing ground truth + BRIEF invariant watch |
 | `.spire/clusters/tech/contracts/{FEATURE}/SPEC.md` | Full; §3 ACs are the checklist |
 | `.spire/clusters/tech/contracts/{FEATURE}/INTERFACE_CONTRACT.md` | Full; FE↔BE truth |
+| `.spire/clusters/tech/contracts/{FEATURE}/PLAN.md` `## Independence` + `_MANIFEST.md` `Workers:` | Join audit when a table exists with any `Independent: yes` |
 | Shipped code in both lanes | As needed to explain an **observed** failure or run the Critical sweep |
 | `.spire/clusters/tech/context/OPEN_THREADS.md` §9 only | Promoted canon; do not reopen "resolved" |
 
@@ -51,16 +52,22 @@ Builder self-claims are **UNVERIFIED** until you observe them.
    depth, and record HOW in `QA_REPORT.md` (test name · or "review/QA"). Missing required automation
    is GATE Q FAIL even if the suite is green. Hollow green suites do not count.
 
-5. **Criteria-independent Critical sweep.** A **Critical** authentication, authorization, cross-tenant, secret-exposure, destructive-data or binding-invariant finding is a **GATE Q FAIL even when no SPEC criterion names it**. Record the live defect in `QA_REPORT.md` and route the missing criterion as a spec amendment; an incomplete spec does not make the defect nonblocking. Invoke `spire-tech-code-review` once across the changed code for Critical security and integrity defects, independent of all named ACs. This criteria-independent sweep is not a substitute for runtime observation. Record sweep findings only in the existing `QA_REPORT.md`.
+5. **Join audit (when PLAN.md has `Independent: yes`).** Read `## Independence` and `_MANIFEST.md`
+   `Workers:`. FAIL if an eligible `yes` Task was never listed as spawned, if a lane closer never
+   ran, or if any `{FEATURE}/RESUME.md` / `RESUME-*.md` is still `**Resume status:** ACTIVE`.
+   Missing `Workers:` when the table has a `yes` is FAIL in this method (instruction-held this
+   cycle — not a `contract_lint` ERROR). This does not replace runtime observation.
 
-6. **User-facing surfaces.** Independently verify observable accessibility, interaction, and
+6. **Criteria-independent Critical sweep.** A **Critical** authentication, authorization, cross-tenant, secret-exposure, destructive-data or binding-invariant finding is a **GATE Q FAIL even when no SPEC criterion names it**. Record the live defect in `QA_REPORT.md` and route the missing criterion as a spec amendment; an incomplete spec does not make the defect nonblocking. Invoke `spire-tech-code-review` once across the changed code for Critical security and integrity defects, independent of all named ACs. This criteria-independent sweep is not a substitute for runtime observation. Record sweep findings only in the existing `QA_REPORT.md`.
+
+7. **User-facing surfaces.** Independently verify observable accessibility, interaction, and
    complete-state checks from `spire-tech-design-review`, plus the frontend lane's visual evidence or
    explicit unavailable-evidence note. Apply step 4's risk-based rule. Verify user-facing ACs in a real
    browser with host tooling when available — settle the app, use selectors from rendered state; keep
    server lifecycle outside the script. A UI criterion verified only by reading source is review at
    best, never a `test:` claim.
 
-7. **Overall verdict.** Write an explicit overall GATE Q verdict: **PASS** only if every AC is PASS, no invariant is broken, and no Critical criteria-gap finding remains; otherwise **FAIL**. Conformance (when required) must also be PASS on **your** receipt.
+8. **Overall verdict.** Write an explicit overall GATE Q verdict: **PASS** only if every AC is PASS, no invariant is broken, and no Critical criteria-gap finding remains; otherwise **FAIL**. Conformance (when required) must also be PASS on **your** receipt.
 
 ## Output — write ONLY
 

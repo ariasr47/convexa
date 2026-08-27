@@ -8,7 +8,7 @@ description: >-
   spire-tech-council-synthesizer by construction. Defining failure mode: agreeableness — a
   review that finds nothing without saying specifically what was checked.
 tools: Read, Grep, Glob, Write
-model: grok-build
+model: grok-4.5
 ---
 
 

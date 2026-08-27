@@ -8,7 +8,7 @@ description: >-
   the data does not support (a number with no vouched source, or a label that renames the
   value).
 tools: Read, Grep, Glob, Write
-model: grok-4.5
+model: grok-4.6
 ---
 
 

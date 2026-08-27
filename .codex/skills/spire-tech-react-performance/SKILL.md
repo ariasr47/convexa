@@ -1,11 +1,14 @@
 ---
 name: spire-tech-react-performance
-description: Use when the declared stack is React or Next and the goal is measured performance — bundle, hydration, re-renders, lists. Prefer this over spire-tech-react-async-data when the metric is client cost after data shape is fixed. Skip other stacks. Prefer measure-first over memo theater.
+description: Use when writing, reviewing, or refactoring React or Next.js code for measured performance — bundle size, hydration, re-renders, or long lists. Triggers on client-cost work after data shape is fixed. Skip non-React stacks.
+when-to-use: React performance, bundle size, hydration, re-renders, long lists, memo
 ---
 
 # React performance — measure then fix
 
-Own **performance craft** for React/Next with evidence-gated changes.
+Own **performance craft** for React/Next with evidence-gated changes. Prefer this over
+`spire-tech-react-async-data` when the metric is client cost after data shape is fixed. Prefer
+measure-first over memo theater.
 
 ## Critical procedure
 
