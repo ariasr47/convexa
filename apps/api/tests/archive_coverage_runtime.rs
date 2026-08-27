@@ -6,7 +6,7 @@ use axum::body::{to_bytes, Body};
 use axum::http::{header, Request, StatusCode};
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
-use chrono::NaiveDate;
+use chrono::{NaiveDate, TimeZone};
 use tower::ServiceExt;
 
 async fn state() -> AppState {
@@ -23,6 +23,22 @@ async fn text(response: axum::response::Response) -> String {
             .to_vec(),
     )
     .unwrap()
+}
+
+async fn metrics_json(state: AppState) -> serde_json::Value {
+    let app = production_router(state, vec![]).unwrap();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/api/_metrics")
+                .header("x-metrics-token", URL_SAFE_NO_PAD.encode([7_u8; 32]))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    serde_json::from_str(&text(response).await).unwrap()
 }
 
 #[test]
@@ -113,6 +129,64 @@ async fn metrics_requests_do_not_trigger_archive_or_vendor_work() {
         .await
         .unwrap()
         .is_empty());
+}
+
+#[tokio::test]
+async fn first_reader_failure_publishes_unavailable_with_known_range_and_null_counts() {
+    let state = state().await;
+    let disabled = api_rust::services::session_chain_archive::SessionChainArchive::disabled();
+    let now = chrono::Utc.with_ymd_and_hms(2026, 8, 26, 15, 0, 0).unwrap();
+    assert!(state
+        .archive_coverage
+        .evaluate(&disabled, now)
+        .await
+        .is_err());
+    let coverage = metrics_json(state).await["session_archive_coverage"].clone();
+    assert_eq!(coverage["status"], "unavailable");
+    assert!(coverage["range"]["start_et_date"].is_string());
+    assert!(coverage["range"]["end_et_date"].is_string());
+    for key in [
+        "expected",
+        "present",
+        "readable",
+        "missing",
+        "unreadable",
+        "not_due",
+    ] {
+        assert!(coverage["counts"][key].is_null());
+    }
+    assert!(coverage["books"].as_array().unwrap().is_empty());
+    assert!(!coverage["data_stale"].as_bool().unwrap());
+}
+
+#[tokio::test]
+async fn success_then_reader_failure_publishes_stale_last_good_matrix() {
+    let state = state().await;
+    let now = chrono::Utc.with_ymd_and_hms(2026, 8, 26, 15, 0, 0).unwrap();
+    let archive = api_rust::services::session_chain_archive::SessionChainArchive::memory();
+    state
+        .archive_coverage
+        .evaluate(&archive, now)
+        .await
+        .unwrap();
+    let before = metrics_json(state.clone()).await["session_archive_coverage"].clone();
+    let disabled = api_rust::services::session_chain_archive::SessionChainArchive::disabled();
+    let later = now + chrono::Duration::minutes(1);
+    assert!(state
+        .archive_coverage
+        .evaluate(&disabled, later)
+        .await
+        .is_err());
+    let after = metrics_json(state).await["session_archive_coverage"].clone();
+    assert_eq!(after["status"], "stale");
+    assert_eq!(after["range"], before["range"]);
+    assert_eq!(after["books"], before["books"]);
+    assert_eq!(after["counts"], before["counts"]);
+    assert_eq!(
+        after["last_verified_at_utc"],
+        before["last_verified_at_utc"]
+    );
+    assert_ne!(after["evaluated_at_et"], before["evaluated_at_et"]);
 }
 
 #[tokio::test]
