@@ -410,7 +410,7 @@ fn contract_metrics_response() -> Response {
             uptime_seconds: 0,
         },
         metrics_auth: "required".into(),
-        session_archive_coverage: empty_coverage_wire(),
+        session_archive_coverage: empty_coverage_wire(&CoveragePolicy::production().unwrap()),
     })
     .into_response()
 }
@@ -573,17 +573,10 @@ pub async fn cache_metrics(
     .into_response()
 }
 
-fn empty_coverage_wire() -> SessionArchiveCoverageWire {
-    let (activation, checkpoint, lookback) = CoveragePolicy::production()
-        .ok()
-        .map(|p| {
-            (
-                p.activation_et_date.to_string(),
-                p.checkpoint_et.format("%H:%M:%S").to_string(),
-                p.runtime_lookback_eligible_sessions,
-            )
-        })
-        .unwrap_or_else(|| ("2026-08-24".into(), "10:30:00".into(), 5));
+fn empty_coverage_wire(policy: &CoveragePolicy) -> SessionArchiveCoverageWire {
+    let activation = policy.activation_et_date.to_string();
+    let checkpoint = policy.checkpoint_et.format("%H:%M:%S").to_string();
+    let lookback = policy.runtime_lookback_eligible_sessions;
     SessionArchiveCoverageWire {
         status: "unavailable".into(),
         status_detail: Some("coverage evaluation has not completed".into()),
@@ -625,7 +618,7 @@ fn empty_coverage_wire() -> SessionArchiveCoverageWire {
 
 async fn coverage_wire(state: &AppState) -> SessionArchiveCoverageWire {
     use crate::state::CoverageRuntimeResult;
-    let mut out = empty_coverage_wire();
+    let mut out = empty_coverage_wire(state.archive_coverage.policy());
     out.observation.started_at_utc = state
         .archive_coverage
         .observation_started_at_utc()

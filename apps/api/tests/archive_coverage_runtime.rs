@@ -272,8 +272,10 @@ async fn metrics_snapshot_has_exact_coverage_shape() {
 #[tokio::test]
 async fn metrics_requests_do_not_trigger_archive_or_vendor_work() {
     let state = state().await;
+    run_ensure_pass(&state).await;
     let app = production_router(state.clone(), vec![]).unwrap();
     let vendor_before = state.massive.as_ref().unwrap().request_count();
+    let attempts_before = state.archive_coverage.evaluation_attempts();
     for _ in 0..3 {
         let response = app
             .clone()
@@ -293,6 +295,10 @@ async fn metrics_requests_do_not_trigger_archive_or_vendor_work() {
     assert_eq!(
         state.massive.as_ref().unwrap().request_count(),
         vendor_before
+    );
+    assert_eq!(
+        state.archive_coverage.evaluation_attempts(),
+        attempts_before
     );
     assert!(state
         .session_archive
@@ -395,10 +401,11 @@ async fn authorization_accepts_bearer_and_header_and_denies_without_coverage() {
             .body(Body::empty())
             .unwrap(),
     ] {
-        assert_eq!(
-            app.clone().oneshot(request).await.unwrap().status(),
-            StatusCode::OK
-        );
+        let response = app.clone().oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body: serde_json::Value = serde_json::from_str(&text(response).await).unwrap();
+        assert!(body["session_archive_coverage"].is_object());
+        assert!(body["session_archive_coverage"]["status"].is_string());
     }
 }
 
@@ -524,6 +531,37 @@ fn protected_trader_and_quant_modules_do_not_import_archive_coverage() {
             );
         }
     }
+}
+
+#[test]
+fn metrics_projection_source_rejects_request_time_work_poison() {
+    let source =
+        std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/src/routes/health.rs"))
+            .unwrap();
+    let start = source.find("pub async fn cache_metrics").unwrap();
+    let end = source[start..]
+        .find("pub(crate) fn metrics_token_ok")
+        .unwrap()
+        + start;
+    let body = &source[start..end];
+    for forbidden in [
+        ".metadata(",
+        ".load(",
+        ".evaluate(",
+        "run_ensure_pass",
+        "runtime_range(",
+        "fetch_vendor_bundle",
+    ] {
+        assert!(
+            !body.contains(forbidden),
+            "metrics projection contains forbidden token {forbidden}"
+        );
+    }
+    let poisoned = format!("{body}\narchive_coverage.metadata(\"SPY\");");
+    assert!(
+        poisoned.contains(".metadata("),
+        "poison helper must be rejected by the guard"
+    );
 }
 
 #[tokio::test]

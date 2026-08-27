@@ -85,6 +85,7 @@ pub struct ArchiveCoverageRuntime {
     last_good: Arc<RwLock<Option<CoverageEvidence>>>,
     cache: Arc<tokio::sync::Mutex<SuccessVerificationCache>>,
     warnings: Arc<tokio::sync::Mutex<std::collections::HashSet<(String, NaiveDate)>>>,
+    evaluation_attempts: Arc<AtomicU64>,
     pub writes: Arc<ArchiveWriteTelemetry>,
 }
 
@@ -104,6 +105,7 @@ impl ArchiveCoverageRuntime {
             last_good: Arc::new(RwLock::new(None)),
             cache: Arc::new(tokio::sync::Mutex::new(SuccessVerificationCache::new())),
             warnings: Arc::new(tokio::sync::Mutex::new(std::collections::HashSet::new())),
+            evaluation_attempts: Arc::new(AtomicU64::new(0)),
             writes: Arc::new(ArchiveWriteTelemetry::new()),
         }
     }
@@ -116,11 +118,16 @@ impl ArchiveCoverageRuntime {
     pub fn observation_started_at_utc(&self) -> DateTime<Utc> {
         self.writes.started_at_utc
     }
+    #[doc(hidden)]
+    pub fn evaluation_attempts(&self) -> u64 {
+        self.evaluation_attempts.load(Ordering::Relaxed)
+    }
     pub async fn evaluate(
         &self,
         archive: &SessionChainArchive,
         now: DateTime<Utc>,
     ) -> Result<Vec<(String, NaiveDate, BookCoverageStatus)>, CoverageFailure> {
+        self.evaluation_attempts.fetch_add(1, Ordering::Relaxed);
         let range_result = coverage::runtime_range(&self.calendar, &self.policy, now);
         let range = range_result.as_ref().ok().cloned();
         let result = if let Some(range) = range.clone() {
