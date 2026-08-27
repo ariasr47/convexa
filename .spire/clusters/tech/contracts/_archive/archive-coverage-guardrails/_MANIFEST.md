@@ -1,14 +1,14 @@
 # archive-coverage-guardrails — pipeline manifest
-Stage:        GATE Q — supplemental CI resource correction awaiting hosted proof
+Stage:        GATE S — shipped and archived after supplemental CI resource correction
 Repos:        backend
 Brief:        BRIEF.md present
 Contracts:
   - SPEC.md                    locked
   - INTERFACE_CONTRACT.md      locked
-Open amendments: GATE_Z_HOSTED_CI_DISK.md ACCEPTED; hosted rerun required
-QA (GATE Q):  QA_REPORT PASS; supplemental CI review 8 PASS / 0 FAIL / 1 UNVERIFIABLE (hosted proof pending)
+Open amendments: none; GATE_Z_HOSTED_CI_DISK.md satisfied by exact-SHA hosted rerun
+QA (GATE Q):  QA_REPORT PASS; supplemental CI review 10 PASS / 0 FAIL / 0 UNVERIFIABLE @ c88ddf10623c98e81e3584e4eb30363dae14ea73
 Workers:      backend=[B1-core-policy,B2-readonly-audit] closer=B4-backend-closer; frontend=[B5-typecheck-fixture] closer=B5-typecheck-fixture; ci=[B6-ci-runner-disk]
-Last gateway:  GATE Q supplemental review blocked only on fresh hosted backend evidence @ 2026-08-26
+Last gateway:  GATE S after supplemental QA PASS 10/10 and exact-SHA hosted CI success @ 2026-08-27 UTC
 Corrections:
   - B4 owns apps/api/src/routes/mod.rs only to register the approved metrics coverage DTO schemas for OpenAPI generation
   - B4 owns apps/api/tests/fixtures/capacity-baseline/v1/identity/manifest.json only to refresh deterministic generated API/client hashes; the reference revision and all ticker/SSE/decision oracle hashes remain locked
