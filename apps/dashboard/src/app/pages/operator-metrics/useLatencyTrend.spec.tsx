@@ -46,6 +46,51 @@ const aggregate = (): MetricsAggregate => ({
   window: { size_desc: '5m', uptime_seconds: 100, request_count: 7 },
   global: scopeData(),
   per_ticker: {},
+  session_archive_coverage: {
+    status: 'unavailable',
+    status_detail: 'Test fixture has no archive evidence',
+    data_stale: false,
+    activation_et_date: '2026-08-24',
+    checkpoint_et: '10:30:00 America/New_York',
+    lookback_eligible_sessions: 5,
+    evaluated_at_et: null,
+    last_verified_at_utc: null,
+    range: { start_et_date: null, end_et_date: null },
+    required_symbols: ['SPY', 'QQQ', 'IWM'],
+    counts: {
+      expected: null,
+      present: null,
+      readable: null,
+      missing: null,
+      unreadable: null,
+      not_due: null,
+    },
+    books: [],
+    per_symbol: [
+      {
+        symbol: 'SPY',
+        last_readable_et_date: null,
+        last_readable_source_as_of: null,
+        write_failures_since_observation: 0,
+      },
+      {
+        symbol: 'QQQ',
+        last_readable_et_date: null,
+        last_readable_source_as_of: null,
+        write_failures_since_observation: 0,
+      },
+      {
+        symbol: 'IWM',
+        last_readable_et_date: null,
+        last_readable_source_as_of: null,
+        write_failures_since_observation: 0,
+      },
+    ],
+    observation: {
+      started_at_utc: '2026-08-26T00:00:00Z',
+      write_failures_total: 0,
+    },
+  },
 });
 
 describe('useLatencyTrend', () => {
