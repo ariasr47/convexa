@@ -181,15 +181,9 @@ pub fn runtime_range(
     policy: &CoveragePolicy,
     now_utc: DateTime<Utc>,
 ) -> Result<CoverageRange, CoverageFailure> {
-    let end = now_utc.with_timezone(&New_York).date_naive();
-    if calendar.is_eligible(end).is_err() {
-        return Err(CoverageFailure {
-            range: None,
-            reason: CoverageFailureReason::Calendar,
-        });
-    }
+    let today = now_utc.with_timezone(&New_York).date_naive();
     let mut dates = Vec::new();
-    let mut d = end;
+    let mut d = today;
     loop {
         if d < policy.activation_et_date {
             break;
@@ -208,6 +202,7 @@ pub fn runtime_range(
             reason: CoverageFailureReason::InvalidRange,
         })?;
     }
+    let end = dates.first().copied().unwrap_or(policy.activation_et_date);
     let start = dates
         .last()
         .copied()
@@ -321,7 +316,7 @@ pub async fn evaluate<R: LiveArchiveRead>(
                                 symbol: symbol.into(),
                                 et_date: date,
                                 status: BookCoverageStatus::Unreadable,
-                                source_as_of: Some(m.source_as_of),
+                                source_as_of: None,
                             });
                         }
                     }
@@ -346,7 +341,10 @@ pub async fn evaluate<R: LiveArchiveRead>(
         let mut n = 0;
         while d <= selected.end {
             if d >= policy.activation_et_date
-                && calendar.is_eligible(d).unwrap_or(false)
+                && calendar.is_eligible(d).map_err(|_| CoverageFailure {
+                    range: Some(selected.clone()),
+                    reason: CoverageFailureReason::Calendar,
+                })?
                 && d == today
                 && now_utc.with_timezone(&New_York).time() < policy.checkpoint_et
             {
@@ -381,7 +379,38 @@ pub async fn evaluate<R: LiveArchiveRead>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::services::market_data::MarketDataSourceKind;
     use chrono::TimeZone;
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    };
+    struct Fake {
+        metadata: Arc<AtomicUsize>,
+        loads: Arc<AtomicUsize>,
+    }
+    impl LiveArchiveRead for Fake {
+        fn metadata<'a>(
+            &'a self,
+            _: &'a str,
+            _: NaiveDate,
+        ) -> BoxFuture<'a, Result<Option<SessionBookMeta>, CoverageFailure>> {
+            self.metadata.fetch_add(1, Ordering::SeqCst);
+            Box::pin(async { Ok(None) })
+        }
+        fn strict_load<'a>(
+            &'a self,
+            _: &'a SessionBookMeta,
+        ) -> BoxFuture<'a, Result<StrictBook, CoverageFailure>> {
+            self.loads.fetch_add(1, Ordering::SeqCst);
+            Box::pin(async {
+                Err(CoverageFailure {
+                    range: None,
+                    reason: CoverageFailureReason::Reader,
+                })
+            })
+        }
+    }
     #[test]
     fn symbols_are_closed() {
         assert_eq!(COVERAGE_SYMBOLS, ["SPY", "QQQ", "IWM"]);
@@ -426,5 +455,116 @@ mod tests {
         let r = runtime_range(&c, &p, now).unwrap();
         assert_eq!(r.start, NaiveDate::from_ymd_opt(2026, 8, 24).unwrap());
         assert_eq!(r.end, NaiveDate::from_ymd_opt(2026, 8, 26).unwrap());
+    }
+    #[tokio::test]
+    async fn before_checkpoint_is_not_due_and_does_not_read() {
+        let f = Fake {
+            metadata: Arc::new(AtomicUsize::new(0)),
+            loads: Arc::new(AtomicUsize::new(0)),
+        };
+        let c = MarketCalendar::production().unwrap();
+        let p = CoveragePolicy::production().unwrap();
+        let now = New_York
+            .with_ymd_and_hms(2026, 8, 26, 10, 0, 0)
+            .unwrap()
+            .with_timezone(&Utc);
+        let e = evaluate(
+            &f,
+            &c,
+            &p,
+            CoverageRange {
+                start: NaiveDate::from_ymd_opt(2026, 8, 26).unwrap(),
+                end: NaiveDate::from_ymd_opt(2026, 8, 26).unwrap(),
+            },
+            now,
+            &mut SuccessVerificationCache::new(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(e.counts.expected, 0);
+        assert_eq!(e.counts.not_due, 3);
+        assert_eq!(e.books.len(), 3);
+        assert_eq!(f.metadata.load(Ordering::SeqCst), 0);
+    }
+    #[test]
+    fn changed_source_timestamp_bypasses_cache_key() {
+        let mut c = SuccessVerificationCache::new();
+        let t = Utc.with_ymd_and_hms(2026, 8, 26, 12, 0, 0).unwrap();
+        let b = StrictBook {
+            symbol: "SPY".into(),
+            et_date: "2026-08-26".into(),
+            source_as_of: t,
+        };
+        c.insert(
+            (
+                "SPY".into(),
+                NaiveDate::from_ymd_opt(2026, 8, 26).unwrap(),
+                t,
+            ),
+            b,
+            t,
+        );
+        assert!(!c.entries.contains_key(&(
+            "SPY".into(),
+            NaiveDate::from_ymd_opt(2026, 8, 26).unwrap(),
+            t + chrono::Duration::seconds(1)
+        )));
+    }
+    #[test]
+    fn cache_evicts_oldest_at_capacity() {
+        let mut c = SuccessVerificationCache::new();
+        let t = Utc.with_ymd_and_hms(2026, 8, 1, 12, 0, 0).unwrap();
+        for i in 0..(MAX_SUCCESS_CACHE_ENTRIES + 1) {
+            let d = NaiveDate::from_ymd_opt(2026, 8, 1).unwrap() + chrono::Days::new(i as u64);
+            let b = StrictBook {
+                symbol: "SPY".into(),
+                et_date: d.to_string(),
+                source_as_of: t + chrono::Duration::milliseconds(i as i64),
+            };
+            c.insert(
+                ("SPY".into(), d, b.source_as_of),
+                b,
+                t + chrono::Duration::milliseconds(i as i64),
+            );
+        }
+        assert_eq!(c.entries.len(), MAX_SUCCESS_CACHE_ENTRIES);
+    }
+    #[test]
+    fn zero_expected_has_empty_books_and_null_last_readable() {
+        let c = MarketCalendar::production().unwrap();
+        let p = CoveragePolicy::production().unwrap();
+        let r = CoverageRange {
+            start: NaiveDate::from_ymd_opt(2026, 8, 22).unwrap(),
+            end: NaiveDate::from_ymd_opt(2026, 8, 23).unwrap(),
+        };
+        let f = Fake {
+            metadata: Arc::new(AtomicUsize::new(0)),
+            loads: Arc::new(AtomicUsize::new(0)),
+        };
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let e = rt
+            .block_on(evaluate(
+                &f,
+                &c,
+                &p,
+                r,
+                Utc.with_ymd_and_hms(2026, 8, 26, 18, 0, 0).unwrap(),
+                &mut SuccessVerificationCache::disabled(),
+            ))
+            .unwrap();
+        assert!(e.books.is_empty());
+        assert_eq!(e.counts, CoverageCounts::default());
+        assert_eq!(e.last_readable.len(), 3);
+        assert!(e.last_readable.iter().all(|x| x.et_date.is_none()));
+    }
+    #[test]
+    fn strict_book_identity_shape_is_explicit() {
+        let t = Utc.with_ymd_and_hms(2026, 8, 26, 12, 0, 0).unwrap();
+        let _ = SessionBookMeta {
+            symbol: "SPY".into(),
+            et_date: "2026-08-26".into(),
+            source_as_of: t,
+            source: MarketDataSourceKind::Fixture,
+        };
     }
 }

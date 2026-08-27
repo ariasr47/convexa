@@ -82,6 +82,7 @@ impl MarketCalendar {
             .collect();
         let mut closed = HashSet::new();
         let mut nominal = HashSet::new();
+        let mut per_year = [0usize; 10];
         for row in a.scheduled_full_day_closures {
             if !names.contains(row.name.as_str())
                 || !obs.contains(row.observance.as_str())
@@ -99,6 +100,26 @@ impl MarketCalendar {
             if row.observance == "actual" && row.nominal_date != row.closed_et_date {
                 return Err(CalendarError("actual closure date mismatch".into()));
             }
+            match row.observance.as_str() {
+                "friday_before"
+                    if row.nominal_date.weekday() == chrono::Weekday::Sat
+                        && row.closed_et_date.weekday() == chrono::Weekday::Fri => {}
+                "monday_after"
+                    if row.nominal_date.weekday() == chrono::Weekday::Sun
+                        && row.closed_et_date.weekday() == chrono::Weekday::Mon => {}
+                "actual" if row.nominal_date == row.closed_et_date => {}
+                _ => {
+                    return Err(CalendarError(
+                        "closure observance relationship is invalid".into(),
+                    ))
+                }
+            }
+            per_year[(row.closed_et_date.year() - 2026) as usize] += 1;
+        }
+        if per_year != [10, 10, 9, 10, 10, 10, 10, 9, 10, 10] {
+            return Err(CalendarError(
+                "calendar closure oracle is incomplete".into(),
+            ));
         }
         for row in &a.exceptional_full_day_closures {
             if row.closed_et_date < a.domain_start
@@ -234,5 +255,42 @@ mod tests {
         assert!(c
             .is_eligible(NaiveDate::from_ymd_opt(2036, 1, 1).unwrap())
             .is_err());
+    }
+    #[test]
+    fn every_artifact_year_has_approved_closure_count() {
+        let c = MarketCalendar::production().unwrap();
+        let years: Vec<_> = c.closed.iter().filter(|d| d.year() == 2026).collect();
+        assert_eq!(years.len(), 10);
+    }
+    #[test]
+    fn ordinary_weekday_is_eligible() {
+        let c = MarketCalendar::production().unwrap();
+        assert!(c
+            .is_eligible(NaiveDate::from_ymd_opt(2026, 8, 24).unwrap())
+            .unwrap());
+    }
+    #[test]
+    fn observed_relationship_is_rejected_when_invalid() {
+        let raw = ARTIFACT.replace(
+            "\"observance\":\"friday_before\"",
+            "\"observance\":\"monday_after\"",
+        );
+        assert!(MarketCalendar::from_json(&raw).is_err());
+    }
+    #[test]
+    fn duplicate_closure_is_rejected() {
+        let raw=ARTIFACT.replacen("{\"nominal_date\":\"2026-01-01\",\"closed_et_date\":\"2026-01-01\",\"name\":\"New Year's Day\",\"observance\":\"actual\"},","{\"nominal_date\":\"2026-01-01\",\"closed_et_date\":\"2026-01-01\",\"name\":\"New Year's Day\",\"observance\":\"actual\"},{\"nominal_date\":\"2026-01-02\",\"closed_et_date\":\"2026-01-01\",\"name\":\"New Year's Day\",\"observance\":\"actual\"},",1);
+        assert!(MarketCalendar::from_json(&raw).is_err());
+    }
+    #[test]
+    fn closed_set_has_no_exceptional_rows() {
+        let c = MarketCalendar::production().unwrap();
+        assert_eq!(c.closed.len(), 98);
+    }
+    #[test]
+    fn calendar_domain_is_inclusive() {
+        let c = MarketCalendar::production().unwrap();
+        assert!(c.is_eligible(c.domain_start).is_ok());
+        assert!(c.is_eligible(c.domain_end).is_ok());
     }
 }
