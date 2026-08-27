@@ -111,6 +111,61 @@ fn cli_malformed_date_has_one_bounded_error_terminal() {
     assert!(!stdout.contains("SESSION_CHAIN_ARCHIVE") && !stdout.contains("C:\\"));
 }
 
+#[test]
+fn cli_existing_and_absent_roots_have_single_bounded_outcomes() {
+    let base = std::env::temp_dir().join(format!("convexa-archive-cli-{}", std::process::id()));
+    let index = base.join("index");
+    let bodies = base.join("bodies");
+    let ring = base.join("ring");
+    let _ = std::fs::remove_dir_all(&base);
+    std::fs::create_dir_all(&index).unwrap();
+    std::fs::create_dir_all(&bodies).unwrap();
+    let run = |from: &str, to: &str, index_path: &std::path::Path, body_path: &std::path::Path| {
+        Command::new(env!("CARGO_BIN_EXE_api-rust"))
+            .args(["archive-coverage-audit", "--from", from, "--to", to])
+            .env("APP_ENV", "test")
+            .env("MASSIVE_API_KEY", "fixture")
+            .env("SESSION_CHAIN_ARCHIVE_ENABLED", "true")
+            .env("SESSION_CHAIN_ARCHIVE_STORE_PATH", index_path)
+            .env("SESSION_CHAIN_ARCHIVE_BODY_ROOT", body_path)
+            .env("CHAIN_SNAPSHOT_STORE_PATH", &ring)
+            .output()
+            .unwrap()
+    };
+    let weekend = run("2026-08-22", "2026-08-23", &index, &bodies);
+    assert!(weekend.status.success());
+    let weekend_out = String::from_utf8(weekend.stdout).unwrap();
+    assert!(weekend_out.ends_with("No books were expected in this window.\n"));
+    assert!(
+        !weekend_out.contains("PASS")
+            && !weekend_out.contains("FAIL")
+            && !weekend_out.contains("ERROR")
+    );
+    let due = run("2026-08-26", "2026-08-26", &index, &bodies);
+    assert!(!due.status.success());
+    let due_out = String::from_utf8(due.stdout).unwrap();
+    assert!(due_out.ends_with("FAIL — 3 missing and 0 unreadable expected books.\n"));
+    assert!(!String::from_utf8(due.stderr).unwrap().contains("error:"));
+    let absent = run(
+        "2026-08-26",
+        "2026-08-26",
+        &base.join("absent-index"),
+        &base.join("absent-bodies"),
+    );
+    assert!(!absent.status.success());
+    let absent_out = String::from_utf8(absent.stdout).unwrap();
+    assert_eq!(
+        absent_out
+            .matches("ERROR — archive coverage could not be checked:")
+            .count(),
+        1
+    );
+    assert!(!absent_out.contains("absent-index") && !absent_out.contains("SESSION_CHAIN_ARCHIVE"));
+    assert!(!String::from_utf8(absent.stderr).unwrap().contains("error:"));
+    assert!(index.is_dir() && bodies.is_dir());
+    let _ = std::fs::remove_dir_all(base);
+}
+
 #[tokio::test]
 async fn ensure_pass_completes_before_snapshot_is_published() {
     let source = std::fs::read_to_string(concat!(
@@ -469,6 +524,66 @@ fn protected_trader_and_quant_modules_do_not_import_archive_coverage() {
             );
         }
     }
+}
+
+#[tokio::test]
+async fn protected_projection_remains_byte_identical_across_coverage_states() {
+    let runtime = api_rust::state::ArchiveCoverageRuntime::production().unwrap();
+    let now = chrono::Utc.with_ymd_and_hms(2026, 8, 26, 15, 0, 0).unwrap();
+    let memory = SessionChainArchive::memory();
+    runtime.evaluate(&memory, now).await.unwrap();
+    let corrupt = SessionChainArchive::memory();
+    corrupt
+        .insert_if_absent(
+            "SPY",
+            "2026-08-26",
+            now,
+            MarketDataSourceKind::Fixture,
+            b"corrupt",
+        )
+        .await
+        .unwrap();
+    runtime
+        .evaluate(&corrupt, now + chrono::Duration::minutes(1))
+        .await
+        .unwrap();
+    let disabled = SessionChainArchive::disabled();
+    assert!(runtime
+        .evaluate(&disabled, now + chrono::Duration::minutes(2))
+        .await
+        .is_err());
+    let identity = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/capacity-baseline/v1/identity");
+    let relative = [
+        "before/decision.json",
+        "before/sse.json",
+        "before/ticker.json",
+        "inputs/spy.json",
+        "inputs/sse.json",
+        "manifest.json",
+        "reference-test-seam.patch",
+    ];
+    let originals: Vec<_> = relative
+        .iter()
+        .map(|p| {
+            let path = identity.join(p);
+            (path.clone(), std::fs::read(&path).unwrap())
+        })
+        .collect();
+    for (path, bytes) in &originals {
+        let normalized = String::from_utf8(bytes.clone())
+            .unwrap()
+            .replace("\r\n", "\n");
+        std::fs::write(path, normalized.as_bytes()).unwrap();
+    }
+    let result = api_rust::capacity::identity::run_control().await;
+    for (path, bytes) in originals {
+        std::fs::write(path, bytes).unwrap();
+    }
+    assert!(
+        result.is_ok(),
+        "coverage states must not alter protected capacity projections: {result:?}"
+    );
 }
 
 fn source_files(path: &std::path::Path) -> Vec<std::path::PathBuf> {
