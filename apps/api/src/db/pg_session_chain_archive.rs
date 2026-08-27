@@ -75,6 +75,42 @@ impl PgSessionChainArchive {
         Ok(row.is_some())
     }
 
+    pub async fn metadata(
+        &self,
+        symbol: &str,
+        et_date: &str,
+    ) -> AppResult<Option<SessionBookMeta>> {
+        let row = sqlx::query(
+            r#"SELECT symbol, et_date, source_as_of, source
+               FROM session_chain_archive WHERE symbol = $1 AND et_date = $2"#,
+        )
+        .bind(symbol)
+        .bind(et_date)
+        .fetch_optional(&self.pg.pool)
+        .await
+        .map_err(|e| AppError::Config(format!("session_chain_archive metadata: {e}")))?;
+        let Some(r) = row else {
+            return Ok(None);
+        };
+        let source_as_of_s: String = r.try_get("source_as_of").unwrap_or_default();
+        let source_as_of = parse_as_of(&source_as_of_s)
+            .map_err(|e| AppError::Config(format!("session_chain_archive source_as_of: {e}")))?;
+        let source = match r
+            .try_get::<String, _>("source")
+            .unwrap_or_default()
+            .as_str()
+        {
+            "live_massive" => MarketDataSourceKind::LiveMassive,
+            _ => MarketDataSourceKind::Fixture,
+        };
+        Ok(Some(SessionBookMeta {
+            symbol: r.try_get("symbol").unwrap_or_else(|_| symbol.to_string()),
+            et_date: r.try_get("et_date").unwrap_or_else(|_| et_date.to_string()),
+            source_as_of,
+            source,
+        }))
+    }
+
     pub async fn list(
         &self,
         symbol: &str,
