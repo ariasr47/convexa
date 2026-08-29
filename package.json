@@ -38,6 +38,8 @@
     "api:router-integration:compile-probe": "node tools/api-router-integration-compile-probe.mjs",
     "api:contract:generate": "node tools/api-contract.mjs generate",
     "api:contract:check": "node tools/api-contract.mjs check",
+    "capacity:load": "nx run api:capacity-load --skip-nx-cache",
+    "capacity:soak": "nx run api:capacity-soak --skip-nx-cache",
     "worktree:link": "node tools/link-workspace.mjs",
     "ci": "npm run api:contract:check && npm run ci:targets",
     "ci:targets": "npm run lint && npm run typecheck && npm run test && npm run build:targets && npm run check:bundle",

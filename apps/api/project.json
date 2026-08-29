@@ -47,6 +47,22 @@
         "cwd": "{workspaceRoot}"
       },
       "cache": false
+    },
+    "capacity-load": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cargo run -p api-rust --locked -- capacity load",
+        "cwd": "{workspaceRoot}"
+      },
+      "cache": false
+    },
+    "capacity-soak": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cargo run -p api-rust --locked -- capacity soak",
+        "cwd": "{workspaceRoot}"
+      },
+      "cache": false
     }
   }
 }
