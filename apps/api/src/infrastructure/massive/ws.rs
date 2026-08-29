@@ -9,6 +9,7 @@ use crate::error::{AppError, AppResult};
 use futures_util::{SinkExt, StreamExt};
 use serde_json::Value;
 use std::collections::HashSet;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::sync::{broadcast, mpsc, RwLock};
@@ -31,6 +32,9 @@ struct HubInner {
     /// Fan-out of all decoded events (subscribers filter by symbol).
     event_tx: broadcast::Sender<StreamEvent>,
     symbols: RwLock<HashSet<String>>,
+    /// Production hubs enqueue `HubCmd`; harness-only hubs update symbols only.
+    emit_hub_cmd: bool,
+    cmds_enqueued: AtomicU64,
 }
 
 enum HubCmd {
@@ -59,6 +63,8 @@ impl StockStreamHub {
             cmd_tx,
             event_tx: event_tx.clone(),
             symbols: RwLock::new(HashSet::new()),
+            emit_hub_cmd: true,
+            cmds_enqueued: AtomicU64::new(0),
         });
         (
             Self {
@@ -70,6 +76,32 @@ impl StockStreamHub {
                 event_tx,
             },
         )
+    }
+
+    /// Harness-only hub: symbol set updates without enqueueing vendor `HubCmd`.
+    /// No network worker; do not call `Config::from_env`.
+    pub fn harness_local() -> Self {
+        let (cmd_tx, _cmd_rx) = mpsc::unbounded_channel();
+        let (event_tx, _) = broadcast::channel(BROADCAST_CAPACITY);
+        Self {
+            inner: Arc::new(HubInner {
+                api_key: String::new(),
+                feed: DataFeed::Delayed,
+                cmd_tx,
+                event_tx,
+                symbols: RwLock::new(HashSet::new()),
+                emit_hub_cmd: false,
+                cmds_enqueued: AtomicU64::new(0),
+            }),
+        }
+    }
+
+    pub fn cmds_enqueued(&self) -> u64 {
+        self.inner.cmds_enqueued.load(Ordering::Relaxed)
+    }
+
+    pub fn publish_event(&self, ev: StreamEvent) {
+        let _ = self.inner.event_tx.send(ev);
     }
 
     /// Ensure `symbols` are on the shared socket.
@@ -90,10 +122,13 @@ impl StockStreamHub {
                 set.insert(s.clone());
             }
         }
-        self.inner
-            .cmd_tx
-            .send(HubCmd::Subscribe(up))
-            .map_err(|e| AppError::Massive(format!("hub cmd: {e}")))?;
+        if self.inner.emit_hub_cmd {
+            self.inner.cmds_enqueued.fetch_add(1, Ordering::Relaxed);
+            self.inner
+                .cmd_tx
+                .send(HubCmd::Subscribe(up))
+                .map_err(|e| AppError::Massive(format!("hub cmd: {e}")))?;
+        }
         Ok(())
     }
 
@@ -435,6 +470,7 @@ pub fn decode_event(item: &Value) -> Option<StreamEvent> {
 mod tests {
     use super::*;
     use serde_json::json;
+    use std::time::Duration;
 
     #[test]
     fn decode_trade() {
@@ -451,5 +487,45 @@ mod tests {
         let ev = decode_event(&v).unwrap();
         assert_eq!(ev.kind, StreamKind::Quote);
         assert!((ev.display_price().unwrap() - 400.05).abs() < 1e-9);
+    }
+
+    #[tokio::test]
+    async fn production_dormant_subscribe_still_enqueues_hubcmd() {
+        let cfg = crate::state::test_stub_config();
+        let (hub, _worker) = StockStreamHub::dormant(&cfg);
+        hub.subscribe(&["SPY".into()]).await.unwrap();
+        assert_eq!(hub.cmds_enqueued(), 1);
+        assert_eq!(hub.symbol_count().await, 1);
+    }
+
+    #[tokio::test]
+    async fn harness_local_subscribe_updates_symbols_and_does_not_enqueue() {
+        let hub = StockStreamHub::harness_local();
+        hub.subscribe(&["SPY".into()]).await.unwrap();
+        hub.subscribe(&["SPY".into(), "QQQ".into()]).await.unwrap();
+        assert_eq!(hub.symbol_count().await, 2);
+        assert_eq!(hub.cmds_enqueued(), 0);
+    }
+
+    #[tokio::test]
+    async fn harness_publish_reaches_subscribers() {
+        let hub = StockStreamHub::harness_local();
+        let mut rx = hub.subscribe_events();
+        hub.publish_event(crate::domain::StreamEvent {
+            symbol: "SPY".into(),
+            kind: crate::domain::StreamKind::Quote,
+            ts_ns: 1,
+            price: None,
+            size: None,
+            bid: Some(100.0),
+            ask: Some(100.02),
+            bid_size: None,
+            ask_size: None,
+        });
+        let ev = tokio::time::timeout(Duration::from_millis(200), rx.recv())
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(ev.symbol, "SPY");
     }
 }
