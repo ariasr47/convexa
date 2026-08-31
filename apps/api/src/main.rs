@@ -201,6 +201,46 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
+    /// Hermetic load/soak harness (not serve; not a research score lab).
+    Capacity {
+        #[command(subcommand)]
+        action: CapacityAction,
+        /// JSON receipt on stdout; standing prose + progress on stderr.
+        #[arg(long, global = true)]
+        json: bool,
+        #[arg(long, global = true)]
+        out: Option<PathBuf>,
+    },
+    /// Audit expected SPY/QQQ/IWM session-archive coverage for one ET date (read-only).
+    ArchiveCoverage {
+        /// Evaluated ET calendar date (YYYY-MM-DD). Omitted ⇒ today America/New_York.
+        #[arg(long = "et-date")]
+        et_date: Option<String>,
+    },
+    /// Research list/load of the session day tape (read-only; not a coverage pass).
+    SessionDayTape {
+        #[arg(long)]
+        symbol: Option<String>,
+        #[arg(long = "et-date")]
+        et_date: Option<String>,
+    },
+    /// Exclusive research playback construct (not serve; not a live Massive feed).
+    SessionDayReplay {
+        #[arg(long)]
+        symbol: String,
+        #[arg(long = "et-date")]
+        et_date: String,
+        #[arg(long)]
+        pace: Option<u32>,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum CapacityAction {
+    /// Short mocked-vendor load (CI + local).
+    Load,
+    /// 600s mocked-vendor soak (local + GATE Q; not default CI).
+    Soak,
 }
 
 #[derive(Subcommand, Debug)]
@@ -319,6 +359,24 @@ async fn main() -> ExitCode {
     if matches!(&cli.cmd, Commands::PostgresMigrate) {
         return api_rust::db::postgres_migrate_cli().await;
     }
+    // Capacity returns ExitCode directly so FAIL verdicts are not wrapped as `error: …`.
+    if let Commands::Capacity { action, json, out } = cli.cmd {
+        return cmd_capacity(action, json, out).await;
+    }
+    if let Commands::ArchiveCoverage { et_date } = cli.cmd {
+        return cmd_archive_coverage(et_date).await;
+    }
+    if let Commands::SessionDayTape { symbol, et_date } = cli.cmd {
+        return cmd_session_day_tape(symbol, et_date).await;
+    }
+    if let Commands::SessionDayReplay {
+        symbol,
+        et_date,
+        pace,
+    } = cli.cmd
+    {
+        return cmd_session_day_replay(symbol, et_date, pace).await;
+    }
     match run(cli).await {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
@@ -402,6 +460,10 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
                 session_chain_archive_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                     .join("../../data/session_chain_archive"),
                 session_chain_archive_body_root: None,
+                session_day_tape_body_root: None,
+                massive_flat_files_body_root: None,
+                massive_files_access_key: String::new(),
+                massive_files_secret: String::new(),
                 liquid_session_ensure_enabled: false,
                 max_live_sessions: 0,
                 max_live_subscribers: 0,
@@ -554,6 +616,16 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
         }
         #[cfg(feature = "postgres")]
         Commands::PostgresMigrate => unreachable!("postgres-migrate is dispatched before run"),
+        Commands::Capacity { .. } => unreachable!("capacity is dispatched before run"),
+        Commands::ArchiveCoverage { .. } => {
+            unreachable!("archive-coverage is dispatched before run")
+        }
+        Commands::SessionDayTape { .. } => {
+            unreachable!("session-day-tape is dispatched before run")
+        }
+        Commands::SessionDayReplay { .. } => {
+            unreachable!("session-day-replay is dispatched before run")
+        }
         Commands::ProductionVolumeDrill { phase } => {
             production_volume_drill(phase)?;
         }
@@ -900,6 +972,10 @@ async fn cmd_score_lab(
             session_chain_archive_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                 .join("../../data/session_chain_archive"),
             session_chain_archive_body_root: None,
+            session_day_tape_body_root: None,
+            massive_flat_files_body_root: None,
+            massive_files_access_key: String::new(),
+            massive_files_secret: String::new(),
             liquid_session_ensure_enabled: false,
             max_live_sessions: 0,
             max_live_subscribers: 0,
@@ -1039,6 +1115,359 @@ fn resolve_requested_symbols(
 }
 
 // ---------------------------------------------------------------------------
+// Capacity harness: hermetic load/soak (not serve; ExitCode from the leaf)
+// ---------------------------------------------------------------------------
+
+async fn cmd_capacity(action: CapacityAction, json: bool, out: Option<PathBuf>) -> ExitCode {
+    let cmd = match action {
+        CapacityAction::Load => api_rust::services::capacity_harness::Command::Load,
+        CapacityAction::Soak => api_rust::services::capacity_harness::Command::Soak,
+    };
+    api_rust::services::capacity_harness::run(cmd, json, out).await
+}
+// --- end cmd_capacity ---
+
+// ---------------------------------------------------------------------------
+// Archive coverage: read-only expected-identity audit (ExitCode before run)
+// ---------------------------------------------------------------------------
+
+async fn cmd_archive_coverage(et_date: Option<String>) -> ExitCode {
+    let cfg = Config::from_env().unwrap_or_else(|_| Config {
+        massive_api_key: String::new(),
+        data_feed: api_rust::DataFeed::Delayed,
+        rest_base: "https://api.massive.com".into(),
+        redis_url: None,
+        http_bind: "0.0.0.0:8000".into(),
+        gex_cache_ttl_secs: 10,
+        gex_cache_ttl_liquid_secs: 20,
+        warm_symbols: vec![],
+        liquid_symbols: Default::default(),
+        warm_interval_secs: 25,
+        warm_concurrency: 2,
+        warm_enabled: false,
+        scan_enabled: false,
+        scan_universe_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("config/universe.json"),
+        scan_fast_interval_secs: 30,
+        scan_slow_batch_size: 4,
+        scan_promotion_cap: 2,
+        scan_stale_after_secs: 180,
+        scan_market_hours_only: false,
+        scan_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/scan.sqlite3"),
+        scan_database_url: None,
+        auth_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/auth.sqlite3"),
+        auth_session_signing_key: "dev".into(),
+        auth_cookie_secure: false,
+        auth_cookie_samesite: "lax".into(),
+        auth_session_idle_secs: 3600,
+        auth_session_absolute_secs: 86400,
+        auth_registration_open: true,
+        auth_demo_seed: None,
+        include_dark_pool: true,
+        darkpool_lookback_secs: 3600,
+        block_min_shares: 5000,
+        iv_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/iv_timeseries.json"),
+        database_url: None,
+        public_rate_limit_per_min: 0,
+        metrics_secret_token: None,
+        chain_snapshot_max_age_secs: 1_209_600,
+        chain_snapshot_max_per_symbol: 48,
+        chain_snapshot_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/chain_snapshots"),
+        chain_snapshot_enabled: false,
+        session_chain_archive_enabled: false,
+        session_chain_archive_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/session_chain_archive"),
+        session_chain_archive_body_root: None,
+        session_day_tape_body_root: None,
+        massive_flat_files_body_root: None,
+        massive_files_access_key: String::new(),
+        massive_files_secret: String::new(),
+        liquid_session_ensure_enabled: false,
+        max_live_sessions: 0,
+        max_live_subscribers: 0,
+        workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
+    });
+    let now = Utc::now();
+    let archive = match api_rust::services::session_chain_archive::open_session_archive_for_cli(
+        &cfg,
+    )
+    .await
+    {
+        Ok(a) => a,
+        Err(fault) => {
+            let (stdout, stderr, code) = match fault {
+                api_rust::services::session_chain_archive::CoverageFault::NotStoring => (
+                    "[ERROR] archive-coverage — session archive not storing. No pass recorded.\n"
+                        .to_string(),
+                    "[RUNNING] archive-coverage — no verdict yet\n".to_string(),
+                    ExitCode::from(1),
+                ),
+                api_rust::services::session_chain_archive::CoverageFault::VendorOnPath => (
+                    "[ERROR] archive-coverage — coverage path must not call Massive. No pass recorded.\n"
+                        .to_string(),
+                    "[RUNNING] archive-coverage — no verdict yet\n".to_string(),
+                    ExitCode::from(1),
+                ),
+                _ => (
+                    "[ERROR] archive-coverage — session archive store error. No pass recorded.\n"
+                        .to_string(),
+                    "[RUNNING] archive-coverage — no verdict yet\n".to_string(),
+                    ExitCode::from(1),
+                ),
+            };
+            eprint!("{stderr}");
+            print!("{stdout}");
+            return code;
+        }
+    };
+    let (stdout, stderr, code) =
+        api_rust::services::session_chain_archive::evaluate_cli(&archive, now, et_date.as_deref())
+            .await;
+    eprint!("{stderr}");
+    print!("{stdout}");
+    code
+}
+// --- end cmd_archive_coverage ---
+
+// ---------------------------------------------------------------------------
+// Session day tape: research list/load (ExitCode before run; Evidence: local)
+// ---------------------------------------------------------------------------
+
+async fn cmd_session_day_tape(symbol: Option<String>, et_date: Option<String>) -> ExitCode {
+    let cfg = Config::from_env().unwrap_or_else(|_| Config {
+        massive_api_key: String::new(),
+        data_feed: api_rust::DataFeed::Delayed,
+        rest_base: "https://api.massive.com".into(),
+        redis_url: None,
+        http_bind: "0.0.0.0:8000".into(),
+        gex_cache_ttl_secs: 10,
+        gex_cache_ttl_liquid_secs: 20,
+        warm_symbols: vec![],
+        liquid_symbols: Default::default(),
+        warm_interval_secs: 25,
+        warm_concurrency: 2,
+        warm_enabled: false,
+        scan_enabled: false,
+        scan_universe_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("config/universe.json"),
+        scan_fast_interval_secs: 30,
+        scan_slow_batch_size: 4,
+        scan_promotion_cap: 2,
+        scan_stale_after_secs: 180,
+        scan_market_hours_only: false,
+        scan_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/scan.sqlite3"),
+        scan_database_url: None,
+        auth_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/auth.sqlite3"),
+        auth_session_signing_key: "dev".into(),
+        auth_cookie_secure: false,
+        auth_cookie_samesite: "lax".into(),
+        auth_session_idle_secs: 3600,
+        auth_session_absolute_secs: 86400,
+        auth_registration_open: true,
+        auth_demo_seed: None,
+        include_dark_pool: true,
+        darkpool_lookback_secs: 3600,
+        block_min_shares: 5000,
+        iv_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/iv_timeseries.json"),
+        database_url: None,
+        public_rate_limit_per_min: 0,
+        metrics_secret_token: None,
+        chain_snapshot_max_age_secs: 1_209_600,
+        chain_snapshot_max_per_symbol: 48,
+        chain_snapshot_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/chain_snapshots"),
+        chain_snapshot_enabled: false,
+        session_chain_archive_enabled: false,
+        session_chain_archive_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/session_chain_archive"),
+        session_chain_archive_body_root: None,
+        session_day_tape_body_root: None,
+        massive_flat_files_body_root: None,
+        massive_files_access_key: String::new(),
+        massive_files_secret: String::new(),
+        liquid_session_ensure_enabled: false,
+        max_live_sessions: 0,
+        max_live_subscribers: 0,
+        workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
+    });
+    let store = match api_rust::services::day_tape::cli::open_session_day_tape_for_cli(&cfg).await {
+        Ok(s) => s,
+        Err(fault) => {
+            let (stdout, stderr, code) =
+                api_rust::services::day_tape::cli::render_open_fault(fault);
+            eprint!("{stderr}");
+            print!("{stdout}");
+            return code;
+        }
+    };
+    let (stdout, stderr, code) = api_rust::services::day_tape::cli::evaluate_cli(
+        &store,
+        Utc::now(),
+        symbol.as_deref(),
+        et_date.as_deref(),
+    )
+    .await;
+    eprint!("{stderr}");
+    print!("{stdout}");
+    code
+}
+// --- end cmd_session_day_tape ---
+
+// ---------------------------------------------------------------------------
+// Session day replay: exclusive construct (ExitCode before run; Evidence: local)
+// ---------------------------------------------------------------------------
+
+async fn cmd_session_day_replay(symbol: String, et_date: String, pace: Option<u32>) -> ExitCode {
+    use std::io::Write;
+    eprintln!("Starting session tape…");
+    let _ = std::io::stderr().flush();
+    let cfg = Config::from_env().unwrap_or_else(|_| Config {
+        massive_api_key: String::new(),
+        data_feed: api_rust::DataFeed::Delayed,
+        rest_base: "https://api.massive.com".into(),
+        redis_url: None,
+        http_bind: "0.0.0.0:8000".into(),
+        gex_cache_ttl_secs: 10,
+        gex_cache_ttl_liquid_secs: 20,
+        warm_symbols: vec![],
+        liquid_symbols: Default::default(),
+        warm_interval_secs: 25,
+        warm_concurrency: 2,
+        warm_enabled: false,
+        scan_enabled: false,
+        scan_universe_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("config/universe.json"),
+        scan_fast_interval_secs: 30,
+        scan_slow_batch_size: 4,
+        scan_promotion_cap: 2,
+        scan_stale_after_secs: 180,
+        scan_market_hours_only: false,
+        scan_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/scan.sqlite3"),
+        scan_database_url: None,
+        auth_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/auth.sqlite3"),
+        auth_session_signing_key: "dev".into(),
+        auth_cookie_secure: false,
+        auth_cookie_samesite: "lax".into(),
+        auth_session_idle_secs: 3600,
+        auth_session_absolute_secs: 86400,
+        auth_registration_open: true,
+        auth_demo_seed: None,
+        include_dark_pool: true,
+        darkpool_lookback_secs: 3600,
+        block_min_shares: 5000,
+        iv_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/iv_timeseries.json"),
+        database_url: None,
+        public_rate_limit_per_min: 0,
+        metrics_secret_token: None,
+        chain_snapshot_max_age_secs: 1_209_600,
+        chain_snapshot_max_per_symbol: 48,
+        chain_snapshot_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/chain_snapshots"),
+        chain_snapshot_enabled: false,
+        session_chain_archive_enabled: false,
+        session_chain_archive_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/session_chain_archive"),
+        session_chain_archive_body_root: None,
+        session_day_tape_body_root: None,
+        massive_flat_files_body_root: None,
+        massive_files_access_key: String::new(),
+        massive_files_secret: String::new(),
+        liquid_session_ensure_enabled: false,
+        max_live_sessions: 0,
+        max_live_subscribers: 0,
+        workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
+    });
+    let store = match api_rust::services::day_tape::cli::open_session_day_tape_for_cli(&cfg).await {
+        Ok(s) => s,
+        Err(fault) => {
+            let (stdout, stderr, code) =
+                api_rust::services::day_tape::cli::render_open_fault(fault);
+            eprint!("{stderr}");
+            print!("{stdout}");
+            return code;
+        }
+    };
+    let app_env = std::env::var("APP_ENV").ok();
+    // Standing before prepare; illegal pace still refuses — do not advertise an out-of-set k.
+    let pace_for_standing = api_rust::services::day_tape::construct::parse_pace(pace).unwrap_or(1);
+    print!(
+        "{}",
+        api_rust::services::day_tape::construct::standing_block(
+            &symbol,
+            &et_date,
+            pace_for_standing
+        )
+    );
+    let _ = std::io::stdout().flush();
+    let prep = api_rust::services::day_tape::construct::prepare_replay(
+        &symbol,
+        &et_date,
+        pace,
+        store,
+        Utc::now(),
+        app_env.as_deref(),
+    )
+    .await;
+    match prep {
+        api_rust::services::day_tape::construct::Prepare::Refuse { literal } => {
+            eprintln!("[ERROR] session-day-replay — {literal}");
+            println!("{literal}");
+            ExitCode::from(1)
+        }
+        api_rust::services::day_tape::construct::Prepare::Play {
+            state,
+            symbol,
+            et_date,
+            pace,
+            day,
+            empty_standing,
+        } => {
+            for line in &empty_standing {
+                eprintln!("{line}");
+            }
+            eprintln!(
+                "{}",
+                api_rust::services::day_tape::construct::running_line(&symbol, &et_date)
+            );
+            let ports = api_rust::services::day_tape::player::PlayerPorts {
+                hub: state.stock_hub.clone(),
+                occupancy: state.replay_occupancy.clone(),
+                hold: std::sync::Arc::new(state.replay_hold.clone()),
+                sleeper: std::sync::Arc::new(api_rust::services::day_tape::player::TokioSleeper),
+            };
+            let play_symbol = symbol.clone();
+            let play_et = et_date.clone();
+            tokio::spawn(async move {
+                api_rust::services::day_tape::player::run_player(
+                    &play_symbol,
+                    &play_et,
+                    pace,
+                    day,
+                    ports,
+                )
+                .await;
+            });
+            let bind = cfg.http_bind.clone();
+            match server::serve_http_only(state, bind).await {
+                Ok(()) => {
+                    eprintln!(
+                        "{}",
+                        api_rust::services::day_tape::construct::stopped_line()
+                    );
+                    ExitCode::SUCCESS
+                }
+                Err(e) => {
+                    eprintln!("[ERROR] session-day-replay — {e}");
+                    ExitCode::from(1)
+                }
+            }
+        }
+    }
+}
+// --- end cmd_session_day_replay ---
+
+// ---------------------------------------------------------------------------
 // P3 research: replay stored chain snapshots (measurement only)
 // ---------------------------------------------------------------------------
 
@@ -1118,6 +1547,10 @@ async fn cmd_batch_backtest(
         session_chain_archive_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("../../data/session_chain_archive"),
         session_chain_archive_body_root: None,
+        session_day_tape_body_root: None,
+        massive_flat_files_body_root: None,
+        massive_files_access_key: String::new(),
+        massive_files_secret: String::new(),
         liquid_session_ensure_enabled: false,
         max_live_sessions: 0,
         max_live_subscribers: 0,
@@ -1583,5 +2016,371 @@ mod batch_backtest_wiring {
                 "cmd_batch_backtest must not contain {needle}"
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod capacity_wiring {
+    use super::{CapacityAction, Cli, Commands};
+    use clap::Parser;
+
+    const MAIN_SRC: &str = include_str!("main.rs");
+
+    fn cmd_capacity_body() -> &'static str {
+        let start = MAIN_SRC
+            .find("async fn cmd_capacity(")
+            .expect("cmd_capacity not found");
+        let rest = &MAIN_SRC[start..];
+        let end = rest
+            .find("\n// --- end cmd_capacity ---")
+            .unwrap_or(rest.len());
+        &rest[..end]
+    }
+
+    #[test]
+    fn capacity_load_and_soak_parse_as_distinct_nested_commands() {
+        let load = Cli::try_parse_from(["api-rust", "capacity", "load"]).unwrap();
+        let soak = Cli::try_parse_from(["api-rust", "capacity", "soak"]).unwrap();
+        assert!(matches!(
+            load.cmd,
+            Commands::Capacity {
+                action: CapacityAction::Load,
+                ..
+            }
+        ));
+        assert!(matches!(
+            soak.cmd,
+            Commands::Capacity {
+                action: CapacityAction::Soak,
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn capacity_is_not_an_alias_of_serve_or_of_the_other_command() {
+        let serve = Cli::try_parse_from(["api-rust", "serve"]).unwrap();
+        assert!(matches!(serve.cmd, Commands::Serve { .. }));
+        assert!(Cli::try_parse_from(["api-rust", "capacity"]).is_err()); // needs load|soak
+    }
+
+    #[test]
+    fn evidence_clap_flag_is_rejected() {
+        assert!(Cli::try_parse_from(["api-rust", "capacity", "load", "--evidence", "ci"]).is_err());
+        assert!(Cli::try_parse_from(["api-rust", "capacity", "load", "--ci"]).is_err());
+    }
+
+    #[test]
+    fn json_and_out_parse_on_capacity() {
+        let cli = Cli::try_parse_from([
+            "api-rust",
+            "capacity",
+            "load",
+            "--json",
+            "--out",
+            "data/capacity/x.json",
+        ])
+        .unwrap();
+        match cli.cmd {
+            Commands::Capacity { json, out, .. } => {
+                assert!(json);
+                assert!(out.unwrap().ends_with("x.json"));
+            }
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn cmd_capacity_does_not_call_forbidden_seams_and_does_construct_harness() {
+        let body = cmd_capacity_body();
+        assert!(body.contains("capacity_harness::run") || body.contains("run("));
+        for needle in [
+            "Config::from_env",
+            "server::serve",
+            "stock_worker.start()",
+            "MarketDataPort::live",
+            "connect_async",
+            "MassiveRestClient",
+        ] {
+            assert!(!body.contains(needle), "{needle}");
+        }
+    }
+
+    #[test]
+    fn cmd_capacity_soak_uses_command_soak_not_a_short_alias() {
+        let body = cmd_capacity_body();
+        assert!(body.contains("Command::Soak") || body.contains("CapacityAction::Soak"));
+        assert!(body.contains("Command::Load") || body.contains("CapacityAction::Load"));
+    }
+}
+
+#[cfg(test)]
+mod archive_coverage_wiring {
+    use super::{Cli, Commands};
+    use clap::{CommandFactory, Parser};
+
+    const MAIN_SRC: &'static str = include_str!("main.rs");
+
+    fn cmd_body() -> &'static str {
+        let start = MAIN_SRC
+            .find("async fn cmd_archive_coverage(")
+            .expect("cmd_archive_coverage not found");
+        let rest = &MAIN_SRC[start..];
+        let end = rest
+            .find("\n// --- end cmd_archive_coverage ---")
+            .unwrap_or(rest.len());
+        &rest[..end]
+    }
+
+    #[test]
+    fn archive_coverage_parses_and_is_listed_with_research_commands() {
+        let names: Vec<String> = Cli::command()
+            .get_subcommands()
+            .map(|c| c.get_name().to_string())
+            .collect();
+        assert!(names.contains(&"archive-coverage".into()));
+        assert!(names.contains(&"score-lab".into()));
+        assert!(names.contains(&"batch-backtest".into()));
+        assert!(names.contains(&"replay-outcome-join".into()));
+        let cli = Cli::try_parse_from(["api-rust", "archive-coverage"]).unwrap();
+        assert!(matches!(
+            cli.cmd,
+            Commands::ArchiveCoverage { et_date: None }
+        ));
+        let named =
+            Cli::try_parse_from(["api-rust", "archive-coverage", "--et-date", "2026-08-10"])
+                .unwrap();
+        match named.cmd {
+            Commands::ArchiveCoverage { et_date } => {
+                assert_eq!(et_date.as_deref(), Some("2026-08-10"))
+            }
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn archive_coverage_is_not_serve_or_score_lab_or_fetch() {
+        let serve = Cli::try_parse_from(["api-rust", "serve"]).unwrap();
+        assert!(matches!(serve.cmd, Commands::Serve { .. }));
+        assert!(Cli::try_parse_from(["api-rust", "archive-coverage", "--fetch"]).is_err());
+        let about = Cli::command()
+            .find_subcommand("archive-coverage")
+            .unwrap()
+            .get_about()
+            .unwrap()
+            .to_string()
+            .to_ascii_lowercase();
+        for banned in ["fetch", "backfill", "serve", "score-lab", "massive"] {
+            assert!(!about.contains(banned), "{banned} in about: {about}");
+        }
+        assert!(about.contains("coverage") || about.contains("audit"));
+    }
+
+    #[test]
+    fn cmd_archive_coverage_does_not_open_live_or_disabled_fallback_or_sleep() {
+        let body = cmd_body();
+        assert!(body.contains("open_session_archive_for_cli") || body.contains("evaluate_cli"));
+        for needle in [
+            "MassiveRestClient",
+            "MarketDataPort::live",
+            "fetch_vendor_bundle",
+            "SessionChainArchive::disabled",
+            "sleep(",
+            "interval(",
+        ] {
+            assert!(!body.contains(needle), "{needle}");
+        }
+        assert!(
+            body.contains("massive_api_key: String::new()") || body.contains("unwrap_or_else"),
+            "must run without MASSIVE_API_KEY (score-lab empty-key pattern)"
+        );
+    }
+}
+
+#[cfg(test)]
+mod session_day_tape_wiring {
+    use super::{Cli, Commands};
+    use clap::{CommandFactory, Parser};
+
+    const MAIN_SRC: &'static str = include_str!("main.rs");
+
+    fn cmd_body() -> &'static str {
+        let start = MAIN_SRC
+            .find("async fn cmd_session_day_tape(")
+            .expect("cmd_session_day_tape not found");
+        let rest = &MAIN_SRC[start..];
+        let end = rest
+            .find("\n// --- end cmd_session_day_tape ---")
+            .unwrap_or(rest.len());
+        &rest[..end]
+    }
+
+    #[test]
+    fn session_day_tape_parses_and_is_listed() {
+        let names: Vec<String> = Cli::command()
+            .get_subcommands()
+            .map(|c| c.get_name().to_string())
+            .collect();
+        assert!(
+            names.contains(&"session-day-tape".into()),
+            "clap name must be session-day-tape; got {names:?}"
+        );
+        assert!(names.contains(&"archive-coverage".into()));
+        let cli = Cli::try_parse_from(["api-rust", "session-day-tape"]).unwrap();
+        assert!(matches!(
+            cli.cmd,
+            Commands::SessionDayTape {
+                symbol: None,
+                et_date: None
+            }
+        ));
+        let named = Cli::try_parse_from([
+            "api-rust",
+            "session-day-tape",
+            "--symbol",
+            "NVDA",
+            "--et-date",
+            "2020-01-02",
+        ])
+        .unwrap();
+        match named.cmd {
+            Commands::SessionDayTape { symbol, et_date } => {
+                assert_eq!(symbol.as_deref(), Some("NVDA"));
+                assert_eq!(et_date.as_deref(), Some("2020-01-02"));
+            }
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn cmd_session_day_tape_does_not_open_live_or_massive() {
+        let body = cmd_body();
+        assert!(
+            body.contains("open_session_day_tape_for_cli") || body.contains("evaluate_cli"),
+            "must dispatch through day_tape::cli"
+        );
+        for needle in [
+            "MassiveRestClient",
+            "MarketDataPort::live",
+            "fetch_vendor_bundle",
+            "run_price_stream",
+            "MassiveStockStream",
+        ] {
+            assert!(
+                !body.contains(needle),
+                "{needle} must not appear in cmd body"
+            );
+        }
+        assert!(
+            body.contains("massive_api_key: String::new()") || body.contains("unwrap_or_else"),
+            "must run without MASSIVE_API_KEY (score-lab empty-key pattern)"
+        );
+        // ExitCode path before run() — dispatch site.
+        assert!(MAIN_SRC.contains("Commands::SessionDayTape { symbol, et_date }"));
+        assert!(MAIN_SRC.contains("return cmd_session_day_tape(symbol, et_date).await;"));
+    }
+}
+
+#[cfg(test)]
+mod session_day_replay_wiring {
+    use super::{Cli, Commands};
+    use clap::{CommandFactory, Parser};
+
+    const MAIN: &str = include_str!("main.rs");
+    const SERVER: &str = include_str!("server.rs");
+
+    #[test]
+    fn clap_name_is_session_day_replay() {
+        let names: Vec<String> = Cli::command()
+            .get_subcommands()
+            .map(|c| c.get_name().to_string())
+            .collect();
+        assert!(
+            names.contains(&"session-day-replay".into()),
+            "clap name must be session-day-replay; got {names:?}"
+        );
+        let cli = Cli::try_parse_from([
+            "api-rust",
+            "session-day-replay",
+            "--symbol",
+            "SPY",
+            "--et-date",
+            "2026-08-10",
+        ])
+        .unwrap();
+        match cli.cmd {
+            Commands::SessionDayReplay {
+                symbol,
+                et_date,
+                pace,
+            } => {
+                assert_eq!(symbol, "SPY");
+                assert_eq!(et_date, "2026-08-10");
+                assert_eq!(pace, None);
+            }
+            other => panic!("{other:?}"),
+        }
+        let paced = Cli::try_parse_from([
+            "api-rust",
+            "session-day-replay",
+            "--symbol",
+            "QQQ",
+            "--et-date",
+            "2026-08-10",
+            "--pace",
+            "4",
+        ])
+        .unwrap();
+        match paced.cmd {
+            Commands::SessionDayReplay { pace, .. } => assert_eq!(pace, Some(4)),
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn serve_command_does_not_grow_replay_flag() {
+        let serve_arm = MAIN
+            .split("Serve {")
+            .nth(1)
+            .unwrap()
+            .split('}')
+            .next()
+            .unwrap();
+        assert!(!serve_arm.contains("replay"));
+        assert!(!SERVER.contains("run_player"));
+        assert!(!SERVER.contains("session-day-replay"));
+    }
+
+    #[test]
+    fn cmd_session_day_replay_does_not_open_live_or_massive_or_spawn_vendor() {
+        let start = MAIN
+            .find("async fn cmd_session_day_replay(")
+            .expect("cmd_session_day_replay not found");
+        let rest = &MAIN[start..];
+        let end = rest
+            .find("\n// --- end cmd_session_day_replay ---")
+            .unwrap_or(rest.len());
+        let body = &rest[..end];
+        for needle in [
+            "MassiveRestClient",
+            "MarketDataPort::live",
+            "fetch_vendor_bundle",
+            "stock_worker.start",
+            "path_a::spawn",
+            "warmer::spawn",
+        ] {
+            assert!(
+                !body.contains(needle),
+                "{needle} must not appear in cmd body"
+            );
+        }
+        assert!(body.contains("open_session_day_tape_for_cli"));
+        assert!(body.contains("prepare_replay"));
+        assert!(body.contains("serve_http_only"));
+        assert!(body.contains("run_player"));
+        assert!(
+            body.contains("massive_api_key: String::new()") || body.contains("unwrap_or_else"),
+            "must run without MASSIVE_API_KEY"
+        );
     }
 }

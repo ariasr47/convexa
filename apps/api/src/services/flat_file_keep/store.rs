@@ -157,6 +157,10 @@ impl FlatFilesStore {
         Self::Failing
     }
 
+    pub fn open_json(root: &std::path::Path) -> Result<Self, StoreError> {
+        Ok(Self::Json(JsonInner::open(root)?))
+    }
+
     fn store_level(&self) -> StoreLevel {
         match self {
             Self::NotStoring => StoreLevel::NotStoring,
@@ -179,7 +183,11 @@ impl FlatFilesStore {
                 Err(StoreError("flat files not storing".into()))
             }
             Self::Failing => Err(StoreError("flat files store error: failing".into())),
-            Self::Json(_) => Err(StoreError("json store not attached".into())),
+            Self::Json(inner) => {
+                inner
+                    .put_extract(symbol, et_date, class, csv, row_count)
+                    .await
+            }
             Self::Memory(inner) => {
                 let mut g = inner.write().await;
                 let key = MemoryInner::slot_key(symbol, et_date, class);
@@ -207,7 +215,11 @@ impl FlatFilesStore {
                 Err(StoreError("flat files not storing".into()))
             }
             Self::Failing => Err(StoreError("flat files store error: failing".into())),
-            Self::Json(_) => Err(StoreError("json store not attached".into())),
+            Self::Json(inner) => {
+                inner
+                    .put_unreadable_pointer(symbol, et_date, class, reason)
+                    .await
+            }
             Self::Memory(inner) => {
                 let mut g = inner.write().await;
                 let key = MemoryInner::slot_key(symbol, et_date, class);
@@ -227,7 +239,7 @@ impl FlatFilesStore {
                 Err(StoreError("flat files not storing".into()))
             }
             Self::Failing => Err(StoreError("flat files store error: failing".into())),
-            Self::Json(_) => Err(StoreError("json store not attached".into())),
+            Self::Json(inner) => inner.put_miss(et_date, class).await,
             Self::Memory(inner) => {
                 let mut g = inner.write().await;
                 if g.any_locked_extract(et_date, class) {
@@ -243,12 +255,13 @@ impl FlatFilesStore {
 
     /// Crash temps are not occupants — ignore leftover `tmp/keep-*`.
     pub async fn ignore_temp(&self, _name: &str) {
-        // Memory has no temp surface; intentional no-op.
+        // Memory/Json classify ignores tmp/; intentional no-op.
     }
 
     pub async fn any_content_hit(&self, et_date: &str, class: ExtractClass) -> bool {
         match self {
             Self::Memory(inner) => inner.read().await.any_content_hit(et_date, class),
+            Self::Json(inner) => inner.any_content_hit(et_date, class).await,
             _ => false,
         }
     }
@@ -256,6 +269,7 @@ impl FlatFilesStore {
     pub async fn any_locked_extract(&self, et_date: &str, class: ExtractClass) -> bool {
         match self {
             Self::Memory(inner) => inner.read().await.any_locked_extract(et_date, class),
+            Self::Json(inner) => inner.any_locked_extract(et_date, class).await,
             _ => false,
         }
     }
@@ -268,7 +282,11 @@ impl FlatFilesStore {
             return Vec::new();
         }
         match self {
-            Self::NotStoring | Self::RefuseToMix | Self::Failing | Self::Json(_) => Vec::new(),
+            Self::NotStoring | Self::RefuseToMix | Self::Failing => Vec::new(),
+            Self::Json(inner) => {
+                let _ = now;
+                inner.list(&symbol).await
+            }
             Self::Memory(inner) => {
                 let g = inner.read().await;
                 let mut out = Vec::new();
@@ -343,6 +361,7 @@ impl FlatFilesStore {
                 let g = inner.read().await;
                 g.fact_for(symbol, et_date, class)
             }
+            Self::Json(inner) => inner.fact_for(symbol, et_date, class).await,
             _ => None,
         };
         classify_dated(symbol, et_date, now, level, fact.as_ref())

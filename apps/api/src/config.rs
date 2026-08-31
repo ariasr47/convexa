@@ -94,6 +94,14 @@ pub struct Config {
     /// Filesystem body-store root. Required when archive enabled + FS body store in use.
     /// `None` = unset/empty → open fail-open to not-storing (no silent default).
     pub session_chain_archive_body_root: Option<PathBuf>,
+    /// Dedicated tape body root. `None` = unset → not storing (no nested default).
+    pub session_day_tape_body_root: Option<PathBuf>,
+    /// Dedicated flat-files extract root. `None` = unset → not storing (no nested default).
+    pub massive_flat_files_body_root: Option<PathBuf>,
+    /// Files Access Key (empty allowed at from_env; required only when keep is armed).
+    pub massive_files_access_key: String,
+    /// Files Secret (empty allowed at from_env; required only when keep is armed).
+    pub massive_files_secret: String,
     /// False → skip liquid-name ensure worker (disjoint from SESSION_CHAIN_ARCHIVE_ENABLED).
     pub liquid_session_ensure_enabled: bool,
     /// Distinct tickers that may be added to the shared vendor hub. `0` = off. Default 50.
@@ -335,6 +343,16 @@ impl Config {
             .unwrap_or_else(|_| default_session_archive_path(&chain_snapshot_store_path));
         let session_chain_archive_body_root =
             parse_optional_path_env("SESSION_CHAIN_ARCHIVE_BODY_ROOT");
+        let session_day_tape_body_root = parse_optional_path_env("SESSION_DAY_TAPE_BODY_ROOT");
+        let massive_flat_files_body_root = parse_optional_path_env("MASSIVE_FLAT_FILES_BODY_ROOT");
+        let massive_files_access_key = env::var("MASSIVE_FILES_ACCESS_KEY")
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        let massive_files_secret = env::var("MASSIVE_FILES_SECRET")
+            .unwrap_or_default()
+            .trim()
+            .to_string();
 
         Ok(Self {
             massive_api_key,
@@ -380,6 +398,10 @@ impl Config {
             session_chain_archive_enabled,
             session_chain_archive_store_path,
             session_chain_archive_body_root,
+            session_day_tape_body_root,
+            massive_flat_files_body_root,
+            massive_files_access_key,
+            massive_files_secret,
             liquid_session_ensure_enabled,
             max_live_sessions,
             max_live_subscribers,
@@ -463,6 +485,35 @@ pub fn path_equals_or_nests(candidate: &Path, other: &Path) -> bool {
 /// Body root must not equal or nest under the ring store or the index Json dir.
 pub fn body_root_conflicts(body_root: &Path, ring: &Path, index: &Path) -> bool {
     path_equals_or_nests(body_root, ring) || path_equals_or_nests(body_root, index)
+}
+
+/// Tape root must not collide with ring, archive index, or archive body (bidirectional nest).
+/// Wraps the live 3-arg `body_root_conflicts`; does not change archive callers' fail-open.
+pub fn tape_root_conflicts(
+    tape: &Path,
+    ring: &Path,
+    archive_index: &Path,
+    archive_body: Option<&Path>,
+) -> bool {
+    body_root_conflicts(tape, ring, archive_index)
+        || archive_body
+            .is_some_and(|b| path_equals_or_nests(tape, b) || path_equals_or_nests(b, tape))
+}
+
+/// Keep root must not collide with ring, archive index, archive body, or **tape** root.
+/// Keep-only predicate — never fed into `tape_root_conflicts` / serve-bind refusal.
+pub fn keep_root_conflicts(
+    keep: &Path,
+    ring: &Path,
+    archive_index: &Path,
+    archive_body: Option<&Path>,
+    tape: Option<&Path>,
+) -> bool {
+    let vs = |a: &Path, b: &Path| path_equals_or_nests(a, b) || path_equals_or_nests(b, a);
+    vs(keep, ring)
+        || vs(keep, archive_index)
+        || archive_body.is_some_and(|b| vs(keep, b))
+        || tape.is_some_and(|t| vs(keep, t))
 }
 
 #[cfg(test)]
@@ -551,5 +602,178 @@ mod tests {
             &ring,
             &index
         ));
+    }
+
+    #[test]
+    fn tape_body_root_unset_is_none_not_invented_path() {
+        assert!(parse_optional_path_env("SESSION_DAY_TAPE_BODY_ROOT_UNSET_SENTINEL").is_none());
+        // No nested default under data/ when env is unset.
+        assert_ne!(
+            parse_optional_path_env("SESSION_DAY_TAPE_BODY_ROOT_UNSET_SENTINEL"),
+            Some(PathBuf::from("data/session_day_tape"))
+        );
+    }
+
+    #[test]
+    fn tape_root_conflicts_with_ring_archive_index_and_archive_body() {
+        let ring = PathBuf::from("data/chain_snapshots");
+        let index = PathBuf::from("data/session_chain_archive");
+        let archive_body = PathBuf::from("data/session-chain-archive-bodies");
+        assert!(tape_root_conflicts(
+            Path::new("data/chain_snapshots"),
+            &ring,
+            &index,
+            Some(archive_body.as_path())
+        ));
+        assert!(tape_root_conflicts(
+            Path::new("data/chain_snapshots/tape"),
+            &ring,
+            &index,
+            Some(archive_body.as_path())
+        ));
+        assert!(tape_root_conflicts(
+            Path::new("data/session_chain_archive"),
+            &ring,
+            &index,
+            Some(archive_body.as_path())
+        ));
+        assert!(tape_root_conflicts(
+            Path::new("data/session_chain_archive/nested"),
+            &ring,
+            &index,
+            Some(archive_body.as_path())
+        ));
+        assert!(tape_root_conflicts(
+            Path::new("data/session-chain-archive-bodies"),
+            &ring,
+            &index,
+            Some(archive_body.as_path())
+        ));
+        assert!(tape_root_conflicts(
+            Path::new("data/session-chain-archive-bodies/x"),
+            &ring,
+            &index,
+            Some(archive_body.as_path())
+        ));
+        // Archive body nesting under tape also conflicts (bidirectional).
+        assert!(tape_root_conflicts(
+            Path::new("data/tape_root"),
+            &ring,
+            &index,
+            Some(Path::new("data/tape_root/bodies"))
+        ));
+        assert!(!tape_root_conflicts(
+            Path::new("data/session_day_tape_ok"),
+            &ring,
+            &index,
+            Some(archive_body.as_path())
+        ));
+        assert!(!tape_root_conflicts(
+            Path::new("data/session_day_tape_ok"),
+            &ring,
+            &index,
+            None
+        ));
+    }
+
+    #[test]
+    fn flat_files_body_root_unset_is_none_not_invented_path() {
+        assert!(parse_optional_path_env("MASSIVE_FLAT_FILES_BODY_ROOT_UNSET_SENTINEL").is_none());
+        assert_ne!(
+            parse_optional_path_env("MASSIVE_FLAT_FILES_BODY_ROOT_UNSET_SENTINEL"),
+            Some(PathBuf::from("data/massive_flat_files"))
+        );
+    }
+
+    #[test]
+    fn keep_root_conflicts_with_ring_archive_index_archive_body_and_tape() {
+        let ring = PathBuf::from("data/chain_snapshots");
+        let index = PathBuf::from("data/session_chain_archive");
+        let archive_body = PathBuf::from("data/session-chain-archive-bodies");
+        let tape = PathBuf::from("data/session_day_tape");
+        assert!(keep_root_conflicts(
+            Path::new("data/chain_snapshots"),
+            &ring,
+            &index,
+            Some(archive_body.as_path()),
+            Some(tape.as_path())
+        ));
+        assert!(keep_root_conflicts(
+            Path::new("data/session_chain_archive/nested"),
+            &ring,
+            &index,
+            Some(archive_body.as_path()),
+            Some(tape.as_path())
+        ));
+        assert!(keep_root_conflicts(
+            Path::new("data/session-chain-archive-bodies"),
+            &ring,
+            &index,
+            Some(archive_body.as_path()),
+            Some(tape.as_path())
+        ));
+        assert!(keep_root_conflicts(
+            Path::new("data/session_day_tape"),
+            &ring,
+            &index,
+            Some(archive_body.as_path()),
+            Some(tape.as_path())
+        ));
+        assert!(keep_root_conflicts(
+            Path::new("data/session_day_tape/flat"),
+            &ring,
+            &index,
+            Some(archive_body.as_path()),
+            Some(tape.as_path())
+        ));
+        assert!(!keep_root_conflicts(
+            Path::new("data/massive_flat_files_ok"),
+            &ring,
+            &index,
+            Some(archive_body.as_path()),
+            Some(tape.as_path())
+        ));
+        assert!(!keep_root_conflicts(
+            Path::new("data/massive_flat_files_ok"),
+            &ring,
+            &index,
+            None,
+            None
+        ));
+    }
+
+    #[test]
+    fn keep_root_is_not_a_peer_inside_tape_root_conflicts() {
+        let src = include_str!("config.rs");
+        let prod = src.split("#[cfg(test)]").next().unwrap_or(src);
+        // tape_root_conflicts still has 4 params and does not mention the keep root env.
+        let sig = "pub fn tape_root_conflicts(";
+        let start = prod.find(sig).expect("tape_root_conflicts present");
+        let after = &prod[start..];
+        let end = after
+            .find(") -> bool")
+            .expect("tape_root_conflicts signature closes");
+        let params = &after[sig.len()..end];
+        assert!(params.contains("tape"));
+        assert!(params.contains("ring"));
+        assert!(params.contains("archive_index"));
+        assert!(params.contains("archive_body"));
+        assert!(!params.contains("keep"));
+        // 4 params (trailing comma allowed → 3 or 4 commas).
+        let commas = params.matches(',').count();
+        assert!(
+            (3..=4).contains(&commas),
+            "tape_root_conflicts must stay 4-arg, commas={commas}, params={params:?}"
+        );
+        // from_env may mention MASSIVE_FLAT_FILES_BODY_ROOT; tape_root_conflicts body must not.
+        let tape_fn = {
+            let s = prod.find("pub fn tape_root_conflicts(").unwrap();
+            let rest = &prod[s..];
+            let close = rest.find("\npub fn ").unwrap_or(rest.len());
+            &rest[..close]
+        };
+        assert!(!tape_fn.contains("MASSIVE_FLAT_FILES_BODY_ROOT"));
+        assert!(!tape_fn.contains("massive_flat_files"));
+        assert!(!tape_fn.contains("keep_root"));
     }
 }

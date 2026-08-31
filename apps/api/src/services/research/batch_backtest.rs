@@ -522,6 +522,7 @@ fn source_token(kind: MarketDataSourceKind) -> &'static str {
     match kind {
         MarketDataSourceKind::LiveMassive => "live_massive",
         MarketDataSourceKind::Fixture => "fixture",
+        MarketDataSourceKind::SessionTape => "session_tape",
     }
 }
 
@@ -1165,6 +1166,10 @@ mod tests {
             session_chain_archive_enabled: false,
             session_chain_archive_store_path: PathBuf::from("data/session_chain_archive"),
             session_chain_archive_body_root: None,
+            session_day_tape_body_root: None,
+            massive_flat_files_body_root: None,
+            massive_files_access_key: String::new(),
+            massive_files_secret: String::new(),
             liquid_session_ensure_enabled: false,
             max_live_sessions: 0,
             max_live_subscribers: 0,

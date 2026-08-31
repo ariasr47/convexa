@@ -13,6 +13,7 @@ mod store;
 mod watchlist;
 
 pub use clocks::{due_instant, is_due, is_et_weekend, parse_et_date, today_et_date};
+pub use fs::{root_is_writable, JsonInner};
 pub use literals::{
     empty_extract, ineligible_weekend, miss, no_stored_extract, not_elapsed, not_in_watchlist,
     unreadable, AUTHORIZES, BAD_DATE, CLOSING, COMMAND, EVIDENCE_CLI, EVIDENCE_HTTP, FRAMING_HIT,
