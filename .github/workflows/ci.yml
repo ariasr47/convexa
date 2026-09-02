@@ -179,9 +179,10 @@ jobs:
         run: cargo test -p api-rust -p quant-engine --locked
 
       - name: Capacity load harness
-        run: cargo run -p api-rust --locked -- capacity load
+        run: cargo run -p api-rust --locked --release -- capacity load
         env:
           CONVEXA_CAPACITY_CI_STEP: "1"
+          APP_ENV: dev
 
       - name: Production runtime guardrails (postgres)
         run: cargo test -p api-rust --features postgres --test production_runtime_guardrails_postgres --locked -- --nocapture
