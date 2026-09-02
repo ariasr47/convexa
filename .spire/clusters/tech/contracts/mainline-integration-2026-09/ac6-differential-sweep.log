@@ -1,0 +1,48 @@
+# AC-6 differential sweep — conductor evidence, 2026-09-02
+#
+# merged tree : spire/mainline-integration-2026-09 @ 2714550, served 127.0.0.1:8010
+# baseline    : origin/main @ d0874ce, served 127.0.0.1:8011
+# same env    : apps/api/.env (operator-supplied MASSIVE_API_KEY), WARM_ENABLED=0, SCAN_ENABLED=0,
+#               SESSION_CHAIN_ARCHIVE_BODY_ROOT=data/session_chain_archive_bodies
+#
+# spec | main | merged | delta
+ai-providers | NORESULT | NORESULT | same
+ai-rec-grounding | PASS | PASS | same
+ai_context_pack | PASS | PASS | same
+ai_rec_backtest_orders | PASS | PASS | same
+ai_recommendations | FAIL | FAIL | same
+api-contract-generation | PASS | PASS | same
+api_metrics | FAIL | FAIL | same
+archive-coverage-guardrails | PASS | PASS | same
+archive-coverage-guardrails-research-read | FAIL | PASS | IMPROVED
+auth-gated | NORESULT | NORESULT | same
+batch-backtest-cli | FAIL | FAIL | same
+broker-option-grouping | NORESULT | NORESULT | same
+bundle_events | FAIL | FAIL | same
+byo-ai-key | FAIL | FAIL | same
+chain-archive-object-store | NORESULT | NORESULT | same
+chain-snapshot-capture | FAIL | FAIL | same
+chain-snapshot-local-store | FAIL | FAIL | same
+day-replay-mock-adapter | FAIL | PASS | IMPROVED
+dealer-flow-projection | PASS | PASS | same
+exchange-holiday-calendar | FAIL | PASS | IMPROVED
+iv_rank | PASS | PASS | same
+liquid-names-session-capture | NORESULT | NORESULT | same
+massive-flat-file-keep | FAIL | PASS | IMPROVED
+openapi-router-dependency-replacement | PASS | PASS | same
+postgres-release-safety | PASS | PASS | same
+postgres-release-safety-repository | NORESULT | NORESULT | same
+production-runtime-guardrails | FAIL | FAIL | same
+production-runtime-guardrails-transport | NORESULT | NORESULT | same
+production-runtime-guardrails-volume | NORESULT | NORESULT | same
+public-surface | PASS | PASS | same
+rec-absence-literals-hole | PASS | PASS | same
+replay-outcome-join | FAIL | FAIL | same
+research-lab-surface | FAIL | PASS | IMPROVED
+scanner | PASS | PASS | same
+score-lab-signal-comparison | PASS | PASS | same
+session-chain-archive | NORESULT | NORESULT | same
+session-day-tape-capture | FAIL | PASS | IMPROVED
+ticker-load-experience | PASS | PASS | same
+tradeable-rec-inputs | NORESULT | NORESULT | same
+user-accounts | PASS | PASS | same
