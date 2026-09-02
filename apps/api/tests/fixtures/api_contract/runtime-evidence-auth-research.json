@@ -56,6 +56,15 @@
       "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
     },
     {
+      "boundary_id": "GET /api/_research/session-books/{symbol} 200 application/json operator-token",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss",
+      "fixture": "hermetic AppState with seeded session archive",
+      "setup": "production router list read; framing RESEARCH READ - SESSION BOOK, vendor_called false, authorizes nothing",
+      "request": "GET /api/_research/session-books/SPY with x-metrics-token",
+      "expected_response": {"status": 200, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
       "boundary_id": "GET /api/_research/session-books/{symbol}/book 422 application/json operator-token",
       "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss",
       "fixture": "hermetic AppState with seeded session archive",
@@ -71,6 +80,69 @@
       "setup": "real SessionChainArchive memory insert via production wire serializer",
       "request": "GET /api/_research/session-books/SPY/book?et_date=2020-01-02 with x-metrics-token",
       "expected_response": {"status": 200, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/_research/session-day-tape/{symbol} 200 application/json operator-token",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss",
+      "fixture": "hermetic AppState with NVDA outside the tape watchlist",
+      "setup": "production router list read; framing RESEARCH READ - SESSION DAY TAPE NOT IN WATCHLIST, days[] array, vendor_called false",
+      "request": "GET /api/_research/session-day-tape/NVDA with x-metrics-token",
+      "expected_response": {"status": 200, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/_research/flat-files/{symbol} 200 application/json operator-token",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss",
+      "fixture": "hermetic AppState with NVDA outside the flat-files watchlist",
+      "setup": "production router list read; framing RESEARCH READ - MASSIVE FLAT FILES NOT IN WATCHLIST, extracts[] array, no vendor credential in the body",
+      "request": "GET /api/_research/flat-files/NVDA with x-metrics-token",
+      "expected_response": {"status": 200, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/_research/flat-files/{symbol}/extract 422 application/json operator-token",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss",
+      "fixture": "hermetic AppState",
+      "setup": "real query validation through production router; error et_date_unparseable",
+      "request": "GET /api/_research/flat-files/SPY/extract?et_date=not-a-date with x-metrics-token",
+      "expected_response": {"status": 422, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/_research/flat-files/{symbol} 401 application/json operator-token",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss",
+      "fixture": "hermetic AppState",
+      "setup": "production router without operator header",
+      "request": "GET /api/_research/flat-files/NVDA",
+      "expected_response": {"status": 401, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/_research/session-archive/coverage 200 application/json operator-token",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss",
+      "fixture": "hermetic AppState with seeded session archive",
+      "setup": "production router coverage read; rows, holes and verdict present, vendor_called false",
+      "request": "GET /api/_research/session-archive/coverage with x-metrics-token",
+      "expected_response": {"status": 200, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/_research/session-archive/coverage 422 application/json operator-token",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss",
+      "fixture": "hermetic AppState",
+      "setup": "real query validation through production router; error et_date_unparseable",
+      "request": "GET /api/_research/session-archive/coverage?et_date=not-a-date with x-metrics-token",
+      "expected_response": {"status": 422, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/_research/session-archive/coverage 401 application/json operator-token",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss",
+      "fixture": "hermetic AppState",
+      "setup": "production router without operator header",
+      "request": "GET /api/_research/session-archive/coverage",
+      "expected_response": {"status": 401, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
       "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
     },
     {

@@ -7956,6 +7956,36 @@
       "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss"
     },
     {
+      "case_id": "GET /api/_research/session-books/{symbol} 200 application/json operator-token",
+      "command": "cargo test -p api-rust --test api_contract_runtime_auth_research -- --nocapture",
+      "coverage_tags": ["direct-http-fragment", "production-router", "shared-error-family"],
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "expected_response": {
+        "body_category": "json",
+        "body_meaning": "json",
+        "body_valid": true,
+        "header_names": [],
+        "header_value_policies": {},
+        "media_type": "application/json",
+        "security_mode": "operator-token",
+        "status": 200
+      },
+      "fixture": "apps/api/tests/fixtures/api_contract/runtime-evidence-auth-research.json",
+      "id": "http-fragment:GET /api/_research/session-books/{symbol} 200 application/json operator-token",
+      "mode": "direct-http",
+      "operation_key": "GET /api/_research/session-books/{symbol}",
+      "request_fixture": "GET /api/_research/session-books/SPY with x-metrics-token",
+      "scenario_id": "http-fragment:GET /api/_research/session-books/{symbol} 200 application/json operator-token:scenario",
+      "setup_fixture": "production router list read; framing RESEARCH READ - SESSION BOOK, vendor_called false, authorizes nothing",
+      "shared_mapping_family": "status-200",
+      "target": "apps/api/tests/api_contract_runtime_auth_research.rs",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss"
+    },
+    {
       "case_id": "GET /api/_research/session-books/{symbol}/book 422 application/json operator-token",
       "command": "cargo test -p api-rust --test api_contract_runtime_auth_research -- --nocapture",
       "coverage_tags": ["direct-http-fragment", "production-router", "shared-error-family"],
@@ -8012,6 +8042,216 @@
       "scenario_id": "http-fragment:GET /api/_research/session-books/{symbol}/book 200 application/json operator-token:scenario",
       "setup_fixture": "real SessionChainArchive memory insert via production wire serializer",
       "shared_mapping_family": "status-200",
+      "target": "apps/api/tests/api_contract_runtime_auth_research.rs",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss"
+    },
+    {
+      "case_id": "GET /api/_research/session-day-tape/{symbol} 200 application/json operator-token",
+      "command": "cargo test -p api-rust --test api_contract_runtime_auth_research -- --nocapture",
+      "coverage_tags": ["direct-http-fragment", "production-router", "shared-error-family"],
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "expected_response": {
+        "body_category": "json",
+        "body_meaning": "json",
+        "body_valid": true,
+        "header_names": [],
+        "header_value_policies": {},
+        "media_type": "application/json",
+        "security_mode": "operator-token",
+        "status": 200
+      },
+      "fixture": "apps/api/tests/fixtures/api_contract/runtime-evidence-auth-research.json",
+      "id": "http-fragment:GET /api/_research/session-day-tape/{symbol} 200 application/json operator-token",
+      "mode": "direct-http",
+      "operation_key": "GET /api/_research/session-day-tape/{symbol}",
+      "request_fixture": "GET /api/_research/session-day-tape/NVDA with x-metrics-token",
+      "scenario_id": "http-fragment:GET /api/_research/session-day-tape/{symbol} 200 application/json operator-token:scenario",
+      "setup_fixture": "production router list read; framing RESEARCH READ - SESSION DAY TAPE NOT IN WATCHLIST, days[] array, vendor_called false",
+      "shared_mapping_family": "status-200",
+      "target": "apps/api/tests/api_contract_runtime_auth_research.rs",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss"
+    },
+    {
+      "case_id": "GET /api/_research/flat-files/{symbol} 200 application/json operator-token",
+      "command": "cargo test -p api-rust --test api_contract_runtime_auth_research -- --nocapture",
+      "coverage_tags": ["direct-http-fragment", "production-router", "shared-error-family"],
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "expected_response": {
+        "body_category": "json",
+        "body_meaning": "json",
+        "body_valid": true,
+        "header_names": [],
+        "header_value_policies": {},
+        "media_type": "application/json",
+        "security_mode": "operator-token",
+        "status": 200
+      },
+      "fixture": "apps/api/tests/fixtures/api_contract/runtime-evidence-auth-research.json",
+      "id": "http-fragment:GET /api/_research/flat-files/{symbol} 200 application/json operator-token",
+      "mode": "direct-http",
+      "operation_key": "GET /api/_research/flat-files/{symbol}",
+      "request_fixture": "GET /api/_research/flat-files/NVDA with x-metrics-token",
+      "scenario_id": "http-fragment:GET /api/_research/flat-files/{symbol} 200 application/json operator-token:scenario",
+      "setup_fixture": "production router list read; framing RESEARCH READ - MASSIVE FLAT FILES NOT IN WATCHLIST, extracts[] array, no vendor credential in the body",
+      "shared_mapping_family": "status-200",
+      "target": "apps/api/tests/api_contract_runtime_auth_research.rs",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss"
+    },
+    {
+      "case_id": "GET /api/_research/flat-files/{symbol}/extract 422 application/json operator-token",
+      "command": "cargo test -p api-rust --test api_contract_runtime_auth_research -- --nocapture",
+      "coverage_tags": ["direct-http-fragment", "production-router", "shared-error-family"],
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "expected_response": {
+        "body_category": "json",
+        "body_meaning": "json",
+        "body_valid": true,
+        "header_names": [],
+        "header_value_policies": {},
+        "media_type": "application/json",
+        "security_mode": "operator-token",
+        "status": 422
+      },
+      "fixture": "apps/api/tests/fixtures/api_contract/runtime-evidence-auth-research.json",
+      "id": "http-fragment:GET /api/_research/flat-files/{symbol}/extract 422 application/json operator-token",
+      "mode": "direct-http",
+      "operation_key": "GET /api/_research/flat-files/{symbol}/extract",
+      "request_fixture": "GET /api/_research/flat-files/SPY/extract?et_date=not-a-date with x-metrics-token",
+      "scenario_id": "http-fragment:GET /api/_research/flat-files/{symbol}/extract 422 application/json operator-token:scenario",
+      "setup_fixture": "real query validation through production router; error et_date_unparseable",
+      "shared_mapping_family": "status-422",
+      "target": "apps/api/tests/api_contract_runtime_auth_research.rs",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss"
+    },
+    {
+      "case_id": "GET /api/_research/flat-files/{symbol} 401 application/json operator-token",
+      "command": "cargo test -p api-rust --test api_contract_runtime_auth_research -- --nocapture",
+      "coverage_tags": ["direct-http-fragment", "production-router", "shared-error-family"],
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "expected_response": {
+        "body_category": "json",
+        "body_meaning": "json",
+        "body_valid": true,
+        "header_names": [],
+        "header_value_policies": {},
+        "media_type": "application/json",
+        "security_mode": "operator-token",
+        "status": 401
+      },
+      "fixture": "apps/api/tests/fixtures/api_contract/runtime-evidence-auth-research.json",
+      "id": "http-fragment:GET /api/_research/flat-files/{symbol} 401 application/json operator-token",
+      "mode": "direct-http",
+      "operation_key": "GET /api/_research/flat-files/{symbol}",
+      "request_fixture": "GET /api/_research/flat-files/NVDA",
+      "scenario_id": "http-fragment:GET /api/_research/flat-files/{symbol} 401 application/json operator-token:scenario",
+      "setup_fixture": "production router without operator header",
+      "shared_mapping_family": "status-401",
+      "target": "apps/api/tests/api_contract_runtime_auth_research.rs",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss"
+    },
+    {
+      "case_id": "GET /api/_research/session-archive/coverage 200 application/json operator-token",
+      "command": "cargo test -p api-rust --test api_contract_runtime_auth_research -- --nocapture",
+      "coverage_tags": ["direct-http-fragment", "production-router", "shared-error-family"],
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "expected_response": {
+        "body_category": "json",
+        "body_meaning": "json",
+        "body_valid": true,
+        "header_names": [],
+        "header_value_policies": {},
+        "media_type": "application/json",
+        "security_mode": "operator-token",
+        "status": 200
+      },
+      "fixture": "apps/api/tests/fixtures/api_contract/runtime-evidence-auth-research.json",
+      "id": "http-fragment:GET /api/_research/session-archive/coverage 200 application/json operator-token",
+      "mode": "direct-http",
+      "operation_key": "GET /api/_research/session-archive/coverage",
+      "request_fixture": "GET /api/_research/session-archive/coverage with x-metrics-token",
+      "scenario_id": "http-fragment:GET /api/_research/session-archive/coverage 200 application/json operator-token:scenario",
+      "setup_fixture": "production router coverage read; rows, holes and verdict present, vendor_called false",
+      "shared_mapping_family": "status-200",
+      "target": "apps/api/tests/api_contract_runtime_auth_research.rs",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss"
+    },
+    {
+      "case_id": "GET /api/_research/session-archive/coverage 422 application/json operator-token",
+      "command": "cargo test -p api-rust --test api_contract_runtime_auth_research -- --nocapture",
+      "coverage_tags": ["direct-http-fragment", "production-router", "shared-error-family"],
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "expected_response": {
+        "body_category": "json",
+        "body_meaning": "json",
+        "body_valid": true,
+        "header_names": [],
+        "header_value_policies": {},
+        "media_type": "application/json",
+        "security_mode": "operator-token",
+        "status": 422
+      },
+      "fixture": "apps/api/tests/fixtures/api_contract/runtime-evidence-auth-research.json",
+      "id": "http-fragment:GET /api/_research/session-archive/coverage 422 application/json operator-token",
+      "mode": "direct-http",
+      "operation_key": "GET /api/_research/session-archive/coverage",
+      "request_fixture": "GET /api/_research/session-archive/coverage?et_date=not-a-date with x-metrics-token",
+      "scenario_id": "http-fragment:GET /api/_research/session-archive/coverage 422 application/json operator-token:scenario",
+      "setup_fixture": "real query validation through production router; error et_date_unparseable",
+      "shared_mapping_family": "status-422",
+      "target": "apps/api/tests/api_contract_runtime_auth_research.rs",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss"
+    },
+    {
+      "case_id": "GET /api/_research/session-archive/coverage 401 application/json operator-token",
+      "command": "cargo test -p api-rust --test api_contract_runtime_auth_research -- --nocapture",
+      "coverage_tags": ["direct-http-fragment", "production-router", "shared-error-family"],
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "expected_response": {
+        "body_category": "json",
+        "body_meaning": "json",
+        "body_valid": true,
+        "header_names": [],
+        "header_value_policies": {},
+        "media_type": "application/json",
+        "security_mode": "operator-token",
+        "status": 401
+      },
+      "fixture": "apps/api/tests/fixtures/api_contract/runtime-evidence-auth-research.json",
+      "id": "http-fragment:GET /api/_research/session-archive/coverage 401 application/json operator-token",
+      "mode": "direct-http",
+      "operation_key": "GET /api/_research/session-archive/coverage",
+      "request_fixture": "GET /api/_research/session-archive/coverage",
+      "scenario_id": "http-fragment:GET /api/_research/session-archive/coverage 401 application/json operator-token:scenario",
+      "setup_fixture": "production router without operator header",
+      "shared_mapping_family": "status-401",
       "target": "apps/api/tests/api_contract_runtime_auth_research.rs",
       "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss"
     },

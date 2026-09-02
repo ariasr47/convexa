@@ -11,7 +11,7 @@
       "kind": "structured-json",
       "media_type": "application/json",
       "path": "apps/api/openapi/parity-coverage.json",
-      "sha256": "b6cc0828c3ddaf037a421858259cdea4edc58fd8270eab02db4ef98645442df6",
+      "sha256": "1dfade691a8e2ce9b80ce86efda01cad38fa088a4f1d253fcd7e9ef4ac6272b8",
       "writer": "npm run api:contract:generate"
     },
     {

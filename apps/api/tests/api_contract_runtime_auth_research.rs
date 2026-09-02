@@ -1015,7 +1015,7 @@ fn runtime_evidence_fragment_resolves_to_real_tests() {
     let source = include_str!("api_contract_runtime_auth_research.rs");
     let entries = fragment["boundaries"].as_array().expect("boundaries array");
     assert_eq!(fragment["schema_version"], 2);
-    assert_eq!(entries.len(), 17, "runtime fragment must not be vacuous");
+    assert_eq!(entries.len(), 25, "runtime fragment must not be vacuous");
     for entry in entries {
         assert!(entry["boundary_id"].as_str().is_some());
         let test = entry["test"].as_str().expect("test name");

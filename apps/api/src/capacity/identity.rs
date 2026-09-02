@@ -26,11 +26,11 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "b6cc0828c3ddaf037a421858259cdea4edc58fd8270eab02db4ef98645442df6",
+        "1dfade691a8e2ce9b80ce86efda01cad38fa088a4f1d253fcd7e9ef4ac6272b8",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "545c15c91429ca71de28ee61d1b6d0f9acf180ceef2e33d97ddba3c3a68a550b",
+        "4c9d3f36c04625eaa8a321076e2823f4d138af9010fdf842b6d8b18e2d907a9d",
     ),
     (
         "libs/api/src/generated/schema.ts",
