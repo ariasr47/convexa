@@ -270,8 +270,8 @@ fn cargo_toml_and_lock_have_no_aws_sdk() {
 
 #[test]
 fn market_data_source_kind_still_three_arms() {
-    let src =
-        fs::read_to_string(workspace_root().join("apps/api/src/services/market_data/mod.rs")).unwrap();
+    let src = fs::read_to_string(workspace_root().join("apps/api/src/services/market_data/mod.rs"))
+        .unwrap();
     let prod = prod_only(&src);
     let start = prod
         .find("pub enum MarketDataSourceKind")
@@ -322,7 +322,9 @@ fn tape_root_conflicts_still_four_params_keep_not_a_peer() {
     let src = fs::read_to_string(workspace_root().join("apps/api/src/config.rs")).unwrap();
     let prod = prod_only(&src);
     let sig = "pub fn tape_root_conflicts(";
-    let start = prod.find(sig).expect("anti-vacuity: tape_root_conflicts must exist");
+    let start = prod
+        .find(sig)
+        .expect("anti-vacuity: tape_root_conflicts must exist");
     let rest = &prod[start..];
     let end = rest.find('{').expect("fn body");
     let header = &rest[..end];
@@ -425,7 +427,11 @@ fn operator_metrics_stages_still_six_latency_names() {
             "STAGES missing {name}"
         );
     }
-    assert_eq!(expected.len(), 6, "AC-45: OperatorMetrics STAGES stays six names");
+    assert_eq!(
+        expected.len(),
+        6,
+        "AC-45: OperatorMetrics STAGES stays six names"
+    );
     for forbid in [
         "flat-files",
         "flat_files",
@@ -505,8 +511,8 @@ fn session_book_coverage_tape_framing_strings_still_present() {
 
 #[test]
 fn health_rs_has_no_flat_files_nest() {
-    let health =
-        fs::read_to_string(workspace_root().join("apps/api/src/routes/health.rs")).expect("health.rs");
+    let health = fs::read_to_string(workspace_root().join("apps/api/src/routes/health.rs"))
+        .expect("health.rs");
     assert!(!health.contains("flat-files"));
     assert!(!health.contains("flat_files"));
     assert!(!health.contains("massive_flat_files"));

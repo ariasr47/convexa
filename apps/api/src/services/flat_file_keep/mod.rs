@@ -15,12 +15,13 @@ mod watchlist;
 pub use clocks::{due_instant, is_due, is_et_weekend, parse_et_date, today_et_date};
 pub use fs::{root_is_writable, JsonInner};
 pub use literals::{
-    empty_extract, ineligible_weekend, miss, no_stored_extract, not_elapsed, not_in_watchlist,
-    unreadable, AUTHORIZES, BAD_DATE, CLOSING, COMMAND, EVIDENCE_CLI, EVIDENCE_HTTP, FRAMING_HIT,
-    FRAMING_MISS, FRAMING_NOT_ELAPSED, FRAMING_NOT_IN_WATCHLIST, FRAMING_NOT_STORING,
-    FRAMING_REFUSE_TO_MIX, FRAMING_UNREADABLE, FRAMING_WEEKEND, HIT_PROVENANCE, INVALID_LIMIT,
-    KEPT, LICENSE, MISSING_CREDENTIALS, MISS_PROVENANCE, NOT_STORING, REFUSE_TO_MIX,
-    STANDING_PROVENANCE, UNAUTHORIZED_DETAIL, UNREADABLE_ERROR, WRONG_CREDENTIAL_CLASS,
+    empty_extract, ineligible_holiday, ineligible_weekend, miss, no_stored_extract, not_elapsed,
+    not_in_watchlist, unreadable, AUTHORIZES, BAD_DATE, CLOSING, COMMAND, EVIDENCE_CLI,
+    EVIDENCE_HTTP, FRAMING_HIT, FRAMING_HOLIDAY, FRAMING_MISS, FRAMING_NOT_ELAPSED,
+    FRAMING_NOT_IN_WATCHLIST, FRAMING_NOT_STORING, FRAMING_REFUSE_TO_MIX, FRAMING_UNREADABLE,
+    FRAMING_WEEKEND, HIT_PROVENANCE, INVALID_LIMIT, KEPT, LICENSE, MISSING_CREDENTIALS,
+    MISS_PROVENANCE, NOT_STORING, REFUSE_TO_MIX, STANDING_PROVENANCE, UNAUTHORIZED_DETAIL,
+    UNREADABLE_ERROR, WRONG_CREDENTIAL_CLASS,
 };
 pub use occupancy::{
     classify_dated, is_content_hit, is_locked_extract, load_envelope, occupancy_label,

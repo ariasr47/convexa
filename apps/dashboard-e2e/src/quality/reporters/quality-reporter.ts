@@ -262,11 +262,28 @@ export class QualityReporter implements Reporter {
       this.output,
     );
     atomicWrite(output, summary);
-    console.log(
-      status === 'pass'
-        ? `[PASS] ${this.gate} — ${passed}/${this.selected} passed — 0 flaky`
-        : `[FAIL] ${this.gate} — ${failed} failed. Open: ${this.output}`,
-    );
+    if (status === 'pass') {
+      console.log(`[PASS] ${this.gate} — ${passed}/${this.selected} passed — 0 flaky`);
+      return;
+    }
+    if (flaky > 0) {
+      console.log(
+        `[FAIL] ${this.gate} — ${flaky} test(s) passed only after retry; no stability-clean pass recorded. Open: ${this.output}`,
+      );
+      return;
+    }
+    if (this.gate === 'visual') {
+      const failedScenarios = this.records.filter((record) => record.status === 'failed');
+      if (failedScenarios.length > 0) {
+        for (const record of failedScenarios) {
+          console.log(
+            `[FAIL] visual — ${String(record.scenario_id)}: the approved baseline differs. Review expected, actual, and diff images. Open: ${this.output}`,
+          );
+        }
+        return;
+      }
+    }
+    console.log(`[FAIL] ${this.gate} — ${failed} failed. Open: ${this.output}`);
   }
 }
 export default QualityReporter;

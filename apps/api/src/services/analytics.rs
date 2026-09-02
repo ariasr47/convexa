@@ -25,6 +25,14 @@ pub async fn load_analytics(
     max_dte: Option<f64>,
     refresh: bool,
 ) -> Result<(Option<AnalyticsSnapshot>, String), AppError> {
+    // Armed replay: ReplayHold before gex_cache; never Massive four-fetch (any ticker).
+    if state.replay_occupancy.is_armed().await {
+        if let Some(hit) = state.replay_hold.get(sym).await {
+            return Ok((Some(hit), "session_tape".into()));
+        }
+        return Ok((None, "session_tape".into()));
+    }
+
     let filter_active = min_dte.is_some() || max_dte.is_some();
     if !refresh && !filter_active {
         if let Some(hit) = state.gex_cache.get(sym).await {
@@ -73,6 +81,14 @@ pub async fn load_analytics(
 /// Unlike [`refresh_analytics`], this **does not** force a vendor re-fetch when the
 /// gex cache is still warm — kills warmer+scanner stampede on hot names.
 pub async fn load_or_compute(state: &AppState, sym: &str) -> Result<AnalyticsSnapshot, AppError> {
+    // Armed replay: hold hit or honest absent — never gex_cache / Massive four-fetch.
+    if state.replay_occupancy.is_armed().await {
+        if let Some(hit) = state.replay_hold.get(sym).await {
+            return Ok(hit);
+        }
+        return Err(AppError::NotFound("structure unavailable".into()));
+    }
+
     if let Some(hit) = state.gex_cache.get(sym).await {
         info!(ticker = %sym, "scanner/warm path: gex cache hit");
         // Live hole: warm hit returns without capture. Wake the off-path ensure worker
@@ -99,15 +115,22 @@ pub async fn load_or_compute(state: &AppState, sym: &str) -> Result<AnalyticsSna
 /// Force-refresh analytics (used by the warmer). Singleflight so concurrent warmer
 /// + scanner + user share one chain pull.
 pub async fn refresh_analytics(state: &AppState, sym: &str) -> Result<AnalyticsSnapshot, AppError> {
+    // Replay construct does not start the warmer; still refuse Massive refresh if armed.
+    if state.replay_occupancy.is_armed().await {
+        return Err(AppError::Config(
+            "replay construct does not refresh via Massive".into(),
+        ));
+    }
     state
         .gex_flight
         .join_or_run(sym, || async {
-            let (snap, _vendor) = compute_analytics(state, sym, None, None).await?;
-            // Intentionally drop _vendor — warmer / refresh_analytics must not capture.
+            let (snap, vendor) = compute_analytics(state, sym, None, None).await?;
+            // Path-B day-tape keep (already-paid only). Warmer must not ring-capture.
+            crate::services::day_tape::path_b::maybe_spawn_persist(state, &vendor).await;
             state.gex_cache.set(snap.clone()).await;
 
             // Keep price warm alongside GEX for the progressive path.
-            if let Ok(live) = state.massive.fetch_quick_live_price(sym).await {
+            if let Ok(live) = state.quick_live_price(sym).await {
                 let _ = state.prices.set_price(&live).await;
             } else {
                 seed_price_if_empty(state, &snap).await;
@@ -173,6 +196,29 @@ async fn compute_analytics(
     ),
     AppError,
 > {
+    // Defense in depth: armed process never takes the Massive four-fetch (any ticker).
+    if state.replay_occupancy.is_armed().await {
+        return Err(AppError::Config(
+            "replay construct does not four-fetch".into(),
+        ));
+    }
+
+    // Capacity harness / fixture arm: resolve the golden book and skip Massive.
+    // When vendor_fixture is None, fall through to today's four-fetch join (byte-identical).
+    if let Some(cat) = &state.vendor_fixture {
+        let vendor = cat.resolve(sym, None)?;
+        let params = AnalyticsComputeParams {
+            min_dte,
+            max_dte,
+            include_dark_pool: state.config.include_dark_pool,
+            block_min_shares: state.config.block_min_shares,
+            ttl_secs: state.config.gex_ttl_for(sym).as_secs(),
+            iv_rank_enabled: false,
+        };
+        let snap = compute_analytics_from_vendor(&vendor, &params, None).await?;
+        return Ok((snap, vendor));
+    }
+
     let t0 = Instant::now();
     // Chain + daily + minute bars in parallel (Python `_acquire_vendor_inputs`).
     // Each is independently best-effort for HV / VWAP; only the chain is required.
@@ -507,5 +553,305 @@ mod hermetic_tests {
             snap.straddle_move.unwrap().state,
             S::Ok | S::NoQuote | S::NotComputed | S::NoExpirationInWindow
         ));
+    }
+
+    fn golden_path() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../libs/quant-engine/tests/fixtures/gex_SPY.json")
+    }
+
+    #[tokio::test]
+    async fn vendor_fixture_some_skips_massive_fetch_and_keeps_none_arm_intact() {
+        let book = crate::services::capacity_harness::fixture::load_capacity_book(&golden_path())
+            .expect("golden");
+        let state = crate::state::AppState::for_capacity_harness(book.catalog, 4, 9)
+            .await
+            .expect("harness state");
+        let (snap, _src) = load_analytics(&state, "SPY", None, None, false)
+            .await
+            .expect("fixture Path-B");
+        let snap = snap.expect("snapshot present");
+        assert_eq!(state.massive.request_count(), 0);
+        assert!(snap.contract_count >= 1000);
+        assert_eq!(snap.ticker, "SPY");
+    }
+
+    #[tokio::test]
+    async fn vendor_fixture_none_still_calls_the_four_fetch_join() {
+        // Source assertion: the None arm still contains fetch_options_market_state,
+        // fetch_daily_bars, fetch_intraday_bars, fetch_recent_trades in one tokio::join!.
+        let src = include_str!("analytics.rs");
+        let start = src.find("async fn compute_analytics(").unwrap();
+        let body = &src[start..];
+        assert!(body.contains("state.massive.fetch_options_market_state(sym)"));
+        assert!(body.contains("state.massive.fetch_daily_bars(sym, 400)"));
+        assert!(body.contains("state.massive.fetch_intraday_bars(sym)"));
+        assert!(body.contains("state.massive.fetch_recent_trades"));
+        // Fixture arm must not rewire onto MarketDataPort::Live.
+        let compute_end = body
+            .find("pub(crate) async fn fetch_vendor_bundle_for_ensure")
+            .unwrap_or(body.len());
+        let compute_fn = &body[..compute_end];
+        assert!(!compute_fn.contains("MarketDataPort::live"));
+        // refresh_analytics must use the fixture-aware quick_live_price wrap.
+        let refresh_start = src
+            .find("pub async fn refresh_analytics(")
+            .expect("refresh_analytics");
+        let refresh_body = &src[refresh_start..];
+        let refresh_end = refresh_body
+            .find("async fn seed_price_if_empty(")
+            .unwrap_or(refresh_body.len());
+        let refresh_fn = &refresh_body[..refresh_end];
+        assert!(refresh_fn.contains("state.quick_live_price(sym)"));
+        assert!(!refresh_fn.contains("state.massive.fetch_quick_live_price"));
+    }
+
+    #[test]
+    fn refresh_analytics_still_has_no_spawn_capture() {
+        let src = include_str!("analytics.rs");
+        let refresh_start = src
+            .find("pub async fn refresh_analytics(")
+            .expect("refresh_analytics");
+        let refresh_body = &src[refresh_start..];
+        let refresh_end = refresh_body
+            .find("async fn seed_price_if_empty(")
+            .unwrap_or(refresh_body.len());
+        let refresh_fn = &refresh_body[..refresh_end];
+        assert!(
+            refresh_fn.contains("gex_cache.set"),
+            "refresh_analytics must still warm gex_cache"
+        );
+        assert!(
+            refresh_fn.contains("quick_live_price"),
+            "refresh_analytics must still warm price"
+        );
+        let spawn = format!("spawn_{}", "capture");
+        assert!(
+            !refresh_fn.contains(&spawn),
+            "poison: refresh_analytics must not call spawn_capture"
+        );
+        assert!(
+            refresh_fn.contains("day_tape::path_b"),
+            "refresh_analytics should hook Path-B persist"
+        );
+    }
+
+    use crate::domain::MarketPhase;
+    use crate::services::day_tape::replay_occupancy::{first_playing_voucher, ReplayOccupancySlot};
+    use crate::services::day_tape::SessionDayTape;
+    use crate::state::{AnalyticsSnapshot, AppState, ReplayHold};
+    use quant_engine::{compute_opportunity_tier, evaluate_gate, GexResult, DEFAULT_GATE_SCORE};
+
+    fn marked_snap(ticker: &str, gex_spot: f64) -> AnalyticsSnapshot {
+        AnalyticsSnapshot {
+            ticker: ticker.into(),
+            gex_spot,
+            display_spot: gex_spot,
+            market_phase: MarketPhase::Rth,
+            atm_iv: 0.2,
+            atm_iv_expiration: None,
+            atm_iv_dte: None,
+            hv_30d: None,
+            iv_hv_ratio: None,
+            contract_count: 0,
+            gex: GexResult::empty(),
+            signals: None,
+            iv_skew: None,
+            term_structure: None,
+            vwap: None,
+            market_context: None,
+            off_exchange: None,
+            iv_rank: None,
+            vol_normalized_gex: None,
+            straddle_move: None,
+            contracts: Vec::new(),
+            compute_ms: 1.0,
+            cached_at: 0,
+            ttl_secs: 0,
+        }
+    }
+
+    async fn armed_replay_state() -> AppState {
+        let occupancy = ReplayOccupancySlot::unset();
+        occupancy
+            .write(first_playing_voucher("SPY", "2026-08-10", 1))
+            .await;
+        AppState::for_session_day_replay_with_env(SessionDayTape::memory(), occupancy, None)
+            .await
+            .expect("replay state")
+    }
+
+    fn score_triple(snap: &AnalyticsSnapshot) -> (i32, String, String) {
+        let sig = snap.signals.as_ref().expect("signals");
+        let gate = evaluate_gate(sig, DEFAULT_GATE_SCORE);
+        let tier = compute_opportunity_tier(sig.opportunity_score, gate.ready, 40, 60, 80);
+        (sig.opportunity_score, tier, gate.state_fingerprint)
+    }
+
+    #[tokio::test]
+    async fn load_analytics_prefers_replay_hold_before_gex_cache() {
+        let state = armed_replay_state().await;
+        // Competing cache entry must lose to ReplayHold while armed.
+        state.gex_cache.set(marked_snap("SPY", 111.0)).await;
+        state
+            .replay_hold
+            .replace("SPY", "2026-08-10", marked_snap("SPY", 222.0))
+            .await;
+
+        let (snap, src) = load_analytics(&state, "SPY", None, None, false)
+            .await
+            .expect("armed load");
+        let snap = snap.expect("ReplayHold hit");
+        assert_eq!(src, "session_tape");
+        assert_eq!(snap.gex_spot, 222.0);
+        assert_eq!(state.massive.request_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn armed_rest_for_second_symbol_does_not_four_fetch() {
+        let state = armed_replay_state().await;
+        state
+            .replay_hold
+            .replace("SPY", "2026-08-10", marked_snap("SPY", 222.0))
+            .await;
+        let before = state.massive.request_count();
+        let (snap, src) = load_analytics(&state, "QQQ", None, None, false)
+            .await
+            .expect("armed second-symbol load must not 5xx");
+        assert!(snap.is_none(), "not-the-armed-day structure is absent");
+        assert_eq!(src, "session_tape");
+        assert_eq!(state.massive.request_count(), before);
+    }
+
+    #[tokio::test]
+    async fn armed_cache_miss_is_absent_structure_not_5xx() {
+        let state = armed_replay_state().await;
+        // Empty ReplayHold + warm gex_cache must still be absent (no cache fallback while armed).
+        state.gex_cache.set(marked_snap("SPY", 111.0)).await;
+        let (snap, src) = load_analytics(&state, "SPY", None, None, false)
+            .await
+            .expect("armed miss is Ok(None), not Err");
+        assert!(snap.is_none());
+        assert_eq!(src, "session_tape");
+        assert_eq!(state.massive.request_count(), 0);
+
+        let err = load_or_compute(&state, "SPY")
+            .await
+            .expect_err("armed miss on load_or_compute");
+        assert!(
+            matches!(err, AppError::NotFound(_)),
+            "armed miss must be NotFound (not 5xx Config): {err}"
+        );
+    }
+
+    #[tokio::test]
+    async fn same_path_b_body_score_triple_matches_live_compute() {
+        let book = crate::services::capacity_harness::fixture::load_capacity_book(&golden_path())
+            .expect("golden");
+        let state = AppState::for_capacity_harness(book.catalog, 4, 9)
+            .await
+            .expect("harness state");
+        assert!(!state.replay_occupancy.is_armed().await, "unset construct");
+
+        let (live_opt, _) = load_analytics(&state, "SPY", None, None, false)
+            .await
+            .expect("fixture live path");
+        let live = live_opt.expect("snapshot");
+
+        let vendor = state
+            .vendor_fixture
+            .as_ref()
+            .expect("fixture catalog")
+            .resolve("SPY", None)
+            .expect("resolve");
+        let params = AnalyticsComputeParams {
+            min_dte: None,
+            max_dte: None,
+            include_dark_pool: state.config.include_dark_pool,
+            block_min_shares: state.config.block_min_shares,
+            ttl_secs: state.config.gex_ttl_for("SPY").as_secs(),
+            iv_rank_enabled: false,
+        };
+        // Replay Path-B always passes iv_store = None.
+        let replay = compute_analytics_from_vendor(&vendor, &params, None)
+            .await
+            .expect("replay compute");
+
+        assert_eq!(score_triple(&live), score_triple(&replay));
+        assert_eq!(state.massive.request_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn unset_construct_still_uses_existing_compute_analytics() {
+        let book = crate::services::capacity_harness::fixture::load_capacity_book(&golden_path())
+            .expect("golden");
+        let state = AppState::for_capacity_harness(book.catalog, 4, 9)
+            .await
+            .expect("harness state");
+        assert!(!state.replay_occupancy.is_armed().await);
+
+        let (snap, src) = load_analytics(&state, "SPY", None, None, false)
+            .await
+            .expect("unset Path-B");
+        assert!(snap.is_some());
+        assert_ne!(src, "session_tape");
+        assert_eq!(state.massive.request_count(), 0);
+
+        // Unset four-fetch join remains in compute_analytics (source pin).
+        let src_file = include_str!("analytics.rs");
+        let start = src_file.find("async fn compute_analytics(").unwrap();
+        let body = &src_file[start..];
+        assert!(body.contains("state.massive.fetch_options_market_state(sym)"));
+        assert!(body.contains("tokio::join!"));
+    }
+
+    #[test]
+    fn armed_structure_path_does_not_spawn_capture() {
+        // Poison: ReplayHold / armed short-circuits must not schedule ring capture.
+        let src = include_str!("analytics.rs");
+        let spawn = format!("spawn_{}", "capture");
+        for (name, marker, end_marker) in [
+            (
+                "load_analytics",
+                "pub async fn load_analytics(",
+                "pub async fn load_or_compute(",
+            ),
+            (
+                "load_or_compute",
+                "pub async fn load_or_compute(",
+                "pub async fn refresh_analytics(",
+            ),
+            (
+                "refresh_analytics",
+                "pub async fn refresh_analytics(",
+                "async fn seed_price_if_empty(",
+            ),
+        ] {
+            let start = src.find(marker).unwrap_or_else(|| panic!("{name} missing"));
+            let body = &src[start..];
+            let end = body.find(end_marker).unwrap_or(body.len());
+            let fn_src = &body[..end];
+            // Armed early-return must exist; spawn_capture must not sit on that arm.
+            assert!(
+                fn_src.contains("replay_occupancy.is_armed()"),
+                "{name} must consult replay_occupancy while armed"
+            );
+            let armed_idx = fn_src.find("replay_occupancy.is_armed()").unwrap();
+            let after_armed = &fn_src[armed_idx..];
+            // Before falling through to the live path, armed arm returns — no spawn on that slice
+            // up to the first closing of the armed block is hard to parse; instead require that
+            // any spawn_capture appears only after the armed early-return pattern.
+            if let Some(spawn_idx) = after_armed.find(&spawn) {
+                let between = &after_armed[..spawn_idx];
+                assert!(
+                    between.contains("return Ok")
+                        || between.contains("return Err")
+                        || between.contains("gex_flight"),
+                    "poison: {name} must return before spawn_capture on the armed arm"
+                );
+            }
+        }
+        // ReplayHold type remains reachable for B5 peeks.
+        let _ = ReplayHold::empty();
     }
 }

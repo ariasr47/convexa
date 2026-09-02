@@ -79,4 +79,12 @@ mod tests {
         assert!(!is_due(d, et_hm(2026, 8, 11, 10, 59)));
         assert!(is_due(d, et_hm(2026, 8, 11, 11, 0)));
     }
+
+    #[test]
+    fn local_is_et_weekend_stays_sat_sun_not_holiday_weekday() {
+        assert!(!is_et_weekend("2026-08-10"));
+        assert!(!is_et_weekend("2026-11-26")); // Thanksgiving Thursday
+        assert!(is_et_weekend("2026-08-15")); // Saturday
+        assert!(is_et_weekend("2026-08-16")); // Sunday
+    }
 }

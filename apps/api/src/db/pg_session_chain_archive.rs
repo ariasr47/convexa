@@ -36,6 +36,7 @@ impl PgSessionChainArchive {
         let source_s = match source {
             MarketDataSourceKind::LiveMassive => "live_massive",
             MarketDataSourceKind::Fixture => "fixture",
+            MarketDataSourceKind::SessionTape => "session_tape",
         };
         let as_of = as_of_string(source_as_of);
         let as_of_ns = source_as_of.timestamp_nanos_opt().unwrap_or(0);
@@ -99,6 +100,7 @@ impl PgSessionChainArchive {
             let source_s: String = r.try_get("source").unwrap_or_default();
             let source = match source_s.as_str() {
                 "live_massive" => MarketDataSourceKind::LiveMassive,
+                "session_tape" => MarketDataSourceKind::SessionTape,
                 _ => MarketDataSourceKind::Fixture,
             };
             out.push(SessionBookMeta {
@@ -142,6 +144,7 @@ impl PgSessionChainArchive {
         let source_s: String = r.try_get("source").unwrap_or_default();
         let source = match source_s.as_str() {
             "live_massive" => MarketDataSourceKind::LiveMassive,
+            "session_tape" => MarketDataSourceKind::SessionTape,
             _ => MarketDataSourceKind::Fixture,
         };
         let meta = SessionBookMeta {

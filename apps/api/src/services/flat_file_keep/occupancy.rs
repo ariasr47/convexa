@@ -1,18 +1,20 @@
 //! Closed type-level occupancy. Exhaustive match; no coverage `present` arm.
 
-use super::clocks::{is_due, is_et_weekend, today_et_date};
+use super::clocks::{is_due, today_et_date};
 use super::literals::{
-    self, FRAMING_HIT, FRAMING_MISS, FRAMING_NOT_ELAPSED, FRAMING_NOT_IN_WATCHLIST,
+    self, FRAMING_HIT, FRAMING_HOLIDAY, FRAMING_MISS, FRAMING_NOT_ELAPSED, FRAMING_NOT_IN_WATCHLIST,
     FRAMING_WEEKEND, UNREADABLE_ERROR,
 };
 use super::watchlist::in_flat_files_watchlist;
-use chrono::{DateTime, Utc};
+use crate::domain::{is_et_weekend as domain_weekend, is_nyse_full_day_holiday};
+use chrono::{DateTime, NaiveDate, Utc};
 
 /// Closed occupancy deck. Type names do not print.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Occupancy {
     NotElapsed,
     IneligibleWeekend,
+    IneligibleHoliday,
     NotStoring,
     RefuseToMix,
     MissingFilesCredentials,
@@ -24,6 +26,10 @@ pub enum Occupancy {
     Unreadable { reason: String },
     Kept { row_count: usize },
     EmptyExtract,
+}
+
+fn naive(et_date: &str) -> Option<NaiveDate> {
+    NaiveDate::parse_from_str(et_date, "%Y-%m-%d").ok()
 }
 
 /// Store-level enablement (before per-date content).
@@ -67,8 +73,11 @@ pub fn classify_dated(
         StoreLevel::RefuseToMix => return Occupancy::RefuseToMix,
         StoreLevel::Storing => {}
     }
-    if is_et_weekend(et_date) {
+    if naive(et_date).is_some_and(domain_weekend) {
         return Occupancy::IneligibleWeekend;
+    }
+    if naive(et_date).is_some_and(is_nyse_full_day_holiday) {
+        return Occupancy::IneligibleHoliday;
     }
     let today = today_et_date(now);
     if et_date > today.as_str() || !is_due(et_date, now) {
@@ -92,6 +101,7 @@ pub fn occupancy_token(o: &Occupancy) -> &'static str {
     match o {
         Occupancy::NotElapsed => "not-elapsed",
         Occupancy::IneligibleWeekend => "ineligible weekend",
+        Occupancy::IneligibleHoliday => "ineligible holiday",
         Occupancy::NotStoring => "not-storing",
         Occupancy::RefuseToMix => "refuse to mix",
         Occupancy::MissingFilesCredentials => "missing-files-credentials",
@@ -113,6 +123,7 @@ pub fn operator_print(o: &Occupancy, symbol: &str, et_date: &str) -> String {
         Occupancy::NotStoring => literals::NOT_STORING.to_string(),
         Occupancy::RefuseToMix => literals::REFUSE_TO_MIX.to_string(),
         Occupancy::IneligibleWeekend => literals::ineligible_weekend(et_date),
+        Occupancy::IneligibleHoliday => literals::ineligible_holiday(et_date),
         Occupancy::NotElapsed => literals::not_elapsed(et_date),
         Occupancy::Miss => literals::miss(et_date),
         Occupancy::NoStoredExtract => literals::no_stored_extract(et_date),
@@ -162,6 +173,18 @@ pub fn load_envelope(
             http_status: 200,
             framing: FRAMING_WEEKEND,
             detail: Some(literals::ineligible_weekend(et_date)),
+            error: None,
+            trades: trades.clone(),
+            quotes: quotes.clone(),
+        };
+    }
+    if matches!(trades, Occupancy::IneligibleHoliday)
+        || matches!(quotes, Occupancy::IneligibleHoliday)
+    {
+        return EnvelopeDecision {
+            http_status: 200,
+            framing: FRAMING_HOLIDAY,
+            detail: Some(literals::ineligible_holiday(et_date)),
             error: None,
             trades: trades.clone(),
             quotes: quotes.clone(),
@@ -234,6 +257,7 @@ pub fn occupancy_label(o: &Occupancy) -> &'static str {
     match o {
         Occupancy::NotElapsed => "not_elapsed",
         Occupancy::IneligibleWeekend => "ineligible_weekend",
+        Occupancy::IneligibleHoliday => "ineligible_holiday",
         Occupancy::NotStoring => "not_storing",
         Occupancy::RefuseToMix => "refuse_to_mix",
         Occupancy::MissingFilesCredentials => "missing_files_credentials",
@@ -270,6 +294,23 @@ mod tests {
         assert_eq!(a, Occupancy::IneligibleWeekend);
         assert_ne!(a, Occupancy::NotElapsed);
         assert_ne!(a, Occupancy::NoStoredExtract);
+    }
+
+    #[test]
+    fn leftover_kept_on_holiday_inspects_as_ineligible_holiday() {
+        let now = et_hm(2026, 11, 27, 12, 0);
+        let o = classify_dated(
+            "SPY",
+            "2026-11-26",
+            now,
+            StoreLevel::Storing,
+            Some(&OccupantFact::Kept { row_count: 3 }),
+        );
+        assert_eq!(o, Occupancy::IneligibleHoliday);
+        assert_ne!(o, Occupancy::Kept { row_count: 3 });
+        assert_ne!(o, Occupancy::EmptyExtract);
+        assert_ne!(o, Occupancy::Miss);
+        assert_ne!(o, Occupancy::IneligibleWeekend);
     }
 
     #[test]
@@ -332,6 +373,7 @@ mod tests {
         for o in [
             Occupancy::NotElapsed,
             Occupancy::IneligibleWeekend,
+            Occupancy::IneligibleHoliday,
             Occupancy::NotStoring,
             Occupancy::RefuseToMix,
             Occupancy::MissingFilesCredentials,
@@ -354,6 +396,7 @@ mod tests {
         let cases = [
             Occupancy::NotElapsed,
             Occupancy::IneligibleWeekend,
+            Occupancy::IneligibleHoliday,
             Occupancy::NotStoring,
             Occupancy::RefuseToMix,
             Occupancy::MissingFilesCredentials,
@@ -421,5 +464,24 @@ mod tests {
         );
         assert_eq!(env2.detail, None);
         assert_eq!(env2.framing, FRAMING_HIT);
+    }
+
+    #[test]
+    fn holiday_load_envelope_is_sibling_of_weekend() {
+        let env = load_envelope(
+            "SPY",
+            "2026-11-26",
+            Occupancy::IneligibleHoliday,
+            Occupancy::IneligibleHoliday,
+        );
+        assert_eq!(env.http_status, 200);
+        assert_eq!(env.framing, FRAMING_HOLIDAY);
+        assert_eq!(
+            env.detail.as_deref(),
+            Some("flat files ineligible holiday: 2026-11-26")
+        );
+        assert_ne!(env.framing, FRAMING_WEEKEND);
+        assert_ne!(occupancy_token(&env.trades), "ineligible weekend");
+        assert_eq!(occupancy_token(&env.trades), "ineligible holiday");
     }
 }

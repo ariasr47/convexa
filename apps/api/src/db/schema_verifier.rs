@@ -77,6 +77,7 @@ const PROBES: &[&str] = &[
     "SELECT user_id,status FROM grok_links LIMIT 0",
     "SELECT symbol,captured_at,body FROM chain_snapshots LIMIT 0",
     "SELECT symbol,et_date,body_locator FROM session_chain_archive LIMIT 0",
+    "SELECT symbol, et_date FROM session_day_tape LIMIT 0",
 ];
 
 fn classify_probe_error(error: sqlx::Error) -> VerificationFailure {

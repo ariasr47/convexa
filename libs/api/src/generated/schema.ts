@@ -71,6 +71,54 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/_research/flat-files/{symbol}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['research_flat_files_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/_research/flat-files/{symbol}/extract': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['research_flat_files_load'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/_research/session-archive/coverage': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['research_session_archive_coverage'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/_research/session-books/{symbol}': {
     parameters: {
       query?: never;
@@ -95,6 +143,38 @@ export interface paths {
       cookie?: never;
     };
     get: operations['research_session_book_load'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/_research/session-day-tape/{symbol}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['research_session_day_tape_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/_research/session-day-tape/{symbol}/day': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['research_session_day_tape_load'];
     put?: never;
     post?: never;
     delete?: never;
@@ -1111,6 +1191,47 @@ export interface components {
       strike: number;
       ticker: string;
     };
+    CoverageErrorBody: {
+      detail: string;
+      error: string;
+      store?: string | null;
+      vendor_called: boolean;
+    };
+    CoverageHoleDto: {
+      class: string;
+      et_date: string;
+      symbol: string;
+    };
+    CoverageOkBody: {
+      authorizes: string;
+      blocked_occupancy: number;
+      checkpoint: string;
+      command: string;
+      et_date: string;
+      evidence: string;
+      expected_due: number;
+      framing: string;
+      holes: components['schemas']['CoverageHoleDto'][];
+      license: string;
+      missing: number;
+      not_yet_due: number;
+      present: number;
+      provenance: string;
+      rows: components['schemas']['CoverageRowDto'][];
+      symbols: string[];
+      unreadable: number;
+      vendor_called: boolean;
+      verdict: string;
+    };
+    CoverageQuery: {
+      et_date?: string | null;
+    };
+    CoverageRowDto: {
+      cell: string;
+      et_date: string;
+      last_readable: string;
+      symbol: string;
+    };
     DarkPoolConfluenceWire: {
       coincides_with: string;
       /** Format: double */
@@ -1187,6 +1308,60 @@ export interface components {
     ExportOpenPositionsBody: {
       source: string;
       state: string;
+    };
+    FlatFilesErrorBody: {
+      detail: string;
+      error: string;
+      framing?: string | null;
+      store?: string | null;
+      vendor_called: boolean;
+    };
+    FlatFilesExtractRowDto: {
+      class: string;
+      et_date: string;
+      occupancy: string;
+      row_count: number;
+      symbol: string;
+    };
+    FlatFilesListBody: {
+      authorizes: string;
+      command: string;
+      count: number;
+      detail?: string | null;
+      evidence: string;
+      extracts: components['schemas']['FlatFilesExtractRowDto'][];
+      framing: string;
+      license: string;
+      provenance: string;
+      symbol: string;
+      vendor_called: boolean;
+      watchlist: string[];
+    };
+    FlatFilesListQuery: {
+      /** Format: int64 */
+      limit?: number | null;
+    };
+    FlatFilesLoadBody: {
+      authorizes: string;
+      command: string;
+      detail?: string | null;
+      et_date: string;
+      evidence: string;
+      framing: string;
+      license: string;
+      provenance: string;
+      quotes_extract: string;
+      quotes_occupancy: string;
+      quotes_row_count: number;
+      symbol: string;
+      trades_extract: string;
+      trades_occupancy: string;
+      trades_row_count: number;
+      vendor_called: boolean;
+      watchlist: string[];
+    };
+    FlatFilesLoadQuery: {
+      et_date?: string | null;
     };
     FlowVsPositioningWire: {
       composition?: null | components['schemas']['DivergenceCompositionWire'];
@@ -1362,6 +1537,7 @@ export interface components {
       net_flow: number;
       /** Format: double */
       sell_vol: number;
+      session_tape?: null | components['schemas']['SessionTapeOccupancyBody'];
       /** Format: int64 */
       spot_ts: number;
       /** Format: double */
@@ -1724,6 +1900,34 @@ export interface components {
       bid: number;
       /** Format: double */
       mid: number;
+    };
+    PathAGapDto: {
+      /** Format: int64 */
+      dropped: number;
+    };
+    PathATickDto: {
+      /** Format: double */
+      ask?: number | null;
+      /** Format: double */
+      ask_size?: number | null;
+      /** Format: double */
+      bid?: number | null;
+      /** Format: double */
+      bid_size?: number | null;
+      kind: string;
+      /** Format: double */
+      price?: number | null;
+      /** Format: double */
+      size?: number | null;
+      /** Format: int64 */
+      ts_ns: number;
+    };
+    PathBGapDto: {
+      mark: string;
+    };
+    PathBSnapshotDto: {
+      as_of: string;
+      mark: string;
     };
     PerTradeCapBody: {
       unit: string;
@@ -2137,6 +2341,15 @@ export interface components {
       settings: null | components['schemas']['AuthSettingsBody'];
       user: null | components['schemas']['AuthUserBody'];
     };
+    SessionTapeOccupancyBody: {
+      et_date: string;
+      /** Format: int64 */
+      pace: number;
+      phase: string;
+      symbol: string;
+      /** @description Present as JSON null when the tape cursor is not yet vouched (no skip_serializing_if). */
+      tape_time_et?: string | null;
+    };
     /**
      * @description Settings patch preserves absent versus explicit null without exposing an unconstrained JSON
      *     object in the HTTP contract.
@@ -2363,6 +2576,69 @@ export interface components {
       universe_size: number;
       /** Format: double */
       updated_at: number;
+    };
+    TapeDayRowDto: {
+      clock?: string | null;
+      et_date: string;
+      path_a_quote_count: number;
+      path_a_trade_count: number;
+      path_b_gap_count: number;
+      path_b_snapshot_count: number;
+      symbol: string;
+    };
+    TapeErrorBody: {
+      detail: string;
+      error: string;
+      framing?: string | null;
+      store?: string | null;
+      vendor_called: boolean;
+    };
+    TapeListBody: {
+      authorizes: string;
+      command: string;
+      count: number;
+      days: components['schemas']['TapeDayRowDto'][];
+      detail?: string | null;
+      evidence: string;
+      framing: string;
+      license: string;
+      path_b_interval: string;
+      provenance: string;
+      symbol: string;
+      vendor_called: boolean;
+      watchlist: string[];
+    };
+    TapeListQuery: {
+      /** Format: int64 */
+      limit?: number | null;
+    };
+    TapeLoadBody: {
+      authorizes: string;
+      clock?: string | null;
+      command: string;
+      detail?: string | null;
+      et_date: string;
+      evidence: string;
+      framing: string;
+      license: string;
+      path_a_detail: string;
+      path_a_gaps: components['schemas']['PathAGapDto'][];
+      path_a_quote_count: number;
+      path_a_ticks: components['schemas']['PathATickDto'][];
+      path_a_trade_count: number;
+      path_b_detail: string;
+      path_b_gap_count: number;
+      path_b_gaps: components['schemas']['PathBGapDto'][];
+      path_b_interval: string;
+      path_b_snapshot_count: number;
+      path_b_snapshots: components['schemas']['PathBSnapshotDto'][];
+      provenance: string;
+      symbol: string;
+      vendor_called: boolean;
+      watchlist: string[];
+    };
+    TapeLoadQuery: {
+      et_date?: string | null;
     };
     TermStructurePointWire: {
       /** Format: double */
@@ -2630,6 +2906,145 @@ export interface operations {
       };
     };
   };
+  research_flat_files_list: {
+    parameters: {
+      query?: {
+        limit?: number | null;
+      };
+      header?: never;
+      path: {
+        symbol: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FlatFilesListBody'];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FlatFilesErrorBody'];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FlatFilesErrorBody'];
+        };
+      };
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FlatFilesErrorBody'];
+        };
+      };
+    };
+  };
+  research_flat_files_load: {
+    parameters: {
+      query?: {
+        et_date?: string | null;
+      };
+      header?: never;
+      path: {
+        symbol: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FlatFilesLoadBody'];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FlatFilesErrorBody'];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FlatFilesErrorBody'];
+        };
+      };
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FlatFilesErrorBody'];
+        };
+      };
+    };
+  };
+  research_session_archive_coverage: {
+    parameters: {
+      query?: {
+        et_date?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CoverageOkBody'];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CoverageErrorBody'];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CoverageErrorBody'];
+        };
+      };
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CoverageErrorBody'];
+        };
+      };
+    };
+  };
   research_session_books_list: {
     parameters: {
       query?: {
@@ -2728,6 +3143,100 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['SessionErrorBody'];
+        };
+      };
+    };
+  };
+  research_session_day_tape_list: {
+    parameters: {
+      query?: {
+        limit?: number | null;
+      };
+      header?: never;
+      path: {
+        symbol: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TapeListBody'];
+        };
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TapeErrorBody'];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TapeErrorBody'];
+        };
+      };
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TapeErrorBody'];
+        };
+      };
+    };
+  };
+  research_session_day_tape_load: {
+    parameters: {
+      query?: {
+        et_date?: string | null;
+      };
+      header?: never;
+      path: {
+        symbol: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TapeLoadBody'];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TapeErrorBody'];
+        };
+      };
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TapeErrorBody'];
+        };
+      };
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TapeErrorBody'];
         };
       };
     };

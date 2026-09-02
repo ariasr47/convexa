@@ -142,7 +142,8 @@ pub fn today_et_date(now: DateTime<Utc>) -> String {
 }
 
 pub fn ensure_eligible(symbol: &str, now: DateTime<Utc>, archive_enabled: bool) -> bool {
-    is_ensure_symbol(symbol) && is_et_weekday(now) && archive_enabled
+    let date = now.with_timezone(&New_York).date_naive();
+    is_ensure_symbol(symbol) && crate::domain::is_et_session_day(date) && archive_enabled
 }
 
 pub fn maybe_wake(wake: &EnsureWake, sym: &str) {
@@ -450,6 +451,30 @@ mod tests {
         assert!(!ensure_eligible("TSLA", mon, true));
         let sat = Utc.with_ymd_and_hms(2026, 8, 8, 15, 0, 0).unwrap();
         assert!(!ensure_eligible("SPY", sat, true));
+    }
+
+    #[test]
+    fn ensure_eligible_false_on_holiday_thursday() {
+        let now = New_York
+            .with_ymd_and_hms(2026, 11, 26, 10, 0, 0)
+            .single()
+            .unwrap()
+            .with_timezone(&Utc);
+        assert!(!ensure_eligible("SPY", now, true));
+        assert!(
+            is_et_weekday(now),
+            "holiday is still a weekday; do not widen is_et_weekend"
+        );
+    }
+
+    #[test]
+    fn ensure_eligible_true_on_ordinary_monday() {
+        let now = New_York
+            .with_ymd_and_hms(2026, 8, 10, 10, 0, 0)
+            .single()
+            .unwrap()
+            .with_timezone(&Utc);
+        assert!(ensure_eligible("SPY", now, true));
     }
 
     #[test]

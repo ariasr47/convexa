@@ -9,6 +9,7 @@ pub const FRAMING_HIT: &str = "RESEARCH READ — MASSIVE FLAT FILES";
 pub const FRAMING_MISS: &str = "RESEARCH READ — NO MASSIVE FLAT FILES";
 pub const FRAMING_NOT_ELAPSED: &str = "RESEARCH READ — MASSIVE FLAT FILES NOT ELAPSED";
 pub const FRAMING_WEEKEND: &str = "RESEARCH READ — MASSIVE FLAT FILES INELIGIBLE WEEKEND";
+pub const FRAMING_HOLIDAY: &str = "RESEARCH READ — MASSIVE FLAT FILES INELIGIBLE HOLIDAY";
 pub const FRAMING_NOT_IN_WATCHLIST: &str = "RESEARCH READ — MASSIVE FLAT FILES NOT IN WATCHLIST";
 pub const FRAMING_NOT_STORING: &str = "RESEARCH READ — MASSIVE FLAT FILES NOT STORING";
 pub const FRAMING_UNREADABLE: &str = "RESEARCH READ — MASSIVE FLAT FILES UNREADABLE";
@@ -39,6 +40,10 @@ pub fn not_in_watchlist(symbol: &str) -> String {
 
 pub fn ineligible_weekend(et_date: &str) -> String {
     format!("flat files ineligible weekend: {et_date}")
+}
+
+pub fn ineligible_holiday(et_date: &str) -> String {
+    format!("flat files ineligible holiday: {et_date}")
 }
 
 pub fn not_elapsed(et_date: &str) -> String {

@@ -51,8 +51,11 @@
     "capacity-load": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "cargo run -p api-rust --locked -- capacity load",
-        "cwd": "{workspaceRoot}"
+        "command": "cargo run -p api-rust --locked --release -- capacity load",
+        "cwd": "{workspaceRoot}",
+        "env": {
+          "APP_ENV": "dev"
+        }
       },
       "cache": false
     },

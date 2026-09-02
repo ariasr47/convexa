@@ -3,6 +3,7 @@
 
 mod archive;
 pub(crate) mod body_store;
+mod coverage;
 mod ensure;
 pub(crate) mod ensure_worker;
 pub(crate) mod et_date;
@@ -10,6 +11,10 @@ pub(crate) mod migrate;
 mod store;
 
 pub use archive::archive_session_best_effort;
+pub use coverage::{
+    derive, emit_latched_warnings, evaluate_cli, open_session_archive_for_cli, CoverageFault,
+    CoverageMatrix, COVERAGE_VENDOR_CALLS, LAST_READABLE_LOAD_CAP,
+};
 pub use ensure::{
     ensure_eligible, ensure_one, ensure_one_gated, ensure_one_with_retention, is_ensure_symbol,
     is_et_weekday, maybe_wake, should_wake_ensure, today_et_date, EnsureForceError, EnsureGate,

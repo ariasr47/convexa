@@ -374,7 +374,7 @@ async fn resolve_price_fast(state: &AppState, sym: &str) -> Result<PriceResponse
     }
 
     let t0 = Instant::now();
-    let live = state.massive.fetch_quick_live_price(sym).await?;
+    let live = state.quick_live_price(sym).await?;
     let ms = t0.elapsed().as_secs_f64() * 1000.0;
     info!(ticker = %sym, price = live.price, ms, "fast stock snapshot price");
 
@@ -454,5 +454,18 @@ mod response_conversion_tests {
         })
         .into_response();
         assert_eq!(ticker.status(), StatusCode::OK);
+    }
+
+    #[test]
+    fn resolve_price_fast_uses_fixture_aware_quick_live_price() {
+        let src = include_str!("ticker.rs");
+        let start = src
+            .find("async fn resolve_price_fast(")
+            .expect("resolve_price_fast");
+        let body = &src[start..];
+        let end = body.find("#[cfg(test)]").unwrap_or(body.len());
+        let fn_body = &body[..end];
+        assert!(fn_body.contains("state.quick_live_price(sym)"));
+        assert!(!fn_body.contains("state.massive.fetch_quick_live_price"));
     }
 }

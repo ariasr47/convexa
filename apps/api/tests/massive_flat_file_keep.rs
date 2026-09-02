@@ -247,11 +247,7 @@ async fn score_triple() -> (i32, String, String) {
     (signals.opportunity_score, tier, gate.state_fingerprint)
 }
 
-async fn http_json(
-    state: AppState,
-    method_uri: &str,
-    token: Option<&str>,
-) -> (StatusCode, Value) {
+async fn http_json(state: AppState, method_uri: &str, token: Option<&str>) -> (StatusCode, Value) {
     let router = routes::router(state).expect("router");
     let mut req = Request::builder()
         .method("GET")
@@ -459,7 +455,10 @@ async fn hermetic_monday_occupancy_matrix_ac54_score_sse() {
         .await
         .unwrap();
     let r6 = keep(
-        &StubClient::new(StubResp::AssertNotCalled, StubResp::Gzip(plant_gzip(trio_csv()))),
+        &StubClient::new(
+            StubResp::AssertNotCalled,
+            StubResp::Gzip(plant_gzip(trio_csv())),
+        ),
         &t6,
         "QQQ",
     )
@@ -629,7 +628,9 @@ async fn hermetic_monday_occupancy_matrix_ac54_score_sse() {
     .await;
     assert!(matches!(r15.trades, ClassVerdict::SkipGet { .. }));
     assert_eq!(
-        partial.load("QQQ", D, ExtractClass::Trades, due_now()).await,
+        partial
+            .load("QQQ", D, ExtractClass::Trades, due_now())
+            .await,
         Occupancy::NoStoredExtract
     );
 
@@ -675,7 +676,10 @@ async fn hermetic_monday_occupancy_matrix_ac54_score_sse() {
     .await;
     assert_eq!(st_u, StatusCode::OK);
     assert_eq!(body_u["quotes_extract"], "");
-    assert!(body_u["trades_extract"].as_str().unwrap_or("").contains("SPY"));
+    assert!(body_u["trades_extract"]
+        .as_str()
+        .unwrap_or("")
+        .contains("SPY"));
 
     // ── 17. Already-kept not overwritten (AC-27); credential refuses (AC-21/22) ──
     let fw = FlatFilesStore::memory();
@@ -1001,8 +1005,13 @@ async fn hermetic_monday_occupancy_matrix_ac54_score_sse() {
     let _ = unauth;
 
     // Future weekday is not-elapsed, not no-stored-extract (AC-11)
-    let (stdout_fut, _, code_fut) =
-        evaluate_cli(&FlatFilesStore::memory(), due_now(), Some("SPY"), Some("2026-08-11")).await;
+    let (stdout_fut, _, code_fut) = evaluate_cli(
+        &FlatFilesStore::memory(),
+        due_now(),
+        Some("SPY"),
+        Some("2026-08-11"),
+    )
+    .await;
     assert_eq!(code_fut, ExitCode::SUCCESS);
     assert!(stdout_fut.contains("not elapsed") || stdout_fut.contains("not-elapsed"));
     assert!(!stdout_fut.contains("no stored extract"));

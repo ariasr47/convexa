@@ -1,6 +1,6 @@
 //! Market session phase and options market-state domain types.
 
-use chrono::{DateTime, Datelike, NaiveTime, Utc};
+use chrono::{DateTime, NaiveTime, Utc};
 use chrono_tz::America::New_York;
 use quant_engine::Contract;
 use serde::{Deserialize, Serialize};
@@ -28,9 +28,13 @@ impl MarketPhase {
 
     /// Classify `now` (any timezone) into a market phase using America/New_York wall clock.
     pub fn classify(now: DateTime<Utc>) -> Self {
+        use super::{is_et_weekend, is_nyse_full_day_holiday};
+
         let et = now.with_timezone(&New_York);
-        // Mon=0 … Sun=6
-        if et.weekday().num_days_from_monday() >= 5 {
+        let date = et.date_naive();
+        // Session-day gate first: weekend or full-day holiday → ClosedPre all clock hours.
+        // Do not fall through to AfterClose after 16:00 on a holiday (no session close that day).
+        if is_et_weekend(date) || is_nyse_full_day_holiday(date) {
             return Self::ClosedPre;
         }
         let t = et.time();
@@ -69,6 +73,15 @@ pub struct OptionsMarketState {
 mod tests {
     use super::*;
     use chrono::TimeZone;
+    use chrono_tz::America::New_York;
+
+    fn et_hm(y: i32, m: u32, d: u32, h: u32, min: u32) -> DateTime<Utc> {
+        New_York
+            .with_ymd_and_hms(y, m, d, h, min, 0)
+            .single()
+            .unwrap()
+            .with_timezone(&Utc)
+    }
 
     #[test]
     fn rth_weekday() {
@@ -89,5 +102,42 @@ mod tests {
         // Saturday
         let now = Utc.with_ymd_and_hms(2026, 8, 8, 15, 0, 0).unwrap();
         assert_eq!(MarketPhase::classify(now), MarketPhase::ClosedPre);
+    }
+
+    #[test]
+    fn holiday_weekday_all_hours_are_closed_pre() {
+        // 2026-11-26 Thanksgiving. EST = UTC-5.
+        assert_eq!(
+            MarketPhase::classify(et_hm(2026, 11, 26, 10, 0)),
+            MarketPhase::ClosedPre
+        );
+        assert_eq!(
+            MarketPhase::classify(et_hm(2026, 11, 26, 17, 0)),
+            MarketPhase::ClosedPre
+        );
+        assert_eq!(
+            MarketPhase::classify(et_hm(2026, 11, 26, 21, 0)),
+            MarketPhase::ClosedPre
+        );
+        assert_ne!(
+            MarketPhase::classify(et_hm(2026, 11, 26, 17, 0)),
+            MarketPhase::AfterClose
+        );
+    }
+
+    #[test]
+    fn ordinary_weekday_1000_is_rth() {
+        assert_eq!(
+            MarketPhase::classify(et_hm(2026, 8, 10, 10, 0)),
+            MarketPhase::Rth
+        );
+    }
+
+    #[test]
+    fn early_close_weekday_1000_may_be_rth() {
+        assert_eq!(
+            MarketPhase::classify(et_hm(2026, 11, 27, 10, 0)),
+            MarketPhase::Rth
+        );
     }
 }

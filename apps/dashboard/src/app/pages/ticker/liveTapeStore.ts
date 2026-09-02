@@ -6,18 +6,35 @@
  *
  * Lifecycle (open/close EventSource) is owned by `useTickerStreamConnection` — this module is
  * the snapshot + subscription seam only.
+ *
+ * Session-tape: `isLive` is the genuine paid-live gate (`genuineIsLive`); `displayActive` may
+ * move headline/tape numbers while fills/pulses stay off. `lastSessionPhase` survives a
+ * payload-gap (`streamOffline` flip without clearing `live`).
  */
 import type { LiveUpdate } from '@convexa/api';
 import { useSyncExternalStore } from 'react';
+import {
+  displayActive as computeDisplayActive,
+  genuineIsLive,
+  sessionTapeOf,
+  type SessionTapeOccupancy,
+} from './sessionTapeStanding';
 
 export interface LiveTapeSnapshot {
   live: LiveUpdate | null;
   streamOffline: boolean;
   /** Uppercase ticker the stream is bound to (for defensive consumers). */
   ticker: string;
+  /** Last vouched session_tape.phase — kept across payload-gap while live is retained. */
+  lastSessionPhase: SessionTapeOccupancy['phase'] | null;
 }
 
-const EMPTY: LiveTapeSnapshot = { live: null, streamOffline: false, ticker: '' };
+const EMPTY: LiveTapeSnapshot = {
+  live: null,
+  streamOffline: false,
+  ticker: '',
+  lastSessionPhase: null,
+};
 
 let snapshot: LiveTapeSnapshot = EMPTY;
 let version = 0;
@@ -47,17 +64,41 @@ export function getLiveTapeVersion(): number {
   return version;
 }
 
-/** Imperative read (confirm handlers, order fill) — no subscription. */
-export function readLiveTape(): LiveTapeSnapshot & { isLive: boolean } {
-  const s = snapshot;
+function deriveApi(s: LiveTapeSnapshot) {
   return {
     ...s,
-    isLive: (s.live?.live ?? false) && !s.streamOffline,
+    isLive: genuineIsLive(s.live, s.streamOffline),
+    displayActive: computeDisplayActive({
+      live: s.live,
+      routeSymbol: s.ticker,
+      streamOffline: s.streamOffline,
+    }),
   };
 }
 
-export function publishLiveTape(next: Partial<LiveTapeSnapshot>): void {
-  snapshot = { ...snapshot, ...next };
+/** Imperative read (confirm handlers, order fill) — no subscription. */
+export function readLiveTape(): LiveTapeSnapshot & { isLive: boolean; displayActive: boolean } {
+  return deriveApi(snapshot);
+}
+
+export function publishLiveTape(
+  next: Partial<Omit<LiveTapeSnapshot, 'lastSessionPhase'>> & {
+    lastSessionPhase?: SessionTapeOccupancy['phase'] | null;
+  },
+): void {
+  const merged: LiveTapeSnapshot = {
+    ...snapshot,
+    ...next,
+    lastSessionPhase: snapshot.lastSessionPhase,
+  };
+  if (next.live !== undefined) {
+    // New payload: adopt phase from occupancy, or clear when unset/S0.
+    merged.lastSessionPhase = sessionTapeOf(next.live)?.phase ?? null;
+  }
+  if (next.lastSessionPhase !== undefined) {
+    merged.lastSessionPhase = next.lastSessionPhase;
+  }
+  snapshot = merged;
   emit();
 }
 
@@ -67,8 +108,10 @@ export function resetLiveTape(): void {
 }
 
 export type LiveTapeApi = LiveTapeSnapshot & {
-  /** Payload says live AND transport is up. */
+  /** Genuine paid-live: construct unset · envelope live · not streamOffline. */
   isLive: boolean;
+  /** Session-tape numbers may move (route match + playing|gap + delivering). */
+  displayActive: boolean;
 };
 
 /**
@@ -77,8 +120,5 @@ export type LiveTapeApi = LiveTapeSnapshot & {
  */
 export function useLiveTape(): LiveTapeApi {
   const s = useSyncExternalStore(subscribeLiveTape, getLiveTapeSnapshot, () => EMPTY);
-  return {
-    ...s,
-    isLive: (s.live?.live ?? false) && !s.streamOffline,
-  };
+  return deriveApi(s);
 }

@@ -317,6 +317,23 @@ describe('operator-vs-trader path separation', () => {
     expect(screen.queryByTestId('nav-ticker')).toBeNull();
     expectNoOpsLink();
   });
+
+  it('"/_ops/research" renders off-shell with operator-session-archive; locked issues no research GET', async () => {
+    const archiveModule = await import(
+      '@/pages/operator-session-archive/OperatorSessionArchive'
+    );
+    expect(typeof archiveModule.OperatorSessionArchive).toBe('function');
+
+    const before = fetchMock.mock.calls.length;
+    renderAt('/_ops/research');
+    await waitFor(() => expect(screen.queryByTestId('route-fallback')).not.toBeInTheDocument());
+    expect(await screen.findByTestId('operator-session-archive')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-shell')).toBeNull();
+    expect(screen.queryByTestId('nav-ticker')).toBeNull();
+    expectNoOpsLink();
+    const after = fetchMock.mock.calls.map((c) => String(c[0]));
+    expect(after.slice(before).some((u) => u.includes('/api/_research'))).toBe(false);
+  });
 });
 
 // =================================================================================================

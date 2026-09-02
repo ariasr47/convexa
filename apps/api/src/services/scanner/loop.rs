@@ -276,19 +276,65 @@ fn now_secs() -> f64 {
         + chrono::Utc::now().timestamp_subsec_millis() as f64 / 1000.0
 }
 
-/// Vendor-covered window: weekdays 04:00–20:00 ET (Python premarket/regular/afterhours).
+/// Vendor-covered window: ET session days 04:00–20:00 (idle on weekends and full-day holidays).
 fn should_sweep(market_hours_only: bool) -> bool {
+    should_sweep_at(chrono::Utc::now(), market_hours_only)
+}
+
+/// Injected-clock form of [`should_sweep`] so holiday/weekend idle tests are not wall-clock flakes.
+pub(crate) fn should_sweep_at(
+    now: chrono::DateTime<chrono::Utc>,
+    market_hours_only: bool,
+) -> bool {
     if !market_hours_only {
         return true;
     }
-    use chrono::{Datelike, Timelike, Utc};
+    use crate::domain::is_et_session_day;
+    use chrono::Timelike;
     use chrono_tz::America::New_York;
-    let et = Utc::now().with_timezone(&New_York);
-    if et.weekday().num_days_from_monday() >= 5 {
+    let et = now.with_timezone(&New_York);
+    if !is_et_session_day(et.date_naive()) {
         return false;
     }
     let mins = et.hour() * 60 + et.minute();
     (4 * 60..20 * 60).contains(&mins)
+}
+
+#[cfg(test)]
+mod holiday_sweep_tests {
+    use super::*;
+    use chrono::{DateTime, TimeZone, Utc};
+    use chrono_tz::America::New_York;
+
+    fn et_hm(y: i32, m: u32, d: u32, h: u32, min: u32) -> DateTime<Utc> {
+        New_York
+            .with_ymd_and_hms(y, m, d, h, min, 0)
+            .single()
+            .unwrap()
+            .with_timezone(&Utc)
+    }
+
+    #[test]
+    fn holiday_rth_clock_idles_when_gate_on() {
+        let now = et_hm(2026, 11, 26, 10, 0);
+        assert!(!should_sweep_at(now, true));
+        assert!(
+            should_sweep_at(now, false),
+            "gate off still 24/7 including holidays"
+        );
+    }
+
+    #[test]
+    fn weekend_parity_gate_on_off() {
+        let sat = et_hm(2026, 8, 8, 12, 0);
+        assert!(!should_sweep_at(sat, true));
+        assert!(should_sweep_at(sat, false));
+    }
+
+    #[test]
+    fn ordinary_monday_1000_sweeps_when_gate_on() {
+        assert!(should_sweep_at(et_hm(2026, 8, 10, 10, 0), true));
+    }
 }
 
 /// Apply fast-lane snapshot results. Caller holds `SweepState` lock; no long vendor waits here.

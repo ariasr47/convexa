@@ -16,7 +16,7 @@
       "npm run api:contract:baseline:candidate -- --source-revision e1e0be78ccf90922bee411c7dc1e5471940dbce5 --out .tmp/api-contract-baseline-candidate.json"
     ],
     "captured_at_utc": "2026-08-22T15:14:08.503Z",
-    "operation_count": 52
+    "operation_count": 57
   },
   "operations": [
     {
@@ -37,11 +37,31 @@
     },
     {
       "method": "GET",
+      "path": "/api/_research/flat-files/{symbol}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/flat-files/{symbol}/extract"
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage"
+    },
+    {
+      "method": "GET",
       "path": "/api/_research/session-books/{symbol}"
     },
     {
       "method": "GET",
       "path": "/api/_research/session-books/{symbol}/book"
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-day-tape/{symbol}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-day-tape/{symbol}/day"
     },
     {
       "method": "DELETE",

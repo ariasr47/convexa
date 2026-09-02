@@ -68,7 +68,11 @@ test('real visual drift fails compare-only without updating the baseline', () =>
   );
   const output = `${result.stdout}\n${result.stderr}`;
   assert.notEqual(result.status, 0);
-  assert.match(output, /landing/);
+  assert.match(
+    output,
+    /\[FAIL\] visual — landing: the approved baseline differs\. Review expected, actual, and diff images\. Open: apps\/dashboard-e2e\/test-output\/playwright\/visual\/summary\.json/,
+  );
+  assert.doesNotMatch(output, /\[FAIL\] visual — \d+ failed/);
   assert.match(output, /diff\.png|Screenshot comparison failed/);
   assert.match(output, /actual\.png|expected\.png/);
 });
