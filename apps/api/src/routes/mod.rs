@@ -34,10 +34,27 @@ use utoipa::{PartialSchema, ToSchema};
 /// registered once through the handler that owns its response contract.
 pub fn contract_router() -> Result<ContractRouter<AppState>, ContractGraphError> {
     let mut router = ContractRouter::new();
+    // Each registration runs in its OWN frame, on purpose. At `opt-level = 0` rustc gives every
+    // `contract_route!` expansion its own stack slot for the `Operation` / `RoutePackage`
+    // temporaries and never reuses them, so registering all operations inline made this one
+    // function's frame ~470 KB (measured by stack-pointer probe between `routes::router` and this
+    // function's entry). That plus one `route()` subtree overflowed Windows' 1 MB main-thread
+    // stack before the listener bound: `cargo run -p api-rust --features postgres -- serve`
+    // (what `npx nx serve api` runs) died with STATUS_STACK_OVERFLOW right after `AppState` was
+    // built. `#[inline(never)]` per route caps the peak at one route's worth, because each
+    // frame pops before the next registration starts. Registration order, handlers, metadata and
+    // the resulting graph are unchanged; release builds and Linux CI (8 MB main stack) never saw
+    // the overflow and are unaffected.
     macro_rules! add {
-        ($handler:path, $metadata:path) => {
-            router = router.route(contract_route!($handler, $metadata)?)?;
-        };
+        ($handler:path, $metadata:path) => {{
+            #[inline(never)]
+            fn register(
+                router: ContractRouter<AppState>,
+            ) -> Result<ContractRouter<AppState>, ContractGraphError> {
+                router.route(contract_route!($handler, $metadata)?)
+            }
+            router = register(router)?;
+        }};
     }
     add!(
         demo::progressive_demo_root,
