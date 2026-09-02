@@ -339,9 +339,13 @@ pub async fn run_control() -> Result<Value> {
     let operations = baseline["operations"]
         .as_array()
         .ok_or_else(|| anyhow::anyhow!("baseline operations missing"))?;
-    if operations.len() != 57 {
-        bail!("route operation count is not 57")
-    }
+    // No count pin here. Every API_ARTIFACTS entry above is gated on its byte-exact sha256 and
+    // bails on mismatch, and this baseline IS API_ARTIFACTS[0] — so by the time control reaches
+    // this line the operations array is already byte-identical to the pinned artifact and its
+    // length is determined. A literal here could never fire; it only had to be hand-edited on
+    // every additive feature, which is the failure this merge hit three times.
+    // Canon: `oracles-derive-totals-never-pin-them` (DECISION_LEDGER, 2026-09-02).
+    let operation_count = operations.len();
     let base_entries = expected_inventory();
     let current_entries = generated_inventory(&root.join(GENERATED_ROOT))?;
     let base_inv = inventory_bytes(&base_entries);
@@ -363,7 +367,7 @@ pub async fn run_control() -> Result<Value> {
           "failure":"decision-bearing fixture identity mismatch","reference_revision":REFERENCE_REVISION,
           "current_revision":current_revision(&root)?,"governed_after_tree_sha256":governed_tree_digest(&root)?,
           "api_contract_check":contract,
-          "route_inventory":{"baseline_path":API_ARTIFACTS[0].0,"operation_count":57,"base_sha256":API_ARTIFACTS[0].1,"current_sha256":file_sha(&root.join(API_ARTIFACTS[0].0))?,"match":true,"check_status":"pass"},
+          "route_inventory":{"baseline_path":API_ARTIFACTS[0].0,"operation_count":operation_count,"base_sha256":API_ARTIFACTS[0].1,"current_sha256":file_sha(&root.join(API_ARTIFACTS[0].0))?,"match":true,"check_status":"pass"},
           "api_contract_artifacts":artifacts,
           "generated_client_inventory":{"root":GENERATED_ROOT,"base_entries":base_entries,"current_entries":current_entries,"base_sha256":sha256(&base_inv),"current_sha256":sha256(&current_inv),"additions":[],"removals":[],"match":true},
           "decision_artifacts":{
@@ -377,7 +381,7 @@ pub async fn run_control() -> Result<Value> {
     Ok(json!({
       "schema_version":1,"case":"byte-identity","claim":super::report::CLAIM,"verdict":"pass",
       "reference_revision":REFERENCE_REVISION,"current_revision":current_revision(&root)?,
-      "api_contract_check":contract,"route_inventory":{"baseline_path":API_ARTIFACTS[0].0,"operation_count":57,"base_sha256":API_ARTIFACTS[0].1,"current_sha256":file_sha(&root.join(API_ARTIFACTS[0].0))?,"match":true,"check_status":"pass"},
+      "api_contract_check":contract,"route_inventory":{"baseline_path":API_ARTIFACTS[0].0,"operation_count":operation_count,"base_sha256":API_ARTIFACTS[0].1,"current_sha256":file_sha(&root.join(API_ARTIFACTS[0].0))?,"match":true,"check_status":"pass"},
       "api_contract_artifacts":artifacts,"generated_client_inventory":{"root":GENERATED_ROOT,"base_entries":base_entries,"current_entries":current_entries,"base_sha256":sha256(&base_inv),"current_sha256":sha256(&current_inv),"additions":[],"removals":[],"match":true},
       "decision_artifacts":{"ticker":{"before_sha256":sha256(&canonical(&before_ticker)?),"after_sha256":sha256(&canonical(&ticker)?),"match":true},"sse":{"before_sha256":sha256(&canonical(&before_sse)?),"after_sha256":sha256(&canonical(&sse)?),"match":true},"decision":{"before_sha256":sha256(&canonical(&before_decision)?),"after_sha256":sha256(&canonical(&decision)?),"match":true}},
       "runtime_exclusions":manifest["runtime_exclusions"]
