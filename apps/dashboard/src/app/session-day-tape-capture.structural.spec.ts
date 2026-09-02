@@ -9,6 +9,13 @@
  * Needles deliberately omit `LiveTape` and bare `tape` (PLAN carry-forward).
  * Mutation-tested: a scan that cannot prove it bites is not enforcement
  * (`[structural-over-prose-enforcement]`).
+ *
+ * F2 (mainline-integration-2026-09, GATE Z item 5): the day-replay-mock-adapter SPEC §4 later
+ * shipped `session day tape` / `Path-A ticks` copy verbatim on the LiveTape widget S1 subtitle
+ * and the S1 chip tooltips. `sessionTapeStanding.ts` and `widgets/_kit/copy.ts` are allowlisted
+ * for exactly those two copy needles — file-exact + needle-exact, never a folder skip and never
+ * a needle deletion. Every other needle (URL / identifier / framing) stays forbidden
+ * everywhere, including inside those two files.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -67,6 +74,42 @@ const LATENCY_TREND = resolve(
 
 function hitsIn(src: string, needles: readonly string[] = TRADER_FORBIDDEN): string[] {
   return needles.filter((n) => src.includes(n));
+}
+
+/**
+ * F2 (mainline-integration-2026-09, GATE Z item 5) — reconciliation with the LATER-approved
+ * day-replay-mock-adapter SPEC §4. Allowlist is exactly these two files, exactly these two
+ * COPY needles. All other TRADER_FORBIDDEN needles (URL / identifier / framing) stay
+ * forbidden in these files too — see the mutation tests below.
+ */
+const SESSION_DAY_TAPE_COPY_ALLOWLIST_FILES = [
+  '/src/app/pages/ticker/sessionTapeStanding.ts',
+  '/src/app/pages/ticker/widgets/_kit/copy.ts',
+] as const;
+
+const SESSION_DAY_TAPE_COPY_ALLOWLIST_NEEDLES = ['session day tape', 'Path-A ticks'] as const;
+
+function isSessionDayTapeCopyAllowlisted(path: string, needle: string): boolean {
+  return (
+    (SESSION_DAY_TAPE_COPY_ALLOWLIST_FILES as readonly string[]).includes(path) &&
+    (SESSION_DAY_TAPE_COPY_ALLOWLIST_NEEDLES as readonly string[]).includes(needle)
+  );
+}
+
+/**
+ * Path-aware TRADER_FORBIDDEN scan. Used by the production assertion below AND by the mutation
+ * tests, which pass a synthetic `sources` map so the allowlist's precision is provable without
+ * ever editing sessionTapeStanding.ts or widgets/_kit/copy.ts on disk.
+ */
+function scanSessionDayTapeNeedles(sources: Record<string, string>): string[] {
+  const offenders: string[] = [];
+  for (const [path, src] of Object.entries(sources)) {
+    const hits = TRADER_FORBIDDEN.filter(
+      (n) => src.includes(n) && !isSessionDayTapeCopyAllowlisted(path, n),
+    );
+    if (hits.length) offenders.push(`${path} → ${hits.join(', ')}`);
+  }
+  return offenders;
 }
 
 /** INTERFACE standing rule 3 — trader-origin operator prefixes 404, token gate is not enough. */
@@ -165,13 +208,8 @@ describe('F1 · no session-day-tape chrome on trader sources (AC-44, AC-45, AC-5
     expect(keys.some((k) => k.endsWith('/app.tsx'))).toBe(true);
   });
 
-  it('dashboard production sources carry none of the session-day-tape needles', () => {
-    const offenders: string[] = [];
-    for (const [path, src] of Object.entries(DASHBOARD_SOURCES)) {
-      const hits = hitsIn(src);
-      if (hits.length) offenders.push(`${path} → ${hits.join(', ')}`);
-    }
-    expect(offenders).toEqual([]);
+  it('dashboard production sources carry none of the session-day-tape needles (F2 allowlist applied)', () => {
+    expect(scanSessionDayTapeNeedles(DASHBOARD_SOURCES)).toEqual([]);
   });
 
   it('mutation — scanner fires on a poisoned trader source', () => {
@@ -191,6 +229,61 @@ describe('F1 · no session-day-tape chrome on trader sources (AC-44, AC-45, AC-5
   it('carve-out — LiveTape / bare tape identifiers are not false positives', () => {
     expect(hitsIn('LiveTape stream; isLive && !streamOffline')).toEqual([]);
     expect(hitsIn('const tape = rows; // bare tape mention')).toEqual([]);
+  });
+});
+
+describe('F2 · session-day-tape copy allowlist is explicit, narrow, and non-vacuous (mainline-integration-2026-09 GATE Z item 5)', () => {
+  it('anti-vacuity — both allowlisted files exist and are seen by the real glob', () => {
+    for (const file of SESSION_DAY_TAPE_COPY_ALLOWLIST_FILES) {
+      expect(Object.keys(DASHBOARD_SOURCES), file).toContain(file);
+    }
+  });
+
+  it('the allowlist is not vacuous — both files legitimately carry the allowlisted copy needles today', () => {
+    const standing = DASHBOARD_SOURCES['/src/app/pages/ticker/sessionTapeStanding.ts'];
+    const copyKit = DASHBOARD_SOURCES['/src/app/pages/ticker/widgets/_kit/copy.ts'];
+    expect(standing).toContain('session day tape');
+    expect(standing).toContain('Path-A ticks');
+    expect(copyKit).toContain('session day tape');
+  });
+
+  it('mutation — sessionTapeStanding.ts still fails when poisoned with the forbidden URL/identifier needles', () => {
+    const file = '/src/app/pages/ticker/sessionTapeStanding.ts';
+    const poisoned: Record<string, string> = {
+      [file]: `${DASHBOARD_SOURCES[file]}\n// poison: fetch('/api/_research/session-day-tape/SPY')`,
+    };
+    expect(scanSessionDayTapeNeedles(poisoned)).toEqual([
+      `${file} → /api/_research/session-day-tape, session-day-tape`,
+    ]);
+  });
+
+  it('mutation — widgets/_kit/copy.ts still fails when poisoned with the bare session-day-tape identifier', () => {
+    const file = '/src/app/pages/ticker/widgets/_kit/copy.ts';
+    const poisoned: Record<string, string> = {
+      [file]: `${DASHBOARD_SOURCES[file]}\n// poison: session-day-tape`,
+    };
+    expect(scanSessionDayTapeNeedles(poisoned)).toEqual([`${file} → session-day-tape`]);
+  });
+
+  it('mutation — both allowlisted files still fail on the other identifier needles (RESEARCH READ / saved Tuesday / Path-B snapshots)', () => {
+    const standingFile = '/src/app/pages/ticker/sessionTapeStanding.ts';
+    const copyFile = '/src/app/pages/ticker/widgets/_kit/copy.ts';
+    const poisoned: Record<string, string> = {
+      [standingFile]: `${DASHBOARD_SOURCES[standingFile]}\n// poison: RESEARCH READ — SESSION DAY TAPE`,
+      [copyFile]: `${DASHBOARD_SOURCES[copyFile]}\n// poison: saved Tuesday · Path-B snapshots`,
+    };
+    const offenders = scanSessionDayTapeNeedles(poisoned);
+    expect(offenders).toContain(`${standingFile} → RESEARCH READ — SESSION DAY TAPE`);
+    expect(offenders).toContain(`${copyFile} → Path-B snapshots, saved Tuesday`);
+  });
+
+  it('mutation — any other trader source containing the allowlisted copy needles still fails (allowlist is file-exact)', () => {
+    const poisoned: Record<string, string> = {
+      '/src/app/shell/TopNav.tsx': '// session day tape and Path-A ticks',
+    };
+    expect(scanSessionDayTapeNeedles(poisoned)).toEqual([
+      '/src/app/shell/TopNav.tsx → session day tape, Path-A ticks',
+    ]);
   });
 });
 
