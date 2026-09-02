@@ -134,3 +134,131 @@ exact defect class `.gitattributes` was written to stop, and the reason main's o
 `archive_coverage_runtime.rs` normalizes those files in place before calling `run_control`. A
 `text eol=lf` rule for that fixture tree is included in the merge; without it the real failure above
 is invisible on Windows.
+
+
+---
+
+# Ruling — conductor, 2026-09-01 (GATE Z resolved; both items routed back to lanes)
+
+## Item 1 — calendar: main's shared XNYS JSON is right; the branch replicas are wrong on three dates
+
+**Evidence.** NYSE Rule 7.2 closes the preceding Friday when a holiday falls on Saturday *except* when
+that Friday ends the yearly accounting period; observed precedent: the NYSE traded full sessions on
+Friday 2010-12-31 and Friday 2021-12-31 (New Year's Day on Saturday both years). `2027-12-31` and
+`2032-12-31` are the same case (2028-01-01 and 2033-01-01 are Saturdays). Main's calendar
+(`calendar_version 2026-2035@2026-08-26.1`) omits both; the branch generator's generic
+"observed weekday" arm added them, and also `2021-12-31` outside the shared domain. The promoted key
+`shared-session-eligibility-calendar` names ONE calendar as truth; the branch's second encoding is
+tolerated only under a checked-in parity proof.
+
+**Ruling.** (a) Remove `2021-12-31`, `2027-12-31`, `2032-12-31` from BOTH replicas
+(`apps/api/src/domain/nyse_full_day.rs` — backend lane; `apps/dashboard/src/app/pages/scanner/nyseFullDayHolidays.ts` — frontend lane) and give both test-time generators the NYSE exception: New Year's Day on a Saturday does NOT close the preceding Friday (Independence Day and Christmas on Saturday still do). (b) `tools/holiday-calendar-parity.spec.mjs` stays checked in and must be green on all three arms once both lanes land. (c) Pre-2026 years stay in the replica (the shared JSON covers 2026–2035); extending the JSON domain backward and making `nyse_full_day.rs` load it is a follow-up backlog item, not this integration. (d) The archived `exchange-holiday-calendar` SPEC line "observed weekdays when the named holiday falls on a weekend" is amended by this ruling (recorded in the ledger); the archived record itself is not edited.
+
+## Item 2 — identity oracle: re-pin per precedent `bcb3d29d`
+
+**Evidence.** Main's own `bcb3d29d` ("test(capacity): refresh approved API artifact hashes",
+2026-08-26) refreshed `apps/api/src/capacity/identity.rs` and
+`apps/api/tests/fixtures/capacity-baseline/v1/identity/manifest.json` when PR #34 added routes. The
+lane measured that `opportunity_score` / `opportunity_tier` / `state_fingerprint` are byte-identical
+on the merged tree; only the route inventory moved (52 → 57 operations).
+
+**Ruling.** The backend lane re-pins the five API artifact SHAs and the operation count (52 → the merged
+count) in `identity.rs` and the manifest rows, exactly the shape of `bcb3d29d`; the `identity/before/*`
+decision fixtures are never edited. `additive-keeps-score-byte-identical` holds; the promoted invariant
+is score/tier/fingerprint identity, not the operation count.
+
+## Item 3 (from the lane's carry-forward) — tooling specs
+
+`tools/api-router-integration-baseline.spec.mjs` (8 direct-HTTP outcomes unclassified in the regenerated
+catalog) and `tools/api-router-integration-rollback.spec.mjs` (rename handling) go to the backend lane:
+use the repo's own `api:router-integration:baseline:candidate` / `:accept` flow, and fix the rollback
+tool's rename handling if it is a tooling gap (record precisely if it is a real rollback hazard).
+
+## Item 4 (observation, not a bounce) — `npx nx serve api` stack overflow
+
+The lane observed `STATUS_STACK_OVERFLOW` from the debug `--features postgres` binary on Windows before
+bind. The conductor is testing whether `origin/main` does the same; QA must record which it is. Not a
+lane task unless the merge introduced it.
+
+
+---
+
+# Follow-up bounce — backend lane (Task B5), 2026-09-01
+
+**Context.** Ruling items 1 (calendar backend half), 2 (identity oracle re-pin) and 4
+(`nx serve api` stack overflow, upgraded to a fix by the conductor mid-task) are DONE and verified.
+Ruling item 3 is done for the rollback tool and done for the defect it names in
+`tools/api-router-integration-baseline.spec.mjs` (the eight unclassified direct-HTTP outcomes — fixed
+at the root: the eight boundaries are now declared in
+`apps/api/tests/fixtures/api_contract/runtime-evidence-auth-research.json`, the catalog regenerated,
+and `API_CONTRACT_EXECUTE_EVIDENCE=1 npm run api:contract:check` exits 0). Removing that blocker
+uncovered a SECOND, distinct blocker in the same spec, below. It is the same two-locked-claims shape
+as GATE Z item 2, and the mechanism the Ruling prescribes cannot reach it.
+
+# Item 5 — the router-integration prechange baseline pins a 181/87 evidence surface
+
+## Field
+
+`tools/api-router-integration-baseline.mjs` — the frozen evidence counts
+`response_conversion.count = 181` and `direct_http.count = 87`, hard-coded in FIVE places
+(`validateBaselineShape` lines 90–91; `runEvidence` lines 235–238; the `buildCandidate` literals
+lines 271–272) and recorded in the checked-in immutable receipt
+`apps/api/openapi/router-integration-prechange-baseline.json`
+(`source.revision 69500b4cbed39531fc1084885e1d75a6b22ca26e`,
+`capture.reviewer_provenance operator-approved-openapi-router-replacement-2026-08-23`, plus the two
+`id_set_sha256` digests of those exact id sets).
+
+## The two expected shapes
+
+| line | says |
+|---|---|
+| `main` / the archived `openapi-router-dependency-replacement` feature | The evidence surface is **exactly 181 response-conversion + 87 direct-HTTP outcomes**, captured at `69500b4c` and operator-approved on 2026-08-23. The receipt is **immutable by construction**: `acceptBaseline()` refuses to write when the file exists ("baseline already exists; refusing overwrite"), and `tools/api-router-integration-baseline.spec.mjs` asserts that refusal. |
+| `codex/browser-quality-gates` | Five additive operator/research operations exist, and with their boundaries declared the evidence surface is **201 response-conversion + 100 direct-HTTP** outcomes. |
+
+## Measured, not assumed
+
+- `node --test tools/api-router-integration-baseline.spec.mjs` → 19 of 20 tests pass; the one failure
+  is `real candidate CLI executes npm evidence without command shim`, now failing with
+  `response evidence set (201/181)` (before the catalog fix it failed earlier, inside
+  `api:contract:check`). The next gate after it would be `direct HTTP evidence set (100/87)`.
+- `tools/api-router-integration-baseline.mjs` is **byte-identical** across `origin/main`,
+  `origin/codex/browser-quality-gates` and this merge (`git diff --quiet` on all three pairs) — nobody
+  updated the frozen counts when the branch added routes. **Not merge-introduced.**
+- On `origin/main`'s tree the numbers still match exactly (52 operations; committed
+  `parity-coverage.json` carries 181 response-conversion + 87 direct-http rows), so this spec is green
+  on main and red on the branch and on the merge.
+- Hosted CI is unaffected: `.github/workflows/*.yml` never runs `npm run test:tools`, never runs
+  `api:router-integration:*`, and never sets `API_CONTRACT_EXECUTE_EVIDENCE`.
+
+## Why the lane cannot decide it
+
+The Ruling says "use the repo's own `api:router-integration:baseline:candidate` / `:accept` flow".
+Read at source, that flow **cannot** reach this field:
+
+1. `candidate` calls `runEvidence()`, which fails closed at `response.length !== 181` before writing
+   anything. It cannot capture a 201/100 surface.
+2. `accept` refuses to overwrite the existing receipt, by design and by test.
+
+So re-baselining requires (a) editing the frozen constants in five places, and (b) **deleting an
+operator-approved immutable receipt** whose stated purpose is to record the surface **before** the
+router replacement — making the word "prechange" false if re-captured at today's revision. That is
+retuning a fail-closed guard to accept the branch, which is exactly what the earlier bounce refused to
+do silently for the identity oracle, and unlike item 2 there is **no precedent commit** to copy.
+
+## What a ruling needs to settle
+
+Which of these, and who owns it:
+
+- **(A) Re-capture at the merge revision.** Update the five constants to 201/100, delete and re-create
+  `router-integration-prechange-baseline.json` through `candidate` + `accept` with fresh operator
+  provenance, and accept that the artifact now records a post-branch surface under a "prechange" name.
+- **(B) Retire the historical binding.** Keep the receipt as an archived record of `69500b4c`, and
+  change `runEvidence()`/`buildCandidate` to DERIVE counts from the observed evidence instead of
+  pinning them, leaving `validateCandidateAgainstBaseline`'s id-set-hash comparison as the drift
+  detector for the frozen revision only. This keeps the historical proof honest but weakens the
+  live guard.
+- **(C) Accept the spec as knowingly red** until the archived feature's tooling is retired (it is
+  outside hosted CI), and record it as a standing exception.
+
+Nothing else in the merge depends on this: `npm run api:contract:check` exits 0 with and without
+`API_CONTRACT_EXECUTE_EVIDENCE=1`, and `tools/api-router-integration-rollback.spec.mjs` is green.
