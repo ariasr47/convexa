@@ -1,8 +1,11 @@
-﻿.claude
-archive
-.agents
+# Paths Nx must not crawl.
+#
+# `.worktrees` is load-bearing: Nx walks worktree checkouts and fails lint on duplicate
+# project names without it (learned 2026-09-01).
+#
+# This file previously began with a UTF-8 BOM, which became part of the FIRST pattern —
+# so the rule read "\ufeff.claude", not ".claude", and never matched. Written without a BOM.
+.claude
 .codex
-figma_frames
-design_handoff_convexa_redesign
-
+archive
 .worktrees
