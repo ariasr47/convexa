@@ -1,8 +1,8 @@
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { OperatorSessionArchive } from './OperatorSessionArchive';
 import { COPY } from './copy';
 
@@ -64,9 +64,7 @@ describe('OperatorSessionArchive gate chrome', () => {
 
   it('Pages document helper does not flip origin-blocked', async () => {
     const fetchImpl = vi.fn();
-    wrap(
-      <OperatorSessionArchive fetchImpl={fetchImpl} documentHost="convexa.pages.dev" />,
-    );
+    wrap(<OperatorSessionArchive fetchImpl={fetchImpl} documentHost="convexa.pages.dev" />);
     expect(screen.getByTestId('osa-pages-helper')).toHaveTextContent(COPY.pagesHelper);
     expect(screen.queryByText(COPY.originBlockedTitle)).not.toBeInTheDocument();
   });

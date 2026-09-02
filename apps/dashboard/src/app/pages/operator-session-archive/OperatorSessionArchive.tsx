@@ -1,3 +1,4 @@
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import Alert from '@mui/material/Alert';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
@@ -18,8 +19,6 @@ import Toolbar from '@mui/material/Toolbar';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useEffect } from 'react';
-import { extrasFor } from '@/shared/theme/tokens';
-import { typographyTokens } from '@/shared/theme/tokens';
 import { BANNED_ON_SCREEN, COPY, originRejectedBody } from './copy';
 import { lookupCoverageCell } from './occupancy';
 import { TRIO, type TrioSymbol } from './schedule';
@@ -121,7 +120,12 @@ function StandingAlert({
         </Typography>
       )}
       {onRetry && (
-        <Button size="small" onClick={onRetry} sx={{ mt: 1, minHeight: 44 }} data-testid="osa-retry">
+        <Button
+          size="small"
+          onClick={onRetry}
+          sx={{ mt: 1, minHeight: 44 }}
+          data-testid="osa-retry"
+        >
           {COPY.retry}
         </Button>
       )}
@@ -167,7 +171,11 @@ function CoverageCard({
       <Card variant="outlined" data-testid="osa-coverage">
         <CardContent>
           <StandingAlert
-            title={c.error === 'not-storing' ? 'session archive not storing' : 'session archive store error:'}
+            title={
+              c.error === 'not-storing'
+                ? 'session archive not storing'
+                : 'session archive store error:'
+            }
             body={c.detail ?? ''}
             caption={COPY.traderUnaffected}
             onRetry={onRetry}
@@ -260,7 +268,11 @@ function CoverageCard({
         )}
         {m.rows.map((row) =>
           row.last_readable ? (
-            <Typography key={`lr-${row.symbol}`} variant="caption" sx={{ ...mono, display: 'block' }}>
+            <Typography
+              key={`lr-${row.symbol}`}
+              variant="caption"
+              sx={{ ...mono, display: 'block' }}
+            >
               {`last readable: ${row.last_readable}`}
             </Typography>
           ) : null,
@@ -399,10 +411,10 @@ export function OperatorSessionArchive(props: OperatorSessionArchiveProps = {}) 
           {!pageLevelExclusive && (
             <>
               {(state.books.kind === 'ready' || state.books.kind === 'stale') && (
-                  <Typography variant="body2" data-testid="osa-authorizes">
-                    {`${COPY.authorizesLabel} ${COPY.authorizesNothing}`}
-                  </Typography>
-                )}
+                <Typography variant="body2" data-testid="osa-authorizes">
+                  {`${COPY.authorizesLabel} ${COPY.authorizesNothing}`}
+                </Typography>
+              )}
 
               <Stack direction="row" spacing={1} data-testid="osa-chips">
                 {TRIO.map((sym) => (
@@ -427,11 +439,7 @@ export function OperatorSessionArchive(props: OperatorSessionArchiveProps = {}) 
                 />
               )}
 
-              <CoverageCard
-                state={state}
-                onPresent={api.presentClick}
-                onRetry={api.pageRetry}
-              />
+              <CoverageCard state={state} onPresent={api.presentClick} onRetry={api.pageRetry} />
 
               <Box data-testid="osa-books">
                 {state.books.kind === 'loading' && (
@@ -474,9 +482,7 @@ export function OperatorSessionArchive(props: OperatorSessionArchiveProps = {}) 
                           key={`${row.symbol}-${row.et_date}`}
                           hover
                           sx={{ cursor: 'pointer' }}
-                          onClick={() =>
-                            api.openBook({ symbol: row.symbol, et_date: row.et_date })
-                          }
+                          onClick={() => api.openBook({ symbol: row.symbol, et_date: row.et_date })}
                           data-testid={`osa-book-row-${row.et_date}`}
                         >
                           <TableCell sx={mono}>{row.et_date}</TableCell>

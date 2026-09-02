@@ -251,9 +251,7 @@ export function reduceArchive(state: ArchiveState, event: ArchiveEvent): Archive
 
     case 'PRESENT_CLICK': {
       const follow = event.identity.symbol !== state.selected;
-      const nextSelected = isTrio(event.identity.symbol)
-        ? event.identity.symbol
-        : state.selected;
+      const nextSelected = isTrio(event.identity.symbol) ? event.identity.symbol : state.selected;
       return {
         ...state,
         selected: follow ? nextSelected : state.selected,
@@ -352,9 +350,7 @@ function reduceListResult(
   // Unclassified transport / 5xx
   if (arm.kind === 'UnclassifiedTransport' || arm.kind === 'Unclassified5xx') {
     const showing =
-      state.books.kind === 'ready' || state.books.kind === 'stale'
-        ? state.books.rows
-        : null;
+      state.books.kind === 'ready' || state.books.kind === 'stale' ? state.books.rows : null;
     if (event.sameChipRetry && showing) {
       return {
         ...state,
@@ -362,9 +358,10 @@ function reduceListResult(
         books: {
           kind: 'stale',
           rows: showing,
-          framing: state.books.kind === 'ready' || state.books.kind === 'stale'
-            ? state.books.framing
-            : undefined,
+          framing:
+            state.books.kind === 'ready' || state.books.kind === 'stale'
+              ? state.books.framing
+              : undefined,
           authorizes:
             state.books.kind === 'ready' || state.books.kind === 'stale'
               ? state.books.authorizes

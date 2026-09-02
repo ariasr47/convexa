@@ -1,12 +1,7 @@
 import { useCallback, useReducer, useRef } from 'react';
 import { classifyResearchOutcome, type ClassifiedArm } from './classify';
 import { projectDigest } from './digest';
-import {
-  COVERAGE_TAIL,
-  fetchResearch,
-  listTail,
-  loadTail,
-} from './researchClient';
+import { COVERAGE_TAIL, fetchResearch, listTail, loadTail } from './researchClient';
 import {
   chipTapGets,
   digestRetryGets,
@@ -105,10 +100,7 @@ export function useSessionArchive(opts: UseSessionArchiveOptions = {}): SessionA
   const [state, dispatch] = useReducer(reduceArchive, undefined, initialArchiveState);
   const originRef = useRef('');
   const tokenRef = useRef('');
-  const [originDraft, setOriginDraftState] = useReducer(
-    (_: string, v: string) => v,
-    '',
-  );
+  const [originDraft, setOriginDraftState] = useReducer((_: string, v: string) => v, '');
   const [tokenDraft, setTokenDraftState] = useReducer((_: string, v: string) => v, '');
 
   const committedBase = useRef<string | null>(null);
@@ -131,10 +123,7 @@ export function useSessionArchive(opts: UseSessionArchiveOptions = {}): SessionA
   }, []);
 
   const runGets = useCallback(
-    async (
-      gets: ReturnType<typeof pageRetryGets>,
-      meta: { sameChipRetry?: boolean } = {},
-    ) => {
+    async (gets: ReturnType<typeof pageRetryGets>, meta: { sameChipRetry?: boolean } = {}) => {
       const base = committedBase.current;
       if (!base) return;
       const token = committedToken.current;
@@ -164,8 +153,7 @@ export function useSessionArchive(opts: UseSessionArchiveOptions = {}): SessionA
                     : undefined,
                 sameChipRetry: meta.sameChipRetry,
               });
-              booksShowingRef.current =
-                arm.kind === 'Ready' || arm.kind === 'EmptyList';
+              booksShowingRef.current = arm.kind === 'Ready' || arm.kind === 'EmptyList';
             } else if (g.kind === 'coverage') {
               const res = await doFetch({ base, tail: COVERAGE_TAIL, token });
               const arm = classifyResearchOutcome({
@@ -177,8 +165,7 @@ export function useSessionArchive(opts: UseSessionArchiveOptions = {}): SessionA
               dispatch({
                 type: 'COVERAGE_RESULT',
                 arm,
-                matrix:
-                  arm.kind === 'Ready' && res.json ? matrixFromJson(res.json) : undefined,
+                matrix: arm.kind === 'Ready' && res.json ? matrixFromJson(res.json) : undefined,
               });
             } else if (g.kind === 'load') {
               try {
@@ -199,9 +186,7 @@ export function useSessionArchive(opts: UseSessionArchiveOptions = {}): SessionA
                   arm,
                   digest:
                     arm.kind === 'Ready' && res.json
-                      ? projectDigest(
-                          res.json as Parameters<typeof projectDigest>[0],
-                        )
+                      ? projectDigest(res.json as Parameters<typeof projectDigest>[0])
                       : undefined,
                   identity: { symbol: g.symbol, et_date: g.et_date },
                 });
@@ -289,8 +274,7 @@ export function useSessionArchive(opts: UseSessionArchiveOptions = {}): SessionA
   }, [runGets]);
 
   const pageRetry = useCallback(() => {
-    const showing =
-      state.books.kind === 'ready' || state.books.kind === 'stale';
+    const showing = state.books.kind === 'ready' || state.books.kind === 'stale';
     dispatch({ type: 'PAGE_RETRY' });
     void runGets(pageRetryGets(state.selected), { sameChipRetry: showing });
   }, [runGets, state.books.kind, state.selected]);

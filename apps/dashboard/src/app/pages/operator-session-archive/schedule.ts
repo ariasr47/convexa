@@ -9,10 +9,7 @@ export type ResearchGet =
   | { kind: 'load'; symbol: string; et_date: string };
 
 export function pageRetryGets(selected: string): ResearchGet[] {
-  return [
-    { kind: 'list', symbol: selected },
-    { kind: 'coverage' },
-  ];
+  return [{ kind: 'list', symbol: selected }, { kind: 'coverage' }];
 }
 
 export function digestRetryGets(identity: BookIdentity): ResearchGet[] {
@@ -27,10 +24,7 @@ export function chipTapGets(symbol: string): ResearchGet[] {
   return [{ kind: 'list', symbol }];
 }
 
-export function presentClickGets(
-  selectedChip: string,
-  identity: BookIdentity,
-): ResearchGet[] {
+export function presentClickGets(selectedChip: string, identity: BookIdentity): ResearchGet[] {
   if (identity.symbol === selectedChip) {
     return [{ kind: 'load', symbol: identity.symbol, et_date: identity.et_date }];
   }

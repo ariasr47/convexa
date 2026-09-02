@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { DigestProjection } from './digest';
 import {
   initialArchiveState,
   reduceArchive,
@@ -7,7 +8,6 @@ import {
   type BookRow,
   type CoverageMatrix,
 } from './viewModel';
-import type { DigestProjection } from './digest';
 
 const spyRows: BookRow[] = [
   {

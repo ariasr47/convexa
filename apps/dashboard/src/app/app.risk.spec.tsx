@@ -319,9 +319,7 @@ describe('operator-vs-trader path separation', () => {
   });
 
   it('"/_ops/research" renders off-shell with operator-session-archive; locked issues no research GET', async () => {
-    const archiveModule = await import(
-      '@/pages/operator-session-archive/OperatorSessionArchive'
-    );
+    const archiveModule = await import('@/pages/operator-session-archive/OperatorSessionArchive');
     expect(typeof archiveModule.OperatorSessionArchive).toBe('function');
 
     const before = fetchMock.mock.calls.length;

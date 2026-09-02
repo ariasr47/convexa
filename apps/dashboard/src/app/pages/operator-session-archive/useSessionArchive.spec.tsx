@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { useSessionArchive } from './useSessionArchive';
 import type { FetchResearchResult } from './researchClient';
+import { useSessionArchive } from './useSessionArchive';
 
 function ok(body: Record<string, unknown>): FetchResearchResult {
   return { status: 200, json: body, bodyText: JSON.stringify(body) };
@@ -90,9 +90,7 @@ describe('useSessionArchive', () => {
       result.current.selectChip('QQQ');
     });
     await waitFor(() => expect(fetchImpl).toHaveBeenCalled());
-    expect(fetchImpl.mock.calls.every((c) => !(c[0].tail as string).includes('/book'))).toBe(
-      true,
-    );
+    expect(fetchImpl.mock.calls.every((c) => !(c[0].tail as string).includes('/book'))).toBe(true);
     expect(fetchImpl.mock.calls.some((c) => (c[0].tail as string).includes('/QQQ'))).toBe(true);
   });
 

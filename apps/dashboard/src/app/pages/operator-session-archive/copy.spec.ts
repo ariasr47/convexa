@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  BANNED_ON_SCREEN,
-  COPY,
-  ORIGIN_BLOCKED_BANNED,
-  originRejectedBody,
-} from './copy';
+import { BANNED_ON_SCREEN, COPY, ORIGIN_BLOCKED_BANNED, originRejectedBody } from './copy';
 
 describe('copy — exact SPEC §4', () => {
   it('AppBar / title / chip', () => {

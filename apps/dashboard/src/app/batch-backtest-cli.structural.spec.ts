@@ -204,9 +204,7 @@ describe('F2 · operator-session-archive allowlist is explicit and non-vacuous (
   });
 
   it('the skip is not vacuous against the real tree — the operator folder legitimately trips CAPTURE_BROWSE_FORBIDDEN today', () => {
-    const skipped = Object.keys(DASHBOARD_SOURCES).filter((k) =>
-      isOperatorSessionArchiveSource(k),
-    );
+    const skipped = Object.keys(DASHBOARD_SOURCES).filter((k) => isOperatorSessionArchiveSource(k));
     expect(skipped.length).toBeGreaterThan(0);
     const wouldHaveHit = skipped.some((k) =>
       CAPTURE_BROWSE_FORBIDDEN.some((n) => DASHBOARD_SOURCES[k].includes(n)),

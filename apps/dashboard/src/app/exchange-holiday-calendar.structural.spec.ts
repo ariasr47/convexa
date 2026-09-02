@@ -49,7 +49,9 @@ describe('exchange-holiday-calendar structural', () => {
     expect(appSrc).toMatch(/path=["']\/lab["']/);
     expect(appSrc).toMatch(/LabIndex/);
 
-    const labKey = Object.keys(DASHBOARD_SOURCES).find((k) => k.endsWith('/pages/lab/LabIndex.tsx'));
+    const labKey = Object.keys(DASHBOARD_SOURCES).find((k) =>
+      k.endsWith('/pages/lab/LabIndex.tsx'),
+    );
     expect(labKey).toBeTruthy();
     const labSrc = DASHBOARD_SOURCES[labKey as string];
     expect(labSrc).toContain('data-testid="lab-index"');

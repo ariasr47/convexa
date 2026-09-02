@@ -8,8 +8,7 @@ export const COPY = {
   authorizesNothing: 'nothing',
 
   originLabel: 'API origin',
-  originHelper:
-    'Public API base URL. Not a secret. Not the Pages host. Refresh forgets it.',
+  originHelper: 'Public API base URL. Not a secret. Not the Pages host. Refresh forgets it.',
   originTooltip:
     'Absolute http(s) origin of the API that serves the research family. A Pages host 404s /api/_research. Do not paste a metrics token here. Refreshing this tab forgets the origin and the token.',
   tokenLabel: 'Metrics token',
@@ -21,12 +20,10 @@ export const COPY = {
 
   lockedCaption:
     'Unlock with the API origin and the metrics token. A Pages host 404s the research family.',
-  pagesHelper:
-    'This page is on Pages. Type the API origin. Do not use this host.',
+  pagesHelper: 'This page is on Pages. Type the API origin. Do not use this host.',
 
   originRejectedTitle: 'origin-rejected',
-  originRejectedEmpty:
-    'API origin is required. Type the API process base URL. Not a Pages host.',
+  originRejectedEmpty: 'API origin is required. Type the API process base URL. Not a Pages host.',
   originRejectedPages:
     'Pages origin cannot serve the research family. Type a non-Pages API origin. Do not retry as a relative /api path.',
   originRejectedUnusable:
@@ -37,16 +34,14 @@ export const COPY = {
     'This API origin 404s the research family. Not an empty corpus. Pages does not proxy /api/_research.',
 
   unauthorizedTitle: 'metrics_unauthorized',
-  unauthorizedBody:
-    'Set Authorization: Bearer <METRICS_SECRET_TOKEN> or X-Metrics-Token',
+  unauthorizedBody: 'Set Authorization: Bearer <METRICS_SECRET_TOKEN> or X-Metrics-Token',
   unauthorizedHelper: 'Same token as Operator Metrics. Not a trader session.',
 
   corsTitle: 'Cross-origin request blocked',
   corsBody:
     'The browser blocked this cross-origin research request. Not an empty corpus. Not unauthorized. Not a Pages research 404.',
 
-  traderUnaffected:
-    'Operator tool only — the trader bundle and SSE are unaffected.',
+  traderUnaffected: 'Operator tool only — the trader bundle and SSE are unaffected.',
   loading: 'Loading session archive…',
   offline: 'Session archive readout unavailable.',
   retry: 'Retry',
@@ -59,16 +54,14 @@ export const COPY = {
   booksLicense: 'Our research · not redistributed on a trader route.',
 
   invariantTitle: 'invariant-fault',
-  invariantLoad:
-    'This stored book is not a legal research read. Not a digest. Not live market.',
+  invariantLoad: 'This stored book is not a legal research read. Not a digest. Not live market.',
   invariantList:
     'This session-books list is not a legal research read. Not a digest. Not live market.',
   invariantCoverage:
     'This coverage envelope is not a legal research read. Not a digest. Not live market.',
 
   coverageFraming: 'RESEARCH READ — SESSION ARCHIVE COVERAGE',
-  coverageFramingWeekend:
-    'RESEARCH READ — SESSION ARCHIVE COVERAGE — NO EXPECTED IDENTITIES',
+  coverageFramingWeekend: 'RESEARCH READ — SESSION ARCHIVE COVERAGE — NO EXPECTED IDENTITIES',
   coverageCommand: 'Command: archive-coverage',
   coverageEvidence: 'Evidence: this process',
   coverageSymbols: 'Symbols: SPY · QQQ · IWM',

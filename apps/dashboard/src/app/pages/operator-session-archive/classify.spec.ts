@@ -165,7 +165,9 @@ describe('classifyResearchOutcome — first match', () => {
           ...listMiss200.json,
           count: 1,
           store: 'hit',
-          books: [{ symbol: 'SPY', et_date: '2024-01-02', source: 'live_massive', source_as_of: 'x' }],
+          books: [
+            { symbol: 'SPY', et_date: '2024-01-02', source: 'live_massive', source_as_of: 'x' },
+          ],
           vendor_called: true,
           authorizes: 'nothing',
         },

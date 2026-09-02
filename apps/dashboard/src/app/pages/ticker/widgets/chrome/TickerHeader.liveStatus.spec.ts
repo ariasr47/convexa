@@ -35,9 +35,7 @@ describe('liveStatus — closed wins over live; lag tip drops holiday', () => {
     );
     expect(s?.label).toMatch(/^○ market closed/);
     expect(s?.label).not.toContain('● live');
-    expect(s?.tip).toBe(
-      'Market is closed (weekend/holiday). Showing the last completed session.',
-    );
+    expect(s?.tip).toBe('Market is closed (weekend/holiday). Showing the last completed session.');
   });
 
   it('lag tip has no holiday substring and is the replacement sentence', () => {

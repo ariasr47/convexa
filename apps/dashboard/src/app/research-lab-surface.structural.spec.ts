@@ -86,9 +86,7 @@ describe('research-lab-surface structural', () => {
   it('glob sees the operator folder; folder name avoids path-scan needles', () => {
     expect(existsSync(ARCHIVE_DIR)).toBe(true);
     expect(folderNameAvoidsPathScanNeedles('operator-session-archive')).toBe(true);
-    const keys = Object.keys(DASHBOARD_SOURCES).filter((k) =>
-      isOperatorSessionArchiveSource(k),
-    );
+    const keys = Object.keys(DASHBOARD_SOURCES).filter((k) => isOperatorSessionArchiveSource(k));
     expect(keys.length).toBeGreaterThan(0);
   });
 

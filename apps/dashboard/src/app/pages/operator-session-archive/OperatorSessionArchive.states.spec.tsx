@@ -1,6 +1,6 @@
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { OperatorSessionArchive } from './OperatorSessionArchive';
@@ -114,9 +114,7 @@ describe('OperatorSessionArchive distinguishable states', () => {
   it('cors-fault title present; stale chip absent', async () => {
     const user = userEvent.setup();
     const fetchImpl = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
-    wrap(
-      <OperatorSessionArchive fetchImpl={fetchImpl} corsSignal={() => true} />,
-    );
+    wrap(<OperatorSessionArchive fetchImpl={fetchImpl} corsSignal={() => true} />);
     await unlockUsable(fetchImpl, user);
     await waitFor(() => {
       expect(screen.getByText(COPY.corsTitle)).toBeInTheDocument();

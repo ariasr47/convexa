@@ -21,9 +21,7 @@ export function documentHostIsPages(host: string): boolean {
  * Trim-first parse of the sitting research API origin (SPEC §2).
  * Canonical usable form: scheme + lowercased host + non-default port; no path.
  */
-export function parseSittingResearchBase(
-  raw: string | null | undefined,
-): SittingResearchBaseParse {
+export function parseSittingResearchBase(raw: string | null | undefined): SittingResearchBaseParse {
   if (raw == null) return { kind: 'OriginEmpty' };
   const trimmed = raw.trim();
   if (!trimmed) return { kind: 'OriginEmpty' };

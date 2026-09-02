@@ -21,9 +21,7 @@ describe('parseSittingResearchBase', () => {
   it('OriginPagesHost — pages.dev and *.pages.dev (ASCII case-insensitive)', () => {
     expect(arm(parseSittingResearchBase('https://pages.dev'))).toBe('OriginPagesHost');
     expect(arm(parseSittingResearchBase('https://convexa.pages.dev'))).toBe('OriginPagesHost');
-    expect(arm(parseSittingResearchBase('https://hash.convexa.pages.dev'))).toBe(
-      'OriginPagesHost',
-    );
+    expect(arm(parseSittingResearchBase('https://hash.convexa.pages.dev'))).toBe('OriginPagesHost');
     expect(arm(parseSittingResearchBase('https://CONVEXA.PAGES.DEV'))).toBe('OriginPagesHost');
     expect(arm(parseSittingResearchBase('https://convexa.Pages.Dev/'))).toBe('OriginPagesHost');
   });

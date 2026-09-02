@@ -16,12 +16,10 @@ export type CoverageCell = (typeof COVERAGE_CELLS)[number];
 export const ORIGIN_BLOCKED_MUST_NOT_CONTAIN = 'blocked occupancy';
 
 export type ListSourceLookup =
-  | { kind: 'known'; source: ListSource }
-  | { kind: 'unavailable'; raw: string };
+  { kind: 'known'; source: ListSource } | { kind: 'unavailable'; raw: string };
 
 export type CoverageCellLookup =
-  | { kind: 'known'; cell: CoverageCell }
-  | { kind: 'unavailable'; raw: string };
+  { kind: 'known'; cell: CoverageCell } | { kind: 'unavailable'; raw: string };
 
 export function lookupListSource(raw: string): ListSourceLookup {
   if ((LIST_SOURCES as readonly string[]).includes(raw)) {

@@ -37,9 +37,11 @@ describe('fetchResearch', () => {
   });
 
   it('uses credentials omit; token sends both headers; empty omits both', async () => {
-    const fetchMock = vi.fn().mockImplementation(() =>
-      Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 })),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(() =>
+        Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 })),
+      );
     vi.stubGlobal('fetch', fetchMock);
 
     await fetchResearch({
@@ -114,10 +116,7 @@ describe('fetchResearch', () => {
 
   it('does not write sessionStorage or localStorage', async () => {
     const ss = vi.spyOn(Storage.prototype, 'setItem');
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(new Response('{}', { status: 200 })),
-    );
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 200 })));
     await fetchResearch({
       base: 'http://127.0.0.1:8000',
       tail: listTail('SPY'),

@@ -20,7 +20,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-const CALENDAR_JSON = 'apps/api/src/services/session_chain_archive/calendars/xnys_full_day_2026_2035.v1.json';
+const CALENDAR_JSON =
+  'apps/api/src/services/session_chain_archive/calendars/xnys_full_day_2026_2035.v1.json';
 const BACKEND_TABLE_RS = 'apps/api/src/domain/nyse_full_day.rs';
 const DASHBOARD_REPLICA_TS = 'apps/dashboard/src/app/pages/scanner/nyseFullDayHolidays.ts';
 
