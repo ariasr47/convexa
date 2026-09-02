@@ -171,6 +171,15 @@ jobs:
       - name: API contract check
         run: npm run api:contract:check
 
+      # ubuntu-24.04 preinstalls ~25 GB of toolchains this job never touches. The merged tree
+      # builds 62 debug test binaries, which exhausted the runner *inside* `Cargo test` — before
+      # either `cargo clean` below could reclaim anything (run 33608643054, 2026-09-02: "No space
+      # left on device", then `ld` died with SIGBUS). Reclaim up front, not just between steps.
+      - name: Free preinstalled runner disk
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL
+          df -h /
+
       - name: Install baseline Rust 1.97.1
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # reviewed-commit-2026-08-05
         with:
