@@ -1,0 +1,168 @@
+{
+  "sse_data_event": {
+    "method": "GET",
+    "path": "/api/stream/{ticker}",
+    "note": "SSE data JSON; not live-fetched by interface_conformance.mjs",
+    "required_always": {
+      "ticker": "string",
+      "mid": "number|null",
+      "bid": "number|null",
+      "ask": "number|null",
+      "spread": "number|null",
+      "net_flow": "number",
+      "buy_vol": "number",
+      "sell_vol": "number",
+      "flow_window_s": "number",
+      "spot_ts": "number",
+      "live": "boolean",
+      "tick_age_s": "number|null",
+      "market_session": "string",
+      "feed": "string",
+      "ts": "number",
+      "gamma_flip": "number|null",
+      "last_trade": "number|null"
+    },
+    "required_when_armed": {
+      "live": "boolean",
+      "feed": "string",
+      "market_session": "string",
+      "session_tape": "object",
+      "session_tape.symbol": "string",
+      "session_tape.et_date": "string",
+      "session_tape.tape_time_et": "string|null",
+      "session_tape.phase": "string",
+      "session_tape.pace": "number"
+    }
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/_research/session-day-tape/{symbol}",
+      "path_params": {
+        "symbol": "NVDA"
+      },
+      "query": {},
+      "required": {
+        "framing": "string",
+        "command": "string",
+        "evidence": "string",
+        "symbol": "string",
+        "watchlist": "array",
+        "watchlist[]": "string",
+        "path_b_interval": "string",
+        "vendor_called": "boolean",
+        "provenance": "string",
+        "license": "string",
+        "authorizes": "string",
+        "count": "number",
+        "days": "array",
+        "detail": "string|null"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-day-tape/{symbol}/day",
+      "path_params": {
+        "symbol": "NVDA"
+      },
+      "query": {
+        "et_date": "2020-01-02"
+      },
+      "required": {
+        "framing": "string",
+        "command": "string",
+        "evidence": "string",
+        "symbol": "string",
+        "et_date": "string",
+        "watchlist": "array",
+        "watchlist[]": "string",
+        "path_b_interval": "string",
+        "vendor_called": "boolean",
+        "provenance": "string",
+        "license": "string",
+        "authorizes": "string",
+        "detail": "string|null",
+        "clock": "string|null",
+        "path_a_trade_count": "number",
+        "path_a_quote_count": "number",
+        "path_a_detail": "string",
+        "path_a_ticks": "array",
+        "path_a_ticks[].kind": "string",
+        "path_a_ticks[].ts_ns": "number",
+        "path_a_ticks[].price": "number|null",
+        "path_a_ticks[].size": "number|null",
+        "path_a_ticks[].bid": "number|null",
+        "path_a_ticks[].ask": "number|null",
+        "path_a_ticks[].bid_size": "number|null",
+        "path_a_ticks[].ask_size": "number|null",
+        "path_a_gaps": "array",
+        "path_a_gaps[].dropped": "number",
+        "path_b_snapshot_count": "number",
+        "path_b_gap_count": "number",
+        "path_b_detail": "string",
+        "path_b_snapshots": "array",
+        "path_b_gaps": "array",
+        "path_b_gaps[].mark": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-day-tape/{symbol}/day",
+      "path_params": {
+        "symbol": "SPY"
+      },
+      "query": {
+        "et_date": "not-a-date"
+      },
+      "expect_status": 422,
+      "required": {
+        "error": "string",
+        "detail": "string",
+        "vendor_called": "boolean"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "path_params": {
+        "symbol": "SPY"
+      },
+      "query": {},
+      "required": {
+        "symbol": "string",
+        "count": "number",
+        "books": "array",
+        "books[].symbol": "string",
+        "books[].et_date": "string",
+        "books[].source_as_of": "string",
+        "books[].source": "string",
+        "store": "string",
+        "detail": "string|null",
+        "vendor_called": "boolean",
+        "framing": "string",
+        "provenance": "string",
+        "license": "string",
+        "authorizes": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}/book",
+      "path_params": {
+        "symbol": "ZZZZNOPE"
+      },
+      "query": {
+        "et_date": "2000-01-01"
+      },
+      "expect_status": 404,
+      "required": {
+        "error": "string",
+        "detail": "string",
+        "symbol": "string",
+        "et_date": "string",
+        "store": "string",
+        "vendor_called": "boolean"
+      }
+    }
+  ]
+}

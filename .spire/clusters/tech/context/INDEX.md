@@ -25,9 +25,12 @@
 
 ## Hot work (pointers only — detail stays in RESUME / contracts)
 > Refresh when GATE R or ship changes the picture. Prefer branch RESUME over duplicating state here.
-- Active program: `keep-paid-books` (BACKLOG; grouping only) — builds done; #5 clock 2026-08-20
-- Active feature: none — `project-context-s2-is-python-era` repaired 2026-08-20
-- Live contracts: none
+- Active program: `production-maturity` — #5 `capacity-baseline` SHIPPED 2026-08-29; #4 still blocked; #6 next in program order
+- Active feature: none in pipeline (unnamed `go` still `grounded-morning-snapshot`)
+- Live contracts: `supply-chain-automation` (GATE Q FAIL; external/security blockers)
+- Last ship: `exchange-holiday-calendar` GATE S 2026-08-31 (`_archive/`; re-pin JSON in `state/conformance/`)
+- Research harvest 2026-08-28: coverage + tape + replay + S3 keep + operator corpus browser SHIPPED
+- Harvest 2026-08-31 (post-lab): `docs/briefings/harvest-2026-08-31.html` — `exchange-holiday-calendar` SHIPPED; unnamed `go` still `grounded-morning-snapshot`; keep-paid-books #5 clock 2026-08-26
 
 ## Operator shortcuts
 - Invariant floor: run the installed `gates.mjs context_for --print` (no feature)

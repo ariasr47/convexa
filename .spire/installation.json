@@ -13,7 +13,7 @@
       "path": "agents/spire-tech-backend.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "317ad1430e8a57e931a33dca8e41337f36bd57baf81c0ed4368ed0ad7782ab86",
+      "sha256": "4b8a5fac9fff197d7e772b76073e7044b0fb879df381f9527d332f7c579bd75b",
       "type": "file"
     },
     {
@@ -37,7 +37,7 @@
       "path": "agents/spire-tech-frontend.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "cc702ce91a00515ac92825c979703a5f9edcb703e77ae55408d9b9015e356c4d",
+      "sha256": "2d0c9814dae3370d7bf6dba70f9d54014b0a417a96c3745f7d22ceba9f4a3d3e",
       "type": "file"
     },
     {
@@ -45,7 +45,7 @@
       "path": "agents/spire-tech-planner.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "140b9cb6cebf1abb3901c1df084af2a2786be5d4d9252417d69b07b6cf12977c",
+      "sha256": "a5b79bea2515d4fd25a37ec78fcf2477b4c9406420d75f98b773e5420f3116d9",
       "type": "file"
     },
     {
@@ -61,7 +61,7 @@
       "path": "agents/spire-tech-qa.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "207ba18a3742da1298df6dc79139c023b68e1b162a6b368344c986c3b91c6a04",
+      "sha256": "9336d71a20da16de14097629d6416af6c6f779877215cf5b6b92590e3b9b25fb",
       "type": "file"
     },
     {
@@ -253,7 +253,7 @@
       "path": "ORCHESTRATOR.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "a12c43b1fd474e776655b8575c8f1c9623579c541d831633d2b4510e79fcfc0a",
+      "sha256": "0f80026f9bc9f155f503c57766d7ff7259e6e53620ebbccd20872b76a3201d97",
       "type": "file"
     },
     {
@@ -261,7 +261,7 @@
       "path": "plan/PLAN_METHOD.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "b49c531ffa12dd74079a833fdf22baab0e7c83c1d2c53dfeedf305e3b06d5937",
+      "sha256": "df2fe330a3bd1cc06194eb6e15bed921a6ec17e200dc84d8d397536ec9a7fc84",
       "type": "file"
     },
     {
@@ -269,7 +269,7 @@
       "path": "ROLE_LAUNCH_PROMPTS.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "627a7ce274c926e731be192e1965da62c802a9d073d891e17762da7c0b97846e",
+      "sha256": "e76207f979cbe3f36991d0631ccf5922efc8d3b9d7d2c5642c656b096d0ae9f1",
       "type": "file"
     },
     {
@@ -573,7 +573,7 @@
       "path": "skills/spire-tech-frontend-patterns/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "32cc98eae74ad7cd218465d5605c8a9e8da1f38de48913560329d91eeaa361c3",
+      "sha256": "2122c66382d9a2e57ac856e229072230fee57b5e8e95387d21d0ad19f2c56e17",
       "type": "file"
     },
     {
@@ -690,6 +690,38 @@
     },
     {
       "mode": 420,
+      "path": "skills/spire-tech-next-best-practices/references/bundled-docs.md",
+      "placement": "provider-root",
+      "provider_root": ".claude",
+      "sha256": "b46d606eb743b4efde32883c4ddeef3a98578d750c05080083125286f38f35be",
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "path": "skills/spire-tech-next-best-practices/SKILL.md",
+      "placement": "provider-root",
+      "provider_root": ".claude",
+      "sha256": "f2c0ebab0980af7aabb43e22cddaad26d901a6904369a3d8923d49ba2d404fae",
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "path": "skills/spire-tech-next-cache-components/references/adopt-vs-optimize.md",
+      "placement": "provider-root",
+      "provider_root": ".claude",
+      "sha256": "9046204b2c8627765fc65cfda013064d75361228d7b9a38b7768fc1a0a790717",
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "path": "skills/spire-tech-next-cache-components/SKILL.md",
+      "placement": "provider-root",
+      "provider_root": ".claude",
+      "sha256": "377e4caecc509aa7a19d74bfcc7e47a0335e4c9c46524b2f3bef4798f847b541",
+      "type": "file"
+    },
+    {
+      "mode": 420,
       "path": "skills/spire-tech-react-a11y/references/a11y-checklist.md",
       "placement": "provider-root",
       "provider_root": ".claude",
@@ -701,7 +733,7 @@
       "path": "skills/spire-tech-react-a11y/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "fd4bb4213e95fe30e841b17305f3c16eb4e17aa9d083771f152b4ebba8d923e0",
+      "sha256": "0306cec6b48a740f288efbee2e5170ac0f824b0621288b5dc9bb2002ca4311ec",
       "type": "file"
     },
     {
@@ -717,7 +749,7 @@
       "path": "skills/spire-tech-react-async-data/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "31d3866109105fc4c4f8626d3a3c86145acb01ff91ac25c2069e251b9aa20d0b",
+      "sha256": "60aa66d19d21e68fa87fc9867ac8bb0a1e6c798ce0695aa13928a2553f3740d2",
       "type": "file"
     },
     {
@@ -733,7 +765,7 @@
       "path": "skills/spire-tech-react-composition/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "9d97605a19516371354b26fe0ee1fee74601e86b47e1b3e135675a42338b58bd",
+      "sha256": "305cf7e3bd24274126b2c7889e933fac504d7a312702e2e6783760581e608f73",
       "type": "file"
     },
     {
@@ -749,7 +781,7 @@
       "path": "skills/spire-tech-react-performance/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "11f032bf4f81160deffda512f4a3ab29b25936600208e7e9b9e585b89fe2d5af",
+      "sha256": "5969386e98c4f8cd81eb796fdc6f7af06583843aa6315da629b60d01b746efb8",
       "type": "file"
     },
     {
@@ -765,7 +797,7 @@
       "path": "skills/spire-tech-react-server-client/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "357b3076bd4fccb62c4bbaf5e21a9b211cd92d4fcd98aefcd0d2058ed6a2a208",
+      "sha256": "e3bd8efba2651755028426bde6dfadb02c87dc13dacacbcc4e9b0c9352270e6c",
       "type": "file"
     },
     {
@@ -781,7 +813,7 @@
       "path": "skills/spire-tech-react-testing/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "36c05c6597466337078764186893075e851f38666bcde06a28937e1739d790e7",
+      "sha256": "0f7e5049e7f57de1c25cc8b4c0ae54299c3a3bf9ed14b18b3874743e47bf31be",
       "type": "file"
     },
     {
@@ -925,7 +957,7 @@
       "path": "tools/continuity.mjs",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "bb8185d44d10741143acdaddbb10787c66893f1c075b8e47764c85389cf0336d",
+      "sha256": "dfb28c70d2761e33f8379702dd615094504707d5ce3fbd266f1a45e39f7598ea",
       "type": "file"
     },
     {
@@ -933,7 +965,7 @@
       "path": "tools/contract_lint.mjs",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "2162892047d365831468e7ac58500d98d217bc0adf368bc0867713e683ac4cff",
+      "sha256": "05fe3cb58088f486bf27330ee660cbca66e4078663d06cb118df812fee12a204",
       "type": "file"
     },
     {
@@ -1013,7 +1045,7 @@
       "path": "AGENTS.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "134c48204b16f506f19e786a6afde399553f2b839b3de39a29d3e0c6ddcae788",
+      "sha256": "c60b130bca97ae8fefe22de513694ded7acf2867ec37803f5fd2ab99fd2efa2a",
       "type": "file"
     },
     {
@@ -1029,7 +1061,7 @@
       "path": "agents/spire-tech-backend.toml",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "fdf7aed2d70e7d8fab111712bb8d1162bee26ab9d25ae41c3ce58d9f6cc568f7",
+      "sha256": "ef9c6c286cbd3c43c269b3cbfe952c0820c5c1b530a9e504aca98c9f95130c9d",
       "type": "file"
     },
     {
@@ -1053,7 +1085,7 @@
       "path": "agents/spire-tech-frontend.toml",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "556ba71127870c372fcf5a76b2c9ac2d70f44ad47574e9bcdcf697f1fdb71da4",
+      "sha256": "cb5c8c5292eac8f0e21a4886e76f3b6e0dba28143a0f78f6bddfba53352c2332",
       "type": "file"
     },
     {
@@ -1061,7 +1093,7 @@
       "path": "agents/spire-tech-planner.toml",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "5947728b63d0367230a3cddbbfdac1c2d5bba2dc5e95586cae2fa8754ef7fea6",
+      "sha256": "fad56cb4ccdb63f357aeb06c2d685f9b529977d878e4b4e778ce96fa1c72de48",
       "type": "file"
     },
     {
@@ -1077,7 +1109,7 @@
       "path": "agents/spire-tech-qa.toml",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "47e455eb323aac351b67b631b1bfb8c4a632d1e528b3c20806444ead18be769b",
+      "sha256": "845c8a50a0df9e5d40e4b88771ba339f2ada8496b71bbb4197ae30978d03f2ee",
       "type": "file"
     },
     {
@@ -1197,7 +1229,7 @@
       "path": "ORCHESTRATOR.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "c6b86545a04ac4c762efb1eac8cf7d4faec80c5cc21d96a3fbd7d436385191a9",
+      "sha256": "692c875be4d8a120c289156b62c8cd66d0e5cd2f5d74a09e01b2c7998adf2232",
       "type": "file"
     },
     {
@@ -1205,7 +1237,7 @@
       "path": "plan/PLAN_METHOD.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "b49c531ffa12dd74079a833fdf22baab0e7c83c1d2c53dfeedf305e3b06d5937",
+      "sha256": "df2fe330a3bd1cc06194eb6e15bed921a6ec17e200dc84d8d397536ec9a7fc84",
       "type": "file"
     },
     {
@@ -1213,7 +1245,7 @@
       "path": "ROLE_LAUNCH_PROMPTS.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "cce71ba501782b73b6279723245bd79cc15eef6c7a637f77df25e1f484a5caa0",
+      "sha256": "08333d9324f653ced926c9708e542193b5586ad5a11e6df42697f455888d28e8",
       "type": "file"
     },
     {
@@ -1517,7 +1549,7 @@
       "path": "skills/spire-tech-frontend-patterns/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "32cc98eae74ad7cd218465d5605c8a9e8da1f38de48913560329d91eeaa361c3",
+      "sha256": "2122c66382d9a2e57ac856e229072230fee57b5e8e95387d21d0ad19f2c56e17",
       "type": "file"
     },
     {
@@ -1634,6 +1666,38 @@
     },
     {
       "mode": 420,
+      "path": "skills/spire-tech-next-best-practices/references/bundled-docs.md",
+      "placement": "provider-root",
+      "provider_root": ".codex",
+      "sha256": "b46d606eb743b4efde32883c4ddeef3a98578d750c05080083125286f38f35be",
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "path": "skills/spire-tech-next-best-practices/SKILL.md",
+      "placement": "provider-root",
+      "provider_root": ".codex",
+      "sha256": "f2c0ebab0980af7aabb43e22cddaad26d901a6904369a3d8923d49ba2d404fae",
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "path": "skills/spire-tech-next-cache-components/references/adopt-vs-optimize.md",
+      "placement": "provider-root",
+      "provider_root": ".codex",
+      "sha256": "9046204b2c8627765fc65cfda013064d75361228d7b9a38b7768fc1a0a790717",
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "path": "skills/spire-tech-next-cache-components/SKILL.md",
+      "placement": "provider-root",
+      "provider_root": ".codex",
+      "sha256": "377e4caecc509aa7a19d74bfcc7e47a0335e4c9c46524b2f3bef4798f847b541",
+      "type": "file"
+    },
+    {
+      "mode": 420,
       "path": "skills/spire-tech-react-a11y/references/a11y-checklist.md",
       "placement": "provider-root",
       "provider_root": ".codex",
@@ -1645,7 +1709,7 @@
       "path": "skills/spire-tech-react-a11y/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "fd4bb4213e95fe30e841b17305f3c16eb4e17aa9d083771f152b4ebba8d923e0",
+      "sha256": "0306cec6b48a740f288efbee2e5170ac0f824b0621288b5dc9bb2002ca4311ec",
       "type": "file"
     },
     {
@@ -1661,7 +1725,7 @@
       "path": "skills/spire-tech-react-async-data/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "31d3866109105fc4c4f8626d3a3c86145acb01ff91ac25c2069e251b9aa20d0b",
+      "sha256": "60aa66d19d21e68fa87fc9867ac8bb0a1e6c798ce0695aa13928a2553f3740d2",
       "type": "file"
     },
     {
@@ -1677,7 +1741,7 @@
       "path": "skills/spire-tech-react-composition/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "9d97605a19516371354b26fe0ee1fee74601e86b47e1b3e135675a42338b58bd",
+      "sha256": "305cf7e3bd24274126b2c7889e933fac504d7a312702e2e6783760581e608f73",
       "type": "file"
     },
     {
@@ -1693,7 +1757,7 @@
       "path": "skills/spire-tech-react-performance/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "11f032bf4f81160deffda512f4a3ab29b25936600208e7e9b9e585b89fe2d5af",
+      "sha256": "5969386e98c4f8cd81eb796fdc6f7af06583843aa6315da629b60d01b746efb8",
       "type": "file"
     },
     {
@@ -1709,7 +1773,7 @@
       "path": "skills/spire-tech-react-server-client/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "357b3076bd4fccb62c4bbaf5e21a9b211cd92d4fcd98aefcd0d2058ed6a2a208",
+      "sha256": "e3bd8efba2651755028426bde6dfadb02c87dc13dacacbcc4e9b0c9352270e6c",
       "type": "file"
     },
     {
@@ -1725,7 +1789,7 @@
       "path": "skills/spire-tech-react-testing/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "36c05c6597466337078764186893075e851f38666bcde06a28937e1739d790e7",
+      "sha256": "0f7e5049e7f57de1c25cc8b4c0ae54299c3a3bf9ed14b18b3874743e47bf31be",
       "type": "file"
     },
     {
@@ -1877,7 +1941,7 @@
       "path": "tools/continuity.mjs",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "bb8185d44d10741143acdaddbb10787c66893f1c075b8e47764c85389cf0336d",
+      "sha256": "dfb28c70d2761e33f8379702dd615094504707d5ce3fbd266f1a45e39f7598ea",
       "type": "file"
     },
     {
@@ -1885,7 +1949,7 @@
       "path": "tools/contract_lint.mjs",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "8c7ec69b67a27e42fd0e3325c809b06aadc85f3c66e0d625232ce486bb8898a7",
+      "sha256": "4ebb825190e7c068da156b696a53090521fead9350bf8e5482d783696edb3d2d",
       "type": "file"
     },
     {
@@ -1965,7 +2029,7 @@
       "path": "AGENTS.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "34f693ef9c7593b311ae1fffe204d2b276e56ceab6af4544b6b98776de468391",
+      "sha256": "d4ff8d548d38a9ff395fb6237866b95da864c4df89c6dc59c17753751f74387f",
       "type": "file"
     },
     {
@@ -1973,7 +2037,7 @@
       "path": "agents/spire-tech-architect.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "721ceadc16f17349e819056346543da982c36a1a576c5c3fe3a44af1db1a8748",
+      "sha256": "d1420c7a80209bed00b0a8f6a3aebf12bc2a27dc2c76241ea0c565a09b730790",
       "type": "file"
     },
     {
@@ -1981,7 +2045,7 @@
       "path": "agents/spire-tech-backend.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "3bb2743230a1ab0b74b573496fa1ab1e7d6fde46e6f988f093b398ce3b134f04",
+      "sha256": "83b1860c82ff321607e5b7ec10b362351c8e9e53d69d51900875e7e06a83ce42",
       "type": "file"
     },
     {
@@ -1989,7 +2053,7 @@
       "path": "agents/spire-tech-council-skeptic.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "6623049755e3f2c1c6e5e20d55e836ee4358eab3b96381d6b227b1eaab7a505c",
+      "sha256": "bf65bce8d32767d6d9a7c9076d5340047cc123d77628a4064894f2329d4a9f20",
       "type": "file"
     },
     {
@@ -1997,7 +2061,7 @@
       "path": "agents/spire-tech-council-synthesizer.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "1fd50ec7153008ee3a4d1052b55dfa6fbabf615c98a605302ee0a632707105f1",
+      "sha256": "4295f7cb0c53d8a9806065abf3fab7bbb6e26fae2ef04cea51623f11a0ff6bd3",
       "type": "file"
     },
     {
@@ -2005,7 +2069,7 @@
       "path": "agents/spire-tech-frontend.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "ce4e338950e328c02e9bcefd15bad855cbb20abb27ba894ad5363e81714c72fc",
+      "sha256": "40e1aede74dbd480a698f88f3bcc669622d0ea9ccd1d4d6e7f431536daf347d5",
       "type": "file"
     },
     {
@@ -2013,7 +2077,7 @@
       "path": "agents/spire-tech-planner.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "a1cfd6edf248f12dbc499a89659a60246ced9b54cfdf97b636025714f2f2637b",
+      "sha256": "bd2e62291ec2bf7b82dcd7b5369234460b8e0e7ddeb5e54cce8ed56e39ceabc8",
       "type": "file"
     },
     {
@@ -2021,7 +2085,7 @@
       "path": "agents/spire-tech-pm.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "95b0d3a62e7cbfaba03c86750825e9e539c246f5223e2933e2de274a1b6815c0",
+      "sha256": "24fd93985eab565aa4d3a49b67b2ff77f2b584985fc69093a0cdc576c458c50d",
       "type": "file"
     },
     {
@@ -2029,7 +2093,7 @@
       "path": "agents/spire-tech-qa.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "b08b29ab708b3d57ece60c805f989332bc71382f61ad135b87169e2e6068bc13",
+      "sha256": "98fd97c0268c53d4a45ee88b41758a8734f6f8bd7126a4482870a9f4f5c9103b",
       "type": "file"
     },
     {
@@ -2037,7 +2101,7 @@
       "path": "agents/spire-tech-ux.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "2c878fa07b7983ffdfaab54ed1324eaeaad5392128db92361f2f5f5608866ffe",
+      "sha256": "c0b6e2f5ca691fc5bef16949d5a35692e36ade5b34e1fc179f8de2516fb47ca6",
       "type": "file"
     },
     {
@@ -2213,7 +2277,7 @@
       "path": "ORCHESTRATOR.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "091769e5dbd9f5421cb09bee79729b3eaaaeafecb3046d02aad8219c659034d8",
+      "sha256": "8f486dde69e90838a00d208bd8bfafca44307a1279c2c65d497f2f0d552773aa",
       "type": "file"
     },
     {
@@ -2221,7 +2285,7 @@
       "path": "plan/PLAN_METHOD.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "b49c531ffa12dd74079a833fdf22baab0e7c83c1d2c53dfeedf305e3b06d5937",
+      "sha256": "df2fe330a3bd1cc06194eb6e15bed921a6ec17e200dc84d8d397536ec9a7fc84",
       "type": "file"
     },
     {
@@ -2229,7 +2293,7 @@
       "path": "ROLE_LAUNCH_PROMPTS.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "0b2b7331d52073deef226a80102a421634f66bbb71b5171bf7b7901282c0b263",
+      "sha256": "77259c604dfb09d242bde9a8503d02e4f0f04be9803fa02531f05048d23a8abc",
       "type": "file"
     },
     {
@@ -2533,7 +2597,7 @@
       "path": "skills/spire-tech-frontend-patterns/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "32cc98eae74ad7cd218465d5605c8a9e8da1f38de48913560329d91eeaa361c3",
+      "sha256": "2122c66382d9a2e57ac856e229072230fee57b5e8e95387d21d0ad19f2c56e17",
       "type": "file"
     },
     {
@@ -2650,6 +2714,38 @@
     },
     {
       "mode": 420,
+      "path": "skills/spire-tech-next-best-practices/references/bundled-docs.md",
+      "placement": "provider-root",
+      "provider_root": ".grok",
+      "sha256": "b46d606eb743b4efde32883c4ddeef3a98578d750c05080083125286f38f35be",
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "path": "skills/spire-tech-next-best-practices/SKILL.md",
+      "placement": "provider-root",
+      "provider_root": ".grok",
+      "sha256": "f2c0ebab0980af7aabb43e22cddaad26d901a6904369a3d8923d49ba2d404fae",
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "path": "skills/spire-tech-next-cache-components/references/adopt-vs-optimize.md",
+      "placement": "provider-root",
+      "provider_root": ".grok",
+      "sha256": "9046204b2c8627765fc65cfda013064d75361228d7b9a38b7768fc1a0a790717",
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "path": "skills/spire-tech-next-cache-components/SKILL.md",
+      "placement": "provider-root",
+      "provider_root": ".grok",
+      "sha256": "377e4caecc509aa7a19d74bfcc7e47a0335e4c9c46524b2f3bef4798f847b541",
+      "type": "file"
+    },
+    {
+      "mode": 420,
       "path": "skills/spire-tech-react-a11y/references/a11y-checklist.md",
       "placement": "provider-root",
       "provider_root": ".grok",
@@ -2661,7 +2757,7 @@
       "path": "skills/spire-tech-react-a11y/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "fd4bb4213e95fe30e841b17305f3c16eb4e17aa9d083771f152b4ebba8d923e0",
+      "sha256": "0306cec6b48a740f288efbee2e5170ac0f824b0621288b5dc9bb2002ca4311ec",
       "type": "file"
     },
     {
@@ -2677,7 +2773,7 @@
       "path": "skills/spire-tech-react-async-data/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "31d3866109105fc4c4f8626d3a3c86145acb01ff91ac25c2069e251b9aa20d0b",
+      "sha256": "60aa66d19d21e68fa87fc9867ac8bb0a1e6c798ce0695aa13928a2553f3740d2",
       "type": "file"
     },
     {
@@ -2693,7 +2789,7 @@
       "path": "skills/spire-tech-react-composition/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "9d97605a19516371354b26fe0ee1fee74601e86b47e1b3e135675a42338b58bd",
+      "sha256": "305cf7e3bd24274126b2c7889e933fac504d7a312702e2e6783760581e608f73",
       "type": "file"
     },
     {
@@ -2709,7 +2805,7 @@
       "path": "skills/spire-tech-react-performance/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "11f032bf4f81160deffda512f4a3ab29b25936600208e7e9b9e585b89fe2d5af",
+      "sha256": "5969386e98c4f8cd81eb796fdc6f7af06583843aa6315da629b60d01b746efb8",
       "type": "file"
     },
     {
@@ -2725,7 +2821,7 @@
       "path": "skills/spire-tech-react-server-client/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "357b3076bd4fccb62c4bbaf5e21a9b211cd92d4fcd98aefcd0d2058ed6a2a208",
+      "sha256": "e3bd8efba2651755028426bde6dfadb02c87dc13dacacbcc4e9b0c9352270e6c",
       "type": "file"
     },
     {
@@ -2741,7 +2837,7 @@
       "path": "skills/spire-tech-react-testing/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "36c05c6597466337078764186893075e851f38666bcde06a28937e1739d790e7",
+      "sha256": "0f7e5049e7f57de1c25cc8b4c0ae54299c3a3bf9ed14b18b3874743e47bf31be",
       "type": "file"
     },
     {
@@ -2893,7 +2989,7 @@
       "path": "tools/continuity.mjs",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "bb8185d44d10741143acdaddbb10787c66893f1c075b8e47764c85389cf0336d",
+      "sha256": "dfb28c70d2761e33f8379702dd615094504707d5ce3fbd266f1a45e39f7598ea",
       "type": "file"
     },
     {
@@ -2901,7 +2997,7 @@
       "path": "tools/contract_lint.mjs",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "0fb58f91e258731c85e7f0a2006fd71429de5ec9e18c91421f29b9f188dd9905",
+      "sha256": "16d9beb9932d8d09e1b028d247c0e41e8cfbddae555809f8aeb89826ead58ce6",
       "type": "file"
     },
     {
@@ -3022,7 +3118,7 @@
       "mode": 420,
       "path": "version",
       "placement": "spire-root",
-      "sha256": "48db5ba7b36657849c691489598f13b3f4353726d4da2ebfb365aa9b172b2800",
+      "sha256": "3ce8f3a8611eb39f32d5cd41348b33031f40e1a80e481d38f251061a9ce9325a",
       "type": "file"
     }
   ],
@@ -3165,7 +3261,7 @@
       "provider_root": ".grok"
     }
   },
-  "installed_at": "2026-08-17T17:03:23.598Z",
+  "installed_at": "2026-08-22T00:52:23.816Z",
   "launch_adapter": {
     "installed": "commands/spire-tech.md",
     "invoke": "/spire-tech",
@@ -3212,5 +3308,5 @@
     "grok"
   ],
   "schema_version": 2,
-  "version": "3.16.0"
+  "version": "3.19.0"
 }

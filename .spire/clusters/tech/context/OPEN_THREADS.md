@@ -1543,6 +1543,182 @@ Does not replace `score-lab` or `batch-backtest`. `NO_UI_CHANGE`. Contracts at
 - `project-context-s2-is-python-era` still unpaid.
 - Sibling `grounding_isolation` suite red remains out-of-feature.
 
+## 7aq. browser-quality-gates — Chromium + bounded compat/a11y/visual gates (SHIPPED + ARCHIVED 2026-08-28)
+
+**What shipped.** Explicit supported-browser policy (locked Playwright Chromium full suite;
+Firefox/WebKit five journeys only). Named npm/Nx targets: `browser:chromium`, `browser:compat`,
+`browser:a11y`, `browser:visual`, aggregate `browser:quality`. Visual compare is zero-tolerance
+current-platform only; update/merge requires two-stage human authorization then acceptance.
+Narrow D7/D8 product accessibility repairs only (exact-file allowlist). `NO_BACKEND_CHANGE`.
+Contracts at `_archive/browser-quality-gates/`. No conformance JSON promoted.
+
+**Verification.** GATE Q PASS 45/0/0. Chromium 52/52, compatibility 15/15, accessibility 16/16,
+visual 6/6 ×2. Hosted-runner browser evidence remains the exact `NOT RUN` line.
+
+### Seams left open
+- Full 52-test inventory is still Chromium-only (by design; not multiplied across engines).
+- Linux visual baselines remain a protected manual hosted flow; no hosted PASS claim.
+- `supply-chain-automation` is still live and blocked on historical secret + upstream Rust advisory.
+- Nested `.worktrees/` still collides with the main Nx graph locally.
+
+## 7ar. capacity-baseline — mocked-vendor load/soak harness (SHIPPED + ARCHIVED 2026-08-29)
+
+**What shipped.** Named `capacity load` / `capacity soak` (clap + uncached Nx/npm). Throwaway
+loopback, mocked Massive, D1 p95 150/4000/200/500 ms, identity skip=fail, overflow HTTP 503 on a
+dedicated probe listener. Merge CI: `--release` + `APP_ENV=dev` + `CONVEXA_CAPACITY_CI_STEP`; soak
+absent from that job. Harness-only hub does not enqueue `HubCmd`. Production ceilings 500/50/120
+untouched. `NO_UI_CHANGE`. `NO_BACKEND_CHANGE` of production HTTP. Contracts at
+`_archive/capacity-baseline/`. No conformance JSON promoted.
+
+**Verification.** GATE Q PASS 49/0/0 (D4 re-run). Release load warm p95 ~37 ms. Soak observed once.
+
+### Seams left open
+- `supply-chain-automation` still live GATE Q FAIL (historical secret, RUSTSEC-2024-0436, hosted evidence).
+- Production-maturity #6 `remote-archive-body-store` is now unblocked in program order; #4 remains blocked.
+- Debug `cargo run` load can miss 150 ms warm on Windows; merge/CI must stay `--release`.
+- Nested `.worktrees/` still collides with the main Nx graph locally.
+
+## 7as. archive-coverage-guardrails — expected SPY/QQQ/IWM books as operator truth (SHIPPED + ARCHIVED 2026-08-29)
+
+**What shipped.** Read-only coverage of `ENSURE_SYMBOLS` (SPY, QQQ, IWM) for one ET date D
+(default today; seed `(SPY, 2020-01-02)` excluded). After **16:00 America/New_York** on an ET
+weekday, each due cell is exactly one of `present` | `missing` | `unreadable` | `blocked occupancy`
+(`present` = loadable `LiveMassive` only). Named `archive-coverage` + sibling
+`GET /api/_research/session-archive/coverage`. Weekend / vacuous window is `[NOT DUE]`, exit 0,
+not a pass. Store-disabled is `[ERROR]`, matrix withheld. One latched structured warning per hole
+identity after the checkpoint. Zero Massive; never writes/fills; score byte-identical; Pages
+`_research` 404. `NO_UI_CHANGE`. Contracts at `_archive/archive-coverage-guardrails/`. Conformance
+`state/conformance/archive-coverage-guardrails.json`.
+
+**Verification.** GATE Q PASS 54/0/0 (AC-21 re-run after GATE Z). Independent conformance PASS 5/5
+(matches builder). `NOTE: VISUAL_EVIDENCE_UNAVAILABLE`.
+
+### Seams left open
+- 16:00 ET is not 48-slot prune salvage; a failed persist can still lose the ring copy earlier the same day.
+- `exchange-holiday-calendar` **SHIPPED + ARCHIVED 2026-08-31** — weekday holidays are empty-expected, not coverage missing.
+- Named weekday before this archive was storing can false-missing (no `since` watermark).
+- Warning latch is process-lifetime, not durable across restarts.
+- Local CLI receipt is not hosted/CI/production coverage.
+- Tape **SHIPPED 2026-08-30** (`session-day-tape-capture`). Replay **SHIPPED 2026-08-30** (`day-replay-mock-adapter`). S3 flat-file keep **SHIPPED 2026-08-31** (`massive-flat-file-keep`).
+- keep-paid-books #5 clock: first reliable production day 2026-08-26; time-split ~2026-09-23 … 2026-10-07.
+- `supply-chain-automation` still live GATE Q FAIL (historical secret, RUSTSEC-2024-0436, hosted evidence).
+- Production-maturity #6 `remote-archive-body-store` still next in that program’s order.
+
+## 7at. session-day-tape-capture — open-to-close research tape for SPY/QQQ/IWM (SHIPPED + ARCHIVED 2026-08-30)
+
+**What shipped.** Append-only Path-A stocks-WS trades **and** quotes for the locked trio on ET
+weekdays 04:00–20:00 America/New_York (recv `try_send` only; writer coalesces Path-A gaps). Path-B
+at most one already-paid structure snapshot per clock-aligned 5-minute mark 09:30…16:00 from
+`refresh_analytics` (still no warmer `spawn_capture`). Sibling
+`GET /api/_research/session-day-tape/{symbol}` + clap `session-day-tape`. Dedicated
+`SESSION_DAY_TAPE_BODY_ROOT`; missing/unwritable → desk up, operator `session day tape not storing`;
+collision with session-archive/ring refuses start. Tape never `LiveMassive` / coverage `present`.
+`NO_UI_CHANGE`. GATE Z AC-32 residual: no store-start watermark; named past weekday with no
+container is `no session day tape`. Contracts at `_archive/session-day-tape-capture/`. Conformance
+`state/conformance/session-day-tape-capture.json`.
+
+**Verification.** GATE Q PASS 66/0/0. Independent conformance PASS 5/5 (matches builder).
+`NOTE: VISUAL_EVIDENCE_UNAVAILABLE`.
+
+### Seams left open
+- Playback **SHIPPED 2026-08-30** (`day-replay-mock-adapter`).
+- S3 stocks SIP trades/quotes keep **SHIPPED 2026-08-31** (`massive-flat-file-keep`). OPRA / indices / crypto files still out. Never fake `live_massive`.
+- `exchange-holiday-calendar` **SHIPPED + ARCHIVED 2026-08-31** — holiday weekday tape is `ineligible holiday`; weekend stays ineligible weekend.
+- Path-A persist dual-fail (event append and gap append both fail) is skip-only, not a fabricated occupant.
+- Nested `.worktrees/` still collides with the main Nx graph locally.
+- keep-paid-books #5 clock: first reliable production day 2026-08-26; time-split ~2026-09-23 … 2026-10-07.
+- `supply-chain-automation` still live GATE Q FAIL (historical secret, RUSTSEC-2024-0436, hosted evidence).
+- Production-maturity #6 `remote-archive-body-store` still next in that program’s order.
+
+## 7au. day-replay-mock-adapter — walk a captured day on the existing ticker (SHIPPED + ARCHIVED 2026-08-30)
+
+**What shipped.** Exclusive process-start `session-day-replay` walks a stored Path-A tape (and
+Path-B 5-minute marks) for one locked-watchlist `(symbol, et_date)` onto the **existing ticker
+SSE**. Occupancy is `session_tape` with `live: false` and phases playing|gap|ended|drop|fault.
+Pace locked to {1,4,10} (chip omits 1×). Production unset still Live Massive; `APP_ENV=prod` +
+replay arm refuses before bind. Walking tape never inserts a session-archive identity / coverage
+`present`. No `/_ops/replay`, no player chrome, no second live path. Pages `_research` still 404.
+Empty Path-A with occupied Path-B still starts. Contracts at `_archive/day-replay-mock-adapter/`.
+Conformance `state/conformance/day-replay-mock-adapter.json`. OpenAPI stayed 55.
+
+**Verification.** GATE Q PASS 47/0/0. Independent conformance PASS 5/5 (matches builder).
+`NOTE: VISUAL_EVIDENCE_UNAVAILABLE`.
+
+### Seams left open
+- S3 stocks SIP trades/quotes keep **SHIPPED 2026-08-31** (`massive-flat-file-keep`). OPRA / indices / crypto files still out. Never fake `live_massive`.
+- `exchange-holiday-calendar` **SHIPPED + ARCHIVED 2026-08-31** — holiday weekday is ineligible-holiday, not empty extract / not coverage missing.
+- GATE Z AC-32 residual on the tape: no store-start watermark; named past weekday with no container is `no session day tape`.
+- Nested `.worktrees/` still collides with the main Nx graph locally.
+- keep-paid-books #5 clock: first reliable production day 2026-08-26; time-split ~2026-09-23 … 2026-10-07.
+- `supply-chain-automation` still live GATE Q FAIL (historical secret, RUSTSEC-2024-0436, hosted evidence).
+- Production-maturity #6 `remote-archive-body-store` still next in that program’s order.
+
+## 7av. massive-flat-file-keep — entitled S3 trades/quotes extracts for SPY/QQQ/IWM (SHIPPED + ARCHIVED 2026-08-31)
+
+**What shipped.** After Massive’s D+1 ~11:00 ET publish clock, operator clap `flat-files keep`
+stores watchlist-filtered stocks SIP **trades** and **quotes** extracts for SPY / QQQ / IWM
+(universe gzip discarded; extract-only). Dedicated `MASSIVE_FLAT_FILES_BODY_ROOT`; files pair
+`MASSIVE_FILES_ACCESS_KEY` + `MASSIVE_FILES_SECRET` (never the REST apiKey). Sibling
+`GET /api/_research/flat-files/{symbol}` + `/extract` (token-gated, zero vendor on read).
+Skip-GET is **per class**; never persist miss beside a sibling keep for the same `(D, class)`.
+Occupancy success word is **`kept`**, never coverage `present` / `LiveMassive`. Serve still
+binds on unset/unwritable/refuse-to-mix. `NO_UI_CHANGE`. OpenAPI 55→57. Contracts at
+`_archive/massive-flat-file-keep/`. Conformance `state/conformance/massive-flat-file-keep.json`.
+
+**Verification.** GATE Q PASS 61/0/0. Independent conformance PASS 6/6 (matches builder).
+`NOTE: VISUAL_EVIDENCE_UNAVAILABLE`.
+
+### Seams left open
+- Completing missing names after a sibling content-hit is Future (AC-54 skip-GET leaves `no stored extract`).
+- Aggregates / OPRA / indices / crypto files still out.
+- `exchange-holiday-calendar` **SHIPPED + ARCHIVED 2026-08-31** — holiday weekday keep/tape is `ineligible holiday`, not empty extract.
+- Local CLI keep is not hosted/CI/production coverage.
+- `research-lab-surface` **SHIPPED + ARCHIVED 2026-08-31** — `/_ops/research` browses existing books + coverage; Pages still 404s `_research` (Railway-direct origin).
+- `supply-chain-automation` still live GATE Q FAIL (historical secret, RUSTSEC-2024-0436, hosted evidence).
+- Production-maturity #6 `remote-archive-body-store` still next in that program’s order.
+- Nested `.worktrees/` still collides with the main Nx graph locally.
+
+## 7aw. research-lab-surface — operator corpus browser (SHIPPED + ARCHIVED 2026-08-31)
+
+**What shipped.** URL-only `/_ops/research` (same first route group as `/_ops/metrics`, outside
+`<AppShell/>`, unlinked). Sitting API origin + metrics token in tab memory. Lists SPY/QQQ/IWM
+session books, opens one as a count-only digest, partitioned coverage card from the existing
+coverage GET (no `et_date` query). `present` = loadable `LiveMassive` only. Empty `apps/api`
+product diff. Pages Function still 404s `/api/_research`. Contracts at
+`_archive/research-lab-surface/`. Conformance `state/conformance/research-lab-surface.json`.
+
+**Verification.** GATE Q PASS 53/0/0 (re-run after GATE Z digest Retry). Independent conformance
+PASS 7/7 (matches builder). Typecheck 0. Full dashboard suite still 1 red outside this change set
+(`session-day-tape-capture.structural.spec.ts`).
+
+### Seams left open
+- Tape / snapshots / flat-files chrome still out of this URL (existing `_research` HTTP only).
+- Pages `_research` 404 stands — weekly use is Railway-direct origin, not a trader-origin proxy.
+- `grounded-morning-snapshot` is the strongest remaining harvest survivor (unnamed next `go`).
+- `supply-chain-automation` still live GATE Q FAIL (historical secret, RUSTSEC-2024-0436, hosted evidence).
+- Production-maturity #6 `remote-archive-body-store` still next in that program’s order.
+
+## 7ax. exchange-holiday-calendar — NYSE full-day occupancy (SHIPPED + ARCHIVED 2026-08-31)
+
+**What shipped.** NYSE full-day weekday closures (2020..=2032) are the same occupancy family
+as Sat/Sun, with a distinct reason. Coverage of a holiday Thursday is empty-expected
+`not_due` (not three `missing` cells, not the word weekend). Tape/keep print
+`ineligible holiday`. Ticker `market_session` is `closed` all clock hours that ET date.
+Scanner badge Closed. Ensure does not wake. Generated/pin-tested scanner replica; no
+`GET /api/holidays`. Empty `quant-engine`. Contracts at
+`_archive/exchange-holiday-calendar/`. Conformance
+`state/conformance/exchange-holiday-calendar.json`.
+
+**Verification.** GATE Q PASS 30/0/0. Independent conformance PASS 5/5 (matches builder).
+
+### Seams left open
+- Half-days / early-close occupancy Future.
+- Completing missing names after skip-GET still Future (`massive-flat-file-keep`).
+- `grounded-morning-snapshot` remains unnamed next `go`.
+- `supply-chain-automation` still live GATE Q FAIL (historical secret, RUSTSEC-2024-0436, hosted evidence).
+- Production-maturity #6 `remote-archive-body-store` still next in that program’s order.
+- Tape store-start watermark still GATE Z residual (`session-day-tape-capture` AC-32).
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).
@@ -1596,9 +1772,11 @@ Does not replace `score-lab` or `batch-backtest`. `NO_UI_CHANGE`. Contracts at
   Ported assertion-for-assertion at **equal coverage** (chromium only, same 29 tests) and proved
   equivalent three ways: same count, same `--list` inventory, and a **mutation check** that failed
   exactly one test with the real overflow number. **29/29 in ~4s vs ~16s.** CI gained
-  `npx playwright install --with-deps chromium`. **WebKit/Firefox were deliberately NOT added** —
-  widening coverage is a separate decision, and mixing it into a port makes a translation bug
-  indistinguishable from a real one. That remains the open follow-on if Safari coverage matters.
+  `npx playwright install --with-deps chromium`. **WebKit/Firefox were deliberately NOT added in the
+  2026-07-28 port** — widening coverage is a separate decision. **Update 2026-08-28:**
+  `browser-quality-gates` shipped the bounded follow-on: Firefox/WebKit run the five compatibility
+  journeys only; the full 52-test inventory stays Chromium. Branded-browser / all-version / OS /
+  assistive-technology certification is still declined.
 - **⚠ TOOLING HAZARD — `nx format:write` is REPO-WIDE and destructive** (found `positions-legs` phase 5,
   2026-07-28): a bare `nx format:write` ran an organize-imports pass over **92 unrelated files** — blog
   HTML, READMEs, auth modules. The lane caught it and reverted everything outside its change set.
@@ -1770,3 +1948,14 @@ Does not replace `score-lab` or `batch-backtest`. `NO_UI_CHANGE`. Contracts at
   source; unverifiable claims carry a `[lane-check]` mark. (rec-absence-literals-hole — three
   false citations in one council · rec-plan-scope-caption — live `DecisionCard.tsx` attachment,
   not Python-era `AiRecPanel`.) See PROJECT_CONTEXT §5.
+- **`local-evidence-is-not-hosted-evidence`** (promoted 2026-08-29, 2 binding) — local/quality-gate
+  green is never hosted/CI evidence; a CI load is never soak evidence; ambient `CI=true` is not a
+  merge job. Closed `NOT RUN` / `Evidence: local|ci` / Command `load|soak`. (browser-quality-gates ·
+  capacity-baseline.) See PROJECT_CONTEXT §5.
+- **`present-is-live-paid-only`** (promoted 2026-08-30, 2 binding; 6th instance 2026-08-31) — a session-archive `present` /
+  live paid book is a loadable `LiveMassive` body; fixture, reconstructed, flat-file, tape, seed, and
+  replay occupancy never insert as `LiveMassive`. (archive-coverage-guardrails · session-day-tape-capture ·
+  day-replay-mock-adapter · massive-flat-file-keep · research-lab-surface · exchange-holiday-calendar.) See PROJECT_CONTEXT §5.
+- **`single-ticker-on-demand`** (promoted 2026-08-30, 2 binding) — request path is one ticker;
+  multi-ticker work is off-path only. (liquid-names-session-capture · session-day-tape-capture.)
+  See PROJECT_CONTEXT §5.
