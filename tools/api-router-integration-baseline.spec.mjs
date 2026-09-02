@@ -139,8 +139,18 @@ test('baseline shape rejects real source, artifact, OpenAPI, and evidence poison
     (x) => {
       x.openapi_version = '3.0.3';
     },
+    // The count is recorded evidence now, not a pinned invariant, so 180-vs-181 is no longer a
+    // SHAPE violation — a tampered count is still caught by validateCandidateAgainstBaseline,
+    // which compares the whole evidence object against the baseline. What the shape still owes
+    // us is that the field is a positive integer at all.
     (x) => {
-      x.evidence.response_conversion.count = 180;
+      x.evidence.response_conversion.count = 0;
+    },
+    (x) => {
+      x.evidence.response_conversion.count = 1.5;
+    },
+    (x) => {
+      x.evidence.direct_http.count = 'many';
     },
     (x) => {
       x.evidence.direct_http.id_set_sha256 = 'bad';
