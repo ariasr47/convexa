@@ -1860,9 +1860,15 @@ Scanner badge Closed. Ensure does not wake. Generated/pin-tested scanner replica
 ## 9. Resolved decisions (do NOT revisit)
 - **Route/OpenAPI integration is repository-owned** — production route registration and `utoipa`
   metadata are paired once through `ContractRouter`; `utoipa-axum` and `paste` are absent from the
-  locked graph. The compatibility inventory remains 52 operations / 181 response conversions / 87
-  direct HTTP cases, with no public contract-tooling route and no dashboard runtime change. Reintroducing
+  locked graph. There is no public contract-tooling route and no dashboard runtime change. Reintroducing
   a second route list or the removed integration dependency is a GATE-Z reversal.
+  **Amended 2026-09-02 (`mainline-integration-2026-09` GATE Z, owner ruling):** this used to pin
+  "52 operations / 181 response conversions / 87 direct HTTP cases" as a standing invariant. Additive
+  routes are legitimate and that literal made every one of them a canon violation — it was contradicted
+  twice in one merge (the capacity identity oracle re-pinned 52→57, and the router-integration baseline
+  went 181/87→201/100). **The invariant is the pairing and the drift detection, never the count.**
+  Oracles derive their totals from the manifest or route table and compare id-set hashes; a frozen
+  number is a bug, not a guardrail.
 - **Live spot ANCHOR = NBBO mid** — smoother, better for anchoring; the mid stays the sole anchor for
   the headline, levels, and live flip. **Narrowed 2026-06-25 (ticker-load-experience GATE S, system-7):**
   a **display-only live last-trade readout** is now ALSO surfaced on the SSE payload beside the mid
