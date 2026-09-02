@@ -1,0 +1,23 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "PASS",
+  "mode": "live",
+  "source": ".spire/clusters/tech/contracts/capacity-baseline/INTERFACE_CONTRACT.md",
+  "base_url": "http://127.0.0.1:64237",
+  "auth": null,
+  "checked_at": "2026-08-25T22:22:05Z",
+  "summary": {
+    "pass": 1,
+    "fail": 0,
+    "total": 1
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/ticker/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 18,
+      "failures": []
+    }
+  ]
+}
