@@ -222,6 +222,53 @@ fn assert_no_secret_values(out: &Output, canaries: &[&str]) {
         }
     }
 }
+/// Reset `db` to an EXACT PREFIX of the compiled manifest: every migration applied except the
+/// final one, replayed from the manifest itself.
+///
+/// Derived from `compiled_migrations()` on purpose. This used to delete version 12 by hand and
+/// revert that migration's columns; when the session-day-tape feature added migration 13 the
+/// hand-written case stopped being a prefix and became a history HOLE, so the runner correctly
+/// reported "inconsistent history" while three tests still waited for "missing migrations".
+/// Deriving the tail means adding a migration re-points these cases instead of silently
+/// invalidating them.
+async fn reset_to_manifest_prefix(db: &str) {
+    let all = api_rust::db::migrations::compiled_migrations();
+    let (_tail, head) = all.split_last().expect("manifest must be non-empty");
+    let p = PgPool::connect(db).await.unwrap();
+    sqlx::query("DROP SCHEMA public CASCADE")
+        .execute(&p)
+        .await
+        .unwrap();
+    sqlx::query("CREATE SCHEMA public")
+        .execute(&p)
+        .await
+        .unwrap();
+    sqlx::query("CREATE TABLE schema_migrations (version BIGINT PRIMARY KEY,name TEXT NOT NULL,applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
+        .execute(&p).await.unwrap();
+    for (version, migration_name, body) in head {
+        for statement in
+            api_rust::db::migrations::split_sql_statements(body).expect("manifest SQL must split")
+        {
+            sqlx::query(&statement).execute(&p).await.unwrap();
+        }
+        sqlx::query("INSERT INTO schema_migrations(version,name) VALUES($1,$2)")
+            .bind(*version)
+            .bind(*migration_name)
+            .execute(&p)
+            .await
+            .unwrap();
+    }
+    drop(p);
+}
+
+/// The version the runner should report as its target: the manifest's final migration.
+fn manifest_target_version() -> i64 {
+    api_rust::db::migrations::compiled_migrations()
+        .last()
+        .expect("manifest must be non-empty")
+        .0
+}
+
 fn migrate(db: &str, extra: &[(&str, &str)]) -> Output {
     let mut c = Command::new(bin());
     c.args(["postgres-migrate"])
@@ -460,20 +507,7 @@ fn cli_fresh_prefix_current_jsonl_and_exit_contract() {
         assert_eq!(terminal(&xr)["outcome"], "work applied");
         // Exact-prefix upgrade: remove the final ledger fact and revert that version's schema
         // shape. The runner must apply the missing suffix, not classify this as a hole.
-        let p = PgPool::connect(&d).await.unwrap();
-        sqlx::query("DELETE FROM schema_migrations WHERE version = 12")
-            .execute(&p)
-            .await
-            .unwrap();
-        sqlx::query("ALTER TABLE session_chain_archive DROP COLUMN body_locator")
-            .execute(&p)
-            .await
-            .unwrap();
-        sqlx::query("ALTER TABLE session_chain_archive ALTER COLUMN body SET NOT NULL")
-            .execute(&p)
-            .await
-            .unwrap();
-        drop(p);
+        reset_to_manifest_prefix(&d).await;
         let prefix = migrate(&d, &[]);
         assert!(prefix.status.success());
         let prefix_records = records(&prefix);
@@ -513,7 +547,7 @@ fn cli_refusal_failure_cancellation_and_secret_matrix() {
         assert_eq!(terminal(&records(&bad_timeout))["reason"], "internal failure");
         let bad_timeout_target = terminal(&records(&bad_timeout))["target_version"].clone();
         drop_db(&a, &bad_timeout_name).await;
-        assert_eq!(bad_timeout_target, 12, "a valid non-empty manifest establishes target version before timeout validation");
+        assert_eq!(bad_timeout_target, serde_json::json!(manifest_target_version()), "a valid non-empty manifest establishes target version before timeout validation");
 
         // Every representable unsafe history shape is exercised against a disposable database.
         for (label, rows, reason) in [
@@ -697,11 +731,7 @@ fn serve_refusal_matrix_is_read_only_pre_bind_pre_worker() {
         // corresponding relation shape; serve must refuse before binding instead of repairing.
         let n = name("serve_exact_prefix"); create(&a, &n).await; let d = url(&base(), &n);
         assert!(migrate(&d, &[]).status.success());
-        let p = PgPool::connect(&d).await.unwrap();
-        sqlx::query("DELETE FROM schema_migrations WHERE version = 12").execute(&p).await.unwrap();
-        sqlx::query("ALTER TABLE session_chain_archive DROP COLUMN body_locator").execute(&p).await.unwrap();
-        sqlx::query("ALTER TABLE session_chain_archive ALTER COLUMN body SET NOT NULL").execute(&p).await.unwrap();
-        drop(p);
+        reset_to_manifest_prefix(&d).await;
         let before = fp(&d).await; let r = serve(&d); let port = r.port; let out = wait_for_exit(r, Duration::from_secs(25)).await;
         assert!(!out.status.success()); assert!(String::from_utf8_lossy(&out.stderr).contains("Startup refused: required PostgreSQL migrations are missing.")); assert_no_secret_egress(&out); assert!(!listener_bound(port)); assert_eq!(before, fp(&d).await); drop_db(&a, &n).await;
 
