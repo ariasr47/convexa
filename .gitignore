@@ -114,3 +114,9 @@ playwright/.cache/
 
 # session scratch (QA/V10 raw evidence, never committed)
 .tmp*
+
+# Dedicated cargo target dirs used by QA/verification runs (5.6GB build output)
+target-qa-holiday/
+
+# Git worktrees created by verification lanes
+.worktrees/
