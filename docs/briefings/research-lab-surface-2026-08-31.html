@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Convexa — Session archive shipped · 31 Aug 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@96,600;96,800;112,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0B0F17;
+      --panel: #131A24;
+      --raised: #1B2432;
+      --phosphor: #E9E4D6;
+      --steel: #8A9BB4;
+      --amber: #F2A93B;
+      --amber-text: #D9A03A;
+      --signal: #5E8BC4;
+      --ok: #6FBF8A;
+      --warn: #E07A3F;
+      --line: rgba(138, 155, 180, 0.24);
+      --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+      --display: "Archivo", "IBM Plex Sans", sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(1100px 520px at 6% -12%, rgba(242, 169, 59, 0.08), transparent 55%),
+        radial-gradient(900px 480px at 100% 8%, rgba(94, 139, 196, 0.06), transparent 50%),
+        var(--ink);
+      color: var(--phosphor);
+      font-family: var(--sans);
+      font-size: 16.5px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 22px 110px; }
+    a { color: var(--signal); text-decoration: none; }
+    a:hover { color: var(--amber); }
+    a:focus-visible { outline: 2px solid var(--amber-text); outline-offset: 3px; }
+    h1, h2, h3 { font-family: var(--display); font-stretch: 112%; letter-spacing: -0.03em; }
+    h1 { font-size: clamp(2rem, 4.4vw, 3.1rem); line-height: 1.06; margin: 0 0 12px; font-weight: 700; }
+    h2 { font-size: 1.48rem; color: var(--phosphor); margin: 52px 0 12px; padding-top: 6px; }
+    h2 .kicker {
+      display: block; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--amber-text); margin-bottom: 6px;
+    }
+    h3 { font-size: 1.06rem; margin: 22px 0 8px; }
+    p, li { color: var(--steel); }
+    strong { color: var(--phosphor); }
+    code { font-family: var(--mono); color: var(--amber-text); font-size: 0.86em; }
+    .lede { max-width: 66ch; font-size: 1.1rem; color: var(--steel); margin: 0 0 20px; }
+    .meta { font-family: var(--mono); font-size: 0.78rem; color: var(--steel); letter-spacing: 0.04em; margin-bottom: 16px; }
+    .chip {
+      display: inline-block; font-family: var(--mono); font-size: 0.68rem;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px;
+      color: var(--amber-text); margin: 0 6px 10px 0;
+    }
+    .nav {
+      position: sticky; top: 0; z-index: 8;
+      background: rgba(11, 15, 23, 0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line); margin: 0 -22px 28px; padding: 10px 22px;
+    }
+    .nav ol {
+      display: flex; flex-wrap: wrap; gap: 8px 14px; list-style: none;
+      margin: 0; padding: 0; font-family: var(--mono); font-size: 0.7rem;
+    }
+    .nav a { color: var(--steel); }
+    .nav a:hover { color: var(--phosphor); }
+    .card {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .grid2, .grid3, .grid4 { display: grid; gap: 12px; }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .grid4 { grid-template-columns: 1fr 1fr; }
+    @media (min-width: 820px) {
+      .grid2 { grid-template-columns: 1fr 1fr; }
+      .grid3 { grid-template-columns: 1fr 1fr 1fr; }
+      .grid4 { grid-template-columns: repeat(4, 1fr); }
+    }
+    .stat b {
+      display: block; font-family: var(--mono); font-size: 1.45rem; color: var(--phosphor);
+      font-variant-numeric: tabular-nums; letter-spacing: -0.03em;
+    }
+    .stat span { font-size: 0.82rem; color: var(--steel); }
+    .stat.amber b { color: var(--amber); }
+    .stat.warn b { color: var(--warn); }
+    .stat.signal b { color: var(--signal); }
+    .stat.ok b { color: var(--ok); }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 8px; font-size: 0.9rem; }
+    th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+    th { background: var(--raised); color: var(--phosphor); font-weight: 600; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    td { background: var(--panel); color: var(--steel); }
+    td strong { color: var(--phosphor); }
+    .note {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 14px 16px; margin: 14px 0;
+    }
+    .note.warn { border-color: rgba(224, 122, 63, 0.55); }
+    .note.warn strong { color: var(--warn); }
+    .note.ok { border-color: rgba(111, 191, 138, 0.4); }
+    .note.ok strong { color: var(--ok); }
+    .thesis {
+      border-left: 3px solid var(--amber);
+      padding: 4px 0 4px 16px; margin: 8px 0 22px;
+      font-size: 1.16rem; color: var(--phosphor); max-width: 72ch;
+    }
+    .tag {
+      display: inline-block; font-family: var(--mono); font-size: 0.66rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 6px; margin: 0 6px 0 0; white-space: nowrap;
+    }
+    .tag-go { background: rgba(94,139,196,0.16); color: var(--signal); }
+    .tag-wait { background: rgba(242,169,59,0.14); color: var(--amber-text); }
+    .tag-park { background: rgba(224,122,63,0.14); color: var(--warn); }
+    .tag-ship { background: rgba(111,191,138,0.14); color: var(--ok); }
+    .tag-later { background: rgba(138,155,180,0.12); color: var(--steel); }
+    .tag-block { background: rgba(224,122,63,0.18); color: var(--warn); }
+    .step { display: grid; grid-template-columns: 36px 1fr; gap: 12px; margin: 12px 0; }
+    .step .n {
+      font-family: var(--display); font-stretch: 112%; font-weight: 700;
+      color: var(--amber); font-size: 1.25rem; line-height: 1.2;
+    }
+    .mock {
+      background: #0E141E;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 16px 0 8px;
+    }
+    .mock-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 10px 14px;
+      background: #161E2A;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--mono); font-size: 0.78rem;
+    }
+    .mock-bar .ro {
+      border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px;
+      color: var(--steel); letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.62rem;
+    }
+    .mock-body { padding: 16px 16px 18px; }
+    .mock-url {
+      font-family: var(--mono); font-size: 0.72rem; color: var(--steel);
+      padding: 8px 14px 0;
+    }
+    .mock-url span { color: var(--amber-text); }
+    .field {
+      display: block; margin: 0 0 12px;
+    }
+    .field label {
+      display: block; font-size: 0.78rem; color: var(--phosphor); margin-bottom: 4px;
+    }
+    .field .box {
+      border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px;
+      font-family: var(--mono); font-size: 0.8rem; color: var(--steel); background: var(--raised);
+    }
+    .field .hint { font-size: 0.75rem; color: var(--steel); margin-top: 4px; }
+    .btn {
+      display: inline-block; background: transparent; color: var(--phosphor);
+      border: 1px solid var(--amber-text); border-radius: 6px;
+      padding: 7px 14px; font-family: var(--sans); font-size: 0.88rem;
+    }
+    .trio { display: flex; gap: 8px; margin: 0 0 14px; }
+    .trio b {
+      font-family: var(--mono); font-size: 0.78rem; font-weight: 500;
+      border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; color: var(--steel);
+    }
+    .trio b.on { border-color: var(--amber-text); color: var(--phosphor); }
+    .cov {
+      display: grid; grid-template-columns: 72px repeat(3, 1fr); gap: 6px;
+      font-family: var(--mono); font-size: 0.72rem; margin: 8px 0 12px;
+    }
+    .cov span {
+      background: var(--raised); border: 1px solid var(--line); border-radius: 4px;
+      padding: 6px 8px; color: var(--steel);
+    }
+    .cov span.head { color: var(--phosphor); background: transparent; border: 0; padding: 0 8px 4px; }
+    .cov span.present { color: var(--phosphor); }
+    .mini-table { width: 100%; font-family: var(--mono); font-size: 0.75rem; }
+    .mini-table th { font-size: 0.62rem; }
+    .mini-table td, .mini-table th { padding: 6px 8px; }
+    .digest {
+      margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;
+      background: var(--raised);
+    }
+    .digest .fr { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber-text); }
+    .digest dl { display: grid; grid-template-columns: 140px 1fr; gap: 4px 10px; margin: 8px 0 0; }
+    .digest dt { color: var(--steel); font-size: 0.78rem; }
+    .digest dd { margin: 0; font-family: var(--mono); font-size: 0.8rem; color: var(--phosphor); }
+    footer {
+      margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--line);
+      font-size: 0.8rem; color: var(--steel);
+    }
+    .srcs { columns: 2; column-gap: 28px; font-size: 0.82rem; }
+    .srcs li { break-inside: avoid; margin: 6px 0; }
+    @media (max-width: 700px) { .srcs { columns: 1; } .cov { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p>
+      <span class="chip">Just shipped</span>
+      <span class="chip">Operator URL-only</span>
+      <span class="chip">Authorizes: nothing</span>
+    </p>
+    <h1>The paid session archive is now a page, not a CLI binge.</h1>
+    <p class="meta">Convexa · 31 Aug 2026 · <code>research-lab-surface</code> GATE S · quality 53 / 0 / 0</p>
+    <p class="thesis">
+      Type <code>/_ops/research</code>. Unlock with the API origin and the metrics token. List the books you already kept. Open one as a research read. See whether today’s live-paid identities are actually there.
+    </p>
+    <p class="lede">
+      This is not trader nav, not the public <code>/lab</code> demos, and not a Cloudflare Pages proxy of research. The server did not grow a new endpoint. The page consumes three reads that already existed.
+    </p>
+
+    <nav class="nav" aria-label="On this page">
+      <ol>
+        <li><a href="#why">Why</a></li>
+        <li><a href="#open">How to open</a></li>
+        <li><a href="#screen">What you see</a></li>
+        <li><a href="#words">Occupancy words</a></li>
+        <li><a href="#not">What it is not</a></li>
+        <li><a href="#honest">When it refuses</a></li>
+        <li><a href="#next">Next</a></li>
+      </ol>
+    </nav>
+
+    <div class="grid4" style="margin-bottom: 22px;">
+      <div class="card stat ok"><b>53/0/0</b><span>quality check (PASS / FAIL / skipped)</span></div>
+      <div class="card stat signal"><b>7/7</b><span>existing research reads re-pinned</span></div>
+      <div class="card stat amber"><b>0</b><span>server product files changed</span></div>
+      <div class="card stat"><b>/_ops</b><span>same family as Operator Metrics</span></div>
+    </div>
+
+    <h2 id="why"><span class="kicker">01 — Why this exists</span>You already pay for the corpus. Until today you could only binge it from a terminal.</h2>
+    <p>
+      Coverage, day tape, replay, and S3 keep all landed as operator tools. They store and classify
+      session books for <strong>SPY / QQQ / IWM</strong>. Weekly use still meant a CLI session — or
+      reading JSON off <code>/api/_research</code> by hand. The trader app never grew a research
+      browser, on purpose: these bodies are stored research, not live market, and they must not ride
+      a Pages origin.
+    </p>
+    <p>
+      This slice is the missing weekly surface. One URL. Off the trader shell. Same token as
+      Operator Metrics. Zero Massive on list, open, miss, or coverage.
+    </p>
+    <div class="grid3">
+      <div class="card">
+        <p><span class="tag tag-ship">Shipped</span></p>
+        <h3>Session books</h3>
+        <p>Dated identities for the closed trio. Open one: capture time, not-live standing, <strong>Authorizes: nothing</strong>, array <strong>counts</strong> only — no contract dump, no tape ticks.</p>
+      </div>
+      <div class="card">
+        <p><span class="tag tag-ship">Shipped</span></p>
+        <h3>Coverage card</h3>
+        <p>Today’s matrix from the existing coverage GET (server-default date). Closed cells only. Local evidence line: <code>Evidence: this process</code> — not a hosted/CI pass.</p>
+      </div>
+      <div class="card">
+        <p><span class="tag tag-later">Still CLI</span></p>
+        <h3>Tape · snapshots · extracts</h3>
+        <p>Those HTTP families exist on the server. This page does not browse them. Mixing decks into one status column was explicitly refused.</p>
+      </div>
+    </div>
+
+    <h2 id="open"><span class="kicker">02 — How to open it</span>There is no nav item. You type the path.</h2>
+    <div class="step"><div class="n">1</div><div><p>On the dashboard, go to <code>/_ops/research</code>. Same idea as <code>/_ops/metrics</code>: own chrome, not inside the trader shell, not linked from TopNav.</p></div></div>
+    <div class="step"><div class="n">2</div><div><p>Unlock with two fields. <strong>API origin</strong> is the public API base (Railway), not <code>convexa.pages.dev</code>. <strong>Metrics token</strong> is the same operator token as metrics — not a trader login cookie.</p></div></div>
+    <div class="step"><div class="n">3</div><div><p>Both live in this tab’s memory. Refresh forgets them. They never go in the URL, <code>sessionStorage</code>, or <code>localStorage</code>.</p></div></div>
+    <div class="note warn">
+      <strong>Pages will 404 research.</strong> A document hosted on <code>*.pages.dev</code> is allowed — the page itself can live there — but the <em>research base</em> cannot be a Pages host. Type the API origin. Relative <code>/api/_research</code> is poison: it looks fine on local Vite and dies in production.
+    </div>
+
+    <h2 id="screen"><span class="kicker">03 — What you see</span>Locked first. Then books plus one partitioned coverage card.</h2>
+
+    <h3>Before Unlock</h3>
+    <div class="mock" aria-label="Mock of the locked operator page">
+      <div class="mock-url">convexa.pages.dev<span>/_ops/research</span></div>
+      <div class="mock-bar">
+        <span>Convexa · Session archive</span>
+        <span class="ro">read-only</span>
+      </div>
+      <div class="mock-body">
+        <p style="margin:0 0 14px;font-size:0.88rem;">Unlock with the API origin and the metrics token. A Pages host 404s the research family.</p>
+        <label class="field">
+          <span>API origin</span>
+          <div class="box">https://api.example.up.railway.app</div>
+          <div class="hint">Public API base URL. Not a secret. Not the Pages host. Refresh forgets it.</div>
+        </label>
+        <label class="field">
+          <span>Metrics token</span>
+          <div class="box">••••••••••••</div>
+          <div class="hint">Same token as Operator Metrics. Not a trader session.</div>
+        </label>
+        <span class="btn">Unlock</span>
+      </div>
+    </div>
+
+    <h3>After a usable origin</h3>
+    <div class="mock" aria-label="Mock of the unlocked corpus browser">
+      <div class="mock-bar">
+        <span>Convexa · Session archive</span>
+        <span class="ro">read-only</span>
+      </div>
+      <div class="mock-body">
+        <div class="trio"><b class="on">SPY</b><b>QQQ</b><b>IWM</b></div>
+        <p style="margin:0 0 6px;font-family:var(--mono);font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--amber-text);">RESEARCH READ — SESSION ARCHIVE COVERAGE</p>
+        <p style="margin:0 0 8px;font-size:0.8rem;">Evidence: this process · Checkpoint: after 16:00 America/New_York</p>
+        <div class="cov">
+          <span class="head"></span><span class="head">SPY</span><span class="head">QQQ</span><span class="head">IWM</span>
+          <span class="head">today</span>
+          <span class="present">present</span>
+          <span>missing</span>
+          <span>not yet due</span>
+        </div>
+        <p style="margin:0 0 12px;font-size:0.78rem;">SESSION ARCHIVE COVERAGE — NOT A FILL · Authorizes: nothing</p>
+        <table class="mini-table">
+          <thead>
+            <tr><th>et_date</th><th>source</th><th>source_as_of</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>2026-08-28</td><td>live_massive</td><td>2026-08-28T20:05:00-04:00</td></tr>
+            <tr><td>2026-08-27</td><td>live_massive</td><td>2026-08-27T20:04:12-04:00</td></tr>
+            <tr><td>2026-08-26</td><td>fixture</td><td>2026-08-26T00:00:00-04:00</td></tr>
+          </tbody>
+        </table>
+        <div class="digest">
+          <div class="fr">RESEARCH READ — SESSION BOOK</div>
+          <dl>
+            <dt>Identity</dt><dd>SPY · 2026-08-28</dd>
+            <dt>Authorizes</dt><dd>nothing</dd>
+            <dt>Provenance</dt><dd>loaded from session archive · no vendor call</dd>
+            <dt>Counts</dt><dd>contracts 184 · daily_bars 12 · minutes 390 · trades 44102</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+    <p>
+      The books table prints payload names: <code>et_date</code>, <code>source</code>, <code>source_as_of</code>.
+      It never grows a <code>present</code> or <code>kept</code> column. A coverage <code>present</code> cell
+      is the only occupancy token that also loads a book. Other cells are text, not buttons.
+    </p>
+
+    <h2 id="words"><span class="kicker">04 — Occupancy words</span>Three decks. Do not mix them.</h2>
+    <table>
+      <thead>
+        <tr><th>Word</th><th>Lives on</th><th>Means</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>present</strong></td>
+          <td>Coverage card only</td>
+          <td>A loadable <strong>LiveMassive</strong> body for that identity. Fixture, tape, and S3 extracts are never this.</td>
+        </tr>
+        <tr>
+          <td><strong>source</strong></td>
+          <td>Books table, printed verbatim</td>
+          <td>Provenance of a stored book (<code>live_massive</code> · <code>fixture</code> · <code>session_tape</code>). Not a coverage cell. Do not read it as present.</td>
+        </tr>
+        <tr>
+          <td><strong>kept</strong></td>
+          <td>Flat-file extracts (not this page)</td>
+          <td>An entitled S3 extract occupant. Still not live paid. Still not this URL.</td>
+        </tr>
+        <tr>
+          <td><strong>missing / unreadable / not yet due / blocked occupancy</strong></td>
+          <td>Coverage card</td>
+          <td>Closed coverage deck. Weekend uses no-expected framing and does not print <code>pass</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note ok">
+      <strong>Authorizes: nothing.</strong> List, load, and coverage envelopes that this page accepts carry that token. A true vendor call or any other authorize value is an invariant fault — not a digest, not occupancy, not “stale keep last.”
+    </div>
+
+    <h2 id="not"><span class="kicker">05 — What this is not</span>Same screen, different product, would be a lie.</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Not <code>/lab</code></h3>
+        <p><code>/lab</code> remains the public instrument-demo hub (Canvas / WebGL, synthetic data, <code>lab-index</code>). Occupying it with paid books would mix a public demo with operator corpus.</p>
+      </div>
+      <div class="card">
+        <h3>Not trader chrome</h3>
+        <p>No TopNav link, no AppShell, no ticker stream, no score-lab HTTP, no morning-note briefing, no JSON export of a loaded book.</p>
+      </div>
+      <div class="card">
+        <h3>Not a Pages research API</h3>
+        <p>Cloudflare Pages still returns plaintext <code>Not Found</code> for <code>/api/_research</code> and <code>/api/_research/*</code>, with or without a token. Weekly use is Railway-direct.</p>
+      </div>
+      <div class="card">
+        <h3>Not a new backend</h3>
+        <p>Empty server product diff. No new path, occupancy class, or seed endpoint. The page talks to list, load, and coverage that already shipped.</p>
+      </div>
+    </div>
+
+    <h2 id="honest"><span class="kicker">06 — When it refuses</span>Failure is a named class, not a blank table.</h2>
+    <p>The page would rather look broken than look like an empty corpus. A few that matter weekly:</p>
+    <table>
+      <thead>
+        <tr><th>You see</th><th>It means</th><th>Not</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>origin-rejected</strong></td>
+          <td>Empty, Pages host, or relative <code>/api</code> origin. No network.</td>
+          <td>Unauthorized. Empty list.</td>
+        </tr>
+        <tr>
+          <td><strong>origin-blocked</strong></td>
+          <td>The research <em>base</em> 404s the family (typical Pages Function).</td>
+          <td>No session book. Dashboard host alone.</td>
+        </tr>
+        <tr>
+          <td><strong>metrics_unauthorized</strong></td>
+          <td>Token required and missing or wrong. Cookie is not the gate.</td>
+          <td>Origin-blocked. Empty list.</td>
+        </tr>
+        <tr>
+          <td><strong>Cross-origin request blocked</strong></td>
+          <td>Classified CORS. Corpus hidden. Cold or warm.</td>
+          <td>Stale keep-last.</td>
+        </tr>
+        <tr>
+          <td><strong>session archive not storing</strong></td>
+          <td>Occupancy 500. No books table. No success coverage. No leftover digest.</td>
+          <td>Empty list. Stale list.</td>
+        </tr>
+        <tr>
+          <td><strong>Coverage readout unavailable.</strong></td>
+          <td>Coverage GET failed as transport. Books can stay. Prior matrix is not kept.</td>
+          <td>The list stale chip. A grid of <code>missing</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>Couldn't refresh — keeping the last list.</strong></td>
+          <td>Same-symbol list Retry failed after a list you are still looking at.</td>
+          <td>Chip switch. Coverage fail. Occupancy 500.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Switching SPY → QQQ hides SPY rows immediately. Retry on the page re-lists the selected symbol
+      and re-fetches coverage — it does not re-open a book. Retry on an unreadable digest re-loads
+      that identity only.
+    </p>
+
+    <h2 id="next"><span class="kicker">07 — What this unlocks</span>Harvest default after this ship is a morning note, not a score change.</h2>
+    <div class="grid3">
+      <div class="card">
+        <p><span class="tag tag-go">Next unnamed go</span></p>
+        <h3>Grounded morning snapshot</h3>
+        <p>A briefing from numbers the scanner and calendar already computed. Every figure cited. No Benzinga. No new vendor. Not this page growing a narrative column.</p>
+      </div>
+      <div class="card">
+        <p><span class="tag tag-wait">Program order</span></p>
+        <h3>Remote archive body store</h3>
+        <p>Production-maturity #6. Insurance for session bodies. Not a trading decision. Not skipped because a UI now exists.</p>
+      </div>
+      <div class="card">
+        <p><span class="tag tag-block">Do not reopen</span></p>
+        <h3>Supply-chain automation</h3>
+        <p>Still a failed quality check: historical secret, upstream Rust advisory, hosted evidence. An unnamed <code>go</code> is pick-next, not reopen.</p>
+      </div>
+    </div>
+    <div class="note">
+      Keep-paid-books still has a clock: first reliable production day 26 Aug 2026; a real time-split is roughly late September to early October. This page does not move that clock.
+    </div>
+
+    <footer>
+      <p>Shipped 31 Aug 2026. Contracts archived at <code>.spire/clusters/tech/contracts/_archive/research-lab-surface/</code>. Re-pin JSON at <code>state/conformance/research-lab-surface.json</code>. Related map: <a href="./backlog-roadmap-2026-08-31.html">backlog &amp; roadmap 31 Aug</a>.</p>
+      <p>Screen copy in the mocks is the shipped operator strings. The dates and counts in the unlocked mock are illustrative, not a live store dump.</p>
+    </footer>
+  </div>
+</body>
+</html>

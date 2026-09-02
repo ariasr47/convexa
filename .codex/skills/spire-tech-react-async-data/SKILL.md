@@ -1,11 +1,15 @@
 ---
 name: spire-tech-react-async-data
-description: Use when the declared stack is React or Next and the work is data fetching, waterfalls, caching, or bundle cost of async UI. Prefer this over spire-tech-frontend-patterns for fetch/waterfall focus; prefer frontend-patterns for general React attention order. Skip other stacks.
+description: Use when writing or reviewing React or Next.js data fetching, request waterfalls, caching, or async UI bundle cost. Triggers on fetch, Suspense, and parallel-load work in React components or pages. Skip non-React stacks.
+when-to-use: data fetching, request waterfall, React Suspense, parallel fetch, async UI, caching
 ---
 
 # React async data — kill waterfalls
 
-Own **async data and bundle-impact craft** for React/Next only. Measure when claiming wins.
+Own **async data and bundle-impact craft** for React/Next only. Measure when claiming wins. Prefer
+this over `spire-tech-frontend-patterns` for fetch/waterfall focus; prefer frontend-patterns for
+general React attention order. Prefer `spire-tech-next-cache-components` when the work is Next
+Cache Components, `"use cache"`, or instant navigation.
 
 ## Critical procedure
 

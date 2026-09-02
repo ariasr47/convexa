@@ -1,11 +1,14 @@
 ---
 name: spire-tech-react-testing
-description: Use when the declared stack is React or Next and writing component/DOM tests with user-centric queries. Prefer this over bare spire-tech-tdd for React component tests; prefer spire-tech-flow-integration-tests for full journeys. Skip other stacks.
+description: Use when writing React component or DOM tests with user-centric queries. Triggers on component/DOM tests, not full-app journeys. Skip non-React stacks.
+when-to-use: React component tests, DOM tests, Testing Library, user-centric queries
 ---
 
 # React testing — user-centric queries
 
-Own **React component test craft** (Testing Library-style) when stack is React/Next.
+Own **React component test craft** (Testing Library-style) when stack is React/Next. Prefer this
+over bare `spire-tech-tdd` for React component tests; prefer `spire-tech-flow-integration-tests` for
+full journeys.
 
 ## Critical procedure
 

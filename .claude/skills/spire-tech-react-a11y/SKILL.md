@@ -1,11 +1,13 @@
 ---
 name: spire-tech-react-a11y
-description: Use when the declared stack is React or Next and fixing or reviewing accessibility — semantics, keyboard, focus, ARIA only when needed, live regions. Prefer this over generic spire-tech-design-review when the defect class is a11y. Skip other stacks.
+description: Use when writing or reviewing React accessibility — semantics, keyboard, focus, labels, or ARIA. Triggers on a11y defects in React UI. Skip non-React stacks.
+when-to-use: React accessibility, keyboard navigation, focus, ARIA, accessible names, labels
 ---
 
 # React accessibility — semantics first
 
 Own **a11y craft for React/Next UIs**. Project canon and legal/product a11y floors outrank generic tips.
+Prefer this over generic `spire-tech-design-review` when the defect class is a11y.
 
 ## Critical procedure
 

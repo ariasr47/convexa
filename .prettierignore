@@ -45,6 +45,9 @@ yarn.lock
 apps/api/config/**
 libs/quant-engine/tests/fixtures/**
 
+# --- Receipt-bound browser evidence (SHA-256 immutable) ---
+apps/dashboard-e2e/visual-review/evidence/**
+
 # --- Env & local secrets (never format, never touch) ---
 .env
 .env.*

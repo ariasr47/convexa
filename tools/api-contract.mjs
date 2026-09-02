@@ -76,26 +76,65 @@ const requiredManifest = [
 ];
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
 export function validateForbiddenPackages({ cargoManifest, cargoLock, resolvedPackages = [] }) {
-  const haystacks = [cargoManifest, cargoLock, ...resolvedPackages].map((value) => String(value ?? ''));
+  const haystacks = [cargoManifest, cargoLock, ...resolvedPackages].map((value) =>
+    String(value ?? ''),
+  );
   for (const packageName of FORBIDDEN_ROUTE_INTEGRATION_PACKAGES) {
     // Match actual TOML package/dependency records, not prose mentioning the removed chain.
-    const packageRecord = new RegExp(`(?:^|\\n)\\s*(?:name\\s*=\\s*\\"${packageName}\\"|${packageName.replace('-', '\\-')}\\s*=)`, 'm');
+    const packageRecord = new RegExp(
+      `(?:^|\\n)\\s*(?:name\\s*=\\s*\\"${packageName}\\"|${packageName.replace('-', '\\-')}\\s*=)`,
+      'm',
+    );
     if (haystacks.some((text) => packageRecord.test(text)))
       throw new Error(`incomplete contract coverage: forbidden package ${packageName}`);
   }
   return true;
 }
 export function validateCompileProbeReceipt(receipt, currentRevision = null) {
-  const failReceipt = (detail) => { throw new Error(`incomplete contract coverage: compile probe receipt ${detail}`); };
-  if (!receipt || receipt.schema_version !== 1 || receipt.probe_id !== 'openapi-router-integration-all-52' || receipt.result !== 'PASS') failReceipt('header');
-  if (currentRevision && receipt.source_revision !== currentRevision) failReceipt('stale source revision');
-  if (receipt.command !== 'npm run api:router-integration:compile-probe' || receipt.probe_tool_path !== 'tools/api-router-integration-compile-probe.mjs' || receipt.utoipa_version !== '5.5.0') failReceipt('command/tool/version');
-  if (!/^[a-f0-9]{64}$/.test(receipt.probe_tool_sha256 ?? '') || receipt.registration_count !== 52 || !/^[a-f0-9]{64}$/.test(receipt.operation_set_sha256 ?? '')) failReceipt('counts or hashes');
-  if (existsSync(join(ROOT, receipt.probe_tool_path)) && receipt.probe_tool_sha256 !== sha(readFileSync(join(ROOT, receipt.probe_tool_path)))) failReceipt('tool hash');
-  if (receipt.pairing_guard?.result !== 'PASS' || receipt.pairing_guard?.observed_unique_pair_count !== 52) failReceipt('pairing');
-  for (const name of ['path', 'tags', 'schema_references']) if (receipt.metadata_traits?.[name] !== 'PASS') failReceipt(`trait ${name}`);
-  for (const method of ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'HEAD', 'PATCH', 'TRACE']) if (receipt.method_filters?.[method] !== 'PASS') failReceipt(`method ${method}`);
-  for (const witness of ['sse', 'stateful_auth', 'declared_error']) if (receipt.witnesses?.[witness]?.result !== 'PASS' || typeof receipt.witnesses[witness].pair !== 'string') failReceipt(`witness ${witness}`);
+  const failReceipt = (detail) => {
+    throw new Error(`incomplete contract coverage: compile probe receipt ${detail}`);
+  };
+  if (
+    !receipt ||
+    receipt.schema_version !== 1 ||
+    receipt.probe_id !== 'openapi-router-integration-all-52' ||
+    receipt.result !== 'PASS'
+  )
+    failReceipt('header');
+  if (currentRevision && receipt.source_revision !== currentRevision)
+    failReceipt('stale source revision');
+  if (
+    receipt.command !== 'npm run api:router-integration:compile-probe' ||
+    receipt.probe_tool_path !== 'tools/api-router-integration-compile-probe.mjs' ||
+    receipt.utoipa_version !== '5.5.0'
+  )
+    failReceipt('command/tool/version');
+  if (
+    !/^[a-f0-9]{64}$/.test(receipt.probe_tool_sha256 ?? '') ||
+    receipt.registration_count !== 52 ||
+    !/^[a-f0-9]{64}$/.test(receipt.operation_set_sha256 ?? '')
+  )
+    failReceipt('counts or hashes');
+  if (
+    existsSync(join(ROOT, receipt.probe_tool_path)) &&
+    receipt.probe_tool_sha256 !== sha(readFileSync(join(ROOT, receipt.probe_tool_path)))
+  )
+    failReceipt('tool hash');
+  if (
+    receipt.pairing_guard?.result !== 'PASS' ||
+    receipt.pairing_guard?.observed_unique_pair_count !== 52
+  )
+    failReceipt('pairing');
+  for (const name of ['path', 'tags', 'schema_references'])
+    if (receipt.metadata_traits?.[name] !== 'PASS') failReceipt(`trait ${name}`);
+  for (const method of ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'HEAD', 'PATCH', 'TRACE'])
+    if (receipt.method_filters?.[method] !== 'PASS') failReceipt(`method ${method}`);
+  for (const witness of ['sse', 'stateful_auth', 'declared_error'])
+    if (
+      receipt.witnesses?.[witness]?.result !== 'PASS' ||
+      typeof receipt.witnesses[witness].pair !== 'string'
+    )
+      failReceipt(`witness ${witness}`);
   if (receipt.invalid_graph_outcomes !== 0) failReceipt('invalid graph outcomes');
   return true;
 }
@@ -520,8 +559,8 @@ function baseline() {
   if (
     value.schema_version !== 1 ||
     value.baseline_id !== 'api-contract-generation-precutover' ||
-    pairs.length !== 52 ||
-    new Set(keys).size !== 52 ||
+    pairs.length !== 57 ||
+    new Set(keys).size !== 57 ||
     !/^[0-9a-f]{40}$/i.test(value.source?.revision ?? '') ||
     !/^[0-9a-f]{64}$/i.test(value.source?.router_sha256 ?? '') ||
     value.capture?.parser !== 'rust-axum-route-registration-v1' ||
@@ -1217,6 +1256,12 @@ function routeSourceModule(path) {
   if (path.startsWith('/api/scan')) return 'apps/api/src/routes/scan.rs';
   if (path.startsWith('/api/_research/chain'))
     return 'apps/api/src/routes/research_chain_snapshots.rs';
+  if (path.startsWith('/api/_research/flat-files'))
+    return 'apps/api/src/routes/research_flat_files.rs';
+  if (path.startsWith('/api/_research/session-day-tape'))
+    return 'apps/api/src/routes/research_session_day_tape.rs';
+  if (path.startsWith('/api/_research/session-archive'))
+    return 'apps/api/src/routes/research_session_coverage.rs';
   if (path.startsWith('/api/_research/session'))
     return 'apps/api/src/routes/research_session_books.rs';
   if (path === '/api/_metrics') return 'apps/api/src/routes/health.rs';
@@ -1236,6 +1281,15 @@ function routeResponseType(path) {
   if (path.startsWith('/api/positions')) return 'SimTradeGateResponse';
   if (path.startsWith('/api/scan')) return 'ScanJsonResponse';
   if (path.startsWith('/api/_research/chain')) return 'ListSnapshotsResponse';
+  if (path.startsWith('/api/_research/flat-files')) {
+    if (path.endsWith('/extract')) return 'LoadFlatFilesResponse';
+    return 'ListFlatFilesResponse';
+  }
+  if (path.startsWith('/api/_research/session-day-tape')) {
+    if (path.endsWith('/day')) return 'LoadSessionDayTapeResponse';
+    return 'ListSessionDayTapeResponse';
+  }
+  if (path.startsWith('/api/_research/session-archive')) return 'CoverageResponse';
   if (path.startsWith('/api/_research/session')) return 'ListSessionBooksResponse';
   if (path === '/api/_metrics') return 'MetricsResponse';
   return 'HealthResponse';
@@ -1274,6 +1328,12 @@ function sourceRegistryTarget(path) {
     return 'apps/api/src/routes/ticker.rs::contract_representative_for';
   if (path.startsWith('/api/_research/chain'))
     return 'apps/api/src/routes/research_chain_snapshots.rs::contract_representative_for';
+  if (path.startsWith('/api/_research/flat-files'))
+    return 'apps/api/src/routes/research_flat_files.rs::contract_representative_response';
+  if (path.startsWith('/api/_research/session-day-tape'))
+    return 'apps/api/src/routes/research_session_day_tape.rs::contract_representative_response';
+  if (path.startsWith('/api/_research/session-archive'))
+    return 'apps/api/src/routes/research_session_coverage.rs::contract_representative_response';
   if (path.startsWith('/api/_research/session'))
     return 'apps/api/src/routes/research_session_books.rs::contract_representative_response';
   return null;
@@ -1966,13 +2026,29 @@ function install(bytes) {
     throw error;
   }
 }
-export function validateRegistrationPairs(source, expectedCount = 52) {
-  const records = [...source.matchAll(/(?:contract_route|add)!\(\s*([A-Za-z0-9_:]+)\s*,\s*([A-Za-z0-9_:]+)\s*\)/g)].filter(([, handler]) => handler !== 'contract_test_operation').map(([, handler, companion]) => ({
-    handler, companion, handler_basename: handler.split('::').pop(), companion_basename: companion.split('::').pop(),
-  }));
-  if (records.length !== expectedCount) fail('incomplete contract coverage', `registration pairing count (${records.length}/${expectedCount})`);
-  if (new Set(records.map((x) => x.handler)).size !== expectedCount || new Set(records.map((x) => x.companion)).size !== expectedCount) fail('incomplete contract coverage', 'duplicate registration pairing');
-  if (records.some((x) => x.companion_basename !== `__path_${x.handler_basename}`)) fail('incomplete contract coverage', 'registration companion mismatch');
+export function validateRegistrationPairs(source, expectedCount = 57) {
+  const records = [
+    ...source.matchAll(/(?:contract_route|add)!\(\s*([A-Za-z0-9_:]+)\s*,\s*([A-Za-z0-9_:]+)\s*\)/g),
+  ]
+    .filter(([, handler]) => handler !== 'contract_test_operation')
+    .map(([, handler, companion]) => ({
+      handler,
+      companion,
+      handler_basename: handler.split('::').pop(),
+      companion_basename: companion.split('::').pop(),
+    }));
+  if (records.length !== expectedCount)
+    fail(
+      'incomplete contract coverage',
+      `registration pairing count (${records.length}/${expectedCount})`,
+    );
+  if (
+    new Set(records.map((x) => x.handler)).size !== expectedCount ||
+    new Set(records.map((x) => x.companion)).size !== expectedCount
+  )
+    fail('incomplete contract coverage', 'duplicate registration pairing');
+  if (records.some((x) => x.companion_basename !== `__path_${x.handler_basename}`))
+    fail('incomplete contract coverage', 'registration companion mismatch');
   return records;
 }
 
@@ -1988,18 +2064,43 @@ function check() {
       cargoManifest: readFileSync(join(ROOT, 'apps/api/Cargo.toml'), 'utf8'),
       cargoLock: readFileSync(join(ROOT, 'Cargo.lock'), 'utf8'),
     });
-  const compileReceipt = join(ROOT, '.spire/clusters/tech/contracts/openapi-router-dependency-replacement/router-integration-compile-probe-receipt.json');
+  const compileReceipt = join(
+    ROOT,
+    '.spire/clusters/tech/contracts/openapi-router-dependency-replacement/router-integration-compile-probe-receipt.json',
+  );
   if (existsSync(compileReceipt)) {
     let receipt;
-    try { receipt = JSON.parse(readFileSync(compileReceipt, 'utf8')); } catch { fail('invalid OpenAPI artifact', 'compile probe receipt JSON'); }
-    const revision = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim();
+    try {
+      receipt = JSON.parse(readFileSync(compileReceipt, 'utf8'));
+    } catch {
+      fail('invalid OpenAPI artifact', 'compile probe receipt JSON');
+    }
+    const revision = spawnSync('git', ['rev-parse', 'HEAD'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    }).stdout.trim();
     let acceptedRevisions = [revision];
     if (receipt.source_revision !== revision) {
-      const parent = spawnSync('git', ['rev-parse', 'HEAD^'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim();
-      const changed = spawnSync('git', ['diff', '--name-only', 'HEAD^', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim().split(/\r?\n/).filter(Boolean);
-      if (changed.length === 1 && changed[0] === '.spire/clusters/tech/contracts/openapi-router-dependency-replacement/router-integration-compile-probe-receipt.json') acceptedRevisions.push(parent);
+      const parent = spawnSync('git', ['rev-parse', 'HEAD^'], {
+        cwd: ROOT,
+        encoding: 'utf8',
+      }).stdout.trim();
+      const changed = spawnSync('git', ['diff', '--name-only', 'HEAD^', 'HEAD'], {
+        cwd: ROOT,
+        encoding: 'utf8',
+      })
+        .stdout.trim()
+        .split(/\r?\n/)
+        .filter(Boolean);
+      if (
+        changed.length === 1 &&
+        changed[0] ===
+          '.spire/clusters/tech/contracts/openapi-router-dependency-replacement/router-integration-compile-probe-receipt.json'
+      )
+        acceptedRevisions.push(parent);
     }
-    if (!acceptedRevisions.includes(receipt.source_revision)) validateCompileProbeReceipt(receipt, revision);
+    if (!acceptedRevisions.includes(receipt.source_revision))
+      validateCompileProbeReceipt(receipt, revision);
     else validateCompileProbeReceipt(receipt);
   }
   const routesSource = join(ROOT, 'apps/api/src/routes/mod.rs');
@@ -2048,7 +2149,10 @@ function check() {
     });
   };
   const extras = discover(join(ROOT, 'apps/api/openapi')).filter(
-    (path) => path !== files.manifest && path !== 'apps/api/openapi/router-integration-prechange-baseline.json' && !expectedPaths.has(path),
+    (path) =>
+      path !== files.manifest &&
+      path !== 'apps/api/openapi/router-integration-prechange-baseline.json' &&
+      !expectedPaths.has(path),
   );
   if (extras.length)
     fail('incomplete contract coverage', `unlisted artifact ${extras.sort().join(', ')}`);

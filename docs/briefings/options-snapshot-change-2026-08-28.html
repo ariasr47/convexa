@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Convexa — How much the options snapshot actually changes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@96,600;96,800;112,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0B0F17;
+      --panel: #131A24;
+      --raised: #1B2432;
+      --phosphor: #E9E4D6;
+      --steel: #8A9BB4;
+      --amber: #F2A93B;
+      --amber-text: #D9A03A;
+      --signal: #5E8BC4;
+      --warn: #E07A3F;
+      --line: rgba(138, 155, 180, 0.24);
+      --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+      --display: "Archivo", "IBM Plex Sans", sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(1100px 520px at 8% -12%, rgba(242, 169, 59, 0.08), transparent 55%),
+        radial-gradient(800px 420px at 100% 6%, rgba(94, 139, 196, 0.07), transparent 50%),
+        var(--ink);
+      color: var(--phosphor);
+      font-family: var(--sans);
+      font-size: 16.5px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 22px 110px; }
+    a { color: var(--signal); text-decoration: none; }
+    a:hover { color: var(--amber); }
+    a:focus-visible { outline: 2px solid var(--amber-text); outline-offset: 3px; }
+    h1, h2, h3 { font-family: var(--display); font-stretch: 112%; letter-spacing: -0.03em; }
+    h1 { font-size: clamp(2rem, 4.2vw, 3.05rem); line-height: 1.06; margin: 0 0 12px; font-weight: 700; }
+    h2 { font-size: 1.48rem; margin: 56px 0 12px; padding-top: 6px; }
+    h2 .kicker {
+      display: block; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--amber-text); margin-bottom: 6px;
+    }
+    h3 { font-size: 1.06rem; margin: 22px 0 8px; }
+    p, li { color: var(--steel); }
+    strong { color: var(--phosphor); }
+    code { font-family: var(--mono); color: var(--amber-text); font-size: 0.86em; }
+    .lede { max-width: 64ch; font-size: 1.1rem; color: var(--steel); margin: 0 0 18px; }
+    .meta { font-family: var(--mono); font-size: 0.78rem; color: var(--steel); letter-spacing: 0.04em; margin-bottom: 14px; }
+    .chip {
+      display: inline-block; font-family: var(--mono); font-size: 0.68rem;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px;
+      color: var(--amber-text); margin: 0 6px 10px 0;
+    }
+    .nav {
+      position: sticky; top: 0; z-index: 8;
+      background: rgba(11, 15, 23, 0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line); margin: 0 -22px 28px; padding: 10px 22px;
+    }
+    .nav ol {
+      display: flex; flex-wrap: wrap; gap: 8px 14px; list-style: none;
+      margin: 0; padding: 0; font-family: var(--mono); font-size: 0.7rem;
+    }
+    .nav a { color: var(--steel); }
+    .nav a:hover { color: var(--phosphor); }
+    .card {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .grid2, .grid3, .grid4 { display: grid; gap: 12px; }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .grid4 { grid-template-columns: 1fr 1fr; }
+    @media (min-width: 820px) {
+      .grid2 { grid-template-columns: 1fr 1fr; }
+      .grid3 { grid-template-columns: 1fr 1fr 1fr; }
+      .grid4 { grid-template-columns: repeat(4, 1fr); }
+    }
+    .stat b {
+      display: block; font-family: var(--mono); font-size: 1.55rem; color: var(--phosphor);
+      font-variant-numeric: tabular-nums; letter-spacing: -0.03em;
+    }
+    .stat span { font-size: 0.82rem; color: var(--steel); }
+    .stat.amber b { color: var(--amber); }
+    .stat.warn b { color: var(--warn); }
+    .stat.signal b { color: var(--signal); }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 8px; font-size: 0.9rem; }
+    th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+    th {
+      background: var(--raised); color: var(--phosphor); font-weight: 600;
+      font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    td { background: var(--panel); color: var(--steel); }
+    td strong { color: var(--phosphor); }
+    .note {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 14px 16px; margin: 14px 0;
+    }
+    .note.warn { border-color: rgba(224, 122, 63, 0.55); }
+    .note.warn strong { color: var(--warn); }
+    .note.ok { border-color: rgba(94, 139, 196, 0.45); }
+    .note.ok strong { color: var(--signal); }
+    .caption { font-size: 0.8rem; color: var(--steel); text-align: center; margin: 8px 0 4px; }
+    .diagram {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+      padding: 16px 12px; margin: 16px 0 8px; overflow-x: auto;
+    }
+    .diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .thesis {
+      border-left: 3px solid var(--amber);
+      padding: 4px 0 4px 16px; margin: 8px 0 22px;
+      font-size: 1.16rem; color: var(--phosphor); max-width: 70ch;
+    }
+    .bars { display: grid; gap: 11px; margin: 14px 0; }
+    .bar-row { display: grid; grid-template-columns: 210px 1fr 72px; gap: 10px; align-items: center; }
+    .bar-row span { font-family: var(--mono); font-size: 0.75rem; color: var(--steel); }
+    .bar-row b { font-family: var(--mono); font-size: 0.82rem; color: var(--phosphor); text-align: right; font-variant-numeric: tabular-nums; }
+    .track { height: 14px; background: var(--raised); border-radius: 4px; overflow: hidden; border: 1px solid var(--line); }
+    .fill { height: 100%; border-radius: 3px; }
+    .fill-amber { background: var(--amber); }
+    .fill-signal { background: var(--signal); }
+    .fill-warn { background: var(--warn); }
+    .fill-steel { background: #4a5a70; }
+    .clock {
+      display: grid; grid-template-columns: repeat(24, 1fr); gap: 3px; margin: 10px 0 6px;
+    }
+    .clock i { display: block; height: 28px; border-radius: 3px; background: var(--raised); border: 1px solid var(--line); }
+    .clock i.hit { background: var(--amber); border-color: transparent; }
+    .clock i.rth { background: #1e2a3a; }
+    .clock-label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.7rem; color: var(--steel); }
+    .wall-run { display: grid; grid-template-columns: 72px 1fr; gap: 10px; align-items: center; margin: 8px 0; }
+    .wall-run .lab { font-family: var(--mono); font-size: 0.78rem; color: var(--amber-text); }
+    .wall-run .seg {
+      height: 22px; border-radius: 4px; background: var(--amber);
+      display: flex; align-items: center; padding: 0 8px;
+      font-family: var(--mono); font-size: 0.68rem; color: #0B0F17; font-weight: 500;
+    }
+    .wall-run .seg.b { background: var(--signal); color: var(--phosphor); }
+    .wall-run .seg.c { background: #4a5a70; color: var(--phosphor); }
+    footer {
+      margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--line);
+      font-size: 0.8rem; color: var(--steel);
+    }
+    @media (max-width: 700px) {
+      .bar-row { grid-template-columns: 1fr; }
+      .clock { grid-template-columns: repeat(12, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p>
+      <span class="chip">Measured on disk</span>
+      <span class="chip">No Massive calls</span>
+      <span class="chip">Authorizes: nothing</span>
+    </p>
+    <h1>The options snapshot does not replace itself every minute. Open interest sleeps. Greeks twitch because the stock moved.</h1>
+    <p class="meta">Convexa · 28 Aug 2026 · compared stored chain snapshots + scanner structure diary · local <code>data/</code></p>
+    <p class="thesis">
+      A new full chain every 60 seconds is mostly yesterday’s dealer book, repriced for today’s spot.
+      Walls change on a tens-of-minutes clock. The flip ticks with price. Capture that way, not “every options tick.”
+    </p>
+    <p class="lede">
+      This is a measurement of books we already paid for and kept, not a guess and not a score change.
+      Two stores: the raw Massive chain (<code>data/chain_snapshots</code>) and the GEX map the app actually shows (<code>data/scan.json</code> history).
+    </p>
+
+    <nav class="nav" aria-label="On this page">
+      <ol>
+        <li><a href="#answer">Answer</a></li>
+        <li><a href="#layers">Four clocks</a></li>
+        <li><a href="#raw">Raw chain</a></li>
+        <li><a href="#oi">OI clock</a></li>
+        <li><a href="#map">The GEX map</a></li>
+        <li><a href="#spy">SPY walls</a></li>
+        <li><a href="#holes">Bad books</a></li>
+        <li><a href="#store">What to keep</a></li>
+        <li><a href="#limits">Limits</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="answer"><span class="kicker">00 · In one screen</span>What actually changes</h2>
+    <div class="grid4">
+      <div class="card stat signal"><b>0%</b><span>median contracts whose open interest moved in ~4 minutes</span></div>
+      <div class="card stat amber"><b>91%</b><span>median contracts whose gamma moved in ~4 minutes (spot)</span></div>
+      <div class="card stat"><b>6%</b><span>RTH samples where the call wall jumped (focus names, ~6 min)</span></div>
+      <div class="card stat warn"><b>$0.28</b><span>median flip move when it “changed” — it is tracking spot</span></div>
+    </div>
+
+    <div class="diagram" role="img" aria-label="Four layers of the options snapshot aging at different speeds">
+      <svg viewBox="0 0 960 300" xmlns="http://www.w3.org/2000/svg">
+        <text x="24" y="28" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="12">ONE MASSIVE OPTIONS SNAPSHOT IS FOUR CLOCKS GLUED TOGETHER</text>
+
+        <rect x="24" y="48" width="912" height="52" rx="8" fill="#131A24" stroke="rgba(94,139,196,0.55)"/>
+        <text x="44" y="70" fill="#5E8BC4" font-family="IBM Plex Mono" font-size="11">1 · STRIKES + OPEN INTEREST</text>
+        <text x="44" y="88" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="14">Sleeps all session. Jumps once when OCC prints (premarket in this corpus).</text>
+        <rect x="780" y="60" width="136" height="28" rx="6" fill="#5E8BC4"/>
+        <text x="848" y="79" text-anchor="middle" fill="#0B0F17" font-family="IBM Plex Sans" font-size="12" font-weight="700">~ once / day</text>
+
+        <rect x="24" y="112" width="912" height="52" rx="8" fill="#131A24" stroke="rgba(242,169,59,0.55)"/>
+        <text x="44" y="134" fill="#F2A93B" font-family="IBM Plex Mono" font-size="11">2 · VENDOR GREEKS + IV</text>
+        <text x="44" y="152" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="14">~90% of contracts reprice whenever spot twitches a few cents.</text>
+        <rect x="780" y="124" width="136" height="28" rx="6" fill="#F2A93B"/>
+        <text x="848" y="143" text-anchor="middle" fill="#0B0F17" font-family="IBM Plex Sans" font-size="12" font-weight="700">every few min</text>
+
+        <rect x="24" y="176" width="912" height="52" rx="8" fill="#131A24" stroke="rgba(138,155,180,0.4)"/>
+        <text x="44" y="198" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="11">3 · CALL / PUT WALLS</text>
+        <text x="44" y="216" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="14">Sticky. SPY only used three call walls in RTH: 775 · 780 · 800.</text>
+        <rect x="780" y="188" width="136" height="28" rx="6" fill="#4a5a70"/>
+        <text x="848" y="207" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="12" font-weight="700">tens of minutes</text>
+
+        <rect x="24" y="240" width="912" height="52" rx="8" fill="#131A24" stroke="rgba(224,122,63,0.45)"/>
+        <text x="44" y="262" fill="#E07A3F" font-family="IBM Plex Mono" font-size="11">4 · GAMMA FLIP + SCORE</text>
+        <text x="44" y="280" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="14">Move almost every sample because they are “spot versus a sticky wall.”</text>
+        <rect x="780" y="252" width="136" height="28" rx="6" fill="#E07A3F"/>
+        <text x="848" y="271" text-anchor="middle" fill="#0B0F17" font-family="IBM Plex Sans" font-size="12" font-weight="700">tracks the tape</text>
+      </svg>
+    </div>
+    <p class="caption">Storing “the snapshot” on a 60-second timer copies layers 2 and 4 over and over. Layer 1 is the expensive unique fact. Layer 3 is what a trader remembers.</p>
+
+    <h2 id="layers"><span class="kicker">01 · What we compared</span>Two memories, same week</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Raw paid books</h3>
+        <p><code>data/chain_snapshots/*.json</code> — 69 names, <strong>3,350</strong> live Massive bodies. Each body is the full chain (strike, right, expiry, OI, IV, greeks) plus bars and prints. Consecutive pairs decoded; fixture SPY row skipped.</p>
+      </div>
+      <div class="card">
+        <h3>The map on the ticker page</h3>
+        <p><code>data/scan.json</code> history — already through Path B. Walls, flip, score, regime, net GEX. SPY/QQQ/IWM: <strong>512–515</strong> samples, 10 Aug 13:15 ET → 23 Aug 11:41 ET.</p>
+      </div>
+    </div>
+    <p>Densest chain day on this box: <strong>20 Aug 2026</strong>. Liquid names are <em>under-sampled</em> in the ring (warm cache skips capture) — 22 live SPY books vs 48 for AMD. That is why the liquid-name ensure worker exists.</p>
+
+    <h2 id="raw"><span class="kicker">02 · Contract fields</span>In four minutes, OI is frozen and greeks are not</h2>
+    <p>703 consecutive pairs with a gap of <strong>≤ 20 minutes</strong> (median <strong>3.9 min</strong>). Identity of a contract = expiration + call/put + strike.</p>
+    <div class="bars" aria-label="Share of contracts that changed between snapshots about four minutes apart">
+      <div class="bar-row">
+        <span>open interest changed</span>
+        <div class="track"><div class="fill fill-signal" style="width:0.2%"></div></div>
+        <b>0.0%</b>
+      </div>
+      <div class="bar-row">
+        <span>strikes added or dropped</span>
+        <div class="track"><div class="fill fill-signal" style="width:0.1%"></div></div>
+        <b>0%</b>
+      </div>
+      <div class="bar-row">
+        <span>implied vol changed</span>
+        <div class="track"><div class="fill fill-amber" style="width:92%"></div></div>
+        <b>92%</b>
+      </div>
+      <div class="bar-row">
+        <span>gamma changed</span>
+        <div class="track"><div class="fill fill-amber" style="width:91%"></div></div>
+        <b>91%</b>
+      </div>
+      <div class="bar-row">
+        <span>fully identical contract</span>
+        <div class="track"><div class="fill fill-steel" style="width:3.4%"></div></div>
+        <b>3%</b>
+      </div>
+    </div>
+    <p class="caption">Median share of stable contracts. Mean OI-changed is 0.2% — still essentially zero. Spot median |Δ| on these pairs: 0.04%.</p>
+    <div class="note ok">
+      <strong>Delta-encoding greeks will not save space.</strong>
+      If 91% of contracts have a new gamma, a “only store what changed” file is still almost the whole chain.
+      Gzip the full snapshot. Do not invent a clever diff for a field that is supposed to tick with spot.
+    </div>
+
+    <h2 id="oi"><span class="kicker">03 · The OI clock</span>Open interest moved two or three times, not 390</h2>
+    <p>Every live SPY, QQQ, and NVDA book on disk, checked in time order. These are the <em>only</em> times OI moved on overlapping contracts:</p>
+    <table>
+      <thead>
+        <tr><th>Name</th><th>When (ET)</th><th>Contracts whose OI moved</th><th>What it looks like</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>QQQ</strong></td><td>20 Aug <strong>06:37</strong></td><td>37.8% of 11,802</td><td>Overnight OCC print, before the open</td></tr>
+        <tr><td><strong>NVDA</strong></td><td>20 Aug <strong>06:33</strong></td><td>47.4% of 3,644</td><td>Same window</td></tr>
+        <tr><td><strong>SPY</strong></td><td>20 Aug <strong>08:38</strong></td><td>32.0% of 13,770</td><td>Still premarket</td></tr>
+        <tr><td><strong>SPY</strong></td><td>22 Aug 15:32</td><td>34.9% after a ~52 hour gap</td><td>Next session’s book, not an intraday tape</td></tr>
+        <tr><td><strong>NVDA</strong></td><td>22 Aug 14:51</td><td>47.8% after a ~51 hour gap</td><td>Same</td></tr>
+      </tbody>
+    </table>
+    <p class="clock-label"><span>ET hour · a trading day</span><span>amber = where OI actually jumped (20 Aug)</span></p>
+    <div class="clock" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><i></i><i></i>
+      <i class="hit" title="06:xx OCC"></i>
+      <i></i>
+      <i class="hit" title="08:xx SPY"></i>
+      <i class="rth"></i><i class="rth"></i><i class="rth"></i>
+      <i class="rth"></i><i class="rth"></i><i class="rth"></i><i class="rth"></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+    <div class="clock-label"><span>00</span><span>06</span><span>09:30 open</span><span>16:00 close</span><span>24</span></div>
+    <p>
+      Massive’s chain snapshot carries <strong>end-of-previous-session open interest</strong>, not a live OI tape.
+      Intraday, layer 1 is a still photo. Layer 2 is a movie of greeks painted on that photo.
+    </p>
+
+    <h2 id="map"><span class="kicker">04 · The map you trade</span>Walls are sticky. The flip is a shadow of spot.</h2>
+    <p>
+      Scanner history is what Path B already computed — the tiles on the ticker page.
+      Focus names (SPY, QQQ, IWM, NVDA, TSLA, AAPL, MSFT, META, AMZN, GLD),
+      weekday 09–15 ET, samples ≤ 8 minutes apart. <strong>n = 834</strong>, median gap <strong>6.0 min</strong>.
+    </p>
+    <div class="bars" aria-label="How often the GEX map changed in about six minutes during regular hours">
+      <div class="bar-row">
+        <span>call wall moved</span>
+        <div class="track"><div class="fill fill-signal" style="width:5.8%"></div></div>
+        <b>5.8%</b>
+      </div>
+      <div class="bar-row">
+        <span>put wall moved</span>
+        <div class="track"><div class="fill fill-signal" style="width:4.2%"></div></div>
+        <b>4.2%</b>
+      </div>
+      <div class="bar-row">
+        <span>gamma flip moved</span>
+        <div class="track"><div class="fill fill-amber" style="width:96.8%"></div></div>
+        <b>97%</b>
+      </div>
+      <div class="bar-row">
+        <span>regime changed</span>
+        <div class="track"><div class="fill fill-steel" style="width:0.1%"></div></div>
+        <b>0.1%</b>
+      </div>
+      <div class="bar-row">
+        <span>score changed</span>
+        <div class="track"><div class="fill fill-warn" style="width:63.2%"></div></div>
+        <b>63%</b>
+      </div>
+      <div class="bar-row">
+        <span>tier changed</span>
+        <div class="track"><div class="fill fill-steel" style="width:10.8%"></div></div>
+        <b>11%</b>
+      </div>
+    </div>
+    <div class="grid3" style="margin-top:12px">
+      <div class="card stat"><b>$10</b><span>median call-wall jump when it did move</span></div>
+      <div class="card stat"><b>$25</b><span>median put-wall jump when it did move</span></div>
+      <div class="card stat amber"><b>$0.28</b><span>median flip move — not a new structure</span></div>
+    </div>
+    <div class="note">
+      <strong>Why the flip and the score twitch.</strong>
+      Opportunity score pays up to 40 of 100 points for sitting near a wall.
+      The analytic flip is a function of spot versus that wall.
+      If the wall holds and the tape walks $2, both the flip and the score “change”
+      without the dealer book having been rewritten. That is layer 4, not layer 1.
+    </div>
+    <p>Median |Δ net GEX| on those 6-minute RTH samples: <strong>2.6%</strong> (mean 8.6% — a few messy pairs pull the average).</p>
+
+    <h3>Open to close, same ET day</h3>
+    <p>First vs last history sample that day, focus names, <strong>n = 113 days</strong>.</p>
+    <div class="grid4">
+      <div class="card stat"><b>25%</b><span>days the call wall moved at all</span></div>
+      <div class="card stat"><b>21%</b><span>days the put wall moved at all</span></div>
+      <div class="card stat"><b>5%</b><span>days regime flipped</span></div>
+      <div class="card stat amber"><b>93%</b><span>days the score was different by the close</span></div>
+    </div>
+    <p>
+      SPY 20 Aug: call wall <strong>+25</strong>. SPY 19 Aug: call wall <strong>−25</strong>.
+      Most index days the wall did not move. Single-name flip can hop (MSFT had ±$80–$100 days) —
+      that is the flip level jumping, not a dollar of drift.
+    </p>
+
+    <h2 id="spy"><span class="kicker">05 · One name</span>SPY’s call wall only sat at three strikes</h2>
+    <p>Regular hours, consecutive history samples. A “run” is how long the call wall stayed on the same strike before jumping.</p>
+    <div class="card">
+      <div class="wall-run"><div class="lab">775</div><div class="seg" style="width:38%">used</div></div>
+      <div class="wall-run"><div class="lab">780</div><div class="seg b" style="width:28%">used</div></div>
+      <div class="wall-run"><div class="lab">800</div><div class="seg c" style="width:55%">used</div></div>
+      <p style="margin:10px 0 0">15 runs. Median duration <strong>31 minutes</strong>. 90th percentile <strong>122 minutes</strong>. Longest <strong>165 minutes</strong>.</p>
+    </div>
+    <div class="diagram" role="img" aria-label="Walls stay, spot walks, flip follows">
+      <svg viewBox="0 0 960 220" xmlns="http://www.w3.org/2000/svg">
+        <text x="24" y="28" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="12">SCHEMATIC · NOT A CHART OF ONE MINUTE</text>
+        <line x1="80" y1="70" x2="900" y2="70" stroke="#F2A93B" stroke-width="3"/>
+        <text x="80" y="58" fill="#F2A93B" font-family="IBM Plex Mono" font-size="12">CALL WALL · sticky for tens of minutes</text>
+        <path d="M80 150 C 200 140, 280 168, 400 132 S 560 170, 720 120 S 840 150, 900 138" fill="none" stroke="#5E8BC4" stroke-width="2.5"/>
+        <text x="80" y="190" fill="#5E8BC4" font-family="IBM Plex Mono" font-size="12">SPOT · the tape</text>
+        <path d="M80 128 C 200 122, 280 146, 400 118 S 560 148, 720 108 S 840 132, 900 122" fill="none" stroke="#E07A3F" stroke-width="1.8" stroke-dasharray="6 5"/>
+        <text x="620" y="100" fill="#E07A3F" font-family="IBM Plex Mono" font-size="12">FLIP · a shadow of spot vs the wall</text>
+      </svg>
+    </div>
+    <p class="caption">A 60-second GEX snapshot mostly re-asks “where is spot relative to 775?” The 775 itself is the rare event.</p>
+
+    <h2 id="holes"><span class="kicker">06 · Do not replay garbage</span>One truncated fetch looks like the chain exploded</h2>
+    <p>On 20 Aug, SPY’s stored ring did this in eleven minutes:</p>
+    <div class="diagram" role="img" aria-label="SPY contract count dropping then recovering">
+      <svg viewBox="0 0 960 160" xmlns="http://www.w3.org/2000/svg">
+        <rect x="40" y="36" width="260" height="88" rx="10" fill="#131A24" stroke="rgba(138,155,180,0.35)"/>
+        <text x="170" y="72" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="12">t</text>
+        <text x="170" y="98" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="22">13,935</text>
+        <path d="M300 80 H360" stroke="#E07A3F" stroke-width="2"/>
+        <rect x="360" y="36" width="260" height="88" rx="10" fill="#131A24" stroke="rgba(224,122,63,0.7)"/>
+        <text x="490" y="72" text-anchor="middle" fill="#E07A3F" font-family="IBM Plex Mono" font-size="12">t + 3.2 min</text>
+        <text x="490" y="98" text-anchor="middle" fill="#E07A3F" font-family="Archivo" font-size="22">9,050</text>
+        <path d="M620 80 H680" stroke="#5E8BC4" stroke-width="2"/>
+        <rect x="680" y="36" width="240" height="88" rx="10" fill="#131A24" stroke="rgba(94,139,196,0.6)"/>
+        <text x="800" y="72" text-anchor="middle" fill="#5E8BC4" font-family="IBM Plex Mono" font-size="12">t + 7.8 min</text>
+        <text x="800" y="98" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="22">14,100</text>
+      </svg>
+    </div>
+    <p class="caption">5,022 contracts vanished, then 5,050 came back. That is a truncated Massive page, not 5,000 new listings. Drop that middle book from any replay.</p>
+    <p>Weekend and closed-session snapshots with <strong>spot frozen</strong> show walls identical and GEX essentially unchanged. Capturing GEX overnight is waste.</p>
+
+    <h2 id="store"><span class="kicker">07 · So what do we keep?</span>Match the clock of each layer</h2>
+    <div class="diagram" role="img" aria-label="Recommended capture cadence versus a 60-second full chain">
+      <svg viewBox="0 0 960 260" xmlns="http://www.w3.org/2000/svg">
+        <text x="480" y="28" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="12">ONE SPY SESSION · DISK, ORDER OF MAGNITUDE</text>
+        <rect x="40" y="52" width="200" height="160" rx="10" fill="#131A24" stroke="rgba(138,155,180,0.35)"/>
+        <text x="140" y="82" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="11">NOW</text>
+        <text x="140" y="112" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="18">1 book</text>
+        <text x="140" y="138" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">first-wins, often midnight</text>
+        <text x="140" y="178" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Mono" font-size="14">~7 MB JSON</text>
+        <text x="140" y="198" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">not a day</text>
+
+        <rect x="270" y="52" width="200" height="160" rx="10" fill="#131A24" stroke="rgba(94,139,196,0.55)"/>
+        <text x="370" y="82" text-anchor="middle" fill="#5E8BC4" font-family="IBM Plex Mono" font-size="11">WALLS · 15 min</text>
+        <text x="370" y="112" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="18">~26 books</text>
+        <text x="370" y="138" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">enough for wall jumps</text>
+        <text x="370" y="178" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Mono" font-size="14">~180 MB JSON</text>
+        <text x="370" y="198" text-anchor="middle" fill="#5E8BC4" font-family="IBM Plex Sans" font-size="12">~40–60 MB gzip</text>
+
+        <rect x="500" y="52" width="200" height="160" rx="10" fill="#131A24" stroke="rgba(242,169,59,0.55)"/>
+        <text x="600" y="82" text-anchor="middle" fill="#F2A93B" font-family="IBM Plex Mono" font-size="11">LIVE POLL · 60s</text>
+        <text x="600" y="112" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="18">~390 books</text>
+        <text x="600" y="138" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">feel of the ticker page</text>
+        <text x="600" y="178" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Mono" font-size="14">~2.7 GB JSON</text>
+        <text x="600" y="198" text-anchor="middle" fill="#F2A93B" font-family="IBM Plex Sans" font-size="12">~0.6–1 GB gzip</text>
+
+        <rect x="730" y="52" width="200" height="160" rx="10" fill="#131A24" stroke="rgba(224,122,63,0.55)"/>
+        <text x="830" y="82" text-anchor="middle" fill="#E07A3F" font-family="IBM Plex Mono" font-size="11">EVERY OPTIONS TICK</text>
+        <text x="830" y="112" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="18">don’t</text>
+        <text x="830" y="138" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">all-OPRA quotes ~110–170 GB/day</text>
+        <text x="830" y="178" text-anchor="middle" fill="#E07A3F" font-family="IBM Plex Mono" font-size="14">OI still daily</text>
+        <text x="830" y="198" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">greeks still a spot function</text>
+      </svg>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Layer</th><th>Keep</th><th>Cadence that matches the measurement</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Strikes + OI</strong></td>
+          <td>One prune-proof session book + the OCC update when it lands</td>
+          <td>Daily. Premarket in this sample.</td>
+        </tr>
+        <tr>
+          <td><strong>Vendor greeks</strong></td>
+          <td>Full snapshots (we do not recompute greeks)</td>
+          <td><strong>5–15 min</strong> for walls. <strong>60s</strong> only if you want the live-poll movie. Gzip; don’t diff.</td>
+        </tr>
+        <tr>
+          <td><strong>Stock tape</strong></td>
+          <td>SSE ticks (or next-morning stock trades file, filtered)</td>
+          <td>That is what makes price tiles move. Tens of MB / name / day.</td>
+        </tr>
+        <tr>
+          <td><strong>Watchlist</strong></td>
+          <td>SPY / QQQ / IWM + names you trade</td>
+          <td>Not 69 names at 60s. Scanner diary already covers breadth cheaply.</td>
+        </tr>
+        <tr>
+          <td><strong>Bad books</strong></td>
+          <td>Drop them</td>
+          <td>Contract-count collapse like 13,935 → 9,050 is not structure.</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note ok">
+      <strong>3 names × 15 min × 30 days</strong> stays in the low tens of gigabytes.
+      The same at 60s starts to want the remote body store.
+      RAM for replay stays small: current snapshot + a tick buffer. Stream the rest like a video.
+    </div>
+
+    <h2 id="limits"><span class="kicker">08 · Honest edges</span>What this test is not</h2>
+    <ul>
+      <li>Local ring, not the 26 Aug production session books. Densest chain day here is <strong>20 Aug</strong>.</li>
+      <li>SPY/QQQ/IWM are thin in the ring because a warm GEX cache skips capture. History in <code>scan.json</code> is the better clock for walls.</li>
+      <li>Flip “changed” is almost always a <strong>small analytic move</strong>, not a new dealer structure. Walls are the sticky object.</li>
+      <li>A naive sum of 13k gammas can explode when net GEX crosses zero or a truncated chain appears. Trust Path-B <code>net_gex</code> in the diary.</li>
+      <li>Nothing here retunes <code>opportunity_score</code>.</li>
+    </ul>
+    <div class="note">
+      <strong>Bottom line for replay.</strong>
+      Tape the stock. Snapshot the chain on a walls clock (5–15 min), or 60s if you want the live feel.
+      Treat OI as daily. Do not buy “every options tick.”
+      That is the day you can play back with Massive unplugged.
+    </div>
+
+    <footer>
+      <p>
+        Source: <code>data/chain_snapshots</code> (3,350 live bodies) and <code>data/scan.json</code> history
+        (SPY/QQQ/IWM n≈512–515, 10–23 Aug 2026). Companion roadmap:
+        <a href="product-roadmap-2026-08-28.html">product-roadmap-2026-08-28.html</a>.
+        Measurement only — Authorizes: nothing.
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

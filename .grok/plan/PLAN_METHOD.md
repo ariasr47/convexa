@@ -18,6 +18,26 @@ a task needs a question answered before an implementer could start it, the plan 
 - **Tasks:** bite-sized, one deliverable each, in dependency order. Backend and frontend tracks
   must be independently executable in parallel. Each task carries its own test cycle: write the
   failing test → run it, watch it fail → implement minimally → run it, watch it pass → commit.
+- **Independence table:** the **planner** writes a `## Independence` table on every GATE PLAN
+  (including all-`Independent: no` rows — that is the honest “cannot split” signal). Columns:
+  Task · Lane · Paths · Depends on · Independent. Lane is `backend` or `frontend` only — there
+  is no third spawn lane. Task ids match `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`. Paths are
+  repo-relative files or a single trailing `/**` directory; `{`, `?`, or a `*` that is not that
+  trailing `/**` cannot be `Independent: yes`. Independent is `yes` or `no`.
+  - `yes` only when this task shares **no** write path with another `yes` row in the same lane
+    (after stripping a trailing `/**` or `/*`, one path must not equal or prefix the other),
+    every `Depends on` id exists, and — for frontend — SPEC §4 names the files the task owns.
+    If §4 does not name files, mark frontend `no`.
+  - Modules both lanes need (API client, schema, tokens) are `Independent: no` on **one** lane,
+    run first; `yes` rows `Depends on` them. Files outside `backend.dir` and `frontend.dir`
+    go on one lane as `no`, never on both.
+  - Overlapping `yes` paths in one lane is a **plan failure** — STOP and fix the table.
+  - Each lane that has work names **exactly one closer** (`Independent: no`, `Depends on` every
+    other task in that lane). Backend closer owns serve + `conformance-receipt.json` only — it
+    does not re-implement worker paths. Frontend closer owns leftover visual/serve states only.
+    Independent workers implement their paths and tests; they do not write the lane receipt.
+  - **Conductor** does not bounce a missing table (archives, GATE M/V, old plans) — missing
+    means one worker per lane. An all-`no` table is not a miss; it is “cannot split.”
 - **Verification track:** names exact commands and their expected output — "run the suite" is not
   a verification step; the command with its expected pass count is.
 

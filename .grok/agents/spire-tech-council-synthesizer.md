@@ -7,7 +7,7 @@ description: >-
   bias. Defining failure mode: concatenating three position papers instead of folding them
   (sections that disagree, or silent drops of R2 conflicts).
 tools: Read, Grep, Glob, Write
-model: grok-4.5
+model: grok-4.6
 ---
 
 

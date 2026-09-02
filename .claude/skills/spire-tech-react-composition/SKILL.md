@@ -1,12 +1,14 @@
 ---
 name: spire-tech-react-composition
-description: Use when the declared stack is React or Next and the work is component API design — variants, compound components, context seams. Prefer this over spire-tech-frontend-patterns for API shape; prefer frontend-patterns for waterfalls/bundle/server overview. Skip other stacks.
+description: Use when writing or refactoring React component APIs — boolean props, variants, compound components, render props, or context. Triggers on reusable React component architecture. Skip non-React stacks.
+when-to-use: boolean props, compound components, render props, context providers, React component API, variants
 ---
 
 # React composition — APIs that scale
 
 Own **React component composition craft** only when the consumer declares React/Next. Project canon
-and declared React version outrank these rules.
+and declared React version outrank these rules. Prefer this over `spire-tech-frontend-patterns` for
+API shape; prefer frontend-patterns for waterfalls, bundle, and server overview.
 
 ## Critical procedure
 
