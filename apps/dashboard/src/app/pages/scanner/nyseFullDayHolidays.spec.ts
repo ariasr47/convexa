@@ -64,6 +64,21 @@ function pushLastWeekday(out: string[], y: number, m: number, wd: number): void 
   keepIfSpan(out, cur);
 }
 
+/**
+ * New Year's Day only: NYSE Rule 7.2 year-end exception — when Jan 1 falls on a Saturday, the
+ * exchange does NOT close the preceding Friday (that Friday ends the yearly accounting period;
+ * observed precedent: full sessions traded Friday 2010-12-31 and Friday 2021-12-31). A Sunday
+ * New Year's Day still observes the following Monday, same as every other holiday.
+ */
+function pushNewYearsObserved(out: string[], y: number): void {
+  const date: Ymd = [y, 1, 1];
+  const wd = weekdayUtc(date);
+  if (wd === 6) return;
+  let observed = date;
+  if (wd === 0) observed = addDays(date, 1);
+  keepIfSpan(out, observed);
+}
+
 /** Anonymous Gregorian (Meeus/Jones/Butcher). Easter Sunday → minus 2 days. */
 function pushGoodFriday(out: string[], y: number): void {
   const a = y % 19;
@@ -83,11 +98,15 @@ function pushGoodFriday(out: string[], y: number): void {
   keepIfSpan(out, addDays([y, month, day], -2));
 }
 
-/** Test-only generator — same rules as Rust `generated_regular_nyse_full_days`. */
+/**
+ * Test-only generator — same rules as Rust `generated_regular_nyse_full_days`. New Year's Day
+ * carries the NYSE Rule 7.2 Saturday exception (no preceding-Friday closure); every other
+ * holiday keeps the generic Sat→Fri / Sun→Mon observed shift.
+ */
 export function generatedRegularNyseFullDays(): string[] {
   const out: string[] = [];
   for (let y = 2019; y <= 2033; y++) {
-    pushObserved(out, y, 1, 1);
+    pushNewYearsObserved(out, y);
     pushNthWeekday(out, y, 1, 3, 1); // MLK
     pushNthWeekday(out, y, 2, 3, 1); // Washington's Birthday
     pushGoodFriday(out, y);
@@ -118,5 +137,14 @@ describe('nyseFullDayHolidays replica', () => {
     expect(isNyseFullDayHolidayIso('2021-06-18')).toBe(false);
     expect(isNyseFullDayHolidayIso('2020-06-19')).toBe(false);
     expect(isNyseFullDayHolidayIso('2019-11-28')).toBe(false);
+  });
+
+  it("NYSE Rule 7.2 — a Saturday New Year's Day does not close the preceding Friday", () => {
+    expect(isNyseFullDayHolidayIso('2027-12-31')).toBe(false);
+    expect(isNyseFullDayHolidayIso('2032-12-31')).toBe(false);
+    expect(isNyseFullDayHolidayIso('2021-12-31')).toBe(false);
+    expect(isNyseFullDayHolidayIso('2027-01-01')).toBe(true);
+    expect(isNyseFullDayHolidayIso('2032-01-01')).toBe(true);
+    expect(isNyseFullDayHolidayIso('2026-07-03')).toBe(true);
   });
 });

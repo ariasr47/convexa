@@ -1,6 +1,11 @@
 /**
  * Generated/pin-tested replica of `apps/api/src/domain/nyse_full_day.rs`.
  * Scanner badge only — ticker honesty binds SSE `market_session`, not this set.
+ *
+ * NYSE Rule 7.2 year-end exception: a Saturday New Year's Day does NOT close the preceding
+ * Friday (that Friday ends the yearly accounting period) — full sessions traded Friday
+ * 2010-12-31 and Friday 2021-12-31. Independence Day and Christmas on a Saturday still close
+ * the preceding Friday.
  */
 
 /** ISO `YYYY-MM-DD` full-day closures, years 2020..=2032. Equality-tested against the generator. */
@@ -23,7 +28,6 @@ export const NYSE_FULL_DAY_HOLIDAYS: ReadonlySet<string> = new Set([
   '2021-09-06',
   '2021-11-25',
   '2021-12-24',
-  '2021-12-31',
   '2022-01-17',
   '2022-02-21',
   '2022-04-15',
@@ -83,7 +87,6 @@ export const NYSE_FULL_DAY_HOLIDAYS: ReadonlySet<string> = new Set([
   '2027-09-06',
   '2027-11-25',
   '2027-12-24',
-  '2027-12-31',
   '2028-01-17',
   '2028-02-21',
   '2028-04-14',
@@ -133,7 +136,6 @@ export const NYSE_FULL_DAY_HOLIDAYS: ReadonlySet<string> = new Set([
   '2032-09-06',
   '2032-11-25',
   '2032-12-24',
-  '2032-12-31',
 ]);
 
 export function isNyseFullDayHolidayIso(iso: string): boolean {
