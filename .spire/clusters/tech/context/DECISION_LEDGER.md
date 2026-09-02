@@ -1215,3 +1215,7 @@ be exactly it.
 > **Owner rulings 2026-09-01.** D1 = **A** (integrate by merge). D2 and D3 queued: keep both capacity
 > harnesses and both coverage builds during integration (default-with-veto, reversible); history-secret
 > ruling for `supply-chain-automation` asked at the next gateway close.
+
+| `calendar-truth-is-shared-xnys-json` | mainline-integration-2026-09 | Z | NYSE full-day closures come from the shared XNYS calendar JSON; a Saturday New Year's Day does not close the preceding Friday (NYSE Rule 7.2 year-end exception; 2010-12-31 and 2021-12-31 precedent); any second encoding (Rust table, dashboard list) exists only under a checked-in parity test against the JSON | yes |
+| `route-growth-repins-api-artifact-oracle` | mainline-integration-2026-09 | Z | a shipped feature that adds API operations re-pins the capacity byte-identity artifact hashes and operation count in the same change (precedent bcb3d29d); the score/tier/fingerprint decision fixtures never move | yes |
+| `structural-scanners-reconcile-by-allowlist` | mainline-integration-2026-09 | Z | when a later approved feature legitimately needs a phrase or path an earlier negative-space scanner forbids, the scanner gains an explicit, file-exact, mutation-tested allowlist; trader poison is never deleted and URL/identifier needles stay global | yes |

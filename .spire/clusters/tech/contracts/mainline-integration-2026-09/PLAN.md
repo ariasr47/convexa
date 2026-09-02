@@ -75,7 +75,14 @@ Exit: AC-7, AC-8, AC-11 observed.
 - V1 — AC-1, AC-9, AC-10, AC-13 by inspection of the merged tree.
 - V2 — AC-2, AC-3, AC-4, AC-7, AC-8, AC-11 by re-running the commands, uncached.
 - V3 — AC-5, AC-6 by an independent serve + `--contract` run into `conformance-receipt-qa.json` and a
-  `--spec` sweep; compare against the builder receipt.
+  `--spec` sweep; compare against the builder receipt. **Env (added 2026-09-01):** the worktree has no
+  `apps/api/.env`; copy it from `C:Devconvexaappsapi.env` (untracked, never commit) before serving,
+  use `SESSION_CHAIN_ARCHIVE_BODY_ROOT=data/session_chain_archive_bodies` (a scratch root makes book
+  loads 500), serve with `cargo run -p api-rust -- serve` and `HTTP_BIND=127.0.0.1:<free port>`. The
+  differential half serves `origin/main` from `C:Devconvexa` (already checked out at `52d6cfd3`) on a
+  second port with the same env. Keep every serve window short: dev serve hits the live vendor within
+  seconds.
+- V5 — AC-14 by building the debug `--features postgres` binary and probing `/api/health`.
 - V4 — AC-12 after the conductor pushes the branch: `gh run list --branch spire/mainline-integration-2026-09`.
 
 ## Independence
