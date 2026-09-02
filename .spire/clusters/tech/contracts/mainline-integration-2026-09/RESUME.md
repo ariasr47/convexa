@@ -1,6 +1,6 @@
 # RESUME — mainline-integration-2026-09
 
-**Resume status:** ACTIVE — GATE Q interrupted 2026-09-02 by Claude 5-hour usage limit.
+**Resume status:** CONSUMED (as of 2026-09-02)
 
 Session `1a888eb4-f5b9-4fde-b84b-4039cea8b6ee` died ~06:28Z while a fresh `spire-tech-qa` lane
 was running. Independent conformance `conformance-receipt-qa.json` was written (34/34 PASS at
