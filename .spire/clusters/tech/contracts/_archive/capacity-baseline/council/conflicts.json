@@ -1,0 +1,285 @@
+{
+  "conflicts": [
+    {
+      "quote": "The load command drives ticker analysis and live stream at 8 + 16 concurrency for 60 seconds, stays within the locked p95/error/drop thresholds, exits 0, and writes a load receipt.",
+      "source": "pm",
+      "why": "This sentence, with soak doing \u201cthe same\u201d for 10 minutes, is a different closed numeric table than the one I locked. I locked load/ci as 20s HTTP + 5s SSE hold + refusal probe totaling <60s at 16 warm HTTP / 8 SSE, and soak as a 600s hold at 8 HTTP / 32 SSE. Both cannot be the v1 gate: 8+16 for \u226560s inverts my fan-out, lengthens merge CI past a sub-minute wall, and under-holds soak versus 32 connections. The check mechanism I will not yield is separate: p95 per named scenario, unexpected-error = 0, expected probe 503s excluded, request_count==0.",
+      "proposal": "Two independently invocable commands, load vs soak, with merge CI invoking load only and soak at 10 minutes local+GATE Q. Owner picks one concurrency pair and one load wall (PM 8+16 for \u226560s sustained, or load 16 HTTP/8 SSE totaling <60s and soak 8 HTTP/32 SSE). Do not ship both tables.",
+      "kind": "product",
+      "conflict_id": "6d444002fcda5337f634dbb4436a59067239307e3eb6c47bb1bffbfbf30d4445",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "On a successful load, the receipt\u2019s 95th-percentile latency of successful ticker-analysis responses is \u2264 2.0 seconds.",
+      "source": "pm",
+      "why": "A single 2.0s lock over all successful ticker-analysis responses cannot be both a non-vacuous warm gate and a feasible cold gate on the 14k-contract golden book. Mixing the coalesced miss with cache-hit GETs hides a GexFlight/cache regression in hit noise. I locked warm p95 \u2264 150ms and cold p95 \u2264 4000ms as separate sample classes; I have no checked-in bench for process_gex_profile on that book, so 150ms/4000ms are uncalibrated proposals, not measured CI facts. PM already named the 2.0s vacuity (50ms\u21921500ms still passes). Unexpected-error = 0 and unexpected stream-drop = 0 do not conflict.",
+      "proposal": "Collect p95 per named scenario (cold coalesced bundle, warm hold, SSE TTFB, SSE emit). Name any warmup window on the receipt; counted work must be non-zero. Apply the product ticker-analysis p95 lock only to the named warm hold, not to a blend with the cold wave. Owner chooses the warm lock (2.0s accepted-loose vs 150ms) and whether cold/SSE p95s also fail the command in v1. No silent auto-tune.",
+      "kind": "product",
+      "conflict_id": "45dd7edff075f3f96d6c4c7ae9fee286ce0b7d648591df4f41c78a5ee2101464",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`{p95_lock}`, `{error_lock}`, `{refusal_lock}`, soak duration, and the surface list are **PM/architect locks, not UX numbers**.",
+      "source": "ux",
+      "why": "Peer `{refusal_lock}` as a rate upper bound cannot stand on the same run as the over-capacity probe. That probe (PM AC-21/22 and my refusal scenario) must emit 503 + Retry-After 30. Counting those 503s against capacity-refusal rate \u2264 {refusal_lock} makes a correct probe FAIL; excluding them while still printing that inequality makes the standing block false. p95 and unexpected-error are upper-bound locks. Refusal is two predicates: zero unexpected 503s under ceiling, and every overflow attempt is a capacity refusal. I agree the five outcome classes stay unblended and that 503 is never filed as unexpected error or rate-limit refusal.",
+      "proposal": "Keep UX classes `ok` / `capacity refusal` / `rate-limit refusal` / `unexpected error` / `client timeout`. Print two refusal checks, not one rate: hold under ceiling has capacity-refusal count 0; probe overflow attempts are all `capacity refusal` 503 with 30s retry guidance (an all-admit probe fails). PASS copy must not read as if expected probe 503s sat under a rate cap.",
+      "kind": "technical",
+      "conflict_id": "b4adaac883604fc82c275002a4d1ecd598f10430dada79b8662b43506e843d7e",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "I assume PM will accept **two closed profiles** (`ci` merge gate, `soak` local-only) and will **not** require 500 real SSE connections or a 10-minute hold in GitHub Actions; if false, CI time, runner RAM, and flake risk become the feature.",
+      "source": "architect",
+      "why": "The no-500 and no-10-minute-merge-CI half stands. The profile name `ci` does not. PM and UX independently locked command labels load vs soak and a separate evidence class local vs ci. A local pre-push of the short job labeled `ci` would be CI evidence it is not.",
+      "proposal": "Commands `load` and `soak` (not aliases of each other or of serve). Evidence class `local` or `ci` is a second axis. Merge CI invokes load only. Soak is local + GATE Q and absent from the default backend CI job.",
+      "kind": "technical",
+      "conflict_id": "2254ef1650e279cbdc3fd66fc5420eca3f38a8c95cb0ae1090ffaca45533b5f7",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Hermetic p95 \u2264 2.0s, unexpected errors 0, unexpected stream drops 0.",
+      "source": "pm",
+      "why": "[PM-C01] I withdraw the single 2.0s ticker-analysis bucket. Mixing cold and warm into one percentile would hide a cache-miss regression inside hit noise, and a 14k-contract cold wave cannot honestly sit under 2.0s if the cold class is budgeted at 4000ms. Unexpected-error count 0 and unexpected stream-hold drops 0 still stand.",
+      "proposal": "Split latency locks by scenario (cold HTTP, warm HTTP, SSE time-to-first-byte, SSE emit after inject). Compute each p95 only from successful samples of that scenario. Do not auto-tune. Keep unexpected errors 0 and unexpected stream-hold drops 0 as command-fail locks.",
+      "kind": "technical",
+      "conflict_id": "c2a867d4e2f0624f93cf48c09c926fd7f64dbd1f9ade7af92416be639f7b6f10",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "A successful load receipt records at least 60 seconds of sustained work and records that 8 ticker-analysis clients and 16 live-stream clients were executed (non-zero on both surfaces).",
+      "source": "pm",
+      "why": "[PM-C02] I withdraw the 60-second floor and the 8+16 pair as sacred product numbers. Sixty seconds is a dead zone: too short to own leak detection (that is the 10-minute soak) and longer than needed to sample p95/error/refusal on both surfaces. Eight-and-sixteen was 'enough to be concurrent,' not a 500-client certification; the architect's tens-of-clients split still does that job.",
+      "proposal": "Keep two named commands, both surfaces actually executed, soak at 10 minutes local + GATE Q and not on merge CI, and a receipt that records the duration and concurrency actually used. Accept a CI-bounded load wall (20s HTTP + 5s SSE hold + refusal probe, total under 60s) and per-profile concurrency (CI 16 warm HTTP + 8 SSE; soak 8 HTTP + 32 SSE), provided a CI load receipt cannot be read as 32-connection or 10-minute evidence.",
+      "kind": "product",
+      "conflict_id": "ea8b01f5b4f37738f6c50181c484c85b0bbf6d27a8ab218a9221092ac60a3190",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "The 150 ms / 4000 ms figures are **regression gates for this mocked path**, not production SLOs (telemetry-slos is a later program item).",
+      "source": "architect",
+      "why": "[PM-C03] I agree they are not production SLOs. I do not agree they are already the locked v1 gates. There is no checked-in bench number; 150ms may flake and 4000ms may be vacuous. Replacing the withdrawn 2.0s blended bucket with uncalibrated figures would be the silent raise this slice forbids. Numeric thresholds are a product lock the brief asked the council to set.",
+      "proposal": "Owner locks four harness p95 gates (warm HTTP, cold HTTP, SSE time-to-first-byte, SSE emit after inject) as numbered thresholds, not SLOs. Treat 150 / 4000 / 200 / 500 ms as the candidates. Retune only as a numbered change after a real CI calibration, never inside the driver. Unexpected-error = 0, expected overflow refusals excluded, and zero outbound vendor I/O stay.",
+      "kind": "product",
+      "conflict_id": "16b124f28cce629912993b21ae0f63b509e9e8ef8fc9f41188113676fdaa5884",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Closed **profile** (`ci` | `soak`) and **scenario** inventory actually executed vs configured-not-run",
+      "source": "architect",
+      "why": "[PM-C04] Collapsing the command name and the evidence class into `ci` makes a local pre-push load read as CI evidence. A CI run is not a soak (agreed). A local load is not a CI measurement. UX already split Command {load|soak} from Evidence {local|ci}; that split is the honest vocabulary.",
+      "proposal": "Closed command vocabulary is load | soak. Closed evidence class is local | ci. Merge CI invokes load. A local load prints Command: load and Evidence: local. Soak remains a distinct command whose receipt cannot say Command: load, and a load receipt cannot say Command: soak.",
+      "kind": "technical",
+      "conflict_id": "c75ddfcdec20e408be25c6b4d9a0873306ab48f7297bdf48bc97034c64fed785",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Optional **byte-identity check** that a warm HTTP bundle's score triple equals the snapshot produced by `compute_analytics_from_vendor` on the same book is a **no-fork proof**, not a lab verdict.",
+      "source": "architect",
+      "why": "[PM-C05] Score / tier / fingerprint must not be capacity thresholds (agreed). Making the no-fork proof optional leaves additive-keeps-score-byte-identical as an unobservable hope. After this feature ships, same market inputs must still produce byte-identical score, tier, and fingerprint; that is ship-blocking isolation, not a lab verdict.",
+      "proposal": "Keep score / tier / fingerprint out of p95 and error locks. Require an observable identity proof after a successful load and a successful soak (same inputs, byte-identical score / tier / fingerprint). An empty scoring-engine diff is necessary and not sufficient by itself.",
+      "kind": "technical",
+      "conflict_id": "c40411fb0d6dff11a5cd9ab5172d94ced29ecc945adb7f7527439380b939fb84",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Run completed; vendor I/O vouched in-process; all three locks held; \u22651 request actually driven",
+      "source": "ux",
+      "why": "[PM-C06] If pass means one capacity-refusal rate upper bound on the same run as the overflow probe, expected 503s either fail a 0 lock or hide inside a non-zero lock. BRIEF's p95 / error / refusal are three concerns, not one blended refusal rate. Expected overflow refusals are refusals, not unexpected errors; a probe that records zero such refusals is vacuous, not a green low rate.",
+      "proposal": "Happy-path locks are per-scenario harness p95, unexpected-error = 0, and unexpected stream-hold drop = 0. The overflow probe is a separate check: every overflow attempt must be a capacity refusal with 30-second retry guidance, excluded from unexpected-error; zero such refusals fail as vacuous. Print `ok`, `capacity refusal`, `rate-limit refusal`, `unexpected error`, and `client timeout` as separate classes. Standing stays first; FAIL names which lock or which probe check tripped.",
+      "kind": "technical",
+      "conflict_id": "2a81d3401662ed3e75f4d6bff7dec4eda119e9171475b693a637b4328c189f98",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "With the public request budget enabled at a low cap, excess requests are refused as request-budget refusals (the limiter still exists; harness-local disable did not delete it).",
+      "source": "pm",
+      "why": "[PM-C07] I withdraw the required low-cap limiter probe. The brief already documents the load-test disable. Production 120 stays untouched; the harness process may turn the limiter off; a 429 while this process limiter is 0 is already a blocked/harness error. That is a stronger anti-deletion check than adding a fourth scenario the closed set does not need.",
+      "proposal": "Drop the required low-cap limiter probe from this slice. Keep production public request budget 120 unchanged; harness-local 0 framed as this process only; a 429 while the process limiter is 0 is blocked, not a pass; subscriber-ceiling vs session-ceiling vs rate-limit refusal remain distinct class names on the receipt (rate-limit count 0 when limiter off, never a blank empty).",
+      "kind": "product",
+      "conflict_id": "58d5355addd3c915e11f6c147a9abfaa7144737e21c74a8e7233493e220f1d82",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "I assume PM will accept **two closed profiles** (`ci` merge gate, `soak` local-only) and will **not** require 500 real SSE connections or a 10-minute hold in GitHub Actions; if false, CI time, runner RAM, and flake risk become the feature.",
+      "source": "architect",
+      "why": "The standing block prints Command: load|soak and Evidence: local|ci as different axes. A closed profile named ci is not a name that reads as load, and it collides with the evidence class, so a local run of the merge-gate command cannot be labeled honestly. Soak local-only with no 10-minute GitHub hold also collides with PM\u2019s GATE Q soak: the receipt cannot both print [NOT RUN] soak on every hosted job and carry a hosted soak receipt.",
+      "proposal": "Printed Command stays load|soak. Printed Evidence stays local|ci, plus a hosted-soak evidence class only if the human requires GATE Q soak. Merge CI still invokes load only. Do not use ci as the operator-facing command name.",
+      "kind": "product",
+      "conflict_id": "1deb45ccba8c0634ab387a2877b5ef509e126c500e5ba5079dffb80d2782c9b4",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A successful load receipt records at least 60 seconds of sustained work and records that 8 ticker-analysis clients and 16 live-stream clients were executed (non-zero on both surfaces).",
+      "source": "pm",
+      "why": "Architect\u2019s ci profile is 20s load + 5s SSE hold + refusal probe totaling under 60s, with 16 warm HTTP and 8 SSE (soak: 8 HTTP + 32 SSE). Incomplete copy is elapsed < locked span \u2192 INCOMPLETE, never PASS. Printing 60 seconds and 8+16 as the successful load identity on a ~25s 16+8 run is a duration/concurrency claim the run does not support; using PM\u2019s 60s lock on the architect driver marks a designed-complete ci run INCOMPLETE.",
+      "proposal": "One load identity printed on the receipt (duration, analysis clients, stream clients) that matches the driver. The human picks PM\u2019s 60s/8+16 or the architect ci budget; do not print one and run the other. Soak 10 minutes may stand (architect 600s) if stream concurrency is unified the same way.",
+      "kind": "product",
+      "conflict_id": "c0cdf8904a48880540d09e1a01702eb7d93b0ca0b6b21145c2a1d680576df8e7",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "p95 is computed only over **successful** ticker-analysis responses.",
+      "source": "pm",
+      "why": "That sentence is one sample class. Architect forbids mixing cold and warm into one percentile. A single receipt ticker-analysis p95 that mixes a 14k-contract first-miss with cache-hit warms is not the latency the label names \u2014 this lane\u2019s defining failure mode. UX-13 also requires a printed basis per figure; one unlabeled blend has no honest basis.",
+      "proposal": "Print per-scenario harness p95 (cold coalesced HTTP, warm cache-hit HTTP, and each SSE basis the architect names), each in ms with a basis. Do not emit one blended ticker-analysis p95. Warmup, if any, is named \u2014 not silently dropped and not mixed.",
+      "kind": "technical",
+      "conflict_id": "5f58b486c32704fe4a91b1e413f9436029f29c560aafdeee2be7a2aaf840743d",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A **receipt** on every terminal run (pass or fail) naming profile, duration, concurrency, ceilings in force, observed p95, unexpected-error count, refusal count, mock/not-production standing, and pass/fail against the locked thresholds.",
+      "source": "pm",
+      "why": "Vacuous, blocked, incomplete, and start-error runs have no honest observed p95 or executed concurrency. Emitting that measurement block is a quoteable we-measured artifact. Architect fails empty corpus before a passing receipt; UX-7 writes no quoteable measurement receipt for 0 requests.",
+      "proposal": "Pass and threshold-fail write the full measurement receipt, standing first. Vacuous, blocked, incomplete, and start-error write a short non-measurement record (standing + verdict + No pass recorded) with no observed-p95 table.",
+      "kind": "technical",
+      "conflict_id": "22e1a7fab544f5771f0e94618e95b6c4be6a8d4c187f5b4ebf52ccc0d0030e13",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**`review` owns intentional naming/surface:** command discoverability (AC-1/2) and the no-trader-UI boundary (AC-33).",
+      "source": "pm",
+      "why": "A new unlinked route or dashboard copy-table string will not show up on a CLI receipt review. That is negative space. Risk-based verify marks silent UI/copy insertion as test, not review. AC-1/2 names on the runner are visible and can stay review.",
+      "proposal": "AC-1 and AC-2 remain review. NO_UI_CHANGE / no trader route / no new dashboard strings (PM AC-33, UX-1, UX-20) are test (empty-diff or copy-table scan). Exact standing-block cadence stays review (UX-5).",
+      "kind": "technical",
+      "conflict_id": "4a91fffdfbe3d0985049849ea52c9e669def154d02c447fc951445b39e101afd",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Finished receipts count `ok`, `capacity refusal`, `rate-limit refusal`, `unexpected error`, and `client timeout` as **separate** classes; 503 is never filed as `unexpected error` or `rate-limit refusal`",
+      "source": "ux",
+      "why": "One capacity-refusal bucket for every LiveCapacity 503 hides subscriber-ceiling vs session-ceiling. PM requires those two plus request-budget to be textually distinct. Unexpected stream-hold drops also have no class here, so AC-14\u2019s stream-hold lock cannot be named on [FAIL].",
+      "proposal": "Receipt classes: ok; subscriber-ceiling refusal; session-ceiling refusal; rate-limit refusal; unexpected error; unexpected stream drop (or a named stream-hold class); client timeout. 503 still never files as unexpected error or 429. Trader 503/429 bodies stay byte-unchanged.",
+      "kind": "product",
+      "conflict_id": "c11c1cedcfed37024ed34e72d1144675dac45c8a210db7d0f8e28dc91b2bb9b6",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "**PM locks numeric harness thresholds (p95, unexpected-error rate, capacity-refusal rate) and soak duration/N** as named constants the receipt can print; PM does **not** call them SLOs and does **not** treat a pass as authorization to raise production ceilings.",
+      "source": "ux",
+      "why": "PM did not lock a capacity-refusal rate. Expected probe 503s are excluded from the error budget; the third named fail is unexpected stream-hold drops (AC-14), and refusal is probe correctness (AC-21\u201323). A standing line capacity-refusal rate \u2264 lock would make a correct 503 probe look like a crossed lock, or would force hiding 503s \u2014 both are dishonest copy. The no-SLO / no-authorization half of this sentence still stands.",
+      "proposal": "Standing block prints per-scenario harness p95 vs locks, unexpected-error count, a named stream-hold/drop lock, and capacity-refusal probe outcome (expected 503 + Retry-After 30, subscriber vs session distinct, excluded from unexpected errors). Do not print expected 503s as a rate the run stayed under.",
+      "kind": "product",
+      "conflict_id": "d7cd119700c42519fc45099cef9a8e8d56396d17ff38e2fb4b5a9e41344281ee",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: Is load\u2019s ship-blocking wall at least 60 seconds of sustained work (AC-5), or may a named scenario sequence (cold, warm, SSE hold, refusal probe) finish under 60s if both surfaces actually ran?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: Confirm concurrency is 8 ticker-analysis + 16 live-stream for both load and soak, not load 16 HTTP/8 SSE and soak 8 HTTP/32 SSE."
+    },
+    {
+      "from": "architect",
+      "ask": "PM: Is \u2264 2.0s the sole ticker-analysis p95 lock, or do additional per-scenario locks (cold coalesced, SSE TTFB, SSE emit) fail the command in v1?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: Is the prices live-stream required in the driven set, or is per-ticker SSE enough for the live-stream surface?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: What exact standing and FAIL wording replaces `capacity-refusal rate \u2264 {refusal_lock}` so a PASS run can record expected probe 503s without reading as a breached rate cap?"
+    },
+    {
+      "from": "pm",
+      "ask": "[PM-A01] Architect: after a successful 10-minute soak, will the same harness process still serve one ticker-analysis request before teardown, so post-soak liveness is observable and not only a zero subscriber count after shutdown?"
+    },
+    {
+      "from": "pm",
+      "ask": "[PM-A02] Architect: will GATE Q invoke the soak command once as evidence even though merge CI does not?"
+    },
+    {
+      "from": "pm",
+      "ask": "[PM-A03] Architect: what printable latency basis will each scenario's harness p95 carry (cold HTTP vs warm HTTP vs SSE time-to-first-byte vs emit after inject) so the receipt can name the clock without inventing it?"
+    },
+    {
+      "from": "pm",
+      "ask": "[PM-A04] Architect: when the fixture arm is not engaged, does ordinary ticker analysis stay behavior-identical for traders, including score / tier / fingerprint?"
+    },
+    {
+      "from": "pm",
+      "ask": "[PM-A05] Architect: does the session-overflow probe keep many live clients on one ticker admitted under the subscriber ceiling as a positive control, distinct from refusing a new ticker past the session ceiling?"
+    },
+    {
+      "from": "pm",
+      "ask": "[PM-A06] UX: can the standing block print one harness-p95 line per executed scenario (basis, observed, lock) instead of a single p95_lock, and still keep standing first on every finished run including FAIL / BLOCKED / INCOMPLETE?"
+    },
+    {
+      "from": "pm",
+      "ask": "[PM-A07] UX: if the harness gives up waiting, is that a non-zero threshold or unexpected-error failure (distinct `client timeout` class on the receipt) rather than a PASS with timeouts parked off the error lock?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: what exact printable Surfaces list was driven this run (ticker-analysis HTTP, per-ticker SSE, and prices SSE or not)? I will print that list and never the API."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: what exact basis string is printed on each harness p95 line (bundle GET wall, SSE time-to-first-byte, SSE emit after inject, others)?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM and architect: which numeric lock table does the standing block print beside observed values \u2014 PM\u2019s 2.0s ticker-analysis p95 / 0 unexpected errors / 0 stream-hold drops, or architect\u2019s per-scenario 150ms warm / 4000ms cold / 200ms TTFB / 500ms emit?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: does the standing block go on stdout, stderr, the receipt file, or all three? I required stdout + file; you named stderr."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: may verdict tokens stay [FAIL]/[BLOCKED]/[INCOMPLETE]/[ERROR] if threshold vs configuration vs infrastructure remain distinguishable as words, or must those three English family names appear on the verdict line?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: is the public-limiter 429 probe a printed scenario on the load/soak receipt, or only a nested isolation test? I need to know whether rate-limit refusal is a counted class or not-attempted on the default-profile receipt."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: after a successful soak, does the receipt print a follow-up ticker-analysis liveness line (PM AC-11), or is that exit-code-only?"
+    }
+  ],
+  "agree_count": {
+    "architect": 11,
+    "pm": 16,
+    "ux": 11
+  }
+}

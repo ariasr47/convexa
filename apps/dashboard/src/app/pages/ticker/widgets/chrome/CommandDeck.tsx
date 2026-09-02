@@ -22,6 +22,7 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useEffect, useRef, useState } from 'react';
+import type { SessionTapeOccupancy } from '../../sessionTapeStanding';
 import { QuickSymbols } from './QuickSymbols';
 import { TintChip as StatusChip, TickerHeader, connectionChip } from './TickerHeader';
 import { TickerToolbar } from './TickerToolbar';
@@ -34,8 +35,12 @@ interface CommandDeckProps {
   m: MarketState;
   sig: Signals | undefined;
   live: LiveUpdate | null;
+  /** Genuine paid-live (fills / pulses). */
   isLive: boolean;
+  /** Session-tape headline/tape numbers may follow mid. */
+  displayActive?: boolean;
   streamOffline: boolean;
+  lastSessionPhase?: SessionTapeOccupancy['phase'] | null;
   selected: string[] | null;
   onOpenTrade: () => void;
   /** The durable positions store is faulted — refuses this CTA (AC-69). */
@@ -73,19 +78,24 @@ function StickyCondensed({
   m,
   live,
   isLive,
+  displayActive,
   streamOffline,
+  lastSessionPhase,
   selected,
   reduced,
 }: {
   m: MarketState;
   live: LiveUpdate | null;
   isLive: boolean;
+  displayActive: boolean;
   streamOffline: boolean;
+  lastSessionPhase: SessionTapeOccupancy['phase'] | null;
   selected: string[] | null;
   reduced: boolean;
 }) {
-  const conn = connectionChip(live, streamOffline, reduced);
-  const price = (isLive && live ? live.mid : m.price)?.toFixed(2);
+  const conn = connectionChip(live, streamOffline, reduced, m.ticker, lastSessionPhase);
+  const numbersActive = displayActive || isLive;
+  const price = (numbersActive && live ? live.mid : m.price)?.toFixed(2);
   const expLabel =
     selected === null
       ? 'All expirations'
@@ -131,6 +141,7 @@ function StickyCondensed({
           tip={conn.tip}
           dot={conn.dot}
           pulse={conn.pulse}
+          warnIcon={conn.warnIcon}
         />
       )}
       <Typography
@@ -154,7 +165,9 @@ export function CommandDeck(props: CommandDeckProps) {
     sig,
     live,
     isLive,
+    displayActive = false,
     streamOffline,
+    lastSessionPhase = null,
     selected,
     onOpenTrade,
     storeFaulted,
@@ -215,7 +228,9 @@ export function CommandDeck(props: CommandDeckProps) {
             m={m}
             live={live}
             isLive={isLive}
+            displayActive={displayActive}
             streamOffline={streamOffline}
+            lastSessionPhase={lastSessionPhase}
             selected={selected}
             reduced={reduced}
           />
@@ -248,7 +263,9 @@ export function CommandDeck(props: CommandDeckProps) {
             sig={sig}
             live={live}
             isLive={isLive}
+            displayActive={displayActive}
             streamOffline={streamOffline}
+            lastSessionPhase={lastSessionPhase}
             selected={selected}
             onOpenTrade={onOpenTrade}
             storeFaulted={storeFaulted}

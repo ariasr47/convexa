@@ -36,7 +36,9 @@ quant-engine = { workspace = true }
 rand = "0.8"
 redis = { version = "0.27", features = ["tokio-comp", "connection-manager"] }
 regex = "1.13.1"
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
+flate2 = "1"
+csv = "1"
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["preserve_order"] }
 sha2 = "0.11.0"

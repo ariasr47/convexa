@@ -19,6 +19,7 @@
  *    write against durable status (unexpected current status ⇒ no-op — idempotent, AC-18).
  */
 import { limitWouldFill } from '@/features/trading/positions/entry';
+import { genuineIsLive } from '@/pages/ticker/sessionTapeStanding';
 import type { LiveUpdate } from '@convexa/api';
 import type { OrderFillBasis, SimOrder, Trigger } from './types';
 
@@ -36,17 +37,17 @@ export interface EngineTick {
   now: number;
 }
 
-/** Build the trigger-relevant slice of a live payload. Structurally drops `last_trade` (and every
- *  other field) — the engine can never see it (§5 canon). */
+/** Trigger slice of a live payload. Accepts generated LiveUpdate including utoipa
+ *  `session_tape?: null | Body` (null = absent). Occupancy forces isLive false. */
 export function tickFromLive(
-  live: Pick<LiveUpdate, 'mid' | 'live'> | null,
+  live: LiveUpdate | null,
   streamOffline: boolean,
   optionMark: number | null,
   now: number = Date.now(),
 ): EngineTick {
   return {
     mid: live?.mid ?? null,
-    isLive: (live?.live ?? false) && !streamOffline,
+    isLive: genuineIsLive(live, streamOffline),
     streamOffline,
     optionMark,
     now,

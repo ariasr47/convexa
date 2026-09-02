@@ -11,6 +11,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { isOperatorSessionArchiveSource } from '../testing/operatorSessionArchiveAllowlist';
 
 const DASHBOARD_SOURCES = import.meta.glob(
   ['/src/app/**/*.{ts,tsx}', '!**/*.spec.{ts,tsx}', '!**/*.test.{ts,tsx}'],
@@ -166,10 +167,17 @@ describe('F2 · no storage / session-archive chrome on trader sources (AC-15, AC
   it('dashboard production sources carry none of the forbidden needles', () => {
     const offenders: string[] = [];
     for (const [path, src] of Object.entries(DASHBOARD_SOURCES)) {
+      if (isOperatorSessionArchiveSource(path)) continue;
       const hits = hitsIn(src);
       if (hits.length) offenders.push(`${path} → ${hits.join(', ')}`);
     }
     expect(offenders).toEqual([]);
+  });
+
+  it('allowlist skip is not vacuous — trader TopNav is still scanned', () => {
+    const navKey = Object.keys(DASHBOARD_SOURCES).find((k) => k.endsWith('/shell/TopNav.tsx'));
+    expect(navKey).toBeTruthy();
+    expect(isOperatorSessionArchiveSource(navKey as string)).toBe(false);
   });
 
   it('does not add trader pages for object-store / session-archive browse', () => {

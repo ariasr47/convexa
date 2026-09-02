@@ -80,6 +80,7 @@ impl PgChainSnapshotStore {
         let source = match wire.source {
             MarketDataSourceKind::LiveMassive => "live_massive",
             MarketDataSourceKind::Fixture => "fixture",
+            MarketDataSourceKind::SessionTape => "session_tape",
         };
         sqlx::query(
             r#"INSERT INTO chain_snapshots (symbol, as_of, as_of_ns, source, body)
@@ -118,6 +119,7 @@ impl PgChainSnapshotStore {
             let source_s: String = r.try_get("source").unwrap_or_default();
             let source = match source_s.as_str() {
                 "live_massive" => MarketDataSourceKind::LiveMassive,
+                "session_tape" => MarketDataSourceKind::SessionTape,
                 _ => MarketDataSourceKind::Fixture,
             };
             out.push(SnapshotMeta {

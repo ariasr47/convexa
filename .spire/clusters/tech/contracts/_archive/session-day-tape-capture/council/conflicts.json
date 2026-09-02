@@ -1,0 +1,305 @@
+{
+  "conflicts": [
+    {
+      "quote": "**Chosen: all in-window trades + 1 s last quote.**",
+      "source": "architect",
+      "why": "I cannot name a mechanism that makes unsampled stock quotes for three names unstorable. Tokio broadcast drops only a lagged sidecar receiver; the recv loop never awaits disk (bounded try_send to a writer task), so SSE cursors stay independent. Writer overflow is a first-class Path-A gap record, not a keep-set change. Stock ev=Q on the existing stocks WS is the feed we already pay for, not OPRA quote files. One-second last-quote was a cost hedge, not a feasibility wall. PM locked the unsampled keep-set unless architecture proved cannot; I did not.",
+      "proposal": "Path-A appends every decoded StreamKind::Trade and every decoded StreamKind::Quote already delivered on StockStreamHub for the locked trio. Recv loop still never awaits I/O; Lagged(n), channel-full, hub Closed/reconnect, and persist fault become gap records. Do not persist LivePrice (it already collapsed trade vs mid).",
+      "kind": "technical",
+      "conflict_id": "daf849244904c57d5b0d1bb1aa0a95af1be2b52ee9f380d466a11c6fe9358ee2",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Path-A and Path-B append only while `MarketPhase::classify(now) == Rth` (09:30\u201316:00 ET, weekdays).",
+      "source": "architect",
+      "why": "MarketPhase has no premarket arm: weekday 04:00\u201309:30 is ClosedPre and after 16:00 is AfterClose. Filtering Path-A on Rth throws Massive ticks the stocks path already received. The same predicate starves PM's inclusive 16:00 Path-B mark because t<=16:00:00 is a millisecond. The warmer interval loop has no phase gate, so an already-paid fetch in [16:00, 16:05) can fill that mark without new REST.",
+      "proposal": "Path-A appends already-received stocks-path events for locked names on eligible ET weekdays, including ClosedPre/AfterClose events that arrive; weekend stays ineligible. Path-B persists at most one already-paid snapshot per clock-aligned ET mark in 09:30, 09:35, \u2026, 16:00; the 16:00 mark may be filled by the first already-paid fetch with ET time in [16:00, 16:05). Completeness is claimed only against RTH 09:30\u201316:00.",
+      "kind": "technical",
+      "conflict_id": "10068494c0c42e4a1fcf0300146dcbe7cc8a13bd87558d93f265a025eeac29ac",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Persist interval **300 s** wall-clock per symbol, **independent of** `WARM_INTERVAL_SECS`.",
+      "source": "architect",
+      "why": "Elapsed 300s from first persist is not PM's clock-aligned grid. A mid-session start at 11:07 would write 11:07, 11:12, \u2026 and could not be audited as 09:30/09:35/\u2026/16:00. Independence from WARM_INTERVAL_SECS still stands: the ~25s warmer firehose is not the Path-B series.",
+      "proposal": "Keep the persist hook only inside refresh_analytics after a successful compute (no new REST, still no spawn_capture). On each already-paid success for a locked name, assign floor(now_et, 5min); persist at most one snapshot per mark in 09:30\u201316:00 inclusive; a missing mark is an honest Path-B gap. Watchlist, mark, and interval predicates run before keeping vendor.",
+      "kind": "technical",
+      "conflict_id": "cc9110527a6073f28ef58ec787035bdf0bb501381071bbc9e8dab082bd9327a4",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "UX will carry **distinct literals** through the UI for `not_due` / `not_storing` / `missing` / `empty_attempted` / `gap` / `unreadable` / `recording` / `closed`, independently for price tape vs structure snapshots, and will not render a tape occupant as a \u201cpresent live session book.\u201d",
+      "source": "architect",
+      "why": "UX bans coverage cells present/missing on this vehicle; my missing collides. not_due collapses ineligible-weekend, not-expected-pre-store, and before-RTH. closed collapses PM's partial vs complete RTH (AC-19, AC-34). One gap token conflates Path-A hub/writer lag with a missing Path-B 5-minute mark. Copy is UX-owned; I should not have pushed coverage-colliding tokens as literals.",
+      "proposal": "Type-level occupancy, independently per path, includes at least: ineligible_weekend, not_expected_pre_store, not_storing, no_identity, empty_while_storing, path_a_hub_gap, path_b_mark_gap, unreadable, partial, complete_rth. complete_rth means capture-on covered 09:30\u201316:00 ET (Path-B marks are snapshot or honest gap; Path-A may be empty). None convert to MarketDataSourceKind::LiveMassive or coverage present. UX maps these to closed literals; I do not author the strings.",
+      "kind": "technical",
+      "conflict_id": "17adc3193c8d143e32a481f06345e41d7e5aaef9a6746e8d931ef5133bf23350",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Hard cap **8** names at config parse; production refuse if empty or over cap.",
+      "source": "architect",
+      "why": "PM locked a non-editable trio this slice. Cap-8 is an operator-editable watchlist (Out) and is the hub max_sessions coupling I flagged. Default three names are already a subset of DEFAULT_LIQUID; v1 must not grow hub membership.",
+      "proposal": "Sibling closed set (not an alias of ENSURE_SYMBOLS, WARM_SYMBOLS, or universe) whose v1 members are exactly SPY, QQQ, IWM. Ensure-set edits still must not resize the tape. Expansion remains Future plus owner.",
+      "kind": "product",
+      "conflict_id": "34c34be2ed9a717b9d810d86f41567cebd16d688c1cff6b7c867a8488b1aaad9",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "PM will accept production **fail-closed** on a dedicated tape body root when tape is enabled (default on), including conflict with ring and session-archive roots.",
+      "source": "architect",
+      "why": "Default-on plus construct-refuse on a missing root takes down serve, which is a desk outage. That contradicts best-effort-isolated-or-null and PM AC-23 (store not configured, trader desk remains available). production-fails-closed still applies to an explicitly enabled store and to root identity conflicts (tape must not share the session-archive or ring body root).",
+      "proposal": "Default unset/disabled yields not_storing and the listener still binds. Explicit enable refuses construct if the dedicated tape root is missing, unwritable, or conflicts with ring / session-archive index / session-archive body root. No nested default path. Runtime write failure still swallows and leaves bundle, scan, SSE, and ensure intact.",
+      "kind": "product",
+      "conflict_id": "53b87f1e6c36dc26cff82a944dc8cc11f0d4e2c5c5f78368c7288e1392bd56b8",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "`78% of the day captured` as a headline is a renamed count with a completeness connotation the data does not carry unless PM locks a session window **and** both paths report against it (they have not, in this BRIEF).",
+      "source": "ux",
+      "why": "PM R1 locked RTH 09:30\u201316:00 as the completeness clock and requires partial \u2260 complete RTH as distinguishable operator outcomes (AC-19, AC-34). Occupancy must carry capture-on coverage so those classes are observable. Percent headlines and verified-complete copy stay banned. The claim that no session window was locked is stale given R1-pm.",
+      "proposal": "Derive partial vs complete_rth from recorded capture-on interval versus 09:30\u201316:00 ET, independent of tick counts. List/load still prints Path-A kind counts and Path-B snapshot counts. UX adds closed literals for those two classes; never a percent and never coverage present/missing.",
+      "kind": "technical",
+      "conflict_id": "446e10df9ce747f4c951c8888533ac9b92e970925e8aad209faea71c42d0fb0e",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "I am **not** sampling Path-A to dodge volume; if the already-received stocks stream cannot be appended for three names, that is an R2 architecture conflict, not a quiet \u201ctrades only\u201d narrowing.",
+      "source": "pm",
+      "why": "Architect showed unsampled quotes on these names can run at hundreds to thousands per second \u2014 enough to put the live tick path at risk and to approach quote-file volume this BRIEF culled. Trades-only would drop the mid the desk anchors on. I cannot defend an unsampled-all-quotes lock, and I will not fall back to trades-only.",
+      "proposal": "Path-A keep-set this slice is every in-window last-trade print plus the last quote per 1-second bucket (vendor clock when present, else an explicit receive-clock \u2014 quality not collapsed). Both kinds remain on the tape and in operator counts. Trades-only stays rejected. Denser quotes are Future.",
+      "kind": "technical",
+      "conflict_id": "f99f570811d7a8d0b983ec9b13bba4b68e418c1f4098d1b72ecab44945aa33fd",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Extended-hours stock events that already arrive **are kept** (do not throw paid ticks) but are **not required** to call a day complete.",
+      "source": "pm",
+      "why": "The BRIEF job is an open-to-close day. Architect appends only during regular hours; premarket and afterhours are out of window, not empty. Keeping extended-hours ticks is a volume and occupancy expansion I added beyond open-to-close.",
+      "proposal": "Capture window is regular hours 09:30\u201316:00 America/New_York on ET weekdays. Out-of-window ticks are not stored and are not empty-while-storing. Premarket/afterhours tape stays Future.",
+      "kind": "technical",
+      "conflict_id": "f4beceacb24517e096f34206ac052865c5f87eb0647d538ca38932e42ec260f9",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "That identity may be claimed **complete RTH** only if Path-A was storing across that window **and** every 5-minute mark either has a snapshot or is an honest **gap** (not silently filled).",
+      "source": "pm",
+      "why": "A through-window day with Path-B all gaps, or Path-A zero prints, would still pass this test and be labeled complete. That is a fabricated open-to-close success. UX correctly forbids a completeness headline and forbids treating a quiet Path-A day as a failed capture.",
+      "proposal": "Drop operator-facing \u201ccomplete RTH\u201d as a success class. Keep partial (capture started after 09:30 or stopped before 16:00) distinct from a through-window day. Empty-while-storing, Path-B gaps, and kind/snapshot counts remain the honesty surface. No percent completeness.",
+      "kind": "technical",
+      "conflict_id": "2551a5c7bacc3cd30aeb32d20726acee9b060c5321401128b8567d77329739bc",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Persist interval **300 s** wall-clock per symbol, **independent of** `WARM_INTERVAL_SECS`.",
+      "source": "architect",
+      "why": "Elapsed 300 s from first in-window persist is not the same series as clock-aligned 09:30, 09:35, \u2026, 16:00. Marks would drift with process start and warmer jitter, so \u201cat most one per 5-minute mark\u201d and \u201cthis mark is a gap\u201d are not observable, and Tuesday 09:35 cannot be compared to Wednesday 09:35.",
+      "proposal": "Keep Path-B on the already-paid warm/refresh persist hook, first in-window persist immediate, no extra vendor fetch. At most one snapshot per America/New_York 5-minute mark from 09:30 through 16:00 inclusive. Wall-clock 300 s is not a substitute for those marks.",
+      "kind": "technical",
+      "conflict_id": "2b74bb893169eac2d2bd508d3f8727b8aade005424a6d910c0d748653cb9a584",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "At least: `not_due` (weekend / future / before RTH), `not_storing` (store disabled), `missing` (due weekday, no identity), `empty_attempted` (window open, zero records), `gap` (lag/disconnect/drop recorded), `unreadable` (index without loadable body), `recording` (RTH open), `closed` (post-16:00 ET with whatever was written).",
+      "source": "architect",
+      "why": "`missing` and `not_due` on the tape vehicle are coverage words (`missing`, `not yet due`). Printing them as tape occupancy lets a tape miss read as a session-archive hole, which present-is-live-paid-only and UX\u2019s hard ban forbid. A single `closed` after 16:00 also hides partial vs empty-while-storing vs gap, which must stay separate outcomes.",
+      "proposal": "Keep Path-A and Path-B occupancy independent in the store. Operator literals follow UX\u2019s closed tape set, plus a tape-specific ineligible/not-due word that is not coverage `not yet due`, plus a gap literal that is not `no path-a ticks`. Never print `missing` or `present` on tape. After 16:00 the operator can still tell partial from empty from gapped.",
+      "kind": "technical",
+      "conflict_id": "948460c9b238ccf9240b699bf73d652840b70fbdceb5c053005c9c8b75b6566c",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "when tape is enabled, production `construct` refuses if the tape body root is missing, unwritable, or conflicts with ring / session-archive index / session-archive body root (extend `body_root_conflicts`).",
+      "source": "architect",
+      "why": "If tape is enabled by default, refusing to start the process because a research tape root is missing or unwritable takes the trader desk down for insurance. Desk-wins isolation requires that case to be not-storing while bundle, scan, live stream, and session-ensure still serve. Colliding with session-archive or ring roots is a different fault: that would overwrite those stores.",
+      "proposal": "Missing or unwritable dedicated tape root \u2192 desk still serves, operator outcome is not-storing, no false stored success. Tape root that would collide with session-archive or ring roots may refuse to start. Default-on tape only with a valid dedicated root; otherwise honest not-storing.",
+      "kind": "product",
+      "conflict_id": "dd04f6735701c4e71afbb01821b00c6b5d2d2755f491348a06be9048237005cf",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Persist the **last quote per symbol per 1-second bucket** keyed on vendor `ts_ns` when `ts_ns > 0`, else receive wall-clock with an explicit **receive-clock** basis (timestamp quality is not collapsed).",
+      "source": "architect",
+      "why": "Operator Path-A copy cannot print `{n_quote} quotes` or \u201cthe quote/mid updates that already arrived\u201d for a last-per-1s sample \u2014 that renames a downsample as the stocks-path quote stream (PM AC-3 / S1). A vouched `quote` count would still be a count of stored samples, not of every quote the live desk received.",
+      "proposal": "R2 picks one keep-set. If every already-received stocks-path quote is stored, Path-A print stays kind-split `trade`/`quote` counts. If last quote per 1-second bucket is stored, operator copy must say that and must not claim every arrived quote/mid.",
+      "kind": "product",
+      "conflict_id": "60d2ff541074ed7b70270b60e6a95f4063a4d638fce77947dcdd3a005d08710b",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Path-A and Path-B append only while `MarketPhase::classify(now) == Rth` (09:30\u201316:00 ET, weekdays).",
+      "source": "architect",
+      "why": "PM keeps extended-hours stock events that already arrive and claims completeness only against RTH. If Path-A drops premarket/afterhours, operator copy cannot say every last-trade/quote the live desk already received; dropped prints would read as if they never happened.",
+      "proposal": "Append Path-A for already-received extended-hours ticks as PM locked; complete-RTH / partial copy stays 09:30\u201316:00 ET only. If append stays RTH-only, the operator surface needs an out-of-window class \u2014 not `no path-a ticks`.",
+      "kind": "product",
+      "conflict_id": "e855c3b9f5934422420f8cae3b1cc38d8d164d927491561c1d9f1c262b18c68d",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Persist interval **300 s** wall-clock per symbol, **independent of** `WARM_INTERVAL_SECS`.",
+      "source": "architect",
+      "why": "Standing block and Path-B section print the locked interval. PM\u2019s operator-visible series is clock-aligned 09:30, 09:35, \u2026, 16:00. Elapsed 300 s from first in-window warmer success is a different series; printing clock-aligned 5-minute marks for an elapsed-from-first store is a renamed cadence.",
+      "proposal": "Persist Path-B on the ET clock-aligned 5-minute marks PM locked (at most one per mark, already-paid only). If elapsed-300s is the store, print that (first snapshot as-of, then 300 s) and do not print 09:30/09:35 marks as if they were stored.",
+      "kind": "product",
+      "conflict_id": "0d046c3224a528fdca22ff18d9269b013ba93b4dca465d544a00ae8ef56c5e74",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "UX will carry **distinct literals** through the UI for `not_due` / `not_storing` / `missing` / `empty_attempted` / `gap` / `unreadable` / `recording` / `closed`, independently for price tape vs structure snapshots, and will not render a tape occupant as a \u201cpresent live session book.\u201d",
+      "source": "architect",
+      "why": "Coverage already uses `missing`/`present` for live-paid session books. Printing `missing` as a tape cell is this feature\u2019s defining integrity failure. Collapsing weekend, future, and before-RTH into `not_due` also violates `absent-is-not-none` against PM\u2019s ineligible-weekend vs not-expected-pre-store vs partial.",
+      "proposal": "Operator literals stay tape-specific: `no session day tape\u2026` / `no path-a ticks\u2026` / `no path-b snapshots\u2026` / `session day tape not storing` / `session day tape unreadable:` / `not in tape watchlist:` plus PM\u2019s ineligible-weekend, not-expected-pre-store, partial, complete RTH, Path-B gap, Path-B not-capturing, unauthorized. Never coverage `missing` or `present` on this vehicle. Internal enums may differ; list/load copy must not emit those coverage words.",
+      "kind": "technical",
+      "conflict_id": "677662fc45cae5ae4dcab60266632a7ec8b1ecc5c9d983cd14fbe302a2a9a832",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Wrapper: tape occupancy = `TapeCapture`; inner \u201chow we fetched\u201d may record live REST as a historical fact.",
+      "source": "architect",
+      "why": "Operator load will read whatever the human print shows. Inner `to_wire` / `serialize_capture` bytes stamped `LiveMassive` would label a tape occupant with the session-book provenance token, which copy hard-bans and `present-is-live-paid-only` forbids.",
+      "proposal": "Occupancy and operator print provenance is research tape / never `live_massive`. If an inner fetch fact is shown, it is already-paid REST as history \u2014 not `MarketDataSourceKind::LiveMassive` and not coverage `present`.",
+      "kind": "technical",
+      "conflict_id": "7da8e8369c6d39ead11394e8ed48583873c56d5e3fcd4d07bcdc69f7cdcea38d",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Hard cap **8** names at config parse; production refuse if empty or over cap.",
+      "source": "architect",
+      "why": "Standing block prints the locked watchlist this run used. PM AC-5: a name that is not SPY, QQQ, or IWM receives no tape. A cap-8 operator-expanded set would print extra names as in-watchlist while PM forbids an operator-editable set this slice.",
+      "proposal": "Locked-watchlist copy and `not in tape watchlist:` follow PM\u2019s closed trio SPY, QQQ, IWM this slice. Expansion stays Future/owner.",
+      "kind": "product",
+      "conflict_id": "1dea254527814f9b62a0bff798bc1dc07d163a8c8c40b0feaf618835690f416e",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`78% of the day captured` as a headline is a renamed count with a completeness connotation the data does not carry unless PM locks a session window **and** both paths report against it (they have not, in this BRIEF).",
+      "source": "ux",
+      "why": "PM locked completeness against RTH 09:30\u201316:00 ET and distinguishable complete RTH vs partial (AC-19, AC-34). The \u201cthey have not\u201d clause is false. Percent headlines stay banned; named complete-RTH vs partial classes do not.",
+      "proposal": "Keep the ban on bare percent / \u201c78% of Tuesday\u201d. Add operator-visible complete RTH vs partial. Do not call Path-A-only or Path-B-only a complete day.",
+      "kind": "product",
+      "conflict_id": "3548cc1b1ac4b7c056e71359b84450eacd755ab151cd8946f831a11c4d689882",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "**PM** accepts the six tape absences (no-ticks / no-snapshots / no-identity / not-storing / unreadable / not-in-watchlist) plus foreign coverage-missing as product states required by `[absent-is-not-none]`, not as UX gold-plating \u2014 including that zero Path-A ticks is **not** a `[FAIL]` coverage hole.",
+      "source": "ux",
+      "why": "PM S4/AC-34 also requires distinguishable Path-B-gap, partial, ineligible-weekend, not-expected-pre-store, unauthorized, and complete RTH. Collapsing those into the six literals \u2014 or using `no path-b snapshots` for both fetch-off and a missing 5-minute mark \u2014 is the absence-collapse this lane was designing against.",
+      "proposal": "Keep the six literals as a subset. Extend the closed operator set with PM\u2019s extra classes: Path-B not-capturing \u2260 Path-B gap \u2260 Path-B empty-while-storing; weekend \u2260 not-expected \u2260 no-identity; partial \u2260 complete RTH. Zero Path-A ticks stays not a coverage `[FAIL]`.",
+      "kind": "product",
+      "conflict_id": "8c345e936c41c2ea4ce9b1a9409dcb5f1ea1c2f8ce76abce4f76132e78ba227e",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "**`review` owns** absence of trader UI (AC-27), no S3 ingest (AC-37), and non-absorption of lab UI / body-move / watchlist expansion (AC-38).",
+      "source": "pm",
+      "why": "Absence of a trader route/nav/screen is negative space that can silently regress. Risk-based verify marks that `test` (UX AC-U1/U31). Marking AC-27 `review` lets a helpful widget land without a rejecting GATE Q path.",
+      "proposal": "Verify-by for no trader-facing route, nav item, or screen is `test`. Leave `review` on AC-37 (no S3 ingest), AC-38 (no lab UI / body-move / watchlist expansion), standing-block prose, glossary, and SPEC \u00a74 `NO_UI_CHANGE`.",
+      "kind": "technical",
+      "conflict_id": "5380f8da4ad619b65438d35cd37a10c5f6865b5f28304c948c138c741a4a0bb7",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: Is production tape capture opt-in (unset = not-storing), or must a production process with a dedicated tape root start capturing the trio by default?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: May the Path-B 16:00 mark be the first already-paid warmer fetch with America/New_York time in [16:00, 16:05), or must that mark stay a gap unless as_of is exactly 16:00:00?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: What exact closed literals should list/load print for ineligible-weekend, not-expected-pre-store, partial, and complete-RTH, given coverage present/missing and percent completeness are banned?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: Should Path-A hub/writer gap records appear as a first-class list/load absence class, or only as the S2 skip/log line?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: can the same already-paid warm/refresh persist hook key at-most-one Path-B snapshot per ET 5-minute mark (09:30\u201316:00 inclusive), with first in-window persist still immediate for the current mark, or is elapsed 300 s wall-clock a hard constraint?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: is 16:00 ET inclusive in-window for the close Path-B snapshot, or does phase classification already treat 16:00 as afterhours?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: does v1 config refuse any watchlist other than the locked trio SPY, QQQ, IWM, so a cap-8 expansion cannot silently become the product and cannot occupy extra hub slots?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: what closed operator literals should the operator see for (a) a Path-A hub-lag / persist-drop gap, (b) a Path-B 5-minute mark with no snapshot while storing, (c) Path-B not attempted because the already-paid warm fetch is off \u2014 each distinct from `no path-a ticks`, `no path-b snapshots`, and `session day tape unreadable`?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: what closed operator literal is an ET Saturday/Sunday (architect `not_due`) so it is not coverage `not yet due`, not weekday `no session day tape`, and not `no path-a ticks`?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: if last-quote-per-1s is stored, does list/load vouch a Path-A `quote` count, and is the 1-second bucket basis (vendor `ts_ns` vs receive-clock) a field the operator print can name so copy does not say every quote that arrived?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: what per-path occupancy tokens will list/load return for empty_attempted, gap (hub lag vs persist skip vs missing 5-minute mark), not_attempted (tape \u2284 warm), recording, closed, and not_due \u2014 without using coverage `missing` or `present`?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: if R2 accepts last-quote-per-1s, what exact operator phrase replaces \u201cthe quote/mid updates that already arrived on that same stocks path\u201d?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: exact operator-visible words for complete RTH, partial, Path-B not-capturing, Path-B gap, and not-expected-pre-store, so those classes are not collapsed into `no path-a ticks` / `no path-b snapshots`."
+    }
+  ],
+  "agree_count": {
+    "architect": 12,
+    "pm": 16,
+    "ux": 7
+  }
+}

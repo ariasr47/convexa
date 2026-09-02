@@ -186,6 +186,12 @@ jobs:
       - name: Cargo test
         run: cargo test -p api-rust -p quant-engine --locked
 
+      - name: Capacity load harness
+        run: cargo run -p api-rust --locked --release -- capacity load
+        env:
+          CONVEXA_CAPACITY_CI_STEP: "1"
+          APP_ENV: dev
+
       - name: Free default-feature debug build space
         run: cargo clean
 

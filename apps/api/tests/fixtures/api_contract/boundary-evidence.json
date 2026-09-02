@@ -232,6 +232,234 @@
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
+        "$ref": "#/components/schemas/FlatFilesListBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/flat-files/{symbol}",
+      "security_mode": "operator-token",
+      "status": "200"
+    },
+    "boundary_evidence_013": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/FlatFilesErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/flat-files/{symbol}",
+      "security_mode": "operator-token",
+      "status": "400"
+    },
+    "boundary_evidence_014": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/FlatFilesErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/flat-files/{symbol}",
+      "security_mode": "operator-token",
+      "status": "401"
+    },
+    "boundary_evidence_015": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/FlatFilesErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/flat-files/{symbol}",
+      "security_mode": "operator-token",
+      "status": "500"
+    },
+    "boundary_evidence_016": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/FlatFilesLoadBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/flat-files/{symbol}/extract",
+      "security_mode": "operator-token",
+      "status": "200"
+    },
+    "boundary_evidence_017": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/FlatFilesErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/flat-files/{symbol}/extract",
+      "security_mode": "operator-token",
+      "status": "401"
+    },
+    "boundary_evidence_018": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/FlatFilesErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/flat-files/{symbol}/extract",
+      "security_mode": "operator-token",
+      "status": "422"
+    },
+    "boundary_evidence_019": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/FlatFilesErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/flat-files/{symbol}/extract",
+      "security_mode": "operator-token",
+      "status": "500"
+    },
+    "boundary_evidence_020": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/CoverageOkBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/session-archive/coverage",
+      "security_mode": "operator-token",
+      "status": "200"
+    },
+    "boundary_evidence_021": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/CoverageErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/session-archive/coverage",
+      "security_mode": "operator-token",
+      "status": "401"
+    },
+    "boundary_evidence_022": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/CoverageErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/session-archive/coverage",
+      "security_mode": "operator-token",
+      "status": "422"
+    },
+    "boundary_evidence_023": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/CoverageErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/session-archive/coverage",
+      "security_mode": "operator-token",
+      "status": "500"
+    },
+    "boundary_evidence_024": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
         "$ref": "#/components/schemas/SessionBooksListBody"
       },
       "body_valid": true,
@@ -247,7 +475,7 @@
       "security_mode": "operator-token",
       "status": "200"
     },
-    "boundary_evidence_013": {
+    "boundary_evidence_025": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -266,7 +494,7 @@
       "security_mode": "operator-token",
       "status": "400"
     },
-    "boundary_evidence_014": {
+    "boundary_evidence_026": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -285,7 +513,7 @@
       "security_mode": "operator-token",
       "status": "401"
     },
-    "boundary_evidence_015": {
+    "boundary_evidence_027": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -304,7 +532,7 @@
       "security_mode": "operator-token",
       "status": "500"
     },
-    "boundary_evidence_016": {
+    "boundary_evidence_028": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -323,7 +551,7 @@
       "security_mode": "operator-token",
       "status": "200"
     },
-    "boundary_evidence_017": {
+    "boundary_evidence_029": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -342,7 +570,7 @@
       "security_mode": "operator-token",
       "status": "401"
     },
-    "boundary_evidence_018": {
+    "boundary_evidence_030": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -361,7 +589,7 @@
       "security_mode": "operator-token",
       "status": "404"
     },
-    "boundary_evidence_019": {
+    "boundary_evidence_031": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -380,7 +608,7 @@
       "security_mode": "operator-token",
       "status": "422"
     },
-    "boundary_evidence_020": {
+    "boundary_evidence_032": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -399,7 +627,159 @@
       "security_mode": "operator-token",
       "status": "500"
     },
-    "boundary_evidence_021": {
+    "boundary_evidence_033": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/TapeListBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/session-day-tape/{symbol}",
+      "security_mode": "operator-token",
+      "status": "200"
+    },
+    "boundary_evidence_034": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/TapeErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/session-day-tape/{symbol}",
+      "security_mode": "operator-token",
+      "status": "400"
+    },
+    "boundary_evidence_035": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/TapeErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/session-day-tape/{symbol}",
+      "security_mode": "operator-token",
+      "status": "401"
+    },
+    "boundary_evidence_036": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/TapeErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/session-day-tape/{symbol}",
+      "security_mode": "operator-token",
+      "status": "500"
+    },
+    "boundary_evidence_037": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/TapeLoadBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/session-day-tape/{symbol}/day",
+      "security_mode": "operator-token",
+      "status": "200"
+    },
+    "boundary_evidence_038": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/TapeErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/session-day-tape/{symbol}/day",
+      "security_mode": "operator-token",
+      "status": "401"
+    },
+    "boundary_evidence_039": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/TapeErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/session-day-tape/{symbol}/day",
+      "security_mode": "operator-token",
+      "status": "422"
+    },
+    "boundary_evidence_040": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/TapeErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/_research/session-day-tape/{symbol}/day",
+      "security_mode": "operator-token",
+      "status": "500"
+    },
+    "boundary_evidence_041": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -418,7 +798,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_022": {
+    "boundary_evidence_042": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -437,7 +817,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_023": {
+    "boundary_evidence_043": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -456,7 +836,7 @@
       "security_mode": "session",
       "status": "422"
     },
-    "boundary_evidence_024": {
+    "boundary_evidence_044": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -475,7 +855,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_025": {
+    "boundary_evidence_045": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -494,7 +874,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_026": {
+    "boundary_evidence_046": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -513,7 +893,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_027": {
+    "boundary_evidence_047": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -532,7 +912,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_028": {
+    "boundary_evidence_048": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -551,7 +931,7 @@
       "security_mode": "session",
       "status": "422"
     },
-    "boundary_evidence_029": {
+    "boundary_evidence_049": {
       "body_category": "redirect",
       "body_meaning": "empty",
       "body_schema": null,
@@ -574,7 +954,7 @@
       "security_mode": "oauth-state",
       "status": "307"
     },
-    "boundary_evidence_030": {
+    "boundary_evidence_050": {
       "body_category": "redirect",
       "body_meaning": "empty",
       "body_schema": null,
@@ -595,7 +975,7 @@
       "security_mode": "oauth-state",
       "status": "307"
     },
-    "boundary_evidence_031": {
+    "boundary_evidence_051": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -614,7 +994,7 @@
       "security_mode": "oauth-state",
       "status": "409"
     },
-    "boundary_evidence_032": {
+    "boundary_evidence_052": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -633,7 +1013,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_033": {
+    "boundary_evidence_053": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -652,7 +1032,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_034": {
+    "boundary_evidence_054": {
       "body_category": "redirect",
       "body_meaning": "empty",
       "body_schema": null,
@@ -673,7 +1053,7 @@
       "security_mode": "public",
       "status": "307"
     },
-    "boundary_evidence_035": {
+    "boundary_evidence_055": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -692,7 +1072,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_036": {
+    "boundary_evidence_056": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -711,7 +1091,7 @@
       "security_mode": "session",
       "status": "409"
     },
-    "boundary_evidence_037": {
+    "boundary_evidence_057": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -734,7 +1114,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_038": {
+    "boundary_evidence_058": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -753,7 +1133,7 @@
       "security_mode": "public",
       "status": "401"
     },
-    "boundary_evidence_039": {
+    "boundary_evidence_059": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -772,7 +1152,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_040": {
+    "boundary_evidence_060": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -791,7 +1171,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_041": {
+    "boundary_evidence_061": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -814,7 +1194,7 @@
       "security_mode": "optional-session",
       "status": "200"
     },
-    "boundary_evidence_042": {
+    "boundary_evidence_062": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -833,7 +1213,7 @@
       "security_mode": "optional-session",
       "status": "200"
     },
-    "boundary_evidence_043": {
+    "boundary_evidence_063": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -852,7 +1232,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_044": {
+    "boundary_evidence_064": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -871,7 +1251,7 @@
       "security_mode": "session",
       "status": "401"
     },
-    "boundary_evidence_045": {
+    "boundary_evidence_065": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -890,7 +1270,7 @@
       "security_mode": "session",
       "status": "503"
     },
-    "boundary_evidence_046": {
+    "boundary_evidence_066": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -909,7 +1289,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_047": {
+    "boundary_evidence_067": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -928,7 +1308,7 @@
       "security_mode": "session",
       "status": "401"
     },
-    "boundary_evidence_048": {
+    "boundary_evidence_068": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -947,7 +1327,7 @@
       "security_mode": "session",
       "status": "422"
     },
-    "boundary_evidence_049": {
+    "boundary_evidence_069": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -966,7 +1346,7 @@
       "security_mode": "session",
       "status": "503"
     },
-    "boundary_evidence_050": {
+    "boundary_evidence_070": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -989,7 +1369,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_051": {
+    "boundary_evidence_071": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1008,7 +1388,7 @@
       "security_mode": "public",
       "status": "403"
     },
-    "boundary_evidence_052": {
+    "boundary_evidence_072": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1027,7 +1407,7 @@
       "security_mode": "public",
       "status": "409"
     },
-    "boundary_evidence_053": {
+    "boundary_evidence_073": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1046,7 +1426,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_054": {
+    "boundary_evidence_074": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1065,7 +1445,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_055": {
+    "boundary_evidence_075": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1084,7 +1464,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_056": {
+    "boundary_evidence_076": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1103,7 +1483,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_057": {
+    "boundary_evidence_077": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1122,7 +1502,7 @@
       "security_mode": "session",
       "status": "503"
     },
-    "boundary_evidence_058": {
+    "boundary_evidence_078": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1141,7 +1521,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_059": {
+    "boundary_evidence_079": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1160,7 +1540,7 @@
       "security_mode": "session",
       "status": "400"
     },
-    "boundary_evidence_060": {
+    "boundary_evidence_080": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1179,7 +1559,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_061": {
+    "boundary_evidence_081": {
       "body_category": "text",
       "body_meaning": "text",
       "body_schema": {
@@ -1198,7 +1578,7 @@
       "security_mode": "session",
       "status": "422"
     },
-    "boundary_evidence_062": {
+    "boundary_evidence_082": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1217,7 +1597,7 @@
       "security_mode": "session",
       "status": "503"
     },
-    "boundary_evidence_063": {
+    "boundary_evidence_083": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1236,7 +1616,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_064": {
+    "boundary_evidence_084": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1255,7 +1635,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_065": {
+    "boundary_evidence_085": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1274,7 +1654,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_066": {
+    "boundary_evidence_086": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1293,7 +1673,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_067": {
+    "boundary_evidence_087": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1312,7 +1692,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_068": {
+    "boundary_evidence_088": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1331,7 +1711,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_069": {
+    "boundary_evidence_089": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1350,7 +1730,7 @@
       "security_mode": "session",
       "status": "422"
     },
-    "boundary_evidence_070": {
+    "boundary_evidence_090": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1369,7 +1749,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_071": {
+    "boundary_evidence_091": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1388,7 +1768,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_072": {
+    "boundary_evidence_092": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1407,7 +1787,7 @@
       "security_mode": "session",
       "status": "422"
     },
-    "boundary_evidence_073": {
+    "boundary_evidence_093": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1426,7 +1806,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_074": {
+    "boundary_evidence_094": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1445,7 +1825,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_075": {
+    "boundary_evidence_095": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1464,7 +1844,7 @@
       "security_mode": "session",
       "status": "422"
     },
-    "boundary_evidence_076": {
+    "boundary_evidence_096": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1483,7 +1863,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_077": {
+    "boundary_evidence_097": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1502,7 +1882,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_078": {
+    "boundary_evidence_098": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1521,7 +1901,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_079": {
+    "boundary_evidence_099": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1540,7 +1920,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_080": {
+    "boundary_evidence_100": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1559,7 +1939,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_081": {
+    "boundary_evidence_101": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1578,7 +1958,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_082": {
+    "boundary_evidence_102": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1597,7 +1977,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_083": {
+    "boundary_evidence_103": {
       "body_category": "text",
       "body_meaning": "text",
       "body_schema": {
@@ -1616,7 +1996,7 @@
       "security_mode": "public",
       "status": "400"
     },
-    "boundary_evidence_084": {
+    "boundary_evidence_104": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1635,7 +2015,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_085": {
+    "boundary_evidence_105": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1654,7 +2034,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_086": {
+    "boundary_evidence_106": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1673,7 +2053,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_087": {
+    "boundary_evidence_107": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1692,7 +2072,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_088": {
+    "boundary_evidence_108": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1711,7 +2091,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_089": {
+    "boundary_evidence_109": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1730,7 +2110,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_090": {
+    "boundary_evidence_110": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1749,7 +2129,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_091": {
+    "boundary_evidence_111": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1768,7 +2148,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_092": {
+    "boundary_evidence_112": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1787,7 +2167,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_093": {
+    "boundary_evidence_113": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1806,7 +2186,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_094": {
+    "boundary_evidence_114": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1825,7 +2205,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_095": {
+    "boundary_evidence_115": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1844,7 +2224,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_096": {
+    "boundary_evidence_116": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1866,7 +2246,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_097": {
+    "boundary_evidence_117": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1885,7 +2265,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_098": {
+    "boundary_evidence_118": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1904,7 +2284,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_099": {
+    "boundary_evidence_119": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1923,7 +2303,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_100": {
+    "boundary_evidence_120": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1942,7 +2322,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_101": {
+    "boundary_evidence_121": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1961,7 +2341,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_102": {
+    "boundary_evidence_122": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1980,7 +2360,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_103": {
+    "boundary_evidence_123": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -1999,7 +2379,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_104": {
+    "boundary_evidence_124": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2018,7 +2398,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_105": {
+    "boundary_evidence_125": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2037,7 +2417,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_106": {
+    "boundary_evidence_126": {
       "body_category": "text",
       "body_meaning": "text",
       "body_schema": {
@@ -2056,386 +2436,6 @@
       "security_mode": "public",
       "status": "400"
     },
-    "boundary_evidence_107": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/prices",
-      "security_mode": "public",
-      "status": "404"
-    },
-    "boundary_evidence_108": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/prices",
-      "security_mode": "public",
-      "status": "422"
-    },
-    "boundary_evidence_109": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/prices",
-      "security_mode": "public",
-      "status": "500"
-    },
-    "boundary_evidence_110": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/prices",
-      "security_mode": "public",
-      "status": "502"
-    },
-    "boundary_evidence_111": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/prices",
-      "security_mode": "public",
-      "status": "503"
-    },
-    "boundary_evidence_112": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/RecommendationBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "POST /api/recommendation/{ticker}",
-      "security_mode": "session",
-      "status": "200"
-    },
-    "boundary_evidence_113": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/WireError"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "POST /api/recommendation/{ticker}",
-      "security_mode": "session",
-      "status": "403"
-    },
-    "boundary_evidence_114": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/WireError"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "POST /api/recommendation/{ticker}",
-      "security_mode": "session",
-      "status": "404"
-    },
-    "boundary_evidence_115": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/WireError"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "POST /api/recommendation/{ticker}",
-      "security_mode": "session",
-      "status": "422"
-    },
-    "boundary_evidence_116": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/WireError"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "POST /api/recommendation/{ticker}",
-      "security_mode": "session",
-      "status": "502"
-    },
-    "boundary_evidence_117": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/WireError"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "POST /api/recommendation/{ticker}",
-      "security_mode": "session",
-      "status": "503"
-    },
-    "boundary_evidence_118": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/RecommendationBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
-      "status": "200"
-    },
-    "boundary_evidence_119": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/WireError"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
-      "status": "403"
-    },
-    "boundary_evidence_120": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
-      "status": "404"
-    },
-    "boundary_evidence_121": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
-      "status": "422"
-    },
-    "boundary_evidence_122": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
-      "status": "500"
-    },
-    "boundary_evidence_123": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
-      "status": "502"
-    },
-    "boundary_evidence_124": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/AppErrorBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
-      "status": "503"
-    },
-    "boundary_evidence_125": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/RecommendationBody"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/recommendation/status/{ticker}",
-      "security_mode": "optional-session",
-      "status": "200"
-    },
-    "boundary_evidence_126": {
-      "body_category": "json",
-      "body_meaning": "json",
-      "body_schema": {
-        "$ref": "#/components/schemas/WireError"
-      },
-      "body_valid": true,
-      "effect_assertion": {
-        "cookie": "none",
-        "durable": "none",
-        "memory": "none"
-      },
-      "header_names": [],
-      "header_value_policies": {},
-      "media_type": "application/json",
-      "operation": "GET /api/recommendation/status/{ticker}",
-      "security_mode": "optional-session",
-      "status": "403"
-    },
     "boundary_evidence_127": {
       "body_category": "json",
       "body_meaning": "json",
@@ -2451,8 +2451,8 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "GET /api/recommendation/status/{ticker}",
-      "security_mode": "optional-session",
+      "operation": "GET /api/prices",
+      "security_mode": "public",
       "status": "404"
     },
     "boundary_evidence_128": {
@@ -2470,11 +2470,391 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
+      "operation": "GET /api/prices",
+      "security_mode": "public",
+      "status": "422"
+    },
+    "boundary_evidence_129": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/prices",
+      "security_mode": "public",
+      "status": "500"
+    },
+    "boundary_evidence_130": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/prices",
+      "security_mode": "public",
+      "status": "502"
+    },
+    "boundary_evidence_131": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/prices",
+      "security_mode": "public",
+      "status": "503"
+    },
+    "boundary_evidence_132": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/RecommendationBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "POST /api/recommendation/{ticker}",
+      "security_mode": "session",
+      "status": "200"
+    },
+    "boundary_evidence_133": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/WireError"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "POST /api/recommendation/{ticker}",
+      "security_mode": "session",
+      "status": "403"
+    },
+    "boundary_evidence_134": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/WireError"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "POST /api/recommendation/{ticker}",
+      "security_mode": "session",
+      "status": "404"
+    },
+    "boundary_evidence_135": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/WireError"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "POST /api/recommendation/{ticker}",
+      "security_mode": "session",
+      "status": "422"
+    },
+    "boundary_evidence_136": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/WireError"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "POST /api/recommendation/{ticker}",
+      "security_mode": "session",
+      "status": "502"
+    },
+    "boundary_evidence_137": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/WireError"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "POST /api/recommendation/{ticker}",
+      "security_mode": "session",
+      "status": "503"
+    },
+    "boundary_evidence_138": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/RecommendationBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/recommendation/export/{ticker}",
+      "security_mode": "optional-session",
+      "status": "200"
+    },
+    "boundary_evidence_139": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/WireError"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/recommendation/export/{ticker}",
+      "security_mode": "optional-session",
+      "status": "403"
+    },
+    "boundary_evidence_140": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/recommendation/export/{ticker}",
+      "security_mode": "optional-session",
+      "status": "404"
+    },
+    "boundary_evidence_141": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/recommendation/export/{ticker}",
+      "security_mode": "optional-session",
+      "status": "422"
+    },
+    "boundary_evidence_142": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/recommendation/export/{ticker}",
+      "security_mode": "optional-session",
+      "status": "500"
+    },
+    "boundary_evidence_143": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/recommendation/export/{ticker}",
+      "security_mode": "optional-session",
+      "status": "502"
+    },
+    "boundary_evidence_144": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/recommendation/export/{ticker}",
+      "security_mode": "optional-session",
+      "status": "503"
+    },
+    "boundary_evidence_145": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/RecommendationBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/recommendation/status/{ticker}",
+      "security_mode": "optional-session",
+      "status": "200"
+    },
+    "boundary_evidence_146": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/WireError"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/recommendation/status/{ticker}",
+      "security_mode": "optional-session",
+      "status": "403"
+    },
+    "boundary_evidence_147": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/recommendation/status/{ticker}",
+      "security_mode": "optional-session",
+      "status": "404"
+    },
+    "boundary_evidence_148": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
       "operation": "GET /api/recommendation/status/{ticker}",
       "security_mode": "optional-session",
       "status": "422"
     },
-    "boundary_evidence_129": {
+    "boundary_evidence_149": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2493,7 +2873,7 @@
       "security_mode": "optional-session",
       "status": "500"
     },
-    "boundary_evidence_130": {
+    "boundary_evidence_150": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2512,7 +2892,7 @@
       "security_mode": "optional-session",
       "status": "502"
     },
-    "boundary_evidence_131": {
+    "boundary_evidence_151": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2531,7 +2911,7 @@
       "security_mode": "optional-session",
       "status": "503"
     },
-    "boundary_evidence_132": {
+    "boundary_evidence_152": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2550,7 +2930,7 @@
       "security_mode": "optional-session",
       "status": "200"
     },
-    "boundary_evidence_133": {
+    "boundary_evidence_153": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2569,7 +2949,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_134": {
+    "boundary_evidence_154": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2588,7 +2968,7 @@
       "security_mode": "optional-session",
       "status": "200"
     },
-    "boundary_evidence_135": {
+    "boundary_evidence_155": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2607,7 +2987,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_136": {
+    "boundary_evidence_156": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2626,7 +3006,7 @@
       "security_mode": "optional-session",
       "status": "200"
     },
-    "boundary_evidence_137": {
+    "boundary_evidence_157": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2645,7 +3025,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_138": {
+    "boundary_evidence_158": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2664,7 +3044,7 @@
       "security_mode": "session",
       "status": "401"
     },
-    "boundary_evidence_139": {
+    "boundary_evidence_159": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2683,7 +3063,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_140": {
+    "boundary_evidence_160": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2702,7 +3082,7 @@
       "security_mode": "session",
       "status": "409"
     },
-    "boundary_evidence_141": {
+    "boundary_evidence_161": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2721,7 +3101,7 @@
       "security_mode": "session",
       "status": "422"
     },
-    "boundary_evidence_142": {
+    "boundary_evidence_162": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2740,7 +3120,7 @@
       "security_mode": "session",
       "status": "503"
     },
-    "boundary_evidence_143": {
+    "boundary_evidence_163": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2759,7 +3139,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_144": {
+    "boundary_evidence_164": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2778,7 +3158,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_145": {
+    "boundary_evidence_165": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2797,7 +3177,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_146": {
+    "boundary_evidence_166": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2816,7 +3196,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_147": {
+    "boundary_evidence_167": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2835,7 +3215,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_148": {
+    "boundary_evidence_168": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2854,7 +3234,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_149": {
+    "boundary_evidence_169": {
       "body_category": "sse",
       "body_meaning": "sse",
       "body_schema": {
@@ -2877,7 +3257,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_150": {
+    "boundary_evidence_170": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2896,7 +3276,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_151": {
+    "boundary_evidence_171": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2915,7 +3295,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_152": {
+    "boundary_evidence_172": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2934,7 +3314,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_153": {
+    "boundary_evidence_173": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2953,7 +3333,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_154": {
+    "boundary_evidence_174": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2976,7 +3356,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_155": {
+    "boundary_evidence_175": {
       "body_category": "sse",
       "body_meaning": "sse",
       "body_schema": {
@@ -2999,7 +3379,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_156": {
+    "boundary_evidence_176": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3018,7 +3398,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_157": {
+    "boundary_evidence_177": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3037,7 +3417,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_158": {
+    "boundary_evidence_178": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3056,7 +3436,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_159": {
+    "boundary_evidence_179": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3075,7 +3455,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_160": {
+    "boundary_evidence_180": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3098,7 +3478,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_161": {
+    "boundary_evidence_181": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3117,7 +3497,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_162": {
+    "boundary_evidence_182": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3136,7 +3516,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_163": {
+    "boundary_evidence_183": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3155,7 +3535,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_164": {
+    "boundary_evidence_184": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3174,7 +3554,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_165": {
+    "boundary_evidence_185": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3193,7 +3573,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_166": {
+    "boundary_evidence_186": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3212,7 +3592,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_167": {
+    "boundary_evidence_187": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3231,7 +3611,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_168": {
+    "boundary_evidence_188": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3250,7 +3630,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_169": {
+    "boundary_evidence_189": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3269,7 +3649,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_170": {
+    "boundary_evidence_190": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3288,7 +3668,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_171": {
+    "boundary_evidence_191": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3307,7 +3687,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_172": {
+    "boundary_evidence_192": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3326,7 +3706,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_173": {
+    "boundary_evidence_193": {
       "body_category": "sse",
       "body_meaning": "sse",
       "body_schema": {
@@ -3351,7 +3731,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_174": {
+    "boundary_evidence_194": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3370,7 +3750,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_175": {
+    "boundary_evidence_195": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3389,7 +3769,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_176": {
+    "boundary_evidence_196": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3408,7 +3788,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_177": {
+    "boundary_evidence_197": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3427,7 +3807,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_178": {
+    "boundary_evidence_198": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3446,7 +3826,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_179": {
+    "boundary_evidence_199": {
       "body_category": "html",
       "body_meaning": "text",
       "body_schema": {
@@ -3465,7 +3845,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_180": {
+    "boundary_evidence_200": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {

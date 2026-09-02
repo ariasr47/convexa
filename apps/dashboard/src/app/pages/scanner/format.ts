@@ -10,6 +10,7 @@
  */
 import type { ScanRow, ScanSortKey, ScanViewSort, SweepHeartbeat } from '@convexa/api';
 import { isIndexMegacap, SCAN_COPY, SESSION_LABEL, type MarketSessionPhase } from './labels';
+import { isNyseFullDayHolidayIso } from './nyseFullDayHolidays';
 
 /** Client-side desk filters. `null` on a dimension means "any". Never refetches. */
 export interface ScanFilters {
@@ -133,13 +134,17 @@ export function filterRows(rows: ScanRow[], filters: ScanFilters): ScanRow[] {
 
 /**
  * US equity session phase from the wall clock in America/New_York.
- * Pre 04:00–09:30 · RTH 09:30–16:00 · After 16:00–20:00 · else Closed (incl. weekends).
+ * Pre 04:00–09:30 · RTH 09:30–16:00 · After 16:00–20:00 · else Closed
+ * (incl. weekends + NYSE full-day holiday weekdays via the pin-tested replica).
  * Clock-derived, not a stream — the badge answers "is the tape open?", not "is structure live?".
  */
 export function marketSessionPhase(nowMs: number): MarketSessionPhase {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
     weekday: 'short',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
     hourCycle: 'h23',
@@ -148,6 +153,8 @@ export function marketSessionPhase(nowMs: number): MarketSessionPhase {
     parts.find((p) => p.type === type)?.value ?? '';
   const weekday = pick('weekday');
   if (weekday === 'Sat' || weekday === 'Sun') return 'closed';
+  const iso = `${pick('year')}-${pick('month')}-${pick('day')}`;
+  if (isNyseFullDayHolidayIso(iso)) return 'closed';
 
   let hour = Number(pick('hour'));
   const minute = Number(pick('minute'));

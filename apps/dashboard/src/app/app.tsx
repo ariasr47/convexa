@@ -6,9 +6,9 @@
  *
  * Route shape (the binding table):
  *  - `/_ops/metrics`         → <OperatorMetrics/>   OUTSIDE the shell, declared FIRST so `/*` can't
- *                                                    shadow it, own AppBar, NOT linked (AC-Inv-7). This
- *                                                    is now the ONLY nav-less route — the operator-vs-
- *                                                    trader separation invariant lives here alone.
+ *                                                    shadow it, own AppBar, NOT linked (AC-Inv-7).
+ *  - `/_ops/research`        → <OperatorSessionArchive/> same first group (operator routes — metrics
+ *                                                    + this surface). Off-shell, URL-only, NOT linked.
  *  - <AppShell/> (parent)    → persistent layout via <Outlet/> — mounts once, does not remount across
  *                              the in-shell pages (AC-Nav-4):
  *      - index (`/`)         → <Landing/>           OWNER DECISION (convexa-redesign): Landing now
@@ -72,6 +72,11 @@ const SettingsPage = lazy(() =>
 const OperatorMetrics = lazy(() =>
   import('@/pages/operator-metrics/operator-metrics').then((m) => ({ default: m.OperatorMetrics })),
 );
+const OperatorSessionArchive = lazy(() =>
+  import('@/pages/operator-session-archive/OperatorSessionArchive').then((m) => ({
+    default: m.OperatorSessionArchive,
+  })),
+);
 const LabIndex = lazy(() => import('@/pages/lab/LabIndex').then((m) => ({ default: m.LabIndex })));
 const StructureFieldLab = lazy(() =>
   import('@/pages/lab/StructureFieldLab').then((m) => ({ default: m.StructureFieldLab })),
@@ -131,9 +136,9 @@ function DefaultTickerRedirect() {
 export function AppRoutes() {
   return (
     <Routes>
-      {/* Operator-only readout — off the trader shell, unlinked. FIRST so `/*` never shadows it.
-          This is the ONLY nav-less route (operator-vs-trader separation invariant). */}
+      {/* Operator routes — off the trader shell, unlinked. FIRST so `/*` never shadows them. */}
       <Route path="/_ops/metrics" element={lazyRoute(<OperatorMetrics />)} />
+      <Route path="/_ops/research" element={lazyRoute(<OperatorSessionArchive />)} />
 
       {/* The persistent shell group: the nav bar mounts once; pages swap in the <Outlet/>. */}
       <Route element={<AppShell />}>

@@ -26,12 +26,12 @@ test('api contract tool exists and exposes generate/check commands', () => {
   assert.match(`${result.stdout}${result.stderr}`, /API contract check passed/);
 });
 
-test('normal gate discovers the complete 52 registration pairing set', () => {
+test('normal gate discovers the complete 57 registration pairing set', () => {
   const source = readFileSync(
     join(fileURLToPath(new URL('..', import.meta.url)), 'apps/api/src/routes/mod.rs'),
     'utf8',
   );
-  assert.equal(validateRegistrationPairs(source).length, 52);
+  assert.equal(validateRegistrationPairs(source).length, 57);
 });
 
 test('forbidden route-integration packages are rejected in manifests, lockfile, and resolved set', () => {
@@ -156,7 +156,7 @@ for (const [name, variable, expected] of [
     assert.match(`${result.stdout}${result.stderr}`, expected);
   });
 }
-test('operation inventory is exactly 52', () => assert.equal(parity.operation_count, 52));
+test('operation inventory is exactly 57', () => assert.equal(parity.operation_count, 57));
 
 test('runtime route registration mutation changes exporter inventory and fails preservation check', () => {
   const result = spawnSync(process.execPath, ['tools/api-contract.mjs', 'generate'], {
@@ -208,7 +208,7 @@ test('pairing gate rejects every real companion poison and restores clean source
   ];
   for (const poisoned of poisons)
     assert.throws(() => validateRegistrationPairs(poisoned), /incomplete contract coverage/);
-  assert.equal(validateRegistrationPairs(source).length, 52);
+  assert.equal(validateRegistrationPairs(source).length, 57);
 });
 test('manifest has exactly four paths', () =>
   assert.deepEqual(

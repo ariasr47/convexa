@@ -87,12 +87,28 @@ describe('evaluateOrder — live-cross-only transitions', () => {
 
   it('last_trade is NEVER an engine input — tickFromLive structurally drops it', () => {
     // A payload whose last_trade crossed but whose mid did not: the engine cannot see last_trade.
-    const live = { mid: 251, live: true, last_trade: 999 } as Pick<LiveUpdate, 'mid' | 'live'> & {
-      last_trade: number;
-    };
+    const live = { mid: 251, live: true, last_trade: 999 } as unknown as LiveUpdate;
     const t = tickFromLive(live, false, null, NOW);
     expect('last_trade' in t).toBe(false);
     expect(evaluateOrder(order(), t)).toBeNull(); // mid 251 < 252 — no trigger, whatever last_trade did
+  });
+
+  it('session_tape + live true does not fill', () => {
+    const playingOcc = {
+      symbol: 'SPY',
+      et_date: '2026-08-10',
+      tape_time_et: '09:35:00',
+      phase: 'playing',
+      pace: 1,
+    };
+    const t = tickFromLive(
+      { mid: 300, live: true, session_tape: playingOcc } as unknown as LiveUpdate,
+      false,
+      1,
+      NOW,
+    );
+    expect(t.isLive).toBe(false);
+    expect(evaluateOrder(order(), t)).toBeNull();
   });
 
   it('limit fill: only on a live cross at the limit; fill price = the limit (AC-16)', () => {

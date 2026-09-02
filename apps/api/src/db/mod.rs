@@ -28,6 +28,8 @@ pub mod pg_scan;
 #[cfg(feature = "postgres")]
 pub mod pg_session_chain_archive;
 #[cfg(feature = "postgres")]
+pub mod pg_session_day_tape;
+#[cfg(feature = "postgres")]
 pub mod postgres;
 
 /// True when this build includes the Postgres client and `DATABASE_URL` is set.

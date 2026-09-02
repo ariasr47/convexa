@@ -7,6 +7,10 @@
  *
  * Stream-drop watchdog flips `streamOffline` when no payload arrives within STREAM_OFFLINE_MS.
  * Static structure (REST bundle) is never written here.
+ *
+ * Session-tape: on payload-gap we ONLY flip `streamOffline` — last `live` (and thus
+ * `lastSessionPhase`) is retained so consumeStanding can classify drop vs ended/fault
+ * (never live-offline while session_tape was last vouched playing|gap).
  */
 import { streamTicker } from '@convexa/api';
 import { useEffect } from 'react';

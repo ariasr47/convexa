@@ -32,6 +32,10 @@
 # Windows checkout before the non-writing manifest check compares them.
 apps/api/openapi/*.json text eol=lf
 apps/api/tests/fixtures/api_contract/*.json text eol=lf
+# Same rule for the capacity v1 byte-identity oracle: manifest.json, the seam patch and
+# the decision-bearing before/ + inputs/ fixtures are SHA-256 / byte compared by
+# apps/api/src/capacity/identity.rs, which never rewrites them.
+apps/api/tests/fixtures/capacity-baseline/** text eol=lf
 libs/api/src/generated/*.ts text eol=lf
 
 # Browser visual-review receipts and source patches are SHA-256-bound evidence.

@@ -575,6 +575,14 @@ async fn operator_research_runtime_evidence_covers_success_validation_auth_and_m
     assert_eq!(observed.json["error"], "no_stored_snapshot");
     emit_observed_direct_outcome("http-fragment:GET /api/_research/chain-snapshots/{symbol}/snapshot 404 application/json operator-token", &observed, "operator-token", serde_json::json!({"durable":"none","memory":"none","cookie":"none"}));
 
+    let response = operator("/api/_research/session-books/SPY".into()).await;
+    let observed = json_response(response).await;
+    assert_eq!(observed.status, StatusCode::OK);
+    assert_eq!(observed.json["framing"], "RESEARCH READ — SESSION BOOK");
+    assert_eq!(observed.json["vendor_called"], false);
+    assert_eq!(observed.json["authorizes"], "nothing");
+    emit_observed_direct_outcome("http-fragment:GET /api/_research/session-books/{symbol} 200 application/json operator-token", &observed, "operator-token", serde_json::json!({"durable":"none","memory":"none","cookie":"none"}));
+
     let response = operator("/api/_research/session-books/SPY/book".into()).await;
     let observed = json_response(response).await;
     assert_eq!(observed.status, StatusCode::UNPROCESSABLE_ENTITY);
@@ -586,7 +594,157 @@ async fn operator_research_runtime_evidence_covers_success_validation_auth_and_m
     let observed = json_response(response).await;
     assert_eq!(observed.status, StatusCode::OK);
     assert_eq!(observed.json["store"], "hit");
+    assert_eq!(observed.json["framing"], "RESEARCH READ — SESSION BOOK");
+    assert_eq!(observed.json["vendor_called"], false);
+    // Coverage `present` remains a LiveMassive book on the session-archive vehicle — not this
+    // fixture seed (`source: fixture`). Flat-files must not reshape that meaning.
+    assert_eq!(observed.json["source"], "fixture");
+    assert_ne!(observed.json["source"], "present");
     emit_observed_direct_outcome("http-fragment:GET /api/_research/session-books/{symbol}/book 200 application/json operator-token", &observed, "operator-token", serde_json::json!({"durable":"none","memory":"none","cookie":"none"}));
+
+    // AC-38: tape list framing / path_b_interval / days[] unchanged.
+    let response = operator("/api/_research/session-day-tape/NVDA".into()).await;
+    let observed = json_response(response).await;
+    assert_eq!(observed.status, StatusCode::OK);
+    assert_eq!(
+        observed.json["framing"],
+        "RESEARCH READ — SESSION DAY TAPE NOT IN WATCHLIST"
+    );
+    assert_eq!(
+        observed.json["path_b_interval"],
+        "5-minute marks 09:30, 09:35, …, 16:00 ET"
+    );
+    assert!(observed.json["days"].is_array());
+    assert_eq!(observed.json["vendor_called"], false);
+    assert_eq!(observed.json["authorizes"], "nothing");
+    emit_observed_direct_outcome("http-fragment:GET /api/_research/session-day-tape/{symbol} 200 application/json operator-token", &observed, "operator-token", serde_json::json!({"durable":"none","memory":"none","cookie":"none"}));
+
+    // massive-flat-file-keep (B5): flat-files oneshots — NVDA list 200, extract 422, 401.
+    let response = operator("/api/_research/flat-files/NVDA".into()).await;
+    let observed = json_response(response).await;
+    assert_eq!(observed.status, StatusCode::OK);
+    assert_eq!(
+        observed.json["framing"],
+        "RESEARCH READ — MASSIVE FLAT FILES NOT IN WATCHLIST"
+    );
+    assert_eq!(observed.json["detail"], "not in flat-files watchlist: NVDA");
+    assert_eq!(observed.json["vendor_called"], false);
+    assert_eq!(observed.json["authorizes"], "nothing");
+    assert_eq!(observed.json["command"], "flat-files");
+    assert_eq!(observed.json["evidence"], "this process");
+    assert!(observed.json["extracts"].is_array());
+    assert!(!observed
+        .body
+        .windows(b"canary-secret-value-do-not-print".len())
+        .any(|w| w == b"canary-secret-value-do-not-print"));
+    emit_observed_direct_outcome(
+        "http-fragment:GET /api/_research/flat-files/{symbol} 200 application/json operator-token",
+        &observed,
+        "operator-token",
+        serde_json::json!({"durable":"none","memory":"none","cookie":"none"}),
+    );
+
+    let response =
+        operator("/api/_research/flat-files/SPY/extract?et_date=not-a-date".into()).await;
+    let observed = json_response(response).await;
+    assert_eq!(observed.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(observed.json["error"], "et_date_unparseable");
+    assert_eq!(observed.json["detail"], "et_date must be YYYY-MM-DD");
+    assert_eq!(observed.json["vendor_called"], false);
+    emit_observed_direct_outcome("http-fragment:GET /api/_research/flat-files/{symbol}/extract 422 application/json operator-token", &observed, "operator-token", serde_json::json!({"durable":"none","memory":"none","cookie":"none"}));
+
+    let response = router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/api/_research/flat-files/NVDA")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let observed = json_response(response).await;
+    assert_eq!(observed.status, StatusCode::UNAUTHORIZED);
+    assert_eq!(observed.json["error"], "metrics_unauthorized");
+    assert!(observed.json.get("extracts").is_none());
+    emit_observed_direct_outcome(
+        "http-fragment:GET /api/_research/flat-files/{symbol} 401 application/json operator-token",
+        &observed,
+        "operator-token",
+        serde_json::json!({"durable":"none","memory":"none","cookie":"none"}),
+    );
+
+    // archive-coverage-guardrails (B6): coverage oneshots — list/load assertions above stay intact.
+    {
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+        use base64::Engine;
+        let decoded = URL_SAFE_NO_PAD
+            .decode(OPERATOR_TOKEN)
+            .expect("OPERATOR_TOKEN must be URL-safe base64");
+        assert!(
+            decoded.len() >= 32,
+            "metrics_token_ok requires decoded length ≥32 (B4 carry-forward); got {}",
+            decoded.len()
+        );
+    }
+
+    let response = operator("/api/_research/session-archive/coverage".into()).await;
+    let observed = json_response(response).await;
+    assert_eq!(observed.status, StatusCode::OK);
+    assert_eq!(observed.json["vendor_called"], false);
+    assert_eq!(observed.json["command"], "archive-coverage");
+    assert_eq!(observed.json["evidence"], "this process");
+    assert!(observed.json.get("rows").is_some());
+    assert!(observed.json.get("holes").is_some());
+    assert!(observed.json.get("verdict").is_some());
+    emit_observed_direct_outcome(
+        "http-fragment:GET /api/_research/session-archive/coverage 200 application/json operator-token",
+        &observed,
+        "operator-token",
+        serde_json::json!({"durable":"none","memory":"none","cookie":"none"}),
+    );
+
+    let response =
+        operator("/api/_research/session-archive/coverage?et_date=not-a-date".into()).await;
+    let observed = json_response(response).await;
+    assert_eq!(observed.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(observed.json["error"], "et_date_unparseable");
+    assert_eq!(observed.json["detail"], "et_date must be YYYY-MM-DD");
+    assert_eq!(observed.json["vendor_called"], false);
+    assert!(observed.json.get("rows").is_none());
+    emit_observed_direct_outcome(
+        "http-fragment:GET /api/_research/session-archive/coverage 422 application/json operator-token",
+        &observed,
+        "operator-token",
+        serde_json::json!({"durable":"none","memory":"none","cookie":"none"}),
+    );
+
+    let response = router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/api/_research/session-archive/coverage")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let observed = json_response(response).await;
+    assert_eq!(observed.status, StatusCode::UNAUTHORIZED);
+    assert_eq!(observed.json["error"], "metrics_unauthorized");
+    assert_eq!(
+        observed.json["detail"],
+        "Set Authorization: Bearer <METRICS_SECRET_TOKEN> or X-Metrics-Token"
+    );
+    assert!(observed.json.get("rows").is_none());
+    emit_observed_direct_outcome(
+        "http-fragment:GET /api/_research/session-archive/coverage 401 application/json operator-token",
+        &observed,
+        "operator-token",
+        serde_json::json!({"durable":"none","memory":"none","cookie":"none"}),
+    );
 
     let response = router
         .clone()

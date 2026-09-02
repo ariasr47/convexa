@@ -11,6 +11,7 @@
 import { existsSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { isOperatorSessionArchiveSource } from '../testing/operatorSessionArchiveAllowlist';
 
 const DASHBOARD_SOURCES = import.meta.glob(
   ['/src/app/**/*.{ts,tsx}', '!**/*.spec.{ts,tsx}', '!**/*.test.{ts,tsx}'],
@@ -104,6 +105,7 @@ describe('F1 · no trader chrome for replay-outcome-join (AC-20/29)', () => {
   it('trader sources do not mention replay-outcome-join chrome', () => {
     const hits: string[] = [];
     for (const [path, src] of Object.entries(DASHBOARD_SOURCES)) {
+      if (isOperatorSessionArchiveSource(path)) continue;
       for (const n of TRADER_FORBIDDEN) {
         if (src.includes(n)) hits.push(`${path}: ${n}`);
       }
@@ -114,11 +116,18 @@ describe('F1 · no trader chrome for replay-outcome-join (AC-20/29)', () => {
   it('trader sources do not import capture browse / research HTTP surface', () => {
     const hits: string[] = [];
     for (const [path, src] of Object.entries(DASHBOARD_SOURCES)) {
+      if (isOperatorSessionArchiveSource(path)) continue;
       for (const n of CAPTURE_BROWSE_FORBIDDEN) {
         if (src.includes(n)) hits.push(`${path}: ${n}`);
       }
     }
     expect(hits).toEqual([]);
+  });
+
+  it('allowlist skip is not vacuous — trader TopNav is still scanned', () => {
+    const navKey = Object.keys(DASHBOARD_SOURCES).find((k) => k.endsWith('/shell/TopNav.tsx'));
+    expect(navKey).toBeTruthy();
+    expect(isOperatorSessionArchiveSource(navKey as string)).toBe(false);
   });
 
   it('does not add a trader page for join measurement', () => {

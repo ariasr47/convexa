@@ -15,6 +15,7 @@ only**: `features/` and `pages/` may import `shared/`; **pages never import sibl
 | `/scanner`        | `pages/scanner/`             | Coming-soon stub.                                             |
 | `/settings`       | `features/auth/SettingsPage` | Route shell lives with the auth domain (tightly coupled).     |
 | `/_ops/metrics`   | `pages/operator-metrics/`    | Operator-only, off the trader shell.                          |
+| `/_ops/research`  | `pages/operator-session-archive/` | Operator session-archive corpus browser, off-shell, URL-only. |
 
 ## `features/` — cross-cutting domains (each used by ≥1 page)
 

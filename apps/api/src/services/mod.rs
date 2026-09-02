@@ -3,8 +3,11 @@
 pub mod analytics;
 pub mod auth;
 pub mod broker;
+pub mod capacity_harness;
 pub mod chain;
 pub mod chain_snapshot;
+pub mod day_tape;
+pub mod flat_file_keep;
 pub mod flight;
 pub mod iv_store;
 pub mod live_capacity;

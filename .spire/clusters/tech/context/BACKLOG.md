@@ -44,12 +44,301 @@ corpus, then we measure it; do **not** buy hist-chain to paper over prune.
 | 2 | `liquid-names-session-capture` — SPY/QQQ/IWM session book even if gex-cache is warm | pipeline feature | **SHIPPED 2026-08-20** |
 | 3 | `paid-book-join-smoke` — run `batch-backtest` then `replay-outcome-join` on a real corpus | chore (no BRIEF) | **DONE 2026-08-20** |
 | 4 | `weekly-digest-lab-ritual` — `join-outcomes` → `score-lab --horizon 1d` on SPY/QQQ/IWM | habit (runbook exists) | **RAN 2026-08-20** (keep weekly) |
-| 5 | `session-corpus-wait` — 4–6 ET weeks of archived session books before a real time-split | wait / gate, not a build | **clock started 2026-08-20** |
+| 5 | `session-corpus-wait` — 4–6 ET weeks of archived session books before a real time-split | wait / gate, not a build | **clock started 2026-08-20; first *reliable* production day is 2026-08-26** (see harvest 2026-08-28) |
 | 6 | `ai-rec-lab-p4` — frozen AI export packs / multi-model lab | pipeline feature (later) | blocked-on boring P2–P3 + #5 |
 | 7 | `chain-archive-object-store` — session bodies off app-Postgres BYTEA | pipeline feature (later) | **SHIPPED 2026-08-20** |
 | 8 | `archive-coverage-guardrails` — detect missing/unreadable daily books without paid monitoring | backend/ops feature | **SHIPPED + ARCHIVED 2026-08-26** |
 
 Do **not** bundle remaining items into one BRIEF. Do **not** start P7 vendor hist-chain.
+
+> **Integrated 2026-09-01** (`mainline-integration-2026-09`): the entries from here down to the
+> 2026-08-22 `api-contract-generation` ship were written on the `codex/browser-quality-gates` line and
+> did not see main's 2026-08-25/26 merges (PR #31 capacity-baseline v1, PR #34 archive-coverage-guardrails).
+
+## Harvest — 2026-08-28 (deep-research: next-focus, paid-data keep, replay)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Not a GATE I cull and **not** a BRIEF. Owner asked for independent research on what to
+focus on next (personal tool *or* public trader product). Evidence pack:
+`docs/briefings/product-roadmap-2026-08-28.html`. **Authorizes: nothing** on live score.
+
+**Clock honesty (keep-paid-books #5).** The wait started 2026-08-20 in canon, but production
+did not store session bodies until 2026-08-22, the first eligible ET session was **2026-08-24**,
+and the ownership repair that stopped thousands of `Permission denied` writes landed
+**2026-08-26**. Audit that day: **7 / 9** expected SPY/QQQ/IWM books; SPY 24–25 **gone for
+good** (48-slot prune + Massive chain snapshot has **Plan History: not applicable**). Treat
+the 4–6 week bar as starting **2026-08-26**, so a real time-split is ~**2026-09-23 … 2026-10-07**,
+not mid-September off the 08-20 label.
+
+**What the $199+$199 already buys that we still do not keep.**
+Live Path-B snapshots (greeks/IV/OI) are unrecoverable after prune — that is why session
+archive exists. Stocks **and** options Advanced plans already include **S3 flat files**
+(trades/quotes/aggregates, next-day ~11:00 ET). We do not download them. SSE ticks are not
+taped. Warmer refreshes are excluded from capture by design. Midnight-ET first-wins books
+are **start-of-day**, not a full open-to-close stream.
+
+**New pool items (one BRIEF each if promoted — do not bundle):**
+| Item | Shape | Why it is here |
+|---|---|---|
+| `archive-coverage-guardrails` | backend/ops, no trader UI | **SHIPPED + ARCHIVED 2026-08-29.** Named by the 2026-08-26 audit. Missing books are silent $398 loss. |
+| `massive-flat-file-keep` | backend/research | **SHIPPED + ARCHIVED 2026-08-31.** Download entitled daily S3 files for SPY/QQQ/IWM. Reconstructs **tape**, not greeks. Provenance-label; never fake a `live_massive` book. |
+| `session-day-tape-capture` | backend | **SHIPPED + ARCHIVED 2026-08-30.** Append-only Path-A SSE + timed Path-B snapshots for a closed watchlist so a day is replayable after Massive is cancelled. |
+| `day-replay-mock-adapter` | both lanes | **SHIPPED + ARCHIVED 2026-08-30.** Existing ticker SSE occupancy; clap `session-day-replay`; never `LiveMassive`. Distinct from `batch-backtest` (snapshot → score, no UI clock). |
+| `research-lab-surface` | frontend first | **SHIPPED + ARCHIVED 2026-08-31.** Operator URL-only corpus browser of existing `_research` list/load + coverage. Not `/lab` demos. Pages still 404s `_research`. |
+| `grounded-morning-snapshot` | both, later | AI briefing from **already computed** scanner + event calendar + GEX, every number cited. No Benzinga. No new vendor. |
+
+**Parked by this harvest (do not re-derive as emergencies):**
+squeeze/short-interest scanner (SI% not in-tier; OptionWalls squeeze median **+0.15% / 5d**);
+Benzinga earnings add-on; news terminal; RL on the score; indices (`I:VIX`/`I:SPX`) product line;
+P7 hist-chain; public SaaS before ledger N.
+
+**Stale standing queue.** Pool §A still headlines the 2026-08-01 order
+`index-first-defaults → SnapTrade → vol-normalized-gex → alerts`. Those four are
+**shipped in code** (Webull, not SnapTrade, for broker v1). The live programs are
+keep-paid-books wait + production-maturity #6 `remote-archive-body-store` + this harvest.
+SnapTrade stays the later multi-broker arm, not the next personal-edge build.
+
+**If the owner says `go` without naming:** the cull still applies.
+`archive-coverage-guardrails` **SHIPPED 2026-08-29**. `session-day-tape-capture`
+**SHIPPED 2026-08-30**. `day-replay-mock-adapter` **SHIPPED 2026-08-30**.
+`massive-flat-file-keep` **SHIPPED 2026-08-31**. `research-lab-surface`
+**SHIPPED 2026-08-31**. Strongest remaining **08-28** harvest survivor is
+`grounded-morning-snapshot` (sequence “after the corpus is visible” is now true).
+See **Harvest — 2026-08-31** below for the post-lab wave. Production-maturity #6
+remains next **in that program's order**. Do not silently skip the wait on #5 to
+reweight `opportunity_score`. Do not reopen blocked `supply-chain-automation`
+as pick-next.
+
+## Harvest — 2026-08-31 (post-lab: use the day, don't clone a terminal)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Not a GATE I cull and **not** a BRIEF. Owner asked for a fresh harvest after
+`research-lab-surface` GATE S. Evidence pack:
+`docs/briefings/harvest-2026-08-31.html`. **Authorizes: nothing** on live score.
+
+**What changed since 28 Aug.** The 08-28 wave is executed: coverage, tape, replay,
+S3 keep, and the operator corpus browser **all SHIPPED**. From this 08-31 pool,
+`exchange-holiday-calendar` **SHIPPED 2026-08-31**. The leak is no longer
+“CLI-only books.” Remaining 08-28 survivor: `grounded-morning-snapshot`, whose
+own sequence note was “after the corpus is visible” — that gate is now open.
+
+**Thesis.** You are not missing a news terminal. You are missing a *cited morning
+read of numbers you already compute*, a *second partitioned card* for the research
+HTTP you already serve, and *insurance for bodies*. Do not retune
+`opportunity_score`. Do not lift the Pages `_research` 404. Do not occupy `/lab`.
+Do not reopen `supply-chain-automation`. Do not skip keep-paid-books #5
+(reliable clock **2026-08-26** → time-split ~**2026-09-23 … 2026-10-07**).
+
+**If the owner says `go` without naming:** still **`grounded-morning-snapshot`**
+(personal-edge, sequence unblocked). Production-maturity #6
+`remote-archive-body-store` is next **in that program**. New 08-31 rows below
+are pool, not a silent default change.
+
+**New pool items (one BRIEF each if promoted — do not bundle):**
+| Item | Shape | Why it is here |
+|---|---|---|
+| `grounded-morning-snapshot` | both, **now** | **Already named 08-28.** Cited briefing from scanner + calendar + GEX. No Benzinga. No new vendor. Corpus-visible sequence **holds**. Unnamed-`go` default. |
+| `research-lab-sibling-reads` | frontend / ops | `/_ops/research` consumes books+coverage only. Live HTTP also has tape, snapshots, flat-files. Council admits **partitioned** sibling cards (same closed-deck discipline). Not a unified status column. Not `/lab`. Pages 404 stands. |
+| `ops-metrics-sitting-origin` | frontend / ops | Metrics is still same-origin `GET /api/_metrics`. Research already has sitting API origin + token. Pages 404s `_metrics` too — a weekly operator on `convexa.pages.dev` cannot unlock metrics the way they unlock research. 2nd consumer of sitting-base; do not bake hosts. |
+| ~~`exchange-holiday-calendar`~~ **SHIPPED 2026-08-31** | backend / ops | Repeat seam on tape, keep, coverage, scanner: weekends handled; **NYSE holidays are not**. Coverage “not yet due” vs empty extract vs missing is a fabricated claim on a closed weekday. |
+| `tape-store-start-watermark` | backend | GATE Z residual on `session-day-tape-capture` AC-32: named past weekday with no container is `no session day tape`; no store-start watermark. Honesty of “we never taped that day.” |
+| `score-lab-digest-surface` | frontend / ops, later | Read-only last score-lab / join artifact on `/_ops/*`. Weekly ritual without clap. **Not** score-lab HTTP compute. **Not** a retune. Sequence after #5 has more calendar, or beside the morning note. |
+
+**Hygiene / system-of-building (not GATE I product; do not bundle into a BRIEF):**
+`project-context-shard-sizes` (still unpaid) · `session-tape-structural-allowlist` (full
+`nx test` 1 red in `session-day-tape-capture.structural.spec.ts`) ·
+`deploy-cors-docs-alignment` (`ALLOWED_ORIGINS` docs vs live `ALLOWED_BROWSER_ORIGINS`) ·
+`nx-worktrees-isolation` (`.worktrees/` collides with the main Nx graph) ·
+`n1-push-deploys` (owner call) · `owner-device-signoff` (habit).
+
+**Already-named, not new:** keep-paid-books #5 wait · #6 `ai-rec-lab-p4` (blocked-on #5) ·
+production-maturity #6 `remote-archive-body-store` · `x1-snaptrade-readonly` (owner-named,
+system-6) · `weekly-digest-lab-ritual` (habit, runbook exists) ·
+`score-lab-b0b-outcomes` (never synthesize).
+
+**Parked (do not re-derive as emergencies — evidence unchanged since 08-28):**
+squeeze/SI scanner · Benzinga/news · RL on the score · indices `I:VIX`/`I:SPX` ·
+P7 hist-chain · public SaaS before ledger N · Pages `_research`/`_metrics` proxy ·
+`/lab` occupancy · `/_ops/replay` player chrome (shipped structural ban) ·
+score-lab **compute** HTTP · `opportunity_score` reweight.
+
+## Last GATE S — 2026-08-31 (`exchange-holiday-calendar` — NYSE full-day occupancy)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+NYSE full-day weekday closures (2020..=2032) are ineligible like weekends, with a distinct
+reason. Coverage empty-expected `not_due`. Tape/keep `ineligible holiday`. Ticker closed
+all hours that ET date. Scanner badge Closed. GATE Q PASS **30/0/0**. Independent
+conformance **5/5**. Archived to `_archive/exchange-holiday-calendar/`. Re-pin JSON
+promoted to `state/conformance/exchange-holiday-calendar.json`. Unnamed next `go`
+harvest default: `grounded-morning-snapshot`. Do not reopen blocked
+`supply-chain-automation`. Production-maturity #6 stays next **in that program**.
+
+## Last GATE I — 2026-08-31 (owner named → `exchange-holiday-calendar`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Owner said **do NYSE holiday** after Harvest 2026-08-31 (not unnamed `go`).
+**Chosen → `exchange-holiday-calendar`.** Brief at
+`.spire/clusters/tech/contracts/_archive/exchange-holiday-calendar/BRIEF.md`.
+**Backend-primary; weekend gates already exist; holidays do not.**
+**Why it won:** owner named it. Repeat seam: coverage `not_due` / tape ineligible /
+keep ineligible / `MarketPhase::classify` / ensure / scanner hours are **Sat/Sun only**.
+Keep already tests that a holiday weekday with zero rows is empty extract, not weekend.
+Unnamed-`go` default `grounded-morning-snapshot` was culled for this ask. Do not reopen
+`supply-chain-automation`. Do not skip keep-paid-books #5. Do not retune the score.
+
+## Last GATE S — 2026-08-31 (`research-lab-surface` — operator corpus browser)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Operators type `/_ops/research` (off-shell, unlinked, not `/lab`) with a sitting API origin +
+metrics token and list/open SPY/QQQ/IWM session books plus today’s coverage card. Empty
+`apps/api` product diff. Pages `_research` 404 stands. GATE Q PASS **53/0/0**. Independent
+conformance **7/7**. Archived to `_archive/research-lab-surface/`. Re-pin JSON promoted to
+`state/conformance/research-lab-surface.json`. Unnamed next `go` harvest default:
+`grounded-morning-snapshot`. Do not reopen blocked `supply-chain-automation`. Production-maturity
+#6 stays next **in that program**.
+
+## Last GATE I — 2026-08-31 (harvest default → `research-lab-surface`)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Owner said `go` after `massive-flat-file-keep` GATE S (unnamed ⇒ harvest
+default). **Chosen → `research-lab-surface`.** Brief at
+`.spire/clusters/tech/contracts/_archive/research-lab-surface/BRIEF.md`.
+**Frontend-primary operator surface; `/lab` instrument demos must not be
+occupied; Pages `_research` 404 stands.**
+**Why it won:** coverage + tape + replay + S3 keep are CLI/`_research` only;
+the operator still cannot *see* the $398 corpus weekly. First slice is a
+URL-only off-shell browser of **existing** list/load (session books spine).
+Do not bundle score-lab HTTP, ticker replay chrome, morning-note, remote
+object-store, or lifting the Pages 404. Cite live `app.tsx` `/_ops/metrics`,
+`LabIndex.tsx`, `functions/api/[[path]].ts`. `supply-chain-automation`
+remains live and blocked — this `go` is pick-next, not reopen #4.
+Production-maturity #6 stays next **in that program**.
+
+## Last GATE S — 2026-08-31 (`massive-flat-file-keep` — entitled S3 trades/quotes extracts)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Operators keep next-day Massive stocks SIP **trades** and **quotes** extracts for SPY/QQQ/IWM
+(`flat-files keep`; dedicated root; gzip discarded). Sibling `_research/flat-files`. Never
+`LiveMassive` / coverage `present`. `NO_UI_CHANGE`. GATE Q PASS **61/0/0**. Independent
+conformance **6/6**. Archived to `_archive/massive-flat-file-keep/`. Conformance JSON promoted
+to `state/conformance/massive-flat-file-keep.json`. Unnamed next `go` harvest default:
+`research-lab-surface`.
+
+## Last GATE I — 2026-08-30 (harvest default → `massive-flat-file-keep`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Owner said `go` after `day-replay-mock-adapter` GATE S (unnamed ⇒ harvest
+default). **Chosen → `massive-flat-file-keep`.** Brief at
+`.spire/clusters/tech/contracts/_archive/massive-flat-file-keep/BRIEF.md`.
+**Backend/research; trader UI NO_UI_CHANGE expected.**
+**Why it won:** $199+$199 already includes unlimited S3 file downloads we do
+not keep; they reconstruct **price/quote history**, not greeks; live tape +
+replay now exist, so this is the remaining entitled tape, not a clock.
+Files are next-day universe CSVs (`files.massive.com`), not REST
+`/v3/trades`. Do not bundle OPRA, indices, hist-chain, lab UI, or Path-A
+conversion. Cite live REST/WS + tape root + source kind — not briefing HTML.
+`supply-chain-automation` remains live and blocked — this `go` is pick-next,
+not reopen #4.
+
+## Last GATE I — 2026-08-30 (harvest default → `day-replay-mock-adapter`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Owner said `go` after `session-day-tape-capture` GATE S (unnamed ⇒ harvest
+default). **Chosen → `day-replay-mock-adapter`.** Brief at
+`.spire/clusters/tech/contracts/_archive/day-replay-mock-adapter/BRIEF.md`.
+**Both lanes; existing ticker SSE, no second live path.**
+**Why it won:** the tape now exists; Fixture is a frozen snapshot, not a clock;
+`batch-backtest` replays scores, not a day on the ticker. Insurance the owner
+named: if Massive is cancelled, walk Tuesday as if live. S3 files are next-day
+price history, not same-day greeks — sequenced after a clock exists. Do not
+bundle object-store, hist-chain, or lab UI. Cite live tape + Fixture + hub.
+`supply-chain-automation` remains live and blocked — this `go` is pick-next,
+not reopen #4.
+
+## Last GATE S — 2026-08-30 (`day-replay-mock-adapter` — walk a captured day on the ticker)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Operators walk a stored SPY/QQQ/IWM research day through the **existing ticker live path**
+(`session-day-replay`; pace {1,4,10}). Occupancy `session_tape` / `live: false`. Production
+unset still Massive; production-profile + replay arm refuses before bind. Never `LiveMassive`.
+No `/_ops/replay`. GATE Q PASS **47/0/0**. Independent conformance **5/5**. Archived to
+`_archive/day-replay-mock-adapter/`. Conformance JSON promoted to
+`state/conformance/day-replay-mock-adapter.json`. Unnamed next `go` harvest default:
+`massive-flat-file-keep`.
+
+## Last GATE I — 2026-08-29 (harvest default → `session-day-tape-capture`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Owner said `go` after `archive-coverage-guardrails` GATE S (unnamed ⇒ harvest
+default). **Chosen → `session-day-tape-capture`.** Brief at
+`.spire/clusters/tech/contracts/_archive/session-day-tape-capture/BRIEF.md`.
+**Backend / research; trader UI out of scope (`NO_UI_CHANGE` expected).**
+**Why it won:** coverage now tells you a paid day is missing; it does not keep
+the open-to-close stream. Path-A ticks still latest-wins in `PriceCache`;
+warmer Path-B drops `_vendor` every 25s by design; session books are first-wins
+start-of-day (QQQ/IWM 24–26 Aug had 0 trades). Replay is blocked-on this tape.
+S3 flat files are next-day price history, not same-day greeks. Do not bundle
+replay, object-store, or hist-chain. Cite live Rust. `supply-chain-automation`
+remains live and blocked — this `go` is pick-next, not reopen #4.
+
+## Last GATE S — 2026-08-29 (`archive-coverage-guardrails` — expected SPY/QQQ/IWM books as operator truth)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Operators can classify today’s SPY/QQQ/IWM session books after 16:00 ET (`present` /
+`missing` / `unreadable` / `blocked occupancy` / `not yet due`). Named `archive-coverage`
++ `GET /api/_research/session-archive/coverage`. GATE Q PASS **54/0/0**. Independent
+conformance **5/5**. Archived to `_archive/archive-coverage-guardrails/`. Conformance JSON
+promoted to `state/conformance/archive-coverage-guardrails.json`. `NO_UI_CHANGE`.
+`supply-chain-automation` remains live and blocked. Unnamed next `go` harvest default:
+tape / day-replay.
+
+## Last GATE I — 2026-08-29 (harvest default → `archive-coverage-guardrails`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Owner said `go` after the 2026-08-28 deep-research harvest (unnamed ⇒ harvest default).
+**Chosen → `archive-coverage-guardrails`.** Brief at
+`.spire/clusters/tech/contracts/_archive/archive-coverage-guardrails/BRIEF.md`.
+**Backend / ops; trader UI out of scope (`NO_UI_CHANGE` expected).**
+**Why it won:** production already archives session books, then fails silently —
+26 Aug audit 7/9 expected SPY/QQQ/IWM books; SPY 24–25 unrecoverable after prune
+(Massive chain snapshot Plan History = not applicable). The failure mode is a
+**lost paid day**, not an unmeasured score. Tape/replay stay sequenced behind
+coverage so a replay is not certified on a hole. Do not bundle object-store,
+flat-files, or hist-chain. Cite live Rust. `supply-chain-automation` remains
+live and blocked — this `go` is pick-next, not reopen #4.
+
+## Last GATE S — 2026-08-29 (`capacity-baseline` — mocked-vendor load/soak harness)
+<!-- atlas: theme=the-machine horizon=now -->
+Maintainers have named `capacity load` / `capacity soak` against mocked vendors with locked harness
+p95 fail-lines. Merge CI runs release load with `APP_ENV=dev`; soak is local + GATE Q only. GATE Q
+PASS **49/0/0**. Archived to `_archive/capacity-baseline/`. `NO_BACKEND_CHANGE` of production HTTP —
+no conformance JSON promoted. `supply-chain-automation` remains live and blocked. Program #6
+`remote-archive-body-store` is next in the production-maturity sequence.
+
+## Last GATE I — 2026-08-28 (production-maturity #5 → `capacity-baseline`; supply-chain still blocked)
+<!-- atlas: theme=the-machine horizon=now -->
+**Chosen → `capacity-baseline`.** `browser-quality-gates` shipped. `supply-chain-automation` remains
+live and blocked (historical secret, RUSTSEC-2024-0436, hosted acceptance). Owner `go` after that
+ship is treated as pick-next, not reopen #4. Production-maturity #5 is the next unblocked program
+slice: a mocked-vendor API/SSE load/soak harness with checked thresholds. SnapTrade stayed parked
+(explicit product go, not this drain). Brief:
+`.spire/clusters/tech/contracts/_archive/capacity-baseline/BRIEF.md`.
+
+## Last GATE S — 2026-08-28 (`browser-quality-gates` — named browser quality gates)
+<!-- atlas: theme=the-machine horizon=now -->
+Maintainers now have honest Chromium, Firefox/WebKit-journey, accessibility, and visual gates with
+actionable artifacts. Product runtime/API/scoring stay unchanged except the closed D7/D8
+accessibility repairs. GATE Q PASS **45/0/0**. Archived to `_archive/browser-quality-gates/`.
+`NO_BACKEND_CHANGE` — no conformance JSON promoted. Three new watch-list keys
+(`engine-claim-matches-executable-engines` · `visual-baseline-requires-human-authority` ·
+`local-evidence-is-not-hosted-evidence`). `supply-chain-automation` remains live and blocked.
+
+## Last GATE I — 2026-08-23 (owner redirect → `browser-quality-gates`)
+<!-- atlas: theme=the-machine horizon=now -->
+**Chosen → `browser-quality-gates`.** The owner explicitly selected the next recommended frontend
+quality slice while GitHub-hosted supply-chain evidence is unavailable. The shipped Playwright suite
+already provides 52 fast Chromium tests and explicitly records Firefox/WebKit as a separate follow-on;
+this feature adds an explicit supported-browser policy, a bounded cross-engine journey matrix,
+automated accessibility gates, and small deterministic visual baselines without changing product UI
+or backend behavior. `capacity-baseline` remains queued as production-maturity item #5 — displaced,
+not dropped. Brief: `.spire/clusters/tech/contracts/_archive/browser-quality-gates/BRIEF.md`.
+
+## Last GATE S — 2026-08-22 (`api-contract-generation` — one executable Rust→TypeScript contract)
+<!-- atlas: theme=the-machine horizon=now -->
+The Rust/Axum route graph now deterministically produces OpenAPI 3.1 and the checked shared TypeScript
+schema/client boundary. Immutable pre-cutover and generated-artifact manifests catch co-omission and
+drift; schema-v2 evidence proves **52 operations, 181 response conversions, and 87 direct HTTP outcomes**
+without changing endpoint, auth, SSE, scoring, or trader-visible behavior. Final fresh QA passed
+**42/0/0**, independent live conformance passed **4/4**, and credential-bearing vendor diagnostics are
+redacted at the request-failure boundary. Archived to `_archive/api-contract-generation/`; standalone
+conformance promoted. Program advances to #4 `supply-chain-automation`.
 
 ## Last GATE I — 2026-08-26 (`archive-coverage-guardrails`)
 <!-- atlas: theme=prove-the-edge horizon=now -->
@@ -76,6 +365,10 @@ or microservices without a measured bottleneck and a separate owner decision.
 | 4 | `supply-chain-automation` — dependency updates, review, Rust audit/deny, CodeQL-supported surfaces, image scan, SBOM | CI/security feature | queued after #3 |
 | 5 | `capacity-baseline` — API/SSE load and soak harness with checked thresholds and mocked vendors | backend/test feature | queued after #4 |
 | 6 | `remote-archive-body-store` — S3-compatible immutable body store behind the shipped body-store port | backend/infra feature | queued after #5; existing filesystem store remains fallback |
+| 3 | `api-contract-generation` — generated OpenAPI plus checked TypeScript client/types | both-lane tooling feature | **SHIPPED + ARCHIVED 2026-08-22** |
+| 4 | `supply-chain-automation` — dependency updates, review, Rust audit/deny, CodeQL-supported surfaces, image scan, SBOM | CI/security feature | **PROMOTED — GATE I 2026-08-22**; still live, GATE Q FAIL (external/security blockers) |
+| 5 | `capacity-baseline` — API/SSE load and soak harness with checked thresholds and mocked vendors | backend/test feature | **SHIPPED + ARCHIVED 2026-08-29** |
+| 6 | `remote-archive-body-store` — S3-compatible immutable body store behind the shipped body-store port | backend/infra feature | queued after #5 (now unblocked in program order); existing filesystem store remains fallback |
 | 7 | `telemetry-slos` — trace correlation/export, service-level objectives, dashboards and alert runbook | backend/infra feature | queued after #6 |
 | 8 | `replica-safe-workers` — API/worker process split, singleton/job coordination, distributed rate limiting | backend/infra feature | queued after #7 |
 | 9 | `recovery-deployment-maturity` — backup/restore drill, staging/migration/smoke/rollback gates, declarative host config | ops feature | queued after #8; migrate `railway.json` watch paths to Railway IaC before 2026-12-01 once the translator preserves them |
@@ -1079,9 +1372,16 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 ## Pool
 
 ### A. Queued / in-mind (decided to build next)
-> **⏭ The queue is owned by the 2026-08-01 roadmap adoption above** (`docs/ROADMAP_2026-08.md`):
-> `index-first-defaults` → `broker-connect` (SnapTrade) → `vol-normalized-gex` → `alerts` → ledger
-> checkpoint. Items below remain in the pool but are displaced by it.
+> **⏭ SUPERSEDED AS THE STANDING NEXT-BUILD ORDER — harvest 2026-08-28.**
+> The 2026-08-01 roadmap (`docs/ROADMAP_2026-08.md`) still records the *strategy*
+> (edge first, business later). Its **build queue**
+> `index-first-defaults → broker-connect (SnapTrade) → vol-normalized-gex → alerts → ledger
+> checkpoint` has largely **shipped in code** (broker v1 is Webull-direct, not SnapTrade;
+> X2 and X3 are in production). Live programs after `capacity-baseline`: keep-paid-books #5
+> wait (reliable clock 2026-08-26) · production-maturity #6 `remote-archive-body-store` ·
+> harvest items in the 2026-08-28 table above. Ledger checkpoint X4 still blocked on N≥20
+> closed outcomes (habit N2). Items below remain in the pool as provenance, not as the next
+> `go` default.
 - **✓ SHIPPED 2026-08-10 — `signed-out-refused-affordances`** (IMPROVEMENT_BACKLOG 5.1;
   `shared/ui/Refused` on signed-out write CTAs). The L4-displacement row below is provenance only.
   *(original entry:)* **DISPLACED to L4 (was ⏭ NEXT) — `signed-out-refused-affordances`** (owner-directed 2026-07-28, straight off the
@@ -1233,6 +1533,76 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   (`OPEN_THREADS` §7)
 
 ### B. Ready candidates (feasible, small, unscheduled)
+- **`archive-coverage-guardrails` — expected/present/missing session books as operator truth** —
+  **→ SHIPPED + ARCHIVED 2026-08-29** (`_archive/archive-coverage-guardrails/`). GATE Q 54/0/0.
+  <!-- atlas: theme=prove-the-edge horizon=now -->
+  `NEW 2026-08-28 (deep-research harvest)`. Specified by `docs/research/ARCHIVE_COVERAGE_AUDIT_2026-08-26.md`.
+  Read-only coverage matrix + one structured warning per symbol/session after 16:00 ET + a local
+  audit command that exits non-zero on a due SPY/QQQ/IWM hole. No trader UI, no paid monitor.
+  Decision-impact: you notice a lost paid day **the day it is lost**, not three days later when
+  prune has already eaten the ring. *Value H · Effort S–M.*
+- **`massive-flat-file-keep` — download the S3 files the $199+$199 already include** —
+  **→ SHIPPED + ARCHIVED 2026-08-31** (`_archive/massive-flat-file-keep/`). GATE Q 61/0/0.
+  <!-- atlas: theme=prove-the-edge horizon=now -->
+  `NEW 2026-08-28`. Stocks and Options Advanced include unlimited file downloads (trades / quotes /
+  aggregates; next-day ~11:00 ET). We currently keep REST snapshots and throw the tape. Flat files
+  reconstruct **price/quote history**, not snapshot greeks/IV/OI (chain snapshot Plan History =
+  not applicable). Store provenance-labeled, never insert as `live_massive`. *Value H · Effort M.*
+- **`session-day-tape-capture` — a replayable open-to-close tape for a closed watchlist** —
+  **→ SHIPPED + ARCHIVED 2026-08-30** (`_archive/session-day-tape-capture/`). GATE Q 66/0/0.
+  <!-- atlas: theme=prove-the-edge horizon=now -->
+  `NEW 2026-08-28`. Path-A SSE ticks currently hit the price cache and die. Path-B warmer is
+  excluded from snapshot capture. Session books are first-wins, often midnight-ET start-of-day
+  (QQQ/IWM 24–26 Aug had **0 trades**). Owner-named: if Massive is cancelled, replay a collected
+  day as if live. Distinct from the 48-slot ring (intraday reprints) and from `batch-backtest`.
+  *Value H · Effort M.* Depends on a bounded watchlist, not the whole universe.
+- **`day-replay-mock-adapter` — Fixture port + SSE hub that plays a captured day into the UI** —
+  **→ SHIPPED + ARCHIVED 2026-08-30** (`_archive/day-replay-mock-adapter/`). GATE Q 47/0/0.
+  <!-- atlas: theme=prove-the-edge horizon=now -->
+  `NEW 2026-08-28`. `MarketDataPort::Fixture` already resolves a frozen `VendorBundle` at `as_of`.
+  That is snapshot replay, not a clock. This item emits price ticks (and periodic structure
+  snapshots) through the **same SSE contract** the ticker page already consumes, at original
+  timestamps or a speed multiplier. Frontend should not grow a second live path.
+  *Value H · Effort M.* Tape **SHIPPED 2026-08-30**; this clock **SHIPPED 2026-08-30**. Distinct
+  from S3 reconstruction. Do not insert tape as `live_massive`.
+- **`research-lab-surface` — make the corpus visible instead of CLI-only** —
+  **→ SHIPPED + ARCHIVED 2026-08-31** (`_archive/research-lab-surface/`). GATE Q 53/0/0.
+  <!-- atlas: theme=trust-the-signal horizon=now -->
+  `NEW 2026-08-28`. `/api/_research/*` is 404 from Pages by design. The trader cannot see the
+  $398 of books, the score-lab, or a replay. A first slice can be operator-gated (same pattern
+  as `/_ops/metrics`). Decision-impact: you use the lab weekly instead of once per research
+  binge. *Value M–H · Effort M.* Do not expose raw vendor payloads on the public origin.
+- **`grounded-morning-snapshot` — cited AI briefing from data already on the board** —
+  <!-- atlas: theme=trust-the-signal horizon=now -->
+  `NEW 2026-08-28`. Scanner + event calendar + GEX walls/flip/vol-norm already exist. SpotGamma's
+  retained value is the **written morning note**. Viral-adjacent if posted (habit N4 still owner-
+  deferred). Every figure must trace (`ai-asserted-numbers-are-traceable`). No Benzinga, no
+  indices add-on, no "AI says buy". *Value M · Effort M.* Sequence after the corpus is visible
+  — **that gate opened 2026-08-31** (`research-lab-surface` SHIPPED). Unnamed-`go` default
+  at Harvest 2026-08-31.
+- **`research-lab-sibling-reads` — partitioned tape / snapshots / extracts on `/_ops/research`** —
+  <!-- atlas: theme=trust-the-signal horizon=now -->
+  `NEW 2026-08-31 (post-lab harvest)`. Live HTTP already has session-day-tape, chain-snapshots,
+  and flat-files list/load. The page consumes books+coverage only. Council admits sibling
+  **partitioned** cards (closed decks; never mint `present` from `kept` / tape). Not a unified
+  status column. Not `/lab`. Pages 404 stands. Do not bundle with morning-note or replay-arm.
+  *Value M–H · Effort M.*
+- **`ops-metrics-sitting-origin` — Operator Metrics uses the same sitting API origin as research** —
+  <!-- atlas: theme=the-machine horizon=now -->
+  `NEW 2026-08-31`. Metrics is relative `GET /api/_metrics`; Pages 404s that prefix too. Research
+  already has tab-memory origin + token. 2nd consumer of sitting-base — do not bake `VITE_*` hosts.
+  *Value M · Effort S–M.* Decision-impact: the operator can read metrics from the Pages SPA
+  the same week they read books.
+- ~~**`exchange-holiday-calendar` — NYSE holidays are not “not yet due” by accident**~~ —
+  **SHIPPED + ARCHIVED 2026-08-31.** Full-day weekday closures (2020..=2032) are empty-expected
+  coverage / tape-keep `ineligible holiday` / ticker `closed`. Half-days Future.
+- **`tape-store-start-watermark` — named past weekday with no container is not a silent miss** —
+  <!-- atlas: theme=prove-the-edge horizon=now -->
+  `NEW 2026-08-31`. GATE Z residual (`session-day-tape-capture` AC-32). *Value M · Effort S.*
+- **`score-lab-digest-surface` — last lab artifact, read-only, `/_ops`** —
+  <!-- atlas: theme=prove-the-edge horizon=later -->
+  `NEW 2026-08-31`. Weekly ranking without clap. Authorizes: nothing. Not score-lab HTTP compute.
+  Not a retune. *Value M · Effort M.* Sequence after more calendar on #5, or beside the morning note.
 - **`project-context-shard-sizes` — split PROJECT_CONTEXT §5/§6** — `RAISED 2026-08-13, still
   <!-- atlas: theme=the-machine horizon=next -->
   unpaid after the 2026-08-20 hygiene batch (that batch did Vite barrels / cargo fmt /
@@ -1920,6 +2290,18 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   visibly; not blocking.
 
 ### C. Strategic / blocked (high value, gated on a decision or heavy lift)
+
+- **Parked cluster (deep-research 2026-08-28) — do not re-derive as emergencies** —
+  <!-- atlas: theme=trust-the-signal horizon=later -->
+  Squeeze / short-interest scanner (SI% not in-tier; OptionWalls squeeze ≥70 median **+0.15% / 5d**);
+  Benzinga earnings add-on (dates for the 69-name universe are already curated JSON);
+  breaking-news / press terminal (new vendor + liability);
+  RL on `opportunity_score` (N is a rounding error; non-stationary; costs eat the edge);
+  indices asset class (`I:VIX`/`I:SPX` — ETF proxies instead);
+  P7 vendor hist-chain (snapshot Plan History = not applicable; do not buy a second options history product
+  to paper over prune);
+  public SaaS / billing before ledger N and written licensing.
+  Full scoring: `docs/briefings/product-roadmap-2026-08-28.html`.
 
 - **HORIZONTAL SCALE — get the caches out of the process** *(owner-raised 2026-07-28; **owner flagged
   STAGE 3 as the one they were thinking about**)* —

@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Convexa — What to build next · 28 Aug 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@96,600;96,800;112,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0B0F17;
+      --panel: #131A24;
+      --raised: #1B2432;
+      --phosphor: #E9E4D6;
+      --steel: #8A9BB4;
+      --amber: #F2A93B;
+      --amber-text: #D9A03A;
+      --signal: #5E8BC4;
+      --warn: #E07A3F;
+      --line: rgba(138, 155, 180, 0.24);
+      --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+      --display: "Archivo", "IBM Plex Sans", sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(1100px 520px at 6% -12%, rgba(242, 169, 59, 0.08), transparent 55%),
+        radial-gradient(900px 480px at 100% 8%, rgba(94, 139, 196, 0.06), transparent 50%),
+        var(--ink);
+      color: var(--phosphor);
+      font-family: var(--sans);
+      font-size: 16.5px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 22px 110px; }
+    a { color: var(--signal); text-decoration: none; }
+    a:hover { color: var(--amber); }
+    a:focus-visible { outline: 2px solid var(--amber-text); outline-offset: 3px; }
+    h1, h2, h3 { font-family: var(--display); font-stretch: 112%; letter-spacing: -0.03em; }
+    h1 { font-size: clamp(2rem, 4.4vw, 3.2rem); line-height: 1.06; margin: 0 0 12px; font-weight: 700; }
+    h2 { font-size: 1.48rem; color: var(--phosphor); margin: 58px 0 12px; padding-top: 6px; }
+    h2 .kicker {
+      display: block; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--amber-text); margin-bottom: 6px; font-stretch: 96%;
+    }
+    h3 { font-size: 1.06rem; margin: 22px 0 8px; }
+    p, li { color: var(--steel); }
+    strong { color: var(--phosphor); }
+    code, .mono { font-family: var(--mono); }
+    code { color: var(--amber-text); font-size: 0.86em; }
+    .lede { max-width: 64ch; font-size: 1.1rem; color: var(--steel); margin: 0 0 20px; }
+    .meta { font-family: var(--mono); font-size: 0.78rem; color: var(--steel); letter-spacing: 0.04em; margin-bottom: 16px; }
+    .chip {
+      display: inline-block; font-family: var(--mono); font-size: 0.68rem;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px;
+      color: var(--amber-text); margin: 0 6px 10px 0;
+    }
+    .nav {
+      position: sticky; top: 0; z-index: 8;
+      background: rgba(11, 15, 23, 0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line); margin: 0 -22px 28px; padding: 10px 22px;
+    }
+    .nav ol {
+      display: flex; flex-wrap: wrap; gap: 8px 14px; list-style: none;
+      margin: 0; padding: 0; font-family: var(--mono); font-size: 0.7rem;
+    }
+    .nav a { color: var(--steel); }
+    .nav a:hover { color: var(--phosphor); }
+    .card {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .grid2, .grid3, .grid4 { display: grid; gap: 12px; }
+    .grid2 { grid-template-columns: 1fr; }
+    .grid3 { grid-template-columns: 1fr; }
+    .grid4 { grid-template-columns: 1fr 1fr; }
+    @media (min-width: 820px) {
+      .grid2 { grid-template-columns: 1fr 1fr; }
+      .grid3 { grid-template-columns: 1fr 1fr 1fr; }
+      .grid4 { grid-template-columns: repeat(4, 1fr); }
+    }
+    .stat b {
+      display: block; font-family: var(--mono); font-size: 1.5rem; color: var(--phosphor);
+      font-variant-numeric: tabular-nums; letter-spacing: -0.03em;
+    }
+    .stat span { font-size: 0.82rem; color: var(--steel); }
+    .stat.amber b { color: var(--amber); }
+    .stat.warn b { color: var(--warn); }
+    .stat.signal b { color: var(--signal); }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 8px; font-size: 0.9rem; }
+    th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+    th { background: var(--raised); color: var(--phosphor); font-weight: 600; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    td { background: var(--panel); color: var(--steel); }
+    td strong { color: var(--phosphor); }
+    .note {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 14px 16px; margin: 14px 0;
+    }
+    .note.warn { border-color: rgba(224, 122, 63, 0.55); }
+    .note.warn strong { color: var(--warn); }
+    .note.ok { border-color: rgba(94, 139, 196, 0.45); }
+    .note.ok strong { color: var(--signal); }
+    .caption { font-size: 0.8rem; color: var(--steel); text-align: center; margin: 8px 0 4px; }
+    .diagram {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+      padding: 16px 12px; margin: 16px 0 8px; overflow-x: auto;
+    }
+    .diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .thesis {
+      border-left: 3px solid var(--amber);
+      padding: 4px 0 4px 16px; margin: 8px 0 22px;
+      font-size: 1.16rem; color: var(--phosphor); max-width: 70ch;
+    }
+    .tag {
+      display: inline-block; font-family: var(--mono); font-size: 0.66rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 6px; margin: 0 6px 6px 0;
+    }
+    .tag-go { background: rgba(94,139,196,0.16); color: var(--signal); }
+    .tag-wait { background: rgba(242,169,59,0.14); color: var(--amber-text); }
+    .tag-park { background: rgba(224,122,63,0.14); color: var(--warn); }
+    .tag-later { background: rgba(138,155,180,0.12); color: var(--steel); }
+    .bars { display: grid; gap: 10px; margin: 12px 0; }
+    .bar-row { display: grid; grid-template-columns: 140px 1fr 64px; gap: 10px; align-items: center; }
+    .bar-row span { font-family: var(--mono); font-size: 0.75rem; color: var(--steel); }
+    .bar-row b { font-family: var(--mono); font-size: 0.8rem; color: var(--phosphor); text-align: right; }
+    .track { height: 14px; background: var(--raised); border-radius: 4px; overflow: hidden; border: 1px solid var(--line); }
+    .fill { height: 100%; border-radius: 3px; }
+    .fill-amber { background: var(--amber); }
+    .fill-signal { background: var(--signal); }
+    .fill-warn { background: var(--warn); }
+    .fill-steel { background: #4a5a70; }
+    .dots { letter-spacing: 0.12em; font-family: var(--mono); color: var(--amber); }
+    .dots.dim { color: var(--steel); }
+    .step { display: grid; grid-template-columns: 48px 1fr; gap: 12px; margin: 14px 0; }
+    .step .n {
+      font-family: var(--display); font-stretch: 112%; font-weight: 700;
+      color: var(--amber); font-size: 1.4rem; line-height: 1.1;
+    }
+    .film { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; margin: 8px 0 4px; }
+    .film i { display: block; height: 16px; border-radius: 2px; background: var(--amber); }
+    .film i.empty { background: var(--raised); border: 1px solid var(--line); }
+    .film i.gap { background: var(--warn); opacity: 0.7; }
+    .film i.ok { background: var(--signal); }
+    .film-label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.7rem; color: var(--steel); }
+    .timeline {
+      display: grid; grid-template-columns: 88px 1fr; gap: 0 16px;
+      border-left: 2px solid var(--line); margin: 18px 0 8px 8px; padding-left: 18px;
+    }
+    .timeline h3 { margin: 0 0 4px; }
+    .when { font-family: var(--mono); font-size: 0.72rem; color: var(--amber-text); padding-top: 4px; }
+    .tl-item { margin-bottom: 22px; }
+    footer {
+      margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--line);
+      font-size: 0.8rem; color: var(--steel);
+    }
+    .srcs { columns: 2; column-gap: 28px; font-size: 0.82rem; }
+    .srcs li { break-inside: avoid; margin: 6px 0; }
+    @media (max-width: 700px) { .srcs { columns: 1; } .bar-row { grid-template-columns: 1fr; } }
+    .quote {
+      font-size: 0.98rem; border-left: 3px solid var(--line);
+      padding: 2px 0 2px 14px; margin: 12px 0; color: var(--steel); max-width: 70ch;
+    }
+    .matrix td.center { text-align: center; font-family: var(--mono); }
+    .hero-grid { margin: 18px 0 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p>
+      <span class="chip">Research desk</span>
+      <span class="chip">Not a GATE I brief</span>
+      <span class="chip">Authorizes: nothing</span>
+    </p>
+    <h1>Keep the day you already paid for. Prove the score. Then let AI talk about numbers it can cite.</h1>
+    <p class="meta">Convexa · 28 Aug 2026 · independent product research · grounded in canon, production audit, score-lab, and the 2026 tools market</p>
+    <p class="thesis">
+      You are not missing a squeeze scanner. You are missing a replayable day, a few more weeks of honest books, and a surface that makes the $398/mo visible. The public product is the same instrument — only after your own ledger says it helps.
+    </p>
+    <p class="lede">
+      This is a map, not a shopping list. Suggestions you named (research tab, news, squeeze, AI everywhere, RL, catalysts) are scored below against what Convexa already computes, what Massive actually sells you, and what the 2026 market already does better. Nothing here retunes <code>opportunity_score</code>.
+    </p>
+
+    <nav class="nav" aria-label="On this page">
+      <ol>
+        <li><a href="#answer">Answer</a></li>
+        <li><a href="#now">Where we are</a></li>
+        <li><a href="#backtest">Backtesting</a></li>
+        <li><a href="#paid">The $398</a></li>
+        <li><a href="#replay">Day replay</a></li>
+        <li><a href="#score">Score &amp; AI</a></li>
+        <li><a href="#ideas">Idea gallery</a></li>
+        <li><a href="#market">The market</a></li>
+        <li><a href="#viral">Viral</a></li>
+        <li><a href="#road">90 days</a></li>
+        <li><a href="#house">Backlog</a></li>
+        <li><a href="#sources">Sources</a></li>
+      </ol>
+    </nav>
+
+    <!-- ANSWER -->
+    <h2 id="answer"><span class="kicker">00 · The answer first</span>What to focus on next</h2>
+    <div class="grid3 hero-grid">
+      <div class="card">
+        <span class="tag tag-go">Personal tool — yes</span>
+        <h3>Build the time machine</h3>
+        <p>Stop losing paid days. Tape the session. Replay SPY from open to close on the real ticker page with mock adapters when Massive is off. That is the feature you named, and it is the one nobody else in the GEX crowd ships as <em>your</em> captured day.</p>
+      </div>
+      <div class="card">
+        <span class="tag tag-wait">Public product — later</span>
+        <h3>Same desk, published</h3>
+        <p>The 1 Aug market report still holds. A public Convexa wins on honesty (methodology + track record + cited AI), not on breadth, 0DTE, or news. Audience compounding is a daily habit you deferred until the quirks shake out. Do not buy vendor add-ons to look like Unusual Whales.</p>
+      </div>
+      <div class="card">
+        <span class="tag tag-park">Hedge-fund terminal — no</span>
+        <h3>Do not clone Bloomberg</h3>
+        <p>Earnings dates you already curate. Short interest is a different product line. Press/news is a different product line. Funds use AI as a cited research copilot, not as a second trader. Convexa’s edge is dealer geometry you compute, then explain.</p>
+      </div>
+    </div>
+
+    <div class="diagram" role="img" aria-label="Fork: personal instrument versus public product, both fed by the same captured day">
+      <svg viewBox="0 0 960 280" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="90" width="220" height="88" rx="10" fill="#131A24" stroke="rgba(242,169,59,0.7)"/>
+        <text x="130" y="126" text-anchor="middle" fill="#F2A93B" font-family="IBM Plex Mono" font-size="11">THE ASSET</text>
+        <text x="130" y="150" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="16">A captured trading day</text>
+        <text x="130" y="170" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">tape + structure + score</text>
+        <path d="M240 134 H330" stroke="#F2A93B" stroke-width="2"/>
+        <path d="M330 80 V188" stroke="#F2A93B" stroke-width="2"/>
+        <path d="M330 80 H410" stroke="#5E8BC4" stroke-width="2"/>
+        <path d="M330 188 H410" stroke="#8A9BB4" stroke-width="2"/>
+        <rect x="410" y="36" width="250" height="96" rx="10" fill="#131A24" stroke="rgba(94,139,196,0.55)"/>
+        <text x="535" y="68" text-anchor="middle" fill="#5E8BC4" font-family="IBM Plex Mono" font-size="11">NOW · YOU</text>
+        <text x="535" y="94" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="15">Replay · measure · trade</text>
+        <text x="535" y="114" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">mock adapters, score-lab, ledger</text>
+        <rect x="410" y="156" width="250" height="96" rx="10" fill="#131A24" stroke="rgba(138,155,180,0.35)"/>
+        <text x="535" y="188" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="11">LATER · OTHERS</text>
+        <text x="535" y="214" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="15">Morning note · public record</text>
+        <text x="535" y="234" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">only if N≥30 says it helps</text>
+        <rect x="690" y="86" width="250" height="96" rx="10" fill="#1B2432" stroke="rgba(224,122,63,0.55)"/>
+        <text x="815" y="118" text-anchor="middle" fill="#E07A3F" font-family="IBM Plex Mono" font-size="11">SKIP</text>
+        <text x="815" y="144" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="15">News · squeeze · RL</text>
+        <text x="815" y="164" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">different data, weak median edge</text>
+      </svg>
+    </div>
+    <p class="caption">One captured day feeds both futures. Buying a news firehose or a squeeze score does not.</p>
+
+    <div class="note ok">
+      <strong>If you say <code>go</code> without naming a feature:</strong> strongest next build from this harvest is
+      <code>archive-coverage-guardrails</code> (stop silent $398 loss), then
+      <code>session-day-tape-capture</code> + <code>day-replay-mock-adapter</code>.
+      Production-maturity #6 (remote object store) is next <em>in that program</em> — insurance for bodies, not a trading decision.
+      Do not reweight the live score. The corpus wait is real; its honest start date is <strong>26 Aug 2026</strong>, not 20 Aug.
+    </div>
+
+    <!-- NOW -->
+    <h2 id="now"><span class="kicker">01 · Desk blotter</span>What Convexa already is</h2>
+    <p>A positions-centric GEX desk for ~7–45 DTE swing trading. Not a flow terminal. Not a broker. Not a news wire.</p>
+    <div class="grid4">
+      <div class="card stat amber"><b>$398</b><span>Massive Stocks + Options Advanced / mo</span></div>
+      <div class="card stat warn"><b>0.467</b><span>score AUC vs large next-day move (one thin slice)</span></div>
+      <div class="card stat"><b>7 / 9</b><span>SPY/QQQ/IWM session books as of 26 Aug audit</span></div>
+      <div class="card stat signal"><b>Authorizes: nothing</b><span>every research CLI refuses to retune live score</span></div>
+    </div>
+
+    <h3>Surfaces that exist today</h3>
+    <table>
+      <thead>
+        <tr><th>Place</th><th>What a person can do</th><th>Honest gap</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Ticker</strong> <code>/ticker/:symbol</code></td>
+          <td>Walls, flip, vol-norm GEX, live tape, setups, AI rec with citations, event calendar, structure history</td>
+          <td>Dense. Research and replay are invisible here.</td>
+        </tr>
+        <tr>
+          <td><strong>Scanner</strong></td>
+          <td>Shipped multi-ticker board over a 69-name universe</td>
+          <td>No morning artifact. No “AI snapshot of the board.”</td>
+        </tr>
+        <tr>
+          <td><strong>Positions</strong></td>
+          <td>Paper sim + read-only Webull book. No order path. Ever.</td>
+          <td>Ledger N is still small until you mirror every real trade (habit N2).</td>
+        </tr>
+        <tr>
+          <td><strong>Alerts / Methodology / Lab</strong></td>
+          <td>Level-touch / tier / score-gate. Public methodology. Experimental canvases.</td>
+          <td>Alerts evaluate on snapshots, not a live stream.</td>
+        </tr>
+        <tr>
+          <td><strong>Research CLIs</strong></td>
+          <td><code>batch-backtest</code> · <code>replay-outcome-join</code> · <code>score-lab</code> · <code>join-outcomes</code></td>
+          <td>Operator-only. Pages 404s <code>/api/_research</code>. You cannot <em>see</em> the books you keep.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Two programs, one wait</h3>
+    <div class="grid2">
+      <div class="card">
+        <span class="tag tag-wait">keep-paid-books</span>
+        <p><strong>Theme: prove the edge.</strong> Session archive, liquid-name capture, object-store bodies, join smoke — shipped. Remaining: <strong>wait 4–6 ET weeks</strong> of real books, then a time-split; AI rec lab after that. Do not buy vendor hist-chain.</p>
+      </div>
+      <div class="card">
+        <span class="tag tag-later">production-maturity</span>
+        <p><strong>Theme: the machine.</strong> Guardrails, Postgres, OpenAPI, capacity harness — shipped. Supply-chain still blocked. Next in <em>that</em> order: remote archive body store, then telemetry. Not the trading bottleneck.</p>
+      </div>
+    </div>
+
+    <div class="diagram" role="img" aria-label="What the trader sees versus what the lab already built">
+      <svg viewBox="0 0 960 220" xmlns="http://www.w3.org/2000/svg">
+        <text x="24" y="28" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="12">TRADER ORIGIN · convexa.pages.dev</text>
+        <rect x="24" y="40" width="912" height="52" rx="8" fill="#1B2432" stroke="rgba(138,155,180,0.28)"/>
+        <text x="40" y="72" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="14">Landing · Ticker · Positions · Scanner · Alerts · Methodology · Settings</text>
+        <text x="24" y="128" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="12">OPERATOR / CLI · 404 from Pages</text>
+        <rect x="24" y="140" width="912" height="52" rx="8" fill="#131A24" stroke="rgba(242,169,59,0.45)"/>
+        <text x="40" y="172" fill="#F2A93B" font-family="IBM Plex Sans" font-size="14">session books · chain snapshots · score-lab · batch-backtest · capacity harness · /_ops/metrics</text>
+      </svg>
+    </div>
+    <p class="caption">The expensive work is on the bottom rail. A research tab is mostly making that rail visible — not inventing a new math engine.</p>
+
+    <!-- BACKTEST -->
+    <h2 id="backtest"><span class="kicker">02 · How we fare</span>Backtesting is built. Evidence is thin. The score is not yet an edge.</h2>
+    <p>
+      This is the most important honest sentence in the file:
+      <strong>the plumbing to measure the score exists; the measurement we have does not justify changing it.</strong>
+    </p>
+
+    <div class="grid4">
+      <div class="card stat signal"><b>A−</b><span>Tooling: replay, join, lab, fixtures, hollow-split refused</span></div>
+      <div class="card stat warn"><b>D</b><span>Corpus: days, not weeks; holes; first-wins at midnight ET</span></div>
+      <div class="card stat warn"><b>F / A*</b><span>Score vs large move / vs “touched a wall we scored on”</span></div>
+      <div class="card stat signal"><b>A</b><span>Honesty: Authorizes nothing; no silent fill of missing books</span></div>
+    </div>
+
+    <h3>What “backtest” means here — three different jobs</h3>
+    <table>
+      <thead>
+        <tr><th>Job</th><th>Command</th><th>What it actually does</th><th>What it is not</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Snapshot replay</strong></td>
+          <td><code>batch-backtest</code></td>
+          <td>Reload a stored options book. Run the same Path-B engine. Zero Massive calls.</td>
+          <td>Not a clock. The UI does not tick. Price does not walk the day.</td>
+        </tr>
+        <tr>
+          <td><strong>Label join</strong></td>
+          <td><code>replay-outcome-join</code> / <code>join-outcomes</code></td>
+          <td>Stick 1-day / 5-day stock-bar labels on those scores. Stocks API only.</td>
+          <td>Not options P&amp;L. Not a sim fill. Not “did the AI rec make money.”</td>
+        </tr>
+        <tr>
+          <td><strong>Rank lab</strong></td>
+          <td><code>score-lab</code></td>
+          <td>Does this number rank the next move better than chance? Comparative, per-symbol.</td>
+          <td>Not permission to retune. One 7-hour slice is not a regime.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>The only published score-lab slice (10 Aug 2026)</h3>
+    <p>SPY + QQQ + IWM, 221 structure samples, one afternoon. 5-day outcomes: none yet. Primary KPI is “large next-day move.”</p>
+    <div class="bars" aria-label="Score lab AUC bars">
+      <div class="bar-row">
+        <span>large move AUC</span>
+        <div class="track"><div class="fill fill-warn" style="width:46.7%"></div></div>
+        <b>0.467</b>
+      </div>
+      <div class="bar-row">
+        <span>chance</span>
+        <div class="track"><div class="fill fill-steel" style="width:50%"></div></div>
+        <b>0.50</b>
+      </div>
+      <div class="bar-row">
+        <span>structure-event AUC</span>
+        <div class="track"><div class="fill fill-signal" style="width:93.2%"></div></div>
+        <b>0.932</b>
+      </div>
+      <div class="bar-row">
+        <span>lift @ top 10% (move)</span>
+        <div class="track"><div class="fill fill-warn" style="width:17%"></div></div>
+        <b>0.17×</b>
+      </div>
+    </div>
+    <p class="caption">Want lift ≳ 1.1 over many weeks. 0.17 means the top-decile scores were <em>worse</em> at picking large moves than picking at random.</p>
+
+    <div class="note warn">
+      <strong>The 0.932 is not a win.</strong>
+      Opportunity score already gives up to 40 of 100 points for sitting near the call wall, put wall, or gamma flip.
+      The “structure event” label <em>means</em> price later touched one of those same levels.
+      That is grading a student on a test written from the answer key. The comparative lab marks this cell
+      <em>definitionally coupled</em>. Do not advertise it as predictive power.
+    </div>
+
+    <h3>Score bins on that slice — high score pinned, did not trend</h3>
+    <table>
+      <thead>
+        <tr><th>Score bin</th><th>n</th><th>Large-move rate</th><th>Touched a level</th><th>Read in plain English</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>37–47</td><td>22</td><td>0.45</td><td>0.00</td><td>Quiet. Fine.</td></tr>
+        <tr><td>57–68</td><td>115</td><td>0.56</td><td>0.31</td><td>Most of the mass lives here.</td></tr>
+        <tr><td>68–78</td><td>50</td><td><strong>0.66</strong></td><td>0.98</td><td>The only bin where large moves actually peak.</td></tr>
+        <tr><td>78–88</td><td>30</td><td><strong>0.10</strong></td><td>0.97</td><td>Prime-looking scores, almost no large next-day moves — pinning / mean-reversion.</td></tr>
+      </tbody>
+    </table>
+    <p>
+      SPY looked usable on a hand-paired view; QQQ ran the other way. Pooling hid that.
+      Any reweight without a symbol split and a multi-week window would be reckless — and is forbidden
+      by <code>[score-change-is-deliberate-and-measured]</code>.
+    </p>
+    <div class="quote">
+      Vol-norm GEX is already in the product (math, wire, tile, methodology). It is <strong>not</strong> a scoring input.
+      Folding it into the score without a lab is the same class of mistake as trusting the 0.932.
+    </div>
+
+    <!-- PAID DATA -->
+    <h2 id="paid"><span class="kicker">03 · The bill</span>You are no longer throwing the books away. You are still throwing the day away.</h2>
+    <p>
+      August 18–20 closed the original leak: every paid options fetch from scanner / ticker cold compute
+      is now a dated snapshot, and one prune-proof session book per symbol per ET day lives beside the 48-slot ring.
+      That is real. It is not the whole day.
+    </p>
+
+    <div class="diagram" role="img" aria-label="What Massive sends versus what Convexa keeps">
+      <svg viewBox="0 0 960 360" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="200" height="320" rx="10" fill="#131A24" stroke="rgba(242,169,59,0.6)"/>
+        <text x="120" y="50" text-anchor="middle" fill="#F2A93B" font-family="IBM Plex Mono" font-size="11">MASSIVE $398</text>
+        <text x="36" y="84" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">REST chain snapshot</text>
+        <text x="36" y="104" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">greeks · IV · OI</text>
+        <text x="36" y="136" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">Stocks websocket</text>
+        <text x="36" y="156" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">ticks all session</text>
+        <text x="36" y="188" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">Minute / trade REST</text>
+        <text x="36" y="220" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">S3 flat files</text>
+        <text x="36" y="240" fill="#F2A93B" font-family="IBM Plex Sans" font-size="12">already entitled</text>
+        <text x="36" y="272" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">Not in this plan:</text>
+        <text x="36" y="292" fill="#E07A3F" font-family="IBM Plex Sans" font-size="12">I:VIX / I:SPX</text>
+        <text x="36" y="312" fill="#E07A3F" font-family="IBM Plex Sans" font-size="12">Benzinga earnings</text>
+
+        <path d="M220 80 H310" stroke="#5E8BC4" stroke-width="2"/>
+        <path d="M220 146 H310" stroke="#E07A3F" stroke-width="2"/>
+        <path d="M220 188 H310" stroke="#8A9BB4" stroke-width="2"/>
+        <path d="M220 230 H310" stroke="#E07A3F" stroke-width="2" stroke-dasharray="5 4"/>
+
+        <rect x="310" y="20" width="310" height="320" rx="10" fill="#131A24" stroke="rgba(94,139,196,0.45)"/>
+        <text x="465" y="50" text-anchor="middle" fill="#5E8BC4" font-family="IBM Plex Mono" font-size="11">WE KEEP</text>
+        <text x="330" y="84" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">48-slot ring / 14 days</text>
+        <text x="330" y="104" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">intraday reprints — cap wins</text>
+        <text x="330" y="136" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">1 session book / symbol / ET day</text>
+        <text x="330" y="156" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">first-wins, often midnight ET</text>
+        <text x="330" y="188" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">structure diary (digest)</text>
+        <text x="330" y="208" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">score, walls, flip — not the chain</text>
+        <text x="330" y="248" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">minutes + trades inside a book</text>
+        <text x="330" y="268" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">only as of capture time</text>
+        <text x="330" y="308" fill="#5E8BC4" font-family="IBM Plex Sans" font-size="12">Bodies on filesystem, not Postgres</text>
+
+        <rect x="650" y="20" width="290" height="320" rx="10" fill="#131A24" stroke="rgba(224,122,63,0.5)"/>
+        <text x="795" y="50" text-anchor="middle" fill="#E07A3F" font-family="IBM Plex Mono" font-size="11">WE DROP / NEVER STORE</text>
+        <text x="670" y="84" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">SSE ticks (Path A)</text>
+        <text x="670" y="104" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">cache, then gone</text>
+        <text x="670" y="136" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">Warmer refreshes</text>
+        <text x="670" y="156" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">excluded on purpose</text>
+        <text x="670" y="188" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">Days the archive failed</text>
+        <text x="670" y="208" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">SPY 24–25 Aug: unrecoverable</text>
+        <text x="670" y="240" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">Daily S3 flat files</text>
+        <text x="670" y="260" fill="#F2A93B" font-family="IBM Plex Sans" font-size="12">paid, not downloaded</text>
+        <text x="670" y="300" fill="#E07A3F" font-family="IBM Plex Sans" font-size="12">Snapshot history: N/A at vendor</text>
+      </svg>
+    </div>
+    <p class="caption">The Options snapshot endpoint cannot give you yesterday’s greeks. If we prune the book, that day of GEX is gone forever.</p>
+
+    <h3>Production coverage, 26 Aug audit</h3>
+    <p class="film-label"><span>Expected 3 names × 3 weekdays</span><span>7 present · 2 gone</span></p>
+    <div class="film" aria-hidden="true">
+      <i class="gap"></i><i class="ok"></i><i class="ok"></i>
+      <i class="gap"></i><i class="ok"></i><i class="ok"></i>
+      <i class="ok"></i><i class="ok"></i><i class="ok"></i>
+      <i class="empty"></i><i class="empty"></i><i class="empty"></i>
+      <i class="empty"></i><i class="empty"></i><i class="empty"></i>
+      <i class="empty"></i><i class="empty"></i><i class="empty"></i>
+      <i class="empty"></i>
+    </div>
+    <p class="caption">Amber/warn = missing SPY 24–25. Signal = present. Empty = future days the wait still needs.</p>
+    <table>
+      <thead>
+        <tr><th>Fact</th><th>Number</th><th>Why it matters</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Code in prod</td><td>21 Aug</td><td>Body root unset — archive did not store.</td></tr>
+        <tr><td>First writable index</td><td>22 Aug 07:59 UTC</td><td>Weekend. First ET session = 24 Aug.</td></tr>
+        <tr><td>Permission failures</td><td>thousands</td><td>SPY 24–25 never landed; ring later pruned the only copies.</td></tr>
+        <tr><td>Ownership repair</td><td>26 Aug</td><td><strong>Honest start of the 4–6 week clock.</strong></td></tr>
+        <tr><td>SPY 26 Aug book</td><td>13,288 contracts · 2,246 minutes · 38,193 trades · ~7.4 MB</td><td>This is what a real day looks like — and it is still one snapshot, not a stream.</td></tr>
+        <tr><td>QQQ/IWM 24–26</td><td>0 trades in the book</td><td>Midnight-ET first-wins = start of day, not the close.</td></tr>
+      </tbody>
+    </table>
+    <div class="note ok">
+      <strong>Flat files are already on the plan.</strong>
+      Options/Stocks Starter and above include unlimited S3 downloads. Advanced ($199) is a superset.
+      Next-day files (~11:00 ET) give trades, quotes, and aggregates — a reconstructable <em>tape</em>.
+      They do <strong>not</strong> give historical chain greeks. Keep live snapshots for GEX; download flat files for the clock.
+      Never insert a reconstructed tape into the session archive as <code>live_massive</code>.
+    </div>
+
+    <!-- REPLAY -->
+    <h2 id="replay"><span class="kicker">04 · The time machine</span>Day replay is a new product, not a flag on batch-backtest</h2>
+    <p>
+      You asked: if we stop paying Massive, play back a collected day so the frontend updates from open to close as if it were live.
+      That is the right insurance policy. The fixture port we have today cannot do it.
+    </p>
+
+    <div class="diagram" role="img" aria-label="Live path versus replay path sharing one SSE contract">
+      <svg viewBox="0 0 960 300" xmlns="http://www.w3.org/2000/svg">
+        <text x="480" y="24" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="12">SAME CONTRACTS THE TICKER PAGE ALREADY SPEAKS</text>
+        <rect x="40" y="44" width="880" height="44" rx="8" fill="#1B2432" stroke="rgba(138,155,180,0.3)"/>
+        <text x="480" y="72" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="14">Ticker UI  ←  SSE ticks + bundle poll  ←  analytics Path B</text>
+
+        <rect x="40" y="116" width="400" height="160" rx="10" fill="#131A24" stroke="rgba(94,139,196,0.5)"/>
+        <text x="240" y="146" text-anchor="middle" fill="#5E8BC4" font-family="IBM Plex Mono" font-size="11">LIVE</text>
+        <text x="60" y="176" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">MassiveStockStream → price cache</text>
+        <text x="60" y="198" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">MarketDataPort::Live → VendorBundle</text>
+        <text x="60" y="230" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">Ticks die in the cache.</text>
+        <text x="60" y="250" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">Bundle kept only if capture fires.</text>
+
+        <rect x="520" y="116" width="400" height="160" rx="10" fill="#131A24" stroke="rgba(242,169,59,0.6)"/>
+        <text x="720" y="146" text-anchor="middle" fill="#F2A93B" font-family="IBM Plex Mono" font-size="11">REPLAY · TO BUILD</text>
+        <text x="540" y="176" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">Tape store → mock stock stream</text>
+        <text x="540" y="198" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">MarketDataPort::Replay → timed bundles</text>
+        <text x="540" y="230" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">Speed 1× or 60×. Same SSE events.</text>
+        <text x="540" y="250" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">Frontend must not grow a second live path.</text>
+      </svg>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Layer 1 — the tape (price)</h3>
+        <p>Every SSE tick we already show (mid, spread, last, net flow) written append-only for a closed watchlist (start with SPY/QQQ/IWM). Or, next morning, the entitled flat file. This is what makes the header and live tiles move.</p>
+      </div>
+      <div class="card">
+        <h3>Layer 2 — the structure (GEX)</h3>
+        <p>Timed Path-B snapshots through the session (not only first-wins at midnight, not only 48 reprints that prune). This is what makes walls, flip, score, and AI inputs walk. Vendor cannot reconstruct this after the fact.</p>
+      </div>
+    </div>
+    <div class="note warn">
+      <strong>Do not pretend a midnight book is a day.</strong>
+      QQQ 24 Aug in the audit is a valid first-wins identity with 11,510 contracts and <em>zero</em> trades.
+      Replaying it would freeze the open. Capture cadence for replay is a product decision:
+      e.g. one structure snapshot every 5–15 minutes on the watchlist, plus the full tick tape.
+    </div>
+    <div class="step">
+      <div class="n">1</div>
+      <div><strong>Tape it while paying.</strong> Bounded watchlist. Provenance <code>live_massive</code>. Fail loud if the day is incomplete.</div>
+    </div>
+    <div class="step">
+      <div class="n">2</div>
+      <div><strong>Download the entitled flat file the next morning</strong> as a second, labeled artifact (tape reconstruction), never as a fake live book.</div>
+    </div>
+    <div class="step">
+      <div class="n">3</div>
+      <div><strong>Mock adapters</strong> implement the existing ports. A replay command points the server at a <code>(symbol, et_date)</code>. The ticker page does not know it is not Tuesday.</div>
+    </div>
+    <div class="step">
+      <div class="n">4</div>
+      <div><strong>Then</strong> you can cancel Massive and still demonstrate, debug, and study days you actually lived through. You cannot mint new days.</div>
+    </div>
+
+    <!-- SCORE + AI -->
+    <h2 id="score"><span class="kicker">05 · Math and models</span>Opportunity score, “AI everywhere,” and why RL waits</h2>
+
+    <h3>What the score is (and is not)</h3>
+    <p>
+      A 0–100 triage heuristic: proximity to dealer levels, IV extremity, stacked setups, a transition bonus.
+      Higher means “more is lining up near a tradeable level,” not “price will trend.”
+      The 10 Aug bins say the highest scores behaved like <strong>pin risk</strong>, not like a breakout alarm.
+    </p>
+    <div class="diagram" role="img" aria-label="Rough composition of opportunity score">
+      <svg viewBox="0 0 960 120" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="36" width="384" height="44" rx="6" fill="#F2A93B"/>
+        <text x="212" y="64" text-anchor="middle" fill="#0B0F17" font-family="IBM Plex Sans" font-size="14" font-weight="700">~40 · near call/put wall</text>
+        <rect x="404" y="36" width="96" height="44" rx="6" fill="#D9A03A"/>
+        <text x="452" y="64" text-anchor="middle" fill="#0B0F17" font-family="IBM Plex Sans" font-size="13">~10 flip</text>
+        <rect x="500" y="36" width="210" height="44" rx="6" fill="#5E8BC4"/>
+        <text x="605" y="64" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">IV + setups + transition</text>
+        <rect x="710" y="36" width="230" height="44" rx="6" fill="#1B2432" stroke="rgba(138,155,180,0.4)"/>
+        <text x="825" y="64" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">not P&amp;L · not a probability</text>
+      </svg>
+    </div>
+    <p class="caption">Until weekly labs on a multi-week, per-symbol corpus say otherwise, treat Prime as “pay attention,” not “size up.”</p>
+
+    <div class="grid2">
+      <div class="card">
+        <span class="tag tag-go">Do this with the score</span>
+        <ul>
+          <li>Keep the weekly ritual. Paste the tool’s own evidence block. Never retype numbers.</li>
+          <li>Freeze <code>score-lab-b0b-outcomes</code> when <code>MASSIVE_API_KEY</code> is in the build env. Never synthesize labels.</li>
+          <li>Add vol-norm onto lab rows as a <em>candidate</em>, not as a live weight.</li>
+          <li>Wait until ~23 Sep–7 Oct (4–6 weeks from 26 Aug) before any time-split story.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="tag tag-park">Do not do this with the score</span>
+        <ul>
+          <li>Change weights from one afternoon of 221 rows.</li>
+          <li>Alert harder on 80+ until the pin pattern is gone in a bigger sample.</li>
+          <li>Train a neural net or RL agent on the diary. Sample size is a rounding error.</li>
+          <li>Let the AI invent a second score. It already fabricated 44% of asserted numbers before grounding shipped.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>AI — what actually works in 2026</h3>
+    <p>
+      Hedge funds (AIMA 2024: 95% using gen AI) put models on <strong>filings, transcripts, and copilot research with citations</strong>.
+      Bridgewater’s public “Pocket Analyst” pitch is hours of exploratory research in minutes, not a buy button.
+      Man Group’s AlphaGPT generates and <em>tests</em> signals. TradeRank’s live LLM paper-trading season:
+      <strong>0 of 14 models beating Bitcoin</strong> as of this week. The model-as-trader demo is content. It is not your edge.
+    </p>
+    <p>
+      Convexa already has the hard part most “AI trading” apps skip: a computed bundle, a closed vocabulary for missing fields,
+      and a rule that a number the model asserts must trace to something we calculated. “AI everywhere” without that is how you get another 44%.
+    </p>
+    <table>
+      <thead>
+        <tr><th>AI idea</th><th>Fit</th><th>Why</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Grounded morning snapshot</strong> of the scanner + calendar + walls</td>
+          <td><span class="tag tag-go">Build later</span></td>
+          <td>Uses data we have. Every figure cited. This is SpotGamma’s retained value, automated, without their bill.</td>
+        </tr>
+        <tr>
+          <td><strong>Ticker research copilot</strong> over the bundle + methodology + event calendar</td>
+          <td><span class="tag tag-go">Shape of Ask-AI today</span></td>
+          <td>Extend; do not replace. Keep <code>no_trade</code> as a first-class, well-argued outcome.</td>
+        </tr>
+        <tr>
+          <td><strong>Multi-model lab (P4)</strong> on frozen export packs</td>
+          <td><span class="tag tag-wait">Blocked on corpus</span></td>
+          <td>keep-paid-books #6. Boring P2–P3 first. Comparing Grok vs Claude on the same cited bundle is real science.</td>
+        </tr>
+        <tr>
+          <td><strong>Reinforcement learning on score / entries</strong></td>
+          <td><span class="tag tag-park">Park</span></td>
+          <td>Non-stationary market, exploration is expensive, 221 rows, commission eats the edge (classic RL-trading failure). Revisit at years of tape, not weeks of digest.</td>
+        </tr>
+        <tr>
+          <td><strong>Uncitable “market snapshot → trade these”</strong></td>
+          <td><span class="tag tag-park">Park</span></td>
+          <td>Violates traceability. Viral for a week. Then someone sizes a fabricated max-risk.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- IDEAS -->
+    <h2 id="ideas"><span class="kicker">06 · Idea gallery</span>Everything you named, scored in plain English</h2>
+    <p>Dots = how much it improves a <em>trading decision you can observe</em> with data we already pay for. Not how shiny it is.</p>
+    <table class="matrix">
+      <thead>
+        <tr>
+          <th>Idea</th>
+          <th>Decision impact</th>
+          <th>Data we have</th>
+          <th>Viral bait</th>
+          <th>Call</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Archive coverage alarms</strong></td>
+          <td class="center"><span class="dots">●●●●●</span></td>
+          <td>Yes — we just failed this in prod</td>
+          <td>None (operator)</td>
+          <td><span class="tag tag-go">Next</span></td>
+        </tr>
+        <tr>
+          <td><strong>Day tape + mock replay</strong></td>
+          <td class="center"><span class="dots">●●●●○</span></td>
+          <td>Partial — need to start keeping ticks</td>
+          <td>High (watch a day)</td>
+          <td><span class="tag tag-go">Next</span></td>
+        </tr>
+        <tr>
+          <td><strong>Flat-file keep</strong> (already entitled)</td>
+          <td class="center"><span class="dots">●●●●○</span></td>
+          <td>Yes — S3 on the $199 plans</td>
+          <td>None</td>
+          <td><span class="tag tag-go">Next</span></td>
+        </tr>
+        <tr>
+          <td><strong>Research tab</strong> (books + lab + replay)</td>
+          <td class="center"><span class="dots">●●●○○</span></td>
+          <td>Yes — hidden behind CLI</td>
+          <td>Medium (nerd Twitter)</td>
+          <td><span class="tag tag-go">Soon</span></td>
+        </tr>
+        <tr>
+          <td><strong>Grounded morning snapshot</strong></td>
+          <td class="center"><span class="dots">●●●○○</span></td>
+          <td>Scanner + calendar + GEX</td>
+          <td>High if posted daily</td>
+          <td><span class="tag tag-wait">After visible lab</span></td>
+        </tr>
+        <tr>
+          <td><strong>UX/UI of the ticker</strong></td>
+          <td class="center"><span class="dots">●●○○○</span></td>
+          <td>n/a</td>
+          <td>Medium</td>
+          <td><span class="tag tag-later">Name the decision, then ship one slice</span></td>
+        </tr>
+        <tr>
+          <td><strong>Fix the math / latest research</strong></td>
+          <td class="center"><span class="dots">●●●○○</span></td>
+          <td>Lab exists; N is too small</td>
+          <td>Low until published</td>
+          <td><span class="tag tag-wait">Measure more weeks</span></td>
+        </tr>
+        <tr>
+          <td><strong>Earnings dates / calendar</strong></td>
+          <td class="center"><span class="dots">●●○○○</span></td>
+          <td>Already curated for 69 names</td>
+          <td>Low</td>
+          <td><span class="tag tag-later">Refresh the JSON. Do not buy Benzinga.</span></td>
+        </tr>
+        <tr>
+          <td><strong>Economic calendar / FOMC</strong></td>
+          <td class="center"><span class="dots">●●○○○</span></td>
+          <td>Not a Massive product. Curate like earnings.</td>
+          <td>Low</td>
+          <td><span class="tag tag-later">Same config pattern</span></td>
+        </tr>
+        <tr>
+          <td><strong>Breaking news / press</strong></td>
+          <td class="center"><span class="dots">●○○○○</span></td>
+          <td>No — new vendor, new liability</td>
+          <td>High, crowded</td>
+          <td><span class="tag tag-park">Park</span></td>
+        </tr>
+        <tr>
+          <td><strong>Short-squeeze scanner</strong></td>
+          <td class="center"><span class="dots">●○○○○</span></td>
+          <td>SI% not in-tier. OptionWalls median +0.15% / 5d</td>
+          <td>Very high, already memed</td>
+          <td><span class="tag tag-park">Park</span></td>
+        </tr>
+        <tr>
+          <td><strong>Fundamentals / 10-K AI</strong></td>
+          <td class="center"><span class="dots">●○○○○</span></td>
+          <td>Not our engine. Fiscal.ai / Hebbia exist</td>
+          <td>Medium</td>
+          <td><span class="tag tag-park">Different product</span></td>
+        </tr>
+        <tr>
+          <td><strong>AI hedge-fund research tab</strong></td>
+          <td class="center"><span class="dots">●●○○○</span></td>
+          <td>Only if it cites Convexa numbers</td>
+          <td>High if honest</td>
+          <td><span class="tag tag-wait">= grounded copilot, not a new tab of vibes</span></td>
+        </tr>
+        <tr>
+          <td><strong>RL / opportunity-score training</strong></td>
+          <td class="center"><span class="dots">●○○○○</span></td>
+          <td>Orders of magnitude too little N</td>
+          <td>Buzzword</td>
+          <td><span class="tag tag-park">Park</span></td>
+        </tr>
+        <tr>
+          <td><strong>Remote object store (#6)</strong></td>
+          <td class="center"><span class="dots">●●○○○</span></td>
+          <td>Yes — bodies already off Postgres</td>
+          <td>None</td>
+          <td><span class="tag tag-later">Next in infra program</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Squeeze, in one paragraph so we can stop re-deriving it</h3>
+    <p>
+      Academic work in 2025 finds short squeezes are real, rare, and short-lived (about 15% of activist short attacks; quarterly, ~10% of names see a “market squeeze” day).
+      A 2019–2023 gamma-squeeze identification paper finds 669 candidate events with a ~5% average abnormal return over the following month — a selected sample, not a scanner you can run every morning.
+      OptionWalls, which actually publishes receipts, shows a squeeze score ≥70 with <strong>51.7% hit rate and +0.15% median 5-day underlying return</strong> (n ≈ 5.8k).
+      That is not a business. It is a lottery ticket with honest marketing. Convexa should keep saying when price is near a call wall with rising call OI — that is already on the chain we pay for — and refuse to brand it “squeeze.”
+    </p>
+
+    <!-- MARKET -->
+    <h2 id="market"><span class="kicker">07 · Outside</span>The 2026 neighborhood, without the brochure language</h2>
+    <div class="diagram" role="img" aria-label="Three product types in the options analytics market">
+      <svg viewBox="0 0 960 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="30" width="290" height="150" rx="10" fill="#131A24" stroke="rgba(138,155,180,0.35)"/>
+        <text x="165" y="60" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="11">TYPE 1 · FLOW</text>
+        <text x="165" y="90" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="16">Prints</text>
+        <text x="40" y="120" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">Unusual Whales · Cheddar</text>
+        <text x="40" y="142" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">from ~$50/mo · community</text>
+        <text x="40" y="164" fill="#E07A3F" font-family="IBM Plex Sans" font-size="12">We should not become this</text>
+
+        <rect x="335" y="30" width="290" height="150" rx="10" fill="#131A24" stroke="rgba(242,169,59,0.65)"/>
+        <text x="480" y="60" text-anchor="middle" fill="#F2A93B" font-family="IBM Plex Mono" font-size="11">TYPE 2 · STRUCTURE</text>
+        <text x="480" y="90" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="16">Walls · flip · GEX</text>
+        <text x="355" y="120" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">SpotGamma · MenthorQ · us</text>
+        <text x="355" y="142" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">SpotGamma Alpha ~$299/mo</text>
+        <text x="355" y="164" fill="#F2A93B" font-family="IBM Plex Sans" font-size="12">Our home. Depth on few names.</text>
+
+        <rect x="650" y="30" width="290" height="150" rx="10" fill="#131A24" stroke="rgba(94,139,196,0.5)"/>
+        <text x="795" y="60" text-anchor="middle" fill="#5E8BC4" font-family="IBM Plex Mono" font-size="11">TYPE 3 · NOTE + RECORD</text>
+        <text x="795" y="90" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="16">A written morning read</text>
+        <text x="670" y="120" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">SpotGamma note · OpenGamma</text>
+        <text x="670" y="142" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">GammaRips (data for agents)</text>
+        <text x="670" y="164" fill="#5E8BC4" font-family="IBM Plex Sans" font-size="12">Our public path, if any</text>
+      </svg>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Name</th><th>What they actually sell</th><th>What we should steal</th><th>What we should not</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>SpotGamma</strong></td>
+          <td>Daily founder note + HIRO + Equity Hub. Discretionary index traders. No public retail API.</td>
+          <td>The written read. Staleness is their #1 churn complaint — we already recompute.</td>
+          <td>Pretending we have buyside positioning estimates (SGOI). We model dealer GEX from the chain.</td>
+        </tr>
+        <tr>
+          <td><strong>Unusual Whales</strong></td>
+          <td>Flow, dark pool, Congress, community. GEX as a side dish. From ~$50/mo.</td>
+          <td>Distribution. API-for-agents thinking.</td>
+          <td>Becoming a print firehose. We lose on breadth and on meme velocity.</td>
+        </tr>
+        <tr>
+          <td><strong>GammaRips</strong></td>
+          <td>“Stop asking AI for picks. Give it data.” Nightly liquid pool, published outcomes, no pick endpoint.</td>
+          <td>Outcomes published, wins and losses. Agent-shaped JSON. Paper by default.</td>
+          <td>3,500-name breadth. Our evidence says index-first, few names deep.</td>
+        </tr>
+        <tr>
+          <td><strong>OpenGamma-style briefs</strong></td>
+          <td>Pre-market dealer brief with a running hit-rate on the archive card.</td>
+          <td>Accuracy-of-record as the product. This is L3 on the Aug 1 roadmap.</td>
+          <td>Hit-rate theater on tiny N. Wilson intervals or don’t publish.</td>
+        </tr>
+        <tr>
+          <td><strong>FlashAlpha / GEX APIs</strong></td>
+          <td>GEX as JSON for developers.</td>
+          <td>We already have a real bundle + OpenAPI. That is a moat if we ever sell data, not a v1 business.</td>
+          <td>Racing 6,000 tickers on a personal Massive key.</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note ok">
+      <strong>What is still uniquely ours, today:</strong>
+      live single-ticker GEX + vol-norm + cited AI rec + paper ledger + read-only real positions,
+      with a research spine that refuses to lie about sample size.
+      Nobody famous combines those. That combination is the product. A news tab is not.
+    </div>
+
+    <!-- VIRAL -->
+    <h2 id="viral"><span class="kicker">08 · Noticed</span>How this gets noticed without becoming a squeeze account</h2>
+    <div class="grid3">
+      <div class="card">
+        <h3>1. Watch a day</h3>
+        <p>A 60× replay of SPY walls walking from the open, posted as a short clip, is a visual the GEX internet does not have. It is also a QA tool. Build it for you; the clip is free later.</p>
+      </div>
+      <div class="card">
+        <h3>2. Publish the lab</h3>
+        <p>Weekly evidence block, including “below chance this week.” OpenGamma’s trick is the running record on the card. Ours would be the first GEX product that shows the score failing in public. That is how trust compounds.</p>
+      </div>
+      <div class="card">
+        <h3>3. Morning note, cited</h3>
+        <p>Three lines + one screenshot. Habit N4, still deferred by you until personal testing is done. Correct call. The build that makes it cheap later is the grounded snapshot, not a growth hack now.</p>
+      </div>
+    </div>
+    <p>
+      Cut from the Aug 1 roadmap and still cut: 0DTE arms race, 3,500-ticker breadth, showing paid quotes to strangers (licensing landmine), real order execution.
+      Viral that needs OPRA for other people is a lawyer, not a feature.
+    </p>
+
+    <!-- 90 DAYS -->
+    <h2 id="road"><span class="kicker">09 · Roadmap</span>Ninety days, personal-first</h2>
+    <div class="timeline">
+      <div class="when">This week</div>
+      <div class="tl-item">
+        <h3>Stop losing days you already bought</h3>
+        <p><code>archive-coverage-guardrails</code> as specified in the 26 Aug audit. One warning per missing SPY/QQQ/IWM book after an ET checkpoint. Local command exits non-zero. No new vendor, no UI chrome.</p>
+      </div>
+      <div class="when">Weeks 1–3</div>
+      <div class="tl-item">
+        <h3>Tape the watchlist · start the flat-file pull</h3>
+        <p><code>session-day-tape-capture</code> for Path-A ticks + timed structure snapshots on SPY/QQQ/IWM (and any name you actually trade). Nightly download of entitled S3 files, provenance-labeled. Keep paying Massive while this fills. Mirror every real trade into the sim ledger (habit N2) — X4 still needs N≥20.</p>
+      </div>
+      <div class="when">Weeks 3–6</div>
+      <div class="tl-item">
+        <h3>Mock replay into the real ticker page</h3>
+        <p><code>day-replay-mock-adapter</code>. Speed control. Same SSE. A researcher (you) can leave Massive unplugged and watch 26 Aug SPY as if it were live. This is also the demo for anyone you ever show the product to.</p>
+      </div>
+      <div class="when">Weeks 4–8</div>
+      <div class="tl-item">
+        <h3>Make the lab visible</h3>
+        <p><code>research-lab-surface</code>, operator-gated first (pattern of <code>/_ops/metrics</code>). List session books, show score-lab evidence, launch a replay. Then, and only then, a grounded morning snapshot that cites the board.</p>
+      </div>
+      <div class="when">~23 Sep – 7 Oct</div>
+      <div class="tl-item">
+        <h3>First honest time-split</h3>
+        <p>4–6 ET weeks from the <strong>26 Aug</strong> reliable clock. <code>batch-backtest</code> + <code>replay-outcome-join</code> on session books that actually span calendar time. Still <strong>Authorizes: nothing</strong> unless the lab clears the bar on more than one week and more than one symbol.</p>
+      </div>
+      <div class="when">Infra, parallel</div>
+      <div class="tl-item">
+        <h3>Remote body store when you pick that program</h3>
+        <p>production-maturity #6. S3-compatible behind the port you already shipped. Do this when bodies outgrow the volume or before you trust a single disk with irreplaceable greeks. Supply-chain stays blocked; do not reopen it as “the next feature” unless hosted evidence exists.</p>
+      </div>
+      <div class="when">Not this quarter</div>
+      <div class="tl-item">
+        <h3>Public SaaS, SnapTrade, news, squeeze, RL, Benzinga, indices add-on</h3>
+        <p>Business test from Aug 1 still stands: daily posting held and a pulse of strangers, plus a ledger you would show. Licensing in writing before the first paying user sees a quote. SnapTrade is the later multi-broker arm — Webull already covers you.</p>
+      </div>
+    </div>
+
+    <h3>Budget honesty</h3>
+    <table>
+      <thead>
+        <tr><th>Line</th><th>Keep?</th><th>Why</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Massive Stocks $199</td><td><strong>Yes, for now</strong></td><td>Live tape + labels + (unused) flat files. Cancel only after you have weeks of taped days.</td></tr>
+        <tr><td>Massive Options $199</td><td><strong>Yes, for now</strong></td><td>The greeks snapshot is the thing that cannot be bought back. Capture cadence is how you earn the right to cancel.</td></tr>
+        <tr><td>Benzinga earnings add-on</td><td>No</td><td>Dates for 69 names are a JSON. You already shipped that.</td></tr>
+        <tr><td>Indices asset class</td><td>No</td><td><code>I:VIX</code> / <code>I:SPX</code> rejected. ETF proxies (SPY/QQQ/SMH) are in-universe.</td></tr>
+        <tr><td>Databento OPRA</td><td>Only if commercial or in-house greeks win a measured test</td><td>Aug 1 L2. Not a personal-phase unlock.</td></tr>
+        <tr><td>Ortex / short-interest</td><td>No</td><td>Different sport. Median squeeze receipts are tiny.</td></tr>
+        <tr><td>AI BYO keys</td><td>Yes</td><td>Already shipped. No Convexa-billed pool.</td></tr>
+      </tbody>
+    </table>
+
+    <!-- HOUSEKEEPING -->
+    <h2 id="house"><span class="kicker">10 · Housekeeping</span>What was stale on the backlog, and what I changed</h2>
+    <p>
+      The idea pool is a discovery surface, not a promise. I did <strong>not</strong> open GATE I or write a BRIEF.
+      I did tidy the standing story so the next <code>go</code> does not re-derive 1 Aug as if SnapTrade were still “next.”
+    </p>
+    <table>
+      <thead>
+        <tr><th>Item</th><th>Was</th><th>Now</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Pool §A queue</td>
+          <td>index-first → SnapTrade → vol-norm → alerts as standing next-build order</td>
+          <td>Marked superseded. Those four shipped in code (broker v1 = Webull). Live programs: corpus wait, maturity #6, this harvest.</td>
+        </tr>
+        <tr>
+          <td>keep-paid-books #5 clock</td>
+          <td>Started 20 Aug</td>
+          <td>Label kept; honest reliable start <strong>26 Aug</strong> after the ownership repair. Time-split window ~23 Sep–7 Oct.</td>
+        </tr>
+        <tr>
+          <td>X2 vol-norm / X3 alerts</td>
+          <td>Roadmap still reads as “next features”</td>
+          <td>Already in production. Residual = lab coupling, not a rebuild.</td>
+        </tr>
+        <tr>
+          <td>New pool rows</td>
+          <td>—</td>
+          <td><code>archive-coverage-guardrails</code> · <code>massive-flat-file-keep</code> · <code>session-day-tape-capture</code> · <code>day-replay-mock-adapter</code> · <code>research-lab-surface</code> · <code>grounded-morning-snapshot</code></td>
+        </tr>
+        <tr>
+          <td>Parked explicitly</td>
+          <td>Re-derived every few gates</td>
+          <td>Squeeze scanner, Benzinga, news terminal, RL, indices line, P7 hist-chain, public SaaS before ledger N.</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      <strong>UX/UI “fix the offering”</strong> is not one feature. The offering is already a GEX desk with cited AI.
+      The UX hole that fails a decision-impact test is: you cannot see or replay the day you paid for.
+      Density on the ticker page is real, but it is not the $398 problem. Slice UI only when you can name the misread (a control that looks live and isn’t, a number that looks like P&amp;L and isn’t).
+    </div>
+
+    <h3>Personal vs public — one more time</h3>
+    <div class="grid2">
+      <div class="card">
+        <h3>For you, this quarter</h3>
+        <p>A desk that remembers Tuesday. A lab that will tell you the score is still coin-flip. A replay you can run with the vendor unplugged. Your real book on the page. No new subscriptions.</p>
+      </div>
+      <div class="card">
+        <h3>For other traders, later</h3>
+        <p>The same desk, with a morning note whose numbers trace, a public ledger with intervals, and a licensing conversation <em>in writing</em>. Not a news product. Not a squeeze product. Not “AI picks.”</p>
+      </div>
+    </div>
+
+    <footer>
+      <p>
+        Convexa research briefing · 28 Aug 2026 · does not authorize a live score change ·
+        harvest also written into <code>.spire/clusters/tech/context/BACKLOG.md</code>.
+        When you want a pipeline feature, say <code>go</code> and name one row — or say <code>go</code> and accept the cull’s default from this harvest.
+      </p>
+    </footer>
+
+    <h2 id="sources"><span class="kicker">11 · Sources</span>Where the claims live</h2>
+    <ul class="srcs">
+      <li>Internal: <code>docs/research/SCORE_LAB_DEEP_DIVE_2026-08-11.md</code> (AUC 0.467 / 0.932 coupling)</li>
+      <li>Internal: <code>docs/research/ARCHIVE_COVERAGE_AUDIT_2026-08-26.md</code> (7/9 books, SPY 24–25 gone)</li>
+      <li>Internal: <code>docs/briefings/backtest-maturity-2026-08-19.html</code> (48-slot cap vs 14 days)</li>
+      <li>Internal: <code>docs/ROADMAP_2026-08.md</code> + <code>docs/MARKET_REALITY_REPORT_2026-08-01.html</code></li>
+      <li>Internal: <code>docs/research/X2_VOL_NORMALIZED_GEX_STATUS.md</code> (X2 already in code)</li>
+      <li>Massive option chain snapshot: Plan History = not applicable</li>
+      <li>Massive Options/Stocks pricing: Advanced $199; flat files from Starter up</li>
+      <li>Massive flat files docs: next-day ~11:00 ET S3 trades/quotes/aggs</li>
+      <li>OptionWalls squeeze receipts: 51.7% hit, +0.15% median 5d, n≈5787, through 2026-04-28</li>
+      <li>Stice-Lawrence et al., JAR 2025 — squeezes after short attacks (~15%)</li>
+      <li>Allen et al., JBF 2025 — market squeezes rare/short-lived; ~9.9% of US names/quarter</li>
+      <li>AEA 2026 “Seeking Gamma” — 669 candidate gamma squeezes 2019–2023, ~5.13% CAR / month (selected)</li>
+      <li>SpotGamma / Unusual Whales / MenthorQ comparison pages, Aug 2026 pricing snapshots</li>
+      <li>GammaRips (data-for-agents, published outcomes, no pick endpoint)</li>
+      <li>TradeRank.ai Season 8 — 0/14 models beating Bitcoin as of 29 Aug 2026</li>
+      <li>AIMA 2024 gen-AI in hedge funds (95% usage); Bridgewater AIA / Pocket Analyst 2026</li>
+      <li>RL-in-trading reviews: non-stationarity, costs, overfitting; TensorTrade failure write-ups</li>
+    </ul>
+  </div>
+</body>
+</html>

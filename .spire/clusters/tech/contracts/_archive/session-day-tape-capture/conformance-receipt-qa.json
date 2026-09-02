@@ -1,0 +1,51 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "PASS",
+  "mode": "live",
+  "source": ".spire/clusters/tech/contracts/session-day-tape-capture/INTERFACE_CONTRACT.md",
+  "base_url": "http://localhost:8000",
+  "auth": null,
+  "checked_at": "2026-08-30T04:35:58Z",
+  "summary": {
+    "pass": 5,
+    "fail": 0,
+    "total": 5
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/_research/session-day-tape/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 14,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-day-tape/{symbol}/day",
+      "verdict": "PASS",
+      "required_checked": 34,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-day-tape/{symbol}/day",
+      "verdict": "PASS",
+      "required_checked": 3,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 14,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}/book",
+      "verdict": "PASS",
+      "required_checked": 6,
+      "failures": []
+    }
+  ]
+}

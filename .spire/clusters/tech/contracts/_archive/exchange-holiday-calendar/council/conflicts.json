@@ -1,0 +1,168 @@
+{
+  "conflicts": [
+    {
+      "quote": "A date the set does **not** name, or a holiday answer that **cannot be evaluated**, is **not** classified as a known full-day holiday.",
+      "source": "pm",
+      "why": "Unlisted \u2260 holiday is lock 2 and I still hold it. 'Cannot be evaluated' is not a membership outcome. The table is compile-time `&'static` triples: lookup on a parsed NaiveDate is total, never Result, never a missing file. A plantable 'unreadable set' requires a runtime calendar. A Result that fail-opens occupancy to a due weekday fabricates session-day holes; a Result that fail-closes fabricates empty-expected holiday. Both fight absent-is-not-none. Clock/zone/et_date garbage already maps to CoverageFault::UnparseableDate.",
+      "proposal": "Split the sentence. Dates not in the set, including outside 2020..=2032, are not holidays (Mon\u2013Fri stays a session weekday). Unparseable et_date/clock stays existing coverage-failed / UnparseableDate. Membership stays `fn(NaiveDate) -> bool` with no Err. Scanner has no lookup Err to fail-open; SCAN_MARKET_HOURS_ONLY off remains the inherited sweep-anyway path. Drop GATE Q's planted unreadable set.",
+      "kind": "technical",
+      "conflict_id": "7c7fe42330cb7d8d1c71479d941d1696ba5a4e8648b2214810b07c6f672d6acb",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Under AC-1\u2019s preconditions, coverage\u2019s operator-visible reason is **holiday**, not weekend.",
+      "source": "pm",
+      "why": "Coverage HTTP has no reason field today. Weekend empty-expected is already generic (NO EXPECTED IDENTITIES \u2014 it does not say weekend). Requiring an operator-visible holiday reason on coverage forces a new coverage key, a sixth cell, or a framing rewrite. UX forbids all three, and lock 3 already picked same due-ness / distinct internal arm, not a new coverage print. Distinguishability of Thursday vs Saturday belongs on the occupancy/identity arm and on tape/keep sibling prints.",
+      "proposal": "Coverage holiday D uses the same empty-expected envelope as Sat/Sun (not_due, no-expected framing, expected_due 0, empty rows/holes). CoverageMatrix.weekend stays Sat/Sun only; the envelope keys no-expected framing off !is_et_session_day, not by setting weekend true. Tape/keep print ineligible-holiday vs ineligible-weekend. Poison holiday-as-weekend on those vehicles. No coverage cell and no new coverage HTTP reason token this slice.",
+      "kind": "product",
+      "conflict_id": "fc17cd773eb24410aa7022af52d18a010b69a2264f6606793c85b7b96dec7429",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Architect inverts the keep oracle `holiday_weekday_zero_rows_is_empty_extract_not_weekend`: after this feature, holiday D is ineligible, **not** `Occupancy::EmptyExtract`.",
+      "source": "ux",
+      "why": "That test's D is 2026-08-10, a Monday that is not a NYSE full-day holiday (UX's own ordinary-weekday oracle). Inverting it in place would mark a session weekday ineligible and fight the out-set pin plus PM AC-29. The test name documents today's hole \u2014 any weekday zero-row gzip is EmptyExtract because no calendar exists. The date is a stand-in, not Thanksgiving.",
+      "proposal": "Leave holiday_weekday_zero_rows_is_empty_extract_not_weekend on 2026-08-10 as EmptyExtract / !is_et_weekend / not IneligibleWeekend. Add a new fixture on a real in-set weekday (2026-11-26 Thanksgiving) that gates before GET, stores nothing, and is not EmptyExtract / not Miss / not IneligibleWeekend.",
+      "kind": "technical",
+      "conflict_id": "c522a8aa5234cf34278c6bfc314556e5b43f495ceb8bba8a73eabc5e8df15e43",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Forbidden edges: tape/keep \u219b coverage/ensure; calendar \u219b `quant-engine` / `signals`; calendar \u219b Massive REST/WS/files; FE \u219b a second holiday table.",
+      "source": "architect",
+      "why": "The last clause over-claimed. marketSessionPhase is an existing weekend gate (Sat/Sun \u2192 closed; 2026-08-10 10:00 ET \u2192 rth). If SSE market_session is closed and the scanner badge stays RTH, the desk has two answers for the same D. A hand-maintained independent TS calendar is still the drift failure I named; forbidding any dashboard membership left that clock with no mechanism.",
+      "proposal": "Retract only 'FE \u219b a second holiday table'. Canonical closed set stays the Rust domain module. Dashboard marketSessionPhase consumes a generated or pin-equality-tested replica of that same set, used only by the scanner session badge. No GET /api/holidays, no bundle calendar field, no calendar UI. Ticker chip still binds SSE market_session === 'closed', not the replica. quant-engine / Massive / tape\u219bcoverage edges stand.",
+      "kind": "technical",
+      "conflict_id": "4b1635768b6b20831765fde94d96903f06d531175fa3987d1d177c6f5d4f5a01",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "On holiday D at 10:00 ET the chip must see `live: false` and `market_session: 'closed'` so `liveStatus` takes the closed branch.",
+      "source": "ux",
+      "why": "live is tick-age freshness (tick_age < LIVE_TICK_MAX_AGE_S), not session standing. liveStatus returns the live chip whenever live.live is true, before it reads market_session \u2014 so live true + closed paints '\u25cf live \u00b7 closed'. Forcing live false is the calendar writing a tick flag. Holiday ClosedPre / closed is a static session clock, not an SSE-drop degrade, and must not reuse the no-ticks path as its mechanism.",
+      "proposal": "market_session_at returns closed on a full-day holiday (lock 4). Leave live as tick-age. Reorder liveStatus so market_session === 'closed' wins over the live.live short-circuit (never \u25cf live \u00b7 closed). The calendar does not write live: false.",
+      "kind": "technical",
+      "conflict_id": "3e034cdc22da9e0cd16f8b8fedc0493019a3f080eb5a59e53c72d182f474899a",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Frontend copy, layout, or a client-side holiday list.",
+      "source": "architect",
+      "why": "I am not asking for a holiday calendar UI, a named-holiday glossary, or a hand-maintained second date book. I am refusing a scope cut that leaves the existing Scanner session badge at RTH at 10:00 ET on a known full-day holiday. That badge is already a weekend gate (Sat/Sun \u2192 Closed, weekday 10:00 \u2192 RTH). BRIEF: vehicles that already have a weekend gate consume the holiday answer. Ticker-closed via the two server classifiers is necessary and not sufficient for scanner chrome. I will not silently drop it.",
+      "proposal": "Keep FE copy and layout in UX\u2019s lane. Treat the existing dashboard session-phase clock as a consumer of the one in-process membership \u2014 generated or shared, not hand-copied, not `GET /api/holidays`, not a new SSE/bundle field. Holiday D at 10:00 ET shows Closed, not RTH, same as Saturday. Owner may cut this only explicitly.",
+      "kind": "product",
+      "conflict_id": "3671f1d48874189277d6d111661d44216b18e02e3e1bf97d888fb6b18e7c3fcd",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Under AC-1\u2019s preconditions, coverage\u2019s operator-visible reason is **holiday**, not weekend.",
+      "source": "pm",
+      "why": "SELF-REVISION \u2014 I withdraw AC-4 as a coverage-HTTP requirement to print the word holiday. BRIEF coverage observed-by is `not_due` empty expected, not a holiday caption. UX\u2019s coverage chrome is already class-level no-expected identities and does not say weekend; forcing a holiday reason on that card adds a sixth cell, a holiday name line, or a new key the card must learn this slice \u2014 all rejected. Distinguishability of Thursday vs Saturday lives on tape/keep sibling literals and on not printing weekend on a holiday weekday.",
+      "proposal": "Coverage HTTP/UI uses the same no-expected envelope as weekend: empty rows, not three cells, not a pass, no holiday cell, no holiday name. It must not print weekend on a holiday Thursday. Tape/keep print ineligible holiday, not ineligible weekend (AC-13/16/43). Poison holiday-as-weekend still goes red.",
+      "kind": "product",
+      "conflict_id": "0a53712f4e05a54c0fafb645b0b163d48feb33a8109f2d672209f4b3cc3e51bf",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "When the holiday answer cannot be evaluated, coverage does **not** print empty-expected holiday; the operator sees **coverage failed / unavailable**, distinct from not-due holiday and from three missing cells as the only signal.",
+      "source": "pm",
+      "why": "SELF-REVISION \u2014 I withdraw serve-time \u201cset unreadable / holiday answer cannot be evaluated\u201d as a holiday-specific class. Architect\u2019s compiled table is total on a parsed date: never `Result`, never null, never a missing file at serve. Inventing a holiday-unknown path would either fabricate empty-expected (hides a hole) or fight fail-closed occupancy. I also withdraw AC-34 as a holiday-lookup-`Err` scanner path.",
+      "proposal": "Unlisted dates, including outside 2020..=2032, are not holidays (session weekdays). Invalid `et_date` / zone parse stays on the existing unparseable / coverage-failed arms \u2014 not empty-expected holiday. Scanner fail-open remains gate-off (`SCAN_MARKET_HOURS_ONLY` false), same as weekend, not a new lookup-failure idle. Corrupt table is compile/test red, not a serve fallback.",
+      "kind": "technical",
+      "conflict_id": "c74ceda679f2e4044fae63e8f9655ffa95c1c12de53e22d4bcc74325629eadcf",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "For the same market inputs, opportunity score, tier, and state fingerprint are **byte-identical** with this construct present vs absent and with D a holiday vs a session weekday that happens to carry the same inputs.",
+      "source": "pm",
+      "why": "SELF-REVISION \u2014 I withdraw the holiday-vs-session-weekday identity clause. Honest `ClosedPre` / `closed` on a full-day holiday changes spot selection versus today\u2019s false RTH at 10:00 ET. Requiring Thanksgiving\u2019s score to match a session Tuesday either forbids the session-standing fix or pretends phase is not an input. `Authorizes: nothing` means do not retune the formula and do not feed the calendar into `generate_signals`.",
+      "proposal": "Keep empty `quant-engine` diff and byte-identical score/tier/fingerprint for the same market inputs including phase. Holiday membership is not a scoring feature. Do not require a holiday weekday\u2019s output to equal a session weekday\u2019s output when standing is correctly closed vs RTH.",
+      "kind": "technical",
+      "conflict_id": "ac0fa767366017c0fa6bc18f621b87e611f7b228210c42a46d2c6d18da659328",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "UX will **not** ship a second frontend holiday table or a calendar editor.",
+      "source": "architect",
+      "why": "A calendar editor is still out. The `/scanner` badge is not the ticker chip: it is `marketSessionPhase(nowMs)`, a client America/New_York weekend gate (Sat/Sun \u2192 `closed`, weekday 10:00 \u2192 `rth`). Ticker honesty can bind existing `market_session === 'closed'` once `market_session_at` consumes the domain predicate; the badge cannot. Forbidding a client-side table (and `GET /api/holidays`, which I will not invent) leaves Thanksgiving 10:00 ET as `rth` on the desk while the slow lane idles \u2014 the same class of lie as holiday-as-feed-lag. BRIEF already says vehicles that have a weekend gate consume the predicate.",
+      "proposal": "Keep the editor and any holiday HTTP resource out. Compile the same closed-set membership into the existing pure `marketSessionPhase` from one generated source (not a hand-pasted FE list). If that remains a forbidden second table, PM must exclude the scanner badge from this slice and I will retract badge-Closed; worker idle and ticker `closed` would remain.",
+      "kind": "technical",
+      "conflict_id": "969a8c98e6d2a6899d31f7427192d8c3bbeb39082baac09132974f307a538e51",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Holiday D uses the **same empty-expected presentation Sat/Sun already use**.",
+      "source": "ux",
+      "why": "Retraction. Same LAYOUT still stands (empty rows, no sixth coverage cell, no `[PASS]`, no Thanksgiving name). Same STRINGS cannot stand next to PM AC-4: coverage\u2019s operator-visible reason must be holiday, not weekend. Identical chrome hides Architect\u2019s distinct discriminator and makes a Thursday `not_due` read as Saturday standing on the S1 surface except by `et_date`. Weekend coverage copy must stay byte-identical and must not gain the word weekend; holiday coverage needs a vouched class token.",
+      "proposal": "Keep empty-expected layout. Architect emits a sibling `framing` value on the existing field (class holiday, not a holiday name, not `weekend: true`, not a new key). The card prints that string. Empty-expected chrome keys off empty rows plus no-expected-class framing, not `verdict === 'not_due'` alone. Distinct keep/tape literals `ineligible holiday` stay.",
+      "kind": "product",
+      "conflict_id": "a4e70d63281345f6b5d5927653922591a8837288da2c09b2ac9757c89b9ceb9b",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: Do you accept a compiled NYSE full-day table spanning inclusive calendar years 2020..=2032, with dates outside that span treated as not-holiday (a Monday\u2013Friday outside the span stays a session weekday), rather than an unbounded rule engine or a vendor calendar?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: At 21:00 America/New_York on a full-day holiday weekday, should ticker market_session and the scanner badge be closed (session-day gate first, any clock hour that date) or overnight (today's weekday-night Massive 8PM\u20134AM gap)?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: what share path puts the one compiled full-day membership into the existing dashboard scanner session-phase clock without a new trader HTTP resource and without a hand-maintained second date table?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: at 10:00 ET on holiday D, does existing closed-session standing already keep the ticker chip off the live and lag branches, or must the live flag also be false as UX\u2019s closed state requires?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: if coverage HTTP/UI keeps the weekend-class no-expected envelope with no holiday name line, will that chrome contain the word weekend on a holiday Thursday?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: can one injected America/New_York civil date drive coverage, tape, keep, ensure, both server session classifiers, scanner `should_sweep`, and the dashboard session-phase clock for the hermetic GATE Q matrix?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: if `CoverageMatrix.weekend` stays Sat/Sun only, will holiday D still arrive on coverage HTTP as `verdict: not_due`, empty `rows`/`holes`, and a sibling no-expected `framing` on the existing field (today `envelope` sets `NO EXPECTED IDENTITIES` only when `matrix.weekend`)?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: is the `/scanner` session badge (`marketSessionPhase`) inside live session standing, or is worker idle plus ticker `closed` enough (badge may remain `RTH` on a holiday weekday)?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: `liveStatus` returns the live branch whenever `live.live` is true, before reading `market_session === 'closed'`. On holiday 10:00 ET, is `live` false whenever `market_session` is `closed`?"
+    }
+  ],
+  "agree_count": {
+    "architect": 8,
+    "pm": 20,
+    "ux": 6
+  }
+}

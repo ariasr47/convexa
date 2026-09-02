@@ -108,7 +108,7 @@ conformance, and volume-replacement receipts.
   `/ticker`→**SPY** via `index-first-defaults`) + `/positions` (→ `pages/positions/PositionsPage.tsx`, the route shell over
   `features/trading/positions/`) + `/scanner` (→ `pages/scanner/`, **shipped** multi-ticker surface) ·
   `/settings` (→ `features/auth/SettingsPage.tsx`) · `/_ops/metrics` (→ `pages/operator-metrics/`)
-  stays OFF the shell + unlinked. **Live SSE is page-scoped to the Ticker page** (opens on mount, closes
+  and `/_ops/research` (→ `pages/operator-session-archive/`) stay OFF the shell + unlinked. **Live SSE is page-scoped to the Ticker page** (opens on mount, closes
   on nav-away, reopens on return, never double-subscribes); the positions store is a localStorage
   singleton so it persists across nav. Brand was UI-only at the time (durable keys / packages / identifiers
   unchanged) — **superseded 2026-06-28 by `rebrand-convexa`: full GammaFlow→Convexa rename incl. a loss-free
@@ -175,6 +175,11 @@ conformance, and volume-replacement receipts.
   through the ONE shared `features/trading/TradeEntryDialog.tsx`. Reuses `features/trading/model/mark.ts`
   for P/L; durable customization + named saved views. `NO_BACKEND_CHANGE` (consumes `GET /api/contract` +
   SSE); never a scoring input; `SIMULATED`.
+- `pages/operator-session-archive/` (`OperatorSessionArchive.tsx` + page-local client) —
+  **operator-only** corpus browser on `/_ops/research` (same first route group as `/_ops/metrics`,
+  own AppBar, OFF the trader shell, unlinked). Sitting API origin + metrics token in tab memory;
+  consumes existing token-gated session-books list/load + coverage GET. `/lab` stays instrument
+  demos. Pages `_research` still 404s. `NO_BACKEND_CHANGE`.
 - `pages/operator-metrics/` (`operator-metrics.tsx` + `LatencyTrend.tsx` + `useLatencyTrend.ts`) —
   **operator-only** metrics readout on route
   `/_ops/metrics` (its own AppBar, OFF the trader routes, not linked from the trader UI). Read-only +
@@ -504,6 +509,31 @@ conformance, and volume-replacement receipts.
   caught by the authoring voice; rec-plan-scope-caption — PLAN locked the caption as a sibling
   after the live `DecisionMetadata` row Stack after reading `DecisionCard.tsx`, refusing
   Python-era `AiRecPanel` line numbers. 2 binding.)*
+- **`[local-evidence-is-not-hosted-evidence]`** (promoted 2026-08-29, 2 binding) — a local or
+  quality-gate result is never labeled hosted/CI/verified-on-runners unless that run actually
+  happened there; a CI load is never soak evidence; ambient `CI=true` is not merge-job evidence.
+  Closed vocabularies (`NOT RUN`, `Evidence: local|ci`, Command `load|soak`) carry the distinction.
+  *(browser-quality-gates — hosted browser `NOT RUN`; capacity-baseline — load vs soak vs local vs
+  ci axes, D4 release CI load. 2 binding.)*
+- **`[present-is-live-paid-only]`** (promoted 2026-08-30, 2 binding; 6th instance 2026-08-31) — a session-archive identity
+  counted as `present` / a live paid book is a **loadable `LiveMassive` body**; fixture,
+  reconstructed, flat-file, tape, seed, and **replay occupancy** are never `present` and are never inserted
+  as `LiveMassive`. Occupancy that is not live-paid is a distinct class (`blocked occupancy` on
+  coverage; research-tape provenance on the day tape; session-tape standing on replay; **`kept`
+  extracts** on the flat-files corpus; **holiday weekday** never `present`).
+  *(archive-coverage-guardrails — fixture occupant is `blocked occupancy`; session-day-tape-capture
+  — Path-B persist drops `MarketDataSourceKind`, operator print never `live_massive`;
+  day-replay-mock-adapter — armed walk never inserts as LiveMassive, `live: false`;
+  massive-flat-file-keep — extract occupant is `kept`, never `present` / `LiveMassive`;
+  research-lab-surface — coverage card `present` only; books `source` never minted as `present`;
+  exchange-holiday-calendar — holiday weekday never `present` / never LiveMassive.
+  2 binding at graduation; 6th instance this ship.)*
+- **`[single-ticker-on-demand]`** (promoted 2026-08-30, 2 binding — long-standing §5 narrowing;
+  formal key at this GATE S) — the trading/serve **request path** computes exactly the one ticker
+  asked for; multi-ticker work happens only in a bounded **off-request-path** worker. Tape capture
+  and liquid-name ensure are off-path. An in-request market sweep is a GATE-Z reversal.
+  *(liquid-names-session-capture; session-day-tape-capture.)* Prose single-sourced in the
+  Single-ticker paragraph above.
 
 ## 6. Current feature state (works end-to-end)
 <!-- shard: tags=features,state,observability,darkpool,ghost-trade,dex,personas,metrics -->
@@ -519,6 +549,69 @@ conformance, and volume-replacement receipts.
   execution was environment-limited because `TEST_DATABASE_URL` was absent; Postgres build and audit
   compile passed. Contracts archived at
   `.spire/clusters/tech/contracts/_archive/archive-coverage-guardrails/`.
+- **NYSE holiday calendar (`exchange-holiday-calendar`, both lanes, shipped 2026-08-31)** —
+  NYSE **full-day** weekday closures (2020..=2032) are the same occupancy **family** as Sat/Sun,
+  with a distinct reason. Coverage is empty-expected `not_due` (not three `missing` cells).
+  Tape/keep print `ineligible holiday`. `MarketPhase` / ticker `market_session` are `closed` /
+  `ClosedPre` all clock hours that ET date. Scanner badge Closed. Ensure does not wake.
+  Juneteenth from 2022. Half-days Future. No `GET /api/holidays`. Empty `quant-engine` this
+  lane. QA PASS 30/0/0; independent conformance 5/5.
+- **Research lab surface (`research-lab-surface`, frontend/ops, shipped 2026-08-31)** —
+  operators type `/_ops/research` (URL-only, off-shell, unlinked; not `/lab`) and, with a sitting
+  API origin + metrics token in tab memory, list SPY/QQQ/IWM session books, open one as a
+  count-only digest (`Authorizes: nothing`), and read today’s coverage card from the existing
+  coverage GET. `present` remains loadable `LiveMassive` only; books table prints `source`
+  verbatim. Empty `apps/api` product diff; Pages `_research` 404 stands. QA PASS 53/0/0;
+  independent conformance 7/7.
+- **Massive flat-file keep (`massive-flat-file-keep`, backend/research, shipped 2026-08-31)** —
+  after the D+1 11:00 ET publish clock, an operator `flat-files keep` stores watchlist-filtered
+  stocks SIP **trades** and **quotes** extracts for **SPY / QQQ / IWM** on a dedicated
+  `MASSIVE_FLAT_FILES_BODY_ROOT` (gzip discarded). Sibling
+  `GET /api/_research/flat-files/{symbol}` (+ `/extract`). Files pair is not the REST apiKey.
+  Skip-GET is **per class**; never miss beside a sibling keep. Occupancy `kept` ≠ coverage
+  `present`. Production unset does not fetch files; serve still binds on not-storing /
+  refuse-to-mix. `NO_UI_CHANGE`. OpenAPI 55→57. QA PASS 61/0/0; independent conformance 6/6.
+- **Session day replay (`day-replay-mock-adapter`, both lanes, shipped 2026-08-30)** —
+  operators can walk a captured **SPY / QQQ / IWM** research day through the **existing ticker
+  live path** (`session-day-replay` at process start; pace locked to {1,4,10}). Occupancy rides
+  the existing ticker SSE (`session_tape`, `live: false`, phases playing|gap|ended|drop|fault).
+  Production unset still talks to Massive; production-profile + replay arm refuses before bind.
+  Walking tape never occupies a live paid session book. No `/_ops/replay`, no player chrome, no
+  second live path. Empty Path-A with occupied Path-B still starts. Chip omits 1×. QA PASS 47/0/0;
+  independent conformance 5/5.
+- **Session day tape (`session-day-tape-capture`, backend/research, shipped 2026-08-30)** —
+  operators keep a replayable open-to-close research day for **SPY / QQQ / IWM**: every already-
+  received stocks-WS trade and quote in Massive-covered weekday hours (04:00–20:00 ET) plus at
+  most one already-paid Path-B structure snapshot per 5-minute mark 09:30…16:00 ET. Sidecar on
+  the existing hub (recv never awaits disk; overflow is a Path-A gap). Named `session-day-tape`
+  + sibling `GET /api/_research/session-day-tape/{symbol}` (token-gated, zero Massive on read).
+  Missing tape disk → desk up, operator `session day tape not storing`; traders see nothing.
+  Tape never occupies a live paid session book. Playback shipped 2026-08-30
+  (`day-replay-mock-adapter`). `NO_UI_CHANGE` for this slice. QA PASS 66/0/0; independent
+  conformance 5/5.
+- **Session-archive coverage (`archive-coverage-guardrails`, backend/ops, shipped 2026-08-29)** —
+  operators can classify today’s **SPY / QQQ / IWM** prune-proof session books after **16:00
+  America/New_York** as `present` | `missing` | `unreadable` | `not yet due` | `blocked occupancy`.
+  Named `archive-coverage` prints the same matrix (local evidence, not hosted); exits 0 only when
+  every due identity is a loadable live paid book, or when none are due (`[NOT DUE]`, never
+  `[PASS] n/n`). Sibling `GET /api/_research/session-archive/coverage` (token-gated, zero Massive);
+  Pages trader origin still 404s `_research`. Coverage never writes a book, never starts ensure,
+  never scores. Default matrix is one ET date D. `NO_UI_CHANGE`. QA PASS 54/0/0; independent
+  conformance 5/5.
+- **Capacity baseline (`capacity-baseline`, backend harness, shipped 2026-08-29)** —
+  maintainers have independently invocable `capacity load` and `capacity soak` commands that drive
+  ticker-bundle HTTP and live SSE against a throwaway loopback process with mocked vendors. Locked
+  harness p95 fail-lines are 150 ms warm HTTP, 4000 ms cold HTTP, 200/500 ms SSE (not production
+  SLOs). Merge CI runs **release** load with `APP_ENV=dev`; soak is local + GATE Q, not the default
+  backend job. Score/tier/fingerprint stay byte-identical; no trader UI; production HTTP unchanged.
+  `NO_BACKEND_CHANGE` of the production HTTP contract. QA PASS 49/0/0.
+- **Browser quality gates (`browser-quality-gates`, FE + e2e/CI tooling, shipped 2026-08-28)** —
+  maintainers have named local/CI commands for Chromium (full 52-test inventory), a five-journey
+  Firefox/WebKit compatibility matrix, axe accessibility over closed public/auth/dense/degraded
+  states, and six deterministic visual scenarios. Product runtime/API/scoring/motion stay unchanged
+  except the owner-authorized D7/D8 accessibility repairs (exact-file allowlist). Visual updates
+  need two-stage human receipts; hosted-runner evidence is recorded as not run. `NO_BACKEND_CHANGE`.
+  QA PASS 45/0/0.
 - **Repository-owned route/OpenAPI integration (`openapi-router-dependency-replacement`, BE + shared client, shipped 2026-08-23)** —
   removed `utoipa-axum` and its transitive unmaintained `paste` dependency while retaining direct
   `utoipa` 5.5.0. One `ContractRouter` graph still owns the same 52 source-derived operations; the

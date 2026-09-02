@@ -1,0 +1,147 @@
+{
+  "conflicts": [
+    {
+      "quote": "This slice **does not speak the coverage deck** (`present` / `missing` / `not yet due` / `blocked occupancy`) because coverage UI is out.",
+      "source": "pm",
+      "why": "List/load already distinguish empty, miss, not-storing, and unreadable — I do not need coverage HTTP to serve those arms, and I will not mint coverage `present` from a list row’s `source` (that is fabricated occupancy). Coverage is the only shipped oracle that may say `present` (loadable LiveMassive). UX and I admitted that one sibling; tape/snapshots/flat-files stay out. Omitting coverage is a feasible books-only page only if the screen never says `present`. Dropping the sibling while still needing today’s live-paid honesty is the leak. Mixing decks is a unified status column, not a second existing GET with its own closed lookup.",
+      "proposal": "Admit coverage as the one v1 sibling occupancy read on the same off-shell `/_ops/` route: existing coverage GET (server-default date), closed cell deck, never applied to a book row. If the human locks coverage Out, I retract lock 1 pick B to books list+load only — no coverage GET from this page, and the view-model must not mint `present` from list `source`.",
+      "kind": "product",
+      "conflict_id": "8d5257ae9c890a3a9101d39f44a6359f27763b81851e3a16b6ec83d63b95be76",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Optional local JSON export may serialize the load body on the operator machine (metrics-page Export precedent: client-only, no server write).",
+      "source": "architect",
+      "why": "PM Out forbids download/export of paid books (redistribution). The load body is the full capture, including contracts/bars/minutes/trades. A client file of that body is a raw dump on disk even if the screen shows only cardinalities. Metrics Export is pipeline snapshots, not a paid options book. I withdraw the export arm.",
+      "proposal": "No local export of a loaded book this slice. Arrays stay in ephemeral memory for cardinality counts only — never rendered, never written.",
+      "kind": "product",
+      "conflict_id": "56dcaa265d97cc3f48a99af096f7cea12a18d579a94baeeb5bafaada82434e9a",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "API origin + metrics token live in **ephemeral** page memory (and at most `sessionStorage`).",
+      "source": "architect",
+      "why": "sessionStorage survives reload, so it cannot implement PM’s reload-may-re-ask or UX’s memory-only tab. It is still a plaintext token at rest without encrypted-at-rest. I already forbade localStorage on that ground; the sessionStorage exception is indefensible.",
+      "proposal": "Token and API origin live only in page memory for the tab. Refresh clears them. Not sessionStorage, not localStorage, not query string, not logs.",
+      "kind": "technical",
+      "conflict_id": "e54c015ba7c6dac0327a92dfd7d601df9573ad2a81deb32616968e08487557bf",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Opening this URL on that origin is **origin-blocked**, not an empty corpus.",
+      "source": "pm",
+      "why": "The Pages Function 404s `/api/_research` before proxy — that is a trader-origin request to the research family, not the dashboard document. `/_ops/research` JS can still load on Pages. Treating that location host as origin-blocked makes hosted weekly use of the operator URL impossible (Axum does not serve the SPA; local Vite is not hosted weekly use). Copying metrics’ relative fetch 404s the same way. Mechanism already named: page-local client, absolute API origin as runtime input, reject host `*.pages.dev`, existing token header pair, credentials omit. CORS already allows those headers on the exact-origin allowlist (Pages origin membership is a lane-check, not a proxy hole).",
+      "proposal": "Keep the Pages `_research` 404. Classify origin-blocked on the research base URL (empty, `*.pages.dev`, or Pages 404 body), not on the dashboard location host. UX owns origin entry. If the human locks ‘this URL on Pages is origin-blocked’ as the product, weekly use is local-Vite-only and I will not add a typed API origin.",
+      "kind": "product",
+      "conflict_id": "093d4504a26e2e769f18977f997c0d85962b02af563d526db5bcf22831061769",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Session-archive books are the spine; archive-coverage is the one sibling occupancy read I admit in v1.",
+      "source": "architect",
+      "why": "The brief names the v1 vehicle set as a council lock (books-only vs books+coverage vs also tape / snapshots / flat-files). Decision-impact observation is list SPY session books and open one dated book, not read today’s coverage cells. Coverage is a sibling the council may admit later. Shipping it this slice puts the coverage deck on the same screen as the books list — the occupancy-leak this slice is designed not to make. Honesty of `present` does not require a matrix here: this screen does not speak `present`; list provenance is not a coverage cell.",
+      "proposal": "v1 = session-books list + digested open for SPY, QQQ, and IWM on `/_ops/research` only. Coverage stays Future-dated on the same operator URL family, visually partitioned, printing only its own closed deck. Books table never grows a `present` or `kept` column. Do not derive coverage cells from list source.",
+      "kind": "product",
+      "conflict_id": "806505418c9621b5bf93d7a504e2b985523eb53e84fc4e98c287b1d4dcd883be",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Unlock with the metrics token, see whether this process has SPY (and the liquid trio) session books, open one dated book as a research read with zero Massive, and read today’s coverage cells without renaming `present` or treating a local matrix as hosted coverage.",
+      "source": "ux",
+      "why": "Same scope call. Reading today’s coverage cells is the archive-coverage job, not the corpus-browser job the brief observes. I accept the occupancy rules inside that sentence — do not rename `present`; a local matrix is not hosted coverage — as binding when coverage ships. They do not pull the matrix into this slice.",
+      "proposal": "Primary job this slice: with the metrics token, list SPY/QQQ/IWM session books and open one dated book as a digested research read with zero vendor. Coverage cells stay out of v1 chrome.",
+      "kind": "product",
+      "conflict_id": "10911bb735f78804af6fb16dea6e797c3973afc4fc2839da49d26830344a981c",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Optional local JSON export may serialize the load body on the operator machine (metrics-page Export precedent: client-only, no server write).",
+      "source": "architect",
+      "why": "Download/export of paid books is Out. Metrics export is an instrumentation snapshot, not a paid options capture. A weekly URL that writes the load body to disk is a redistribution path for research that authorizes nothing.",
+      "proposal": "No export or download control this slice. The load body stays in memory for digested confirmation only and is never serialized to a file from this surface.",
+      "kind": "product",
+      "conflict_id": "9cd5072eea1c2d5549ce5c7ae257f84686b8079bdf90884c923da63f94f8385e",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "API origin + metrics token live in **ephemeral** page memory (and at most `sessionStorage`).",
+      "source": "architect",
+      "why": "`sessionStorage` keeps a plaintext metrics token across reload. That is a secret in the browser, not sitting-only memory. Reload re-ask is expected, not data loss; persisting the operator token in the browser is not.",
+      "proposal": "Token and API origin live in page memory for the tab only. Refresh re-asks. No `sessionStorage`, no `localStorage`, no query string.",
+      "kind": "technical",
+      "conflict_id": "e91b6befd0c6f1cf80a9f77198016d9dea69e40cf95c84839eb3916b3475eff2",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Corpus data is available only from an origin allowed to reach the research family (the same class of access as operator metrics).",
+      "source": "pm",
+      "why": "SELF-REVISION — I withdraw the parenthetical. Architect showed a same-origin research fetch from Pages must 404, and copying the metrics relative client cannot list or open books in production. Origin-blocked stays first-class and distinct from empty and unauthorized. I no longer claim research is reachable the way metrics is.",
+      "proposal": "Pages research 404 stands. Weekly list/open needs a runtime non-Pages API origin the operator supplies in the sitting, plus the metrics token. Local Vite proof stays local evidence, not hosted weekly-use proof.",
+      "kind": "technical",
+      "conflict_id": "8309a4f578319f8be00f1256e252bfa4dc09bac6fd7cc4a4304eb092b7062748",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "This slice **does not speak the coverage deck** (`present` / `missing` / `not yet due` / `blocked occupancy`) because coverage UI is out.",
+      "source": "pm",
+      "why": "Occupancy honesty cannot mint `present` from a list `source` token; that is fabricated coverage. The BRIEF allows coverage as a sibling the council may admit, and a partitioned coverage card already prints the closed HTTP deck while the books table prints `source` verbatim with no `present`/`kept` column — mixing is a layout failure, not a reason to omit the only vouched `present` surface. Never speaking the deck will push operators to read `source: live_massive` as live-paid `present`.",
+      "proposal": "v1 = session-books spine + one partitioned coverage card on `/_ops/research` (closed cells, `Evidence: this process`, no CLI `[PASS]` line). Tape / snapshots / extracts stay out. List never grows a `present` column.",
+      "kind": "product",
+      "conflict_id": "85ec52b80da96dbbc592a5ffaf9137ff592179c401eb8c1705874df4b6c4cfcb",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "API origin + metrics token live in **ephemeral** page memory (and at most `sessionStorage`).",
+      "source": "architect",
+      "why": "Reload-reask and memory-only are already locked. `sessionStorage` survives refresh, is a plaintext secret-at-rest, and is the remember-me store architect said they have not designed. It is the same class as `localStorage` without `[secret-encrypted-at-rest]`.",
+      "proposal": "Token (and any API-origin string) stay in page memory for the tab only. Refreshing re-asks. Never `sessionStorage`, `localStorage`, query string, `document.title`, error text, or aria.",
+      "kind": "technical",
+      "conflict_id": "39fd75c443afbce5709805da6d8efa805dc4e803b6340914802a1d2617c83c9a",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Optional local JSON export may serialize the load body on the operator machine (metrics-page Export precedent: client-only, no server write).",
+      "source": "architect",
+      "why": "PM already forbids download/export of paid books. Serializing the load body writes `market.contracts` to disk — the chain dump this surface must not present, now as a file. Metrics export is process metrics, not a paid-chain precedent.",
+      "proposal": "No export/download control in v1. Digest is on-screen identity + array counts only.",
+      "kind": "product",
+      "conflict_id": "61cf7378f7b0d479c712c8748abb6c9f43bf2e847264a49227cc067714926b34",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**`review` owns** digested-vs-dump composition (AC-11), in-flight vs empty as visible standing (AC-25), non-absorption of sibling vehicles (AC-40), not naming it Lab (AC-41), motion/token discipline (AC-42).",
+      "source": "pm",
+      "why": "UX owns Verify-by. A contracts table or a tape/extract card can look intentional on a copy pass; dump-absence and sibling-vehicle absence silently regress. In-flight standing, not-naming-Lab, and motion/hex may stay review.",
+      "proposal": "Mark dump-absence (no `market.contracts` / OHLC / tape rows) and sibling-vehicle absence (no tape / snapshot / extract tables) as `test`. Keep AC-25, AC-41, and AC-42 as `review`.",
+      "kind": "technical",
+      "conflict_id": "9c20edd45698fb2acb56ce459593f7a3316ed00e10356fdeb64c66b1624c8961",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ]
+}

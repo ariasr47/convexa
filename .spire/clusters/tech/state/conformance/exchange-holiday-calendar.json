@@ -1,0 +1,149 @@
+{
+  "sse_data_event": {
+    "method": "GET",
+    "path": "/api/stream/{ticker}",
+    "note": "SSE data JSON; not live-fetched by interface_conformance.mjs",
+    "required_always": {
+      "ticker": "string",
+      "mid": "number|null",
+      "bid": "number|null",
+      "ask": "number|null",
+      "spread": "number|null",
+      "net_flow": "number",
+      "buy_vol": "number",
+      "sell_vol": "number",
+      "flow_window_s": "number",
+      "spot_ts": "number",
+      "live": "boolean",
+      "tick_age_s": "number|null",
+      "market_session": "string",
+      "feed": "string",
+      "ts": "number",
+      "gamma_flip": "number|null",
+      "last_trade": "number|null"
+    }
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage",
+      "path_params": {},
+      "query": {},
+      "required": {
+        "framing": "string",
+        "command": "string",
+        "evidence": "string",
+        "symbols": "array",
+        "symbols[]": "string",
+        "et_date": "string",
+        "checkpoint": "string",
+        "vendor_called": "boolean",
+        "provenance": "string",
+        "license": "string",
+        "authorizes": "string",
+        "verdict": "string",
+        "expected_due": "number",
+        "present": "number",
+        "missing": "number",
+        "unreadable": "number",
+        "not_yet_due": "number",
+        "blocked_occupancy": "number",
+        "rows": "array",
+        "rows[].symbol": "string",
+        "rows[].et_date": "string",
+        "rows[].cell": "string",
+        "rows[].last_readable": "string",
+        "holes": "array",
+        "holes[].symbol": "string",
+        "holes[].et_date": "string",
+        "holes[].class": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage",
+      "path_params": {},
+      "query": { "et_date": "2026-08-08" },
+      "required": {
+        "framing": "string",
+        "command": "string",
+        "evidence": "string",
+        "et_date": "string",
+        "checkpoint": "string",
+        "vendor_called": "boolean",
+        "provenance": "string",
+        "authorizes": "string",
+        "license": "string",
+        "verdict": "string",
+        "expected_due": "number",
+        "present": "number",
+        "missing": "number",
+        "unreadable": "number",
+        "not_yet_due": "number",
+        "blocked_occupancy": "number",
+        "rows": "array",
+        "holes": "array"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage",
+      "path_params": {},
+      "query": { "et_date": "2026-11-26" },
+      "required": {
+        "framing": "string",
+        "command": "string",
+        "evidence": "string",
+        "et_date": "string",
+        "checkpoint": "string",
+        "vendor_called": "boolean",
+        "provenance": "string",
+        "authorizes": "string",
+        "license": "string",
+        "verdict": "string",
+        "expected_due": "number",
+        "present": "number",
+        "missing": "number",
+        "unreadable": "number",
+        "not_yet_due": "number",
+        "blocked_occupancy": "number",
+        "rows": "array",
+        "holes": "array"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage",
+      "path_params": {},
+      "query": { "et_date": "not-a-date" },
+      "expect_status": 422,
+      "required": {
+        "error": "string",
+        "detail": "string",
+        "vendor_called": "boolean"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "path_params": { "symbol": "SPY" },
+      "query": {},
+      "required": {
+        "symbol": "string",
+        "count": "number",
+        "books": "array",
+        "books[].symbol": "string",
+        "books[].et_date": "string",
+        "books[].source_as_of": "string",
+        "books[].source": "string",
+        "store": "string",
+        "detail": "string|null",
+        "vendor_called": "boolean",
+        "framing": "string",
+        "provenance": "string",
+        "license": "string",
+        "authorizes": "string"
+      }
+    }
+  ]
+}

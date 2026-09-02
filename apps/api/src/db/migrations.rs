@@ -306,6 +306,25 @@ ALTER TABLE session_chain_archive
   ALTER COLUMN body DROP NOT NULL;
 "#,
     ),
+    (
+        13,
+        "session_day_tape",
+        r#"
+-- Session day tape index. Bodies live on SESSION_DAY_TAPE_BODY_ROOT (filesystem only).
+CREATE TABLE IF NOT EXISTS session_day_tape (
+    symbol              TEXT NOT NULL,
+    et_date             TEXT NOT NULL,
+    path_a_armed_from   TEXT,
+    path_a_armed_until  TEXT,
+    path_b_armed_from   TEXT,
+    path_b_armed_until  TEXT,
+    path_b_capturing    BOOLEAN NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (symbol, et_date)
+);
+CREATE INDEX IF NOT EXISTS session_day_tape_symbol_et_date_idx
+    ON session_day_tape (symbol, et_date ASC);
+"#,
+    ),
 ];
 // Kept private for the SQL splitter tests; the authority boundary is `compiled_manifest()`.
 #[cfg(test)]
@@ -762,5 +781,27 @@ SELECT 'it''s;quoted', "also;quoted";
         assert!(sql.contains("body_locator"));
         assert!(sql.contains("DROP NOT NULL") || (sql.contains("body") && sql.contains("NULL")));
         assert!(!name.contains("chain_snapshots"));
+    }
+
+    #[test]
+    fn session_day_tape_migration_is_v13_no_bytea() {
+        let (v, name, sql) = MIGRATIONS
+            .iter()
+            .find(|(_, n, _)| *n == "session_day_tape")
+            .expect("v13 session_day_tape must exist");
+        assert_eq!(*v, 13);
+        assert_eq!(*name, "session_day_tape");
+        assert!(sql.contains("PRIMARY KEY (symbol, et_date)"));
+        assert!(sql.contains("path_a_armed_from"));
+        assert!(sql.contains("path_b_capturing"));
+        let create = sql
+            .lines()
+            .filter(|l| !l.trim_start().starts_with("--"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(
+            !create.to_ascii_uppercase().contains("BYTEA"),
+            "tape index must not use BYTEA"
+        );
     }
 }

@@ -17,6 +17,13 @@ import {
   validatePostcutoverDelta,
 } from './api-router-integration-baseline.mjs';
 
+/** Prefer a stash-create tree when dirty; fall back to HEAD on a clean worktree. */
+function sourceRevisionMatchingWorktree(cwd = resolve(import.meta.dirname, '..')) {
+  const stashSha = execFileSync('git', ['stash', 'create'], { cwd, encoding: 'utf8' }).trim();
+  if (/^[0-9a-f]{40}$/i.test(stashSha)) return stashSha;
+  return execFileSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf8' }).trim();
+}
+
 test('declares the immutable baseline and four artifact paths', () => {
   assert.equal(BASELINE_PATH, 'apps/api/openapi/router-integration-prechange-baseline.json');
   assert.deepEqual(ARTIFACT_PATHS, [
@@ -217,10 +224,7 @@ test('real baseline CLI dispatches through canonical file URL', () => {
 
 test('real candidate CLI executes npm evidence without command shim', () => {
   const script = resolve(import.meta.dirname, 'api-router-integration-baseline.mjs');
-  const sourceRevision = execFileSync('git', ['rev-parse', 'HEAD'], {
-    cwd: resolve(import.meta.dirname, '..'),
-    encoding: 'utf8',
-  }).trim();
+  const sourceRevision = sourceRevisionMatchingWorktree();
   assert.match(sourceRevision, /^[0-9a-f]{40}$/);
   const out = `.tmp/b1c-runner-${process.pid}.json`;
   const npmCli =
@@ -251,10 +255,7 @@ for (const [name, value] of [
   test(`real candidate rejects ${name}`, () => {
     const script = resolve(import.meta.dirname, 'api-router-integration-baseline.mjs');
     const out = `.tmp/b1c-invalid-${process.pid}.json`;
-    const sourceRevision = execFileSync('git', ['rev-parse', 'HEAD'], {
-      cwd: resolve(import.meta.dirname, '..'),
-      encoding: 'utf8',
-    }).trim();
+    const sourceRevision = sourceRevisionMatchingWorktree();
     const env = { ...process.env };
     if (value === undefined) delete env.npm_execpath;
     else env.npm_execpath = value;

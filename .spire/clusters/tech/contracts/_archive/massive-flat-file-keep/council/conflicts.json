@@ -1,0 +1,246 @@
+{
+  "conflicts": [
+    {
+      "quote": "Session-bar aggregates are also In, as a third entitled class, because they are already paid for and they reconstruct the session\u2019s price path at bar grain when a tick file is a miss or an empty extract.",
+      "source": "pm",
+      "why": "R1-architect lock 1 is stocks SIP trades_v1 + quotes_v1 only this slice. Mechanism already named: corpus identity is (et_date, product) with product enum {TradesV1, QuotesV1}; two universe-per-day stream GETs; reconstructable price/quote history is prints plus quotes. Aggregates are derived OHLCV \u2014 they do not add a tick the SIP trades file lacks \u2014 and they add a third vendor object, a third extract, and extra GB/day. BRIEF left this as a council lock; I am not claiming a new paid SKU (docs not in-repo list aggregates as already entitled). Shipping AC-3 as ship-blocking silently grows the product set and the store without that lock.",
+      "proposal": "Keep this slice to {TradesV1, QuotesV1} and leave a closed product slot. If the human locks session-bar aggregates In, extend the enum with a third independent class and a third universe GET; aggregates occupancy must never satisfy trades or quotes. Do not derive bars from the trades extract and call that the aggregates class.",
+      "kind": "product",
+      "conflict_id": "502673893d816bd15e8c3efc5ba8267bd02ffae147202119c14eeb98048e06e8",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Vendor day files are universe-per-day; the durable occupant is the locked-name extract per `(symbol, ET date, file class)`, not a promise to retain the entire US universe file forever.",
+      "source": "pm",
+      "why": "R1-architect lock 3 retains both the vendor gzip and the watchlist extract. Mechanism: stream GET to temp on the dedicated root \u2192 fsync \u2192 rename into a corpus locator; first-wins on successful corpus bytes (gzip magic + digest); extract may be rebuilt from that local corpus without network. After cancel, re-GET is impossible \u2014 that is the feature\u2019s reason to exist. Extract-only makes a bad ticker-column filter or a later locked-name add a network operation, and leaves no entitled object to prove we fetched the universe file. Disk growth is an operator-volume problem; it is not a reason to drop the corpus object this slice.",
+      "proposal": "Durable operator-visible occupant stays the watchlist extract per (symbol, et_date, product). Also persist the universe gzip on the dedicated root as the first-wins corpus object (no prune this slice). If the human forbids universe retention, retract gzip keep and persist extracts plus a sidecar digest only; then extract rebuild requires S3.",
+      "kind": "product",
+      "conflict_id": "0141cfb0acdb44e76235e1b95222ef014d9bad42f403715bc2d1aefaab6bacf7",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Occupancy is miss or unreadable as appropriate \u2014 not kept.",
+      "source": "pm",
+      "why": "That outcome is paired with keep/fetch faults after due that include vendor down. Architect Miss is only due and vendor 404 / no-such-key after the due line. Transport or vendor-down without a 404 does not prove the object absent \u2014 that is Unattempted (UX download-failed: not confirmed). A truncated unusable body is Unreadable. Classifying unknown fetch failure as miss makes a later successful GET look like filling a hole that was never a hole, and collapses absent-is-not-none.",
+      "proposal": "Miss = due and no-such-key / 404. Unattempted = due and GET not run or transport/auth failed without absence confirmation (403/401 stay Unattempted/credential, not Miss). Unreadable = object/pointer exists but gzip/csv/header fails. Missing local S3 pair remains refuse-before-GET, distinct from all three.",
+      "kind": "technical",
+      "conflict_id": "b5664f98bdfe1f72d7ba66fffeb78da2b98db1585d8e999a9a3b869b33b9b1c5",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Aggregates are derived OHLCV; they do not add a tick the SIP trades file lacks.",
+      "source": "architect",
+      "why": "The BRIEF left aggregates as a council lock, not Out. Session-bar aggregates are a third entitled class (S2, AC-3\u20135): bar-grain price history when a tick file is a miss or an empty extract. They do not add a tick, and they must not satisfy a trades or quotes claim \u2014 that is why they are a distinct class, not why they are Out. Skipping them is a scope/value call, not a tick-reconstruction fact. I will not silently narrow S2. The closed product `{TradesV1, QuotesV1}` and a two-product GET cannot represent AC-3.",
+      "proposal": "This slice keeps three independent classes: stocks SIP trades, stocks SIP quotes, and session-bar aggregates. Aggregates never classify trades or quotes as kept. If obtaining aggregates requires a new paid SKU, contradict AC-3 as feasibility; do not skip them as derived OHLCV.",
+      "kind": "product",
+      "conflict_id": "d8f79bcd7065acf4fefa0f2d6b399a4eb61e157c1798e1ba09f5c4a20fd840dc",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Retain **both** corpus gzip and extract because a cancelled plan cannot re-GET (the feature\u2019s reason to exist).",
+      "source": "architect",
+      "why": "The durable occupant the operator may claim is the locked-name extract, not the US universe file. Unbounded no-prune retention of GB-class universe gzip is a disk, volume-sharing, and license-adjacent cost, and it invites a \u201cwe kept the whole SIP day\u201d completeness claim this slice forbids. Cancel-then-load of extracts (AC-10) does not require durable universe retention if the extract already succeeded.",
+      "proposal": "Operator claim and occupancy stay per (symbol, D, class) extract. Whether this slice also persists the entitled universe gzip (fetch artifact / post-cancel extract rebuild, no prune) is a human lock against GB-class volume growth. Either path must ban a full-universe keep claim and a completeness percent. I do not concede extract-only if rebuild-from-gzip is required; I do not silently accept unbounded universe retention.",
+      "kind": "product",
+      "conflict_id": "b0e9bbb0d25cc3d1e0c91d1db9703def555f17f30c11a699dc5b2cd5be6f6ec4",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Given D is due and the entitled class is not obtained, occupancy is **miss** \u2014 not not-elapsed, not empty extract, not an empty session-day tape, not not-storing.",
+      "source": "pm",
+      "why": "\u201cNot obtained\u201d after due collapses Architect Unattempted (GET not run, transport/auth failed), UX download-failed, unauthorized/missing-files-credentials, and vendor 404 into one miss. Architect Miss is due AND vendor 404/no-such-key. UX already forbids collapsing unknown fetch failure into miss. AC-15, the due-clock lock that says a class not obtained is miss, and the fetch-fault row that classifies faults as miss cannot stand under absent-is-not-none.",
+      "proposal": "Retract that breadth. Miss = due AND vendor 404/no-such-key after a keep. Unattempted / download-failed / unauthorized / missing-files-credentials stay distinct from miss, empty extract, not-elapsed, and not-storing. Fetch fault after due is not kept and is not automatically miss.",
+      "kind": "technical",
+      "conflict_id": "b393fbb0e93db1d0463a306acdda69617a80dee8ef81c23f7a59666c55ae04ee",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "After the publish clock, a due absent vendor file is **`miss`**, not empty extract, not not-elapsed.",
+      "source": "ux",
+      "why": "On inspect (zero S3), \u201cdue absent vendor file\u201d is store-absent, not a proved vendor 404. That is Architect Unattempted when GET was not run. Printing `flat files miss: vendor file for {ET_DATE} due and absent` fabricates a vendor hole and is the same collapse as AC-15.",
+      "proposal": "Miss literal only when due AND vendor 404/no-such-key is proved (keep path). Inspect of a due date with no stored object and no proved 404 uses a distinct unattempted/not-kept class, not miss. Empty extract and not-elapsed stay distinct. Keep CLI non-zero remains for proved miss.",
+      "kind": "technical",
+      "conflict_id": "c74c9edd29ed09d48089ff7ee3ddfb94fcdcb8f7b2540d63db9262f733aa1e5c",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Layout leaves a closed product slot so aggregates can be added later without restating provenance.",
+      "source": "architect",
+      "why": "PM locked session-bar aggregates In this slice as a third entitled class (S2 / AC-3 / AC-5), independently occupied and independently claimed. Parking them in a later slot is a silent Out: standing would name only trades and quotes, the list would omit the kind, and a bars-only keep could still be read as \u201cthe tape.\u201d BRIEF left aggregates as a council lock, not an architect non-goal.",
+      "proposal": "This slice occupies three classes. Operator kind token is `aggregates` (never \u201csession bars\u201d, never \u201cOHLC that proves open-to-close\u201d, never a blended \u201ctape\u201d). Standing payload appends `\u00b7 aggregates`. If the human takes architect Out, omit the column entirely \u2014 do not print `0 aggregates`.",
+      "kind": "product",
+      "conflict_id": "6f4bbe4c7b45cb582a29b19ec817ff41dc585eba148c034f4e7601aa253996e2",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Retain **both** corpus gzip and extract because a cancelled plan cannot re-GET (the feature\u2019s reason to exist).",
+      "source": "architect",
+      "why": "PM\u2019s durable occupant is the locked-name extract; full-universe retain is Future-dated. If the root holds the universe gzip, operator standing that says \u201cnot a full-universe keep\u201d is a storage claim the data falsifies; if list/load serves that gzip, copy that says watchlist-extract-only is a redistribution/completeness lie. `kept` is an extract claim, not a universe-object claim.",
+      "proposal": "Operator-visible occupant and claims stay `(symbol, D, class)` extract. If gzip is retained as a fetch artifact, standing names it as a non-redistributed vendor object, never \u201cwe kept the whole SIP day.\u201d Research load returns extract only \u2014 never the universe CSV.",
+      "kind": "product",
+      "conflict_id": "b0339d4f1517bdd80c0f4e860c30db12ad59cac731e39a72e17a3f85de0d553e",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Given D is due and the entitled class is not obtained, occupancy is **miss** \u2014 not not-elapsed, not empty extract, not an empty session-day tape, not not-storing.",
+      "source": "pm",
+      "why": "The operator literal I locked is `flat files miss: vendor file for {ET_DATE} due and absent`. That vouches absence. \u201cNot obtained\u201d also covers vendor-down, 403, truncation, and write-fail \u2014 none of which prove the file is absent. Printing `miss` there renames an unconfirmed fetch into a hole (`absent-is-not-none`). Empty extract stays the zero-row-on-a-present-file class; not-elapsed stays the clock class.",
+      "proposal": "`miss` only when due and vendor 404/no-such-key is confirmed, or inspect of a named due D with no stored object (BRIEF). Keep transport/unknown failure: `flat files download failed: vendor file for {ET_DATE} not confirmed` \u2014 not miss. Truncated stored body: `unreadable`. Credential failures never print as miss.",
+      "kind": "technical",
+      "conflict_id": "75e926882b411ac1f1eb9cda762cecb2f42ef7cc501fb341990e40bf3223d4bd",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Auth 403/401 \u2192 `Unattempted` (credential), non-zero exit, no partial rename.",
+      "source": "architect",
+      "why": "`Unattempted` is not an operator occupancy word. It collapses GET-not-run, transport failure, and 403/401. A 403 after GET is a fetch, so it cannot stand in for missing-files-credentials or wrong-credential-class (zero fetch). Transport-without-404 is `download failed`, not miss, not empty extract. GET-not-run on a named due D with no object is inspect `miss` (BRIEF), not Unattempted.",
+      "proposal": "Type-level may keep a non-miss failed-GET state. Operator print: pair absent \u2192 missing-files-credentials (no GET); live key in the files slot \u2192 wrong-credential-class (no GET); unknown transport \u2192 `download failed`; confirmed 404 \u2192 `miss`. Never print `Unattempted`.",
+      "kind": "technical",
+      "conflict_id": "f91d4ee8cf3b127bf4be3334f199d5e70f2ccde39a4e50c0039de3263beca1ba",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**Interface / PM** will not collapse occupancy into a boolean `present`/`missing` on the wire; the closed states (`NotElapsed` / `Miss` / `ExtractEmpty` / `Unreadable` / `NotStoring` / \u2026) must remain distinct through to the operator consumer (`absent-is-not-none`).",
+      "source": "architect",
+      "why": "Distinctness must survive; the printed tokens must not. Operator success occupancy is `kept` / `kept from Massive flat files`, never `present`, never `Stored`. `Stored` is gzip-on-disk and would label a zero-row symbol as success. `ExtractEmpty` is not the operator string `empty extract`. Surfacing type names would rename the values.",
+      "proposal": "Map Stored + \u22651 extract rows \u2192 `kept from Massive flat files`; ExtractEmpty \u2192 `empty extract`; NotElapsed \u2192 `not-elapsed`; Miss \u2192 `miss`; Unreadable \u2192 `unreadable`; NotStoring \u2192 `not-storing`; Ineligible \u2192 `ineligible weekend`. Do not print `present`, `Stored`, `live`, `live_massive`, or `Live tape` on this vehicle.",
+      "kind": "technical",
+      "conflict_id": "5d8eda773b99e715220d521d0e159d0e572edf8d009320ee783aeda08a7a6b4c",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Mechanism: new optional root; conflict predicate is bidirectional nest against ring, archive index, archive body, **and** the tape root; collision refuses process start (same as tape collision \u2192 `Err`, not disabled).",
+      "source": "architect",
+      "why": "A mis-set keep root would refuse `serve` bind. Traders would lose the desk. That is not `NO_UI_CHANGE` and not live-tick isolation. PM\u2019s collision outcome is keep **refuse to mix** with tape/archive/ring unchanged; not-storing is unset/unwritable, a different class. Architect\u2019s own armed-keep rule says collision refuse is on the armed construct, not on `serve`.",
+      "proposal": "Collision refuses armed keep (`refuse to mix`) and occupies none of those roots. `serve` still binds and talks to Massive REST/WS. Operator line is not `flat files not storing`.",
+      "kind": "technical",
+      "conflict_id": "428c3ad35c5216fd029b7130925412095e36a646b997ae790e2d1f15f7fce62f",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Mechanism: files client type **has no `api_key` field**; it takes an access-key + secret pair loaded from env **other than** `MASSIVE_API_KEY`.",
+      "source": "architect",
+      "why": "Different env names do not detect the live REST/WS key placed in the files slot. SigV4 would still GET and 403 as `Unattempted` \u2014 a fetch, and not PM\u2019s wrong-credential-class refuse with files-call count 0. Operator copy cannot say \u201cdoes not fetch\u201d or distinguish that refuse from missing pair or from miss.",
+      "proposal": "Armed keep classifies the files pair against the live REST key before any GET. Equal/wrong class \u2192 refuse, zero files fetch, literal wrong-credential-class. Missing pair \u2192 missing-files-credentials, zero fetch. Source scan on the files leaf remains.",
+      "kind": "technical",
+      "conflict_id": "00824a5350f1e468620d1c66da614e54f66101de78047e13d754d1c5446b1b92",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Not-elapsed, miss, empty extract, unreadable, not-storing, missing-files-credentials, wrong-credential-class, ineligible-weekend, not-in-watchlist, unauthorized, kept, live-tape, and live-paid-present outcomes are distinguishable in operator keep/list/load without reading source.",
+      "source": "pm",
+      "why": "Listing `live-tape` and `live-paid-present` as keep/list/load outcomes puts poison tokens on this vehicle. Success occupancy is `kept`, never `present`. `live tape` is a foreign class (session-day-tape / ticker Live tape) and must not appear as a flat-file cell. The same AC then bans coverage/tape literals as this occupancy \u2014 the outcome list contradicts the ban and the `live` / `live_massive` / `present` poison.",
+      "proposal": "This vehicle\u2019s printed deck is kept \u00b7 not-elapsed \u00b7 miss \u00b7 empty extract \u00b7 unreadable \u00b7 not-storing \u00b7 missing-files-credentials \u00b7 wrong-credential-class \u00b7 ineligible-weekend \u00b7 not-in-watchlist \u00b7 unauthorized (HTTP). live-tape and live-paid-present are distinguished by absence; poison tests fail if those literals appear here.",
+      "kind": "technical",
+      "conflict_id": "dadbf06b4da5165103f2011d694bb4f241259f51e94820a7e2ad075e2c4042a3",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Armed keep with missing/unusable S3 keys yields **`flat files unauthorized`** and the clause **REST apiKey is not the S3 secret**.",
+      "source": "ux",
+      "why": "I collapsed three classes into one line. PM requires missing-files-credentials \u2260 wrong-credential-class \u2260 HTTP unauthorized. Printing the REST-apiKey clause on a mere missing pair asserts a substitution this run did not perform \u2014 copy that the data does not support.",
+      "proposal": "Missing pair \u2192 `flat files unauthorized` (or missing-files-credentials) with no REST clause and no fetch. Live key in the files slot \u2192 wrong-credential-class + `REST apiKey is not the files secret` + no fetch. HTTP token miss \u2192 shipped `metrics_unauthorized` only.",
+      "kind": "technical",
+      "conflict_id": "67b8aeeb3adf2341cca0750594adbf8c2e1e30bd7d49c58f2b72c3b121f943b7",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Extract:     watchlist rows only \u00b7 not a full-universe keep \u00b7 not a full open-to-close claim",
+      "source": "ux",
+      "why": "\u201cNot a full-universe keep\u201d is a storage fact I cannot vouch until the occupant lock lands. If architect retains the universe gzip, that standing line is false. The still-defensible hedges are no redistribution and no open-to-close completeness claim from a filtered extract.",
+      "proposal": "Standing: product occupant is the watchlist extract \u00b7 not a full-universe redistribution \u00b7 not a full open-to-close claim. Drop \u201cnot a full-universe keep\u201d as a store assertion.",
+      "kind": "technical",
+      "conflict_id": "8b39d0dd2632cf1b74b147adcdf60afa374aec00dec6f45e402c84b5816a86cf",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: if the human locks aggregates Out this slice, do AC-3 and the three-class clauses of AC-4/AC-5 withdraw, or are they parked for a later slice with the same occupancy rules?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: if the durable occupant is extract-only, must keep still stream the universe gzip through a temp file (then discard), and is a sidecar digest of that discarded object required as proof of fetch after cancel?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: confirm the operator success literal remains kept / kept from Massive flat files even if the store\u2019s corpus-level state is Stored (gzip magic + digest) and present stays banned on this vehicle."
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: are session-bar aggregates on the same entitled files plan and the same SigV4 GET as trades/quotes, or a different SKU/prefix? If the same SKU, lock 1 Out is a product skip, not a feasibility block."
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: how do type-level Stored / ExtractEmpty / Unattempted map onto operator literals kept / empty extract / unauthorized / download failed / unattempted so the operator never sees Stored or present, and 403 is not miss?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: if the human locks aggregates In, will standing payload and list columns append named aggregates (never \u201csession bars\u201d / open-to-close) and omit that column entirely if Out?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: is operator `_research` list/load in-scope this slice, or CLI-only? Product lock is named keep and a sibling `_research` read (token-gated, zero vendor)."
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: what runtime refuse distinguishes a missing files pair (AC-19) from the live REST key value placed in the files-secret slot (AC-20)? Source-scan of MASSIVE_API_KEY poisons the name, not that paste."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: if the keep root collides with tape/archive/ring, does `serve` fail to bind, or does only armed keep refuse-to-mix while the desk stays up?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: does `_research` list/load ever return the universe gzip body, or only watchlist extracts?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: how is wrong-credential-class refused with zero files fetch if isolation is only \u201cenv other than MASSIVE_API_KEY\u201d?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: after architect\u2019s extra-GET / derived-OHLCV argument, are session-bar aggregates still In this slice? Standing will append `\u00b7 aggregates` only if that lock holds."
+    }
+  ],
+  "agree_count": {
+    "architect": 6,
+    "pm": 16,
+    "ux": 12
+  }
+}

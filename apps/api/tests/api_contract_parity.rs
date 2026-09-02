@@ -539,7 +539,7 @@ fn every_persisted_boundary_has_explicit_route_source_target() {
         .flat_map(|operation| operation["boundaries"].as_array().unwrap())
         .map(|boundary| boundary["boundary_id"].as_str().unwrap())
         .collect::<Vec<_>>();
-    assert_eq!(ids.len(), 181);
+    assert_eq!(ids.len(), 201);
     for id in ids {
         let target = api_rust::routes::response_conversion_registry_source_target(id)
             .unwrap_or_else(|| panic!("missing explicit route source target: {id}"));
@@ -749,7 +749,27 @@ declare_boundary_evidence_tests!(
     boundary_evidence_177,
     boundary_evidence_178,
     boundary_evidence_179,
-    boundary_evidence_180
+    boundary_evidence_180,
+    boundary_evidence_181,
+    boundary_evidence_182,
+    boundary_evidence_183,
+    boundary_evidence_184,
+    boundary_evidence_185,
+    boundary_evidence_186,
+    boundary_evidence_187,
+    boundary_evidence_188,
+    boundary_evidence_189,
+    boundary_evidence_190,
+    boundary_evidence_191,
+    boundary_evidence_192,
+    boundary_evidence_193,
+    boundary_evidence_194,
+    boundary_evidence_195,
+    boundary_evidence_196,
+    boundary_evidence_197,
+    boundary_evidence_198,
+    boundary_evidence_199,
+    boundary_evidence_200,
 );
 /// Exercise the actual Axum router returned by production `routes::router` for every ordinary
 /// operation.  This intentionally uses no handler/facade mocks: status and media are observed at
@@ -879,6 +899,26 @@ async fn http_parity_harness_observes_all_operations() {
             ) && path.ends_with("/book")
             {
                 request_path.push_str("?et_date=2020-01-02");
+            } else if matches!(
+                outcome["access_mode"].as_str(),
+                Some("operator") | Some("operator-notfound")
+            ) && path.contains("flat-files")
+            {
+                // Representative live 200 is NVDA not-in-watchlist (no keep root required).
+                request_path = request_path.replace("SPY", "NVDA");
+                if path.ends_with("/extract") {
+                    request_path.push_str("?et_date=2020-01-02");
+                }
+            } else if matches!(
+                outcome["access_mode"].as_str(),
+                Some("operator") | Some("operator-notfound")
+            ) && path.contains("session-day-tape")
+            {
+                // Representative live 200 is NVDA not-in-watchlist (no tape root required).
+                request_path = request_path.replace("SPY", "NVDA");
+                if path.ends_with("/day") {
+                    request_path.push_str("?et_date=2020-01-02");
+                }
             }
             let mut request = Request::builder().method(method).uri(request_path);
             if matches!(method_name, "POST" | "PUT" | "PATCH") {
@@ -1065,7 +1105,7 @@ async fn http_parity_harness_observes_all_operations() {
         }
     }
     assert!(
-        observed == 52,
+        observed == 57,
         "every material HTTP scenario must be exercised"
     );
     let resolved_after = state.auth.resolve_session(Some(session_value));
@@ -1287,7 +1327,7 @@ fn operation_count(doc: &Value) -> usize {
 #[test]
 fn ordinary_http_has_typed_responses() {
     let d = document();
-    assert_eq!(operation_count(&d), 52);
+    assert_eq!(operation_count(&d), 57);
     assert!(d["paths"]["/api/health"]["get"]["responses"]["200"].is_object());
 }
 #[test]
@@ -1530,7 +1570,7 @@ fn iv_rank_schema_requires_every_serialized_key_and_marks_optionals_nullable() {
 #[test]
 fn paths_are_unique_and_nonempty() {
     let d = document();
-    assert_eq!(d["paths"].as_object().unwrap().len(), 45);
+    assert_eq!(d["paths"].as_object().unwrap().len(), 50);
     assert!(d["paths"]
         .as_object()
         .unwrap()
