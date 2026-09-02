@@ -4,28 +4,28 @@
       "kind": "structured-json",
       "media_type": "application/json",
       "path": "apps/api/openapi/convexa.openapi.json",
-      "sha256": "d74c74e75d229efbafb0f6dee0ead751e9c50394e9c1fd77da0743688afc18e7",
+      "sha256": "a97e87e64d26f7aca31857ddb28a2fb14a35ac5501a142f040af5fbd36b9e05c",
       "writer": "npm run api:contract:generate"
     },
     {
       "kind": "structured-json",
       "media_type": "application/json",
       "path": "apps/api/openapi/parity-coverage.json",
-      "sha256": "c10d9b07abb83abbbe6b2bcdab64a14ffc171fd88511aad7976b5f4f7e16dd77",
+      "sha256": "1dfade691a8e2ce9b80ce86efda01cad38fa088a4f1d253fcd7e9ef4ac6272b8",
       "writer": "npm run api:contract:generate"
     },
     {
       "kind": "structured-json",
       "media_type": "application/json",
       "path": "apps/api/openapi/precutover-operation-baseline.json",
-      "sha256": "2803c58a00f563e6e136056582f1a5682fc05bfe196f501d9e813c48a8b35c8f",
+      "sha256": "b92b276e1deb2e7b7113f350a65fd22d504dc0d7a88e247d50c371871302dec1",
       "writer": "npm run api:contract:baseline:accept"
     },
     {
       "kind": "comment-capable-source",
       "media_type": "text/typescript",
       "path": "libs/api/src/generated/schema.ts",
-      "sha256": "1993a512687dc40e0171609ec3ca0403ba886dc8fa3dcfb7fa35ad34f7358f5f",
+      "sha256": "b9331ad13084c7a144a4de53cf58d0a65d730b8ba2c07c96a35b720d3006380a",
       "writer": "npm run api:contract:generate"
     }
   ],

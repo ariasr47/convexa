@@ -23,6 +23,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SessionTapeOccupancy } from '../../sessionTapeStanding';
 import { CommandDeck } from './CommandDeck';
 import { connectionChip } from './TickerHeader';
 
@@ -83,7 +84,9 @@ const signals: Signals = {
   prime_prompt_eligible: false,
 } as Signals;
 
-function liveUpdate(over: Partial<LiveUpdate> = {}): LiveUpdate {
+function liveUpdate(
+  over: Partial<LiveUpdate> & { session_tape?: SessionTapeOccupancy } = {},
+): LiveUpdate {
   return {
     ticker: 'TSLA',
     mid: 416.5,
@@ -104,6 +107,17 @@ function liveUpdate(over: Partial<LiveUpdate> = {}): LiveUpdate {
     last_trade: 416.13,
     ...over,
   } as LiveUpdate;
+}
+
+function tapeOcc(over: Partial<SessionTapeOccupancy> = {}): SessionTapeOccupancy {
+  return {
+    symbol: 'SPY',
+    et_date: '2026-08-10',
+    tape_time_et: '09:35:00',
+    phase: 'playing',
+    pace: 1,
+    ...over,
+  };
 }
 
 // A harness that supplies the real `usePersona` (client-local, no network) to the deck.
@@ -206,6 +220,128 @@ describe('connectionChip — the single stream-driven chip (unit)', () => {
     const c = connectionChip(liveUpdate({ live: false, market_session: 'regular' }), false, false);
     expect(c?.tone).toBe('warning');
     expect(c?.pulse).toBe(false);
+  });
+
+  it('S1 starting chip is session tape · starting… not liveStatus', () => {
+    const c = connectionChip(
+      liveUpdate({
+        live: false,
+        feed: 'session_tape',
+        market_session: 'session_tape',
+        session_tape: tapeOcc({ tape_time_et: null }),
+      }),
+      false,
+      false,
+      'SPY',
+    );
+    expect(c?.text).toBe('session tape · starting…');
+    expect(c?.dot).toBe('○');
+    expect(c?.pulse).toBe(false);
+    expect(c?.tone).toBe('neutral');
+    expect(c?.text).not.toMatch(/live|no live ticks|overnight|market closed/i);
+  });
+
+  it('S1 playing omits · 1× and prints tape HH:MM:SS ET', () => {
+    const c = connectionChip(
+      liveUpdate({ live: false, feed: 'session_tape', session_tape: tapeOcc({ pace: 1 }) }),
+      false,
+      false,
+      'SPY',
+    );
+    expect(c?.text).toContain('tape 09:35:00 ET');
+    expect(c?.text).not.toMatch(/1×/);
+    expect(c?.pulse).toBe(false);
+    expect(c?.dot).toBe('○');
+  });
+
+  it('S1 playing prints · 4× when pace is 4', () => {
+    const c = connectionChip(
+      liveUpdate({ live: false, feed: 'session_tape', session_tape: tapeOcc({ pace: 4 }) }),
+      false,
+      false,
+      'SPY',
+    );
+    expect(c?.text).toMatch(/4×/);
+  });
+
+  it('S1 streamOffline during playing is Session tape stream dropped not live-offline', () => {
+    const c = connectionChip(
+      liveUpdate({ live: false, feed: 'session_tape', session_tape: tapeOcc() }),
+      true,
+      false,
+      'SPY',
+    );
+    expect(c?.text).toBe('⚠ Session tape stream dropped');
+    expect(c?.text).not.toContain('Live offline');
+    expect(c?.tone).toBe('warning');
+  });
+
+  it('S0 streamOffline is still Live offline reconnecting', () => {
+    const c = connectionChip(liveUpdate({ live: true, market_session: 'regular' }), true, false);
+    expect(c?.text).toContain('⚠ Live offline — reconnecting…');
+  });
+
+  it('poison live true + session_tape still hollow session tape not ● live', () => {
+    const c = connectionChip(
+      liveUpdate({
+        live: true,
+        feed: 'session_tape',
+        session_tape: tapeOcc({ tape_time_et: '10:00:00' }),
+      }),
+      false,
+      false,
+      'SPY',
+    );
+    expect(c?.dot).toBe('○');
+    expect(c?.pulse).toBe(false);
+    expect(c?.text).not.toMatch(/●/);
+    expect(c?.text).toMatch(/session tape/);
+  });
+
+  it('not-this-ticker chip names the armed identity', () => {
+    const c = connectionChip(
+      liveUpdate({
+        ticker: 'QQQ',
+        live: false,
+        feed: 'session_tape',
+        session_tape: tapeOcc(),
+      }),
+      false,
+      false,
+      'QQQ',
+    );
+    expect(c?.text).toBe('session tape · SPY · Mon Aug 10 · not this ticker');
+  });
+
+  it('ended chip is session tape ended not live-offline', () => {
+    const c = connectionChip(
+      liveUpdate({
+        live: false,
+        feed: 'session_tape',
+        session_tape: tapeOcc({ phase: 'ended', tape_time_et: '16:00:00' }),
+      }),
+      false,
+      false,
+      'SPY',
+    );
+    expect(c?.text).toBe('session tape ended · SPY · Mon Aug 10');
+    expect(c?.tone).toBe('warning');
+    expect(c?.text).not.toContain('Live offline');
+  });
+
+  it('gap chip only when standing is gap', () => {
+    const c = connectionChip(
+      liveUpdate({
+        live: false,
+        feed: 'session_tape',
+        session_tape: tapeOcc({ phase: 'gap', tape_time_et: '09:40:00' }),
+      }),
+      false,
+      false,
+      'SPY',
+    );
+    expect(c?.text).toBe('session tape gap · SPY · Mon Aug 10');
+    expect(c?.tone).toBe('warning');
   });
 });
 

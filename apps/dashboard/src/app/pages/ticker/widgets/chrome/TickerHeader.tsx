@@ -21,6 +21,7 @@ import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { Refused } from '@/shared/ui/Refused';
 import type { LiveUpdate, MarketState, Signals } from '@convexa/api';
+import WarningAmber from '@mui/icons-material/WarningAmber';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Skeleton from '@mui/material/Skeleton';
@@ -29,7 +30,19 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 import { useLiveTape } from '../../liveTapeStore';
-import { LAST_TRADE_TOOLTIP, OFFLINE_CHIP_TOOLTIP, SINGLE_NAME_CAVEAT } from '../_kit/copy';
+import {
+  consumeStanding,
+  sessionTapeChip,
+  sessionTapeOf,
+  type SessionTapeOccupancy,
+} from '../../sessionTapeStanding';
+import {
+  LAST_TRADE_NO_TAPE_PRINT,
+  LAST_TRADE_REPLAY_TOOLTIP,
+  LAST_TRADE_TOOLTIP,
+  OFFLINE_CHIP_TOOLTIP,
+  SINGLE_NAME_CAVEAT,
+} from '../_kit/copy';
 import { FreshnessLine } from './FreshnessLine';
 
 const REGIME_TIP =
@@ -45,12 +58,15 @@ export function TintChip({
   tip,
   dot,
   pulse,
+  warnIcon,
 }: {
   tone: 'success' | 'error' | 'info' | 'warning' | 'neutral';
   label: string;
   tip?: string;
   dot?: string;
   pulse?: boolean;
+  /** DESIGN_SYSTEM: warning.* + icon always when label has no leading ⚠. */
+  warnIcon?: boolean;
 }) {
   const chip = (
     <Box
@@ -58,7 +74,7 @@ export function TintChip({
       sx={(t) => ({
         display: 'inline-flex',
         alignItems: 'center',
-        gap: dot ? 0.5 : 0,
+        gap: dot || warnIcon ? 0.5 : 0,
         px: 1,
         py: '3px',
         borderRadius: '999px',
@@ -73,6 +89,7 @@ export function TintChip({
             : alpha(t.palette[tone].main, 0.16),
       })}
     >
+      {warnIcon && <WarningAmber aria-hidden sx={{ fontSize: 12, color: 'warning.main' }} />}
       {dot && (
         <Box
           component="span"
@@ -108,20 +125,28 @@ export function TintChip({
 // ---- Live last-trade readout (AC-LastTrade-1..5) --------------------------------------------
 // LIVE-DERIVED (rides SSE only). Cold → shimmer; default → `● Last trade $X`; live-empty → honest
 // empty; offline → `⏸ Last trade $X` dimmed. Never the headline; never freezes a stale value.
+// S1 (session_tape): hollow ○ + replay tooltip; no ⏸; drop dims via chip, not paused copy.
 export function LastTradeReadout({
   live: liveProp,
   streamOffline: offlineProp,
+  displayActive: displayActiveProp,
 }: {
   live?: LiveUpdate | null;
   streamOffline?: boolean;
+  displayActive?: boolean;
 } = {}) {
   // Prefer liveTapeStore when props omitted (§3.8 Phase C).
   // Lazy import avoided — store is light and ticker-only.
   const tape = useLiveTape();
   const live = liveProp !== undefined ? liveProp : tape.live;
   const streamOffline = offlineProp !== undefined ? offlineProp : tape.streamOffline;
-  // Flash the live last-trade on a genuine print (live only; frozen when offline / not live).
-  const ltActive = (live?.live ?? false) && !streamOffline;
+  const st = sessionTapeOf(live);
+  const numbersActive =
+    displayActiveProp !== undefined
+      ? displayActiveProp
+      : tape.displayActive || ((live?.live ?? false) && !streamOffline && !st);
+  // Flash on genuine print while numbers are active (S0 live or S1 display-active).
+  const ltActive = numbersActive && !streamOffline;
   const ltFlash = useFlashOnChange(ltActive ? (live?.last_trade ?? null) : null, {
     active: ltActive,
   });
@@ -136,6 +161,41 @@ export function LastTradeReadout({
     );
   }
   const lt = live.last_trade;
+
+  if (st) {
+    const tip = LAST_TRADE_REPLAY_TOOLTIP;
+    const dim = streamOffline;
+    if (lt == null) {
+      return (
+        <Tooltip arrow title={tip}>
+          <Typography
+            component="span"
+            variant="body2"
+            sx={{ color: 'text.secondary', opacity: dim ? 0.5 : 1 }}
+            data-testid="last-trade"
+          >
+            {LAST_TRADE_NO_TAPE_PRINT}
+          </Typography>
+        </Tooltip>
+      );
+    }
+    return (
+      <Tooltip arrow title={tip}>
+        <Typography
+          component="span"
+          variant="body2"
+          sx={[{ color: 'text.secondary', opacity: dim ? 0.5 : 1 }, flashColorSx(ltFlash)]}
+          data-testid="last-trade"
+        >
+          <Box component="span" sx={{ color: 'text.secondary' }}>
+            ○
+          </Box>{' '}
+          Last trade ${lt.toFixed(2)}
+        </Typography>
+      </Tooltip>
+    );
+  }
+
   if (streamOffline) {
     return (
       <Tooltip arrow title={LAST_TRADE_TOOLTIP}>
@@ -188,6 +248,14 @@ export function liveStatus(
 ): { color: 'info' | 'warning' | 'default'; label: string; tip: string } | null {
   if (!live) return null;
   const last = live.mid != null ? ` · mid $${live.mid.toFixed(2)}` : '';
+  // Closed wins over live.live — never ● live · closed (calendar does not write live:false).
+  if (live.market_session === 'closed') {
+    return {
+      color: 'default',
+      label: `○ market closed${last}`,
+      tip: 'Market is closed (weekend/holiday). Showing the last completed session.',
+    };
+  }
   if (live.live) {
     const s: Record<string, string> = {
       premarket: 'pre-market',
@@ -208,37 +276,54 @@ export function liveStatus(
       tip: 'Massive covers 4 AM–8 PM ET only; the 8 PM–4 AM overnight session is not provided, so this is the last close. Overnight-capable platforms (e.g. Webull) will show a different, live price.',
     };
   }
-  if (live.market_session === 'closed') {
-    return {
-      color: 'default',
-      label: `○ market closed${last}`,
-      tip: 'Market is closed (weekend/holiday). Showing the last completed session.',
-    };
-  }
   return {
     color: 'warning',
     label: `○ no live ticks${last}`,
-    tip: 'In a covered session but no ticks are arriving — the feed may be lagging, or it is a market holiday.',
+    tip: 'In a covered session but no ticks are arriving — the feed may be lagging.',
   };
 }
 
 /**
  * connectionChip — resolves the SINGLE stream-driven connection chip from `live`/`streamOffline`.
- * The offline warning supersedes the session chip so a stale "live" can never contradict a dropped
- * transport (`[live-vs-static-isolation]`). Shared by the deck hero AND the sticky condensed bar so
- * both reflect the exact same live state. `reduced` gates the live-dot pulse (live only).
+ * Session-tape basis branches BEFORE liveStatus / live-offline. Unset-arm offline supersedes a
+ * would-be live session (`[live-vs-static-isolation]`). Shared by the deck hero AND the sticky
+ * condensed bar. `reduced` gates the live-dot pulse (genuine live only).
  */
 export function connectionChip(
   live: LiveUpdate | null,
   streamOffline: boolean,
   reduced: boolean,
+  routeSymbol?: string,
+  lastPhase?: SessionTapeOccupancy['phase'] | null,
 ): {
   tone: 'info' | 'warning' | 'neutral';
   text: string;
   tip?: string;
   dot?: string;
   pulse: boolean;
+  warnIcon?: boolean;
 } | null {
+  const route = routeSymbol ?? live?.ticker ?? '';
+  const standing = consumeStanding({ live, streamOffline, routeSymbol: route, lastPhase });
+  if (standing.kind !== 's0') {
+    const st = sessionTapeOf(live);
+    if (!st) return null;
+    const chip = sessionTapeChip({
+      standing,
+      occupancy: st,
+      routeSymbol: route,
+      maxPx: 393,
+    });
+    return {
+      tone: chip.tone,
+      text: chip.text,
+      tip: chip.tip,
+      dot: chip.dot,
+      pulse: false,
+      warnIcon: chip.warnIcon,
+    };
+  }
+
   const ls = liveStatus(live);
   const label = streamOffline ? '⚠ Live offline — reconnecting…' : (ls?.label ?? null);
   if (!label) return null;
@@ -252,6 +337,7 @@ export function connectionChip(
   const dot = label.startsWith('● ') || label.startsWith('○ ') ? label[0] : undefined;
   const text = dot ? label.slice(2) : label;
   const pulse = dot === '●' && tone === 'info' && !streamOffline && !reduced; // live only
+  // S0 path stays byte-identical — no new warning icon on unset-arm chips.
   return { tone, text, tip: streamOffline ? OFFLINE_CHIP_TOOLTIP : ls?.tip, dot, pulse };
 }
 
@@ -259,7 +345,10 @@ interface TickerHeaderProps {
   m: MarketState;
   sig: Signals | undefined;
   live: LiveUpdate | null;
+  /** Genuine paid-live gate (fills / ● live / pulses). */
   isLive: boolean;
+  /** Session-tape numbers may follow mid (or S0 live). */
+  displayActive?: boolean;
   streamOffline: boolean;
   selected: string[] | null;
   /** Persistent "+ Open simulated trade" CTA, right-aligned in the header (kept out of the analysis flow). */
@@ -280,6 +369,8 @@ interface TickerHeaderProps {
    *  line. The CALLER owns the membership decision (true ONLY for a confirmed non-universe symbol;
    *  unknown/failed reads stay false — AC-5). Muted caption, token-only, never warn/red. */
   singleNameCaveat?: boolean;
+  /** Last vouched session_tape.phase — survives payload-gap for drop standing. */
+  lastSessionPhase?: SessionTapeOccupancy['phase'] | null;
 }
 
 export function TickerHeader({
@@ -287,6 +378,7 @@ export function TickerHeader({
   sig,
   live,
   isLive,
+  displayActive = false,
   streamOffline,
   selected,
   onOpenTrade,
@@ -295,12 +387,14 @@ export function TickerHeader({
   onSignIn,
   freshness,
   singleNameCaveat = false,
+  lastSessionPhase = null,
 }: TickerHeaderProps) {
   const reduced = useReducedMotion();
-  const conn = connectionChip(live, streamOffline, reduced);
-  // Headline price flash on a live NBBO-mid change (live only; inert when static/offline).
-  const priceFlash = useFlashOnChange(isLive && live ? live.mid : null, {
-    active: isLive && !streamOffline,
+  const conn = connectionChip(live, streamOffline, reduced, m.ticker, lastSessionPhase);
+  // Numbers follow tape mid when display-active OR genuine live (S0).
+  const numbersActive = displayActive || isLive;
+  const priceFlash = useFlashOnChange(numbersActive && live ? live.mid : null, {
+    active: numbersActive && !streamOffline,
   });
 
   return (
@@ -335,19 +429,20 @@ export function TickerHeader({
                   tip={conn.tip}
                   dot={conn.dot}
                   pulse={conn.pulse}
+                  warnIcon={conn.warnIcon}
                 />
               )}
             </Stack>
           )}
 
-          {/* Headline ANCHOR (NBBO mid when live, else the static price). The last-trade readout below is
-            DISPLAY-ONLY and NEVER feeds this anchor (`live-spot=NBBO-mid`, AC-LastTrade-5). Mono figure. */}
+          {/* Headline ANCHOR (NBBO mid when live or display-active, else the static price). The last-trade
+            readout below is DISPLAY-ONLY and NEVER feeds this anchor (`live-spot=NBBO-mid`). Mono figure. */}
           <Typography variant="h1" sx={{ fontSize: 32, fontWeight: 700, lineHeight: 1.12 }}>
             <Box
               component="span"
               sx={[{ fontVariantNumeric: 'tabular-nums' }, flashColorSx(priceFlash)]}
             >
-              {m.ticker} · ${(isLive && live ? live.mid : m.price)?.toFixed(2)}
+              {m.ticker} · ${(numbersActive && live ? live.mid : m.price)?.toFixed(2)}
             </Box>
             <Typography
               component="span"
@@ -371,7 +466,11 @@ export function TickerHeader({
             data-testid="deck-meta"
             sx={{ alignItems: 'center', flexWrap: 'wrap', columnGap: 1, rowGap: 0.25 }}
           >
-            <LastTradeReadout live={live} streamOffline={streamOffline} />
+            <LastTradeReadout
+              live={live}
+              streamOffline={streamOffline}
+              displayActive={numbersActive}
+            />
             {freshness && (
               <>
                 <Typography

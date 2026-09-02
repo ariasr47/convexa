@@ -46,6 +46,9 @@ apps/api/config/**
 libs/quant-engine/tests/fixtures/**
 apps/dashboard-e2e/visual-review/evidence/**
 
+# --- Receipt-bound browser evidence (SHA-256 immutable) ---
+apps/dashboard-e2e/visual-review/evidence/**
+
 # --- Env & local secrets (never format, never touch) ---
 .env
 .env.*

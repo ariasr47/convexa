@@ -1,0 +1,51 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "PASS",
+  "mode": "live",
+  "source": ".spire/clusters/tech/contracts/exchange-holiday-calendar/INTERFACE_CONTRACT.md",
+  "base_url": "http://127.0.0.1:8000",
+  "auth": null,
+  "checked_at": "2026-09-01T01:19:49Z",
+  "summary": {
+    "pass": 5,
+    "fail": 0,
+    "total": 5
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage",
+      "verdict": "PASS",
+      "required_checked": 27,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage",
+      "verdict": "PASS",
+      "required_checked": 18,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage",
+      "verdict": "PASS",
+      "required_checked": 18,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage",
+      "verdict": "PASS",
+      "required_checked": 3,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 14,
+      "failures": []
+    }
+  ]
+}

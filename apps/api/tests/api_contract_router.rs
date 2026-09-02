@@ -29,7 +29,7 @@ fn contract_openapi_has_exact_pre_cutover_operation_set() {
     let document = routes::openapi().expect("valid production contract graph");
     let mut actual = operation_pairs(&document);
     actual.sort();
-    assert_eq!(actual.len(), 52);
+    assert_eq!(actual.len(), 57);
     assert!(operation_pairs(&document).contains(&("POST".into(), "/api/auth/logout".into())));
     assert!(!operation_pairs(&document).contains(&("DELETE".into(), "/api/auth/logout".into())));
     let baseline: Value = serde_json::from_str(include_str!(
@@ -138,7 +138,7 @@ fn runtime_and_openapi_are_built_from_one_registered_graph() {
         .split("#[utoipa::path(")
         .next()
         .expect("contract router source");
-    assert_eq!(graph_source.match_indices("add!(").count() - 1, 52);
+    assert_eq!(graph_source.match_indices("add!(").count() - 1, 57);
     assert!(!source.contains("\n    Router::new()"));
     assert!(!source.contains("utoipa_axum"));
 }
@@ -152,8 +152,8 @@ fn disposable_route_graph_mutation_changes_runtime_and_openapi_together() {
         .1;
     let baseline_pairs = operation_pairs(&baseline);
     let mutated_pairs = operation_pairs(&mutated);
-    assert_eq!(baseline_pairs.len(), 52);
-    assert_eq!(mutated_pairs.len(), 53);
+    assert_eq!(baseline_pairs.len(), 57);
+    assert_eq!(mutated_pairs.len(), 58);
     assert!(mutated_pairs.contains(&("GET".into(), "/__contract_test_operation".into())));
     assert!(!baseline_pairs.contains(&("GET".into(), "/__contract_test_operation".into())));
 }

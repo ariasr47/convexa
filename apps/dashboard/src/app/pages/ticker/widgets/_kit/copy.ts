@@ -39,6 +39,12 @@ export const LAST_TRADE_TOOLTIP =
   'Empty between trades, overnight, and before the session’s first print — it never shows a ' +
   'stale number as current. Pauses with the live stream if it drops.';
 
+/** S1 last-trade tooltip while session_tape is present (replaces LAST_TRADE_TOOLTIP). */
+export const LAST_TRADE_REPLAY_TOOLTIP =
+  'The last stored trade print on this session day tape. Research readout only — not a live vendor feed. The headline follows the tape mid when session tape is playing; walls / gamma flip / max pain stay on the structure snapshot, not on this print.';
+
+export const LAST_TRADE_NO_TAPE_PRINT = 'Last trade — no tape print at this tape time';
+
 /**
  * Compact big-dollar formatter — sign-FIRST (figure minus U+2212), `$` after the sign, magnitude
  * scaled B/M/K (1 decimal) or a bare integer below 1e3. `−$12.3M`, `$793.2M`, `$36.6B`, `$420`.
@@ -525,6 +531,31 @@ export function withStructureAge(basis: string, ageSeconds: number | null | unde
 export const LIVE_TAPE_SUBTITLE_LIVE = 'Live stream · not the structure snapshot below';
 export const LIVE_TAPE_SUBTITLE_OFFLINE =
   'Stream offline · last known ticks · structure levels stay current';
+
+/** S1 LiveTape title — from first session_tape payload (including starting). */
+export const SESSION_TAPE_TITLE = 'Session tape';
+
+export const SESSION_TAPE_INFO =
+  'Reads off the stored session day tape (Path-A trades and quotes). Not a live vendor feed. Structure tiles below stay snapshot reads; they are not this tape claiming live greeks.';
+
+export const SESSION_TAPE_SUBTITLE_ENDED =
+  'Session tape ended · last tape ticks · structure levels stay snapshot';
+
+export const SESSION_TAPE_NET_FLOW_INFO_1X =
+  "Aggressive buys minus sells over the tape's last few minutes, from stored Path-A trades. Not a live vendor feed. Positive = buyers lifting the ask; negative = sellers hitting the bid.";
+
+export const SESSION_TAPE_NET_FLOW_INFO_FAST =
+  'Aggressive buys minus sells from stored Path-A trades. Not a live vendor feed. This number does not name a tape-time window. Positive = buyers lifting the ask; negative = sellers hitting the bid.';
+
+/** Playing / keep-alive / gap / starting subtitle. */
+export function sessionTapeSubtitle(symbol: string, humanDate: string): string {
+  return `Session day tape · ${symbol} · ${humanDate} · not a live feed`;
+}
+
+/** Not-the-armed-day LiveTape subtitle — names the armed identity. */
+export function sessionTapeNotThisTickerSubtitle(armedSymbol: string, humanDate: string): string {
+  return `Session day tape · ${armedSymbol} · ${humanDate} · not this ticker — not a live feed`;
+}
 
 /** Dealer positioning static grid — snapshot honesty + age. */
 export function dealerPositioningSubtitle(ageSeconds: number | null | undefined): string {

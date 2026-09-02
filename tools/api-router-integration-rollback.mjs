@@ -112,6 +112,19 @@ export function proveRollback({
       input: patch,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
+    // `git apply --reverse` writes the WORKTREE ONLY, leaving the index describing the
+    // REPLACEMENT tree, while the residual comparison below is index-aware. Without this
+    // stage, every path the replacement DELETED OR RENAMED AWAY comes back to disk with
+    // correct bytes but stays UNTRACKED, and the comparison reports it as a whole-file
+    // deletion. Measured on the 2026-09 mainline merge, whose replacement renamed
+    // `apps/api/src/services/session_chain_archive/coverage.rs` into `coverage/policy.rs`
+    // (a file-to-directory rename): the reverse restored coverage.rs byte-identically to the
+    // pre-edit blob (29348 bytes, sha256
+    // 8e38a66c0ec2c846430eacbcd934592e94f0fcd32fb6e92dd2a58de817c13d32) yet `git status`
+    // showed it as `??` and the proof failed with a phantom residual. Staging re-hashes the
+    // worktree through the clean filter, so index and worktree describe the same tree and the
+    // comparison is honest on a CRLF checkout too. Confined to the disposable worktree.
+    git(worktree, ['add', '--all', '--', '.']);
     // Compare the materialized rollback tree with the declared pre-edit revision;
     // comparing with the replacement index would report the intentional reverse patch.
     const ignoredDirty = new Set(dirtyPaths);

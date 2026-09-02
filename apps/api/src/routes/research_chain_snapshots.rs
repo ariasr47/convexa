@@ -45,6 +45,7 @@ fn source_token(kind: MarketDataSourceKind) -> &'static str {
     match kind {
         MarketDataSourceKind::LiveMassive => "live_massive",
         MarketDataSourceKind::Fixture => "fixture",
+        MarketDataSourceKind::SessionTape => "session_tape",
     }
 }
 

@@ -179,19 +179,7 @@ pub async fn get_price(
     }
 
     // Cold: stock snapshot REST (~ms), not options chain.
-    let live = if let Some(port) = &state.harness_market_data {
-        let bundle = port.resolve(&sym, None).await?;
-        crate::domain::LivePrice {
-            symbol: sym.clone(),
-            price: bundle.market.current_spot,
-            bid: None,
-            ask: None,
-            ts_ns: bundle.market.timestamp,
-            received_at: bundle.as_of.timestamp(),
-        }
-    } else {
-        state.massive()?.fetch_quick_live_price(&sym).await?
-    };
+    let live = state.quick_live_price(&sym).await?;
     let _ = state.prices.set_price(&live).await;
     let mut resp = StatePriceResponse::from(&live);
     resp.source = "stock_snapshot".into();
@@ -299,5 +287,16 @@ mod response_conversion_tests {
             let body = String::from_utf8(body.to_vec()).unwrap();
             assert!(body.contains(body_marker), "{boundary}: {body}");
         }
+    }
+
+    #[test]
+    fn get_price_cold_path_uses_fixture_aware_quick_live_price() {
+        let src = include_str!("price.rs");
+        let start = src.find("pub async fn get_price(").expect("get_price");
+        let body = &src[start..];
+        let end = body.find("pub async fn get_prices(").unwrap_or(body.len());
+        let fn_body = &body[..end];
+        assert!(fn_body.contains("state.quick_live_price(&sym)"));
+        assert!(!fn_body.contains("state.massive.fetch_quick_live_price"));
     }
 }

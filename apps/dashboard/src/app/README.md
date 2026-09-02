@@ -7,14 +7,15 @@ only**: `features/` and `pages/` may import `shared/`; **pages never import sibl
 
 ## `pages/` — one folder per route
 
-| Route             | Folder                       | Notes                                                         |
-| ----------------- | ---------------------------- | ------------------------------------------------------------- |
-| `/`               | `pages/landing/`             | Landing splash.                                               |
-| `/ticker/:ticker` | `pages/ticker/`              | The GEX viewer — a **widget bento** (see below).              |
-| `/positions`      | `pages/positions/`           | Route shell; the book/logic is `features/trading/positions/`. |
-| `/scanner`        | `pages/scanner/`             | Coming-soon stub.                                             |
-| `/settings`       | `features/auth/SettingsPage` | Route shell lives with the auth domain (tightly coupled).     |
-| `/_ops/metrics`   | `pages/operator-metrics/`    | Operator-only, off the trader shell.                          |
+| Route             | Folder                            | Notes                                                         |
+| ----------------- | --------------------------------- | ------------------------------------------------------------- |
+| `/`               | `pages/landing/`                  | Landing splash.                                               |
+| `/ticker/:ticker` | `pages/ticker/`                   | The GEX viewer — a **widget bento** (see below).              |
+| `/positions`      | `pages/positions/`                | Route shell; the book/logic is `features/trading/positions/`. |
+| `/scanner`        | `pages/scanner/`                  | Coming-soon stub.                                             |
+| `/settings`       | `features/auth/SettingsPage`      | Route shell lives with the auth domain (tightly coupled).     |
+| `/_ops/metrics`   | `pages/operator-metrics/`         | Operator-only, off the trader shell.                          |
+| `/_ops/research`  | `pages/operator-session-archive/` | Operator session-archive corpus browser, off-shell, URL-only. |
 
 ## `features/` — cross-cutting domains (each used by ≥1 page)
 

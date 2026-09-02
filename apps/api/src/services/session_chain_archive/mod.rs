@@ -13,7 +13,10 @@ pub(crate) mod migrate;
 mod store;
 
 pub use archive::{archive_session_best_effort, archive_session_best_effort_observed};
-pub use coverage::COVERAGE_SYMBOLS;
+pub use coverage::{
+    derive, emit_latched_warnings, evaluate_cli, open_session_archive_for_cli, CoverageFault,
+    CoverageMatrix, COVERAGE_SYMBOLS, COVERAGE_VENDOR_CALLS, LAST_READABLE_LOAD_CAP,
+};
 pub use ensure::{
     ensure_eligible, ensure_one, ensure_one_gated, ensure_one_with_retention, is_ensure_symbol,
     is_et_weekday, maybe_wake, should_wake_ensure, today_et_date, EnsureForceError, EnsureGate,

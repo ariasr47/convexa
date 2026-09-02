@@ -4,7 +4,9 @@
 //! quant-engine / Redis / HTTP consumers see them.
 
 pub mod market;
+pub mod nyse_full_day;
 pub mod price;
 
 pub use market::{MarketPhase, OptionsMarketState};
+pub use nyse_full_day::{is_et_session_day, is_et_weekend, is_nyse_full_day_holiday};
 pub use price::{LivePrice, StreamEvent, StreamKind};

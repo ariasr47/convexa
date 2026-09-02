@@ -56,7 +56,7 @@ function warmNav(to: string) {
 // Product spine (where → why → track): Scanner first, then Ticker, Positions, Alerts, Blog.
 // Lab is a public Canvas instrument demo (not product spine, but discoverable).
 // Active-route rules: Scanner `/scanner*`; Ticker `/ticker*`; Positions `/positions*`; etc.
-// Deliberately NO operator entry (`/_ops/metrics` is URL-only).
+// Deliberately NO operator entry (`/_ops/metrics` and `/_ops/research` are URL-only).
 const NAV: NavEntry[] = [
   {
     label: 'Scanner',

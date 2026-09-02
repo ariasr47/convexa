@@ -92,6 +92,7 @@ fn source_name(source: MarketDataSourceKind) -> &'static str {
     match source {
         MarketDataSourceKind::LiveMassive => "live",
         MarketDataSourceKind::Fixture => "fixture",
+        MarketDataSourceKind::SessionTape => "session_tape",
     }
 }
 
@@ -99,6 +100,7 @@ fn parse_source(s: &str) -> Option<MarketDataSourceKind> {
     match s {
         "live" => Some(MarketDataSourceKind::LiveMassive),
         "fixture" => Some(MarketDataSourceKind::Fixture),
+        "session_tape" => Some(MarketDataSourceKind::SessionTape),
         _ => None,
     }
 }

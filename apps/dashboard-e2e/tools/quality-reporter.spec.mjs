@@ -55,3 +55,46 @@ test('real reporter identity helpers map manifest Chromium and all behavior IDs'
     ),
   );
 });
+
+test('visual mismatch operator line uses exact SPEC §4 scenario wording', () => {
+  const output = 'apps/dashboard-e2e/test-output/playwright/visual/summary.json';
+  const script = `
+    import { QualityReporter } from './apps/dashboard-e2e/src/quality/reporters/quality-reporter.ts';
+    const logs = [];
+    const originalLog = console.log;
+    const originalError = console.error;
+    console.log = (...args) => logs.push(args.join(' '));
+    console.error = (...args) => logs.push(args.join(' '));
+    const ids = ['landing', 'ticker-desktop', 'ticker-offline-mobile', 'positions-dense', 'scanner-dense', 'ai-recommendation'];
+    const reporter = new QualityReporter({ gate: 'visual', output: ${JSON.stringify(output)} });
+    const tests = ids.map((id) => ({
+      titlePath: () => ['', 'chromium', 'visual.spec.ts', id],
+      location: { file: process.cwd().replaceAll('\\\\', '/') + '/apps/dashboard-e2e/src/quality/visual.spec.ts' },
+      parent: { project: () => ({ name: 'chromium' }) },
+    }));
+    reporter.onBegin({ rootDir: process.cwd() }, { allTests: () => tests });
+    reporter.onTestEnd(tests[0], { status: 'failed', retry: 0, attachments: [] });
+    for (let i = 1; i < tests.length; i += 1) {
+      reporter.onTestEnd(tests[i], { status: 'passed', retry: 0, attachments: [] });
+    }
+    reporter.onEnd();
+    console.log = originalLog;
+    console.error = originalError;
+    const expected = ${JSON.stringify(`[FAIL] visual — landing: the approved baseline differs. Review expected, actual, and diff images. Open: ${output}`)};
+    if (!logs.includes(expected)) {
+      console.error(JSON.stringify(logs));
+      process.exit(1);
+    }
+    if (logs.some((line) => /\\[FAIL\\] visual — \\d+ failed/.test(line))) process.exit(2);
+  `;
+  assert.doesNotThrow(() =>
+    execFileSync(
+      process.execPath,
+      ['--experimental-strip-types', '--input-type=module', '-e', script],
+      {
+        cwd: path.resolve('.'),
+        stdio: 'pipe',
+      },
+    ),
+  );
+});

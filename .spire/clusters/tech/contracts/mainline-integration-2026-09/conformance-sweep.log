@@ -1,0 +1,69 @@
+# mainline-integration-2026-09 — AC-6 conformance sweep
+# base url: http://127.0.0.1:8010  (cargo run -p api-rust -- serve, default features, HTTP_BIND=127.0.0.1:8010)
+# command:  node .claude/tools/gates.mjs interface_conformance --spec <file> --url http://127.0.0.1:8010 --auth-signup --report <tmp>
+# verdict read from the report JSON; exit is the tool exit code
+# run at:   2026-09-02T05:13:54Z
+ai-providers.json                                PASS        exit=0 endpoints=5   
+ai-rec-grounding.json                            PASS        exit=0 endpoints=2   
+ai_context_pack.json                             PASS        exit=0 endpoints=1   
+ai_rec_backtest_orders.json                      PASS        exit=0 endpoints=1   
+ai_recommendations.json                          FAIL        exit=1 endpoints=3   GET /api/personas: 
+api-contract-generation.json                     PASS        exit=0 endpoints=4   
+api_metrics.json                                 FAIL        exit=1 endpoints=1   GET /api/_metrics: 
+archive-coverage-guardrails-research-read.json   PASS        exit=0 endpoints=5   
+archive-coverage-guardrails.json                 PASS        exit=0 endpoints=1   
+auth-gated.json                                  PASS        exit=0 endpoints=4   
+batch-backtest-cli.json                          FAIL        exit=1 endpoints=4   GET /api/_research/chain-snapshots/{symbol}/snapshot: 
+broker-option-grouping.json                      PASS        exit=0 endpoints=1   
+bundle_events.json                               FAIL        exit=1 endpoints=3   GET /api/ticker/{ticker}:  | GET /api/market-data: 
+byo-ai-key.json                                  FAIL        exit=1 endpoints=2   GET /api/recommendation/status/{ticker}: 
+chain-archive-object-store.json                  NO_REPORT   exit=2 endpoints=0   spec error: Unexpected non-whitespace character after JSON at position 11 (line 1 column 12)
+chain-snapshot-capture.json                      FAIL        exit=1 endpoints=4   GET /api/_research/chain-snapshots/{symbol}/snapshot: 
+chain-snapshot-local-store.json                  FAIL        exit=1 endpoints=4   GET /api/_research/chain-snapshots/{symbol}/snapshot: 
+day-replay-mock-adapter.json                     PASS        exit=0 endpoints=5   
+dealer-flow-projection.json                      PASS        exit=0 endpoints=1   
+exchange-holiday-calendar.json                   PASS        exit=0 endpoints=5   
+iv_rank.json                                     PASS        exit=0 endpoints=1   
+liquid-names-session-capture.json                NO_REPORT   exit=2 endpoints=0   spec error: Unexpected non-whitespace character after JSON at position 11 (line 1 column 12)
+massive-flat-file-keep.json                      PASS        exit=0 endpoints=6   
+openapi-router-dependency-replacement.json       PASS        exit=0 endpoints=4   
+postgres-release-safety-repository.json          NO_REPORT   exit=2 endpoints=0   spec has no endpoints
+postgres-release-safety.json                     PASS        exit=0 endpoints=1   
+production-runtime-guardrails-transport.json     NO_REPORT   exit=2 endpoints=0   spec has no endpoints
+production-runtime-guardrails-volume.json        NO_REPORT   exit=2 endpoints=0   spec has no endpoints
+production-runtime-guardrails.json               FAIL        exit=1 endpoints=2   GET /api/_metrics: 
+public-surface.json                              PASS        exit=0 endpoints=4   
+rec-absence-literals-hole.json                   PASS        exit=0 endpoints=2   
+replay-outcome-join.json                         FAIL        exit=1 endpoints=4   GET /api/_research/chain-snapshots/{symbol}/snapshot: 
+research-lab-surface.json                        PASS        exit=0 endpoints=7   
+scanner.json                                     PASS        exit=0 endpoints=2   
+score-lab-signal-comparison.json                 PASS        exit=0 endpoints=1   
+session-chain-archive.json                       NO_REPORT   exit=2 endpoints=0   spec error: Unexpected non-whitespace character after JSON at position 11 (line 1 column 12)
+session-day-tape-capture.json                    PASS        exit=0 endpoints=5   
+ticker-load-experience.json                      PASS        exit=0 endpoints=2   
+tradeable-rec-inputs.json                        PASS        exit=0 endpoints=4   
+user-accounts.json                               FAIL        exit=1 endpoints=2   POST /api/auth/signup: 
+# totals: PASS=24 FAIL=10 OTHER=6 of 40 spec files
+#
+# Reading of the non-PASS rows (each verified at source; none is caused by the merge):
+#   * All SEVEN specs this merge is about PASS: day-replay-mock-adapter, exchange-holiday-calendar,
+#     massive-flat-file-keep, research-lab-surface, session-day-tape-capture,
+#     archive-coverage-guardrails-research-read (branch) and archive-coverage-guardrails (main).
+#   * "spec error: Unexpected non-whitespace character after JSON at position 11" —
+#     chain-archive-object-store.json, liquid-names-session-capture.json, session-chain-archive.json
+#     are checked-in FRAGMENTS: each begins `"endpoints": [` with no enclosing braces, so they are
+#     not parseable JSON documents. Pre-existing on both parents.
+#   * "spec has no endpoints" — postgres-release-safety-repository, production-runtime-guardrails-
+#     transport / -volume are non-HTTP specs; there is nothing for an HTTP runner to probe.
+#   * api_metrics.json / production-runtime-guardrails.json FAIL on
+#     window.size_desc / window.uptime_seconds / window.request_count. `/api/_metrics` emits
+#     `"window": "15m"` (a string) from a hard-coded instrumentation-disabled payload in
+#     apps/api/src/routes/health.rs. That file is BYTE-IDENTICAL to origin/main in this tree
+#     (`git diff origin/main HEAD -- apps/api/src/routes/health.rs` is empty) and both parents carry
+#     the same literal, so these specs are stale against the shipped shape on both lines.
+#   * The four `/api/_research/chain-snapshots/{symbol}/snapshot` FAILs need a captured chain
+#     snapshot for the probed identity; this worktree's `data/chain_snapshots` is empty.
+#   * user-accounts.json POST /api/auth/signup returns HTTP 409 because the sweep itself runs with
+#     --auth-signup, which already created that account in the same process.
+#   * ai_recommendations / bundle_events / byo-ai-key need warm vendor bundles for the probed
+#     tickers that had not landed in the cache when the sweep ran.

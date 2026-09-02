@@ -1,0 +1,254 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "PASS",
+  "mode": "live",
+  "source": "/Users/rodrigoarias/dev/convexa/.worktrees/mainline-integration/.spire/clusters/tech/contracts/mainline-integration-2026-09/INTERFACE_CONTRACT.md",
+  "base_url": "http://127.0.0.1:8010",
+  "auth": null,
+  "checked_at": "2026-09-02T11:51:29Z",
+  "summary": {
+    "pass": 34,
+    "fail": 0,
+    "total": 34
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/_research/session-day-tape/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 14,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-day-tape/{symbol}/day",
+      "verdict": "PASS",
+      "required_checked": 34,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-day-tape/{symbol}/day",
+      "verdict": "PASS",
+      "required_checked": 3,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 14,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}/book",
+      "verdict": "PASS",
+      "required_checked": 6,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage",
+      "verdict": "PASS",
+      "required_checked": 27,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage",
+      "verdict": "PASS",
+      "required_checked": 18,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage",
+      "verdict": "PASS",
+      "required_checked": 18,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage",
+      "verdict": "PASS",
+      "required_checked": 3,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 14,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/flat-files/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 18,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/flat-files/{symbol}/extract",
+      "verdict": "PASS",
+      "required_checked": 18,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/flat-files/{symbol}/extract",
+      "verdict": "PASS",
+      "required_checked": 3,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 14,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}/book",
+      "verdict": "PASS",
+      "required_checked": 6,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-day-tape/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 14,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 14,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 14,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 14,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 10,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}/book",
+      "verdict": "PASS",
+      "required_checked": 6,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}/book",
+      "verdict": "PASS",
+      "required_checked": 23,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage",
+      "verdict": "PASS",
+      "required_checked": 27,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-day-tape/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 14,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-day-tape/{symbol}/day",
+      "verdict": "PASS",
+      "required_checked": 34,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-day-tape/{symbol}/day",
+      "verdict": "PASS",
+      "required_checked": 3,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 14,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}/book",
+      "verdict": "PASS",
+      "required_checked": 6,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage",
+      "verdict": "PASS",
+      "required_checked": 27,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage",
+      "verdict": "PASS",
+      "required_checked": 18,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-archive/coverage",
+      "verdict": "PASS",
+      "required_checked": 3,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 14,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}/book",
+      "verdict": "PASS",
+      "required_checked": 6,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_metrics",
+      "verdict": "PASS",
+      "required_checked": 27,
+      "failures": []
+    }
+  ]
+}

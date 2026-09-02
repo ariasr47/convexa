@@ -94,6 +94,7 @@ pub async fn serve(config: Config) -> AppResult<()> {
     info!(%addr, "api-rust listening");
     // No background producer starts until the listener has successfully bound.
     worker_state.stock_worker.start();
+    crate::services::day_tape::path_a::spawn(worker_state.clone());
     warmer::spawn(worker_state.clone());
     crate::services::session_chain_archive::ensure_worker::spawn(worker_state.clone());
     if worker_state.config.scan_enabled {
@@ -122,6 +123,23 @@ pub async fn serve(config: Config) -> AppResult<()> {
     } else {
         info!("scanner disabled (SCAN_ENABLED=0)");
     }
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .map_err(|e| crate::error::AppError::Other(anyhow::anyhow!("serve: {e}")))?;
+    Ok(())
+}
+
+/// Bind the existing HTTP/SSE graph **without** starting vendor/path_a/warmer/ensure/scanner.
+/// Used by the exclusive research replay construct after occupancy is vouched.
+pub async fn serve_http_only(state: AppState, bind: String) -> AppResult<()> {
+    let app = router_with_cors(state, cors_layer())?;
+    let addr: SocketAddr = bind
+        .parse()
+        .map_err(|e| crate::error::AppError::Config(format!("HTTP_BIND {bind}: {e}")))?;
+    info!(%addr, "api-rust binding listener (http-only)");
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    info!(%addr, "api-rust listening (http-only)");
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await

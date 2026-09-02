@@ -7,10 +7,17 @@
  *
  * Mutation-tested: a scan that cannot prove it bites is not enforcement
  * (`[structural-over-prose-enforcement]`).
+ *
+ * F2 (mainline-integration-2026-09, GATE Z item 5): the capture-browse scan below allowlists
+ * exactly `pages/operator-session-archive/` — the research-lab-surface SPEC §2 "Structural
+ * scanners" row names that folder an explicit allowlist for this scanner. The skip is
+ * file-exact, never a needle deletion; every other trader source, including a poisoned
+ * shell/TopNav.tsx, is still scanned.
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { isOperatorSessionArchiveSource } from '../testing/operatorSessionArchiveAllowlist';
 
 const DASHBOARD_SOURCES = import.meta.glob(
   ['/src/app/**/*.{ts,tsx}', '!**/*.spec.{ts,tsx}', '!**/*.test.{ts,tsx}'],
@@ -114,6 +121,10 @@ describe('F1 · no trader chrome for batch-backtest (AC-21)', () => {
   it('trader sources do not import capture browse / research HTTP surface', () => {
     const hits: string[] = [];
     for (const [path, src] of Object.entries(DASHBOARD_SOURCES)) {
+      // F2 (mainline-integration-2026-09, GATE Z item 5): operator-session-archive is an
+      // EXPLICIT allowlist for this scan (research-lab-surface SPEC §2) — file-exact skip,
+      // never a needle deletion. CAPTURE_BROWSE_FORBIDDEN itself is unchanged.
+      if (isOperatorSessionArchiveSource(path)) continue;
       for (const n of CAPTURE_BROWSE_FORBIDDEN) {
         if (src.includes(n)) hits.push(`${path}: ${n}`);
       }
@@ -160,6 +171,54 @@ describe('F1 · no trader chrome for batch-backtest (AC-21)', () => {
     expect(
       hitsIn("const url = '/api/_research/chain-snapshots/SPY'", CAPTURE_BROWSE_FORBIDDEN),
     ).toEqual(expect.arrayContaining(['/api/_research', 'chain-snapshots']));
+  });
+});
+
+describe('F2 · operator-session-archive allowlist is explicit and non-vacuous (mainline-integration-2026-09 GATE Z item 5)', () => {
+  /** Same skip the production test above applies, exercised against synthetic sources so the
+   *  allowlist's precision is provable without editing any real file on disk. */
+  function scanCaptureBrowse(sources: Record<string, string>): string[] {
+    const hits: string[] = [];
+    for (const [path, src] of Object.entries(sources)) {
+      if (isOperatorSessionArchiveSource(path)) continue;
+      for (const n of CAPTURE_BROWSE_FORBIDDEN) {
+        if (src.includes(n)) hits.push(`${path}: ${n}`);
+      }
+    }
+    return hits;
+  }
+
+  it('anti-vacuity — a poisoned shell/TopNav.tsx-style source is still reported', () => {
+    const poisoned: Record<string, string> = {
+      '/src/app/shell/TopNav.tsx': "fetch('/api/_research/session-books/SPY')",
+    };
+    expect(scanCaptureBrowse(poisoned)).toEqual(['/src/app/shell/TopNav.tsx: /api/_research']);
+  });
+
+  it('anti-vacuity — a source path under the allowlisted operator folder is skipped', () => {
+    const allowlisted: Record<string, string> = {
+      '/src/app/pages/operator-session-archive/researchClient.ts':
+        "const url = '/api/_research/chain-snapshots/SPY';",
+    };
+    expect(scanCaptureBrowse(allowlisted)).toEqual([]);
+  });
+
+  it('the skip is not vacuous against the real tree — the operator folder legitimately trips CAPTURE_BROWSE_FORBIDDEN today', () => {
+    const skipped = Object.keys(DASHBOARD_SOURCES).filter((k) => isOperatorSessionArchiveSource(k));
+    expect(skipped.length).toBeGreaterThan(0);
+    const wouldHaveHit = skipped.some((k) =>
+      CAPTURE_BROWSE_FORBIDDEN.some((n) => DASHBOARD_SOURCES[k].includes(n)),
+    );
+    expect(wouldHaveHit).toBe(true);
+  });
+
+  it('the allowlist is folder-exact — a lookalike path is not covered', () => {
+    expect(
+      isOperatorSessionArchiveSource('/src/app/pages/operator-session-archive-extra/evil.ts'),
+    ).toBe(false);
+    expect(
+      isOperatorSessionArchiveSource('/src/app/pages/not-operator-session-archive/evil.ts'),
+    ).toBe(false);
   });
 });
 

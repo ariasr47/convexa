@@ -1,0 +1,9 @@
+# mainline-integration-2026-09 — brief
+Goal:            Land the `codex/browser-quality-gates` line on `main` as ONE verified merge: five features (day-replay-mock-adapter, exchange-holiday-calendar, massive-flat-file-keep, research-lab-surface, session-day-tape-capture) plus the second builds of capacity-baseline and archive-coverage-guardrails. Both lines' code must compile and test green together, every promoted conformance spec must pass on the merged server, and hosted CI must be green on the pushed branch before it lands.
+Decision impact: N/A — delivery correctness, not a trading decision. Observed when `main`'s contracts folder answers "what shipped" truthfully and the deployed API serves both lines' surfaces at once.
+Feasibility:     pass — merge dry-run 2026-09-01: 50 conflicts; the conductor resolved the 29 record/canon/spire files, leaving 22 code and tooling files to the backend lane; both parents are green on their own lines.
+Effort:          L
+Invariant watch: additive-keeps-score-byte-identical (capacity v1 byte-identity self-test must still pass) · best-effort-isolated-or-null · shared-session-eligibility-calendar (one XNYS calendar; the dashboard holiday list must agree with it) · reconstruction-never-satisfies-live-coverage · cited-code-is-verified-not-assumed (resolve every conflict from inspected code, never from either record's prose)
+Context tags:    architecture,backend,api,engine,live,sse,providers,observability,decisions,invariants,isolation
+Source:          owner ruling A on 2026-09-01 — docs/HANDOVER-2026-09-01-main-reconciliation.md §4 Phase A, D1
+Considered:      integrate-by-merge (CHOSEN — owner ruling A) · rebuild-five-features-on-main (culled: weeks of rework; discards 405 verified criteria) · abandon-branch (culled: discards verified work) · cherry-pick-records-only (culled: records without code would falsify main in the other direction)

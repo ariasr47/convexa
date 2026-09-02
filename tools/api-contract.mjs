@@ -559,8 +559,8 @@ function baseline() {
   if (
     value.schema_version !== 1 ||
     value.baseline_id !== 'api-contract-generation-precutover' ||
-    pairs.length !== 52 ||
-    new Set(keys).size !== 52 ||
+    pairs.length !== 57 ||
+    new Set(keys).size !== 57 ||
     !/^[0-9a-f]{40}$/i.test(value.source?.revision ?? '') ||
     !/^[0-9a-f]{64}$/i.test(value.source?.router_sha256 ?? '') ||
     value.capture?.parser !== 'rust-axum-route-registration-v1' ||
@@ -1256,6 +1256,12 @@ function routeSourceModule(path) {
   if (path.startsWith('/api/scan')) return 'apps/api/src/routes/scan.rs';
   if (path.startsWith('/api/_research/chain'))
     return 'apps/api/src/routes/research_chain_snapshots.rs';
+  if (path.startsWith('/api/_research/flat-files'))
+    return 'apps/api/src/routes/research_flat_files.rs';
+  if (path.startsWith('/api/_research/session-day-tape'))
+    return 'apps/api/src/routes/research_session_day_tape.rs';
+  if (path.startsWith('/api/_research/session-archive'))
+    return 'apps/api/src/routes/research_session_coverage.rs';
   if (path.startsWith('/api/_research/session'))
     return 'apps/api/src/routes/research_session_books.rs';
   if (path === '/api/_metrics') return 'apps/api/src/routes/health.rs';
@@ -1275,6 +1281,15 @@ function routeResponseType(path) {
   if (path.startsWith('/api/positions')) return 'SimTradeGateResponse';
   if (path.startsWith('/api/scan')) return 'ScanJsonResponse';
   if (path.startsWith('/api/_research/chain')) return 'ListSnapshotsResponse';
+  if (path.startsWith('/api/_research/flat-files')) {
+    if (path.endsWith('/extract')) return 'LoadFlatFilesResponse';
+    return 'ListFlatFilesResponse';
+  }
+  if (path.startsWith('/api/_research/session-day-tape')) {
+    if (path.endsWith('/day')) return 'LoadSessionDayTapeResponse';
+    return 'ListSessionDayTapeResponse';
+  }
+  if (path.startsWith('/api/_research/session-archive')) return 'CoverageResponse';
   if (path.startsWith('/api/_research/session')) return 'ListSessionBooksResponse';
   if (path === '/api/_metrics') return 'MetricsResponse';
   return 'HealthResponse';
@@ -1313,6 +1328,12 @@ function sourceRegistryTarget(path) {
     return 'apps/api/src/routes/ticker.rs::contract_representative_for';
   if (path.startsWith('/api/_research/chain'))
     return 'apps/api/src/routes/research_chain_snapshots.rs::contract_representative_for';
+  if (path.startsWith('/api/_research/flat-files'))
+    return 'apps/api/src/routes/research_flat_files.rs::contract_representative_response';
+  if (path.startsWith('/api/_research/session-day-tape'))
+    return 'apps/api/src/routes/research_session_day_tape.rs::contract_representative_response';
+  if (path.startsWith('/api/_research/session-archive'))
+    return 'apps/api/src/routes/research_session_coverage.rs::contract_representative_response';
   if (path.startsWith('/api/_research/session'))
     return 'apps/api/src/routes/research_session_books.rs::contract_representative_response';
   return null;
@@ -2005,7 +2026,7 @@ function install(bytes) {
     throw error;
   }
 }
-export function validateRegistrationPairs(source, expectedCount = 52) {
+export function validateRegistrationPairs(source, expectedCount = 57) {
   const records = [
     ...source.matchAll(/(?:contract_route|add)!\(\s*([A-Za-z0-9_:]+)\s*,\s*([A-Za-z0-9_:]+)\s*\)/g),
   ]

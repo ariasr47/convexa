@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Convexa — Backlog &amp; roadmap · 31 Aug 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@96,600;96,800;112,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0B0F17;
+      --panel: #131A24;
+      --raised: #1B2432;
+      --phosphor: #E9E4D6;
+      --steel: #8A9BB4;
+      --amber: #F2A93B;
+      --amber-text: #D9A03A;
+      --signal: #5E8BC4;
+      --ok: #6FBF8A;
+      --warn: #E07A3F;
+      --line: rgba(138, 155, 180, 0.24);
+      --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+      --display: "Archivo", "IBM Plex Sans", sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(1100px 520px at 6% -12%, rgba(242, 169, 59, 0.08), transparent 55%),
+        radial-gradient(900px 480px at 100% 8%, rgba(94, 139, 196, 0.06), transparent 50%),
+        var(--ink);
+      color: var(--phosphor);
+      font-family: var(--sans);
+      font-size: 16.5px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 22px 110px; }
+    a { color: var(--signal); text-decoration: none; }
+    a:hover { color: var(--amber); }
+    a:focus-visible { outline: 2px solid var(--amber-text); outline-offset: 3px; }
+    h1, h2, h3 { font-family: var(--display); font-stretch: 112%; letter-spacing: -0.03em; }
+    h1 { font-size: clamp(2rem, 4.4vw, 3.1rem); line-height: 1.06; margin: 0 0 12px; font-weight: 700; }
+    h2 { font-size: 1.48rem; color: var(--phosphor); margin: 52px 0 12px; padding-top: 6px; }
+    h2 .kicker {
+      display: block; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--amber-text); margin-bottom: 6px;
+    }
+    h3 { font-size: 1.06rem; margin: 22px 0 8px; }
+    p, li { color: var(--steel); }
+    strong { color: var(--phosphor); }
+    code { font-family: var(--mono); color: var(--amber-text); font-size: 0.86em; }
+    .lede { max-width: 66ch; font-size: 1.1rem; color: var(--steel); margin: 0 0 20px; }
+    .meta { font-family: var(--mono); font-size: 0.78rem; color: var(--steel); letter-spacing: 0.04em; margin-bottom: 16px; }
+    .chip {
+      display: inline-block; font-family: var(--mono); font-size: 0.68rem;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px;
+      color: var(--amber-text); margin: 0 6px 10px 0;
+    }
+    .nav {
+      position: sticky; top: 0; z-index: 8;
+      background: rgba(11, 15, 23, 0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line); margin: 0 -22px 28px; padding: 10px 22px;
+    }
+    .nav ol {
+      display: flex; flex-wrap: wrap; gap: 8px 14px; list-style: none;
+      margin: 0; padding: 0; font-family: var(--mono); font-size: 0.7rem;
+    }
+    .nav a { color: var(--steel); }
+    .nav a:hover { color: var(--phosphor); }
+    .card {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .grid2, .grid3, .grid4 { display: grid; gap: 12px; }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .grid4 { grid-template-columns: 1fr 1fr; }
+    @media (min-width: 820px) {
+      .grid2 { grid-template-columns: 1fr 1fr; }
+      .grid3 { grid-template-columns: 1fr 1fr 1fr; }
+      .grid4 { grid-template-columns: repeat(4, 1fr); }
+    }
+    .stat b {
+      display: block; font-family: var(--mono); font-size: 1.45rem; color: var(--phosphor);
+      font-variant-numeric: tabular-nums; letter-spacing: -0.03em;
+    }
+    .stat span { font-size: 0.82rem; color: var(--steel); }
+    .stat.amber b { color: var(--amber); }
+    .stat.warn b { color: var(--warn); }
+    .stat.signal b { color: var(--signal); }
+    .stat.ok b { color: var(--ok); }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 8px; font-size: 0.9rem; }
+    th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+    th { background: var(--raised); color: var(--phosphor); font-weight: 600; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    td { background: var(--panel); color: var(--steel); }
+    td strong { color: var(--phosphor); }
+    .note {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 14px 16px; margin: 14px 0;
+    }
+    .note.warn { border-color: rgba(224, 122, 63, 0.55); }
+    .note.warn strong { color: var(--warn); }
+    .note.ok { border-color: rgba(111, 191, 138, 0.4); }
+    .note.ok strong { color: var(--ok); }
+    .thesis {
+      border-left: 3px solid var(--amber);
+      padding: 4px 0 4px 16px; margin: 8px 0 22px;
+      font-size: 1.16rem; color: var(--phosphor); max-width: 72ch;
+    }
+    .tag {
+      display: inline-block; font-family: var(--mono); font-size: 0.66rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 6px; margin: 0 6px 0 0; white-space: nowrap;
+    }
+    .tag-go { background: rgba(94,139,196,0.16); color: var(--signal); }
+    .tag-wait { background: rgba(242,169,59,0.14); color: var(--amber-text); }
+    .tag-park { background: rgba(224,122,63,0.14); color: var(--warn); }
+    .tag-ship { background: rgba(111,191,138,0.14); color: var(--ok); }
+    .tag-later { background: rgba(138,155,180,0.12); color: var(--steel); }
+    .tag-block { background: rgba(224,122,63,0.18); color: var(--warn); }
+    .film { display: grid; grid-template-columns: repeat(28, 1fr); gap: 3px; margin: 10px 0 4px; }
+    .film i { display: block; height: 14px; border-radius: 2px; background: var(--raised); border: 1px solid var(--line); }
+    .film i.ok { background: var(--ok); border-color: transparent; }
+    .film i.now { background: var(--amber); border-color: transparent; }
+    .film i.wait { background: var(--raised); }
+    .film-label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.7rem; color: var(--steel); }
+    .step { display: grid; grid-template-columns: 36px 1fr; gap: 12px; margin: 12px 0; }
+    .step .n {
+      font-family: var(--display); font-stretch: 112%; font-weight: 700;
+      color: var(--amber); font-size: 1.25rem; line-height: 1.2;
+    }
+    footer {
+      margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--line);
+      font-size: 0.8rem; color: var(--steel);
+    }
+    .srcs { columns: 2; column-gap: 28px; font-size: 0.82rem; }
+    .srcs li { break-inside: avoid; margin: 6px 0; }
+    @media (max-width: 700px) { .srcs { columns: 1; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p>
+      <span class="chip">Backlog map</span>
+      <span class="chip">Not a GATE I brief</span>
+      <span class="chip">Authorizes: nothing</span>
+    </p>
+    <h1>Pipeline is empty. Next unnamed <code>go</code> is a research lab — not a score change, not supply-chain.</h1>
+    <p class="meta">Convexa · 31 Aug 2026 · reconstructed from <code>BACKLOG.md</code> after <code>massive-flat-file-keep</code> shipped</p>
+    <p class="thesis">
+      Keep the $398 you already pay for. Wait until the books are old enough to measure. Make the corpus visible. Do not reopen a blocked security gate, and do not retune the score until the ledger has N.
+    </p>
+    <p class="lede">
+      This is the live idea pool plus the two owner programs — not a commitment. Promotion still happens one feature at a time. Saying <code>go</code> without a name still runs the cull; the harvest default today is <code>research-lab-surface</code>.
+    </p>
+
+    <nav class="nav" aria-label="On this page">
+      <ol>
+        <li><a href="#now">Now</a></li>
+        <li><a href="#next">Next go</a></li>
+        <li><a href="#books">Keep-paid-books</a></li>
+        <li><a href="#machine">Production-maturity</a></li>
+        <li><a href="#parked">Parked</a></li>
+        <li><a href="#strategy">Edge-first frame</a></li>
+      </ol>
+    </nav>
+
+    <div class="grid4" style="margin-bottom: 22px;">
+      <div class="card stat ok"><b>0</b><span>live pipeline features (drained)</span></div>
+      <div class="card stat warn"><b>1</b><span>blocked live contract (supply-chain)</span></div>
+      <div class="card stat amber"><b>~23–37d</b><span>until earliest honest time-split</span></div>
+      <div class="card stat signal"><b>61/0/0</b><span>last ship quality check (flat-file keep)</span></div>
+    </div>
+
+    <h2 id="now"><span class="kicker">01 — Where we are</span>Just shipped, still waiting, still blocked</h2>
+    <div class="grid3">
+      <div class="card">
+        <p><span class="tag tag-ship">Shipped today</span></p>
+        <h3>Massive flat-file keep</h3>
+        <p>Next-day stocks SIP <strong>trades and quotes</strong> extracts for SPY / QQQ / IWM. Operator command + research read. Never a live paid book. No trader screen.</p>
+      </div>
+      <div class="card">
+        <p><span class="tag tag-wait">Wait</span></p>
+        <h3>Keep-paid-books clock</h3>
+        <p>First reliable production day is <strong>26 Aug</strong>. A real time-split is ~<strong>23 Sep … 7 Oct</strong>, not mid-September off the 20 Aug label. Do not skip this wait to retune the score.</p>
+      </div>
+      <div class="card">
+        <p><span class="tag tag-block">Blocked</span></p>
+        <h3>Supply-chain automation</h3>
+        <p>Still live. Quality check failed on a historical committed secret, an upstream Rust advisory, and hosted evidence. An unnamed <code>go</code> is pick-next, not reopen.</p>
+      </div>
+    </div>
+
+    <div class="note ok">
+      <strong>Harvest 28 Aug — four of six items shipped.</strong>
+      Coverage, tape, replay, and S3 keep are in. Remaining survivors: make the corpus visible (<code>research-lab-surface</code>), then a cited morning note (<code>grounded-morning-snapshot</code>).
+    </div>
+
+    <h2 id="next"><span class="kicker">02 — If you say go</span>Three honest nexts, not one pile</h2>
+    <div class="step">
+      <div class="n">1</div>
+      <div>
+        <h3>Unnamed <code>go</code> → research lab surface <span class="tag tag-go">Harvest default</span></h3>
+        <p>Trader/operator can <em>see</em> session books, score-lab, and replay. Research is CLI-only today; the public origin 404s <code>/api/_research</code> on purpose. First slice can stay operator-gated like <code>/_ops/metrics</code>. Do not dump raw vendor payloads on the trader origin.</p>
+        <p>Value M–H · Effort M · frontend first.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="n">2</div>
+      <div>
+        <h3>Production-maturity #6 → remote archive body store <span class="tag tag-later">Program order</span></h3>
+        <p>S3-compatible immutable bodies behind the port already shipped. Filesystem store stays the fallback. This is insurance for books, not a trading decision. Unblocked in program order now that capacity-baseline shipped.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="n">3</div>
+      <div>
+        <h3>Keep-paid-books #5 → do nothing until N is old enough <span class="tag tag-wait">Clock</span></h3>
+        <p>The lab ritual already ran once. Frozen AI export packs (#6) stay blocked on boring P2–P3 plus this wait. Hist-chain is still cut — Massive snapshot Plan History is not applicable.</p>
+      </div>
+    </div>
+
+    <h2 id="books"><span class="kicker">03 — Prove the edge</span>Keep-paid-books program</h2>
+    <p>Owner-directed 19 Aug. One BRIEF each. Theme: the $199 Options book we already fetch survives as a dated corpus, then we measure it.</p>
+    <div class="film" aria-hidden="true" title="Days since reliable clock 26 Aug toward ~23 Sep">
+      <i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i>
+      <i class="now"></i>
+      <i class="wait"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i>
+      <i class="wait"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i>
+      <i class="wait"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i>
+      <i class="wait"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i>
+      <i class="wait"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i>
+      <i class="wait"></i><i class="wait"></i>
+    </div>
+    <p class="film-label"><span>26 Aug reliable clock</span><span>31 Aug today</span><span>~23 Sep earliest split</span></p>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Item</th><th>Shape</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><code>session-chain-archive</code> — one book / symbol / ET day prune cannot delete</td><td>pipeline</td><td><span class="tag tag-ship">Shipped 20 Aug</span></td></tr>
+        <tr><td>2</td><td><code>liquid-names-session-capture</code> — SPY/QQQ/IWM even if cache is warm</td><td>pipeline</td><td><span class="tag tag-ship">Shipped 20 Aug</span></td></tr>
+        <tr><td>3</td><td><code>paid-book-join-smoke</code> — back-test then join on a real corpus</td><td>chore</td><td><span class="tag tag-ship">Done 20 Aug</span></td></tr>
+        <tr><td>4</td><td><code>weekly-digest-lab-ritual</code> — join-outcomes → score-lab 1d</td><td>habit</td><td><span class="tag tag-ship">Ran 20 Aug</span> keep weekly</td></tr>
+        <tr><td>5</td><td><code>session-corpus-wait</code> — 4–6 ET weeks before a real time-split</td><td>wait, not a build</td><td><span class="tag tag-wait">Clock 26 Aug</span></td></tr>
+        <tr><td>6</td><td><code>ai-rec-lab-p4</code> — frozen AI export packs / multi-model lab</td><td>pipeline later</td><td><span class="tag tag-park">Blocked</span> on P2–P3 + #5</td></tr>
+        <tr><td>7</td><td><code>chain-archive-object-store</code> — bodies off app-Postgres</td><td>pipeline</td><td><span class="tag tag-ship">Shipped 20 Aug</span></td></tr>
+      </tbody>
+    </table>
+    <p>Follow-on harvest that grew out of this program (not extra program numbers): coverage, day tape, replay, flat-file keep — all shipped 29–31 Aug.</p>
+
+    <h2 id="machine"><span class="kicker">04 — The machine</span>Production-maturity program</h2>
+    <p>Owner-directed 21 Aug. One independently verifiable slice per BRIEF. No Kubernetes, Kafka, service mesh, GraphQL, or microservices without a measured bottleneck and a separate owner decision.</p>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Item</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Fail-closed prod config, restricted CORS, stable secret keys</td><td><span class="tag tag-ship">Shipped 22 Aug</span></td></tr>
+        <tr><td>2</td><td>Real Postgres CI + serialized release migrations</td><td><span class="tag tag-ship">Shipped 22 Aug</span></td></tr>
+        <tr><td>3</td><td>Generated OpenAPI + checked TypeScript client</td><td><span class="tag tag-ship">Shipped 22 Aug</span></td></tr>
+        <tr><td>4</td><td>Supply-chain automation (audits, SBOM, image scan, Dependabot)</td><td><span class="tag tag-block">Live · quality fail</span></td></tr>
+        <tr><td>5</td><td>API/SSE load and soak harness, mocked vendors</td><td><span class="tag tag-ship">Shipped 29 Aug</span></td></tr>
+        <tr><td>6</td><td>Remote archive body store (S3-compatible, filesystem fallback)</td><td><span class="tag tag-go">Next in this program</span></td></tr>
+        <tr><td>7</td><td>Telemetry / SLOs / alert runbook</td><td><span class="tag tag-later">After #6</span></td></tr>
+        <tr><td>8</td><td>Replica-safe workers, singleton jobs, distributed rate limits</td><td><span class="tag tag-later">After #7</span></td></tr>
+        <tr><td>9</td><td>Backup/restore drill, staging/rollback, declarative host config</td><td><span class="tag tag-later">After #8</span></td></tr>
+        <tr><td>10</td><td>Upstream resilience + property/fuzz/benchmark gates</td><td><span class="tag tag-later">After #9</span></td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="parked"><span class="kicker">05 — Do not re-derive</span>Parked, stale queue, later harvest</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Parked by the 28 Aug harvest</h3>
+        <ul>
+          <li>Squeeze / short-interest scanner (SI% not in-tier; weak 5-day median)</li>
+          <li>Benzinga earnings add-on (dates already curated JSON)</li>
+          <li>News / press terminal (new vendor + liability)</li>
+          <li>RL on the score (N is a rounding error)</li>
+          <li>Indices product line (<code>I:VIX</code> / <code>I:SPX</code>)</li>
+          <li>Vendor hist-chain (do not buy a second options history to paper over prune)</li>
+          <li>Public SaaS / billing before ledger N and written licensing</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Still in the pool, not next</h3>
+        <ul>
+          <li><code>grounded-morning-snapshot</code> — cited briefing from scanner + events + GEX already on the board. Sequence after the lab is visible.</li>
+          <li>Aug 1 build queue (<code>index-first-defaults</code> → SnapTrade → vol-normalized GEX → alerts) largely <strong>shipped in code</strong>. Broker v1 is Webull, not SnapTrade. SnapTrade stays the later multi-broker arm.</li>
+          <li>Ledger checkpoint still blocked on N≥20 closed outcomes (habit: mirror every real trade as a sim record).</li>
+          <li>Public daily post habit still owner-deferred.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note warn">
+      <strong>Horizontal scale is not the next trading feature.</strong>
+      Bundle cache is still process-local. The honest trigger is a second replica or real concurrent users. If picked up: live-subscriber ceiling first, then shared cache with age, then warm-set, then SSE fan-out. A ten-minute-old gamma profile presented as current is worse than a slow one.
+    </div>
+
+    <h2 id="strategy"><span class="kicker">06 — Standing frame</span>Edge first, business later</h2>
+    <p>Locked 1 Aug. 10–25 h/wk. Minimize spend. The app’s only honest justification is measurably better trading decisions for you. The business option stays gated on your own ledger.</p>
+    <div class="grid3">
+      <div class="card">
+        <h3>Now (habits, not builds)</h3>
+        <p>Deploy current <code>main</code> when you choose. Trade through the app so the ledger can accumulate N. Index-first defaults already exist in code. Daily public post waits on you.</p>
+      </div>
+      <div class="card">
+        <h3>Next (pipeline)</h3>
+        <p>Lab surface so the paid corpus is usable weekly. Then either remote body store (machine) or the wait until books are old enough to split. Score change only as a named, measured feature.</p>
+      </div>
+      <div class="card">
+        <h3>Later (gated)</h3>
+        <p>Morning-note automation, Databento OPRA eval, public track-record page, billing/ToS. Cut: 0DTE arms race, 3,500-ticker breadth, extra direct brokers while SnapTrade is unused.</p>
+      </div>
+    </div>
+
+    <footer>
+      <p>Sources (canon, not this page):</p>
+      <ul class="srcs">
+        <li><code>.spire/clusters/tech/context/BACKLOG.md</code></li>
+        <li><code>.spire/clusters/tech/context/INDEX.md</code></li>
+        <li><code>docs/ROADMAP_2026-08.md</code></li>
+        <li><a href="./product-roadmap-2026-08-28.html">28 Aug research briefing</a></li>
+        <li>Last ship: <code>_archive/massive-flat-file-keep/</code></li>
+        <li>Live blocked contract: <code>supply-chain-automation</code></li>
+      </ul>
+      <p>This page does not authorize a score change, a vendor swap, or a GATE I pick. Say <code>go</code> in the conductor if you want the cull to run.</p>
+    </footer>
+  </div>
+</body>
+</html>

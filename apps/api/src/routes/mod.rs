@@ -15,7 +15,10 @@ pub(crate) mod market;
 mod price;
 mod recommendation;
 mod research_chain_snapshots;
+mod research_flat_files;
 mod research_session_books;
+mod research_session_coverage;
+mod research_session_day_tape;
 mod scan;
 mod stream;
 pub(crate) use stream::market_session_at;
@@ -31,10 +34,27 @@ use utoipa::{PartialSchema, ToSchema};
 /// registered once through the handler that owns its response contract.
 pub fn contract_router() -> Result<ContractRouter<AppState>, ContractGraphError> {
     let mut router = ContractRouter::new();
+    // Each registration runs in its OWN frame, on purpose. At `opt-level = 0` rustc gives every
+    // `contract_route!` expansion its own stack slot for the `Operation` / `RoutePackage`
+    // temporaries and never reuses them, so registering all operations inline made this one
+    // function's frame ~470 KB (measured by stack-pointer probe between `routes::router` and this
+    // function's entry). That plus one `route()` subtree overflowed Windows' 1 MB main-thread
+    // stack before the listener bound: `cargo run -p api-rust --features postgres -- serve`
+    // (what `npx nx serve api` runs) died with STATUS_STACK_OVERFLOW right after `AppState` was
+    // built. `#[inline(never)]` per route caps the peak at one route's worth, because each
+    // frame pops before the next registration starts. Registration order, handlers, metadata and
+    // the resulting graph are unchanged; release builds and Linux CI (8 MB main stack) never saw
+    // the overflow and are unaffected.
     macro_rules! add {
-        ($handler:path, $metadata:path) => {
-            router = router.route(contract_route!($handler, $metadata)?)?;
-        };
+        ($handler:path, $metadata:path) => {{
+            #[inline(never)]
+            fn register(
+                router: ContractRouter<AppState>,
+            ) -> Result<ContractRouter<AppState>, ContractGraphError> {
+                router.route(contract_route!($handler, $metadata)?)
+            }
+            router = register(router)?;
+        }};
     }
     add!(
         demo::progressive_demo_root,
@@ -56,12 +76,34 @@ pub fn contract_router() -> Result<ContractRouter<AppState>, ContractGraphError>
         research_chain_snapshots::__path_load_snapshot_contract
     );
     add!(
+        research_session_day_tape::list_session_day_tape_contract,
+        research_session_day_tape::__path_list_session_day_tape_contract
+    );
+    add!(
+        research_session_day_tape::load_session_day_tape_contract,
+        research_session_day_tape::__path_load_session_day_tape_contract
+    );
+    // Flat-files before session-books so Axum cannot bind `flat-files` as
+    // `/api/_research/session-books/{symbol}`.
+    add!(
+        research_flat_files::list_flat_files_contract,
+        research_flat_files::__path_list_flat_files_contract
+    );
+    add!(
+        research_flat_files::load_flat_files_contract,
+        research_flat_files::__path_load_flat_files_contract
+    );
+    add!(
         research_session_books::list_session_books_contract,
         research_session_books::__path_list_session_books_contract
     );
     add!(
         research_session_books::load_session_book_contract,
         research_session_books::__path_load_session_book_contract
+    );
+    add!(
+        research_session_coverage::session_archive_coverage_contract,
+        research_session_coverage::__path_session_archive_coverage_contract
     );
     add!(book::get_book, book::__path_get_book);
     add!(book::put_book, book::__path_put_book);
@@ -224,9 +266,34 @@ pub fn response_conversion_registry(boundary_id: &str) -> Option<Response> {
             path if path.starts_with("/api/stream/") => {
                 stream::contract_representative_response(boundary_id)
             }
+            "/api/_research/flat-files/{symbol}" | "/api/_research/flat-files/{symbol}/extract" => {
+                Some(research_flat_files::contract_representative_response(
+                    status,
+                    media,
+                    *cookie,
+                    boundary_id,
+                ))
+            }
+            "/api/_research/session-day-tape/{symbol}"
+            | "/api/_research/session-day-tape/{symbol}/day" => {
+                Some(research_session_day_tape::contract_representative_response(
+                    status,
+                    media,
+                    *cookie,
+                    boundary_id,
+                ))
+            }
             "/api/_research/session-books/{symbol}"
             | "/api/_research/session-books/{symbol}/book" => {
                 Some(research_session_books::contract_representative_response(
+                    status,
+                    media,
+                    *cookie,
+                    boundary_id,
+                ))
+            }
+            "/api/_research/session-archive/coverage" => {
+                Some(research_session_coverage::contract_representative_response(
                     status,
                     media,
                     *cookie,
@@ -309,8 +376,18 @@ pub fn response_conversion_registry_source_target(boundary_id: &str) -> Option<&
         | "/api/_research/chain-snapshots/{symbol}/snapshot" => {
             "apps/api/src/routes/research_chain_snapshots.rs::contract_representative_for"
         }
+        "/api/_research/flat-files/{symbol}" | "/api/_research/flat-files/{symbol}/extract" => {
+            "apps/api/src/routes/research_flat_files.rs::contract_representative_response"
+        }
+        "/api/_research/session-day-tape/{symbol}"
+        | "/api/_research/session-day-tape/{symbol}/day" => {
+            "apps/api/src/routes/research_session_day_tape.rs::contract_representative_response"
+        }
         "/api/_research/session-books/{symbol}" | "/api/_research/session-books/{symbol}/book" => {
             "apps/api/src/routes/research_session_books.rs::contract_representative_response"
+        }
+        "/api/_research/session-archive/coverage" => {
+            "apps/api/src/routes/research_session_coverage.rs::contract_representative_response"
         }
         path if path.starts_with("/api/auth/") || path == "/api/auth/session" => {
             "apps/api/src/routes/auth.rs::contract_representative_response"
@@ -400,6 +477,102 @@ const RESPONSE_CONVERSION_SOURCES: &[(&str, &str, u16, bool)] = &[
         false,
     ),
     (
+        "GET /api/_research/flat-files/{symbol} 200 application/json operator-token",
+        "application/json",
+        200,
+        false,
+    ),
+    (
+        "GET /api/_research/flat-files/{symbol} 400 application/json operator-token",
+        "application/json",
+        400,
+        false,
+    ),
+    (
+        "GET /api/_research/flat-files/{symbol} 401 application/json operator-token",
+        "application/json",
+        401,
+        false,
+    ),
+    (
+        "GET /api/_research/flat-files/{symbol} 500 application/json operator-token",
+        "application/json",
+        500,
+        false,
+    ),
+    (
+        "GET /api/_research/flat-files/{symbol}/extract 200 application/json operator-token",
+        "application/json",
+        200,
+        false,
+    ),
+    (
+        "GET /api/_research/flat-files/{symbol}/extract 401 application/json operator-token",
+        "application/json",
+        401,
+        false,
+    ),
+    (
+        "GET /api/_research/flat-files/{symbol}/extract 422 application/json operator-token",
+        "application/json",
+        422,
+        false,
+    ),
+    (
+        "GET /api/_research/flat-files/{symbol}/extract 500 application/json operator-token",
+        "application/json",
+        500,
+        false,
+    ),
+    (
+        "GET /api/_research/session-day-tape/{symbol} 200 application/json operator-token",
+        "application/json",
+        200,
+        false,
+    ),
+    (
+        "GET /api/_research/session-day-tape/{symbol} 400 application/json operator-token",
+        "application/json",
+        400,
+        false,
+    ),
+    (
+        "GET /api/_research/session-day-tape/{symbol} 401 application/json operator-token",
+        "application/json",
+        401,
+        false,
+    ),
+    (
+        "GET /api/_research/session-day-tape/{symbol} 500 application/json operator-token",
+        "application/json",
+        500,
+        false,
+    ),
+    (
+        "GET /api/_research/session-day-tape/{symbol}/day 200 application/json operator-token",
+        "application/json",
+        200,
+        false,
+    ),
+    (
+        "GET /api/_research/session-day-tape/{symbol}/day 401 application/json operator-token",
+        "application/json",
+        401,
+        false,
+    ),
+    (
+        "GET /api/_research/session-day-tape/{symbol}/day 422 application/json operator-token",
+        "application/json",
+        422,
+        false,
+    ),
+    (
+        "GET /api/_research/session-day-tape/{symbol}/day 500 application/json operator-token",
+        "application/json",
+        500,
+        false,
+    ),
+    (
         "GET /api/_research/session-books/{symbol} 200 application/json operator-token",
         "application/json",
         200,
@@ -449,6 +622,30 @@ const RESPONSE_CONVERSION_SOURCES: &[(&str, &str, u16, bool)] = &[
     ),
     (
         "GET /api/_research/session-books/{symbol}/book 500 application/json operator-token",
+        "application/json",
+        500,
+        false,
+    ),
+    (
+        "GET /api/_research/session-archive/coverage 200 application/json operator-token",
+        "application/json",
+        200,
+        false,
+    ),
+    (
+        "GET /api/_research/session-archive/coverage 401 application/json operator-token",
+        "application/json",
+        401,
+        false,
+    ),
+    (
+        "GET /api/_research/session-archive/coverage 422 application/json operator-token",
+        "application/json",
+        422,
+        false,
+    ),
+    (
+        "GET /api/_research/session-archive/coverage 500 application/json operator-token",
         "application/json",
         500,
         false,
@@ -1595,11 +1792,32 @@ fn register_route_schemas(mut document: OpenApi) -> OpenApi {
     schema!(research_chain_snapshots::SnapshotMinuteDto);
     schema!(research_chain_snapshots::SnapshotTradeDto);
     schema!(research_chain_snapshots::ListSnapshotRow);
+    schema!(research_flat_files::FlatFilesListBody);
+    schema!(research_flat_files::FlatFilesLoadBody);
+    schema!(research_flat_files::FlatFilesExtractRowDto);
+    schema!(research_flat_files::FlatFilesErrorBody);
+    schema!(research_flat_files::FlatFilesListQuery);
+    schema!(research_flat_files::FlatFilesLoadQuery);
+    schema!(research_session_day_tape::TapeListBody);
+    schema!(research_session_day_tape::TapeLoadBody);
+    schema!(research_session_day_tape::TapeDayRowDto);
+    schema!(research_session_day_tape::TapeErrorBody);
+    schema!(research_session_day_tape::PathATickDto);
+    schema!(research_session_day_tape::PathAGapDto);
+    schema!(research_session_day_tape::PathBSnapshotDto);
+    schema!(research_session_day_tape::PathBGapDto);
+    schema!(research_session_day_tape::TapeListQuery);
+    schema!(research_session_day_tape::TapeLoadQuery);
     schema!(research_session_books::SessionBooksListBody);
     schema!(research_session_books::SessionBookHitBody);
     schema!(research_session_books::SessionBookMissBody);
     schema!(research_session_books::SessionBookRowDto);
     schema!(research_session_books::SessionErrorBody);
+    schema!(research_session_coverage::CoverageOkBody);
+    schema!(research_session_coverage::CoverageErrorBody);
+    schema!(research_session_coverage::CoverageRowDto);
+    schema!(research_session_coverage::CoverageHoleDto);
+    schema!(research_session_coverage::CoverageQuery);
     schema!(scan::ScanEnvelope);
     schema!(scan::ScanView);
     schema!(scan::StructureHistoryResponse);
@@ -1620,6 +1838,7 @@ fn register_route_schemas(mut document: OpenApi) -> OpenApi {
     schema!(stream::StreamPricePointBody);
     schema!(stream::StreamPricesEventBody);
     schema!(stream::LiveUpdateBody);
+    schema!(stream::SessionTapeOccupancyBody);
     let components = document.components.take().unwrap_or_default();
     let mut builder = ComponentsBuilder::from(components).schemas_from_iter(schemas);
     for (name, scheme) in crate::openapi::security_schemes() {
@@ -1763,8 +1982,13 @@ fn apply_route_security(document: &mut OpenApi) {
         "/api/_metrics",
         "/api/_research/chain-snapshots/{symbol}",
         "/api/_research/chain-snapshots/{symbol}/snapshot",
+        "/api/_research/flat-files/{symbol}",
+        "/api/_research/flat-files/{symbol}/extract",
+        "/api/_research/session-day-tape/{symbol}",
+        "/api/_research/session-day-tape/{symbol}/day",
         "/api/_research/session-books/{symbol}",
         "/api/_research/session-books/{symbol}/book",
+        "/api/_research/session-archive/coverage",
     ] {
         set(path, "get", operator());
     }

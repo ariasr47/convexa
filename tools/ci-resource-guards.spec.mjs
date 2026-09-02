@@ -25,3 +25,17 @@ test('backend CI releases debug artifacts before the production build', async ()
   assert.ok(releaseBuild > cleanup, 'cleanup must run immediately before the production build');
   assert.match(workflow.slice(cleanup, releaseBuild), /run:\s*cargo clean/);
 });
+
+test('backend CI frees preinstalled runner disk before any Rust compilation', async () => {
+  const workflow = await fs.readFile('.github/workflows/ci.yml', 'utf8');
+  const freeRunner = workflow.indexOf('- name: Free preinstalled runner disk');
+  const toolchain = workflow.indexOf('- name: Install baseline Rust 1.97.1');
+  const defaultTests = workflow.indexOf('- name: Cargo test');
+
+  assert.ok(freeRunner >= 0, 'preinstalled-disk cleanup step is missing');
+  assert.ok(freeRunner < toolchain, 'cleanup must precede the Rust toolchain install');
+  assert.ok(freeRunner < defaultTests, 'cleanup must precede the default-feature Rust tests');
+  // The two `cargo clean` steps only reclaim OUR artifacts, and both run after `Cargo test` —
+  // so a debug test build large enough to fill the runner fails before either can help.
+  assert.match(workflow.slice(freeRunner, toolchain), /sudo rm -rf .*\/usr\/share\/dotnet/);
+});

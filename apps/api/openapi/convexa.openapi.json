@@ -1076,6 +1076,39 @@
         },
         "type": "object"
       },
+      "CoverageErrorBody": {
+        "properties": {
+          "detail": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "store": {
+            "type": ["string", "null"]
+          },
+          "vendor_called": {
+            "type": "boolean"
+          }
+        },
+        "required": ["error", "detail", "vendor_called"],
+        "type": "object"
+      },
+      "CoverageHoleDto": {
+        "properties": {
+          "class": {
+            "type": "string"
+          },
+          "et_date": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          }
+        },
+        "required": ["symbol", "et_date", "class"],
+        "type": "object"
+      },
       "CoverageObservationWire": {
         "properties": {
           "started_at_utc": {
@@ -1088,6 +1121,104 @@
           }
         },
         "required": ["started_at_utc", "write_failures_total"],
+        "type": "object"
+      },
+      "CoverageOkBody": {
+        "properties": {
+          "authorizes": {
+            "type": "string"
+          },
+          "blocked_occupancy": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "checkpoint": {
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          },
+          "et_date": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "expected_due": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "framing": {
+            "type": "string"
+          },
+          "holes": {
+            "items": {
+              "$ref": "#/components/schemas/CoverageHoleDto"
+            },
+            "type": "array"
+          },
+          "license": {
+            "type": "string"
+          },
+          "missing": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "not_yet_due": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "present": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "provenance": {
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/CoverageRowDto"
+            },
+            "type": "array"
+          },
+          "symbols": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "unreadable": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "vendor_called": {
+            "type": "boolean"
+          },
+          "verdict": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "framing",
+          "command",
+          "evidence",
+          "symbols",
+          "et_date",
+          "checkpoint",
+          "vendor_called",
+          "provenance",
+          "license",
+          "authorizes",
+          "verdict",
+          "expected_due",
+          "present",
+          "missing",
+          "unreadable",
+          "not_yet_due",
+          "blocked_occupancy",
+          "rows",
+          "holes"
+        ],
         "type": "object"
       },
       "CoveragePerSymbolWire": {
@@ -1110,6 +1241,14 @@
         "required": ["symbol", "write_failures_since_observation"],
         "type": "object"
       },
+      "CoverageQuery": {
+        "properties": {
+          "et_date": {
+            "type": ["string", "null"]
+          }
+        },
+        "type": "object"
+      },
       "CoverageRangeWire": {
         "properties": {
           "end_et_date": {
@@ -1119,6 +1258,24 @@
             "type": ["string", "null"]
           }
         },
+        "type": "object"
+      },
+      "CoverageRowDto": {
+        "properties": {
+          "cell": {
+            "type": "string"
+          },
+          "et_date": {
+            "type": "string"
+          },
+          "last_readable": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          }
+        },
+        "required": ["symbol", "et_date", "cell", "last_readable"],
         "type": "object"
       },
       "DarkPoolConfluenceWire": {
@@ -1335,6 +1492,206 @@
           }
         },
         "required": ["source", "state"],
+        "type": "object"
+      },
+      "FlatFilesErrorBody": {
+        "properties": {
+          "detail": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "framing": {
+            "type": ["string", "null"]
+          },
+          "store": {
+            "type": ["string", "null"]
+          },
+          "vendor_called": {
+            "type": "boolean"
+          }
+        },
+        "required": ["error", "detail", "vendor_called"],
+        "type": "object"
+      },
+      "FlatFilesExtractRowDto": {
+        "properties": {
+          "class": {
+            "type": "string"
+          },
+          "et_date": {
+            "type": "string"
+          },
+          "occupancy": {
+            "type": "string"
+          },
+          "row_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "symbol": {
+            "type": "string"
+          }
+        },
+        "required": ["symbol", "et_date", "class", "occupancy", "row_count"],
+        "type": "object"
+      },
+      "FlatFilesListBody": {
+        "properties": {
+          "authorizes": {
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          },
+          "count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "detail": {
+            "type": ["string", "null"]
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "extracts": {
+            "items": {
+              "$ref": "#/components/schemas/FlatFilesExtractRowDto"
+            },
+            "type": "array"
+          },
+          "framing": {
+            "type": "string"
+          },
+          "license": {
+            "type": "string"
+          },
+          "provenance": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "vendor_called": {
+            "type": "boolean"
+          },
+          "watchlist": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "framing",
+          "command",
+          "evidence",
+          "symbol",
+          "watchlist",
+          "vendor_called",
+          "provenance",
+          "license",
+          "authorizes",
+          "count",
+          "extracts"
+        ],
+        "type": "object"
+      },
+      "FlatFilesListQuery": {
+        "properties": {
+          "limit": {
+            "format": "int64",
+            "type": ["integer", "null"]
+          }
+        },
+        "type": "object"
+      },
+      "FlatFilesLoadBody": {
+        "properties": {
+          "authorizes": {
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          },
+          "detail": {
+            "type": ["string", "null"]
+          },
+          "et_date": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "framing": {
+            "type": "string"
+          },
+          "license": {
+            "type": "string"
+          },
+          "provenance": {
+            "type": "string"
+          },
+          "quotes_extract": {
+            "type": "string"
+          },
+          "quotes_occupancy": {
+            "type": "string"
+          },
+          "quotes_row_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "trades_extract": {
+            "type": "string"
+          },
+          "trades_occupancy": {
+            "type": "string"
+          },
+          "trades_row_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "vendor_called": {
+            "type": "boolean"
+          },
+          "watchlist": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "framing",
+          "command",
+          "evidence",
+          "symbol",
+          "et_date",
+          "watchlist",
+          "vendor_called",
+          "provenance",
+          "license",
+          "authorizes",
+          "trades_occupancy",
+          "trades_row_count",
+          "trades_extract",
+          "quotes_occupancy",
+          "quotes_row_count",
+          "quotes_extract"
+        ],
+        "type": "object"
+      },
+      "FlatFilesLoadQuery": {
+        "properties": {
+          "et_date": {
+            "type": ["string", "null"]
+          }
+        },
         "type": "object"
       },
       "FlowVsPositioningWire": {
@@ -1893,6 +2250,17 @@
           "sell_vol": {
             "format": "double",
             "type": "number"
+          },
+          "session_tape": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SessionTapeOccupancyBody",
+                "description": "Omitted entirely when the replay construct is unset (do not emit `session_tape: null`)."
+              }
+            ]
           },
           "spot_ts": {
             "format": "int64",
@@ -3052,6 +3420,75 @@
           }
         },
         "required": ["bid", "ask", "mid"],
+        "type": "object"
+      },
+      "PathAGapDto": {
+        "properties": {
+          "dropped": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": ["dropped"],
+        "type": "object"
+      },
+      "PathATickDto": {
+        "properties": {
+          "ask": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "ask_size": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "bid": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "bid_size": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "kind": {
+            "type": "string"
+          },
+          "price": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "size": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "ts_ns": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": ["kind", "ts_ns"],
+        "type": "object"
+      },
+      "PathBGapDto": {
+        "properties": {
+          "mark": {
+            "type": "string"
+          }
+        },
+        "required": ["mark"],
+        "type": "object"
+      },
+      "PathBSnapshotDto": {
+        "properties": {
+          "as_of": {
+            "type": "string"
+          },
+          "mark": {
+            "type": "string"
+          }
+        },
+        "required": ["mark", "as_of"],
         "type": "object"
       },
       "PerTradeCapBody": {
@@ -4539,6 +4976,29 @@
         "required": ["authenticated", "google_available", "user", "settings"],
         "type": "object"
       },
+      "SessionTapeOccupancyBody": {
+        "properties": {
+          "et_date": {
+            "type": "string"
+          },
+          "pace": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "tape_time_et": {
+            "description": "Present as JSON null when the tape cursor is not yet vouched (no skip_serializing_if).",
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["symbol", "et_date", "phase", "pace"],
+        "type": "object"
+      },
       "SettingsPatchBody": {
         "description": "Settings patch preserves absent versus explicit null without exposing an unconstrained JSON\nobject in the HTTP contract.",
         "properties": {
@@ -5169,6 +5629,263 @@
         "required": ["updated_at", "sweep_last_completed", "universe_size"],
         "type": "object"
       },
+      "TapeDayRowDto": {
+        "properties": {
+          "clock": {
+            "type": ["string", "null"]
+          },
+          "et_date": {
+            "type": "string"
+          },
+          "path_a_quote_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "path_a_trade_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "path_b_gap_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "path_b_snapshot_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "symbol": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol",
+          "et_date",
+          "path_a_trade_count",
+          "path_a_quote_count",
+          "path_b_snapshot_count",
+          "path_b_gap_count"
+        ],
+        "type": "object"
+      },
+      "TapeErrorBody": {
+        "properties": {
+          "detail": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "framing": {
+            "type": ["string", "null"]
+          },
+          "store": {
+            "type": ["string", "null"]
+          },
+          "vendor_called": {
+            "type": "boolean"
+          }
+        },
+        "required": ["error", "detail", "vendor_called"],
+        "type": "object"
+      },
+      "TapeListBody": {
+        "properties": {
+          "authorizes": {
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          },
+          "count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/TapeDayRowDto"
+            },
+            "type": "array"
+          },
+          "detail": {
+            "type": ["string", "null"]
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "framing": {
+            "type": "string"
+          },
+          "license": {
+            "type": "string"
+          },
+          "path_b_interval": {
+            "type": "string"
+          },
+          "provenance": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "vendor_called": {
+            "type": "boolean"
+          },
+          "watchlist": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "framing",
+          "command",
+          "evidence",
+          "symbol",
+          "watchlist",
+          "path_b_interval",
+          "vendor_called",
+          "provenance",
+          "license",
+          "authorizes",
+          "count",
+          "days"
+        ],
+        "type": "object"
+      },
+      "TapeListQuery": {
+        "properties": {
+          "limit": {
+            "format": "int64",
+            "type": ["integer", "null"]
+          }
+        },
+        "type": "object"
+      },
+      "TapeLoadBody": {
+        "properties": {
+          "authorizes": {
+            "type": "string"
+          },
+          "clock": {
+            "type": ["string", "null"]
+          },
+          "command": {
+            "type": "string"
+          },
+          "detail": {
+            "type": ["string", "null"]
+          },
+          "et_date": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "framing": {
+            "type": "string"
+          },
+          "license": {
+            "type": "string"
+          },
+          "path_a_detail": {
+            "type": "string"
+          },
+          "path_a_gaps": {
+            "items": {
+              "$ref": "#/components/schemas/PathAGapDto"
+            },
+            "type": "array"
+          },
+          "path_a_quote_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "path_a_ticks": {
+            "items": {
+              "$ref": "#/components/schemas/PathATickDto"
+            },
+            "type": "array"
+          },
+          "path_a_trade_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "path_b_detail": {
+            "type": "string"
+          },
+          "path_b_gap_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "path_b_gaps": {
+            "items": {
+              "$ref": "#/components/schemas/PathBGapDto"
+            },
+            "type": "array"
+          },
+          "path_b_interval": {
+            "type": "string"
+          },
+          "path_b_snapshot_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "path_b_snapshots": {
+            "items": {
+              "$ref": "#/components/schemas/PathBSnapshotDto"
+            },
+            "type": "array"
+          },
+          "provenance": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "vendor_called": {
+            "type": "boolean"
+          },
+          "watchlist": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "framing",
+          "command",
+          "evidence",
+          "symbol",
+          "et_date",
+          "watchlist",
+          "path_b_interval",
+          "vendor_called",
+          "provenance",
+          "license",
+          "authorizes",
+          "path_a_trade_count",
+          "path_a_quote_count",
+          "path_a_detail",
+          "path_a_ticks",
+          "path_a_gaps",
+          "path_b_snapshot_count",
+          "path_b_gap_count",
+          "path_b_detail",
+          "path_b_snapshots",
+          "path_b_gaps"
+        ],
+        "type": "object"
+      },
+      "TapeLoadQuery": {
+        "properties": {
+          "et_date": {
+            "type": ["string", "null"]
+          }
+        },
+        "type": "object"
+      },
       "TermStructurePointWire": {
         "properties": {
           "atm_iv": {
@@ -5753,6 +6470,215 @@
         "x-convexa-surface": "operator-research"
       }
     },
+    "/api/_research/flat-files/{symbol}": {
+      "get": {
+        "operationId": "research_flat_files_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "symbol",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": ["integer", "null"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlatFilesListBody"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlatFilesErrorBody"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlatFilesErrorBody"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlatFilesErrorBody"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "operator-token": []
+          }
+        ],
+        "x-convexa-security": "operator-token",
+        "x-convexa-surface": "operator-research"
+      }
+    },
+    "/api/_research/flat-files/{symbol}/extract": {
+      "get": {
+        "operationId": "research_flat_files_load",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "symbol",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "et_date",
+            "required": false,
+            "schema": {
+              "type": ["string", "null"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlatFilesLoadBody"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlatFilesErrorBody"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlatFilesErrorBody"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlatFilesErrorBody"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "operator-token": []
+          }
+        ],
+        "x-convexa-security": "operator-token",
+        "x-convexa-surface": "operator-research"
+      }
+    },
+    "/api/_research/session-archive/coverage": {
+      "get": {
+        "operationId": "research_session_archive_coverage",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "et_date",
+            "required": false,
+            "schema": {
+              "type": ["string", "null"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverageOkBody"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverageErrorBody"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverageErrorBody"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverageErrorBody"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "operator-token": []
+          }
+        ],
+        "x-convexa-security": "operator-token",
+        "x-convexa-surface": "operator-research"
+      }
+    },
     "/api/_research/session-books/{symbol}": {
       "get": {
         "operationId": "research_session_books_list",
@@ -5893,6 +6819,151 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SessionErrorBody"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "operator-token": []
+          }
+        ],
+        "x-convexa-security": "operator-token",
+        "x-convexa-surface": "operator-research"
+      }
+    },
+    "/api/_research/session-day-tape/{symbol}": {
+      "get": {
+        "operationId": "research_session_day_tape_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "symbol",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "int64",
+              "type": ["integer", "null"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TapeListBody"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TapeErrorBody"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TapeErrorBody"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TapeErrorBody"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "operator-token": []
+          }
+        ],
+        "x-convexa-security": "operator-token",
+        "x-convexa-surface": "operator-research"
+      }
+    },
+    "/api/_research/session-day-tape/{symbol}/day": {
+      "get": {
+        "operationId": "research_session_day_tape_load",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "symbol",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "et_date",
+            "required": false,
+            "schema": {
+              "type": ["string", "null"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TapeLoadBody"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TapeErrorBody"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TapeErrorBody"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TapeErrorBody"
                 }
               }
             },

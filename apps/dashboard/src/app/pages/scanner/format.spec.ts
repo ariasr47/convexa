@@ -21,6 +21,7 @@ import {
   marketSessionPhase,
   partitionLeadGroup,
   relAge,
+  sessionBadge,
   snapRows,
   sortRows,
   structureAsOfRel,
@@ -31,6 +32,7 @@ import {
   INDEX_MEGACAP_SYMBOLS,
   isIndexMegacap,
   regimeLabel,
+  SESSION_LABEL,
   statusMeta,
   tierLabel,
   UNAVAILABLE_STATUS_META,
@@ -298,6 +300,40 @@ describe('marketSessionPhase — US equity clock (America/New_York)', () => {
     expect(marketSessionPhase(Date.UTC(2026, 7, 11, 3, 0, 0))).toBe('closed');
     // Saturday
     expect(marketSessionPhase(Date.UTC(2026, 7, 8, 15, 0, 0))).toBe('closed');
+  });
+
+  it('Thanksgiving 2026-11-26 10:00 ET is Closed, not RTH', () => {
+    // EST (DST already ended): 10:00 ET = 15:00 UTC
+    expect(marketSessionPhase(Date.UTC(2026, 10, 26, 15, 0, 0))).toBe('closed');
+    expect(sessionBadge(Date.UTC(2026, 10, 26, 15, 0, 0)).label).toBe(SESSION_LABEL.closed);
+  });
+
+  it('holiday pre and after clocks are Closed (S2 pin, not a new AC)', () => {
+    expect(marketSessionPhase(Date.UTC(2026, 10, 26, 13, 0, 0))).toBe('closed'); // 08:00 ET
+    expect(marketSessionPhase(Date.UTC(2026, 10, 26, 22, 0, 0))).toBe('closed'); // 17:00 ET
+  });
+
+  it('ordinary Monday 10:00 ET remains RTH', () => {
+    expect(marketSessionPhase(Date.UTC(2026, 7, 10, 14, 0, 0))).toBe('rth');
+  });
+
+  it('Saturday remains Closed', () => {
+    expect(marketSessionPhase(Date.UTC(2026, 7, 8, 15, 0, 0))).toBe('closed');
+  });
+
+  it('early-close Friday 2026-11-27 10:00 ET remains RTH (still a session day)', () => {
+    // EST: 10:00 ET = 15:00 UTC
+    expect(marketSessionPhase(Date.UTC(2026, 10, 27, 15, 0, 0))).toBe('rth');
+  });
+
+  it('fresh heartbeat does not engage scan-worker-down (holiday idle ≠ worker-down)', () => {
+    const nowS = 1_800_000;
+    expect(
+      sweepBanner(
+        { updated_at: nowS - 30, sweep_last_completed: nowS - 120, universe_size: 2 },
+        nowS,
+      ),
+    ).toEqual({ engaged: false, text: '' });
   });
 });
 

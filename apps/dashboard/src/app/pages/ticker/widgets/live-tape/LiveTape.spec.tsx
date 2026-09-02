@@ -14,6 +14,7 @@ import type { LiveUpdate, MarketState } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import type { SessionTapeOccupancy } from '../../sessionTapeStanding';
 import { LiveTape } from './LiveTape';
 
 const marketState = (over: Partial<MarketState> = {}): MarketState => ({
@@ -70,30 +71,42 @@ const marketState = (over: Partial<MarketState> = {}): MarketState => ({
   ...over,
 });
 
-const liveUpdate = (over: Partial<LiveUpdate> = {}): LiveUpdate => ({
-  ticker: 'TSLA',
-  mid: 251,
-  bid: null,
-  ask: null,
-  spread: 0.05,
-  net_flow: 1200,
-  buy_vol: 0,
-  sell_vol: 0,
-  flow_window_s: 300,
-  spot_ts: 1,
-  live: true,
-  tick_age_s: 1,
-  market_session: 'regular',
-  feed: 'realtime',
-  ts: Date.now(),
-  gamma_flip: 248,
-  last_trade: 251.13,
-  ...over,
-});
+const liveUpdate = (
+  over: Partial<LiveUpdate> & { session_tape?: SessionTapeOccupancy } = {},
+): LiveUpdate =>
+  ({
+    ticker: 'TSLA',
+    mid: 251,
+    bid: null,
+    ask: null,
+    spread: 0.05,
+    net_flow: 1200,
+    buy_vol: 0,
+    sell_vol: 0,
+    flow_window_s: 300,
+    spot_ts: 1,
+    live: true,
+    tick_age_s: 1,
+    market_session: 'regular',
+    feed: 'realtime',
+    ts: Date.now(),
+    gamma_flip: 248,
+    last_trade: 251.13,
+    ...over,
+  }) as LiveUpdate;
 
 function wrap(ui: React.ReactNode) {
   return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
 }
+
+const sessionTape = (over: Partial<SessionTapeOccupancy> = {}): SessionTapeOccupancy => ({
+  symbol: 'SPY',
+  et_date: '2026-08-10',
+  tape_time_et: '09:35:00',
+  phase: 'playing',
+  pace: 1,
+  ...over,
+});
 
 describe('LiveTape · tape-local honesty', () => {
   it('PRE-LIVE: live fields read the em-dash (never a fabricated 0) and the flip is the STATIC value without the "(live)" claim', () => {
@@ -118,5 +131,178 @@ describe('LiveTape · tape-local honesty', () => {
     );
     expect(screen.getByText('-800')).toBeInTheDocument(); // the negative path, not just the happy '+'
     expect(screen.getByText('—')).toBeInTheDocument(); // the null spread, isolated
+  });
+
+  it('S0 title Live tape and LIVE_TAPE_SUBTITLE_* still exist when occupancy omitted', () => {
+    wrap(
+      <LiveTape
+        m={marketState()}
+        live={liveUpdate({ live: true })}
+        isLive={true}
+        streamOffline={false}
+      />,
+    );
+    expect(screen.getByText('Live tape')).toBeInTheDocument();
+    expect(screen.getByText(/Live stream · not the structure snapshot below/)).toBeInTheDocument();
+    expect(screen.getByText('Gamma flip (live)')).toBeInTheDocument();
+  });
+
+  it('S1 title is Session tape from first session_tape payload including starting', () => {
+    wrap(
+      <LiveTape
+        m={marketState({ ticker: 'SPY' })}
+        live={liveUpdate({
+          ticker: 'SPY',
+          live: false,
+          feed: 'session_tape',
+          session_tape: sessionTape({ tape_time_et: null, phase: 'playing' }),
+        })}
+        isLive={false}
+        displayActive={false}
+        streamOffline={false}
+      />,
+    );
+    expect(screen.getByText('Session tape')).toBeInTheDocument();
+    expect(screen.queryByText('Live tape')).toBeNull();
+    expect(
+      screen.getByText(/Session day tape · SPY · Mon Aug 10 · not a live feed/),
+    ).toBeInTheDocument();
+  });
+
+  it('S1 does not use LIVE_TAPE_SUBTITLE_LIVE or OFFLINE', () => {
+    wrap(
+      <LiveTape
+        m={marketState({ ticker: 'SPY' })}
+        live={liveUpdate({
+          ticker: 'SPY',
+          live: false,
+          feed: 'session_tape',
+          session_tape: sessionTape(),
+        })}
+        isLive={false}
+        displayActive={true}
+        streamOffline={false}
+      />,
+    );
+    expect(screen.queryByText(/Live stream · not the structure/)).toBeNull();
+    expect(screen.queryByText(/Stream offline · last known ticks/)).toBeNull();
+  });
+
+  it('S1 gamma flip label never appends (live)', () => {
+    wrap(
+      <LiveTape
+        m={marketState({ ticker: 'SPY' })}
+        live={liveUpdate({
+          ticker: 'SPY',
+          live: true,
+          feed: 'session_tape',
+          session_tape: sessionTape(),
+        })}
+        isLive={false}
+        displayActive={true}
+        streamOffline={false}
+      />,
+    );
+    expect(screen.getByText('Gamma flip')).toBeInTheDocument();
+    expect(screen.queryByText('Gamma flip (live)')).toBeNull();
+  });
+
+  it('S1 1× net-flow keeps (5m) and last-few-minutes ⓘ', () => {
+    wrap(
+      <LiveTape
+        m={marketState({ ticker: 'SPY' })}
+        live={liveUpdate({
+          ticker: 'SPY',
+          live: false,
+          feed: 'session_tape',
+          flow_window_s: 300,
+          session_tape: sessionTape({ pace: 1 }),
+        })}
+        isLive={false}
+        displayActive={true}
+        streamOffline={false}
+      />,
+    );
+    expect(screen.getByText('Net flow (5m)')).toBeInTheDocument();
+  });
+
+  it('S1 4× net-flow is Net flow with no (Nm) and no last few minutes', () => {
+    wrap(
+      <LiveTape
+        m={marketState({ ticker: 'SPY' })}
+        live={liveUpdate({
+          ticker: 'SPY',
+          live: false,
+          feed: 'session_tape',
+          flow_window_s: 300,
+          session_tape: sessionTape({ pace: 4 }),
+        })}
+        isLive={false}
+        displayActive={true}
+        streamOffline={false}
+      />,
+    );
+    expect(screen.getByText('Net flow')).toBeInTheDocument();
+    expect(screen.queryByText(/Net flow \(\d+m\)/)).toBeNull();
+  });
+
+  it('S1 ended subtitle is Session tape ended · last tape ticks · structure levels stay snapshot', () => {
+    wrap(
+      <LiveTape
+        m={marketState({ ticker: 'SPY' })}
+        live={liveUpdate({
+          ticker: 'SPY',
+          live: false,
+          feed: 'session_tape',
+          session_tape: sessionTape({ phase: 'ended' }),
+        })}
+        isLive={false}
+        displayActive={false}
+        streamOffline={false}
+      />,
+    );
+    expect(
+      screen.getByText('Session tape ended · last tape ticks · structure levels stay snapshot'),
+    ).toBeInTheDocument();
+  });
+
+  it('S1 drop does not show ⏸ offline', () => {
+    wrap(
+      <LiveTape
+        m={marketState({ ticker: 'SPY' })}
+        live={liveUpdate({
+          ticker: 'SPY',
+          live: false,
+          feed: 'session_tape',
+          session_tape: sessionTape({ phase: 'playing' }),
+        })}
+        isLive={false}
+        displayActive={false}
+        streamOffline={true}
+      />,
+    );
+    expect(screen.queryByText(/⏸ offline/)).toBeNull();
+    expect(screen.getByText('Session tape')).toBeInTheDocument();
+  });
+
+  it('display-active moves numbers; keep-alive does not flash', () => {
+    wrap(
+      <LiveTape
+        m={marketState({ ticker: 'SPY' })}
+        live={liveUpdate({
+          ticker: 'SPY',
+          live: false,
+          feed: 'session_tape',
+          net_flow: 1500,
+          spread: 0.02,
+          session_tape: sessionTape(),
+        })}
+        isLive={false}
+        displayActive={true}
+        streamOffline={false}
+      />,
+    );
+    expect(screen.getByText('+1,500')).toBeInTheDocument();
+    expect(screen.getByText('$0.02')).toBeInTheDocument();
   });
 });

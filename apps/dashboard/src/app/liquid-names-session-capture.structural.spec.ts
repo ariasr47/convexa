@@ -11,6 +11,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { isOperatorSessionArchiveSource } from '../testing/operatorSessionArchiveAllowlist';
 
 const DASHBOARD_SOURCES = import.meta.glob(
   ['/src/app/**/*.{ts,tsx}', '!**/*.spec.{ts,tsx}', '!**/*.test.{ts,tsx}'],
@@ -156,10 +157,17 @@ describe('F2 · no liquid-ensure trader chrome (AC-18 / AC-25)', () => {
   it('dashboard production sources carry none of the ensure / lab-name needles', () => {
     const offenders: string[] = [];
     for (const [path, src] of Object.entries(DASHBOARD_SOURCES)) {
+      if (isOperatorSessionArchiveSource(path)) continue;
       const hits = hitsIn(src);
       if (hits.length) offenders.push(`${path} → ${hits.join(', ')}`);
     }
     expect(offenders).toEqual([]);
+  });
+
+  it('allowlist skip is not vacuous — trader TopNav is still scanned', () => {
+    const navKey = Object.keys(DASHBOARD_SOURCES).find((k) => k.endsWith('/shell/TopNav.tsx'));
+    expect(navKey).toBeTruthy();
+    expect(isOperatorSessionArchiveSource(navKey as string)).toBe(false);
   });
 
   it('no new trader page/route for session capture or lab names', () => {

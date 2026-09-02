@@ -1,6 +1,8 @@
 //! Shared application state for the Axum server.
 
-use crate::config::{body_root_conflicts, ChainSnapshotBackend, Config};
+use crate::config::{
+    body_root_conflicts, keep_root_conflicts, tape_root_conflicts, ChainSnapshotBackend, Config,
+};
 use crate::domain::{LivePrice, MarketPhase};
 use crate::error::AppResult;
 use crate::infrastructure::massive::MassiveRestClient;
@@ -10,6 +12,9 @@ use crate::middleware::RateLimiter;
 use crate::services::auth::{AuthConfig, AuthService, AuthStore};
 use crate::services::broker::{get_positions_provider, BrokerBookService};
 use crate::services::chain_snapshot::ChainSnapshotStore;
+use crate::services::day_tape::replay_occupancy::ReplayOccupancySlot;
+use crate::services::day_tape::{root_is_writable, SessionDayTape};
+use crate::services::flat_file_keep::FlatFilesStore;
 use crate::services::flight::GexFlight;
 use crate::services::iv_store::IvStore;
 use crate::services::live_capacity::{LifecycleProbe, LiveCapacity};
@@ -286,17 +291,67 @@ pub struct AppState {
     pub chain_snapshots: ChainSnapshotStore,
     /// Sibling prune-proof session archive (Disabled when not configured).
     pub session_archive: SessionChainArchive,
+    /// Sibling research day tape (Disabled when root unset/missing/unwritable).
+    pub day_tape: SessionDayTape,
+    /// Dedicated Massive flat-files extract store (NotStoring / RefuseToMix / Json).
+    pub flat_files: FlatFilesStore,
+    /// Consume-visible session-tape occupancy (unset ⇒ omitted on ticker SSE).
+    pub replay_occupancy: ReplayOccupancySlot,
+    /// Path-B structure hold for the armed replay identity (before gex_cache).
+    pub replay_hold: ReplayHold,
     /// Non-blocking wake into the liquid-name session ensure worker.
     pub ensure_wake: EnsureWake,
     /// `(T, D)` singleflight + Massive spacing for the ensure worker.
     pub ensure_gate: Arc<EnsureGate>,
     pub archive_coverage: ArchiveCoverageRuntime,
+    /// `None` in production `construct`. `Some` only on `for_capacity_harness` / probe constructor.
+    pub vendor_fixture: Option<Arc<crate::services::market_data::FixtureCatalog>>,
     /// Shared Postgres pool when durable stores are postgres-backed (book sync, etc.).
     #[cfg(feature = "postgres")]
     pub pg: Option<crate::db::postgres::Pg>,
 }
 
+/// At-most-one Path-B snapshot for the armed replay day (B3; consulted before gex_cache in B5).
+#[derive(Clone, Default)]
+pub struct ReplayHold {
+    inner: Arc<tokio::sync::RwLock<Option<ReplayHoldEntry>>>,
+}
+
+struct ReplayHoldEntry {
+    symbol: String,
+    #[allow(dead_code)] // identity retained for B5 date-scoped peek
+    et_date: String,
+    snapshot: AnalyticsSnapshot,
+}
+
+impl ReplayHold {
+    pub fn empty() -> Self {
+        Self {
+            inner: Arc::new(tokio::sync::RwLock::new(None)),
+        }
+    }
+
+    pub async fn replace(&self, symbol: &str, et_date: &str, snapshot: AnalyticsSnapshot) {
+        *self.inner.write().await = Some(ReplayHoldEntry {
+            symbol: symbol.to_ascii_uppercase(),
+            et_date: et_date.to_string(),
+            snapshot,
+        });
+    }
+
+    pub async fn get(&self, symbol: &str) -> Option<AnalyticsSnapshot> {
+        let g = self.inner.read().await;
+        g.as_ref()
+            .and_then(|e| (e.symbol == symbol.to_ascii_uppercase()).then(|| e.snapshot.clone()))
+    }
+}
+
 impl AppState {
+    /// Vendor REST request count; `0` when no live client is constructed (harness arms).
+    pub fn massive_request_count(&self) -> u64 {
+        self.massive.as_ref().map_or(0, |m| m.request_count())
+    }
+
     pub fn massive(&self) -> AppResult<&MassiveRestClient> {
         self.massive.as_ref().ok_or_else(|| {
             crate::error::AppError::Config(
@@ -567,9 +622,20 @@ impl AppState {
                     .into(),
             ));
         }
+        let day_tape = open_session_day_tape(&config, {
+            #[cfg(feature = "postgres")]
+            {
+                pg.clone()
+            }
+            #[cfg(not(feature = "postgres"))]
+            {
+                ()
+            }
+        })?;
+        let flat_files = open_flat_files_store(&config);
 
         let archive_coverage = ArchiveCoverageRuntime::production()?;
-        Ok(Self {
+        let state = Self {
             config: Arc::new(config),
             prices,
             massive: Some(massive),
@@ -588,12 +654,19 @@ impl AppState {
             rate_limiter,
             chain_snapshots,
             session_archive,
+            day_tape,
+            flat_files,
+            replay_occupancy: ReplayOccupancySlot::unset(),
+            replay_hold: ReplayHold::empty(),
             ensure_wake: EnsureWake::default(),
             ensure_gate: Arc::new(EnsureGate::new()),
             archive_coverage,
+            vendor_fixture: None,
             #[cfg(feature = "postgres")]
             pg,
-        })
+        };
+        Self::assert_no_production_fixture(production, &state.vendor_fixture)?;
+        Ok(state)
     }
 
     /// Hermetic constructor for research-route / capture tests (no live vendor needed to boot).
@@ -687,12 +760,270 @@ impl AppState {
             rate_limiter: Arc::new(RateLimiter::new(0)),
             chain_snapshots,
             session_archive,
+            day_tape: SessionDayTape::disabled(),
+            flat_files: FlatFilesStore::memory(),
+            replay_occupancy: ReplayOccupancySlot::unset(),
+            replay_hold: ReplayHold::empty(),
             ensure_wake: EnsureWake::default(),
             ensure_gate: Arc::new(EnsureGate::new()),
             archive_coverage: ArchiveCoverageRuntime::production()?,
+            vendor_fixture: None,
             #[cfg(feature = "postgres")]
             pg: None,
         })
+    }
+
+    fn assert_no_production_fixture(
+        production: bool,
+        vendor_fixture: &Option<Arc<crate::services::market_data::FixtureCatalog>>,
+    ) -> AppResult<()> {
+        if production && vendor_fixture.is_some() {
+            return Err(crate::error::AppError::Config(
+                "production construct refuses vendor_fixture=Some".into(),
+            ));
+        }
+        Ok(())
+    }
+
+    /// Hermetic capacity-harness constructor. Never `Config::from_env`, never `server::serve`,
+    /// never starts the stock worker. LiveCapacity ceilings are caller-supplied (load: 9/4).
+    pub async fn for_capacity_harness(
+        catalog: Arc<crate::services::market_data::FixtureCatalog>,
+        max_sessions: usize,
+        max_subscribers: usize,
+    ) -> AppResult<Self> {
+        Self::for_capacity_harness_with_env(
+            catalog,
+            max_sessions,
+            max_subscribers,
+            std::env::var("APP_ENV").ok().as_deref(),
+        )
+        .await
+    }
+
+    /// Inner constructor; `app_env` is injected so tests need not mutate process env.
+    async fn for_capacity_harness_with_env(
+        catalog: Arc<crate::services::market_data::FixtureCatalog>,
+        max_sessions: usize,
+        max_subscribers: usize,
+        app_env: Option<&str>,
+    ) -> AppResult<Self> {
+        if app_env == Some("prod") {
+            return Err(crate::error::AppError::Config(
+                "capacity harness refuses APP_ENV=prod".into(),
+            ));
+        }
+        let mut config = test_stub_config();
+        config.massive_api_key = "capacity-harness-dummy-not-a-secret".into();
+        config.rest_base = "http://127.0.0.1:1".into();
+        config.warm_enabled = false;
+        config.scan_enabled = false;
+        config.chain_snapshot_enabled = false;
+        config.session_chain_archive_enabled = false;
+        config.liquid_session_ensure_enabled = false;
+        config.public_rate_limit_per_min = 0;
+        config.include_dark_pool = false;
+        config.max_live_sessions = max_sessions;
+        config.max_live_subscribers = max_subscribers;
+        config.redis_url = None;
+        if config.rest_base.contains("massive.com") {
+            return Err(crate::error::AppError::Config(
+                "capacity harness refuses live Massive rest_base".into(),
+            ));
+        }
+        if let Ok(env_key) = std::env::var("MASSIVE_API_KEY") {
+            if !env_key.is_empty() && config.massive_api_key == env_key {
+                return Err(crate::error::AppError::Config(
+                    "capacity harness refuses MASSIVE_API_KEY as the fetch key".into(),
+                ));
+            }
+        }
+
+        let prices = PriceCache::connect(None).await?;
+        let massive = MassiveRestClient::new(&config)?;
+        let gex_cache = GexCache::new(config.clone());
+        let auth_store = AuthStore::open_memory()?;
+        let auth = AuthService::new(
+            auth_store,
+            AuthConfig {
+                signing_key: config.auth_session_signing_key.clone(),
+                session_idle_secs: config.auth_session_idle_secs as f64,
+                session_absolute_secs: config.auth_session_absolute_secs as f64,
+                cookie_secure: config.auth_cookie_secure,
+                cookie_samesite: config.auth_cookie_samesite.clone(),
+                registration_open: config.auth_registration_open,
+                password_min_length: 8,
+            },
+        );
+        let iv_path = std::env::temp_dir().join(format!(
+            "convexa_iv_capacity_{}_{}.json",
+            std::process::id(),
+            Utc::now().timestamp_nanos_opt().unwrap_or(0)
+        ));
+        let stock_hub = StockStreamHub::harness_local();
+        let (_unused_hub, stock_worker) = StockStreamHub::dormant(&config);
+        let stock_worker = Arc::new(StockStreamWorkerStarter::new(stock_worker));
+        // Intentionally never call stock_worker.start().
+        Ok(Self {
+            config: Arc::new(config),
+            prices,
+            massive: Some(massive),
+            harness_market_data: None,
+            lifecycle_probe: LifecycleProbe::disabled(),
+            archive_coverage: ArchiveCoverageRuntime::production()?,
+            gex_cache,
+            gex_flight: GexFlight::new(),
+            scan: ScanStore::memory(),
+            universe: None,
+            auth,
+            broker: BrokerBookService::new(get_positions_provider()),
+            iv_store: IvStore::open(&iv_path)?,
+            stock_hub,
+            stock_worker,
+            live_capacity: LiveCapacity::new(max_sessions, max_subscribers),
+            rate_limiter: Arc::new(RateLimiter::new(0)),
+            chain_snapshots: ChainSnapshotStore::disabled(),
+            session_archive: SessionChainArchive::disabled(),
+            day_tape: SessionDayTape::disabled(),
+            flat_files: FlatFilesStore::not_storing(),
+            replay_occupancy: ReplayOccupancySlot::unset(),
+            replay_hold: ReplayHold::empty(),
+            ensure_wake: EnsureWake::default(),
+            ensure_gate: Arc::new(EnsureGate::new()),
+            vendor_fixture: Some(catalog),
+            #[cfg(feature = "postgres")]
+            pg: None,
+        })
+    }
+
+    /// Exclusive session-day-replay construct. Never `Config::from_env` live Massive,
+    /// never starts `stock_worker` / path_a / warmer / ensure / scanner.
+    pub async fn for_session_day_replay_with_env(
+        tape: SessionDayTape,
+        occupancy: ReplayOccupancySlot,
+        app_env: Option<&str>,
+    ) -> AppResult<Self> {
+        if crate::services::day_tape::construct::production_profile_refuses(app_env) {
+            return Err(crate::error::AppError::Config(
+                "session-day-replay refuses APP_ENV=prod".into(),
+            ));
+        }
+        let mut config = test_stub_config();
+        config.massive_api_key = String::new();
+        config.rest_base = "http://127.0.0.1:1".into();
+        config.warm_enabled = false;
+        config.scan_enabled = false;
+        config.chain_snapshot_enabled = false;
+        config.session_chain_archive_enabled = false;
+        config.liquid_session_ensure_enabled = false;
+        config.public_rate_limit_per_min = 0;
+        config.include_dark_pool = false;
+        config.max_live_sessions = 0;
+        config.max_live_subscribers = 0;
+        config.redis_url = None;
+        if config.rest_base.contains("massive.com") {
+            return Err(crate::error::AppError::Config(
+                "session-day-replay refuses live Massive rest_base".into(),
+            ));
+        }
+
+        let prices = PriceCache::connect(None).await?;
+        let massive = MassiveRestClient::new(&config)?;
+        let gex_cache = GexCache::new(config.clone());
+        let auth_store = AuthStore::open_memory()?;
+        let auth = AuthService::new(
+            auth_store,
+            AuthConfig {
+                signing_key: config.auth_session_signing_key.clone(),
+                session_idle_secs: config.auth_session_idle_secs as f64,
+                session_absolute_secs: config.auth_session_absolute_secs as f64,
+                cookie_secure: config.auth_cookie_secure,
+                cookie_samesite: config.auth_cookie_samesite.clone(),
+                registration_open: config.auth_registration_open,
+                password_min_length: 8,
+            },
+        );
+        let iv_path = std::env::temp_dir().join(format!(
+            "convexa_iv_replay_{}_{}.json",
+            std::process::id(),
+            Utc::now().timestamp_nanos_opt().unwrap_or(0)
+        ));
+        let stock_hub = StockStreamHub::harness_local();
+        let (_unused_hub, stock_worker) = StockStreamHub::dormant(&config);
+        let stock_worker = Arc::new(StockStreamWorkerStarter::new(stock_worker));
+        // Intentionally never call stock_worker.start()
+        Ok(Self {
+            config: Arc::new(config),
+            prices,
+            massive: Some(massive),
+            harness_market_data: None,
+            lifecycle_probe: LifecycleProbe::disabled(),
+            archive_coverage: ArchiveCoverageRuntime::production()?,
+            gex_cache,
+            gex_flight: GexFlight::new(),
+            scan: ScanStore::memory(),
+            universe: None,
+            auth,
+            broker: BrokerBookService::new(get_positions_provider()),
+            iv_store: IvStore::open(&iv_path)?,
+            stock_hub,
+            stock_worker,
+            live_capacity: LiveCapacity::new(0, 0),
+            rate_limiter: Arc::new(RateLimiter::new(0)),
+            chain_snapshots: ChainSnapshotStore::disabled(),
+            session_archive: SessionChainArchive::disabled(),
+            day_tape: tape,
+            flat_files: FlatFilesStore::not_storing(),
+            replay_occupancy: occupancy,
+            replay_hold: ReplayHold::empty(),
+            ensure_wake: EnsureWake::default(),
+            ensure_gate: Arc::new(EnsureGate::new()),
+            vendor_fixture: None,
+            #[cfg(feature = "postgres")]
+            pg: None,
+        })
+    }
+
+    /// Fixture-aware quick live price. Both capacity harnesses resolve here without touching the
+    /// vendor: `harness_market_data` (v1 `capacity-baseline`) and `vendor_fixture`
+    /// (v2 `capacity load|soak`). With neither set, identical to
+    /// `MassiveRestClient::fetch_quick_live_price`.
+    pub async fn quick_live_price(&self, sym: &str) -> AppResult<LivePrice> {
+        if let Some(port) = &self.harness_market_data {
+            let bundle = port.resolve(sym, None).await?;
+            return Ok(LivePrice {
+                symbol: sym.to_owned(),
+                price: bundle.market.current_spot,
+                bid: None,
+                ask: None,
+                ts_ns: bundle.market.timestamp,
+                received_at: bundle.as_of.timestamp(),
+            });
+        }
+        if let Some(cat) = &self.vendor_fixture {
+            let b = cat.resolve(sym, None)?;
+            return Ok(LivePrice {
+                symbol: b.market.ticker.clone(),
+                price: b.market.current_spot,
+                bid: None,
+                ask: None,
+                ts_ns: b.market.timestamp,
+                received_at: Utc::now().timestamp(),
+            });
+        }
+        self.massive()?.fetch_quick_live_price(sym).await
+    }
+
+    /// Poison helper: production + `vendor_fixture=Some` must refuse (B7 / unit probe).
+    #[cfg(test)]
+    pub async fn construct_with_fixture_for_poison(
+        catalog: Arc<crate::services::market_data::FixtureCatalog>,
+    ) -> AppResult<Self> {
+        let mut state =
+            Self::for_tests(ChainSnapshotStore::memory(), SessionChainArchive::memory()).await?;
+        state.vendor_fixture = Some(catalog);
+        Self::assert_no_production_fixture(true, &state.vendor_fixture)?;
+        Ok(state)
     }
 }
 
@@ -746,10 +1077,57 @@ pub(crate) fn test_stub_config() -> Config {
         session_chain_archive_enabled: true,
         session_chain_archive_store_path: PathBuf::from("data/session_chain_archive"),
         session_chain_archive_body_root: None,
+        session_day_tape_body_root: None,
+        massive_flat_files_body_root: None,
+        massive_files_access_key: String::new(),
+        massive_files_secret: String::new(),
         liquid_session_ensure_enabled: false,
         max_live_sessions: 0,
         max_live_subscribers: 0,
         workspace_root: PathBuf::from("."),
+    }
+}
+
+/// Open flat-files store. Collision → `RefuseToMix` Ok. Unset/missing/unwritable → `NotStoring` Ok.
+/// Never `AppError::Config`. Never constructs a files HTTP client.
+pub(crate) fn open_flat_files_store(config: &Config) -> FlatFilesStore {
+    let Some(root) = config.massive_flat_files_body_root.as_ref() else {
+        info!("flat files not fetching — production unset");
+        return FlatFilesStore::NotStoring;
+    };
+    if root.as_os_str().is_empty() {
+        warn!("MASSIVE_FLAT_FILES_BODY_ROOT empty; flat files not storing");
+        return FlatFilesStore::NotStoring;
+    }
+    if keep_root_conflicts(
+        root,
+        &config.chain_snapshot_store_path,
+        &config.session_chain_archive_store_path,
+        config.session_chain_archive_body_root.as_deref(),
+        config.session_day_tape_body_root.as_deref(),
+    ) {
+        warn!(
+            path = %root.display(),
+            "MASSIVE_FLAT_FILES_BODY_ROOT conflicts with ring/archive/tape; refuse to mix"
+        );
+        return FlatFilesStore::RefuseToMix;
+    }
+    if !crate::services::flat_file_keep::root_is_writable(root) {
+        warn!(
+            path = %root.display(),
+            "MASSIVE_FLAT_FILES_BODY_ROOT missing or unwritable; flat files not storing"
+        );
+        return FlatFilesStore::NotStoring;
+    }
+    match FlatFilesStore::open_json(root) {
+        Ok(store) => {
+            info!(path = %root.display(), "flat files: json");
+            store
+        }
+        Err(e) => {
+            warn!(error = %e.0, "flat files root unusable; flat files not storing");
+            FlatFilesStore::NotStoring
+        }
     }
 }
 
@@ -776,6 +1154,63 @@ async fn open_chain_snapshot_store(config: &Config, _pg: ()) -> ChainSnapshotSto
         return ChainSnapshotStore::disabled();
     }
     open_chain_snapshot_filesystem(config).await
+}
+
+/// Open day-tape store. Collision → Err (refuse start). Unset/missing/unwritable → Disabled Ok.
+/// Does **not** add a production tape-root prerequisite.
+pub(crate) fn open_session_day_tape(
+    config: &Config,
+    #[cfg(feature = "postgres")] pg: Option<crate::db::postgres::Pg>,
+    #[cfg(not(feature = "postgres"))] _pg: (),
+) -> AppResult<SessionDayTape> {
+    let Some(root) = config.session_day_tape_body_root.as_ref() else {
+        info!("SESSION_DAY_TAPE_BODY_ROOT unset; session day tape not storing");
+        return Ok(SessionDayTape::disabled());
+    };
+    if root.as_os_str().is_empty() {
+        warn!("SESSION_DAY_TAPE_BODY_ROOT empty; session day tape not storing");
+        return Ok(SessionDayTape::disabled());
+    }
+    if tape_root_conflicts(
+        root,
+        &config.chain_snapshot_store_path,
+        &config.session_chain_archive_store_path,
+        config.session_chain_archive_body_root.as_deref(),
+    ) {
+        return Err(crate::error::AppError::Config(
+            "SESSION_DAY_TAPE_BODY_ROOT conflicts with ring, session-archive index, or session-archive body"
+                .into(),
+        ));
+    }
+    if !root_is_writable(root) {
+        warn!(
+            path = %root.display(),
+            "SESSION_DAY_TAPE_BODY_ROOT missing or unwritable; session day tape not storing"
+        );
+        return Ok(SessionDayTape::disabled());
+    }
+    #[cfg(feature = "postgres")]
+    if let Some(p) = pg {
+        match SessionDayTape::open_postgres(p, root) {
+            Ok(store) => {
+                info!(path = %root.display(), "session day tape: postgres index + fs bodies");
+                return Ok(store);
+            }
+            Err(e) => {
+                warn!(error = %e, "session day tape postgres open failed; falling back to json");
+            }
+        }
+    }
+    match SessionDayTape::open_json(root) {
+        Ok(store) => {
+            info!(path = %root.display(), "session day tape: json");
+            Ok(store)
+        }
+        Err(e) => {
+            warn!(error = %e, "session day tape root unusable; session day tape not storing");
+            Ok(SessionDayTape::disabled())
+        }
+    }
 }
 
 fn session_archive_body_root_or_disabled(config: &Config) -> Option<&std::path::PathBuf> {
@@ -1175,6 +1610,10 @@ mod tests {
             session_chain_archive_enabled: true,
             session_chain_archive_store_path: PathBuf::from("data/session_chain_archive"),
             session_chain_archive_body_root: None,
+            session_day_tape_body_root: None,
+            massive_flat_files_body_root: None,
+            massive_files_access_key: String::new(),
+            massive_files_secret: String::new(),
             liquid_session_ensure_enabled: false,
             max_live_sessions: 0,
             max_live_subscribers: 0,
@@ -1298,6 +1737,180 @@ mod tests {
         .await;
         assert!(!store.is_enabled());
         assert!(!root.exists());
+    }
+
+    #[tokio::test]
+    async fn unset_root_constructs_disabled_listener_would_bind() {
+        let mut config = test_config();
+        config.session_day_tape_body_root = None;
+        #[cfg(feature = "postgres")]
+        let store = open_session_day_tape(&config, None).unwrap();
+        #[cfg(not(feature = "postgres"))]
+        let store = open_session_day_tape(&config, ()).unwrap();
+        assert!(!store.is_enabled());
+        let err = store.list("SPY").await.unwrap_err();
+        assert!(err.to_string().contains("session day tape not storing"));
+    }
+
+    #[tokio::test]
+    async fn unset_root_constructs_not_storing_listener_would_bind() {
+        let mut config = test_config();
+        config.massive_flat_files_body_root = None;
+        let store = open_flat_files_store(&config);
+        assert!(matches!(store, FlatFilesStore::NotStoring));
+        // Serve still binds: opener is Ok(NotStoring), never AppError::Config.
+        let _ = store;
+    }
+
+    #[tokio::test]
+    async fn colliding_root_is_refuse_to_mix_not_config_err() {
+        let mut config = test_config();
+        config.chain_snapshot_store_path = PathBuf::from("data/chain_snapshots");
+        config.session_chain_archive_store_path = PathBuf::from("data/session_chain_archive");
+        config.session_chain_archive_body_root =
+            Some(PathBuf::from("data/session-chain-archive-bodies"));
+        config.session_day_tape_body_root = Some(PathBuf::from("data/session_day_tape"));
+        config.massive_flat_files_body_root = Some(PathBuf::from("data/chain_snapshots"));
+        let store = open_flat_files_store(&config);
+        assert!(matches!(store, FlatFilesStore::RefuseToMix));
+        assert!(!matches!(store, FlatFilesStore::NotStoring));
+    }
+
+    /// Nested so the PLAN name does not collide with day_tape's same-named test in this module.
+    mod flat_files_open {
+        use super::*;
+
+        #[tokio::test]
+        async fn unwritable_root_is_not_storing_not_a_start_refusal() {
+            let file_path =
+                std::env::temp_dir().join(format!("convexa_ff_notdir_{}.txt", std::process::id()));
+            std::fs::write(&file_path, b"not-a-dir").unwrap();
+            let mut config = test_config();
+            config.massive_flat_files_body_root = Some(file_path.clone());
+            let store = open_flat_files_store(&config);
+            assert!(matches!(store, FlatFilesStore::NotStoring));
+            let _ = std::fs::remove_file(&file_path);
+        }
+    }
+
+    #[tokio::test]
+    async fn colliding_root_refuses_construct() {
+        let mut config = test_config();
+        config.chain_snapshot_store_path = PathBuf::from("data/chain_snapshots");
+        config.session_chain_archive_store_path = PathBuf::from("data/session_chain_archive");
+        config.session_chain_archive_body_root =
+            Some(PathBuf::from("data/session-chain-archive-bodies"));
+        config.session_day_tape_body_root = Some(PathBuf::from("data/chain_snapshots"));
+        #[cfg(feature = "postgres")]
+        let err = open_session_day_tape(&config, None).unwrap_err();
+        #[cfg(not(feature = "postgres"))]
+        let err = open_session_day_tape(&config, ()).unwrap_err();
+        assert!(
+            err.to_string().contains("conflicts"),
+            "collision must refuse construct, got {err}"
+        );
+    }
+
+    #[tokio::test]
+    async fn unwritable_root_is_not_storing_not_a_start_refusal() {
+        let file_path = std::env::temp_dir().join(format!(
+            "day_tape_state_not_dir_{}_{}",
+            std::process::id(),
+            Utc::now().timestamp_nanos_opt().unwrap_or(0)
+        ));
+        std::fs::write(&file_path, b"not-a-dir").unwrap();
+        let mut config = test_config();
+        config.session_day_tape_body_root = Some(file_path.clone());
+        #[cfg(feature = "postgres")]
+        let store = open_session_day_tape(&config, None).unwrap();
+        #[cfg(not(feature = "postgres"))]
+        let store = open_session_day_tape(&config, ()).unwrap();
+        assert!(!store.is_enabled());
+        let _ = std::fs::remove_file(&file_path);
+    }
+
+    fn golden_path() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../libs/quant-engine/tests/fixtures/gex_SPY.json")
+    }
+
+    #[tokio::test]
+    async fn for_tests_leaves_vendor_fixture_none() {
+        let s = AppState::for_tests(
+            crate::services::chain_snapshot::ChainSnapshotStore::memory(),
+            crate::services::session_chain_archive::SessionChainArchive::memory(),
+        )
+        .await
+        .unwrap();
+        assert!(s.vendor_fixture.is_none());
+        assert_eq!(s.live_capacity.max_subscribers(), 0);
+        assert_eq!(s.live_capacity.max_sessions(), 0);
+        // Wrong constructor for capacity — still points at the live Massive host.
+        assert_eq!(s.config.rest_base, "https://api.massive.com");
+    }
+
+    #[tokio::test]
+    async fn for_runtime_guardrail_tests_leaves_vendor_fixture_none() {
+        let s = AppState::for_runtime_guardrail_tests("test-metrics-token".into())
+            .await
+            .unwrap();
+        assert!(s.vendor_fixture.is_none());
+    }
+
+    #[tokio::test]
+    async fn for_capacity_harness_sets_fixture_ceilings_limiter_and_harness_hub() {
+        let book =
+            crate::services::capacity_harness::fixture::load_capacity_book(&golden_path()).unwrap();
+        let s = AppState::for_capacity_harness(book.catalog, 4, 9)
+            .await
+            .unwrap();
+        assert!(s.vendor_fixture.is_some());
+        assert_eq!(s.live_capacity.max_subscribers(), 9);
+        assert_eq!(s.live_capacity.max_sessions(), 4);
+        assert_eq!(s.config.public_rate_limit_per_min, 0);
+        assert_eq!(s.config.rest_base, "http://127.0.0.1:1");
+        assert!(!s.config.warm_enabled && !s.config.scan_enabled);
+        assert_eq!(s.stock_hub.cmds_enqueued(), 0);
+        s.stock_hub.subscribe(&["SPY".into()]).await.unwrap();
+        assert_eq!(s.stock_hub.cmds_enqueued(), 0);
+        assert_ne!(s.config.rest_base, "https://api.massive.com");
+    }
+
+    #[tokio::test]
+    async fn for_capacity_harness_refuses_app_env_prod() {
+        let book =
+            crate::services::capacity_harness::fixture::load_capacity_book(&golden_path()).unwrap();
+        let err = AppState::for_capacity_harness_with_env(book.catalog, 4, 9, Some("prod"))
+            .await
+            .err();
+        assert!(err.is_some());
+    }
+
+    #[tokio::test]
+    async fn production_construct_refuses_vendor_fixture_some() {
+        let book =
+            crate::services::capacity_harness::fixture::load_capacity_book(&golden_path()).unwrap();
+        let err = AppState::construct_with_fixture_for_poison(book.catalog)
+            .await
+            .err();
+        assert!(err.is_some());
+        assert!(err
+            .unwrap()
+            .to_string()
+            .contains("production construct refuses vendor_fixture=Some"));
+    }
+
+    #[tokio::test]
+    async fn quick_live_price_resolves_from_vendor_fixture() {
+        let book =
+            crate::services::capacity_harness::fixture::load_capacity_book(&golden_path()).unwrap();
+        let expected_spot = book.vendor.market.current_spot;
+        let s = AppState::for_capacity_harness(book.catalog, 4, 9)
+            .await
+            .unwrap();
+        let live = s.quick_live_price("SPY").await.unwrap();
+        assert_eq!(live.symbol, "SPY");
+        assert_eq!(live.price, expected_spot);
     }
 }
 

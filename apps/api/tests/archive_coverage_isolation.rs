@@ -27,7 +27,12 @@ fn poisoned_scan_rejects() {
 
 #[test]
 fn coverage_has_no_vendor_or_trader_dependency() {
-    assert!(allowed(&leaf_source("coverage.rs")));
+    // `coverage` is a directory since the browser-quality-gates merge. This coarse substring
+    // tripwire binds the audit read (`policy.rs`) that feeds `/api/_metrics`; the research
+    // evaluator (`matrix.rs`) is bound by the needle-precise scan in
+    // `archive_coverage_guardrails_isolation.rs`, which this scan cannot reuse because
+    // `matrix.rs` legitimately names the `MarketDataSourceKind::LiveMassive` provenance variant.
+    assert!(allowed(&leaf_source("coverage/policy.rs")));
 }
 #[test]
 fn calendar_has_no_vendor_or_trader_dependency() {

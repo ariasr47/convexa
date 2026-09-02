@@ -7,6 +7,25 @@ test('isolation accepts only quality seams', () => {
     assertIsolatedPaths(['package.json', 'apps/dashboard-e2e/tools/x.mjs']),
   );
 });
+test('isolation admits exact AC27 hygiene paths and still rejects adjacent poisons', () => {
+  assert.doesNotThrow(() =>
+    assertIsolatedPaths([
+      '.prettierignore',
+      'tools/api-router-integration-baseline.spec.mjs',
+      'tools/api-router-integration-compile-probe.spec.mjs',
+      'tools/api-contract.mjs',
+      'tools/api-contract.spec.mjs',
+    ]),
+  );
+  for (const file of [
+    'apps/dashboard/src/app/pages/operator-metrics/LatencyTrend.tsx',
+    'apps/dashboard/src/app/pages/operator-metrics/useLatencyTrend.spec.tsx',
+    'libs/api/src/lib/convexa.ts',
+    'libs/api/src/lib/client.ts',
+    'tools/other.mjs',
+  ])
+    assert.throws(() => assertIsolatedPaths([file]));
+});
 test('isolation rejects product, backend and runtime paths', () => {
   for (const file of [
     'apps/dashboard/src/app.tsx',

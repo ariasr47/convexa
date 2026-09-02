@@ -1,6 +1,6 @@
 # RESUME — branch `main` — written 2026-09-01 (reconciliation snapshot, GATE R)
 
-**Resume status:** ACTIVE
+**Resume status:** CONSUMED (as of 2026-09-02)
 
 Conductor snapshot at a clean boundary: **the branch handover has been consumed and verified; no
 gate is in flight; three owner rulings are queued.** Overlay on the canon; reconcile against disk.

@@ -65,6 +65,10 @@
 | `ai-asserted-numbers-are-traceable` | every number or field the in-app AI **asserts** is traceable to a computed bundle field, and every field it **omits** says so in a **closed vocabulary** rather than a mark meaning something else; an untraceable figure is never rendered as fact, an absent one never as a **reserved literal of another state** and never **pre-typed into a tradeable input** by default, inference or chain-derived fallback | CONTEXT §5 · THREADS §9 | **2026-08-14** | ai-rec-grounding (per-figure grounding; **44.4% of asserted numbers measured untraceable**), rec-absence-literals-hole (the absence half — six fields, one new vocabulary member, the Accept seam) — **2 binding**. Logged at **0 instances** 2026-07-16 as explicitly aspirational ("an aspirational rule is not canon"); the queued severity-path question dissolved when the 2nd instance arrived, so it graduated on **ordinary recurrence** exactly as the rule intends |
 | `cited-code-is-verified-not-assumed` | a design or plan artifact must not assert a fact about **existing code** it will reuse unless that fact was **read at source**; unverifiable claims carry a `[lane-check]` mark instead of being asserted | CONTEXT §5 · THREADS §9 | **2026-08-17** | rec-absence-literals-hole (1st instance — 3 false citations inside one council), rec-plan-scope-caption (2nd — PLAN locked attachment against live `DecisionCard.tsx`, not Python-era `AiRecPanel`) — **2 binding**. Graduated by `ledger_tally` at this GATE S |
 
+| `local-evidence-is-not-hosted-evidence` | a local or quality-gate result is never labeled hosted/CI unless that run happened there; a CI load is never soak evidence; ambient `CI=true` is not merge-job evidence | CONTEXT §5 · THREADS §9 | **2026-08-29** | browser-quality-gates (hosted browser `NOT RUN`), capacity-baseline (load vs soak vs local vs ci; D4 release CI) — **2 binding**. Graduated by `ledger_tally` at `capacity-baseline` GATE S |
+| `present-is-live-paid-only` | a session-archive `present` / live paid book is a loadable `LiveMassive` body; fixture, reconstructed, flat-file, tape, seed, and replay occupancy never insert as `LiveMassive` | CONTEXT §5 · THREADS §9 | **2026-08-30** | archive-coverage-guardrails (blocked occupancy), session-day-tape-capture (Path-B drops source kind; operator never `live_massive`) — **2 binding**. Graduated by `ledger_tally` at `session-day-tape-capture` GATE S. 3rd instance: `day-replay-mock-adapter` (armed walk never LiveMassive). 4th: `massive-flat-file-keep` (extracts never LiveMassive / `kept` ≠ `present`). 5th: `research-lab-surface`. 6th: `exchange-holiday-calendar` (holiday weekday never `present`) |
+| `single-ticker-on-demand` | the trading/serve REQUEST PATH computes exactly the one ticker asked for; multi-ticker work is a bounded off-request-path worker | CONTEXT §5 · THREADS §9 | **2026-08-30** | liquid-names-session-capture (ensure off-path), session-day-tape-capture (tape sidecar off request path) — **2 binding**. Long-standing narrowed prose in §5; formal key graduation via `ledger_tally` at this GATE S |
+
 > Pre-existing canon (recorded by the ledger, already a rule before it existed — not re-promoted):
 > `gamma-sourcing-split` (CONTEXT §3 / THREADS §9).
 > (`ai-external-no-llm` was here until **2026-06-23** — now **DEMOTED / narrowed** by `ai-recommendations`;
@@ -220,6 +224,32 @@ be exactly it.
   now in Promoted canon above.)_
 - _(`no-real-order-path` graduated 2026-06-24; reaffirmed again by user-accounts → 3 binding instances,
   already in Promoted canon.)_
+- **`engine-claim-matches-executable-engines`** (1 instance — `browser-quality-gates` 2026-08-28; binding) —
+  the supported-browser promise names only engines this repository's locked Playwright release can
+  actually run (Chromium full suite; Firefox/WebKit five compatibility journeys). Browserslist, if
+  present, is emitted-code intent, not journey evidence. No branded-browser, all-version, OS/device,
+  or assistive-technology certification claim. A future quality/browser feature violates it by
+  advertising an engine or branded browser it cannot execute. *Not promoted at 1 instance.*
+- **`visual-baseline-requires-human-authority`** (1 instance — `browser-quality-gates` 2026-08-28; binding) —
+  visual candidate write and merge eligibility require two-stage human authorization then acceptance
+  receipts; a worker or command must never author or alter those files. Missing authority is a
+  visible stop, not self-approval. *Not promoted at 1 instance.*
+- _(`local-evidence-is-not-hosted-evidence` GRADUATED **2026-08-29** at `capacity-baseline` — 2 binding
+  (browser-quality-gates hosted `NOT RUN`; capacity-baseline load≠soak and local≠ci). Now in Promoted
+  canon above.)_
+- **`harness-p95-is-not-slo`** (1 instance — `capacity-baseline` 2026-08-29; binding) —
+  a load/soak/quality harness p95 is a mocked-path regression gate, never a production SLO, never
+  permission to raise live ceilings, and never labeled as vendor/Massive p95. Future `telemetry-slos`
+  must not treat these numbers as live-site objectives. *Not promoted at 1 instance.*
+- _(`present-is-live-paid-only` GRADUATED **2026-08-30** at `session-day-tape-capture` — 2 binding
+  (archive-coverage-guardrails blocked occupancy; session-day-tape-capture never LiveMassive).
+  3rd instance: `day-replay-mock-adapter` GATE S 2026-08-30 (replay occupancy never LiveMassive).
+  4th instance: `massive-flat-file-keep` GATE S 2026-08-31 (extracts never LiveMassive / coverage present).
+  Now in Promoted canon above.)_
+- **`credential-class-isolation`** (1 instance — `massive-flat-file-keep` 2026-08-31; binding) —
+  a files/S3 secret is never the live REST apiKey; classify credential class before GET; missing
+  pair and wrong-class stay distinct (REST clause only on wrong-class). A future files/object
+  client violates it by reusing `MASSIVE_API_KEY` as SigV4 material. *Not promoted at 1 instance.*
 
 ## Ledger (append-only — one row per binding decision instance)
 | key | feature | gate | statement (as locked) | binding |
@@ -960,6 +990,192 @@ be exactly it.
 > `cited-code-is-verified-not-assumed` · `absent-is-not-none`). Conformance JSON promoted to
 > `state/conformance/openapi-router-dependency-replacement.json`.
 
+| `structural-over-prose-enforcement` | browser-quality-gates | S | inventory equality, exact-file D7/D8 isolation (no directory prefix), mutation/poison probes, and receipt-bound visual authority make the quality promise build-breaking rather than documented | yes |
+| `theme-token-discipline` | browser-quality-gates | S | D7/D8 contrast repairs consume existing local theme slots; no hardcoded hex, no token-table or global-palette amendment; baselines are not a second token authority | yes |
+| `cited-code-is-verified-not-assumed` | browser-quality-gates | S | D7/D8 selectors, oracles, and cold-error copy were locked against live rendered nodes; a selector drift is GATE Z, not permission to weaken the matrix | yes |
+| `single-motion-moment` | browser-quality-gates | S | quality gates and D7/D8 repairs add no animation family; visual baselines cannot introduce or amend motion; reduced-motion remains the existing shared path | yes |
+| `absent-is-not-none` | browser-quality-gates | S | hosted-runner browser evidence is the closed `NOT RUN` line, never collapsed into local PASS; axe moderate/minor stays in the summary without pretending to be a clean audit | yes |
+| `engine-claim-matches-executable-engines` | browser-quality-gates | S | **NEW KEY (1st instance).** Supported-browser promise = locked Playwright Chromium (52) + Firefox/WebKit (5 journeys). Browserslist is emitted-code intent. No branded-browser / all-version / OS / AT certification | yes |
+| `visual-baseline-requires-human-authority` | browser-quality-gates | S | **NEW KEY (1st instance).** Visual update cannot write candidates without a valid authorization receipt; merge requires a separate acceptance receipt; workers never author either | yes |
+| `local-evidence-is-not-hosted-evidence` | browser-quality-gates | S | **NEW KEY (1st instance).** While hosted runners/billing are unavailable, completion copy is the exact §4 `NOT RUN` hosted line; local results do not count as hosted evidence | yes |
+
+> **GATE S tally — browser-quality-gates (2026-08-28).** **NO new graduations.** Mechanical
+> `ledger_tally`: three new keys stay at 1 binding (`engine-claim-matches-executable-engines` ·
+> `visual-baseline-requires-human-authority` · `local-evidence-is-not-hosted-evidence`). Already-
+> promoted keys gained instances (`structural-over-prose-enforcement` · `theme-token-discipline` ·
+> `cited-code-is-verified-not-assumed` · `single-motion-moment` · `absent-is-not-none`).
+> `NO_BACKEND_CHANGE` — no conformance JSON promoted.
+
+| `additive-keeps-score-byte-identical` | capacity-baseline | S | after successful load and soak, score/tier/fingerprint match the Path-B oracle on the golden book; skip is a fail; the triple is not a p95 lock | yes |
+| `operator-vs-trader-path-separation` | capacity-baseline | S | harness is CLI-only; no trader route, nav, Settings, or `/_ops` capacity surface; receipts are not trader-visible | yes |
+| `structural-over-prose-enforcement` | capacity-baseline | S | isolation poisons (debug CI load, missing APP_ENV, HubCmd queue growth, empty corpus, identity skip) fail the suite rather than relying on a comment | yes |
+| `cited-code-is-verified-not-assumed` | capacity-baseline | S | LiveCapacity `>= max`, production subscribe enqueue, `for_tests` wrong constructor, gex_SPY contract_count 14218 were read at source | yes |
+| `production-fails-closed` | capacity-baseline | S | APP_ENV=prod + fixture Some refuses; missing APP_ENV on a production construct refuses; harness does not fall back to paid Massive | yes |
+| `no-secrets-in-image` | capacity-baseline | S | dummy key only; receipts/logs scanned so MASSIVE_API_KEY values and apikey= fragments cannot appear | yes |
+| `local-evidence-is-not-hosted-evidence` | capacity-baseline | S | **2nd instance.** Evidence `local` vs `ci` are separate axes; load `[NOT RUN] soak`; a ci load is not soak evidence; debug local is not merge-CI evidence | yes |
+| `harness-p95-is-not-slo` | capacity-baseline | S | **NEW KEY (1st instance).** D1 150/4000/200/500 ms are mocked-path regression gates, not production SLOs, not permission to raise 500/50/120 | yes |
+
+> **GATE S tally — capacity-baseline (2026-08-29).** **`local-evidence-is-not-hosted-evidence` GRADUATES**
+> (2 features, all binding — mechanical `ledger_tally`). New watch-list key `harness-p95-is-not-slo`
+> (1 binding). Already-promoted keys gained instances (`additive-keeps-score-byte-identical` ·
+> `operator-vs-trader-path-separation` · `structural-over-prose-enforcement` ·
+> `cited-code-is-verified-not-assumed` · `production-fails-closed` · `no-secrets-in-image`).
+> `NO_BACKEND_CHANGE` of production HTTP — no conformance JSON promoted.
+
+| `operator-vs-trader-path-separation` | archive-coverage-guardrails | I | coverage is operator/research; unlinked from trader UI; zero Massive on a coverage read; Pages `_research` 404 | yes |
+| `cited-code-is-verified-not-assumed` | archive-coverage-guardrails | I | cite live `session_chain_archive/{store,ensure}.rs`, `research_session_books.rs`, `ENSURE_SYMBOLS`; not Python and not the 26 Aug audit prose as an oracle | yes |
+| `operator-vs-trader-path-separation` | archive-coverage-guardrails | S | QA: sibling `_research` coverage; Pages `_research`/`_metrics` 404; no trader chrome; `vendor_called=false`; never writes/ensure | yes |
+| `cited-code-is-verified-not-assumed` | archive-coverage-guardrails | S | derive leaf `coverage.rs` + `Commands::ArchiveCoverage`; list/load + `deserialize_capture`; exhaustive `MarketDataSourceKind`; seed excluded | yes |
+| `best-effort-isolated-or-null` | archive-coverage-guardrails | S | coverage/warning/audit failure leaves bundle, scan, SSE, and ensure succeeding | yes |
+| `additive-keeps-score-byte-identical` | archive-coverage-guardrails | S | coverage never a scoring input; score/tier/fingerprint identity holds derive success vs fail | yes |
+| `absent-is-not-none` | archive-coverage-guardrails | S | `present` ≠ `missing` ≠ `unreadable` ≠ `not yet due` ≠ `blocked occupancy` ≠ store-disabled ERROR ≠ weekend `[NOT DUE]` | yes |
+| `structural-over-prose-enforcement` | archive-coverage-guardrails | S | planted missing/unreadable/fixture occupant fail the audit by construction; exhaustive source match so a new kind cannot silently become Present | yes |
+| `local-evidence-is-not-hosted-evidence` | archive-coverage-guardrails | S | CLI standing `Evidence: local` and `local audit is not production coverage`; a local receipt is not hosted/CI | yes |
+| `no-secrets-in-image` | archive-coverage-guardrails | S | canary secret values do not appear in matrix, warning, or audit output | yes |
+| `present-is-live-paid-only` | archive-coverage-guardrails | S | **NEW KEY (1st instance).** `present` = loadable `LiveMassive` body; fixture/reconstructed/flat-file/seed never present and never inserted as LiveMassive; occupant is `blocked occupancy` | yes |
+
+> **GATE S tally — archive-coverage-guardrails (2026-08-29).** **NO new graduations.** Mechanical
+> `ledger_tally`: new watch-list key `present-is-live-paid-only` (1 binding). Already-promoted keys
+> gained instances (`operator-vs-trader-path-separation` · `cited-code-is-verified-not-assumed` ·
+> `best-effort-isolated-or-null` · `additive-keeps-score-byte-identical` · `absent-is-not-none` ·
+> `structural-over-prose-enforcement` · `local-evidence-is-not-hosted-evidence` ·
+> `no-secrets-in-image`). Conformance JSON promoted to
+> `state/conformance/archive-coverage-guardrails.json`.
+
+| `operator-vs-trader-path-separation` | session-day-tape-capture | I | tape is research; trader SSE unchanged; a tape read must not trigger a vendor fetch or rewrite live price cache | yes |
+| `cited-code-is-verified-not-assumed` | session-day-tape-capture | I | cite live `StockStreamHub` / `price_stream.rs` / `refresh_analytics` drop `_vendor` / `spawn_capture` hooks / `ENSURE_SYMBOLS`; do not treat session archive or Fixture as already this tape | yes |
+| `present-is-live-paid-only` | session-day-tape-capture | I | tape snapshots never insert as `LiveMassive` session books; occupancy stays a distinct class | yes |
+| `operator-vs-trader-path-separation` | session-day-tape-capture | S | QA: sibling `_research` tape list/load; Pages `_research` 404; no trader chrome; `vendor_called=false`; recv never awaits disk | yes |
+| `cited-code-is-verified-not-assumed` | session-day-tape-capture | S | live `StockStreamHub.subscribe_events`, `refresh_analytics` keep `_vendor` for tape only, no `spawn_capture` on warmer | yes |
+| `best-effort-isolated-or-null` | session-day-tape-capture | S | missing tape root and persist fault leave bundle, scan, SSE, and ensure succeeding | yes |
+| `additive-keeps-score-byte-identical` | session-day-tape-capture | S | tape never a scoring input; score/tier/fingerprint identity holds tape on vs fail | yes |
+| `live-vs-static-isolation` | session-day-tape-capture | S | Path-A sidecar never dims or blanks live ticks; overflow is a gap record, not a stalled SSE | yes |
+| `absent-is-not-none` | session-day-tape-capture | S | no-ticks ≠ not-storing ≠ unreadable ≠ coverage missing ≠ not-elapsed; GATE Z residual: no pre-store class | yes |
+| `structural-over-prose-enforcement` | session-day-tape-capture | S | poison: warmer still no `spawn_capture`; tape never `insert_if_absent` as LiveMassive; no watermark plant | yes |
+| `local-evidence-is-not-hosted-evidence` | session-day-tape-capture | S | CLI `Evidence: local`; local audit is not production coverage | yes |
+| `no-secrets-in-image` | session-day-tape-capture | S | canary secret values do not appear in tape list/load or CLI | yes |
+| `present-is-live-paid-only` | session-day-tape-capture | S | **2nd instance.** Path-B persist drops `MarketDataSourceKind`; operator print never `live_massive`; tape never occupies session archive as present | yes |
+| `single-ticker-on-demand` | session-day-tape-capture | S | capture is off the trader request path; request path still one ticker | yes |
+
+> **GATE S tally — session-day-tape-capture (2026-08-30).** **`present-is-live-paid-only` GRADUATES**
+> (2 features, all binding — mechanical `ledger_tally`; pre-indexed in Promoted canon this ship).
+> **`single-ticker-on-demand` GRADUATES** (2 features, all binding — liquid-names-session-capture +
+> this tape; long-standing §5 narrowing, formal key this ship). Already-promoted keys gained
+> instances (`operator-vs-trader-path-separation` · `cited-code-is-verified-not-assumed` ·
+> `best-effort-isolated-or-null` · `additive-keeps-score-byte-identical` ·
+> `live-vs-static-isolation` · `absent-is-not-none` · `structural-over-prose-enforcement` ·
+> `local-evidence-is-not-hosted-evidence` · `no-secrets-in-image`). Conformance JSON promoted to
+> `state/conformance/session-day-tape-capture.json`. GATE Z AC-32 residual: no pre-store class.
+
+| `present-is-live-paid-only` | day-replay-mock-adapter | I | replayed tape is never a `LiveMassive` session book and never labeled live Massive | yes |
+| `cited-code-is-verified-not-assumed` | day-replay-mock-adapter | I | cite live tape list/load, `MarketDataPort::Fixture` (frozen as_of, not a clock), `StockStreamHub` publish_event; do not treat Fixture or batch-backtest as already this replay | yes |
+| `production-fails-closed` | day-replay-mock-adapter | I | production construct does not silently become replay when the replay arm is unset | yes |
+| `present-is-live-paid-only` | day-replay-mock-adapter | S | **3rd instance.** Armed walk never inserts session-archive as LiveMassive; occupancy `live: false`; coverage cell stays missing | yes |
+| `cited-code-is-verified-not-assumed` | day-replay-mock-adapter | S | live tape list/load, Fixture frozen as_of not a clock, hub `publish_event`, `ReplayHold` before cache; not batch-backtest | yes |
+| `production-fails-closed` | day-replay-mock-adapter | S | `APP_ENV=prod` + replay arm refuses before bind; unset production still Live Massive | yes |
+| `operator-vs-trader-path-separation` | day-replay-mock-adapter | S | existing ticker SSE with honest not-live occupancy; Pages `_research` 404; no `/_ops/replay`; arming not trader cookie | yes |
+| `live-vs-static-isolation` | day-replay-mock-adapter | S | drop/end/fault distinguishable from live-offline; last tape values kept; drop chip not reconnect | yes |
+| `best-effort-isolated-or-null` | day-replay-mock-adapter | S | clock/tape-read fault leaves bundle/scan/unrelated succeeding; standing replay-fault | yes |
+| `additive-keeps-score-byte-identical` | day-replay-mock-adapter | S | score/tier/fingerprint byte-identical replay vs live formula; unset arm identity with pre-feature; Authorizes: nothing | yes |
+| `absent-is-not-none` | day-replay-mock-adapter | S | missing ≠ empty ≠ unreadable ≠ not-storing ≠ ended ≠ drop ≠ fault ≠ live-offline; miss refuses before bind | yes |
+| `structural-over-prose-enforcement` | day-replay-mock-adapter | S | poison: session-tape + live:true live chrome; insert_if_absent LiveMassive; production Live when unset | yes |
+| `local-evidence-is-not-hosted-evidence` | day-replay-mock-adapter | S | GATE Q `NOTE: VISUAL_EVIDENCE_UNAVAILABLE`; local receipts are not hosted/CI | yes |
+| `no-secrets-in-image` | day-replay-mock-adapter | S | canary secret values do not appear in walk output or ticker SSE payloads | yes |
+| `single-ticker-on-demand` | day-replay-mock-adapter | S | armed process one ticker; other route symbols do not start Massive or a second tape | yes |
+
+> **GATE S tally — day-replay-mock-adapter (2026-08-30).** **NO new graduations.** Mechanical
+> `ledger_tally`: 9 unpromoted watch keys remain at 1 feature each. Already-promoted keys gained
+> instances (`present-is-live-paid-only` 3rd · `cited-code-is-verified-not-assumed` ·
+> `production-fails-closed` · `operator-vs-trader-path-separation` · `live-vs-static-isolation` ·
+> `best-effort-isolated-or-null` · `additive-keeps-score-byte-identical` · `absent-is-not-none` ·
+> `structural-over-prose-enforcement` · `local-evidence-is-not-hosted-evidence` ·
+> `no-secrets-in-image` · `single-ticker-on-demand`). Conformance JSON promoted to
+> `state/conformance/day-replay-mock-adapter.json`.
+
+| `present-is-live-paid-only` | massive-flat-file-keep | I | reconstructed S3 files never insert as `LiveMassive` / coverage `present` | yes |
+| `cited-code-is-verified-not-assumed` | massive-flat-file-keep | I | cite live `infrastructure/massive/{rest,ws}.rs` (no files client), `MASSIVE_API_KEY` + REST base, `fetch_recent_trades` `/v3/trades`, `MarketDataSourceKind` {LiveMassive, Fixture, SessionTape}, `tape_root_conflicts`, `TAPE_WATCHLIST`/`ENSURE_SYMBOLS`; vendor files endpoint `files.massive.com` is docs not in-repo; do not treat REST trades or day_tape as already this keep | yes |
+| `production-fails-closed` | massive-flat-file-keep | I | armed download with missing S3 keys or unwritable root refuses; production unset does not fetch files | yes |
+| `operator-vs-trader-path-separation` | massive-flat-file-keep | I | CLI + `_research`; Pages still 404; no ticker player chrome | yes |
+| `present-is-live-paid-only` | massive-flat-file-keep | S | **4th instance.** Extract corpus never `insert_if_absent` / never `LiveMassive` / never coverage `present`; occupancy word is `kept` | yes |
+| `cited-code-is-verified-not-assumed` | massive-flat-file-keep | S | files client is sibling of REST (SigV4 + files pair), not `fetch_recent_trades`; `MarketDataSourceKind` stays three arms | yes |
+| `production-fails-closed` | massive-flat-file-keep | S | armed keep with missing files pair or unwritable root refuses; production unset does not fetch files; keep root is **not** a serve-bind prerequisite | yes |
+| `operator-vs-trader-path-separation` | massive-flat-file-keep | S | clap `flat-files` + `_research/flat-files`; Pages still 404; `NO_UI_CHANGE`; token is metrics token not trader cookie | yes |
+| `additive-keeps-score-byte-identical` | massive-flat-file-keep | S | `authorizes: nothing`; score/tier/fingerprint byte-identical construct on vs off and succeed vs fail | yes |
+| `best-effort-isolated-or-null` | massive-flat-file-keep | S | keep fault never 5xxs bundle / scan / SSE / ensure; serve still binds on not-storing / refuse-to-mix | yes |
+| `absent-is-not-none` | massive-flat-file-keep | S | miss ≠ empty extract ≠ no stored extract ≠ not-elapsed ≠ unreadable ≠ not-storing; never miss beside a sibling keep for the same `(D, class)` | yes |
+| `structural-over-prose-enforcement` | massive-flat-file-keep | S | isolation poison: no `aws-sdk`, no `MASSIVE_API_KEY` on files client, no `insert_if_absent`, miss-beside-keep, dashboard needles | yes |
+| `local-evidence-is-not-hosted-evidence` | massive-flat-file-keep | S | CLI `Evidence: local`; GATE Q `NOTE: VISUAL_EVIDENCE_UNAVAILABLE`; local keep is not hosted coverage | yes |
+| `no-secrets-in-image` | massive-flat-file-keep | S | files pair is env-only; canary REST/files values absent from list/load/CLI | yes |
+| `credential-class-isolation` | massive-flat-file-keep | S | **NEW KEY (1st instance).** Files access/secret is never the live REST apiKey; classify before GET; wrong-class prints REST clause, missing pair does not | yes |
+| `operator-vs-trader-path-separation` | research-lab-surface | I | operator corpus browser is URL-only off-shell unlinked; not `/lab` instrument demos; Pages `_research` 404 stands; metrics token not trader cookie | yes |
+| `present-is-live-paid-only` | research-lab-surface | I | UI must not label extracts / tape / fixtures as live paid `present` | yes |
+| `cited-code-is-verified-not-assumed` | research-lab-surface | I | cite live `app.tsx` `/_ops/metrics`, `LabIndex.tsx` instrument demos, `functions/api/[[path]].ts` 404, existing `research_session_books.rs` et al.; do not treat `/lab` as this surface | yes |
+| `server-side-gate-enforcement` | research-lab-surface | I | research list/load stays token-gated; trader session cookie is not the gate | yes |
+| `operator-vs-trader-path-separation` | research-lab-surface | C | v1 is `/_ops/research` off-shell unlinked not `/lab`; sitting research base rejects `*.pages.dev`; Pages `_research` 404 stands | yes |
+| `present-is-live-paid-only` | research-lab-surface | C | coverage `present` = loadable LiveMassive only; books table never `present`/`kept`; do not mint coverage from list `source` | yes |
+| `server-side-gate-enforcement` | research-lab-surface | C | metrics token is the gate; page fetches `credentials:'omit'`; cookie-only 401 is a non-page GATE Q probe | yes |
+| `absent-is-not-none` | research-lab-surface | C | cors-fault ≠ classified occupancy-500 ≠ coverage-unavailable ≠ list stale keep-last; occupancy-500 hides concurrent load digest | yes |
+| `no-secrets-in-image` | research-lab-surface | C | sitting origin + metrics token in tab memory only; never sessionStorage / localStorage / query | yes |
+| `structural-over-prose-enforcement` | research-lab-surface | C | empty `apps/api` product diff; path-scan allowlist + anti-vacuity; no relative `/api/_research` | yes |
+| `additive-keeps-score-byte-identical` | research-lab-surface | C | successful envelopes `authorizes: nothing`; `vendor_called` true or other authorizes → invariant-fault | yes |
+| `local-evidence-is-not-hosted-evidence` | research-lab-surface | C | coverage card `Evidence: this process`; local matrix is not hosted/CI | yes |
+| `operator-vs-trader-path-separation` | research-lab-surface | S | `/_ops/research` off-shell unlinked; not `/lab`; Pages `_research` 404; metrics token not trader cookie | yes |
+| `present-is-live-paid-only` | research-lab-surface | S | **5th instance.** Coverage `present` = loadable LiveMassive only; books table never `present`/`kept`; no mint from list `source` | yes |
+| `cited-code-is-verified-not-assumed` | research-lab-surface | S | live `app.tsx` first-group `/_ops/metrics`, `LabIndex` demos, Pages Function 404, existing books/coverage GETs | yes |
+| `server-side-gate-enforcement` | research-lab-surface | S | metrics token gate; page `credentials:'omit'`; cookie-only 401 is non-page GATE Q | yes |
+| `absent-is-not-none` | research-lab-surface | S | cors-fault ≠ occupancy-500 ≠ coverage-unavailable ≠ list stale; occupancy-500 hides concurrent load digest | yes |
+| `no-secrets-in-image` | research-lab-surface | S | sitting origin + token tab memory only; never sessionStorage / localStorage / query | yes |
+| `structural-over-prose-enforcement` | research-lab-surface | S | empty `apps/api` product diff; path-scan allowlist + anti-vacuity; no relative `/api/_research` | yes |
+| `additive-keeps-score-byte-identical` | research-lab-surface | S | envelopes `authorizes: nothing`; score/tier/fingerprint unused vs used | yes |
+| `local-evidence-is-not-hosted-evidence` | research-lab-surface | S | coverage `Evidence: this process`; local matrix is not hosted/CI | yes |
+| `theme-token-discipline` | research-lab-surface | S | operator chrome binds theme tokens; no new hex table; dark/light parity | yes |
+| `single-motion-moment` | research-lab-surface | S | no new orchestrated motion family | yes |
+| `digested-labels-not-raw-dump` | research-lab-surface | S | load digest is counts only; no contract/OHLC/tape dump tables | yes |
+| `absent-is-not-none` | exchange-holiday-calendar | I | NYSE full-day holiday is not miss / empty extract / coverage missing | yes |
+| `present-is-live-paid-only` | exchange-holiday-calendar | I | a holiday weekday is never a loadable LiveMassive `present` | yes |
+| `cited-code-is-verified-not-assumed` | exchange-holiday-calendar | I | cite weekend-only clocks in coverage/ensure/tape/keep/`MarketPhase`; no holiday table in-tree today | yes |
+| `structural-over-prose-enforcement` | exchange-holiday-calendar | I | poison a holiday weekday as weekend-ineligible; anti-vacuity | yes |
+| `absent-is-not-none` | exchange-holiday-calendar | C | holiday ineligible ≠ weekend ineligible ≠ miss ≠ empty extract ≠ coverage missing | yes |
+| `present-is-live-paid-only` | exchange-holiday-calendar | C | holiday weekday never coverage `present` / never LiveMassive | yes |
+| `additive-keeps-score-byte-identical` | exchange-holiday-calendar | C | empty `quant-engine` diff; calendar not a scoring input; Authorizes: nothing | yes |
+| `structural-over-prose-enforcement` | exchange-holiday-calendar | C | generated/pin-tested scanner replica of the same set; poison holiday-as-weekend | yes |
+| `absent-is-not-none` | exchange-holiday-calendar | S | holiday ineligible ≠ weekend ≠ miss ≠ empty extract ≠ coverage missing | yes |
+| `present-is-live-paid-only` | exchange-holiday-calendar | S | **6th instance.** Holiday weekday never `present` / never LiveMassive | yes |
+| `cited-code-is-verified-not-assumed` | exchange-holiday-calendar | S | weekend-only clocks cited then consumed; table is new domain module | yes |
+| `structural-over-prose-enforcement` | exchange-holiday-calendar | S | generated/pin-tested scanner replica; poison holiday-as-weekend; Juneteenth 2022+ | yes |
+| `additive-keeps-score-byte-identical` | exchange-holiday-calendar | S | empty `quant-engine` this lane; Authorizes: nothing | yes |
+| `single-ticker-on-demand` | exchange-holiday-calendar | S | ensure/scanner stay off the ticker request path; holiday skip is off-path | yes |
+
+> **GATE S tally — exchange-holiday-calendar (2026-08-31).** **NO new graduations.** Mechanical
+> `ledger_tally`: 10 unpromoted watch keys remain at 1 feature each (still includes
+> `credential-class-isolation`). Already-promoted keys gained instances
+> (`present-is-live-paid-only` 6th · `absent-is-not-none` ·
+> `cited-code-is-verified-not-assumed` · `structural-over-prose-enforcement` ·
+> `additive-keeps-score-byte-identical` · `single-ticker-on-demand`).
+> Conformance JSON promoted to `state/conformance/exchange-holiday-calendar.json`.
+> No `GET /api/holidays`. Empty `quant-engine` this lane.
+
+> **GATE S tally — research-lab-surface (2026-08-31).** **NO new graduations.** Mechanical
+> `ledger_tally`: 10 unpromoted watch keys remain at 1 feature each (still includes
+> `credential-class-isolation`). Already-promoted keys gained instances
+> (`present-is-live-paid-only` 5th · `operator-vs-trader-path-separation` ·
+> `cited-code-is-verified-not-assumed` · `server-side-gate-enforcement` ·
+> `absent-is-not-none` · `no-secrets-in-image` · `structural-over-prose-enforcement` ·
+> `additive-keeps-score-byte-identical` · `local-evidence-is-not-hosted-evidence` ·
+> `theme-token-discipline` · `single-motion-moment` · `digested-labels-not-raw-dump`).
+> Re-pin JSON promoted to `state/conformance/research-lab-surface.json`. Empty `apps/api`
+> product diff. Pages `_research` 404 stands.
+
+> **GATE S tally — massive-flat-file-keep (2026-08-31).** **NO new graduations.** Mechanical
+> `ledger_tally`: 10 unpromoted watch keys remain at 1 feature each (new:
+> `credential-class-isolation`). Already-promoted keys gained instances
+> (`present-is-live-paid-only` 4th · `cited-code-is-verified-not-assumed` ·
+> `production-fails-closed` · `operator-vs-trader-path-separation` ·
+> `additive-keeps-score-byte-identical` · `best-effort-isolated-or-null` ·
+> `absent-is-not-none` · `structural-over-prose-enforcement` ·
+> `local-evidence-is-not-hosted-evidence` · `no-secrets-in-image`). Conformance JSON promoted to
+> `state/conformance/massive-flat-file-keep.json`. Completing missing names after skip-GET is Future.
+
 > **GATE S tally — ai-providers (2026-08-18).** **NO new graduations.** All honored keys are already
 > promoted canon. New watch-list key `user-subscription-not-operator-pool` (1 feature, binding).
 > Conformance JSON promoted to `state/conformance/ai-providers.json`. AC-9/10/14/15 stay
@@ -992,3 +1208,16 @@ be exactly it.
 > binding keys were already promoted canon. `NO_BACKEND_CHANGE`, so no conformance JSON was promoted.
 > Fresh independent QA passed 45/0/0; hosted Ubuntu evidence remains honestly NOT RUN until GitHub
 > runner access returns.
+
+| `integrate-parallel-lines-by-verified-merge` | mainline-integration-2026-09 | PLAN | when two lines both hold QA-passed builds of the same feature, main lands them by ONE verified merge (fresh QA + hosted CI), never by cherry-picking records without their code and never by resetting main; both records are kept verbatim under distinct archive names | yes |
+| `duplicate-implementations-coexist-until-ruled` | mainline-integration-2026-09 | PLAN | an accidental parallel implementation (capacity v1/v2, coverage main/research-read) stays in code until the owner rules which retires; the integration lane may not delete a side to resolve a conflict | no |
+
+> **Owner rulings 2026-09-01.** D1 = **A** (integrate by merge). D2 and D3 queued: keep both capacity
+> harnesses and both coverage builds during integration (default-with-veto, reversible); history-secret
+> ruling for `supply-chain-automation` asked at the next gateway close.
+
+| `calendar-truth-is-shared-xnys-json` | mainline-integration-2026-09 | Z | NYSE full-day closures come from the shared XNYS calendar JSON; a Saturday New Year's Day does not close the preceding Friday (NYSE Rule 7.2 year-end exception; 2010-12-31 and 2021-12-31 precedent); any second encoding (Rust table, dashboard list) exists only under a checked-in parity test against the JSON | yes |
+| `route-growth-repins-api-artifact-oracle` | mainline-integration-2026-09 | Z | a shipped feature that adds API operations re-pins the capacity byte-identity artifact **hashes** in the same change (precedent bcb3d29d); the score/tier/fingerprint decision fixtures never move. **NARROWED 2026-09-02 (GATE Q run 4 finding):** this row originally said "hashes and operation count", which put it in direct conflict with `oracles-derive-totals-never-pin-them` promoted by the same gate. The count half is withdrawn: the artifact sha256 gate already determines the operation array byte-for-byte, so a count literal was unreachable as well as brittle. Hashes are the oracle; counts derive from them. Re-adding a count pin is a GATE-Z reversal. | yes |
+| `structural-scanners-reconcile-by-allowlist` | mainline-integration-2026-09 | Z | when a later approved feature legitimately needs a phrase or path an earlier negative-space scanner forbids, the scanner gains an explicit, file-exact, mutation-tested allowlist; trader poison is never deleted and URL/identifier needles stay global | yes |
+| `oracles-derive-totals-never-pin-them` | mainline-integration-2026-09 | Z | an oracle that guards a countable surface (API operations, response conversions, direct-HTTP cases, migrations, route inventories) derives its total from the manifest or route table at run time and detects change by comparing an id-set hash; a frozen literal count is a bug, not a guardrail — it turns every legitimate additive feature into a failure and was contradicted three times in one merge (52→57 operations, 181/87→201/100, migration 12→13) | yes |
+| `test-oracles-never-pin-their-environment` | mainline-integration-2026-09 | Z | a test may not assert a value derived from the machine it runs on (CI-vs-local evidence labels, host OS, platform stack size) unless it derives that value from the same classifier the code uses; such an assertion passes only where it was written and silently never runs anywhere else — `capacity_load.rs` pinned `"local"` and so could only pass off CI, and AC-14 pinned a Windows-only stack overflow it could never reproduce elsewhere | yes |

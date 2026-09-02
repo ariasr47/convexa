@@ -17,6 +17,13 @@ import {
   validatePostcutoverDelta,
 } from './api-router-integration-baseline.mjs';
 
+/** Prefer a stash-create tree when dirty; fall back to HEAD on a clean worktree. */
+function sourceRevisionMatchingWorktree(cwd = resolve(import.meta.dirname, '..')) {
+  const stashSha = execFileSync('git', ['stash', 'create'], { cwd, encoding: 'utf8' }).trim();
+  if (/^[0-9a-f]{40}$/i.test(stashSha)) return stashSha;
+  return execFileSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf8' }).trim();
+}
+
 test('declares the immutable baseline and four artifact paths', () => {
   assert.equal(BASELINE_PATH, 'apps/api/openapi/router-integration-prechange-baseline.json');
   assert.deepEqual(ARTIFACT_PATHS, [
@@ -132,8 +139,18 @@ test('baseline shape rejects real source, artifact, OpenAPI, and evidence poison
     (x) => {
       x.openapi_version = '3.0.3';
     },
+    // The count is recorded evidence now, not a pinned invariant, so 180-vs-181 is no longer a
+    // SHAPE violation — a tampered count is still caught by validateCandidateAgainstBaseline,
+    // which compares the whole evidence object against the baseline. What the shape still owes
+    // us is that the field is a positive integer at all.
     (x) => {
-      x.evidence.response_conversion.count = 180;
+      x.evidence.response_conversion.count = 0;
+    },
+    (x) => {
+      x.evidence.response_conversion.count = 1.5;
+    },
+    (x) => {
+      x.evidence.direct_http.count = 'many';
     },
     (x) => {
       x.evidence.direct_http.id_set_sha256 = 'bad';
@@ -217,10 +234,7 @@ test('real baseline CLI dispatches through canonical file URL', () => {
 
 test('real candidate CLI executes npm evidence without command shim', () => {
   const script = resolve(import.meta.dirname, 'api-router-integration-baseline.mjs');
-  const sourceRevision = execFileSync('git', ['rev-parse', 'HEAD'], {
-    cwd: resolve(import.meta.dirname, '..'),
-    encoding: 'utf8',
-  }).trim();
+  const sourceRevision = sourceRevisionMatchingWorktree();
   assert.match(sourceRevision, /^[0-9a-f]{40}$/);
   const out = `.tmp/b1c-runner-${process.pid}.json`;
   const npmCli =
@@ -251,10 +265,7 @@ for (const [name, value] of [
   test(`real candidate rejects ${name}`, () => {
     const script = resolve(import.meta.dirname, 'api-router-integration-baseline.mjs');
     const out = `.tmp/b1c-invalid-${process.pid}.json`;
-    const sourceRevision = execFileSync('git', ['rev-parse', 'HEAD'], {
-      cwd: resolve(import.meta.dirname, '..'),
-      encoding: 'utf8',
-    }).trim();
+    const sourceRevision = sourceRevisionMatchingWorktree();
     const env = { ...process.env };
     if (value === undefined) delete env.npm_execpath;
     else env.npm_execpath = value;

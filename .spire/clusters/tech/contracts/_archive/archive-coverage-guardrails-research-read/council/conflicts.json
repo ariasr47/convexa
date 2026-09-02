@@ -1,0 +1,279 @@
+{
+  "conflicts": [
+    {
+      "quote": "**Winner: 10:00 ET.**",
+      "source": "architect",
+      "why": "I cannot name a mechanism by which 10:00 America/New_York beats 48-slot prune on a polled liquid name. The ring is 48 snapshots per symbol; a 60s ticker poll can rotate it in tens of minutes, so 10:00 is not prune-salvage. Ensure at 16:00 is also not still in its first MASSIVE_RETRY_SPACING_SECS=300 window (Massive has been open since 04:00 ET per OPEN_THREADS \u00a72). The 10:00 lock was a prune-margin claim I can no longer defend.",
+      "proposal": "Lock the due clock at 16:00 America/New_York (PM). Keep the injected DateTime<Utc>. Before that instant a today weekday cell is NotYetDue and does not warn. Named residual: same-day notice is not ring salvage; a missing persist can lose the ring copy hours before 16:00.",
+      "kind": "technical",
+      "conflict_id": "f75c8069768ab26f5a80129d09bfb3168e417011b800cd1742153eaea7dc2a39",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Identity date = `today_et_date(now)` unless the CLI names another `YYYY-MM-DD` via `parse_et_date`.",
+      "source": "architect",
+      "why": "A default-today matrix on 2026-08-26 would classify only the 26th and could exit 0 while SPY 24\u201325 were already missing \u2014 the incident this BRIEF exists to catch. Last-readable of a present today points at today and hides those holes. Weekend default today_et_date \u2192 empty expected set \u2192 exit 0 has the same blindness for Friday. I withdraw one-D-as-the-matrix.",
+      "proposal": "Derive accepts an explicit ET date range. Default until = last due date (today after 16:00 ET, else yesterday). Worker warning pass classifies only identities due at this injected now (three loads per tick), not the full range. HTTP/CLI materialize the range on demand. Default since is PM\u2019s call \u2014 not inferred from min(present).",
+      "kind": "technical",
+      "conflict_id": "b946d75e623d81467fff9770826c486f142780ff0be8d0c2dec0ea90fdd923d6",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "5. **Storing window** starts the first ET weekday this environment was actually storing \u2014 the 21 Aug \u201cunset root\u201d days must not count as missing.",
+      "source": "pm",
+      "why": "SessionChainArchive::list/load return metas and bodies, not an archive-enabled-at watermark. min(LiveMassive et_date) is the first present book and would omit leading misses (24\u201325 if 26 is the first present). Walking every weekday while the store is enabled would classify 21 Aug unset-root as missing. Those are the only oracles in the live store; neither implements this sentence. Baking 2026-08-26 into code would violate cited-code-is-verified-not-assumed.",
+      "proposal": "Multi-date window start is an explicit since (CLI flag and/or runtime env). Dates before since are not expected. A currently disabled store is StoreDisabled (matrix withheld, CLI non-zero, no per-cell warnings), not a missing grid. No inferred first-storing weekday from list().",
+      "kind": "technical",
+      "conflict_id": "1fcb87c522fba144510e1ce07c614bbac4f242dc70509f4b7aee14b8baa1dd95",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Each due identity is exactly one of **present** \u00b7 **missing** \u00b7 **unreadable**.",
+      "source": "pm",
+      "why": "insert_if_absent is first-wins on (symbol, et_date). A Fixture (or any non-LiveMassive) row occupies the slot with a body that may deserialize. That is not Missing (index row exists) and not Unreadable (load may be Ok(Some) plus deserialize_capture Ok). Folding it to present is the reconstruction lie. Forcing it into missing or unreadable collapses absent-is-not-none. Seed exclusion only removes (SPY, 2020-01-02); it does not cover a Fixture planted on a live weekday.",
+      "proposal": "Due derive stays four mutually exclusive arms: Present | Missing | Unreadable | RejectedSource. CLI exit 0 only when every due identity is Present. Operator copy must not say present; do not reuse missing. UX already has a blocked/reconstructed family \u2014 use that rather than widening unreadable to \u201cbody loaded but source rejected.\u201d One checkpoint warning for that identity.",
+      "kind": "technical",
+      "conflict_id": "4756d937ac1c4ddc176726e56cc9f27ac8e67bf30acdc18c825f72ca31f42b76",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`cargo run -p api-rust -- archive-coverage` (or Architect\u2019s renamed clap that still prints this title) prints the matrix and exits **non-zero iff** any **due** expected identity is `missing` or `unreadable`.",
+      "source": "ux",
+      "why": "The iff is bidirectional. A due identity occupied by Fixture/non-LiveMassive is neither missing nor unreadable, so this sentence makes archive-coverage exit 0 on the first-wins occupancy poison. Structural enforcement is Insert Fixture \u2192 status \u2260 Present \u2192 CLI \u2260 0. PM\u2019s \u201c0 only when every due expected identity is present\u201d is the exit rule that matches that poison.",
+      "proposal": "Exit 0 only when every due identity is present. Non-zero on missing, unreadable, RejectedSource/blocked occupancy, StoreDisabled, or derive failure \u2014 distinguishable, not aliases. Vacuous/not-due window (zero due identities) still exits 0 as NOT DUE, not as n/n present.",
+      "kind": "technical",
+      "conflict_id": "4d21ed8a57e2ecd5753c8660896dcd4abb9a1c66d25de47802b225b65dfed8b6",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "CLI **does not wait** for checkpoint: the operator asked *now*.",
+      "source": "architect",
+      "why": "If this means today\u2019s load miss is a CLI hole before the due clock, the audit is a different matrix than HTTP NotYetDue and a daytime run always fails today\u2019s trio. BRIEF requires the same matrix. PM AC-8 already forbids today\u2019s pre-checkpoint identities from failing the audit by themselves. Non-blocking I still defend: the command must not sleep until 16:00.",
+      "proposal": "CLI runs immediately (no sleep). It uses the same derive as HTTP and the warning emitter: pre-checkpoint today is NotYetDue and does not fail the process by itself. A named date still classifies due vs not-yet-due against the injected now.",
+      "kind": "technical",
+      "conflict_id": "492bfb7c736be429738923f232e7158a9eec5823e3b20557671e5d0e8c51f774",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "**Last readable:** latest `present` identity for that symbol inside the archive that is **not** the seed fixture.",
+      "source": "ux",
+      "why": "Newest present anywhere in the archive can be after row D (D2 missing, D3 present \u2192 global latest is D3). PM AC-5 requires D2\u2019s last-readable on or before D2. Printing a later date on an earlier hole invents a prior success the row did not have. Seed remains excluded; another symbol\u2019s date remains forbidden; Unreadable candidates are skipped, not treated as last-readable.",
+      "proposal": "Last-readable for symbol S at date D is the newest Present LiveMassive identity with et_date <= D, seed skipped, Unreadable skipped, walk capped at 60 index rows. A trailing column prints that value at the window\u2019s last due date. Typed absence if none qualify \u2014 not a fabricated date.",
+      "kind": "technical",
+      "conflict_id": "195f0ecccf5b486648555add335439bb41df5fce3e7c9f302e262a5802dabaf4",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**Checkpoint = 16:00 America/New_York.**",
+      "source": "pm",
+      "why": "I cannot defend 16:00 against the BRIEF job. That hour is \u201csession over,\u201d not notice-before-prune: Massive is already open from 04:00 ET, and six more hours of 48-slot ring rotation is the silent-loss window this slice exists to beat. Not-yet-due already stops 00:01 false missing; that protection moves with the checkpoint and does not require waiting until RTH close.",
+      "proposal": "Lock 10:00 America/New_York as the due instant. Keep not-yet-due, no hole warning, and no audit fail for today\u2019s trio before that instant. Do not slide the clock to next midnight.",
+      "kind": "product",
+      "conflict_id": "57612fc8a3a4270c3d14fdef558baf55a45fbbd12d65a23e6134f811e573a6c2",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Every eligible date from the first ET weekday this environment\u2019s session archive was **storing** through the last **due** date (yesterday, plus today once 16:00 ET has passed).",
+      "source": "pm",
+      "why": "An unbounded storing-window matrix is not the BRIEF job (same-ET-day hole, not a growing corpus report) and cannot ride architect\u2019s worker path of three full-body loads per 60s tick. 21 Aug unset-root days are only false-missing if they sit in the default expected set; a today-default derive never asks for them. I will not silently keep AC-1 as a multi-month grid.",
+      "proposal": "Default expected set is one ET date D (today, or the date the CLI names), minus the seed, iff D is an ET weekday. Last-readable may walk history (capped). Prior-day holes are audited by naming D, not by loading every due body on the worker. Pre-storing dates stay out of the default today matrix automatically.",
+      "kind": "product",
+      "conflict_id": "7fbd3228f802c41e0cbe81bf5f1d285c16dfa7c923fec68b2bbe8ae2e9d1514f",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Dispatch like `Capacity` (`main.rs` returns `ExitCode` before `run()`): **0** iff no hole among expected identities for the named date (default `today_et_date`); **non-zero** iff any expected identity is `Missing` | `Unreadable` | `RejectedSource` | `StoreDisabled`.",
+      "source": "architect",
+      "why": "The weekday expected set is not checkpoint-gated, so this exit rule makes a 09:00 ET audit of today non-zero whenever books have not landed yet. That is not-yet-due collapsed into a failed gate \u2014 the failure that trains operators to ignore the audit. HTTP already returns NotYetDue; a different CLI clock is two products. BRIEF requires the same matrix. UX already requires a not-due window to exit 0.",
+      "proposal": "One derive for HTTP, CLI print, CLI exit, and warning suppression. CLI does not block until 10:00. Exit 0 when D is ineligible, not yet due, or every due expected identity is present. Exit non-zero on due Missing / Unreadable / RejectedSource, on store-not-storing, or on coverage-compute failure.",
+      "kind": "product",
+      "conflict_id": "d3a364e63d4c72ffde7a0c8fa1e50e2489a8e848d3296108f9dff0af99600cc1",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Walk `list(symbol, None)` newest-first (`MemoryInner::list` already sorts by `et_date` ascending).",
+      "source": "architect",
+      "why": "Newest-in-archive with no upper bound of D returns a later book when the CLI names a historical date. Last-readable on a D2 hole must be a present live paid identity on or before D2, or honest none \u2014 not a later date that reads as recovery.",
+      "proposal": "Same walk, skip seed and non-live-paid, skip et_date > D, then the first readable LiveMassive; the 60-row cap still applies. Honest none if none qualify.",
+      "kind": "technical",
+      "conflict_id": "a35113676817db277fb5cc2a41468b505c1ca1f4f8f9f40805f800981d644596",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Each due identity is exactly one of **present** \u00b7 **missing** \u00b7 **unreadable**.",
+      "source": "pm",
+      "why": "A fixture or reconstructed occupant of a live due identity is not missing (a row exists) and not unreadable (the body may deserialize). Forcing that occupant into one of those two classes is the collapse absent-is-not-none forbids. Architect\u2019s RejectedSource is the honest split; AC-13 already requires not present.",
+      "proposal": "Due cells are present, missing, unreadable, or a distinct not-present-wrong-source outcome. It fails the audit, emits one warning after checkpoint, and is distinguishable from the other three. UX names the operator literal. Seed identity exclusion is unchanged.",
+      "kind": "technical",
+      "conflict_id": "a071ffd7ce048a154d0c0da5f4a91afdba8b2c9e37a8531e8a6403ce65c53da4",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "6. **Hole list** \u2014 only `missing` and `unreadable` identities; empty hole list is not the same as \u201cineligible window.\u201d",
+      "source": "ux",
+      "why": "RejectedSource fails the audit and is neither missing nor unreadable. Omitting it from the hole list yields empty holes plus non-zero exit \u2014 the copy bug UX already forbids (print, hole list, and exit must agree). Reusing missing or unreadable wording is the same class collapse.",
+      "proposal": "Hole list names every identity that fails the due audit except matrix-level errors (not-storing, compute-fail). Add a closed operator literal for wrong-source occupancy; do not print present; do not reuse missing or unreadable. One S2 warning after checkpoint for that identity.",
+      "kind": "technical",
+      "conflict_id": "66b34465b1549010bcf3de333bf126f5583e27f679de9fad896360d662e1f574",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Given a storing archive and at least one due ET weekday, the operator matrix includes each of SPY, QQQ, and IWM for every due expected date in the storing window, and each of those cells is classified exactly one of present, missing, or unreadable.",
+      "source": "pm",
+      "why": "BRIEF observed-by is the same ET day's trio, not every weekday since this environment began storing. A storing-window grid makes Saturday still due on last Friday, so UX `[NOT DUE]` for weekend-only today cannot stand; it invites 7/9-style count headlines this lane banned as health; and first-boot would warn every historical hole \u2014 a new flood. Architect already locked one evaluated `D`. Pre-storing dates must still never print as `missing`; that honesty does not require emitting the whole history as the default matrix. I retract any reading of my three-date layout example as a locked window \u2014 it was illustration only.",
+      "proposal": "Default S1/S3 matrix and S2 latch evaluate one ET date `D` (today, or CLI-named). Weekend `D` \u2192 `[NOT DUE]`, no expected date columns, exit 0. Standing block prints that `D` plus the locked checkpoint. Forensic history is a re-run with a named date, not v1 columns. A named weekday from before this archive was storing is not `missing` (not expected / blocked), not a hole warning.",
+      "kind": "product",
+      "conflict_id": "6f9786afd16fabbd2017a2a7144e4684750bdc1b37fcc7c62cc3abd9216da4a3",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Each due identity is exactly one of **present** \u00b7 **missing** \u00b7 **unreadable**.",
+      "source": "pm",
+      "why": "Architect's first-wins fixture occupancy is a due outcome that is not `present` (not LiveMassive), not `missing` (row exists), and not `unreadable` (body may deserialize). Folding it into those three tokens is a silent rename \u2014 this lane's defining failure. UX R1's closed cell set and AC-U13 (non-zero iff missing or unreadable) were also too narrow; I retract the iff. Exit 0 only when every due expected identity is `present`. Warnings that fire only for missing/unreadable leave fixture occupancy silent.",
+      "proposal": "Keep derive `RejectedSource`. Operator-visible due cell for fixture/reconstructed occupancy is not `present`, not `missing`, not `unreadable`, and never `live_massive`. CLI non-zero. After checkpoint, exactly one structured warning whose line does not reuse the missing or unreadable templates. Prefer blocked/error for that identity over a pretty fourth synonym that still looks like a coverage class.",
+      "kind": "technical",
+      "conflict_id": "931c6dfca587cda3c69cdd4a8d3822920831fc0f644479e8fea2c2af4fcd136e",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "CLI **does not wait** for checkpoint: the operator asked *now*.",
+      "source": "architect",
+      "why": "If *now* means today's empty archive is `missing` and the process exits non-zero before the checkpoint, CLI silently renames `not yet due` as a hole. The next sentence already returns `NotYetDue` on HTTP. Split vehicles that disagree on the cell literal violate same-matrix copy. Morning FAIL trains operators to ignore the gate. Architect's assumption that PM will keep CLI evaluation checkpoint-free cannot stand as pre-checkpoint `missing`.",
+      "proposal": "CLI does not sleep until the checkpoint. It still prints `not yet due` for today's eligible cells before that instant, omits them from the hole list, and does not fail the process for those cells. Same derive as HTTP.",
+      "kind": "technical",
+      "conflict_id": "5745ca174324309f40c56b0694884834ed4c34ee546f22147f3e21d1fa4333e6",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**Matrix:** always three symbol rows for the evaluated `D` (weekend \u2192 three `IneligibleWeekend` rows, not an empty \u201call missing\u201d list).",
+      "source": "architect",
+      "why": "Three `ineligible` cells are a coverage matrix that classified nothing expected. Closed operator cell literals are `present` | `missing` | `unreadable` | `not yet due`. `IneligibleWeekend` as a module type is fine; printing it as a cell will be read as a coverage class and screenshotted as a run. The operator signal for weekend `D` is `[NOT DUE]\u2026 Not a coverage pass.`, not three classified rows.",
+      "proposal": "Weekend `D`: withhold expected date columns; print the NOT DUE verdict; exit 0. Do not emit `ineligible` as a matrix cell. Empty-all-missing is still forbidden \u2014 standing + NOT DUE is the distinct state.",
+      "kind": "technical",
+      "conflict_id": "f2c07fc3a4817a363d7ff024bb3e07172de9e1785ad0264973de74b180ec0c3f",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "After checkpoint on a weekday: `Missing` / `Unreadable` / `RejectedSource` / `StoreDisabled` are holes.",
+      "source": "architect",
+      "why": "`session archive not storing` is a matrix-level error, not a hole in an expected book. Treating StoreDisabled as the same hole family as missing/unreadable \u2014 even with one process-level key \u2014 puts a coverage-warning identity in the grep stream for a lost book when no identity was expected. UX withholds the matrix, prints `[ERROR]\u2026 session archive not storing. No pass recorded.`, exit non-zero, no S2 coverage warning.",
+      "proposal": "StoreDisabled \u2192 error state (matrix withheld, CLI `[ERROR]` non-zero, no `session archive coverage warning` line). A distinct store-disabled log is allowed; it must not use the missing/unreadable warning templates or three per-symbol keys. Exit non-zero stands.",
+      "kind": "technical",
+      "conflict_id": "e3daa5de5be881b01a0994ae1e02411b99fa4abdf60ac8ddb134e029239c7b34",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**Cap the walk at 60 index rows** so a fully corrupt archive cannot turn a coverage pass into unbounded body reads.",
+      "source": "architect",
+      "why": "`last readable: none (seed fixture excluded)` is allowed only when this run can vouch there is no non-seed present identity. Stopping at 60 unreadables and printing `none` fabricates that absence. Bounded I/O can stay; the copy cannot.",
+      "proposal": "Cap may remain as an I/O bound. If the walk hits the cap without a qualifying present identity, do not print `none (seed fixture excluded)` and do not print a date. Omit last-readable or mark it undetermined/blocked. Never silent seed.",
+      "kind": "technical",
+      "conflict_id": "be05e5364572cfccd898ecc66c7226cb38880d1f7dc72294c8f4100d73911c72",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**`review` owns** command discoverability/naming (AC-20), absence of trader UI (AC-29), and non-absorption of tape/object-store/monitor/volume (AC-35).",
+      "source": "pm",
+      "why": "Trader-chrome absence can silently regress (toast, Ask-AI line, `/_ops/metrics` card, Pages proxy) without a named new screen. Review of no screen added will not catch it. UX AC-U1\u2013U4 mark those `test` (structural empty-diff, Pages 404, OperatorMetrics closed stage set).",
+      "proposal": "AC-20 naming and AC-35 non-absorption stay `review`. Trader-silence and `/_ops/metrics` non-render stay `test` (UX AC-U1\u2013U4). AC-29 may remain `review` only as we did not choose a dashboard route; it does not replace those test marks.",
+      "kind": "technical",
+      "conflict_id": "68809cec4cf21311bcedbd98192a02383852ffcfc57cf4ba1fcf0dffcf4afb80",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: When since is omitted, what is the default window start \u2014 last due date only, a required env/flag that blocks the run if missing, or another explicit calendar date? Do not ask derive to infer it from min(present)."
+    },
+    {
+      "from": "architect",
+      "ask": "PM: What operator-visible token is a first-wins Fixture/non-LiveMassive occupant on a due weekday \u2014 a fourth class, UX\u2019s blocked/reconstructed family, or a fold you will own?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: Is a 60-row last-readable walk cap acceptable for v1, knowing a match older than 60 index rows becomes typed absence?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: Confirm last-readable is on or before that row\u2019s D (trailing column = last due date\u2019s value), not global latest in the archive."
+    },
+    {
+      "from": "architect",
+      "ask": "UX: Will AC-U13\u2019s iff missing|unreadable become exit 0 only when every due identity is present, so blocked/RejectedSource occupancy fails the command?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: what closed cell literal and S2 warning line should the operator see for a fixture or reconstructed occupant of a due identity (architect RejectedSource) so it is not present, not missing, and not unreadable?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: when the CLI names a weekday D from before this environment was storing, can coverage distinguish that date from missing, or is pre-storing-vs-missing an accepted residual on the named-date path only?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: on a weekend named D, is the operator surface three ineligible rows (architect) or omitted date columns plus [NOT DUE] with no cells? Product only requires weekend \u2260 missing, \u2260 warn, \u2260 non-zero."
+    },
+    {
+      "from": "ux",
+      "ask": "Human: lock 10:00 vs 16:00 America/New_York so the standing block can print `{locked ET checkpoint}` without inventing it. UX copy works with either; the latch-once warning can assert `missing` after the book later lands \u2014 worse at 10:00, still true at 16:00."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: operator-facing token and exact warning line for `RejectedSource` (must not reuse missing, unreadable, present, or `live_massive`)."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: how a CLI-named weekday from before this archive was storing is distinguished from `missing` without shipping PM's full storing-window grid."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: if the storing-window grid is withdrawn, confirm last-readable is per-symbol when-any for evaluated `D` (BRIEF), not per historical row on-or-before that row's date."
+    }
+  ],
+  "agree_count": {
+    "architect": 12,
+    "pm": 13,
+    "ux": 10
+  }
+}

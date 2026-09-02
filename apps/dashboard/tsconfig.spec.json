@@ -36,7 +36,8 @@
     "src/**/*.spec.jsx",
     "src/**/*.d.ts",
     "src/test-setup.ts",
-    "src/testing/noNamingVocabulary.ts"
+    "src/testing/noNamingVocabulary.ts",
+    "src/testing/operatorSessionArchiveAllowlist.ts"
   ],
   "references": [
     {

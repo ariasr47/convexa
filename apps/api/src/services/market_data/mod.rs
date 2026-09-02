@@ -40,6 +40,8 @@ pub struct VendorBundle {
 pub enum MarketDataSourceKind {
     LiveMassive,
     Fixture,
+    /// Path-B rehydrate / replay provenance — never a live paid book (`present`).
+    SessionTape,
 }
 
 /// Serde-friendly daily bar for fixture JSON (maps to quant-engine [`DailyBar`]).
@@ -216,5 +218,48 @@ mod tests {
         let err = port.resolve("NOPE", None).await.unwrap_err();
         let msg = err.to_string();
         assert!(msg.contains("not found") || msg.contains("NOPE"), "{msg}");
+    }
+
+    #[test]
+    fn market_data_port_remains_two_arms() {
+        let src = include_str!("mod.rs");
+        let prod = src.split("#[cfg(test)]").next().unwrap_or(src);
+        assert!(prod.contains("Live(LiveMarketData)"));
+        assert!(prod.contains("Fixture(Arc<FixtureCatalog>)"));
+        assert!(
+            !prod.contains("Replay("),
+            "MarketDataPort must not grow a Replay arm"
+        );
+        let enum_block = prod
+            .split("pub enum MarketDataPort")
+            .nth(1)
+            .expect("port enum");
+        let body = enum_block.split('}').next().unwrap();
+        assert_eq!(
+            body.matches('(').count(),
+            2,
+            "MarketDataPort must have exactly two tuple arms"
+        );
+    }
+
+    #[test]
+    fn market_data_source_kind_has_session_tape_and_serde_token() {
+        assert_eq!(
+            serde_json::to_value(MarketDataSourceKind::SessionTape).unwrap(),
+            serde_json::json!("session_tape")
+        );
+        assert_eq!(
+            serde_json::from_value::<MarketDataSourceKind>(serde_json::json!("session_tape"))
+                .unwrap(),
+            MarketDataSourceKind::SessionTape
+        );
+        assert_ne!(
+            MarketDataSourceKind::SessionTape,
+            MarketDataSourceKind::LiveMassive
+        );
+        assert_ne!(
+            MarketDataSourceKind::SessionTape,
+            MarketDataSourceKind::Fixture
+        );
     }
 }

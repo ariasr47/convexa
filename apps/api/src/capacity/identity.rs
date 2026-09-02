@@ -18,23 +18,23 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
-        "2803c58a00f563e6e136056582f1a5682fc05bfe196f501d9e813c48a8b35c8f",
+        "b92b276e1deb2e7b7113f350a65fd22d504dc0d7a88e247d50c371871302dec1",
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "d74c74e75d229efbafb0f6dee0ead751e9c50394e9c1fd77da0743688afc18e7",
+        "a97e87e64d26f7aca31857ddb28a2fb14a35ac5501a142f040af5fbd36b9e05c",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "c10d9b07abb83abbbe6b2bcdab64a14ffc171fd88511aad7976b5f4f7e16dd77",
+        "1dfade691a8e2ce9b80ce86efda01cad38fa088a4f1d253fcd7e9ef4ac6272b8",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "5e310572bf0d5ab65e7495889718fc65e520b1609266d61a9de4171724c4fe95",
+        "4c9d3f36c04625eaa8a321076e2823f4d138af9010fdf842b6d8b18e2d907a9d",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "1993a512687dc40e0171609ec3ca0403ba886dc8fa3dcfb7fa35ad34f7358f5f",
+        "b9331ad13084c7a144a4de53cf58d0a65d730b8ba2c07c96a35b720d3006380a",
     ),
 ];
 
@@ -339,9 +339,13 @@ pub async fn run_control() -> Result<Value> {
     let operations = baseline["operations"]
         .as_array()
         .ok_or_else(|| anyhow::anyhow!("baseline operations missing"))?;
-    if operations.len() != 52 {
-        bail!("route operation count is not 52")
-    }
+    // No count pin here. Every API_ARTIFACTS entry above is gated on its byte-exact sha256 and
+    // bails on mismatch, and this baseline IS API_ARTIFACTS[0] — so by the time control reaches
+    // this line the operations array is already byte-identical to the pinned artifact and its
+    // length is determined. A literal here could never fire; it only had to be hand-edited on
+    // every additive feature, which is the failure this merge hit three times.
+    // Canon: `oracles-derive-totals-never-pin-them` (DECISION_LEDGER, 2026-09-02).
+    let operation_count = operations.len();
     let base_entries = expected_inventory();
     let current_entries = generated_inventory(&root.join(GENERATED_ROOT))?;
     let base_inv = inventory_bytes(&base_entries);
@@ -363,7 +367,7 @@ pub async fn run_control() -> Result<Value> {
           "failure":"decision-bearing fixture identity mismatch","reference_revision":REFERENCE_REVISION,
           "current_revision":current_revision(&root)?,"governed_after_tree_sha256":governed_tree_digest(&root)?,
           "api_contract_check":contract,
-          "route_inventory":{"baseline_path":API_ARTIFACTS[0].0,"operation_count":52,"base_sha256":API_ARTIFACTS[0].1,"current_sha256":file_sha(&root.join(API_ARTIFACTS[0].0))?,"match":true,"check_status":"pass"},
+          "route_inventory":{"baseline_path":API_ARTIFACTS[0].0,"operation_count":operation_count,"base_sha256":API_ARTIFACTS[0].1,"current_sha256":file_sha(&root.join(API_ARTIFACTS[0].0))?,"match":true,"check_status":"pass"},
           "api_contract_artifacts":artifacts,
           "generated_client_inventory":{"root":GENERATED_ROOT,"base_entries":base_entries,"current_entries":current_entries,"base_sha256":sha256(&base_inv),"current_sha256":sha256(&current_inv),"additions":[],"removals":[],"match":true},
           "decision_artifacts":{
@@ -377,7 +381,7 @@ pub async fn run_control() -> Result<Value> {
     Ok(json!({
       "schema_version":1,"case":"byte-identity","claim":super::report::CLAIM,"verdict":"pass",
       "reference_revision":REFERENCE_REVISION,"current_revision":current_revision(&root)?,
-      "api_contract_check":contract,"route_inventory":{"baseline_path":API_ARTIFACTS[0].0,"operation_count":52,"base_sha256":API_ARTIFACTS[0].1,"current_sha256":file_sha(&root.join(API_ARTIFACTS[0].0))?,"match":true,"check_status":"pass"},
+      "api_contract_check":contract,"route_inventory":{"baseline_path":API_ARTIFACTS[0].0,"operation_count":operation_count,"base_sha256":API_ARTIFACTS[0].1,"current_sha256":file_sha(&root.join(API_ARTIFACTS[0].0))?,"match":true,"check_status":"pass"},
       "api_contract_artifacts":artifacts,"generated_client_inventory":{"root":GENERATED_ROOT,"base_entries":base_entries,"current_entries":current_entries,"base_sha256":sha256(&base_inv),"current_sha256":sha256(&current_inv),"additions":[],"removals":[],"match":true},
       "decision_artifacts":{"ticker":{"before_sha256":sha256(&canonical(&before_ticker)?),"after_sha256":sha256(&canonical(&ticker)?),"match":true},"sse":{"before_sha256":sha256(&canonical(&before_sse)?),"after_sha256":sha256(&canonical(&sse)?),"match":true},"decision":{"before_sha256":sha256(&canonical(&before_decision)?),"after_sha256":sha256(&canonical(&decision)?),"match":true}},
       "runtime_exclusions":manifest["runtime_exclusions"]

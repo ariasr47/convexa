@@ -1,0 +1,246 @@
+{
+  "conflicts": [
+    {
+      "quote": "Architect does not add a wire field; PM/UX must not treat recency-true as Massive-live.",
+      "source": "architect",
+      "why": "That sentence is no longer defensible. The ticker already derives paid-live meaning (chip, pulses, fills) from the recency-true classifier. Process occupancy the client cannot read is copy-only, so replay ticks that satisfy wall recency occupy live Massive. present-is-live-paid-only and honesty-is-structural fail without consume-visible occupancy on the existing ticker path.",
+      "proposal": "Keep MarketDataPort as Live|Fixture and StreamEvent without a provenance member. The replay construct publishes closed consume occupancy on the existing hub/SSE path: stream basis is not paid-live; the paid-live classifier is false while armed; identity is the armed (symbol, et_date); tape cursor time is the stored stamp (not wall receive); phase is playing, gap, ended, or fault. Recency stays wall-clock for drop detection only. Same socket; not a third port kind.",
+      "kind": "technical",
+      "conflict_id": "bfe7b9741556202e9f8cf7b0241cd88f685c62e298b3c95c00229e26e1ea2caf",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "End-of-tape / player drop degrades like an SSE gap (recency ages out); last Path-B snapshot remains.",
+      "source": "architect",
+      "why": "Collapsing end and drop into recency-age-out makes end-of-tape render as vendor-down. The existing consume watchdog treats hub silence as a live-stream drop. A \u0394t/k sleeper is silent between occupants, so waits longer than the watchdog look like drops even while the clock is still running.",
+      "proposal": "While the sleeper is running, publish non-tick playing occupancy/keep-alive on a period below the consume watchdog \u2014 no fabricated Trade/Quote. On last occupant, publish ended occupancy, then stop; do not loop. Last ReplayHold stays. RecvError/lag is drop, distinct from ended and from fault. Production serve still uses wall-clock recency as today.",
+      "kind": "technical",
+      "conflict_id": "7fbd4808e4c9e04617f051cb06bd652c5dc5c5793f32924a365443a5c3fc0440",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Skip emit; occupancy already recorded the gap.",
+      "source": "architect",
+      "why": "Store-side AxisA/Path-A occupancy is not visible on the ticker consume path. Skip-without-signal makes a recorded PathAGap indistinguishable from watchdog silence, violating absent-is-not-none for gap vs drop vs ended.",
+      "proposal": "Still no interpolated ticks and no sleep on a ts-less PathAGap. When the cursor passes that slot (vec order between stamped neighbors \u2014 assumption: gap records sit in stored Path-A order), publish gap occupancy (non-tick), then sleep to the next stamped Trade/Quote. Unreadable DayContainer still refuses the whole start.",
+      "kind": "technical",
+      "conflict_id": "4a47e321e827429c2d6de19ffbe8b33b3c315e16fa38edd5dd7f14c46665e427",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Start on Path-A zero shows `no path-a ticks for {SYMBOL} on {ET_DATE}` and refuses the walk.",
+      "source": "ux",
+      "why": "EmptyWhileStoring is already distinct from NoIdentity. Refusing start on Path-A count 0 blocks PM\u2019s independent Path-B walk (Path-B Occupied, Path-A empty) and turns a kept quiet day into cannot-walk at the player boundary.",
+      "proposal": "NoIdentity / Unreadable / NotStoring / ineligible / not-elapsed / not-in-watchlist refuse with a silent hub. EmptyWhileStoring starts: zero Path-A Trade/Quote emits, Path-B marks still fire if Occupied, empty \u2260 missing. Copy may use the capture empty literal; the clock still runs.",
+      "kind": "product",
+      "conflict_id": "7a23ee55163d4c0d1a96e06d08be80aee5e5030abb3129017b204561d7eb468c",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`/_ops/replay` is a **second unlinked operator route**, same chrome family as metrics (own AppBar, off `AppShell`, not in TopNav).",
+      "source": "ux",
+      "why": "Exclusive construct loads one DayContainer at process start and is the sole publisher; vendor worker and Path-A capture stay unspawned. A Start control that names (symbol, et_date) after bind is runtime arming \u2014 a catalog or live\u2194tape hot-switch, both rejected. PM already locked process-start and listed a `/_ops` walker as Out.",
+      "proposal": "Identity and k are construct arguments. Production-profile plus arm refuses startup. No HTTP Start/Stop that arms, disarms, or re-identifies the player this slice. Take UX\u2019s CLI-only out: operator standing on process/CLI; S1 ticker honesty remains.",
+      "kind": "technical",
+      "conflict_id": "f8d325a00d3e1c39b662db63510b87d7c289af5d1f005b83243c9d7a767275cd",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Architect does not add a wire field; PM/UX must not treat recency-true as Massive-live.",
+      "source": "architect",
+      "why": "The existing ticker already treats recency-true as live-session standing. Process occupancy is not visible there. Instructing PM/UX not to treat recency as Massive-live does not change what the desk shows. S3 / AC-13 require captured-research-day standing \u2014 not live, not live Massive \u2014 on the existing ticker. I will not drop that class or accept copy-only honesty.",
+      "proposal": "Keep one ticker live path (no second live path). While armed, that path must not occupy live-session standing. Recency of ticks is not provenance. Architecture chooses the consume-path fact that makes playing / end-of-captured-day / replay-fault / live-offline (unset arm only) observable without reading source.",
+      "kind": "technical",
+      "conflict_id": "c0a10b7ef5aa2279f81b7d9fa0c20a0efb429e62988778be1c8b1dcf4176c960",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "End-of-tape / player drop degrades like an SSE gap (recency ages out); last Path-B snapshot remains.",
+      "source": "architect",
+      "why": "End of captured day is not Massive dropped and is not a stream gap (AC-19, AC-42). Recency aging into the existing gap/offline path is the live-offline standing. Lumping player drop with end-of-tape also collapses replay-fault into end. Last structure remaining is the part that stands.",
+      "proposal": "After the last stored occupant: no further Path-A, no loop, last structure may remain, standing is end of captured day. Clock/tape-read fault is replay-fault. Unset-arm vendor down is live-offline. Recency aging is not the end classifier.",
+      "kind": "technical",
+      "conflict_id": "098b970f1c395e125147a5b002473f6c46fab77c0c4b1bc8798ff0be88481ef9",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Start on Path-A zero shows `no path-a ticks for {SYMBOL} on {ET_DATE}` and refuses the walk.",
+      "source": "ux",
+      "why": "Empty Path-A is a quiet stored day, not missing, not unreadable (AC-17). Path-A and Path-B walk independently (AC-22): present Path-B must still unfold when Path-A is quiet. Refusing the whole walk because Path-A is zero makes Path-A-empty stand in for \u2018no Tuesday\u2019 and blocks a Path-B-only day.",
+      "proposal": "Keep `no path-a ticks\u2026` as the empty-tape class, distinct from missing and unreadable. If Path-B is occupied, the walk may start: zero Path-A prints, structure as the clock reaches stored marks. If both sides are empty, it is an empty-walk that ends without fabricated prints \u2014 still not a missing-tape refuse.",
+      "kind": "product",
+      "conflict_id": "51e6698d1f2c548698659b0a6b80cfc400ffa749ea4fa8e76cdfd296d7562ef4",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`/_ops/replay` is a **second unlinked operator route**, same chrome family as metrics (own AppBar, off `AppShell`, not in TopNav).",
+      "source": "ux",
+      "why": "Arming is process-start on a research/non-production serve, not a runtime flip, not an `/_ops` walker (Out, S7). Start/Stop on a running serve is that flip; I am not falsifying exclusive-construct to get an operator page. Ticker honesty while armed does not require a second surface.",
+      "proposal": "Process-start / CLI arm only this slice. No operator start/stop page. Miss, unreadable, ineligible, end, and fault copy still appear on the existing ticker while armed and on startup/CLI refuse. Operator lab UI and runtime re-arm stay Future.",
+      "kind": "product",
+      "conflict_id": "1a021b3a4cc71cff73776a6a289af64d514f0fc6834d1272adb4f378cb58b8d2",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Aggressive buys minus sells over the tape\u2019s last few minutes, from stored Path-A trades.",
+      "source": "ux",
+      "why": "4\u00d7 and 10\u00d7 compress waits; they do not restamp the day. A \u2018tape\u2019s last few minutes\u2019 claim at those speeds is not the stored session\u2019s last few minutes. That is a false walk of flow. I locked those speeds so a 16-hour tape can be sat through, not so copy can lie about the window. I am not adding a second flow clock this slice.",
+      "proposal": "At 1\u00d7, net-flow may keep a last-few-minutes read. At 4\u00d7/10\u00d7, do not claim tape minutes: keep the number without a tape-time window, or say it is compressed with the clock. No tape-time flow accumulator this slice.",
+      "kind": "technical",
+      "conflict_id": "4a0228873a3e58ae08f0e0f14eb9120394f24c5a0d2e8d73db30af5150916ff9",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Architect does not add a wire field; PM/UX must not treat recency-true as Massive-live.",
+      "source": "architect",
+      "why": "That sentence makes replay indistinguishable from live on the surface the desk already uses. Replay ticks **will** satisfy recency (`tick_age < 30s` wall). The ticker SSE envelope already sets `live` from that bit. The shipped client is `isLive = (live?.live ?? false) && !streamOffline`, and that boolean \u2014 not occupancy the page cannot read \u2014 gates `\u25cf live \u00b7 ${session}`, `Streaming live ${feed} ticks.`, title `Live tape`, `Gamma flip (live)`, `liveDotPulse` / `widgetLivePulse`, and `evaluateOrder` fills. Process occupancy is not a field the UI consumes. Honest consume without a closed stream-basis on LiveUpdate is copy theater; recency-true is the paid-live classifier in chrome today.",
+      "proposal": "Keep StreamEvent stamp-only if needed. The existing ticker SSE envelope must carry a closed stream basis the client branches on before `live` / `feed` interpolation; replayed updates keep `live: false`. Named consume facts (not a new socket): basis = session tape; `et_date`; vouched tape time ET (do not relabel wall `ts` / `Date.now()` as tape time); phase `playing` | `ended`. Display-active may move headline/tiles/flash; `isLive` stays false so fills, live pulse, and live-session chip meaning stay off. Poison: a fixture with `live: true` and session-tape basis that still paints live chrome.",
+      "kind": "technical",
+      "conflict_id": "096836b6fbe2090bdf2be3217c96aa77d9baaa6fc828b6a9b4d6c3135a2d9dd6",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Recency (`last_tick_wall`) stays wall clock so end-of-tape still degrades in 30s of operator time.",
+      "source": "architect",
+      "why": "Stop-publish plus wall recency is the live-offline path, not an ended standing. The ticker watchdog is 15s of no payload (`STREAM_OFFLINE_MS`) \u2192 `\u26a0 Live offline \u2014 reconnecting\u2026` / `OFFLINE_CHIP_TOOLTIP` (Massive reconnect). That fires before 30s recency and is a live-vendor claim the tape cannot carry. `live: false` without a vouched ended phase still falls through `liveStatus` to `\u25cb overnight \u2014 no live data`, `\u25cb market closed`, or `\u25cb no live ticks` / \u201cfeed may be lagging.\u201d Injecting tape-cursor `market_session` does not fix the chip if it still uses `liveStatus`.",
+      "proposal": "Emit a vouched `ended` phase on the same ticker contract and do not let heartbeat silence be the ended classifier. S1 copy stays `\u25cb session tape ended \u00b7 {SYM} \u00b7 {humanSessionDate}`; last tape numbers kept; structure stays snapshot; never live-offline, never overnight-no-live-data. SSE drop during replay is a distinct `\u26a0 Session tape stream dropped`. Replay-fault is a third standing if the envelope names it; otherwise it must not reuse live-offline.",
+      "kind": "technical",
+      "conflict_id": "cc3e3ef5c3b74de59d5c2bac39561e895475e1e4604ef887afaeb116bf5c811a",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Start on Path-A zero shows `no path-a ticks for {SYMBOL} on {ET_DATE}` and refuses the walk.",
+      "source": "ux",
+      "why": "I cannot defend refuse-as-walk. No identity \u2260 empty Path-A (`absent-is-not-none`). Architect starts EmptyWhileStoring with zero Path-A emits; PM locked a quiet walk. Refusing start renames a kept quiet day as missing. Fabrication is inventing ticks, not a clock that emits nothing. The `no path-a ticks\u2026` line stays as empty standing, not a start-refuse.",
+      "proposal": "No-identity / unreadable / not-storing still refuse; ticker stays S0. Stored identity with Path-A count 0: clock may start; operator/CLI shows `no path-a ticks for {SYMBOL} on {ET_DATE}`; S1 may show session-tape chrome with `Last trade \u2014 no tape print at this tape time` and no fabricated prints. Path-B empty with Path-A present still warns `no path-b snapshots\u2026` and may walk Path-A. Retract AC-U11 refuse; keep the literal.",
+      "kind": "product",
+      "conflict_id": "b211f952b20a79551f71232c26db88c6826891a360f3ad6ed1751ffb6e1a4651",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "`/_ops/replay` is a **second unlinked operator route**, same chrome family as metrics (own AppBar, off `AppShell`, not in TopNav).",
+      "source": "ux",
+      "why": "PM locked process-start arming, no runtime flip, no ticker play button, no second route, no `/_ops` walker. A Start page is operator chrome the BRIEF does not require. I already allowed S2 visual to drop under CLI-only. Keeping `/_ops/replay` as required is re-scope. Ticker honesty (S0/S1) does not depend on that route.",
+      "proposal": "No `/_ops/replay` this slice. Arming copy on the process/CLI twin (`session-day-replay` stdout + standing block; capture miss literals). No trader nav, no Settings toggle, no play/pause/scrub. S0 byte-identical when unset; S1 session-tape chip/widget/last-trade/fills split remains ship-blocking.",
+      "kind": "product",
+      "conflict_id": "96e2e86fa5d0d81f02e82dc695af38946b4885d5f0da32d97c48290efa0a596a",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Exact English is UX; the closed standing class in AC-13/19/42 stays `test`.",
+      "source": "pm",
+      "why": "Standing class as `test` is right. Parking visible not-live wording as review-only (AC-14) leaves the live interpolations unguarded. `Streaming live ${feed} ticks.`, `\u25cf live \u00b7`, `Live tape`, `Gamma flip (live)`, pulse, and fills follow `live.live` without a copy edit. That silently regresses; risk-based-verify is `test`, not exact-English review.",
+      "proposal": "AC-14 / AC-U28 stay `review` for approved standing prose (session tape, research playback, glossary). AC-U3, AC-U4, AC-U6, AC-U7, AC-U9, AC-U27 stay `test`: banned tokens `live` / `LIVE` / `live_massive` / `this quote is live` on S1; no `Live tape` / `Gamma flip (live)` / `\u25cf live`; end-of-tape \u2260 live-offline; `isLive` false; poison `live: true` + session-tape basis. Do not move those rows to review in SPEC \u00a73.",
+      "kind": "technical",
+      "conflict_id": "e40af2a9d855ba4cd5c7fb17e13f5986d705539c8a9f26ace7078c3f23f4f815",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Path-A gap chip is `session tape gap \u00b7 \u2026` and does not use the live \u201cfeed may be lagging\u201d tip.",
+      "source": "ux",
+      "why": "PathAGap has no `ts_ns` and is skip-emit. A ticker `session tape gap` chip with no vouched gap/phase on LiveUpdate is a label the consume path cannot support (defining failure). Inter-arrival waits are the clock, not a gap standing. Long silence still must not become live-offline (ended/drop conflict above).",
+      "proposal": "Drop S1 `session tape gap` as a required chip phase unless a vouched gap lands on the envelope. Keep the negative: do not use live lag / reconnect copy for a recorded Path-A gap. Occupancy/CLI may still record PathAGap. Retract AC-U8 as a ticker-chip `test` of that string; keep \u201cno live lag tip\u201d inside AC-U3/U7 if a gap phase appears later.",
+      "kind": "technical",
+      "conflict_id": "49ddf5b3f425c761d55123d9a70581feb7e6281b8a12a63e3e0fa2e40c65bf9a",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Standing includes **partial captured day**, never a full open-to-close claim.",
+      "source": "pm",
+      "why": "The negative is binding. The positive (\u201cpartial captured day\u201d on the existing ticker) asserts completeness the LiveUpdate does not carry. No completeness field, no `{k} snapshots` health score, no \u201c78% of Tuesday.\u201d Printing partial on S1 is the same failure mode as printing complete.",
+      "proposal": "Walk what was kept (PM AC-26). Ticker never claims full open-to-close and never prints partial/completeness %. Chip is `session tape \u00b7 {SYM} \u00b7 {humanSessionDate} \u00b7 tape {time} ET` plus locked `{n}\u00d7` if armed. Operator/CLI may reuse capture occupancy. Ban \u201ccomplete open-to-close\u201d in S1/S2 copy.",
+      "kind": "technical",
+      "conflict_id": "c9ae3bca3f5ebf47cd0db71b1258f60c55c53f0f189cd5e30975f508017665a4",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: Net-flow stays a wall-clock 300s window inside existing apply_event, so 4\u00d7/10\u00d7 compresses tape-time flow. Is that accepted this slice, or do you require a tape-time flow accumulator (currently a non-goal)?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: EmptyWhileStoring (Path-A count 0) \u2014 confirm a started zero-tick walk so Occupied Path-B can still unfold, versus UX AC-U11 refusing the walk."
+    },
+    {
+      "from": "architect",
+      "ask": "UX: Playing keep-alive occupancy must suppress the Massive watchdog during sleeper waits (including 1\u00d7 gaps longer than the watchdog) without fabricating ticks. Confirm drop copy is only for hub RecvError/lag, never for a still-running sleeper."
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: if replayed ticks satisfy recency and you add no consume-path standing, how does the existing ticker show captured-research-day \u2260 live Massive and end-of-tape \u2260 live-offline? I will not drop those classes."
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: can locked 4\u00d7 and 10\u00d7 emit Path-A in stored order with waits compressed by that factor, without dropping or reordering, including Path-B as the clock reaches stored marks? 60\u00d7 is out. If 10\u00d7 cannot, what measured bound?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: when production-profile is started with the replay arm set, does the process refuse to start as a walker (required), or can it still serve tape?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: armed identity is one locked name; operator opens a different locked name on that process \u2014 what observable standing is not-the-armed-day, with no Massive and no second tape?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: process-start / CLI-only arming \u2014 is the operator start/stop page out this slice, with miss/end/fault copy still binding on the existing ticker plus CLI/startup?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: AC-U3 forbids the token `live` in tooltips, but approved tooltips include \u201cnot a live vendor feed\u201d and \u201cnot live Massive\u201d. Which rule is the gate?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: on the existing ticker SSE envelope the dashboard already consumes (LiveUpdate / LiveUpdateBody), will replay set `live: false` and add a closed stream basis plus vouched `et_date`, tape-time ET, and phase `playing`|`ended` the client can branch on before `feed` interpolation \u2014 yes or no?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: what vouched ended (and replay-fault, if distinct) signal prevents the 15s payload-gap watchdog from classifying end-of-tape as `\u26a0 Live offline \u2014 reconnecting\u2026`?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: at default 1\u00d7, should the S1 chip print ` \u00b7 1\u00d7` or omit speed until 4\u00d7/10\u00d7 is armed?"
+    }
+  ],
+  "agree_count": {
+    "architect": 14,
+    "pm": 19,
+    "ux": 10
+  }
+}

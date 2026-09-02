@@ -192,7 +192,7 @@ export function TickerDashboard() {
   });
   // Live tape subscription — portfolio / orders / deck need ticks. Structure widgets are memoized
   // on REST props so they skip re-render when only the tape changes (§3.8 Phase C).
-  const { live, streamOffline, isLive } = useLiveTape();
+  const { live, streamOffline, isLive, displayActive, lastSessionPhase } = useLiveTape();
   const { data, loading, error, refresh: load } = page.bundle;
   const structHist = page.history;
   const universeMembership = page.universeMembership;
@@ -470,7 +470,9 @@ export function TickerDashboard() {
               sig={sig}
               live={live}
               isLive={isLive}
+              displayActive={displayActive}
               streamOffline={streamOffline}
+              lastSessionPhase={lastSessionPhase}
               selected={selected}
               onOpenTrade={() => openEntry()}
               // The faulted state follows the STORE, not the route (SPEC §2.9). Computed
