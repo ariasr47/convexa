@@ -1,0 +1,16 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "PASS",
+  "mode": "live",
+  "source": ".spire/clusters/tech/contracts/capacity-baseline/INTERFACE_CONTRACT.md",
+  "base_url": "http://127.0.0.1:8000",
+  "auth": null,
+  "checked_at": "2026-08-29T02:08:30Z",
+  "note": "NO_BACKEND_CHANGE of production HTTP; endpoints is the empty set. Live ticker/SSE must not be used as Massive conformance.",
+  "summary": {
+    "pass": 0,
+    "fail": 0,
+    "total": 0
+  },
+  "endpoints": []
+}

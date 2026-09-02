@@ -1,0 +1,58 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "PASS",
+  "mode": "live",
+  "source": ".spire/clusters/tech/contracts/massive-flat-file-keep/INTERFACE_CONTRACT.md",
+  "base_url": "http://127.0.0.1:8000",
+  "auth": null,
+  "checked_at": "2026-08-31T07:59:31Z",
+  "summary": {
+    "pass": 6,
+    "fail": 0,
+    "total": 6
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/_research/flat-files/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 18,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/flat-files/{symbol}/extract",
+      "verdict": "PASS",
+      "required_checked": 18,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/flat-files/{symbol}/extract",
+      "verdict": "PASS",
+      "required_checked": 3,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 14,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}/book",
+      "verdict": "PASS",
+      "required_checked": 6,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-day-tape/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 14,
+      "failures": []
+    }
+  ]
+}
