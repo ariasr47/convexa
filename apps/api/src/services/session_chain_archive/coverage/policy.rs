@@ -149,9 +149,11 @@ impl SuccessVerificationCache {
 }
 
 #[derive(Clone, Debug, Default)]
+#[allow(dead_code)] // constructed by this module's tests
 pub struct WarningLedger {
     identities: std::collections::HashSet<(String, NaiveDate)>,
 }
+#[allow(dead_code)] // exercised by this module's tests
 impl WarningLedger {
     pub fn new() -> Self {
         Self::default()

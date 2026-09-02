@@ -1,6 +1,6 @@
 //! Per-scenario harness p95 evaluation (no blended ticker-analysis p95).
 
-use super::types::{ScenarioName, COLD_P95_MS, SSE_EMIT_P95_MS, SSE_TTFB_P95_MS, WARM_P95_MS};
+use super::types::ScenarioName;
 
 /// Re-export basis string used by PLAN tests.
 pub const BASIS_WARM: &str = ScenarioName::BASIS_WARM;
@@ -143,6 +143,8 @@ pub fn render_p95_block(samples: &ScenarioSamples) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    // Used only by these tests; importing here keeps the lib build free of unused imports.
+    use super::super::types::{COLD_P95_MS, SSE_EMIT_P95_MS, SSE_TTFB_P95_MS, WARM_P95_MS};
 
     fn forced_warm(ms: f64) -> ScenarioSamples {
         ScenarioSamples {

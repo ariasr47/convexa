@@ -108,6 +108,7 @@ pub async fn run_ensure_pass(state: &AppState) {
     }
 }
 
+#[allow(dead_code)] // thin wrapper exercised only by this module's tests
 pub(crate) async fn run_ensure_pass_at<F, Fut>(
     archive: &SessionChainArchive,
     ring: &ChainSnapshotStore,
@@ -119,7 +120,7 @@ pub(crate) async fn run_ensure_pass_at<F, Fut>(
     ensure_enabled: bool,
     max_age: Duration,
     max_per: usize,
-    mut force_compute: F,
+    force_compute: F,
 ) where
     F: FnMut(String) -> Fut,
     Fut: Future<Output = Result<VendorBundle, EnsureForceError>>,

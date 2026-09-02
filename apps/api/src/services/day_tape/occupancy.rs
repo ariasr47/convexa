@@ -355,6 +355,7 @@ pub fn load_clock_literal(
 }
 
 /// Exhaustive match helper — compiles only if every arm is named.
+#[allow(dead_code)] // exhaustive-match tripwire; called from tests
 pub fn axis_a_label(a: AxisA) -> &'static str {
     match a {
         AxisA::NotInWatchlist => "not_in_watchlist",
@@ -369,6 +370,7 @@ pub fn axis_a_label(a: AxisA) -> &'static str {
     }
 }
 
+#[allow(dead_code)] // exhaustive-match tripwire; called from tests
 pub fn axis_b_path_a_label(a: AxisBPathA) -> &'static str {
     match a {
         AxisBPathA::EmptyWhileStoring => "empty_while_storing",
@@ -377,6 +379,7 @@ pub fn axis_b_path_a_label(a: AxisBPathA) -> &'static str {
     }
 }
 
+#[allow(dead_code)] // exhaustive-match tripwire; called from tests
 pub fn axis_b_path_b_label(a: AxisBPathB) -> &'static str {
     match a {
         AxisBPathB::PathBNotCapturing => "path_b_not_capturing",
@@ -386,6 +389,7 @@ pub fn axis_b_path_b_label(a: AxisBPathB) -> &'static str {
     }
 }
 
+#[allow(dead_code)] // exhaustive-match tripwire; called from tests
 pub fn axis_c_label(a: AxisC) -> &'static str {
     match a {
         AxisC::Partial => "partial",

@@ -8,10 +8,9 @@ use crate::openapi::RouteResponse;
 use crate::services::flat_file_keep::{
     in_flat_files_watchlist, is_content_hit, normalize_symbol, occupancy_token, parse_et_date,
     ExtractClass, FlatFilesStore, Occupancy, AUTHORIZES, BAD_DATE, COMMAND, EVIDENCE_HTTP,
-    FLAT_FILES_WATCHLIST, FRAMING_HIT, FRAMING_HOLIDAY, FRAMING_NOT_IN_WATCHLIST,
-    FRAMING_NOT_STORING, FRAMING_REFUSE_TO_MIX, FRAMING_UNREADABLE, HIT_PROVENANCE,
-    INVALID_LIMIT, LICENSE, MISS_PROVENANCE, NOT_STORING, REFUSE_TO_MIX, UNAUTHORIZED_DETAIL,
-    UNREADABLE_ERROR,
+    FLAT_FILES_WATCHLIST, FRAMING_HIT, FRAMING_NOT_IN_WATCHLIST, FRAMING_NOT_STORING,
+    FRAMING_REFUSE_TO_MIX, FRAMING_UNREADABLE, HIT_PROVENANCE, INVALID_LIMIT, LICENSE,
+    MISS_PROVENANCE, NOT_STORING, REFUSE_TO_MIX, UNAUTHORIZED_DETAIL, UNREADABLE_ERROR,
 };
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
@@ -636,7 +635,9 @@ pub fn flat_files_read_vendor_call_count() -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    // Used only by these tests; keeps the lib build free of unused imports.
     use crate::services::chain_snapshot::ChainSnapshotStore;
+    use crate::services::flat_file_keep::FRAMING_HOLIDAY;
     use crate::services::session_chain_archive::SessionChainArchive;
     use axum::body::to_bytes;
     use axum::http::HeaderValue;
