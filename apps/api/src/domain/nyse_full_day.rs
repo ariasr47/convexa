@@ -25,7 +25,6 @@ const NYSE_FULL_DAY: &[(i32, u8, u8)] = &[
     (2021, 9, 6),
     (2021, 11, 25),
     (2021, 12, 24),
-    (2021, 12, 31),
     (2022, 1, 17),
     (2022, 2, 21),
     (2022, 4, 15),
@@ -85,7 +84,6 @@ const NYSE_FULL_DAY: &[(i32, u8, u8)] = &[
     (2027, 9, 6),
     (2027, 11, 25),
     (2027, 12, 24),
-    (2027, 12, 31),
     (2028, 1, 17),
     (2028, 2, 21),
     (2028, 4, 14),
@@ -135,7 +133,6 @@ const NYSE_FULL_DAY: &[(i32, u8, u8)] = &[
     (2032, 9, 6),
     (2032, 11, 25),
     (2032, 12, 24),
-    (2032, 12, 31),
 ];
 
 /// Attach point for one-off closures. v1 is empty.
@@ -166,7 +163,7 @@ pub fn nyse_full_day_iso_dates() -> Vec<String> {
 pub(crate) fn generated_regular_nyse_full_days() -> Vec<(i32, u8, u8)> {
     let mut out = Vec::new();
     for y in 2019..=2033 {
-        push_observed(&mut out, y, 1, 1); // New Year's
+        push_new_years(&mut out, y); // New Year's (Rule 7.2 exception, see fn doc)
         push_nth_weekday(&mut out, y, 1, 3, Weekday::Mon); // MLK
         push_nth_weekday(&mut out, y, 2, 3, Weekday::Mon); // Washington's Birthday
         push_good_friday(&mut out, y);
@@ -198,6 +195,24 @@ fn push_observed(out: &mut Vec<(i32, u8, u8)>, y: i32, m: u32, day: u32) {
     let date = NaiveDate::from_ymd_opt(y, m, day).unwrap();
     let observed = match date.weekday() {
         Weekday::Sat => date.pred_opt().unwrap(),
+        Weekday::Sun => date.succ_opt().unwrap(),
+        _ => date,
+    };
+    keep_if_span(out, observed);
+}
+
+/// New Year's Day, which carries the NYSE Rule 7.2 exception: a Saturday holiday is
+/// observed on the preceding Friday EXCEPT when that Friday ends the yearly accounting
+/// period, so a Saturday New Year's Day closes nothing. Observed precedent: the NYSE
+/// traded full sessions on Friday 2010-12-31 and Friday 2021-12-31 (2011-01-01 and
+/// 2022-01-01 were Saturdays). A Sunday New Year's Day still shifts forward to the
+/// Monday (2023-01-02). Independence Day and Christmas keep the plain `push_observed`
+/// Saturday-to-Friday shift.
+#[cfg(test)]
+fn push_new_years(out: &mut Vec<(i32, u8, u8)>, y: i32) {
+    let date = NaiveDate::from_ymd_opt(y, 1, 1).unwrap();
+    let observed = match date.weekday() {
+        Weekday::Sat => return,
         Weekday::Sun => date.succ_opt().unwrap(),
         _ => date,
     };
@@ -310,6 +325,51 @@ mod tests {
             assert!(!is_nyse_full_day_holiday(x), "{x} must stay eligible");
             assert!(is_et_session_day(x));
         }
+    }
+
+    #[test]
+    fn saturday_new_years_does_not_close_the_preceding_friday() {
+        // NYSE Rule 7.2 exception (ruling 2026-09-01, GATE Z item 1): the Friday that ends
+        // the yearly accounting period stays open. 2022-01-01, 2028-01-01 and 2033-01-01 are
+        // Saturdays, so 2021-12-31, 2027-12-31 and 2032-12-31 are full sessions.
+        for (y, m, day) in [(2021, 12, 31), (2027, 12, 31), (2032, 12, 31)] {
+            let x = d(y, m, day);
+            assert_eq!(x.weekday(), Weekday::Fri, "{x} must be the year-end Friday");
+            assert!(
+                !is_nyse_full_day_holiday(x),
+                "{x} must stay a session day (Saturday New Year's closes nothing)"
+            );
+            assert!(is_et_session_day(x));
+        }
+        // The Saturday itself is a weekend day, and no January 1 row was minted in its place.
+        for (y, m, day) in [(2022, 1, 1), (2028, 1, 1), (2033, 1, 1)] {
+            let x = d(y, m, day);
+            assert_eq!(x.weekday(), Weekday::Sat);
+            assert!(!is_nyse_full_day_holiday(x));
+        }
+    }
+
+    #[test]
+    fn saturday_christmas_and_independence_still_close_the_preceding_friday() {
+        // Anti-vacuity for the exception above: it is scoped to New Year's alone.
+        for (y, m, day) in [
+            (2021, 12, 24), // 2021-12-25 Saturday
+            (2027, 12, 24), // 2027-12-25 Saturday
+            (2032, 12, 24), // 2032-12-25 Saturday
+            (2026, 7, 3),   // 2026-07-04 Saturday
+            (2020, 7, 3),   // 2020-07-04 Saturday
+        ] {
+            let x = d(y, m, day);
+            assert_eq!(x.weekday(), Weekday::Fri);
+            assert!(
+                is_nyse_full_day_holiday(x),
+                "{x} must be the observed closure"
+            );
+            assert!(!is_et_session_day(x));
+        }
+        // And a Sunday New Year's Day still shifts forward to the Monday.
+        assert_eq!(d(2023, 1, 1).weekday(), Weekday::Sun);
+        assert!(is_nyse_full_day_holiday(d(2023, 1, 2)));
     }
 
     #[test]
