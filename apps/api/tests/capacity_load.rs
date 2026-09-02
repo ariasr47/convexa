@@ -6,7 +6,7 @@ use api_rust::services::capacity_harness::types::{
     LOAD_PRICES_SSE, LOAD_WARM_HTTP, SSE_EMIT_P95_MS, SSE_TTFB_P95_MS, SURFACE_PER_TICKER_SSE,
     SURFACE_PRICES_SSE, SURFACE_TICKER_ANALYSIS_HTTP, WARM_P95_MS,
 };
-use api_rust::services::capacity_harness::{run_with_hooks, RunHooks};
+use api_rust::services::capacity_harness::{classify_evidence, run_with_hooks, RunHooks};
 use std::fs;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -87,7 +87,12 @@ async fn hermetic_capacity_load_passes_under_sixty_seconds() {
     let rec = parse_receipt(&raw).expect("receipt must parse with standing");
 
     assert_eq!(rec.command, Command::Load);
-    assert_eq!(rec.evidence.as_str(), "local");
+    // The evidence label is environment-derived: GITHUB_ACTIONS (which every hosted runner step
+    // sets) or CONVEXA_CAPACITY_CI_STEP classify as `ci`, anything else as `local`. Pinning
+    // "local" here meant this test could only ever pass OFF CI — and the branch it came from never
+    // ran hosted CI, so nothing caught it. Assert the receipt agrees with the environment it ran
+    // in; evidence.rs's own unit tests own the classifier's truth table.
+    assert_eq!(rec.evidence, classify_evidence());
     assert!(
         rec.verdict.starts_with("[PASS]"),
         "verdict must be PASS line, got {}",
