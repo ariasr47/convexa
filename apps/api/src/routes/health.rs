@@ -472,6 +472,12 @@ pub async fn health(State(state): State<AppState>) -> Json<Value> {
     Json(json!({
         "status": "ok",
         "service": "api-rust",
+        // The deployed revision, so "did my merge actually ship?" is one request instead of an
+        // archaeology session. Railway already sets RELEASE_GIT_SHA; nothing surfaced it, so on
+        // 2026-09-02 a failed container build left production serving a six-day-old image while
+        // Deploy smoke passed against it — every endpoint it probes already existed. Null when
+        // unset (local dev), which is honest rather than pretending to know.
+        "release": std::env::var("RELEASE_GIT_SHA").ok(),
         "price_cache": state.prices.backend_name(),
         "durable_store": durable_store,
         "data_feed": state.config.data_feed.as_str(),
