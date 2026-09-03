@@ -2057,6 +2057,10 @@
           "rate_limit": {
             "$ref": "#/components/schemas/HealthRateLimit"
           },
+          "release": {
+            "description": "Deployed git revision, from `RELEASE_GIT_SHA`. Null when unset (local dev).",
+            "type": ["string", "null"]
+          },
           "scanner": {
             "$ref": "#/components/schemas/HealthScanner"
           },

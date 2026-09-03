@@ -16,6 +16,13 @@ use utoipa::{IntoResponses, ToSchema};
 pub struct HealthWire {
     pub status: String,
     pub service: String,
+    // This field is part of the CLOSED wire schema on purpose. `api_health` round-trips the
+    // untyped `health()` body through `serde_json::from_value::<HealthWire>`, which SILENTLY
+    // DROPS any key absent from this struct. Adding `release` to `health()` alone shipped a
+    // field that compiled, tested green, deployed, and never reached the wire (2026-09-03).
+    // Both edits or neither.
+    /// Deployed git revision, from `RELEASE_GIT_SHA`. Null when unset (local dev).
+    pub release: Option<String>,
     pub price_cache: String,
     pub durable_store: String,
     pub data_feed: String,
@@ -90,9 +97,14 @@ impl IntoResponse for HealthResponse {
 /// This deliberately uses the route's production response enum, keeping the conversion proof
 /// coupled to the same `HealthWire` serializer used by the live handler.
 pub(crate) fn contract_representative_response() -> Response {
-    HealthResponse::Ok(HealthWire {
+    HealthResponse::Ok(contract_representative_wire()).into_response()
+}
+
+fn contract_representative_wire() -> HealthWire {
+    HealthWire {
         status: "ok".into(),
         service: "api-rust".into(),
+        release: None,
         price_cache: "memory".into(),
         durable_store: "json".into(),
         data_feed: "fixture".into(),
@@ -144,8 +156,7 @@ pub(crate) fn contract_representative_response() -> Response {
             ttl_default_secs: 0,
             ttl_liquid_secs: 0,
         },
-    })
-    .into_response()
+    }
 }
 
 pub(crate) fn contract_representative_response_for(
@@ -168,10 +179,47 @@ pub(crate) fn contract_representative_response_for(
     }
 }
 
+/// Keys present in `sent` that did not survive into `kept`.
+///
+/// `serde` drops unknown keys silently, so this is the only place the divergence is visible.
+fn dropped_keys(sent: &Value, kept: &Value) -> Vec<String> {
+    let (Some(sent), Some(kept)) = (sent.as_object(), kept.as_object()) else {
+        return Vec::new();
+    };
+    sent.keys()
+        .filter(|key| !kept.contains_key(*key))
+        .cloned()
+        .collect()
+}
+
+/// Round-trip the untyped `health()` body through the closed wire schema.
+///
+/// The round-trip is lossy by construction: any key `health()` emits that `HealthWire` does not
+/// declare is discarded without error. That shipped a field to production that compiled, tested
+/// green, deployed, and never reached the wire (2026-09-03). The check below makes the next one
+/// fail the test suite instead of a curl.
+fn health_wire_from_body(body: Value) -> HealthWire {
+    let wire: HealthWire =
+        serde_json::from_value(body.clone()).expect("health wire matches closed schema");
+    let kept = serde_json::to_value(&wire).expect("health wire reserializes");
+    let dropped = dropped_keys(&body, &kept);
+    if !dropped.is_empty() {
+        tracing::error!(
+            dropped = ?dropped,
+            "health body keys dropped by the closed wire schema; declare them on HealthWire"
+        );
+    }
+    debug_assert!(
+        dropped.is_empty(),
+        "health body keys dropped by HealthWire: {dropped:?}"
+    );
+    wire
+}
+
 #[utoipa::path(get, path = "/api/health", operation_id = "api_health")]
 pub async fn api_health(State(state): State<AppState>) -> HealthResponse {
     let Json(body) = health(State(state)).await;
-    HealthResponse::Ok(serde_json::from_value(body).expect("health wire matches closed schema"))
+    HealthResponse::Ok(health_wire_from_body(body))
 }
 
 #[utoipa::path(
@@ -801,6 +849,50 @@ mod production_metrics_tests {
         )]);
         assert!(metrics_token_ok(&direct, &expected));
         assert!(!metrics_token_ok(&direct, "documented-placeholder-token"));
+    }
+}
+
+#[cfg(test)]
+mod wire_divergence_tests {
+    use super::dropped_keys;
+    use serde_json::json;
+
+    #[test]
+    fn dropped_keys_names_every_key_the_closed_schema_discards() {
+        let sent = json!({"status":"ok","service":"api-rust","release":"abc123"});
+        let kept = json!({"status":"ok","service":"api-rust"});
+        assert_eq!(dropped_keys(&sent, &kept), vec!["release".to_string()]);
+    }
+
+    #[test]
+    fn dropped_keys_is_empty_when_the_round_trip_is_lossless() {
+        let sent = json!({"status":"ok","release":null});
+        assert_eq!(dropped_keys(&sent, &sent), Vec::<String>::new());
+    }
+
+    /// The helper being correct proves nothing if nothing calls it. Debug builds — which is what
+    /// `cargo test` and CI run — must turn a dropped key into a failure, not a log line.
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic(expected = "health body keys dropped by HealthWire")]
+    fn undeclared_key_in_the_health_body_fails_the_build() {
+        let mut body = serde_json::to_value(super::contract_representative_wire())
+            .expect("representative wire serializes");
+        body.as_object_mut()
+            .expect("representative body is an object")
+            .insert("not_on_the_wire".into(), json!("x"));
+        let _ = super::health_wire_from_body(body);
+    }
+
+    #[test]
+    fn dropped_keys_ignores_value_changes_and_non_objects() {
+        let sent = json!({"status":"ok"});
+        let kept = json!({"status":"degraded"});
+        assert_eq!(dropped_keys(&sent, &kept), Vec::<String>::new());
+        assert_eq!(
+            dropped_keys(&json!([1, 2]), &json!({})),
+            Vec::<String>::new()
+        );
     }
 }
 
