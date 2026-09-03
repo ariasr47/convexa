@@ -38,8 +38,17 @@ apps/api/data
 **/.ruff_cache
 
 # Test / coverage output.
+#
+# `coverage` is ROOT-ANCHORED on purpose, matching .gitignore's `/coverage`. It was `**/coverage`
+# until 2026-09-02, which also matched the Rust source module
+# apps/api/src/services/session_chain_archive/coverage/ — so the container build context was
+# missing real source and died with `error[E0583]: file not found for module \`coverage\``.
+# Nothing caught it: the files are committed, so every checkout-based job compiled fine, and the
+# only jobs that build the image (supply-chain artifacts, and Railway's deploy) run solely on
+# main. The merge landed red and production silently kept serving the previous release.
+# Do not re-broaden this to `**/`.
 **/test-output
-**/coverage
+/coverage
 
 # VCS / editor / agent / docker meta.
 .git
