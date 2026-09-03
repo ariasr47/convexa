@@ -1502,6 +1502,8 @@ export interface components {
       metrics_auth: string;
       price_cache: string;
       rate_limit: components['schemas']['HealthRateLimit'];
+      /** @description Deployed git revision, from `RELEASE_GIT_SHA`. Null when unset (local dev). */
+      release?: string | null;
       scanner: components['schemas']['HealthScanner'];
       service: string;
       status: string;
