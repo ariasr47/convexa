@@ -1,0 +1,422 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Ticker desk"
+    },
+    {
+      "id": "page-2",
+      "name": "Responsive"
+    },
+    {
+      "id": "page-3",
+      "name": "Site"
+    },
+    {
+      "id": "page-4",
+      "name": "Dialogs & gates"
+    },
+    {
+      "id": "page-5",
+      "name": "System"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "title": "Ticker desk · SPY (interactive · expand and resize the window)",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 2300,
+      "page": "page-1",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    {
+      "file": "DeskStates.dc.html",
+      "title": "Desk · loading, failed, offline, empty, Prime, closed",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 2200,
+      "page": "page-1"
+    },
+    {
+      "file": "AiRead.dc.html",
+      "title": "AI read · nine states (narrow form)",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 1720,
+      "page": "page-1"
+    },
+    {
+      "file": "Flows.dc.html",
+      "title": "User flows",
+      "x": 4680,
+      "y": 0,
+      "w": 1440,
+      "h": 760,
+      "page": "page-1"
+    },
+    {
+      "file": "DirectionB.dc.html",
+      "title": "Direction B · sticky read rail",
+      "x": 0,
+      "y": 2440,
+      "w": 760,
+      "h": 640,
+      "page": "page-1"
+    },
+    {
+      "file": "DirectionC.dc.html",
+      "title": "Direction C · focus mode",
+      "x": 880,
+      "y": 2440,
+      "w": 760,
+      "h": 640,
+      "page": "page-1"
+    },
+    {
+      "file": "Desk1920.dc.html",
+      "title": "Desk · 1920 wide",
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 2100,
+      "page": "page-2",
+      "is_interactive": true
+    },
+    {
+      "file": "Desk1280.dc.html",
+      "title": "Desk · 1280 laptop",
+      "x": 2040,
+      "y": 0,
+      "w": 1280,
+      "h": 2400,
+      "page": "page-2",
+      "is_interactive": true
+    },
+    {
+      "file": "Desk1024.dc.html",
+      "title": "Desk · 1024 tablet landscape",
+      "x": 3440,
+      "y": 0,
+      "w": 1024,
+      "h": 2900,
+      "page": "page-2",
+      "is_interactive": true
+    },
+    {
+      "file": "Desk834.dc.html",
+      "title": "Desk · 834 tablet",
+      "x": 4584,
+      "y": 0,
+      "w": 834,
+      "h": 3500,
+      "page": "page-2",
+      "is_interactive": true
+    },
+    {
+      "file": "Desk390.dc.html",
+      "title": "Desk · 390 phone viewport (tap the AI read peek)",
+      "x": 5538,
+      "y": 0,
+      "w": 390,
+      "h": 1400,
+      "page": "page-2",
+      "is_interactive": true
+    },
+    {
+      "file": "Landing834.dc.html",
+      "title": "Landing · 834",
+      "x": 0,
+      "y": 3640,
+      "w": 834,
+      "h": 4100,
+      "page": "page-2"
+    },
+    {
+      "file": "Landing390.dc.html",
+      "title": "Landing · 390",
+      "x": 954,
+      "y": 3640,
+      "w": 390,
+      "h": 5000,
+      "page": "page-2"
+    },
+    {
+      "file": "Scanner834.dc.html",
+      "title": "Scanner · 834 (cards)",
+      "x": 1464,
+      "y": 3640,
+      "w": 834,
+      "h": 2300,
+      "page": "page-2"
+    },
+    {
+      "file": "Scanner390.dc.html",
+      "title": "Scanner · 390",
+      "x": 2418,
+      "y": 3640,
+      "w": 390,
+      "h": 3900,
+      "page": "page-2"
+    },
+    {
+      "file": "Positions390.dc.html",
+      "title": "Positions · 390 (cards)",
+      "x": 2928,
+      "y": 3640,
+      "w": 390,
+      "h": 2600,
+      "page": "page-2"
+    },
+    {
+      "file": "Settings390.dc.html",
+      "title": "Settings · 390 (tabs)",
+      "x": 3438,
+      "y": 3640,
+      "w": 390,
+      "h": 2300,
+      "page": "page-2"
+    },
+    {
+      "file": "RespSpec.dc.html",
+      "title": "Responsive spec",
+      "x": 3948,
+      "y": 3640,
+      "w": 1440,
+      "h": 1300,
+      "page": "page-2"
+    },
+    {
+      "file": "Landing.dc.html",
+      "title": "Landing",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 2960,
+      "page": "page-3"
+    },
+    {
+      "file": "Scanner.dc.html",
+      "title": "Scanner",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 1300,
+      "page": "page-3"
+    },
+    {
+      "file": "Positions.dc.html",
+      "title": "Positions",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 1220,
+      "page": "page-3"
+    },
+    {
+      "file": "Alerts.dc.html",
+      "title": "Alerts",
+      "x": 4680,
+      "y": 0,
+      "w": 1440,
+      "h": 1100,
+      "page": "page-3"
+    },
+    {
+      "file": "Settings.dc.html",
+      "title": "Settings",
+      "x": 0,
+      "y": 3100,
+      "w": 1440,
+      "h": 1820,
+      "page": "page-3"
+    },
+    {
+      "file": "Methodology.dc.html",
+      "title": "Methodology",
+      "x": 1560,
+      "y": 3100,
+      "w": 1440,
+      "h": 2400,
+      "page": "page-3"
+    },
+    {
+      "file": "Blog.dc.html",
+      "title": "Blog",
+      "x": 3120,
+      "y": 3100,
+      "w": 1440,
+      "h": 900,
+      "page": "page-3"
+    },
+    {
+      "file": "Lab.dc.html",
+      "title": "Lab",
+      "x": 4680,
+      "y": 3100,
+      "w": 1440,
+      "h": 1000,
+      "page": "page-3"
+    },
+    {
+      "file": "Auth.dc.html",
+      "title": "Sign in + auth wall",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 940,
+      "page": "page-4"
+    },
+    {
+      "file": "TradeEntry.dc.html",
+      "title": "Trade entry · position and order variants",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 1150,
+      "page": "page-4"
+    },
+    {
+      "file": "WhatsSent.dc.html",
+      "title": "What’s sent drawer",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 960,
+      "page": "page-4"
+    },
+    {
+      "file": "Persona.dc.html",
+      "title": "Persona · picker and customize",
+      "x": 4680,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "OrderDetail.dc.html",
+      "title": "Order detail",
+      "x": 0,
+      "y": 1290,
+      "w": 1440,
+      "h": 760,
+      "page": "page-4"
+    },
+    {
+      "file": "ViewEditor.dc.html",
+      "title": "Scan view editor",
+      "x": 1560,
+      "y": 1290,
+      "w": 1440,
+      "h": 900,
+      "page": "page-4"
+    },
+    {
+      "file": "NotFound.dc.html",
+      "title": "Route fallback + 404",
+      "x": 3120,
+      "y": 1290,
+      "w": 1440,
+      "h": 640,
+      "page": "page-4"
+    },
+    {
+      "file": "Operator.dc.html",
+      "title": "Operator · metrics + research",
+      "x": 4680,
+      "y": 1290,
+      "w": 1440,
+      "h": 1080,
+      "page": "page-4"
+    },
+    {
+      "file": "Library.dc.html",
+      "title": "Library · tokens, components, states, React mapping",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 5400,
+      "page": "page-5"
+    },
+    {
+      "file": "Components.dc.html",
+      "title": "Components & motion sheet",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 2720,
+      "page": "page-5"
+    },
+    {
+      "file": "DeskLight.dc.html",
+      "title": "Desk · light scheme (interactive)",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 2300,
+      "page": "page-5",
+      "is_interactive": true
+    },
+    {
+      "file": "LandingLight.dc.html",
+      "title": "Landing · light scheme",
+      "x": 4680,
+      "y": 0,
+      "w": 1440,
+      "h": 2960,
+      "page": "page-5"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "note-tweaks",
+      "x": 0,
+      "y": -150,
+      "w": 560,
+      "page": "page-1",
+      "text": "Ticker desk — the tweak chips switch readState (idle · loading · trade · no_trade · stale · cooldown · signed_out · no_key), live (pulses, particles, trail), scheme (dark · light) and the phone sheet (open · peek). Click “Analyze current snapshot” to run loading → trade; Field / Magnet switches the hero. Expand this frame and resize your window: the layout is fluid."
+    },
+    {
+      "id": "note-resp",
+      "x": 0,
+      "y": -150,
+      "w": 620,
+      "page": "page-2",
+      "text": "Same source, five widths. Every frame here renders the identical page body through one set of media and container queries — nothing is redrawn by hand. The phone desk docks the AI read as a bottom sheet; tables become cards under 1000px; the settings rail becomes tabs under 900px."
+    },
+    {
+      "id": "note-site",
+      "x": 0,
+      "y": -150,
+      "w": 520,
+      "page": "page-3",
+      "text": "Site surfaces at 1440. Copy is grounded in the product (69-name universe, ~60s desk cadence, ~3-min scanner sweep, 7–45 DTE, simulated book, BYO key); all prices, P/L, scores and timestamps are sample values."
+    },
+    {
+      "id": "note-dialogs",
+      "x": 0,
+      "y": -150,
+      "w": 520,
+      "page": "page-4",
+      "text": "Every overlay and gate in the product: sign-in and the private-testing wall, the one shared sim trade-entry dialog in both variants (with the six binding disclosures verbatim), the egress drawer, persona editing, order detail in both coverage states, the scan view editor, route fallback, 404, and the two operator surfaces."
+    },
+    {
+      "id": "note-system",
+      "x": 0,
+      "y": -150,
+      "w": 560,
+      "page": "page-5",
+      "text": "The library is generated from tokens/tokens.json and src/components — every state shown there is a registered state. The light renders prove the scheme is a token swap, not a second layout."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
+}

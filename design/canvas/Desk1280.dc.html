@@ -1,0 +1,815 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap">
+  <style>
+  :root, [data-scheme="dark"] { --ink: #0B0F17; --ink-2: #0D121B; --panel: #131A24; --raised: #1B2432; --raised-2: #223041; --line: rgba(138,155,180,0.16); --line-2: rgba(138,155,180,0.30); --phosphor: #E9E4D6; --steel: #8A9BB4; --steel-2: rgba(138,155,180,0.85); --amber: #F2A93B; --amber-text: #F2A93B; --amber-ink: #0B0F17; --amber-tint: rgba(242,169,59,0.12); --amber-tint-2: rgba(242,169,59,0.22); --signal: #5E8BC4; --signal-tint: rgba(94,139,196,0.16); --warn: #E07A3F; --warn-tint: rgba(224,122,63,0.14); --up: #2ecc71; --up-tint: rgba(46,204,113,0.14); --down: #ff5c5c; --down-tint: rgba(255,92,92,0.14); --glass: rgba(19,26,36,0.82); --scrim: rgba(0,0,0,0.55); --e1: 0 1px 2px rgba(0,0,0,0.24), 0 2px 6px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.04); --e2: 0 6px 16px rgba(0,0,0,0.32), 0 2px 4px rgba(0,0,0,0.2); --e4: 0 12px 32px rgba(0,0,0,0.44), 0 4px 8px rgba(0,0,0,0.28); --sheen: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0) 46%); }
+  [data-scheme="light"] { --ink: #F6F6F3; --ink-2: #F1F1EC; --panel: #FFFFFF; --raised: #ECECE7; --raised-2: #E3E3DD; --line: rgba(23,32,43,0.12); --line-2: rgba(23,32,43,0.22); --phosphor: #17202B; --steel: #5A6B85; --steel-2: #61708A; --amber: #C57F19; --amber-text: #8F5C0F; --amber-ink: #17202B; --amber-tint: rgba(197,127,25,0.12); --amber-tint-2: rgba(197,127,25,0.22); --signal: #3D6DA5; --signal-tint: rgba(61,109,165,0.14); --warn: #A65526; --warn-tint: rgba(166,85,38,0.12); --up: #1e9e57; --up-tint: rgba(30,158,87,0.14); --down: #d23b3b; --down-tint: rgba(210,59,59,0.12); --glass: rgba(255,255,255,0.86); --scrim: rgba(23,32,43,0.45); --e1: 0 1px 2px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.05); --e2: 0 6px 16px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06); --e4: 0 12px 32px rgba(0,0,0,0.16), 0 4px 8px rgba(0,0,0,0.10); --sheen: none; }
+  * { box-sizing: border-box; }
+  html, body { background: var(--ink); }
+  body { margin: 0; color: var(--phosphor); font-family: 'IBM Plex Sans', system-ui, 'Segoe UI', sans-serif; font-size: 13px; line-height: 1.5; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; overflow-x: hidden; }
+  a { color: var(--signal); text-decoration: none; } a:hover { color: var(--phosphor); text-decoration: underline; }
+  h1, h2, h3 { text-wrap: balance; }
+  .display { font-family: 'Archivo', 'IBM Plex Sans', system-ui, sans-serif; font-stretch: 112.5%; font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; }
+  .mono { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .sans { font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+  .caps { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); line-height: 1.3; }
+  .steel { color: var(--steel); } .dim { color: var(--steel-2); } .amber { color: var(--amber-text); } .signal { color: var(--signal); } .up { color: var(--up); } .down { color: var(--down); } .warn { color: var(--warn); }
+  .panel { background: var(--panel); background-image: var(--sheen); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--e1); min-width: 0; container-type: inline-size; }
+  @container (max-width: 360px) { .cell .v { font-size: 17px; } }
+  @container (max-width: 280px) { .cell .v { font-size: 15px; } .cell .s { font-size: 11px; } }
+  .panel.quiet { background-image: none; box-shadow: none; }
+  .well { background: var(--ink-2); border-top: 1px solid var(--line); }
+  .hair { border-top: 1px solid var(--line); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 8px; font: 600 13px/1 'IBM Plex Sans', system-ui, sans-serif; border: 1px solid transparent; cursor: pointer; white-space: nowrap; text-decoration: none; transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, border-color 160ms ease; }
+  .btn.sm { height: 30px; padding: 0 10px; font-size: 12px; } .btn.lg { height: 44px; padding: 0 20px; font-size: 14px; border-radius: 10px; }
+  .btn.primary { background: var(--amber); color: var(--amber-ink); }
+  .btn.primary:hover { transform: translateY(-1px); box-shadow: 0 8px 22px -8px rgba(242,169,59,0.6); filter: brightness(1.04); }
+  .btn.secondary { background: transparent; color: var(--phosphor); border-color: var(--line-2); }
+  .btn.secondary:hover { background: var(--raised); border-color: var(--steel); }
+  .btn.ghost { background: transparent; color: var(--steel); }
+  .btn.ghost:hover { color: var(--phosphor); background: var(--raised); }
+  .btn.link { background: none; color: var(--signal); padding: 0; height: auto; border: 0; font-weight: 500; }
+  .btn.link:hover { text-decoration: underline; }
+  .btn.disabled, .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; filter: none !important; }
+  .btn.focus { outline: 2px solid var(--amber-text); outline-offset: 2px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 500; line-height: 1; white-space: nowrap; color: var(--steel); background: rgba(138,155,180,0.14); }
+  .chip.up { color: var(--up); background: var(--up-tint); } .chip.down { color: var(--down); background: var(--down-tint); }
+  .chip.live { color: var(--signal); background: var(--signal-tint); } .chip.warn { color: var(--warn); background: var(--warn-tint); }
+  .chip.emph { color: var(--amber-text); background: var(--amber-tint); } .chip.outline { background: transparent; border: 1px solid var(--line-2); }
+  .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .is-live .chip.live .dot { animation: livePulse 1.6s ease-in-out infinite; }
+  .sym { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); font: 600 12px/1 'IBM Plex Mono', monospace; letter-spacing: 0.04em; color: var(--phosphor); cursor: pointer; flex-shrink: 0; }
+  .sym:hover { border-color: var(--steel); background: var(--raised); } .sym.on { border-color: var(--amber); color: var(--amber-text); background: var(--amber-tint); }
+  .seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 8px; background: var(--raised); border: 1px solid var(--line); }
+  .seg > span { padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; color: var(--steel); cursor: pointer; line-height: 1.2; white-space: nowrap; }
+  .seg > span.on { background: var(--panel); color: var(--phosphor); box-shadow: var(--e1); }
+  .field { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--ink-2); color: var(--phosphor); font-size: 13px; min-width: 0; }
+  .field.focus { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-tint); }
+  .field .ph { color: var(--steel-2); }
+  .cell { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .cell .v { font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 500; line-height: 1.15; color: var(--phosphor); letter-spacing: -0.01em; }
+  .cell .s { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--steel); line-height: 1.3; }
+  .cell.offline { opacity: 0.5; }
+  .is-live .flash-up { animation: flashUp 700ms ease-out 1; } .is-live .flash-down { animation: flashDown 700ms ease-out 1; }
+  .ring { outline: 2px solid var(--amber-text); outline-offset: 2px; border-radius: 8px; }
+  .kbd { display: inline-flex; align-items: center; height: 18px; padding: 0 5px; border-radius: 4px; border: 1px solid var(--line-2); font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--steel); background: var(--ink-2); }
+  .ico { width: 16px; height: 16px; flex-shrink: 0; }
+  .tt { position: absolute; background: var(--raised-2); color: var(--phosphor); border: 1px solid var(--line-2); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.45; box-shadow: var(--e4); max-width: 260px; }
+  .skel { background: linear-gradient(90deg, var(--raised) 0%, var(--raised-2) 50%, var(--raised) 100%); background-size: 200% 100%; border-radius: 6px; animation: shimmer 1.4s linear infinite; }
+  .livebar { position: absolute; left: 0; top: 0; width: 2px; height: 32%; border-top-left-radius: 12px; background: linear-gradient(180deg, var(--signal), transparent); opacity: 0.75; }
+  .is-live .livebar { animation: widgetLivePulse 2.8s ease-in-out infinite; }
+  .particle { animation: drift 6s linear infinite; opacity: 0; }
+  .is-live .particle { opacity: 1; }
+  .trail { stroke-dasharray: 4 3; }
+  .is-live .trail { animation: trailMove 1.2s linear infinite; }
+  .is-live .beam { animation: beam 2.4s ease-in-out infinite; }
+  .is-live .tick { animation: tick 1s steps(1) infinite; }
+  .scroll-x { display: flex; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .scroll-x::-webkit-scrollbar { display: none; }
+  .wrap { width: 100%; max-width: 1360px; margin: 0 auto; padding-left: clamp(16px, 3vw, 40px); padding-right: clamp(16px, 3vw, 40px); }
+  .nav-bar { position: sticky; top: 0; z-index: 20; height: calc(56px + env(safe-area-inset-top)); padding-top: env(safe-area-inset-top); background: var(--glass); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+  .nav-in { height: 56px; display: flex; align-items: center; gap: 24px; }
+  .nav-links { display: flex; gap: 22px; }
+  .nav-links a { position: relative; display: inline-flex; align-items: center; height: 56px; padding: 0 2px; font-size: 13.5px; font-weight: 600; text-decoration: none; color: var(--steel); }
+  .nav-links a.on { color: var(--phosphor); }
+  .nav-links a.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--amber); border-radius: 2px 2px 0 0; }
+  .nav-burger { display: none; color: var(--steel); align-items: center; }
+  .nav-search { height: 32px; width: 280px; border-radius: 999px; background: var(--ink-2); border-color: var(--line); gap: 10px; }
+  .nav-search-icon { display: none; color: var(--steel); align-items: center; }
+  .nav-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .foot-grid { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: start; padding-top: 24px; padding-bottom: 40px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  @media (min-width: 1600px) { .wrap { max-width: 1560px; } }
+  @media (max-width: 1299px) { .nav-search { width: 200px; } .nav-in { gap: 18px; } .nav-links { gap: 16px; } }
+  @media (max-width: 1099px) { .nav-search { display: none; } .nav-search-icon { display: inline-flex; } .nav-clock .tick { display: none; } }
+  @media (max-width: 899px) { .nav-links { display: none; } .nav-burger { display: inline-flex; } .nav-in { gap: 14px; } .grid-3, .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 699px) { .foot-grid { grid-template-columns: 1fr; } .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } .nav-clock { display: none; } .nav-bell { display: none; } }
+  @media (pointer: coarse) { .btn { min-height: 44px; } .btn.sm { min-height: 40px; } .sym { min-height: 40px; } .seg > span { min-height: 38px; display: inline-flex; align-items: center; } }
+  @media (max-width: 599px) { [role="dialog"] { width: 100% !important; border-radius: 12px !important; } [role="dialog"] .btn { flex: 1 1 100%; } }
+  @keyframes livePulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: 0.45; transform: scale(1.35);} }
+  @keyframes widgetLivePulse { 0%,100% { opacity: 0.55;} 50% { opacity: 0.95;} }
+  @keyframes flashUp { 0% { color: var(--up); } 100% { color: var(--phosphor); } }
+  @keyframes flashDown { 0% { color: var(--down); } 100% { color: var(--phosphor); } }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  @keyframes drift { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 0.9; } 85% { opacity: 0.9; } 100% { transform: translateY(-46px); opacity: 0; } }
+  @keyframes trailMove { to { stroke-dashoffset: -14; } }
+  @keyframes beam { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+  @keyframes tick { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  @keyframes drawIn { from { stroke-dashoffset: 1600; } to { stroke-dashoffset: 0; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+  .lrow { display: grid; grid-template-columns: 18px 1fr auto auto; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); }
+  .lrow.big { padding: 10px 0; }
+  .lrow .tick { width: 14px; height: 0; display: inline-block; flex-shrink: 0; }
+  .lrow .lbl { font-size: 12px; color: var(--steel); font-weight: 500; white-space: nowrap; }
+  .lrow .val { font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 500; }
+  .lrow.big .val { font-size: 18px; font-weight: 600; }
+  .lrow .dist { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--steel); min-width: 52px; text-align: right; }
+
+  .desk { width: 100%; background: var(--ink); color: var(--phosphor); }
+  .mast { padding-top: 20px; padding-bottom: 12px; }
+  .mast-row { display: flex; align-items: flex-start; gap: 16px 28px; flex-wrap: wrap; }
+  .mast-title { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .mast-sym, .mast-price { font-size: clamp(30px, 3vw, 42px); letter-spacing: -0.02em; }
+  .mast-meta { display: flex; align-items: center; gap: 10px 12px; margin-top: 6px; font-size: 12.5px; color: var(--steel); flex-wrap: wrap; }
+  .mast-controls { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-wrap: wrap; }
+  .quick { display: flex; align-items: center; gap: 8px; margin-top: 14px; overflow-x: auto; scrollbar-width: none; }
+  .quick::-webkit-scrollbar { display: none; }
+  .quick-note { margin-left: auto; white-space: nowrap; font-size: 11.5px; color: var(--steel-2); }
+  .field-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; }
+  .field-main { min-width: 0; padding: 10px 6px 0; }
+  .ladder { border-left: 1px solid var(--line); padding: 12px 18px 14px; display: flex; flex-direction: column; }
+  .ladder-rows { margin-top: 6px; }
+  .ladder-foot { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tape-row { display: flex; align-items: center; gap: 14px; padding: 8px 14px 12px; border-top: 1px solid var(--line); margin-top: 6px; }
+  .path-row { display: flex; align-items: center; gap: 12px 18px; padding: 8px 14px 12px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .path-row .pr { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .path-row .pr-note { margin-left: auto; white-space: nowrap; font-size: 11px; color: var(--steel-2); }
+  .sf-narrow { display: none; }
+  .strip { display: grid; grid-template-columns: 1.35fr repeat(7, minmax(0, 1fr)); }
+  .strip > * { border-right: 1px solid var(--line); min-width: 0; }
+  .strip > *:last-child { border-right: 0; }
+  .work { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: 14px; align-items: stretch; }
+  .side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .ai { position: relative; display: flex; flex-direction: column; min-height: 100%; }
+  .ai-head { display: flex; align-items: center; gap: 10px; padding: 14px 20px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .ai-cols { display: grid; grid-template-columns: 1.05fr 1fr; gap: 28px; padding: 16px 20px 6px; }
+  .ai-peek { display: none; }
+  .ai-foot { margin-top: auto; display: flex; align-items: center; gap: 12px; padding: 10px 20px 12px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--steel); flex-wrap: wrap; }
+  .ai-foot .note { margin-left: auto; }
+  .ai-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+  .ctx-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+  .ctx-head .rule { flex: 1; height: 1px; background: var(--line); min-width: 40px; }
+  .ctx-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .ctx-span2 { grid-column: span 2; }
+  .tape-grid { display: grid; grid-template-columns: 1fr 1fr; }
+  .ctx-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .strip-dots { display: none; justify-content: center; gap: 4px; margin-top: 6px; }
+  .ai-scrim { display: none; }
+  .ai-mbar { display: none; }
+  @media (min-width: 1600px) { .ctx-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .field-grid { grid-template-columns: minmax(0, 1fr) 340px; } }
+  @media (max-width: 1199px) { .work { grid-template-columns: 1fr; } .side { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 1099px) { .strip { display: flex; overflow-x: auto; scrollbar-width: none; } .strip::-webkit-scrollbar { display: none; } .strip > * { flex: 0 0 170px; } .strip > *:first-child { flex-basis: 250px; } .strip > *:last-child { border-right: 1px solid var(--line); } .strip-dots { display: flex; } }
+  @media (max-width: 999px) { .field-grid { grid-template-columns: 1fr; } .ladder { border-left: 0; border-top: 1px solid var(--line); padding: 12px 14px; } .ladder-rows { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; } .lrow, .lrow.big { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; border-top: 0; padding: 8px 10px; border-radius: 8px; background: var(--ink-2); } .lrow .dist { min-width: 0; text-align: left; } .ladder-foot { margin-top: 12px; } .ctx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 899px) { .ai-cols { grid-template-columns: 1fr; gap: 18px; } .side { grid-template-columns: 1fr; } }
+  @media (max-width: 767px) {
+    .desk { padding-bottom: calc(76px + env(safe-area-inset-bottom)); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+    .tape-row { flex-wrap: wrap; } .tape-row > div { flex: 1 1 100%; order: 3; }
+    .path-row .pr-note { margin-left: 0; white-space: normal; }
+    .ai-scrim { position: fixed; inset: 0; z-index: 29; background: var(--scrim); }
+    .desk.is-peek .ai-scrim { display: none; } .desk:not(.is-peek) .ai-scrim { display: block; }
+    .ai-mbar { display: flex; align-items: center; gap: 8px; padding: 10px 16px 0; flex-wrap: wrap; font-size: 11.5px; color: var(--steel); }
+    .mast-controls { width: 100%; margin-left: 0; }
+    .mast-controls .field { flex: 1 1 140px; }
+    .mast-controls .btn { flex: 1 1 100%; height: 44px; }
+    .quick-note { display: none; }
+    .sf-wide { display: none; } .sf-narrow { display: block; }
+    .ladder-rows { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ctx-grid { grid-template-columns: 1fr; } .ctx-span2 { grid-column: span 1; } .ctx-head .seg { margin-left: 0; width: 100%; overflow-x: auto; scrollbar-width: none; }
+    .tape-row { padding-left: 10px; padding-right: 10px; }
+    .ai { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; border-radius: 18px 18px 0 0; max-height: 82vh; overflow: auto; box-shadow: 0 -14px 36px rgba(0,0,0,0.42), var(--e4); min-height: 0; padding-bottom: env(safe-area-inset-bottom); }
+    .ai-head { display: none; } .ai-foot { display: none; }
+    .ai-peek { display: flex; align-items: center; gap: 8px; padding: 8px 16px 10px; cursor: pointer; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+    .ai-cols { padding: 12px 16px 16px; gap: 14px; }
+    .is-peek .ai-body { display: none; }
+    .ai-actions .btn { flex: 1 1 100%; height: 44px; }
+    .work { gap: 12px; }
+  }
+</style>
+</helmet>
+<div data-scheme="{{scheme}}" class="desk {{liveClass}} {{sheetClass}}" style="min-height: 2400px;">
+    <header class="nav-bar">
+    <div class="wrap nav-in">
+      <a href="#" class="nav-burger" aria-label="Open navigation menu"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M4 7h16M4 12h16M4 17h16"></path></svg></a>
+      <a href="#" style="display: inline-flex; text-decoration: none;"><span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 17px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 12.6px; height: 12.2px; margin: 0 0.8px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span></a>
+      <nav aria-label="primary" class="nav-links"><a href="#" class="">Scanner</a><a href="#" class="on">Ticker</a><a href="#" class="">Positions</a><a href="#" class="">Alerts</a></nav>
+      <div class="nav-right">
+        <div class="field nav-search"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><span class="ph" style="flex: 1;">Jump to a ticker…</span><span class="kbd">⌘K</span></div>
+        <a href="#" class="nav-search-icon" aria-label="Search tickers"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></a>
+        <div class="chip live nav-clock" style="height: 26px;"><span class="dot"></span>Open <span class="mono tick" style="color: var(--steel);">10:42:07 ET</span></div>
+        <a href="#" class="nav-bell" aria-label="Alerts" style="display: inline-flex; color: var(--steel);"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 16V11a6 6 0 0112 0v5l2 2H4l2-2z"></path><path d="M10 20a2 2 0 004 0"></path></svg></a>
+        <a href="#" aria-label="Account settings" style="display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: var(--amber); color: var(--amber-ink); font: 700 12px/1 'IBM Plex Sans', sans-serif; text-decoration: none; flex-shrink: 0;">R</a>
+      </div>
+    </div>
+  </header>
+    
+  <section class="wrap mast">
+    <div class="mast-row">
+      <div style="min-width: 0; flex: 1 1 420px;">
+        <div class="mast-title">
+          <h1 class="display mast-sym" style="margin: 0;">SPY</h1>
+          <span class="mono flash-up mast-price" style="font-weight: 500;">573.12</span>
+          <span class="mono up" style="font-size: 15px; font-weight: 500;">+1.84 · +0.32%</span>
+        </div>
+        <div class="mast-meta">
+          <span class="chip up">positive gamma</span>
+          <span class="chip live"><span class="dot"></span>live · open · <span class="mono">SPY</span> tape</span>
+          <span>SPDR S&amp;P 500 ETF</span><span class="dim">·</span>
+          <span><span class="signal">●</span> Last trade <span class="mono">573.10</span></span><span class="dim">·</span>
+          <span>Levels @ <span class="mono">573.05</span></span><span class="dim">·</span>
+          <span>Structure as-of <span class="mono">42s</span> · refreshes ~60s</span><span class="dim">·</span>
+          <span>All expirations</span>
+        </div>
+      </div>
+      <div class="mast-controls">
+        <div class="field" style="height: 36px; gap: 8px;"><span class="caps" style="font-size: 11px;">Expirations</span><span style="font-weight: 600;">All</span><span class="mono steel" style="font-size: 11px;">7–45 DTE</span><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 9l6 6 6-6"></path></svg></div>
+        <div class="field" style="height: 36px; gap: 8px;"><span class="caps" style="font-size: 11px;">Persona</span><span style="font-weight: 600;">Balanced Swinger</span><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 9l6 6 6-6"></path></svg></div>
+        <button class="btn primary"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 5v14M5 12h14"></path></svg> Open simulated trade</button>
+      </div>
+    </div>
+    <div class="quick">
+      <span class="caps" style="margin-right: 4px; flex-shrink: 0;">Quick</span>
+      <span class="sym on">SPY</span><span class="sym">QQQ</span><span class="sym">IWM</span><span class="sym">NVDA</span><span class="sym">TSLA</span>
+      <span style="width: 1px; height: 16px; background: var(--line-2); margin: 0 4px; flex-shrink: 0;"></span>
+      <span class="sym">AAPL</span><span class="sym">AMD</span><span class="sym">META</span>
+      <span class="quick-note">Universe member · 69 tracked names</span>
+    </div>
+  </section>
+    
+  <section class="wrap">
+    <div class="panel" style="position: relative; overflow: hidden;">
+      <span class="livebar"></span>
+      <div style="display: flex; align-items: flex-start; gap: 12px; padding: 14px 18px 10px; flex-wrap: wrap;">
+    <div style="min-width: 0; flex: 1 1 200px;">
+      <div style="display: flex; align-items: center; gap: 8px;"><h2 style="margin: 0; font-size: 14px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Structure field</h2><span class="chip live" style="height: 18px; padding: 0 7px; font-size: 11px;"><span class="dot"></span>mid · tape</span></div>
+      <p style="margin: 2px 0 0; font-size: 12px; color: var(--steel);">Net dealer gamma by strike · all expirations · levels are REST structure (as-of 42s) · the mid is tape</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap;"><div style="display: flex; align-items: center; gap: 14px; margin-right: 8px; font-size: 11px; color: var(--steel); flex-wrap: wrap;"><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: var(--up);"></span>call-dominated</span><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: var(--down);"></span>put-dominated</span><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 2px; background: var(--amber);"></span>flip</span></div><span class="seg"><span class="{{fieldSegClass}}" onClick="{{showField}}">Field</span><span class="{{magnetSegClass}}" onClick="{{showMagnet}}">Magnet</span></span><span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg></span></div>
+  </div>
+      <div class="well field-grid">
+        <div class="field-main">
+          <sc-if value="{{viewField}}" hint-placeholder-val="{{true}}"><div class="sf-wide"><svg viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet" style="display: block; width: 100%; height: auto;" role="img" aria-label="Net dealer gamma by strike">
+    <defs>
+      <linearGradient id="main-heat" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="var(--down)" stop-opacity="0.16"></stop><stop offset="0.375" stop-color="var(--amber)" stop-opacity="0.05"></stop><stop offset="1" stop-color="var(--up)" stop-opacity="0.16"></stop></linearGradient>
+      <linearGradient id="main-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--up)" stop-opacity="0.22"></stop><stop offset="0.5" stop-color="var(--phosphor)" stop-opacity="0.02"></stop><stop offset="1" stop-color="var(--down)" stop-opacity="0.22"></stop></linearGradient>
+      <clipPath id="main-clip"><rect x="44" y="22" width="936" height="248"></rect></clipPath>
+    </defs>
+    <rect x="44" y="22" width="936" height="248" fill="url(#main-heat)"></rect>
+    <line x1="44" y1="146" x2="980" y2="146" stroke="var(--steel)" stroke-opacity="0.35"></line>
+    <g clip-path="url(#main-clip)"><path d="M 62.0 159.9 C 84.5 159.9, 84.5 174.1, 107.0 174.1 C 129.5 174.1, 129.5 199.2, 152.0 199.2 C 174.5 199.2, 174.5 227.5, 197.0 227.5 C 219.5 227.5, 219.5 244.1, 242.0 244.1 C 264.5 244.1, 264.5 229.7, 287.0 229.7 C 309.5 229.7, 309.5 199.6, 332.0 199.6 C 354.5 199.6, 354.5 169.5, 377.0 169.5 C 399.5 169.5, 399.5 130.5, 422.0 130.5 C 444.5 130.5, 444.5 110.0, 467.0 110.0 C 489.5 110.0, 489.5 70.3, 512.0 70.3 C 534.5 70.3, 534.5 34.7, 557.0 34.7 C 579.5 34.7, 579.5 31.9, 602.0 31.9 C 624.5 31.9, 624.5 56.1, 647.0 56.1 C 669.5 56.1, 669.5 92.8, 692.0 92.8 C 714.5 92.8, 714.5 120.4, 737.0 120.4 C 759.5 120.4, 759.5 132.8, 782.0 132.8 C 804.5 132.8, 804.5 136.2, 827.0 136.2 C 849.5 136.2, 849.5 136.9, 872.0 136.9 C 894.5 136.9, 894.5 136.9, 917.0 136.9 C 939.5 136.9, 939.5 136.9, 962.0 136.9 L 962.0 146 L 62.0 146 Z" fill="url(#main-area)"></path><rect x="48.2" y="146.0" width="27.6" height="13.9" rx="1.5" fill="var(--down)" fill-opacity="0.78"></rect><rect x="93.2" y="146.0" width="27.6" height="28.1" rx="1.5" fill="var(--down)" fill-opacity="0.78"></rect><rect x="138.2" y="146.0" width="27.6" height="53.2" rx="1.5" fill="var(--down)" fill-opacity="0.78"></rect><rect x="183.2" y="146.0" width="27.6" height="81.5" rx="1.5" fill="var(--down)" fill-opacity="0.78"></rect><rect x="228.2" y="146.0" width="27.6" height="98.1" rx="1.5" fill="var(--down)" fill-opacity="0.78"></rect><rect x="273.2" y="146.0" width="27.6" height="83.7" rx="1.5" fill="var(--down)" fill-opacity="0.78"></rect><rect x="318.2" y="146.0" width="27.6" height="53.6" rx="1.5" fill="var(--down)" fill-opacity="0.78"></rect><rect x="363.2" y="146.0" width="27.6" height="23.5" rx="1.5" fill="var(--down)" fill-opacity="0.78"></rect><rect x="408.2" y="130.5" width="27.6" height="15.5" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="453.2" y="110.0" width="27.6" height="36.0" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="498.2" y="70.3" width="27.6" height="75.7" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="543.2" y="34.7" width="27.6" height="111.3" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="588.2" y="31.9" width="27.6" height="114.1" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="633.2" y="56.1" width="27.6" height="89.9" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="678.2" y="92.8" width="27.6" height="53.2" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="723.2" y="120.4" width="27.6" height="25.6" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="768.2" y="132.8" width="27.6" height="13.2" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="813.2" y="136.2" width="27.6" height="9.8" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="858.2" y="136.9" width="27.6" height="9.1" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="903.2" y="136.9" width="27.6" height="9.1" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="948.2" y="136.9" width="27.6" height="9.1" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><path d="M 62.0 159.9 C 84.5 159.9, 84.5 174.1, 107.0 174.1 C 129.5 174.1, 129.5 199.2, 152.0 199.2 C 174.5 199.2, 174.5 227.5, 197.0 227.5 C 219.5 227.5, 219.5 244.1, 242.0 244.1 C 264.5 244.1, 264.5 229.7, 287.0 229.7 C 309.5 229.7, 309.5 199.6, 332.0 199.6 C 354.5 199.6, 354.5 169.5, 377.0 169.5 C 399.5 169.5, 399.5 130.5, 422.0 130.5 C 444.5 130.5, 444.5 110.0, 467.0 110.0 C 489.5 110.0, 489.5 70.3, 512.0 70.3 C 534.5 70.3, 534.5 34.7, 557.0 34.7 C 579.5 34.7, 579.5 31.9, 602.0 31.9 C 624.5 31.9, 624.5 56.1, 647.0 56.1 C 669.5 56.1, 669.5 92.8, 692.0 92.8 C 714.5 92.8, 714.5 120.4, 737.0 120.4 C 759.5 120.4, 759.5 132.8, 782.0 132.8 C 804.5 132.8, 804.5 136.2, 827.0 136.2 C 849.5 136.2, 849.5 136.9, 872.0 136.9 C 894.5 136.9, 894.5 136.9, 917.0 136.9 C 939.5 136.9, 939.5 136.9, 962.0 136.9" fill="none" stroke="var(--phosphor)" stroke-opacity="0.55" stroke-width="1.25"></path><circle class="particle" cx="233.0" cy="180.7" r="1.2" fill="var(--down)" style="animation-delay: 0.00s; animation-duration: 4.5s;"></circle><circle class="particle" cx="272.3" cy="193.7" r="1.7" fill="var(--down)" style="animation-delay: -0.43s; animation-duration: 5.2s;"></circle><circle class="particle" cx="311.6" cy="206.7" r="2.2" fill="var(--down)" style="animation-delay: -0.86s; animation-duration: 5.9s;"></circle><circle class="particle" cx="315.0" cy="189.7" r="1.2" fill="var(--down)" style="animation-delay: -1.29s; animation-duration: 6.6s;"></circle><circle class="particle" cx="354.3" cy="202.7" r="1.7" fill="var(--down)" style="animation-delay: -1.72s; animation-duration: 4.5s;"></circle><circle class="particle" cx="357.6" cy="185.7" r="2.2" fill="var(--down)" style="animation-delay: -2.15s; animation-duration: 5.2s;"></circle><circle class="particle" cx="396.9" cy="198.7" r="1.2" fill="var(--up)" style="animation-delay: -2.58s; animation-duration: 5.9s;"></circle><circle class="particle" cx="436.3" cy="181.7" r="1.7" fill="var(--up)" style="animation-delay: -3.01s; animation-duration: 6.6s;"></circle><circle class="particle" cx="439.6" cy="194.7" r="2.2" fill="var(--up)" style="animation-delay: -3.44s; animation-duration: 4.5s;"></circle><circle class="particle" cx="478.9" cy="207.7" r="1.2" fill="var(--up)" style="animation-delay: -3.87s; animation-duration: 5.2s;"></circle><circle class="particle" cx="482.2" cy="190.7" r="1.7" fill="var(--up)" style="animation-delay: -4.30s; animation-duration: 5.9s;"></circle><circle class="particle" cx="521.6" cy="203.7" r="2.2" fill="var(--up)" style="animation-delay: -4.73s; animation-duration: 6.6s;"></circle><circle class="particle" cx="560.9" cy="186.7" r="1.2" fill="var(--up)" style="animation-delay: -5.16s; animation-duration: 4.5s;"></circle><circle class="particle" cx="564.2" cy="199.7" r="1.7" fill="var(--up)" style="animation-delay: -5.59s; animation-duration: 5.2s;"></circle></g>
+    <text x="38" y="35.4" text-anchor="end" font-family="IBM Plex Mono" font-size="10" fill="var(--steel)">+$500M</text><text x="38" y="149.5" text-anchor="end" font-family="IBM Plex Mono" font-size="10" fill="var(--steel)">0</text><text x="38" y="263.6" text-anchor="end" font-family="IBM Plex Mono" font-size="10" fill="var(--steel)">−$500M</text><text x="62.0" y="290" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--steel)">550</text><text x="242.0" y="290" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--steel)">560</text><text x="422.0" y="290" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--steel)">570</text><text x="602.0" y="290" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--steel)">580</text><text x="782.0" y="290" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--steel)">590</text><text x="962.0" y="290" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--steel)">600</text>
+    <line x1="242.0" y1="22" x2="242.0" y2="270" stroke="var(--down)" stroke-width="1.25" ></line><text x="242.0" y="14" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600" fill="var(--down)">put wall 560</text>
+    <line x1="602.0" y1="22" x2="602.0" y2="270" stroke="var(--up)" stroke-width="1.25" ></line><text x="602.0" y="14" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600" fill="var(--up)">call wall 580</text>
+    <line x1="395.0" y1="22" x2="395.0" y2="270" stroke="var(--amber)" stroke-width="6" stroke-opacity="0.18" class="beam"></line><line x1="395.0" y1="22" x2="395.0" y2="270" stroke="var(--amber)" stroke-width="1.75" ></line><text x="395.0" y="14" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600" fill="var(--amber)">flip 568.50</text>
+    <line x1="422.0" y1="22" x2="422.0" y2="270" stroke="var(--steel)" stroke-width="1" stroke-dasharray="3 3"></line><text x="422.0" y="14" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" font-weight="600" fill="var(--steel)">max pain 570</text>
+    <g>
+      <line x1="478.2" y1="22" x2="478.2" y2="270" stroke="var(--signal)" stroke-width="1.5" stroke-dasharray="2 3"></line>
+      <circle cx="478.2" cy="146" r="9" fill="var(--signal)" fill-opacity="0.18" class="beam"></circle>
+      <circle cx="478.2" cy="146" r="4" fill="var(--signal)"></circle>
+      <rect x="486.2" y="125" width="86" height="18" rx="4" fill="var(--panel)" stroke="var(--signal)" stroke-opacity="0.6"></rect><text x="492.2" y="138" font-family="IBM Plex Mono" font-size="10.5" font-weight="600" fill="var(--signal)">● mid 573.12</text>
+    </g>
+  </svg></div><div class="sf-narrow"><svg viewBox="0 0 420 230" preserveAspectRatio="xMidYMid meet" style="display: block; width: 100%; height: auto;" role="img" aria-label="Net dealer gamma by strike">
+    <defs>
+      <linearGradient id="mainn-heat" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="var(--down)" stop-opacity="0.16"></stop><stop offset="0.375" stop-color="var(--amber)" stop-opacity="0.05"></stop><stop offset="1" stop-color="var(--up)" stop-opacity="0.16"></stop></linearGradient>
+      <linearGradient id="mainn-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--up)" stop-opacity="0.22"></stop><stop offset="0.5" stop-color="var(--phosphor)" stop-opacity="0.02"></stop><stop offset="1" stop-color="var(--down)" stop-opacity="0.22"></stop></linearGradient>
+      <clipPath id="mainn-clip"><rect x="10" y="22" width="400" height="196"></rect></clipPath>
+    </defs>
+    <rect x="10" y="22" width="400" height="196" fill="url(#mainn-heat)"></rect>
+    <line x1="10" y1="120" x2="410" y2="120" stroke="var(--steel)" stroke-opacity="0.35"></line>
+    <g clip-path="url(#mainn-clip)"><path d="M 17.7 131.0 C 27.3 131.0, 27.3 142.2, 36.9 142.2 C 46.5 142.2, 46.5 162.0, 56.2 162.0 C 65.8 162.0, 65.8 184.4, 75.4 184.4 C 85.0 184.4, 85.0 197.5, 94.6 197.5 C 104.2 197.5, 104.2 186.2, 113.8 186.2 C 123.5 186.2, 123.5 162.4, 133.1 162.4 C 142.7 162.4, 142.7 138.6, 152.3 138.6 C 161.9 138.6, 161.9 107.7, 171.5 107.7 C 181.2 107.7, 181.2 91.5, 190.8 91.5 C 200.4 91.5, 200.4 60.1, 210.0 60.1 C 219.6 60.1, 219.6 32.0, 229.2 32.0 C 238.8 32.0, 238.8 29.8, 248.5 29.8 C 258.1 29.8, 258.1 49.0, 267.7 49.0 C 277.3 49.0, 277.3 78.0, 286.9 78.0 C 296.5 78.0, 296.5 99.8, 306.2 99.8 C 315.8 99.8, 315.8 109.5, 325.4 109.5 C 335.0 109.5, 335.0 112.2, 344.6 112.2 C 354.2 112.2, 354.2 112.8, 363.8 112.8 C 373.5 112.8, 373.5 112.8, 383.1 112.8 C 392.7 112.8, 392.7 112.8, 402.3 112.8 L 402.3 120 L 17.7 120 Z" fill="url(#mainn-area)"></path><rect x="11.8" y="120.0" width="11.8" height="11.0" rx="1.5" fill="var(--down)" fill-opacity="0.78"></rect><rect x="31.0" y="120.0" width="11.8" height="22.2" rx="1.5" fill="var(--down)" fill-opacity="0.78"></rect><rect x="50.2" y="120.0" width="11.8" height="42.0" rx="1.5" fill="var(--down)" fill-opacity="0.78"></rect><rect x="69.5" y="120.0" width="11.8" height="64.4" rx="1.5" fill="var(--down)" fill-opacity="0.78"></rect><rect x="88.7" y="120.0" width="11.8" height="77.5" rx="1.5" fill="var(--down)" fill-opacity="0.78"></rect><rect x="107.9" y="120.0" width="11.8" height="66.2" rx="1.5" fill="var(--down)" fill-opacity="0.78"></rect><rect x="127.2" y="120.0" width="11.8" height="42.4" rx="1.5" fill="var(--down)" fill-opacity="0.78"></rect><rect x="146.4" y="120.0" width="11.8" height="18.6" rx="1.5" fill="var(--down)" fill-opacity="0.78"></rect><rect x="165.6" y="107.7" width="11.8" height="12.3" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="184.9" y="91.5" width="11.8" height="28.5" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="204.1" y="60.1" width="11.8" height="59.9" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="223.3" y="32.0" width="11.8" height="88.0" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="242.6" y="29.8" width="11.8" height="90.2" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="261.8" y="49.0" width="11.8" height="71.0" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="281.0" y="78.0" width="11.8" height="42.0" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="300.2" y="99.8" width="11.8" height="20.2" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="319.5" y="109.5" width="11.8" height="10.5" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="338.7" y="112.2" width="11.8" height="7.8" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="357.9" y="112.8" width="11.8" height="7.2" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="377.2" y="112.8" width="11.8" height="7.2" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><rect x="396.4" y="112.8" width="11.8" height="7.2" rx="1.5" fill="var(--up)" fill-opacity="0.78"></rect><path d="M 17.7 131.0 C 27.3 131.0, 27.3 142.2, 36.9 142.2 C 46.5 142.2, 46.5 162.0, 56.2 162.0 C 65.8 162.0, 65.8 184.4, 75.4 184.4 C 85.0 184.4, 85.0 197.5, 94.6 197.5 C 104.2 197.5, 104.2 186.2, 113.8 186.2 C 123.5 186.2, 123.5 162.4, 133.1 162.4 C 142.7 162.4, 142.7 138.6, 152.3 138.6 C 161.9 138.6, 161.9 107.7, 171.5 107.7 C 181.2 107.7, 181.2 91.5, 190.8 91.5 C 200.4 91.5, 200.4 60.1, 210.0 60.1 C 219.6 60.1, 219.6 32.0, 229.2 32.0 C 238.8 32.0, 238.8 29.8, 248.5 29.8 C 258.1 29.8, 258.1 49.0, 267.7 49.0 C 277.3 49.0, 277.3 78.0, 286.9 78.0 C 296.5 78.0, 296.5 99.8, 306.2 99.8 C 315.8 99.8, 315.8 109.5, 325.4 109.5 C 335.0 109.5, 335.0 112.2, 344.6 112.2 C 354.2 112.2, 354.2 112.8, 363.8 112.8 C 373.5 112.8, 373.5 112.8, 383.1 112.8 C 392.7 112.8, 392.7 112.8, 402.3 112.8" fill="none" stroke="var(--phosphor)" stroke-opacity="0.55" stroke-width="1.25"></path><circle class="particle" cx="90.8" cy="147.4" r="1.2" fill="var(--down)" style="animation-delay: 0.00s; animation-duration: 4.5s;"></circle><circle class="particle" cx="107.6" cy="160.4" r="1.7" fill="var(--down)" style="animation-delay: -0.43s; animation-duration: 5.2s;"></circle><circle class="particle" cx="124.4" cy="173.4" r="2.2" fill="var(--down)" style="animation-delay: -0.86s; animation-duration: 5.9s;"></circle><circle class="particle" cx="125.8" cy="156.4" r="1.2" fill="var(--down)" style="animation-delay: -1.29s; animation-duration: 6.6s;"></circle><circle class="particle" cx="142.6" cy="169.4" r="1.7" fill="var(--down)" style="animation-delay: -1.72s; animation-duration: 4.5s;"></circle><circle class="particle" cx="144.0" cy="152.4" r="2.2" fill="var(--down)" style="animation-delay: -2.15s; animation-duration: 5.2s;"></circle><circle class="particle" cx="160.8" cy="165.4" r="1.2" fill="var(--up)" style="animation-delay: -2.58s; animation-duration: 5.9s;"></circle><circle class="particle" cx="177.6" cy="148.4" r="1.7" fill="var(--up)" style="animation-delay: -3.01s; animation-duration: 6.6s;"></circle><circle class="particle" cx="179.1" cy="161.4" r="2.2" fill="var(--up)" style="animation-delay: -3.44s; animation-duration: 4.5s;"></circle><circle class="particle" cx="195.9" cy="174.4" r="1.2" fill="var(--up)" style="animation-delay: -3.87s; animation-duration: 5.2s;"></circle><circle class="particle" cx="197.3" cy="157.4" r="1.7" fill="var(--up)" style="animation-delay: -4.30s; animation-duration: 5.9s;"></circle><circle class="particle" cx="214.1" cy="170.4" r="2.2" fill="var(--up)" style="animation-delay: -4.73s; animation-duration: 6.6s;"></circle><circle class="particle" cx="230.9" cy="153.4" r="1.2" fill="var(--up)" style="animation-delay: -5.16s; animation-duration: 4.5s;"></circle><circle class="particle" cx="232.3" cy="166.4" r="1.7" fill="var(--up)" style="animation-delay: -5.59s; animation-duration: 5.2s;"></circle></g>
+    
+    <line x1="94.6" y1="22" x2="94.6" y2="218" stroke="var(--down)" stroke-width="1.25" ></line>
+    <line x1="248.5" y1="22" x2="248.5" y2="218" stroke="var(--up)" stroke-width="1.25" ></line>
+    <line x1="160.0" y1="22" x2="160.0" y2="218" stroke="var(--amber)" stroke-width="6" stroke-opacity="0.18" class="beam"></line><line x1="160.0" y1="22" x2="160.0" y2="218" stroke="var(--amber)" stroke-width="1.75" ></line>
+    <line x1="171.5" y1="22" x2="171.5" y2="218" stroke="var(--steel)" stroke-width="1" stroke-dasharray="3 3"></line>
+    <g>
+      <line x1="195.5" y1="22" x2="195.5" y2="218" stroke="var(--signal)" stroke-width="1.5" stroke-dasharray="2 3"></line>
+      <circle cx="195.5" cy="120" r="9" fill="var(--signal)" fill-opacity="0.18" class="beam"></circle>
+      <circle cx="195.5" cy="120" r="4" fill="var(--signal)"></circle>
+      
+    </g>
+  </svg></div></sc-if>
+          <sc-if value="{{viewMagnet}}" hint-placeholder-val="{{false}}"><div class="sf-wide"><svg viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet" style="display: block; width: 100%; height: auto;" role="img" aria-label="Magnet view: spot between the put wall, flip and call wall">
+    <defs><linearGradient id="mg-1000" x1="0" x2="1"><stop offset="0" stop-color="var(--down)" stop-opacity="0.22"></stop><stop offset="0.5" stop-color="var(--amber)" stop-opacity="0.08"></stop><stop offset="1" stop-color="var(--up)" stop-opacity="0.22"></stop></linearGradient></defs>
+    <rect x="260" y="116" width="500" height="68" rx="8" fill="url(#mg-1000)"></rect>
+    <rect x="260" y="116" width="500" height="68" rx="8" fill="none" stroke="var(--line-2)"></rect>
+    <line x1="260" y1="40" x2="260" y2="260" stroke="var(--down)" stroke-width="1.5"></line><text x="260" y="28" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--down)">put wall 560</text>
+    <line x1="760" y1="40" x2="760" y2="260" stroke="var(--up)" stroke-width="1.5"></line><text x="760" y="28" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--up)">call wall 580</text>
+    <line x1="472.5" y1="40" x2="472.5" y2="260" stroke="var(--amber)" stroke-width="8" stroke-opacity="0.16" class="beam"></line><line x1="472.5" y1="40" x2="472.5" y2="260" stroke="var(--amber)" stroke-width="2"></line><text x="472.5" y="28" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--amber)">flip 568.50</text>
+    <line x1="472.5" y1="150" x2="588.0000000000001" y2="150" stroke="var(--signal)" stroke-width="1.5" stroke-dasharray="3 4" class="trail"></line>
+    <circle cx="588.0000000000001" cy="150" r="16" fill="var(--signal)" fill-opacity="0.16" class="beam"></circle>
+    <circle cx="588.0000000000001" cy="150" r="7" fill="var(--signal)"></circle>
+    <text x="602.0000000000001" y="136" font-family="IBM Plex Mono" font-size="12" font-weight="600" fill="var(--phosphor)">mid 573.12</text>
+    <text x="602.0000000000001" y="174" font-family="IBM Plex Sans" font-size="11" fill="var(--steel)">+0.81% above the flip · dealers dampen moves here</text><text x="60" y="286" font-family="IBM Plex Sans" font-size="11" fill="var(--steel-2)">Magnet view · structure levels · a display metaphor, not a forecast</text>
+  </svg></div><div class="sf-narrow"><svg viewBox="0 0 420 220" preserveAspectRatio="xMidYMid meet" style="display: block; width: 100%; height: auto;" role="img" aria-label="Magnet view: spot between the put wall, flip and call wall">
+    <defs><linearGradient id="mg-420" x1="0" x2="1"><stop offset="0" stop-color="var(--down)" stop-opacity="0.22"></stop><stop offset="0.5" stop-color="var(--amber)" stop-opacity="0.08"></stop><stop offset="1" stop-color="var(--up)" stop-opacity="0.22"></stop></linearGradient></defs>
+    <rect x="106.66666666666666" y="76" width="206.66666666666666" height="68" rx="8" fill="url(#mg-420)"></rect>
+    <rect x="106.66666666666666" y="76" width="206.66666666666666" height="68" rx="8" fill="none" stroke="var(--line-2)"></rect>
+    <line x1="106.66666666666666" y1="40" x2="106.66666666666666" y2="180" stroke="var(--down)" stroke-width="1.5"></line><text x="106.66666666666666" y="28" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--down)">put 560</text>
+    <line x1="313.3333333333333" y1="40" x2="313.3333333333333" y2="180" stroke="var(--up)" stroke-width="1.5"></line><text x="313.3333333333333" y="28" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--up)">call 580</text>
+    <line x1="194.5" y1="40" x2="194.5" y2="180" stroke="var(--amber)" stroke-width="8" stroke-opacity="0.16" class="beam"></line><line x1="194.5" y1="40" x2="194.5" y2="180" stroke="var(--amber)" stroke-width="2"></line><text x="194.5" y="28" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--amber)">flip 568.50</text>
+    <line x1="194.5" y1="110" x2="242.24000000000004" y2="110" stroke="var(--signal)" stroke-width="1.5" stroke-dasharray="3 4" class="trail"></line>
+    <circle cx="242.24000000000004" cy="110" r="16" fill="var(--signal)" fill-opacity="0.16" class="beam"></circle>
+    <circle cx="242.24000000000004" cy="110" r="7" fill="var(--signal)"></circle>
+    <text x="256.24" y="96" font-family="IBM Plex Mono" font-size="12" font-weight="600" fill="var(--phosphor)">mid 573.12</text>
+    
+  </svg></div></sc-if>
+          <div class="tape-row">
+            <span class="caps" style="white-space: nowrap;">Tape · 5m mid trail</span>
+            <div style="flex: 1; min-width: 0;"><svg viewBox="0 0 640 30" width="100%" height="30" preserveAspectRatio="none" style="display: block; overflow: visible;" aria-hidden="true"><path d="M 0.0 12.5 L 13.6 9.9 L 27.2 13.6 L 40.9 12.1 L 54.5 10.6 L 68.1 11.4 L 81.7 18.1 L 95.3 11.9 L 108.9 17.5 L 122.6 21.8 L 136.2 24.9 L 149.8 20.8 L 163.4 22.4 L 177.0 28.0 L 190.6 22.1 L 204.3 22.8 L 217.9 15.5 L 231.5 18.2 L 245.1 11.2 L 258.7 9.6 L 272.3 11.2 L 286.0 11.6 L 299.6 2.0 L 313.2 2.5 L 326.8 13.2 L 340.4 11.9 L 354.0 8.9 L 367.7 19.6 L 381.3 19.4 L 394.9 19.7 L 408.5 19.4 L 422.1 23.7 L 435.7 24.2 L 449.4 13.9 L 463.0 17.5 L 476.6 17.1 L 490.2 11.0 L 503.8 10.6 L 517.4 10.2 L 531.1 2.0 L 544.7 5.7 L 558.3 5.8 L 571.9 9.6 L 585.5 2.2 L 599.1 11.8 L 612.8 7.4 L 626.4 14.3 L 640.0 19.0" fill="none" stroke="var(--signal)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" class="trail"></path><circle cx="640.0" cy="19.0" r="3" fill="var(--signal)"></circle><circle cx="640.0" cy="19.0" r="7" fill="var(--signal)" fill-opacity="0.2" class="beam"></circle></svg></div>
+            <span class="mono" style="font-size: 11px; color: var(--steel); white-space: nowrap;">last <span style="color: var(--phosphor);">573.10</span> · <span class="up">▲</span> 4 · <span class="down">▼</span> 2</span>
+          </div>
+          <div class="path-row">
+            <span class="caps" style="white-space: nowrap;">Structure path · slow lane</span>
+            <div class="pr"><span class="mono" style="font-size: 11px; color: var(--steel); white-space: nowrap;">score</span><svg viewBox="0 0 120 22" width="120" height="22" style="display: block; overflow: visible; max-width: 100%;" aria-hidden="true"><path d="M 0.0 10.3 L 9.2 9.2 L 18.5 11.4 L 27.7 13.9 L 36.9 11.0 L 46.2 16.8 L 55.4 17.1 L 64.6 12.1 L 73.8 13.1 L 83.1 20.0 L 92.3 14.1 L 101.5 4.5 L 110.8 4.8 L 120.0 2.0" fill="none" stroke="var(--amber)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" class=""></path></svg><span class="mono" style="font-size: 11px; white-space: nowrap;">72 <span class="steel">· +6 today</span></span></div>
+            <div class="pr"><span class="mono" style="font-size: 11px; color: var(--steel); white-space: nowrap;">dist to flip</span><svg viewBox="0 0 120 22" width="120" height="22" style="display: block; overflow: visible; max-width: 100%;" aria-hidden="true"><path d="M 0.0 20.0 L 9.2 15.2 L 18.5 16.3 L 27.7 12.1 L 36.9 11.9 L 46.2 11.0 L 55.4 11.8 L 64.6 9.2 L 73.8 2.0 L 83.1 5.7 L 92.3 8.4 L 101.5 4.4 L 110.8 7.5 L 120.0 6.3" fill="none" stroke="var(--steel)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" class=""></path></svg><span class="mono" style="font-size: 11px; white-space: nowrap;">−0.81% <span class="steel">· from −1.9%</span></span></div>
+            <span class="mono pr-note">session path · 14 samples · not live ticks</span>
+          </div>
+        </div>
+        <div class="ladder">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;"><span class="caps">Levels</span><span class="mono" style="font-size: 11px; color: var(--steel);">distance from mid</span></div>
+          <div class="ladder-rows">
+            <div class="lrow ">
+    <span class="tick" style="border-top: 2px solid var(--up);"></span>
+    <span class="lbl" style="">Call wall</span>
+    <span class="val ">580.00</span>
+    <span class="dist">+1.20%</span>
+  </div>
+            <div class="lrow big">
+    <span class="tick" style="border-top: 2px solid var(--signal);"></span>
+    <span class="lbl" style="color: var(--signal); font-weight: 600;">Mid <span class="chip live" style="height: 16px; padding: 0 6px; font-size: 11px; margin-left: 4px;"><span class="dot"></span>tape</span></span>
+    <span class="val flash-up">573.12</span>
+    <span class="dist">—</span>
+  </div>
+            <div class="lrow ">
+    <span class="tick" style="border-top: 1px dashed var(--steel);"></span>
+    <span class="lbl" style="">Max pain</span>
+    <span class="val ">570.00</span>
+    <span class="dist">−0.54%</span>
+  </div>
+            <div class="lrow ">
+    <span class="tick" style="border-top: 2px solid var(--amber);"></span>
+    <span class="lbl" style="">Gamma flip</span>
+    <span class="val ">568.50</span>
+    <span class="dist">−0.81%</span>
+  </div>
+            <div class="lrow ">
+    <span class="tick" style="border-top: 2px solid var(--down);"></span>
+    <span class="lbl" style="">Put wall</span>
+    <span class="val ">560.00</span>
+    <span class="dist">−2.29%</span>
+  </div>
+          </div>
+          <div class="ladder-foot">
+            <div class="cell"><div style="display: flex; align-items: center; gap: 5px;"><span class="caps">Vol-norm GEX</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span></div><span class="v up" style="font-size: 18px;">+$1.94B</span><span class="s">primary magnitude</span></div>
+            <div class="cell"><div style="display: flex; align-items: center; gap: 5px;"><span class="caps">Raw · 1% shock</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span></div><span class="v" style="font-size: 18px;">+$1.62B</span><span class="s">secondary</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+    
+  <section class="wrap" style="padding-top: 16px;">
+    <div class="panel strip">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px;">
+        <svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true" style="flex-shrink: 0;"><circle cx="24" cy="24" r="22" fill="none" stroke="var(--line-2)" stroke-width="4"></circle><circle cx="24" cy="24" r="22" fill="none" stroke="var(--amber)" stroke-width="4" stroke-linecap="round" stroke-dasharray="138.2" stroke-dashoffset="38.7" transform="rotate(-90 24 24)"></circle><text x="50%" y="50%" dy="0.36em" text-anchor="middle" font-family="IBM Plex Mono" font-size="15" font-weight="600" fill="var(--phosphor)">72</text></svg>
+        <div class="cell"><div style="display: flex; align-items: center; gap: 5px;"><span class="caps">Opportunity</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span></div><span class="v" style="font-size: 18px;"><span class="amber">Actionable</span></span><span class="s">near wall · IV cheap · 2 setups</span></div>
+      </div>
+      <div class="cell " style="padding: 12px 16px; position: relative; min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 5px;"><span class="caps">Net DEX</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span></div>
+    <div style="display: flex; align-items: baseline; gap: 6px;"><span class="v " style="font-size: 20px; ">−$412M</span><span class="down" style="font-size: 12px;">▼</span></div>
+    <span class="s">delta hedging pressure</span>
+  </div>
+      <div class="cell " style="padding: 12px 16px; position: relative; min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 5px;"><span class="caps">IV / HV</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span></div>
+    <div style="display: flex; align-items: baseline; gap: 6px;"><span class="v " style="font-size: 20px; ">0.82</span></div>
+    <span class="s">options look cheap</span>
+  </div>
+      <div class="cell " style="padding: 12px 16px; position: relative; min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 5px;"><span class="caps">IV rank</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span></div>
+    <div style="display: flex; align-items: baseline; gap: 6px;"><span class="v " style="font-size: 20px; ">34</span></div>
+    <span class="s">2nd quartile · 41st pct</span>
+  </div>
+      <div class="cell " style="padding: 12px 16px; position: relative; min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 5px;"><span class="caps">Vol / OI</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span></div>
+    <div style="display: flex; align-items: baseline; gap: 6px;"><span class="v " style="font-size: 20px; ">0.61×</span></div>
+    <span class="s">3 unusual strikes</span>
+  </div>
+      <div class="cell " style="padding: 12px 16px; position: relative; min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 5px;"><span class="caps">IV skew</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span></div>
+    <div style="display: flex; align-items: baseline; gap: 6px;"><span class="v " style="font-size: 20px; ">−2.4 pts</span></div>
+    <span class="s">fear · puts bid</span>
+  </div>
+      <div class="cell " style="padding: 12px 16px; position: relative; min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 5px;"><span class="caps">Term</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span></div>
+    <div style="display: flex; align-items: baseline; gap: 6px;"><span class="v " style="font-size: 20px; ">Contango</span></div>
+    <span class="s">7d 14.2 → 90d 18.0</span>
+  </div>
+      <div class="cell " style="padding: 12px 16px; position: relative; min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 5px;"><span class="caps">Off-exchange</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span></div>
+    <div style="display: flex; align-items: baseline; gap: 6px;"><span class="v " style="font-size: 20px; ">41%</span></div>
+    <span class="s">context only · no side</span>
+  </div>
+    </div>
+    <div class="strip-dots" aria-hidden="true"><span style="width: 14px; height: 3px; border-radius: 2px; background: var(--steel);"></span><span style="width: 6px; height: 3px; border-radius: 2px; background: var(--line-2);"></span><span style="width: 6px; height: 3px; border-radius: 2px; background: var(--line-2);"></span></div>
+  </section>
+    
+  <section class="wrap" style="padding-top: 16px;">
+    <div class="work">
+      <div class="ai-scrim" onClick="{{toggleSheet}}"></div><section class="panel ai">
+    <div class="ai-peek" onClick="{{toggleSheet}}">
+      <div style="width: 100%; display: flex; justify-content: center; margin-bottom: 2px;"><span style="width: 36px; height: 4px; border-radius: 2px; background: var(--line-2);"></span></div>
+      <span class="amber" style="display: inline-flex;"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"></path></svg></span><span style="font-size: 13px; font-weight: 600;">AI read</span><span class="dim">·</span><span class="display" style="font-size: 15px;">{{peekVerdict}}</span><span style="flex: 1;"></span><span class="mono" style="font-size: 11px; color: var(--steel);">as of 10:41</span><span style="display: inline-flex; color: var(--steel); transform: {{peekChevron}};"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 9l6 6 6-6"></path></svg></span>
+    </div>
+    <div class="ai-head">
+      <div style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; background: var(--amber-tint); color: var(--amber-text);"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"></path></svg></div>
+      <h2 style="margin: 0; font-size: 14px; font-weight: 600;">AI read · SPY</h2>
+      <span class="chip outline">SIMULATED / advisory</span>
+      <sc-if value="{{hasRead}}" hint-placeholder-val="{{true}}"><span class="chip outline mono" style="font-size: 11px;">Persona · Balanced Swinger</span><span class="chip outline mono" style="font-size: 11px;">claude-sonnet-5 · your key</span></sc-if>
+      <div style="flex: 1;"></div>
+      <a href="#" class="btn link" style="font-size: 12px;">What’s sent <svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+      <sc-if value="{{hasRead}}" hint-placeholder-val="{{true}}"><button class="btn ghost sm" onClick="{{dismiss}}" aria-label="Dismiss read" title="Dismiss"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 6l12 12M18 6L6 18"></path></svg></button></sc-if>
+      <span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle></svg></span>
+    </div>
+    <div class="ai-body" style="display: flex; flex-direction: column; flex: 1;">
+      <div class="ai-mbar"><span class="chip outline">SIMULATED / advisory</span><sc-if value="{{hasRead}}" hint-placeholder-val="{{true}}"><span class="chip outline mono" style="font-size: 11px;">Balanced Swinger · claude-sonnet-5</span></sc-if><a href="#" class="btn link" style="font-size: 12px;">What’s sent <svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a><span style="flex: 1;"></span><sc-if value="{{hasRead}}" hint-placeholder-val="{{true}}"><button class="{{refreshClass}}" onClick="{{ask}}" style="height: 30px; font-size: 12px;"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 12a9 9 0 11-2.6-6.4"></path><path d="M21 4v5h-5"></path></svg> {{refreshLabel}}</button></sc-if></div>
+      <sc-if value="{{isStale}}" hint-placeholder-val="{{false}}">
+    <div style="margin: 14px 20px 0; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: var(--warn-tint); border: 1px solid var(--warn); color: var(--warn); font-size: 12.5px; flex-wrap: wrap;">
+      <svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 3l10 18H2L12 3z"></path><path d="M12 10v4M12 17.5h.01"></path></svg><span style="flex: 1 1 240px; color: var(--phosphor);"><strong style="font-weight: 600;">A newer snapshot has arrived.</strong> This read is pinned to 10:41:52 ET; levels may have moved.</span><button class="btn secondary sm" onClick="{{ask}}"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 12a9 9 0 11-2.6-6.4"></path><path d="M21 4v5h-5"></path></svg> Refresh analysis</button>
+    </div></sc-if>
+      <sc-if value="{{isSignedOut}}" hint-placeholder-val="{{false}}">
+    <div class="ai-cols" style="align-items: center; padding: 22px 20px 14px;">
+      <div>
+        <div class="display" style="font-size: 22px;">Sign in to ask for a read.</div>
+        <p style="margin: 6px 0 0; font-size: 13px; color: var(--steel); line-height: 1.55;">The structure, tape and context on this desk stay free without an account. The AI read runs on your own key and needs a sign-in so the key stays yours.</p>
+      </div>
+      <div class="ai-actions" style="justify-content: flex-end;"><button class="btn secondary">What’s sent to the AI</button><button class="btn primary">Sign in to ask</button></div>
+    </div></sc-if>
+      <sc-if value="{{isNoKey}}" hint-placeholder-val="{{false}}">
+    <div class="ai-cols" style="align-items: center; padding: 22px 20px 14px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px; color: var(--steel);"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="8" cy="15" r="4"></circle><path d="M11 12l9-9M17 6l3 3M14 9l2 2"></path></svg><span class="caps">Add an API key to power reads</span></div>
+        <div class="display" style="font-size: 22px; margin-top: 6px;">Your key, your cost.</div>
+        <p style="margin: 6px 0 0; font-size: 13px; color: var(--steel); line-height: 1.55;">Add a key for Anthropic, OpenAI, Gemini or Grok in Settings. The manual export always works without one.</p>
+      </div>
+      <div class="ai-actions" style="justify-content: flex-end;"><a href="#" class="btn link">View what’s sent <svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a><button class="btn primary">Open AI providers in Settings</button></div>
+    </div></sc-if>
+      <sc-if value="{{isIdle}}" hint-placeholder-val="{{false}}">
+    <div class="ai-cols" style="align-items: center; padding-top: 18px;">
+      <div>
+        <div class="display" style="font-size: 22px;">Ready to read this snapshot.</div>
+        <p style="margin: 6px 0 0; font-size: 13px; color: var(--steel); line-height: 1.55;">A risk-first entry read on SPY, framed by your persona and grounded in the structure above. Advisory — you confirm every paper trade.</p>
+        <div style="display: flex; gap: 14px; margin-top: 12px; font-size: 11.5px; color: var(--steel); flex-wrap: wrap;"><span>Snapshot as of <span class="mono">10:41:52 ET</span></span><span>·</span><span>your own key</span><span>·</span><span><span class="mono">3</span> of <span class="mono">10</span> reads left today</span></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; align-items: stretch;"><div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0;">
+    <div class="field" style="height: 34px; gap: 8px; padding: 0 10px 0 12px;"><span class="caps" style="font-size: 11px;">Persona</span><span style="font-weight: 600; white-space: nowrap;">Balanced Swinger</span><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 9l6 6 6-6"></path></svg></div>
+    <div class="field mono" style="height: 34px; gap: 8px; padding: 0 10px 0 12px; font-size: 12px;"><span class="caps sans" style="font-size: 11px;">Model</span>claude-sonnet-5<svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 9l6 6 6-6"></path></svg></div>
+    <button class="btn primary" onClick="{{ask}}" style="margin-left: auto;">Analyze current snapshot <svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+  </div></div>
+    </div></sc-if>
+      <sc-if value="{{isLoading}}" hint-placeholder-val="{{false}}">
+    <div style="padding: 18px 20px 10px;">
+      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 50%; background: var(--amber); animation: livePulse 1.2s ease-in-out infinite;"></span>Thinking…</div>
+        <div style="display: flex; align-items: center; gap: 14px; font-size: 12px; color: var(--steel); flex-wrap: wrap;">
+          <span style="display: inline-flex; align-items: center; gap: 5px;"><span class="steel" style="display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12l5 5L20 7"></path></svg></span>Snapshot pinned 10:41:52</span>
+          <span style="display: inline-flex; align-items: center; gap: 5px;"><span class="steel" style="display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12l5 5L20 7"></path></svg></span>Persona applied</span>
+          <span style="display: inline-flex; align-items: center; gap: 5px; color: var(--phosphor);"><span class="mono">claude-sonnet-5</span> reading · usually 5–15 s</span>
+        </div>
+      </div>
+      <div class="ai-cols" style="padding: 16px 0 0;">
+        <div style="display: flex; flex-direction: column; gap: 10px;"><div class="skel" style="height: 30px; width: 46%;"></div><div class="skel" style="height: 14px; width: 68%;"></div><div class="skel" style="height: 12px; width: 92%; margin-top: 10px;"></div><div class="skel" style="height: 12px; width: 84%;"></div><div class="skel" style="height: 12px; width: 76%;"></div></div>
+        <div class="ctx-2"><div class="skel" style="height: 74px;"></div><div class="skel" style="height: 74px;"></div><div class="skel" style="height: 74px;"></div><div class="skel" style="height: 74px;"></div></div>
+      </div>
+      <p style="margin: 14px 0 0; font-size: 11.5px; color: var(--steel-2);">Asking your own key · counts as 1 of 10 reads today · the rest of the desk keeps updating.</p>
+    </div></sc-if>
+      <sc-if value="{{isTradeLike}}" hint-placeholder-val="{{true}}">
+    <div class="ai-cols">
+      <div style="min-width: 0;">
+        <div class="mono" style="display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--steel); flex-wrap: wrap;"><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--amber);"></span>read pinned</span><span>as of 10:41:52 ET · 48s ago</span><span>·</span><span>snapshot 9f2c…</span></div>
+        <div class="display" style="font-size: clamp(26px, 2.4vw, 32px); margin-top: 10px; letter-spacing: -0.015em;"><span class="amber">Trade</span><span class="dim" style="font-weight: 500;"> · </span>Bullish</div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 13px; color: var(--phosphor); flex-wrap: wrap;"><span style="font-weight: 600;">Bull call spread</span><span class="dim">·</span><span class="mono">575 / 580</span><span class="dim">·</span><span>Sep 18 <span class="steel">(15 DTE)</span></span><span class="dim">·</span><span class="chip emph">high confidence</span></div>
+        <div style="margin-top: 16px;">
+          <div class="caps" style="margin-bottom: 6px;">Why</div>
+          <ul style="margin: 0; padding-left: 16px; font-size: 13px; line-height: 1.55; color: var(--phosphor); display: flex; flex-direction: column; gap: 4px;">
+            <li>Mid sits <span class="mono">+0.81%</span> above the gamma flip, so dealer hedging dampens dips into <span class="mono">568.50</span>.</li>
+            <li>The <span class="mono">580</span> call wall caps the upside — a defined-risk spread pays for the pin, not for a breakout.</li>
+            <li>IV/HV at <span class="mono">0.82</span> reads cheap: buying the debit is favoured over selling premium.</li>
+          </ul>
+        </div>
+        <div style="margin-top: 14px;">
+          <div class="caps" style="margin-bottom: 6px;">Manage the trade</div>
+          <p style="margin: 0; font-size: 13px; line-height: 1.55;">Take half at the call wall; trail the rest above VWAP. Exit on a close below the flip.</p>
+        </div>
+        <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--steel); display: flex; flex-direction: column; gap: 2px;">
+          <span>What the numbers said · candidates tight, median spread <span class="mono">$0.02</span> · candidate set live-session, as of 10:41 ET</span>
+          <span><span class="mono">±$8.40 (1.5%)</span> straddle-implied move for Sep 18</span>
+        </div>
+      </div>
+      <div style="min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+        <div class="ctx-2">
+          <div style="padding: 12px 14px; border-radius: 10px; background: var(--ink-2); border: 1px solid var(--line); min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 5px;"><span class="caps">Max risk</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span></div>
+    <div class="mono" style="font-size: 20px; font-weight: 500; line-height: 1.2; margin-top: 4px; ">$420</div>
+    <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; color: var(--steel);"><span class="steel" style="display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12l5 5L20 7"></path></svg></span><span>debit paid · 1.7% of account</span></div>
+  </div>
+          <div style="padding: 12px 14px; border-radius: 10px; background: var(--ink-2); border: 1px solid var(--line); min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 5px;"><span class="caps">Invalidation</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span></div>
+    <div class="mono" style="font-size: 20px; font-weight: 500; line-height: 1.2; margin-top: 4px; ">568.50</div>
+    <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; color: var(--steel);"><span class="steel" style="display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12l5 5L20 7"></path></svg></span><span>traces to the gamma flip</span></div>
+  </div>
+          <div style="padding: 12px 14px; border-radius: 10px; background: var(--ink-2); border: 1px solid var(--line); min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 5px;"><span class="caps">Entry</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span></div>
+    <div class="mono" style="font-size: 20px; font-weight: 500; line-height: 1.2; margin-top: 4px; ">near 573</div>
+    <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; color: var(--steel);"><span class="steel" style="display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12l5 5L20 7"></path></svg></span><span>on a pullback to VWAP 571.88</span></div>
+  </div>
+          <div style="padding: 12px 14px; border-radius: 10px; background: var(--ink-2); border: 1px solid var(--line); min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 5px;"><span class="caps">Target</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span></div>
+    <div class="sans" style="font-size: 20px; font-weight: 500; line-height: 1.2; margin-top: 4px; border-bottom: 1px dotted var(--steel-2); display: inline-block;">579.50</div>
+    <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; color: var(--steel);"><span class="dim" style="display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12h14"></path></svg></span><span>AI-stated · untraced</span></div>
+  </div>
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border-radius: 8px; background: var(--raised); font-size: 12px; line-height: 1.45; color: var(--steel);"><span style="display: inline-flex; color: var(--steel); margin-top: 1px;"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"></path></svg></span><span><strong style="color: var(--phosphor); font-weight: 600;">3 of 4 checked figures trace to Convexa.</strong> The target is the model’s own number and renders in body type. Within your per-trade cap (<span class="mono">$500</span> · 2% of <span class="mono">$25,000</span>).</span></div>
+        <div class="ai-actions">
+          <button class="btn primary">Review simulated trade</button>
+          <button class="btn secondary">Create sim order</button>
+          <a href="#" class="btn link" style="margin-left: 4px;">Full analysis &amp; data <svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+        </div>
+        <p style="margin: 0; font-size: 11.5px; color: var(--steel-2);">Nothing is saved until you review the pre-filled trade and confirm. A read, not an order.</p>
+      </div>
+    </div></sc-if>
+      <sc-if value="{{isNoTrade}}" hint-placeholder-val="{{false}}">
+    <div class="ai-cols">
+      <div style="min-width: 0;">
+        <div class="mono" style="display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--steel); flex-wrap: wrap;"><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--amber);"></span>read pinned</span><span>as of 10:41:52 ET · 48s ago</span><span>·</span><span>snapshot 9f2c…</span></div>
+        <div class="display" style="font-size: clamp(26px, 2.4vw, 32px); margin-top: 10px; letter-spacing: -0.015em;">No trade<span class="dim" style="font-weight: 500;"> · </span><span class="steel" style="font-weight: 600; font-size: 0.7em;">sit this one out</span></div>
+        <p style="margin: 8px 0 0; font-size: 13px; line-height: 1.55; max-width: 520px;">Mid is pinned between the flip and the call wall with cheap vol but no directional flow. A “no trade” read is a complete, correct answer — the persona sees no edge worth the debit.</p>
+        <div style="margin-top: 16px;">
+          <div class="caps" style="margin-bottom: 6px;">Re-engage when</div>
+          <ul style="margin: 0; padding-left: 16px; font-size: 13px; line-height: 1.55; display: flex; flex-direction: column; gap: 4px;">
+            <li>Mid reclaims <span class="mono">575</span> with net flow positive for 15 minutes.</li>
+            <li>Or the flip migrates above <span class="mono">570</span> on the next structure refresh.</li>
+          </ul>
+        </div>
+        <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--steel);">What the numbers said · candidates tight, median spread <span class="mono">$0.02</span> · <span class="mono">±$8.40 (1.5%)</span> implied move for Sep 18</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+        <div style="padding: 14px; border-radius: 10px; background: var(--ink-2); border: 1px solid var(--line);">
+          <div class="caps">What would change the read</div>
+          <div class="ctx-2" style="margin-top: 10px; gap: 12px;">
+            <div><div class="mono" style="font-size: 18px;">575.00</div><div style="font-size: 11px; color: var(--steel);">reclaim level</div></div>
+            <div><div class="mono" style="font-size: 18px;">+15m</div><div style="font-size: 11px; color: var(--steel);">positive net flow</div></div>
+            <div><div class="mono" style="font-size: 18px;">&gt; 570</div><div style="font-size: 11px; color: var(--steel);">flip migration</div></div>
+            <div><div class="mono" style="font-size: 18px;">~60s</div><div style="font-size: 11px; color: var(--steel);">next structure refresh</div></div>
+          </div>
+        </div>
+        <div class="ai-actions">
+          <button class="btn secondary"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 16V11a6 6 0 0112 0v5l2 2H4l2-2z"></path><path d="M10 20a2 2 0 004 0"></path></svg> Alert me at 575</button>
+          <button class="btn ghost" onClick="{{ask}}"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 12a9 9 0 11-2.6-6.4"></path><path d="M21 4v5h-5"></path></svg> Refresh analysis</button>
+          <a href="#" class="btn link" style="margin-left: 4px;">Full analysis &amp; data <svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+        </div>
+        <p style="margin: 0; font-size: 11.5px; color: var(--steel-2);">No simulated entry — nothing to review. Set an alert on the reclaim level instead.</p>
+      </div>
+    </div></sc-if>
+      <sc-if value="{{hasRead}}" hint-placeholder-val="{{true}}">
+        <div class="ai-foot">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0;">
+    <div class="field" style="height: 34px; gap: 8px; padding: 0 10px 0 12px;"><span class="caps" style="font-size: 11px;">Persona</span><span style="font-weight: 600; white-space: nowrap;">Balanced Swinger</span><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 9l6 6 6-6"></path></svg></div>
+    <div class="field mono" style="height: 34px; gap: 8px; padding: 0 10px 0 12px; font-size: 12px;"><span class="caps sans" style="font-size: 11px;">Model</span>claude-sonnet-5<svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 9l6 6 6-6"></path></svg></div>
+    
+  </div>
+          <button class="{{refreshClass}}" onClick="{{ask}}" style="height: 34px;"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 12a9 9 0 11-2.6-6.4"></path><path d="M21 4v5h-5"></path></svg> {{refreshLabel}}</button>
+          <span class="note">{{footerNote}}</span>
+        </div>
+      </sc-if>
+    </div>
+  </section>
+      <div class="side">
+    <section class="panel" style="position: relative; overflow: hidden;">
+      <span class="livebar"></span>
+      <div style="display: flex; align-items: flex-start; gap: 12px; padding: 14px 18px 10px; flex-wrap: wrap;">
+    <div style="min-width: 0; flex: 1 1 200px;">
+      <div style="display: flex; align-items: center; gap: 8px;"><h2 style="margin: 0; font-size: 14px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Live tape</h2><span class="chip live" style="height: 18px; padding: 0 7px; font-size: 11px;"><span class="dot"></span>live</span></div>
+      <p style="margin: 2px 0 0; font-size: 12px; color: var(--steel);">Trade tape + quote stream · pauses on a drop, levels stay</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap;"><span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg></span></div>
+  </div>
+      <div class="well tape-grid">
+        <div style="border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);"><div class="cell " style="padding: 12px 16px; position: relative; min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 5px;"><span class="caps">Net flow · 5m</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span><span class="chip live" style="height: 16px; padding: 0 6px; font-size: 11px; margin-left: 2px;"><span class="dot"></span></span></div>
+    <div style="display: flex; align-items: baseline; gap: 6px;"><span class="v flash-up" style="font-size: 20px; color: var(--up);">+12,480</span><span class="up" style="font-size: 12px;">▲</span></div>
+    <span class="s">buyers lifting the ask</span>
+  </div></div>
+        <div style="border-bottom: 1px solid var(--line);"><div class="cell " style="padding: 12px 16px; position: relative; min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 5px;"><span class="caps">Spread</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span><span class="chip live" style="height: 16px; padding: 0 6px; font-size: 11px; margin-left: 2px;"><span class="dot"></span></span></div>
+    <div style="display: flex; align-items: baseline; gap: 6px;"><span class="v " style="font-size: 20px; ">$0.01</span></div>
+    <span class="s">tight · liquid</span>
+  </div></div>
+        <div style="border-right: 1px solid var(--line);"><div class="cell " style="padding: 12px 16px; position: relative; min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 5px;"><span class="caps">VWAP</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span></div>
+    <div style="display: flex; align-items: baseline; gap: 6px;"><span class="v " style="font-size: 20px; ">571.88</span></div>
+    <span class="s">mid +0.22% above</span>
+  </div></div>
+        <div><div class="cell " style="padding: 12px 16px; position: relative; min-width: 0;">
+    <div style="display: flex; align-items: center; gap: 5px;"><span class="caps">Gamma flip · live</span><span style="color: var(--steel-2); display: inline-flex;"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></span><span class="chip live" style="height: 16px; padding: 0 6px; font-size: 11px; margin-left: 2px;"><span class="dot"></span></span></div>
+    <div style="display: flex; align-items: baseline; gap: 6px;"><span class="v " style="font-size: 20px; ">568.50</span></div>
+    <span class="s">live recompute · levels flip 568.50</span>
+  </div></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--line);">
+        <span class="caps">Flow</span>
+        <div style="flex: 1; min-width: 0;"><svg viewBox="0 0 220 26" width="100%" height="26" preserveAspectRatio="none" style="display: block; overflow: visible;" aria-hidden="true"><path d="M 0.0 16.0 L 7.6 19.3 L 15.2 14.5 L 22.8 21.4 L 30.3 19.8 L 37.9 24.0 L 45.5 16.7 L 53.1 20.6 L 60.7 19.2 L 68.3 15.8 L 75.9 8.7 L 83.4 8.4 L 91.0 9.6 L 98.6 5.3 L 106.2 3.6 L 113.8 9.9 L 121.4 2.0 L 129.0 4.8 L 136.6 5.4 L 144.1 14.2 L 151.7 15.7 L 159.3 16.9 L 166.9 13.5 L 174.5 16.5 L 182.1 14.9 L 189.7 18.7 L 197.2 17.6 L 204.8 11.7 L 212.4 15.3 L 220.0 6.7 L 220 26 L 0 26 Z" fill="var(--up-tint)"></path><path d="M 0.0 16.0 L 7.6 19.3 L 15.2 14.5 L 22.8 21.4 L 30.3 19.8 L 37.9 24.0 L 45.5 16.7 L 53.1 20.6 L 60.7 19.2 L 68.3 15.8 L 75.9 8.7 L 83.4 8.4 L 91.0 9.6 L 98.6 5.3 L 106.2 3.6 L 113.8 9.9 L 121.4 2.0 L 129.0 4.8 L 136.6 5.4 L 144.1 14.2 L 151.7 15.7 L 159.3 16.9 L 166.9 13.5 L 174.5 16.5 L 182.1 14.9 L 189.7 18.7 L 197.2 17.6 L 204.8 11.7 L 212.4 15.3 L 220.0 6.7" fill="none" stroke="var(--up)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" class="trail"></path></svg></div>
+        <span class="mono" style="font-size: 11px; color: var(--steel); white-space: nowrap;">SPY · 30 × 10s</span>
+      </div>
+    </section>
+    <section class="panel">
+      <div style="display: flex; align-items: flex-start; gap: 12px; padding: 14px 18px 10px; flex-wrap: wrap;">
+    <div style="min-width: 0; flex: 1 1 200px;">
+      <div style="display: flex; align-items: center; gap: 8px;"><h2 style="margin: 0; font-size: 14px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Your position · SPY</h2></div>
+      <p style="margin: 2px 0 0; font-size: 12px; color: var(--steel);">Simulated · marks from the live mid</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap;"><a href="#" class="btn link" style="font-size: 12px;">Open book →</a><span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg></span></div>
+  </div>
+      <div style="padding: 4px 18px 14px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+        <div style="flex: 1 1 160px; min-width: 0;">
+          <div style="font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Bull call spread <span class="mono steel" style="font-weight: 500;">575 / 580 · Sep 18</span></div>
+          <div style="font-size: 11.5px; color: var(--steel); margin-top: 2px;">2 × · opened today 09:52 · stop <span class="mono">568.50</span></div>
+        </div>
+        <div style="text-align: right;"><div class="mono up flash-up" style="font-size: 20px; font-weight: 600;">+$142</div><div class="mono up" style="font-size: 12px;">+18.4%</div></div>
+        <svg viewBox="0 0 72 26" width="72" height="26" style="display: block; overflow: visible; max-width: 100%;" aria-hidden="true"><path d="M 0.0 22.5 L 3.1 19.0 L 6.3 24.0 L 9.4 23.8 L 12.5 19.7 L 15.7 10.9 L 18.8 14.1 L 21.9 10.2 L 25.0 3.1 L 28.2 7.0 L 31.3 3.8 L 34.4 2.0 L 37.6 2.3 L 40.7 9.0 L 43.8 13.8 L 47.0 14.5 L 50.1 16.8 L 53.2 16.9 L 56.3 21.4 L 59.5 15.3 L 62.6 22.0 L 65.7 13.1 L 68.9 18.8 L 72.0 12.9" fill="none" stroke="var(--up)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" class=""></path></svg>
+      </div>
+    </section>
+    <section class="panel" style="position: relative; overflow: hidden;">
+      <span class="livebar"></span>
+      <div style="display: flex; align-items: flex-start; gap: 12px; padding: 14px 18px 10px; flex-wrap: wrap;">
+    <div style="min-width: 0; flex: 1 1 200px;">
+      <div style="display: flex; align-items: center; gap: 8px;"><h2 style="margin: 0; font-size: 14px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Sim orders · SPY</h2><span class="chip live" style="height: 18px; padding: 0 7px; font-size: 11px;"><span class="dot"></span>live</span></div>
+      <p style="margin: 2px 0 0; font-size: 12px; color: var(--steel);">1 watching · triggers on the live mid</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap;"><span class="chip outline">SIMULATED</span><span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg></span></div>
+  </div>
+      <div style="padding: 2px 18px 14px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: var(--ink-2); border: 1px solid var(--line); flex-wrap: wrap;">
+          <span class="chip live"><span class="dot"></span>watching</span>
+          <span style="font-size: 12.5px; flex: 1 1 160px;">Buy 1 <span class="mono">SPY 575C</span> Sep 18 · limit <span class="mono">2.40</span></span>
+          <span class="mono" style="font-size: 11px; color: var(--steel);">mark 2.46</span>
+          <span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M9 6l6 6-6 6"></path></svg></span>
+        </div>
+        <p style="margin: 0; font-size: 11.5px; color: var(--steel-2);">Fills are modeled at the mid — no slippage, no partials. Never sent to a broker.</p>
+      </div>
+    </section></div>
+    </div>
+  </section>
+    
+  <section class="wrap" style="padding-top: 22px;">
+    <div class="ctx-head">
+      <span class="caps" style="color: var(--phosphor);">Context</span>
+      <span style="font-size: 12px; color: var(--steel);">Advisory reads that never feed the score · snapshot, never live · refreshes with the data load</span>
+      <span class="rule"></span>
+      <span class="seg"><span class="on">All</span><span>Flow</span><span>Vol</span><span>Positioning</span></span>
+    </div>
+    <div class="ctx-grid">
+      
+    <section class="panel quiet " style="display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px 8px; flex-wrap: wrap;">
+    <div style="min-width: 0; flex: 1 1 200px;">
+      <div style="display: flex; align-items: center; gap: 8px;"><h2 style="margin: 0; font-size: 13px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Projected dealer flow</h2></div>
+      <p style="margin: 2px 0 0; font-size: 12px; color: var(--steel);">Charm and vanna · snapshot, never live</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap;"><span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg></span></div>
+  </div>
+      <div style="padding: 4px 16px 14px; flex: 1;"><div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); flex-wrap: wrap;"><div style="flex: 1 1 150px; min-width: 0;"><div style="font-size: 12px; font-weight: 600;">Charm · drift into OPEX</div><div style="font-size: 11px; color: var(--steel);">supportive drift into Sep 19 OPEX</div></div><div style="width: 120px; height: 6px; border-radius: 3px; background: var(--raised); position: relative; overflow: hidden;"><span style="position: absolute; top: 0; bottom: 0; left: 50%; width: 38%; background: var(--up);"></span><span style="position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--steel-2);"></span></div><span class="mono" style="font-size: 13px; min-width: 64px; text-align: right;">+$38M/day</span></div><div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); flex-wrap: wrap;"><div style="flex: 1 1 150px; min-width: 0;"><div style="font-size: 12px; font-weight: 600;">Vanna · per vol move</div><div style="font-size: 11px; color: var(--steel);">a vol pop sells delta</div></div><div style="width: 120px; height: 6px; border-radius: 3px; background: var(--raised); position: relative; overflow: hidden;"><span style="position: absolute; top: 0; bottom: 0; right: 50%; width: 26%; background: var(--down);"></span><span style="position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--steel-2);"></span></div><span class="mono" style="font-size: 13px; min-width: 64px; text-align: right;">−$12M / +1 vol</span></div><p style="margin: 8px 0 0; font-size: 11px; color: var(--steel-2);">Directional only as a hedging metaphor — not a forecast.</p></div>
+    </section>
+      
+    <section class="panel quiet " style="display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px 8px; flex-wrap: wrap;">
+    <div style="min-width: 0; flex: 1 1 200px;">
+      <div style="display: flex; align-items: center; gap: 8px;"><h2 style="margin: 0; font-size: 13px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Market context</h2></div>
+      <p style="margin: 2px 0 0; font-size: 12px; color: var(--steel);">Trend, shape, flow vs positioning, ATR</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap;"><span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg></span></div>
+  </div>
+      <div style="padding: 4px 16px 14px; flex: 1;"><div class="ctx-2" style="gap: 10px 16px;"><div class="cell" style="padding: 8px 0; border-top: 1px solid var(--line);"><span class="caps">Trend</span><span class="v" style="font-size: 15px;">Up · strong</span><span class="s">momentum positive</span></div><div class="cell" style="padding: 8px 0; border-top: 1px solid var(--line);"><span class="caps">Profile shape</span><span class="v" style="font-size: 15px;">Concentrated</span><span class="s">balance tilts calls</span></div><div class="cell" style="padding: 8px 0; border-top: 1px solid var(--line);"><span class="caps">Flow vs positioning</span><span class="v" style="font-size: 15px;">Aligned</span><span class="s">flow with the wall</span></div><div class="cell" style="padding: 8px 0; border-top: 1px solid var(--line);"><span class="caps">ATR 14d</span><span class="v" style="font-size: 15px;">$6.20 · 1.1%</span><span class="s">5d 5.4 · 30d 6.8</span></div></div></div>
+    </section>
+      
+    <section class="panel quiet " style="display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px 8px; flex-wrap: wrap;">
+    <div style="min-width: 0; flex: 1 1 200px;">
+      <div style="display: flex; align-items: center; gap: 8px;"><h2 style="margin: 0; font-size: 13px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Term structure</h2></div>
+      <p style="margin: 2px 0 0; font-size: 12px; color: var(--steel);">ATM IV by tenor · sampled 7/14/30/60/90 DTE</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap;"><span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg></span></div>
+  </div>
+      <div style="padding: 4px 16px 14px; flex: 1;"><svg viewBox="0 0 380 54" width="100%" height="54" preserveAspectRatio="none" aria-label="ATM IV by tenor" style="display: block;"><rect x="2.0" y="4" width="72.0" height="28" rx="5" fill="var(--amber)" fill-opacity="0.21"></rect><text x="38.0" y="23" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--phosphor)">14.2</text><text x="38.0" y="48" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--steel)">7d</text><rect x="78.0" y="4" width="72.0" height="28" rx="5" fill="var(--amber)" fill-opacity="0.34"></rect><text x="114.0" y="23" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--phosphor)">15.1</text><text x="114.0" y="48" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--steel)">14d</text><rect x="154.0" y="4" width="72.0" height="28" rx="5" fill="var(--amber)" fill-opacity="0.53"></rect><text x="190.0" y="23" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--phosphor)">16.4</text><text x="190.0" y="48" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--steel)">30d</text><rect x="230.0" y="4" width="72.0" height="28" rx="5" fill="var(--amber)" fill-opacity="0.67"></rect><text x="266.0" y="23" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--phosphor)">17.3</text><text x="266.0" y="48" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--steel)">60d</text><rect x="306.0" y="4" width="72.0" height="28" rx="5" fill="var(--amber)" fill-opacity="0.77"></rect><text x="342.0" y="23" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--phosphor)">18.0</text><text x="342.0" y="48" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--steel)">90d</text></svg><div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 11.5px; color: var(--steel); flex-wrap: wrap; gap: 6px;"><span><span class="chip">contango</span> · near-dated vol cheapest</span><span class="mono">slope +3.8</span></div></div>
+    </section>
+      
+    <section class="panel quiet " style="display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px 8px; flex-wrap: wrap;">
+    <div style="min-width: 0; flex: 1 1 200px;">
+      <div style="display: flex; align-items: center; gap: 8px;"><h2 style="margin: 0; font-size: 13px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Straddle-implied move</h2></div>
+      <p style="margin: 2px 0 0; font-size: 12px; color: var(--steel);">From the ATM straddle · the market’s own range</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap;"><span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg></span></div>
+  </div>
+      <div style="padding: 4px 16px 14px; flex: 1;"><div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;"><span class="mono" style="font-size: 26px; font-weight: 500;">±$8.40</span><span class="mono steel" style="font-size: 13px;">±1.5%</span><span class="chip outline">Sep 18</span></div><div style="position: relative; height: 26px; margin-top: 10px; border-radius: 6px; background: var(--raised);"><span style="position: absolute; left: 34%; right: 34%; top: 0; bottom: 0; background: var(--amber-tint-2); border-radius: 6px;"></span><span style="position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: var(--signal);"></span><span class="mono" style="position: absolute; left: 34%; transform: translateX(-100%); top: 5px; font-size: 11px; color: var(--steel); padding-right: 6px;">564.7</span><span class="mono" style="position: absolute; left: 66%; top: 5px; font-size: 11px; color: var(--steel); padding-left: 6px;">581.5</span></div><p style="margin: 8px 0 0; font-size: 11px; color: var(--steel-2);">Sep 25 ±$11.10 · Oct 17 ±$16.80 · a price of vol, not a forecast.</p></div>
+    </section>
+      
+    <section class="panel quiet " style="display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px 8px; flex-wrap: wrap;">
+    <div style="min-width: 0; flex: 1 1 200px;">
+      <div style="display: flex; align-items: center; gap: 8px;"><h2 style="margin: 0; font-size: 13px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Fresh positioning · Vol/OI</h2></div>
+      <p style="margin: 2px 0 0; font-size: 12px; color: var(--steel);">Strikes trading over 1.0× open interest today</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap;"><span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg></span></div>
+  </div>
+      <div style="padding: 4px 16px 14px; flex: 1;"><div style="display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line);"><span class="mono" style="font-size: 13px; font-weight: 600; min-width: 52px;">580 C</span><span class="chip emph mono">2.4×</span><span style="font-size: 11.5px; color: var(--steel);">call wall · 18,400 vol</span></div><div style="display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line);"><span class="mono" style="font-size: 13px; font-weight: 600; min-width: 52px;">575 C</span><span class="chip emph mono">1.6×</span><span style="font-size: 11.5px; color: var(--steel);">12,100 vol</span></div><div style="display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line);"><span class="mono" style="font-size: 13px; font-weight: 600; min-width: 52px;">560 P</span><span class="chip emph mono">1.2×</span><span style="font-size: 11.5px; color: var(--steel);">put wall · 9,800 vol</span></div><p style="margin: 8px 0 0; font-size: 11px; color: var(--steel-2);">Activity, not direction — no side implied.</p></div>
+    </section>
+      
+    <section class="panel quiet " style="display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px 8px; flex-wrap: wrap;">
+    <div style="min-width: 0; flex: 1 1 200px;">
+      <div style="display: flex; align-items: center; gap: 8px;"><h2 style="margin: 0; font-size: 13px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Off-exchange blocks</h2></div>
+      <p style="margin: 2px 0 0; font-size: 12px; color: var(--steel);">41% printed off-lit · dark pools + internalized</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap;"><span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg></span></div>
+  </div>
+      <div style="padding: 4px 16px 14px; flex: 1;"><div style="display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line);"><span class="mono" style="font-size: 13px; font-weight: 600; min-width: 56px;">573.00</span><div style="flex: 1; height: 6px; border-radius: 3px; background: var(--raised); overflow: hidden;"><span style="display: block; height: 100%; width: 80.60000000000001%; background: var(--steel);"></span></div><span class="mono" style="font-size: 11px; color: var(--steel); min-width: 32px; text-align: right;">31%</span></div><div style="display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line);"><span class="mono" style="font-size: 13px; font-weight: 600; min-width: 56px;">570.50</span><div style="flex: 1; height: 6px; border-radius: 3px; background: var(--raised); overflow: hidden;"><span style="display: block; height: 100%; width: 57.2%; background: var(--steel);"></span></div><span class="mono" style="font-size: 11px; color: var(--steel); min-width: 32px; text-align: right;">22%</span></div><div style="display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line);"><span class="mono" style="font-size: 13px; font-weight: 600; min-width: 56px;">575.00</span><div style="flex: 1; height: 6px; border-radius: 3px; background: var(--raised); overflow: hidden;"><span style="display: block; height: 100%; width: 36.4%; background: var(--steel);"></span></div><span class="mono" style="font-size: 11px; color: var(--steel); min-width: 32px; text-align: right;">14%</span></div><p style="margin: 8px 0 0; font-size: 11px; color: var(--steel-2);">Side and intent unknown — context only, not a directional signal.</p></div>
+    </section>
+      
+    <section class="panel quiet ctx-span2" style="display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px 8px; flex-wrap: wrap;">
+    <div style="min-width: 0; flex: 1 1 200px;">
+      <div style="display: flex; align-items: center; gap: 8px;"><h2 style="margin: 0; font-size: 13px; font-weight: 600; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Setups</h2></div>
+      <p style="margin: 2px 0 0; font-size: 12px; color: var(--steel);">Rule-based reads of the current structure · as-of 42s</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap;"><span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg></span></div>
+  </div>
+      <div style="padding: 4px 16px 14px; flex: 1;"><div class="ctx-2"><div style="padding: 12px 14px; border-radius: 10px; background: var(--ink-2); border: 1px solid var(--line);"><div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;"><span style="font-size: 13px; font-weight: 600;">Pin into the call wall</span><span class="chip emph">HIGH</span></div><p style="margin: 6px 0 0; font-size: 12px; color: var(--steel); line-height: 1.5;">Positive gamma, mid within 1.2% of the 580 wall, cheap vol. Fade extremes; size for the pin.</p></div><div style="padding: 12px 14px; border-radius: 10px; background: var(--ink-2); border: 1px solid var(--line);"><div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;"><span style="font-size: 13px; font-weight: 600;">Flip reclaim</span><span class="chip ">MEDIUM</span></div><p style="margin: 6px 0 0; font-size: 12px; color: var(--steel); line-height: 1.5;">Mid held above the 568.50 flip for two structure cycles. Dips into the flip have been bought.</p></div></div></div>
+    </section>
+      <section class="panel quiet" style="display: flex; align-items: center; justify-content: center; gap: 8px; border-style: dashed; color: var(--steel-2); min-height: 120px; font-size: 12.5px; font-weight: 500;"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 5v14M5 12h14"></path></svg> Add a widget <span class="chip outline" style="font-size: 11px;">coming soon</span></section>
+    </div>
+  </section>
+    <footer style="margin-top: 48px;">
+    <svg viewBox="0 0 1200 40" preserveAspectRatio="none" style="display: block; width: 100%; height: 40px;" aria-hidden="true"><path d="M 0 36 Q 600 -12 1200 36" fill="none" stroke="var(--steel)" stroke-opacity="0.35" stroke-width="1" vector-effect="non-scaling-stroke"></path></svg>
+    <div class="wrap foot-grid">
+      <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+        <span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 15px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 11.1px; height: 10.8px; margin: 0 0.7px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span>
+        <div style="display: flex; gap: 18px; font-size: 12px; flex-wrap: wrap;"><a href="#" style="color: var(--steel);">How Convexa works</a><a href="#" style="color: var(--steel);">Blog — how we read structure</a><a href="#" style="color: var(--steel);">Lab</a></div>
+        <p style="margin: 0; max-width: 720px; font-size: 12px; color: var(--steel);">Convexa is an analysis tool. Positions in the sim book are <strong>simulated</strong> (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.</p>
+        <p style="margin: 0; font-size: 12px; color: var(--steel-2);">© 2026 Convexa. All rights reserved.</p>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--steel);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"></path></svg><span class="seg" style="padding: 2px;"><span class="on">Dark</span><span>Light</span><span>System</span></span></div>
+    </div>
+  </footer>
+  </div>
+</x-dc>
+<script data-dc-script data-props='{"readState":{"editor":"enum","default":"trade","options":["idle","loading","trade","no_trade","stale","cooldown","signed_out","no_key"],"section":"AI read"},"live":{"editor":"boolean","default":true,"section":"Liveness"},"scheme":{"editor":"enum","default":"dark","options":["dark","light"],"section":"Theme"},"sheet":{"editor":"enum","default":"open","options":["open","peek"],"section":"Phone (< 768px)"},"$preview":{"width":1280,"height":2400}}'>
+class Component extends DCLogic {
+  state = { phase: null, view: 'field', sheet: null };
+  componentDidUpdate(prev) {
+    if (prev.readState !== this.props.readState && this.state.phase !== null) this.setState({ phase: null });
+    if (prev.sheet !== this.props.sheet && this.state.sheet !== null) this.setState({ sheet: null });
+  }
+  componentWillUnmount() { clearTimeout(this._t); }
+  renderVals() {
+    const phase = this.state.phase || this.props.readState || 'trade';
+    const tradeLike = phase === 'trade' || phase === 'stale' || phase === 'cooldown';
+    const hasRead = tradeLike || phase === 'no_trade';
+    const sheetOpen = this.state.sheet === null ? (this.props.sheet || 'open') === 'open' : this.state.sheet;
+    const ask = () => {
+      clearTimeout(this._t);
+      this.setState({ phase: 'loading', sheet: true });
+      this._t = setTimeout(() => this.setState({ phase: 'trade' }), 1900);
+    };
+    return {
+      scheme: this.props.scheme || 'dark',
+      liveClass: this.props.live === false ? '' : 'is-live',
+      sheetClass: sheetOpen ? '' : 'is-peek',
+      peekVerdict: tradeLike ? 'Trade · Bullish' : phase === 'no_trade' ? 'No trade' : phase === 'loading' ? 'Thinking…' : phase === 'signed_out' ? 'Sign in to ask' : phase === 'no_key' ? 'Add a key' : 'Ready to read',
+      peekChevron: sheetOpen ? 'rotate(0deg)' : 'rotate(180deg)',
+      toggleSheet: () => this.setState({ sheet: !sheetOpen }),
+      isIdle: phase === 'idle',
+      isLoading: phase === 'loading',
+      isTradeLike: tradeLike,
+      isNoTrade: phase === 'no_trade',
+      isStale: phase === 'stale',
+      isSignedOut: phase === 'signed_out',
+      isNoKey: phase === 'no_key',
+      hasRead,
+      refreshClass: phase === 'cooldown' ? 'btn ghost disabled' : 'btn ghost',
+      refreshLabel: phase === 'cooldown' ? 'Cooling down · 42s' : 'Refresh analysis',
+      footerNote: phase === 'cooldown' ? 'A fresh read rarely changes inside a minute · 3 of 10 reads left today' : 'Reads pin to a snapshot and never refresh themselves · 3 of 10 reads left today',
+      ask,
+      dismiss: () => { clearTimeout(this._t); this.setState({ phase: 'idle' }); },
+      viewField: this.state.view === 'field',
+      viewMagnet: this.state.view === 'magnet',
+      fieldSegClass: this.state.view === 'field' ? 'on' : '',
+      magnetSegClass: this.state.view === 'magnet' ? 'on' : '',
+      showField: () => this.setState({ view: 'field' }),
+      showMagnet: () => this.setState({ view: 'magnet' }),
+    };
+  }
+}
+</script>
+</body>
+</html>
