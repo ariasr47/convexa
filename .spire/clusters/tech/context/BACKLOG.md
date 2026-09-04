@@ -30,6 +30,27 @@
 
 ---
 
+## Harvest — 2026-09-03 (design re-baseline → Curvature Terminal v2)
+<!-- atlas: theme=trust-the-signal horizon=next -->
+Not a GATE I cull and **not** a BRIEF. Owner approved a site-wide redesign on a design canvas and ruled
+that it supersedes the 2026-08-10 canon; `DESIGN_SYSTEM.md` is now **SET — Curvature Terminal v2**
+(skeptic PASS WITH FINDINGS, no Critical; session `context/design-session/rebaseline-2026-09-03.md`).
+Design source: `design/` (canvas + static site + `site/library.html` + `tokens/tokens.json` mirror).
+**Authorizes: nothing** on live score — FE-only.
+
+- **`curvature-terminal-v2-build`** — implement the v2 desk, AI read brief, nav + ⌘K palette, figure
+  cells, responsive bands, and the site surfaces per the canon and `design/site/library.html` (React
+  mapping table). *Decision-impact:* the trader finds the flip/walls and the AI verdict without scanning
+  13 equal cards, and never mistakes a snapshot for live (one connection chip; gated liveness); observe via
+  the AI-read state coverage, the no-overflow suite at 393/834/900/1280, and the desk task time.
+  *Feasibility:* no backend change; canon amendments already ruled (StatTile → FigureCell, motion class,
+  declared spacing/radius/breakpoints, nav shape); enforced specs to amend are listed in the canon's
+  enforcement table. *Score:* Value **H** × Effort **L** (phased: primitives → desk + AI read → scanner /
+  positions / settings / alerts → landing → responsive pass). *Invariants touched:*
+  `live-vs-static-isolation` (strengthened), `theme-token-discipline` (seven additions land in
+  `tokens.ts`), `single-shared-sim-entry-dialog` (unchanged). **Open owner question:** direct
+  branch build vs the council pipeline (retire-or-stub for `docs/design/DESIGN_SYSTEM.md` ruled **A — stubbed**, 2026-09-03).
+
 ## Program — keep-paid-books (owner-directed 2026-08-19)
 <!-- atlas: theme=prove-the-edge horizon=now -->
 Grouping only — **not** a pipeline feature. Owner said put all seven briefing

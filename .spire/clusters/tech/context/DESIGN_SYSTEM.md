@@ -2,61 +2,86 @@
 
 > **Project-owned** (scaffolded once by the kit; the kit never overwrites it). This file is the
 > durable design authority for UX and frontend — not a per-feature mood board and not kit brand taste.
-> **Codified 2026-08-10** from shipped product evidence (not invented). Kit method (review/critique)
-> lives in `spire-tech-design-review`. This document is **adherence** material: what to follow, not
-> how to critique.
+> **Codified 2026-08-10** from shipped product evidence; **re-baselined 2026-09-03** to Curvature
+> Terminal v2 by owner ruling. Kit method (review/critique) lives in `spire-tech-design-review`. This
+> document is **adherence** material: what to follow, not how to critique.
 >
-> **This file is the sole design-rules authority.** Where any older doc, comment, or plan
-> disagrees with this file, **this file wins**. Values still live only in `tokens.ts` (never a second
-> hex table in SPECs). Critique method is kit-owned (`spire-tech-design-review`), not a product skill.
+> **This file is the sole design-rules authority.** Where any older doc, comment, plan, canvas or
+> generated page disagrees with this file, **this file wins**. Values still live only in `tokens.ts`
+> (never a second hex table in SPECs). Critique method is kit-owned (`spire-tech-design-review`), not a
+> product skill.
 >
-> | Layer                 | Path                                                       | Role                                                              |
-> | --------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------- |
-> | **This file**         | `.spire/clusters/tech/context/DESIGN_SYSTEM.md`            | **Only** binding design rules (SPEC §4 / M9)                      |
-> | **Token authority**   | `apps/dashboard/src/app/shared/theme/tokens.ts`            | Single source of hex/type values                                  |
-> | **Theme wiring**      | `apps/dashboard/src/app/shared/theme/theme.ts`             | MUI theme, focus ring, touch floor                                |
-> | **Component catalog** | `docs/design/DESIGN_SYSTEM.md`                             | Props/states/a11y of signature pieces — **not** a second rulebook |
-> | **Decision history**  | `.spire/clusters/tech/contracts/_archive/redesign-stage-*` | Why it is this way                                                |
+> | Layer                 | Path                                                                                                                         | Role                                                                                                              |
+> | --------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+> | **This file**         | `.spire/clusters/tech/context/DESIGN_SYSTEM.md`                                                                              | **Only** binding design rules (SPEC §4 / M9)                                                                      |
+> | **Token authority**   | `apps/dashboard/src/app/shared/theme/tokens.ts`                                                                              | Single source of hex/type values **at runtime**                                                                   |
+> | **Theme wiring**      | `apps/dashboard/src/app/shared/theme/theme.ts`                                                                               | MUI theme, focus ring, touch floor                                                                                |
+> | **Design source**     | `design/` — canvas `design/canvas/`, static site `design/site/`, generator `design/src/`, mirror `design/tokens/tokens.json` | The v2 direction in working form. `tokens.json` is a **verified mirror** of `tokens.ts` (`design/src/verify-tokens.mjs`) — **never a second runtime authority**, and its own `$comment` "source of truth" is scoped to the `design/` folder only |
+> | **Component catalog** | `design/site/library.html` (generated from `design/src/components/*.mjs`)                                                    | v2 props/states/React mapping — **not** a second rulebook                                                         |
+> | **Prior catalog**     | `docs/design/DESIGN_SYSTEM.md`                                                                                               | The **prior** direction's catalog; **pending a retire-or-stub ruling** (method §Single authority). Do not cite as current, do not delete without the owner's ruling |
+> | **Decision history**  | `.spire/clusters/tech/contracts/_archive/redesign-stage-*` · `design/CHANGELOG.md` · `context/design-session/rebaseline-2026-09-03.md` | Why it is this way                                                                                                |
 >
 > Retired: `.claude/skills/convexa-design` (removed 2026-08-10). Historical mentions in tests/plans are
 > provenance only — do not reload or reintroduce that skill.
 
-**Status:** SET — The Curvature Terminal, decided 2026-07-22 (owner Q4(a)); **codified into Spire** 2026-08-10  
+**Status:** SET — Curvature Terminal v2 (re-baseline of The Curvature Terminal), decided 2026-09-03 (owner ruling; see `design-session/rebaseline-2026-09-03.md`)  
 **maturity:** growing
 
-> Codify session: `context/design-session/codify-2026-08-10.md`. Direction was already product-approved
-> and enforced in code; this session **documents** it for Spire gates — it does not re-pick a brand.
+> Re-baseline session: `context/design-session/rebaseline-2026-09-03.md` (method §Re-entry — explicit
+> human re-baseline, no propose cycle: the direction was produced, iterated and approved by the owner
+> on the canvas before the session). Codify session: `context/design-session/codify-2026-08-10.md`.
+> **v2 supersedes v1; it does not delete it** — the prior direction stays in **Amendments** below.
 
 ---
 
 ## The direction
 
-**The Curvature Terminal** — a positions-centric, multi-page trading product (Convexa) whose visual
-language is derived from **convexity / gamma curvature** and **broker-terminal honesty**, not from
-generic dashboard taste.
+**Curvature Terminal v2** — the same identity (convexity/gamma curvature + broker-terminal honesty),
+re-cut so the ticker page reads as **one instrument** instead of a bento of equal widgets.
 
 **What it is for.** Operators and swing traders who live in dark terminals, read dealer gamma structure,
 and distrust UIs that overclaim. Numerals are personality; degraded and simulated states are styled
-truth, not footnotes.
+truth, not footnotes. That has not changed. What changed is the shape of the desk.
+
+**What v2 is.** The desk is an instrument, read top to bottom:
+
+**masthead** (symbol, mid, expirations, persona, the one primary action) → **structure field hero**
+(the field, the **level ladder**, the **tape trail** and the **structure path** in one panel) →
+**read strip** of figure cells → the **AI read brief**, verdict first, laid out wide beside tape /
+position / orders → a **quiet context band** that carries its own basis and as-of and never feeds the
+score. The landing has exactly **one hero instrument** — the 3D dealer-gamma surface (strike × tenor),
+the product's own model drawn in depth, not a decorative illustration.
+
+Layout is design intent recorded for the build, not a rule this file enforces line by line; the
+enforceable parts are in **Components / patterns** and **Structural enforcement**. The rendered intent
+lives in `design/site/desk.html` (fluid, interactive) and `design/site/library.html`.
 
 **What it deliberately rejects** (with cause — observed failures, not preferences):
 
-| Reject                                                          | Because (evidence)                                                                          |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| GitHub Dark neutrals (`#0d1117`, `#161b22`, …) as “our” palette | Converged baseline before redesign; documented in `docs/design/DESIGN_REVIEW_2026-07-22.md` |
-| Inter (or system face) as identity                              | Same review; type is Archivo + IBM Plex                                                     |
-| Blue→violet gradient CTAs / marks                               | Skill bans gradient-brand vocabulary; `brandGradient` deleted stage-3                       |
-| Blog cream + Segoe (`#f4f1eb`)                                  | Named slop-tell on a brand asset                                                            |
-| Even sprinkling of accent                                       | Amber is **spent**, not sprinkled; `signal` is quieter on purpose                           |
-| Hue-alone “warning” on brand amber                              | Amber vs warning rule — warnings are burnt orange **+ icon always**                         |
-| Green/red as decoration or on rates / hit-rate tints            | Reserved for **direction** (P/L, flow, gamma sign only)                                     |
-| A fourth use of the convex arc                                  | Arc is spent in **exactly three** places (mark X, hero curve-draw, arc section dividers)    |
+| Reject                                                          | Because (evidence)                                                                                                                                          |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GitHub Dark neutrals (`#0d1117`, `#161b22`, …) as “our” palette | Converged baseline before redesign; documented in `docs/design/DESIGN_REVIEW_2026-07-22.md`                                                                  |
+| Inter (or system face) as identity                              | Same review; type is Archivo + IBM Plex                                                                                                                     |
+| Blue→violet gradient CTAs / marks                               | Skill bans gradient-brand vocabulary; `brandGradient` deleted stage-3                                                                                        |
+| Blog cream + Segoe (`#f4f1eb`)                                  | Named slop-tell on a brand asset                                                                                                                            |
+| Even sprinkling of accent                                       | Amber is **spent**, not sprinkled; `signal` is quieter on purpose                                                                                           |
+| Hue-alone “warning” on brand amber                              | Amber vs warning rule — warnings are burnt orange **+ icon always**                                                                                         |
+| Green/red as decoration or on rates / hit-rate tints            | Reserved for **direction** (P/L, flow, gamma sign only). Scope (positions-legs ruling #18): gamma/GEX surfaces keep call-vs-put; position + P&L surfaces tint by **signed-P&L direction only** — never call-vs-put, never position side                                                                                                     |
+| A fourth use of the convex arc                                  | Arc is spent in **exactly three** places (mark X, hero curve-draw, arc section dividers)                                                                     |
+| **(v2)** Accent-bar stat tiles                                  | A coloured left edge encodes state in hue alone and dies in a black-and-white screenshot; state belongs in the label row and the type register (`design/src/components/figure-cell.mjs`) |
+| **(v2)** Hover-only affordances                                 | A control that only appears on hover does not exist on touch or to a keyboard; every hover reveal needs a tap/focus path (`design/src/screens/responsive-spec.mjs`) |
+| **(v2)** A “live” chip or pulse on a snapshot surface           | Liveness is a claim. Scanner sweeps, pinned reads and structure snapshots are not streams; the chip and the pulse are gated by a genuinely live stream (`design/CHANGELOG.md`, second-pass fixes) |
+| **(v2)** Green/red on status chips, success states or hit rates | Extends the direction reservation to the surfaces v2 adds — a status chip is not a signed number                                                             |
+| **(v2)** Chips or labels below the 11px floor                   | v2 adds many chips (connection, provenance, tier, kbd); the floor is what keeps them legible instead of decorative                                           |
 
 ### Costs ruled in knowingly
 
 - Dark-first product culture; light scheme exists but dark remains the historical default / anonymous baseline (`tokens.ts` palette comment).
 - Structural enforcement (tests that red-build) over prose-only guidelines — new surfaces that fight the inventory fail CI.
 - Diagnostic chart series colors are **non-brand** and mode-invariant (`chartCategorical`) — deliberately outside the trader brand palette.
+- **(v2) A design source that lives outside the app and must be kept verified.** `design/` can drift from `tokens.ts`. The mitigation is one command — `node design/src/verify-tokens.mjs` — and the rule that drift is resolved **in favour of `tokens.ts`**, never by promoting the mirror.
+- **(v2) A wider motion exemption.** Replacing an enumerated exemption with a **class** (data signals) is weaker enforcement than a fixed list. Accepted because the class has a hard predicate — a genuinely live stream plus `prefers-reduced-motion` — and because an enumerated list was already being amended per feature.
+- **(v2) A radius migration.** `shape.borderRadius` moves 10 → 12 for panels, which visibly changes every card in the app in one commit. Accepted rather than shipping two radii that differ by 2px.
 
 ---
 
@@ -65,16 +90,30 @@ truth, not footnotes.
 All **values** live in `apps/dashboard/src/app/shared/theme/tokens.ts`. This table is the binding
 **map** for agents; do not invent a second hex table in SPECs.
 
+**Reading the map:** shipped constants are named here with the values already in `tokens.ts`. The v2
+additions are named **without values on purpose** — their values are not yet in the runtime authority,
+and this file must never be the place a value first appears. Read them from the verified mirror
+`design/tokens/tokens.json` (`additions` block) until they land in `tokens.ts`.
+
 | Axis                      | Binding choice                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Type — display + body** | **Archivo** (display, real `font-stretch` / `wdth` — never faux `scaleX`) · **IBM Plex Sans** (body/UI) · **IBM Plex Mono** (all data/figures, tabular by construction — **narrowed 2026-08-13, see Amendments:** mono means *this figure is Convexa's*; a figure the app asserts but could not trace renders in Plex Sans, the one carve-out). Self-hosted under dashboard `public/fonts` (OFL). Inter is **retired**, not a fallback. Global `font-variant-numeric: tabular-nums`. Landing display scale `displayScale` 44–56px / weight 700. In-app heading sizes are structural (ticker anchor) and stay. Stat **values** are never heading elements.                                                                                                                                                                         |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Type — display + body** | **Archivo** (display, real `font-stretch` / `wdth` — never faux `scaleX`) · **IBM Plex Sans** (body/UI) · **IBM Plex Mono** (all data/figures, tabular by construction — **narrowed 2026-08-13, see Amendments:** mono means *this figure is Convexa's*; a figure the app asserts but could not trace renders in Plex Sans, the one carve-out). Self-hosted under dashboard `public/fonts` (OFL). Inter is **retired**, not a fallback. Global `font-variant-numeric: tabular-nums`. Landing display scale `displayScale` 44–56px / weight 700. In-app heading sizes are structural (ticker anchor) and stay. Stat **values** are never heading elements. **v2 adds one display role:** the AI read **verdict** is Archivo display — the only display type inside a panel. |
 | **Palette**               | **Named brand constants** (dark default): `ink` `#0B0F17` canvas · `panel` `#131A24` raised · `phosphor` `#E9E4D6` primary text · `steel` `#8A9BB4` secondary · **`gammaAmber` `#F2A93B`** dominant brand · `signal` `#5E8BC4` links/info/live (quieter than amber) · `warningOrange` `#E07A3F` true warnings only + icon. Light: `paper` `#F6F6F3` · `inkText` `#17202B` · `amberDeep` `#C57F19` as fill primary · text-grade amber `extrasLight.textAmber` `#8F5C0F`. Success/error slots reserved for direction (see Banned). Mode-aware presentation via `extrasFor(theme)` / `elevationFor(theme)` — never bare `extras` (dark-locks light surfaces). |
 | **Two amber grades**      | **`primary.main`** = fill/UI amber (≥3:1 UI class). **`extrasFor(theme).textAmber`** = body/label amber text (≥4.5:1). Do not use fill amber as small text in light mode. Focus ring uses **text-grade** amber (stage-3 GATE Z).                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| **Spacing scale**         | **Undeclared as a named ladder in tokens.** MUI theme spacing is the practical grid; do not invent a parallel spacing token table without an amendment. Prefer existing component density over new ad-hoc gaps.                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| **Radius / elevation**    | `shape.borderRadius: 10` for cards (MUI shape). Controls/chips may override locally (documented in tokens). Elevation: named ladder **e1** (resting) · **e2** (raised/hover/sticky) · **e4** (overlay) via `elevationFor(theme)` — not free-form MUI shadow indices in product code.                                                                                                                                                                                                                                                                                                                                                                       |
-| **Motion**                | **Exactly one orchestrated moment:** landing hero curve-draw (`HeroCurve.tsx`). Kept **data signals** (flash-on-tick + live pulses) are exempt by decision — pinned by `single-motion-moment.spec.ts`. New keyframes elsewhere are a red build. Animate transform/opacity; honor reduced-motion via shared hooks. GEX chart: `isAnimationActive={false}`.                                                                                                                                                                                                                                                                                                  |
+| **Surfaces & lines (v2, additive)** | Seven new names, **pending in `tokens.ts`, mirrored in `design/tokens/tokens.json`**: `ink2` (the *well* — the recessed body inside a panel) · `raised2` (one step above `panelRaised`) · `line` (hairline divider) · `line2` (strong divider / control border) · `steel2` (**text tertiary**; measured **≥4.8:1 on panel**, 5.2:1 on ink dark, and a solid light-mode value — `design/tokens/tokens.json` `additions`, `design/CHANGELOG.md` 2026-09-03) · `scrim` (sheet/dialog scrim) · `glass` (translucent nav background). Additive only: no shipped constant changes meaning. Until they land in `tokens.ts` they may not be hardcoded in components and may not be read from `tokens.json` at runtime. Elevation `e1`/`e2`/`e4` and the amber grades stay as measured. |
+| **Spacing scale**         | **DECLARED (v2, closes the previously undeclared axis):** a 4-pt rhythm — **4 · 8 · 12 · 16 · 20 · 24 · 32 · 40**. Mirror: `design/tokens/tokens.json` `spacing`. MUI theme spacing remains the mechanism; the ladder is what may be spent, not a parallel token table. Values outside the ladder are an **Amendments** event, not a local judgement call. |
+| **Radius / elevation**    | **Radius DECLARED (v2):** panels **12** · dialogs **16** · controls **8** · pills **999**. `shape.borderRadius` is `10` in `tokens.ts:83` today and **migrates to 12 at build** (see Costs). Local overrides are for the declared roles only, not free-form. Elevation unchanged: named ladder **e1** (resting) · **e2** (raised/hover/sticky) · **e4** (overlay) via `elevationFor(theme)` — not free-form MUI shadow indices in product code. |
+| **Motion**                | **The hero curve-draw stays the one orchestrated moment** (`HeroCurve.tsx`, ~900ms). **v2 change:** the exemption beside it is no longer an enumerated pair but a **class — data signals** — flash-on-tick 700ms · live pulse 1.6s (dot) / 2.8s (widget bar) · field drift 4.5–6.5s · tape trail 1.2s · mid beam 2.4s · skeleton shimmer · bottom sheet 320ms. A keyframe qualifies for the class only if it (a) is driven by a **genuinely live stream** and stops when the stream drops, and (b) is fully disabled under `prefers-reduced-motion`. Anything else is a new orchestrated moment and a red build. Animate transform/opacity; hover transitions 160–220ms. GEX chart: `isAnimationActive={false}`. Durations mirror: `design/tokens/tokens.json` `motion`. |
+| **Breakpoints / container queries (v2)** | Six page bands: **≥1600 wide · 1300–1599 desktop · 1100–1299 laptop · 1000–1099 small laptop · 768–999 tablet · <768 phone** (`design/tokens/tokens.json` `breakpoints`). One fluid body per screen — six bands, not six drawings. **Container thresholds** are independent of the viewport: a panel under **360px** drops figures to 17px, under **280px** to 15px. Chrome may collapse at its own component thresholds (nav search →icon at 1100, nav links →burger and the settings rail →tabs at 900, nav clock hides at 700); those are component rules and do **not** add page breakpoints. |
+| **Icons (v2, closes part of an undeclared axis)** | Stroke-based **inline SVG on a 24 grid**, `currentColor`, stroke-width 1.75, round caps/joins, `aria-hidden` when decorative; nominal sizes **16 / 20 / 24** (smaller inline glyphs inside chips and strips use the same geometry). **Emoji are never icons.** The two typographic truth marks v2 uses in copy — the pause mark on an offline figure and the ring on a closed/replay chip — render as the stroke icons in the app (`pause` exists in the set); the static preview's ⏸ / ○ characters are stand-ins, and any platform that colour-emoji-renders them must be given the stroke icon instead. |
+| **Z-index (v2)**          | One scale, no ad-hoc values: nav **20** · sheet scrim **29** · sheet **30** · popover **35** · dialog **40** · toast **50** (`design/tokens/tokens.json` `zIndex`).                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
-**Undeclared axes — do not fill with a default.** Full spacing ladder tokens; global form-control radius beyond “cards 10 + local overrides”; icon set beyond warning-icon rule; marketing illustration system beyond the arc rule. Needing one is an **Amendments** event.
+**Undeclared axes — do not fill with a default.** Spacing and radius are **no longer undeclared** (v2
+declared both, above). The marketing illustration system is now declared as a **hard limit rather than
+an inventory**: exactly **one hero instrument** — the 3D dealer-gamma surface on the landing — and
+nothing else. No secondary illustrations, no spot art, no icon-illustration hybrids. What remains
+undeclared: nothing in this list; a *new* axis (e.g. a data-viz colour scale beyond `chartCategorical`,
+or an illustration second to the hero) is an **Amendments** event, not a local decision.
 
 ---
 
@@ -87,14 +126,31 @@ All **values** live in `apps/dashboard/src/app/shared/theme/tokens.ts`. This tab
 | `apps/dashboard/src/app/shared/theme/*.spec.ts` | Structural enforcement (hex discipline, motion inventory, fonts, amber grades, …) |
 | `apps/dashboard/public/fonts/`                  | Self-hosted faces                                                                 |
 | Dashboard components                            | Bind MUI palette slots / `extrasFor` / `elevationFor` — **never hardcoded hex**   |
+| `design/tokens/tokens.json`                     | **Design-side mirror** of `tokens.ts` + the v2 `additions` block. Verified, not authoritative |
+| `design/src/verify-tokens.mjs`                  | The check that the mirror still matches `tokens.ts`, and the list of what `tokens.ts` still needs. Drift resolves toward `tokens.ts` |
+| `design/src/components/*.mjs`                   | One module per primitive: `render()`, `states[]`, and a `spec` naming the React component, its path, and what changes |
+| `design/src/screens/*.mjs`                      | Composed surfaces over sample data (`design/src/data/index.mjs`) — sample values, never product truth |
+| `design/site/library.html`                      | Generated component catalog: every state, the React mapping, the motion and token tables |
+| `design/site/*.html` · `design/canvas/`         | Generated static renders and canvas artboards. **Do not hand-edit** — regenerate with `node design/src/build.mjs` |
 
-**Import rule:** components never import raw brand constants for one-off colors when a palette slot or `extrasFor` key exists. Mode-aware values only inside `sx`/styled `theme` callbacks.
+**Import rule:** components never import raw brand constants for one-off colors when a palette slot or
+`extrasFor` key exists. Mode-aware values only inside `sx`/styled `theme` callbacks. Nothing in the app
+imports from `design/` at runtime — the folder is a source for humans and agents, not a dependency.
+
+**Font note (not an exception to the rule):** the generated pages under `design/site/` and
+`design/canvas/` load Archivo and IBM Plex from a Google Fonts link because that sandbox cannot read the
+repo's local files (`design/src/lib.mjs:4`). The **app** stays self-hosted; `fonts.spec.ts` is unchanged
+and a CDN font link in `apps/dashboard` is still a red build.
 
 ---
 
 ## Components / patterns
 
-Full prop/state docs for signature pieces: `docs/design/DESIGN_SYSTEM.md` (component catalog only).
+Full prop/state docs for signature pieces: **`design/site/library.html`** (component catalog only —
+generated from `design/src/components/*.mjs`, so the catalog and the design cannot describe different
+things). `docs/design/DESIGN_SYSTEM.md` documents the **prior** direction and is pending a
+retire-or-stub ruling; do not extend it and do not cite it as current.
+
 This section is the **binding short list** agents must not violate:
 
 1. **`ConvexaMark`** — sole wordmark; amber only on the arc-X; no gradient.
@@ -104,28 +160,49 @@ This section is the **binding short list** agents must not violate:
 5. **Warning pattern** — `warning.*` + icon always; never brand amber alone for warning.
 6. **Focus** — authored `:focus-visible` ring (text-grade amber); no bare `outline: none` without replacement.
 7. **Touch** — ≥44px effective targets on coarse pointers.
-8. **Mobile terminal** — no horizontal overflow at 393px; nav collapses when text nav no longer fits.
+8. **Mobile terminal** — no horizontal overflow; nav collapses when text nav no longer fits. See 17 for the widths.
 9. **`<meta name="theme-color">` follows the active color scheme** (must not stay dark when light mode is on).
 10. **Sim trade entry** — one shared `TradeEntryDialog` for sim-only flows (`[single-shared-sim-entry-dialog]`); real-money entry is a separate component if it exists.
 11. **Locked intentional deviations** — do not “fix” the GEX chart back to horizontal (vertical diverging is owner-locked); do not collapse mid + last-trade into a single price without an amendment.
 12. **Figma “Design Reference” is retired** as authority (owner 2026-07-22) — it encodes the old palette; `tokens.ts` only.
+13. **(v2) Figure cell replaces `StatTile`.** No coloured accent edge. State lives in the **label row** (caps label, ⓘ, and a live dot **only** when the value comes from the stream) and in the **type register** (Mono = Convexa's figure; Sans with a dotted rule = asserted but untraced). Offline keeps the **last known value at 50% opacity with a pause marker** and says so. A member of the closed not-a-number vocabulary renders as 15px **Sans**, never as a figure. Container steps: 20px → 17px under 360px of panel width → 15px under 280px. Source: `design/src/components/figure-cell.mjs`.
+14. **(v2) Level ladder** — the structure levels sorted by price (call wall, mid, max pain, gamma flip, put wall) with distance from mid in the last column; the mid is the **only** live row. Each row's tick uses the same stroke as its line in the structure field so ladder and field read as one object. Replaces the twelve-tile grid. Source: `design/src/components/ladder.mjs`.
+15. **(v2) Read strip** — one horizontal strip of figure cells (opportunity, net DEX, IV/HV, IV rank, chain vol/OI, skew, term structure, off-exchange) under the hero. It is figure cells, so rules 13 and 24 apply to it unchanged; it may scroll sideways as a deliberate rail (17).
+16. **(v2) AI read brief** — **verdict first**, then risk, then rationale. The **verdict word is the panel's single amber spend** (Archivo display); nothing else in the panel spends amber. The four risk fields (max risk · invalidation · entry · target) come **before** any prose, each carrying its grounding line — a check for traced, a dash plus the Sans register for the model's own number, **never colour**. **Nine named states**, none of which may collapse into another: *idle · loading · produced (trade) · produced (no trade) · stale · cooldown/daily cap · signed out · add a key · full-analysis drawer* (`design/src/screens/ai-read.mjs`). `no_trade` is a complete, correct answer, not an error. **Stale is a warning strip with the icon**, in-body, never a footnote. The panel carries a one-line grounding summary and the folded Why; the itemized grounding breakdown with counts, the cited contract, the analyst prose and the as-sent inputs live in the drawer — the panel never grows to hold them. Under **768px** the whole brief becomes a **bottom sheet** with a peek row carrying the verdict, over the `scrim` token.
+17. **(v2) Six breakpoints + container queries, no horizontal overflow.** Bands per the Tokens table. Checked widths: the suite (`apps/dashboard-e2e/src/e2e/no-overflow.spec.ts`) enforces **393** (both schemes), **900** and **1280** today; **834** is added at build and **900 stays** (the MUI `md` band is still where the tables are densest). The design renders the phone at **390**, so the narrower of 390/393 is the binding floor and both must be clean. Grids use `minmax(0, 1fr)`; long strings ellipsize or wrap; only deliberate rails (read strip, quick symbols, desk strip, settings tabs) scroll sideways. Safe-area insets are padded, not ignored.
+18. **(v2) One connection chip per page**, with exactly six states and no invented seventh: **live** (signal dot + mid, only while the stream is genuinely live) · **closed** (neutral, names the mid it is showing) · **overnight** (warning + icon) · **no ticks** (warning + icon) · **offline** (warning + icon, "reconnecting…") · **replay** (outline, names the session). Source: `design/src/components/chip.mjs` `CONNECTION`. A second liveness claim anywhere on the same page is the failure this rule exists to stop.
+19. **(v2) Navigation** — wordmark + **four product links** (Scanner · Ticker · Positions · Alerts) + the **⌘K command palette** + the session chip. **Lab and Blog move to the footer.** The palette opens anywhere in the shell and shows tier and score inline. Collapse thresholds are component rules (see Tokens): search →icon at 1100, links →burger at 900, clock/bell hide at 700.
+20. **(v2) Hover-revealed controls always have a tap/focus path.** Row actions, preview popovers and hover lifts are enhancements; the same action must be reachable by tap and by keyboard focus at every breakpoint.
+21. **(v2) Panels are containers.** Every widget frame is a container-query context so a figure reads correctly in any cell or rail, whatever the viewport. Quiet panels (the context band) never lift and never sheen; normal panels lift 2px to `e2` on hover.
+22. **(v2) Liveness is gated.** A pulse, a flash, a drifting particle or a moving trail may only run while a genuine stream is delivering; when it drops they stop and the truth marker appears. Snapshot surfaces never wear a live chip (see Banned).
+23. **Type register** (carried forward, 2026-08-13) — Mono means *this figure is Convexa's*; an untraced asserted figure renders in Plex Sans. v2 spends this in two more places: the figure cell and the AI read's risk fields.
+24. **Closed not-a-number vocabulary** (carried forward) — `—` · `unavailable` · `not given` · `not set` · `size not suggested` · `unrecognized`. Distinct literals, never synonyms; rendered as Sans text, never as a figure; a seventh member is an **Amendments** event.
 
-Inventory growth beyond signature pieces is catalog work in `docs/design/DESIGN_SYSTEM.md`, not a re-baseline of this file.
+Inventory growth beyond signature pieces is catalog work in `design/site/library.html` (edit the module
+in `design/src/components/`, rebuild), not a re-baseline of this file.
 
 ### Structural enforcement (tests win over prose)
 
-| Rule                               | Mechanism (under `apps/dashboard/src/app/shared/theme/` unless noted) |
-| ---------------------------------- | --------------------------------------------------------------------- |
-| Zero hardcoded hex / retired hexes | `hex-discipline.spec.ts`, `banned-hexes.spec.ts`                      |
-| Arc in exactly 3 places            | `arc.spec.ts` (importer set-equality)                                 |
-| One orchestrated motion moment     | `single-motion-moment.spec.ts`                                        |
-| Fonts self-hosted, no CDN          | `fonts.spec.ts`                                                       |
-| Warnings carry icon                | `warning-icon.spec.ts`                                                |
-| Brand assets match tokens          | `brand-assets.spec.ts`                                                |
-| Amber grades / focus ring          | `stage3-amber.spec.ts`, theme baseline                                |
-| No 393px overflow                  | `apps/dashboard-e2e` no-overflow suite                                |
+Paths are under `apps/dashboard/src/app/shared/theme/` unless noted. **No row below is claimed green for
+v2.** Rows marked **amend at build** encode the *prior* direction today: each must be rewritten in the
+same change that lands the v2 behaviour, or it will red-build correct code.
 
-**Testing gotcha:** MUI `sx` compiles to classes — never assert `getAttribute('style')` (empty); use className identity / structure. Source-scans use Vite `?raw` and must be mutation-tested.
+| Rule                               | Mechanism                                                                                                 |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Zero hardcoded hex / retired hexes | `hex-discipline.spec.ts`, `banned-hexes.spec.ts` — **amend at build:** the seven v2 additions must land in `tokens.ts` first; hardcoding them (or reading `tokens.json` at runtime) is exactly what this catches |
+| Arc in exactly 3 places            | `shared/ui/arc.spec.ts` (importer set-equality) — budget unchanged; **verify at build** that v2 added no fourth importer |
+| One orchestrated motion moment     | `single-motion-moment.spec.ts` — **amend at build:** the enumerated exemption becomes the **data-signal class** (drift, trailMove, beam, shimmer, sheet transition), with the live-stream + reduced-motion predicate |
+| Figure-cell anatomy                | `pages/ticker/widgets/_kit/StatTile.spec.tsx` — **amend at build** to `FigureCell`: no accent bar, label-row liveness, register-driven value |
+| Type floor / figure sizes          | `pages/ticker/widgets/_kit/type-floor.spec.tsx` — **amend at build** for the container steps (20 → 17 → 15) and the 11px chip/label floor |
+| No horizontal overflow             | `apps/dashboard-e2e/src/e2e/no-overflow.spec.ts` — **amend at build:** add **834** to the existing 393 / 900 / 1280 (900 stays) |
+| Fonts self-hosted, no CDN          | `fonts.spec.ts` (unchanged; `design/` preview pages are outside `apps/dashboard` and out of scope)         |
+| Warnings carry icon                | `warning-icon.spec.ts`                                                                                    |
+| Brand assets match tokens          | `brand-assets.spec.ts`                                                                                    |
+| Amber grades / focus ring          | `stage3-amber.spec.ts`, theme baseline                                                                    |
+| Design mirror matches tokens       | `node design/src/verify-tokens.mjs` — reported 20/20 shared values matching on 2026-09-03 (`design-session/rebaseline-2026-09-03.md`); not wired into CI, run it when either side moves |
+
+**Testing gotcha:** MUI `sx` compiles to classes — never assert `getAttribute('style')` (empty); use
+className identity / structure. Source-scans use Vite `?raw` and must be mutation-tested.
 
 ---
 
@@ -147,6 +224,11 @@ Observed and ruled for **this** product only:
 | Stat values as heading elements                         | Numerals-as-personality; documented ticker failure                            |
 | Chip/label text &lt; 11px                               | Type floor                                                                    |
 | CDN-fetched fonts at glance time                        | `fonts.spec.ts`                                                               |
+| **(v2)** Accent-bar stat tiles (state carried by a coloured edge) | Superseded by the figure cell; hue-alone state fails a black-and-white screenshot (contradiction 1, 2026-09-03) |
+| **(v2)** A “live” chip, dot or pulse on a snapshot surface | Liveness must be gated by a genuine stream; a snapshot that claims live is the honesty failure this system exists to prevent |
+| **(v2)** Green/red on status chips, success states or hit rates | Direction reservation, restated for the surfaces v2 adds                     |
+| **(v2)** Hover-only affordances                         | Invisible on touch and to the keyboard; every hover reveal needs a tap/focus path |
+| **(v2)** A second token table anywhere                  | Including `design/tokens/tokens.json`, `docs/design/*`, or any SPEC §4, if it claims authority rather than mirroring `tokens.ts` |
 
 ---
 
@@ -158,6 +240,7 @@ Observed and ruled for **this** product only:
 | 2026-07-22           | `docs/design/DESIGN_REVIEW_2026-07-22.md` + verification           | Observed slop baseline that the direction rejects                                              |
 | 2026-07-22 → stage-3 | `tokens.ts`, `theme.ts`, structural specs, redesign-stage archives | Values shipped and enforced                                                                    |
 | 2026-08-10           | Spire codify session (`design-session/codify-2026-08-10.md`)       | Folded existing authority into Spire `DESIGN_SYSTEM` for M9 / SPEC §4; no re-proposal of brand |
+| 2026-09-03           | `design/` canvas + `design/site/library.html` + `design/tokens/tokens.json` (owner-approved on the canvas; artifact https://claude.ai/code/artifact/82be651e-c9a1-4ad4-a672-886626f8cf73) | **v2 direction** (desk as one instrument); figure cell; data-signal motion class; declared spacing / radius / breakpoints; four-link nav + ⌘K palette; verdict-first AI read brief |
 
 ## Amendments
 
@@ -170,3 +253,5 @@ Observed and ruled for **this** product only:
 | 2026-08-13 | **Type register carries authorship — a narrowing of "all data/figures mono".** Mono (IBM Plex Mono) now means **this figure is Convexa's**: a value we computed, or a model-asserted value that *traces* to one. A figure the app asserts but **could not trace** renders in **IBM Plex Sans** (body register). The mono/tabular rule is otherwise unchanged and remains the default for every figure in the app; this carves out exactly one case. **Ruled in knowingly:** untraced figures lose tabular alignment and visibly stop lining up in a column. That is a second honest signal, and it may read as a rendering bug — accepted, because a number the app could not verify *should* look different from one it did. Applies only where a grounding state exists (the AI-rec card and the entry dialog); no other surface changes. | `ai-rec-grounding` (owner ruled A, 2026-08-13). The design council chose type register over colour and weight because it survives a **black-and-white screenshot** and spends no warning chrome — `warning.*` already carries the card-level amber line, and green/red stay reserved for signed direction. Colour alone would have made authorship invisible to anyone screenshotting or colour-blind. Council record: `contracts/ai-rec-grounding/council/decisions.md` D3 + R3/T19; PM priced it as required, UX committed to rendering it. |
 | 2026-08-12 | **Two new members of the closed not-a-number vocabulary** — `not set` (the owner supplied no risk block; the only member the trader can act on, cleared by typing) and `size not suggested` (the risk block is present but the model returned no size; cleared by the model answering). Distinct literals, never synonyms, joining the existing `—` / `unavailable` / `not given` set. | `tradeable-rec-inputs` AC-69/70/71/80: a fifth not-a-number state was needed and the two new members must never collapse into one string.                                                                  |
 | 2026-08-14 | **One new member of the closed not-a-number vocabulary: `unrecognized`** — tip: *The read named a conviction outside Convexa's scale. Convexa shows low, medium or high only; it won't repeat an answer it can't place.* Joins `—` / `unavailable` / `not given` / `not set` / `size not suggested`. It is the only member meaning **the read answered, off our scale** — never a synonym for `not given` (which means it did not answer) and never for `unavailable` (which asserts an input failed). Emitted from **exactly one site** (the confidence enum validation) so it cannot become a second `unavailable`, and it renders as **text with the chip suppressed** — the raw model string never reaches the chip or the DOM. | `rec-absence-literals-hole` (council decisions.md §C #21, declared default-with-veto; not overturned). The shipped five could not say *"it answered, off our scale"*: `confidence` is the only **banded** field, so it is the only one that can return a stated answer outside `low\|medium\|high`. PM's standing "no new absence word" rule holds for the other five of the six fields. Council record: `contracts/rec-absence-literals-hole/council/decisions.md` §C; SPEC AC-18 / AC-24 (SB). |
+| 2026-09-03 | **RE-BASELINE to Curvature Terminal v2** (owner: *"we have a design system in .spire tech I believe, this supersedes that."*). Direction **A** (wide two-column AI brief under the structure field) chosen on the canvas; B (sticky rail) and C (focus mode) kept as unadopted alternates. **Eight contradictions with v1, each ruled by the supersession:** (1) `StatTile`'s coloured left accent bar → **figure cell**, state in the label row and the type register. (2) The enumerated motion exemption → **data-signal class** (drift, trail, beam, shimmer, sheet) gated by a live stream + reduced-motion; the hero curve remains the one orchestrated moment. (3) Spacing was "undeclared — do not fill with a default" → **declared** 4-pt rhythm 4·8·12·16·20·24·32·40. (4) Radius was "cards 10 + local overrides" → **declared** panels 12 / dialogs 16 / controls 8 / pills 999, with `shape.borderRadius` migrating 10 → 12 at build. (5) Nav six links + account → **four product links + ⌘K palette + session chip**, Lab and Blog to the footer. (6) Palette `extras` → **seven additive tokens** (`ink2`, `raised2`, `line`, `line2`, `steel2`, `scrim`, `glass`), pending in `tokens.ts`, mirrored in `design/tokens/tokens.json`. (7) Ticker bento of equal widgets → **masthead → structure field hero → read strip → wide AI brief → quiet context band** (design intent for the build, not a line-by-line canon rule). (8) The long AI recommendation card → **verdict-first brief**, nine named states, risk before rationale, bottom sheet under 768px. **Carried forward unchanged:** the three faces and self-hosting, arc budget of three, amber spent not sprinkled, the two amber grades, warning = burnt orange + icon, green/red for direction only, live-vs-static isolation, the type register, the closed not-a-number vocabulary, the focus ring, the 44px touch floor, no phone-width overflow, stat values never headings, the 11px chip floor, and `tokens.ts` as the sole runtime hex authority. **Rival-authority dispositions:** `docs/design/DESIGN_SYSTEM.md` (prior direction's catalog, restates the v1 palette table) is **held as-is, pending an owner retire-or-stub ruling** — flagged here so it cannot quietly become a second authority; `design/README.md` was **reworded this session** to defer (binding rules here, values in `tokens.ts`, `tokens.json` a verified mirror); `design/tokens/tokens.json` is declared a **mirror**, not a rules authority; `design/CHANGELOG.md` is a decision log that points here. **Enforcement deferred to the build (nothing is claimed green):** `StatTile.spec.tsx` → FigureCell, `type-floor.spec.tsx`, `single-motion-moment.spec.ts` inventory → class, `arc.spec.ts` fourth-importer check, e2e no-overflow adds 834 + 1280, and `hex-discipline.spec.ts` once the seven additions land in `tokens.ts`. | Explicit human re-baseline under `DESIGN_SYSTEM_METHOD.md` §Re-entry / Step C. Evidence: `design/` (canvas, `design/site/library.html`, `design/tokens/tokens.json`, `design/src/**`), owner-approved on the canvas before the session; `design/src/verify-tokens.mjs` reported 20/20 shared values matching `tokens.ts` on 2026-09-03. Session record and the full contradiction table: `context/design-session/rebaseline-2026-09-03.md`. v1 is superseded, not deleted — every row above stays. |
+| 2026-09-03 | **Rival authority ruled — A, stub.** `docs/design/DESIGN_SYSTEM.md` (the 2026-07-23 component catalog) is now a pointer to this canon, `tokens.ts` and `design/site/library.html`; its token table is gone. The positions-legs scope on `success`/`error` (owner ruling #18) that had been amended into that table now lives in this file's Banned table and is quoted verbatim in the stub; `tint.spec.tsx` cites the canon. | Owner ruling A on the rival-authority Decision card (re-baseline session 2026-09-03) |

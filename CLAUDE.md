@@ -20,6 +20,7 @@ Nx-auto-maintained; read it and follow it. This file is not duplicated into it o
 - `libs/api` (`@convexa/api`) — shared TS API client (consumed as source).
 - `.spire/clusters/tech/` — **shared product memory** (PROJECT_CONTEXT, BACKLOG,
   contracts, DESIGN_SYSTEM, decision ledger, conformance suite). **Committed.**
+- `design/` — **the design source the canon points to** (Curvature Terminal v2, 2026-09-03): the Claude Design canvas + artboards, a static site with the interactive desk and `site/library.html` (tokens, component states, React mapping), `tokens/tokens.json` (design mirror, verified against `tokens.ts` by `src/verify-tokens.mjs`), and the generator. Regenerate with `node design/src/build.mjs`; never hand-edit `design/canvas` or `design/site`. Binding rules stay in `.spire/clusters/tech/context/DESIGN_SYSTEM.md`.
 - `.claude/` — Claude host adapter (orchestrator, agents, skills, tools). **Committed.**
   Not product memory — do not put context/contracts here.
 - `.codex/` — Codex host adapter. **Committed.**
