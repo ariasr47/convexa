@@ -2058,7 +2058,7 @@
             "$ref": "#/components/schemas/HealthRateLimit"
           },
           "release": {
-            "description": "Deployed git revision, from `RELEASE_GIT_SHA`. Null when unset (local dev).",
+            "description": "Deployed git revision, or null when the runtime cannot determine it.",
             "type": ["string", "null"]
           },
           "scanner": {

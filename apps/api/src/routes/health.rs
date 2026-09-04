@@ -21,7 +21,10 @@ pub struct HealthWire {
     // DROPS any key absent from this struct. Adding `release` to `health()` alone shipped a
     // field that compiled, tested green, deployed, and never reached the wire (2026-09-03).
     // Both edits or neither.
-    /// Deployed git revision, from `RELEASE_GIT_SHA`. Null when unset (local dev).
+    // Resolution order and the empty-variable trap live on `deployed_revision`. Keep the doc
+    // comment below free of env-var names: it is the PUBLIC schema description, and naming the
+    // plumbing there means every change to the plumbing churns the generated artifacts.
+    /// Deployed git revision, or null when the runtime cannot determine it.
     pub release: Option<String>,
     pub price_cache: String,
     pub durable_store: String,
@@ -178,6 +181,30 @@ pub(crate) fn contract_representative_response_for(
         _ => panic!("unknown health response-conversion boundary: {boundary}"),
     }
 }
+
+/// The deployed git revision, or `None` when it genuinely is not known.
+///
+/// `RELEASE_GIT_SHA` is OUR variable, not a Railway built-in — `apps/api/.env.example` documents it
+/// as operator-supplied. It exists in the Railway environment but is EMPTY, and `env::var` returns
+/// `Ok("")` for a defined-but-blank variable rather than `Err`, so a bare `.ok()` reported `""` as
+/// if it were a revision (found in production 2026-09-03). Falling back to Railway's own
+/// `RAILWAY_GIT_COMMIT_SHA` means this works with no dashboard configuration to keep in sync.
+fn deployed_revision() -> Option<String> {
+    resolve_revision(|name| std::env::var(name).ok())
+}
+
+/// The env-free core of [`deployed_revision`], so its behavior is testable without mutating
+/// process environment — which races every other test in the binary.
+fn resolve_revision(lookup: impl Fn(&str) -> Option<String>) -> Option<String> {
+    REVISION_VARS
+        .iter()
+        .filter_map(|name| lookup(name))
+        .map(|value| value.trim().to_string())
+        .find(|value| !value.is_empty())
+}
+
+/// Checked in order; the first non-empty wins.
+const REVISION_VARS: [&str; 2] = ["RELEASE_GIT_SHA", "RAILWAY_GIT_COMMIT_SHA"];
 
 /// Keys present in `sent` that did not survive into `kept`.
 ///
@@ -521,11 +548,10 @@ pub async fn health(State(state): State<AppState>) -> Json<Value> {
         "status": "ok",
         "service": "api-rust",
         // The deployed revision, so "did my merge actually ship?" is one request instead of an
-        // archaeology session. Railway already sets RELEASE_GIT_SHA; nothing surfaced it, so on
-        // 2026-09-02 a failed container build left production serving a six-day-old image while
-        // Deploy smoke passed against it — every endpoint it probes already existed. Null when
-        // unset (local dev), which is honest rather than pretending to know.
-        "release": std::env::var("RELEASE_GIT_SHA").ok(),
+        // archaeology session. On 2026-09-02 a failed container build left production serving a
+        // six-day-old image while Deploy smoke passed against it — every endpoint it probes
+        // already existed. Null when unknown, which is honest rather than pretending to know.
+        "release": deployed_revision(),
         "price_cache": state.prices.backend_name(),
         "durable_store": durable_store,
         "data_feed": state.config.data_feed.as_str(),
@@ -849,6 +875,57 @@ mod production_metrics_tests {
         )]);
         assert!(metrics_token_ok(&direct, &expected));
         assert!(!metrics_token_ok(&direct, "documented-placeholder-token"));
+    }
+}
+
+#[cfg(test)]
+mod deployed_revision_tests {
+    use super::resolve_revision;
+    use std::collections::HashMap;
+
+    fn env(pairs: &[(&str, &str)]) -> impl Fn(&str) -> Option<String> {
+        let map: HashMap<String, String> = pairs
+            .iter()
+            .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
+            .collect();
+        move |name: &str| map.get(name).cloned()
+    }
+
+    #[test]
+    fn our_variable_wins_when_it_carries_a_revision() {
+        let got = resolve_revision(env(&[
+            ("RELEASE_GIT_SHA", "a455004"),
+            ("RAILWAY_GIT_COMMIT_SHA", "ffffffff"),
+        ]));
+        assert_eq!(got.as_deref(), Some("a455004"));
+    }
+
+    /// The production defect: the variable is DEFINED but blank, so `env::var` returns `Ok("")`
+    /// and a bare `.ok()` reports an empty string as though it were a revision.
+    #[test]
+    fn a_defined_but_empty_variable_falls_through_instead_of_reporting_itself() {
+        let got = resolve_revision(env(&[
+            ("RELEASE_GIT_SHA", ""),
+            ("RAILWAY_GIT_COMMIT_SHA", "a455004"),
+        ]));
+        assert_eq!(got.as_deref(), Some("a455004"));
+    }
+
+    #[test]
+    fn whitespace_only_is_not_a_revision() {
+        let got = resolve_revision(env(&[("RELEASE_GIT_SHA", "   \n")]));
+        assert_eq!(got, None);
+    }
+
+    #[test]
+    fn surrounding_whitespace_is_trimmed() {
+        let got = resolve_revision(env(&[("RELEASE_GIT_SHA", "  a455004\n")]));
+        assert_eq!(got.as_deref(), Some("a455004"));
+    }
+
+    #[test]
+    fn nothing_set_is_null_not_empty_string() {
+        assert_eq!(resolve_revision(env(&[])), None);
     }
 }
 
