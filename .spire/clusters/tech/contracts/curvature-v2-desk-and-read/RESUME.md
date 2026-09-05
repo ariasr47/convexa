@@ -963,7 +963,148 @@ server, ran `npm run ports:free` (confirmed one listener on :4200, killed) both 
 4. `decision-grid`/`decision-thesis` DOM order swapped (row 31) — `DecisionCard.spec.tsx`'s existing
    order test updated accordingly; no other existing test depended on the old order.
 
-## Next: FE-10 (not started)
+## Done (FE-10) — do not re-do
 
-**FE-10 — The bottom sheet and its peek row (under 768px).** Read PLAN.md's FE-10 section fresh before
-starting. Depends on FE-9 (done, this session) for the panel body it wraps.
+**FE-10 — the bottom sheet and its peek row (under 768px), plus the GATE Z A10 retention amendment.**
+Owns (as landed): new `pages/ticker/widgets/ai-rec/{ReadSheet.tsx,ReadSheet.spec.tsx}` ·
+`pages/ticker/widgets/ai-rec/AiRecPanel.tsx` · `pages/ticker/widgets/ai-rec/useAiRecommendation.ts`
+(GATE Z amendment) + new `useAiRecommendation.spec.ts`. **One necessary collateral fix outside the
+Owns list, forced open by actually running the full e2e suite** (see below):
+`apps/dashboard-e2e/src/e2e/no-overflow.spec.ts` (one line, one locator re-anchor).
+
+**GATE Z's cheap check, done FIRST, at source — the retention was genuinely missing, not true by
+construction.** Read `useAiRecommendation.ts`'s `request()` catch branch fresh: it called
+`setRec({status:'unavailable', ...})` **unconditionally** on any non-auth failure — including a
+REFRESH fired while a produced read was already pinned (`DecisionCard`'s own "Refresh" button and the
+A1c annex's "Ask anyway" both call `ai.request()` again while `producedRec` is truthy). That genuinely
+REPLACES the pinned rec, not merely hides it — confirmed reachable, not hypothetical. Fixed **inside
+the hook only** (never a parallel ref in the panel, per the GATE Z instruction): `setRec` in the catch
+branch is now a **functional update** — `current?.status === 'produced' ? current : {...unavailable
+artifact}` — so a failed refresh over an already-produced read is a no-op; only the FIRST failed ask
+(nothing pinned yet) still synthesizes `unavailable`. This also resolves the SPEC §2.6 tension the GATE
+Z note flagged: because `requestState`/`resultState` are read off the SAME `rec` object, retaining the
+produced `rec` means `requestState` never becomes `'unavailable'` while a produced result exists —
+A10 and a produced result stay mutually exclusive **by construction**, exactly as premise (1) said,
+once the eviction bug was fixed. New `useAiRecommendation.spec.ts` (2 tests, `renderHook` + a
+`requestRecommendation`/`fetchRecStatus` network-boundary mock): the retention itself (byte-identical
+object via `toBe`, not merely equal), and a CONTRAST test proving the guard does not swallow the base
+A10 case (first failure, nothing pinned, still synthesizes `unavailable`).
+
+**Mutation proof actually run (poison → confirm red → revert):** reverted the functional-update guard
+back to the old unconditional `setRec({...unavailable})` — the retention test went red naming the exact
+mismatch (`status: "produced"` expected, `"unavailable"` received); the contrast test stayed green
+(proving it isolates the right behaviour). Reverted; both green again.
+
+**The sheet: one component, CSS for the wide/narrow split, ONE genuinely new subtree.** `ReadSheet.tsx`
+wraps the EXISTING `<Widget>...</Widget>` JSX in `AiRecPanel.tsx` (a two-line wrap at the call site,
+nothing inside the Widget's own body touched). Under `>=768px` (`useMediaQuery(theme.breakpoints.down
+('tablet'))`, degrading to `false` under jsdom's absent `matchMedia` — every pre-existing AiRecPanel/
+DecisionCard test keeps exercising the wide anatomy untouched) it returns `children` straight through,
+zero wrapper. Under `<768px` it portals `children` into an MUI `Drawer anchor="bottom"` (gets
+`theme.zIndex.drawer` (30) and the already-shipped `extrasFor(theme).scrim` backdrop for free — both
+bind at the theme layer, phase 1, not re-invented here) with a `transitionDuration={320}` (DESIGN_
+SYSTEM.md's own named "bottom sheet 320ms" data-signal motion entry). The container-query hazard
+(§2.5): the Drawer's Paper is portalled to `document.body`, severing `@container panel`'s ancestry —
+re-declared via the sanctioned `<PanelContainer>` component one level inside the Paper (NOT
+`panelContainerSx` directly on `slotProps.paper.sx` — that slot's `sx` type is narrower than `Box`'s
+and rejects the array form; the component wrapper sidesteps the type fight cleanly, still the same
+sanctioned name, still zero new patterns).
+
+**The sheet defaults OPEN, not collapsed — a real, load-bearing finding, not an assumption.** The
+peek row (verdict-only, tap/click to open) exists only once the sheet is explicitly MINIMIZED via a
+chevron control inside the expanded body. First attempt defaulted to collapsed (matching a naive
+reading of "peek row"); running `apps/dashboard-e2e/src/e2e/no-overflow.spec.ts`'s ALREADY-SHIPPED
+`openProducedRecommendation()` helper (taps "Analyze current snapshot" at 393px, asserts
+`decision-verdict`/`decision-grid` attached with NO intervening "expand" step) against that version
+red-built 3 of its 5 cases — an actually-run proof, not a guess. Flipped the default to `expanded=true`
+so a freshly-produced read shows up immediately, exactly as it always has; the peek row is reached only
+by tapping the minimize chevron (or the Drawer's own backdrop/Escape, which routes to the same
+`setExpanded(false)`). Verified again after the fix: same 5 cases green.
+
+**Exactly one verdict node, criterion 45 (SB).** The minimize control inside the expanded Drawer
+carries NO verdict text of its own (an early draft would have repeated it, mounting two
+`decision-verdict` nodes at once while expanded — caught before shipping, not after) — it is a bare
+`IconButton`. `ReadSheet.spec.tsx` (7 tests): wide passthrough (one node, no sheet machinery); narrow
+default-expanded (one node, the full body's own, minimize control present); narrow minimized (one
+node, the peek row's own, full body genuinely UNMOUNTED — MUI's `Modal` does not keep closed-Drawer
+children in the DOM by default, so this is a real unmount, not a CSS hide); narrow re-expanded (one
+node again); the wide anatomy and the minimized peek render the SAME string `toBe`-equal from the SAME
+`verdict`/`isTrade` props (computed ONCE in `AiRecPanel.tsx` from `producedRec.strategy.decision`/
+`.bias` — the identical object `DecisionCard` itself renders from, never a second wire read); verdict
+`null` (idle/loading/unavailable/signed-out — row 42) shows the body directly at both widths, no peek
+row, no phantom verdict. **Mutation proof actually run:** temporarily rendered `children` ALONGSIDE the
+peek row (simulating the exact double-mount bug the design guards against) — 4 of 6 tests went red on
+Testing Library's "multiple elements found" error, naming both nodes. Reverted; 6/6 (7/7 after the
+default-flip revision) green again.
+
+**Criterion 46 (review, browser 393) — the unit half only, `[lane-check]`.** jsdom does not evaluate
+container queries; `ReadSheet.spec.tsx`'s own container-hazard describe block asserts the DECLARATION
+only (`emotionClassOf`/`allRulesForClass`/`joinedStyleText`, the SAME `_kit/emotionCssReader.ts` idiom
+`ReadStrip.spec.tsx` already established) — confirms `container-type:inline-size;container-name:panel`
+on the `PanelContainer` wrapper one level inside the portalled root. The STEPPING behaviour itself is
+confirmed in the browser check below, at a real 393px width.
+
+**A real collateral break, found ONLY by running the full e2e suite (not assumed safe) — fixed with a
+one-line re-anchor, not a design change:** `no-overflow.spec.ts`'s "AI recommendation decision card"
+describe block already opens a produced rec at 393px and asserts `page.locator('.MuiDrawer-paper')`
+has `overflow:hidden` (originally written when the "Full analysis & data" `AnalysisSurface` Drawer was
+the ONLY Drawer paper ever on that page). The moment `ReadSheet`'s own Drawer ships (open by default,
+393px, once a read is produced), that class-only locator resolves to TWO elements and Playwright's
+strict mode throws. Fixed by re-anchoring to the `dialog` locator ALREADY defined two lines above
+(`page.getByRole('dialog', {name: 'Full analysis & data · TSLA'})` — the exact same node the class
+locator used to reach by luck) — the assertion's own intent (that specific analysis drawer's overflow
+containment) is unchanged, only the path to it. This is the SAME "necessary write-path overlap" shape
+FE-8/FE-9 already established precedent for (a later/sibling task's file needs a small, forced,
+surgical fix when an earlier task's own change breaks it) — not scope creep into FE-12's file.
+
+**Full verification, canonical commands, this session, exit codes actually checked:**
+- `npm run typecheck` → **0** (`tsconfig.app.json` then `tsconfig.spec.json` rebuilt fresh after
+  deleting stale `dist`/`out-tsc` — the CLAUDE.md-documented phantom-error trap fired once this
+  session on an unrelated stale cache; cleared before trusting any red).
+- `npx nx test @convexa/dashboard` → **0** @ **231 files / 2664 tests** (229/2656 baseline → +2 files
+  [`ReadSheet.spec.tsx` 7, `useAiRecommendation.spec.ts` 2] / +8 tests — matches exactly, no other
+  file's count moved).
+- `npm run lint` → **0** (same 5 pre-existing warnings — 1 dashboard, 4 dashboard-e2e — no new ones).
+- `npm run build` → **0** (production, both api release + dashboard bundle).
+- `npx nx e2e dashboard-e2e` (production build, ports freed IPv4+IPv6 before/after, twice this
+  session — once before the `no-overflow.spec.ts` fix to CONFIRM the break, once after to confirm the
+  fix) → **75/75 passed, 0 flaky**, matching FE-8's/FE-9's own recorded signature. One isolated re-run
+  of `curvature-v2.spec.ts`'s AC-34 hit-area test showed a single sub-pixel flake (43.999969… vs 44,
+  an existing hamburger-drawer close-button measurement, nothing to do with ai-rec) that passed clean
+  in isolation and in the full 75/75 run — recorded as the SAME environmental flake class prior
+  sessions already logged, not this task's code.
+
+**Browser check, actually done, both colour schemes, at 393px, through a real fetch-mocked
+`/ticker/TSLA` (production `serve-static` + a throwaway Playwright script, not committed — deleted
+after, matching prior lanes' own precedent).** Seeded a produced trade rec via the POST stub, drove:
+(1) idle, before asking — composer visible, no sheet machinery; (2) after asking — the sheet opens by
+default, full body incl. `Trade · long` verdict (Archivo, amber), risk grid, minimize chevron, scrim
+dimming the page behind it; (3) tap minimize — the peek row alone (`Trade · long`, amber, chevron-up)
+with the rest of the page (tape, orders, quiet band) fully visible/scrollable above it; (4) tap the
+peek row — re-expands, same content. Confirmed in BOTH dark and light: light mode genuinely repaints
+onto the light panel surface (no dark-plate bleed — this needed the SAME two-part theme seed FE-8's
+session already discovered and documented: `localStorage['convexa.uiprefs.v1']` AND the mocked
+`/api/auth/session` response's `settings.theme`, both from the same `scheme` variable, or "light"
+silently renders dark), zero console errors. Also confirmed at 1280 (wide): the panel renders inline
+in normal flow, `Trade · long` verdict visible in place, zero sheet machinery mounted (measured:
+`getByRole('button', {name: 'Minimize the AI read'})` count 0). Deleted the throwaway script and all
+nine screenshots, confirmed `git status --short` showed no stray files, killed the server, ran
+`npm run ports:free` (both before and after every serve cycle this session).
+
+**Known deviations to carry into the build report (FE-14):**
+1. GATE Z amendment: `useAiRecommendation.ts` added to FE-10's Owns list by the conductor (A10
+   retention) — see above, not a scope decision this lane made unilaterally.
+2. The sheet's default-expanded / minimize-to-peek interaction shape is NOT literally specified by
+   SPEC/PLAN (which name only "a peek row carrying the verdict," not its open/closed default or its
+   dismiss control) — this session filled that gap with the minimal mechanism an existing, already-
+   shipped e2e flow forced (see above), rather than inventing a richer interaction (swipe gestures,
+   partial-height drag) the contracts never asked for. Flagging so a design review can confirm the
+   shape if desired; no criterion is under-met by it (45/46 both hold in every reachable state).
+3. `no-overflow.spec.ts` — one locator re-anchored (`.MuiDrawer-paper` → the already-defined `dialog`
+   locator), forced by this task's own change, outside FE-10's Owns list but the same sanctioned
+   "necessary collateral fix" shape FE-8/FE-9 already used.
+
+## Next: FE-11 (not started)
+
+**FE-11 — Compose the desk, and burn down the spacing exemptions in the rewritten files only.** Read
+PLAN.md's FE-11 section fresh before starting. Depends on FE-6, FE-7, FE-8, FE-9, FE-10 (all done).

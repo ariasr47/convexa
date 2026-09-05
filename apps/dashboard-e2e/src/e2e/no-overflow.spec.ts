@@ -662,7 +662,14 @@ test.describe('AI recommendation decision card', () => {
       await expect(dialog.getByRole('button', { name: 'Close analysis' })).toHaveCount(1);
       const content = dialog.getByTestId('analysis-content');
       await expect(content).toHaveCount(1);
-      await expect(page.locator('.MuiDrawer-paper')).toHaveCSS('overflow', 'hidden');
+      // (curvature-v2-desk-and-read FE-10) Re-anchored from the bare `.MuiDrawer-paper` class
+      // locator to the ALREADY-DEFINED `dialog` locator above (the identical node — this IS the
+      // analysis Drawer's own paper, `role="dialog"`): FE-10's bottom sheet is now a SECOND
+      // `MuiDrawer-paper` on this page at 393px (it renders open-by-default once a read is
+      // produced — see `ReadSheet.tsx`), so the class-only locator became ambiguous
+      // ("strict mode violation: resolved to 2 elements") the moment that shipped. `dialog` was
+      // always the intended target; nothing about this assertion's coverage changes.
+      await expect(dialog).toHaveCSS('overflow', 'hidden');
       const scrollRegions = await dialog.locator('*').evaluateAll((nodes) =>
         nodes
           .filter((node) => {
