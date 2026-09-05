@@ -59,6 +59,9 @@ const renderCard = (
   );
 
 describe('DecisionCard observable contract', () => {
+  // Row 31 (SPEC §4.5, FE-9): the four risk fields render their grounding BEFORE any prose —
+  // `decision-grid` now precedes `decision-thesis`, the deliberate reorder that makes
+  // `AiRecPanel.tsx`'s own long-standing header doc ("risk + invalidation FIRST") literally true.
   it('keeps the fixed hierarchy in DOM order', () => {
     renderCard();
     const ids = [
@@ -67,8 +70,8 @@ describe('DecisionCard observable contract', () => {
       'decision-verdict',
       'decision-metadata',
       'plan-fields-not-checked',
-      'decision-thesis',
       'decision-grid',
+      'decision-thesis',
       'decision-evidence',
       'decision-actions',
     ];

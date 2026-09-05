@@ -37,6 +37,7 @@ import {
   AskModelSelect,
   LoadingBlock,
   PoweringCta,
+  QuietGateNote,
   SignedOutGate,
   SnapshotHint,
   UnavailableBlock,
@@ -45,6 +46,7 @@ import { AnalysisSurface } from './AnalysisSurface';
 import { COPY } from './copy';
 import { DecisionCard } from './DecisionCard';
 import { deriveAiRecPresentation } from './presentationPolicy';
+import { readLayoutFor } from './readLayout';
 import type { AiRec, RecRequestOpts } from './useAiRecommendation';
 
 export { useReadPersonas } from './useReadPersonas';
@@ -181,6 +183,12 @@ export function AiRecPanel({
           : (powering?.unavailable_reason ?? null),
   });
   const poweringCta = POWERING_STATES.has(presentation.requestState);
+  // The ONE total mapping (SPEC §2.6, readLayout.ts) is what actually GATES the A1c annex below —
+  // not a parallel `requestState === 'no_edge'` re-check. A regression in the mapping (e.g. the
+  // corrected earlier draft's error, collapsing no_edge back to an idle-only body) therefore shows
+  // up here, in the real render, not only in the mapping's own isolated tests.
+  const readLayout = readLayoutFor(presentation.requestState, presentation.resultState);
+  const showQuietGateAnnex = readLayout.annexes.includes('A1c');
 
   // Exactly one body state. A powering CTA preempts the generic `unavailable` block.
   const phase = loading
@@ -403,6 +411,22 @@ export function AiRecPanel({
             onAnalysis={() => setAnalysisOpen(true)}
             onRefresh={() => doRequest({ override: false })}
             onDismiss={ai.dismiss}
+          />
+        )}
+
+        {/* A1c — the quiet-gate annex (SPEC §4.5, §2.6): a request-scope condition, not a peer body
+            state. `no_edge` composes over a produced read rather than replacing it — the same note,
+            caption and `Ask anyway` control as A1b (idle · quiet gate), rendered IN BODY beneath the
+            read, and WITHOUT A1b's Mono `no_trade` stance line (a real verdict is mounted here; the
+            machine stance would collide with it, canon rule 23 / row 42). `refresh`/`retry` both
+            resolve false under `no_edge` by construction (presentationPolicy.ts:169,177), so this is
+            the ONLY recovery control the panel would otherwise leave the user without (row 59). */}
+        {signedIn && producedRec && !loading && showQuietGateAnnex && (
+          <QuietGateNote
+            reasons={gate.reasons}
+            onAskAnyway={() => doRequest({ override: true })}
+            includeStanceLine={false}
+            sx={{ mt: 1.5 }}
           />
         )}
 

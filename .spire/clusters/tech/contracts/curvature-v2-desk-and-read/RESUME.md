@@ -756,11 +756,190 @@ session (FE-6's own edit).
    drops out of the desk; until that commits, the real `/ticker` page shows two GEX-wall renderers.
    Confirmed by browser screenshot this session (see above) — not hidden.
 
-## Next: FE-9 (not started)
+## Done (FE-9) — do not re-do
 
-**FE-9 — The AI read: one total `(request, result) → ReadLayout` mapping, and the A1c annex.** Depends
-on FE-1 (done). Read PLAN.md's FE-9 section fresh (long — the `no_edge`/A1c mechanism, the two-arm
-A1b/A1c distinction, and the exhaustiveness-proof mutation tests are all load-bearing) before starting.
-Not otherwise blocked by FE-8's work — `ai-rec/**` was untouched by this session except through the
-generic `TickerDashboard.tsx` render tree (AiRecPanel's own mount point, line numbers, and props were
-not touched).
+**FE-9 — The AI read: one total `(request, result) → ReadLayout` mapping, and the A1c annex.** Owns
+(as landed): new `ai-rec/{readLayout.ts, readLayout.spec.ts, readLayout.render.spec.tsx}` ·
+`AiRecPanel.tsx` · `AiRecPanelBlocks.tsx` · `DecisionCard.tsx` · `DecisionCard.spec.tsx` (existing
+DOM-order test updated for the deliberate reorder below). `copy.ts`/`fixtures.ts` were READ but not
+edited — every string this task needed already shipped.
+
+**The Critical, fixed.** `readLayout.ts` exports `readLayoutFor(requestState, resultState) →
+{ body, annexes }`, exhaustive over the real 15×7 grid via `assertNeverRequestState`/
+`assertNeverResultState` `never`-arm guards (exported so `readLayout.spec.ts` can exercise the SAME
+guard at a widened-local-copy call site, mirroring `liveClaim.typeproof.spec.ts`'s established
+`@ts-expect-error` idiom — a real `@ts-expect-error`/TS2578 compile proof, not a runtime-only check).
+**Load-bearing finding, not assumed:** the naive mutation "delete the `default: return
+assertNeverResultState(...)` arm" does **NOT** go red — the switch already covers all 6 real
+`AiRecResultState` members, so removing the catch-all changes nothing (TS already sees it as
+exhaustive). The REAL proof removes one covered `case` (`incomplete_trade`) while KEEPING the
+`default` arm: `npm run typecheck` then names the exact member — `TS2345: Argument of type
+"incomplete_trade" is not assignable to parameter of type 'never'` — actually run, confirmed red,
+reverted. Recorded here so a later lane doesn't waste a cycle re-deriving the same false start.
+
+**`AiRecPanel.tsx` genuinely CONSULTS `readLayoutFor`for the A1c decision — not a parallel,
+disconnected description of intent.** First draft gated the annex on the SAME
+`presentation.requestState === 'no_edge'` check the mapping also encodes, which technically worked but
+meant a bug in `readLayoutFor` could never be *observed* through the real host — exactly the vacuous-
+test shape the launch brief warns against. Found this by RUNNING mutation proof (b) against the FULL
+APP test (not just the pure-function unit test): poisoning `readLayoutFor` to collapse `(no_edge,
+fresh_trade)` back to `{ body: 'A1a', annexes: [] }` left the real rendered panel UNCHANGED (still
+correct) while only the isolated `readLayoutFor` assertions went red — a real, caught gap, not a
+hypothetical one. Fixed by computing `const readLayout = readLayoutFor(presentation.requestState,
+presentation.resultState); const showQuietGateAnnex = readLayout.annexes.includes('A1c');` in
+`AiRecPanel.tsx` and gating the annex on that. Re-ran the SAME poison afterward: the full-app test now
+goes red too (3 failures, including the real host), confirming the mapping is actually load-bearing.
+`DecisionCard.tsx`'s pre-existing A5/A9 conditionals were left AS-IS (already correct, not part of the
+Critical, and rewiring already-correct working code through the new mapping was not worth the added
+risk this session).
+
+**Four mutation proofs actually run (poison → confirm red → captured output → revert), all against
+`readLayout.ts`/`AiRecPanel.tsx`, not narrated:**
+- (a, adjusted — see finding above) removed the `incomplete_trade` case, kept the `default` arm →
+  `npm run typecheck` red, named the exact member. Reverted, `npm run typecheck` → 0.
+- (b) poisoned `(no_edge, resultState≠null)` to `{ body: 'A1a', annexes: [] }` → BOTH
+  `readLayout.spec.ts`'s own runtime-companion test AND `readLayout.render.spec.tsx`'s row-58 full-app
+  test went red (3 failures: the pure assertion, the dedicated mutation-proof test, and the row-47
+  sibling-isolation test that depends on the annex actually mounting). Reverted; 148/148 green again.
+- (c) restored A1b's Mono `no_trade` line inside the A1c annex (`includeStanceLine={false}` →
+  `{true}` at the `AiRecPanel.tsx` call site) → the row-58/59 full-app test went red on
+  `queryByTestId('ai-rec-quiet-gate-stance')` no longer being null. Reverted.
+- (d) demonstrated, not merely asserted, that identifying A1b by the shared gate-note string ALONE is
+  genuinely ambiguous against A1c (both render it) — a dedicated test renders both arms and shows the
+  naive identifier can't tell them apart, then shows the REAL discriminator (the Mono stance line's
+  presence/absence) does. This is a shipped, permanent test (`readLayout.render.spec.tsx`), not a
+  one-off session poison — it documents WHY every other test in the file uses conjunction.
+
+**A second, undiscovered defect found ONLY by building a real DOM colour census for criterion 30 (not
+by inspection) — fixed in the same commit, not deferred:** MUI's CSS-variables mode (`theme.ts:65`)
+compiles `sx={{ color: 'primary.main' }}` to the literal `var(--mui-palette-primary-main)`, but an
+UNTHEMED `variant="text"`/`"outlined"` `Button` (no explicit `color` prop) resolves its own text/border
+color through a ONE-HOP indirection — `color:var(--variant-textColor)` with a SEPARATE
+`--variant-textColor:var(--mui-palette-primary-main)` declaration in the same rule. A naive
+direct-match census (`color:var(--mui-palette-primary-main)` only) misses this entirely — and it is
+real: `DecisionCard.tsx`'s pre-existing, untouched-until-now "Full analysis & data" (`variant="text"`,
+no color prop), "Create sim order" (`variant="outlined"`, no color prop), "Refresh" (`variant="text"`,
+no color prop), and the `RiskField` `not_set` arm's inline "Set your risk inputs" link ALL defaulted to
+MUI's unthemed `color="primary"` — i.e., ALL FOUR were already rendering brand amber TEXT, in EVERY
+produced state including *No trade* (where row 30 requires ZERO amber). This is not something this
+session introduced; it was there before FE-9 and nothing in the shipped suite had ever asserted
+against it. **Fixed** by binding each an EXPLICIT non-amber color: `Full analysis & data` and `Set your
+risk inputs` → `color="info"` (link-class, matching `AiRecPanel.tsx`'s own pre-existing "View what's
+sent" precedent and its comment: "link-class action text binds `info`… never amber"); `Create sim
+order` and `Refresh` → `color="inherit"` (matching the existing `Dismiss`/`Retry`/`Ask anyway`
+precedent — neutral secondary actions, not links). `Review simulated trade` (the one `variant=
+"contained"` CTA) is correctly EXEMPT: a contained button's text is `primary.contrastText` (ink on an
+amber FILL), the FILL/UI-grade spend `tokens.ts` already reserves for buttons — never the TEXT-grade
+spend rule 16 scopes. **The improved census, and the fix, were both proven non-vacuous**: re-poisoned
+`Full analysis & data` back to no explicit color after fixing it — `readLayout.render.spec.tsx` went
+red on exactly the three states that render it (A3, A4, A5-over-A3), naming `"Full analysis & data"`
+as the unexpected extra amber-bearing text each time. Reverted.
+
+**Verdict-word styling (rows 29/30/31, canon 16's "verdict-first brief" — genuinely new, not
+previously built anywhere in this codebase).** `DecisionCard.tsx`'s verdict `Typography` gained
+`fontFamily: typographyTokens.displayFontFamily` (Archivo), `fontStretch: '112.5%'`, `fontWeight: 700`,
+`fontSize: {xs:'20px', sm:'26px'}`, and `color: isTrade ? 'primary.main' : undefined` — ONE text node
+(`` `Trade · ${bias}` `` / `No trade`, byte-identical strings to before), not split into per-word spans:
+an earlier attempt colouring only the word "Trade" (matching the `design/` mockup's `<span
+class="amber">Trade</span>` markup exactly) broke dom-testing-library's `getByText('Trade · long')`
+across dozens of pre-existing call sites (`getNodeText` only concatenates DIRECT text-node children,
+ignoring nested elements — found by actually running the suite, not assumed). Kept as one node with a
+conditional whole-element colour instead: `No trade` spends NO amber at all (ruling 8 / §4.5 — no_trade
+is info-toned, never a directional colour), so the two-way split is preserved without touching a single
+existing test.
+
+**Row 31 — the four risk fields, grounding before prose, register never colour.**
+1. **`decision-grid` (the four risk fields) now renders BEFORE `decision-thesis` (the reasoning
+   prose)** — previously the reverse. `AiRecPanel.tsx`'s own header doc already declared "risk +
+   invalidation FIRST"; the shipped DOM order contradicted its own stated intent. `DecisionCard.spec.
+   ts`'s existing "keeps the fixed hierarchy in DOM order" test was updated to the corrected sequence
+   (`decision-grid` before `decision-thesis`) — the ONLY existing test this session's product changes
+   required touching.
+2. **`Max risk` now carries `groundingState={rec.grounding?.fields.max_risk?.state}`** (previously
+   omitted) — completing 3 of the 4 risk fields' register treatment (Invalidation and Target already
+   had it). **`Entry` (`entry_trigger`) is deliberately left WITHOUT a register** — SPEC §4.5 names it
+   as one of "the four risk fields," but the wire's `Grounding.fields` shape has exactly five keys
+   (`exit_stop`, `exit_target`, `invalidation_level`, `max_risk`, `position_size`) and NONE of them is
+   `entry_trigger`. This is the SAME shape as the corrected `no_edge` error the whole council spent its
+   effort on — SPEC prose asserting something the shipped wire does not carry — recorded here rather
+   than silently building a fabricated grounding state for a field that structurally can't have one.
+3. **A dotted rule for "the model's own number" (untraced), added at the `RiskField` CALL SITE in
+   `DecisionCard.tsx`, NOT inside `literals.ts`'s `registerSx`.** `literals.ts` is outside this task's
+   Owns list, and `literals.spec.ts`'s own "registerSx — D3" describe block already pins
+   `untraced`/`not_checkable`/`not_applicable` as mutually EQUAL `{fontFamily}`-only objects (a settled
+   prior amendment) — adding a border there would break that suite's own exact-equality assertions.
+   Layered `borderBottom: '1px dotted'` on top of `registerSx`'s return, scoped to
+   `literal.kind === 'value' && groundingState === 'untraced'` only, so an absence literal (dash/not
+   given/unavailable) never grows a spurious rule under it.
+
+**Row 41 — a SECOND behaviour change SPEC §4.5 names explicitly, easy to miss on a fast read.** The
+shipped `no_edge` branch of `ActionRegion` (A1b) was an EARLY RETURN — it replaced the idle composer
+and primary action outright with just the gate note + Ask anyway, an "override rendered as a block"
+per SPEC's own words. Fixed: A1b now renders the SAME primary control idle renders (disabled under the
+closed gate, exactly as any other non-actionable idle sub-state disables it) PLUS the gate note as a
+footnote beneath it — via a new shared `QuietGateNote` component (`AiRecPanelBlocks.tsx`, exported)
+that BOTH A1b (`includeStanceLine`) and the new A1c annex (`includeStanceLine={false}`) render, so the
+two arms can never drift apart on the note/caption/Ask-anyway text itself.
+
+**GATE Z item flagged, not built — the A10 "previously pinned read stays pinned" retention.** §4.5's
+A10 row and §5's error-handling section both state a request failure "keeps any previously pinned read
+pinned and readable" — but the shipped `useAiRecommendation.ts` hook (NOT in FE-9's Owns list)
+`setRec(res)`s the WHOLE `rec` object on every request, including a failure, so a produced read is
+genuinely REPLACED (not merely hidden) the moment a subsequent ask fails. The literal §3 AC row 34 text
+("never renders as idle or a no-trade verdict") does NOT itself require retention and IS satisfied
+today (A10 already renders its own line, never idle, never no-trade) — retention is PLAN's own
+Step-5-table elaboration and §4.5/§5's descriptive prose, neither of which carries its own numbered,
+ship-blocking §3 criterion. Building it would mean either (a) editing `useAiRecommendation.ts`, outside
+this task's Owns list, or (b) a parallel "last known produced rec" ref inside `AiRecPanel.tsx` that
+risks silently disagreeing with the hook's own lifecycle (dismiss, ticker change, sign-out) — exactly
+the kind of half-scoped mechanism FE-6's own RESUME entry declined to build for a structurally similar
+reason. Flagging for GATE Z / a later lane rather than inventing it.
+
+**Full verification, canonical commands, this session, exit codes actually checked:**
+- `npm run typecheck` → **0**.
+- `npx nx test @convexa/dashboard` → **0** @ **229 files / 2656 tests** (227/2507 baseline → +2 files
+  [`readLayout.spec.ts` 113, `readLayout.render.spec.tsx` 36] / +149 tests — the pre-existing ai-rec
+  suite's own 447 tests are UNCHANGED in count, all still green under the DOM reorder / colour-prop
+  changes).
+- `npm run lint` → **0** (same 5 pre-existing warnings total — 1 dashboard, 4 dashboard-e2e — no new
+  ones).
+- `npm run build` → **0** (production, both api release + dashboard bundle).
+- `npx nx e2e dashboard-e2e` (against the PRODUCTION build, ports freed IPv4+IPv6 before and after) →
+  **75/75 passed, 0 flaky**, matching FE-8's own already-recorded 75/75-on-prod signature — confirms
+  this session's `Button color` / DOM-order changes did not disturb the registered visual/hit-area
+  suite.
+
+**Browser check, actually done, both colour schemes, through a real fetch-mocked `/ticker/TSLA` (Vite
+dev + a throwaway Playwright script, not committed — deleted after, matching prior lanes' own
+precedent).** Seeded a `(no_edge, fresh_trade)` scenario by making the recommendation-status AND the
+recommendation POST response both report `gate.state: 'no_fresh_edge'` (the POST response's OWN gate is
+what `applyGating` reads on success, which is what keeps `readinessGateState` closed AFTER a produced
+read lands — the actual mechanism that makes this pair reachable in the real app, not just in a unit
+fixture). Clicked "Ask anyway" from the A1b arm; confirmed in BOTH dark and light: the produced
+`Trade · long` card renders (verdict amber, Archivo, `primary.main`; risk fields Mono/traced), the A1c
+annex mounts BENEATH it (`No fresh edge right now — score below threshold` + caption + `Ask anyway`,
+NO Mono `no_trade` line inside it), light mode genuinely repaints onto the light panel surface (no
+dark-plate bleed, amber renders as the measured `amberDeep` #C57F19 there), zero console/page errors.
+Also confirmed the "Full analysis & data" / "Set your risk inputs" fix visually (blue/info, not amber)
+and "Create sim order" (neutral outline, not amber-bordered) in both screenshots. Killed the dev
+server, ran `npm run ports:free` (confirmed one listener on :4200, killed) both before and after.
+
+**Known deviations to carry into the build report (FE-14):**
+1. `readLayoutFor`'s `bodyForResult` returns `'A3'` (not `'A3'`-or-`'A4'`) for all three degraded
+   result states (`stale_newer_snapshot`/`stale_at_generation`/`superseded_inputs`) — the two-axis
+   mapping cannot see `strategy.decision` (a THIRD fact outside the grid), so it cannot always pick
+   between a stale TRADE and a stale NO-TRADE body. Documented in the function's own doc comment. The
+   PRODUCTION render path (`DecisionCard.tsx`'s `isTrade`) does NOT consult this function and renders
+   the correct verdict word regardless: this is a named limitation of the pure mapping's OWN return
+   value, not a rendering bug.
+2. The A10 "previously pinned read stays pinned" retention is flagged, not built (GATE Z, see above).
+3. Four buttons' `color` props changed (`Full analysis & data`, `Set your risk inputs` → `info`;
+   `Create sim order`, `Refresh` → `inherit`) — a real, necessary fix for criterion 30 (see above), but
+   beyond PLAN's own illustrative code for this task, which never anticipated this defect existed.
+4. `decision-grid`/`decision-thesis` DOM order swapped (row 31) — `DecisionCard.spec.tsx`'s existing
+   order test updated accordingly; no other existing test depended on the old order.
+
+## Next: FE-10 (not started)
+
+**FE-10 — The bottom sheet and its peek row (under 768px).** Read PLAN.md's FE-10 section fresh before
+starting. Depends on FE-9 (done, this session) for the panel body it wraps.
