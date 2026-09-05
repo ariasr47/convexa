@@ -14,6 +14,13 @@
  * SAME `streamOffline`/session-tape discipline `live-tape/LiveTape.tsx` already established
  * (`tileOffline = st ? false : streamOffline`) — a genuine drop, never a replay arm or a
  * not-yet-connected state.
+ *
+ * GATE Z (FE-11, SPEC §4.1 "Tape trail row" offline/stale column): `paused` is now ALSO forwarded
+ * into `TapePulseStrip` so the `Mid` readout ITSELF carries the pause mark + dims, matching the
+ * ladder mid row's own F4/F5 treatment — this row previously only rendered the caption BELOW the
+ * readout, never marked the value. Because `paused` is the host's `tileOffline` (never true during a
+ * replay standing), the mark can never appear during F6 — the same standing-union mechanism, not a
+ * second one.
  */
 import type { StructureFieldSurfaces } from '@/shared/charts/structure-field/StructureFieldCanvas';
 import type { LevelPalette } from '@/shared/charts/structure-field/levelStrokes';
@@ -55,6 +62,7 @@ export function TapeTrailRow({
         claim={claim}
         mid={mid}
         lastTrade={lastTrade}
+        paused={paused}
         palette={palette}
         surfaces={surfaces}
         height={height}

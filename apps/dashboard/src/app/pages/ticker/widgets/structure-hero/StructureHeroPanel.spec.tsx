@@ -4,15 +4,22 @@
  * (single store read, palette identity, inner boundary). Criteria 20/23/24 are proven at their own
  * pure-function/component level (`paintStep.spec.ts`, `level-ladder/*.spec.tsx`,
  * `StructureFieldCanvas.spec.tsx`) — not re-proven here. Criteria 21/22/52 are `review` (browser).
+ *
+ * GATE Z (FE-11): the ladder mid row's and tape-trail row's own offline/stale + F6 replay treatment
+ * (SPEC §4.1, criterion 16b) — the STANDING-UNION integration proof (offline dims + pause marks both
+ * readouts; a replay standing renders F6 in both, full strength, no pause mark, no dot, with a REAL
+ * replayed value — never vacuous — mirroring `live-dot-census.spec.tsx`'s own "F6 must be reachable"
+ * discipline for the LiveTape cells).
  */
 import type { StructureFieldCanvasProps } from '@/shared/charts/structure-field';
-import { theme } from '@/shared/theme/theme';
+import { lightTheme, theme } from '@/shared/theme/theme';
 import type { LiveUpdate, MarketState, StrikeRow } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
 import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { publishLiveTape, resetLiveTape } from '../../liveTapeStore';
+import type { SessionTapeOccupancy } from '../../sessionTapeStanding';
 import type { LevelLadderProps } from '../level-ladder';
 import { StructureHeroPanel } from './StructureHeroPanel';
 
@@ -257,6 +264,39 @@ describe('StructureHeroPanel', () => {
     expect(ladderPalette).toBe(canvasPalette);
   });
 
+  it("criterion 53 (ported from the deleted `GexProfileChart`/`chart.spec.tsx`, GATE Z FE-11): the resolved `surfaces` object never renders the same across the dark and light schemes — this is now the desk's ONLY structure-instrument host, so its own scheme resolution carries the proof `GexProfileChart` used to", () => {
+    publishLiveTape({ ticker: 'SPY', live: liveUpdate(), streamOffline: false });
+    const { unmount } = render(
+      <ThemeProvider theme={theme}>
+        <StructureHeroPanel
+          symbol="SPY"
+          m={marketState()}
+          strikes={strikes}
+          structureAgeSeconds={42}
+        />
+      </ThemeProvider>,
+    );
+    const dark = captured.canvas[captured.canvas.length - 1].surfaces;
+    unmount();
+    captured.canvas.length = 0;
+
+    render(
+      <ThemeProvider theme={lightTheme}>
+        <StructureHeroPanel
+          symbol="SPY"
+          m={marketState()}
+          strikes={strikes}
+          structureAgeSeconds={42}
+        />
+      </ThemeProvider>,
+    );
+    const light = captured.canvas[captured.canvas.length - 1].surfaces;
+
+    const keys = Object.keys(dark) as (keyof typeof dark)[];
+    const differing = keys.filter((k) => dark[k] !== light[k]);
+    expect(differing.length).toBeGreaterThan(0);
+  });
+
   it('inner boundary (SPEC §5): a canvas fault degrades to a static message WITHOUT taking the ladder, the tape row or the path strip', () => {
     canvasShouldThrow = true;
     const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -283,5 +323,108 @@ describe('StructureHeroPanel', () => {
     expect(screen.getByTestId('wall-magnet-view')).toBeInTheDocument();
     // The ladder/tape/path stay mounted regardless of which paint is selected for the canvas region.
     expect(screen.getByTestId('level-ladder')).toBeInTheDocument();
+  });
+
+  const occ = (over: Partial<SessionTapeOccupancy> = {}): SessionTapeOccupancy => ({
+    symbol: 'SPY',
+    et_date: '2026-09-02',
+    tape_time_et: '09:35:00',
+    phase: 'playing',
+    pace: 1,
+    ...over,
+  });
+
+  /** Scoped to the ladder only — the tape-trail readout ALSO renders a "Mid" text node, so an
+   *  unscoped `screen.getByText('Mid')` is ambiguous once both surfaces are mounted together. */
+  function ladderMidCard(): HTMLElement {
+    const ladder = screen.getByTestId('level-ladder');
+    return within(ladder)
+      .getByTestId('ladder-tick-mid')
+      .parentElement?.querySelector('[data-figure-state]') as HTMLElement;
+  }
+
+  describe('GATE Z (SPEC §4.1 "offline/stale" column) — the ladder mid row AND the tape-trail readout, together', () => {
+    it('a genuine drop dims + pause-marks BOTH the ladder mid row and the tape-trail Mid readout; the four structure rows and Structure readout stay untouched', () => {
+      publishLiveTape({ ticker: 'SPY', live: liveUpdate({ mid: 451.2 }), streamOffline: false });
+      const { unmount } = renderHero();
+      unmount();
+
+      publishLiveTape({ ticker: 'SPY', live: null, streamOffline: true });
+      renderHero();
+
+      const midCard = ladderMidCard();
+      expect(midCard).toHaveAttribute('data-figure-state', 'offline-bare');
+      expect(midCard).toHaveTextContent('offline');
+
+      expect(screen.getByTestId('tape-mid-pause')).toBeInTheDocument();
+      expect(screen.getByTestId('tape-mid-readout')).toHaveTextContent('Mid —');
+      expect(screen.getByTestId('tape-trail-caption')).toHaveTextContent('tape paused');
+
+      // Structure readout (REST, never stream-derived) is untouched by the drop.
+      const structureReadout = screen.getByTestId('tape-structure-readout');
+      expect(getComputedStyle(structureReadout).opacity).not.toBe('0.5');
+    });
+
+    it('a drop with a retained latch: both readouts show the RETAINED number, dimmed, with a pause mark — never blanked', () => {
+      // NEVER unmount between the live tick and the drop — the latch is component-local state
+      // (`useStreamLatch`), so it only survives a REACTIVE re-render off the same store subscription,
+      // not a fresh mount. `act()` flushes the store's `emit()` synchronously (mirrors
+      // `LiveTape.spec.tsx`'s own `rerender()`-based latch proofs, adapted for a store-only reader).
+      publishLiveTape({ ticker: 'SPY', live: liveUpdate({ mid: 451.2 }), streamOffline: false });
+      renderHero();
+      act(() => {
+        publishLiveTape({ ticker: 'SPY', live: null, streamOffline: true });
+      });
+
+      // The mid latch retains the pre-drop value — both surfaces show it, not `—`. The ladder
+      // formats via bare interpolation (`$451.2`, FE-5's own documented, unrelated cosmetic finding)
+      // while the tape readout formats via `.toFixed(2)` (`$451.20`) — two different call sites'
+      // existing formatting rules, not a new inconsistency this task introduces.
+      const midCard = ladderMidCard();
+      expect(midCard).toHaveAttribute('data-figure-state', 'offline-retained');
+      expect(midCard).toHaveTextContent('offline · last known');
+      expect(midCard).toHaveTextContent('$451.2');
+
+      expect(screen.getByTestId('tape-mid-readout')).toHaveTextContent('Mid $451.20');
+      expect(screen.getByTestId('tape-mid-pause')).toBeInTheDocument();
+    });
+
+    it('16b — a replay standing renders BOTH readouts as F6: full strength, no pause mark, a REAL replayed value (never vacuous)', () => {
+      // The mid latch must never carry a pre-replay LIVE value into the replay arm (16a/16b's own
+      // reset-token discipline) — start clean, straight into replay.
+      const live = liveUpdate({
+        mid: 573.12,
+        session_tape: occ(),
+      } as Partial<LiveUpdate>);
+      publishLiveTape({ ticker: 'SPY', live, streamOffline: false });
+      renderHero();
+
+      const midCard = ladderMidCard();
+      expect(midCard).toHaveAttribute('data-figure-state', 'replay');
+      expect(midCard).toHaveTextContent('session replay');
+      expect(midCard).toHaveTextContent('$573.12');
+      // The pause-mark assertion IS the point of 16b — prove its absence, not merely the state name.
+      expect(midCard.textContent).not.toMatch(/offline/);
+      expect(within(midCard).queryByTestId('figure-live-dot')).toBeNull();
+
+      expect(screen.getByTestId('tape-mid-readout')).toHaveTextContent('Mid $573.12');
+      expect(screen.queryByTestId('tape-mid-pause')).toBeNull();
+      expect(screen.queryByTestId('tape-trail-caption')).toBeNull();
+    });
+
+    it('16b — the four structure rows stay dotless, un-dimmed and offline-free during a replay standing too', () => {
+      const live = liveUpdate({ mid: 573.12, session_tape: occ() } as Partial<LiveUpdate>);
+      publishLiveTape({ ticker: 'SPY', live, streamOffline: false });
+      renderHero();
+      for (const id of [
+        'ladder-tick-callWall',
+        'ladder-tick-putWall',
+        'ladder-tick-maxPain',
+        'ladder-tick-gammaFlip',
+      ]) {
+        const cell = screen.getByTestId(id).parentElement?.querySelector('[data-figure-state]');
+        expect(cell?.getAttribute('data-figure-state')).toBe('default');
+      }
+    });
   });
 });

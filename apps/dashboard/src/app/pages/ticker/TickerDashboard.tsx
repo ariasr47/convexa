@@ -4,11 +4,15 @@
  * positioning, off-exchange blocks, setups, and GEX chart are now the `ticker/widgets/*` components
  * (FigureCell (was StatTile, curvature-v2-foundations) · TickerToolbar · TickerHeader · LiveTape ·
  * StructureHeroPanel · ReadStrip (curvature-v2-desk-and-read FE-8: replaces the old dealer
- * positioning widget, now deleted) · GexStrikeProfile · TermStructureCard · FreshPositioning ·
- * OffExchangeBlocks · Setups).
+ * positioning widget, now deleted) · TermStructureCard · FreshPositioning · OffExchangeBlocks ·
+ * Setups). `GexStrikeProfile` (curvature-v2-desk-and-read FE-11) is deleted — it is fully superseded
+ * by `StructureHeroPanel`, the desk's ONE structure instrument; see that widget's own module doc and
+ * `gex-profile-chart/chart.tsx`'s.
  * This file is the COMPOSITION + data wiring only.
  *
- * Product spine #3 — hierarchy, not equal weight: Structure → Tape & plan → Supporting context.
+ * Product spine #3 — hierarchy, not equal weight: Structure → Tape & plan → Supporting context
+ * (curvature-v2-desk-and-read FE-11 reading order: masthead → structure-hero → read-strip → the
+ * plan group [LiveTape / PositionBrief / AiRecPanel wide / OrdersWidget] → the quiet context band).
  *
  * RE-SKIN + COMPONENTIZE, NOT a logic rewrite (FRONTEND_EXECUTION_CONTRACT hard rules): the bundle
  * poll (~60s), the page-scoped SSE subscription + payload-gap watchdog, the AI-rec hook, the
@@ -39,9 +43,6 @@ import { CapAnnotation } from '@/pages/ticker/widgets/ai-rec/CapAnnotation';
 import { StateExportDrawer } from '@/pages/ticker/widgets/ai-rec/StateExportDrawer';
 import { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommendation';
 import { PrimeBanner, tierMeta } from '@/pages/ticker/widgets/opportunity-tier';
-import { resolveLevelPalette } from '@/shared/charts/structure-field/levelStrokes';
-import { isDeliveringLive } from '@/shared/liveness/liveClaim';
-import { extrasFor } from '@/shared/theme/tokens';
 import { OptionRight } from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -67,7 +68,6 @@ import { useTickerTradeFlows } from './useTickerTradeFlows';
 import {
   DealerFlowProjection,
   FreshPositioning,
-  GexStrikeProfile,
   IvRank,
   LiveTape,
   MarketContext,
@@ -78,7 +78,7 @@ import {
   TermStructureCard,
 } from './widgets';
 import { humanAge, StatSkeleton } from './widgets/_kit';
-import { CommandDeck, LastTradeReadout, TapePulseStrip, TickerToolbar } from './widgets/chrome';
+import { CommandDeck, LastTradeReadout, TickerToolbar } from './widgets/chrome';
 import { buildReadStrip, ReadStrip } from './widgets/read-strip';
 import { StructureHeroPanel } from './widgets/structure-hero';
 
@@ -256,28 +256,6 @@ export function TickerDashboard() {
   );
 
   const theme = useTheme();
-  // Minimal, surgical fix (curvature-v2-desk-and-read FE-6): `TapePulseStrip` became presentational
-  // (SPEC §2.1's second fabrication site removed — it no longer calls `useLiveTape()` itself), so
-  // this OLD standalone mount below (`TapePulseStrip structureMid={...}`, pre-FE-11's reading-order
-  // rewrite) now computes the SAME claim/mid/palette/surfaces the new `structure-hero/` composition
-  // computes, through the SAME canon composers — never a second, hand-rolled expression. This page
-  // file is outside `pages/ticker/widgets/**` and was already calling `useLiveTape()` directly
-  // (`live`/`isLive`/`streamOffline` above), so it is a legitimate, pre-existing standalone reader,
-  // not a new fabrication site.
-  const tapePulsePalette = useMemo(() => resolveLevelPalette(theme), [theme]);
-  const tapePulseSurfaces = useMemo(
-    () => ({
-      ink: theme.palette.background.default,
-      panel: theme.palette.background.paper,
-      raised: extrasFor(theme).panelRaised,
-      phosphor: theme.palette.text.primary,
-      steel: theme.palette.text.secondary,
-      warning: theme.palette.warning.main,
-    }),
-    [theme],
-  );
-  const tapePulseClaim = isDeliveringLive(live, streamOffline);
-  const tapePulseMid = tapePulseClaim ? (live?.mid ?? null) : null;
   const m = data?.market_state ?? page.marketState;
   const fresh = data?.meta.freshness;
   const sig = data?.signals ?? page.signals;
@@ -319,11 +297,6 @@ export function TickerDashboard() {
   const allDates = data?.expirations.map((e) => e.date) ?? [];
   const noneSelected = selected !== null && selected.length === 0;
   const checked = selected ?? allDates; // dates shown ticked in the menu
-  // Product spine #4 — structure age/basis from page model (REST path only, never SSE).
-  const expWindowLabel =
-    selected === null
-      ? 'all expirations'
-      : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`;
   // Product spine #5 — open sim book on THIS ticker for the position brief (between structure & plan).
   const openBookViews = useMemo(
     () =>
@@ -528,21 +501,17 @@ export function TickerDashboard() {
               onSelectQuickSymbol={onSelectQuickSymbol}
             />
 
-            {/* Tape Pulse — thin dual-clock strip (structure mid vs live mid). Not a full bento cell. */}
-            <TapePulseStrip
-              structureMid={m.gex_spot ?? m.price}
-              claim={tapePulseClaim}
-              mid={tapePulseMid}
-              lastTrade={tapePulseClaim && live?.last_trade != null ? live.last_trade : null}
-              palette={tapePulsePalette}
-              surfaces={tapePulseSurfaces}
-            />
-
             {/* The widget BENTO board — product spine #3: NOT equal weight.
-                Reading order matches Scan → Ticker → Plan:
-                  1. Structure  — walls / flip / GEX (why this name)
-                  2. Tape & plan — live tape, AI read, sim orders (act → watch)
-                  3. Context    — supporting advisory reads (never score inputs)
+                Reading order (curvature-v2-desk-and-read FE-11, SPEC §1/§4):
+                  masthead (CommandDeck + TickerToolbar, above, unchanged)
+                    → structure-hero (the field, the ladder, the tape trail, the structure path — ONE
+                      instrument; the standalone `TapePulseStrip` masthead fragment and the standalone
+                      `GexStrikeProfile` widget that used to duplicate parts of it are both GONE, not
+                      merely hidden — see `structure-hero/` and `gex-profile-chart/chart.tsx`'s own
+                      module docs)
+                    → read-strip
+                    → AiRecPanel (wide) beside LiveTape / PositionBrief / OrdersWidget
+                    → quiet context band
                 Zone labels are non-headings (`<p>`) so widget titles stay the only h2s
                 (heading-semantics guard). One selection provider; two-column grid; container
                 queries still size each cell. Widgets mount AT REST (stage-3 §3.1-1). */}
@@ -568,19 +537,13 @@ export function TickerDashboard() {
                   Structure
                 </BoardZoneLabel>
 
-                {/* Minimal, surgical fix (curvature-v2-desk-and-read FE-8, mirroring FE-6's own
-                    TapePulseStrip precedent above): the old dealer positioning widget (twelve
-                    static tiles + the Field/Magnet toggle) is deleted whole — its twelve cells
-                    decompose with zero orphans into `StructureHeroPanel` (walls, max pain via the
-                    ladder + ladder foot, the Field/Magnet toggle) and `ReadStrip` (the other seven +
-                    opportunity). Mounted HERE, in that widget's own former slot, so the
-                    "Call wall" readiness anchor and every re-pointed spec assertion still resolve —
-                    this is NOT FE-11's "reading order" rewrite (masthead → hero → strip → AI → quiet
-                    band): `GexStrikeProfile`, `PositionBrief` and everything below stay exactly where
-                    they were. FE-11 removes this comment when it does that full rewrite (its own
-                    Step 1 explicitly supersedes `GexStrikeProfile` with this same `StructureHeroPanel`
-                    — the two canvases coexisting between here and FE-11's commit is a KNOWN, NAMED,
-                    temporary condition, not a silent regression; see the FE-8 build report. */}
+                {/* FE-11's OWN reading-order rewrite: `StructureHeroPanel` is the desk's ONE structure
+                    instrument (field + ladder + tape trail + structure path). The standalone
+                    `GexStrikeProfile` widget that used to render directly below it — a second,
+                    overlapping GEX-wall renderer, disclosed as a KNOWN, NAMED, TEMPORARY condition at
+                    FE-6/FE-8 — is DELETED, not merely unmounted (see `gex-profile-chart/chart.tsx`'s
+                    own module doc: every capability it had — the field canvas, the walls/flip/mid, the
+                    embedded session path strip — is already present here, so nothing it drew is lost). */}
                 <ErrorBoundary variant="widget" label="Structure hero">
                   <StructureHeroPanel
                     symbol={ticker}
@@ -607,27 +570,19 @@ export function TickerDashboard() {
                   />
                 </ErrorBoundary>
 
-                {/* GEX strike profile — structure centerpiece + embedded session path strip. */}
-                {data?.strike_profile && (
-                  <ErrorBoundary variant="widget" label="GEX profile">
-                    <GexStrikeProfile
-                      strikes={data.strike_profile.strikes}
-                      spot={m.gex_spot ?? m.price}
-                      callWall={m.call_wall}
-                      putWall={m.put_wall}
-                      gammaFlip={m.gamma_flip}
-                      expLabel={expWindowLabel}
-                      structureAgeSeconds={structureAgeSeconds}
-                      symbol={ticker}
-                      pathSamples={structHist.samples}
-                      pathLoading={structHist.loading}
-                      pathError={structHist.error}
-                      pathBasis={structHist.basis}
-                    />
-                  </ErrorBoundary>
-                )}
+                {/* ── 2. TAPE & PLAN ───────────────────────────────────────────────── */}
+                <BoardZoneLabel zone="plan">Tape & plan</BoardZoneLabel>
 
-                {/* Product spine #5 — position brief bridges structure → plan (your book on this name). */}
+                {/* LIVE-DERIVED tiles — dim on an SSE drop (span 2). */}
+                <ErrorBoundary variant="widget" label="Live tape">
+                  <LiveTape m={m} />
+                </ErrorBoundary>
+
+                {/* Product spine #5 — position brief bridges structure → plan (your book on this
+                    name). FE-11 moves it INTO the plan zone, beside LiveTape/AiRecPanel/OrdersWidget
+                    (SPEC §1's flow: "AI read brief wide beside tape / position / orders") — it no
+                    longer sits ahead of the zone label, since it now belongs WITH this group, not
+                    before it. */}
                 <PositionBrief
                   ticker={ticker}
                   openViews={openBookViews}
@@ -637,14 +592,6 @@ export function TickerDashboard() {
                   tradeAllowed={orderGate.allowed}
                   onSignIn={() => orderGate.signIn(GATE_SIGN_IN)}
                 />
-
-                {/* ── 2. TAPE & PLAN ───────────────────────────────────────────────── */}
-                <BoardZoneLabel zone="plan">Tape & plan</BoardZoneLabel>
-
-                {/* LIVE-DERIVED tiles — dim on an SSE drop (span 2). */}
-                <ErrorBoundary variant="widget" label="Live tape">
-                  <LiveTape m={m} />
-                </ErrorBoundary>
 
                 {/* Act → watch as one motion (UX §4.4): AI-rec paired with sim orders. */}
                 <AiRecPanel

@@ -131,3 +131,96 @@ describe('TapePulseStrip responsive header', () => {
     expect(screen.getByTestId('tape-mid-readout')).toHaveTextContent('Mid $147.50');
   });
 });
+
+describe('TapePulseStrip — the Mid readout offline pause mark (GATE Z, SPEC §4.1 "Tape trail row")', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      new Proxy({}, { get: () => vi.fn() }) as unknown as CanvasRenderingContext2D,
+    );
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(() => 1),
+    );
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+  });
+
+  afterEach(() => {
+    cleanup();
+    act(() => undefined);
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('no `paused` prop: no pause mark, the value is not dimmed (default, unchanged shape)', () => {
+    render(
+      <ThemeProvider theme={darkTheme}>
+        <TapePulseStrip
+          structureMid={146.15}
+          claim={NOT_LIVE}
+          mid={147.5}
+          palette={palette}
+          surfaces={surfaces}
+        />
+      </ThemeProvider>,
+    );
+    expect(screen.queryByTestId('tape-mid-pause')).toBeNull();
+  });
+
+  it('paused + a retained latched mid: pause mark present, value dimmed, latched number still shown', () => {
+    render(
+      <ThemeProvider theme={darkTheme}>
+        <TapePulseStrip
+          structureMid={146.15}
+          claim={NOT_LIVE}
+          mid={147.5}
+          paused
+          palette={palette}
+          surfaces={surfaces}
+        />
+      </ThemeProvider>,
+    );
+    expect(screen.getByTestId('tape-mid-pause')).toBeInTheDocument();
+    const readout = screen.getByTestId('tape-mid-readout');
+    expect(readout).toHaveTextContent('Mid $147.50');
+    const valueSpan = screen.getByText('$147.50');
+    expect(getComputedStyle(valueSpan).opacity).toBe('0.5');
+  });
+
+  it('paused + an empty latch (bare): pause mark present, value dimmed, shows `—`', () => {
+    render(
+      <ThemeProvider theme={darkTheme}>
+        <TapePulseStrip
+          structureMid={146.15}
+          claim={NOT_LIVE}
+          mid={null}
+          paused
+          palette={palette}
+          surfaces={surfaces}
+        />
+      </ThemeProvider>,
+    );
+    expect(screen.getByTestId('tape-mid-pause')).toBeInTheDocument();
+    expect(screen.getByTestId('tape-mid-readout')).toHaveTextContent('Mid —');
+  });
+
+  it('16b: `paused=false` during a replay standing renders full strength — no pause mark, never dimmed', () => {
+    // Mirrors the host's own invariant: `tileOffline` (this component's `paused`) is `st ? false :
+    // streamOffline`, so a replay standing reaches this component with `paused=false` structurally,
+    // never by an `!isLive` check here. This proves the component honours that contract when it does.
+    render(
+      <ThemeProvider theme={darkTheme}>
+        <TapePulseStrip
+          structureMid={146.15}
+          claim={NOT_LIVE}
+          mid={147.5}
+          paused={false}
+          palette={palette}
+          surfaces={surfaces}
+        />
+      </ThemeProvider>,
+    );
+    expect(screen.queryByTestId('tape-mid-pause')).toBeNull();
+    const valueSpan = screen.getByText('$147.50');
+    expect(getComputedStyle(valueSpan).opacity).not.toBe('0.5');
+  });
+});

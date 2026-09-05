@@ -7,8 +7,13 @@
  *
  *   (a) stroke-dash draw keyframes exist ONLY in `pages/landing/HeroCurve.tsx` (THE moment);
  *   (b) `widgetRise` (the retired stagger) exists nowhere;
- *   (c) the GEX chart pins `isAnimationActive={false}` and carries no `animationDuration`
- *       (the retired mount bar-grow — §3.1-4; animation props only, geometry LOCKED);
+ *   (c) the desk's structure instrument carries no Recharts mount-animation props (the retired
+ *       bar-grow — §3.1-4; animation props only, geometry LOCKED). GATE Z (FE-11, curvature-v2-
+ *       desk-and-read): this pin moved from the deleted `gex-profile-chart/GexProfileChart` (whose
+ *       own `isAnimationActive={false}` documentation comment retired the OLD Recharts contract) onto
+ *       `structure-hero/StructureHeroPanel.tsx` — the desk's ONE remaining structure instrument,
+ *       which never used Recharts to begin with (built fresh on Canvas2D at FE-6), so there is no
+ *       equivalent retirement comment to require there, only the substantive absence;
  *   (d) the app-wide `@keyframes` inventory is SET-EQUAL to the kept allowlist
  *       {liveDotPulse, widgetLivePulse, ordersWatchPulse} + the dynamic flash-* family
  *       (declared only in `useFlashOnChange.ts`) + emotion `keyframes` used only by HeroCurve;
@@ -115,16 +120,16 @@ describe('single-motion-moment — the app-wide keyframe inventory (mutation-gua
     expect(filesWhere((src) => src.includes('widgetRise'))).toEqual([]);
   });
 
-  it('(c) the GEX chart renders instantly: Structure Field has no Recharts mount animation', () => {
-    const chart = APP_SOURCES['/src/app/pages/ticker/widgets/gex-profile-chart/chart.tsx'];
-    expect(chart, 'chart.tsx must exist at its locked path').toBeTruthy();
-    // Canvas Structure Field — pin documents the retired Recharts animation contract.
-    expect(chart).toContain('isAnimationActive={false}');
-    expect(chart).not.toContain('animationDuration');
-    expect(chart).not.toContain('isAnimationActive={true}');
-    expect(chart).toContain('StructureFieldCanvas');
-    expect(chart).not.toContain("from 'recharts'");
-    expect(chart).not.toContain('from "recharts"');
+  it('(c) the structure instrument renders instantly: Structure Field has no Recharts mount animation', () => {
+    // GATE Z (FE-11): re-pointed from the deleted `gex-profile-chart/GexProfileChart` (superseded
+    // whole by this file — see both modules' own doc comments) onto its successor.
+    const hero = APP_SOURCES['/src/app/pages/ticker/widgets/structure-hero/StructureHeroPanel.tsx'];
+    expect(hero, 'StructureHeroPanel.tsx must exist at its locked path').toBeTruthy();
+    expect(hero).not.toContain('animationDuration');
+    expect(hero).not.toContain('isAnimationActive={true}');
+    expect(hero).toContain('StructureFieldCanvas');
+    expect(hero).not.toContain("from 'recharts'");
+    expect(hero).not.toContain('from "recharts"');
   });
 
   it('(d) the named @keyframes inventory is SET-EQUAL to the kept data-signal allowlist', () => {

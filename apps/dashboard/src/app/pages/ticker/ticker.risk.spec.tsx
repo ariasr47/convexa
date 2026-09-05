@@ -370,7 +370,9 @@ describe('Ticker · stream isolation (live-vs-static-isolation)', () => {
       expect(w.textContent).toBe(staticBefore[i]);
       expect(within(w).queryByText(/⏸/)).toBeNull();
     });
-    expect(screen.getByTestId('widget-gex-strike-profile')).toBeInTheDocument();
+    // (curvature-v2-desk-and-read FE-11) `GexStrikeProfile` is deleted — `StructureHeroPanel` is the
+    // desk's ONE structure instrument now; this checks the successor stays mounted through the drop.
+    expect(screen.getByTestId('widget-structure-hero')).toBeInTheDocument();
     expect(within(screen.getByTestId('level-ladder')).getByText('$260')).toBeInTheDocument(); // call wall value intact
     // OFFLINE is neither the cold skeleton nor a refresh/error state (3 distinct states).
     expect(screen.queryByTestId('cold-skeleton')).toBeNull();

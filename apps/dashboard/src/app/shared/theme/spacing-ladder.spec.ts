@@ -31,6 +31,14 @@ export const SPACING_DEBT_BURNDOWN_PHASE = 'curvature-v2 phase 4 (responsive swe
  * template-literal spacing, which is the likely source of the delta). Reported in BUILD_REPORT.md
  * beside the architect's figure per PLAN FE-3 Step 5. EVERY entry must still carry an off-ladder
  * value (checked below).
+ *
+ * FE-11 BURN-DOWN (owner ruling 4, "the files this phase rewrites only"): `chrome/TapePulseStrip.tsx`
+ * is the one EXEMPT file this phase actually rewrote (its `Mid` readout gained the offline pause
+ * mark + dim, SPEC §4.1) — its one off-ladder value (`px: 1.25`) moved onto the ladder (`1.5`) and its
+ * entry is removed here. Measured again after: **48 occurrences across 25 files.** No other EXEMPT
+ * file was touched this phase (`position-brief/PositionBrief.tsx` is READ, not rewritten — only its
+ * call site moved in `TickerDashboard.tsx`) — do not widen the fence to files this phase did not
+ * actually rewrite; the remainder stays booked to `SPACING_DEBT_BURNDOWN_PHASE`.
  */
 const EXEMPT: string[] = [
   'app.tsx',
@@ -51,7 +59,6 @@ const EXEMPT: string[] = [
   'pages/ticker/widgets/ai-rec/reasoning.tsx',
   'pages/ticker/widgets/chrome/CommandDeck.tsx',
   'pages/ticker/widgets/chrome/QuickSymbols.tsx',
-  'pages/ticker/widgets/chrome/TapePulseStrip.tsx',
   'pages/ticker/widgets/chrome/TickerHeader.tsx',
   'pages/ticker/widgets/chrome/TickerToolbar.tsx',
   'pages/ticker/widgets/dealer-flow-projection/DealerFlowProjection.tsx',
@@ -87,8 +94,10 @@ describe('spacing ladder — fenced, live-checked, with a named expiry', () => {
 
   it('no NEW off-ladder spacing outside the seeded exemption list', () => {
     const v = offLadder(SOURCES, EXEMPT);
-    expect(v, `off the 4-pt ladder (burn-down: ${SPACING_DEBT_BURNDOWN_PHASE}):\n${v.join('\n')}`)
-      .toEqual([]);
+    expect(
+      v,
+      `off the 4-pt ladder (burn-down: ${SPACING_DEBT_BURNDOWN_PHASE}):\n${v.join('\n')}`,
+    ).toEqual([]);
   });
 
   it('the exemption list is LIVE — every listed file still carries an off-ladder value', () => {

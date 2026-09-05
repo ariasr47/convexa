@@ -566,22 +566,6 @@ export function sessionTapeNotThisTickerSubtitle(armedSymbol: string, humanDate:
   return `Session day tape · ${armedSymbol} · ${humanDate} · not this ticker — not a live feed`;
 }
 
-/**
- * Structure-snapshot honesty + age (curvature-v2-desk-and-read FE-8: renamed from
- * `dealerPositioningSubtitle` — the old dealer positioning widget's own subtitle (that widget is
- * deleted whole at FE-8) — per PLAN
- * step 4, "re-pointed, not deleted." Kept exported with its string UNCHANGED so the honesty phrase
- * survives the deletion, even though `StructureHeroPanel`/`ReadStrip` (FE-6/FE-7, already committed,
- * outside this task's lane) ship their OWN bespoke basis subtitles rather than calling this helper —
- * see the FE-8 build report for that disclosed, no-call-site-today finding.
- */
-export function structureSnapshotSubtitle(ageSeconds: number | null | undefined): string {
-  return withStructureAge(
-    'Snapshot, never live — stay current on a stream drop; refresh with the data load',
-    ageSeconds,
-  );
-}
-
 /** GEX chart — spot basis + expiration window + age. */
 export function gexProfileSubtitle(
   gexSpot: number | null | undefined,

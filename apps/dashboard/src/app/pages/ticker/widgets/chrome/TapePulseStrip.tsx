@@ -21,6 +21,12 @@
  * unconditionally. Liveness is carried once by the ladder's mid row dot; this readout never wears a
  * second one (criterion 8/9).
  *
+ * GATE Z (FE-11, SPEC §4.1 "Tape trail row"): the `Mid` value itself now carries the offline/stale
+ * pause mark + dim on a genuine drop (`paused`, the host's `tileOffline`) — never during a session
+ * replay (the host defines `tileOffline` as `st ? false : streamOffline`, so `paused` structurally
+ * cannot be true while replaying — the same standing-union mechanism criterion 16b requires, not an
+ * `!isLive` branch). No dot: this readout never had one (SPEC §4.2).
+ *
  * P5 (SPEC §2.7 mechanism): the former module-level `INK`/`PANEL`/`SIGNAL` hex literals are gone —
  * `surfaces.ink`/`surfaces.panel` and `palette.mid` (the SAME resolved objects the field and the
  * ladder receive) replace them, so this canvas can never drift onto a scheme-invariant fill
@@ -31,6 +37,7 @@ import type { StructureFieldSurfaces } from '@/shared/charts/structure-field/Str
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { andPresent, type LiveClaim } from '@/shared/liveness/liveClaim';
 import { typographyTokens } from '@/shared/theme/tokens';
+import PauseIcon from '@mui/icons-material/Pause';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -48,6 +55,10 @@ export interface TapePulseStripProps {
   /** Optional last-print price, for the decorative buy/sell flash bars — same latch-adjacent
    *  discipline: only ever a raw stream figure, gated the same way as the trail below. */
   lastTrade?: number | null;
+  /** SPEC §4.1 offline/stale (GATE Z, FE-11) — true only on a genuine stream drop, never a replay arm
+   *  (host-computed `tileOffline`, mirrors `TapeTrailRow`'s own `paused`). Marks + dims the `Mid`
+   *  value; never the `Structure` readout (that figure is REST, not stream-derived). */
+  paused?: boolean;
   /** The SAME resolved objects `StructureFieldCanvas`/`LevelLadder` receive (SPEC §2.7) — never a
    *  second colour table, never a theme read of its own. */
   palette: LevelPalette;
@@ -60,6 +71,7 @@ export function TapePulseStrip({
   claim,
   mid,
   lastTrade = null,
+  paused = false,
   palette,
   surfaces,
   height = 88,
@@ -219,7 +231,11 @@ export function TapePulseStrip({
         data-testid="tape-pulse-header"
         sx={{
           minHeight: '28px',
-          px: 1.25,
+          // GATE Z (FE-11) spacing burn-down: `1.25` was the last off-ladder value in this file
+          // (`spacing-ladder.spec.ts`'s EXEMPT list) — moved onto the 4-pt rhythm (`1.5` = 12px, the
+          // nearest ladder step) now that this file is rewritten this phase; the EXEMPT entry is
+          // removed in the same commit.
+          px: 1.5,
           py: 0.5,
           display: 'flex',
           flexWrap: 'wrap',
@@ -238,16 +254,36 @@ export function TapePulseStrip({
             Tape
           </Typography>
           {/* `Mid` — unconditional (SPEC §4.2). The word never carries a liveness claim; the
-              ladder's mid row dot is the one place liveness renders on the desk (criterion 8/9). */}
+              ladder's mid row dot is the one place liveness renders on the desk (criterion 8/9).
+              GATE Z (FE-11): `paused` (genuine drop only, never replay) adds the pause mark + dims
+              the value — the SAME `{retained}`-shape treatment the ladder mid row gets, applied here
+              because `mid` already encodes retained-vs-bare (a latched number vs `—`). */}
           <Typography
             variant="caption"
             data-testid="tape-mid-readout"
-            sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}
+            sx={{
+              color: 'text.secondary',
+              whiteSpace: 'nowrap',
+              display: 'inline-flex',
+              alignItems: 'baseline',
+              gap: 0.5,
+            }}
           >
             Mid{' '}
+            {paused && (
+              <PauseIcon
+                aria-hidden
+                data-testid="tape-mid-pause"
+                sx={{ fontSize: 14, color: 'text.secondary' }}
+              />
+            )}
             <Box
               component="span"
-              sx={{ color: 'text.primary', fontFamily: typographyTokens.monoFontFamily }}
+              sx={{
+                color: 'text.primary',
+                fontFamily: typographyTokens.monoFontFamily,
+                ...(paused ? { opacity: 0.5 } : {}),
+              }}
             >
               {displayMid != null ? `$${displayMid.toFixed(2)}` : '—'}
             </Box>

@@ -85,6 +85,50 @@ describe('TapeTrailRow — the trail-paused caption (SPEC §4.6)', () => {
     );
   });
 
+  it('GATE Z: `paused` reaches the Mid readout itself, not only the row caption — the pause mark mounts inside `TapePulseStrip`', () => {
+    render(
+      <ThemeProvider theme={theme}>
+        <TapeTrailRow
+          structureMid={450}
+          claim={NOT_LIVE}
+          mid={450.5}
+          retained
+          paused
+          palette={palette}
+          surfaces={surfaces}
+        />
+      </ThemeProvider>,
+    );
+    expect(screen.getByTestId('tape-mid-pause')).toBeInTheDocument();
+    expect(screen.getByTestId('tape-trail-caption')).toHaveTextContent(
+      'tape paused · trail frozen',
+    );
+  });
+
+  it('not paused: no pause mark on the readout and no row caption', () => {
+    const claim = isDeliveringLive(
+      { ticker: 'SPY', live: true, market_session: 'open' } as Parameters<
+        typeof isDeliveringLive
+      >[0],
+      false,
+    );
+    render(
+      <ThemeProvider theme={theme}>
+        <TapeTrailRow
+          structureMid={450}
+          claim={claim}
+          mid={450.5}
+          retained
+          paused={false}
+          palette={palette}
+          surfaces={surfaces}
+        />
+      </ThemeProvider>,
+    );
+    expect(screen.queryByTestId('tape-mid-pause')).toBeNull();
+    expect(screen.queryByTestId('tape-trail-caption')).toBeNull();
+  });
+
   it('renders `tape paused` ALONE when paused and the latch never held a value — never asserting a frozen trail that was never drawn', () => {
     render(
       <ThemeProvider theme={theme}>

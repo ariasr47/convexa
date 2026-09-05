@@ -8,7 +8,7 @@ import type { LevelPalette } from '@/shared/charts/structure-field/levelStrokes'
 import { isDeliveringLive, NOT_LIVE, type LiveClaim } from '@/shared/liveness/liveClaim';
 import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildLadder, formatAnchorText, type LadderInput } from './ladderModel';
 import { LevelLadder } from './LevelLadder';
@@ -175,6 +175,53 @@ describe('LevelLadder — exactly one live dot, on the mid row (criterion 8)', (
   it('zero live dots when midLive is NOT_LIVE', () => {
     const { container } = wrap({ ...FULL_INPUT, midLive: NOT_LIVE });
     expect(container.querySelectorAll('[data-testid="figure-live-dot"]')).toHaveLength(0);
+  });
+});
+
+describe('LevelLadder — the mid row offline/stale + F6 replay treatment (GATE Z, SPEC §4.1)', () => {
+  it('offline, retained: the mid row dims and shows the pause mark; the four structure rows stay un-dimmed', () => {
+    wrap({ ...FULL_INPUT, midOffline: { retained: true } });
+    const midCard = screen.getByText('Mid').closest('[data-figure-state]')!;
+    expect(midCard).toHaveAttribute('data-figure-state', 'offline-retained');
+    expect(midCard).toHaveTextContent('offline · last known');
+    // The CARD is never dimmed (`FigureCell` always mounts it `dim={false}`) — the retained VALUE
+    // glyph itself carries the dim (same discipline the F4/F5 unit tests already establish).
+    expect(getComputedStyle(screen.getByText('$252')).opacity).toBe('0.5');
+
+    for (const id of ['callWall', 'putWall', 'maxPain', 'gammaFlip']) {
+      const tick = screen.getByTestId(`ladder-tick-${id}`);
+      const cell = tick.parentElement?.querySelector('[data-figure-state]') as HTMLElement;
+      expect(cell.dataset.figureState).toBe('default');
+      expect(getComputedStyle(cell).opacity).not.toBe('0.5');
+    }
+  });
+
+  it('offline, bare: the mid row shows the bare literal + pause mark, caption `offline` (never "last known")', () => {
+    wrap({ ...FULL_INPUT, mid: null, midOffline: { retained: false } });
+    const midCard = screen.getByText('Mid').closest('[data-figure-state]')!;
+    expect(midCard).toHaveAttribute('data-figure-state', 'offline-bare');
+    expect(midCard).toHaveTextContent('offline');
+    expect(midCard.textContent).not.toMatch(/last known/);
+  });
+
+  it('replay (F6): the mid row renders full strength, NO dot, NO pause mark, caption "session replay" (criterion 16b)', () => {
+    wrap({ ...FULL_INPUT, midReplay: true });
+    const midCard = screen.getByText('Mid').closest('[data-figure-state]') as HTMLElement;
+    expect(midCard).toHaveAttribute('data-figure-state', 'replay');
+    expect(midCard).toHaveTextContent('session replay');
+    // The whole point of 16b: a replay standing must never wear the offline pause mark.
+    expect(midCard.textContent).not.toMatch(/offline/);
+    expect(within(midCard).queryByTestId('figure-live-dot')).toBeNull();
+    expect(getComputedStyle(midCard).opacity).not.toBe('0.5');
+  });
+
+  it('replay never co-occurs with a live dot even if a stale `live` claim were passed (branch order proof)', () => {
+    // `offline`/`replay` are checked before the live-dot branch in FigureCell — this proves the
+    // ladder's own call site does not accidentally reintroduce a dot via `row.live` during replay.
+    wrap({ ...FULL_INPUT, midReplay: true, midLive: LIVE });
+    const midCard = screen.getByText('Mid').closest('[data-figure-state]') as HTMLElement;
+    expect(midCard).toHaveAttribute('data-figure-state', 'replay');
+    expect(within(midCard).queryByTestId('figure-live-dot')).toBeNull();
   });
 });
 

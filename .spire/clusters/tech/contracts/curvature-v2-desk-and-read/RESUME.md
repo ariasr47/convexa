@@ -1104,7 +1104,249 @@ nine screenshots, confirmed `git status --short` showed no stray files, killed t
    locator), forced by this task's own change, outside FE-10's Owns list but the same sanctioned
    "necessary collateral fix" shape FE-8/FE-9 already used.
 
-## Next: FE-11 (not started)
+## Done (FE-11) — do not re-do
 
-**FE-11 — Compose the desk, and burn down the spacing exemptions in the rewritten files only.** Read
-PLAN.md's FE-11 section fresh before starting. Depends on FE-6, FE-7, FE-8, FE-9, FE-10 (all done).
+**FE-11 — Compose the desk, burn down the one spacing exemption this phase rewrote, and resolve the
+three GATE Z items the launch brief assigned (ladder/tape-trail offline+F6, the orphaned
+`structureSnapshotSubtitle`, `GexStrikeProfile`'s coexistence).** Owns (as landed, per PLAN's
+Independence row): `TickerDashboard.tsx`, `ticker-hierarchy.spec.tsx` (necessary collateral, not
+literally in the row but forced — see below), `ticker.risk.spec.tsx` (same), `spacing-ladder.spec.ts`
+(EXEMPT re-point). **Beyond the literal Owns row**, GATE Z's own resolution commit (`015b99ea`)
+explicitly assigned FE-11 the ladder-mid/tape-trail treatment, which required touching
+`level-ladder/{ladderModel.ts,LevelLadder.tsx}` (FE-5's files), `structure-hero/{StructureHeroPanel.tsx,
+StructureHeroPanel.spec.tsx,TapeTrailRow.tsx,TapeTrailRow.spec.tsx}` and `chrome/{TapePulseStrip.tsx,
+TapePulseStrip.spec.tsx}` (FE-6's files) — the same "necessary write-path overlap" shape FE-8/9/10
+already established, documented at each edit site, not silently absorbed. Additionally touched:
+`_kit/copy.ts` (GATE Z item 2), `gex-profile-chart/{chart.tsx,chart.spec.tsx,index.ts}` +
+`git rm GexStrikeProfile.{tsx,spec.tsx}` (GATE Z item 3), `single-motion-moment.spec.ts` (forced
+collateral — its own `(c)` pin quoted a comment inside the deleted file), plus one wholly new file,
+`ticker-desk-composition.spec.tsx` (criteria 47/54, additive — PLAN's own Step 2/3 text describes new
+assertions with no obvious home in the four Owns-row files; same "additive, cheap regression
+insurance" precedent FE-5/FE-7 already used for files beyond their own enumerated lists).
+
+**GATE Z item 1 — the ladder mid row's and tape-trail row's offline/stale + F6 replay treatment (SPEC
+§4.1), mechanised by branching on the STANDING UNION, never `!isLive`.** `ladderModel.ts`'s `LadderRow`
+gained `offline: {retained} | null` / `replay: boolean` — `null`/`false` on the four structure rows in
+EVERY standing (byte-identical, un-dimmed, matches criterion 19's existing proof), populated only on
+the mid row from two new optional `LadderInput` fields (`midOffline`/`midReplay`). `LevelLadder.tsx`'s
+`LadderLine` forwards `row.offline`/`row.replay` into `FigureCell` — zero new mechanism, the exact
+`offline`/`replay` props `LiveTape.tsx`'s cells already use. `StructureHeroPanel.tsx` computes
+`midOffline = tileOffline ? {retained: midLatch.retained} : null` and `midReplay = Boolean(st)` — MUTUALLY
+EXCLUSIVE by construction (`tileOffline` is `st ? false : streamOffline`, so it can never be true while
+`st` — a replay standing — holds), which is the whole mechanism criterion 16b needs: implemented as
+`!isLive → pause mark` the two would contradict (a replay standing always has `midLive` false); implemented
+over the standing union they structurally cannot, because replay is not offline. **Mutation-proven**:
+poisoned `midOffline` to `!claim ? {...} : null` (the literal `!isLive`-shaped contradiction) — the
+16b replay test went red naming `offline-retained` where `replay` was expected; reverted, green again.
+Also poisoned by dropping `replay={row.replay}` from `LevelLadder.tsx`'s call site — three tests
+(two in `LevelLadder.spec.tsx`, one integration in `StructureHeroPanel.spec.tsx`) went red naming
+`live`/`default` where `replay` was expected; reverted.
+
+**A genuine second finding, not merely the offline plumbing: `StructureHeroPanel.tsx`'s mid STREAM
+READ was gated on `claim` alone, which is ALWAYS false during replay — so before this session, the
+ladder mid (and the tape-trail's own `Mid` readout) could never show a real number during a session-tape
+replay, only ever the empty literal.** Fixed by gating on `numbersActive = st ? tape.displayActive :
+claim` — the EXACT discipline `live-tape/LiveTape.tsx`'s own `numbersActive` already established (S0
+genuinely live / S1 display-active during replay), never a new one. `claim` itself is UNCHANGED and
+still governs `midLive`/the live dot (never true during replay). Verified non-vacuous the same way
+`live-dot-census.spec.tsx`'s own replay tests already prove for LiveTape's cells: the new
+`StructureHeroPanel.spec.tsx` replay case asserts the ladder mid AND the tape-trail readout both show
+the REAL replayed value (`$573.12`), not `—`.
+
+**The tape-trail row's own `Mid` readout (`chrome/TapePulseStrip.tsx`) never had ANY offline
+treatment at all before this task** — only the row-level caption (`TapeTrailRow.tsx`'s `paused &&
+(...)`) existed; the value itself never dimmed or wore a pause mark. Added a new `paused?: boolean`
+prop (threaded `TapeTrailRow` → `TapePulseStrip`, the same `tileOffline` value the row's own caption
+already uses — one signal, two renderers, never two computations), rendering a `PauseIcon` (mirroring
+`FigureCell.tsx`'s own `PauseMark` styling, not a new pattern) + `opacity: 0.5` on the value span when
+`paused`. Since `paused` is the host's `tileOffline`, it structurally cannot be true during a replay
+standing — the identical mechanism, not a second one. **Mutation-proven**: poisoned `TapePulseStrip.tsx`'s
+`px: 1.5` back to `1.25` (see the spacing item below, same file) — unrelated to this specific mechanism,
+so the offline/F6 poison was the `LevelLadder`/`StructureHeroPanel` ones above; the pause-mark mechanism
+itself was proven by 7 new `TapePulseStrip.spec.tsx` tests (default no-mark, paused+retained,
+paused+bare, `paused=false` during replay never marks) plus a `TapeTrailRow.spec.tsx` integration test
+proving `paused` reaches the readout, not only the row caption.
+
+**GATE Z item 2 — the orphaned `structureSnapshotSubtitle`.** Deleted (`_kit/copy.ts`), not wired.
+Confirmed zero importers (`rg structureSnapshotSubtitle apps/dashboard/src` → zero matches after
+deletion) and zero test references (`copy.spec.ts` never asserted it). Not wired into `ReadStrip`/
+`StructureHeroPanel`'s own subtitles because SPEC §4.6 PINS the hero's basis line verbatim
+(`"levels are REST structure (as-of {age}) · the mid is tape"`) — different wording, already shipped,
+already tested; wiring the old helper there would contradict pinned copy. `withStructureAge` (the
+shared helper it called) is untouched — still used by `gexProfileSubtitle`/two other live call sites.
+
+**GATE Z item 3 — `GexStrikeProfile` does not survive, anywhere; the desk becomes ONE structure
+instrument.** Confirmed FULL functional supersession before deleting anything (not assumed): every
+capability `GexStrikeProfile.tsx` had — `StructureFieldCanvas`, the walls/flip/mid, the embedded
+`StructurePathStrip` — is already present in `StructureHeroPanel`, and `GexStrikeProfile` had zero
+other importers anywhere in the app (`rg -l GexStrikeProfile` before deletion: the widget file, its own
+spec, its own barrel, and `TickerDashboard.tsx` — nothing else). Deleted whole (`git rm
+GexStrikeProfile.{tsx,spec.tsx}`), mirroring the FE-8 `DealerPositioning` precedent, not merely
+unmounted — leaving a fully-superseded, still-importable widget around risks a future lane innocently
+re-mounting it and recreating the exact "two overlapping instruments" problem this item exists to
+close. `chart.tsx` (which `GexStrikeProfile` also used) SURVIVES, trimmed: `GexProfileChart`/`GexLegend`
+(the standalone component + its legend, now fully dead) removed; `windowedStrikes`/`rowsToSamples`
+(pure functions `StructureHeroPanel.tsx` ALSO calls directly) kept — the file's own module doc explains
+why it outlives the widget. `chart.spec.tsx` rewritten to test the two surviving pure functions
+(porting `windowedStrikes`'s tests from the deleted `GexStrikeProfile.spec.tsx` — that function is not
+dead-widget debt, `StructureHeroPanel` depends on it) plus a new `rowsToSamples` test (previously
+untested anywhere). **A coverage regression caught and closed, not silently dropped**: the deleted
+`chart.spec.tsx`'s own criterion-53 proof ("the resolved `surfaces` object never renders the same
+across dark/light") tested `GexProfileChart`'s theme resolution — with that component gone, criterion
+53's RUNTIME proof had no host left. Ported onto `StructureHeroPanel.spec.tsx` (the file that now owns
+that resolution in production), reusing its own already-mocked `captured.canvas` scaffolding — not a
+new mechanism. `gex-profile-chart/index.ts` re-points its one export line at `./chart` (the barrel
+had nothing else to export once `GexStrikeProfile.tsx` was gone).
+
+**`TickerDashboard.tsx`'s own rewrite, beyond removing `GexStrikeProfile`'s JSX**: (a) the OLD
+standalone masthead `<TapePulseStrip>` mount (between `CommandDeck` and the widget bento, predating
+FE-6's absorption of the tape trail into the hero) is DELETED, not merely left — it was a second,
+literally duplicate render of the SAME component the hero's own `TapeTrailRow` already mounts (proven
+before removing: a throwaway browser script counted exactly 1 `[data-testid="tape-pulse-strip"]` node
+after the change, confirming the duplicate is gone, not merely relocated); its now-unused
+`tapePulsePalette`/`tapePulseSurfaces`/`tapePulseClaim`/`tapePulseMid` computations and their imports
+(`resolveLevelPalette`, `isDeliveringLive`, `extrasFor`) are removed with it. (b) `PositionBrief` moves
+OUT of the structure zone and INTO the "Tape & plan" zone, immediately after `LiveTape` and before
+`AiRecPanel`/`OrdersWidget` — matching SPEC §1's flow line verbatim ("AI read brief wide beside tape /
+position / orders"), a real, deliberate reorder, not a renaming. `AiRecPanel`'s own `span`/width prop
+was NOT changed — "wide" in the flow diagram reads as a description of the existing rendered outcome
+(confirmed in the browser check below), not a literal instruction PLAN elaborates further; not touched
+absent a stronger signal (`do not invent product UX policy the contracts omit`).
+
+**Two collateral fixes, forced open only by actually running the full suite, not assumed safe (the
+same shape FE-8/9/10 already established):**
+1. `single-motion-moment.spec.ts`'s own `(c)` pin quoted `isAnimationActive={false}` INSIDE the
+   deleted `GexProfileChart`'s doc comment (retiring the OLD Recharts contract). Re-pointed onto
+   `StructureHeroPanel.tsx` — the substantive claims survive (no `animationDuration`, no
+   `isAnimationActive={true}`, no `from 'recharts'`, does use `StructureFieldCanvas`); the literal
+   `isAnimationActive={false}` string requirement is dropped because `StructureHeroPanel.tsx` never
+   had Recharts to retire from (built fresh on Canvas2D at FE-6) — there is no equivalent retirement
+   comment to require there, only the substantive absence.
+2. `liveClaim.spec.ts`'s BANNED-pattern source scan (reads RAW file text, comments included — the
+   SAME trap FE-6's own session already hit and documented) flagged a NEW doc comment in
+   `StructureHeroPanel.tsx` that literally spelled `isLive && !streamOffline` while explaining
+   `LiveTape.tsx`'s own `numbersActive` derivation. Reworded to describe the branch without quoting
+   the literal expression — the same "word around it" convention FE-6's session established.
+
+**`ticker-hierarchy.spec.tsx` and `ticker.risk.spec.tsx` — forced, not FE-11's literal Owns row, same
+necessary-overlap shape.** `ticker.risk.spec.tsx:373` asserted `widget-gex-strike-profile` stayed
+present through an SSE drop — re-pointed to `widget-structure-hero` (its successor, same claim: the
+structure instrument survives a drop). `ticker-hierarchy.spec.tsx`'s DOM-order test asserted
+"Structure → position brief → Tape & plan → Supporting context" — rewritten for the new order
+("Structure → Tape & plan [live tape, position brief, AI read, orders] → Supporting context"), with
+`position-brief` now asserted AFTER `board-zone-plan` and AFTER `live-tape`, before `board-zone-context`.
+`ticker-age-basis.spec.tsx`'s own `gex` check was ALREADY conditional (`if (gex) {...}`, future-proofed
+by a prior lane) — needed zero changes, confirmed green as-is. `ticker-semantics.spec.tsx`/
+`stage3-headings.spec.tsx` (the two files PLAN's Owns row actually names) needed ZERO changes — FE-8's
+own session already re-pointed the one heading assertion that would have broken; verified green,
+not assumed.
+
+**Criteria 47/54 — new tests, no obvious home in the four Owns-row files, additive** (`ticker-desk-
+composition.spec.tsx`, 10 tests):
+- **Criterion 47** (AI-read isolation): mounts the real app 6 times (a baseline + signed-out/without-
+  a-key/cooling-down/capped/request-failure), capturing `textContent` for `widget-structure-hero`,
+  `widget-live-tape`, `widget-read-strip` and three quiet-band widgets, asserting byte-identical
+  against the baseline in every AI state. **Mutation-proven, non-vacuous**: temporarily folded the
+  AI panel's own text into the captured set — all 5 comparison cases went red (the AI panel's text
+  genuinely differs per state, proving the byte-comparison mechanism is sensitive), while the diff
+  output showed the four REAL regions unchanged even in the failing case; reverted.
+- **Criterion 54** (one shared entry dialog): a source scan (`?raw` glob, the same idiom `liveClaim.
+  spec.ts`/`spacing-ladder.spec.ts` already use) proving exactly ONE component matches
+  `/\w*Entry\w*Dialog\w*/` app-wide (`TradeEntryDialog`, in `tradeEntry/TradeEntryDialogView.tsx`;
+  `features/trading/TradeEntryDialog.tsx` is a pure re-export barrel, not a second declaration) — a
+  temporary poison file declaring `FakeEntryDialog` proved the scan actually bites, then was deleted.
+  A second scan confirms `TickerDashboard.tsx` calls `useTickerTradeFlows(` exactly once and mounts
+  `<TradeEntryDialog` exactly twice (the ghost-entry instance + the documented additive ORDER
+  variant) from one import. A behavioural test clicks `PositionBrief`'s own CTA
+  (`position-brief-open-trade`) and confirms it opens `[data-testid="trade-entry-dialog"]` — the SAME
+  node `ai-rec.grounding.spec.tsx`'s own "Accept opens the shared entry dialog" test already proves
+  the AI path reaches, not merely a lookalike. `[no-real-order-path]`: confirms `TickerDashboard.tsx`
+  never calls `fetch('/api/orders...)` directly and delegates through the sanctioned
+  `useOrderEngine`/`usePortfolio` hooks (the broader invariant is guarded elsewhere, not re-derived
+  here).
+
+**Step 4 — the spacing burn-down, actually done (not merely checked for pre-existing cleanliness).**
+Of the files this phase touched, exactly ONE was on `spacing-ladder.spec.ts`'s EXEMPT list:
+`chrome/TapePulseStrip.tsx` (its `px: 1.25` header padding). Moved onto the ladder (`1.5` = 12px, the
+nearest 4-pt step) and the EXEMPT entry removed in the same commit. Measured before/after (a small
+node script mirroring the spec's own regex, not the spec itself): **49→48 occurrences, 26→25 files** —
+exactly the expected -1/-1. **Mutation-proven**: reverted `px: 1.5` back to `1.25` with the EXEMPT
+entry still removed — `spacing-ladder.spec.ts`'s "no NEW off-ladder spacing" test went red naming the
+exact file/value; reverted. No other EXEMPT file was touched (`position-brief/PositionBrief.tsx` was
+READ, never rewritten — only its JSX call site moved in `TickerDashboard.tsx`) — the fence is not
+widened beyond files this phase actually rewrote, per ruling 4.
+
+**Full verification, canonical commands, this session, exit codes actually checked (not printed
+summaries):**
+- `npm run typecheck` → **0** (checked repeatedly through the session, including after the final
+  formatting pass).
+- `npx nx test @convexa/dashboard` → **0** @ **231 files / 2693 tests** (231/2664 baseline →
+  net +29 tests: -1 file/-3 tests for the deleted `GexStrikeProfile.spec.tsx`, +1 net test in the
+  rewritten `chart.spec.tsx` [2→3], +5 `ladderModel.spec.ts`, +4 `LevelLadder.spec.tsx`, +4
+  `TapePulseStrip.spec.tsx`, +2 `TapeTrailRow.spec.tsx`, +5 `StructureHeroPanel.spec.tsx` [4 GATE Z
+  integration + 1 criterion-53 port], +10 new `ticker-desk-composition.spec.tsx`; file count nets to
+  231 because the one deleted file is offset by the one new file). Ran the FULL suite fresh
+  (`--skip-nx-cache`) twice this session, both clean — no Nx flaky-task notice this time.
+- `npm run lint` → **0** (same 5 pre-existing warnings — 1 dashboard, 4 dashboard-e2e — no new ones).
+- `npm run format:check` → the bare npm script silently ignores `--files` (prettier has no such flag;
+  only Nx's OWN `format:write`/`format:check` targets accept it) — used scoped `npx prettier --check/
+  --write <exact files>` instead, on the 6 files it actually flagged (whitespace/wrap only, no logic
+  changes); re-checked clean after.
+- `npm run build` → **0** (production, both api release + dashboard bundle). `git diff --name-only
+  $(git merge-base main HEAD)..HEAD -- apps/api` → **107** files, unchanged from every prior
+  checkpoint this branch — confirmed again, not assumed.
+- e2e, against the PRODUCTION build (`serve-static`, ports freed IPv4+IPv6 before/after,
+  `--skip-nx-cache`), run TWICE: first pass **74/75** (the SAME documented sub-pixel flake class prior
+  sessions recorded — `43.999969… vs 44`, the hamburger-drawer close button, unrelated to this
+  session's code), second pass **75/75, 0 flaky**. `--list` confirms 62 `curvature-v2`/`no-overflow`
+  rows, matching the pre-existing baseline exactly (T1/T2/T3 are FE-12's own scope, untouched).
+
+**Browser check, actually done, the production build, all five width×scheme combinations named in the
+task brief.** Built production, served via `serve-static --port=4200` (the same command CI/prior
+lanes use), stubbed the network with a hand-built bundle fixture (not the `curvature-v2.spec.ts`
+fixture verbatim this time — a smaller, self-contained one; same shape), seeded BOTH
+`localStorage['convexa.uiprefs.v1']` AND the mocked `/api/auth/session` response's `settings.theme`
+from the same `scheme` variable (the FE-8-documented two-part theme trap). Ran at **393×852 dark,
+393×852 light, 834×1100 dark, 900×1100 dark, 1280×1400 dark, 1280×1400 light** — six renders (one
+extra light check at 1280 beyond the five named, cheap and confirms the P5 finding holds at both a
+narrow and a wide breakpoint). At every one: `document.documentElement.scrollWidth ===
+document.documentElement.clientWidth` (**zero page overflow**, measured, not eyeballed); DOM order of
+`widget-structure-hero` < `widget-read-strip` < `ai-rec-panel` < `widget-market-context` (**the
+reading order holds**); `widget-gex-strike-profile` count **0** (confirmed gone); `tape-pulse-strip`
+count **1** (confirmed the masthead duplicate is gone, only the hero's own remains); zero console
+errors. Visually confirmed via full-page screenshots at 1280 dark/light (light mode genuinely
+repaints the field canvas onto the light panel surface, no dark-plate bleed) and a scroll-targeted
+393px crop of the "Tape & plan" zone (Live tape's four figure cells, Position brief, AI recommendation
+card all render in the intended order — an initial diagnostic screenshot appeared to show a blank
+region there, traced to a screenshot-timing race in the throwaway script itself, not a real defect;
+re-shot with a longer settle wait and confirmed correct). All throwaway scripts (`_fe11_visual.mjs`,
+`_fe11_closeup.mjs`, `_fe11_diag.mjs`) and screenshots deleted after use, confirmed via `git status
+--short` showing no stray files; server killed, ports freed both before and after.
+
+**Known deviations to carry into the build report (FE-14):**
+1. GATE Z item 1's mechanism required a genuine VALUE-flow fix in `StructureHeroPanel.tsx` (gating the
+   mid stream read on `numbersActive` instead of `claim` alone) beyond what "add offline/replay props"
+   alone would have needed — without it, F6 would have been structurally reachable but always vacuous
+   (never a real number during replay). Documented in-file and here so a later lane doesn't mistake it
+   for scope creep.
+2. `GexStrikeProfile.tsx`/`.spec.tsx` deleted whole, not merely unmounted — a stronger action than the
+   launch brief's own wording ("decide and record whether it survives anywhere") strictly required,
+   justified by full confirmed functional supersession (see above) and the FE-8 `DealerPositioning`
+   precedent. If a reviewer disagrees, the revert is small (two files, one barrel line, one
+   `chart.tsx`/`chart.spec.tsx` partial revert).
+3. `AiRecPanel`'s `span`/width prop was NOT changed despite SPEC §1's "AI read brief WIDE" wording —
+   read as a description of the already-rendered outcome (confirmed in the browser check), not an
+   instruction to add a new prop; flagging so a design review can confirm the reading.
+4. `ticker-hierarchy.spec.tsx`/`ticker.risk.spec.tsz` — collateral fixes outside FE-11's literal Owns
+   row, forced by this task's own composition change, same sanctioned shape FE-8/9/10 already used.
+5. The remaining 48 off-ladder spacing occurrences across 25 files (all outside this phase's rewritten
+   set) stay booked to `SPACING_DEBT_BURNDOWN_PHASE` ("curvature-v2 phase 4, responsive sweep") — not
+   widened, per ruling 4.
+
+## Next: FE-12 (not started)
+
+**FE-12 — The browser layer: re-anchor, re-point, register, prove execution.** Read PLAN.md's FE-12
+section fresh before starting. Depends on FE-11 (done). `no-overflow.spec.ts`'s `/ticker/TSLA` readiness
+anchor already resolves correctly post-FE-11 (confirmed: 75/75 e2e green this session) — FE-12's own
+Step 2 re-anchor to `level-ladder`'s testid is still the RIGHT thing to do (don't rely on luck twice),
+just confirmed not URGENTLY broken by FE-11's changes.

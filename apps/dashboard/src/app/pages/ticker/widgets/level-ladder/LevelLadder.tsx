@@ -80,6 +80,8 @@ function LadderLine({ row, palette }: { row: LadderRow; palette: LevelPalette })
           label={row.label}
           value={row.price}
           live={row.live}
+          offline={row.offline}
+          replay={row.replay}
           caption={row.distance}
         />
       </Box>

@@ -1,98 +1,60 @@
 /**
- * `GexProfileChart` — the host half of SPEC §2.7 / criteria 52-53 (DELEGATED P5): the canvas has no
- * theme input of its own, so THIS component is where `palette`/`surfaces` get resolved via
- * `useTheme()` and handed down. Criterion 52 (does the field actually render on the light panel
- * surface) is `review` — a real browser check. Criterion 53 ("no surface this phase creates renders
- * a hardcoded, scheme-invariant background or text colour") is `test`-able here: the resolved
- * `surfaces` object this host computes must differ between the dark and light theme.
+ * `chart.tsx` — the surviving pure helpers (SPEC §2.3-adjacent) after GATE Z's FE-11 deletion of the
+ * standalone `GexStrikeProfile`/`GexProfileChart`/`GexLegend` (see `chart.tsx`'s own module doc for
+ * why the file survives that deletion). `windowedStrikes` moved here from the now-deleted
+ * `GexStrikeProfile.spec.tsx` — it is NOT dead-widget test debt, it is the exact function
+ * `structure-hero/StructureHeroPanel.tsx` calls to build its own `StructureFieldModel`, so a silent
+ * regression here (walls dropped from the window, unsorted strikes) would render the desk's PRIMARY
+ * structure instrument wrong, not merely a deleted secondary one.
+ *
+ * The former criterion-53 host-level "surfaces differ across schemes" proof (palette/surfaces
+ * resolution) that used to live here against `GexProfileChart` is NOT dropped — it is ported onto
+ * `StructureHeroPanel.spec.tsx` (the file that now owns that resolution in production), so criterion
+ * 53's runtime coverage survives the widget's deletion. `hex-discipline.spec.ts`'s static scan is a
+ * separate, still-independent check on raw hex literals.
  */
-import type { StructureFieldCanvasProps } from '@/shared/charts/structure-field';
-import { lightTheme, theme } from '@/shared/theme/theme';
 import type { StrikeRow } from '@convexa/api';
-import { ThemeProvider } from '@mui/material/styles';
-import { render } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GexProfileChart } from './chart';
+import { describe, expect, it } from 'vitest';
+import { rowsToSamples, windowedStrikes } from './chart';
 
-const captured: StructureFieldCanvasProps[] = [];
-
-vi.mock('@/shared/charts/structure-field', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/shared/charts/structure-field')>();
-  return {
-    ...actual,
-    StructureFieldCanvas: (props: StructureFieldCanvasProps) => {
-      captured.push(props);
-      return null;
-    },
-  };
+const strike = (over: Partial<StrikeRow>): StrikeRow => ({
+  strike: 250,
+  net_gex: 1e6,
+  call_gex: 1e6,
+  put_gex: 0,
+  call_oi: 0,
+  put_oi: 0,
+  total_oi: 0,
+  net_dex: null,
+  vol_oi_ratio: null,
+  volume: null,
+  ...over,
 });
 
-const strikes: StrikeRow[] = [
-  {
-    strike: 448,
-    net_gex: -2_000_000,
-    call_gex: 0,
-    put_gex: -2_000_000,
-    call_oi: 0,
-    put_oi: 0,
-    total_oi: 0,
-    net_dex: null,
-    vol_oi_ratio: null,
-    volume: null,
-  },
-  {
-    strike: 452,
-    net_gex: 3_000_000,
-    call_gex: 3_000_000,
-    put_gex: 0,
-    call_oi: 0,
-    put_oi: 0,
-    total_oi: 0,
-    net_dex: null,
-    vol_oi_ratio: null,
-    volume: null,
-  },
-];
-
-describe('GexProfileChart — resolves scheme-aware palette/surfaces (criterion 53)', () => {
-  afterEach(() => {
-    captured.length = 0;
+describe('windowedStrikes (pure windowing, shared by StructureHeroPanel)', () => {
+  it('widens the ±10% spot window to always include the walls it labels, and sorts ascending', () => {
+    // Walls OUTSIDE ±10% of spot 250 (225–275): put wall 200, call wall 300.
+    const rows = [320, 300, 250, 200, 180].map((k) => strike({ strike: k }));
+    const out = windowedStrikes(rows, 250, 300, 200);
+    expect(out.map((s) => s.strike)).toEqual([200, 250, 300]); // walls kept, out-of-window dropped, sorted
   });
 
-  it('hands the canvas a five-member palette and a full surfaces object, per render', () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <GexProfileChart strikes={strikes} spot={450} callWall={452} putWall={448} gammaFlip={449} />
-      </ThemeProvider>,
-    );
-    expect(captured).toHaveLength(1);
-    const { palette, surfaces } = captured[0];
-    expect(Object.keys(palette).sort()).toEqual(
-      ['callWall', 'gammaFlip', 'maxPain', 'mid', 'putWall'].sort(),
-    );
-    expect(Object.keys(surfaces).sort()).toEqual(
-      ['ink', 'panel', 'phosphor', 'raised', 'steel', 'warning'].sort(),
-    );
+  it('non-positive walls fall back to the plain ±10% spot window', () => {
+    const rows = [200, 230, 250, 270, 300].map((k) => strike({ strike: k }));
+    const out = windowedStrikes(rows, 250, 0, 0);
+    expect(out.map((s) => s.strike)).toEqual([230, 250, 270]); // 225–275 only
   });
+});
 
-  it('never renders the same surfaces object across the dark and light schemes (no scheme-invariant surface)', () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <GexProfileChart strikes={strikes} spot={450} callWall={452} putWall={448} gammaFlip={449} />
-      </ThemeProvider>,
-    );
-    const dark = captured[0].surfaces;
-    captured.length = 0;
-
-    render(
-      <ThemeProvider theme={lightTheme}>
-        <GexProfileChart strikes={strikes} spot={450} callWall={452} putWall={448} gammaFlip={449} />
-      </ThemeProvider>,
-    );
-    const light = captured[0].surfaces;
-
-    const keys = Object.keys(dark) as (keyof typeof dark)[];
-    const differing = keys.filter((k) => dark[k] !== light[k]);
-    expect(differing.length).toBeGreaterThan(0);
+describe('rowsToSamples (pure field mapping, shared by StructureHeroPanel)', () => {
+  it('maps each strike row onto the field sample shape, one-to-one, in order', () => {
+    const rows = [
+      strike({ strike: 240, net_gex: -1e6, net_dex: 2e5, vol_oi_ratio: 0.4, volume: 100 }),
+      strike({ strike: 260, net_gex: 3e6, net_dex: null, vol_oi_ratio: null, volume: null }),
+    ];
+    expect(rowsToSamples(rows)).toEqual([
+      { strike: 240, netGex: -1e6, netDex: 2e5, volOi: 0.4, volume: 100 },
+      { strike: 260, netGex: 3e6, netDex: null, volOi: null, volume: null },
+    ]);
   });
 });

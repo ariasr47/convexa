@@ -199,6 +199,49 @@ describe('buildLadder — the mid row live claim (criterion 8 model half)', () =
   });
 });
 
+describe('buildLadder — mid row offline/replay, GATE Z (SPEC §4.1, criterion 16b)', () => {
+  it('defaults to no offline and no replay when the caller omits both', () => {
+    const rows = buildLadder(FULL_INPUT);
+    const mid = rows.find((r) => r.id === 'mid')!;
+    expect(mid.offline).toBeNull();
+    expect(mid.replay).toBe(false);
+  });
+
+  it('the mid row carries `offline: {retained: true}` when the caller passes it, retained', () => {
+    const rows = buildLadder({ ...FULL_INPUT, midOffline: { retained: true } });
+    const mid = rows.find((r) => r.id === 'mid')!;
+    expect(mid.offline).toEqual({ retained: true });
+    expect(mid.replay).toBe(false);
+  });
+
+  it('the mid row carries `offline: {retained: false}` (bare) when the caller passes it', () => {
+    const rows = buildLadder({ ...FULL_INPUT, midOffline: { retained: false } });
+    const mid = rows.find((r) => r.id === 'mid')!;
+    expect(mid.offline).toEqual({ retained: false });
+  });
+
+  it('the mid row carries `replay: true` when the caller passes `midReplay`', () => {
+    const rows = buildLadder({ ...FULL_INPUT, midReplay: true });
+    const mid = rows.find((r) => r.id === 'mid')!;
+    expect(mid.replay).toBe(true);
+    // 16b: a replay standing never also carries offline.
+    expect(mid.offline).toBeNull();
+  });
+
+  it('the four structure rows NEVER carry offline or replay, regardless of the mid row standing', () => {
+    const rows = buildLadder({
+      ...FULL_INPUT,
+      midOffline: { retained: true },
+      midReplay: true,
+    });
+    for (const r of rows) {
+      if (r.id === 'mid') continue;
+      expect(r.offline).toBeNull();
+      expect(r.replay).toBe(false);
+    }
+  });
+});
+
 describe('formatAnchorText — the header states the anchor once (criterion 4)', () => {
   it('names gex_spot when present', () => {
     expect(formatAnchorText(250)).toBe('$250');

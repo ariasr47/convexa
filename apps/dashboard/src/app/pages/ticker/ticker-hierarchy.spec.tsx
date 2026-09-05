@@ -104,30 +104,36 @@ describe('Ticker · board hierarchy (product spine #3)', () => {
     }
   });
 
-  it('DOM order is Structure → position brief → Tape & plan → Supporting context', async () => {
+  it('DOM order is Structure → Tape & plan (live tape, position brief, AI read, orders) → Supporting context', async () => {
     renderTicker();
     await screen.findByText('Call wall');
 
     const zoneStructure = screen.getByTestId('board-zone-structure');
-    const brief = screen.getByTestId('position-brief');
     const zonePlan = screen.getByTestId('board-zone-plan');
     const zoneContext = screen.getByTestId('board-zone-context');
-    // (v2, curvature-v2-desk-and-read FE-8) the old dealer positioning widget is deleted;
-    // `StructureHeroPanel` is its
-    // successor in the SAME primary-structure slot (the ladder's walls, the Field/Magnet toggle).
+    // (curvature-v2-desk-and-read FE-11) `StructureHeroPanel` is the desk's ONE structure instrument
+    // (the old dealer positioning widget AND the standalone `GexStrikeProfile` are both deleted).
     const dealer = screen.getByTestId('structure-hero');
     const live = screen.getByTestId('live-tape');
+    // FE-11 moves `position-brief` OUT of the structure zone and INTO the plan group, beside
+    // LiveTape/AiRecPanel/OrdersWidget (SPEC §1's flow: "AI read brief wide beside tape / position /
+    // orders") — it is no longer a bridge ahead of the zone label.
+    const brief = screen.getByTestId('position-brief');
 
-    // Zones + brief ordered: structure → book → plan → context.
-    expect(docIndex(zoneStructure)).toBeLessThan(docIndex(brief));
-    expect(docIndex(brief)).toBeLessThan(docIndex(zonePlan));
+    // Zones ordered: structure → plan → context.
+    expect(docIndex(zoneStructure)).toBeLessThan(docIndex(zonePlan));
     expect(docIndex(zonePlan)).toBeLessThan(docIndex(zoneContext));
 
-    // Primary structure (dealer tiles) appears before live tape — not equal-weight top-of-board.
-    expect(docIndex(dealer)).toBeLessThan(docIndex(live));
+    // Primary structure (the hero) appears before live tape — not equal-weight top-of-board.
     expect(docIndex(zoneStructure)).toBeLessThan(docIndex(dealer));
-    expect(docIndex(dealer)).toBeLessThan(docIndex(brief));
+    expect(docIndex(dealer)).toBeLessThan(docIndex(zonePlan));
+    expect(docIndex(dealer)).toBeLessThan(docIndex(live));
+
+    // Position brief now lives WITH the plan group, not ahead of it.
     expect(docIndex(zonePlan)).toBeLessThan(docIndex(live));
+    expect(docIndex(zonePlan)).toBeLessThan(docIndex(brief));
+    expect(docIndex(live)).toBeLessThan(docIndex(brief));
+    expect(docIndex(brief)).toBeLessThan(docIndex(zoneContext));
     expect(docIndex(live)).toBeLessThan(docIndex(zoneContext));
   });
 

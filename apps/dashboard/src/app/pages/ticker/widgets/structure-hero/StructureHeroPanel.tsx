@@ -105,9 +105,21 @@ export function StructureHeroPanel({
   const tape = useLiveTape();
   const st = sessionTapeOf(tape.live);
   const claim = isDeliveringLive(tape.live, tape.streamOffline);
-  // The RAW stream mid, gated on the base claim (never a `?? bundle` composition) — the value FE-2's
-  // latch is fed (`useStreamLatch`'s own contract: "the value AS RECEIVED ON THE STREAM").
-  const midStream = claim ? (tape.live?.mid ?? null) : null;
+  // GATE Z (FE-11): the SAME "S0 genuinely live / S1 display-active during replay" discipline
+  // `live-tape/LiveTape.tsx`'s own `numbersActive` already established (branching on session-tape
+  // occupancy, falling back to the store's live/offline facts) — deliberately NOT `claim` alone.
+  // `claim` (`isDeliveringLive`) is ALWAYS false
+  // during a session-tape replay (SPEC §2.1: replay is never the live stream), so gating the mid
+  // STREAM READ on `claim` alone left it permanently `null` for the whole replay arm — the mid would
+  // never reach F6 with a real number, only ever the empty literal, which is not "full strength."
+  // `tape.live.mid` genuinely carries replayed values during a session tape (mirrors
+  // `live-tape/LiveTape.tsx`'s `net_flow`/`gamma_flip` reads, which already use this same gate) — the
+  // wire ships the same envelope shape either way. `claim` itself (below) is UNCHANGED and still
+  // governs `midLive`/the live dot: never true during replay.
+  const numbersActive = st ? tape.displayActive : claim;
+  // The RAW stream mid (never a `?? bundle` composition) — the value FE-2's latch is fed
+  // (`useStreamLatch`'s own contract: "the value AS RECEIVED ON THE STREAM").
+  const midStream = numbersActive ? (tape.live?.mid ?? null) : null;
   const resetToken = `${symbol.toUpperCase()}|${st ? 'replay' : 'live'}`;
   const midLatch = useStreamLatch(midStream, resetToken);
   const midLive = andPresent(claim, midStream);
@@ -116,6 +128,19 @@ export function StructureHeroPanel({
   // reported through the "offline" arm — it has its own standing.
   const tileOffline = st ? false : tape.streamOffline;
   const lastTrade = claim && tape.live?.last_trade != null ? tape.live.last_trade : null;
+
+  // GATE Z (FE-11) — SPEC §4.1's ladder mid-row offline/stale treatment, mechanised by branching on
+  // the STANDING UNION (live / offline / replay), never on `!isLive`: `midOffline` and `midReplay` are
+  // mutually exclusive BY CONSTRUCTION (`tileOffline` is defined as `st ? false : streamOffline`, so
+  // it can never be true while `st` — a replay standing — holds). This is the exact mechanism
+  // criterion 16b requires: implemented as `!isLive -> pause mark`, a replay standing (where `midLive`
+  // is always false) would wrongly wear one; implemented over this standing union, it structurally
+  // cannot, because replay is not offline.
+  const midOffline = useMemo(
+    () => (tileOffline ? { retained: midLatch.retained } : null),
+    [tileOffline, midLatch.retained],
+  );
+  const midReplay = Boolean(st);
 
   const anchor = levelSpot(m);
   const rows = useMemo(
@@ -127,9 +152,21 @@ export function StructureHeroPanel({
         gammaFlip: m.gamma_flip,
         mid: displayMid,
         midLive,
+        midOffline,
+        midReplay,
         anchor,
       }),
-    [m.call_wall, m.put_wall, m.max_pain, m.gamma_flip, displayMid, midLive, anchor],
+    [
+      m.call_wall,
+      m.put_wall,
+      m.max_pain,
+      m.gamma_flip,
+      displayMid,
+      midLive,
+      midOffline,
+      midReplay,
+      anchor,
+    ],
   );
   const anchorText = formatAnchorText(anchor);
   const ageLabel = structureAgeSeconds != null ? humanAge(structureAgeSeconds) : 'unknown age';

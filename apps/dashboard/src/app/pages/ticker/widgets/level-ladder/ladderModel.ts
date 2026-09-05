@@ -47,6 +47,20 @@ export interface LadderRow {
   live: LiveClaim;
   /** A token key, never a colour (SPEC §2.7). */
   stroke: LadderRowId;
+  /**
+   * MID ROW ONLY (SPEC §4.1, "offline/stale" column, GATE Z / FE-11: "four structure rows
+   * byte-identical and un-dimmed; only the mid row dims, with the pause mark"). `null` for the four
+   * structure rows — they never receive offline dimming, in every standing including a drop. Same
+   * `{retained}` shape `FigureCell`/`LiveTape.tsx` already use — never a second offline vocabulary.
+   */
+  offline: { retained: boolean } | null;
+  /**
+   * MID ROW ONLY — F6, session replay (criterion 16b: "a replay standing renders F6 with no pause
+   * mark"). `offline` and `replay` are MUTUALLY EXCLUSIVE by construction at the caller (a replay
+   * standing is never `tileOffline` — `live-tape/LiveTape.tsx`'s own `st ? false : streamOffline`
+   * discipline), never by an `!isLive` branch here — that is the shape criterion 16b forbids.
+   */
+  replay: boolean;
 }
 
 export interface LadderInput {
@@ -58,6 +72,15 @@ export interface LadderInput {
   /** The tape mid, and the only live row. */
   mid: number | null | undefined;
   midLive: LiveClaim;
+  /**
+   * MID ROW ONLY (SPEC §4.1, GATE Z / FE-11). The SAME `tileOffline`/`{retained}` discipline
+   * `live-tape/LiveTape.tsx` already established, branched on the STANDING union at the caller
+   * (`StructureHeroPanel`'s single store read) — `null`/`undefined` when not offline. A replay
+   * standing must never reach this field (criterion 16b).
+   */
+  midOffline?: { retained: boolean } | null;
+  /** MID ROW ONLY — F6, session replay. `undefined`/`false` when not replaying. */
+  midReplay?: boolean;
   /** The anchor the distances are measured from: `gex_spot ?? price`. */
   anchor: number | null;
 }
@@ -96,6 +119,8 @@ export function buildLadder(input: LadderInput): LadderRows {
       distance: dist(input.callWall, input.anchor),
       live: NOT_LIVE,
       stroke: 'callWall',
+      offline: null,
+      replay: false,
     },
     {
       id: 'maxPain',
@@ -104,6 +129,8 @@ export function buildLadder(input: LadderInput): LadderRows {
       distance: dist(input.maxPain, input.anchor),
       live: NOT_LIVE,
       stroke: 'maxPain',
+      offline: null,
+      replay: false,
     },
     {
       id: 'gammaFlip',
@@ -112,6 +139,8 @@ export function buildLadder(input: LadderInput): LadderRows {
       distance: dist(input.gammaFlip, input.anchor),
       live: NOT_LIVE,
       stroke: 'gammaFlip',
+      offline: null,
+      replay: false,
     },
     {
       id: 'putWall',
@@ -120,6 +149,8 @@ export function buildLadder(input: LadderInput): LadderRows {
       distance: dist(input.putWall, input.anchor),
       live: NOT_LIVE,
       stroke: 'putWall',
+      offline: null,
+      replay: false,
     },
     {
       id: 'mid',
@@ -134,6 +165,8 @@ export function buildLadder(input: LadderInput): LadderRows {
       distance: ABSENT_DISTANCE,
       live: input.midLive,
       stroke: 'mid',
+      offline: input.midOffline ?? null,
+      replay: Boolean(input.midReplay),
     },
   ];
 
