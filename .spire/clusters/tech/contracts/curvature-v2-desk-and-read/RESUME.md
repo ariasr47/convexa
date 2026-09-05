@@ -1,3 +1,27 @@
+# GATE Z RESOLVED by the conductor (A10 retention) - 2026-09-05
+
+The FE-9 lane flagged that A10's *"the previously pinned read stays pinned and readable"* needs
+`useAiRecommendation.ts`, which is in **no task's Owns list** (FE-10 owns `ReadSheet.*` + `AiRecPanel.tsx`;
+FE-11 owns `TickerDashboard.tsx` + specs). Same shape as the FE-6 flag: a spec requirement no task owns.
+
+**Resolution: FE-10 owns it. Its Owns list is amended to add
+`apps/dashboard/src/app/pages/ticker/widgets/ai-rec/useAiRecommendation.ts`.** FE-10 is the next AI-read
+task and already owns the panel that consumes the hook.
+
+**Do the cheap check FIRST - this may be zero mechanism plus one test.** SPEC §2.6 states two things that
+must be reconciled before anything is built:
+1. **"A10 never composes"** - it is an *exclusive body*, because the host passes `poweringReason: null`
+   whenever `rec.status === 'produced'` (`AiRecPanel.tsx:176-181`), so `unavailable` and a produced read
+   cannot be the same render.
+2. **"the previously pinned read stays pinned and readable"** on a request failure.
+
+If (1) holds, then a failed **refresh** while a produced read is held may never reach `unavailable` at
+all - in which case the retention is already true **by construction** and what is missing is a *test that
+proves it*, not a mechanism. **Establish which it is at source before writing code.** If it is genuinely
+missing, implement it **inside the hook**, never as a parallel ref in the panel - the lane was right that
+a second source of truth risks disagreeing with the hook's own lifecycle, and that is the fabrication
+class this whole phase exists to remove.
+
 # curvature-v2-desk-and-read — frontend build RESUME
 
 **Resume status:** ACTIVE
