@@ -11,12 +11,19 @@
   from a lane's uncommitted work after a rate-limit kill; verified cold by the conductor.
 - `b5251aa1` — FE-4 (the extracted pure paint step, the three live gates)
 - `2fbfd6c2` — FE-5 (the level ladder) — see "Done (FE-5)" below.
+- `95078372` — FE-6 (the structure-field hero) — see "Done (FE-6)" below.
 
-Working tree is clean at the time of writing (post-FE-5 commit). `npm run typecheck` **0**, `npx nx
-test @convexa/dashboard` **0** @ **224 files / 2460 tests** (up from the 221/2424 baseline after
-FE-4: +3 files, +36 tests), `npm run lint` **0** (no new warnings, same one pre-existing
+Working tree is clean at the time of writing (post-FE-6 commit). `npm run typecheck` **0**, `npx nx
+test @convexa/dashboard` **0** @ **226 files / 2474 tests** (up from the 224/2460 baseline after
+FE-5: +2 files, +14 tests), `npm run lint` **0** (no new warnings, same one pre-existing
 `react-hooks/exhaustive-deps` warning in `useSessionArchive.ts`, unrelated to this branch). e2e not
-touched yet (that's FE-12).
+touched yet (that's FE-12). **Nx's own `test` target flaked once mid-session** (printed "1 error"
+alongside "225 passed" — the exact `printed passed but exits non-zero` trap this repo's CLAUDE.md
+warns about) and Nx auto-retried to a clean 226/2474; a direct `npx vitest run` from
+`apps/dashboard/` (bypassing Nx's cache/retry layer) reproduced the clean 226/2474 deterministically
+twice more — the flake was environmental (Nx orchestration), not this session's code. If you see a
+similar one-off red with an otherwise-green summary, re-run via plain `vitest run` before treating it
+as a real regression.
 
 ---
 
@@ -292,50 +299,123 @@ is BE-1's check to run and report, not something a frontend lane caused or can f
 
 ---
 
-## Next: FE-6 (not started)
+## Done (FE-6) — do not re-do
 
 **FE-6 — the structure-field hero: one `Widget`, four presentational children, one store read.**
-Owns: new `pages/ticker/widgets/structure-hero/{StructureHeroPanel.tsx,StructureHeroPanel.spec.tsx,
-TapeTrailRow.tsx,index.ts}` · `pages/ticker/widgets/chrome/{TapePulseStrip.tsx,
-TapePulseStrip.spec.tsx,index.ts}` · `pages/ticker/widgets/gex-profile-chart/{GexStrikeProfile.tsx,
-chart.tsx}` · `pages/ticker/widgets/dealer-positioning/WallMagnetView.tsx` (moved into
-`structure-hero/`) · `shared/charts/structure-field/StructureFieldCanvas.tsx` (a11y wrapper only).
-Depends on FE-2 (done), FE-4 (done), FE-5 (done).
+Owns (as landed): new `pages/ticker/widgets/structure-hero/{StructureHeroPanel.tsx,
+StructureHeroPanel.spec.tsx,TapeTrailRow.tsx,TapeTrailRow.spec.tsx,index.ts}` ·
+`pages/ticker/widgets/chrome/TapePulseStrip.tsx` + `.spec.tsx` (rewritten, not `index.ts` — see
+deviation below) · `pages/ticker/widgets/gex-profile-chart/{GexStrikeProfile.tsx,chart.tsx}` ·
+`pages/ticker/widgets/structure-hero/WallMagnetView.tsx` (moved, `git mv`, from
+`dealer-positioning/`) · `shared/charts/structure-field/StructureFieldCanvas.{tsx,spec.tsx}` (a11y
+wrapper + its own new test) · `shared/liveness/liveClaim.spec.ts` (EXEMPT list) ·
+`shared/theme/hex-discipline.spec.ts` (EXEMPT list).
 
-Read PLAN.md's FE-6 section fresh (around line 1163 in the copy read this session — **re-check the
-line number, it drifts**) before starting, AND re-read `LevelLadder.tsx`'s own module doc — its
-props are `rows: LadderRows`, `anchorText: string | NotANumber`, `palette: LevelPalette`, ALL
-pre-computed. Key traps:
-- **`StructureHeroPanel` is the ONE component calling `useLiveTape()`** in the whole hero (SPEC §2.1)
-  — it derives the branded claim once and hands `rows`/`anchorText`/`palette`/`mid`/`claim` down as
-  props to four presentational children (`StructureFieldCanvas`, `LevelLadder`, `TapeTrailRow`,
-  `StructurePathStrip`). Building `rows` means calling `buildLadder({ callWall: m.call_wall, putWall:
-  m.put_wall, maxPain: m.max_pain, gammaFlip: m.gamma_flip, mid: <tape mid>, midLive: andPresent(claim,
-  mid), anchor: levelSpot(m) })` from `level-ladder`'s barrel, and `anchorText` via
-  `formatAnchorText(levelSpot(m))` — both exported from `@/pages/ticker/widgets/level-ladder`.
-- **`palette` must be the SAME object** `StructureFieldCanvas` receives (`resolveLevelPalette(theme)`,
-  computed once, passed to both) — criterion 7's identity check depends on this literally, not just
-  visually.
-- **INNER BOUNDARY**: the `ErrorBoundary` wraps ONLY the canvas region, not the whole hero — a canvas
-  fault must not blank the REST-only ladder.
-- **The `Live`/`Mid` word is DELETED** from `TapePulseStrip.tsx:199`, not demoted — becomes `Mid`
-  unconditionally, beside the existing `Structure ${structureMid}` readout, unchanged.
-- **`TapePulseStrip.tsx:33`'s `isLive`** must gain the `andPresent(claim, mid)` requirement (currently
-  can print "Live" over a REST structure mid when the stream is up but carries no mid — criterion 10,
-  SB).
-- **`TapePulseStrip.tsx:71,73`'s paint-loop fallback** (`displayMid = liveMid ?? structureMid`, pushed
-  every rAF frame unconditionally) must gate on the claim + latched mid, using FE-2's latch.
-- **Criterion 24 (P1, DELEGATED):** the canvas needs `role="img"` + `aria-label` +
-  `aria-describedby` pointing at a visually-hidden summary `<p>`, per `design/src/lib.mjs:296`
-  (correcting `decisions.md`'s `:293` citation).
-- **`hex-discipline.spec.ts`'s exemption list** currently carries `structureFieldShared.ts`,
-  `labTokens.ts`, and `chrome/TapePulseStrip.tsx` (three entries) — this task fixes
-  `TapePulseStrip.tsx` (P5, same edit as the `Live`/`Mid` fix) and MUST remove its entry in the same
-  commit, dropping the list to two.
-- **`liveClaim.spec.ts`'s EXEMPT list** (FE-1 note, still live) currently carries THREE entries —
-  `live-tape/LiveTape.tsx`, `chrome/TapePulseStrip.tsx`, `gex-profile-chart/GexStrikeProfile.tsx`.
-  This task must remove all three in the same commit that fixes those files (re-point the LiveTape
-  entry to `structure-hero/StructureHeroPanel.tsx`, delete the other two).
+**What shipped, and where it deviated from PLAN's illustrative snippet (all deliberate, reasoned in
+each file's own module doc — read those before re-deriving):**
+
+1. **`StructureHeroPanel` renders `StructureFieldCanvas` DIRECTLY, never through
+   `gex-profile-chart/GexProfileChart`.** `GexProfileChart` resolves its OWN `palette`/`surfaces` via
+   its own `useTheme()` call (needed so its still-live standalone call site keeps working) — routing
+   the hero's canvas through it would give the ladder a DIFFERENT palette object than the canvas,
+   breaking criterion 7's identity requirement. Instead `StructureHeroPanel` builds the
+   `StructureFieldModel` itself, reusing `chart.tsx`'s exported pure `windowedStrikes`/
+   `rowsToSamples` helpers (the latter promoted from private to exported, additive) so the model
+   shape never drifts from the standalone widget's own.
+2. **`GexStrikeProfile.tsx` keeps its own `useLiveTape()` read** (fixed to compose via
+   `isDeliveringLive`/`andPresent` instead of `tape.isLive`) rather than becoming prop-driven — it is
+   a STANDALONE widget outside `structure-hero/`, not one of the hero's four children, so SPEC
+   §2.1's single-store-read invariant (scoped to `structure-hero/` by the reviewer probe's own
+   wording) does not apply to it. Its unused `liveSpot` override prop was ALSO dropped (dead code —
+   no call site anywhere ever passed it).
+3. **`TapePulseStrip.tsx` became FULLY presentational** — no store read at all, not even an optional
+   fallback. Required props: `claim: LiveClaim`, `mid: number | null` (already latch-resolved by the
+   caller), `lastTrade?`, `palette: LevelPalette`, `surfaces: StructureFieldSurfaces`. This broke the
+   OLD standalone mount in `TickerDashboard.tsx:504` (not touched by FE-11 yet) — fixed by computing
+   the same claim/mid/palette/surfaces INLINE there via the canon composers (mirrors FE-1's
+   `DealerPositioning.tsx` precedent: a breaking prop-shape change forces every existing consumer to
+   satisfy it immediately). `chrome/index.ts` did NOT need editing — it still just re-exports the
+   file, which kept its name and location.
+4. **The `liveClaim.spec.ts` EXEMPT list ended at TWO entries, not one** (GoogleButton-style
+   permanent entries aside) — `TapePulseStrip.tsx` and `GexStrikeProfile.tsx` entries were removed
+   (both fixed), but the `live-tape/LiveTape.tsx` entry was **investigated and deliberately kept**,
+   not re-pointed to `StructureHeroPanel.tsx` as PLAN's own prose suggested. Measured against the
+   ACTUAL shipped `LiveTape.tsx` (FE-2): its `numbersActive` derivation genuinely needs the store's
+   raw `isLive` flag for a documented, real reason (blind to `market_session`, true during
+   session-tape playback — see that file's own `:77-90` comment) that is NOT the same question
+   `isDeliveringLive` answers. Re-pointing away from it would have meant either changing FE-2's
+   already-verified behaviour, or renaming a variable purely to dodge the mutation-guarded regex —
+   gaming the guard the test exists to prevent. `StructureHeroPanel.tsx` needs NO entry: written
+   using only `isDeliveringLive`/`andPresent`, it never trips the BANNED patterns. **One real trap
+   hit and cleared while writing this fix: the doc comments EXPLAINING the old `tape.isLive`/`isLive
+   &&` bugs themselves matched the mutation-guarded regex** (it scans raw file text, comments
+   included) — three files' module docs had to be reworded (never spelling the literal
+   `tape.isLive`/`isLive &&` substring) before the suite went green.
+5. **The ladder's mid row does NOT get offline/pause-mark treatment in this task — a named, honest
+   gap, not a silent drop.** SPEC §4.1's "Level ladder" row states "only the mid row dims, with the
+   pause mark" on a drop, but FE-6's own assigned criteria (9, 10, 11, 19, 20, 21, 22, 23, 24, 52)
+   never test this, PLAN's own FE-6 Step 6 text only asserts it for the FOUR STRUCTURE rows, and
+   `LevelLadder.tsx`/`ladderModel.ts` (FE-5's owned files, not in FE-6's Independence-table Owns row)
+   have no `offline` concept on any row today. Building it correctly would require replicating
+   `LiveTape.tsx`'s full session-tape/replay-aware `tileOffline` machinery inside a file this task
+   doesn't own, with real risk of getting the replay case wrong (criterion 16b forbids a pause mark
+   there). Flagging for the next lane / GATE Z rather than inventing it half-scoped.
+6. **The tape-trail-row's decorative print-flash feature (buy/sell colour bars on a trade tick) was
+   preserved**, not dropped, by adding an optional `lastTrade` prop threaded the same way as
+   `mid` — a REST fallback would have silently changed shipped visual behaviour for no reason tied to
+   this task's criteria.
+7. **The trail-paused caption (§4.6, "tape paused · trail frozen" / "tape paused")** is new,
+   deliberately narrow: gated on `tileOffline` (the SAME `st ? false : streamOffline` discipline
+   `LiveTape.tsx` already established, reusing `sessionTapeOf` — a legitimate existing import, not a
+   new liveness expression) so it never fires during session-tape replay. It does NOT attempt F6's
+   full "session replay" caption/no-dim treatment for the tape row or the ladder mid row — same
+   reasoning and same named gap as item 5.
+
+**Mutation proofs actually run (poison → confirm red → revert), all this session, each output
+captured above in the session transcript, not re-derived from memory:**
+- Criterion 7 (palette identity): gave the ladder a freshly-`resolveLevelPalette`'d object instead of
+  the shared one — `StructureHeroPanel.spec.tsx`'s identity test (`toBe`, not `toEqual`) went red
+  naming the exact mismatch; reverted.
+- Criterion 10 (the `Mid`/`Live` word): reinstated `activeClaim ? 'Live' : 'Mid'` in
+  `TapePulseStrip.tsx` — BOTH `TapePulseStrip.spec.tsx` (unit) and `StructureHeroPanel.spec.tsx`
+  (integration) went red on the same case; reverted.
+- Criterion 24 (a11y): deleted `aria-describedby` — `StructureFieldCanvas.spec.tsx`'s new test went
+  red on `expect(describedBy).toBeTruthy()`; reverted.
+- The trail caption's two-arm discipline: collapsed both arms to the "trail frozen" string —
+  `TapeTrailRow.spec.tsx`'s "never asserts a frozen trail that was never drawn" case went red;
+  reverted.
+- The inner boundary (SPEC §5): widened the `ErrorBoundary` to wrap the whole hero body instead of
+  just the canvas/magnet region — `StructureHeroPanel.spec.tsx`'s inner-boundary test went red
+  (`getByTestId('level-ladder')` threw, not found, once the boundary swallowed everything); reverted.
+
+**Browser check, actually done.** Temporarily mounted `<StructureHeroPanel>` into
+`/lab/structure-field` (bridging the lab's synthetic `StructureFieldModel` into a fabricated
+`MarketState`/`StrikeRow[]` shape — the lab has no real bundle), served the dashboard, and because the
+app resolves its OWN theme from a stored preference (`convexa.uiprefs.v1` in `localStorage`) rather
+than the browser's `prefers-color-scheme` — a real trap, cost a screenshot cycle to discover, the
+FIRST light-mode attempt using Playwright's `colorScheme: 'light'` context option rendered
+byte-identical to dark — the throwaway script was fixed to `page.addInitScript` that key before
+`page.goto`. Confirmed dark (1280×1600), light (1280×1600, criterion 52: the hero genuinely repaints
+onto the light panel surface, no dark plate) and a 393px narrow dark viewport (no horizontal
+overflow, ladder rows and toggle wrap correctly), plus the Field/Magnet toggle (clicked, confirmed
+`wall-magnet-view` renders while the ladder/tape-row/path stay mounted underneath). Zero console
+errors beyond the expected API-not-served 502s. Reverted the lab edit, confirmed
+`git status --short apps/dashboard/src/app/pages/lab/StructureFieldLab.tsx` returned nothing, killed
+the server, ran `npm run ports:free`.
+
+## GATE Z item flagged (new, from item 5/7 above)
+
+**The ladder's mid row and the tape-trail row's own "session replay" F6 treatment are not built.**
+SPEC §4.1's per-component table names both (ladder: "only the mid row dims, with the pause mark" on
+offline/stale; tape trail row: latched value + pause mark, or bare + pause mark, on offline/stale) as
+if fully generic across every standing, but FE-6's own assigned criteria never test the ladder-mid
+half, and neither the ladder nor a from-scratch new component (`TapeTrailRow` didn't exist before this
+task) had ANY session-tape/replay awareness to build from. A future lane (or GATE Z sign-off) should
+decide: (a) is this in scope for a later task (FE-7 through FE-11 don't obviously own it either), or
+(b) is SPEC §4.1's table describing a debt this phase knowingly under-builds, analogous to the named
+point-by-point curve text-equivalent debt in §4.4. Recommend NOT silently building it into `LevelLadder.tsx`
+(an FE-5-owned file) without an explicit owner decision, given the real risk of contradicting FE-2's
+already-settled criterion 16b (no pause mark during replay) if done hastily.
 
 ## Process notes for whoever continues
 
@@ -352,3 +432,79 @@ pre-computed. Key traps:
 - Node/npx: prepend `C:\nvm4w\nodejs` to PATH in this shell if missing.
 - `npm run ports:free` sweeps IPv4 and IPv6 before/after any serve; this session served the dashboard
   alone (no backend) for a browser check — killed it cleanly afterward.
+- **The app's theme (dark/light) does NOT follow the browser's `prefers-color-scheme`** — it reads a
+  stored preference (`localStorage['convexa.uiprefs.v1']`, anonymous default `dark`). A Playwright
+  `colorScheme` context option alone renders dark regardless of the setting; set the localStorage key
+  via `page.addInitScript` before `page.goto` to actually exercise light mode.
+- **`liveClaim.spec.ts`'s BANNED-pattern source scan reads RAW file text, comments included** — a doc
+  comment explaining an old bug by literally spelling `tape.isLive` or `isLive &&` trips the same
+  regex the code fix was supposed to clear. Word around it (e.g., "the store's own `isLive` flag off
+  `tape` directly") rather than quoting the literal expression.
+
+---
+
+## Next: FE-7 (not started)
+
+**FE-7 — The read strip: eight fixed slots, each cell its own container.** Owns: new
+`pages/ticker/widgets/read-strip/{ReadStrip.tsx,ReadStrip.spec.tsx,readStripModel.ts,
+readStripModel.spec.ts,index.ts}` · `pages/ticker/widgets/iv-rank/IvRank.tsx`. Depends on FE-1
+(done). **Independent: no.**
+**Spec:** §2.4, §4.1, §4.6 · **Criteria:** 8 (SB), 19 (SB), 25 (SB), 26, 27, 28, 50 (SB), 60.
+
+Read PLAN.md's FE-7 section fresh (around line 1245 in the copy read this session — re-check, it
+drifts) and SPEC §2.4/§4.1 fresh before starting. Key traps, read from this session's own reading of
+both documents (not re-verified against the tree since FE-7 hasn't started — re-check line numbers
+against the CURRENT `DealerPositioning.tsx`, which this session did NOT touch beyond the one-line
+`WallMagnetView` import re-point):
+- **Eight FIXED slots, a closed tuple type** (`READ_STRIP_SLOTS`), never 7-or-8 — the architect's own
+  R2 self-revision was withdrawn at R3; a variable-cardinality slot recreates
+  `[absent-is-not-none]` in the scroll axis at 393px (an absent cell and one scrolled off the rail are
+  indistinguishable). No tenth member, no eighth-slot special case.
+- **Values/tooltips copy byte-for-byte** from `DealerPositioning.tsx` (re-verify these line ranges
+  fresh, they will have drifted from PLAN's citations by now): `netDex`, `ivHv`, `volOi`, `ivSkew`,
+  `termStructure`, `offExchange`, `opportunity`. `ivRank` comes from the EXISTING `IvRank.tsx` (find
+  it fresh — this session did not touch it). **This accounting is what makes FE-8's `DealerPositioning`
+  deletion reviewable** — the twelve shipped cells must decompose with zero orphans: 3 to the ladder
+  (FE-5, done), 2 to the ladder foot (FE-5, done), 7 here, IV rank the eighth.
+- **The empty off-exchange slot renders `not provided`** (`shared/copy/notANumber.ts`), never
+  `unavailable` — it collapses BOTH the disabled-source case (`INCLUDE_DARK_POOL=false`) and the
+  failed-computation case into one member, because the frontend cannot distinguish them
+  (`PROJECT_CONTEXT.md` §5, an empty `apps/api` diff). Criterion 27: neutral register, no
+  success/error palette class, states context-only/no-side explicitly (`[dark-pool-context-only]`).
+- **Term structure keeps its shipped THREE-way render** (`unavailable` / `—` / the wire's `state`
+  label) — this is legitimate, NOT a second not-a-number vocabulary, because unlike off-exchange the
+  two absences here ARE distinguishable (object absent vs. present-but-thin `points` array). Copy
+  `DealerPositioning.tsx`'s exact three-way logic; don't collapse it to match off-exchange's one
+  member.
+- **THE CONTAINER-QUERY HAZARD, again** (same class of bug FE-6's own module docs discuss for the
+  hero): each of the eight cells wraps in the shipped `PanelContainer` (same `containerName: 'panel'`,
+  NESTED under the Widget's own) — declaring the name at the STRIP/rail level instead would make the
+  nearest named ancestor the ~1280px panel body for every cell, so `FigureCell.tsx:216-217`'s
+  20→17→15px step would never fire at any viewport. `[lane-check]`: jsdom cannot evaluate container
+  queries — a unit test may assert the `PanelContainer` declaration only, never the stepping
+  behaviour (that's `review`, browser-only, no criterion claims a jsdom proof of it).
+- **The strip is a rail; the page is not** (criterion 50, SB): `overflowX: 'auto'` + `minWidth: 0` on
+  the parent track. Assert the declaration in jsdom; the scrolling behaviour itself is FE-12's
+  browser row.
+- **All eight cells are dotless** (criterion 8, SB) — none of DealerPositioning's shipped cells is
+  live-derived today, so `live={NOT_LIVE}` at every slot is mechanically enforced by FE-1's brand
+  (a stray `live={someClaim}` is a compile error) but the RUNTIME census (a DOM scan finding zero
+  `data-figure-state="live"` nodes and zero `figure-live-dot` testids in the strip) is this task's own
+  proof to write — poison one slot with `live={andPresent(someClaim, 1)}` under a live fixture, confirm
+  the census goes red, revert.
+- **Mutation proof named explicitly by PLAN**: poison the off-exchange slot to render `'unavailable'`
+  instead of `not provided` — criterion 26 must go red. Record it, actually run it.
+- **Read `live-dot-census.spec.tsx` fresh before touching it** — FE-8 (not this task) re-points it to
+  render `LiveTape + LevelLadder + ReadStrip` together, but reading it now will show you exactly what
+  shape of DOM scan `ReadStrip.tsx` needs to be compatible with, so you don't have to guess and FE-8
+  doesn't have to redo your cell markup.
+- **Not wired into the page yet is fine and expected** — matches FE-5's and FE-6's own precedent.
+  `TickerDashboard.tsx`'s reading-order rewrite is FE-11's task alone; do not mount `ReadStrip` there.
+  If a component you build here forces an unavoidable compile-time fix to an EXISTING untouched call
+  site (the way FE-6 had to touch `TickerDashboard.tsx:504` for `TapePulseStrip`'s new required
+  props), that is an acceptable, minimal, documented deviation — but first check whether `ReadStrip`
+  actually has an existing call site to break (unlike `TapePulseStrip`, it's a brand-new component
+  with no precursor, so this may simply not arise).
+- **Browser check**: no existing lab page mounts a bento-style read strip today. Follow FE-5's/FE-6's
+  pattern — temporarily mount into `/lab/structure-field` or a new throwaway location, screenshot dark
+  + light + 393px, revert. `npm run ports:free` before and after.
