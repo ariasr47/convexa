@@ -61,7 +61,13 @@ const runtime = () => {
 const gateCounts: Record<string, number> = {
   // (curvature-v2-foundations FE-10) 52 → 75: matches `manifest.json`'s `full_chromium.inventory_id`
   // bump to `curvature-v2-foundations-75-v1` (`tools/lib/manifest.mjs` enforces the same number).
-  chromium: 75,
+  // (curvature-v2-desk-and-read FE-12) 75 → 86: FE-12 registered `desk-and-read.spec.ts` (6 new
+  // Chromium tests: criterion 45's two, the criteria 20/22 evidence pair, criterion 52's two) and
+  // added 5 new criterion-50 read-strip-rail tests to `no-overflow.spec.ts` (393 dark/light, 834,
+  // 900, 1280) — the first net-new e2e tests this phase's own lanes have added to the registered six
+  // (FE-1 through FE-11 only edited/re-pointed existing ones); bump to
+  // `curvature-v2-desk-and-read-86-v1` (`tools/lib/manifest.mjs` enforces the same number).
+  chromium: 86,
   compatibility: 15,
   accessibility: 16,
   visual: 6,

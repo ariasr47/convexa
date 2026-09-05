@@ -2,7 +2,7 @@
   "schema_version": 1,
   "support_policy_id": "playwright-engines-1.62.1",
   "full_chromium": {
-    "inventory_id": "curvature-v2-foundations-75-v1",
+    "inventory_id": "curvature-v2-desk-and-read-86-v1",
     "tests": [
       {
         "test_id": "d38f0e9816f51aa1922817ddad296f9fcfffdcb98335c43716eb971b1cf4f276",
@@ -666,6 +666,105 @@
         "title_path": [
           "lg 1280 no-overflow · dark scheme",
           "/alerts fits 1280px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "7c9a59b736deaedd88c886db1414542a48c5854dc1bf3145ada8e696fe72b81c",
+        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
+        "title_path": [
+          "Criterion 45 (SB) — exactly one decision-verdict node at 393 and 1280, same string",
+          "393px: opening the analysis mounts exactly one decision-verdict node (the bottom-sheet peek/body are mutually exclusive)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "ecd188a0cc406275a6d691e0f88f1d05af9c25fff9561b52a1ecac83a5e7a3fd",
+        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
+        "title_path": [
+          "Criterion 45 (SB) — exactly one decision-verdict node at 393 and 1280, same string",
+          "resizing 393 -> 1280 in the SAME session keeps exactly one decision-verdict node, carrying the SAME string (proves the bottom sheet and the wide panel are one field, not two)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "d41d051dfea0a1832ef7214bda787fee740e1e353ec900225b37da3b9ddbfe3e",
+        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
+        "title_path": [
+          "Criteria 20/22 evidence — a stream drop keeps the field attached and geometrically stable; reduce-motion renders without incident",
+          "stream drop: connection flips to offline, the field canvas stays attached at unchanged geometry (browser companion — trail/drift/beam/sweep stopping is proven at the unit tier, paintStep.spec.ts)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "d1ba21e2d0cd4049141e669f64e81b7c9afb6ef6e11cc41f295a3076d4a8228c",
+        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
+        "title_path": [
+          "Criteria 20/22 evidence — a stream drop keeps the field attached and geometrically stable; reduce-motion renders without incident",
+          "reduce-motion: the ticker renders without incident and stays connected (criterion 22 static-frame review capture)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "4a86e48d84286f7093cd156768b5ee076058d8389bb2ce4ce5089aa95a41c896",
+        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
+        "title_path": [
+          "Criterion 52 (P5, review) — the field's own canvas fill is not scheme-invariant",
+          "393px: the canvas's own base fill differs between dark and light — not scheme-invariant"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "2646d4aaeb078597b702641accb55fed199fa19f21370ded8950bfd94f871b28",
+        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
+        "title_path": [
+          "Criterion 52 (P5, review) — the field's own canvas fill is not scheme-invariant",
+          "1280px: the canvas's own base fill differs between dark and light — not scheme-invariant"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "3ab9230e2b8f130c1c653b84ac897c18a12cd0acd985532f2c3252b44936eb61",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "criterion 50 (SB) — the read strip scrolls sideways at 393px while the page itself never does"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "16fe0fa2eed54c39736f4e4865a8d1b917767ddce7b98c6dfeb363d0324cd7e7",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "criterion 50 (SB) — the read strip scrolls sideways at 393px while the page itself never does"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "522483072ccc4666f6a0a1980d4296b1a496dd0771669beac3ee03930dcce9eb",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "criterion 50 (SB) — the read strip never pushes the page wider at 834px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "daffbc63deed7ae39111f700c5661345e8c59eea4544d490a0ab9a2d3b8c336a",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "md 900 no-overflow · dark scheme",
+          "criterion 50 (SB) — the read strip never pushes the page wider at 900px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "ddc37e404acc651e7433b8945e4282d98d21ee4bf3a6a871c72ff7b0e76115fe",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · dark scheme",
+          "criterion 50 (SB) — the read strip never pushes the page wider at 1280px"
         ],
         "project": "chromium"
       }

@@ -629,6 +629,36 @@ async function assertNoHorizontalOverflow(page: Page) {
   ).toBeLessThanOrEqual(innerWidth);
 }
 
+/**
+ * Criterion 50 (SB) — the read strip scrolls sideways when its cells do not fit, and the PAGE itself
+ * never scrolls sideways. `requireRailOverflow` is `true` only at 393px (PLAN's own Step 4 wording:
+ * "Assert `scrollWidth > clientWidth` AT 393 … both halves, or the row is satisfied by a strip that
+ * simply fits") — at the wider bands the rail is allowed to simply fit; only the page-level half is
+ * required there.
+ */
+async function assertReadStripDiscipline(page: Page, opts: { requireRailOverflow: boolean }) {
+  const m = await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="read-strip-rail"]') as HTMLElement | null;
+    return {
+      railScrollWidth: el ? el.scrollWidth : null,
+      railClientWidth: el ? el.clientWidth : null,
+      pageScrollWidth: document.documentElement.scrollWidth,
+      innerWidth: window.innerWidth,
+    };
+  });
+  expect(m.railScrollWidth, 'read-strip-rail must be attached to measure it').not.toBeNull();
+  expect(
+    m.pageScrollWidth,
+    `page scrollWidth ${m.pageScrollWidth} must fit innerWidth ${m.innerWidth} even when the read-strip rail itself scrolls`,
+  ).toBeLessThanOrEqual(m.innerWidth);
+  if (opts.requireRailOverflow) {
+    expect(
+      m.railScrollWidth,
+      `read-strip rail should scroll sideways (scrollWidth ${m.railScrollWidth} vs clientWidth ${m.railClientWidth})`,
+    ).toBeGreaterThan(m.railClientWidth as number);
+  }
+}
+
 // ---- AI recommendation decision card -----------------------------------------------------------
 // These checks deliberately wait for the produced fixture and assert card/detail nodes before any
 // geometry assertion; an error page or an empty Ticker cannot satisfy the group.
@@ -961,6 +991,15 @@ for (const scheme of ['dark', 'light'] as const) {
       await expect(page.getByTestId('nav-drawer-lab')).toHaveCount(0);
       await expect(page.getByTestId('nav-drawer-blog')).toHaveCount(0);
     });
+
+    test('criterion 50 (SB) — the read strip scrolls sideways at 393px while the page itself never does', async ({
+      page,
+    }) => {
+      await seed(page, { scheme });
+      await page.goto('/ticker/TSLA');
+      await expect(page.getByTestId('level-ladder')).toBeAttached();
+      await assertReadStripDiscipline(page, { requireRailOverflow: true });
+    });
   });
 }
 
@@ -998,5 +1037,16 @@ for (const vp of WIDE_VIEWPORTS) {
         await assertNoHorizontalOverflow(page);
       });
     }
+
+    test(`criterion 50 (SB) — the read strip never pushes the page wider at ${vp.width}px`, async ({
+      page,
+    }) => {
+      await seed(page, { scheme: 'dark', positions: 'none' });
+      await page.goto('/ticker/TSLA');
+      await expect(page.getByTestId('level-ladder')).toBeAttached();
+      // At the wider bands the rail is allowed to simply fit (PLAN's own Step 4 wording) — only the
+      // page-level half is required unconditionally.
+      await assertReadStripDiscipline(page, { requireRailOverflow: false });
+    });
   });
 }

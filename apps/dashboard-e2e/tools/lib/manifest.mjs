@@ -33,11 +33,16 @@ export function validateManifest(value) {
     // added 23 real Chromium tests (16 to `no-overflow.spec.ts` — AC-38/AC-39/AC-40/AC-57's `/alerts`
     // route, the `tablet 834` width, and 3 degraded-surface cases at 2 schemes — plus 7 new to
     // `curvature-v2.spec.ts`), so the frozen inventory this validator enforces moves with them.
-    value.full_chromium?.inventory_id !== 'curvature-v2-foundations-75-v1' ||
+    // (curvature-v2-desk-and-read FE-12) bumped 75 → 86: registered `desk-and-read.spec.ts` (6 new
+    // tests — criterion 45's two, the criteria 20/22 evidence pair, criterion 52's two) and added 5
+    // new criterion-50 read-strip-rail tests to `no-overflow.spec.ts` (393 dark/light, 834, 900,
+    // 1280) — the first net-new Chromium tests this phase's own lanes have added (FE-1 through FE-11
+    // only edited/re-pointed existing ones).
+    value.full_chromium?.inventory_id !== 'curvature-v2-desk-and-read-86-v1' ||
     !Array.isArray(tests) ||
-    tests.length !== 75
+    tests.length !== 86
   )
-    fail('full Chromium inventory must contain 75 tests');
+    fail('full Chromium inventory must contain 86 tests');
   unique(
     tests.map((x) => x.test_id),
     'full Chromium tests',
