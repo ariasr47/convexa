@@ -10,10 +10,14 @@
 - `84651e8d` — FE-3 (the shared stroke table, the canvas's theme input) — landed by the conductor
   from a lane's uncommitted work after a rate-limit kill; verified cold by the conductor.
 - `b5251aa1` — FE-4 (the extracted pure paint step, the three live gates)
+- FE-5 (the level ladder) — see "Done (FE-5)" below; commit hash filled in after this session's
+  commit lands.
 
-Working tree is clean at the time of writing. `npm run typecheck` **0**, `npx nx test
-@convexa/dashboard` **0** @ **221 files / 2424 tests** (up from the 220/2417 baseline after FE-3),
-`npm run lint` **0** (no new warnings). e2e not touched yet (that's FE-12).
+Working tree is clean at the time of writing (post-FE-5 commit). `npm run typecheck` **0**, `npx nx
+test @convexa/dashboard` **0** @ **224 files / 2460 tests** (up from the 221/2424 baseline after
+FE-4: +3 files, +36 tests), `npm run lint` **0** (no new warnings, same one pre-existing
+`react-hooks/exhaustive-deps` warning in `useSessionArchive.ts`, unrelated to this branch). e2e not
+touched yet (that's FE-12).
 
 ---
 
@@ -152,6 +156,105 @@ needs a running Rust API to reach it, and criterion 20's `test` mark is already 
 mutation-proven `paintStep.spec.ts`; criterion 22 is `review`-only. If a later lane wants full
 browser coverage of the drop state, start `npx nx serve api` alongside the dashboard first.
 
+## Done (FE-5) — do not re-do
+
+**FE-5 — the level ladder: five rows, closed union, the anchor, and D-14's literal.** Owns: new
+`pages/ticker/widgets/level-ladder/{ladderModel.ts,ladderModel.spec.ts,LevelLadder.tsx,
+LevelLadder.spec.tsx,LadderFoot.tsx,LadderFoot.spec.tsx,index.ts}`.
+
+**What shipped, near-verbatim to PLAN's illustrative Step-1 code** (`ladderModel.ts`): `ABSENT_LEVEL`
+/`ABSENT_DISTANCE` both `'—'` (D-14), `LadderRow`/`LadderInput` types, `buildLadder()` returning the
+closed five-tuple, sorted by computed price with null-priced rows sinking to the bottom in
+declaration order. One addition beyond the plan's fenced code: `formatAnchorText(anchor)` — a small
+exported helper (reuses the same `price()` formatting rule) so the header states the anchor once
+without duplicating the `$<n>`-or-`ABSENT_LEVEL` logic; no test depends on it existing as a separate
+export, it's just where the header's format call now lives.
+
+`LevelLadder.tsx` — renders the five rows through `FigureCell` (`register="traced"`), each with a
+tick (`LadderTick`) reading `palette[row.stroke]` via an exhaustive `tickColor()` switch (`never`
+default arm) — the SECOND compile-time exhaustiveness gate PLAN asked for, alongside `buildLadder`'s
+`LadderRows` return type. **`LevelLadder` is PRESENTATIONAL, not a `LadderInput` consumer** — its
+props are `rows: LadderRows`, `anchorText: string | NotANumber`, `palette: LevelPalette`, all
+pre-computed by the caller. This was a mid-task correction: the FIRST version had `LevelLadder` take
+`input: LadderInput` and call `buildLadder`/`formatAnchorText` internally, which typechecked and
+passed its own tests fine — but PLAN's own FE-6 section (`## FE-6`, "Step 1 — the panel host") shows
+the intended host call site verbatim: `<LevelLadder rows={rows} anchorText={anchorText} />`, and
+explains WHY: `StructureHeroPanel` is "ONE component … SINGLE STORE READ … derives the branded claim
+once and passes it and the mid DOWN AS PROPS. That is the structural reason the four regions are
+presentational children." A `LevelLadder` that re-derives rows from raw input would have been the
+one non-presentational child, forcing FE-6 to either edit a file it doesn't own (`level-ladder/**`
+belongs to FE-5) or hand it awkward pass-through props. Caught and fixed BEFORE commit by reading
+FE-6's section fully, not left for FE-6 to discover. `palette: LevelPalette` is still a required
+prop, never computed internally — the caller (FE-6's `StructureHeroPanel`) passes the SAME
+`resolveLevelPalette(theme)` object the canvas receives, which is what makes criterion 7's identity
+check meaningful. Header renders `` `distance from levels @ ${anchorText}` `` once, above the rows,
+from the `anchorText` prop (built by the caller via `formatAnchorText(anchor)`).
+
+`LadderFoot.tsx` — Vol-norm GEX + Raw GEX (1% shock), tooltip copy copied byte-for-byte from
+`DealerPositioning.tsx:122-143` (confirmed by direct string comparison in `LadderFoot.spec.tsx`,
+including the `unavailable`/input-dependency arm).
+
+**NOT wired into any page yet — this is deliberate, not a gap.** FE-5's PLAN.md Independence row
+owns only `level-ladder/**`; `TickerDashboard.tsx`/`DealerPositioning.tsx`/`widgets/index.ts` are
+untouched (the last of those is FE-8's path, since deleting `DealerPositioning` is when the barrel
+gets re-pointed). Mounting the ladder into the real desk is FE-6's job
+(`StructureHeroPanel`, which composes field + ladder + tape trail).
+
+**Deviation from PLAN's enumerated `Owns` file list (additive, in-lane):** added
+`LadderFoot.spec.tsx`, which PLAN's file list for FE-5 does not name (criterion 6 is `review`-only,
+so PLAN's authors reasonably didn't mandate a spec for it). Added anyway as cheap regression
+insurance on a byte-for-byte tooltip copy from a file FE-8 deletes whole — 5 tests, all passing,
+asserting the exact tooltip strings via the `title` attribute MUI's `Tooltip` sets natively (see
+below for why not a full open/close interaction test).
+
+**One honest testing finding, not a gap:** `LadderFoot.spec.tsx` originally drove full Tooltip
+open/close cycles (`help.focus()` + `Enter`, mirroring `FigureCell.spec.tsx`'s own pattern) for the
+byte-for-byte copy checks. Two of the three cases went reliably red when run as part of the full
+file (each passed in isolation) — a real MUI Popper/Transition timing interaction across a fast
+`cleanup()`/remount boundary in jsdom, not a flaky assertion. `FigureCell.spec.tsx` already proves
+the ⓘ control's open-on-tap/Enter/Space mechanics once, for every call site, so re-driving that same
+mechanism per LadderFoot case wasn't buying new coverage — switched to asserting MUI's native
+`title` fallback attribute (present on the child regardless of open state) instead, which is both
+more reliable and a more direct check of copy fidelity.
+
+**Mutation proofs actually run (poison → confirm red → revert), both against a clean baseline of 18
+green `ladderModel.spec.ts` tests:**
+1. Replaced the mid row's `distance: ABSENT_DISTANCE` with `distance: dist(input.mid, input.anchor)`
+   — the "mid row distance is always the not-applicable member" test went red naming the actual
+   computed string (`'at spot'` for the coincident anchor/mid fixture used), not merely "not '—'".
+   Reverted; 18/18 green again.
+2. Replaced `rows.sort((a, b) => numeric(b) - numeric(a))` with a no-op (fixed declaration order) —
+   BOTH the crossing-case test (put wall priced above mid) AND the null-sinks-to-bottom test went red
+   (`callWall` at index 0 instead of `putWall`; `mid` at the tail instead of `callWall`). Reverted;
+   18/18 green again.
+
+**Browser check, actually done (not skipped as "not wired yet").** LevelLadder has no page consumer
+until FE-6, so the running desk can't show it — but rather than settle for DOM-test evidence alone,
+mounted it TEMPORARILY into the existing `/lab/structure-field` lab page (which already resolves
+`resolveLevelPalette(theme)` for the canvas, so it was a ~20-line addition), served the dashboard,
+screenshotted dark (1280×1400), light (1280×1400) and a 393px-narrow dark viewport via a throwaway
+Playwright script (not committed, run from repo root as `_tmp_shot.mjs`/`_tmp_shot2.mjs`, deleted
+after). Confirmed in all three: five rows present, sorted by price (Call wall → Mid → Gamma flip →
+Put wall → Max pain, with the null Max pain sinking to the bottom showing `—`/`—`), ticks colour-
+matched to the field's own wall/flip lines, exactly one live dot (on Mid), anchor line rendered once
+above the rows, mid row's own distance line reads `—`, no horizontal overflow at 393px, zero new
+console errors (only the pre-existing 502s from the API not being served). Reverted the temporary
+`StructureFieldLab.tsx` edit, confirmed via `git status --short` it was byte-identical to its
+committed state, killed the dev server, ran `npm run ports:free`. **Re-did this whole cycle a second
+time** after the presentational-props correction above (fresh temp mount using the
+`rows`/`anchorText` shape, fresh typecheck, fresh serve, fresh screenshot at 1280×1000 dark) —
+pixel-identical render, zero console errors, reverted and ports freed again, confirmed clean a second
+time. Two full serve/screenshot/revert cycles this session, both left the tree clean.
+
+**One cosmetic, non-defect observation from the browser check:** the demo model's live mid renders
+as a raw unrounded float (`$512.801474784933`) in the ladder's Mid row. This is the demo fixture
+feeding an unrounded float into `price()`, which formats via bare template interpolation — the same
+formatting rule DealerPositioning's shipped call/put/max-pain cells already use (no `.toFixed()`
+anywhere in the precedent either). Not a defect introduced by this task; real market-state numbers
+are whole-dollar strikes in practice (per `distanceToLevel.ts`'s own module doc). Not fixed — fixing
+it would mean changing `price()`'s formatting rule beyond what PLAN's Step 1 code specifies, which is
+out of this task's delegated scope.
+
 ## GATE Z item already flagged (not new)
 
 Criterion 16 split into 16a/16b — FE-2 (done) implements only the provable substance via the reset
@@ -172,6 +275,14 @@ token. The launch brief for THIS session states the split is now settled (16a = 
    interface didn't name — added because SPEC row 20 names drift as something that stops on a drop,
    but the plan's own suggested metrics (trail points / particle arcs / sweep gradient fills) give it
    no automated proof; `lineToCalls` closes that gap.
+4. FE-5 added `LadderFoot.spec.tsx`, one file beyond PLAN's enumerated FE-5 `Owns` list (which names
+   `ladderModel.ts`/`.spec.ts`, `LevelLadder.tsx`/`.spec.tsx`, `LadderFoot.tsx`, `index.ts` but no
+   `LadderFoot.spec.tsx` — criterion 6 is `review`-only). Added as cheap regression insurance on a
+   byte-for-byte tooltip copy from a file FE-8 deletes whole. Still entirely inside `level-ladder/**`.
+5. FE-5 added `formatAnchorText()` as a small named export in `ladderModel.ts`, beyond PLAN's fenced
+   Step-1 code block (which computed the header's anchor text inline at the call site). No test
+   depends on it being a separate export; it just centralizes the same `$<n>`-or-`ABSENT_LEVEL` rule
+   `price()` already encodes, so the header doesn't duplicate that logic.
 
 ## Also worth flagging, not caused by this session
 
@@ -182,26 +293,50 @@ is BE-1's check to run and report, not something a frontend lane caused or can f
 
 ---
 
-## Next: FE-5 (not started)
+## Next: FE-6 (not started)
 
-**FE-5 — the level ladder: five rows, closed union, the anchor, and D-14's literal.** Owns: new
-`pages/ticker/widgets/level-ladder/{ladderModel.ts,ladderModel.spec.ts,LevelLadder.tsx,
-LevelLadder.spec.tsx,LadderFoot.tsx,index.ts}`. Depends on FE-1 (done), FE-3 (done).
+**FE-6 — the structure-field hero: one `Widget`, four presentational children, one store read.**
+Owns: new `pages/ticker/widgets/structure-hero/{StructureHeroPanel.tsx,StructureHeroPanel.spec.tsx,
+TapeTrailRow.tsx,index.ts}` · `pages/ticker/widgets/chrome/{TapePulseStrip.tsx,
+TapePulseStrip.spec.tsx,index.ts}` · `pages/ticker/widgets/gex-profile-chart/{GexStrikeProfile.tsx,
+chart.tsx}` · `pages/ticker/widgets/dealer-positioning/WallMagnetView.tsx` (moved into
+`structure-hero/`) · `shared/charts/structure-field/StructureFieldCanvas.tsx` (a11y wrapper only).
+Depends on FE-2 (done), FE-4 (done), FE-5 (done).
 
-Read PLAN.md's FE-5 section fresh (around line 1007 in the copy read this session — **re-check the
-line number, it drifts**) before starting. Key traps already named there:
-- **The distance anchor is the LEVELS SPOT (`gex_spot ?? price`), never the mid** — anchoring on the
-  mid would silently change every distance the trader has read for months.
-- **D-14 (DELEGATED):** the absent-level literal is `—` (`ABSENT_LEVEL`), one constant — reversal is
-  one line if the owner reverses D-14.
-- **The mid row's distance is ALWAYS `—`** (`ABSENT_DISTANCE`), never a computed zero — a computed
-  mid distance would be "anchor drift wearing the column's label", not a real zero.
-- **Exactly five rows, closed union, sorted by computed price** — a null level never removes a row;
-  rows with no price sink to the bottom in declaration order.
-- **`resolveLevelPalette(theme)` (FE-3, done) is the stroke source** — the ladder's row ticks must
-  read from the SAME resolved object the canvas receives, by identity, not a second table.
-- **Criterion 2's exact words** (`Call wall`, `Put wall`) are the e2e readiness anchor
-  (`no-overflow.spec.ts:398`) — FE-12 re-anchors it later, but FE-5 must keep the words exact now.
+Read PLAN.md's FE-6 section fresh (around line 1163 in the copy read this session — **re-check the
+line number, it drifts**) before starting, AND re-read `LevelLadder.tsx`'s own module doc — its
+props are `rows: LadderRows`, `anchorText: string | NotANumber`, `palette: LevelPalette`, ALL
+pre-computed. Key traps:
+- **`StructureHeroPanel` is the ONE component calling `useLiveTape()`** in the whole hero (SPEC §2.1)
+  — it derives the branded claim once and hands `rows`/`anchorText`/`palette`/`mid`/`claim` down as
+  props to four presentational children (`StructureFieldCanvas`, `LevelLadder`, `TapeTrailRow`,
+  `StructurePathStrip`). Building `rows` means calling `buildLadder({ callWall: m.call_wall, putWall:
+  m.put_wall, maxPain: m.max_pain, gammaFlip: m.gamma_flip, mid: <tape mid>, midLive: andPresent(claim,
+  mid), anchor: levelSpot(m) })` from `level-ladder`'s barrel, and `anchorText` via
+  `formatAnchorText(levelSpot(m))` — both exported from `@/pages/ticker/widgets/level-ladder`.
+- **`palette` must be the SAME object** `StructureFieldCanvas` receives (`resolveLevelPalette(theme)`,
+  computed once, passed to both) — criterion 7's identity check depends on this literally, not just
+  visually.
+- **INNER BOUNDARY**: the `ErrorBoundary` wraps ONLY the canvas region, not the whole hero — a canvas
+  fault must not blank the REST-only ladder.
+- **The `Live`/`Mid` word is DELETED** from `TapePulseStrip.tsx:199`, not demoted — becomes `Mid`
+  unconditionally, beside the existing `Structure ${structureMid}` readout, unchanged.
+- **`TapePulseStrip.tsx:33`'s `isLive`** must gain the `andPresent(claim, mid)` requirement (currently
+  can print "Live" over a REST structure mid when the stream is up but carries no mid — criterion 10,
+  SB).
+- **`TapePulseStrip.tsx:71,73`'s paint-loop fallback** (`displayMid = liveMid ?? structureMid`, pushed
+  every rAF frame unconditionally) must gate on the claim + latched mid, using FE-2's latch.
+- **Criterion 24 (P1, DELEGATED):** the canvas needs `role="img"` + `aria-label` +
+  `aria-describedby` pointing at a visually-hidden summary `<p>`, per `design/src/lib.mjs:296`
+  (correcting `decisions.md`'s `:293` citation).
+- **`hex-discipline.spec.ts`'s exemption list** currently carries `structureFieldShared.ts`,
+  `labTokens.ts`, and `chrome/TapePulseStrip.tsx` (three entries) — this task fixes
+  `TapePulseStrip.tsx` (P5, same edit as the `Live`/`Mid` fix) and MUST remove its entry in the same
+  commit, dropping the list to two.
+- **`liveClaim.spec.ts`'s EXEMPT list** (FE-1 note, still live) currently carries THREE entries —
+  `live-tape/LiveTape.tsx`, `chrome/TapePulseStrip.tsx`, `gex-profile-chart/GexStrikeProfile.tsx`.
+  This task must remove all three in the same commit that fixes those files (re-point the LiveTape
+  entry to `structure-hero/StructureHeroPanel.tsx`, delete the other two).
 
 ## Process notes for whoever continues
 
