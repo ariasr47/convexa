@@ -1,6 +1,12 @@
 /**
  * Session-tape consume standing — genuine isLive split + S1 chip/copy helpers.
  * Branch on `session_tape` before liveStatus / live-offline (SPEC §4, INTERFACE occupancy).
+ *
+ * `isDeliveringLive` / `NOT_LIVE` / `andPresent` / `LiveClaim` moved to `shared/liveness/liveClaim.ts`
+ * (curvature-v2-desk-and-read PLAN U-2): SPEC §2.1 requires `Widget.live` (`shared/ui/`) to carry the
+ * brand, and a `shared/` → `pages/` import would invert the repo's binding dependency direction. This
+ * module re-exports them so "produced only inside that module" stays literally true and every
+ * shipped importer of `isDeliveringLive` keeps its path.
  */
 import type { LiveUpdate } from '@convexa/api';
 import { humanSessionDate } from './widgets/_kit/copy';
@@ -50,14 +56,18 @@ export function genuineIsLive(live: LiveUpdate | null, streamOffline: boolean): 
  * This is exactly the boolean `resolveConnectionState` uses to decide its `'live'` kind: no session
  * tape, the stream is not offline, a payload exists, the market is not closed, and the payload says
  * live.
+ *
+ * MOVED (curvature-v2-desk-and-read PLAN U-2 — `Widget.tsx` and `OrdersWidget.tsx` consume the
+ * brand and cannot import from `pages/`). Behaviour is byte-identical; the return type is now the
+ * nominal `LiveClaim` (SPEC §2.1, §7 invariant 1). Re-exported here so every shipped importer keeps
+ * its path.
  */
-export function isDeliveringLive(live: LiveUpdate | null, streamOffline: boolean): boolean {
-  if (sessionTapeOf(live)) return false;
-  if (streamOffline) return false;
-  if (!live) return false;
-  if (live.market_session === 'closed') return false;
-  return live.live === true;
-}
+export {
+  andPresent,
+  isDeliveringLive,
+  NOT_LIVE,
+  type LiveClaim,
+} from '@/shared/liveness/liveClaim';
 
 /** Headline/tape numbers may follow mid — never fills or live pulses. */
 export function displayActive(opts: {

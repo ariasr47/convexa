@@ -6,6 +6,7 @@
  * (`[best-effort-isolated-or-null]`). Re-skin/componentize only — values + copy preserved byte-for-byte.
  */
 import { OPPORTUNITY_TIER_INFO } from '@/pages/ticker/widgets/opportunity-tier';
+import { NOT_LIVE } from '@/shared/liveness/liveClaim';
 import { Widget } from '@/shared/ui/Widget';
 import type { MarketState, OffExchange, Signals } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -98,7 +99,7 @@ export const DealerPositioning = memo(function DealerPositioning({
         </Box>
       ) : (
         <Box sx={GRID} data-testid="dealer-positioning">
-          {/* All 12 sites: register="traced", live={false} — none of DealerPositioning's cells is
+          {/* All 12 sites: register="traced", live={NOT_LIVE} — none of DealerPositioning's cells is
               live-derived (AC-1c). Tier emphasis (Opportunity) survives in type + the amber word
               already in the value string — no accentColor, no replacement mark (AC-13b). Call
               wall / Put wall keep their EXACT label words, un-hedged into "(resistance)"/"(support)"
@@ -107,7 +108,7 @@ export const DealerPositioning = memo(function DealerPositioning({
             register="traced"
             label="Call wall"
             value={m.call_wall != null ? `$${m.call_wall}` : '—'}
-            live={false}
+            live={NOT_LIVE}
             caption={distanceToLevel(m.call_wall, spot)}
             info="Strike with the most positive dealer gamma (vendor gamma × dealer-sign OI). Tends to act as resistance. Not the same object as the analytic gamma flip — see Methodology. Secondary line is distance from gex_spot (or mid)."
           />
@@ -115,7 +116,7 @@ export const DealerPositioning = memo(function DealerPositioning({
             register="traced"
             label="Put wall"
             value={m.put_wall != null ? `$${m.put_wall}` : '—'}
-            live={false}
+            live={NOT_LIVE}
             caption={distanceToLevel(m.put_wall, spot)}
             info="Strike with the most negative dealer gamma (vendor gamma × dealer-sign OI). Tends to act as support. OI sign is a convention, not measured inventory. Secondary line is distance from gex_spot (or mid)."
           />
@@ -127,7 +128,7 @@ export const DealerPositioning = memo(function DealerPositioning({
                 ? 'unavailable'
                 : fmtUsdCompact(m.vol_normalized_gex.net_gex)
             }
-            live={false}
+            live={NOT_LIVE}
             info={
               m.vol_normalized_gex == null
                 ? 'Primary magnitude read — unavailable until ATM IV or 30d HV lands on this snapshot.'
@@ -138,14 +139,14 @@ export const DealerPositioning = memo(function DealerPositioning({
             register="traced"
             label="Raw GEX (1% shock)"
             value={fmtUsdCompact(m.net_gex)}
-            live={false}
+            live={NOT_LIVE}
             info="Secondary: raw dollar dealer gamma for a fixed 1% shock. Prefer Vol-norm GEX above for cross-regime magnitude."
           />
           <FigureCell
             register="traced"
             label="Net DEX"
             value={m.net_dex == null ? 'unavailable' : fmtUsdCompact(m.net_dex)}
-            live={false}
+            live={NOT_LIVE}
             info={netDexTip(m.call_dex, m.put_dex)}
           />
           {/* Max pain — AC-19b: a null max_pain renders the BARE `—`, never `$—`. The pre-existing
@@ -155,7 +156,7 @@ export const DealerPositioning = memo(function DealerPositioning({
             register="traced"
             label="Max pain"
             value={m.max_pain != null ? `$${m.max_pain}` : '—'}
-            live={false}
+            live={NOT_LIVE}
             caption={distanceToLevel(m.max_pain, spot)}
             info="Price at the nearest monthly expiration where the most option value expires worthless — a mild magnet into expiry. Secondary line is distance from gex_spot (or mid)."
           />
@@ -163,7 +164,7 @@ export const DealerPositioning = memo(function DealerPositioning({
             register="traced"
             label="IV / HV"
             value={m.iv_hv_ratio.toFixed(2)}
-            live={false}
+            live={NOT_LIVE}
             info="Implied volatility ÷ recent realized volatility. >1 = options look expensive (favor selling); <1 = cheap (favor buying)."
           />
           <FigureCell
@@ -172,7 +173,7 @@ export const DealerPositioning = memo(function DealerPositioning({
             value={
               m.chain_vol_oi_ratio == null ? 'unavailable' : `${m.chain_vol_oi_ratio.toFixed(2)}×`
             }
-            live={false}
+            live={NOT_LIVE}
             info={volOiTip(volOiThreshold, unusualCount)}
           />
           <FigureCell
@@ -183,7 +184,7 @@ export const DealerPositioning = memo(function DealerPositioning({
                 ? 'unavailable'
                 : `${m.iv_skew.slope >= 0 ? '+' : '−'}${Math.abs(m.iv_skew.slope).toFixed(1)} pts · ${skewState(m.iv_skew.slope)}`
             }
-            live={false}
+            live={NOT_LIVE}
             info={m.iv_skew == null ? 'IV skew unavailable this cycle.' : skewTip(m.iv_skew)}
           />
           <FigureCell
@@ -196,7 +197,7 @@ export const DealerPositioning = memo(function DealerPositioning({
                   ? '—'
                   : m.term_structure.state
             }
-            live={false}
+            live={NOT_LIVE}
             info={
               m.term_structure == null
                 ? 'Term structure unavailable this cycle.'
@@ -208,7 +209,7 @@ export const DealerPositioning = memo(function DealerPositioning({
               register="traced"
               label="Off-exchange %"
               value={`${offExchange.ratio_pct}%`}
-              live={false}
+              live={NOT_LIVE}
               info={`Share of recent volume printed off-lit (dark pools/ATS + internalized retail). Top levels: ${
                 offExchange.levels
                   .slice(0, 3)
@@ -221,7 +222,7 @@ export const DealerPositioning = memo(function DealerPositioning({
             register="traced"
             label="Opportunity"
             value={`${opportunityScore} · ${tierWord}`}
-            live={false}
+            live={NOT_LIVE}
             info={
               '0–100 triage score (proximity + IV/HV stretch + setups + flip transition + optional dark pool). Does not use vol-norm GEX or IV-rank — those stay advisory. Not a trade signal.' +
               OPPORTUNITY_TIER_INFO

@@ -141,7 +141,7 @@ export function OrdersWidget({
   );
 
   return (
-    <Widget id="orders" title={WIDGET_TITLE(symbol)} live={watchingAny} actions={actions}>
+    <Widget id="orders" title={WIDGET_TITLE(symbol)} watch={watchingAny} actions={actions}>
       <Box component="span" aria-live="polite" sx={srOnly} data-testid="orders-announce">
         {announcement}
       </Box>

@@ -26,6 +26,7 @@
  * visible), reduced-motion-gated, firing only while genuinely live.
  */
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import { NOT_LIVE, type LiveClaim } from '@/shared/liveness/liveClaim';
 import { elevationFor, extrasFor } from '@/shared/theme/tokens';
 import { useWidgetChrome } from '@/shared/ui/Widget/WidgetChromeContext';
 import { useWidgetSelection } from '@/shared/ui/Widget/WidgetSelectionContext';
@@ -54,8 +55,18 @@ export interface WidgetProps {
   icon?: ReactNode;
   subtitle?: ReactNode;
   info?: string;
-  /** Live accent pulses ONLY when this is true (`isLive && !streamOffline`); frozen otherwise. */
-  live?: boolean;
+  /** Live accent pulses ONLY when this is true (`isLive && !streamOffline`); frozen otherwise.
+   *  Branded (FE-1, SPEC §2.1 invariant 1): only `isDeliveringLive(...)`/`andPresent(...)`/
+   *  `NOT_LIVE` can produce this value — a raw boolean does not type-check here. */
+  live?: LiveClaim;
+  /**
+   * A WATCH pulse — orders watching for a live cross (`OrdersWidget.tsx:144`). Deliberately NOT
+   * `live`: it is not a delivering-stream claim, and branding it would launder a different fact
+   * through the one predicate (SPEC §2.1). Drives the same `widgetLivePulse` declaration, so this
+   * split changes no pixel. Pre-existing rule-22 question (does a watch pulse need a live stream?)
+   * is UNCHANGED by this phase and is recorded in the build report, not fixed here.
+   */
+  watch?: boolean;
   /** The section's own always-visible controls (legend, "View what's sent", persona select, …). */
   actions?: ReactNode;
   children: ReactNode;
@@ -107,7 +118,8 @@ export function Widget({
   icon,
   subtitle,
   info,
-  live = false,
+  live: liveClaim = NOT_LIVE,
+  watch = false,
   actions,
   children,
   span = 1,
@@ -116,6 +128,11 @@ export function Widget({
   bodyPad = 'default',
 }: WidgetProps) {
   const reduced = useReducedMotion();
+  // `live` (the branded delivering-stream claim) OR `watch` (OrdersWidget's open-orders fact) both
+  // drive the SAME `widgetLivePulse` declaration below — kept as the plain local `live` so the
+  // pulse's shipped gate expression, spelled out where it is actually used a few lines down,
+  // stays byte-identical for `single-motion-moment.spec.ts`'s structural mutation proof.
+  const live = Boolean(liveClaim) || watch;
   const chrome = useWidgetChrome();
   const quiet = chrome === 'quiet';
   // Body-wrapper chrome. 'inset' recesses the well (darker + inner shadow) so raised paper tiles pop.
@@ -400,7 +417,8 @@ export function Widget({
             },
           }),
           // Live accent — thin info edge (deck owns connection chip; strip is secondary signal).
-          // Quieter pulse so it doesn't compete with the hero connection chip.
+          // Quieter pulse so it doesn't compete with the hero connection chip. `live` here is the
+          // LOCAL combined boolean (liveClaim || watch) computed above.
           ...(live &&
             !quiet && {
               '&::before': {

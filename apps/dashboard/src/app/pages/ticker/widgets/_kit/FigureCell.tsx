@@ -37,8 +37,9 @@
  * animate. Reusing the chip's keyframe by name here would be a fragile, undeclared cross-component
  * runtime dependency for no acceptance-criterion benefit, so the dot stays a plain static mark.
  */
-import { flashColorSx, type FlashState } from '@/shared/hooks/useFlashOnChange';
 import { isNotANumber, type NotANumber } from '@/shared/copy/notANumber';
+import { flashColorSx, type FlashState } from '@/shared/hooks/useFlashOnChange';
+import type { LiveClaim } from '@/shared/liveness/liveClaim';
 import { typographyTokens } from '@/shared/theme/tokens';
 import PauseIcon from '@mui/icons-material/Pause';
 import Box from '@mui/material/Box';
@@ -165,8 +166,9 @@ export interface FigureCellProps {
   register: 'traced' | 'asserted';
   value: string | NotANumber;
   /** Label-row dot ONLY. Derived from the value's OWN expression at the call site — never from a
-   *  widget-scoped `live`/`numbersActive` flag. */
-  live?: boolean;
+   *  widget-scoped `live`/`numbersActive` flag. Branded (FE-1, SPEC §2.1 invariant 1): only
+   *  `isDeliveringLive(...)`/`andPresent(...)`/`NOT_LIVE` can produce this value. */
+  live?: LiveClaim;
   /** `retained: true` is the ONLY thing that licenses the `· last known` clause (ruling 2) — it is
    *  data-driven, never a fixed caption. `null`/`undefined` → not offline at all. */
   offline?: { retained: boolean } | null;

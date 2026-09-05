@@ -3,7 +3,8 @@
  * states, the closed `NotANumber` vocabulary (AC-19/AC-19b), the ⓘ keyboard path, and the
  * anti-copy-paste source scan (AC-13a) with its mutation proof.
  */
-import { NOT_A_NUMBER, isNotANumber } from '@/shared/copy/notANumber';
+import { isNotANumber, NOT_A_NUMBER } from '@/shared/copy/notANumber';
+import { isDeliveringLive, NOT_LIVE } from '@/shared/liveness/liveClaim';
 import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import { render, screen } from '@testing-library/react';
@@ -11,6 +12,13 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { allRulesForClass, emotionClassOf, joinedStyleText } from './emotionCssReader';
 import { FigureCell, StatSkeleton, type FigureCellProps } from './FigureCell';
+
+// A branded `true` claim for tests exercising the F3 live dot (FE-1, SPEC §2.1 invariant 1) — a
+// raw `true` no longer type-checks in `FigureCellProps.live`.
+const LIVE_TRUE = isDeliveringLive(
+  { live: true, market_session: 'regular' } as Parameters<typeof isDeliveringLive>[0],
+  false,
+);
 
 function wrap(props: Partial<FigureCellProps> & Pick<FigureCellProps, 'label' | 'value'>) {
   const full: FigureCellProps = { register: 'traced', ...props };
@@ -49,13 +57,13 @@ describe('FigureCell — F2 loading (StatSkeleton)', () => {
 
 describe('FigureCell — F3 live', () => {
   it('the dot renders ONLY when `live` is true, carries the visually-hidden word "live", and never sits in an aria-live region', () => {
-    const { unmount } = wrap({ label: 'Net flow', value: '+12,480', live: true });
+    const { unmount } = wrap({ label: 'Net flow', value: '+12,480', live: LIVE_TRUE });
     const dot = screen.getByTestId('figure-live-dot');
     expect(dot).toHaveTextContent('live');
     expect(dot.closest('[aria-live]')).toBeNull();
     expect(dot.closest('[data-figure-state]')).toHaveAttribute('data-figure-state', 'live');
     unmount();
-    wrap({ label: 'Net flow', value: '+12,480', live: false });
+    wrap({ label: 'Net flow', value: '+12,480', live: NOT_LIVE });
     expect(screen.queryByTestId('figure-live-dot')).toBeNull();
   });
 });
@@ -93,7 +101,7 @@ describe('FigureCell — F5 offline, no value retained (AC-17b)', () => {
 
 describe('FigureCell — F6 replay (AC-6)', () => {
   it('Mono full strength, no dot, no pause mark, no "offline" caption', () => {
-    wrap({ label: 'Gamma flip', value: '$573', replay: true, live: true });
+    wrap({ label: 'Gamma flip', value: '$573', replay: true, live: LIVE_TRUE });
     expect(screen.queryByTestId('figure-live-dot')).toBeNull();
     expect(screen.queryByText(/offline/)).toBeNull();
     expect(screen.getByText('session replay')).toBeInTheDocument();
