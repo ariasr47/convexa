@@ -23,6 +23,22 @@
  *
  * Scans use the Vite `?raw` glob idiom and are MUTATION-GUARDED per the house rule (a scan that
  * can't fail is worthless). Spec files are excluded (they may quote motion tokens in fixtures).
+ *
+ * TWO BLIND SPOTS THIS FILE CANNOT SEE (PLAN FE-4, SPEC §7 "how the motion rule actually bites"),
+ * recorded here verbatim rather than "closed" by adding a name to `KEPT_KEYFRAMES` — doing that
+ * closes NEITHER hole, because neither is a named `@keyframes` block at all:
+ *
+ *   1. A Canvas2D rAF loop declares no `@keyframes` — `namedKeyframesIn` (`:54-55` above) matches
+ *      only literal `@keyframes <name>` text, so the Structure Field's sweep, drift, particles and
+ *      tape trail (`shared/charts/structure-field/paintStep.ts`) are entirely invisible to this file.
+ *      The enforcement for THOSE motions is `paintStep.spec.ts`'s recording-context tests
+ *      (criterion 20/22), not this one — a recorder driving the extracted pure paint steps and
+ *      counting what was actually drawn, since no shipped harness can read a canvas pixel.
+ *   2. `useFlashOnChange.ts:71-74` mints a DYNAMIC keyframe name (`flash-${tone}-${id}`) per flash —
+ *      `declaresDynamicKeyframes` (`:58` above) deliberately exempts it from the SET-EQUAL inventory
+ *      check in (d), so a per-flash name never fails that assertion by design. Its live/reduced-motion
+ *      gating is instead proven behaviourally in `useFlashOnChange.spec.tsx` (inert when `!active` or
+ *      `reduced`; an in-flight flash clears when either flips mid-flash), not by scanning source text.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -192,7 +208,12 @@ describe('(e) AC-54 (SB) — the data-signal class predicate is enforced, not me
     // something unrelated (the exact false-positive this default-avoids fallback exists to prevent).
     const unrelatedReducedUsage = `...(live && { animation: 'fooPulse 1s infinite' })\nif (!reduced && x) { y(); }`;
     expect(
-      isLiveAndReducedMotionGated(unrelatedReducedUsage, 'fooPulse', /live\s*&&/, /kind === 'live' && !reduced/),
+      isLiveAndReducedMotionGated(
+        unrelatedReducedUsage,
+        'fooPulse',
+        /live\s*&&/,
+        /kind === 'live' && !reduced/,
+      ),
     ).toBe(false);
 
     const noInvocationAtAll = `const x = 1; // no keyframe use here`;
@@ -243,9 +264,9 @@ describe('(e) AC-54 (SB) — the data-signal class predicate is enforced, not me
     // the live gate is gone, the reduced-motion media query is untouched.
     const poisoned = real.replace(/\.\.\.\(live\s+&&\s+!quiet\s+&&\s*\{/, '...(!quiet && {');
     expect(poisoned, 'the replace must actually have matched the real source').not.toBe(real);
-    expect(
-      isLiveAndReducedMotionGated(poisoned, 'widgetLivePulse', /\.\.\.\(\s*live\s*&&/),
-    ).toBe(false);
+    expect(isLiveAndReducedMotionGated(poisoned, 'widgetLivePulse', /\.\.\.\(\s*live\s*&&/)).toBe(
+      false,
+    );
     // The clean, unpoisoned source must still pass — the proof is that the predicate discriminates,
     // not that it always fails.
     expect(isLiveAndReducedMotionGated(real, 'widgetLivePulse', /\.\.\.\(\s*live\s*&&/)).toBe(true);
@@ -258,8 +279,8 @@ describe('(e) AC-54 (SB) — the data-signal class predicate is enforced, not me
       "animation: 'widgetLivePulse 2.8s ease-in-out infinite',",
     );
     expect(poisoned, 'the replace must actually have matched the real source').not.toBe(real);
-    expect(
-      isLiveAndReducedMotionGated(poisoned, 'widgetLivePulse', /\.\.\.\(\s*live\s*&&/),
-    ).toBe(false);
+    expect(isLiveAndReducedMotionGated(poisoned, 'widgetLivePulse', /\.\.\.\(\s*live\s*&&/)).toBe(
+      false,
+    );
   });
 });
