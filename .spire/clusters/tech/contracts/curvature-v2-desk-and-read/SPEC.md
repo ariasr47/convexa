@@ -2,7 +2,7 @@
 
 **Source brief:** .spire/clusters/tech/contracts/curvature-v2-desk-and-read/BRIEF.md
 **Council:** R1 positions · R2 critiques · R3 resolutions · decisions.md   (under council/)
-**Status:** draft
+**Status:** **approved by the owner 2026-09-05** (spec locked; build authorized). Criterion 16 was split into 16a/16b at GATE Z the same day — see §9.
 
 > **Delegated calls — there are seven, not five.** **Seven** calls in this spec were taken **by the
 > conductor under a written delegation from the owner**, who was asleep: the five product rulings
@@ -388,7 +388,8 @@ sixteen technical conflicts the voices settled at file:line in `decisions.md` §
 | 13 | S8 | On a drop with an **empty** latch, the same cell renders a closed-vocabulary member with the pause marker and **no** "last known" words | test (**SB**) |
 | 14 | S8 | No figure anywhere on the desk renders the "last known" retention wording over a value sourced from the REST bundle rather than the stream latch | test (**SB**) |
 | 15 | S8 | A widget-level subtitle claiming last-known ticks renders only when at least one cell in that widget holds a latched stream value; otherwise the no-ticks-retained arm renders | test |
-| 16 | S8 | After a symbol change or a replay arm, the latch is empty: every live-derived cell shows the bare member with the pause mark, and the connection chip is simultaneously on its wordless placeholder | test |
+| 16a | S8 | **After a symbol change** the latch is empty: every live-derived cell shows the bare not-a-number member with **no pause mark and no dot** (the stream republishes `{live: null, streamOffline: false}` at `useTickerStream.ts:34`, so `LiveTape.tsx:100`'s `tileOffline` is false and `FigureCell.tsx:255`'s offline arm is never entered), no prior symbol's value survives in any cell, and the connection chip is simultaneously on its **wordless placeholder** (`connectionStateFor` returns `null` when `live == null`) | test |
+| 16b | S8 | **After a replay arm** the latch is empty: every live-derived cell renders **F6** — full strength, no dot, no pause mark, caption `session replay` (`FigureCell.tsx:277-281`) — no pre-replay value survives, and the connection chip shows the **replay** state, **never** the placeholder (`connectionState.ts:92-96`: once `live` is non-null the resolver cannot re-enter `null` within a mounted session for that symbol) | test |
 | 17 | S8 | A value restored from the latch on a drop does **not** produce a flash | test |
 | 18 | S2 | The tape cell's label names its **derivation** (`· live` / `· session tape`) in every standing, never changes with connection state, and is never byte-identical to the ladder's `Gamma flip` row label | test |
 | 19 | S8 | On a drop, the strip's static cells, the ladder's four structure rows and every quiet-band card render **identical text content** to their pre-drop render, and none is dimmed | test |

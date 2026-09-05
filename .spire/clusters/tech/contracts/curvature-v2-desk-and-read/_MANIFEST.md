@@ -1,5 +1,5 @@
 # curvature-v2-desk-and-read — pipeline manifest
-Stage:        GATE C — **SPEC APPROVED BY OWNER 2026-09-05**; build authorized (phase 2 of 4 of the Curvature Terminal v2 build).
+Stage:        BUILD — frontend lane dispatched 2026-09-05 (phase 2 of 4 of the Curvature Terminal v2 build).
 Repos:        frontend
 Brief:        BRIEF.md present
 Contracts:
@@ -19,8 +19,8 @@ Open amendments: none yet. Two canon amendments are already **in scope** for thi
                  red-flags correct code at GATE Q. (b) the **`tooltip` z-rung** carried open from
                  phase 1 (canon declares six rungs; MUI defaults tooltip to 1500, above every one).
 QA (GATE Q):  n/a
-Workers:      council R1x3, R2x3, R3x3, R4 synthesizer (2 passes), S2 skeptic (2 passes)
-Last gateway:  GATE C @ 2026-09-05
+Workers:      council R1x3, R2x3, R3x3, R4 synthesizer (2 passes), S2 skeptic (2 passes); planner; frontend lane (build)
+Last gateway:  GATE PLAN @ 2026-09-05
 
 ## Gate trail
 - GATE I @ 2026-09-05 — brief + cull recorded (8 candidates, 1 chosen, 6 culled with cause, 1 culled-to-partial).
@@ -49,3 +49,19 @@ Last gateway:  GATE C @ 2026-09-05
 `state/spire-curvature-v2-foundations/RESUME.md` is ACTIVE and carries the five owed items and the gotchas
 phase 1 paid for. Eight owner rulings in `contracts/curvature-v2-foundations/council/decisions.md` bind
 here — rulings 1, 2, 3, 5, 6 and 8 constrain what this phase builds directly.
+
+- GATE PLAN @ 2026-09-05 - PLAN.md: 15 tasks (1 backend verification-only + 14 frontend), 3 tracks, a 17-row
+  verification table, 15 mutation proofs, Independence all-`no` with stated grounds. The planner **bounced one
+  GATE Z item** rather than planning around it: SPEC criterion 16 was **not satisfiable as written**.
+- GATE Z @ 2026-09-05 - criterion 16 split into **16a** (symbol change) and **16b** (replay arm), each asserting
+  what the code can actually produce, verified at source by the conductor before amending:
+  `useTickerStream.ts:34` republishes `{live: null, streamOffline: false}` on a symbol change, so
+  `LiveTape.tsx:100`'s `tileOffline` is false and `FigureCell.tsx:255`'s offline arm is never entered - there is
+  **no pause mark** on that path; and a replay arm renders **F6** (`FigureCell.tsx:277-281`: no dot, no pause mark)
+  while `connectionState.ts:92-96` forbids the chip re-entering the placeholder within a mounted session. The
+  original row demanded both together, so a fixture satisfying it would have gone **green against a state the app
+  cannot produce** - the vacuity the spec's own row 57 forbids. The chip half was right for 16a (the republished
+  null does return the chip to its wordless placeholder) and wrong for 16b (replay shows the replay state).
+  Also closed the planner's U-1: `SPEC.md`'s status line still read `draft` after the owner's approval.
+- BUILD @ 2026-09-05 - frontend lane dispatched on Sonnet (per the budget rule: build lanes Sonnet, council Opus).
+
