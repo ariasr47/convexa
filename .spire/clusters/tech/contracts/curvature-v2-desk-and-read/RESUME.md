@@ -1359,10 +1359,145 @@ re-shot with a longer settle wait and confirmed correct). All throwaway scripts 
    set) stay booked to `SPACING_DEBT_BURNDOWN_PHASE` ("curvature-v2 phase 4, responsive sweep") — not
    widened, per ruling 4.
 
-## Next: FE-12 (not started)
+## Done (FE-12) — do not re-do
 
-**FE-12 — The browser layer: re-anchor, re-point, register, prove execution.** Read PLAN.md's FE-12
-section fresh before starting. Depends on FE-11 (done). `no-overflow.spec.ts`'s `/ticker/TSLA` readiness
-anchor already resolves correctly post-FE-11 (confirmed: 75/75 e2e green this session) — FE-12's own
-Step 2 re-anchor to `level-ladder`'s testid is still the RIGHT thing to do (don't rely on luck twice),
-just confirmed not URGENTLY broken by FE-11's changes.
+**FE-12 — The browser layer: re-anchor, re-point, register, prove execution.** Commit `73d79584`.
+Owns (as landed, per PLAN's Independence row): `playwright.config.ts` (testMatch registration) ·
+new `apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts` · `no-overflow.spec.ts` (criterion 50).
+`apps/dashboard-e2e/src/quality/manifest.ts` did NOT need a "deleted testids" edit (nothing was
+deleted this task) — but a file PLAN's Owns row does NOT name, `manifest.json` (plus its three
+downstream consumers), turned out to need one anyway; see the necessary-overlap item below.
+
+**Steps 2/3 were already correct before this task started — verified fresh, not re-done.**
+`no-overflow.spec.ts:398-405`'s `/ticker/TSLA` readiness anchor already carries FE-8's own
+`getByTestId('level-ladder')` + `getByText('Call wall').first()` pair, byte-identical to PLAN's own
+illustrative Step-2 code. The widths (`VIEWPORT` = 393×852 both schemes; `WIDE_VIEWPORTS` = 834/900/
+1280, dark only) were already exactly PLAN's Step 3 shape — confirmed by reading the file, not
+trusted from a prior session's citation. **834 already shipped (FE-8's own comment names it) — did
+NOT add it a second time.**
+
+**Step 1 + Step 5 — `desk-and-read.spec.ts`, six tests, three groups (not four).** PLAN's own Step 5
+names FOUR groups, but criterion 9 (exactly one connection chip in the viewport at both scroll
+positions, `tape-stream-state` gone) already had FULL, currently-green browser coverage in
+`curvature-v2.spec.ts`'s `AC-1a` describe block (landed at FE-6/FE-8) — using `toBeInViewport` per
+node, the EXACT reviewer probe PLAN's own text names. Re-verified it's still green and still uses
+`toBeInViewport` before deciding not to duplicate it; duplicating a passing browser assertion in a
+second file buys nothing. The three groups that got NEW tests:
+1. **Criterion 45 (SB)** — two tests: 393px alone (exactly one `decision-verdict` node after opening
+   the analysis), and a SECOND test that resizes the SAME session 393→1280 and asserts the SAME
+   verdict string persists as exactly one node — stronger than two independent page loads, since it
+   proves the bottom sheet and the wide panel are one field, not two coincidentally-matching ones.
+2. **Criteria 20/22 evidence** — two tests. Criterion 20's own `test` mark is already satisfied at
+   the unit tier (`paintStep.spec.ts`'s recording-context proof, per SPEC §7's own text); this
+   browser companion proves what a real DOM CAN see on a stream drop (the `connection-chip` flips to
+   `offline` via `page.clock.install()` + a split `fastForward(14_000)`/`fastForward(1_000)` past
+   `STREAM_OFFLINE_MS` — the EXACT working pattern this repo's own `quality/accessibility.spec.ts`/
+   `compatibility.spec.ts`/`visual.spec.ts` already use for the identical watchdog, not invented
+   fresh; `structure-field-canvas` stays attached at unchanged geometry) and attaches before/after
+   screenshots for a reviewer to judge the rest (criteria 21/22 stay `review` — canvas pixel content
+   beyond attachment/geometry is not something this harness can assert without re-deriving FE-4's own
+   recording-context fixture inside a browser test). A second test does the same attach-and-capture
+   under `reducedMotion: 'reduce'`.
+3. **Criterion 52 (P5, review)** — two tests (393, 1280), and the one place this task went BEYOND a
+   review-only screenshot: reads a real pixel (`getImageData(2, 2, 1, 1)`) from the canvas's own base
+   `surfaces.ink` fill (`StructureHeroPanel.tsx`'s `theme.palette.background.default`) in both
+   schemes via a SECOND `context.newPage()` (never a second `seed()` call on the same page —
+   `addInitScript` accumulates across navigations, so a second call would stack rather than replace)
+   and asserts they differ — a genuine automated proof, not merely a screenshot, that the field's own
+   fill is not scheme-invariant. Measured values from the mutation proof below: dark `11,15,23`,
+   light `246,246,243`.
+
+**THE THEME TRAP, deliberately engineered around, not merely noted.** `useSettings.ts`'s precedence
+rule (D7) is "signed in ⇒ the SERVER `settings` WIN" — `curvature-v2.spec.ts`'s AND
+`no-overflow.spec.ts`'s OWN stubs both hardcode the mocked `/api/auth/session` response's
+`settings.theme` to `'dark'` regardless of the `scheme` parameter (harmless there because neither
+ever exercises light mode against that hardcoded value — confirmed by reading both files fully, not
+assumed). `desk-and-read.spec.ts`'s own `stubNetwork` drives `settings.theme` from the SAME `scheme`
+parameter as the localStorage seed, exactly the fix FE-11's session already had to discover the hard
+way for its own throwaway script. Criterion 52's test would have been SILENTLY VACUOUS (always
+reading the same dark-rendered ink twice) without this.
+
+**A genuine, unplanned necessary-overlap fix, found only by actually running the full gate — not
+assumed safe:** `npx nx e2e dashboard-e2e` runs `tools/run-gate.mjs chromium`, which validates every
+executed Chromium test against a FROZEN, hand-maintained per-test inventory
+(`quality/manifest.json`'s `full_chromium.tests`, cross-checked by `quality-reporter.ts`'s
+`mapChromiumIdentity`, `tools/lib/manifest.mjs`'s `validateManifest`, and `tools/manifest.spec.mjs`'s
+own unit test) — the exact SAME "an unregistered/unlisted test reports green by never being counted"
+shape PLAN's own T1 worries about, one layer deeper. `git log` on `manifest.json` shows it was frozen
+at 75 tests since PHASE 1's own landing commit (`404f8144`) and never touched by ANY of this phase's
+FE-1 through FE-11 lanes — confirmed by checking git history, not assumed — because none of them
+added a net-new Chromium test to the six registered specs (all prior additions were edits/re-points
+of existing tests). This task is the FIRST to add net-new tests (11: 6 in `desk-and-read.spec.ts` + 5
+criterion-50 tests in `no-overflow.spec.ts`), so it is the first to trip this gate. Fixed by adding
+11 entries to `manifest.json` (`test_id` = sha256 of the title-path array, matching the required
+`/^[a-f0-9]{64}$/` shape the validator enforces — the field is opaque, never re-derived or verified
+against content, confirmed by reading `mapChromiumIdentity`/`quality-reporter.spec.mjs` before relying
+on that), bumping `inventory_id` from `curvature-v2-foundations-75-v1` to
+`curvature-v2-desk-and-read-86-v1`, and bumping the three other hardcoded `75`s
+(`quality-reporter.ts:64`, `tools/lib/manifest.mjs`'s validator, `tools/manifest.spec.mjs`'s own
+unit assertion) to `86`. `manifest.ts` (the file PLAN's Owns row actually names) needed NO edit —
+its own `qualityManifest` object only lists compatibility/accessibility/visual inventories, not the
+per-test Chromium list, which lives in the separate `manifest.json` PLAN's text did not anticipate.
+Ran the 17-test `node --test` tooling suite (`manifest.spec.mjs`, `summary.spec.mjs`,
+`quality-reporter.spec.mjs`, `mutations.spec.mjs`) after the edit — 17/17 green, confirming the
+manifest shape itself is still valid, not just that the count matches.
+
+**Mutation proofs actually run (poison → confirm red → captured output → revert), both this
+session:**
+1. **Registration (T1, SPEC row 51's own reason for existing):** removed `'desk-and-read.spec.ts'`
+   from `playwright.config.ts`'s `testMatch` array, ran `npx playwright test --list`, confirmed
+   `grep -c 'desk-and-read'` returns **0** — the spec vanishes from the listing entirely, proving the
+   registration is load-bearing. Reverted; `--list` shows all 6 cases again.
+2. **The assertion itself (criterion 52):** flipped `expect(lightInk).not.toBe(darkInk)` to
+   `.toBe(darkInk)` in the committed file, ran `npx playwright test -g "Criterion 52"` against the
+   production build — both the 393px and 1280px cases went RED, naming the real measured values
+   (`Expected: "11,15,23"`, `Received: "246,246,243"`) — proving the check is genuinely sensitive to
+   real pixel data, not vacuously true. Reverted; confirmed `git diff` on the file returns nothing
+   (byte-identical to the committed version), re-ran the same `-g` filter green (2/2 passed).
+
+**Full verification, canonical commands, this session, exit codes actually checked (not printed
+summaries):**
+- `npm run typecheck` → **0**.
+- `npx nx test @convexa/dashboard` → **0** @ **231 files / 2693 tests** (unchanged from FE-11's own
+  baseline — this task touched zero files under `apps/dashboard/`, only `apps/dashboard-e2e/`).
+- `npm run lint` → **0** (same 5 pre-existing warnings — 1 dashboard, 4 dashboard-e2e — no new ones).
+- `npm run build` → **0** (production, api release + dashboard bundle).
+- `git diff origin/main...HEAD -- apps/api` → **0 lines** (the three-dot form the RESUME's own top
+  correction demands — re-verified, not assumed).
+- `npx playwright test -c apps/dashboard-e2e/playwright.config.ts --list` → exit 0, names
+  `desk-and-read.spec.ts` with all 6 cases (captured and pasted below).
+- `npx nx e2e dashboard-e2e --skip-nx-cache` against the PRODUCTION build (`npm run ports:free`
+  swept IPv4+IPv6 before/after every run) → **86/86 passed, 0 flaky**, exit 0 — run **twice** for
+  independent confirmation (4m13s cold, 18.0s warm; both clean, no flake notice either time).
+
+**The executed case list (SPEC row 51's own requirement — captured, not narrated) — the five
+`/ticker` overflow row×scheme combinations from the `--list` output:**
+```
+no-overflow.spec.ts › 393px no-overflow · dark scheme › /ticker/TSLA fits the viewport
+no-overflow.spec.ts › 393px no-overflow · light scheme › /ticker/TSLA fits the viewport
+no-overflow.spec.ts › tablet 834 no-overflow · dark scheme › /ticker/TSLA fits 834px
+no-overflow.spec.ts › md 900 no-overflow · dark scheme › /ticker/TSLA fits 900px
+no-overflow.spec.ts › lg 1280 no-overflow · dark scheme › /ticker/TSLA fits 1280px
+```
+Five rows — 393 dark, 393 light, 834, 900, 1280 — matching PLAN's own reviewer-probe wording exactly
+("names 393 dark, 393 light, 834, 900, 1280 — five rows, not eight").
+
+**Browser check / visual evidence, actually done.** The desk-and-read.spec.ts tests themselves ARE
+the visual-evidence mechanism this task needed (per-scheme screenshots attached to the Playwright
+report for the stream-drop/reduce-motion/light-mode groups, `testInfo.attach`, viewable via
+`npx playwright show-report` against the last run's HTML report) — this task's own criteria (45, the
+20/22 evidence pair, 52) are ABOUT capturing that evidence programmatically and reliably on every
+run, not a one-off manual click-through, so no SEPARATE throwaway script/screenshot cycle was run
+beyond what the committed specs themselves produce. Confirmed the light/dark ink values are real and
+different (see mutation proof above) and confirmed via the attached screenshots (viewed from the
+test-results directory during the mutation-proof run) that the hero genuinely repaints onto the light
+panel surface at both 393 and 1280 — no dark-plate bleed.
+
+**One honest scope note, not a gap:** PLAN's Owns row lists `manifest.ts` "(if it names deleted
+testids)" — it doesn't, and nothing was deleted this task, so that specific conditional never fired.
+The manifest work this task actually needed (`manifest.json` + its three downstream consumers) is a
+different file PLAN's text didn't name at all, surfaced only by actually running the full quality
+gate rather than assuming `npx playwright test`'s own pass/fail was the whole story. Recording this
+here so a later lane doesn't rediscover the same gate from scratch, and so the build report can note
+it as a necessary-overlap fix in the same documented shape FE-8/9/10/11 already established for their
+own out-of-Owns-row edits.
