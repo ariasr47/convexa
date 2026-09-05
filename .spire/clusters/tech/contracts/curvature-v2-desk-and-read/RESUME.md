@@ -12,10 +12,9 @@
 - `b5251aa1` — FE-4 (the extracted pure paint step, the three live gates)
 - `2fbfd6c2` — FE-5 (the level ladder) — see "Done (FE-5)" below.
 - `95078372` — FE-6 (the structure-field hero) — see "Done (FE-6)" below.
-- FE-7 (the read strip) — **committed by this session** — see "Done (FE-7)" below for the exact hash
-  once recorded at commit time (this file is written just before that commit).
+- `6eea1c81` — FE-7 (the read strip) — see "Done (FE-7)" below.
 
-Working tree is clean at the time of writing (post-FE-7, pre-commit-hash-record). `npm run
+Working tree is clean at the time of writing (post-FE-7 commit `6eea1c81`). `npm run
 typecheck` **0**, `npx nx test @convexa/dashboard` **0** @ **228 files / 2512 tests** (up from the
 226/2474 baseline after FE-6: +2 files, +38 tests), `npm run lint` **0** (no new warnings, same one
 pre-existing `react-hooks/exhaustive-deps` warning in `useSessionArchive.ts`, unrelated to this
