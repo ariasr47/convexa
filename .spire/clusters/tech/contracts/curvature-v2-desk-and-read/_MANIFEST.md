@@ -1,11 +1,13 @@
 # curvature-v2-desk-and-read — pipeline manifest
-Stage:        GATE C — spec synthesized, skeptic clean, contract_lint 0 errors (phase 2 of 4 of the Curvature Terminal v2 build). AWAITING OWNER APPROVAL of SPEC.md.
+Stage:        GATE C — **SPEC APPROVED BY OWNER 2026-09-05**; build authorized (phase 2 of 4 of the Curvature Terminal v2 build).
 Repos:        frontend
 Brief:        BRIEF.md present
 Contracts:
-  - SPEC.md                    draft, awaiting owner approval — 32/32 council conflicts folded with verified
+  - SPEC.md                    **locked (owner-approved 2026-09-05)** — 32/32 council conflicts folded with verified
                                receipt; SEVEN conductor calls under delegation, all tagged DELEGATED (P1-P5, D-14, D-15)
-  - INTERFACE_CONTRACT.md      draft — NO_BACKEND_CHANGE + a Conformance spec block; pins
+                               — **ratified by the owner's spec approval 2026-09-05**; they stay tagged so the
+                               provenance survives into GATE Q and the ledger
+  - INTERFACE_CONTRACT.md      **locked** — NO_BACKEND_CHANGE + a Conformance spec block; pins
                                `/api/ticker/{ticker}` then `/api/recommendation/status/{ticker}` (order load-bearing);
                                the recommendation POST is deliberately unpinned (session-bound, mutating, would spend
                                a real AI request against the caller's cap)

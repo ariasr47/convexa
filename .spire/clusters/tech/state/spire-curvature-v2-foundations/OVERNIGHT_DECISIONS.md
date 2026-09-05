@@ -1,7 +1,14 @@
 # OVERNIGHT DECISIONS — 2026-09-05 (read this first)
 
-**Status:** LIVE — appended as the session runs. Written because you went to sleep and authorised the
-session to decide and log rather than block.
+**Status:** ✅ **OWNER RETURNED 2026-09-05 and approved the spec + authorized the build lane.**
+
+That approval **ratifies all seven delegated calls** below (P1-P5, D-14, D-15) as written - they are no
+longer provisional. They stay tagged `DELEGATED` in `SPEC.md` so the provenance survives into GATE Q and
+the decision ledger: a later reader can still tell which calls were the owner's and which were taken for
+them. **Any of them is still reversible**, but from here a reversal costs build rework rather than a spec
+edit, so the `Reverse it by` lines below are now estimates of what to redo, not free undos.
+
+Written because the owner went to sleep and authorised the session to decide and log rather than block.
 
 **How to read this.** Every row is a decision I made *for* you. The **Reverse it by** column is the
 one-line undo. Nothing here is pushed; everything is on `spire/curvature-v2-foundations` in the working
