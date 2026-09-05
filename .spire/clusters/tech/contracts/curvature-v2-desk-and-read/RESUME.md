@@ -1,3 +1,20 @@
+# CONDUCTOR NOTE for FE-14 / GATE Q - the e2e quality reporter is CWD-dependent
+
+`apps/dashboard-e2e/src/quality/reporters/quality-reporter.ts:10` reads
+`apps/dashboard-e2e/src/quality/manifest.json` as a path **relative to the process CWD**. Run from the
+repo root (as `nx e2e` does) it resolves; run from inside `apps/dashboard-e2e/` it doubles the prefix and
+crashes with `ENOENT ...apps/dashboard-e2e/apps/dashboard-e2e/src/quality/manifest.json` **before any test
+runs**, while the piped exit code can still read 0.
+
+The conductor hit this verifying FE-12's `--list` proof. The registration is genuinely correct - from the
+repo root, `npx playwright test --config apps/dashboard-e2e/playwright.config.ts --list` shows **86 cases,
+6 of them `desk-and-read.spec.ts`**. But a QA seat that runs playwright from the e2e directory will get a
+confusing ENOENT rather than a test result, and could misread it as a broken suite.
+
+**Always run e2e from the repo root, and check the exit code without a pipe swallowing it.** Worth a small
+robustness fix (resolve the manifest relative to the reporter's own file) if FE-14 has room; if not, name
+it in `BUILD_REPORT.md` as carried debt with a phase attached rather than leaving it undocumented.
+
 # CONDUCTOR CORRECTION - the `apps/api` diff is EMPTY. Stop reporting 107 files.
 
 **Two lanes have now reported a "107-file `apps/api` diff" and both were wrong.** It is an artifact of
