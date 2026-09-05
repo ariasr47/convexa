@@ -18,8 +18,11 @@
  *     (`CustomizationToolbar.tsx`, `ScanToolbar.tsx`), table row hover (`ScanTable.tsx`), and inside
  *     a real ticker widget (`PositionBrief.tsx`'s basis-label chip, `text.secondary` text on it).
  *   - `well` (`#F1F1EC`, lighter than `panelRaised`): the inset body of SEVEN real ticker widgets
- *     (`MarketContext`, `StraddleMove`, `LiveTape`, `DealerFlowProjection`, `DealerPositioning`,
- *     `StructureHistory`, `IvRank` — all `bodyVariant="inset"`) and `TopNav.tsx`'s search-trigger
+ *     (`MarketContext`, `StraddleMove`, `LiveTape`, `DealerFlowProjection`, `ReadStrip`,
+ *     `StructureHistory`, `IvRank` — all `bodyVariant="inset"`; curvature-v2-desk-and-read FE-8:
+ *     the old dealer positioning widget deleted, `ReadStrip` — FE-7, same `bodyVariant="inset"` —
+ *     takes its seat,
+ *     count stays seven) and `TopNav.tsx`'s search-trigger
  *     button (`color: 'text.secondary'` painted directly on `extrasFor(t).well`).
  *   - `background.default` ("paper", `#F6F6F3`) and `background.paper` (white, `#ffffff`): the page
  *     canvas and `Widget.tsx`'s own card root / `FigureCell.tsx`'s `CellCard` / dialog papers.
@@ -40,7 +43,13 @@ type Rgb = [number, number, number];
 
 const hexToRgb = (hex: string): Rgb => {
   const h = hex.replace('#', '');
-  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+  const full =
+    h.length === 3
+      ? h
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : h;
   const n = parseInt(full, 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 };
@@ -70,7 +79,10 @@ const contrastRgb = (a: Rgb, b: Rgb): number => {
 
 /** Contrast of a token colour (hex OR alpha rgba) against an OPAQUE surface hex. */
 const contrastOn = (fg: string, surfaceHex: string): number =>
-  contrastRgb(fg.startsWith('#') ? hexToRgb(fg) : rgbaOverHex(fg, surfaceHex), hexToRgb(surfaceHex));
+  contrastRgb(
+    fg.startsWith('#') ? hexToRgb(fg) : rgbaOverHex(fg, surfaceHex),
+    hexToRgb(surfaceHex),
+  );
 
 // Real surfaces, both schemes (evidence for each is the block comment above).
 const DARK = { ink: '#0B0F17', panel: '#131A24', well: '#0D121B' };

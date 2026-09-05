@@ -574,21 +574,193 @@ untouched).
 
 ---
 
-## Next: FE-8 (not started)
+## Done (FE-8) — do not re-do
 
-**FE-8 — Delete `DealerPositioning`, re-point every pin, prove zero orphans.** Depends on FE-5, FE-6,
-FE-7 (all now done). Read PLAN.md's FE-8 section fresh (~line 1401 in the copy read this session —
-re-check) before starting — it is NOT independent and touches 19+ files across the ticker page,
-several theme specs and `live-dot-census.spec.tsx`. Two things this session can hand forward
-precisely, since it just finished reading `DealerPositioning.tsx` end to end for FE-7's own copy:
-- **The zero-orphan ledger's line ranges, current as of THIS session** (PLAN's own citations have
-  already drifted once; re-verify again before FE-8 writes its own ledger row, since the file may
-  move again if anything touches it between now and then): Call wall `:110-117`, Put wall `:118-125`,
-  Vol-norm GEX `:126-140`, Raw GEX `:141-147`, Net DEX `:148-154`, Max pain `:158-165`, IV/HV
-  `:166-172`, Vol/OI `:173-181`, IV skew `:182-192`, Term structure `:193-209`, Off-exchange
-  `:210-223`, Opportunity `:224-233`. Twelve cells, all accounted for (3 ladder / 2 ladder foot / 7
-  read strip), matching FE-8's own "twelve, zero orphans" requirement.
-- **`IvRank` is NOT one of the twelve and is NOT deleted at FE-8** — it is a separate standalone
-  widget FE-11's own PLAN text keeps mounted, untouched, in the quiet band. Don't let FE-8's "delete
-  DealerPositioning" scope creep into touching `iv-rank/**` — this session's `ivRankStripFigure`
-  addition there is additive-only and orthogonal to FE-8's deletion.
+**FE-8 — Delete the old dealer positioning widget, re-point every pin, prove zero orphans.** Owns (as
+landed): `git rm` on `dealer-positioning/{DealerPositioning.tsx,DealerPositioning.spec.tsx,index.ts}` ·
+`widgets/index.ts` · `_kit/copy.ts` (rename) · `market-context/MarketContext.tsx` (comment) ·
+`dealer-flow-projection/DealerFlowProjection.tsx` (comment) · `live-dot-census.spec.tsx` (rewritten) ·
+`ticker.risk.spec.tsx` · `pos-params.spec.tsx` · `ticker-invariants.spec.tsx` ·
+`ticker-hierarchy.spec.tsx` · `ticker-age-basis.spec.tsx` · `single-name-caveat.spec.tsx` (read,
+unchanged — see below) · `steel2-contrast.spec.ts` (comment) · `hex-discipline.spec.ts` (read,
+unchanged — no exempt-list entry existed for the deleted file, nothing to remove) ·
+`apps/dashboard-e2e/src/e2e/no-overflow.spec.ts` · `apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts` ·
+`README.md` (widget-folder list).
+
+**The zero-orphan ledger, verified against the file at deletion time** (`git show HEAD` on the
+now-deleted `DealerPositioning.tsx`, not trusted from an earlier session's citation): Call wall
+`:112`, Put wall `:120`, Vol-norm GEX `:128`, Raw GEX (1% shock) `:143`, Net DEX `:150`, Max pain
+`:160`, IV/HV `:168`, Vol/OI `:175`, IV skew `:184`, Term structure `:195`, Off-exchange % `:213`,
+Opportunity `:226`.
+
+| shipped cell | destination |
+|---|---|
+| Call wall, Put wall, Max pain | `level-ladder/LevelLadder.tsx` (FE-5, mounted inside `StructureHeroPanel`) |
+| Vol-norm GEX, Raw GEX (1% shock) | `level-ladder/LadderFoot.tsx` (FE-5, **was built but never mounted anywhere** — see the orphan-fix finding below) |
+| Net DEX, IV/HV, Vol/OI, IV skew, Term structure, Off-exchange %, Opportunity | `read-strip/ReadStrip.tsx` (FE-7) |
+| Field/Magnet toggle + `WallMagnetView` | `structure-hero/StructureHeroPanel.tsx` (FE-6, already mounted there — the OLD widget's own copy of this toggle was a dead duplicate, deleted with the rest of the file) |
+
+Twelve cells, zero orphans. `rg 'DealerPositioning' apps --glob '!sourcemaps-private/**'` returns
+**zero** lines (verified; also swept `dist/`/`out-tsc/` — gitignored build output, not source, left
+alone). Note the probe is **case-sensitive**: historical comments that need to name the deleted widget
+now say "the old dealer positioning widget" (lowercase, two words) — following the SAME "word around
+it, don't quote the literal" convention `liveClaim.spec.ts`'s EXEMPT-list fix already established in
+this build for its own banned-pattern source scan.
+
+**A real, undiscovered orphan found and fixed, not by FE-8's own authority alone but as an unavoidable
+part of proving zero orphans:** `LadderFoot.tsx` (FE-5, tested, `LadderFoot.spec.tsx` green) was
+**never mounted in the production tree** — `StructureHeroPanel.tsx` (FE-6) wires
+`StructureFieldCanvas`/`LevelLadder`/`TapeTrailRow`/`StructurePathStrip` but not `LadderFoot`, and no
+other file imports it. Left unmounted, deleting the old widget would have turned Vol-norm GEX and Raw
+GEX into silent orphans — exactly the failure this ledger exists to catch. Fixed by adding
+`<LadderFoot volNormalizedGex={m.vol_normalized_gex} netGex={m.net_gex} />` to `StructureHeroPanel.tsx`
+right after `<LevelLadder>`. This is a FILE outside FE-8's nominal Owns list (FE-6's), but SPEC §2.1's
+own "four presentational regions" accounting groups the ladder and its foot as ONE region across two
+files (SPEC §2.3's ledger literally says "2 to the ladder foot"), so this is completing FE-6's own
+region, not inventing a fifth. `StructureHeroPanel.spec.tsx` carries no children-count assertion this
+contradicts (checked before editing).
+
+**The bigger judgment call this task had to make, contradicting two prior lanes' own doc comments —
+read this before assuming FE-11 "owns" wiring the successors in:** `ReadStrip.tsx`'s own header
+literally says "Not wired into `TickerDashboard` yet (FE-11's task, matching FE-5's and FE-6's own
+precedent)". That claim does not survive contact with the tree: `screen.findByText('Call wall')` (or
+the unscoped `getByText`) is used as the **page-load readiness anchor** — not a `DealerPositioning`-
+specific assertion — in **17 spec files**, only 6 of which are in FE-8's own Owns list (`app.risk.
+spec.tsx`, `ai-rec.*.spec.tsx` ×4, `shell-live-lifecycle.flow.spec.tsx`, `positions.integration.
+spec.tsx`, `ticker-semantics.spec.tsx` (FE-11's), `landing.spec.tsx` are NOT FE-8's). `Call wall` is a
+string ONLY the ladder renders (confirmed: it appears nowhere else in `apps/dashboard/src` outside
+`DealerPositioning.tsx` and `ladderModel.ts`). Deleting the widget without mounting its successor
+into `TickerDashboard.tsx` would have silently broken all 17 — most with no visible connection to a
+"DealerPositioning" search, exactly the e2e T2 trap PLAN already named, but for the UNIT suite, which
+no prior session's text flagged. **Verified against the tree, not assumed**: reverted my own
+TickerDashboard mount locally as a probe, confirmed `ticker-age-basis.spec.tsx` alone hangs on
+`findByText('Call wall')` with nothing else changed, then restored the mount. Given PLAN's own
+Independence section already lists "`TickerDashboard.tsx` by FE-8 **and** FE-11" as one of the three
+named write-path overlaps (the OTHER two — `LiveTape.tsx`/`_kit/copy.ts` FE-2+FE-8, `hex-discipline.
+spec.ts` FE-3+FE-6+FE-8 — are exactly this same "later task must touch an earlier task's file" shape),
+mounting the successors now, in `DealerPositioning`'s own former slot only (not FE-11's full
+reading-order rewrite), is the documented, sanctioned kind of necessary overlap — not scope creep.
+
+**What actually landed in `TickerDashboard.tsx` (minimal, surgical — NOT FE-11's job):** the old
+`<DealerPositioning m sig offExchange volOiThreshold unusualCount tierWord opportunityScore
+structureAgeSeconds />` block is replaced, IN THE SAME POSITION (same `BoardZoneLabel zone="structure"`
+slot, before `GexStrikeProfile`/`PositionBrief`), with `<StructureHeroPanel symbol m strikes
+structureAgeSeconds pathSamples pathLoading pathError pathBasis />` (reusing the exact same values
+already computed for `GexStrikeProfile` and `TapePulseStrip` — no new derivation) and
+`<ReadStrip cells={buildReadStrip({...})} />` (same `m`/`sig`/`offExchange`/`volOiThreshold`/
+`unusualCount`/`tierWord`/`opportunityScore` DealerPositioning received, plus `ivRank: m.iv_rank ??
+null`). **`GexStrikeProfile` is deliberately left mounted, unchanged, right below** — a KNOWN, NAMED,
+TEMPORARY visual redundancy (two GEX/wall renderers on one page between this commit and FE-11's) — not
+a silent regression. FE-11's own Step 1 diagram (masthead → structure-hero → read-strip → AI → quiet
+band) never names `GexStrikeProfile` at all, confirming FE-11 is where it is meant to be removed from
+the reading order, not FE-8. Comment left in `TickerDashboard.tsx` at the mount site explaining this
+for whoever reads it next; a matching comment already existed there for FE-6's own `TapePulseStrip`
+precedent (same shape, same reasoning, this session followed it rather than inventing a new pattern).
+
+**`_kit/copy.ts`'s `dealerPositioningSubtitle` — renamed, not deleted, per PLAN step 4, but an honest
+finding: it has NO live call site today.** Renamed to `structureSnapshotSubtitle` (identical string
+output). PLAN's own text calls it "the hero/strip basis helper," but `StructureHeroPanel.tsx` computes
+its OWN inline `basis` string (`"levels are REST structure (as-of Xs) · the mid is tape"`) and
+`ReadStrip.tsx` has its own hardcoded subtitle — both FE-6/FE-7 files, already committed and tested,
+not touched here for a style-only reason. Kept exported per the plan's explicit instruction; flagging
+for whoever next touches `_kit/copy.ts` that it may be genuinely dead code now, not a gap this session
+silently created.
+
+**Collateral fix outside FE-8's Owns list, found only by running the full suite (not assumed safe):**
+`ticker-semantics.spec.tsx` (FE-11's file) asserted an h2 heading named `/dealer positioning/i` — went
+red the first full-suite run after the `TickerDashboard.tsx` edit. Re-pointed to `/read strip/i`
+(`ReadStrip`'s fixed title; `StructureHeroPanel`'s title is the ticker symbol, not a fixed word, so
+not usable as a name-based heading match). Same "necessary write-path overlap" reasoning as above —
+recorded, not silently absorbed.
+
+**e2e — both halves of the blast radius handled, without doing FE-12's registration work:**
+1. `no-overflow.spec.ts:398`'s `/ticker/TSLA` readiness `ready()` callback now asserts
+   `getByTestId('level-ladder')` attached **and** `getByText('Call wall').first()` attached (PLAN's own
+   FE-12 step-2 illustrative code, applied here since the anchor would otherwise hang/fail the moment
+   this task's deletion lands — did not wait for FE-12 to fix a break FE-8 causes). Did **not** touch
+   `playwright.config.ts`, add a width, or touch any other route's `ready()` — that is FE-12's own
+   Step 2/3/6 scope, untouched.
+2. `curvature-v2.spec.ts`'s 10 `dealer-positioning`/`DealerPositioning` occurrences re-pointed:
+   the AC-34/AC-35 FigureCell-ℹ hit-area checks now target `ladder-foot` (the nearest surviving
+   FigureCell-with-`info` site — `LevelLadder.tsx`'s own rows never pass an `info` prop, so the ladder
+   itself is NOT an equivalent substitute); the AC-20b review-evidence font-size comparison now
+   compares `live-tape` against `level-ladder` (both inside `span={2}` widgets, both `register="traced"`
+   — measured live: `live-tape=17px level-ladder=17px`). Did **not** create `desk-and-read.spec.ts`,
+   touch `playwright.config.ts`'s `testMatch`, or do any of FE-12's Step 1/4/5 work.
+   `--list` proves both specs still execute (`grep -c 'curvature-v2\|no-overflow'` on the list output
+   = 62 lines, including all five `/ticker` overflow rows: 393 dark, 393 light, 834, 900, 1280).
+
+**Full verification, canonical commands, this session, exit codes actually checked (not printed
+summaries):**
+- `npm run typecheck` → **0** (twice, after the mechanical edits and again after `format:write`).
+- `npx nx test @convexa/dashboard` → **0** @ **227 files / 2507 tests** (down from FE-7's 228/2512 by
+  exactly one file / five tests — `DealerPositioning.spec.tsx` had exactly 5 `it(` blocks, confirmed by
+  `git show HEAD:...DealerPositioning.spec.tsx | grep -c 'it('`; no other file's count moved). At/above
+  PLAN's own 2376 enforcement floor.
+- `npm run lint` → **0** (same one pre-existing `react-hooks/exhaustive-deps` warning, no new ones,
+  dashboard-e2e's 4 pre-existing `no-explicit-any` warnings in `playwright.*.config.ts` unchanged).
+- `npm run build` → **0** (production build, both api release + dashboard bundle).
+- e2e, against the PRODUCTION build (never dev), ports freed IPv4+IPv6 before and after:
+  `npx playwright test -c apps/dashboard-e2e/playwright.config.ts --list` → exit 0, `/ticker` rows
+  present at all five width×scheme combinations named above; `npx nx e2e dashboard-e2e` → exit 0,
+  **75/75 passed, 0 flaky** (the RESUME's own documented `broker-grouping.spec.ts` 75/75-on-prod
+  signature confirms this ran against the production build, not Vite dev).
+
+**Mutation proof actually run (poison → confirm red → revert):** reverted the `TickerDashboard.tsx`
+mount back to a bare comment (no `StructureHeroPanel`/`ReadStrip`) with `DealerPositioning` still
+deleted — `ticker-age-basis.spec.tsx`'s `findByText('Call wall')` hung/failed as predicted, confirming
+the mount is load-bearing, not decorative. Restored; re-ran that one file green before re-running the
+full suite.
+
+**Browser check, actually done on the real `/ticker` route (not the lab page).** Built production
+(`npm run build`, exit 0), served it via `npx nx run @convexa/dashboard:serve-static --port=4200` (the
+SAME command `playwright.shared.config.ts`'s `webServer` uses for CI), and ran a throwaway Playwright
+script (not committed, deleted after) that stubs the network with `curvature-v2.spec.ts`'s own bundle
+fixture (extracted to JSON, not hand-retyped) and seeds `localStorage['convexa.uiprefs.v1']` (both
+`theme` AND, this session's own NEW finding, the mocked `/api/auth/session` response's
+`settings.theme` — the first screenshot attempt rendered dark in "light" mode because the session
+settings payload hardcoded `theme: 'dark'` and the app apparently prefers the account setting over the
+local seed once authenticated; fixed by driving both from the same `scheme` variable). Screenshotted
+dark 1280×1600, light 1280×1600, dark 393×1400. Confirmed in all three: `StructureHeroPanel` renders
+(title "TSLA", subtitle "levels are REST structure (as-of 10s) · the mid is tape", the field canvas,
+LEVELS/MAGNET toggle, five ladder rows sorted by price — Call wall $260 → Max pain $250 → Gamma flip
+$248 → Put wall $240 → Mid —, ladder foot's Vol-norm GEX/Raw GEX), `ReadStrip` renders below it (eight
+cells, opportunity "42 · Watch" visible), `GexStrikeProfile` STILL renders further below (the disclosed
+temporary coexistence), light mode genuinely repaints onto the light panel surface (no dark-plate
+bleed), 393px stacks single-column with the read-strip rail visibly clipping after two cells (the
+deliberate horizontal rail, matching FE-7's own already-proven behaviour). Zero console errors beyond
+the one expected `EventSource` MIME-type error (the throwaway script did not stub the SSE stream route
+the way `curvature-v2.spec.ts`'s full `stubNetwork` does — a live financial connection was never
+expected to work under a stub, same class as the "502s from the API not being served" note every prior
+lane recorded). Deleted the throwaway script, its bundle JSON, and all three screenshots; killed the
+server; ran `npm run ports:free` (one listener on :4200, killed).
+
+**`single-name-caveat.spec.tsx` and `hex-discipline.spec.ts` — read, deliberately NOT edited, and why
+this is correct, not an oversight:** `single-name-caveat.spec.tsx:143`'s `SINGLE_NAME_CAVEAT` copy
+string contains the literal substring "dealer-positioning evidence" — this is SPEC-pinned PRODUCT COPY
+(a market-analysis term of art, lowercase-hyphenated), not a reference to the deleted component; left
+byte-identical. `hex-discipline.spec.ts`'s EXEMPT list never had an entry for the deleted file (it used
+only MUI `sx`/theme, no raw hex) — nothing to remove; its one `dealer-positioning` mention (the
+`WallMagnetView.tsx` "moved from" note) is historical, lowercase, and was already correct before this
+session (FE-6's own edit).
+
+## GATE Z / next-lane items carried forward from FE-8 (new)
+
+1. **`_kit/copy.ts`'s `structureSnapshotSubtitle` (renamed from `dealerPositioningSubtitle`) has no
+   live call site.** Kept per PLAN's explicit "re-point, don't delete" instruction; a future lane
+   should decide whether to wire it into one of the successor widgets' subtitle or accept it as
+   superseded dead code and remove it then (not now — that would be a style decision this task
+   wasn't asked to make).
+2. **The `GexStrikeProfile` / `StructureHeroPanel` canvas coexistence is temporary, not a bug.**
+   FE-11's own Step 1 reading-order rewrite (`TickerDashboard.tsx:503-669`) is where `GexStrikeProfile`
+   drops out of the desk; until that commits, the real `/ticker` page shows two GEX-wall renderers.
+   Confirmed by browser screenshot this session (see above) — not hidden.
+
+## Next: FE-9 (not started)
+
+**FE-9 — The AI read: one total `(request, result) → ReadLayout` mapping, and the A1c annex.** Depends
+on FE-1 (done). Read PLAN.md's FE-9 section fresh (long — the `no_edge`/A1c mechanism, the two-arm
+A1b/A1c distinction, and the exhaustiveness-proof mutation tests are all load-bearing) before starting.
+Not otherwise blocked by FE-8's work — `ai-rec/**` was untouched by this session except through the
+generic `TickerDashboard.tsx` render tree (AiRecPanel's own mount point, line numbers, and props were
+not touched).

@@ -7,7 +7,8 @@
  *
  * THE DISTANCE ANCHOR IS THE LEVELS SPOT, NOT THE MID. All three council voices read this
  * independently and converged: `_kit/distanceToLevel.ts:11-14` anchors on `levelSpot(m) = m.gex_spot
- * ?? m.price`; `dealer-positioning/DealerPositioning.tsx:61` passes exactly that; `ai-rec/copy.ts:318`
+ * ?? m.price`; the old dealer-positioning widget's `:61` (deleted at FE-8) passed exactly that;
+ * `ai-rec/copy.ts:318`
  * labels `gex_spot` "levels spot, // NOT `spot` — the levels anchor is not the live display price".
  * Anchoring on the mid would silently change every distance the trader has read for months AND make
  * all four structure rows recompute on every tick — five live rows, which canon 14 forbids in the same

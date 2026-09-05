@@ -42,7 +42,6 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { AccessibleHelp } from '../ai-rec/AccessibleHelp';
 import {
   MC_ADVISORY,
   MC_ATR_EMPTY,
@@ -108,6 +107,7 @@ import {
   mcTiBasis,
   mcTrendLine,
 } from '../_kit/copy';
+import { AccessibleHelp } from '../ai-rec/AccessibleHelp';
 
 const MONO = typographyTokens.monoFontFamily;
 
@@ -428,7 +428,7 @@ export function MarketContext({ pack }: Props) {
             <Box
               sx={{
                 display: 'grid',
-                // Intrinsically responsive (the DealerPositioning/DealerFlowProjection idiom): four
+                // Intrinsically responsive (the ReadStrip/DealerFlowProjection idiom): four
                 // across when wide, 2×2 at medium, single column narrow, via `auto-fit`/`minmax`.
                 // CORRECTED (curvature-v2-foundations SPEC §2.5): the prior claim here — that this
                 // Emotion version drops or warns on an `@container` object key in `sx` — is FALSE

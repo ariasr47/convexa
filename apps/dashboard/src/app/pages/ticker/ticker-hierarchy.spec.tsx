@@ -112,7 +112,10 @@ describe('Ticker · board hierarchy (product spine #3)', () => {
     const brief = screen.getByTestId('position-brief');
     const zonePlan = screen.getByTestId('board-zone-plan');
     const zoneContext = screen.getByTestId('board-zone-context');
-    const dealer = screen.getByTestId('dealer-positioning');
+    // (v2, curvature-v2-desk-and-read FE-8) the old dealer positioning widget is deleted;
+    // `StructureHeroPanel` is its
+    // successor in the SAME primary-structure slot (the ladder's walls, the Field/Magnet toggle).
+    const dealer = screen.getByTestId('structure-hero');
     const live = screen.getByTestId('live-tape');
 
     // Zones + brief ordered: structure → book → plan → context.

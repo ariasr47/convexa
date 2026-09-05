@@ -2,7 +2,8 @@
  * `LadderFoot` — re-houses Vol-norm GEX and Raw GEX (1% shock) from the twelve-tile grid this phase
  * decomposes (SPEC §2.3: "the twelve shipped cells decompose with zero orphans — 3 to ladder rows …
  * 2 to the ladder foot"). Criterion 6 (review): both cells and their tooltips are copied
- * BYTE-FOR-BYTE from `DealerPositioning.tsx:122-143`, including the `unavailable` arm — one of the
+ * BYTE-FOR-BYTE from the old dealer positioning widget's `:122-143` (deleted at FE-8), including
+ * the `unavailable` arm — one of the
  * two cases where the frontend genuinely can observe the reason (an input dependency, not a bare
  * absence) — so D-14's `—` does not apply here.
  */

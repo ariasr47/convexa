@@ -4,14 +4,26 @@
  * `figure-live-dot` while the chip resolved to `closed` (a wire-real `market_session:'closed'` +
  * `live:true` combination — `apps/api/src/routes/stream.rs` derives the two independently) and while
  * a session tape was replaying (every standing) — because the chip and `LiveTape` answered "is this
- * live?" with two different predicates. `LiveTape.spec.tsx` and `DealerPositioning.spec.tsx` never
- * rendered the two widgets TOGETHER and never counted `figure-live-dot`, so the leak shipped green.
+ * live?" with two different predicates. `LiveTape.spec.tsx` and the OLD dealer positioning widget's
+ * own spec (deleted whole at FE-8) never rendered the two widgets TOGETHER and never counted
+ * `figure-live-dot`, so the leak shipped green.
  *
- * This spec renders `LiveTape` + `DealerPositioning` together (the two `FigureCell` consumers, SPEC
- * §2.3) off the SAME `{live, streamOffline}` fact the real `liveTapeStore` would hold — publishing
- * into the store rather than hand-deriving `isLive`/`displayActive` overrides, so this is exactly
- * what `TickerDashboard` feeds both widgets in production — and counts dots across the six
- * connection `kind`s and every replay standing.
+ * (curvature-v2-desk-and-read FE-8) the old dealer positioning widget is deleted; its twelve cells'
+ * successors are `StructureHeroPanel` (which now hosts `LevelLadder` + `LadderFoot` — 3 ladder rows +
+ * 2 foot cells) and `ReadStrip` (the other seven + opportunity). This spec renders `LiveTape` +
+ * `StructureHeroPanel` + `ReadStrip` together off the SAME `{live, streamOffline}` fact the real
+ * `liveTapeStore` would hold — publishing into the store rather than hand-deriving
+ * `isLive`/`displayActive` overrides, so this is exactly what `TickerDashboard` feeds all three in
+ * production — and counts dots across the six connection `kind`s and every replay standing.
+ *
+ * ONE GENUINELY NEW LIVE FIGURE, disclosed not hidden: the ladder's `Mid` row (SPEC §2.3 — "the mid
+ * the only live row") did not exist as a cell on the old widget at all (the old grid never showed a
+ * mid tile). Under a real `live` connection it now legitimately wears a dot too, so the page-wide LIVE
+ * count below is FOUR (Net flow, Spread, Gamma flip, ladder Mid), not the old three — a real, correct
+ * behavioural difference, not a widened assertion. The twelve cells INHERITED from the old widget
+ * (ladder's Call wall/Put wall/Max pain, its foot's two GEX cells, the strip's seven) stay dotless in
+ * every case below, checked individually by label so the ladder's own two new rows (Mid, Gamma flip)
+ * never get silently folded into that count.
  *
  * Before the fix (`LiveTape.tsx` deriving its liveness from `numbersActive` instead of the shared
  * `isDeliveringLive` predicate) the "closed with a live:true glitch" and every "replay standing" case
@@ -19,15 +31,16 @@
  * the recorded before/after run.
  */
 import { theme } from '@/shared/theme/theme';
-import type { LiveUpdate, MarketState, OffExchange, Signals } from '@convexa/api';
+import type { LiveUpdate, MarketState, OffExchange } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { resolveConnectionState } from './connection/connectionState';
 import { publishLiveTape, resetLiveTape } from './liveTapeStore';
 import type { SessionTapeOccupancy } from './sessionTapeStanding';
-import { DealerPositioning } from './widgets/dealer-positioning/DealerPositioning';
 import { LiveTape } from './widgets/live-tape/LiveTape';
+import { buildReadStrip, ReadStrip } from './widgets/read-strip';
+import { StructureHeroPanel } from './widgets/structure-hero';
 
 afterEach(() => {
   cleanup();
@@ -121,18 +134,6 @@ const occ = (over: Partial<SessionTapeOccupancy> = {}): SessionTapeOccupancy => 
   ...over,
 });
 
-const signals: Signals = {
-  ticker: TICKER,
-  regime: 'positive_gamma',
-  regime_note: null,
-  vol_regime: 'neutral',
-  distances: {},
-  setups: [],
-  opportunity_score: 73,
-  opportunity_tier: 'actionable',
-  prime_prompt_eligible: false,
-};
-
 const offEx: OffExchange = {
   ratio_pct: 38,
   offex_shares: 38_000,
@@ -143,25 +144,49 @@ const offEx: OffExchange = {
   note: '',
 };
 
+/** The twelve cells the old dealer positioning widget used to render, by their SHIPPED label text —
+ *  spread across
+ *  the ladder (3), the ladder foot (2) and the read strip (7). Deliberately excludes the ladder's
+ *  `Mid` and `Gamma flip` rows, which are NEW figures the old grid never had (module doc above). */
+const INHERITED_TWELVE_LABELS = [
+  'Call wall',
+  'Put wall',
+  'Max pain',
+  'Vol-norm GEX',
+  'Raw GEX (1% shock)',
+  'Net DEX',
+  'IV / HV',
+  'Vol/OI',
+  'IV skew',
+  'Term structure',
+  'Off-exchange %',
+  'Opportunity',
+] as const;
+
 function mountWidgets() {
+  const m = marketState();
   return render(
     <ThemeProvider theme={theme}>
-      <LiveTape m={marketState()} />
-      <DealerPositioning
-        m={marketState()}
-        sig={signals}
-        offExchange={offEx}
-        volOiThreshold={1}
-        unusualCount={0}
-        tierWord="Actionable"
-        opportunityScore={73}
+      <LiveTape m={m} />
+      <StructureHeroPanel symbol={TICKER} m={m} strikes={[]} />
+      <ReadStrip
+        cells={buildReadStrip({
+          m,
+          offExchange: offEx,
+          volOiThreshold: 1,
+          unusualCount: 0,
+          tierWord: 'Actionable',
+          opportunityScore: 73,
+          ivRank: null,
+        })}
       />
     </ThemeProvider>,
   );
 }
 
 /** Publishes into the REAL `liveTapeStore` — never a hand-derived `isLive`/`displayActive` prop
- *  override — so `LiveTape` reads exactly what `TickerDashboard` feeds it in production. */
+ *  override — so `LiveTape` (and `StructureHeroPanel`'s own single store read) reads exactly what
+ *  `TickerDashboard` feeds it in production. */
 function renderPage(live: LiveUpdate | null, streamOffline: boolean) {
   publishLiveTape({ live, streamOffline, ticker: TICKER });
   return mountWidgets();
@@ -177,8 +202,16 @@ function widgetCells(widgetId: string): HTMLElement[] {
   );
 }
 
-describe('AC-1c (SB) — the dot census: LiveTape + DealerPositioning together, every connection kind', () => {
-  it('LIVE — exactly three dots page-wide (Net flow, Spread, Gamma flip); VWAP and all 12 dealer-positioning cells are dotless', () => {
+/** Every one of the twelve cells inherited from the old dealer positioning widget, wherever it now
+ *  lives, by label. */
+function inheritedCells(): HTMLElement[] {
+  return INHERITED_TWELVE_LABELS.map(
+    (label) => screen.getByText(label).closest('[data-figure-state]') as HTMLElement,
+  );
+}
+
+describe('AC-1c (SB) — the dot census: LiveTape + StructureHeroPanel + ReadStrip together, every connection kind', () => {
+  it('LIVE — exactly FOUR dots page-wide (Net flow, Spread, Gamma flip, ladder Mid); VWAP and all 12 cells inherited from the old dealer positioning widget are dotless', () => {
     const live = liveUpdate();
     expect(resolveConnectionState({ live, streamOffline: false, routeSymbol: TICKER }).kind).toBe(
       'live',
@@ -186,14 +219,16 @@ describe('AC-1c (SB) — the dot census: LiveTape + DealerPositioning together, 
     renderPage(live, false);
 
     const liveTapeCells = widgetCells('live-tape');
-    const dealerCells = widgetCells('dealer-positioning');
+    const inherited = inheritedCells();
     expect(liveTapeCells).toHaveLength(4);
-    expect(dealerCells).toHaveLength(12);
+    expect(inherited).toHaveLength(12);
 
-    expect(totalDots()).toBe(3);
-    expect(
-      dealerCells.every((c) => c.querySelector('[data-testid="figure-live-dot"]') == null),
-    ).toBe(true);
+    // The ladder's `Mid` row is the ONE genuinely new live figure (module doc above) — the census
+    // must find it, or this test would silently stop proving the ladder participates at all.
+    expect(totalDots()).toBe(4);
+    expect(inherited.every((c) => c.querySelector('[data-testid="figure-live-dot"]') == null)).toBe(
+      true,
+    );
 
     const vwapCell = screen.getByText('VWAP').closest('[data-figure-state]') as HTMLElement;
     expect(within(vwapCell).queryByTestId('figure-live-dot')).toBeNull();
@@ -213,7 +248,9 @@ describe('AC-1c (SB) — the dot census: LiveTape + DealerPositioning together, 
     ['offline (watchdog expired)', liveUpdate(), true],
   ] as const)('%s — zero dots anywhere on the page', (label, live, streamOffline) => {
     const kind = resolveConnectionState({ live, streamOffline, routeSymbol: TICKER }).kind;
-    expect(kind, `fixture for "${label}" must actually resolve to a non-live kind`).not.toBe('live');
+    expect(kind, `fixture for "${label}" must actually resolve to a non-live kind`).not.toBe(
+      'live',
+    );
     renderPage(live, streamOffline);
     expect(totalDots()).toBe(0);
   });
@@ -235,7 +272,9 @@ describe('AC-1c (SB) — the dot census: LiveTape + DealerPositioning together, 
       expect(totalDots()).toBe(0);
       // F6 must be REACHABLE, not dotless merely because the value is also absent — Net flow
       // renders a REAL number from the replayed tape here (never `—`), yet still carries no dot.
-      const netFlowCell = screen.getByText(/Net flow/).closest('[data-figure-state]') as HTMLElement;
+      const netFlowCell = screen
+        .getByText(/Net flow/)
+        .closest('[data-figure-state]') as HTMLElement;
       expect(netFlowCell.dataset.figureState).toBe('replay');
       expect(within(netFlowCell).queryByTestId('figure-live-dot')).toBeNull();
     },

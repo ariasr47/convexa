@@ -395,7 +395,14 @@ const ROUTES: Array<{ path: string; ready: (page: Page) => Promise<void> }> = [
   { path: '/', ready: async (p) => void (await expect(p.getByTestId('landing')).toBeAttached()) },
   {
     path: '/ticker/TSLA',
-    ready: async (p) => void (await expect(p.getByText('Call wall').first()).toBeAttached()),
+    ready: async (p) => {
+      // (v2, curvature-v2-desk-and-read FE-8) Re-anchored: `Call wall` moved from the deleted
+      // twelve-tile grid (the old dealer positioning widget) to the level ladder. The words are
+      // UNCHANGED by criterion 2 — this anchor is on the ladder's own testid so a future copy
+      // change reds ONE assertion instead of ~12 e2e cases at every width.
+      await expect(p.getByTestId('level-ladder')).toBeAttached();
+      await expect(p.getByText('Call wall').first()).toBeAttached();
+    },
   },
   {
     path: '/positions',
@@ -807,7 +814,9 @@ for (const scheme of ['dark', 'light'] as const) {
     // the OPEN palette each fit without overflow (curvature-v2-foundations). Each names its own
     // content anchor BEFORE measuring (the suite's own vacuity-guard idiom) so a page that crashed
     // or rendered blank would fail there, not silently pass the overflow check on an empty page.
-    test('AC-40 — the sign-in wall fits at 393px (signed out, a gated surface)', async ({ page }) => {
+    test('AC-40 — the sign-in wall fits at 393px (signed out, a gated surface)', async ({
+      page,
+    }) => {
       await stubNetwork(page, { signedIn: false });
       await seed(page, { scheme });
       await page.goto('/positions');

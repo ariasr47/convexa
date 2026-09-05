@@ -2,8 +2,9 @@
  * LiveTape — the 5 LIVE-DERIVED StatTiles (Net flow 5m · Spread · Gamma flip · VWAP · Last trade).
  * These ride the SSE stream, so on a payload-gap drop the ones with a held value **dim + pause mark
  * + `offline · last known`**, and the ones with an empty latch dim + pause mark with no "last known"
- * words (SPEC §2.2, owner ruling 2's debt) — `[live-vs-static-isolation]`. The static
- * DealerPositioning tiles below never receive `offline`.
+ * words (SPEC §2.2, owner ruling 2's debt) — `[live-vs-static-isolation]`. The static tiles below
+ * (the ladder, ladder foot and read strip, curvature-v2-desk-and-read FE-8 — formerly the dealer
+ * positioning widget's grid) never receive `offline`.
  *
  * Session-tape (S1): title `Session tape` from first occupancy; no LIVE_TAPE_SUBTITLE_*; gamma flip
  * label is `Gamma flip · session tape`; Widget `live={NOT_LIVE}`; drop may dim — never the pause

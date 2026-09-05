@@ -98,10 +98,13 @@ describe('Ticker · heading semantics (h1 → h2, data values are never headings
     expect(h1s[0].textContent).toMatch(/TSLA · \$/);
 
     // Widget titles render as h2 (styling variant unchanged) — spot the board's widgets.
+    // (v2, curvature-v2-desk-and-read FE-8: necessary collateral fix on a write-path FE-8 and FE-11
+    // both touch, per PLAN.md's own Independence section — the old dealer positioning widget is
+    // deleted, its
+    // successor widgets are `StructureHeroPanel` (titled by symbol, not a fixed word) and
+    // `ReadStrip`, titled "Read strip".)
     expect(screen.getByRole('heading', { level: 2, name: /live tape/i })).toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', { level: 2, name: /dealer positioning/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /read strip/i })).toBeInTheDocument();
 
     // No skipped levels: every heading element on /ticker is h1 or h2.
     const levels = new Set(allHeadings().map((h) => h.tagName.toLowerCase()));

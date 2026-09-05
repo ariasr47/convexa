@@ -2,9 +2,11 @@
  * Ticker viewer — recomposed from reusable section components (convexa-redesign Ticker re-skin +
  * componentize). The monolith's stat-tile grid, headline, toolbar, term-structure card, fresh
  * positioning, off-exchange blocks, setups, and GEX chart are now the `ticker/widgets/*` components
- * (FigureCell (was StatTile, curvature-v2-foundations) · TickerToolbar · TickerHeader · LiveTape · DealerPositioning · GexStrikeProfile ·
- * TermStructureCard · FreshPositioning · OffExchangeBlocks · Setups). This file is the COMPOSITION +
- * data wiring only.
+ * (FigureCell (was StatTile, curvature-v2-foundations) · TickerToolbar · TickerHeader · LiveTape ·
+ * StructureHeroPanel · ReadStrip (curvature-v2-desk-and-read FE-8: replaces the old dealer
+ * positioning widget, now deleted) · GexStrikeProfile · TermStructureCard · FreshPositioning ·
+ * OffExchangeBlocks · Setups).
+ * This file is the COMPOSITION + data wiring only.
  *
  * Product spine #3 — hierarchy, not equal weight: Structure → Tape & plan → Supporting context.
  *
@@ -64,7 +66,6 @@ import { useTickerPageModel } from './useTickerPageModel';
 import { useTickerTradeFlows } from './useTickerTradeFlows';
 import {
   DealerFlowProjection,
-  DealerPositioning,
   FreshPositioning,
   GexStrikeProfile,
   IvRank,
@@ -78,6 +79,8 @@ import {
 } from './widgets';
 import { humanAge, StatSkeleton } from './widgets/_kit';
 import { CommandDeck, LastTradeReadout, TapePulseStrip, TickerToolbar } from './widgets/chrome';
+import { buildReadStrip, ReadStrip } from './widgets/read-strip';
+import { StructureHeroPanel } from './widgets/structure-hero';
 
 // The cold-load stat grid: the full tile structure as shimmer (AC-Skel-1).
 function StatGridSkeleton() {
@@ -565,17 +568,42 @@ export function TickerDashboard() {
                   Structure
                 </BoardZoneLabel>
 
-                {/* STATIC positioning — walls, GEX, opportunity. Stay rendered on SSE drop. */}
-                <ErrorBoundary variant="widget" label="Dealer positioning">
-                  <DealerPositioning
+                {/* Minimal, surgical fix (curvature-v2-desk-and-read FE-8, mirroring FE-6's own
+                    TapePulseStrip precedent above): the old dealer positioning widget (twelve
+                    static tiles + the Field/Magnet toggle) is deleted whole — its twelve cells
+                    decompose with zero orphans into `StructureHeroPanel` (walls, max pain via the
+                    ladder + ladder foot, the Field/Magnet toggle) and `ReadStrip` (the other seven +
+                    opportunity). Mounted HERE, in that widget's own former slot, so the
+                    "Call wall" readiness anchor and every re-pointed spec assertion still resolve —
+                    this is NOT FE-11's "reading order" rewrite (masthead → hero → strip → AI → quiet
+                    band): `GexStrikeProfile`, `PositionBrief` and everything below stay exactly where
+                    they were. FE-11 removes this comment when it does that full rewrite (its own
+                    Step 1 explicitly supersedes `GexStrikeProfile` with this same `StructureHeroPanel`
+                    — the two canvases coexisting between here and FE-11's commit is a KNOWN, NAMED,
+                    temporary condition, not a silent regression; see the FE-8 build report. */}
+                <ErrorBoundary variant="widget" label="Structure hero">
+                  <StructureHeroPanel
+                    symbol={ticker}
                     m={m}
-                    sig={sig}
-                    offExchange={data?.off_exchange}
-                    volOiThreshold={volOiThreshold}
-                    unusualCount={unusualStrikes.length}
-                    tierWord={tm.word}
-                    opportunityScore={sig?.opportunity_score ?? 0}
+                    strikes={data?.strike_profile.strikes ?? []}
                     structureAgeSeconds={structureAgeSeconds}
+                    pathSamples={structHist.samples}
+                    pathLoading={structHist.loading}
+                    pathError={structHist.error}
+                    pathBasis={structHist.basis}
+                  />
+                </ErrorBoundary>
+                <ErrorBoundary variant="widget" label="Read strip">
+                  <ReadStrip
+                    cells={buildReadStrip({
+                      m,
+                      offExchange: data?.off_exchange,
+                      volOiThreshold,
+                      unusualCount: unusualStrikes.length,
+                      tierWord: tm.word,
+                      opportunityScore: sig?.opportunity_score ?? 0,
+                      ivRank: m.iv_rank ?? null,
+                    })}
                   />
                 </ErrorBoundary>
 

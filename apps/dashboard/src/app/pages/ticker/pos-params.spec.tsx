@@ -251,8 +251,11 @@ describe('AC-74/AC-77 — the pos_* request shape never branches', () => {
   });
 
   it('opportunity score and tier are unchanged by any position activity', async () => {
+    // (v2, curvature-v2-desk-and-read FE-8) the opportunity cell moved from the old dealer
+    // positioning widget's
+    // grid (deleted) to the read strip's own `opportunity` slot — same value, new address.
     await mount();
-    const before = await screen.findByTestId('widget-dealer-positioning');
+    const before = await screen.findByTestId('read-strip-cell-opportunity');
     const scoreBefore = before.textContent;
 
     cleanup();
@@ -260,7 +263,9 @@ describe('AC-74/AC-77 — the pos_* request shape never branches', () => {
     seedCondor();
     seedSingleLeg('p-extra');
     await mount();
-    expect((await screen.findByTestId('widget-dealer-positioning')).textContent).toBe(scoreBefore);
+    expect((await screen.findByTestId('read-strip-cell-opportunity')).textContent).toBe(
+      scoreBefore,
+    );
   });
 });
 

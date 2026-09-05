@@ -26,7 +26,6 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { AccessibleHelp } from '../ai-rec/AccessibleHelp';
 import {
   CHARM_EMPTY,
   CHARM_LABEL,
@@ -45,6 +44,7 @@ import {
   VANNA_LABEL,
   VANNA_NEGATION,
 } from '../_kit/copy';
+import { AccessibleHelp } from '../ai-rec/AccessibleHelp';
 
 const MONO = typographyTokens.monoFontFamily;
 
@@ -169,7 +169,7 @@ export function DealerFlowProjection({ dfp }: Props) {
             <Box
               sx={{
                 display: 'grid',
-                // Intrinsically responsive (matches DealerPositioning's idiom): the two limbs pair
+                // Intrinsically responsive (matches ReadStrip's idiom): the two limbs pair
                 // side-by-side once the widget is wide enough (~440px) and stack below it, via
                 // `auto-fit`/`minmax`. CORRECTED (curvature-v2-foundations SPEC §2.5): the prior
                 // claim here — that this Emotion version doesn't pass `@container` through and

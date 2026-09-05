@@ -158,7 +158,7 @@ describe('buildReadStrip — every cell is dotless (criterion 8 model half)', ()
   });
 });
 
-describe('buildReadStrip — the seven decomposed cells, byte-for-byte with DealerPositioning', () => {
+describe('buildReadStrip — the seven decomposed cells, byte-for-byte with the old dealer positioning widget', () => {
   it('opportunity — score · tier word', () => {
     const c = bySlot(FULL_INPUT);
     expect(c.opportunity.value).toBe('73 · Actionable');

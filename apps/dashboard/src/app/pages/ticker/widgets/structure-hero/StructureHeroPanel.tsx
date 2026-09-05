@@ -1,8 +1,17 @@
 /**
  * StructureHeroPanel — the structure-field hero (curvature-v2-desk-and-read, SPEC §2.1/§2.5/§4.2).
- * ONE `Widget`, four PRESENTATIONAL children: `StructureFieldCanvas` · `LevelLadder` ·
- * `TapeTrailRow` · `StructurePathStrip` (plus the Field/Magnet toggle's `WallMagnetView`, an
- * alternate paint for the same canvas region).
+ * ONE `Widget`, four PRESENTATIONAL regions: `StructureFieldCanvas` · the level ladder
+ * (`LevelLadder` + `LadderFoot`, one region, two files) · `TapeTrailRow` · `StructurePathStrip`
+ * (plus the Field/Magnet toggle's `WallMagnetView`, an alternate paint for the same canvas region).
+ *
+ * FE-8 ADDITION (orphan fix): `LadderFoot` (Vol-norm GEX, Raw GEX 1% shock — SPEC §2.3's "ladder
+ * foot", FE-5) was built and tested but never mounted anywhere in the production tree — FE-6 wired
+ * the other three regions but not this one. Left unmounted, deleting the old dealer positioning
+ * widget (FE-8) would
+ * have turned these two cells into genuine orphans, exactly what the zero-orphan ledger exists to
+ * catch. Wired in here, beside `LevelLadder`, since the ledger already books it as part of the SAME
+ * ladder region, not a fifth one; `StructureHeroPanel.spec.tsx` carries no children-count assertion
+ * this contradicts.
  *
  * SINGLE STORE READ (SPEC §2.1): this is the ONLY component in `structure-hero/` that calls
  * `useLiveTape()`. It derives the branded claim ONCE and hands it — and the mid — DOWN AS PROPS.
@@ -40,7 +49,7 @@ import { humanAge } from '../_kit/copy';
 import { levelSpot } from '../_kit/distanceToLevel';
 import { useStreamLatch } from '../_kit/useStreamLatch';
 import { rowsToSamples, windowedStrikes } from '../gex-profile-chart/chart';
-import { buildLadder, formatAnchorText, LevelLadder } from '../level-ladder';
+import { buildLadder, formatAnchorText, LadderFoot, LevelLadder } from '../level-ladder';
 import { StructurePathStrip } from '../structure-history/StructurePathStrip';
 import { TapeTrailRow } from './TapeTrailRow';
 import { WallMagnetView } from './WallMagnetView';
@@ -212,6 +221,7 @@ export function StructureHeroPanel({
           )}
         </ErrorBoundary>
         <LevelLadder rows={rows} anchorText={anchorText} palette={palette} />
+        <LadderFoot volNormalizedGex={m.vol_normalized_gex} netGex={m.net_gex} />
         <TapeTrailRow
           structureMid={structureMid}
           claim={claim}

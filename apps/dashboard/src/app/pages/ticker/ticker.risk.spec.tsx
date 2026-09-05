@@ -371,7 +371,7 @@ describe('Ticker · stream isolation (live-vs-static-isolation)', () => {
       expect(within(w).queryByText(/⏸/)).toBeNull();
     });
     expect(screen.getByTestId('widget-gex-strike-profile')).toBeInTheDocument();
-    expect(within(screen.getByTestId('dealer-positioning')).getByText('$260')).toBeInTheDocument(); // call wall value intact
+    expect(within(screen.getByTestId('level-ladder')).getByText('$260')).toBeInTheDocument(); // call wall value intact
     // OFFLINE is neither the cold skeleton nor a refresh/error state (3 distinct states).
     expect(screen.queryByTestId('cold-skeleton')).toBeNull();
     expect(screen.queryByText(/Couldn't refresh/)).toBeNull();
@@ -462,9 +462,13 @@ describe('Ticker · independent nullability (null matrix)', () => {
       for (const [other, otherCopy] of NULLABLE_SECTIONS)
         if (other !== field) expect(screen.queryByText(otherCopy)).toBeNull();
       // The board around it is intact — walls + score render, no error page.
-      const dealer = screen.getByTestId('dealer-positioning');
-      expect(within(dealer).getByText('$260')).toBeInTheDocument();
-      expect(within(dealer).getByText(/42 ·/)).toBeInTheDocument();
+      // (v2, FE-8) walls live in the ladder now; the score lives in the read strip's opportunity
+      // cell — two separate successors of the old dealer positioning widget's single container
+      // (deleted at FE-8).
+      expect(within(screen.getByTestId('level-ladder')).getByText('$260')).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId('read-strip-cell-opportunity')).getByText(/42 ·/),
+      ).toBeInTheDocument();
       expect(screen.queryByText('Retry')).toBeNull();
     },
   );
@@ -482,7 +486,7 @@ describe('Ticker · independent nullability (null matrix)', () => {
     await screen.findByText('Call wall');
     for (const [, emptyCopy] of NULLABLE_SECTIONS)
       expect(screen.getByText(emptyCopy)).toBeInTheDocument();
-    expect(within(screen.getByTestId('dealer-positioning')).getByText('$260')).toBeInTheDocument();
+    expect(within(screen.getByTestId('level-ladder')).getByText('$260')).toBeInTheDocument();
     expect(screen.queryByText('Retry')).toBeNull();
     expect(errSpy).not.toHaveBeenCalled();
     errSpy.mockRestore();
@@ -585,7 +589,7 @@ describe('Ticker · last_trade is display-only', () => {
     pushLive({ live: true, mid: 251, gamma_flip: 248, last_trade: 999.99 });
     expect(anchor()).toHaveTextContent('TSLA · $251.00');
     expect(flipTile()).toBeInTheDocument();
-    expect(within(screen.getByTestId('dealer-positioning')).getByText('$260')).toBeInTheDocument();
+    expect(within(screen.getByTestId('level-ladder')).getByText('$260')).toBeInTheDocument();
 
     // No recent print → the honest empty, NEVER the prior value styled current; anchor unmoved.
     pushLive({ live: true, mid: 251, gamma_flip: 248, last_trade: null });

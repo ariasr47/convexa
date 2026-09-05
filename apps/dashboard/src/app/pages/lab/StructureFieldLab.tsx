@@ -19,8 +19,8 @@ import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { StructureFieldCanvas } from './StructureFieldCanvas';
-import { StructureFieldWebGL } from './StructureFieldWebGL';
 import { buildDemoField, samplesFromStrikes, type StructureFieldModel } from './structureFieldDemo';
+import { StructureFieldWebGL } from './StructureFieldWebGL';
 // Note: Lab hub lives at /lab — this page is the shipped Structure Field deep-link.
 
 type Renderer = 'canvas2d' | 'webgl';
@@ -33,8 +33,9 @@ export function StructureFieldLab() {
   const [tick, setTick] = useState(0);
   const [renderer, setRenderer] = useState<Renderer>('canvas2d');
 
-  // Mechanical fix mirroring FE-1's DealerPositioning.tsx precedent: StructureFieldCanvas's
-  // `palette`/`surfaces` props became required at FE-3 (SPEC §2.7); this lab-only call site is not
+  // Mechanical fix mirroring FE-1's precedent on the old dealer-positioning widget (deleted whole
+  // at FE-8): StructureFieldCanvas's `palette`/`surfaces` props became required at FE-3 (SPEC
+  // §2.7); this lab-only call site is not
   // one of FE-3's owned paths but must satisfy the new prop shape for `npm run typecheck` (not
   // deferred). Out of this phase's product scope otherwise.
   const theme = useTheme();
@@ -204,12 +205,7 @@ export function StructureFieldLab() {
         {renderer === 'webgl' ? (
           <StructureFieldWebGL model={model} height={520} />
         ) : (
-          <StructureFieldCanvas
-            model={model}
-            height={520}
-            palette={palette}
-            surfaces={surfaces}
-          />
+          <StructureFieldCanvas model={model} height={520} palette={palette} surfaces={surfaces} />
         )}
 
         <Stack spacing={1} sx={{ mt: 3, maxWidth: 760 }}>

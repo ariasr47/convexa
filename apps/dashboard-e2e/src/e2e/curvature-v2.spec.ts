@@ -12,9 +12,11 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
  *     path, at 393/834/900/1280.
  *   - AC-20b — the rendered container-query step. See the block comment above that test for why it
  *     is recorded as `review` evidence rather than asserted pass/fail (PLAN's own sanctioned
- *     "honest fallback": `LiveTape.tsx`/`DealerPositioning.tsx` are BOTH `span={2}` — full bento
- *     width at every breakpoint — so this shipped page has no two-panel-on-one-screen pair to
- *     compare without re-laying out a surface, which is out of this phase's scope).
+ *     "honest fallback": `LiveTape.tsx`/`StructureHeroPanel.tsx` (curvature-v2-desk-and-read FE-8:
+ *     re-pointed from the deleted dealer positioning widget, its `span={2}` successor in that page
+ *     slot) are BOTH `span={2}` — full bento width at every breakpoint — so this shipped page has no
+ *     two-panel-on-one-screen pair to compare without re-laying out a surface, which is out of this
+ *     phase's scope).
  *
  * NETWORK — a self-contained `stubNetwork`/`seed` pair, deliberately not imported from
  * `no-overflow.spec.ts` (that file does not export them, and widening its export surface for one
@@ -445,7 +447,10 @@ test.describe('AC-34 — coarse pointer at 393px: the effective hit area, measur
     await expect(page.getByTestId('command-palette')).toBeAttached();
     await expectFloor(page.getByTestId('palette-command-surface-scanner'), 'palette row · Scanner');
     await expectFloor(page.getByTestId('palette-command-surface-ticker'), 'palette row · Ticker');
-    await expectFloor(page.getByTestId('palette-command-surface-positions'), 'palette row · Positions');
+    await expectFloor(
+      page.getByTestId('palette-command-surface-positions'),
+      'palette row · Positions',
+    );
     await expectFloor(page.getByTestId('palette-command-surface-alerts'), 'palette row · Alerts');
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('command-palette')).toHaveCount(0);
@@ -464,10 +469,17 @@ test.describe('AC-34 — coarse pointer at 393px: the effective hit area, measur
     await expect(page.getByTestId('nav-drawer')).toBeHidden();
 
     // -- FigureCell's ℹ (the one AC-34 names by name — the affordance this phase turned into a
-    // real focusable control). `dealer-positioning` renders at 393px (single-column bento).
+    // real focusable control). (v2, curvature-v2-desk-and-read FE-8) `dealer-positioning` is
+    // deleted; `ladder-foot` (inside `StructureHeroPanel`, the successor mounted in that same
+    // page slot) renders at 393px the same way and its Vol-norm GEX cell carries the SAME
+    // FigureCell ℹ primitive (the ladder's own rows do not — `LevelLadder.tsx` never passes an
+    // `info` prop — so the foot is the nearest equivalent site, not an arbitrary substitute).
     await expectFloor(
-      page.getByTestId('dealer-positioning').getByRole('button', { name: /^About /i }).first(),
-      "FigureCell's ℹ (dealer-positioning)",
+      page
+        .getByTestId('ladder-foot')
+        .getByRole('button', { name: /^About /i })
+        .first(),
+      "FigureCell's ℹ (ladder-foot)",
     );
 
     // -- the connection chip: ruling 5's floor applies to it ONLY "if it becomes interactive" — it
@@ -487,7 +499,12 @@ test.describe('AC-34 — coarse pointer at 393px: the effective hit area, measur
 /** The four "look-alike" widgets ruling 6 names — each keeps its own layout; only the affordance
  *  changed, from a hover-only `Tooltip` wrapping a non-focusable icon to a real `AccessibleHelp`
  *  `button` (`ai-rec/AccessibleHelp.tsx:8-12`, reused verbatim per the ruling). */
-const HOVER_INFO_WIDGETS = ['iv-rank', 'market-context', 'straddle-move', 'dealer-flow-projection'] as const;
+const HOVER_INFO_WIDGETS = [
+  'iv-rank',
+  'market-context',
+  'straddle-move',
+  'dealer-flow-projection',
+] as const;
 
 /**
  * A REAL touch tap — `touchstart` then a brief hold then `touchend` — not Playwright's `.tap()`
@@ -531,7 +548,10 @@ async function assertTapAndKeyboardReveal(page: Page, help: Locator, label: stri
   // KEYBOARD path — focus alone (no pointer at all) reveals the SAME content, because it is a real
   // `<button>` (native tab order) wrapped by a `Tooltip` that opens `onFocus`, not a hover-only one.
   await help.focus();
-  await expect(page.locator('[role="tooltip"]'), `${label}: keyboard focus reveals content`).toBeVisible();
+  await expect(
+    page.locator('[role="tooltip"]'),
+    `${label}: keyboard focus reveals content`,
+  ).toBeVisible();
   await help.blur();
   await expect(page.locator('[role="tooltip"]'), `${label}: hides on blur`).toBeHidden();
 }
@@ -558,10 +578,12 @@ test.describe('AC-35 — the six converted hover-only info sites', () => {
         await assertTapAndKeyboardReveal(page, help, `${widget} @ ${vp.label}px`);
       }
 
-      // The primitive itself (FigureCell's ℹ, shipped in `live-tape`/`dealer-positioning`) — one
+      // The primitive itself (FigureCell's ℹ, shipped in `live-tape`/`ladder-foot` — v2,
+      // curvature-v2-desk-and-read FE-8: `dealer-positioning` deleted, re-pointed to `ladder-foot`,
+      // the nearest equivalent FigureCell-with-info site; see the AC-34 block above for why) — one
       // concrete site proves the same shipped pattern; the loop above already covers ruling 6's six.
       const figureHelp = page
-        .getByTestId('dealer-positioning')
+        .getByTestId('ladder-foot')
         .getByRole('button', { name: /^About /i })
         .first();
       await assertTapAndKeyboardReveal(page, figureHelp, `FigureCell ℹ @ ${vp.label}px`);
@@ -577,15 +599,16 @@ test.describe('AC-35 — the six converted hover-only info sites', () => {
 // without re-laying out a surface: drop to `review` with both measured sizes written into the build
 // report — never to a jsdom row asserting style text."
 //
-// That is the case here. The only two widgets that use `FigureCell` (and therefore step against the
-// named `panel` container — `_kit/FigureCell.tsx:211-218`) are `LiveTape` and `DealerPositioning`,
-// and BOTH are mounted with `span={2}` (`LiveTape.tsx:133`, `DealerPositioning.tsx:71` — "Bento
-// column span" `Widget.tsx:63`) — full bento width at every breakpoint the grid has (`md`+:
-// `gridColumn: 'span 2'`; below `md`: the grid itself is one column, so still full width). There is
-// no THIRD `FigureCell` consumer and neither of these two ever renders inside a narrower context
-// (the widget "expand" dialog is `maxWidth="lg"` — WIDER, not narrower — `Widget.tsx:443`). Making a
-// narrow pair requires giving one of them `span={1}` or inventing a new narrow slot — a real layout
-// change this phase's own non-goals forbid (PLAN's scope discipline, same shape as ruling 5's).
+// That was the case at phase 1 (LiveTape + the old dealer positioning widget). (v2,
+// curvature-v2-desk-and-read FE-8: that widget is deleted, its walls-and-foot content re-pointed
+// into `StructureHeroPanel`'s own `LevelLadder`, ALSO a `FigureCell` consumer.) `LiveTape` and
+// `StructureHeroPanel` are BOTH mounted with `span={2}` (`LiveTape.tsx:133`, `StructureHeroPanel.
+// tsx` — "Bento column span" `Widget.tsx:63`) — full bento width at every breakpoint the grid has
+// (`md`+: `gridColumn: 'span 2'`; below `md`: the grid itself is one column, so still full width).
+// Neither ever renders inside a narrower context (the widget "expand" dialog is `maxWidth="lg"` —
+// WIDER, not narrower — `Widget.tsx:443`). Making a narrow pair requires giving one of them
+// `span={1}` or inventing a new narrow slot — a real layout change this phase's own non-goals
+// forbid (PLAN's scope discipline, same shape as ruling 5's).
 //
 // This test therefore does not assert AC-20b pass/fail. It captures REAL browser measurements (the
 // declaration cannot be jsdom-verified as a rendered value — that is exactly why AC-20b exists) at
@@ -604,19 +627,22 @@ test('AC-20b (review-only evidence) — rendered font-size of a traced FigureCel
     .locator('[data-figure-register="mono"]')
     .first()
     .evaluate((el) => getComputedStyle(el).fontSize);
-  const dealerPositioningSize = await page
-    .getByTestId('dealer-positioning')
+  // (v2, curvature-v2-desk-and-read FE-8) `dealer-positioning` deleted; `level-ladder` (inside the
+  // SAME `span={2}` `StructureHeroPanel` that took its page slot) is the re-pointed second site —
+  // its `FigureCell`s are ALSO `register="traced"` (mono), so this remains a like-for-like compare.
+  const structureHeroSize = await page
+    .getByTestId('level-ladder')
     .locator('[data-figure-register="mono"]')
     .first()
     .evaluate((el) => getComputedStyle(el).fontSize);
 
   console.log(
     `[AC-20b evidence] 393px viewport, single-column bento (both widgets span=2, so both panels ` +
-      `are the SAME width by construction): live-tape=${liveTapeSize} dealer-positioning=${dealerPositioningSize}`,
+      `are the SAME width by construction): live-tape=${liveTapeSize} level-ladder=${structureHeroSize}`,
   );
 
   // The only assertion made: BOTH values are real, valid computed sizes (the traced figures did
   // render, so the numbers going into the build report are not a measurement of a blank page).
   expect(liveTapeSize).toMatch(/^\d+(\.\d+)?px$/);
-  expect(dealerPositioningSize).toMatch(/^\d+(\.\d+)?px$/);
+  expect(structureHeroSize).toMatch(/^\d+(\.\d+)?px$/);
 });

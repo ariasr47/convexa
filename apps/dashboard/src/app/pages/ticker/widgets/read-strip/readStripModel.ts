@@ -5,14 +5,15 @@
  * `[absent-is-not-none]` in the SCROLL axis (at 393px an absent cell and a cell scrolled off the
  * rail are indistinguishable), and fixed slots have a repair variable cardinality does not.
  *
- * Seven of the eight cells decompose BYTE-FOR-BYTE from `DealerPositioning.tsx`'s values and
- * tooltips (re-verify the exact line numbers fresh — they drift; this file was written reading
- * `DealerPositioning.tsx` at the time of this task). The eighth (`ivRank`) comes from
- * `iv-rank/IvRank.tsx`'s own `ivRankStripFigure` — a digest of the number that widget's own FULL
- * body (percentile, band, basis line, advisory footer) still renders separately, untouched, in the
- * quiet band (FE-11).
+ * Seven of the eight cells decompose BYTE-FOR-BYTE from the old dealer positioning widget's values
+ * and tooltips (re-verify the exact line numbers fresh — they drift; this file was written reading
+ * that widget's source at the time of this task — it is deleted whole at FE-8). The eighth
+ * (`ivRank`) comes from `iv-rank/IvRank.tsx`'s own `ivRankStripFigure` — a digest of the number that
+ * widget's own FULL body (percentile, band, basis line, advisory footer) still renders separately,
+ * untouched, in the quiet band (FE-11).
  *
- * That accounting is what makes deleting `DealerPositioning` reviewable (FE-8): the twelve shipped
+ * That accounting is what makes deleting the old dealer positioning widget reviewable (FE-8): the
+ * twelve shipped
  * cells decompose with zero orphans — 3 to the ladder rows, 2 to the ladder foot (FE-5, done), 7
  * here, IV rank the eighth.
  */
@@ -83,8 +84,8 @@ export interface ReadStripInput {
   offExchange: OffExchange | null | undefined;
   volOiThreshold: number;
   unusualCount: number;
-  /** Opportunity tier word, computed in TickerDashboard via tierMeta (same source DealerPositioning
-   *  used). No accent-color prop — a FigureCell has none to take one. */
+  /** Opportunity tier word, computed in TickerDashboard via tierMeta (same source the old dealer
+   *  positioning widget used). No accent-color prop — a FigureCell has none to take one. */
   tierWord: string;
   opportunityScore: number;
   ivRank: IvRankRead | null;
@@ -94,7 +95,8 @@ const skewSign = (slope: number) => (slope >= 0 ? '+' : '−');
 
 /**
  * The off-exchange cell's info text (criterion 27: "context only, no side" — never omitted). The
- * "Top levels" clause — byte-for-byte from `DealerPositioning.tsx` — appears only when there is
+ * "Top levels" clause — byte-for-byte from the old dealer positioning widget (deleted at FE-8) —
+ * appears only when there is
  * data to name; the closing sentence is present in BOTH arms, unconditionally.
  */
 function offExchangeInfo(offExchange: OffExchange | null | undefined): string {

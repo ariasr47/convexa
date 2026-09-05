@@ -1,8 +1,10 @@
 /**
  * Ticker section copy + formatters — extracted verbatim from the TickerDashboard monolith so the new
- * section components (LiveTape, DealerPositioning, TermStructure, FreshPositioning, OffExchangeBlocks,
- * TickerHeader) share one source. **Behavior-preserving move only** — every string + numeric format is
- * byte-identical to the pre-refactor inline definitions (the ticker specs assert this copy).
+ * section components (LiveTape, StructureHeroPanel, ReadStrip, TermStructure, FreshPositioning,
+ * OffExchangeBlocks, TickerHeader) share one source. **Behavior-preserving move only** — every string
+ * + numeric format is byte-identical to the pre-refactor inline definitions (the ticker specs assert
+ * this copy). (The old dealer positioning widget is deleted at curvature-v2-desk-and-read FE-8; its
+ * two consumers of this file's copy are its successors above.)
  */
 import type { IvSkew, TermStructure } from '@convexa/api';
 
@@ -564,8 +566,16 @@ export function sessionTapeNotThisTickerSubtitle(armedSymbol: string, humanDate:
   return `Session day tape · ${armedSymbol} · ${humanDate} · not this ticker — not a live feed`;
 }
 
-/** Dealer positioning static grid — snapshot honesty + age. */
-export function dealerPositioningSubtitle(ageSeconds: number | null | undefined): string {
+/**
+ * Structure-snapshot honesty + age (curvature-v2-desk-and-read FE-8: renamed from
+ * `dealerPositioningSubtitle` — the old dealer positioning widget's own subtitle (that widget is
+ * deleted whole at FE-8) — per PLAN
+ * step 4, "re-pointed, not deleted." Kept exported with its string UNCHANGED so the honesty phrase
+ * survives the deletion, even though `StructureHeroPanel`/`ReadStrip` (FE-6/FE-7, already committed,
+ * outside this task's lane) ship their OWN bespoke basis subtitles rather than calling this helper —
+ * see the FE-8 build report for that disclosed, no-call-site-today finding.
+ */
+export function structureSnapshotSubtitle(ageSeconds: number | null | undefined): string {
   return withStructureAge(
     'Snapshot, never live — stay current on a stream drop; refresh with the data load',
     ageSeconds,
