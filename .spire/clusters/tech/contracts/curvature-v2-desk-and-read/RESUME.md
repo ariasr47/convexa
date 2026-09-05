@@ -10,8 +10,7 @@
 - `84651e8d` — FE-3 (the shared stroke table, the canvas's theme input) — landed by the conductor
   from a lane's uncommitted work after a rate-limit kill; verified cold by the conductor.
 - `b5251aa1` — FE-4 (the extracted pure paint step, the three live gates)
-- FE-5 (the level ladder) — see "Done (FE-5)" below; commit hash filled in after this session's
-  commit lands.
+- `2fbfd6c2` — FE-5 (the level ladder) — see "Done (FE-5)" below.
 
 Working tree is clean at the time of writing (post-FE-5 commit). `npm run typecheck` **0**, `npx nx
 test @convexa/dashboard` **0** @ **224 files / 2460 tests** (up from the 221/2424 baseline after
