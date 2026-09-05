@@ -1,4 +1,4 @@
-import { useCallback, useReducer, useRef } from 'react';
+import { useCallback, useMemo, useReducer, useRef } from 'react';
 import { classifyResearchOutcome, type ClassifiedArm } from './classify';
 import { projectDigest } from './digest';
 import { COVERAGE_TAIL, fetchResearch, listTail, loadTail } from './researchClient';
@@ -107,7 +107,9 @@ export function useSessionArchive(opts: UseSessionArchiveOptions = {}): SessionA
   const committedToken = useRef('');
   const booksShowingRef = useRef(false);
 
-  const corsSignal = opts.corsSignal ?? (() => false);
+  // `?? (() => false)` built a NEW function on every render, so every useCallback listing
+  // corsSignal in its deps was re-created every render and memoised nothing.
+  const corsSignal = useMemo(() => opts.corsSignal ?? (() => false), [opts.corsSignal]);
   const doFetch = opts.fetchImpl ?? fetchResearch;
   const documentIsPages = documentHostIsPages(
     opts.documentHost ?? (typeof window !== 'undefined' ? window.location.host : ''),

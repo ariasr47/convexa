@@ -9,8 +9,8 @@ use crate::services::day_tape::{
     axis_a_detail, derive_axis_a, derive_axis_c, derive_path_a, derive_path_b, in_tape_watchlist,
     is_not_storing_err, is_store_error, list_clock, load_clock_literal, normalize_symbol,
     parse_et_date, path_a_detail, path_b_detail, AxisA, DayContainer, DeriveInput, PathAKind,
-    PathARecord, SessionDayTape, COMMAND, HIT_PROVENANCE, LICENSE, MISS_PROVENANCE, NOT_STORING,
-    PATH_B_INTERVAL, TAPE_WATCHLIST,
+    PathARecord, COMMAND, HIT_PROVENANCE, LICENSE, MISS_PROVENANCE, NOT_STORING, PATH_B_INTERVAL,
+    TAPE_WATCHLIST,
 };
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
@@ -860,7 +860,9 @@ pub fn tape_read_vendor_call_count() -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    // Used only by these tests; keeps the lib build free of unused imports.
     use crate::services::chain_snapshot::ChainSnapshotStore;
+    use crate::services::day_tape::SessionDayTape;
     use crate::services::day_tape::{PathBSnapshot, LIST_CLOCK_CLOSED};
     use crate::services::session_chain_archive::SessionChainArchive;
     use axum::body::to_bytes;

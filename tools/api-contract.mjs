@@ -12,6 +12,7 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -483,10 +484,11 @@ function compileCandidateConsumers(schemaBytes) {
       Buffer.from(readFileSync(join(ROOT, 'libs/api/src/lib/broker.ts'))),
     ]),
   );
-  const cache = join(
-    process.env.TEMP ?? process.env.TMP ?? '.',
-    `convexa-api-contract-candidate-${cacheKey}.ok`,
-  );
+  // TEMP/TMP are Windows names. On macOS and on Linux CI both are unset, so this fell through
+  // to '.' and dropped the marker in the REPO ROOT — untracked, ungitignored, and one `git add .`
+  // away from being committed. os.tmpdir() honours TMPDIR and gives every platform a real
+  // temp directory.
+  const cache = join(tmpdir(), `convexa-api-contract-candidate-${cacheKey}.ok`);
   if (existsSync(cache)) return;
   const stage = mkdtempSync(join(ROOT, 'api-contract-candidate-'));
   try {

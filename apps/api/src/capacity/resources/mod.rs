@@ -26,6 +26,12 @@ pub mod linux;
 #[cfg(target_os = "windows")]
 pub mod windows;
 
+// `pid` is consumed by the windows and linux arms below; on any other target both are
+// compiled out and it is genuinely unused. CI is linux, so this never fires there.
+#[cfg_attr(
+    not(any(target_os = "windows", target_os = "linux")),
+    allow(unused_variables)
+)]
 pub fn sample_pid(pid: u32) -> Result<ResourceSnapshot, SampleError> {
     #[cfg(target_os = "windows")]
     {

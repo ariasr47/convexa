@@ -1,7 +1,7 @@
 //! Per-class keep: skip-GET on content-hit, extract locked names, discard gzip.
 //! Talks to a local `UniverseGet` trait (B6 adapts `MassiveFilesClient`).
 
-use super::clocks::{is_due, is_et_weekend, today_et_date};
+use super::clocks::{is_due, today_et_date};
 use super::extract::{extract_locked_from_path, ExtractError};
 use super::occupancy::{is_content_hit, Occupancy};
 use super::store::{ExtractClass, FlatFilesStore};
@@ -406,6 +406,8 @@ pub mod test_stub {
 mod tests {
     use super::test_stub::{plant_gzip, StubClient, StubResp};
     use super::*;
+    // Used only by these tests; keeps the lib build free of unused imports.
+    use super::super::clocks::is_et_weekend;
     use chrono::TimeZone;
     use chrono_tz::America::New_York;
     use std::time::Instant;
@@ -795,13 +797,25 @@ mod tests {
             &tmp,
         )
         .await;
-        assert_eq!(report.trades, ClassVerdict::Gate(Occupancy::IneligibleHoliday));
-        assert_eq!(report.quotes, ClassVerdict::Gate(Occupancy::IneligibleHoliday));
+        assert_eq!(
+            report.trades,
+            ClassVerdict::Gate(Occupancy::IneligibleHoliday)
+        );
+        assert_eq!(
+            report.quotes,
+            ClassVerdict::Gate(Occupancy::IneligibleHoliday)
+        );
         assert_eq!(client.send_count(ExtractClass::Trades), 0);
         assert_eq!(client.send_count(ExtractClass::Quotes), 0);
         assert_ne!(report.trades, ClassVerdict::Stored(Occupancy::EmptyExtract));
-        assert_ne!(occupancy_token(&Occupancy::IneligibleHoliday), "ineligible weekend");
-        assert_eq!(occupancy_token(&Occupancy::IneligibleHoliday), "ineligible holiday");
+        assert_ne!(
+            occupancy_token(&Occupancy::IneligibleHoliday),
+            "ineligible weekend"
+        );
+        assert_eq!(
+            occupancy_token(&Occupancy::IneligibleHoliday),
+            "ineligible holiday"
+        );
     }
 
     #[tokio::test]

@@ -120,3 +120,8 @@ target-qa-holiday/
 
 # Git worktrees created by verification lanes
 .worktrees/
+
+# api-contract.mjs working files. The .ok marker now lands in os.tmpdir(), but the staging
+# tree is mkdtemp'd inside the repo root by design and a crashed run leaves it behind.
+api-contract-candidate-*/
+convexa-api-contract-candidate-*.ok
