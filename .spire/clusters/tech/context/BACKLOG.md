@@ -160,6 +160,71 @@ P7 hist-chain · public SaaS before ledger N · Pages `_research`/`_metrics` pro
 `/lab` occupancy · `/_ops/replay` player chrome (shipped structural ban) ·
 score-lab **compute** HTTP · `opportunity_score` reweight.
 
+## Harvest — 2026-09-05 (integration residuals: the gates that do not gate)
+
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Not a GATE I cull and **not** a BRIEF. Residuals surfaced while landing
+`mainline-integration-2026-09` (GATE Q PASS `729445c`, merged `30b7381`) and its four
+follow-on fixes (PRs #40–#44). **Authorizes: nothing** on live score.
+
+**Thesis.** Every bug in this sequence was *pre-existing and invisible until the layer
+above it was fixed* — the container build could not fail visibly until `.dockerignore`
+was corrected, and the health field could not read empty until it reached the wire.
+Each passed a green pipeline. The common shape: **the suite proved the absence of a
+regression; nothing asserted the presence of the behavior.** The items below are all
+one class — standards this repo already meets but does not enforce, or gates whose
+output cannot be acted on.
+
+**New pool items (one BRIEF each if promoted — do not bundle):**
+
+- **`branch-protection-on-main`** — `main` has `protected=false`. `gh pr merge --auto`
+  therefore merges **immediately** rather than deferring, which is how `15efeda` landed
+  with Backend and Frontend still in flight (they passed; the process was still wrong).
+  Seven checks exist and none are required. *The repo has extensive gates and lacks the
+  one setting that enforces them.* Requiring the seven on `main` makes `--auto` behave the
+  way every caller already assumes it does. *Value H (prevents merging past red) · Effort L.*
+- **`deny-warnings-in-ci`** — CI has no `-D warnings`, no `RUSTFLAGS`, no clippy, no
+  crate-level `deny`. PR #44 took `api-rust` to **zero source-level warnings** (verified by
+  building the merge result: 26 warning lines, all `linker_messages` from Homebrew Rust on
+  macOS, absent on Linux). Nothing holds it there. **Cheapest at exactly zero, which is
+  now.** Sibling: `cargo fmt --check` exits 1 on 9 files and no gate runs it. *Value M
+  (prevents silent rot) · Effort L.*
+- **`supply-chain-blocked-reason-fidelity`** — `npm-audit-unavailable` covers three distinct
+  failures in `spawnCaptured` (spawn throw, 180s timeout, child error) and **all three write
+  `raw_exit_code: null`**. When `npm_advisories` blocked PR #43 twice, the receipt could not
+  say which. That opacity pushed diagnosis to a local reproduction that was contaminated by
+  npm cache-lock contention with a concurrent session, producing a confidently wrong
+  root-cause claim. A distinct `rule_id` per branch turns a guess into a lookup. *Value H
+  (a required gate whose failures are undiagnosable) · Effort L.*
+- **`deploy-smoke-asserts-revision`** — Deploy smoke probes endpoints that already existed,
+  so it passed for six days against an image from 2026-08-27 while every container build was
+  failing. `/api/health` now carries `release` (PR #43), making the assertion one line.
+  *Value H (the check that certified a stale deploy) · Effort L.*
+- **`artifacts-mjs-surfaces-build-errors`** — `artifacts.mjs` swallowed the container build's
+  compiler output; `error[E0583]: file not found for module 'coverage'` was invisible until a
+  temporary `--progress=plain` workflow exposed it. *Value M · Effort L.*
+- **`untrack-api-contract-cache-marker`** — `convexa-api-contract-candidate-a291ffee….ok` is
+  **committed on `main`**. PR #44 fixed the cause (marker now lands in `os.tmpdir()`) and
+  gitignored the pattern, but `.gitignore` does not affect tracked files. One `git rm --cached`.
+  *Value L · Effort L.*
+- **`node-26-toolchain-rotation`** — `.nvmrc` says 26.7.0 while `supply-chain.yml` pins
+  `node-version: 24.19.0` in four places. That pin is **load-bearing, not stale**:
+  `.supply-chain/tools.json` pins npm `11.17.0` by `sha256` of the Node **24.19.0** tarball
+  (`source_kind: bundled_with_node`), `acquire-tools.mjs` verifies it, and the capability
+  receipts record the same `tool_sha256`. PR #44's `engines.node` bump to `>=26.0.0` was
+  **reverted** (`c5d2a02`) for this reason — a floor CI sits below is not a floor. Moving to 26
+  means rotating tarball, sha256, and receipts together. *Value L · Effort M — deliberate
+  rotation, never a drive-by.*
+- **`toolchain-pin-coupling-comments`** — the `node-version: 24.19.0` pin gives no hint that a
+  `sha256` in `.supply-chain/tools.json` depends on it. The coupling is invisible from the
+  workspace where the edit would be made; a comment naming `tools.json` at each of the four
+  pins prevents the next reader (human or agent) from "modernising" it. *Value M (near-miss
+  this session) · Effort L.*
+
+**Housekeeping, not pool items:** 15 dependabot PRs open (several Rust crates, each wanting a
+~28-minute backend run); 12 stale `codex/*` branches predating the integration; decisions **D2**
+(which capacity harness survives) and **D3** (historical committed secret) still owner-blocked.
+
 ## Last GATE S — 2026-08-31 (`exchange-holiday-calendar` — NYSE full-day occupancy)
 <!-- atlas: theme=prove-the-edge horizon=now -->
 NYSE full-day weekday closures (2020..=2032) are ineligible like weekends, with a distinct
