@@ -1,5 +1,8 @@
 # RESUME — spire/curvature-v2-foundations (2026-09-03)
 
+**Resume status:** ACTIVE  
+**Written:** 2026-09-03 (GATE R, phase 1 closed at GATE S — a clean phase boundary, not a mid-build checkpoint)
+
 Written at GATE R for a **fresh session on another machine**. Self-contained against `PROJECT_CONTEXT.md`.
 Boot with `/conductor`; this file is the overlay.
 
