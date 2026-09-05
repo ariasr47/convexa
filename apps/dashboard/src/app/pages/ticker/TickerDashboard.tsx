@@ -2,7 +2,7 @@
  * Ticker viewer — recomposed from reusable section components (convexa-redesign Ticker re-skin +
  * componentize). The monolith's stat-tile grid, headline, toolbar, term-structure card, fresh
  * positioning, off-exchange blocks, setups, and GEX chart are now the `ticker/widgets/*` components
- * (StatTile · TickerToolbar · TickerHeader · LiveTape · DealerPositioning · GexStrikeProfile ·
+ * (FigureCell (was StatTile, curvature-v2-foundations) · TickerToolbar · TickerHeader · LiveTape · DealerPositioning · GexStrikeProfile ·
  * TermStructureCard · FreshPositioning · OffExchangeBlocks · Setups). This file is the COMPOSITION +
  * data wiring only.
  *
@@ -542,7 +542,6 @@ export function TickerDashboard() {
                     volOiThreshold={volOiThreshold}
                     unusualCount={unusualStrikes.length}
                     tierWord={tm.word}
-                    tierColor={tm.color}
                     opportunityScore={sig?.opportunity_score ?? 0}
                     structureAgeSeconds={structureAgeSeconds}
                   />

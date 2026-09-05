@@ -232,7 +232,8 @@ const hoverAmber = (src: string): string[] =>
 /** The "no amber on hover chrome" file list (§8-3a — the rule made structural). */
 const HOVER_CENSUS_FILES = [
   '/src/app/shared/ui/Widget/Widget.tsx',
-  '/src/app/pages/ticker/widgets/_kit/StatTile.tsx',
+  // Re-pointed, not deleted (AC-57): StatTile.tsx → FigureCell.tsx at curvature-v2-foundations.
+  '/src/app/pages/ticker/widgets/_kit/FigureCell.tsx',
   '/src/app/features/trading/positions/PositionRow.tsx',
   '/src/app/features/trading/positions/PositionCard.tsx',
   '/src/app/features/trading/orders/OrderRow.tsx',

@@ -25,7 +25,7 @@ describe('TapePulseStrip responsive header', () => {
     vi.unstubAllGlobals();
   });
 
-  it('renders offline tape, status, and structure as separate wrapping header fields', () => {
+  it('renders offline tape and structure as separate wrapping header fields; carries NO second page-scope liveness claim', () => {
     publishLiveTape({ ticker: 'SPCX', live: null, streamOffline: true });
     render(
       <ThemeProvider theme={themeForPref('dark')}>
@@ -36,7 +36,11 @@ describe('TapePulseStrip responsive header', () => {
     expect(getComputedStyle(header).display).toBe('flex');
     expect(getComputedStyle(header).flexWrap).toBe('wrap');
     expect(screen.getByTestId('tape-mid-readout')).toHaveTextContent('Mid $146.15');
-    expect(screen.getByTestId('tape-stream-state')).toHaveTextContent('⏸ Stream offline');
     expect(screen.getByTestId('tape-structure-readout')).toHaveTextContent('Structure $146.15');
+    // Re-pointed (curvature-v2-foundations, AC-57): `tape-stream-state` was a SECOND page-scope
+    // liveness authority beside the header connection chip (canon rule 18). It is now DELETED —
+    // the ONE connection chip (`TickerHeader`/`CommandDeck`) is the sole authority; that assertion
+    // lives in `ticker.risk.spec.tsx` / the new `connection` specs, not here.
+    expect(screen.queryByTestId('tape-stream-state')).toBeNull();
   });
 });

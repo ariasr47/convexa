@@ -10,6 +10,7 @@ const qualityManifest = JSON.parse(
   fs.readFileSync(path.join(ROOT, 'apps/dashboard-e2e/src/quality/manifest.json'), 'utf8'),
 ) as {
   full_chromium: {
+    inventory_id: string;
     tests: Array<{ test_id: string; file: string; title_path: string[]; project: string }>;
   };
   accessibility: { behaviors: Array<{ id: string }> };
@@ -58,7 +59,9 @@ const runtime = () => {
   };
 };
 const gateCounts: Record<string, number> = {
-  chromium: 52,
+  // (curvature-v2-foundations FE-10) 52 → 75: matches `manifest.json`'s `full_chromium.inventory_id`
+  // bump to `curvature-v2-foundations-75-v1` (`tools/lib/manifest.mjs` enforces the same number).
+  chromium: 75,
   compatibility: 15,
   accessibility: 16,
   visual: 6,
@@ -241,7 +244,10 @@ export class QualityReporter implements Reporter {
     };
     if (this.gate === 'chromium')
       Object.assign(summary, {
-        inventory_id: 'pre-feature-52-v1',
+        // Read from the manifest itself rather than a second hardcoded literal (curvature-v2-
+        // foundations FE-10 bumped this to `curvature-v2-foundations-75-v1` — a duplicated string
+        // here would have been a second place to forget on the next bump).
+        inventory_id: qualityManifest.full_chromium.inventory_id,
         project: 'chromium',
         tests: this.records,
       });

@@ -31,6 +31,34 @@ export function genuineIsLive(live: LiveUpdate | null, streamOffline: boolean): 
   return (live?.live ?? false) && !streamOffline;
 }
 
+/**
+ * GATE Q bounce (curvature-v2-foundations, finding 1) — `[live-vs-static-isolation]`. The ONE
+ * "is THIS the delivering live stream, right now" predicate, consumed by BOTH the connection chip
+ * (`connection/connectionState.ts`'s `'live'` kind) and the per-figure liveness motion in
+ * `LiveTape.tsx` (the label-row dot, the widget pulse, tick flash) — so there is exactly one answer
+ * to "is this live?", never two predicates that can silently disagree.
+ *
+ * Deliberately NOT `genuineIsLive` above: that function (consumed by the order engine and the
+ * positions "live" badge) does not check `market_session`, so it reads `true` while the venue is
+ * closed and the wire's `live` flag is stale-but-true — `apps/api/src/routes/stream.rs` derives
+ * `live` from tick recency and `market_session` from the ET clock **independently**, so the
+ * combination is reachable from the real wire, not merely a hypothetical fixture. It is also
+ * deliberately NOT `numbersActive`/`displayActive`: those answer "should figures show a moving
+ * number at all" (true during session-tape replay, by design — F6 is "full strength"), which is a
+ * strictly broader question than "is this the live stream" (replay is never the live stream).
+ *
+ * This is exactly the boolean `resolveConnectionState` uses to decide its `'live'` kind: no session
+ * tape, the stream is not offline, a payload exists, the market is not closed, and the payload says
+ * live.
+ */
+export function isDeliveringLive(live: LiveUpdate | null, streamOffline: boolean): boolean {
+  if (sessionTapeOf(live)) return false;
+  if (streamOffline) return false;
+  if (!live) return false;
+  if (live.market_session === 'closed') return false;
+  return live.live === true;
+}
+
 /** Headline/tape numbers may follow mid — never fills or live pulses. */
 export function displayActive(opts: {
   live: LiveUpdate | null;
@@ -173,20 +201,23 @@ export function sessionTapeChip(opts: {
         warnIcon: true,
       };
     case 'drop':
+      // AC-8 / SPEC §2.4 Icons row: no literal `⚠` in the string — the stroke warn icon renders
+      // instead (this is the ONE change the canon requires against the otherwise-shipped, verbatim
+      // sentences). `warnIcon: true` so the renderer actually shows that icon in its place.
       return {
         tone: 'warning',
-        text: '⚠ Session tape stream dropped',
+        text: 'Session tape stream dropped',
         tip: 'The ticker stream dropped while session tape was playing. Structure levels stay as of the last snapshot. This is not live Massive reconnecting.',
         pulse: false,
-        warnIcon: false,
+        warnIcon: true,
       };
     case 'fault':
       return {
         tone: 'warning',
-        text: '⚠ Session tape playback fault',
+        text: 'Session tape playback fault',
         tip: 'Session tape playback faulted. Last tape numbers may remain. This is not live Massive reconnecting.',
         pulse: false,
-        warnIcon: false,
+        warnIcon: true,
       };
     case 'not-this-ticker':
       return {

@@ -37,13 +37,12 @@ import type {
   MarketContextPack,
   TrendMomentumRead,
 } from '@convexa/api';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Stack from '@mui/material/Stack';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import { AccessibleHelp } from '../ai-rec/AccessibleHelp';
 import {
   MC_ADVISORY,
   MC_ATR_EMPTY,
@@ -127,7 +126,11 @@ function EmptyLine({ text, testid }: { text: string; testid: string }) {
   );
 }
 
-/** A caption label + optional ⓘ info affordance (the row/card tooltip carrier). */
+/**
+ * A caption label + optional ⓘ info affordance (the row/card tooltip carrier). Ruling 6
+ * (curvature-v2-foundations): converted to the shipped `AccessibleHelp` pattern — a real focusable
+ * `button`, reachable by tap and keyboard, not just hover (AC-35).
+ */
 function CaptionLabel({ label, info }: { label: string; info?: string }) {
   return (
     <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
@@ -137,14 +140,7 @@ function CaptionLabel({ label, info }: { label: string; info?: string }) {
       >
         {label}
       </Typography>
-      {info && (
-        <Tooltip title={info} arrow placement="top">
-          <InfoOutlinedIcon
-            sx={{ fontSize: 13, color: 'text.disabled' }}
-            data-testid={`mc-info-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
-          />
-        </Tooltip>
-      )}
+      {info && <AccessibleHelp label={`About ${label}`} text={info} />}
     </Stack>
   );
 }
@@ -433,9 +429,17 @@ export function MarketContext({ pack }: Props) {
               sx={{
                 display: 'grid',
                 // Intrinsically responsive (the DealerPositioning/DealerFlowProjection idiom): four
-                // across when wide, 2×2 at medium, single column narrow — NEVER a `@container`
-                // object key in sx (this Emotion version silently drops it; the dealer-flow post-QA
-                // catch pinned the `auto-fit`/`minmax` idiom).
+                // across when wide, 2×2 at medium, single column narrow, via `auto-fit`/`minmax`.
+                // CORRECTED (curvature-v2-foundations SPEC §2.5): the prior claim here — that this
+                // Emotion version drops or warns on an `@container` object key in `sx` — is FALSE
+                // for the dependency state in this tree (verified three levels down: Emotion emits
+                // an object key with an object value verbatim; stylis 4.2.0 special-cases `@c…n`
+                // into the nested-at-rule branch; MUI attaches `theme.containerQueries` and sorts
+                // container queries on every `sx` result). Container-query support is NOT the risk.
+                // This widget stays on `auto-fit`/`minmax` anyway — it is one of the four
+                // hand-rolled StatTile-family widgets ruling 6 keeps unconverted (not register-
+                // enforced, not container-stepped); adding `@container` here is a later phase's
+                // rebuild, not this comment fix.
                 gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
                 gap: 2,
               }}

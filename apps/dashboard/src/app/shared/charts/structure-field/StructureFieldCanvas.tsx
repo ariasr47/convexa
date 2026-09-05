@@ -871,7 +871,7 @@ export function StructureFieldCanvas({
             color: PHOSPHOR,
             background: RAISED,
             border: '1px solid rgba(138,155,180,0.3)',
-            borderRadius: 8,
+            borderRadius: '8px',
             padding: '6px 10px',
             pointerEvents: 'none',
           }}

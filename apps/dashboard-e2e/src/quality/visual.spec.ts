@@ -49,7 +49,8 @@ for (const scenario of visualScenarios) {
     }
     if (scenario.id === 'ticker-offline-mobile') {
       await page.clock.fastForward(15_000);
-      await expect(page.getByTestId('tape-stream-state')).toContainText('Stream offline');
+      // Re-pointed (curvature-v2-foundations, AC-57): folded into the ONE connection chip.
+      await expect(page.getByTestId('connection-chip').first()).toContainText('Live offline');
     }
     const topState = await stabilizeVisualTop(page);
     expect(topState).toMatchObject({ scrollY: 0, top: 0, position: 'sticky' });

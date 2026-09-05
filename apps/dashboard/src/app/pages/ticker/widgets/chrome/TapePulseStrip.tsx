@@ -204,16 +204,11 @@ export function TapePulseStrip({ structureMid, height = 88 }: TapePulseStripProp
               ${displayMid.toFixed(2)}
             </Box>
           </Typography>
-          {!isLive && (
-            <Typography
-              component="span"
-              variant="caption"
-              data-testid="tape-stream-state"
-              sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}
-            >
-              {tape.streamOffline ? '⏸ Stream offline' : 'Stream off'}
-            </Typography>
-          )}
+          {/* The `tape-stream-state` node (⏸ Stream offline / Stream off) is DELETED here —
+              curvature-v2-foundations SPEC §2.4: it was a SECOND page-scope liveness authority
+              beside the header connection chip, exactly what canon rule 18 exists to stop. Its
+              text folds into the ONE chip; `compatibility.spec.ts:48` (and the other pins named in
+              PLAN FE-5 step 5) are re-pointed in the same change. */}
         </Stack>
         <Typography
           component="span"

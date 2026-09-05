@@ -187,7 +187,9 @@ export function AuthDialog({
         // Elevated slate card (raised above the page) + crisp border + dialog shadow, per the Figma.
         paper: {
           sx: {
-            borderRadius: 2.5,
+            // DIALOG role = 16px (SPEC §2.2, ruling 4), declared ONCE via `theme.components
+            // .MuiDialog.styleOverrides.paper` — no local literal here (was `2.5`, i.e. 25px pre-flip),
+            // so this paper inherits the single declared dialog radius instead of drifting from it.
             border: 1,
             borderColor: 'divider',
             backgroundImage: 'none',

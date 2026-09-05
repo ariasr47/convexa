@@ -319,12 +319,28 @@ describe('Ticker · stream isolation (live-vs-static-isolation)', () => {
       await vi.advanceTimersByTimeAsync(16_000);
     });
 
-    // Live tiles degrade: dimmed + ⏸, last-known value RETAINED (never blanked).
-    expect(
-      within(screen.getByTestId('live-tape')).getAllByText('⏸ offline').length,
-    ).toBeGreaterThan(0);
+    // Live tiles degrade. FigureCell's pause mark is a real SVG icon, not the literal `⏸` glyph
+    // (curvature-v2-foundations SPEC §4.1/§4.2 Icons row) — assert the icon's presence structurally
+    // rather than a composed "⏸ offline" text node. Net flow / Spread take the NO-RETAINED arm
+    // (F5, bare literal — ruling 2: phase 1 does not add the retention latch to LiveTape); Gamma
+    // flip's rendered value already falls back to the bundle on a drop, so it takes the RETAINED
+    // arm (F4, dimmed) instead of blanking a value that is still honestly current (AC-17a/AC-17b).
+    const liveTape = screen.getByTestId('live-tape');
+    expect(within(liveTape).getAllByTestId('PauseIcon').length).toBeGreaterThan(0);
+    const netFlowCell = screen.getByText('Net flow (5m)').closest('[data-figure-state]');
+    expect(netFlowCell).toHaveAttribute('data-figure-state', 'offline-bare');
+    expect(within(netFlowCell as HTMLElement).getByText('offline')).toBeInTheDocument();
+    const spreadCell = screen.getByText('Spread').closest('[data-figure-state]');
+    expect(spreadCell).toHaveAttribute('data-figure-state', 'offline-bare');
+    const gammaFlipCell = screen.getByText('Gamma flip').closest('[data-figure-state]');
+    expect(gammaFlipCell).toHaveAttribute('data-figure-state', 'offline-retained');
+    expect(within(gammaFlipCell as HTMLElement).getByText('offline · last known')).toBeInTheDocument();
     expect(screen.getByTestId('last-trade')).toHaveTextContent('⏸ Last trade $251.13');
-    expect(screen.getByText('⚠ Live offline — reconnecting…')).toBeInTheDocument();
+    // The connection chip's offline label no longer carries the literal `⚠` (curvature-v2-foundations
+    // SPEC §4.2 Icons row — a real stroke warn icon renders instead) and asserts the resolved state
+    // directly rather than a composed text node.
+    expect(screen.getByTestId('connection-chip')).toHaveAttribute('data-connection-state', 'offline');
+    expect(screen.getByText('Live offline — reconnecting…')).toBeInTheDocument();
 
     // Statics keep rendering the last bundle, byte-identical, with NO offline look of their own.
     STATIC_WIDGETS.forEach((id, i) => {
@@ -342,7 +358,11 @@ describe('Ticker · stream isolation (live-vs-static-isolation)', () => {
     // RECONNECT: the next payload clears offline; the live look returns; statics unmoved.
     pushLive({ live: true, mid: 251, gamma_flip: 248, last_trade: 251.55 });
     expect(screen.getByTestId('last-trade')).toHaveTextContent('● Last trade $251.55');
-    expect(screen.queryByText('⚠ Live offline — reconnecting…')).toBeNull();
+    expect(screen.queryByText('Live offline — reconnecting…')).toBeNull();
+    expect(screen.getByTestId('connection-chip')).not.toHaveAttribute(
+      'data-connection-state',
+      'offline',
+    );
     STATIC_WIDGETS.forEach((id, i) =>
       expect(screen.getByTestId(id).textContent).toBe(staticBefore[i]),
     );

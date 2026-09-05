@@ -21,13 +21,12 @@
 import { typographyTokens } from '@/shared/theme/tokens';
 import { Widget } from '@/shared/ui/Widget';
 import type { DealerFlowProjection as Dfp } from '@convexa/api';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Stack from '@mui/material/Stack';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import { AccessibleHelp } from '../ai-rec/AccessibleHelp';
 import {
   CHARM_EMPTY,
   CHARM_LABEL,
@@ -64,7 +63,11 @@ function EmptyLine({ text, testid }: { text: string; testid: string }) {
   );
 }
 
-/** A limb section header: the label + an ⓘ info affordance carrying the StatTile-family tooltip. */
+/**
+ * A limb section header: the label + an ⓘ info affordance carrying the StatTile-family tooltip.
+ * Ruling 6 (curvature-v2-foundations): converted to the shipped `AccessibleHelp` pattern — a real
+ * focusable `button`, reachable by tap and keyboard, not just hover (AC-35).
+ */
 function LimbLabel({ label, info }: { label: string; info: string }) {
   return (
     <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 0.75 }}>
@@ -74,9 +77,7 @@ function LimbLabel({ label, info }: { label: string; info: string }) {
       >
         {label}
       </Typography>
-      <Tooltip title={info} arrow placement="top">
-        <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
-      </Tooltip>
+      <AccessibleHelp label={`About ${label}`} text={info} />
     </Stack>
   );
 }
@@ -169,9 +170,18 @@ export function DealerFlowProjection({ dfp }: Props) {
               sx={{
                 display: 'grid',
                 // Intrinsically responsive (matches DealerPositioning's idiom): the two limbs pair
-                // side-by-side once the widget is wide enough (~440px) and stack below it, with no
-                // container-query object key (this Emotion version doesn't pass `@container` through
-                // and warns on the kebab-case condition).
+                // side-by-side once the widget is wide enough (~440px) and stack below it, via
+                // `auto-fit`/`minmax`. CORRECTED (curvature-v2-foundations SPEC §2.5): the prior
+                // claim here — that this Emotion version doesn't pass `@container` through and
+                // warns on the kebab-case condition — is FALSE for the dependency state in this
+                // tree (verified three levels down: Emotion emits an object key with an object
+                // value verbatim, its kebab-case warning fires only in the scalar-value branch for
+                // CSS property names; stylis 4.2.0 special-cases `@c…n` into the nested-at-rule
+                // branch; MUI attaches `theme.containerQueries` and sorts container queries on every
+                // `sx` result). Container-query support is NOT the risk. This widget stays on
+                // `auto-fit`/`minmax` anyway — it is one of the four hand-rolled StatTile-family
+                // widgets ruling 6 keeps unconverted; adding `@container` here is a later phase's
+                // rebuild, not this comment fix.
                 gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
                 gap: 2,
               }}

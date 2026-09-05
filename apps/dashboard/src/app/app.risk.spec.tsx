@@ -342,8 +342,9 @@ describe('operator-vs-trader path separation', () => {
 //     behavior is the regression-prone part guarded here.)
 // =================================================================================================
 describe('mobile nav drawer', () => {
-  // Spine + lab: Scanner → Ticker → Positions → Alerts → Lab → Blog
-  const DRAWER_ENTRIES = ['scanner', 'ticker', 'positions', 'alerts', 'lab', 'blog'] as const;
+  // (v2) The four product links ONLY (canon rule 19, curvature-v2-foundations AC-23) — Lab and
+  // Blog moved to the footer, off the bar and the drawer.
+  const DRAWER_ENTRIES = ['scanner', 'ticker', 'positions', 'alerts'] as const;
 
   it('carries EXACTLY the trader NAV entries, no /_ops link, aria-current on the active entry', async () => {
     const user = userEvent.setup();

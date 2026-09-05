@@ -2,6 +2,7 @@
  * Display labels, microcopy, and formatters for the positions portfolio — verbatim from
  * UX_BLUEPRINT §2/§3/§4/§6. Pure strings + formatters; no side effects.
  */
+import { NO_BASIS_LABEL } from '@/shared/copy/notANumber';
 import type { MaxLossWithheldReason } from './maxLoss';
 import type { EntryBasis, EntryMode, PositionStatus } from './types';
 
@@ -122,8 +123,12 @@ export const NOT_RECORDED_TIP =
   "Convexa won't guess it. Nothing was deleted — the record is intact and still counted in your " +
   'history.';
 
-/** The `pl_pct` cell literal for `pl_pct_state.no_basis` — testid `cell-no-basis`. */
-export const NO_BASIS_LABEL = 'no basis';
+/**
+ * The `pl_pct` cell literal for `pl_pct_state.no_basis` — testid `cell-no-basis`. Re-pointed at the
+ * shared `NotANumber` closed union (`shared/copy/notANumber.ts`, PLAN U-3); re-exported under its
+ * existing name so no call site churns.
+ */
+export { NO_BASIS_LABEL };
 
 export const NO_BASIS_TIP =
   'This position opened at about no net debit or credit, so a percentage has nothing to measure ' +

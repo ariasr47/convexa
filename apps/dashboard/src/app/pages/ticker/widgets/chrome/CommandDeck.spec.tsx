@@ -23,9 +23,30 @@ import { ThemeProvider } from '@mui/material/styles';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { connectionStateFor } from '../../connection/connectionState';
+import { resolveChipContent } from '../../connection/copy';
 import type { SessionTapeOccupancy } from '../../sessionTapeStanding';
 import { CommandDeck } from './CommandDeck';
-import { connectionChip } from './TickerHeader';
+
+/**
+ * Migrated off the deleted `TickerHeader.connectionChip()` (curvature-v2-foundations, SPEC §2.4:
+ * "the resolver moves out of `TickerHeader.tsx`"). This adapter mirrors the OLD signature/shape
+ * exactly (`(live, streamOffline, reduced, routeSymbol?) => {tone,text,tip,dot,pulse,warnIcon} |
+ * null`) over the NEW resolver + pure chip-content function, so the 14 call sites below need no
+ * further shape changes — only the two sites asserting the now-corrected `drop`/`fault` and S0
+ * `offline` copy (the literal `⚠` dropped in favour of a real icon, SPEC §4.2 Icons row).
+ */
+function chip(
+  live: LiveUpdate | null,
+  streamOffline: boolean,
+  reduced: boolean,
+  routeSymbol?: string,
+) {
+  const route = routeSymbol ?? live?.ticker ?? '';
+  const state = connectionStateFor({ live, streamOffline, routeSymbol: route });
+  if (state == null) return null;
+  return resolveChipContent(state, live, route, reduced);
+}
 
 // ---- Fixtures --------------------------------------------------------------------------------
 function marketState(over: Partial<MarketState> = {}): MarketState {
@@ -201,29 +222,29 @@ afterEach(() => {
 // ============================================================================================
 describe('connectionChip — the single stream-driven chip (unit)', () => {
   it('live session → live chip with pulse; reduced motion strips the pulse', () => {
-    const c = connectionChip(liveUpdate({ live: true, market_session: 'regular' }), false, false);
+    const c = chip(liveUpdate({ live: true, market_session: 'regular' }), false, false);
     expect(c?.tone).toBe('info');
     expect(c?.text).toContain('live');
     expect(c?.pulse).toBe(true);
-    expect(connectionChip(liveUpdate({ live: true }), false, true)?.pulse).toBe(false);
+    expect(chip(liveUpdate({ live: true }), false, true)?.pulse).toBe(false);
   });
 
   it('stream offline SUPERSEDES a would-be live session — never a stale "live", never a pulse', () => {
-    const c = connectionChip(liveUpdate({ live: true, market_session: 'regular' }), true, false);
+    const c = chip(liveUpdate({ live: true, market_session: 'regular' }), true, false);
     expect(c?.tone).toBe('warning');
     expect(c?.text).toContain('Live offline');
     expect(c?.pulse).toBe(false);
   });
 
   it('no payload → no chip; no ticks in a covered session → the non-live warning (no pulse)', () => {
-    expect(connectionChip(null, false, false)).toBeNull();
-    const c = connectionChip(liveUpdate({ live: false, market_session: 'regular' }), false, false);
+    expect(chip(null, false, false)).toBeNull();
+    const c = chip(liveUpdate({ live: false, market_session: 'regular' }), false, false);
     expect(c?.tone).toBe('warning');
     expect(c?.pulse).toBe(false);
   });
 
   it('S1 starting chip is session tape · starting… not liveStatus', () => {
-    const c = connectionChip(
+    const c = chip(
       liveUpdate({
         live: false,
         feed: 'session_tape',
@@ -242,7 +263,7 @@ describe('connectionChip — the single stream-driven chip (unit)', () => {
   });
 
   it('S1 playing omits · 1× and prints tape HH:MM:SS ET', () => {
-    const c = connectionChip(
+    const c = chip(
       liveUpdate({ live: false, feed: 'session_tape', session_tape: tapeOcc({ pace: 1 }) }),
       false,
       false,
@@ -255,7 +276,7 @@ describe('connectionChip — the single stream-driven chip (unit)', () => {
   });
 
   it('S1 playing prints · 4× when pace is 4', () => {
-    const c = connectionChip(
+    const c = chip(
       liveUpdate({ live: false, feed: 'session_tape', session_tape: tapeOcc({ pace: 4 }) }),
       false,
       false,
@@ -265,24 +286,24 @@ describe('connectionChip — the single stream-driven chip (unit)', () => {
   });
 
   it('S1 streamOffline during playing is Session tape stream dropped not live-offline', () => {
-    const c = connectionChip(
+    const c = chip(
       liveUpdate({ live: false, feed: 'session_tape', session_tape: tapeOcc() }),
       true,
       false,
       'SPY',
     );
-    expect(c?.text).toBe('⚠ Session tape stream dropped');
+    expect(c?.text).toBe('Session tape stream dropped');
     expect(c?.text).not.toContain('Live offline');
     expect(c?.tone).toBe('warning');
   });
 
   it('S0 streamOffline is still Live offline reconnecting', () => {
-    const c = connectionChip(liveUpdate({ live: true, market_session: 'regular' }), true, false);
-    expect(c?.text).toContain('⚠ Live offline — reconnecting…');
+    const c = chip(liveUpdate({ live: true, market_session: 'regular' }), true, false);
+    expect(c?.text).toContain('Live offline — reconnecting…');
   });
 
   it('poison live true + session_tape still hollow session tape not ● live', () => {
-    const c = connectionChip(
+    const c = chip(
       liveUpdate({
         live: true,
         feed: 'session_tape',
@@ -299,7 +320,7 @@ describe('connectionChip — the single stream-driven chip (unit)', () => {
   });
 
   it('not-this-ticker chip names the armed identity', () => {
-    const c = connectionChip(
+    const c = chip(
       liveUpdate({
         ticker: 'QQQ',
         live: false,
@@ -314,7 +335,7 @@ describe('connectionChip — the single stream-driven chip (unit)', () => {
   });
 
   it('ended chip is session tape ended not live-offline', () => {
-    const c = connectionChip(
+    const c = chip(
       liveUpdate({
         live: false,
         feed: 'session_tape',
@@ -330,7 +351,7 @@ describe('connectionChip — the single stream-driven chip (unit)', () => {
   });
 
   it('gap chip only when standing is gap', () => {
-    const c = connectionChip(
+    const c = chip(
       liveUpdate({
         live: false,
         feed: 'session_tape',
@@ -371,7 +392,7 @@ describe('CommandDeck — sticky condensed bar (state-driven scroll condense + l
     setDeckVisible(false);
     const sticky = screen.getByTestId('deck-sticky');
     expect(sticky).toHaveTextContent('TSLA · $415.99'); // static price, NOT the stale 416.50 live mid
-    expect(within(sticky).getByText('⚠ Live offline — reconnecting…')).toBeInTheDocument();
+    expect(within(sticky).getByText('Live offline — reconnecting…')).toBeInTheDocument();
     expect(within(sticky).queryByText(/● live/)).toBeNull();
   });
 });

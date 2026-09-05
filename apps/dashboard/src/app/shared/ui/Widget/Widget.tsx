@@ -26,7 +26,7 @@
  * visible), reduced-motion-gated, firing only while genuinely live.
  */
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
-import { elevationFor } from '@/shared/theme/tokens';
+import { elevationFor, extrasFor } from '@/shared/theme/tokens';
 import { useWidgetChrome } from '@/shared/ui/Widget/WidgetChromeContext';
 import { useWidgetSelection } from '@/shared/ui/Widget/WidgetSelectionContext';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
@@ -131,7 +131,9 @@ export function Widget({
     flexDirection: 'column',
     ...(bodyVariant === 'inset'
       ? {
-          backgroundColor: theme.palette.background.default,
+          // v2 `ink2` — the WELL (SPEC §2.1). This faked the well with `background.default` (=
+          // `ink`, not `ink2`) before the token existed; now theme-derived via `extrasFor`.
+          backgroundColor: extrasFor(theme).well,
           boxShadow:
             theme.palette.mode === 'dark'
               ? 'inset 0 2px 10px -5px rgba(0,0,0,0.55)'
@@ -154,7 +156,11 @@ export function Widget({
       sx={[
         bodyPad === 'default' && { p: 2, pt: 1.5 },
         // Container-query context for the body: each widget styles its internals by its OWN width.
-        { containerType: 'inline-size' },
+        // NAMED (SPEC §2.5): an unnamed `@container` resolves against the NEAREST container
+        // ancestor, so a future nested rail would answer the panel's question instead of the panel
+        // itself. `FigureCell` queries `theme.containerQueries('panel')` and must NEVER query an
+        // unnamed container.
+        { containerType: 'inline-size', containerName: 'panel' },
         ...(Array.isArray(bodySx) ? bodySx : [bodySx]),
       ]}
     >
@@ -325,7 +331,11 @@ export function Widget({
           bgcolor: 'background.paper',
           border: '1px solid',
           borderColor: 'divider',
-          borderRadius: '12px',
+          // PANEL role (SPEC §2.2, ruling 4) — `1` is a THEME-DERIVED multiplier (1 × shape.borderRadius
+          // = 12px today), not a literal: inside `sx`, MUI resolves a numeric `borderRadius` through
+          // `createUnaryUnit(theme, 'shape.borderRadius', …)`, so `theme.shape.borderRadius` itself
+          // must never be passed as the raw value here (that would resolve to 12 × 12 = 144px).
+          borderRadius: 1,
           // Resting depth matches Command Deck (`elevationFor.e1`) — one material language.
           // Quiet (context band): same e1, no hover lift — tertiary claim.
           boxShadow: elevationFor(theme).e1,
@@ -374,7 +384,7 @@ export function Widget({
               content: '""',
               position: 'absolute',
               inset: 0,
-              borderRadius: '12px',
+              borderRadius: 1, // PANEL role — theme-derived multiplier, see the note above
               padding: '1.5px',
               // The gradient sweeps from primary through the live accent.
               background:
@@ -400,7 +410,11 @@ export function Widget({
                 left: 0,
                 width: 2,
                 height: '32%',
-                borderTopLeftRadius: '12px',
+                // `borderTopLeftRadius` is NOT one of MUI's recognized `sx` shorthand props (only
+                // the bare `borderRadius` key is routed through `createUnaryUnit`), so a raw theme
+                // number here passes straight through to emotion as CSS and is safely theme-derived
+                // (unlike the plain `borderRadius` sites above, which need the `1 ×` multiplier idiom).
+                borderTopLeftRadius: theme.shape.borderRadius,
                 background: 'linear-gradient(180deg, var(--mui-palette-info-main), transparent)',
                 pointerEvents: 'none',
                 opacity: 0.75,
@@ -434,14 +448,18 @@ export function Widget({
         slots={{ transition: Fade }}
         slotProps={{
           // Dim + blur the page behind for a premium "focus" feel.
-          backdrop: { sx: { backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' } },
+          // v2 `scrim` (SPEC §2.1) — the hardcoded `rgba(0,0,0,0.6)` is GONE, not overridden: the
+          // `MuiBackdrop` theme default now supplies `scrim` to every overlay, including this one.
+          backdrop: { sx: { backdropFilter: 'blur(4px)' } },
           paper: {
             sx: {
               // Crisp dark surface: kill MUI's dark-mode elevation overlay (the washed-grey look) and
               // pin the widget surface, matching the inline widget exactly.
               bgcolor: 'background.paper',
               backgroundImage: 'none',
-              borderRadius: '16px',
+              // DIALOG role = 16px, declared ONCE via `theme.components.MuiDialog.styleOverrides
+              // .paper` (SPEC §2.2, ruling 4) — no local literal here, so this paper inherits the
+              // single declared dialog radius instead of duplicating (and drifting from) it.
               border: '1px solid',
               borderColor: 'divider',
               boxShadow: 24,

@@ -111,7 +111,6 @@ function renderDP(overM: Partial<MarketState> = {}, offExchange: OffExchange | n
         volOiThreshold={1}
         unusualCount={0}
         tierWord="Actionable"
-        tierColor={theme.palette.warning.main}
         opportunityScore={73}
       />
     </ThemeProvider>,

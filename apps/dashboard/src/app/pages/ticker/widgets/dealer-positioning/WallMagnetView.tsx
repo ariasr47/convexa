@@ -145,7 +145,7 @@ export function WallMagnetView({
 
   return (
     <div ref={wrapRef} data-testid="wall-magnet-view" style={{ width: '100%' }}>
-      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', borderRadius: 8 }} />
+      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', borderRadius: '8px' }} />
     </div>
   );
 }

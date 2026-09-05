@@ -31,6 +31,7 @@ const config = {
     'app-loads.spec.ts',
     'broker-grouping.spec.ts',
     'broker.spec.ts',
+    'curvature-v2.spec.ts',
     'navigation.spec.ts',
     'no-overflow.spec.ts',
   ],

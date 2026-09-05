@@ -2,7 +2,7 @@
   "schema_version": 1,
   "support_policy_id": "playwright-engines-1.62.1",
   "full_chromium": {
-    "inventory_id": "pre-feature-52-v1",
+    "inventory_id": "curvature-v2-foundations-75-v1",
     "tests": [
       {
         "test_id": "d38f0e9816f51aa1922817ddad296f9fcfffdcb98335c43716eb971b1cf4f276",
@@ -460,6 +460,212 @@
         "title_path": [
           "lg 1280 no-overflow · dark scheme",
           "/settings fits 1280px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "716ebfe9795cfc528498cfd333d06b28b4751b4727ca470e24eff93eb2b33e11",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "AC-35 — the six converted hover-only info sites",
+          "have a tap AND a keyboard path at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "d443288ce649206734d2430813cc541adf395c34d5908e7d4f3b6e3a61db3086",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "AC-35 — the six converted hover-only info sites",
+          "have a tap AND a keyboard path at 834px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "5fbbd41af2c2d6919a1cdd094c79d8828ff160d5f163405d630a0138b6f98561",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "AC-35 — the six converted hover-only info sites",
+          "have a tap AND a keyboard path at 900px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "f70aa4b8a35f9b094b68659dbc0ea75c07c2083ff39d33211047b46f453c0579",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "AC-35 — the six converted hover-only info sites",
+          "have a tap AND a keyboard path at 1280px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "4b1407223e2035cb5bb6590094ce21c3babad4cdd1913c55e0d608ac340c38cb",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "AC-20b (review-only evidence) — rendered font-size of a traced FigureCell value, both panels, one viewport"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "d3d8972b71c27981edae5dfae41391fc4dd6b8c3723f7f431ab568990c46c869",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "AC-1a — one connection chip in the viewport, never two, never the deleted stream-state block",
+          "hero chip in view at rest; condensed chip replaces it in-viewport after scroll (hero node stays mounted, off-screen)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "0863040d6895985568b0d6e90c310b272f10fb0bb215b02245028c393e6841c7",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "AC-34 — coarse pointer at 393px: the effective hit area, measured, for every named control",
+          "the palette trigger + its rows, the burger drawer + its four links, and FigureCell’s ⓘ all measure ≥44px in both dimensions"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "6b548be765cbc94f9e11ccce736b21d397cc926b6a7e7170375b696c71f2840d",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "/alerts fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "159418b00977a9e14029062144186ed89348bd7f10cf6eecc889e708e436f2a1",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "AC-40 — the sign-in wall fits at 393px (signed out, a gated surface)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "1dc6a1160cef476541c4a02a4e3ea762ae7b5c9c4317d6e45647571005691810",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "AC-40 — the cold-start failure banner fits at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "bcd829c17709a2561043dac185f5992151ac8a8086a4b3463ef464df40789be5",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "AC-40 — the open ⌘K palette fits at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "e2eecbc13d5ce74c1333cf25e3b2e6dcefae3c48905a1a2b59f0466e63a81c03",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "/alerts fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "f88c7b5634d005183b4e6fa19330d003f6c884081da5b610164d956b280f6453",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "AC-40 — the sign-in wall fits at 393px (signed out, a gated surface)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "218cd01619623a541d51cd616c14808e02b8e878d5669228e69f0bb1de73ea4f",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "AC-40 — the cold-start failure banner fits at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "5a4ccf7cb3baa1a9b392bd500a3cf6f039e09022d89767bca980db24b4629eff",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "AC-40 — the open ⌘K palette fits at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "8d672ff93b271833cfbfca389b2a914af61289ba2452249307e8b1e49b8b3cd4",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "/ fits 834px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "fa9e37558ee0a78314941d1eef11e260d562f697a6bc364dc44a5d984b9bde6a",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "/ticker/TSLA fits 834px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "0d8a09ce0cf4f03a1590698da90e2432869f4ca911bc48d7e743b2a0f07223ba",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "/positions fits 834px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "b4693d7e775f94b81f2f46cbce811bbf4b75066f3f9d4ec1939e561805cb1805",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "/scanner fits 834px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "e379dbf91977d0d37b0568eab206fcbc581862a434414c97ef837e915ec31af6",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "/settings fits 834px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "0e7b76731148dd29c9eb27c22ee8392f5a731981eb194c12ae42b5ea0a1e3d34",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "/alerts fits 834px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "5e0207ffa6024babafba75b588fb159c22e19676992fe7fa344775a1148ee8df",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "md 900 no-overflow · dark scheme",
+          "/alerts fits 900px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "09fc2dcd819cfd5f0ef109e95d6264a4e9e81a38846654686122b96201827433",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · dark scheme",
+          "/alerts fits 1280px (scrollWidth <= innerWidth)"
         ],
         "project": "chromium"
       }

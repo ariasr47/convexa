@@ -5,7 +5,9 @@ import { loadManifest, validateManifest } from './lib/manifest.mjs';
 test('browser quality manifest is closed and has the required inventories', () => {
   const manifest = loadManifest();
   assert.equal(manifest.schema_version, 1);
-  assert.equal(manifest.full_chromium.tests.length, 52);
+  // (curvature-v2-foundations FE-10) 52 → 75 — see `lib/manifest.mjs`'s own comment at this same
+  // check for the itemized 23-test delta.
+  assert.equal(manifest.full_chromium.tests.length, 75);
   assert.equal(manifest.compatibility.journeys.length, 5);
   assert.deepEqual(manifest.compatibility.projects, ['chromium', 'firefox', 'webkit']);
   assert.equal(manifest.accessibility.scans.length, 9);

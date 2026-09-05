@@ -108,21 +108,27 @@ export function validateSummary(summary, options = {}) {
       'Automated WCAG-oriented scanning is not a complete manual accessibility audit or assistive-technology certification.'
   )
     err('accessibility disclaimer');
-  if (
-    summary.gate === 'chromium' &&
-    (summary.inventory_id !== 'pre-feature-52-v1' ||
+  if (summary.gate === 'chromium') {
+    // Read the expected inventory_id/count from the manifest itself, not a second hardcoded literal
+    // (curvature-v2-foundations FE-10 bumped `pre-feature-52-v1`/52 → `curvature-v2-foundations-75-
+    // v1`/75 — see `manifest.mjs`'s own comment at its matching check for the itemized delta).
+    const manifestInventoryId = manifest.full_chromium.inventory_id;
+    const manifestCount = manifest.full_chromium.tests.length;
+    if (
+      summary.inventory_id !== manifestInventoryId ||
       summary.project !== 'chromium' ||
-      summary.selected !== 52 ||
-      summary.tests.length !== 52)
-  )
-    err('Chromium inventory');
+      summary.selected !== manifestCount ||
+      summary.tests.length !== manifestCount
+    )
+      err('Chromium inventory');
+  }
   if (summary.gate === 'chromium') {
     const manifestIds = manifest.full_chromium.tests.map((x) => x.test_id);
     const identities = summary.tests.map((record) => record.test_id);
     uniqueSet(identities, 'Chromium tests');
     if (
-      manifestIds.length !== 52 ||
-      new Set(identities).size !== 52 ||
+      manifestIds.length !== manifest.full_chromium.tests.length ||
+      new Set(identities).size !== manifestIds.length ||
       !manifestIds.every((x) => identities.includes(x))
     )
       err('Chromium test identity');

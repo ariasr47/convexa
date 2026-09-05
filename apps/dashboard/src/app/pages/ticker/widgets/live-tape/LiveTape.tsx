@@ -18,7 +18,7 @@ import { Widget } from '@/shared/ui/Widget';
 import type { LiveUpdate, MarketState } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { useLiveTape } from '../../liveTapeStore';
-import { consumeStanding, sessionTapeOf } from '../../sessionTapeStanding';
+import { consumeStanding, isDeliveringLive, sessionTapeOf } from '../../sessionTapeStanding';
 import {
   LIVE_TAPE_SUBTITLE_LIVE,
   LIVE_TAPE_SUBTITLE_OFFLINE,
@@ -32,7 +32,7 @@ import {
   sessionTapeSubtitle,
 } from '../_kit/copy';
 import { distanceToLevel, levelSpot } from '../_kit/distanceToLevel';
-import { StatTile } from '../_kit/StatTile';
+import { FigureCell } from '../_kit/FigureCell';
 
 const GRID = {
   display: 'grid',
@@ -71,9 +71,18 @@ export function LiveTape({
 
   // S0: numbers + pulse while genuinely live. S1: numbers while display-active; never Widget pulse.
   const numbersActive = st ? displayActive : isLive && !streamOffline;
-  const widgetLive = st ? false : numbersActive;
-  // Flash only on real prints while numbers are active (keep-alive does not change mid/spread).
-  const flashActive = numbersActive && !streamOffline;
+  // GATE Q bounce (curvature-v2-foundations, finding 1) — [live-vs-static-isolation]: the label-row
+  // dot, the widget pulse and the tick flash answer "is THIS the delivering live stream right now?",
+  // which is NOT what `numbersActive` answers ("should numbers move at all" — true during session-
+  // tape playback too, and blind to `market_session` on the S0 path). The chip
+  // (`connection/connectionState.ts`) and these three figures now share the ONE predicate,
+  // `isDeliveringLive`, computed straight from the raw `live` payload + `streamOffline` — never
+  // re-derived from `numbersActive`/`isLive`/`displayActive` a second way.
+  const isDeliveringLiveNow = isDeliveringLive(live, streamOffline);
+  const widgetLive = isDeliveringLiveNow;
+  // Flash only on a print from the genuinely live, delivering stream (AC-11: tick flash stops in
+  // every one of the five non-live chip states, replay included — a replayed tape print is not one).
+  const flashActive = isDeliveringLiveNow;
 
   const netFlow = numbersActive && live ? live.net_flow : null;
   const netFlowFlash = useFlashOnChange(netFlow, { active: flashActive });
@@ -90,6 +99,12 @@ export function LiveTape({
   // S1 drop may dim numbers — never StatTile `⏸ offline` caption.
   const tileOffline = st ? false : streamOffline;
   const dimSx = st && streamOffline ? { opacity: 0.5 } : undefined;
+  // F6 (SPEC §4.1) — session replay never wears the label-row dot, structurally, not merely by data:
+  // `FigureCell` already implements the F6 branch (mono full strength, no dot, no pause mark, no
+  // `offline` caption) but no call site here ever set the prop, so it was unreachable (GATE Q bounce,
+  // finding 1, case B). VWAP is excluded on purpose — it is a static bundle field, never a replay
+  // artifact, so it stays in its ordinary default/F1 rendering at every standing.
+  const replayFigure = Boolean(st);
 
   let title = 'Live tape';
   let subtitle = numbersActive ? LIVE_TAPE_SUBTITLE_LIVE : LIVE_TAPE_SUBTITLE_OFFLINE;
@@ -135,35 +150,57 @@ export function LiveTape({
       bodyVariant="inset"
     >
       <Box sx={{ ...GRID, ...dimSx }} data-testid="live-tape">
-        <StatTile
+        {/* Net flow — AC-1c: live = isDeliveringLiveNow && netFlow != null. GATE Q bounce finding 1:
+            `netFlow != null` ALONE is not the delivering-stream predicate — it is also true while a
+            session tape plays back a real number, which must NOT wear a dot. F5-only this phase
+            (no retention latch on LiveTape — ruling 2; phase 2 owes it). */}
+        <FigureCell
+          register="traced"
           label={netFlowLabel}
           value={netFlow != null ? `${netFlow >= 0 ? '+' : ''}${netFlow.toLocaleString()}` : '—'}
-          accent={netFlow == null ? 'neutral' : netFlow >= 0 ? 'up' : 'down'}
-          offline={tileOffline}
+          live={isDeliveringLiveNow && netFlow != null}
+          offline={tileOffline ? { retained: false } : null}
+          replay={replayFigure}
           flash={netFlowFlash}
           info={netFlowInfo}
         />
-        <StatTile
+        {/* Spread — AC-1c: live = isDeliveringLiveNow && live?.spread != null (GATE Q bounce finding 1
+            — see the Net flow comment above for why `numbersActive` alone is the wrong gate). */}
+        <FigureCell
+          register="traced"
           label="Spread"
           value={numbersActive && live?.spread != null ? `$${live.spread.toFixed(2)}` : '—'}
-          accent="neutral"
-          offline={tileOffline}
+          live={isDeliveringLiveNow && live?.spread != null}
+          offline={tileOffline ? { retained: false } : null}
+          replay={replayFigure}
           flash={spreadFlash}
           info="Best ask minus best bid. Wider = a thinner, more volatile market."
         />
-        <StatTile
+        {/* Gamma flip — AC-1c: live = isDeliveringLiveNow && live?.gamma_flip != null, deliberately
+            NOT `flipValue != null` (pre-conversion :87 falls back to the bundle's m.gamma_flip, so a
+            dot keyed on the rendered value would claim the stream for a static number). The
+            rendered value already falls back to the bundle on a drop, so its offline arm is
+            RETAINED whenever a fallback exists (matches the shipped dim+caption behaviour), and
+            degrades honestly to the bare literal only if even the bundle has none. */}
+        <FigureCell
+          register="traced"
           label={gammaLabel}
-          value={`$${flipValue}`}
-          accent="neutral"
-          offline={tileOffline}
+          value={flipValue != null ? `$${flipValue}` : '—'}
+          live={isDeliveringLiveNow && live?.gamma_flip != null}
+          offline={tileOffline ? { retained: flipValue != null } : null}
+          replay={replayFigure}
           flash={flipFlash}
-          secondary={flipSecondary}
+          caption={flipSecondary}
           info="Analytic net-GEX zero-crossing (where hedging flips from dampening to amplifying) — not the same as call/put walls, which pick peak vendor-gamma strikes. Above it → steadier/range-bound; below it → more volatile/trending. Secondary line is distance from gex_spot (or mid)."
         />
-        <StatTile
+        {/* VWAP — AC-1c: ALWAYS dotless. `market_state.vwap` is a bundle field (never on the
+            stream), so it NEVER wears a live dot and NEVER dims on an SSE drop (pre-conversion:
+            no `offline` prop at all). */}
+        <FigureCell
+          register="traced"
           label="VWAP"
           value={m.vwap != null ? `$${m.vwap.toFixed(2)}` : '—'}
-          accent="neutral"
+          live={false}
           info="Volume-weighted average price for the session — a common intraday fair-value / mean-reversion reference."
         />
       </Box>

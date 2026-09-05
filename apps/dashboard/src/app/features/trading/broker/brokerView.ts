@@ -44,15 +44,18 @@ import {
   NOT_RECORDED,
   type PositionView,
 } from '@/features/trading/positions/view';
+import { NOT_PROVIDED } from '@/shared/copy/notANumber';
 import type { BrokerBook, BrokerFact, BrokerLeg, BrokerPosition } from '@convexa/api';
 import { isStale } from './predicates';
 
 /**
  * The FIFTH not-a-number literal (SPEC §1/§4): a fact the broker's FEED never carried. Distinct
  * from `not recorded` (positions/view.ts NOT_RECORDED — our own saved records) — two different
- * truths, never one literal for the other.
+ * truths, never one literal for the other. Re-pointed at the shared `NotANumber` closed union
+ * (`shared/copy/notANumber.ts`, PLAN U-3); re-exported under its existing name so no call site
+ * churns.
  */
-export const NOT_PROVIDED = 'not provided';
+export { NOT_PROVIDED };
 
 /** The shipped family for a fact the feed carried but Convexa could not parse. */
 export const UNAVAILABLE = 'unavailable';

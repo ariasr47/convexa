@@ -29,11 +29,15 @@ export function validateManifest(value) {
     fail('unsupported policy');
   const tests = value.full_chromium?.tests;
   if (
-    value.full_chromium?.inventory_id !== 'pre-feature-52-v1' ||
+    // (curvature-v2-foundations FE-10) bumped from the frozen `pre-feature-52-v1`/52 baseline: FE-10
+    // added 23 real Chromium tests (16 to `no-overflow.spec.ts` — AC-38/AC-39/AC-40/AC-57's `/alerts`
+    // route, the `tablet 834` width, and 3 degraded-surface cases at 2 schemes — plus 7 new to
+    // `curvature-v2.spec.ts`), so the frozen inventory this validator enforces moves with them.
+    value.full_chromium?.inventory_id !== 'curvature-v2-foundations-75-v1' ||
     !Array.isArray(tests) ||
-    tests.length !== 52
+    tests.length !== 75
   )
-    fail('full Chromium inventory must contain 52 tests');
+    fail('full Chromium inventory must contain 75 tests');
   unique(
     tests.map((x) => x.test_id),
     'full Chromium tests',

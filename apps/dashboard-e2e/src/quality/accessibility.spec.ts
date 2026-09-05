@@ -199,13 +199,27 @@ test.describe('A11Y behavioral sequences', () => {
     requestState.releaseInitialStream();
     await expect(page.getByTestId('command-deck')).toBeVisible();
     await expect(page.getByTestId('last-trade')).toContainText('● Last trade');
-    await expect(page.getByTestId('tape-stream-state')).toHaveCount(0);
+    // Re-pointed (curvature-v2-foundations, AC-57): `tape-stream-state` was a SECOND page-scope
+    // liveness authority beside the header connection chip (canon rule 18) — folded into the ONE
+    // chip. The offline label no longer carries the literal `⚠` (it renders a stroke warn icon
+    // instead — SPEC §4.2 Icons row), so the text assertion drops the glyph too.
+    await expect(page.getByTestId('connection-chip').first()).not.toHaveAttribute(
+      'data-connection-state',
+      'offline',
+    );
     await page.clock.fastForward(14_000);
-    await expect(page.getByTestId('tape-stream-state')).toHaveCount(0);
+    await expect(page.getByTestId('connection-chip').first()).not.toHaveAttribute(
+      'data-connection-state',
+      'offline',
+    );
     await page.clock.fastForward(1_000);
-    await expect(page.getByTestId('tape-stream-state')).toContainText('⏸ Stream offline');
+    await expect(page.getByTestId('connection-chip').first()).toHaveAttribute(
+      'data-connection-state',
+      'offline',
+    );
+    await expect(page.getByTestId('connection-chip').first()).toContainText('Live offline');
     await expect(page.getByTestId('last-trade')).toContainText('⏸ Last trade');
-    await expect(page.getByText('⚠ Live offline — reconnecting…')).toBeVisible();
+    await expect(page.getByText('Live offline — reconnecting…')).toBeVisible();
     await expect(page.getByText('● live')).toHaveCount(0);
     expect(() => requestState.releaseInitialStream()).toThrow(/already released/);
   });

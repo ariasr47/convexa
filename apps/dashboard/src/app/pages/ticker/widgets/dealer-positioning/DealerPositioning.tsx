@@ -22,7 +22,7 @@ import {
   volOiTip,
 } from '../_kit/copy';
 import { distanceToLevel, levelSpot } from '../_kit/distanceToLevel';
-import { StatTile } from '../_kit/StatTile';
+import { FigureCell } from '../_kit/FigureCell';
 import { WallMagnetView } from './WallMagnetView';
 
 const GRID = {
@@ -37,9 +37,9 @@ interface Props {
   offExchange: OffExchange | null | undefined;
   volOiThreshold: number;
   unusualCount: number;
-  /** Opportunity tier emphasis (word + accent color), computed in TickerDashboard via tierMeta. */
+  /** Opportunity tier word, computed in TickerDashboard via tierMeta. No accent color prop — a
+   *  FigureCell has none to take one (AC-13a; the v2 figure primitive carries no accent edge). */
   tierWord: string;
-  tierColor: string;
   opportunityScore: number;
   /** REST-bundle age (seconds) — product spine #4; never from the live stream. */
   structureAgeSeconds?: number | null;
@@ -53,7 +53,6 @@ export const DealerPositioning = memo(function DealerPositioning({
   volOiThreshold,
   unusualCount,
   tierWord,
-  tierColor,
   opportunityScore,
   structureAgeSeconds = null,
 }: Props) {
@@ -99,84 +98,96 @@ export const DealerPositioning = memo(function DealerPositioning({
         </Box>
       ) : (
         <Box sx={GRID} data-testid="dealer-positioning">
-          <StatTile
+          {/* All 12 sites: register="traced", live={false} — none of DealerPositioning's cells is
+              live-derived (AC-1c). Tier emphasis (Opportunity) survives in type + the amber word
+              already in the value string — no accentColor, no replacement mark (AC-13b). Call
+              wall / Put wall keep their EXACT label words, un-hedged into "(resistance)"/"(support)"
+              — the side lives in the label, the sign in the value glyphs (AC-13c). */}
+          <FigureCell
+            register="traced"
             label="Call wall"
-            value={`$${m.call_wall}`}
-            accent="up"
-            secondary={distanceToLevel(m.call_wall, spot)}
+            value={m.call_wall != null ? `$${m.call_wall}` : '—'}
+            live={false}
+            caption={distanceToLevel(m.call_wall, spot)}
             info="Strike with the most positive dealer gamma (vendor gamma × dealer-sign OI). Tends to act as resistance. Not the same object as the analytic gamma flip — see Methodology. Secondary line is distance from gex_spot (or mid)."
           />
-          <StatTile
+          <FigureCell
+            register="traced"
             label="Put wall"
-            value={`$${m.put_wall}`}
-            accent="down"
-            secondary={distanceToLevel(m.put_wall, spot)}
+            value={m.put_wall != null ? `$${m.put_wall}` : '—'}
+            live={false}
+            caption={distanceToLevel(m.put_wall, spot)}
             info="Strike with the most negative dealer gamma (vendor gamma × dealer-sign OI). Tends to act as support. OI sign is a convention, not measured inventory. Secondary line is distance from gex_spot (or mid)."
           />
-          <StatTile
+          <FigureCell
+            register="traced"
             label="Vol-norm GEX"
             value={
               m.vol_normalized_gex == null
                 ? 'unavailable'
                 : fmtUsdCompact(m.vol_normalized_gex.net_gex)
             }
-            accent={
-              m.vol_normalized_gex == null
-                ? 'neutral'
-                : m.vol_normalized_gex.net_gex >= 0
-                  ? 'up'
-                  : 'down'
-            }
+            live={false}
             info={
               m.vol_normalized_gex == null
                 ? 'Primary magnitude read — unavailable until ATM IV or 30d HV lands on this snapshot.'
                 : `Primary magnitude (vol-normalized). ${m.vol_normalized_gex.basis_note}`
             }
           />
-          <StatTile
+          <FigureCell
+            register="traced"
             label="Raw GEX (1% shock)"
             value={fmtUsdCompact(m.net_gex)}
-            accent={m.net_gex >= 0 ? 'up' : 'down'}
+            live={false}
             info="Secondary: raw dollar dealer gamma for a fixed 1% shock. Prefer Vol-norm GEX above for cross-regime magnitude."
           />
-          <StatTile
+          <FigureCell
+            register="traced"
             label="Net DEX"
             value={m.net_dex == null ? 'unavailable' : fmtUsdCompact(m.net_dex)}
-            accent="neutral"
+            live={false}
             info={netDexTip(m.call_dex, m.put_dex)}
           />
-          <StatTile
+          {/* Max pain — AC-19b: a null max_pain renders the BARE `—`, never `$—`. The pre-existing
+              `` `$${m.max_pain ?? '—'}` `` template was exactly the `$—` defect this criterion
+              names; guarded the same way call/put wall are above. */}
+          <FigureCell
+            register="traced"
             label="Max pain"
-            value={`$${m.max_pain ?? '—'}`}
-            accent="neutral"
-            secondary={distanceToLevel(m.max_pain, spot)}
+            value={m.max_pain != null ? `$${m.max_pain}` : '—'}
+            live={false}
+            caption={distanceToLevel(m.max_pain, spot)}
             info="Price at the nearest monthly expiration where the most option value expires worthless — a mild magnet into expiry. Secondary line is distance from gex_spot (or mid)."
           />
-          <StatTile
+          <FigureCell
+            register="traced"
             label="IV / HV"
             value={m.iv_hv_ratio.toFixed(2)}
-            accent="neutral"
+            live={false}
             info="Implied volatility ÷ recent realized volatility. >1 = options look expensive (favor selling); <1 = cheap (favor buying)."
           />
-          <StatTile
+          <FigureCell
+            register="traced"
             label="Vol/OI"
             value={
               m.chain_vol_oi_ratio == null ? 'unavailable' : `${m.chain_vol_oi_ratio.toFixed(2)}×`
             }
-            accent="neutral"
+            live={false}
             info={volOiTip(volOiThreshold, unusualCount)}
           />
-          <StatTile
+          <FigureCell
+            register="traced"
             label="IV skew"
             value={
               m.iv_skew == null
                 ? 'unavailable'
                 : `${m.iv_skew.slope >= 0 ? '+' : '−'}${Math.abs(m.iv_skew.slope).toFixed(1)} pts · ${skewState(m.iv_skew.slope)}`
             }
-            accent="neutral"
+            live={false}
             info={m.iv_skew == null ? 'IV skew unavailable this cycle.' : skewTip(m.iv_skew)}
           />
-          <StatTile
+          <FigureCell
+            register="traced"
             label="Term structure"
             value={
               m.term_structure == null
@@ -185,7 +196,7 @@ export const DealerPositioning = memo(function DealerPositioning({
                   ? '—'
                   : m.term_structure.state
             }
-            accent="neutral"
+            live={false}
             info={
               m.term_structure == null
                 ? 'Term structure unavailable this cycle.'
@@ -193,10 +204,11 @@ export const DealerPositioning = memo(function DealerPositioning({
             }
           />
           {offExchange?.ratio_pct != null && (
-            <StatTile
+            <FigureCell
+              register="traced"
               label="Off-exchange %"
               value={`${offExchange.ratio_pct}%`}
-              accent="neutral"
+              live={false}
               info={`Share of recent volume printed off-lit (dark pools/ATS + internalized retail). Top levels: ${
                 offExchange.levels
                   .slice(0, 3)
@@ -205,11 +217,11 @@ export const DealerPositioning = memo(function DealerPositioning({
               }. Side/intent unknown — context only, not a directional signal.`}
             />
           )}
-          <StatTile
+          <FigureCell
+            register="traced"
             label="Opportunity"
             value={`${opportunityScore} · ${tierWord}`}
-            accent="neutral"
-            accentColor={tierColor}
+            live={false}
             info={
               '0–100 triage score (proximity + IV/HV stretch + setups + flip transition + optional dark pool). Does not use vol-norm GEX or IV-rank — those stay advisory. Not a trade signal.' +
               OPPORTUNITY_TIER_INFO

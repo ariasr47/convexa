@@ -45,6 +45,10 @@ const VIEWPORT = { width: 393, height: 852 };
  * content is tightest. If a scheme-dependent width ever appears, this is the assumption to revisit.
  */
 const WIDE_VIEWPORTS = [
+  // (v2) 834 ADDED (canon rule 17 — the design renders the phone at 390, the narrower of 390/393
+  // is the binding floor; 834 is the shipped `tablet`-band check). 900 is KEPT — the MUI `md` band
+  // is still where the tables are densest (SPEC §2.2's declared bands do not remove any MUI key).
+  { label: 'tablet 834', width: 834, height: 1112 },
   { label: 'md 900', width: 900, height: 900 },
   { label: 'lg 1280', width: 1280, height: 900 },
 ] as const;
@@ -405,6 +409,11 @@ const ROUTES: Array<{ path: string; ready: (page: Page) => Promise<void> }> = [
     path: '/settings',
     ready: async (p) => void (await expect(p.getByTestId('settings-page')).toBeAttached()),
   },
+  {
+    // (v2) `/alerts` joins the top-four nav this phase (SPEC §1) — AC-38 covers it at every width.
+    path: '/alerts',
+    ready: async (p) => void (await expect(p.getByTestId('alerts-page')).toBeAttached()),
+  },
 ];
 
 // ---- A SEEDED positions book ---------------------------------------------------------------------
@@ -530,15 +539,24 @@ async function seed(
   );
 }
 
-/** ONE handler, explicit branching — see the translation note at the top of the file. */
-async function stubNetwork(page: Page) {
+/**
+ * ONE handler, explicit branching — see the translation note at the top of the file.
+ * `signedIn` defaults true (owner lockdown: /positions and /scanner sit behind RequireAuth, so
+ * every layout/nav walk that is not SPECIFICALLY testing the wall must be signed in). AC-40's
+ * degraded-surface arm passes `signedIn: false` to reach the wall itself at 393px.
+ */
+async function stubNetwork(page: Page, opts: { signedIn?: boolean } = {}) {
+  const signedIn = opts.signedIn ?? true;
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
 
     if (path.startsWith('/api/auth/session')) {
-      // Owner lockdown (2026-08-06): /positions and /scanner sit behind RequireAuth, so these
-      // layout/nav walks must be SIGNED IN — the wall is not what they are testing.
+      if (!signedIn) {
+        return route.fulfill({
+          json: { authenticated: false, user: null, google_available: false, settings: null },
+        });
+      }
       return route.fulfill({
         json: {
           authenticated: true,
@@ -785,6 +803,42 @@ for (const scheme of ['dark', 'light'] as const) {
       });
     }
 
+    // -- AC-40 — degraded surfaces at 393px: the sign-in wall, the cold-start failure banner, and
+    // the OPEN palette each fit without overflow (curvature-v2-foundations). Each names its own
+    // content anchor BEFORE measuring (the suite's own vacuity-guard idiom) so a page that crashed
+    // or rendered blank would fail there, not silently pass the overflow check on an empty page.
+    test('AC-40 — the sign-in wall fits at 393px (signed out, a gated surface)', async ({ page }) => {
+      await stubNetwork(page, { signedIn: false });
+      await seed(page, { scheme });
+      await page.goto('/positions');
+      await expect(page.getByTestId('require-auth-wall')).toBeAttached();
+      await assertNoHorizontalOverflow(page);
+    });
+
+    test('AC-40 — the cold-start failure banner fits at 393px', async ({ page }) => {
+      // A MORE SPECIFIC, LATER-registered route wins (Playwright: last-registered runs first) —
+      // this overrides `stubNetwork`'s /api/ticker/ 200 with a transport fault for THIS test only.
+      await stubNetwork(page);
+      await page.route('**/api/ticker/**', (route) => route.fulfill({ status: 500, body: '' }));
+      await seed(page, { scheme });
+      await page.goto('/ticker/TSLA');
+      await expect(page.getByRole('button', { name: /retry/i })).toBeAttached();
+      await assertNoHorizontalOverflow(page);
+    });
+
+    test('AC-40 — the open ⌘K palette fits at 393px', async ({ page }) => {
+      await stubNetwork(page);
+      await seed(page, { scheme });
+      await page.goto('/ticker/TSLA');
+      await expect(page.getByText('Call wall').first()).toBeAttached();
+      // `Control+K` — the listener accepts EITHER `ctrlKey` or `metaKey`; Control is the reliable
+      // choice under headless Chromium regardless of host OS (CI runs Linux).
+      await page.keyboard.press('Control+K');
+      await expect(page.getByTestId('command-palette')).toBeAttached();
+      await expect(page.getByTestId('palette-listbox')).toBeAttached();
+      await assertNoHorizontalOverflow(page);
+    });
+
     test('tradeable-rec-inputs — a produced, OVER-CAP rec with a cited contract fits at 393px', async ({
       page,
     }) => {
@@ -882,11 +936,14 @@ for (const scheme of ['dark', 'light'] as const) {
       await expect(page.getByTestId('scanner-page')).toBeAttached();
       await expect(page.getByTestId('nav-menu-button')).toBeVisible();
       await expect(page.getByTestId('nav-ticker')).toBeHidden(); // inline nav hidden below md
-      // The drawer carries ALL four entries (incl. Blog, which previously clipped off-screen).
+      // (v2) The drawer carries EXACTLY the four product links (canon rule 19, AC-23) — Lab and
+      // Blog moved to the footer, off the bar AND the drawer.
       await page.getByTestId('nav-menu-button').click();
-      for (const e of ['ticker', 'positions', 'scanner', 'blog']) {
+      for (const e of ['scanner', 'ticker', 'positions', 'alerts']) {
         await expect(page.getByTestId(`nav-drawer-${e}`)).toBeVisible();
       }
+      await expect(page.getByTestId('nav-drawer-lab')).toHaveCount(0);
+      await expect(page.getByTestId('nav-drawer-blog')).toHaveCount(0);
     });
   });
 }

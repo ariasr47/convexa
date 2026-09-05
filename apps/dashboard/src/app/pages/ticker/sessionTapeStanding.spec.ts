@@ -5,6 +5,7 @@ import {
   displayActive,
   formatPlayingChipText,
   genuineIsLive,
+  isDeliveringLive,
   sessionTapeOf,
   type SessionTapeOccupancy,
 } from './sessionTapeStanding';
@@ -148,6 +149,59 @@ describe('sessionTapeStanding', () => {
         routeSymbol: 'SPY',
       }),
     ).toEqual({ kind: 'fault' });
+  });
+
+  describe('isDeliveringLive — GATE Q bounce (curvature-v2-foundations, finding 1)', () => {
+    // The ONE predicate `LiveTape.tsx` (the label-row dot, the widget pulse, tick flash) and
+    // `connection/connectionState.ts` (the chip's `'live'` kind) both call — this is a fast, DOM-free
+    // unit test of the exact boolean that gates `widgetLive`/`flashActive`, which cannot itself be
+    // observed via a rendered CSS assertion in jsdom (emotion's injected stylesheet is CUMULATIVE
+    // across renders in a test file — a bare vs. gated `animation:` invocation is NOT reliably
+    // distinguishable that way; verified empirically, not assumed, before choosing this unit-level
+    // proof instead). The DOM-observable consequence (the label-row dot) is covered separately by
+    // `live-dot-census.spec.tsx`, which renders `LiveTape` and counts `figure-live-dot`.
+    it('true only for a genuinely live, delivering S0 payload', () => {
+      expect(isDeliveringLive(live({ live: true, market_session: 'regular' }), false)).toBe(true);
+      expect(isDeliveringLive(live({ live: true, market_session: 'premarket' }), false)).toBe(true);
+      expect(isDeliveringLive(live({ live: true, market_session: 'afterhours' }), false)).toBe(true);
+    });
+
+    it('false when the market is closed, even if the wire still says live:true (finding 1 case A — apps/api/src/routes/stream.rs derives `live` from tick recency and `market_session` from the ET clock independently, so this combination is reachable from the real wire)', () => {
+      expect(isDeliveringLive(live({ live: true, market_session: 'closed' }), false)).toBe(false);
+      // genuineIsLive is the WRONG predicate for exactly this reason — it does not check
+      // market_session, so it disagrees with isDeliveringLive on this one input.
+      expect(genuineIsLive(live({ live: true, market_session: 'closed' }), false)).toBe(true);
+    });
+
+    it('false for every replay standing, even with a genuinely-shaped live:true payload (finding 1 case B — F6 must never wear a dot)', () => {
+      for (const phase of ['playing', 'gap', 'ended', 'fault'] as const) {
+        expect(
+          isDeliveringLive(live({ live: true, session_tape: occ({ phase }) }), false),
+          `phase=${phase}`,
+        ).toBe(false);
+      }
+      // starting (playing + no tape_time_et) and not-this-ticker (route mismatch is irrelevant to
+      // this predicate — it only sees the payload, not the route symbol) are still session-tape-
+      // poisoned the same way.
+      expect(
+        isDeliveringLive(
+          live({ live: true, session_tape: occ({ tape_time_et: null }) }),
+          false,
+        ),
+      ).toBe(false);
+    });
+
+    it('false when the stream is offline, and false with no payload at all', () => {
+      expect(isDeliveringLive(live({ live: true, market_session: 'regular' }), true)).toBe(false);
+      expect(isDeliveringLive(null, false)).toBe(false);
+    });
+
+    it('false when the venue itself is not producing ticks (live:false), overnight or otherwise', () => {
+      expect(isDeliveringLive(live({ live: false, market_session: 'regular' }), false)).toBe(false);
+      expect(isDeliveringLive(live({ live: false, market_session: 'overnight' }), false)).toBe(
+        false,
+      );
+    });
   });
 
   it('formatPlayingChipText drops tape-time before speed at 393px', () => {

@@ -22,9 +22,12 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useEffect, useRef, useState } from 'react';
+import { ConnectionChip } from '../../connection/ConnectionChip';
+import { connectionStateFor } from '../../connection/connectionState';
+import { LivenessAnnouncer } from '../../connection/LivenessAnnouncer';
 import type { SessionTapeOccupancy } from '../../sessionTapeStanding';
 import { QuickSymbols } from './QuickSymbols';
-import { TintChip as StatusChip, TickerHeader, connectionChip } from './TickerHeader';
+import { TickerHeader } from './TickerHeader';
 import { TickerToolbar } from './TickerToolbar';
 
 /** Shared with Widget frames — one elevation/radius language for deck ↔ board. */
@@ -93,7 +96,12 @@ function StickyCondensed({
   selected: string[] | null;
   reduced: boolean;
 }) {
-  const conn = connectionChip(live, streamOffline, reduced, m.ticker, lastSessionPhase);
+  const connState = connectionStateFor({
+    live,
+    streamOffline,
+    routeSymbol: m.ticker,
+    lastSessionPhase,
+  });
   const numbersActive = displayActive || isLive;
   const price = (numbersActive && live ? live.mid : m.price)?.toFixed(2);
   const expLabel =
@@ -104,9 +112,7 @@ function StickyCondensed({
     <Box
       data-testid="deck-sticky"
       sx={(t) => ({
-        position: 'sticky',
-        top: 0,
-        zIndex: 5,
+        // `position: sticky` lives on the PARENT (`deck-sticky-reveal`) now — see its comment.
         display: 'flex',
         alignItems: 'center',
         gap: 1.25,
@@ -134,16 +140,7 @@ function StickyCondensed({
       >
         {m.ticker} · ${price}
       </Typography>
-      {conn && (
-        <StatusChip
-          tone={conn.tone}
-          label={conn.text}
-          tip={conn.tip}
-          dot={conn.dot}
-          pulse={conn.pulse}
-          warnIcon={conn.warnIcon}
-        />
-      )}
+      <ConnectionChip state={connState} live={live} routeSymbol={m.ticker} reduced={reduced} />
       <Typography
         variant="caption"
         sx={{
@@ -205,15 +202,43 @@ export function CommandDeck(props: CommandDeckProps) {
     return () => io.disconnect();
   }, []);
 
+  const connState = connectionStateFor({
+    live,
+    streamOffline,
+    routeSymbol: m.ticker,
+    lastSessionPhase,
+  });
+
   return (
     <>
+      {/* The ONE page-scoped `aria-live` region (SPEC §2.4) — mounted ONCE and ALWAYS, above BOTH
+          chip renderers below, so it never announces twice while `condensed` keeps both mounted,
+          and its EMPTY initial mount (text arrives via a later state update) is what makes the
+          announcement fire reliably. Neither chip renderer owns its own region. */}
+      <LivenessAnnouncer state={connState} live={live} />
+
       {/* The condensed bar lives above the deck so it pins to the top of the scroll container. It is
-          revealed (opacity/height) only after the deck scrolls past; reduced-motion → instant. */}
+          revealed (opacity/height) only after the deck scrolls past; reduced-motion → instant.
+          `position: sticky` lives HERE, not on `StickyCondensed`'s own root, on purpose: a sticky
+          element can never render outside its CONTAINING BLOCK's own box (MDN "position: sticky" —
+          "confined to its containing block"). This wrapper's containing block is the tall,
+          page-length `<Box>` `TickerDashboard.tsx` renders it inside (deck + the full widget bento
+          board) — plenty of room for the sticky range to span the whole scroll. Its OLD home (the
+          inner `deck-sticky` Box, still just below) sits inside a wrapper whose OWN unstuck box is
+          at most ~64px tall once condensed, positioned right above the (much taller) deck — by the
+          time a real scroll had gone far enough for the hand-off sentinel to fire, that ~64px box
+          had already scrolled fully out of view, so the "sticky" child had no containing block left
+          to render within and silently rendered off-screen at its stale in-flow position — a real,
+          measured defect (curvature-v2-foundations AC-1a; confirmed via a live-browser geometry probe,
+          not asserted). */}
       <Box
         aria-hidden={!condensed}
         data-testid="deck-sticky-reveal"
         data-reduced={reduced ? 'true' : 'false'}
         sx={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 5,
           overflow: 'hidden',
           maxHeight: condensed ? 64 : 0,
           opacity: condensed ? 1 : 0,

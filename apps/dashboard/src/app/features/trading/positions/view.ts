@@ -13,6 +13,7 @@
  */
 import type { MarkResult } from '@/features/trading/model/mark';
 import type { MarkBasis } from '@/features/trading/model/types';
+import { NOT_RECORDED } from '@/shared/copy/notANumber';
 import { composePositionMark, type PositionMark } from './composeMark';
 import { evalSubjectOf, type EvalSubject } from './evalSubject';
 import {
@@ -38,13 +39,16 @@ export const STRUCTURE_LINE_MAX_STRIKES = 3;
 const ELLIPSIS = '…';
 /**
  * The literal for a fact OUR OWN SAVED RECORD never held (SPEC §4, the four not-a-number literals).
+ * Re-pointed at the shared `NotANumber` closed union (`shared/copy/notANumber.ts`, curvature-v2
+ * foundations SPEC §2.3 / PLAN U-3) so there is ONE source of truth instead of four; re-exported
+ * under its existing name so no call site churns.
  *
  * EXPORTED (additively, for reading only) so `broker/brokerView.ts` can SUBSTITUTE it: a broker row
  * with no strike/expiry is missing that fact from the FEED, not from a record of ours, and the two
  * truths must never share one literal. The broker projection swaps it for `not provided` — it does
  * not, and must not, change what this module emits for the sim book.
  */
-export const NOT_RECORDED = 'not recorded';
+export { NOT_RECORDED };
 
 export interface LegDisplayRow {
   leg_id: LegId;

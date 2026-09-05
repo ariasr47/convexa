@@ -9,6 +9,12 @@
  *      (numeric px or `'<n>rem'` below 0.6875rem) anywhere under `pages/`, `features/`, `shell/`,
  *      `shared/ui/` — EXCEPT the enumerated SVG-chart tick-text exemptions (chart annotation, not UI
  *      chips/labels; bumping them moves LOCKED-chart geometry — contract §10.1, flagged not decided).
+ *   3. AC-20a — `FigureCell`'s container-step DECLARATION (20 → 17 → 15px against the NAMED `panel`
+ *      container). HARDENED reader (curvature-v2-foundations SPEC §2.5): the old helper returned
+ *      the FIRST rule bearing the class and stopped at the first `}` — structurally blind to a
+ *      hoisted `@container` block, and it would have PASSED with those blocks deleted. `chipRule`
+ *      now captures EVERY block bearing the class (a global regex over the joined, whitespace-
+ *      stripped CSS text), so a `@container` block is visible to the assertion.
  */
 import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render } from '@testing-library/react';
@@ -16,8 +22,15 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { theme } from '@/shared/theme/theme';
 import { TintChip } from '@/shared/ui/TintChip';
+import { allRulesForClass, emotionClassOf, joinedStyleText } from './emotionCssReader';
 
 afterEach(() => cleanup());
+
+function classListOf(el: Element): string {
+  const cls = emotionClassOf(el);
+  expect(cls, 'element should carry an emotion (sx) class').toBeTruthy();
+  return cls as string;
+}
 
 // ---- 1. TintChip renders at the floor ------------------------------------------------------------
 
@@ -29,14 +42,8 @@ describe('TintChip — computed font-size is the 11px floor', () => {
       </ThemeProvider>,
     );
     const chip = getByText(label);
-    const emotionClass = Array.from(chip.classList).find((c) => c.startsWith('css-'));
-    expect(emotionClass, 'TintChip should carry an emotion (sx) class').toBeTruthy();
-
-    const css = Array.from(document.querySelectorAll('style'))
-      .map((s) => s.textContent ?? '')
-      .join('\n')
-      .replace(/\s+/g, '');
-    return css.split(`.${emotionClass}{`)[1]?.split('}')[0] ?? '';
+    const cls = classListOf(chip);
+    return allRulesForClass(joinedStyleText(), cls).join(';');
   };
 
   it('the emotion class the chip wears declares font-size:11px', () => {
@@ -45,6 +52,34 @@ describe('TintChip — computed font-size is the 11px floor', () => {
 
   it('the stage-3 emphasis tone holds the same 11px floor (§8-4)', () => {
     expect(chipRule('HIGH')).toContain('font-size:11px');
+  });
+});
+
+// ---- MUTATION GUARD for the hardened reader itself -------------------------------------------------
+
+describe('allRulesForClass — the hardened reader is non-vacuous and sees hoisted blocks', () => {
+  it('a single-rule fixture returns exactly that rule', () => {
+    const css = '.css-abc{font-size:20px;color:red;}';
+    expect(allRulesForClass(css, 'css-abc')).toEqual(['font-size:20px;color:red;']);
+  });
+
+  it('MUTATION GUARD: a fixture with a HOISTED @container block after the base rule is VISIBLE — the old reader would have missed it entirely', () => {
+    const css =
+      '@container panel (max-width:360px){.css-abc{font-size:17px;}}' +
+      '.css-abc{font-size:20px;}';
+    const rules = allRulesForClass(css, 'css-abc');
+    // Both the base declaration AND the hoisted @container declaration are captured.
+    expect(rules.some((r) => r.includes('font-size:17px'))).toBe(true);
+    expect(rules.some((r) => r.includes('font-size:20px'))).toBe(true);
+  });
+
+  it('MUTATION GUARD: deleting the @container block from the fixture removes it from the result — proving the assertion actually depends on that block existing', () => {
+    const withContainer =
+      '@container panel (max-width:360px){.css-abc{font-size:17px;}}' +
+      '.css-abc{font-size:20px;}';
+    const withoutContainer = '.css-abc{font-size:20px;}';
+    expect(allRulesForClass(withContainer, 'css-abc').join(';')).toContain('font-size:17px');
+    expect(allRulesForClass(withoutContainer, 'css-abc').join(';')).not.toContain('font-size:17px');
   });
 });
 
