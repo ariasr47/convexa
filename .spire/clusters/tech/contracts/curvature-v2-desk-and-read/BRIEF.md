@@ -23,7 +23,10 @@ Goal:            Re-cut the **ticker desk** from a bento of thirteen equal widge
                  retention latch** that ruling 2 explicitly deferred to this phase.
                  **Explicitly NOT in this phase:** scanner, positions, settings and alerts keep their
                  current composition (phase 3); the landing, the site pages and the responsive sweep
-                 that adds 834 to the overflow suite are phase 4. The eight remaining context widgets
+                 are phase 4 — **834 is NOT part of it**: `no-overflow.spec.ts:51` already ships
+                 `{ label: 'tablet 834', width: 834, height: 1112 }`, added in phase 1, exactly as
+                 canon rule 17 said it would be ("834 is added at build"). This brief's first draft
+                 dated 834 to phase 4, which is wrong (corrected at GATE C / R3). The eight remaining context widgets
                  are **re-housed** into the quiet band as placement + chrome only — their internals are
                  already on `FigureCell` from phase 1 and their per-widget rebuild is named debt with
                  phase 3 attached, not silent scope.
@@ -41,6 +44,11 @@ Decision impact: This is the owner's loudest recorded complaint and the reason t
                  opacity with the pause marker (and no "last known" words where no retained value
                  exists); and the no-overflow suite stays green at **393 / 834 / 900 / 1280** in both
                  schemes with the read strip scrolling as a rail rather than widening the page.
+                 **Corrected at GATE C (R3):** the suite runs **393 in both schemes** and **834 / 900 /
+                 1280 in one**, by documented decision (`no-overflow.spec.ts:43-45`); canon rule 17
+                 already states this correctly. This brief's first draft claimed "both schemes" at all
+                 four widths — inherited from phase 1's brief — and the error reached several draft
+                 acceptance rows before pm withdrew them.
 Feasibility:     pass. Frontend-only — no backend change, no vendor call, no math touched; the
                  `apps/api` diff must be **empty** and `opportunity_score` / `opportunity_tier` /
                  `state_fingerprint` byte-identical. Three load-bearing facts were **read at source**
@@ -103,6 +111,10 @@ Source:          `BACKLOG.md` → **Harvest — 2026-09-03 (design re-baseline �
                  `contracts/curvature-v2-foundations/BRIEF.md` as `curvature-v2-desk-and-read`. Phase 1
                  closed at GATE S (`state/spire-curvature-v2-foundations/RESUME.md`, ACTIVE) and carries
                  five owed items into this phase. **Eight owner rulings bind here**
+                 **Also corrected at R3:** this brief implied alerts is unshipped. It is not —
+                 `AlertsPage.tsx:24-49` composes a `level_touch` rule with a price threshold and
+                 persists it to `convexa.alerts.v1`, so the AI read's "Alert me at ..." action is
+                 feasible today and is a scope question, not a feasibility one.
                  (`contracts/curvature-v2-foundations/council/decisions.md`): rulings 1 (the wordless
                  pre-first-fact placeholder and its monotonic latch), 2 (retention — the latch is
                  explicitly this phase's debt), 3 (the nine-member vocabulary), 4 (the spacing

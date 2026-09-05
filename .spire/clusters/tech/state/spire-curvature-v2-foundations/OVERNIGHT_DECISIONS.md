@@ -61,6 +61,61 @@ before the build lane runs; it is a one-value change in the theme plus the canon
 
 ---
 
+## 🟠 Corrections to my own BRIEF (found by the council, verified by me)
+
+### C-1 — the BRIEF was wrong about the 834 breakpoint
+
+My BRIEF says the responsive sweep "adds 834 to the overflow suite" in **phase 4**. The architect
+challenged it; I checked and it is **already shipped**:
+`apps/dashboard-e2e/src/e2e/no-overflow.spec.ts:51` reads `{ label: 'tablet 834', width: 834, height: 1112 }`,
+with a comment at `:48` saying `(v2) 834 ADDED (canon rule 17 ...)`. It landed in **phase 1**.
+
+**Decided:** I am **not** editing `BRIEF.md` while R2 is in flight (changing a round's input mid-round is
+worse than a stale sentence the round is already attacking). It gets corrected at R3 when I fold
+conflicts, and recorded in `decisions.md`. Phase 4's scope shrinks by one item.
+
+**Correction to this correction (found at R3, by pm).** I first wrote that canon rule 17 "carries the same
+stale sentence" and needed the same fix. That overstated it. Rule 17 reads *"the suite … enforces **393**
+(both schemes), **900** and **1280** today; **834** is added at build"* — which was **accurate when
+written**, and phase 1 is the build that added it. The canon needs a **tense update**, not a correction of
+fact. **The canon was right and my BRIEF was wrong**, which is the opposite of what I implied.
+
+### C-2 — a real light-mode defect in the code the hero re-houses
+
+The architect reported and I verified: `shared/charts/structure-field/StructureFieldCanvas.tsx:18`
+hardcodes `const INK = '#0B0F17'`, its only hook is `useReducedMotion` (`:11`), and `:223` / `:434` fill
+with `INK` **unconditionally**. There is no theme or colour-scheme input at all, so **the structure field
+paints a dark rectangle in light mode**. Its header comment claims *"Theme literals match tokens.ts"* —
+which is a prose exemption standing in for the structural rule `hex-discipline` is supposed to enforce.
+
+This lands inside phase 2 whether or not anyone planned it: the hero is this canvas. **Decided:** it is
+in scope, and the fix is a real theme input rather than a second set of literals. **Reverse it by** ruling
+the hero dark-only in both schemes — which I do not recommend, since canon requires light/dark parity.
+
+### C-3 - "both schemes" is wrong above 393px
+
+I wrote that the overflow suite "stays green at **393 / 834 / 900 / 1280** in both schemes". It does not,
+**by documented decision**: `no-overflow.spec.ts:43-45` says *"ONE SCHEME for the wider bands, deliberately:
+horizontal overflow is box geometry and dark/light change no widths ... 393px keeps BOTH schemes because
+that is where content is tightest."* The wide bands run dark only. **Canon rule 17 already says this
+correctly** — *"enforces **393** (both schemes), **900** and **1280**"*. The wrong sentence is in **my
+BRIEF and the phase-1 BRIEF**, not the canon, and it propagated into several of pm's acceptance rows.
+
+**Decided:** the criteria say **393 in both schemes, 834 / 900 / 1280 in one** - matching the shipped
+suite and its stated assumption. Corrected at R3. **Note the interaction with C-2:** because the wide
+bands are dark-only *and* the structure field has no light rendering at all, **no existing test can catch
+the dark-rectangle-in-light-mode defect**. That gap needs its own criterion, not a wider overflow sweep.
+
+### C-4 - a trap the build lane will hit (not a correction, a warning)
+
+`no-overflow.spec.ts:398` uses `getByText('Call wall').first()` as the **readiness anchor for every
+`/ticker` route walk at every width** - and `Call wall` is a string rendered by `DealerPositioning`, the
+component this phase deletes. The moment the ladder replaces those twelve tiles, every wide-band overflow
+test hangs or fails on a missing anchor, and it will look like an overflow regression rather than a moved
+string. The plan must re-anchor it. Recorded here so it is not rediscovered at GATE Q.
+
+---
+
 ## ⚪ Boot + housekeeping (done before you slept, recorded for completeness)
 
 | # | Decision | Why | Reverse it by |

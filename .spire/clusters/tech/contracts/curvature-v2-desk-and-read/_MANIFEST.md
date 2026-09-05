@@ -21,6 +21,12 @@ Last gateway:  GATE I @ 2026-09-05
   Three load-bearing code facts read at source rather than asserted (`[cited-code-is-verified-not-assumed]`):
   the structure field already ships horizontally; `useFlashOnChange.ts:44` writes `prev.current` before its
   null guard at `:46`; `verify-tokens.mjs:38` prints the seven v2 additions without structurally checking them.
+- Baseline @ 2026-09-05 - conductor's own runs on `spire/curvature-v2-foundations` @ `6a3ef463`, **exit codes checked,
+  not printed summaries**: `npm run typecheck` **exit 0**; `npx nx test @convexa/dashboard` **exit 0** @ **215 files /
+  2376 tests**; `npm run lint` **exit 0**. All three match phase 1's recorded close-out figures, so the branch is
+  where the RESUME said it was.
+  e2e honestly **NOT RUN** at baseline (needs `npx playwright install chromium` + a production build + `ports:free`).
+- GATE C @ 2026-09-05 - R1 dispatched: architect, pm, ux, blind and parallel.
 
 ## Inherited from phase 1 (do not rediscover)
 `state/spire-curvature-v2-foundations/RESUME.md` is ACTIVE and carries the five owed items and the gotchas
