@@ -403,6 +403,28 @@ errors beyond the expected API-not-served 502s. Reverted the lab edit, confirmed
 `git status --short apps/dashboard/src/app/pages/lab/StructureFieldLab.tsx` returned nothing, killed
 the server, ran `npm run ports:free`.
 
+## GATE Z RESOLVED by the conductor 2026-09-05 - in scope, owned by FE-11
+
+The FE-6 lane was right to flag it and right not to build it into an FE-5-owned file on its own
+authority. Resolution:
+
+**(a) It is IN SCOPE, not debt.** SPEC §4.1's per-component table names both treatments. Declaring them
+under-built would be a silent scope cut, and the §4.4 curve-text-equivalent debt is not a precedent for
+it: that one was *explicitly* booked by delegated ruling P1 with a phase attached, after weighing cost.
+This has had no such decision, and "no task obviously owns it" is not a reason to drop a spec row.
+
+**(b) FE-11 owns it** ("Compose the desk, and burn down the spacing exemptions in the rewritten files
+only"). It is a cross-component consistency requirement spanning the ladder's mid row and the tape-trail
+row, and FE-11 is the task that legitimately touches the assembled desk. FE-7 through FE-10 each own a
+narrower surface, which is why none of them looked like the home.
+
+**(c) The 16b risk the lane worried about is resolved by branching on STANDING, not on "not live".**
+Criterion 16b settles that **replay renders F6 with no pause mark**. The §4.1 treatment applies to the
+**offline** and **stale** standings only. Implemented as a branch over the standing union, the two
+cannot contradict: replay is not offline. Implemented as `!isLive -> pause mark`, they would - which is
+exactly the hasty version the lane declined to write. That distinction is the mechanism; FE-11 must
+encode it explicitly and prove it with a replay-standing case that asserts the pause mark is **absent**.
+
 ## GATE Z item flagged (new, from item 5/7 above)
 
 **The ladder's mid row and the tape-trail row's own "session replay" F6 treatment are not built.**
