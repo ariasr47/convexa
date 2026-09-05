@@ -20,7 +20,7 @@
  * dirty check, the blit, rAF scheduling and the DOM listeners.
  */
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { LevelPalette } from './levelStrokes';
 import {
   computeGeometry,
@@ -69,6 +69,10 @@ export function StructureFieldCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const modelRef = useRef(model);
   modelRef.current = model;
+  // Criterion 24 (P1, DELEGATED, SPEC §4.4) — the canvas gains an accessible name and a summary
+  // alternative. This promotes an unlabelled canvas from one widget among thirteen to the desk's
+  // primary instrument; the design source already does this (`design/src/lib.mjs:296`).
+  const summaryId = useId();
   const hoverRef = useRef<{ x: number; y: number } | null>(null);
   const [hoverReadout, setHoverReadout] = useState<string | null>(null);
   const reducedMotion = useReducedMotion();
@@ -226,6 +230,9 @@ export function StructureFieldCanvas({
       <canvas
         ref={canvasRef}
         data-testid="structure-field-canvas"
+        role="img"
+        aria-label={`Net dealer gamma by strike for ${model.symbol}`}
+        aria-describedby={summaryId}
         style={{
           display: 'block',
           width: '100%',
@@ -239,6 +246,28 @@ export function StructureFieldCanvas({
           touchAction: 'none',
         }}
       />
+      {/* The text equivalent (criterion 24): what the field plots, the levels it marks, and a
+          pointer at the ladder as its tabular equivalent (criterion 23 — the ladder already puts
+          every level + distance in the DOM, beside the field). Visually hidden, not decorative —
+          this is the canvas's accessible description, not a caption. */}
+      <p
+        id={summaryId}
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: 'hidden',
+          clip: 'rect(0 0 0 0)',
+          whiteSpace: 'nowrap',
+          border: 0,
+        }}
+      >
+        Net dealer gamma by strike for {model.symbol}, marking the call wall, put wall, gamma flip
+        and max pain levels plus the live tape mid. The level ladder beside this field states the
+        same levels and distances as text.
+      </p>
       {hoverReadout && (
         <div
           style={{

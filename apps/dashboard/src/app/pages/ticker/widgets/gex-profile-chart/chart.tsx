@@ -8,6 +8,7 @@
 import type { FieldSample, StructureFieldModel } from '@/shared/charts/structure-field';
 import { StructureFieldCanvas } from '@/shared/charts/structure-field';
 import { resolveLevelPalette } from '@/shared/charts/structure-field/levelStrokes';
+import { andPresent, NOT_LIVE, type LiveClaim } from '@/shared/liveness/liveClaim';
 import { extrasFor } from '@/shared/theme/tokens';
 import type { StrikeRow } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -27,8 +28,8 @@ interface Props {
   structureAgeSeconds?: number | null;
   /** Ticker symbol for the field label. */
   symbol?: string;
-  /** True when live mid is coming from a live SSE tape. */
-  tapeLive?: boolean;
+  /** The branded delivering claim (SPEC §2.1) — never a hand-rolled boolean. */
+  tapeLive?: LiveClaim;
 }
 
 /** The readable strike window around spot, always wide enough to include the walls it labels.
@@ -46,7 +47,11 @@ export function windowedStrikes(
     .toSorted((a, b) => a.strike - b.strike);
 }
 
-function rowsToSamples(rows: StrikeRow[]): FieldSample[] {
+/** Exported so `structure-hero/StructureHeroPanel.tsx` can build the SAME `StructureFieldModel`
+ *  shape directly (it renders `StructureFieldCanvas` itself, not through this file's own
+ *  `GexProfileChart` — see that file's module doc for why the palette/surfaces IDENTITY the ladder
+ *  shares with the canvas rules out routing through a component that resolves its own theme). */
+export function rowsToSamples(rows: StrikeRow[]): FieldSample[] {
   return rows.map((s) => ({
     strike: s.strike,
     netGex: s.net_gex,
@@ -92,7 +97,7 @@ export const GexProfileChart = memo(function GexProfileChart({
   liveSpot,
   structureAgeSeconds = null,
   symbol = '',
-  tapeLive = false,
+  tapeLive = NOT_LIVE,
 }: Props) {
   // Pin for single-motion-moment.spec.ts — Structure Field has no Recharts animation path.
   // isAnimationActive={false}
@@ -135,7 +140,11 @@ export const GexProfileChart = memo(function GexProfileChart({
       gammaFlip,
       asOfSec,
       liveMid: mid,
-      live: Boolean(tapeLive && mid != null),
+      // `andPresent` (SPEC §2.1) — never a hand-rolled `Boolean(x && y != null)` chain. The model's
+      // own `live` field is a plain `boolean` (`shared/charts/structure-field/types.ts`, out of this
+      // task's owned files), but a `LiveClaim` widens to it safely; the fabrication this replaces
+      // was the composition, not the field's type.
+      live: andPresent(tapeLive, mid),
       source: 'rest',
     };
   }, [data, spot, callWall, putWall, gammaFlip, liveSpot, structureAgeSeconds, symbol, tapeLive]);

@@ -1,7 +1,15 @@
 /**
  * GexStrikeProfile — Structure Field + embedded Structure path strip.
  * Live mid from liveTapeStore; path is slow-lane session history (not live ticks).
+ *
+ * This widget is a STANDALONE consumer of the tape store — not one of `structure-hero/`'s four
+ * presentational children (SPEC §2.1's single-store-read invariant is scoped to that directory), so
+ * it legitimately keeps its own `useLiveTape()` read. What it no longer does is compute its own
+ * liveness a SECOND way: the old chain reading the store's own `isLive` flag off `tape` directly
+ * (SPEC §2.1's "third fabrication site") is replaced by the canon `isDeliveringLive`/`andPresent`
+ * composers, the same ones every other desk figure uses.
  */
+import { andPresent, isDeliveringLive } from '@/shared/liveness/liveClaim';
 import { Widget } from '@/shared/ui/Widget';
 import type { StrikeRow, StructureSample } from '@convexa/api';
 import { memo } from 'react';
@@ -16,7 +24,6 @@ interface Props {
   callWall: number;
   putWall: number;
   gammaFlip: number;
-  liveSpot?: number | null;
   expLabel?: string;
   structureAgeSeconds?: number | null;
   symbol?: string;
@@ -36,7 +43,6 @@ const GEX_INFO =
 export const GexStrikeProfile = memo(function GexStrikeProfile({
   expLabel = 'selected window',
   structureAgeSeconds = null,
-  liveSpot: liveSpotProp,
   symbol = '',
   pathSamples = null,
   pathLoading = false,
@@ -45,9 +51,9 @@ export const GexStrikeProfile = memo(function GexStrikeProfile({
   ...props
 }: Props) {
   const tape = useLiveTape();
-  const liveSpot =
-    liveSpotProp !== undefined ? liveSpotProp : tape.isLive && tape.live ? tape.live.mid : null;
-  const tapeLive = liveSpotProp !== undefined ? liveSpotProp != null : tape.isLive && !!tape.live;
+  const claim = isDeliveringLive(tape.live, tape.streamOffline);
+  const tapeLive = andPresent(claim, tape.live?.mid);
+  const liveSpot = tapeLive ? (tape.live?.mid ?? null) : null;
 
   if (!windowedStrikes(props.strikes, props.spot, props.callWall, props.putWall).length)
     return null;

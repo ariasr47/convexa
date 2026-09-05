@@ -1,42 +1,84 @@
 /**
- * Tape Pulse strip — thin dual-clock mid trail under Command Deck.
- * Structure mid from REST; live mid + print flashes from liveTapeStore.
+ * Tape Pulse strip — thin dual-clock mid trail under Command Deck. PRESENTATIONAL (curvature-v2-
+ * desk-and-read, SPEC §2.1/§4.2): the host (`structure-hero/TapeTrailRow.tsx`) computes the branded
+ * claim + the latched mid ONCE, at the desk's single store read, and hands them down as props. This
+ * file no longer calls `useLiveTape()` itself — that is SPEC §2.1's "second fabrication site"
+ * (`:32-33,:39,:69,:77` used to read the store's own `isLive` flag off `tape` directly), fixed by
+ * removing the read entirely rather than re-deriving it a second, correct way.
+ *
+ * `:33`'s old `isLive` (missing the `live.mid != null` requirement its own `liveMid` already had) is
+ * replaced by `andPresent(claim, mid)` below — the SAME composition helper every other desk figure
+ * uses, never a hand-rolled `&&` chain.
+ *
+ * `:71`/`:73`'s old paint-loop fallback (`displayMid = liveMid ?? structureMid`, pushed to the trail
+ * EVERY rAF frame unconditionally, so the drawn trail could be composed of structure-mid samples) is
+ * replaced: the trail pushes a point only while `activeClaim` holds — freezing (never zeroing, never
+ * blanking) on a drop. `mid` is already the LATCHED value the caller computed (FE-2's
+ * `useStreamLatch`), so the frozen trail's last point is the last genuinely-live tick, never a REST
+ * bundle number.
+ *
+ * `:199`'s `{isLive ? 'Live' : 'Mid'}` word is DELETED, not demoted (SPEC §4.2) — the label is `Mid`
+ * unconditionally. Liveness is carried once by the ladder's mid row dot; this readout never wears a
+ * second one (criterion 8/9).
+ *
+ * P5 (SPEC §2.7 mechanism): the former module-level `INK`/`PANEL`/`SIGNAL` hex literals are gone —
+ * `surfaces.ink`/`surfaces.panel` and `palette.mid` (the SAME resolved objects the field and the
+ * ladder receive) replace them, so this canvas can never drift onto a scheme-invariant fill
+ * (criteria 52/53). Its `hex-discipline.spec.ts` exemption entry is removed in the same commit.
  */
+import { withAlpha, type LevelPalette } from '@/shared/charts/structure-field/levelStrokes';
+import type { StructureFieldSurfaces } from '@/shared/charts/structure-field/StructureFieldCanvas';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import { andPresent, type LiveClaim } from '@/shared/liveness/liveClaim';
 import { typographyTokens } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useEffect, useRef } from 'react';
-import { useLiveTape } from '../../liveTapeStore';
-
-const INK = '#0B0F17';
-const PANEL = '#131A24';
-const SIGNAL = '#5E8BC4';
 
 export interface TapePulseStripProps {
-  /** Structure-clock mid (REST gex_spot / price). */
+  /** Structure-clock mid (REST gex_spot / price) — unchanged readout, never gated. */
   structureMid: number;
+  /** The host's base delivering claim (SPEC §2.1) — never re-derived here. */
+  claim: LiveClaim;
+  /** The mid to DISPLAY — already latch-resolved by the caller (FE-2): the last genuinely-live
+   *  tick, retained across a drop, cleared only on the caller's reset token. Never a REST fallback
+   *  (criterion 10/14). */
+  mid: number | null;
+  /** Optional last-print price, for the decorative buy/sell flash bars — same latch-adjacent
+   *  discipline: only ever a raw stream figure, gated the same way as the trail below. */
+  lastTrade?: number | null;
+  /** The SAME resolved objects `StructureFieldCanvas`/`LevelLadder` receive (SPEC §2.7) — never a
+   *  second colour table, never a theme read of its own. */
+  palette: LevelPalette;
+  surfaces: StructureFieldSurfaces;
   height?: number;
 }
 
-export function TapePulseStrip({ structureMid, height = 88 }: TapePulseStripProps) {
+export function TapePulseStrip({
+  structureMid,
+  claim,
+  mid,
+  lastTrade = null,
+  palette,
+  surfaces,
+  height = 88,
+}: TapePulseStripProps) {
   const reduced = useReducedMotion();
-  const tape = useLiveTape();
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const midRef = useRef<number | null>(null);
-  const liveRef = useRef(false);
+  const activeRef = useRef(false);
   const lastTradeRef = useRef<number | null>(null);
-  const liveMid =
-    tape.isLive && tape.live?.mid != null && Number.isFinite(tape.live.mid) ? tape.live.mid : null;
-  const isLive = Boolean(tape.isLive && tape.live?.live && !tape.streamOffline);
-  const displayMid = liveMid ?? structureMid;
+  // The composed "genuinely delivering AND this mid is present right now" claim (SPEC §2.1) — the
+  // ONLY place this file answers "is this live", and it answers it through the shared composer.
+  const activeClaim = andPresent(claim, mid);
+  const displayMid = mid;
   const chartHeight = Math.max(44, height - 28);
 
-  midRef.current = liveMid;
-  liveRef.current = isLive;
-  lastTradeRef.current = tape.isLive && tape.live?.last_trade != null ? tape.live.last_trade : null;
+  midRef.current = mid;
+  activeRef.current = Boolean(activeClaim);
+  lastTradeRef.current = lastTrade;
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -65,16 +107,20 @@ export function TapePulseStrip({ structureMid, height = 88 }: TapePulseStripProp
 
     const paint = (now: number) => {
       if (!running) return;
-      const liveMid = midRef.current;
-      const isLive = liveRef.current;
+      const active = activeRef.current;
+      const currentMid = midRef.current;
       const lt = lastTradeRef.current;
-      const displayMid = liveMid ?? structureMid;
 
-      trail.push({ t: now, mid: displayMid });
+      // Push a trail point ONLY while the claim holds and the latched mid is present (SPEC §2.1) —
+      // never a structure-mid fallback. On a drop the trail FREEZES at its last live point instead
+      // of blanking, zeroing, or drifting onto a REST number.
+      if (active && currentMid != null) {
+        trail.push({ t: now, mid: currentMid });
+      }
       while (trail.length > 100) trail.shift();
       while (trail.length && now - trail[0].t > 5000) trail.shift();
 
-      if (isLive && lt != null && lt !== lastLt) {
+      if (active && lt != null && lt !== lastLt) {
         if (lastLt != null && !reduced) {
           prints.push({ t: now, mid: lt, dir: lt >= lastLt ? 1 : -1 });
         }
@@ -91,13 +137,13 @@ export function TapePulseStrip({ structureMid, height = 88 }: TapePulseStripProp
       const yOf = (m: number) => pad.t + plotH * (1 - (m - lo) / (hi - lo || 1));
       const xOf = (i: number, n: number) => pad.l + (i / Math.max(1, n - 1)) * plotW;
 
-      ctx.fillStyle = INK;
+      ctx.fillStyle = surfaces.ink;
       ctx.fillRect(0, 0, w, chartHeight);
-      ctx.fillStyle = PANEL;
+      ctx.fillStyle = surfaces.panel;
       ctx.fillRect(pad.l, pad.t, plotW, plotH);
 
       const yBase = yOf(structureMid);
-      ctx.strokeStyle = 'rgba(138,155,180,0.4)';
+      ctx.strokeStyle = withAlpha(surfaces.steel, 0.4);
       ctx.setLineDash([3, 3]);
       ctx.beginPath();
       ctx.moveTo(pad.l, yBase);
@@ -113,7 +159,7 @@ export function TapePulseStrip({ structureMid, height = 88 }: TapePulseStripProp
           if (i === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         });
-        ctx.strokeStyle = SIGNAL;
+        ctx.strokeStyle = palette.mid;
         ctx.lineWidth = 1.75;
         ctx.stroke();
       }
@@ -122,8 +168,8 @@ export function TapePulseStrip({ structureMid, height = 88 }: TapePulseStripProp
       if (last) {
         const x = xOf(trail.length - 1, trail.length);
         const y = yOf(last.mid);
-        const pulse = isLive && !reduced ? 0.5 + 0.5 * Math.sin(now / 300) : 0.35;
-        ctx.fillStyle = SIGNAL;
+        const pulse = active && !reduced ? 0.5 + 0.5 * Math.sin(now / 300) : 0.35;
+        ctx.fillStyle = palette.mid;
         ctx.beginPath();
         ctx.arc(x, y, 3 + pulse, 0, Math.PI * 2);
         ctx.fill();
@@ -153,7 +199,7 @@ export function TapePulseStrip({ structureMid, height = 88 }: TapePulseStripProp
       window.removeEventListener('resize', onResize);
       resizeObserver?.disconnect();
     };
-  }, [structureMid, chartHeight, reduced]);
+  }, [structureMid, chartHeight, reduced, surfaces, palette]);
 
   return (
     <Box
@@ -191,17 +237,19 @@ export function TapePulseStrip({ structureMid, height = 88 }: TapePulseStripProp
           <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 700 }}>
             Tape
           </Typography>
+          {/* `Mid` — unconditional (SPEC §4.2). The word never carries a liveness claim; the
+              ladder's mid row dot is the one place liveness renders on the desk (criterion 8/9). */}
           <Typography
             variant="caption"
             data-testid="tape-mid-readout"
             sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}
           >
-            {isLive ? 'Live' : 'Mid'}{' '}
+            Mid{' '}
             <Box
               component="span"
               sx={{ color: 'text.primary', fontFamily: typographyTokens.monoFontFamily }}
             >
-              ${displayMid.toFixed(2)}
+              {displayMid != null ? `$${displayMid.toFixed(2)}` : '—'}
             </Box>
           </Typography>
           {/* The `tape-stream-state` node (⏸ Stream offline / Stream off) is DELETED here —

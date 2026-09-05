@@ -37,6 +37,9 @@ import { CapAnnotation } from '@/pages/ticker/widgets/ai-rec/CapAnnotation';
 import { StateExportDrawer } from '@/pages/ticker/widgets/ai-rec/StateExportDrawer';
 import { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommendation';
 import { PrimeBanner, tierMeta } from '@/pages/ticker/widgets/opportunity-tier';
+import { resolveLevelPalette } from '@/shared/charts/structure-field/levelStrokes';
+import { isDeliveringLive } from '@/shared/liveness/liveClaim';
+import { extrasFor } from '@/shared/theme/tokens';
 import { OptionRight } from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -250,6 +253,28 @@ export function TickerDashboard() {
   );
 
   const theme = useTheme();
+  // Minimal, surgical fix (curvature-v2-desk-and-read FE-6): `TapePulseStrip` became presentational
+  // (SPEC §2.1's second fabrication site removed — it no longer calls `useLiveTape()` itself), so
+  // this OLD standalone mount below (`TapePulseStrip structureMid={...}`, pre-FE-11's reading-order
+  // rewrite) now computes the SAME claim/mid/palette/surfaces the new `structure-hero/` composition
+  // computes, through the SAME canon composers — never a second, hand-rolled expression. This page
+  // file is outside `pages/ticker/widgets/**` and was already calling `useLiveTape()` directly
+  // (`live`/`isLive`/`streamOffline` above), so it is a legitimate, pre-existing standalone reader,
+  // not a new fabrication site.
+  const tapePulsePalette = useMemo(() => resolveLevelPalette(theme), [theme]);
+  const tapePulseSurfaces = useMemo(
+    () => ({
+      ink: theme.palette.background.default,
+      panel: theme.palette.background.paper,
+      raised: extrasFor(theme).panelRaised,
+      phosphor: theme.palette.text.primary,
+      steel: theme.palette.text.secondary,
+      warning: theme.palette.warning.main,
+    }),
+    [theme],
+  );
+  const tapePulseClaim = isDeliveringLive(live, streamOffline);
+  const tapePulseMid = tapePulseClaim ? (live?.mid ?? null) : null;
   const m = data?.market_state ?? page.marketState;
   const fresh = data?.meta.freshness;
   const sig = data?.signals ?? page.signals;
@@ -501,7 +526,14 @@ export function TickerDashboard() {
             />
 
             {/* Tape Pulse — thin dual-clock strip (structure mid vs live mid). Not a full bento cell. */}
-            <TapePulseStrip structureMid={m.gex_spot ?? m.price} />
+            <TapePulseStrip
+              structureMid={m.gex_spot ?? m.price}
+              claim={tapePulseClaim}
+              mid={tapePulseMid}
+              lastTrade={tapePulseClaim && live?.last_trade != null ? live.last_trade : null}
+              palette={tapePulsePalette}
+              surfaces={tapePulseSurfaces}
+            />
 
             {/* The widget BENTO board — product spine #3: NOT equal weight.
                 Reading order matches Scan → Ticker → Plan:

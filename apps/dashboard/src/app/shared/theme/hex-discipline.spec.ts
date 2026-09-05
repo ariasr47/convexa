@@ -58,13 +58,11 @@ const EXEMPT: Record<string, string> = {
   // (verified: no import statement between the two files) — the two files' hex literals were
   // always independent duplicates, not a shared source.
   'shared/charts/structure-field/structureFieldShared.ts':
-    'Shared Structure Field brand token literals for the WebGL lab instrument only (pages/lab/** — out of this phase\'s scope)',
+    "Shared Structure Field brand token literals for the WebGL lab instrument only (pages/lab/** — out of this phase's scope)",
   'pages/lab/demos/labTokens.ts':
     'Lab Canvas demos — brand token literals shared by ticker-candidate instruments',
-  'pages/ticker/widgets/chrome/TapePulseStrip.tsx':
-    'Tape Pulse strip Canvas2D — brand token literals (cannot use MUI sx)',
-  'pages/ticker/widgets/dealer-positioning/WallMagnetView.tsx':
-    'Wall Magnet Canvas2D — brand token literals (cannot use MUI sx)',
+  'pages/ticker/widgets/structure-hero/WallMagnetView.tsx':
+    'Wall Magnet Canvas2D — brand token literals (cannot use MUI sx); moved from dealer-positioning/ (FE-6 step 5, file unchanged)',
   'pages/ticker/widgets/term-structure/TermHeatChart.tsx':
     'Term Heat Canvas2D — brand token literals (cannot use MUI sx)',
 

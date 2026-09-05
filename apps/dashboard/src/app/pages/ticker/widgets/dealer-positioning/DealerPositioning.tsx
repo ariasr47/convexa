@@ -24,7 +24,10 @@ import {
 } from '../_kit/copy';
 import { distanceToLevel, levelSpot } from '../_kit/distanceToLevel';
 import { FigureCell } from '../_kit/FigureCell';
-import { WallMagnetView } from './WallMagnetView';
+// Moved to `structure-hero/` (curvature-v2-desk-and-read, FE-6 step 5) — the toggle itself moves
+// with the field; this file's OWN toggle/magnet view is untouched (DealerPositioning is deleted
+// whole at FE-8) and just re-points its import to the file's new home.
+import { WallMagnetView } from '../structure-hero/WallMagnetView';
 
 const GRID = {
   display: 'grid',

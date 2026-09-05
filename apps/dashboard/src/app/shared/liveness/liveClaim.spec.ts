@@ -84,24 +84,35 @@ const violatesLivenessFence = (src: string): boolean => BANNED.some((re) => re.t
  * that removes each entry. Live-checked below: an entry whose file no longer matches red-builds, so
  * a stale exemption cannot quietly widen the fence.
  *
- * NOTE (sequencing, plan deviation recorded in the build report). PLAN.md's FE-1 step 7 snippet
- * seeds EXEMPT with only `structure-hero/StructureHeroPanel.tsx` (a file FE-6 creates) and a prose
- * note to seed it instead with `live-tape/LiveTape.tsx` until then. Measured against the tree
- * (`grep -n "isLive" …`), TWO more files ALREADY violate the BANNED patterns today, independently of
- * this phase: `chrome/TapePulseStrip.tsx:32-33,39,69,77` (`tape.isLive`, `isLive &&` — SPEC §2.1's
- * own "second fabrication site", fixed at FE-6 step 3) and `gex-profile-chart/GexStrikeProfile.tsx:
- * 49-50` (`tape.isLive` — SPEC §2.1's "third fabrication site", re-pointed at FE-6, which owns this
- * file per the Independence table). Landing the scan without exempting them would red the FE-1
- * commit for defects neither FE-1 nor its dependents fix — not a new liveness expression this task
- * introduced. Both entries are removed by FE-6 in the same coupled edit as the LiveTape entry.
+ * FE-6 UPDATE (honest finding, recorded in the build report — not a silent scope cut). PLAN.md's
+ * FE-1 step 7 snippet's prose said the `live-tape/LiveTape.tsx` seed entry would be "re-pointed to
+ * structure-hero/StructureHeroPanel.tsx once the hero lands." Measured against the ACTUAL shipped
+ * `LiveTape.tsx` (FE-2, committed): `:66`'s `isLive = isLiveProp !== undefined ? isLiveProp :
+ * tape.isLive` still reads `tape.isLive` directly, feeding `:78`'s `numbersActive = st ? displayActive
+ * : isLive && !streamOffline` — and `:77-85`'s own comment explains at length why `numbersActive`
+ * ("should figures move at all — true during session-tape playback too, and blind to
+ * `market_session`") is DELIBERATELY a different question from `isDeliveringLive`, not a fabrication
+ * of it. `LiveTape.tsx` is not one of `structure-hero/`'s four presentational children (SPEC §2.1's
+ * single-store-read invariant is scoped to that directory, per the reviewer probe: "does exactly ONE
+ * component in `structure-hero/` call `useLiveTape()`?") and this file is outside FE-6's owned paths
+ * (Independence table). Repointing this entry AWAY from `LiveTape.tsx` would require either changing
+ * FE-2's already-verified, committed behaviour, or renaming a variable purely to dodge the regex —
+ * gaming the mutation guard this test exists to prevent. Left in place, unchanged, still accurate.
+ * `structure-hero/StructureHeroPanel.tsx` (built this task, using ONLY `isDeliveringLive`/
+ * `andPresent`) needs NO entry — it triggers none of the BANNED patterns, so none is added.
+ *
+ * The other two entries ARE fixed and removed here, per the same note: `chrome/TapePulseStrip.tsx`
+ * (SPEC §2.1's second fabrication site) is now fully presentational — it no longer calls
+ * `useLiveTape()` at all, receiving `claim`/`mid` as props (FE-6 step 3). `gex-profile-chart/
+ * GexStrikeProfile.tsx` (SPEC §2.1's third fabrication site) keeps its own store read — it is a
+ * standalone widget, not a hero child — but its `tape.isLive && tape.live` chain is replaced by
+ * `isDeliveringLive`/`andPresent`, so it no longer matches BANNED either.
  */
 const EXEMPT: Record<string, string> = {
   'pages/ticker/widgets/live-tape/LiveTape.tsx':
-    'pre-FE-6 seed — re-pointed to structure-hero/StructureHeroPanel.tsx once the hero lands (re-point, never delete)',
-  'pages/ticker/widgets/chrome/TapePulseStrip.tsx':
-    "SPEC §2.1's second fabrication site (own `isLive` missing the `live.mid != null` requirement) — fixed at FE-6 step 3",
-  'pages/ticker/widgets/gex-profile-chart/GexStrikeProfile.tsx':
-    "SPEC §2.1's third fabrication site (own `tapeLive`/`liveSpot` computation) — re-pointed at FE-6, which owns this file",
+    "FE-2's `numbersActive` derivation genuinely differs from `isDeliveringLive` (blind to " +
+    'market_session, true during session-tape playback) — see the FE-6 note above for why this ' +
+    'entry stays rather than being re-pointed',
 };
 
 describe('the source scan — no second liveness expression in a presentational desk file', () => {
