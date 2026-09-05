@@ -1,0 +1,38 @@
+apps/dashboard/src/app/pages/lab/demos/FlowRibbonsLab.tsx:167:            borderRadius: 12,
+apps/dashboard/src/app/pages/landing/Landing.tsx:74:                  borderRadius: 999,
+apps/dashboard/src/app/pages/lab/demos/TapePulseLab.tsx:186:            borderRadius: 12,
+apps/dashboard/src/app/pages/lab/demos/WallMagnetLab.tsx:178:            borderRadius: 12,
+apps/dashboard/src/app/pages/lab/demos/TermHeatLab.tsx:162:            borderRadius: 12,
+apps/dashboard/src/app/pages/lab/StructureFieldWebGL.tsx:985:            borderRadius: 12,
+apps/dashboard/src/app/pages/lab/StructureFieldWebGL.tsx:998:          borderRadius: 12,
+apps/dashboard/src/app/pages/lab/StructureFieldWebGL.tsx:1012:          borderRadius: 12,
+apps/dashboard/src/app/pages/lab/StructureFieldWebGL.tsx:1029:            borderRadius: 8,
+apps/dashboard/src/app/pages/alerts/AlertsPage.tsx:174:              borderRadius: 1,
+apps/dashboard/src/app/shared/charts/structure-field/StructureFieldCanvas.tsx:874:            borderRadius: 8,
+apps/dashboard/src/app/shared/ui/ErrorBoundary.tsx:69:          borderRadius: 1,
+apps/dashboard/src/app/shared/ui/ValueCard.tsx:110:              borderRadius: 1.5,
+apps/dashboard/src/app/pages/ticker/widgets/_kit/StatTile.tsx:47:    borderRadius: 12,
+apps/dashboard/src/app/shared/ui/Refused.tsx:45:        borderRadius: 1,
+apps/dashboard/src/app/pages/ticker/widgets/setups/Setups.tsx:35:            <Card key={i} variant="outlined" sx={{ borderRadius: 3 }}>
+apps/dashboard/src/app/shared/ui/ComingSoonBox.tsx:34:          borderRadius: 2,
+apps/dashboard/src/app/pages/ticker/widgets/gex-profile-chart/chart.tsx:62:      <Box sx={{ width: 10, height: 10, borderRadius: 0.5, bgcolor: color }} />
+apps/dashboard/src/app/pages/ticker/widgets/ai-rec/reasoning.tsx:136:              borderRadius: 2,
+apps/dashboard/src/app/shared/theme/tokens.ts:87:export const shape = { borderRadius: 10 } as const;
+apps/dashboard/src/app/pages/ticker/widgets/fresh-positioning/FreshPositioning.tsx:54:                sx={{ px: 1.5, py: 1, borderRadius: 1.5, bgcolor: 'action.hover' }}
+apps/dashboard/src/app/features/trading/positions/CustomizationToolbar.tsx:333:    borderRadius: 999,
+apps/dashboard/src/app/features/auth/AuthDialog.tsx:190:            borderRadius: 2.5,
+apps/dashboard/src/app/features/trading/orders/OrdersWidget.tsx:42:    <Box data-testid="orders-store-fault" sx={{ p: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}>
+apps/dashboard/src/app/pages/ticker/widgets/off-exchange-blocks/OffExchangeBlocks.tsx:68:                    borderRadius: 1.5,
+apps/dashboard/src/app/shared/ui/ComingSoonCard.tsx:25:      sx={{ color: 'primary.main', borderColor: 'primary.main', borderRadius: 999 }}
+apps/dashboard/src/app/shared/ui/ComingSoonCard.tsx:39:        borderRadius: 1.5,
+apps/dashboard/src/app/pages/ticker/widgets/chrome/TickerToolbar.tsx:115:              borderRadius: 0,
+apps/dashboard/src/app/features/auth/SettingsPage.tsx:67:      sx={{ bgcolor: 'background.paper', borderColor: 'divider', borderRadius: 2.5, p: 3 }}
+apps/dashboard/src/app/pages/ticker/widgets/ai-rec/AiRecPanelBlocks.tsx:96:        borderRadius: 3,
+apps/dashboard/src/app/pages/ticker/widgets/ai-rec/AiRecPanelBlocks.tsx:369:    <Box sx={{ mt: 1, p: 1.5, borderRadius: 3, bgcolor: 'action.hover' }} data-testid={cfg.testid}>
+apps/dashboard/src/app/pages/ticker/widgets/ai-rec/DecisionCard.tsx:341:        sx={{ mt: 1, p: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}
+apps/dashboard/src/app/features/auth/RiskInputsSection.tsx:161:                borderRadius: 1,
+apps/dashboard/src/app/features/auth/RiskInputsSection.tsx:205:                borderRadius: 1,
+apps/dashboard/src/app/pages/ticker/widgets/dealer-positioning/WallMagnetView.tsx:148:      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', borderRadius: 8 }} />
+apps/dashboard/src/app/features/auth/AccountControl.tsx:60:            borderRadius: 999,
+apps/dashboard/src/app/features/auth/AiKeySection.tsx:423:      sx={{ mt: 2, p: 1.5, borderRadius: 2.5, border: '1px solid', borderColor: 'divider' }}
+apps/dashboard/src/app/features/auth/AiKeySection.tsx:552:      sx={{ p: 1.5, borderRadius: 2.5, border: '1px solid', borderColor: 'divider' }}

@@ -468,7 +468,7 @@ throughput and cost).
 | # | Story | Acceptance criterion | Verify by | Completion evidence |
 |---|---|---|---|---|
 | AC-13a **(SB)** | US-1 | After this phase no figure anywhere in the app renders a coloured accent edge: neither an `accent` nor an `accentColor` prop survives anywhere, `StatTile.tsx` no longer exists, and the anatomy cannot be reintroduced by copy-paste. | test | Source scan (arc.spec importer idiom) with a recorded mutation proof: re-adding either prop or a `StatTile` import red-builds; anti-vacuity assertion that the scan glob is non-empty |
-| AC-13b | US-1 | Opportunity-tier emphasis survives the deletion in **type and the single amber word** already inside the value string — no replacement colour, and never a directional one. | review | Reviewer note naming the Opportunity cell in both schemes |
+| AC-13b | US-1 | Opportunity-tier emphasis survives the deletion in the **tier word carried inside the value string** (`Actionable`, in `77 · Actionable`), in **type only** — the value renders in one register at `text.primary`, identical in both schemes — no replacement colour, and never a directional one. *(Amended by owner ruling 8, 2026-09-03. The superseded text required "type and the single amber word already inside the value string"; there has never been an amber word — pre-phase the tier's amber lived only in the `accentColor` bar AC-13a deletes.)* | review | Reviewer note naming the Opportunity cell in both schemes: the tier word present inside the value string, and the value's computed colour identical to the other figures' in the same strip — no colour in the cell varying by tier or by direction |
 | AC-13c | US-1 | After this phase a trader can still tell Call wall from Put wall **in a greyscale screenshot** of the dealer-positioning strip without opening a tooltip: the side is carried by the label words, which stay exactly `Call wall` and `Put wall` and are **not** re-hedged into `(resistance)` / `(support)`. | test + review | Test asserting the two labels render verbatim and neither cell carries a colour-only side encoding; a greyscale capture of the strip attached |
 | AC-14 | US-1 | A figure Convexa computed renders in the mono register and lines up column-wise with its neighbours. | review | Reviewer note naming the screen and strip inspected |
 | AC-15 **(SB)** | US-1 | A figure the app asserts but could not trace renders in the Sans register with the dotted rule and is visibly different from a traced figure in the same strip — the **untraced arm fires**, not merely that mono renders. | test | Component test driving the `asserted` arm; a mono-only assertion is not sufficient evidence |
@@ -532,7 +532,7 @@ throughput and cost).
 | # | Story | Acceptance criterion | Verify by | Completion evidence |
 |---|---|---|---|---|
 | AC-41 **(SB)** | US-5 | Each of the seven new token names resolves to a defined value in **both** schemes; none falls back to its dark value in light mode. | test | Runtime key-set twin over `extras`/`extrasLight` **plus** a set-equality assertion over the two palette objects' key sets (the `divider` half is not covered by the type) **plus a per-name value assertion** — `extrasLight[name] !== extras[name]` for each of the seven, exempted only by the declared same-in-both-schemes list (§2.1). The value assertion is not redundant: a key-set twin proves both maps declare the same seven keys and is structurally blind to `extrasLight.glass` being handed `extras.glass`, which is exactly the fallback this row's own words forbid. `npm run typecheck` exit 0 recorded — `nx test` alone cannot see the parity guarantee. |
-| AC-42 | US-5 | The tertiary-text token's measured contrast on the panel surface is **recorded for both schemes** and meets the dark floor the canon states. **The light-mode floor is not stated in the canon — see §9 D-1.** | test + owner ruling | Measured numbers for both schemes in the build report; the dark floor asserted, the light floor pending the ruling |
+| AC-42 | US-5 | The tertiary-text token's measured contrast is **recorded for both schemes** and **asserted in both**: the dark floor the canon states, and the light floor set by owner ruling 7 — WCAG AA 4.5:1 on every light surface where `textTertiary` can actually render (`panelRaised`, `well`, `paper`, white). `raised2` is excluded on zero-consumer evidence, and the exclusion is guarded live rather than assumed. **See §9 D-1 for the ruling that closed the light floor.** | test | Measured numbers for both schemes in the build report — dark `ink` 5.18 / `panel` 4.83 / `well` 5.10; light `steel2` = `#5D6B84` at `panelRaised` 4.54 / `well` 4.75 / `paper` 4.97 / white 5.38 — with `steel2-contrast.spec.ts` asserting **both** floors plus a liveness guard that red-builds the day `raised2` gains a consumer |
 | AC-43 | US-5 | Switching scheme on any of the six screens changes colour only: nothing moves and no text reflows to a different line count at the same width. | review | Side-by-side review note per screen |
 | AC-44 **(SB)** | DS-1 | This phase introduces zero new hardcoded colour literals — **hex or `rgba()`** — and nothing in the app reads the design-side mirror at runtime. | test | `hex-discipline` + `banned-hexes` green **plus** the new banned-literals scan seeded from `tokens.ts`; recorded mutation proof that a planted token literal red-builds, and an anti-vacuity assertion that the ban list and glob are non-empty |
 | AC-45 | US-5 | The browser theme colour follows the active scheme after this phase. | review | Reviewer note in both schemes |
@@ -848,10 +848,22 @@ binds if it exceeds budget.
 
 ## 9. Open questions
 
-1. **D-1 — the light-mode contrast floor for `steel2`.** The canon records a measured dark floor and only
-   "a solid light-mode value" for light. No one invented a number and none should be. AC-42 records the
-   measurement for both schemes; the **light floor needs an owner or UX ruling** before it can be
-   asserted. Until then AC-42 asserts only the dark floor.
+1. **D-1 — the light-mode contrast floor for `steel2`: RULED AND CLOSED** (owner ruling 7, 2026-09-03,
+   post-build). *The question as it stood:* the canon recorded a measured dark floor and only "a solid
+   light-mode value" for light, so AC-42 recorded the measurement for both schemes but could assert only
+   the dark one — no one invented a number and none should have. *How it was settled:* the build measured
+   both schemes and the conductor recomputed every figure independently from the raw hexes; the then-current
+   light value `#61708A` scored **4.23:1 on `panelRaised` `#ECECE7`**, the widget-card surface a real
+   tertiary label sits on, under WCAG AA's 4.5:1 for normal text. The owner ruled **darken it** and declare
+   the floor. *The outcome:* light `steel2` is now **`#5D6B84`** in `tokens.ts` and in the
+   `design/tokens/tokens.json` mirror (`node design/src/verify-tokens.mjs` exit 0), measuring **4.54:1 on
+   `panelRaised`, 4.75 on `well`, 4.97 on `paper`, 5.38 on white** — every light surface where
+   `textTertiary` has a real consumer clears 4.5:1. `raised2` (`#E3E3DD`, 4.18:1) is **excluded** because it
+   has zero consumers anywhere in the app, and the exclusion is guarded by a test that red-builds the day
+   one appears rather than left as a standing assumption. AC-42 is therefore no longer dark-only: both
+   floors are asserted by `steel2-contrast.spec.ts`. **Still owed at close:** the canon Amendment stating
+   the light floor, so it is enforceable there rather than rediscovered — the conductor's action, not the
+   lane's.
 2. **The `tooltip` z-index rung is undeclared.** The canon declares six rungs; MUI has eight slots.
    `tooltip` defaults to 1500 — above every v2 rung, which is arguably correct and definitely
    undeclared. §2.2 gives the build a working mapping (`tooltip` above toast; `mobileStepper`/`fab`/

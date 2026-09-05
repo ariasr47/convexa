@@ -222,3 +222,68 @@ failing on the app's densest page today; a reviewer with a mouse cannot see it.
   remaining structural gaps (no register enforcement, no container steps) stay out of phase 1 and belong to
   the phase that rebuilds them.
 - Do not "fix" their mono figures: ux verified they are correct — a static figure's correct render is no dot.
+
+### Ruling 7 — the light-mode floor for `steel2` (2026-09-03, post-build): **A, darken it**
+
+**What prompted it.** SPEC §9 D-1 recorded that the canon states a measured **dark** floor for
+`steel2`/`extras.textTertiary` and only "a solid light-mode value" for light, and refused to invent a
+number. The build measured both schemes (AC-42) and the conductor recomputed every figure independently
+from the raw hexes: light `#61708A` scores **4.23:1 on `panelRaised` `#ECECE7`** — the widget card surface
+where a real tertiary label actually sits — against WCAG AA's 4.5:1 for normal text. Dark is fine (4.83
+panel / 5.18 ink). Nothing gated on it, because no light floor existed to gate against.
+
+**The ruling.** Darken the light-mode value until it clears **4.5:1 on every light surface where
+`textTertiary` can appear**, and then declare that floor in the canon so it is enforceable rather than
+rediscovered. A token value change is exactly what a foundations phase is for.
+
+**Candidates computed by the conductor** (same hue 218°, same saturation, stepping lightness down):
+
+| candidate | `panelRaised` #ECECE7 | `paper` #F6F6F3 | white | `raised2` #E3E3DD |
+|---|---|---|---|---|
+| `#61708A` (current) | 4.23 ✗ | 4.63 | 5.01 | 3.89 ✗ |
+| `#5D6B84` | 4.54 ✓ | 4.97 | 5.38 | 4.18 ✗ |
+| `#58657D` | 4.96 ✓ | 5.43 | 5.88 | 4.56 ✓ |
+
+**What binds the build:**
+- The lane picks the value by **where `textTertiary` can actually render**. If it can appear on `raised2`
+  (a light surface this phase adds), `#5D6B84` is not enough and `#58657D` is the honest floor. Determine
+  usage from the code; do not assume.
+- The value changes in `tokens.ts` (the runtime authority) **and** in `design/tokens/tokens.json` (the
+  mirror), and `node design/src/verify-tokens.mjs` must pass — the mirror drifting from the runtime is the
+  precise failure that file exists to prevent.
+- AC-42 stops being dark-only: the light floor is now stated, so it gets asserted, against the darkest
+  light surface `textTertiary` may occupy.
+- `BUILD_REPORT.md` §5 is updated with the new measurements; the old ones stay as the before.
+- The canon gains the light floor as an Amendment (conductor's action at close, not the lane's).
+
+### Ruling 8 — AC-13b (2026-09-03, post-GATE-Q): **A, amend the criterion**
+
+**What prompted it.** GATE Q's re-run returned 79 PASS / 1 FAIL / 1 UNVERIFIABLE; the single FAIL was
+AC-13b, and it is a defect in the criterion rather than in the code. As written it requires that
+Opportunity-tier emphasis survive "in **type and the single amber word already inside the value string**".
+QA verified in the browser that the value renders `77 - Actionable` as one Plex Mono span at
+`rgb(233,228,214)`, identical in both schemes, and that `ValueGlyph` hardcodes `color: 'text.primary'` and
+exposes no value colour. It then read `HEAD` and established the premise was **already false before this
+phase**: the pre-phase call site passed `accentColor={tierColor}` and no `valueColor`. There has never been
+an amber word in that value string. Tier emphasis lived in the accent bar this phase deletes.
+
+**The ruling.** Amend AC-13b to assert what is true and wanted: tier emphasis survives in the **word**
+(`Actionable`) carried inside the value string, in **type only** - no replacement colour, and never a
+directional one. The guard the criterion exists to hold - that nothing reintroduces colour, least of all a
+green/red one, on a non-directional datum - is preserved verbatim.
+
+**Why not the alternative.** Rendering the tier word in text-grade amber was rejected: the canon spends
+amber on the AI read's verdict word as the panel's **single** spend (rule 16), and a second amber word on
+the same page dilutes precisely what makes the first one carry meaning. This is the same shape as the
+earlier Call wall / Put wall resolution, where the label words already carried the distinction and a
+replacement mark was withdrawn.
+
+**What binds the follow-up:**
+- The amendment is a **one-clause factual correction** to the criterion text. The hidden folding receipt and
+  every `spire:council-resolution` marker stay byte-identical, and `contract_lint` must still exit 0.
+- SPEC §9's D-1 entry and the AC-42 row are updated in the same pass to record that ruling 7 landed
+  (`steel2` light = `#5D6B84`, floor now stated and asserted) rather than still reading "pending a ruling".
+- Separately, two tests labelled "MUTATION PROOF" have no-op bodies (`expect(true).toBe(true)`) at
+  `connectionState.spec.ts:101` and `FigureCell.spec.tsx:285`. Their comments are honest about why, but a
+  no-op under that heading reads as coverage to every later reader; QA rejected both as proof and performed
+  the mutations itself. They are replaced with real assertions (or the heading removed) in the same pass.
