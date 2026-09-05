@@ -307,7 +307,12 @@ describe('Ticker · stream isolation (live-vs-static-isolation)', () => {
     expect(screen.queryByTestId('cold-skeleton')).toBeNull();
 
     // A live tick arrives: the anchor flips to the NBBO mid; the last-trade line fills.
-    pushLive({ live: true, mid: 251, gamma_flip: 248, last_trade: 251.13 });
+    // `gamma_flip: 253` is DELIBERATELY DIFFERENT from the bundle's `market_state.gamma_flip`
+    // (248, fixture above) — criterion 14's mutation proof needs the two sources distinguishable
+    // by VALUE, or a reintroduced `?? m.gamma_flip` fallback renders the same number by
+    // coincidence and this test cannot catch it (the exact vacuity trap SPEC §7/criterion 57 exist
+    // to forbid).
+    pushLive({ live: true, mid: 251, gamma_flip: 253, last_trade: 251.13 });
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('TSLA · $251.00');
     expect(screen.getByTestId('last-trade')).toHaveTextContent('Last trade $251.13');
 
@@ -321,25 +326,42 @@ describe('Ticker · stream isolation (live-vs-static-isolation)', () => {
 
     // Live tiles degrade. FigureCell's pause mark is a real SVG icon, not the literal `⏸` glyph
     // (curvature-v2-foundations SPEC §4.1/§4.2 Icons row) — assert the icon's presence structurally
-    // rather than a composed "⏸ offline" text node. Net flow / Spread take the NO-RETAINED arm
-    // (F5, bare literal — ruling 2: phase 1 does not add the retention latch to LiveTape); Gamma
-    // flip's rendered value already falls back to the bundle on a drop, so it takes the RETAINED
-    // arm (F4, dimmed) instead of blanking a value that is still honestly current (AC-17a/AC-17b).
+    // rather than a composed "⏸ offline" text node. (v2, SPEC §2.2 — owner ruling 2's debt) the
+    // retention latch now owns Net flow / Spread / Gamma flip alike: each retains the last value
+    // that actually arrived ON THE STREAM before the drop, so all three take the RETAINED arm
+    // (F4, dimmed, `offline · last known`) because the live push above carried a value for each
+    // (AC-17a/AC-17b, criterion 12).
     const liveTape = screen.getByTestId('live-tape');
     expect(within(liveTape).getAllByTestId('PauseIcon').length).toBeGreaterThan(0);
     const netFlowCell = screen.getByText('Net flow (5m)').closest('[data-figure-state]');
-    expect(netFlowCell).toHaveAttribute('data-figure-state', 'offline-bare');
-    expect(within(netFlowCell as HTMLElement).getByText('offline')).toBeInTheDocument();
+    expect(netFlowCell).toHaveAttribute('data-figure-state', 'offline-retained');
+    expect(within(netFlowCell as HTMLElement).getByText('+1,200')).toBeInTheDocument();
+    expect(
+      within(netFlowCell as HTMLElement).getByText('offline · last known'),
+    ).toBeInTheDocument();
     const spreadCell = screen.getByText('Spread').closest('[data-figure-state]');
-    expect(spreadCell).toHaveAttribute('data-figure-state', 'offline-bare');
-    const gammaFlipCell = screen.getByText('Gamma flip').closest('[data-figure-state]');
+    expect(spreadCell).toHaveAttribute('data-figure-state', 'offline-retained');
+    expect(within(spreadCell as HTMLElement).getByText('$0.05')).toBeInTheDocument();
+    // (v2) The label names the DERIVATION, not the connection state (criterion 18) — it is
+    // `Gamma flip · live` before AND after the drop; the ladder's own `Gamma flip` row (FE-5) is a
+    // separate, dotless figure and this label is deliberately never byte-identical to it.
+    const gammaFlipCell = screen.getByText('Gamma flip · live').closest('[data-figure-state]');
     expect(gammaFlipCell).toHaveAttribute('data-figure-state', 'offline-retained');
-    expect(within(gammaFlipCell as HTMLElement).getByText('offline · last known')).toBeInTheDocument();
+    expect(
+      within(gammaFlipCell as HTMLElement).getByText('offline · last known'),
+    ).toBeInTheDocument();
+    // The RETAINED value is the STREAM's $253, never the bundle's $248 (criterion 14) — this is
+    // the assertion the mutation proof actually keys on.
+    expect(within(gammaFlipCell as HTMLElement).getByText('$253')).toBeInTheDocument();
+    expect(within(gammaFlipCell as HTMLElement).queryByText('$248')).toBeNull();
     expect(screen.getByTestId('last-trade')).toHaveTextContent('⏸ Last trade $251.13');
     // The connection chip's offline label no longer carries the literal `⚠` (curvature-v2-foundations
     // SPEC §4.2 Icons row — a real stroke warn icon renders instead) and asserts the resolved state
     // directly rather than a composed text node.
-    expect(screen.getByTestId('connection-chip')).toHaveAttribute('data-connection-state', 'offline');
+    expect(screen.getByTestId('connection-chip')).toHaveAttribute(
+      'data-connection-state',
+      'offline',
+    );
     expect(screen.getByText('Live offline — reconnecting…')).toBeInTheDocument();
 
     // Statics keep rendering the last bundle, byte-identical, with NO offline look of their own.

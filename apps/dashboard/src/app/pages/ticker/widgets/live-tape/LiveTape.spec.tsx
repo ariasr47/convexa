@@ -1,9 +1,12 @@
 /**
- * LiveTape — RISK-BASED widget spec (qa-verify.md §4, 2026-07-13). The dim/⏸-offline treatment on an
- * SSE drop is PAGE-covered (`pages/ticker/ticker.risk.spec.tsx` walks it end-to-end); this spec keeps
- * only the tape-local honesty logic:
- *   1. PRE-LIVE (no tick yet): live-derived fields read the honest em-dash — never a fabricated 0 —
- *      and the gamma flip shows the STATIC authoritative value WITHOUT the "(live)" claim;
+ * LiveTape — RISK-BASED widget spec (qa-verify.md §4, 2026-07-13; relabelled curvature-v2-desk-and-read
+ * FE-2). The dim/⏸-offline treatment on an SSE drop is PAGE-covered
+ * (`pages/ticker/ticker.risk.spec.tsx` walks it end-to-end); this spec keeps only the tape-local
+ * honesty logic:
+ *   1. PRE-LIVE (`live: null`, `streamOffline: false` — the SAME shape as a post-symbol-change reset,
+ *      criterion 16a): every live-derived cell shows the bare em-dash — never a fabricated 0 and
+ *      NEVER the bundle's `m.gamma_flip` fallback (SPEC §2.2, criterion 14 — that fallback is what
+ *      produced the violation this phase fixes; the structure flip is the LADDER's own row, FE-5);
  *   2. per-field tolerance inside a live payload: a null spread reads em-dash while net flow renders,
  *      and a negative net flow renders signed (the sign path, not just the happy `+`).
  * NOT asserted (visible + intentional → review/page): default live figures, offline dim/caption,
@@ -12,7 +15,7 @@
 import { theme } from '@/shared/theme/theme';
 import type { LiveUpdate, MarketState } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { SessionTapeOccupancy } from '../../sessionTapeStanding';
 import { LiveTape } from './LiveTape';
@@ -109,15 +112,19 @@ const sessionTape = (over: Partial<SessionTapeOccupancy> = {}): SessionTapeOccup
 });
 
 describe('LiveTape · tape-local honesty', () => {
-  it('PRE-LIVE: live fields read the em-dash (never a fabricated 0) and the flip is the STATIC value without the "(live)" claim', () => {
+  it('PRE-LIVE: every live-derived field reads the bare em-dash — never a fabricated 0 and never the bundle fallback (SPEC §2.2, criterion 14)', () => {
     wrap(<LiveTape m={marketState()} live={null} isLive={false} streamOffline={false} />);
-    expect(screen.getAllByText('—').length).toBeGreaterThan(0); // net flow + spread honest-empty
+    // Net flow, Spread AND Gamma flip all read the bare em-dash — the latch has never held a
+    // stream value, and the gamma flip cell no longer falls back to `m.gamma_flip` (that fallback
+    // is what produced criterion 14's violation; the bundle's structure flip is the LADDER's own
+    // row, FE-5, not this figure).
+    expect(screen.getAllByText('—').length).toBe(3);
     expect(screen.queryByText(/^[+-]?0$/)).toBeNull(); // no invented 0 net-flow
-    expect(screen.getByText('Gamma flip')).toBeInTheDocument(); // static authority…
-    expect(screen.queryByText('Gamma flip (live)')).toBeNull(); // …never claimed live
-    expect(screen.getByText('$248')).toBeInTheDocument(); // the static flip value
-    // Distance secondary: flip 248 vs gex_spot 250 → −$2.0 · 0.8% below
-    expect(screen.getByTestId('stat-secondary')).toHaveTextContent('−$2.0 · 0.8% below');
+    expect(screen.getByText('Gamma flip · live')).toBeInTheDocument(); // the label names the derivation…
+    expect(screen.queryByText('Gamma flip (live)')).toBeNull(); // …the old parenthetical form is gone
+    expect(screen.queryByText('$248')).toBeNull(); // never the static bundle flip under this label
+    // No distance secondary either: `distanceToLevel` is undefined when the level itself is null.
+    expect(screen.queryByTestId('stat-secondary')).toBeNull();
   });
 
   it('per-field: a null spread reads em-dash while net flow renders; a negative net flow renders signed', () => {
@@ -144,7 +151,7 @@ describe('LiveTape · tape-local honesty', () => {
     );
     expect(screen.getByText('Live tape')).toBeInTheDocument();
     expect(screen.getByText(/Live stream · not the structure snapshot below/)).toBeInTheDocument();
-    expect(screen.getByText('Gamma flip (live)')).toBeInTheDocument();
+    expect(screen.getByText('Gamma flip · live')).toBeInTheDocument();
   });
 
   it('S1 title is Session tape from first session_tape payload including starting', () => {
@@ -188,7 +195,7 @@ describe('LiveTape · tape-local honesty', () => {
     expect(screen.queryByText(/Stream offline · last known ticks/)).toBeNull();
   });
 
-  it('S1 gamma flip label never appends (live)', () => {
+  it('S1 gamma flip label names the session-tape derivation, never the live/parenthetical form', () => {
     wrap(
       <LiveTape
         m={marketState({ ticker: 'SPY' })}
@@ -203,8 +210,9 @@ describe('LiveTape · tape-local honesty', () => {
         streamOffline={false}
       />,
     );
-    expect(screen.getByText('Gamma flip')).toBeInTheDocument();
+    expect(screen.getByText('Gamma flip · session tape')).toBeInTheDocument();
     expect(screen.queryByText('Gamma flip (live)')).toBeNull();
+    expect(screen.queryByText('Gamma flip · live')).toBeNull();
   });
 
   it('S1 1× net-flow keeps (5m) and last-few-minutes ⓘ', () => {
@@ -283,6 +291,144 @@ describe('LiveTape · tape-local honesty', () => {
     );
     expect(screen.queryByText(/⏸ offline/)).toBeNull();
     expect(screen.getByText('Session tape')).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------------------------
+  // FE-2 step 5 — the retention latch's two arms (SPEC §2.2), criteria 12/13/15/15b/17/18.
+  // ---------------------------------------------------------------------------------------------
+
+  it('criterion 12 — a drop with a HELD latch renders the retained value, dimmed, with the pause mark and "offline · last known"', () => {
+    const live = liveUpdate({ gamma_flip: 260 }); // distinct from the bundle's 248 (criterion 14)
+    const { rerender } = wrap(
+      <LiveTape m={marketState()} live={live} isLive={true} streamOffline={false} />,
+    );
+    expect(screen.getByText('$260')).toBeInTheDocument();
+
+    rerender(
+      <ThemeProvider theme={theme}>
+        <LiveTape m={marketState()} live={live} isLive={true} streamOffline={true} />
+      </ThemeProvider>,
+    );
+    const cell = screen.getByText('Gamma flip · live').closest('[data-figure-state]');
+    expect(cell).toHaveAttribute('data-figure-state', 'offline-retained');
+    expect(within(cell as HTMLElement).getByText('$260')).toBeInTheDocument(); // never $248
+    expect(within(cell as HTMLElement).getByText('offline · last known')).toBeInTheDocument();
+  });
+
+  it('criterion 13 — a drop with an EMPTY latch renders the bare member, pause mark, and NO "last known" words', () => {
+    const { rerender } = wrap(
+      <LiveTape m={marketState()} live={null} isLive={false} streamOffline={false} />,
+    );
+    rerender(
+      <ThemeProvider theme={theme}>
+        <LiveTape
+          m={marketState()}
+          live={liveUpdate({ live: false })}
+          isLive={false}
+          streamOffline={true}
+        />
+      </ThemeProvider>,
+    );
+    const cell = screen.getByText('Gamma flip · live').closest('[data-figure-state]');
+    expect(cell).toHaveAttribute('data-figure-state', 'offline-bare');
+    expect(within(cell as HTMLElement).queryByText(/last known/)).toBeNull();
+    expect(within(cell as HTMLElement).getByText('—')).toBeInTheDocument();
+  });
+
+  it('criterion 15b — at least one held latch renders the LAST-KNOWN-TICKS subtitle arm', () => {
+    const live = liveUpdate({ net_flow: 900, spread: null, gamma_flip: null });
+    const { rerender } = wrap(
+      <LiveTape m={marketState()} live={live} isLive={true} streamOffline={false} />,
+    );
+    rerender(
+      <ThemeProvider theme={theme}>
+        <LiveTape m={marketState()} live={live} isLive={true} streamOffline={true} />
+      </ThemeProvider>,
+    );
+    expect(
+      screen.getByText('Stream offline · last known ticks · structure levels stay current'),
+    ).toBeInTheDocument();
+  });
+
+  it('criterion 15 — no latch ever held a value renders the NO-TICKS-RETAINED subtitle arm', () => {
+    const { rerender } = wrap(
+      <LiveTape m={marketState()} live={null} isLive={false} streamOffline={false} />,
+    );
+    rerender(
+      <ThemeProvider theme={theme}>
+        <LiveTape
+          m={marketState()}
+          live={liveUpdate({ live: false })}
+          isLive={false}
+          streamOffline={true}
+        />
+      </ThemeProvider>,
+    );
+    expect(
+      screen.getByText('Stream offline · no ticks retained · structure levels stay current'),
+    ).toBeInTheDocument();
+  });
+
+  it('criterion 17 — a value restored from the latch on reconnect does not re-flash', () => {
+    // jsdom does not compute `animation-name` from an emotion-injected stylesheet, so this is
+    // asserted on the emotion CLASS NAME instead: `flashColorSx` folds the flash state into the
+    // `sx` object, so a genuinely flashing value gets a DIFFERENT generated class than a resting
+    // one — proven by the anti-vacuity half below, on the SAME mechanism.
+    const live248 = liveUpdate({ gamma_flip: 248 });
+    const { rerender, unmount } = wrap(
+      <LiveTape m={marketState()} live={live248} isLive={true} streamOffline={false} />,
+    );
+    const restingClass = screen.getByText('$248').className;
+    rerender(
+      <ThemeProvider theme={theme}>
+        <LiveTape m={marketState()} live={live248} isLive={true} streamOffline={true} />
+      </ThemeProvider>,
+    );
+    rerender(
+      <ThemeProvider theme={theme}>
+        <LiveTape m={marketState()} live={live248} isLive={true} streamOffline={false} />
+      </ThemeProvider>,
+    );
+    // useFlashOnChange.ts:46 returns early on a null `before` — the drop fed it `null`, so the
+    // restored print (the SAME 248) has no `before` to compare against and cannot flash: its class
+    // stays the RESTING one.
+    expect(screen.getByText('$248').className).toBe(restingClass);
+    unmount();
+
+    // ANTI-VACUITY: the SAME mechanism must show a genuinely DIFFERENT class on an ordinary
+    // live-to-live value change, or the equality above passes merely because this harness cannot
+    // see a class change at all.
+    const { rerender: rerenderFlash } = wrap(
+      <LiveTape m={marketState()} live={live248} isLive={true} streamOffline={false} />,
+    );
+    rerenderFlash(
+      <ThemeProvider theme={theme}>
+        <LiveTape
+          m={marketState()}
+          live={liveUpdate({ gamma_flip: 261 })}
+          isLive={true}
+          streamOffline={false}
+        />
+      </ThemeProvider>,
+    );
+    expect(screen.getByText('$261').className).not.toBe(restingClass);
+  });
+
+  it('criterion 18 — the gamma-flip label names the derivation and is never byte-identical to the ladder row label across live AND a drop', () => {
+    const live = liveUpdate({ gamma_flip: 248 });
+    const { rerender } = wrap(
+      <LiveTape m={marketState()} live={live} isLive={true} streamOffline={false} />,
+    );
+    expect(screen.getByText('Gamma flip · live')).toBeInTheDocument();
+    expect(screen.queryByText('Gamma flip')).toBeNull(); // the ladder's own row label (FE-5)
+
+    rerender(
+      <ThemeProvider theme={theme}>
+        <LiveTape m={marketState()} live={live} isLive={true} streamOffline={true} />
+      </ThemeProvider>,
+    );
+    expect(screen.getByText('Gamma flip · live')).toBeInTheDocument(); // label UNCHANGED by the drop
+    expect(screen.queryByText('Gamma flip')).toBeNull();
   });
 
   it('display-active moves numbers; keep-alive does not flash', () => {

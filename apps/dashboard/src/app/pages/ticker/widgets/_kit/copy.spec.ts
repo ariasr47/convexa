@@ -25,6 +25,7 @@ import {
   ivrBasisLine,
   LIVE_TAPE_SUBTITLE_LIVE,
   LIVE_TAPE_SUBTITLE_OFFLINE,
+  LIVE_TAPE_SUBTITLE_OFFLINE_EMPTY,
   MC_BALANCE_DISPLAY,
   MC_COMPOSITION_DISPLAY,
   MC_CONCENTRATION_DISPLAY,
@@ -163,5 +164,21 @@ describe('product spine #4 — structure age + basis phrases', () => {
     expect(LIVE_TAPE_SUBTITLE_LIVE).toMatch(/structure/i);
     expect(LIVE_TAPE_SUBTITLE_OFFLINE).toMatch(/structure/i);
     expect(LIVE_TAPE_SUBTITLE_OFFLINE).toMatch(/offline/i);
+  });
+
+  it('criterion 15 — the three live-tape subtitle arms are exact and pairwise distinct', () => {
+    expect(LIVE_TAPE_SUBTITLE_LIVE).toBe('Live stream · not the structure snapshot below');
+    expect(LIVE_TAPE_SUBTITLE_OFFLINE).toBe(
+      'Stream offline · last known ticks · structure levels stay current',
+    );
+    expect(LIVE_TAPE_SUBTITLE_OFFLINE_EMPTY).toBe(
+      'Stream offline · no ticks retained · structure levels stay current',
+    );
+    const arms = [
+      LIVE_TAPE_SUBTITLE_LIVE,
+      LIVE_TAPE_SUBTITLE_OFFLINE,
+      LIVE_TAPE_SUBTITLE_OFFLINE_EMPTY,
+    ];
+    expect(new Set(arms).size).toBe(arms.length);
   });
 });

@@ -125,6 +125,9 @@ const BANNED = [
   'Streaming live',
   'Live tape',
   'Gamma flip (live)',
+  // (v2) The retired parenthetical form's successor (SPEC §2.2, criterion 18) — a session-tape
+  // replay must render `Gamma flip · session tape`, never the `· live` derivation label.
+  'Gamma flip · live',
   'Live offline — reconnecting…',
   '○ overnight — no live data',
   '○ market closed',
@@ -236,6 +239,8 @@ describe('day-replay-mock-adapter · S1 fixture pass', () => {
     expect(text).not.toMatch(/Net flow \(\d+m\)/);
     expect(text).not.toMatch(/last few minutes/i);
     expect(screen.queryByText('Gamma flip (live)')).toBeNull();
+    expect(screen.queryByText('Gamma flip · live')).toBeNull();
+    expect(screen.getByText('Gamma flip · session tape')).toBeInTheDocument();
 
     // Fills off
     const tick = tickFromLive(poison, false, 1);
@@ -263,6 +268,8 @@ describe('day-replay-mock-adapter · S1 fixture pass', () => {
       </ThemeProvider>,
     );
     expect(screen.getByText('Live tape')).toBeInTheDocument();
-    expect(screen.getByText('Gamma flip (live)')).toBeInTheDocument();
+    // (v2) The label names the derivation, not the connection state (SPEC §2.2, criterion 18):
+    // `Gamma flip · live` holds through both live and a drop; `Gamma flip (live)` is retired.
+    expect(screen.getByText('Gamma flip · live')).toBeInTheDocument();
   });
 });

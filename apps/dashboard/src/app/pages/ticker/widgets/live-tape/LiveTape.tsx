@@ -1,38 +1,43 @@
 /**
- * LiveTape — the 5 LIVE-DERIVED StatTiles (Net flow 5m · Spread · Gamma flip (live) · VWAP ·
- * Last trade). These ride the SSE stream, so on a payload-gap drop they **dim + caption `⏸ offline`**
- * ("paused, levels below stay current") — `[live-vs-static-isolation]`. The static DealerPositioning
- * tiles below never receive `offline`.
+ * LiveTape — the 5 LIVE-DERIVED StatTiles (Net flow 5m · Spread · Gamma flip · VWAP · Last trade).
+ * These ride the SSE stream, so on a payload-gap drop the ones with a held value **dim + pause mark
+ * + `offline · last known`**, and the ones with an empty latch dim + pause mark with no "last known"
+ * words (SPEC §2.2, owner ruling 2's debt) — `[live-vs-static-isolation]`. The static
+ * DealerPositioning tiles below never receive `offline`.
  *
  * Session-tape (S1): title `Session tape` from first occupancy; no LIVE_TAPE_SUBTITLE_*; gamma flip
- * never `(live)`; Widget `live={false}`; drop may dim — never `⏸ offline`. Numbers follow
- * `displayActive` (not genuine isLive).
+ * label is `Gamma flip · session tape`; Widget `live={NOT_LIVE}`; drop may dim — never the pause
+ * mark. Numbers follow `displayActive` (not genuine isLive).
  *
  * Note: VWAP is a static bundle field but lives in the live row visually (it is intraday/live-feel);
  * it carries NO `offline` (it never dims) — matching the pre-refactor behavior where VWAP had no
- * `offline` prop. Gamma flip (live) shows the static authoritative flip when not live, never a stale
- * live value.
+ * `offline` prop. Gamma flip's label names its DERIVATION (`· live` / `· session tape`), never the
+ * connection state (SPEC §2.2, criterion 18) — the value itself comes from the retention latch, never
+ * the bundle's `m.gamma_flip` (criterion 14).
  */
 import { useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
+import { andPresent, NOT_LIVE } from '@/shared/liveness/liveClaim';
 import { Widget } from '@/shared/ui/Widget';
 import type { LiveUpdate, MarketState } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { useLiveTape } from '../../liveTapeStore';
 import { consumeStanding, isDeliveringLive, sessionTapeOf } from '../../sessionTapeStanding';
 import {
+  humanSessionDate,
   LIVE_TAPE_SUBTITLE_LIVE,
   LIVE_TAPE_SUBTITLE_OFFLINE,
+  LIVE_TAPE_SUBTITLE_OFFLINE_EMPTY,
   SESSION_TAPE_INFO,
   SESSION_TAPE_NET_FLOW_INFO_1X,
   SESSION_TAPE_NET_FLOW_INFO_FAST,
   SESSION_TAPE_SUBTITLE_ENDED,
   SESSION_TAPE_TITLE,
-  humanSessionDate,
   sessionTapeNotThisTickerSubtitle,
   sessionTapeSubtitle,
 } from '../_kit/copy';
 import { distanceToLevel, levelSpot } from '../_kit/distanceToLevel';
 import { FigureCell } from '../_kit/FigureCell';
+import { useStreamLatch } from '../_kit/useStreamLatch';
 
 const GRID = {
   display: 'grid',
@@ -84,21 +89,6 @@ export function LiveTape({
   // every one of the five non-live chip states, replay included — a replayed tape print is not one).
   const flashActive = isDeliveringLiveNow;
 
-  const netFlow = numbersActive && live ? live.net_flow : null;
-  const netFlowFlash = useFlashOnChange(netFlow, { active: flashActive });
-  const spreadFlash = useFlashOnChange(numbersActive ? (live?.spread ?? null) : null, {
-    active: flashActive,
-    tone: 'neutral',
-  });
-  const flipFlash = useFlashOnChange(numbersActive ? (live?.gamma_flip ?? null) : null, {
-    active: flashActive,
-  });
-  const flipValue = (numbersActive ? live?.gamma_flip : null) ?? m.gamma_flip;
-  const flipSecondary = distanceToLevel(flipValue, levelSpot(m));
-
-  // S1 drop may dim numbers — never StatTile `⏸ offline` caption.
-  const tileOffline = st ? false : streamOffline;
-  const dimSx = st && streamOffline ? { opacity: 0.5 } : undefined;
   // F6 (SPEC §4.1) — session replay never wears the label-row dot, structurally, not merely by data:
   // `FigureCell` already implements the F6 branch (mono full strength, no dot, no pause mark, no
   // `offline` caption) but no call site here ever set the prop, so it was unreachable (GATE Q bounce,
@@ -106,19 +96,59 @@ export function LiveTape({
   // artifact, so it stays in its ordinary default/F1 rendering at every standing.
   const replayFigure = Boolean(st);
 
+  // The retention latch's reset token (SPEC §2.2, criteria 16a/16b): route symbol AND replay-armed
+  // state, so a symbol change AND a replay arm both empty every latch this widget owns from one token.
+  const resetToken = `${m.ticker.toUpperCase()}|${st ? 'replay' : 'live'}`;
+
+  const netFlowStream = numbersActive && live ? live.net_flow : null;
+  const netFlowLatch = useStreamLatch(netFlowStream, resetToken);
+  const netFlowFlash = useFlashOnChange(netFlowStream, { active: flashActive });
+  const spreadStream = numbersActive ? (live?.spread ?? null) : null;
+  const spreadLatch = useStreamLatch(spreadStream, resetToken);
+  const spreadFlash = useFlashOnChange(spreadStream, {
+    active: flashActive,
+    tone: 'neutral',
+  });
+  const flipStream = numbersActive ? (live?.gamma_flip ?? null) : null;
+  const flipFlash = useFlashOnChange(flipStream, {
+    active: flashActive,
+  });
+  // The latch owns BOTH halves (SPEC §2.2). `live?.gamma_flip` is the RAW STREAM value — the same one
+  // fed to the flash hook above — never a `?? m.gamma_flip` composition (that produced criterion 14's
+  // violation). The bundle's structure flip is the LADDER's row (FE-5) and is not adopted here.
+  const flipLatch = useStreamLatch(flipStream, resetToken);
+  const flipValue = flipLatch.value;
+  const flipSecondary = distanceToLevel(flipValue, levelSpot(m));
+  const anyLatchHeld = netFlowLatch.retained || spreadLatch.retained || flipLatch.retained;
+
+  // S1 drop may dim numbers — never StatTile `⏸ offline` caption.
+  const tileOffline = st ? false : streamOffline;
+  const dimSx = st && streamOffline ? { opacity: 0.5 } : undefined;
+
   let title = 'Live tape';
-  let subtitle = numbersActive ? LIVE_TAPE_SUBTITLE_LIVE : LIVE_TAPE_SUBTITLE_OFFLINE;
+  let subtitle = numbersActive
+    ? LIVE_TAPE_SUBTITLE_LIVE
+    : anyLatchHeld
+      ? LIVE_TAPE_SUBTITLE_OFFLINE
+      : LIVE_TAPE_SUBTITLE_OFFLINE_EMPTY;
   let info =
     'Live-derived reads off the trade tape + quote stream. These pause on a stream drop; the levels below stay current.';
   let netFlowLabel = `Net flow (${live ? Math.round(live.flow_window_s / 60) : 5}m)`;
   let netFlowInfo =
     'Aggressive buys minus sells over the last few minutes, from the live trade tape. Positive = buyers lifting the ask; negative = sellers hitting the bid.';
-  let gammaLabel = isLive ? 'Gamma flip (live)' : 'Gamma flip';
+  // (v2) The label names the DERIVATION, not the connection state (criterion 18). The old ternary
+  // made the label byte-identical to the ladder's `Gamma flip` row on a drop, while the two cells
+  // hold two different numbers — and the caption slot cannot carry the distinction, because
+  // `FigureCell.tsx:251,260,269` OVERWRITES `effectiveCaption` to `offline · last known` / `offline`
+  // in the offline arms, discarding sub-copy on exactly the drop where it is most needed. Both arms
+  // name a derivation and neither changes with connection state — `· live` holds through live *and*
+  // drop; the only switch is live-stream vs session-tape derivation.
+  let gammaLabel = 'Gamma flip · live';
 
   if (st) {
     title = SESSION_TAPE_TITLE;
     info = SESSION_TAPE_INFO;
-    gammaLabel = 'Gamma flip';
+    gammaLabel = 'Gamma flip · session tape';
     const human = humanSessionDate(st.et_date);
     const armed = st.symbol.toUpperCase();
     if (standing.kind === 'ended') {
@@ -150,43 +180,45 @@ export function LiveTape({
       bodyVariant="inset"
     >
       <Box sx={{ ...GRID, ...dimSx }} data-testid="live-tape">
-        {/* Net flow — AC-1c: live = isDeliveringLiveNow && netFlow != null. GATE Q bounce finding 1:
-            `netFlow != null` ALONE is not the delivering-stream predicate — it is also true while a
-            session tape plays back a real number, which must NOT wear a dot. F5-only this phase
-            (no retention latch on LiveTape — ruling 2; phase 2 owes it). */}
+        {/* Net flow — the latch owns BOTH the rendered value and `retained` (SPEC §2.2), same
+            discipline as gamma flip below. `live` is keyed on the RAW STREAM presence
+            (`netFlowStream`), never the latched render value — a dot keyed on the latched value
+            would claim the stream for a retained-but-stale number. */}
         <FigureCell
           register="traced"
           label={netFlowLabel}
-          value={netFlow != null ? `${netFlow >= 0 ? '+' : ''}${netFlow.toLocaleString()}` : '—'}
-          live={isDeliveringLiveNow && netFlow != null}
-          offline={tileOffline ? { retained: false } : null}
+          value={
+            netFlowLatch.value != null
+              ? `${netFlowLatch.value >= 0 ? '+' : ''}${netFlowLatch.value.toLocaleString()}`
+              : '—'
+          }
+          live={andPresent(isDeliveringLiveNow, netFlowStream)}
+          offline={tileOffline ? { retained: netFlowLatch.retained } : null}
           replay={replayFigure}
           flash={netFlowFlash}
           info={netFlowInfo}
         />
-        {/* Spread — AC-1c: live = isDeliveringLiveNow && live?.spread != null (GATE Q bounce finding 1
-            — see the Net flow comment above for why `numbersActive` alone is the wrong gate). */}
+        {/* Spread — same latch discipline as Net flow / Gamma flip above. */}
         <FigureCell
           register="traced"
           label="Spread"
-          value={numbersActive && live?.spread != null ? `$${live.spread.toFixed(2)}` : '—'}
-          live={isDeliveringLiveNow && live?.spread != null}
-          offline={tileOffline ? { retained: false } : null}
+          value={spreadLatch.value != null ? `$${spreadLatch.value.toFixed(2)}` : '—'}
+          live={andPresent(isDeliveringLiveNow, spreadStream)}
+          offline={tileOffline ? { retained: spreadLatch.retained } : null}
           replay={replayFigure}
           flash={spreadFlash}
           info="Best ask minus best bid. Wider = a thinner, more volatile market."
         />
-        {/* Gamma flip — AC-1c: live = isDeliveringLiveNow && live?.gamma_flip != null, deliberately
-            NOT `flipValue != null` (pre-conversion :87 falls back to the bundle's m.gamma_flip, so a
-            dot keyed on the rendered value would claim the stream for a static number). The
-            rendered value already falls back to the bundle on a drop, so its offline arm is
-            RETAINED whenever a fallback exists (matches the shipped dim+caption behaviour), and
-            degrades honestly to the bare literal only if even the bundle has none. */}
+        {/* Gamma flip — the latch owns BOTH halves (SPEC §2.2, criterion 14). `live` is keyed on the
+            RAW STREAM presence (`live?.gamma_flip`), deliberately NOT `flipValue != null` — a dot
+            keyed on the rendered (possibly latched) value would claim the stream for a retained
+            number. Neither the value nor the boolean reads `m.gamma_flip` — that fallback produced
+            criterion 14's violation and is not adopted here. */}
         <FigureCell
           register="traced"
           label={gammaLabel}
           value={flipValue != null ? `$${flipValue}` : '—'}
-          live={isDeliveringLiveNow && live?.gamma_flip != null}
+          live={andPresent(isDeliveringLiveNow, live?.gamma_flip)}
           offline={tileOffline ? { retained: flipValue != null } : null}
           replay={replayFigure}
           flash={flipFlash}
@@ -200,7 +232,7 @@ export function LiveTape({
           register="traced"
           label="VWAP"
           value={m.vwap != null ? `$${m.vwap.toFixed(2)}` : '—'}
-          live={false}
+          live={NOT_LIVE}
           info="Volume-weighted average price for the session — a common intraday fair-value / mean-reversion reference."
         />
       </Box>

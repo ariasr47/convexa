@@ -531,6 +531,13 @@ export function withStructureAge(basis: string, ageSeconds: number | null | unde
 export const LIVE_TAPE_SUBTITLE_LIVE = 'Live stream · not the structure snapshot below';
 export const LIVE_TAPE_SUBTITLE_OFFLINE =
   'Stream offline · last known ticks · structure levels stay current';
+/**
+ * (v2) The NO-TICKS-RETAINED arm. `LiveTape.tsx:110` selects on the stream flag ALONE today, so the
+ * retention claim in LIVE_TAPE_SUBTITLE_OFFLINE is made unconditionally on every drop — including the
+ * drop where nothing was ever retained. Same two-arm discipline owner ruling 2 sets for values.
+ */
+export const LIVE_TAPE_SUBTITLE_OFFLINE_EMPTY =
+  'Stream offline · no ticks retained · structure levels stay current';
 
 /** S1 LiveTape title — from first session_tape payload (including starting). */
 export const SESSION_TAPE_TITLE = 'Session tape';
