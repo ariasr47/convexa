@@ -6,25 +6,33 @@
  * → tape mid + trail → 60Hz probe. React only receives a small hover readout string.
  *
  * Used by the ticker GEX strike profile and the /lab comparison page.
- * Theme literals match tokens.ts. Honors prefers-reduced-motion.
+ *
+ * The canvas paints to Canvas2D and cannot consume MUI `sx` / `useTheme()` — it has no theme input
+ * of its own. `palette` and `surfaces` below are the RESOLVED, scheme-aware colours the host resolves
+ * once via `resolveLevelPalette(theme)` / `useTheme()` and hands down as props (SPEC §2.7); the level
+ * stroke table itself lives in `levelStrokes.ts` so the ladder (FE-5) and this field can never drift
+ * apart. Honors prefers-reduced-motion.
  */
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { useEffect, useRef, useState } from 'react';
+import type { LevelPalette } from './levelStrokes';
+import { withAlpha } from './levelStrokes';
 import type { MarkerLayoutBox } from './markerLayout';
 import { layoutMarkerLabels, layoutTapeLabel } from './markerLayout';
 import { structureBufferKey } from './structureBufferKey';
 import type { FieldSample, StructureFieldModel } from './types';
 
-const INK = '#0B0F17';
-const PANEL = '#131A24';
-const PHOSPHOR = '#E9E4D6';
-const STEEL = '#8A9BB4';
-const AMBER = '#F2A93B';
-const SIGNAL = '#5E8BC4';
-const GREEN = '#2ecc71';
-const RED = '#ff5c5c';
-const RAISED = '#1B2432';
-const BURNT = '#E07A3F';
+export interface StructureFieldSurfaces {
+  ink: string;
+  panel: string;
+  raised: string;
+  phosphor: string;
+  steel: string;
+  /** The tenth former module literal (`BURNT`, the lab-chrome "TAPE OFF" pill) — mode-aware via
+   *  `theme.palette.warning.main`. Not part of SPEC §2.7's illustrative 5-key snippet; added because
+   *  leaving it out would leave one scheme-invariant hex literal in the file (criterion 53). */
+  warning: string;
+}
 
 export interface StructureFieldCanvasProps {
   model: StructureFieldModel;
@@ -35,6 +43,16 @@ export interface StructureFieldCanvasProps {
    * `lab` — full instrument chrome (default).
    */
   variant?: 'lab' | 'ticker';
+  /**
+   * The RESOLVED level palette (SPEC §2.7). The canvas paints to Canvas2D and cannot consume MUI
+   * `sx`, so the host resolves token keys → colours with `resolveLevelPalette(theme)` and passes them
+   * in. This is the theme input the file previously had none of, and it is what makes criterion 52
+   * satisfiable — DELEGATED (P5).
+   */
+  palette: LevelPalette;
+  /** The scheme's panel + body surfaces, same reason. Replaces the unconditional `INK`/`PANEL`/
+   *  `RAISED`/`PHOSPHOR`/`STEEL`/`BURNT` fills the file used to carry as module-level hex. */
+  surfaces: StructureFieldSurfaces;
 }
 
 interface Particle {
@@ -146,6 +164,8 @@ export function StructureFieldCanvas({
   height = 480,
   className,
   variant = 'lab',
+  palette,
+  surfaces,
 }: StructureFieldCanvasProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -220,7 +240,7 @@ export function StructureFieldCanvas({
 
       const pts = samples.map((s) => ({ x: xOf(s.strike), y: yOf(s.netGex) }));
 
-      o.fillStyle = INK;
+      o.fillStyle = surfaces.ink;
       o.fillRect(0, 0, w, h);
 
       // Deep vignette
@@ -232,9 +252,9 @@ export function StructureFieldCanvas({
         h * 0.48,
         Math.max(w, h) * 0.72,
       );
-      vg.addColorStop(0, PANEL);
-      vg.addColorStop(0.55, '#101722');
-      vg.addColorStop(1, INK);
+      vg.addColorStop(0, surfaces.panel);
+      vg.addColorStop(0.55, withAlpha(surfaces.panel, 0.6));
+      vg.addColorStop(1, surfaces.ink);
       o.fillStyle = vg;
       o.fillRect(pad.l, pad.t, plotW, plotH);
 
@@ -247,9 +267,9 @@ export function StructureFieldCanvas({
         o.fillStyle = g;
         o.fillRect(x - radius, pad.t, radius * 2, plotH);
       };
-      bloom(m.putWall, 'rgba(255,92,92,0.18)', plotW * 0.14);
-      bloom(m.callWall, 'rgba(46,204,113,0.16)', plotW * 0.14);
-      bloom(m.gammaFlip, 'rgba(242,169,59,0.12)', plotW * 0.1);
+      bloom(m.putWall, withAlpha(palette.putWall, 0.18), plotW * 0.14);
+      bloom(m.callWall, withAlpha(palette.callWall, 0.16), plotW * 0.14);
+      bloom(m.gammaFlip, withAlpha(palette.gammaFlip, 0.12), plotW * 0.1);
 
       // Strike heat columns — |GEX| intensity (structure density)
       const colW = Math.max(2, plotW / samples.length);
@@ -261,18 +281,18 @@ export function StructureFieldCanvas({
         const colH = Math.max(1, bot - top);
         const grad = o.createLinearGradient(0, top, 0, bot);
         if (s.netGex >= 0) {
-          grad.addColorStop(0, `rgba(46,204,113,${0.06 + intensity * 0.28})`);
-          grad.addColorStop(1, 'rgba(46,204,113,0.02)');
+          grad.addColorStop(0, withAlpha(palette.callWall, 0.06 + intensity * 0.28));
+          grad.addColorStop(1, withAlpha(palette.callWall, 0.02));
         } else {
-          grad.addColorStop(0, 'rgba(255,92,92,0.02)');
-          grad.addColorStop(1, `rgba(255,92,92,${0.06 + intensity * 0.28})`);
+          grad.addColorStop(0, withAlpha(palette.putWall, 0.02));
+          grad.addColorStop(1, withAlpha(palette.putWall, 0.06 + intensity * 0.28));
         }
         o.fillStyle = grad;
         o.fillRect(x - colW * 0.45, top, colW * 0.9, colH);
       }
 
       // Quiet horizontal guides
-      o.strokeStyle = 'rgba(138,155,180,0.1)';
+      o.strokeStyle = withAlpha(surfaces.steel, 0.1);
       o.lineWidth = 1;
       for (let i = 0; i <= 4; i++) {
         const y = pad.t + (plotH * i) / 4;
@@ -283,7 +303,7 @@ export function StructureFieldCanvas({
       }
 
       // Zero line
-      o.strokeStyle = 'rgba(138,155,180,0.4)';
+      o.strokeStyle = withAlpha(surfaces.steel, 0.4);
       o.setLineDash([5, 5]);
       o.beginPath();
       o.moveTo(pad.l, y0);
@@ -309,24 +329,24 @@ export function StructureFieldCanvas({
       o.lineTo(pts[pts.length - 1].x, y0);
       o.closePath();
       const fill = o.createLinearGradient(0, pad.t, 0, pad.t + plotH);
-      fill.addColorStop(0, 'rgba(46,204,113,0.28)');
-      fill.addColorStop(0.48, 'rgba(19,26,36,0.04)');
-      fill.addColorStop(0.52, 'rgba(19,26,36,0.04)');
-      fill.addColorStop(1, 'rgba(255,92,92,0.28)');
+      fill.addColorStop(0, withAlpha(palette.callWall, 0.28));
+      fill.addColorStop(0.48, withAlpha(surfaces.panel, 0.04));
+      fill.addColorStop(0.52, withAlpha(surfaces.panel, 0.04));
+      fill.addColorStop(1, withAlpha(palette.putWall, 0.28));
       o.fillStyle = fill;
       o.fill();
 
       // Curve glow + core
       o.save();
-      o.shadowColor = 'rgba(94,139,196,0.65)';
+      o.shadowColor = withAlpha(palette.mid, 0.65);
       o.shadowBlur = calm ? 8 : 18;
-      o.strokeStyle = SIGNAL;
+      o.strokeStyle = palette.mid;
       o.lineWidth = calm ? 2 : 2.6;
       o.lineJoin = 'round';
       strokeSmooth(o, pts);
       o.stroke();
       o.restore();
-      o.strokeStyle = 'rgba(233,228,214,0.55)';
+      o.strokeStyle = withAlpha(surfaces.phosphor, 0.55);
       o.lineWidth = 1;
       strokeSmooth(o, pts);
       o.stroke();
@@ -345,17 +365,17 @@ export function StructureFieldCanvas({
         o.globalAlpha = 1;
       };
 
-      level(m.putWall, RED, 1.6);
-      level(m.callWall, GREEN, 1.6);
-      level(m.spot, STEEL, 1);
+      level(m.putWall, palette.putWall, 1.6);
+      level(m.callWall, palette.callWall, 1.6);
+      level(m.spot, surfaces.steel, 1);
 
       // Flip — structural amber (static core; breath is dynamic)
       {
         const x = xOf(m.gammaFlip);
         o.save();
-        o.shadowColor = 'rgba(242,169,59,0.8)';
+        o.shadowColor = withAlpha(palette.gammaFlip, 0.8);
         o.shadowBlur = calm ? 10 : 20;
-        o.strokeStyle = AMBER;
+        o.strokeStyle = palette.gammaFlip;
         o.lineWidth = calm ? 2 : 2.75;
         o.beginPath();
         o.moveTo(x, pad.t);
@@ -372,22 +392,22 @@ export function StructureFieldCanvas({
           id: 'put',
           x: xOf(m.putWall),
           label: `put $${m.putWall.toFixed(0)}`,
-          color: RED,
+          color: palette.putWall,
           preferredLane: 0,
         },
         {
           id: 'call',
           x: xOf(m.callWall),
           label: `call $${m.callWall.toFixed(0)}`,
-          color: GREEN,
+          color: palette.callWall,
           preferredLane: 0,
         },
-        { id: 'flip', x: xOf(m.gammaFlip), label: 'flip', color: AMBER, preferredLane: 1 },
+        { id: 'flip', x: xOf(m.gammaFlip), label: 'flip', color: palette.gammaFlip, preferredLane: 1 },
         {
           id: 'spot',
           x: xOf(m.spot),
           label: `spot $${m.spot.toFixed(1)}`,
-          color: STEEL,
+          color: surfaces.steel,
           preferredLane: 2,
         },
       ].filter(
@@ -409,12 +429,12 @@ export function StructureFieldCanvas({
       markerLayoutRef.current = markerBoxes;
       o.font = '600 11px "IBM Plex Sans", system-ui, sans-serif';
       for (const marker of markerBoxes) {
-        o.fillStyle = marker.color ?? PHOSPHOR;
+        o.fillStyle = marker.color ?? surfaces.phosphor;
         o.fillText(marker.label, marker.x + 8, marker.y + 12);
       }
 
       // Axis labels (structure)
-      o.fillStyle = STEEL;
+      o.fillStyle = surfaces.steel;
       o.font = '500 11px "IBM Plex Sans", system-ui, sans-serif';
       o.fillText(`$${minK.toFixed(0)}`, pad.l, h - 16);
       o.fillText(`$${maxK.toFixed(0)}`, pad.l + plotW - 40, h - 16);
@@ -431,7 +451,7 @@ export function StructureFieldCanvas({
       const reduce = reducedRef.current;
 
       if (samples.length < 2) {
-        ctx.fillStyle = INK;
+        ctx.fillStyle = surfaces.ink;
         ctx.fillRect(0, 0, w, h);
         raf = requestAnimationFrame(paint);
         return;
@@ -474,9 +494,9 @@ export function StructureFieldCanvas({
             : 0.28 + 0.22 * Math.sin(now / 900);
         const band = plotW * 0.045;
         const well = ctx.createLinearGradient(x - band, 0, x + band, 0);
-        well.addColorStop(0, 'rgba(242,169,59,0)');
-        well.addColorStop(0.5, `rgba(242,169,59,${breath * 0.22})`);
-        well.addColorStop(1, 'rgba(242,169,59,0)');
+        well.addColorStop(0, withAlpha(palette.gammaFlip, 0));
+        well.addColorStop(0.5, withAlpha(palette.gammaFlip, breath * 0.22));
+        well.addColorStop(1, withAlpha(palette.gammaFlip, 0));
         ctx.fillStyle = well;
         ctx.fillRect(x - band, pad.t, band * 2, plotH);
 
@@ -484,9 +504,9 @@ export function StructureFieldCanvas({
         if (!reduce) {
           const sweep = ((now / 12) % (plotW + 80)) - 40;
           const sg = ctx.createLinearGradient(pad.l + sweep - 30, 0, pad.l + sweep + 30, 0);
-          sg.addColorStop(0, 'rgba(233,228,214,0)');
-          sg.addColorStop(0.5, 'rgba(233,228,214,0.035)');
-          sg.addColorStop(1, 'rgba(233,228,214,0)');
+          sg.addColorStop(0, withAlpha(surfaces.phosphor, 0));
+          sg.addColorStop(0.5, withAlpha(surfaces.phosphor, 0.035));
+          sg.addColorStop(1, withAlpha(surfaces.phosphor, 0));
           ctx.fillStyle = sg;
           ctx.fillRect(pad.l, pad.t, plotW, plotH);
         }
@@ -512,7 +532,7 @@ export function StructureFieldCanvas({
           }
           const midG = gexAt(samples, strikeOf(0.5));
           const a = 0.04 + (0.06 * Math.abs(midG)) / maxAbs;
-          ctx.strokeStyle = midG >= 0 ? `rgba(46,204,113,${a})` : `rgba(255,92,92,${a})`;
+          ctx.strokeStyle = midG >= 0 ? withAlpha(palette.callWall, a) : withAlpha(palette.putWall, a);
           ctx.lineWidth = 1;
           ctx.stroke();
         }
@@ -565,11 +585,11 @@ export function StructureFieldCanvas({
           const yCurve = yOf(g);
           const x = xOf(k);
           const y = yCurve + (y0 - yCurve) * p.v;
-          const alpha = Math.max(0, Math.min(1, p.life)) * (1 - p.v * 0.55);
+          const particleAlpha = Math.max(0, Math.min(1, p.life)) * (1 - p.v * 0.55);
           ctx.fillStyle =
             p.sign > 0
-              ? `rgba(46,204,113,${0.15 + alpha * 0.65})`
-              : `rgba(255,92,92,${0.15 + alpha * 0.65})`;
+              ? withAlpha(palette.callWall, 0.15 + particleAlpha * 0.65)
+              : withAlpha(palette.putWall, 0.15 + particleAlpha * 0.65);
           ctx.beginPath();
           ctx.arc(x, y, p.size * (1 - p.v * 0.4), 0, Math.PI * 2);
           ctx.fill();
@@ -593,7 +613,7 @@ export function StructureFieldCanvas({
             const a = (1 - age) * 0.35;
             if (a <= 0.02) continue;
             const x = xOf(s.mid);
-            ctx.fillStyle = `rgba(94,139,196,${a})`;
+            ctx.fillStyle = withAlpha(palette.mid, a);
             ctx.beginPath();
             ctx.arc(x, y0, 2.2, 0, Math.PI * 2);
             ctx.fill();
@@ -608,13 +628,13 @@ export function StructureFieldCanvas({
         // Vertical beam
         ctx.save();
         const beam = ctx.createLinearGradient(x, pad.t, x, pad.t + plotH);
-        beam.addColorStop(0, 'rgba(94,139,196,0)');
-        beam.addColorStop(0.5, `rgba(94,139,196,${0.12 + pulse * 0.18})`);
-        beam.addColorStop(1, 'rgba(94,139,196,0)');
+        beam.addColorStop(0, withAlpha(palette.mid, 0));
+        beam.addColorStop(0.5, withAlpha(palette.mid, 0.12 + pulse * 0.18));
+        beam.addColorStop(1, withAlpha(palette.mid, 0));
         ctx.fillStyle = beam;
         ctx.fillRect(x - 6, pad.t, 12, plotH);
 
-        ctx.strokeStyle = SIGNAL;
+        ctx.strokeStyle = palette.mid;
         ctx.globalAlpha = 0.4 + pulse * 0.5;
         ctx.lineWidth = 2;
         ctx.setLineDash([3, 4]);
@@ -626,14 +646,14 @@ export function StructureFieldCanvas({
 
         // Bead + outer ring
         ctx.globalAlpha = 1;
-        ctx.shadowColor = 'rgba(94,139,196,0.9)';
+        ctx.shadowColor = withAlpha(palette.mid, 0.9);
         ctx.shadowBlur = 14 + pulse * 10;
-        ctx.fillStyle = SIGNAL;
+        ctx.fillStyle = palette.mid;
         ctx.beginPath();
         ctx.arc(x, y0, 3.8 + pulse * 1.8, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
-        ctx.strokeStyle = `rgba(233,228,214,${0.35 + pulse * 0.4})`;
+        ctx.strokeStyle = withAlpha(surfaces.phosphor, 0.35 + pulse * 0.4);
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.arc(x, y0, 8 + pulse * 4, 0, Math.PI * 2);
@@ -652,11 +672,11 @@ export function StructureFieldCanvas({
           ],
         });
         if (tapeBox) {
-          ctx.fillStyle = PHOSPHOR;
+          ctx.fillStyle = surfaces.phosphor;
           ctx.font = '600 11px "IBM Plex Sans", system-ui, sans-serif';
           ctx.fillText(tapeBox.label, tapeBox.x + 8, tapeBox.y + 12);
           if (tapeBox.edgeTreatment !== 'none') {
-            ctx.strokeStyle = SIGNAL;
+            ctx.strokeStyle = palette.mid;
             ctx.globalAlpha = 0.8;
             ctx.lineWidth = 1;
             ctx.beginPath();
@@ -690,14 +710,17 @@ export function StructureFieldCanvas({
 
         // Soft magnet disk
         const mg = ctx.createRadialGradient(hx, hy, 2, hx, hy, 36 + intensity * 20);
-        mg.addColorStop(0, best.netGex >= 0 ? 'rgba(46,204,113,0.22)' : 'rgba(255,92,92,0.22)');
+        mg.addColorStop(
+          0,
+          best.netGex >= 0 ? withAlpha(palette.callWall, 0.22) : withAlpha(palette.putWall, 0.22),
+        );
         mg.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = mg;
         ctx.beginPath();
         ctx.arc(hx, hy, 40 + intensity * 18, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = 'rgba(233,228,214,0.28)';
+        ctx.strokeStyle = withAlpha(surfaces.phosphor, 0.28);
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(hx, pad.t);
@@ -706,8 +729,8 @@ export function StructureFieldCanvas({
         ctx.lineTo(pad.l + plotW, hy);
         ctx.stroke();
 
-        ctx.fillStyle = PHOSPHOR;
-        ctx.shadowColor = 'rgba(233,228,214,0.5)';
+        ctx.fillStyle = surfaces.phosphor;
+        ctx.shadowColor = withAlpha(surfaces.phosphor, 0.5);
         ctx.shadowBlur = 8;
         ctx.beginPath();
         ctx.arc(hx, hy, 4.5, 0, Math.PI * 2);
@@ -719,10 +742,10 @@ export function StructureFieldCanvas({
         const barH = 4;
         const bx = Math.min(Math.max(hx - barW / 2, pad.l), pad.l + plotW - barW);
         const by = Math.min(hy + 14, pad.t + plotH - 8);
-        ctx.fillStyle = 'rgba(27,36,50,0.9)';
+        ctx.fillStyle = withAlpha(surfaces.raised, 0.9);
         roundRect(ctx, bx, by, barW, barH, 2);
         ctx.fill();
-        ctx.fillStyle = best.netGex >= 0 ? GREEN : RED;
+        ctx.fillStyle = best.netGex >= 0 ? palette.callWall : palette.putWall;
         roundRect(ctx, bx, by, barW * intensity, barH, 2);
         ctx.fill();
 
@@ -731,21 +754,21 @@ export function StructureFieldCanvas({
         const tw = ctx.measureText(label).width + 16;
         const rx = Math.min(Math.max(hx - tw / 2, pad.l), pad.l + plotW - tw);
         const ry = Math.max(pad.t + 8, hy - 34);
-        ctx.fillStyle = RAISED;
-        ctx.strokeStyle = 'rgba(138,155,180,0.4)';
+        ctx.fillStyle = surfaces.raised;
+        ctx.strokeStyle = withAlpha(surfaces.steel, 0.4);
         roundRect(ctx, rx, ry, tw, 22, 6);
         ctx.fill();
         ctx.stroke();
-        ctx.fillStyle = PHOSPHOR;
+        ctx.fillStyle = surfaces.phosphor;
         ctx.fillText(label, rx + 8, ry + 15);
       }
 
       // Title strip + tape pill — lab chrome only (ticker Widget owns honesty copy).
       if (!embedded) {
-        ctx.fillStyle = PHOSPHOR;
+        ctx.fillStyle = surfaces.phosphor;
         ctx.font = '700 13px "IBM Plex Sans", system-ui, sans-serif';
         ctx.fillText(`${m.symbol} · dealer field`, pad.l, 22);
-        ctx.fillStyle = STEEL;
+        ctx.fillStyle = surfaces.steel;
         ctx.font = '500 11px "IBM Plex Sans", system-ui, sans-serif';
         const age = relAge(m.asOfSec, now);
         const src =
@@ -759,10 +782,10 @@ export function StructureFieldCanvas({
         const pill = m.live ? 'TAPE LIVE' : 'TAPE OFF';
         ctx.font = '700 10px "IBM Plex Sans", system-ui, sans-serif';
         const pw = ctx.measureText(pill).width + 14;
-        ctx.fillStyle = m.live ? 'rgba(94,139,196,0.28)' : 'rgba(224,122,63,0.22)';
+        ctx.fillStyle = m.live ? withAlpha(palette.mid, 0.28) : withAlpha(surfaces.warning, 0.22);
         roundRect(ctx, w - pad.r - pw - 8, 8, pw, 18, 9);
         ctx.fill();
-        ctx.fillStyle = m.live ? SIGNAL : BURNT;
+        ctx.fillStyle = m.live ? palette.mid : surfaces.warning;
         ctx.fillText(pill, w - pad.r - pw + 0, 21);
       }
 
@@ -772,7 +795,7 @@ export function StructureFieldCanvas({
         for (let i = 0; i < 18; i++) {
           const gx = pad.l + (Math.sin(now * 0.001 + i * 12.1) * 0.5 + 0.5) * plotW;
           const gy = pad.t + (Math.cos(now * 0.0007 + i * 7.3) * 0.5 + 0.5) * plotH;
-          ctx.fillStyle = PHOSPHOR;
+          ctx.fillStyle = surfaces.phosphor;
           ctx.fillRect(gx, gy, 1.2, 1.2);
         }
         ctx.globalAlpha = 1;
@@ -836,6 +859,8 @@ export function StructureFieldCanvas({
     pad.r,
     pad.t,
     pad.b,
+    palette,
+    surfaces,
   ]);
 
   useEffect(() => {
@@ -868,8 +893,8 @@ export function StructureFieldCanvas({
             bottom: 12,
             fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
             fontSize: 12,
-            color: PHOSPHOR,
-            background: RAISED,
+            color: surfaces.phosphor,
+            background: surfaces.raised,
             border: '1px solid rgba(138,155,180,0.3)',
             borderRadius: '8px',
             padding: '6px 10px',

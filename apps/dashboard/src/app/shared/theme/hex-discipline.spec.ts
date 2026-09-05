@@ -43,12 +43,22 @@ const EXEMPT: Record<string, string> = {
   'features/auth/GoogleButton.tsx':
     'Google brand mark + branded sign-in button spec (theme-invariant by design)',
 
-  // LEGITIMATE — Canvas2D Structure Field instrument (ticker + lab). Paint paths cannot consume
-  // MUI sx/theme; literals are brand tokens from tokens.ts (ink/panel/phosphor/steel/gammaAmber).
-  'shared/charts/structure-field/StructureFieldCanvas.tsx':
-    'Canvas2D dual-clock Structure Field — brand token literals (cannot use MUI sx)',
+  // RESOLVED (FE-3, SPEC §2.7) — StructureFieldCanvas.tsx now takes its level/surface colours as
+  // RESOLVED props (`palette`/`surfaces`) from `levelStrokes.ts` + the host's `useTheme()`; the
+  // module-level hex literals (`INK`/`PANEL`/`RAISED`/`PHOSPHOR`/`STEEL`/`RED`/`GREEN`/`AMBER`/
+  // `SIGNAL`/`BURNT`) are gone. Its exemption entry is REMOVED, not kept — this is the coupled
+  // removal SPEC §2.7 / PLAN.md U-6 calls for. See `levelStrokes.spec.ts` for the file-scoped
+  // liveness half of this proof (a before/after `hex-discipline.spec.ts` run, recorded in the build
+  // report) and `StructureFieldCanvas.spec.tsx` for the canvas-paints-from-props proof.
+  //
+  // `structureFieldShared.ts`'s `SF` STAYS exempt — it is consumed ONLY by `pages/lab/**`
+  // (`StructureFieldWebGL.tsx`, the WebGL comparison twin), which is out of this phase's product
+  // scope (PLAN.md FE-3: "if a lab file cannot be converted cheaply, keep its hex-discipline
+  // exemption entry"). `StructureFieldCanvas.tsx` itself never imported `structureFieldShared.ts`
+  // (verified: no import statement between the two files) — the two files' hex literals were
+  // always independent duplicates, not a shared source.
   'shared/charts/structure-field/structureFieldShared.ts':
-    'Shared Structure Field brand token literals for Canvas2D + WebGL instruments',
+    'Shared Structure Field brand token literals for the WebGL lab instrument only (pages/lab/** — out of this phase\'s scope)',
   'pages/lab/demos/labTokens.ts':
     'Lab Canvas demos — brand token literals shared by ticker-candidate instruments',
   'pages/ticker/widgets/chrome/TapePulseStrip.tsx':

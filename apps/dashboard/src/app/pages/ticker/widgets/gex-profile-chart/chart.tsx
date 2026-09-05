@@ -7,6 +7,8 @@
  */
 import type { FieldSample, StructureFieldModel } from '@/shared/charts/structure-field';
 import { StructureFieldCanvas } from '@/shared/charts/structure-field';
+import { resolveLevelPalette } from '@/shared/charts/structure-field/levelStrokes';
+import { extrasFor } from '@/shared/theme/tokens';
 import type { StrikeRow } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -99,6 +101,24 @@ export const GexProfileChart = memo(function GexProfileChart({
     [strikes, spot, callWall, putWall],
   );
 
+  // The canvas paints to Canvas2D and cannot consume MUI `sx`/`useTheme()` itself (SPEC §2.7) —
+  // this host resolves token keys → colours and hands the RESOLVED, scheme-aware values down as
+  // props. `palette` is the shared ladder/field stroke table (criterion 7); `surfaces` replaces the
+  // canvas's former unconditional dark fills (criteria 52/53, DELEGATED P5).
+  const theme = useTheme();
+  const palette = useMemo(() => resolveLevelPalette(theme), [theme]);
+  const surfaces = useMemo(
+    () => ({
+      ink: theme.palette.background.default,
+      panel: theme.palette.background.paper,
+      raised: extrasFor(theme).panelRaised,
+      phosphor: theme.palette.text.primary,
+      steel: theme.palette.text.secondary,
+      warning: theme.palette.warning.main,
+    }),
+    [theme],
+  );
+
   const model: StructureFieldModel | null = useMemo(() => {
     if (data.length < 2) return null;
     const asOfSec =
@@ -127,7 +147,13 @@ export const GexProfileChart = memo(function GexProfileChart({
       data-testid="gex-structure-field"
       sx={{ width: '100%', borderRadius: '0 0 11px 11px', overflow: 'hidden' }}
     >
-      <StructureFieldCanvas model={model} height={300} variant="ticker" />
+      <StructureFieldCanvas
+        model={model}
+        height={300}
+        variant="ticker"
+        palette={palette}
+        surfaces={surfaces}
+      />
     </Box>
   );
 });

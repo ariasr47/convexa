@@ -4,12 +4,15 @@
  * Optional: load SPY structure from REST.
  * Renderer toggle: Canvas2D (original) vs WebGL2 (comparison twin).
  */
+import { resolveLevelPalette } from '@/shared/charts/structure-field/levelStrokes';
+import { extrasFor } from '@/shared/theme/tokens';
 import { getTicker } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
+import { useTheme } from '@mui/material/styles';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
@@ -29,6 +32,24 @@ export function StructureFieldLab() {
   const [loading, setLoading] = useState(false);
   const [tick, setTick] = useState(0);
   const [renderer, setRenderer] = useState<Renderer>('canvas2d');
+
+  // Mechanical fix mirroring FE-1's DealerPositioning.tsx precedent: StructureFieldCanvas's
+  // `palette`/`surfaces` props became required at FE-3 (SPEC §2.7); this lab-only call site is not
+  // one of FE-3's owned paths but must satisfy the new prop shape for `npm run typecheck` (not
+  // deferred). Out of this phase's product scope otherwise.
+  const theme = useTheme();
+  const palette = useMemo(() => resolveLevelPalette(theme), [theme]);
+  const surfaces = useMemo(
+    () => ({
+      ink: theme.palette.background.default,
+      panel: theme.palette.background.paper,
+      raised: extrasFor(theme).panelRaised,
+      phosphor: theme.palette.text.primary,
+      steel: theme.palette.text.secondary,
+      warning: theme.palette.warning.main,
+    }),
+    [theme],
+  );
 
   // Demo live-mid drift (~20fps is enough for delight; instruments paint on rAF).
   useEffect(() => {
@@ -183,7 +204,12 @@ export function StructureFieldLab() {
         {renderer === 'webgl' ? (
           <StructureFieldWebGL model={model} height={520} />
         ) : (
-          <StructureFieldCanvas model={model} height={520} />
+          <StructureFieldCanvas
+            model={model}
+            height={520}
+            palette={palette}
+            surfaces={surfaces}
+          />
         )}
 
         <Stack spacing={1} sx={{ mt: 3, maxWidth: 760 }}>
