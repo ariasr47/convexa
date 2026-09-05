@@ -20,7 +20,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { IVR_WHOLE_EMPTY } from '../_kit/copy';
-import { IvRank } from './IvRank';
+import { IvRank, ivRankStripFigure } from './IvRank';
 
 // The wire `*_descriptor`/`advisory_note` strings carry a sentinel so any accidental render is caught.
 const WIRE_DESC = 'WIRE-DESCRIPTOR-NEVER-RENDERED';
@@ -128,5 +128,40 @@ describe('IvRank · the ⓘ affordances are keyboard-reachable (AC-35)', () => {
     await user.keyboard('{Enter}');
     expect(await screen.findByRole('tooltip')).toBeInTheDocument();
     await user.keyboard('{Escape}');
+  });
+});
+
+// curvature-v2-desk-and-read FE-7 — the read strip's own digest of this widget's number (SPEC
+// §2.3/§2.4: "IV rank comes from IvRank.tsx"). This widget's own body (above) is UNCHANGED by this
+// export; these tests cover only the small pure function the strip calls.
+describe('ivRankStripFigure — the read strip digest (criteria 25, 28)', () => {
+  it('computed with a recognized band — the rank plus the SAME closed band label the full widget uses', () => {
+    expect(ivRankStripFigure(computed())).toBe('82 · premium rich');
+  });
+
+  it('computed with an unrecognized band — the rank alone, never a raw wire pass-through', () => {
+    expect(ivRankStripFigure(computed({ band: 'wat' as IvRankRead['band'] }))).toBe('82');
+  });
+
+  it('computed with no band at all — the rank alone', () => {
+    expect(ivRankStripFigure(computed({ band: null }))).toBe('82');
+  });
+
+  it('degenerate-flat (rank null) — the closed `unavailable` member, never a fabricated midpoint', () => {
+    expect(ivRankStripFigure(flat())).toBe('unavailable');
+  });
+
+  it('building — the closed `unavailable` member (the strip is a digest; the full building message stays in this widget)', () => {
+    expect(ivRankStripFigure(building())).toBe('unavailable');
+  });
+
+  it('an unknown wire state — fail-honest to `unavailable`, never a throw', () => {
+    expect(ivRankStripFigure(computed({ state: 'weird' as IvRankRead['state'] }))).toBe(
+      'unavailable',
+    );
+  });
+
+  it('whole read null — `unavailable`', () => {
+    expect(ivRankStripFigure(null)).toBe('unavailable');
   });
 });

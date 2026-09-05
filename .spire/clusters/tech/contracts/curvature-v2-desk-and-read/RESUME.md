@@ -12,18 +12,18 @@
 - `b5251aa1` — FE-4 (the extracted pure paint step, the three live gates)
 - `2fbfd6c2` — FE-5 (the level ladder) — see "Done (FE-5)" below.
 - `95078372` — FE-6 (the structure-field hero) — see "Done (FE-6)" below.
+- FE-7 (the read strip) — **committed by this session** — see "Done (FE-7)" below for the exact hash
+  once recorded at commit time (this file is written just before that commit).
 
-Working tree is clean at the time of writing (post-FE-6 commit). `npm run typecheck` **0**, `npx nx
-test @convexa/dashboard` **0** @ **226 files / 2474 tests** (up from the 224/2460 baseline after
-FE-5: +2 files, +14 tests), `npm run lint` **0** (no new warnings, same one pre-existing
-`react-hooks/exhaustive-deps` warning in `useSessionArchive.ts`, unrelated to this branch). e2e not
-touched yet (that's FE-12). **Nx's own `test` target flaked once mid-session** (printed "1 error"
-alongside "225 passed" — the exact `printed passed but exits non-zero` trap this repo's CLAUDE.md
-warns about) and Nx auto-retried to a clean 226/2474; a direct `npx vitest run` from
-`apps/dashboard/` (bypassing Nx's cache/retry layer) reproduced the clean 226/2474 deterministically
-twice more — the flake was environmental (Nx orchestration), not this session's code. If you see a
-similar one-off red with an otherwise-green summary, re-run via plain `vitest run` before treating it
-as a real regression.
+Working tree is clean at the time of writing (post-FE-7, pre-commit-hash-record). `npm run
+typecheck` **0**, `npx nx test @convexa/dashboard` **0** @ **228 files / 2512 tests** (up from the
+226/2474 baseline after FE-6: +2 files, +38 tests), `npm run lint` **0** (no new warnings, same one
+pre-existing `react-hooks/exhaustive-deps` warning in `useSessionArchive.ts`, unrelated to this
+branch). e2e not touched yet (that's FE-12). **Nx's own `test` target flaked again this session**
+(the run printed a failure-shaped summary once, then Nx's own "Nx detected a flaky task" notice fired
+and a same-command re-run resolved to a clean cache hit at 228/2512, exit 0) — same environmental
+class the FE-6 session already recorded, not this session's code; confirmed by re-running the exact
+canonical command a second time and getting a clean cached 0.
 
 ---
 
@@ -465,68 +465,131 @@ already-settled criterion 16b (no pause mark during replay) if done hastily.
 
 ---
 
-## Next: FE-7 (not started)
+## Done (FE-7) — do not re-do
 
-**FE-7 — The read strip: eight fixed slots, each cell its own container.** Owns: new
-`pages/ticker/widgets/read-strip/{ReadStrip.tsx,ReadStrip.spec.tsx,readStripModel.ts,
-readStripModel.spec.ts,index.ts}` · `pages/ticker/widgets/iv-rank/IvRank.tsx`. Depends on FE-1
-(done). **Independent: no.**
-**Spec:** §2.4, §4.1, §4.6 · **Criteria:** 8 (SB), 19 (SB), 25 (SB), 26, 27, 28, 50 (SB), 60.
+**FE-7 — the read strip: eight fixed slots, each cell its own container.** Owns (as landed): new
+`pages/ticker/widgets/read-strip/{readStripModel.ts,readStripModel.spec.ts,ReadStrip.tsx,
+ReadStrip.spec.tsx,index.ts}` · `pages/ticker/widgets/iv-rank/IvRank.tsx` (additive export only,
+`IvRank.spec.tsx` gained a companion describe block for it).
 
-Read PLAN.md's FE-7 section fresh (around line 1245 in the copy read this session — re-check, it
-drifts) and SPEC §2.4/§4.1 fresh before starting. Key traps, read from this session's own reading of
-both documents (not re-verified against the tree since FE-7 hasn't started — re-check line numbers
-against the CURRENT `DealerPositioning.tsx`, which this session did NOT touch beyond the one-line
-`WallMagnetView` import re-point):
-- **Eight FIXED slots, a closed tuple type** (`READ_STRIP_SLOTS`), never 7-or-8 — the architect's own
-  R2 self-revision was withdrawn at R3; a variable-cardinality slot recreates
-  `[absent-is-not-none]` in the scroll axis at 393px (an absent cell and one scrolled off the rail are
-  indistinguishable). No tenth member, no eighth-slot special case.
-- **Values/tooltips copy byte-for-byte** from `DealerPositioning.tsx` (re-verify these line ranges
-  fresh, they will have drifted from PLAN's citations by now): `netDex`, `ivHv`, `volOi`, `ivSkew`,
-  `termStructure`, `offExchange`, `opportunity`. `ivRank` comes from the EXISTING `IvRank.tsx` (find
-  it fresh — this session did not touch it). **This accounting is what makes FE-8's `DealerPositioning`
-  deletion reviewable** — the twelve shipped cells must decompose with zero orphans: 3 to the ladder
-  (FE-5, done), 2 to the ladder foot (FE-5, done), 7 here, IV rank the eighth.
-- **The empty off-exchange slot renders `not provided`** (`shared/copy/notANumber.ts`), never
-  `unavailable` — it collapses BOTH the disabled-source case (`INCLUDE_DARK_POOL=false`) and the
-  failed-computation case into one member, because the frontend cannot distinguish them
-  (`PROJECT_CONTEXT.md` §5, an empty `apps/api` diff). Criterion 27: neutral register, no
-  success/error palette class, states context-only/no-side explicitly (`[dark-pool-context-only]`).
-- **Term structure keeps its shipped THREE-way render** (`unavailable` / `—` / the wire's `state`
-  label) — this is legitimate, NOT a second not-a-number vocabulary, because unlike off-exchange the
-  two absences here ARE distinguishable (object absent vs. present-but-thin `points` array). Copy
-  `DealerPositioning.tsx`'s exact three-way logic; don't collapse it to match off-exchange's one
-  member.
-- **THE CONTAINER-QUERY HAZARD, again** (same class of bug FE-6's own module docs discuss for the
-  hero): each of the eight cells wraps in the shipped `PanelContainer` (same `containerName: 'panel'`,
-  NESTED under the Widget's own) — declaring the name at the STRIP/rail level instead would make the
-  nearest named ancestor the ~1280px panel body for every cell, so `FigureCell.tsx:216-217`'s
-  20→17→15px step would never fire at any viewport. `[lane-check]`: jsdom cannot evaluate container
-  queries — a unit test may assert the `PanelContainer` declaration only, never the stepping
-  behaviour (that's `review`, browser-only, no criterion claims a jsdom proof of it).
-- **The strip is a rail; the page is not** (criterion 50, SB): `overflowX: 'auto'` + `minWidth: 0` on
-  the parent track. Assert the declaration in jsdom; the scrolling behaviour itself is FE-12's
-  browser row.
-- **All eight cells are dotless** (criterion 8, SB) — none of DealerPositioning's shipped cells is
-  live-derived today, so `live={NOT_LIVE}` at every slot is mechanically enforced by FE-1's brand
-  (a stray `live={someClaim}` is a compile error) but the RUNTIME census (a DOM scan finding zero
-  `data-figure-state="live"` nodes and zero `figure-live-dot` testids in the strip) is this task's own
-  proof to write — poison one slot with `live={andPresent(someClaim, 1)}` under a live fixture, confirm
-  the census goes red, revert.
-- **Mutation proof named explicitly by PLAN**: poison the off-exchange slot to render `'unavailable'`
-  instead of `not provided` — criterion 26 must go red. Record it, actually run it.
-- **Read `live-dot-census.spec.tsx` fresh before touching it** — FE-8 (not this task) re-points it to
-  render `LiveTape + LevelLadder + ReadStrip` together, but reading it now will show you exactly what
-  shape of DOM scan `ReadStrip.tsx` needs to be compatible with, so you don't have to guess and FE-8
-  doesn't have to redo your cell markup.
-- **Not wired into the page yet is fine and expected** — matches FE-5's and FE-6's own precedent.
-  `TickerDashboard.tsx`'s reading-order rewrite is FE-11's task alone; do not mount `ReadStrip` there.
-  If a component you build here forces an unavoidable compile-time fix to an EXISTING untouched call
-  site (the way FE-6 had to touch `TickerDashboard.tsx:504` for `TapePulseStrip`'s new required
-  props), that is an acceptable, minimal, documented deviation — but first check whether `ReadStrip`
-  actually has an existing call site to break (unlike `TapePulseStrip`, it's a brand-new component
-  with no precursor, so this may simply not arise).
-- **Browser check**: no existing lab page mounts a bento-style read strip today. Follow FE-5's/FE-6's
-  pattern — temporarily mount into `/lab/structure-field` or a new throwaway location, screenshot dark
-  + light + 393px, revert. `npm run ports:free` before and after.
+**What shipped, closely following PLAN's illustrative shape, one real judgment call on the eighth
+slot:**
+
+1. **`READ_STRIP_SLOTS`/`ReadStripSlot`** — the closed eight-member tuple, verbatim order from
+   PLAN's Step 1 and `DESIGN_SYSTEM.md` rule 15 (they agree): `opportunity, netDex, ivHv, ivRank,
+   volOi, ivSkew, termStructure, offExchange`.
+2. **Seven cells decompose byte-for-byte from the CURRENT `DealerPositioning.tsx`** (re-read fresh
+   this session, not trusted from PLAN's citations, which had drifted by a few lines as expected):
+   `netDex` (`:148-154`), `ivHv` (`:166-172`), `volOi` (`:173-181`), `ivSkew` (`:182-192`),
+   `termStructure` (`:193-209`), `offExchange` (`:210-223`, now unconditional), `opportunity`
+   (`:224-233`). Values AND tooltips copied verbatim — `readStripModel.spec.ts` asserts several by
+   exact string.
+3. **The eighth slot (`ivRank`) — the one real design decision this task made, recorded here so a
+   later lane doesn't have to re-derive it.** `IvRank.tsx` today is a FULL standalone widget (rank +
+   percentile + band + basis line + advisory footer + a four-way building/flat/computed/unavailable
+   state machine) — too rich to fit one `FigureCell`'s label+value+caption slot, and it is **not**
+   deleted: FE-11's own PLAN text keeps `IvRank` mounted, untouched, as one of the eight quiet-band
+   widgets. So the read strip's `ivRank` slot is a NEW small digest, not the widget's full body:
+   added `ivRankStripFigure(read)` as an additive exported pure function IN `IvRank.tsx` (the file
+   PLAN's Owns row names), which collapses `building` / degenerate-flat (`rank == null`) / whole-null
+   / unknown-state into the ONE closed `unavailable` member and otherwise renders `` `${rank} ·
+   ${band}` `` using the SAME closed `ivrBandDisplay` lookup the full widget already uses (never a
+   raw wire pass-through). The full widget's own body is completely unchanged — read it fresh if this
+   surprises you; nothing about its rendering was touched, only a new export was added beside it.
+4. **Off-exchange (criterion 26/27)** — unconditional now (`offExchange?.ratio_pct != null ? ... :
+   NOT_PROVIDED`, never `unavailable`); the "Side/intent unknown — context only, not a directional
+   signal." sentence is present in BOTH the populated and empty info-text arms (criterion 27 needs it
+   unconditionally, not only when there's data to append "Top levels" to).
+5. **Term structure (criterion 60)** — the shipped three-way render copied as-is: absent object →
+   `unavailable`; present, `points.length < 2` → `—`; otherwise → `m.term_structure.state`. Not
+   collapsed to match off-exchange's single member — SPEC §2.4 is explicit these are NOT the same
+   vocabulary because the two absences here ARE distinguishable.
+6. **`ReadStrip.tsx`** — one `Widget id="read-strip"` (title "Read strip", an own-words subtitle, not
+   spec-pinned copy — no criterion or `_kit/copy.ts` constant claims this widget's title/subtitle)
+   wrapping a `Box data-testid="read-strip-rail"` (`display:flex, overflowX:'auto', minWidth:0`,
+   criterion 50) containing eight `PanelContainer` (same `containerName:'panel'`, NESTED — never
+   declared on the rail itself, SPEC §2.5's hazard) each wrapping one `FigureCell`. All eight cells
+   pass `live={NOT_LIVE}` from the model (criterion 8) — FE-1's brand makes a stray live claim a
+   compile error, and the runtime census is proven below.
+7. **PRESENTATIONAL, not wired into `TickerDashboard.tsx`** — matches FE-5's/FE-6's own precedent;
+   `ReadStrip` has no existing call site to break (unlike `TapePulseStrip` at FE-6), so no forced
+   edit to an untouched file arose. FE-11 mounts it.
+
+**Mutation proofs actually run (poison → confirm red → revert, both named explicitly by PLAN, both
+actually executed this session with captured output, not narrated):**
+1. Off-exchange (criterion 26): replaced the `NOT_PROVIDED` fallback with the literal `'unavailable'`
+   in `readStripModel.ts` — 4 tests went red, each naming the actual received string (`'unavailable'`
+   received where `'not provided'` was expected). Reverted; 31/31 green again.
+2. Dot census (criterion 8): gave the `netDex` cell `live: andPresent(isDeliveringLive(...), 1)`
+   instead of `NOT_LIVE` under a genuinely live fixture, in `readStripModel.ts` — both the model-level
+   "all eight cells carry NOT_LIVE" test AND `ReadStrip.spec.tsx`'s DOM census test went red (found 1
+   dot / 1 `data-figure-state="live"` node where 0 were expected). Reverted; suite green again.
+
+**Container-query and rail-discipline proofs are DOM-level, not merely declared:** reused the
+existing `_kit/emotionCssReader.ts` (`allRulesForClass`/`joinedStyleText`/`emotionClassOf` —
+already shipped for `type-floor.spec.tsx`'s own container-step assertion, not a new pattern) to prove
+from jsdom-visible emotion CSS text that (a) each of the eight `read-strip-cell-<slot>` wrappers
+carries BOTH `container-type:inline-size` and `container-name:panel`, (b) the rail itself does NOT
+carry `container-name:panel`, and (c) the rail carries `overflow-x:auto` and `min-width:0`. This is
+the `[lane-check]`-compliant proof — the DECLARATION only, never the actual container-query stepping
+behaviour (that stays browser-only/review, confirmed separately below).
+
+**Browser check, actually done.** Temporarily mounted `<ReadStrip cells={buildReadStrip(fixture)} />`
+into `/lab/structure-field` beneath the canvas (a ~55-line fixture block + one `<ReadStrip>` JSX
+line), served the dashboard, and used the SAME `localStorage['convexa.uiprefs.v1']` theme-toggle
+trick FE-6's session already had to discover (Playwright's `colorScheme` context option alone renders
+dark regardless of the stored preference). Screenshotted dark (1280×1400), light (1280×1400) and both
+schemes at a 393px-narrow viewport. Confirmed in all four: eight cells present, labels/values/info
+icons render, the widget card chrome and info tooltips are correct in both schemes (light mode
+genuinely repaints onto the light panel surface, no dark bleed), the rail visibly clips its eighth
+cell inside the widget frame at both 1280 and 393 (the deliberate horizontal rail, not a bug), zero
+new console errors (only the pre-existing 502s from the API not being served). Went one step further
+than a visual look: ran a second throwaway script measuring `document.documentElement.scrollWidth`
+vs `clientWidth` at 393 and 1280 — **the PAGE never overflows at either width** (`scrollWidth ===
+clientWidth` both times) while the **rail's own** `scrollWidth` exceeds its `clientWidth` at both
+widths (1204 vs 327 at 393, 1204 vs 1118 at 1280) — direct measured proof of criteria 49/50's
+substance, not just a look. Reverted the lab edit, confirmed via `git status --short --
+apps/dashboard/src/app/pages/lab/StructureFieldLab.tsx` it returned nothing (byte-identical to
+committed state), deleted both throwaway scripts and all four screenshots, killed the dev server, ran
+`npm run ports:free` (confirmed one listener on :4200, killed).
+
+**One deviation from PLAN's enumerated FE-7 `Owns` list (additive, in-lane):** `IvRank.spec.tsx`
+gained a new `describe` block (`ivRankStripFigure`) — PLAN's Owns row names `IvRank.tsx` but not a
+spec change for it; added because the new export needed its own coverage and the file it lives in is
+the natural home (mirrors FE-5's own precedent of adding `LadderFoot.spec.tsx` beyond the enumerated
+list for the same reason — cheap regression insurance on a small named export).
+
+**Full-suite verification, canonical command, this session:** `npm run typecheck` **0** ·
+`npx nx test @convexa/dashboard` **0** @ **228 files / 2512 tests** (226/2474 → +2 files / +38 tests:
+23 in `readStripModel.spec.ts`, 8 in `ReadStrip.spec.tsx`, 7 new in `IvRank.spec.tsx`) · `npm run
+lint` **0** (same one pre-existing warning, no new ones). Nx's own `test` target printed a
+flaky-task notice mid-session (the same environmental class the FE-6 session already recorded, not
+this session's code) — a second run of the identical canonical command resolved to a clean cached
+228/2512 at exit 0; trust that, not the one-off.
+
+**Not touched, correctly:** `DealerPositioning.tsx` (this task only READ it, to copy values/tooltips
+— FE-8 deletes it), `TickerDashboard.tsx` (FE-11's job), `IvRank.tsx`'s own render body (only a new
+export was added beside it, nothing inside `IvRank()` itself changed), `live-dot-census.spec.tsx`
+(read fresh per RESUME's own instruction, confirmed it re-points at FE-8, not this task — left
+untouched).
+
+---
+
+## Next: FE-8 (not started)
+
+**FE-8 — Delete `DealerPositioning`, re-point every pin, prove zero orphans.** Depends on FE-5, FE-6,
+FE-7 (all now done). Read PLAN.md's FE-8 section fresh (~line 1401 in the copy read this session —
+re-check) before starting — it is NOT independent and touches 19+ files across the ticker page,
+several theme specs and `live-dot-census.spec.tsx`. Two things this session can hand forward
+precisely, since it just finished reading `DealerPositioning.tsx` end to end for FE-7's own copy:
+- **The zero-orphan ledger's line ranges, current as of THIS session** (PLAN's own citations have
+  already drifted once; re-verify again before FE-8 writes its own ledger row, since the file may
+  move again if anything touches it between now and then): Call wall `:110-117`, Put wall `:118-125`,
+  Vol-norm GEX `:126-140`, Raw GEX `:141-147`, Net DEX `:148-154`, Max pain `:158-165`, IV/HV
+  `:166-172`, Vol/OI `:173-181`, IV skew `:182-192`, Term structure `:193-209`, Off-exchange
+  `:210-223`, Opportunity `:224-233`. Twelve cells, all accounted for (3 ladder / 2 ladder foot / 7
+  read strip), matching FE-8's own "twelve, zero orphans" requirement.
+- **`IvRank` is NOT one of the twelve and is NOT deleted at FE-8** — it is a separate standalone
+  widget FE-11's own PLAN text keeps mounted, untouched, in the quiet band. Don't let FE-8's "delete
+  DealerPositioning" scope creep into touching `iv-rank/**` — this session's `ivRankStripFigure`
+  addition there is additive-only and orthogonal to FE-8's deletion.

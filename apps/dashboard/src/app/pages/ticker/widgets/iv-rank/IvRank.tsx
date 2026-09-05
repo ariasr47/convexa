@@ -39,7 +39,6 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { AccessibleHelp } from '../ai-rec/AccessibleHelp';
 import {
   IVR_ADVISORY,
   IVR_FLAT_NOTE,
@@ -60,8 +59,28 @@ import {
   ivrRankDescriptor,
   ivrTipBuilding,
 } from '../_kit/copy';
+import { AccessibleHelp } from '../ai-rec/AccessibleHelp';
 
 const MONO = typographyTokens.monoFontFamily;
+
+/**
+ * The read strip's digested figure for this metric (curvature-v2-desk-and-read, FE-7 — SPEC §2.3/
+ * §2.4/§4.1: "IV rank comes from `IvRank.tsx`"). This widget's own FULL body (percentile, band,
+ * basis line, advisory footer, the building/degenerate-flat/unavailable distinction) stays intact,
+ * untouched, mounted separately in the quiet band (FE-11) — this export only feeds the strip's
+ * single compact cell.
+ *
+ * Collapses `building` / degenerate-flat (`rank == null`) / whole-null-or-unknown-state into the
+ * ONE closed `unavailable` member — unlike off-exchange (SPEC §2.4) these three ARE distinguishable
+ * on the wire, but the strip is a quick digest of the number this widget states in full below, not a
+ * second home for that distinction. Never re-derives a description from the scalar (criterion 28):
+ * the band suffix, when present, is the SAME closed `ivrBandDisplay` lookup the full widget uses.
+ */
+export function ivRankStripFigure(read: IvRankRead | null): string {
+  if (read == null || read.state !== 'computed' || read.rank == null) return 'unavailable';
+  const band = read.band != null ? ivrBandDisplay(read.band) : null;
+  return band != null ? `${read.rank} · ${band}` : `${read.rank}`;
+}
 
 interface Props {
   /** The additive static read (`m.iv_rank ?? null`). NO live/offline prop is accepted — this widget is
