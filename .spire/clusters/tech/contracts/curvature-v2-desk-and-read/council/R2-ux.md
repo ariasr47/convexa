@@ -1,5 +1,3 @@
-# R2 — ux cross-critique: curvature-v2-desk-and-read
-
 ```json
 {
   "role": "ux",

@@ -116,6 +116,59 @@ string. The plan must re-anchor it. Recorded here so it is not rediscovered at G
 
 ---
 
+## 🟡 Decided at R4 (the synthesizer hit a gap my record left open)
+
+### D-14 - which not-a-number literal an absent **ladder level** renders
+
+My `decisions.md` settled that **one** vocabulary member covers every null level (no per-level reason
+exists on the wire - `generated/schema.ts:1687,1703,1716,1748` are bare `?: number | null`). It did not say
+**which**, and pm's R3 and ux's R3 named different ones: `not provided` vs `-`.
+
+**Decided (by the R4 synthesizer, recorded here because it is a real call, not a drafting choice):**
+**`-`**, on shipped precedent and minimum claim - `DealerPositioning.tsx:109,117,157` already renders it
+and `FigureCell.tsx:285` names that case `empty`. `not provided` would assert *the feed did not send it*,
+which the wire cannot actually distinguish from *not computed*.
+
+Note this is **not** in tension with the read strip's empty slot rendering `not provided`: different
+surface, different cause. The strip's slot is a metric the **feed** owns; a ladder level is a value the
+**bundle** computes. The nine-member vocabulary exists precisely so these stay distinct
+(phase-1 ruling 3: distinct literals, never synonyms). **Reverse it by** changing one constant.
+
+---
+
+## 🟡 Decided after the skeptic's second pass
+
+### D-15 - `cooldown` / `daily_cap` over a pinned read: **render unchanged this phase**
+
+**How this surfaced.** The spec's first draft narrated this as an *open question* ("nobody ruled on
+them"). The skeptic's pass-2 review judged that framing insufficient - **"same defect, different name"**
+- on the grounds that declaring a rendering *unchanged* **is** a decision, and an undisclosed decision is
+exactly what the DELEGATED marking exists to prevent. It was right, so this is now the **seventh**
+call taken for you, not an open item.
+
+**The decision.** A cooling-down or capped user reading a pinned trade continues to see no countdown and
+no cap notice in the panel body - the shipped behaviour (`AiRecPanel.tsx:423` gates `ActionRegion` on
+`!producedRec`). **Unchanged this phase.**
+
+**Why this is not the `no_edge` defect repeating.** `no_edge` is a claim about **the market the pinned
+read describes**, so it qualifies whether the read is still true - which is why leaving it unrendered was
+a real hole. A cooldown or a cap is a claim about the **request budget**: it qualifies only your next
+ask, and nothing in the pinned read becomes untrue while a cooldown runs. I checked this against
+`[model-read-carries-its-assumptions]` specifically, since that is the guardrail the skeptic invoked, and
+the distinction holds: a budget limit is not one of the read's assumptions.
+
+**Reverse it by** saying so - the annex mechanism (A1c) already exists, so it is one more row in the
+state table plus one acceptance criterion, not a rebuild.
+
+### Also corrected after pass 2 (a Minor, but a false citation)
+
+The spec claimed `retry` and `refresh` **both** require `requestState === 'idle'`. `refresh` does;
+`retry` is `(degraded && requestState === 'idle') || unavailableRetryGate` (`presentationPolicy.ts:169`),
+so it is **not** idle-only in general. The conclusion it supported still holds - under `no_edge` both
+resolve false - but the generalisation was wrong and is now stated correctly.
+
+---
+
 ## ⚪ Boot + housekeeping (done before you slept, recorded for completeness)
 
 | # | Decision | Why | Reverse it by |

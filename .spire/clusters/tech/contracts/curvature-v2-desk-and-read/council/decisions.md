@@ -113,7 +113,7 @@ BRIEF's feasibility note does not contain.
    clause holds for the levels, the tape trail and the mid beam, and is asserted.
 2. **The canvas gets an accessible name and a summary alternative.** This is the cheap half and it is not
    optional: the phase promotes an unlabelled canvas from one widget among thirteen to **the desk's
-   primary instrument**. The design source already does it — `design/src/lib.mjs:293` emits
+   primary instrument**. The design source already does it — `design/src/lib.mjs:296` emits
    `role="img" aria-label="Net dealer gamma by strike"` — and the shipped canvas does not. It gains an
    accessible name, a summary naming what it plots and the levels it marks, and a programmatic pointer to
    the ladder as its tabular equivalent.

@@ -6,7 +6,7 @@
       "why": "SELF-REVISION. I withdraw this for the off-exchange cell. ux's CI-6 is right and I could not defend mine against it: per `PROJECT_CONTEXT.md` \u00a75 the off-exchange object is omitted both when `INCLUDE_DARK_POOL=false` and when the best-effort computation fails, and both arrive at the FE as an absent object. My rule forces that cell to render `unavailable`, which asserts an attempt was made and failed \u2014 a claim the wire cannot support and the `apps/api` diff must stay empty this phase, so no discriminator can be added. That is `[absent-is-not-none]` inverted: I would be manufacturing a reason. The cost of withdrawing is real (ux risk 5: a rail whose cardinality varies makes an off-screen cell indistinguishable from an absent one), so I am not withdrawing silently.",
       "proposal": "The rule holds for seven of the eight cells: opportunity, net DEX, IV/HV, IV rank, vol/OI, IV skew and term structure each render a vocabulary member and keep their slot. The off-exchange cell is the declared exception \u2014 absent when the object is absent \u2014 and the strip's cardinality is therefore 7-or-8, stated in SPEC with the reason, not silently variable. The wire-level attempted/failed discriminator is booked as named debt with a phase attached, per ux CI-6.",
       "kind": "technical",
-      "conflict_id": "9cd25bfb7e143e0ff59e53f79f3e177d392422fe55b831d23b0fb6531b528379",
+      "conflict_id": "a4100aa2cb7bb692e152d140b40299fd1a5061c76a6edddc013e94ae6b111bc8",
       "raised_by": "architect",
       "self_revision": true,
       "quote_verified": true
@@ -17,7 +17,7 @@
       "why": "The diagnosis is correct and I accept it (see `agree`), but the prescription is written against pre-latch code and, applied literally after the latch lands, deletes ruling 2's arm A for the one `LiveTape` cell that can genuinely retain a value. Ruling 2 makes the latch this phase's debt: once a last-non-null latch exists, the gamma-flip cell on a drop HAS a real retained stream value \u2014 the last live-recomputed flip \u2014 and the honest render of that is 50% opacity + pause mark + `offline \u00b7 last known`. A blanket 'never `last known`' on that cell forbids the correct post-latch render. Worse, the substitute ux prescribes introduces a third fabrication shape: `PROJECT_CONTEXT.md` \u00a73 and ux's own CI-4 establish that the structure flip and the live-recomputed flip are legitimately different numbers, so swapping the structure flip in under a cell labelled `Gamma flip \u00b7 live` shows the trader a different measurement under the live label at the exact moment the stream died.",
       "proposal": "Split the requirement by latch state, which is the same two arms ruling 2 already names. Pre-latch (today's defect): `:190`'s `retained: flipValue != null` is wrong and must go \u2014 no `last known` over a bundle fallback. Post-latch (this phase's ship state): `:96`'s `?? m.gamma_flip` fallback is removed from the RETAINED computation, `retained` is keyed on the latched last-non-null STREAM flip only, and `last known` renders exactly when that latch is non-empty and never otherwise. The cell keeps its `Gamma flip \u00b7 live` label with ux's CI-4 sub-copy naming the structure flip it differs from. Arm B (latch empty \u2014 no stream flip ever arrived this symbol view) renders the bare vocabulary member with the pause mark and no `last known` words, which is the render ux is actually protecting.",
       "kind": "technical",
-      "conflict_id": "15a58f982c077d25135a7b9b06c077eb146aa4be3d55fa9d65b59ab727529a72",
+      "conflict_id": "aceb88547f1c7fa4c2e747d7b93124f584004111b1d599fb074bb861e828dc1c",
       "raised_by": "architect",
       "self_revision": false,
       "quote_verified": true
@@ -28,7 +28,7 @@
       "why": "A6 folds two shipped, independently-produced states into one render case with one marker. `presentationPolicy.ts:16-17` declares `cooldown` and `daily_cap` as two distinct members of `AiRecRequestState`, and `ai-rec/copy.ts` already ships non-synonymous copy for each \u2014 `cooldownLabel` at `:167` (`Cooling down \u00b7 {remaining}s`) and `capTitle` at `:169` (`Daily AI limit reached \u2014 resets {when}`), plus `retryInCooldown` at `:186` versus `retryWhenReset` at `:187`. Under ux's own UX-28 the test asserts each of the nine RENDER CASES renders its own marker, and UX-34 explicitly delegates the distinctness to UX-28 ('the distinctness itself is UX-28's test'). If cooldown and cap are one case, nothing tests that they differ \u2014 a build that renders a capped user a countdown passes the whole ux set. That directly contradicts pm's AC-50, which requires them non-synonymous and ship-adjacent, and it is the ruling-3 collapse shape at a smaller scale: a shipped distinction disappearing into a presentational union.",
       "proposal": "Keep ux's three-axis composition model \u2014 it is right and I adopt it \u2014 but split A6 into A6a `cooldown` and A6b `daily_cap`, each with its own marker keyed on the shipped copy constants, and let the canon-16 'nine' be nine NAMES rather than nine cases. The mapping stays total via my \u00a72.5 mechanism: one `(requestState, resultState) -> ReadLayout` function with a `never` default arm, so the split costs one union member and no new test idiom.",
       "kind": "technical",
-      "conflict_id": "22bc9bd699e9d6cabae484baa490bc34f35ce5907872741223cf836928eee65b",
+      "conflict_id": "e955ae399c45374a067bf33c13554617184a829e0e358669136ceded4bfca89f",
       "raised_by": "architect",
       "self_revision": false,
       "quote_verified": true
@@ -39,7 +39,7 @@
       "why": "Applying `containerName: 'panel'` AT the strip is the specific way the container ladder dies on the strip, and it fails silently at desktop. `FigureCell.tsx:216-217` queries `theme.containerQueries('panel').down(360)` and `.down(280)`; CSS resolves `@container panel` against the NEAREST ancestor bearing that name. `Widget.tsx:163` and `PanelContainer.tsx:16-17` are the only two declarations of that name in the app (verified this round). If the strip is one `Widget`, the nearest named ancestor of all eight cells is the panel body \u2014 roughly 1280px at desktop \u2014 so every cell renders at the 20px base and none ever steps to 17 or 15, at any viewport. The strip's own width is never the queried width. This is not a second sizing rule; it is the same rule resolving against the wrong box.",
       "proposal": "Declare the name at the CELL, not the strip: wrap each strip cell in the shipped `PanelContainer` (same name, nested \u2014 the nearest-ancestor rule does the work, no new axis, no edit to `FigureCell`'s query or to `type-floor.spec.tsx`'s AC-20a assertion). The same correction applies to ux's bottom sheet, which MUI portals to `document.body` and which therefore severs container ancestry unless its root re-declares the name. `[lane-check]` stands from my R1: jsdom does not evaluate container queries, so a unit test can assert the DECLARATION only \u2014 the stepping behaviour is provable in the browser layer at a real width, never in the unit suite.",
       "kind": "technical",
-      "conflict_id": "141bd5c439d84f555c64ece652a5b8b43d6ca440e4bd29a0ddb3e29527836eb9",
+      "conflict_id": "ea59389db41e25a65375ed5e66472d588b0d4b170d3073df03fe27ff557238fd",
       "raised_by": "architect",
       "self_revision": false,
       "quote_verified": true
@@ -50,7 +50,7 @@
       "why": "Two problems, both about the word 'field'. (a) It contradicts ux's own UX-42 and H3: the field's drift must STOP on a drop, so the field is by design not identical across a drop. A build satisfying UX-42 red-builds UX-11 and vice versa. (b) 'byte-identical' is unobservable for the field by any shipped harness. `StructureFieldCanvas.tsx` paints to a Canvas2D context and the directory contains zero `aria-`, `role=` or visually-hidden text (grepped this round, no matches); `live-dot-census.spec.tsx:171` counts DOM nodes and `single-motion-moment.spec.ts:54-55` scans for literal `@keyframes` names, so neither can see a canvas pixel. An AC nobody can run is the phase-1 GATE-Q shape wearing the phase-1 GATE-Q label.",
       "proposal": "Scope the byte-identical clause to what has DOM text \u2014 the strip's static cells, the ladder's four structure rows, and the quiet band \u2014 where a text-content assertion is real and cheap. State the field's obligation separately and in its own terms: on a drop the curve, the wall lines and the flip line keep their last computed geometry and are not dimmed, while trail, drift, beam and sweep stop. Prove that with my \u00a71 mechanism (extract the paint step into a pure function of `(model, ctx, now, reduced)` and drive it against a recording fake 2D context: `live: false` -> zero trail points, zero particle `arc()` calls, zero sweep gradient fills, non-zero level strokes), because that is the only mechanism on the table that can observe the canvas at all.",
       "kind": "technical",
-      "conflict_id": "8b3094da37bcdf27df57a34e32028ea91f696c7e1e1c48f50437e0a7e4fe9cb1",
+      "conflict_id": "c8501479224a1c6c07579ce281f098ab0b5500da2bb6c30161a774ae9b0841dc",
       "raised_by": "architect",
       "self_revision": false,
       "quote_verified": true
@@ -61,7 +61,7 @@
       "why": "The first and third clauses are right; the middle one leaves a hole in a column. 'No distance value' means an empty cell in the distance column, and an empty cell in a column is indistinguishable from a render bug \u2014 the failure `[absent-is-not-none]` exists to name. ux's own CI-9 already accepts that an absent distance gets a literal, not a blank: it requires the MID row's distance cell to render `\u2014`. The two rows are then treated inconsistently \u2014 the mid row's absent distance is typed, the null level's absent distance is blank \u2014 with no mechanism distinguishing them.",
       "proposal": "The null level's distance cell renders the same not-applicable member the mid row uses (`\u2014`), for the same reason: the distance is undefined because the level is, not because the computation failed. `distanceToLevel.ts:24-25` already returns `null` when either input is missing, so this is a caller choice at the ladder, not a change to the helper. No tenth member is requested; rule 24's closure at nine holds.",
       "kind": "technical",
-      "conflict_id": "b66756dd7a20d0d52a55bbb6afdfbf8782f16a570f2467e0900583eaf63c9203",
+      "conflict_id": "a0f5ddca890f921c7283b7a0bb74c53998fda7b9ea4bc6e21b12c3c1ec1cce2f",
       "raised_by": "architect",
       "self_revision": false,
       "quote_verified": true
@@ -72,7 +72,7 @@
       "why": "The shipped suite does not run three of those eight combinations, and it declines to on purpose. `no-overflow.spec.ts:43-45` records the decision in terms \u2014 'ONE SCHEME for the wider bands, deliberately: horizontal overflow is box geometry and dark/light change no widths' \u2014 and 393 keeps both schemes 'because that is where content is tightest'. The e2e manifest confirms the shipped shape: `manifest.json` carries `393px no-overflow \u00b7 dark scheme` AND `393px no-overflow \u00b7 light scheme` entries, but `tablet 834 no-overflow \u00b7 dark scheme` (`:604`) with no light-scheme counterpart at 834, 900 or 1280 (grepped this round: no `light scheme` title after the 393 block). So AC-78 and AC-24 as written are either (a) certified against a suite that never ran half of what they claim \u2014 the exact 'green suite that lies' pm's own risk 9 names \u2014 or (b) a silent doubling of the wide-band matrix that reverses a documented decision. The BRIEF carries the same error ('the no-overflow suite stays green at 393 / 834 / 900 / 1280 in both schemes'), and ux's UX-20 and UX-50 inherit it.",
       "proposal": "Write the criterion to the suite's actual shape: both schemes at 393; one scheme at 834, 900 and 1280. If the owner wants light at the wide bands, that is a deliberate reversal of `no-overflow.spec.ts:43-45` and belongs in the build report as a change to the suite's design, with the widened matrix's runtime cost named. Either way the row must be provable with `npx playwright test --list` before GATE Q, not with a passing summary \u2014 `playwright.config.ts` is an explicit `testMatch` allowlist and an unregistered spec reports green by never running.",
       "kind": "technical",
-      "conflict_id": "74d2abbeee8bd25f30cadb1e6d509ff8e45afb1ed101d7180d49f188eb069bab",
+      "conflict_id": "bb0e7c4521b3c8ce39c3b39d2f0bd2bf4f0ffe51b31e6999e316cd01c893dad3",
       "raised_by": "architect",
       "self_revision": false,
       "quote_verified": true
@@ -83,7 +83,7 @@
       "why": "Wrong on a checkable fact, and the same error appears in pm's Scope-Out ('the responsive sweep that adds 834 to the overflow suite \u2014 **phase 4**') and in the BRIEF ('the landing, the site pages and the responsive sweep that adds 834 to the overflow suite are phase 4'). 834 is ALREADY in the standing suite: `no-overflow.spec.ts:51` declares `{ label: 'tablet 834', width: 834, height: 1112 }` inside `WIDE_VIEWPORTS`, and `:48-50` records it as a v2 addition made against canon rule 17. `manifest.json:604` pins six shipped `tablet 834 no-overflow \u00b7 dark scheme` cases (one per route). It shipped in phase 1. The BRIEF is wrong on this and so is the canon's phase assignment.",
       "proposal": "Delete the future-dated row and the Scope-Out clause; replace both with the true obligation, which is smaller: 834 is already green and this phase must KEEP it green through the desk rebuild. Note the coupling my \u00a76 flagged \u2014 `no-overflow.spec.ts:398` uses `page.getByText('Call wall').first()` as the readiness anchor for `/ticker/TSLA` at every width, and this phase deletes `DealerPositioning`, which renders that text today. The ladder keeps the exact label word (decisions \u00a72: 'the side is in the label words'), so the anchor survives \u2014 but deliberately, not by luck. A rename reds ~12 e2e cases for a reason nobody will connect to a copy change.",
       "kind": "technical",
-      "conflict_id": "b200a76753685eafbf96c7484619f7ff5466852e030925c59bc234435a2ab225",
+      "conflict_id": "d43b5ffdabe7099fd4937f4aeeaaf35a111acba3a4770a3494a7b0770907dca4",
       "raised_by": "architect",
       "self_revision": false,
       "quote_verified": true
@@ -94,7 +94,7 @@
       "why": "Unsatisfiable against shipped code without changing every number the trader has read for months, and self-contradictory with canon 14's own liveness clause. The shipped anchor is the levels spot, not the mid: `_kit/distanceToLevel.ts:11-14` (`levelSpot`) prefers `gex_spot` and falls back to `price`, and `DealerPositioning.tsx:61` uses exactly that. `copy.ts:318` labels `gex_spot` as 'levels spot' with the comment 'NOT spot \u2014 the levels anchor is not the live display price'. These are different numbers by construction: `gex_spot` is the last session close when the market is closed and live in RTH; `price` is the live/delayed display spot. Anchoring the column on the mid also makes all four structure rows recompute on every tick \u2014 five live rows \u2014 which canon 14 forbids in the same sentence that AC-16 is drawn from. ux reached the same conclusion independently at CI-9 and routed the canon wording as a product amendment; the AC text itself is a factual correction, not a preference.",
       "proposal": "AC-16 becomes: every non-mid row shows its distance from the ladder's declared anchor (the levels spot, `gex_spot` else `price`), the ladder names that anchor once (pm's AC-17 already requires this), and the mid row's distance cell renders the not-applicable member rather than a computed zero \u2014 zero would assert the mid equals the structure anchor, which it usually does not. The canon rule 14 wording amendment is ux's product conflict and I do not re-raise it here.",
       "kind": "technical",
-      "conflict_id": "279cee3e6461dd52c5c56902685233051c8dfb26c70e1d19734775920b4fb892",
+      "conflict_id": "9923b1d9a01690c4f8d6d91fd0e0fabe28b820d7a95b669ee9ad6b97bf90902f",
       "raised_by": "architect",
       "self_revision": false,
       "quote_verified": true
@@ -105,7 +105,7 @@
       "why": "The first clause is right and cheap. The second clause silently prices a surface this phase's feasibility note does not contain, and only the owner can decide whether to buy it. The field carries the whole net-GEX-by-strike curve, the wall lines and the flip line, and it carries them ONLY as canvas pixels: `StructureFieldCanvas.tsx` has no `aria-`, no `role=` and no visually-hidden text anywhere in its directory (grepped this round, zero matches), and its only hook import is `useReducedMotion` at `:11`. 'Every value they carry is still readable as text' therefore means inventing a DOM text equivalent for a continuous curve over a spot \u00b120% strike grid \u2014 a new surface with its own copy, its own container-step behaviour and its own 44px questions. The BRIEF prices the hero as 'a re-housing of a shipped Canvas2D instrument, not a new chart'. The tape trail and the mid beam are different: their values already have DOM homes (the ladder's mid row and `LiveTape`'s cells), so the clause is already satisfied for them at zero cost. I am not proposing which way this goes \u2014 it is scope and user value, and the accessibility argument for buying it is genuinely strong.",
       "proposal": "Split AC-12. Keep the static-frame clause at every width for all three motions, verified in the browser at both reduce-motion settings. Then the owner rules on the text clause: EITHER scope it to the tape trail and mid beam (true today, free) and book 'the structure field has no text equivalent' as named debt with a phase attached; OR put a text equivalent of the field in scope this phase and price it, in which case it needs its own criterion and its own surface. Related and in the same decision: `StructureFieldCanvas.tsx` imports no theme and fills `INK = '#0B0F17'` unconditionally at `:223` and `:434`, so promoting it to THE hero ships a dark rectangle inside a light desk unless light-mode parity is also ruled in or named.",
       "kind": "product",
-      "conflict_id": "3786828966382d4a1651ee68499aec860ec03841ff0e40f35e7acae012625a74",
+      "conflict_id": "bbd9e6aaa6d596150801c2775312747cb0367c7d760028657d60c31885ac5ab0",
       "raised_by": "architect",
       "self_revision": false,
       "quote_verified": true
@@ -215,7 +215,7 @@
       "why": "The shipped distance column does not measure from the mid. `_kit/distanceToLevel.ts:11-14` anchors on `levelSpot(m) = m.gex_spot ?? m.price`, `DealerPositioning.tsx:61` passes exactly that, and the shipped label vocabulary is explicit that the two are different objects (`_kit/copy.ts:318`: `gex_spot: 'levels spot', // NOT 'spot' \u2014 the levels anchor is not the live display price`). The architect read the same lines independently and reached the same conclusion. An AC that says 'from the mid' does one of two harmful things: it renames the anchor in copy (my defining failure mode \u2014 a label asserting a meaning the data does not support), or, implemented literally, it re-derives all four structure rows on every tick, i.e. five live rows, which canon 14 forbids in the same sentence this AC comes from. The second clause is right and I am not contesting it.",
       "proposal": "AC-16 \u2192 'Every non-mid row shows its distance from the levels anchor (`gex_spot ?? price`); the mid row's distance cell renders `\u2014`, never a computed zero.' Keep it `test`. Pair it with AC-17 unchanged (the ladder states the anchor once, e.g. `distance from levels @ {gex_spot}`), which stays `review` because it is visible, intentional copy.",
       "kind": "technical",
-      "conflict_id": "a00f538e4ab1e9fc02fc48489980f4ed6eb9e2358e633156a3531fb70c68500c",
+      "conflict_id": "2e37b9d89c44cf98a84f89aa82f365bfc61fb66ebdabef3e004cf675be129c47",
       "raised_by": "ux",
       "self_revision": false,
       "quote_verified": true
@@ -226,7 +226,7 @@
       "why": "This phase scopes exactly one canon amendment, and it needs two. Rule 14 has the same defect as rule 11 for the same reason the brief gives: it names something the code does not do. Canon 14 says 'with distance from mid in the last column' while the shipped anchor is `gex_spot ?? price` (`distanceToLevel.ts:11-14`). Left unamended it either red-flags correct code at GATE Q \u2014 the exact argument the brief makes for amending rule 11 \u2014 or pushes a build lane to re-anchor the column on the live mid, which creates five live rows and breaks the same rule two clauses later. I am not asking a lane to fix it; amending the canon is an Amendments event and belongs to the owner.",
       "proposal": "Add to Scope \u2014 In, alongside item 8: the **canon rule 14 amendment** \u2014 'distance from mid' \u2192 'distance from the levels anchor (`gex_spot ?? price`), stated once in the ladder header', with 'the mid is the **only** live row' and the shared-stroke clause kept verbatim. Documentation plus an Amendments-table entry, no product behaviour, no AC \u2014 exactly how pm framed the rule 11 amendment. Also keep rule 11's 'do not collapse mid + last-trade into a single price without an amendment' clause verbatim in the amended rule 11 (my CI-11): the masthead redraw is precisely when that collapse gets proposed for space.",
       "kind": "product",
-      "conflict_id": "cd015a55ef8371bf4e9bc704dd78198ba7a44c388efb7be46786422b3875a8a6",
+      "conflict_id": "76e8043d9262314647ab1780d64eb71a0091ea07c2fd50d549c707ef121e2e06",
       "raised_by": "ux",
       "self_revision": false,
       "quote_verified": true
@@ -237,7 +237,7 @@
       "why": "Read as written this is unsatisfiable, and my own UX-30 ('is the panel's only amber spend') carries the identical defect \u2014 I am narrowing both, not just pm's. Canon rule 6 mandates an authored `:focus-visible` ring in **text-grade amber**, and my lane requires focusable controls inside this panel: the `AccessibleHelp` \u24d8 on each of the four risk fields (ruling 6), the ask control, the drawer trigger and 'Review simulated trade'. So a focused panel always contains a second amber element, by canon. This is the rules 13-vs-18 shape again \u2014 two canon rules that contradict read literally \u2014 and the phase-1 resolution was a scope clarification, not a build choice.",
       "proposal": "AC-31 \u2192 'In the panel's **resting** render, the verdict word is the only element spending amber as text or fill; the authored `:focus-visible` ring (rule 6) is outside this criterion.' Record the scoping as an Amendments clarification on rule 16, the same shape rule 18 took. On pm's assumption 11, my lane's answer so it does not need an owner: the design source's amber header-icon tint, provenance dot and loading pulse (`design/src/screens/ai-read.mjs:8`, `:15`, `:67`) do **not** stay. `design/` is a drawing, not authority \u2014 my CI-3, CI-7 and CI-8 already catalogue four places where it contradicts a shipped owner ruling \u2014 so the canon binds and the drawings are regenerated (`node design/src/build.mjs`).",
       "kind": "technical",
-      "conflict_id": "c8c5c101e0bfdfd8c21f0983900643327712a56d72fd6b1afeef573542cc734b",
+      "conflict_id": "6d672404065db32db8b7cc93b0fc40426ed0bf5f4077b91b5edcbcfc09361cbc",
       "raised_by": "ux",
       "self_revision": false,
       "quote_verified": true
@@ -248,7 +248,7 @@
       "why": "'has already received a value' does not say received from where, and today's code answers 'from the REST bundle'. Verified at source this round: `LiveTape.tsx:96` computes `flipValue = (numbersActive ? live?.gamma_flip : null) ?? m.gamma_flip`, and `:190` passes `offline={tileOffline ? { retained: flipValue != null } : null}` \u2014 the call site's own comment at `:180-184` states it in terms ('its offline arm is RETAINED whenever a fallback exists'). `FigureCell.tsx:259` then prints `offline \u00b7 last known` over a structure number that never came off the stream. AC-64 as worded certifies that render as passing. It is ruling 2's fabrication in its second form: not a caption without a value, but a caption over the wrong value.",
       "proposal": "AC-64 \u2192 '\u2026a live-derived figure that has already received a value **on the stream** shows that value at reduced opacity with the pause marker and says it is the last known value.' Add two rows, both `test`: (a) my UX-10 \u2014 no figure anywhere renders `offline \u00b7 last known` over a value sourced from the REST bundle; (b) my UX-9 \u2014 the `LiveTape` widget subtitle's 'last known ticks' clause (`_kit/copy.ts:532-533`, rendered unconditionally today at `LiveTape.tsx:110`) renders only when at least one cell in that widget actually retained a stream value. The subtitle is the same fabrication one scope up and needs the same two arms as the cell.",
       "kind": "technical",
-      "conflict_id": "049b305d9554784d812ed20a662e58535f0ad4f24d304dbfc68bafee9a25f8c8",
+      "conflict_id": "238b1c70b41701e272f5759c9bf49b284eb02d8a3f48c927a1fec2083140e330",
       "raised_by": "ux",
       "self_revision": false,
       "quote_verified": true
@@ -259,7 +259,7 @@
       "why": "'matches **why** it is absent' asserts the frontend knows the reason. For the five levels the bundle delivers a missing or null number with no reason code, so choosing `\u2014` (not applicable) over `unavailable` (the computation failed) invents a reason \u2014 the same wire-level discriminator gap I named for off-exchange in CI-6, where I withdrew a caption rather than assert one. My own L4 row carries the identical defect ('`\u2014` when not applicable, `unavailable` when the cycle failed'), so I am narrowing mine in the same breath. As written the criterion also cannot fail honestly: any literal that ships can be argued to 'match why', which makes a ship-adjacent row unfalsifiable.",
       "proposal": "AC-20 \u2192 'An absent level renders a member of the closed nine in 15px Sans, keeps its row and its label, is never a zero, never another member's literal and never an empty row, and the member is chosen by a rule the SPEC states and the frontend can actually evaluate.' Where no discriminator exists on the wire, the SPEC names **one** member for all level absences and records the missing attempted-vs-failed discriminator as debt with a phase attached \u2014 the CI-6 treatment. Architect ask 1 below settles which case we are in.",
       "kind": "technical",
-      "conflict_id": "33c52bfb565831cef7cad951bd41c2f137bbd6cd25fb0917fb2b5c91fa5ccd77",
+      "conflict_id": "9fd66af16ac8179486f4303b74e9c324f1ac48c5f5f0eeaa90fe56c991dca98c",
       "raised_by": "ux",
       "self_revision": false,
       "quote_verified": true
@@ -270,7 +270,7 @@
       "why": "Nine is not the honest set, and the missing one is failure. This ship-blocking row passes on a build where a provider timeout, a mid-flight key rejection or a network error renders as *idle* ('Ready to read this snapshot.'), because failure is not among the nine and nothing asserts its absence from idle \u2014 and idle asserts the user never asked. The copy already ships (`ai-rec/copy.ts:51-52`, 'AI unavailable \u2014 try again') and `presentationPolicy.ts` carries `unavailable` as a shipped result state, so this is the canon lagging the code, exactly the shape of ruling 3. The row is also unsatisfiable read as nine exclusive peers: stale is a strip composed **over** a produced read (`design/src/screens/desk.mjs:233`) and the drawer is a surface opened **from** one (`AiRecPanel.tsx:199`), so a test asserting nine mutually exclusive primary lines red-builds correct code. Adding a named state to canon 16's enumeration is an Amendments event, which is why this goes to the owner rather than being settled between pm and me.",
       "proposal": "Owner ruling: add **request failure** as a named state in canon rule 16 (an Amendments entry; the copy already ships) and record the composition clarification that *stale* and the *full-analysis drawer* compose over a produced read rather than being exclusive peers \u2014 the same clarification shape rule 18 took. AC-38 then reads: 'Every named render case is independently reachable from at least one producible (request, result) pair; no two non-synonymous cases render the same primary line; a request failure renders its own named line and never renders as idle or as a no-trade verdict.' That keeps pm's non-collapse teeth, drops the count, and makes AC-57 the row that proves it. The architect's three other homeless shipped states (`no_edge`, `superseded_inputs`, `incomplete_trade`) need the same explicit disposition in the same ruling.",
       "kind": "product",
-      "conflict_id": "022d67fa981747dfa677eb8ee431a0aa5165df1de978e8af95f68e17cc8e2af4",
+      "conflict_id": "9e855edbc81d21917d695a63ea95739d7f4d17baf77f92ced4be5767c665cb7a",
       "raised_by": "ux",
       "self_revision": false,
       "quote_verified": true
@@ -281,7 +281,7 @@
       "why": "This is the AC set's only scheme-differentiated obligation, and it checks overflow alone. Verified at source this round: `StructureFieldCanvas.tsx` imports no theme (`:11-16`, its only hook is `useReducedMotion`), declares `const INK = '#0B0F17'` at `:18` and fills with it unconditionally at `:223`, `:237` and `:434`. So a build can satisfy every 'both schemes' row in the phase while the hero \u2014 promoted here from one widget among thirteen to the desk's primary instrument \u2014 renders as a dark plate inside a light panel. The brief's own `[theme-token-discipline]` watch says 'zero hardcoded hex; mode-aware values only through `extrasFor(theme)` / `elevationFor(theme)`'. The architect flagged the same fact and explicitly declined to rule on scope; with no AC and no Scope-Out line, silence ships the dark rectangle and nobody is accountable for it.",
       "proposal": "Owner picks one, and it must be one: (a) **In** \u2014 add an AC: 'In light mode at 393 and 1280, the hero field renders on the active scheme's panel surface; no background fill is scheme-invariant', which is my H1 state's light arm and lands with the shared stroke-table edit the architect already prices; or (b) **Out** \u2014 name it verbatim in Scope \u2014 Out with `StructureFieldCanvas.tsx:18,223,237,434` and a phase attached, in which case my UX-50 narrows to overflow only (see my self-revision) and the build report carries the hero's light-mode gap as accepted debt, not as a passing criterion.",
       "kind": "product",
-      "conflict_id": "c8aa6d5e25325dfe4f6e8ba5d39d8c944dc0f489fd669b735c9cc27293e79c0c",
+      "conflict_id": "9cbb4882c66e879d699abf6b2770ce1f46d9ea995892016c4e4cfe79ee431d6b",
       "raised_by": "ux",
       "self_revision": false,
       "quote_verified": true
@@ -292,7 +292,7 @@
       "why": "The second option cannot be exercised on this desk. Rule 13's provenance mark is a **dot plus a visually-hidden word** (`FigureCell.tsx:129-148`), not a visible word \u2014 so 'demoted to a per-figure provenance mark' means the word disappears either way. Worse, the datum that word describes is the mid, and the mid already gets exactly one provenance mark inside the same panel: the ladder's mid row (canon 14, my CI-7 / UX-14). Demoting `TapePulseStrip.tsx:199` to a mark therefore puts two provenance marks on one value inside one frame, which reads as two claims about one number \u2014 and 'Live' is connection vocabulary in the hero, which is exactly what CI-7 keeps off the ladder row.",
       "proposal": "Delete the word, do not demote it. The mid's label is `Mid` unconditionally (a label, not a claim); its liveness is carried by the ladder mid row's single per-figure dot; its basis is stated once in the hero head ('levels are REST structure (as-of {age}) \u00b7 the mid is tape'). If the tape-trail row needs its own truth marker on a drop, it uses the pause mark and my H3 caption (the trail froze), never the word 'Live'.",
       "kind": "technical",
-      "conflict_id": "414f8fcaa17d3ea52e6fa1903eca485b43f0c7d43bd454c5a26e51225a4fb078",
+      "conflict_id": "e005d715e9e7e5bee7c6250abc6c4dd3b2ae11e87b0abe2cabb657a5005bfd25",
       "raised_by": "ux",
       "self_revision": false,
       "quote_verified": true
@@ -303,7 +303,7 @@
       "why": "Self-revision. The architect is right and my own matrix contradicts itself: UX-17 gives the mid row's distance cell `\u2014` while UX-15 leaves a null level's distance cell empty. An empty cell in a column is indistinguishable from a render bug \u2014 `[absent-is-not-none]` in the column axis, which is the same failure I applied to the strip in S4. I withdraw 'with no distance value'.",
       "proposal": "UX-15 \u2192 'A null level keeps its row and its label, renders a closed-vocabulary member in 15px Sans in the value cell, renders `\u2014` in the distance cell, and never renders `$\u2014`.' Mark stays `test`. Member selection follows the AC-20 narrowing above, not a reason the frontend cannot observe.",
       "kind": "technical",
-      "conflict_id": "477b24b97cac4c920c78c68421a5f435b9097a414047ad6048b2d7bb273417eb",
+      "conflict_id": "a5896ba42ede2d83940fad754a8c1f8eb9ce87c21431b819216768559af63b04",
       "raised_by": "ux",
       "self_revision": true,
       "quote_verified": true
@@ -314,7 +314,7 @@
       "why": "Self-revision, falsified by the architect's \u00a74.2 source read. `FigureCell.tsx:216-217` queries `theme.containerQueries('panel').down(360)` and `.down(280)`, and CSS resolves `@container panel` against the **nearest** ancestor bearing that name. If the strip itself is the named panel, eight ~140px cells all resolve against a ~1280px panel body and never step \u2014 my assumption would have quietly killed rule 13's container ladder on the surface that needs it most, in the direction nobody looks (it looks fine at desktop and merely looks wrong at 393). I withdraw it.",
       "proposal": "Each strip cell is wrapped in `PanelContainer` (the shipped primitive, same name, nested \u2014 the nearest-ancestor rule does the work); the strip is a rail, not the container context. The bottom sheet re-declares the named container at the sheet root, because MUI portals it to `document.body` and severs the ancestry. And no AC of mine claims a jsdom `test` of actual stepping: jsdom does not evaluate container queries, so the declaration is unit-checkable and the behaviour is browser-only or `review`.",
       "kind": "technical",
-      "conflict_id": "ec53a32c62a9cec158c2dd5e8dfe5a702b23188155318b8c5958b923a02e8ad7",
+      "conflict_id": "8501eb0fc07b63787479eb9e4707f47f6b3288d798ba64c4ccd297c235edba3d",
       "raised_by": "ux",
       "self_revision": true,
       "quote_verified": true
@@ -325,7 +325,7 @@
       "why": "Self-revision. My \u00a72.4 enumerated nine render cases and no failure case, so UX-28 as written certifies a build where a request failure falls back to idle \u2014 the fabrication pm's risk 2 names, and one my own lane should have caught, since the copy for it already ships (`ai-rec/copy.ts:51-52`) and I cited that very file elsewhere in my position. I withdraw 'nine' as the state count for this AC.",
       "proposal": "The honest state set is **ten render cases on three axes**: eight exclusive body cases \u2014 A1 idle \u00b7 A2 loading \u00b7 A3 produced (trade) \u00b7 A4 produced (no trade) \u00b7 A6 cooldown/daily cap \u00b7 A8 add a key (eight non-collapsing reasons inside it) \u00b7 **A10 request failure** (its own named line, the previously pinned read still pinned and readable, never idle and never a no-trade verdict) \u2014 plus A7 signed out as the outer gate; and two that **compose over** a produced read: A5 stale (in-body warning strip with the icon) and A9 the full-analysis drawer. UX-28 \u2192 'Every named render case is independently reachable and renders its own marker; A5 and A9 compose over A3/A4; the remaining cases are mutually exclusive.' Mark stays `test`. Whether canon 16's enumeration gains the failure state is the owner's Amendments call, raised separately against AC-38.",
       "kind": "technical",
-      "conflict_id": "bbd19c76082314c0ab6ab276fbec966530b5f52572b4b8512d8ee5932c9cb87e",
+      "conflict_id": "a4feb589178f1d3b7bee653641cfd24b3b7e6504c004341d46b1c1666a5fd41f",
       "raised_by": "ux",
       "self_revision": true,
       "quote_verified": true
@@ -336,7 +336,7 @@
       "why": "Self-revision. 'a useful primary action' is not testable and does not exclude the thing pm's risk 3 correctly flags: a decorative or disabled 'Alert me at 575' on the most important honest state in the panel. A criterion that a decorative control can satisfy is not a criterion, and a control naming a capability the build does not have is my own defining failure mode in button form.",
       "proposal": "Split UX-32 into two rows. UX-32a (`test`): 'A4 renders with no warning chrome, no error tone and the same typographic weight as a trade, and every control it renders performs an action this build actually performs \u2014 no disabled placeholder and no control naming an unbuilt capability.' UX-32b (`review`): the wording \u2014 `No trade` verdict, the `Re-engage when {conditions}` line carrying the level as a **condition** rather than a control label, primary = the shipped refresh / re-ask control, secondary = full analysis. That splits the silently-regressing half from the visible half instead of pinning prose in an assertion.",
       "kind": "technical",
-      "conflict_id": "8902f5b45216981d65d91264a2058222faa68a69b2010d9918c8ec40b84524e8",
+      "conflict_id": "d55d1d188499f798c1a94c8e5e3ca9fa45afc75201ac0cffd205bed5c66748e4",
       "raised_by": "ux",
       "self_revision": true,
       "quote_verified": true
@@ -347,7 +347,7 @@
       "why": "Self-revision. 'Clean' asserts a scheme-parity property my own lane never defined and, against `StructureFieldCanvas.tsx` having no theme input and filling `INK` unconditionally (`:18`, `:223`, `:237`, `:434`), the row is either narrower than its wording (overflow only \u2014 in which case the wording overclaims what the suite proves) or unsatisfiable without a canvas edit no lane has scoped. Either way it is a `test` mark on a sentence that does not say what it checks.",
       "proposal": "UX-50 \u2192 'At 393 / 834 / 900 / 1280 in both schemes the page has no horizontal overflow, and no surface this phase creates renders a hardcoded, scheme-invariant background or text colour' (`test`; the second half is the shipped `hex-discipline` idiom, not a visual judgement). The hero canvas's light-mode parity is *not* covered by this row and is routed to the owner as a separate scope call (my conflict against AC-78).",
       "kind": "technical",
-      "conflict_id": "cf3ea90510717bd8b4e2438d2fd8c507d540402988ef616dc35ac14cefcb8efa",
+      "conflict_id": "2c5bd4ed7c96010920f93f67f1ece3c75f928c2b23b5a53c9dc703c50569abae",
       "raised_by": "ux",
       "self_revision": true,
       "quote_verified": true

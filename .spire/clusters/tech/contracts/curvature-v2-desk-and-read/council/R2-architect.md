@@ -1,5 +1,3 @@
-# R2 — architect cross-critique: curvature-v2-desk-and-read
-
 ```json
 {
   "role": "architect",
