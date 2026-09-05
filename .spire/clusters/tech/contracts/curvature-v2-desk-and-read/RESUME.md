@@ -1,3 +1,19 @@
+# CONDUCTOR CORRECTION - the `apps/api` diff is EMPTY. Stop reporting 107 files.
+
+**Two lanes have now reported a "107-file `apps/api` diff" and both were wrong.** It is an artifact of
+comparing the wrong way. Measured by the conductor at FE-11:
+
+| comparison | result | what it means |
+|---|---|---|
+| `git diff origin/main...HEAD -- apps/api` (**three-dot**) | **0 lines** | changes THIS BRANCH introduced - the invariant, and it holds |
+| `git diff origin/main..HEAD -- apps/api` (two-dot) | 15 lines | includes commits **origin/main** gained since the branch point - not ours |
+| `git diff e73c7b53..HEAD -- apps/api` (phase-2 build only) | **0 lines** | no build commit touched `apps/api` |
+
+**Use the three-dot form.** A `BUILD_REPORT.md` or QA receipt claiming `apps/api` changed would be a
+false GATE Q failure on the phase's headline invariant (`additive-keeps-score-byte-identical`,
+NO_BACKEND_CHANGE). Note also that **local `main` is 56 commits behind `origin/main`** in this checkout,
+so anything comparing against local `main` is measuring the wrong baseline entirely.
+
 # GATE Z RESOLVED by the conductor (A10 retention) - 2026-09-05
 
 The FE-9 lane flagged that A10's *"the previously pinned read stays pinned and readable"* needs
