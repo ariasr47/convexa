@@ -105,7 +105,7 @@ depends on it.
 |---|---|---|---|
 | D-3 | Feature named **`curvature-v2-desk-and-read`** | It is the exact name phase 1's own BRIEF recorded for the deferred phase-2 candidate, so the cull trail stays continuous | Rename the contracts dir; nothing else references it yet |
 | D-4 | Phase 2 = masthead + hero panel + level ladder + read strip + AI read brief + the `LiveTape` retention latch | The four canon-bound surfaces share one grid, one liveness predicate and one figure vocabulary; splitting them turns each seam into a cross-phase negotiation | Cut any one surface out of the BRIEF before GATE C |
-| D-5 | The eight quiet context widgets are **re-housed only** (placement + quiet chrome), internals untouched | They already consume `FigureCell` from phase 1, so re-housing is cheap; rebuilding eight widget internals in the same BRIEF gives GATE Q no per-surface verdict — the same failure the phase-1 cull rejected | Pull them into phase 2 in full, at roughly +1 build lane |
+| D-5 | The eight quiet context widgets are **re-housed only** (placement + quiet chrome), internals untouched | ⚠️ **My stated reason was WRONG — see the correction below.** The decision itself stands | Pull them into phase 2 in full, at roughly +1 build lane |
 | D-6 | Their internal rebuild is attached to **phase 3**, which I widened from "scanner · positions · settings · alerts" to include the ticker context arm | Otherwise that work is orphaned — no phase owned it | Give it its own phase 5 instead |
 | D-7 | Spacing-exemption burn-down is **partial** — only files phase 2 rewrites | Ruling 4 fenced the list with an expiry at "a named later phase"; phase 4's responsive sweep touches every screen anyway, so that is the honest home for the remainder | Demand the full burn-down here |
 | D-8 | `verify-tokens.mjs` structured checks extended to the seven v2 additions, **in phase 2** | Verified at source: `verify-tokens.mjs:38` only *prints* the additions. Its exit 0 does not prove the mirror matches for `steel2` — a false green sitting under a ruling-7 token value | Defer it to phase 4 |
@@ -218,6 +218,31 @@ The spec claimed `retry` and `refresh` **both** require `requestState === 'idle'
 `retry` is `(degraded && requestState === 'idle') || unavailableRetryGate` (`presentationPolicy.ts:169`),
 so it is **not** idle-only in general. The conclusion it supported still holds - under `no_edge` both
 resolve false - but the generalisation was wrong and is now stated correctly.
+
+---
+
+## 🟠 Correction to D-5, found opening phase 3 (2026-09-05)
+
+**The decision was right; my reason for it was false.** I wrote that the eight ticker quiet-band widgets
+"already consume `FigureCell` from phase 1, so re-housing is cheap." Measured at source opening phase 3:
+
+- **Zero** of the eight import `FigureCell` (`dealer-flow-projection`, `market-context`, `iv-rank`,
+  `straddle-move`, `term-structure`, `fresh-positioning`, `off-exchange-blocks`, `setups` — all 0 files).
+- They are **hand-rolled "StatTile-family"** surfaces. `MarketContext.tsx:440` says so in terms: *"one of
+  the four hand-rolled StatTile-family widgets **ruling 6 keeps unconverted** (not register-enforced, not
+  container-stepped); adding `@container` here is **a later phase's rebuild**."*
+- `StatTile` itself is gone as a component (`_kit/index.ts:7`: *"`StatTile` → `FigureCell` … no
+  deprecation window"*). Every surviving mention is a **comment** naming the idiom, not a live import.
+
+**Why the decision still holds.** Phase 1's ruling 6 deliberately fixed only their six hover-only ⓘ sites
+and explicitly left their structural gaps to "the phase that rebuilds them". So excluding them from phase
+2 and attaching them to phase 3 was correct — but for the opposite reason to the one I gave. They were
+excluded because they are **unconverted**, not because they were already done.
+
+**What this changes for phase 3:** its quiet-band arm is a **real conversion**, not a re-housing, and
+should be sized accordingly. The same measurement also shows **scanner, positions, alerts and settings
+have zero `FigureCell` between them** — phase 1 landed the primitive at `StatTile` call sites, which were
+all ticker-local, so those four surfaces never received it at all.
 
 ---
 
