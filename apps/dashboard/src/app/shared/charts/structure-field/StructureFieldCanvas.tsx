@@ -20,7 +20,6 @@
  * dirty check, the blit, rAF scheduling and the DOM listeners.
  */
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
-import { fieldAmbientShadow } from '@/shared/theme/tokens';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { withAlpha, type LevelPalette } from './levelStrokes';
 import {
@@ -240,9 +239,20 @@ export function StructureFieldCanvas({
           height,
           borderRadius: embedded ? 0 : 12,
           border: embedded ? 'none' : `1px solid ${withAlpha(surfaces.steel, 0.28)}`,
+          // The ambient outer shadow (`rgba(0,0,0,0.65)`) is a deliberately MODE-INVARIANT literal,
+          // not a `tokens.ts` export — GATE Z (curvature-v2-desk-and-read, 2026-09-05, QA F3)
+          // removed the short-lived `fieldAmbientShadow` token: its only consumer is this
+          // `embedded === false` branch (`/lab/structure-field`; the desk hero passes
+          // `variant="ticker"`, so `embedded` is true there and this line never paints), and a
+          // named export with one lab-only consumer, absent from the mirrored `additions` block in
+          // `design/tokens/tokens.json`, contradicts DESIGN_SYSTEM.md:103's "Seven new names ...
+          // mirrored" claim for that surface. This canvas also has no `useTheme()` to resolve
+          // `elevationFor(theme)` from (SPEC §2.7 — it takes already-RESOLVED colours as props), so
+          // there is no existing token this value can bind to without new prop plumbing. See the
+          // exemption entry in `hex-discipline.spec.ts` for the "why a literal, not a token" note.
           boxShadow: embedded
             ? 'none'
-            : `0 0 0 1px ${withAlpha(surfaces.ink, 0.6)}, 0 18px 48px -24px ${fieldAmbientShadow}`,
+            : `0 0 0 1px ${withAlpha(surfaces.ink, 0.6)}, 0 18px 48px -24px rgba(0,0,0,0.65)`,
           cursor: 'crosshair',
           touchAction: 'none',
         }}

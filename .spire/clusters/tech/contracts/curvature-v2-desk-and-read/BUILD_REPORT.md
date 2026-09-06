@@ -420,3 +420,76 @@ as a discrepancy, not silently followed. Four real defects in previously-shipped
 fixed. Named debt is booked with `file:line` and a phase for every item this phase knowingly
 under-built, including the CWD-dependent e2e quality reporter, left unfixed this session by deliberate
 choice rather than risk an unverified module-resolution change in a file three tooling scripts trust.
+
+## 18. GATE Z hardening pass (2026-09-05) — QA Pass 2 F2/F3 fixed, F1 carried forward, the flake root-caused
+
+QA Pass 2 returned **PASS 60 / 0 / 1** with two MEDIUM findings (F2, F3) that would have shipped a
+guard weaker than the one this phase started with. This narrow pass fixes exactly those two; F1 is
+carried forward as named debt (not fixed, per the launch scope).
+
+**F2 — `hex-discipline.spec.ts`'s EXEMPT list was file-scoped.** `apps/dashboard/src/app/shared/theme/hex-discipline.spec.ts`:
+the seven product-file whole-file exemptions QA named (`AuthDialog.tsx`, `FigureCell.tsx`,
+`CommandDeck.tsx`, `TickerToolbar.tsx`, `PositionBrief.tsx`, `StructurePathStrip.tsx`, `Widget.tsx`)
+were narrowed to a new `EXEMPT_VALUES: Record<file, {values: string[]; why: string}>` map — only the
+exact literal string(s) named are skipped; any other hex/rgb(a) added to the same file still reds. A
+fourth spec (`the per-value exemption list is live`) asserts every listed value is still present
+verbatim, preserving the over-removal-detection property QA confirmed. Two inaccurate reasons were
+corrected: `StructurePathStrip.tsx` is the static container `bgcolor` on the whole strip, not a "row
+hover/zebra tint"; `FigureCell.tsx` line 84 is a `backgroundImage` sheen, a drifted near-duplicate of
+the design mirror's `sheen.dark` (0.05 vs canon 0.045, same 46% stop) — not bound to a live token
+because `sheen` has no `tokens.ts` export (a pre-existing, opposite-direction mirror hole, not this
+repair's doing) and correcting the literal would itself be an unauthorized pixel change.
+`TickerToolbar.tsx`'s value is documented as verbatim the inset layer of `elevation.dark.e1` — not
+bound to `elevationFor(theme).e1` because that would add e1's two outer shadow layers, a rendered
+pixel change the toolbar does not paint today. **Re-ran QA's own probe as proof:** injected
+`outlineColor: '#F2A93B'` into `FigureCell.tsx` (`CapsLabel`'s `sx`) — `hex-discipline.spec.ts` went
+**red** (real exit code 1, message pointed at the injected line/value); reverted; `git diff --stat`
+on the file returned empty.
+
+**F3 — `fieldAmbientShadow` deleted.** Removed the export from `apps/dashboard/src/app/shared/theme/tokens.ts`
+(it was single-consumer — `StructureFieldCanvas.tsx`'s `embedded === false` branch, i.e.
+`/lab/structure-field` only — unmirrored in `design/tokens/tokens.json`, contradicting
+`DESIGN_SYSTEM.md:103`'s "Seven new names ... mirrored" claim). Restored the previous literal
+(`rgba(0,0,0,0.65)`) inline at `StructureFieldCanvas.tsx`'s one call site rather than binding to
+`elevationFor(theme)`: the canvas has no `useTheme()` (SPEC §2.7 — it takes already-resolved colours
+as props), so binding would need new prop plumbing outside this repair's authority. Added one narrow
+`EXEMPT_VALUES` entry (`shared/charts/structure-field/StructureFieldCanvas.tsx` → `rgba(0,0,0,0.65)`)
+to `hex-discipline.spec.ts` with the same reasoning. Verified `node design/src/verify-tokens.mjs`
+exit **0** after the removal (`additions: name sets match (glass, ink2, line, line2, raised2, scrim,
+steel2)` — unchanged, `fieldAmbientShadow` was never in that set). Zero rendered-pixel change (same
+literal before the token existed, during, and after removal).
+
+**F1 — carried forward, not fixed (named debt).** The census in `readLayout.render.spec.tsx` /
+`hex-discipline.spec.ts` is token-exact and QA proved three ways a fourth amber can still be added to
+`DecisionCard.tsx` invisibly:
+  1. `backgroundColor: (t) => alpha(t.palette.primary.main, 0.9)` — a 90%-opaque amber fill, invisible
+     to both guards (the amber-tint tokens `amberTint`/`amberTint2` in `design/tokens/tokens.json` are
+     exactly this shape, so the canon's own declared tints are unrecognized).
+  2. `backgroundColor: 'primary.light'` — MUI augments `primary.light` from `gammaAmber`, so it renders
+     amber; the census only matches a literal `var(--mui-palette-primary-main)` binding.
+  3. `'&:hover': { backgroundColor: 'primary.main' }` — `allRulesForClass` matches `.css-x{` only,
+     never `.css-x:hover{`.
+  Booked to a future phase (unassigned — widening the amber census from one token to the alpha-blend/
+  augmented-slot/pseudo-class-rule family is hardening the `readLayout.render.spec.tsx` /
+  `hex-discipline.spec.ts` census, not an unmet acceptance criterion this session's SPEC scopes).
+
+**The flake, root-caused (QA, not this session's own finding — recorded here per the launch
+instruction so the next phase does not re-chase it).** Two earlier lanes misattributed an
+intermittent failure to `pos-params` / `aiProviders` / `app.risk` (all three ran 5/5 green under
+scrutiny). QA traced it to a **stale `node_modules/.vite` glob-transform cache** still listing a
+deleted `_mutation_poison_*` file from an earlier mutation-proof run; `nx test --skip-nx-cache` does
+**not** clear this (it is Vite's own transform cache, not Nx's). Clearing `node_modules/.vite` (this
+session ran `rm -rf node_modules/.vite apps/dashboard/node_modules/.vite` before typechecking/testing,
+as a precaution) gives a clean **231/231** files, exit 0. If a future session sees an import error
+naming `_mutation_poison_*`, clear that cache before diagnosing anything else in the suite itself.
+
+**Verification this session:** `node design/src/verify-tokens.mjs` exit **0**; `npx nx typecheck
+@convexa/dashboard` exit **0**; `npx nx test @convexa/dashboard` exit **0**, **231 files / 2694
+tests** (one more than the 2693 baseline — the new per-value liveness spec); `npm run lint` exit **0**
+(4 pre-existing warnings in `dashboard-e2e`, 1 pre-existing warning in `@convexa/dashboard`, 0 new,
+0 errors); `git diff --stat -- apps/api` **0 lines**; branch `spire/curvature-v2-foundations` and HEAD
+`2cc659da` unchanged before and after (confirmed both). Files touched: `apps/dashboard/src/app/shared/theme/hex-discipline.spec.ts`,
+`apps/dashboard/src/app/shared/theme/tokens.ts`, `apps/dashboard/src/app/shared/charts/structure-field/StructureFieldCanvas.tsx`.
+Nothing else in the working tree was touched; the 27 untracked `docs/research/convexa-business-review-2026-09-05/`
+files belonging to another process were left alone (not written to, not staged — `git status --short
+-uno` deliberately excludes untracked files, so the tracked-change list above is the complete diff).

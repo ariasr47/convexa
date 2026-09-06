@@ -75,12 +75,12 @@ const EXEMPT: Record<string, string> = {
   // `palette.putWall` the ladder/field already share) are REMOVED from this list, not added to it.
   // Everything below is a genuinely NEW-VISIBLE class the broadened regex surfaces — Canvas2D
   // lab/demo instruments (same brand-literal carve-out as `WallMagnetView.tsx`/`TermHeatChart.tsx`
-  // above) and production decorative micro-glazing (`sx`/`styled` inset-highlight and drop-shadow
-  // literals) that already branch on `theme.palette.mode` at every call site — i.e. NOT the
-  // scheme-invariant shape criterion 53 polices, just unsourced. Rebinding a dozen single-consumer
-  // cosmetic alpha values to brand-new named tokens is a design-system extension this narrow repair
-  // has no authority to make (`DESIGN_SYSTEM.md` canon table is unchanged); exempted here, reasoned,
-  // for a future design pass to burn down.
+  // above) are still whole-file (they spend brand rgba alpha-blends throughout, not at named
+  // spots). The SEVEN production-file entries this repair originally added here were WHOLE-FILE
+  // too — GATE Z narrowed all seven to `EXEMPT_VALUES` below (see that block's header) because a
+  // whole-file exemption disarms the guard on any FUTURE hardcoded colour in the same file, not
+  // just the value it was granted for (QA F2, 2026-09-05: `outlineColor: '#F2A93B'` injected into
+  // `FigureCell.tsx` left this suite at exit 0).
   'pages/lab/StructureFieldWebGL.tsx':
     'Structure Field WebGL comparison twin (pages/lab/** — out of product scope) — brand token rgba alpha-blends, same carve-out as structureFieldShared.ts',
   'pages/lab/demos/FlowRibbonsLab.tsx':
@@ -91,20 +91,6 @@ const EXEMPT: Record<string, string> = {
     'Lab Canvas demo — brand token rgba alpha-blends, same carve-out as labTokens.ts',
   'pages/lab/demos/WallMagnetLab.tsx':
     'Lab Canvas demo — brand token rgba alpha-blends, same carve-out as labTokens.ts',
-  'features/auth/AuthDialog.tsx':
-    "The auth modal's own backdrop tuning (`slotProps.backdrop.sx`) is a deliberately DIFFERENT weight/hue from the shared v2 `scrim` token (0.66 vs 0.55 alpha, a slightly warmer near-ink vs pure `scrim`'s neutral) — pre-dates this phase; rebinding to `scrim` would visibly lighten the auth gate, a UX call outside this repair's authority",
-  'pages/ticker/widgets/_kit/FigureCell.tsx':
-    'Figure card bevel/inset-highlight micro-shadow — decorative, already branches on `theme.palette.mode` at every call site (not scheme-invariant), single-consumer cosmetic values',
-  'pages/ticker/widgets/chrome/CommandDeck.tsx':
-    'Top-highlight glass gradient on the command deck surface — decorative, dark-only (light branch is `none`), single-consumer cosmetic value',
-  'pages/ticker/widgets/chrome/TickerToolbar.tsx':
-    'Inset top-highlight on the toolbar — decorative, dark-only (light branch is `none`), single-consumer cosmetic value',
-  'pages/ticker/widgets/position-brief/PositionBrief.tsx':
-    'Card bevel/inset-highlight micro-shadow — decorative, already branches on `theme.palette.mode` at every call site, single-consumer cosmetic values',
-  'pages/ticker/widgets/structure-history/StructurePathStrip.tsx':
-    'Row hover/zebra tint — decorative, already branches on `theme.palette.mode` (dark 0.18 / light 0.03 black alpha), single-consumer cosmetic value',
-  'shared/ui/Widget/Widget.tsx':
-    'Body-well inset shadow (the recessed-panel affordance) — decorative, already branches on `theme.palette.mode` at its one call site, single-consumer cosmetic value',
 
   // (2026-07-16) The two operator-metrics TODO exemptions were RESOLVED the same day they were
   // logged: the chart palette + stale-dot grey moved into `shared/theme/tokens.ts` as the
@@ -112,6 +98,90 @@ const EXEMPT: Record<string, string> = {
   // deleted at redesign-stage-3 §5.1 — zero consumers; stage1-tokens.spec pins the absence.)
   // The liveness invariant below is what forced their removal — a stale exemption fails the
   // suite by design.
+};
+
+/**
+ * GATE Z narrowing (curvature-v2-desk-and-read, 2026-09-05, QA F2) — the seven product files below
+ * were WHOLE-FILE exempted by the prior repair. QA proved the structural cost by mutation: injecting
+ * `outlineColor: '#F2A93B'` (a hardcoded brand hex, unrelated to any of the values below) into
+ * `FigureCell.tsx` left `hex-discipline.spec.ts` at exit 0 — the guard's coverage on all seven files
+ * had gone from full to zero, not just for the values each entry was granted for.
+ *
+ * Each entry now lists the EXACT literal string(s) (as they appear post-comment-strip, byte for
+ * byte) the reason justifies. Any hex/rgb(a) literal in one of these files that is NOT in its
+ * `values` list still reds — an unrelated hardcoded colour added to the same file (the
+ * `outlineColor: '#F2A93B'` shape QA probed) is caught. The liveness test below still asserts every
+ * listed value is still present verbatim, so a stale entry (the value was removed/changed) still
+ * reds too — the over-removal-detection property QA confirmed holds.
+ *
+ * Two reasons here were corrected because QA found them inaccurate (a false reason in an exemption
+ * list is the prose-standing-in-for-enforcement failure this program exists to remove):
+ *   - `StructurePathStrip` — it is the static container `bgcolor` on the whole strip, not a
+ *     "row hover/zebra tint".
+ *   - `FigureCell` line 84 — it is a `backgroundImage` sheen, and it is a DRIFTED near-duplicate of
+ *     the design mirror's declared `sheen.dark` (`design/tokens/tokens.json`: 0.045 alpha, same 46%
+ *     stop; this file carries 0.05). It is NOT bound to a live token here: `sheen` has no export in
+ *     `shared/theme/tokens.ts` today (it exists only in the mirror — a PRE-EXISTING, opposite-
+ *     direction mirror hole per QA F3(b), not this repair's doing), so there is nothing importable
+ *     to bind to, and correcting the literal from 0.05 to 0.045 would itself be a (tiny) rendered
+ *     pixel change this narrow repair has no product-design authority to make silently. Left as a
+ *     literal, reasoned accurately, for a future design pass that also closes the `sheen` mirror
+ *     hole to burn down together.
+ *   - `TickerToolbar` — its value is VERBATIM the inset layer of `elevation.dark.e1`
+ *     (`inset 0 1px 0 rgba(255, 255, 255, 0.04)`), not an independent decorative choice. It is not
+ *     bound to `elevationFor(theme).e1` because that token's box-shadow also carries e1's two OUTER
+ *     shadow layers, which the toolbar does not paint today — binding would add visible drop-shadow
+ *     layers to the toolbar, a rendered pixel change. Kept as a literal that happens to equal e1's
+ *     inset component, reasoned accurately.
+ */
+const EXEMPT_VALUES: Record<string, { values: string[]; why: string }> = {
+  'features/auth/AuthDialog.tsx': {
+    values: ['rgba(8, 11, 16, 0.66)'],
+    why: "The auth modal's own backdrop tuning (`slotProps.backdrop.sx`) is a deliberately DIFFERENT weight/hue from the shared v2 `scrim` token (0.66 vs 0.55 alpha, a slightly cooler near-ink vs pure `scrim`'s neutral — corrected from 'warmer', QA F2) — pre-dates this phase (byte-identical on origin/main); rebinding to `scrim` would visibly lighten the auth gate, a UX call outside this repair's authority",
+  },
+  'pages/ticker/widgets/_kit/FigureCell.tsx': {
+    values: [
+      'rgba(255,255,255,0.05)',
+      'rgba(0,0,0,0.35)',
+      'rgba(16,24,40,0.08)',
+      'rgba(0,0,0,0.6)',
+      'rgba(255,255,255,0.08)',
+      'rgba(16,24,40,0.25)',
+    ],
+    why: "Figure card bevel/inset-highlight/drop-shadow micro-shadows — decorative, all mode-branched at their call sites (not scheme-invariant), single-consumer cosmetic values. Line 84's `backgroundImage` sheen (`rgba(255,255,255,0.05)` at a 46% stop) is a DRIFTED near-duplicate of the mirror's declared `sheen.dark` (0.045, same 46% stop) — not bound because `sheen` has no `tokens.ts` export to bind to (pre-existing mirror-only hole) and correcting the literal would itself change rendered pixels; see the block header above",
+  },
+  'pages/ticker/widgets/chrome/CommandDeck.tsx': {
+    values: ['rgba(255,255,255,0.05)'],
+    why: 'Top-highlight glass gradient on the command deck surface — decorative, dark-only (light branch is `none`), single-consumer cosmetic value (two occurrences, same value)',
+  },
+  'pages/ticker/widgets/chrome/TickerToolbar.tsx': {
+    values: ['rgba(255,255,255,0.04)'],
+    why: "Inset top-highlight on the toolbar, dark-only (light branch is `none`) — VERBATIM the inset layer of `elevation.dark.e1`, not bound to `elevationFor(theme).e1` because that would also add e1's two outer shadow layers (a rendered pixel change the toolbar does not paint today); see the block header above",
+  },
+  'pages/ticker/widgets/position-brief/PositionBrief.tsx': {
+    values: ['rgba(255,255,255,0.04)', 'rgba(16,24,40,0.06)'],
+    why: 'Card bevel/inset-highlight micro-shadow — decorative, already branches on `theme.palette.mode` at every call site, single-consumer cosmetic values',
+  },
+  'pages/ticker/widgets/structure-history/StructurePathStrip.tsx': {
+    values: ['rgba(0,0,0,0.18)', 'rgba(0,0,0,0.03)'],
+    why: 'Static container `bgcolor` on the whole strip (`data-testid="structure-history"`) — corrected from "row hover/zebra tint" (QA F2, the values were right, the description was not) — decorative, mode-branched (dark 0.18 / light 0.03 black alpha), single-consumer cosmetic value',
+  },
+  'shared/ui/Widget/Widget.tsx': {
+    values: ['rgba(0,0,0,0.55)', 'rgba(16,24,40,0.25)'],
+    why: 'Body-well inset shadow (the recessed-panel affordance) — decorative, mode-branched at its one call site, single-consumer cosmetic value',
+  },
+  // GATE Z (curvature-v2-desk-and-read, 2026-09-05, QA F3) — `fieldAmbientShadow` was REMOVED from
+  // `tokens.ts` (it was an unmirrored, single-consumer `tokens.ts` export contradicting
+  // DESIGN_SYSTEM.md:103's "Seven new names ... mirrored in design/tokens/tokens.json" claim for
+  // that surface). The literal it sourced is restored here, narrowly exempted rather than re-bound,
+  // because the canvas has no `useTheme()` to resolve an existing token (`elevationFor(theme)`)
+  // from — it takes already-RESOLVED colours as props (SPEC §2.7) — so binding would need new prop
+  // plumbing this repair has no authority to add. Zero rendered-pixel change from before the token
+  // existed or after removing it (same literal both times).
+  'shared/charts/structure-field/StructureFieldCanvas.tsx': {
+    values: ['rgba(0,0,0,0.65)'],
+    why: "The field canvas's ambient outer shadow, /lab/structure-field only (`embedded === false` ⇔ `variant=\"lab\"`; the desk hero passes `variant=\"ticker\"` so this branch never paints there) — deliberately MODE-INVARIANT, matching the elevation ladder's own convention of keying outer shadow layers off pure black at varying alpha, never a background/text colour (criterion 53 does not scope it)",
+  },
 };
 
 /** `/src/app/pages/foo.tsx` → `pages/foo.tsx` (app-relative, matching the EXEMPT keys). */
@@ -163,12 +233,17 @@ describe('[theme-token-discipline] · zero hardcoded hex outside shared/theme', 
     for (const [key, src] of Object.entries(SOURCES)) {
       const file = appPath(key);
       if (file in EXEMPT) continue;
+      // Per-value exemption (GATE Z, QA F2): only the EXACT literals granted are skipped — any
+      // other hex/rgb(a) in the same file (e.g. an injected `outlineColor: '#F2A93B'`) still reds.
+      const allowed = new Set(EXEMPT_VALUES[file]?.values ?? []);
       const lines = stripComments(src).split('\n');
       lines.forEach((line, i) => {
         for (const m of line.match(HEX) ?? []) {
+          if (allowed.has(m)) continue;
           violations.push(`src/app/${file}:${i + 1} → ${m}`);
         }
         for (const m of rgbMatches(line)) {
+          if (allowed.has(m)) continue;
           violations.push(`src/app/${file}:${i + 1} → ${m}`);
         }
       });
@@ -192,6 +267,21 @@ describe('[theme-token-discipline] · zero hardcoded hex outside shared/theme', 
         hasHex || hasRgb,
         `${file} is exempted but carries no hex/rgb(a) anymore — remove the entry`,
       ).toBe(true);
+    }
+  });
+
+  it('the per-value exemption list is live — every listed value still exists verbatim in its file (stale/over-broad entries must be narrowed)', () => {
+    for (const [file, { values, why }] of Object.entries(EXEMPT_VALUES)) {
+      const entry = Object.entries(SOURCES).find(([k]) => appPath(k) === file);
+      if (!entry)
+        throw new Error(`${file} is exempted (“${why}”) but no longer exists — remove the entry`);
+      const stripped = stripComments(entry[1]);
+      for (const value of values) {
+        expect(
+          stripped.includes(value),
+          `${file} is exempted for "${value}" (“${why}”) but that literal is no longer present — remove/narrow the entry`,
+        ).toBe(true);
+      }
     }
   });
 });
