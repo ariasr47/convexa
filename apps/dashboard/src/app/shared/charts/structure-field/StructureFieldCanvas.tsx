@@ -20,8 +20,9 @@
  * dirty check, the blit, rAF scheduling and the DOM listeners.
  */
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import { fieldAmbientShadow } from '@/shared/theme/tokens';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import type { LevelPalette } from './levelStrokes';
+import { withAlpha, type LevelPalette } from './levelStrokes';
 import {
   computeGeometry,
   emptyFrameState,
@@ -238,10 +239,10 @@ export function StructureFieldCanvas({
           width: '100%',
           height,
           borderRadius: embedded ? 0 : 12,
-          border: embedded ? 'none' : '1px solid rgba(138,155,180,0.28)',
+          border: embedded ? 'none' : `1px solid ${withAlpha(surfaces.steel, 0.28)}`,
           boxShadow: embedded
             ? 'none'
-            : '0 0 0 1px rgba(11,15,23,0.6), 0 18px 48px -24px rgba(0,0,0,0.65)',
+            : `0 0 0 1px ${withAlpha(surfaces.ink, 0.6)}, 0 18px 48px -24px ${fieldAmbientShadow}`,
           cursor: 'crosshair',
           touchAction: 'none',
         }}
@@ -278,7 +279,7 @@ export function StructureFieldCanvas({
             fontSize: 12,
             color: surfaces.phosphor,
             background: surfaces.raised,
-            border: '1px solid rgba(138,155,180,0.3)',
+            border: `1px solid ${withAlpha(surfaces.steel, 0.3)}`,
             borderRadius: '8px',
             padding: '6px 10px',
             pointerEvents: 'none',

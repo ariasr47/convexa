@@ -190,7 +190,8 @@ export function TapePulseStrip({
       for (const p of prints) {
         const age = (now - p.t) / 800;
         const a = Math.max(0, 1 - age);
-        ctx.fillStyle = p.dir > 0 ? `rgba(46,204,113,${0.2 * a})` : `rgba(255,92,92,${0.2 * a})`;
+        ctx.fillStyle =
+          p.dir > 0 ? withAlpha(palette.callWall, 0.2 * a) : withAlpha(palette.putWall, 0.2 * a);
         ctx.fillRect(pad.l, yOf(p.mid) - 1, plotW, 2);
       }
 

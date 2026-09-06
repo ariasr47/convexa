@@ -403,7 +403,7 @@ sixteen technical conflicts the voices settled at file:line in `decisions.md` §
 | 27 | S9 | The off-exchange cell renders neutrally, states that it is context only with no side, and never in the success/direction register | test |
 | 28 | S9 | Term structure, IV rank and skew render the wire's closed label; no strip cell re-derives a label from a scalar | test |
 | 29 | S3 | The verdict word is the first content node in the AI panel's reading order | test (**SB**) |
-| 30 | S3 | The verdict word is the only element in the panel spending amber **as text**, in **every** state; the only non-text amber permitted anywhere in the panel is the authored `:focus-visible` ring and the in-flight progress indicator while a request is actually running — a colour census of the panel finds no third — **DELEGATED (P2)** | test (**SB**) |
+| 30 | S3 | The verdict word is the only element in the panel spending amber **as text**, in **every** state. Non-text amber is a **closed list of three**: the authored `:focus-visible` ring (canon rule 6), the in-flight progress indicator while a request is actually running, and **the fill of the state's ONE primary action** (`primary.main` — canon's fill/UI amber grade). A colour census of the panel — covering **text and non-text bindings both** — finds no fourth, and finds **at most one** primary-action fill mounted in any single state — **DELEGATED (P2), amended at GATE Z 2026-09-05 by owner ruling** | test (**SB**) |
 | 31 | S3·S10 | Each of the four risk fields (max risk · invalidation · entry · target) renders its grounding **before** any prose, declaring traced vs the model's own number in the **type register** — Mono for traced, Plex Sans with a dotted rule for the model's own — and never in colour | test (**SB**) |
 | 32 | S3 | Every named AI-read case of §4.5 is independently reachable from at least one producible `(request, result)` pair in the fixture harness — **DELEGATED (P4)** | test (**SB**) |
 | 33 | S3 | No two non-synonymous AI-read cases render the same primary line, and no case is identified — in a criterion, a test or the build report — by a marker another reachable case also renders — **DELEGATED (P4)** | test (**SB**) |
@@ -478,6 +478,26 @@ assertion over three checkable clauses while the unverifiable one carried the ho
 covers **every** control the state renders, not just the primary.
 <!-- spire:council-resolution:v1 c244d9322e8506f5f8aeada6d30e21d42cd5b99ea36d4d90a69f62a69533348a folded -->
 <!-- spire:council-resolution:v1 d55d1d188499f798c1a94c8e5e3ca9fa45afc75201ac0cffd205bed5c66748e4 folded -->
+
+**GATE Z amendment (2026-09-05, owner ruling) — the primary-action fill is the third permitted
+non-text amber.** GATE Q #1 FAILed row 30 on evidence the conductor's P2 ruling had not accounted for: a
+token-exact DOM census of the production build found four `variant="contained"` primary CTA fills
+spending brand amber inside the panel (`Analyze current snapshot`, `Review simulated trade`, the sign-in
+button, and the light-mode `#C57F19` equivalent). **The ruling was the outlier, not the code.** The canon's
+own palette table defines **`primary.main` AS fill/UI amber**, deliberately distinct from the text grade
+(`extrasFor(theme).textAmber`) — the two-grade system exists precisely so amber can be a fill *and* a
+text colour with different contrast floors. The owner-approved design source draws these buttons amber
+(`design/src/screens/ai-read.mjs` `btn primary`). Re-toning them would have contradicted the approved
+canvas and made this panel's primary action weaker than every other primary button in the app.
+
+What keeps the rule meaningful after the amendment is **cardinality, not exclusion**: each panel state
+renders exactly **one** primary action, so the census asserts *at most one* primary fill is mounted —
+amber stays spent, not sprinkled, which is what canon rule 16 actually protects.
+
+**The second, independent ground for the FAIL stands and is NOT resolved by this amendment.** The census
+row 30 names **did not exist**: `readLayout.render.spec.tsx:84`'s `amberBearingTexts()` scans `color:`
+bindings only, so a `test (SB)` row shipped with automation for one of its two clauses. The row is
+re-verified only once a census covering **non-text bindings** exists and is mutation-proven.
 
 **The amber criterion excludes the focus ring, and does not branch on a ruling.** Read as "no other
 amber pixel", the rule is **unsatisfiable against canon rule 6** (`DESIGN_SYSTEM.md:161`), which

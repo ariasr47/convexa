@@ -45,6 +45,16 @@ export const amberDeep = '#C57F19';
 export const signal = '#5E8BC4';
 /** TRUE warnings only (stale/offline, error strips, degraded) — ALWAYS paired with an icon. */
 export const warningOrange = '#E07A3F';
+/**
+ * The Structure Field canvas's ambient outer shadow (GATE Z repair, curvature-v2-desk-and-read —
+ * `hex-discipline.spec.ts` extended to catch `rgba()` literals; this one was invisible to the old
+ * hex-only regex). Deliberately MODE-INVARIANT by design, matching this app's own elevation ladder
+ * convention (`elevation.dark`/`elevation.light` both key their outer shadow layers off pure
+ * black, varying only alpha) — a pure depth/ambient-falloff cue, never a background or text colour,
+ * so criterion 53's "no scheme-invariant background/text colour" does not scope it. Named here so
+ * it is SOURCED, not silently inlined, per this file's own editing rule.
+ */
+export const fieldAmbientShadow = 'rgba(0,0,0,0.65)';
 
 /** Light canvas — neutral-warm paper, deliberately clear of the cream tell. */
 export const paper = '#F6F6F3';

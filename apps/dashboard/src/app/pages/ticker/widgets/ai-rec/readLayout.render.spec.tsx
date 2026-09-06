@@ -41,6 +41,7 @@ import {
   type PresentationInput,
 } from './presentationPolicy';
 import { readLayoutFor, type Annex, type BodyCase } from './readLayout';
+import { allRulesForClass, joinedStyleText } from '../_kit/emotionCssReader';
 
 afterEach(cleanup);
 
@@ -122,6 +123,103 @@ function amberBearingTexts(container: HTMLElement): string[] {
   return out;
 }
 
+// ---- non-text amber census (row 30, amended GATE Z 2026-09-05) --------------------------------
+// The gap the FAIL named: `amberBearingTexts` above scans `color:` bindings on DIRECT-TEXT-bearing
+// elements only — the TEXT half of row 30. This is the NON-text half, token-exact against the same
+// emotion-CSS-rule reader `_kit/emotionCssReader.ts` uses (never `getAttribute('style')`; MUI `sx`
+// compiles to classes). It classifies every rendered non-text amber binding into the amendment's
+// CLOSED LIST OF THREE — `focus-ring` (the authored `:focus-visible` outline, a GLOBAL rule, not
+// element-scoped), `in-flight` (the CircularProgress the loading state mounts, a `color:` spend
+// with no own text node — currentColor reaching an SVG stroke), and `primary-fill` (a
+// `variant="contained"` button defaulting to `color="primary"`, i.e. `primary.main` AS THE FILL
+// GRADE the amendment names) — and everything else is `other`, the "fourth" the amended row
+// forbids. A disabled contained button is EXCLUDED from `primary-fill`: probed against MUI's own
+// generated CSS (`css-mp4dpo-...` base rule vs. the SEPARATE, higher-specificity
+// `.css-mp4dpo-...Mui-disabled{background-color:var(--mui-palette-action-disabledBackground)}`
+// block) — the disabled override wins the cascade and the button no longer renders amber, which is
+// why QA's four named fills were all ENABLED buttons.
+type NonTextAmberFinding =
+  | { kind: 'focus-ring' }
+  | { kind: 'in-flight' }
+  | { kind: 'primary-fill'; label: string }
+  | { kind: 'other'; label: string };
+
+function boundToPrimaryMain(block: string, prop: string): boolean {
+  const direct = new RegExp(`(?:^|;)${prop}:var\\(--mui-palette-primary-main\\)(?:;|$)`);
+  if (direct.test(block)) return true;
+  const indirect = block.match(new RegExp(`(?:^|;)${prop}:var\\((--[a-zA-Z0-9-]+)\\)`));
+  return !!(indirect && block.includes(`${indirect[1]}:var(--mui-palette-primary-main)`));
+}
+
+function describeAmberElement(el: Element): string {
+  const testId = el.getAttribute('data-testid');
+  if (testId) return `${el.tagName.toLowerCase()}[data-testid="${testId}"]`;
+  const muiClass = Array.from(el.classList).find((c) => c.startsWith('Mui') && c.includes('-'));
+  const text = (el.textContent ?? '').trim().slice(0, 30);
+  return `${el.tagName.toLowerCase()}.${muiClass ?? '?'}${text ? ` "${text}"` : ''}`;
+}
+
+function nonTextAmberFindings(container: HTMLElement): NonTextAmberFinding[] {
+  const css = joinedStyleText().replace(/\s+/g, '');
+  const findings: NonTextAmberFinding[] = [];
+
+  // The one authored focus ring: a GLOBAL `:focus-visible` rule, not tied to any rendered
+  // element's own class — recognised directly from the stylesheet text (present only when
+  // `<CssBaseline />` is actually mounted in this particular render).
+  const ringHexes = [extras.textAmber.toLowerCase(), extrasLight.textAmber.toLowerCase()];
+  for (const m of css.matchAll(/:focus-visible[^{]*\{outline:2pxsolid(#[0-9a-fA-F]{6})/g)) {
+    if (ringHexes.includes(m[1].toLowerCase())) findings.push({ kind: 'focus-ring' });
+  }
+
+  container.querySelectorAll('*').forEach((el) => {
+    const ownClasses = Array.from(el.classList).filter((c) => c.startsWith('css-'));
+    for (const cls of ownClasses) {
+      for (const block of allRulesForClass(css, cls)) {
+        if (boundToPrimaryMain(block, 'color')) {
+          // A `color:` binding is the TEXT census's job when the element itself carries a direct
+          // text node (`amberBearingTexts` above) — here we count it ONLY when it does not, which
+          // is exactly the non-text currentColor spend (e.g. an SVG stroke).
+          const ownText = Array.from(el.childNodes)
+            .filter((n) => n.nodeType === Node.TEXT_NODE)
+            .map((n) => n.textContent)
+            .join('')
+            .trim();
+          if (!ownText) {
+            findings.push(
+              el.classList.contains('MuiCircularProgress-root')
+                ? { kind: 'in-flight' }
+                : { kind: 'other', label: `${describeAmberElement(el)} color` },
+            );
+          }
+        }
+        if (boundToPrimaryMain(block, 'background-color')) {
+          if (
+            el.classList.contains('MuiButton-contained') &&
+            !el.classList.contains('Mui-disabled')
+          ) {
+            findings.push({ kind: 'primary-fill', label: describeAmberElement(el) });
+          } else if (!el.classList.contains('Mui-disabled')) {
+            findings.push({ kind: 'other', label: `${describeAmberElement(el)} background-color` });
+          }
+        }
+        for (const prop of ['border-color', 'fill', 'stroke'] as const) {
+          if (boundToPrimaryMain(block, prop)) {
+            findings.push({ kind: 'other', label: `${describeAmberElement(el)} ${prop}` });
+          }
+        }
+      }
+    }
+  });
+  return findings;
+}
+
+function fillCount(findings: NonTextAmberFinding[]): number {
+  return findings.filter((f) => f.kind === 'primary-fill').length;
+}
+function otherFindings(findings: NonTextAmberFinding[]): NonTextAmberFinding[] {
+  return findings.filter((f): f is { kind: 'other'; label: string } => f.kind === 'other');
+}
+
 // ---- rows 29/30/31 — DecisionCard, produced (trade) --------------------------------------------
 
 describe('row 29/30 — the verdict word is the first content node and the only amber-as-text spend', () => {
@@ -140,6 +238,11 @@ describe('row 29/30 — the verdict word is the first content node and the only 
     );
     const amber = amberBearingTexts(container);
     expect(amber).toEqual(['Trade · long']);
+    // Row 30 (amended) — NON-text half: exactly one primary-action fill (`Review simulated
+    // trade`, the state's ONE primary action), no fourth.
+    const nonText = nonTextAmberFindings(container);
+    expect(otherFindings(nonText)).toEqual([]);
+    expect(fillCount(nonText)).toBe(1);
     // Row 29: the verdict is the first content node of the read's own body (after the fixed
     // attribution chrome above it — provenance and, when present, a composing degraded strip;
     // criterion 43 requires the strip itself precede the read).
@@ -176,6 +279,11 @@ describe('row 29/30 — the verdict word is the first content node and the only 
     );
     expect(amberBearingTexts(container)).toEqual([]);
     expect(screen.getByTestId('decision-verdict-word').textContent).toBe(COPY.noTrade.title);
+    // Row 30 (amended) — `no_trade` renders NO primary-action fill either (`reviewTrade` and
+    // `createOrder` are both false in this presentation): no verdict amber, no fill amber.
+    const nonText = nonTextAmberFindings(container);
+    expect(otherFindings(nonText)).toEqual([]);
+    expect(fillCount(nonText)).toBe(0);
   });
 
   it('A5 composing over A3 (stale): the verdict is STILL the only amber text, beneath the warning strip', () => {
@@ -192,25 +300,54 @@ describe('row 29/30 — the verdict word is the first content node and the only 
       />,
     );
     expect(amberBearingTexts(container)).toEqual(['Trade · long']);
+    // Row 30 (amended) — composing a degraded strip over a produced trade does not add a SECOND
+    // fill: still exactly the one `Review simulated trade` primary action.
+    const nonText = nonTextAmberFindings(container);
+    expect(otherFindings(nonText)).toEqual([]);
+    expect(fillCount(nonText)).toBe(1);
     // Criterion 43: the strip precedes the read, and the read stays legible beneath it.
     const strip = screen.getByTestId('decision-degraded');
     const verdict = screen.getByTestId('decision-verdict');
     expect(strip.compareDocumentPosition(verdict) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('A2 (loading), A7 (signed out), A8 (add a key), A10 (request failure), A6a/A6b (cooldown/cap) spend NO amber', () => {
-    const cases: Array<{ label: string; node: React.ReactElement }> = [
+  it('A2 (loading), A7 (signed out), A8 (add a key), A10 (request failure), A6a/A6b/missing-key (cooldown/cap/no-key) spend the amended closed list ONLY — no fourth, at most one fill', () => {
+    // `expectedFill`/`expectedInFlight` name what QA's census actually found (or, for the new
+    // cases, what the SAME `variant="contained"` default-primary pattern predicts): A7 and A8 are
+    // TWO of QA's four named CTA fills (`Sign in to ask AI`, the powering CTA); A2 mounts the
+    // in-flight indicator instead (no button at all); A10/A6a/A6b/missing-key render either an
+    // OUTLINED/inherit-colour control or a DISABLED contained one, so zero fill either way.
+    const cases: Array<{
+      label: string;
+      node: React.ReactElement;
+      expectedFill: number;
+      expectedInFlight: number;
+    }> = [
       {
         label: 'A2',
         node: <LoadingBlock ticker="TSLA" readName="Default" path={null} model={null} />,
+        expectedFill: 0,
+        expectedInFlight: 1,
       },
-      { label: 'A7', node: <SignedOutGate hasRec={false} promptText={null} onSignIn={vi.fn()} /> },
-      { label: 'A8', node: <PoweringCta reason="missing_key" onSettings={vi.fn()} /> },
+      {
+        label: 'A7',
+        node: <SignedOutGate hasRec={false} promptText={null} onSignIn={vi.fn()} />,
+        expectedFill: 1,
+        expectedInFlight: 0,
+      },
+      {
+        label: 'A8',
+        node: <PoweringCta reason="no_key" onSettings={vi.fn()} />,
+        expectedFill: 1,
+        expectedInFlight: 0,
+      },
       {
         label: 'A10',
         node: (
           <UnavailableBlock cap={cap} cooldownRemaining={0} retryAllowed={true} onRetry={vi.fn()} />
         ),
+        expectedFill: 0,
+        expectedInFlight: 0,
       },
       {
         label: 'A6a',
@@ -227,6 +364,8 @@ describe('row 29/30 — the verdict word is the first content node and the only 
             onAskAnyway={vi.fn()}
           />
         ),
+        expectedFill: 0,
+        expectedInFlight: 0,
       },
       {
         label: 'A6b',
@@ -243,17 +382,47 @@ describe('row 29/30 — the verdict word is the first content node and the only 
             onAskAnyway={vi.fn()}
           />
         ),
+        expectedFill: 0,
+        expectedInFlight: 0,
+      },
+      {
+        label: 'missing-key',
+        node: (
+          <ActionRegion
+            cap={cap}
+            cooldownRemaining={0}
+            reasons={[]}
+            compact={false}
+            ticker="TSLA"
+            requestState="missing_key"
+            actions={actions({ analyze: false })}
+            onGet={vi.fn()}
+            onAskAnyway={vi.fn()}
+          />
+        ),
+        // A DISABLED `variant="contained"` button — MUI's `.Mui-disabled` override wins the
+        // cascade and repaints it `action.disabledBackground`, never amber (probed against the
+        // real generated CSS above `nonTextAmberFindings` documents this).
+        expectedFill: 0,
+        expectedInFlight: 0,
       },
     ];
-    for (const { label, node } of cases) {
+    for (const { label, node, expectedFill, expectedInFlight } of cases) {
       const { container, unmount } = renderThemed(node);
-      expect(amberBearingTexts(container), `${label} must spend no amber`).toEqual([]);
+      expect(amberBearingTexts(container), `${label} must spend no amber AS TEXT`).toEqual([]);
+      const nonText = nonTextAmberFindings(container);
+      expect(otherFindings(nonText), `${label} must have no fourth non-text amber`).toEqual([]);
+      expect(fillCount(nonText), `${label} primary-fill count`).toBe(expectedFill);
+      expect(
+        nonText.filter((f) => f.kind === 'in-flight').length,
+        `${label} in-flight count`,
+      ).toBe(expectedInFlight);
       unmount();
       cleanup();
     }
   });
 
-  it('A1a (idle) and A1b (idle · quiet gate) spend no amber either — the panel has no verdict yet', () => {
+  it('A1a (idle) and A1b (idle · quiet gate) spend no amber as TEXT — but each still mounts exactly ONE primary fill (the primary control), no fourth', () => {
     for (const requestState of ['idle', 'no_edge'] as const) {
       const { container, unmount } = renderThemed(
         <ActionRegion
@@ -269,6 +438,14 @@ describe('row 29/30 — the verdict word is the first content node and the only 
         />,
       );
       expect(amberBearingTexts(container)).toEqual([]);
+      const nonText = nonTextAmberFindings(container);
+      expect(otherFindings(nonText), `${requestState} must have no fourth non-text amber`).toEqual(
+        [],
+      );
+      // QA's census found this exact fill in idle (`Analyze current snapshot`); `no_edge`'s idle
+      // body renders the SAME enabled primary control (row 41 — "everything idle renders") plus
+      // the outlined (color=inherit, never amber) `Ask anyway` footnote, so it is one fill too.
+      expect(fillCount(nonText), `${requestState} primary-fill count`).toBe(1);
       unmount();
       cleanup();
     }
