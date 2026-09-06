@@ -49,8 +49,25 @@ MUI puts it above modal in the first place), below `toast` 50 so a toast is neve
 tooltip. Set MUI's `zIndex.tooltip` to it so nothing stays ad-hoc.
 
 I considered `tooltip: 36` (just above popover, below dialog) and rejected it: it hides tooltips inside
-dialogs, and the trade-entry dialog has ⓘ affordances. **Reverse it by:** naming a different number
-before the build lane runs; it is a one-value change in the theme plus the canon's z-index row.
+dialogs, and the trade-entry dialog has ⓘ affordances.
+
+### ⚠️ D-2 was NOT applied this phase - and that is correct
+
+**Status: still open, carried forward.** The council did not scope it in. `SPEC.md:55` says plainly
+*"The `tooltip` z-rung is **not** amended here (see §9)"*, and §9 item 4 records why: this phase puts
+`AccessibleHelp` tooltips inside a bottom sheet (rung 30) and the expand dialog (rung 40), where MUI's
+default 1500 renders above both - **which is the behaviour we want**, so the gap is benign here and not
+this phase's blocker.
+
+**I got this wrong in a build dispatch** and told the FE-14 closer there were *four* canon amendments
+including the tooltip rung. The lane checked the locked contracts, found they said the opposite,
+**refused to fabricate a fourth amendment**, shipped the three real ones (rules 11, 14, 16 + rule 17
+tense-only), and reported the conflict instead of quietly following me. That is exactly the behaviour the
+lane-refusal discipline exists for, and it was right.
+
+**Where that leaves the recommendation:** `tooltip: 45` still looks like the right number for the reasons
+above, but it is now a **later-phase** item, not something this build landed. Nothing in the shipped code
+depends on it.
 
 ---
 
