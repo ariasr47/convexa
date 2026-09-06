@@ -5,7 +5,7 @@
   "source": ".spire/clusters/tech/contracts/curvature-v2-desk-and-read/INTERFACE_CONTRACT.md",
   "base_url": "http://localhost:8000",
   "auth": null,
-  "checked_at": "2026-09-06T01:38:37Z",
+  "checked_at": "2026-09-06T03:23:35Z",
   "summary": {
     "pass": 2,
     "fail": 0,
