@@ -30,6 +30,53 @@
 
 ---
 
+## Harvest — 2026-09-06 (owner direction: AI-powered Convexa)
+<!-- atlas: theme=trust-the-signal horizon=next -->
+Not a GATE I cull and **not** a BRIEF. Owner direction: *"I want Convexa to be an AI-powered artifact, for
+example the AI rec panel for recommendations."* **Authorizes: nothing** on live score. Recorded so the
+direction is dated and queued rather than re-derived.
+
+**The template is the AI rec panel, and what makes it work is not that it calls an LLM.** It is that the
+LLM is an **advisory consumer of already-computed state** — the shape `ai-external-no-llm` was *narrowed*
+to permit (never a scoring / gate / fingerprint input, no recompute, off the SSE path, server-side key, no
+auto-act, no real order), plus the **type register** carrying authorship (Mono = traced to a computed
+bundle field, Plex Sans + dotted rule = the model's own number). Any new AI surface inherits both or it
+stops being Convexa.
+
+**Sequencing ruled by the conductor 2026-09-06 — phase 3 first, and it is a precondition, not a rival.**
+Scanner, positions, settings and alerts have **zero `FigureCell`** between them (measured at GATE I of
+`curvature-v2-surfaces`), so they cannot yet distinguish "Convexa's number" from "the model's number".
+Adding AI there first would multiply untraceable assertions on the densest surfaces in the app — the exact
+risk `ai-asserted-numbers-are-traceable` was promoted on, after **44.4% of asserted numbers measured
+untraceable**.
+
+**The AI surface to back next is already in this backlog:** `grounded-morning-snapshot` (line ~108) — an
+AI briefing over already-computed scanner + event calendar + GEX, **every number cited**, no new vendor.
+It reuses the grounding machinery `curvature-v2-desk-and-read` hardened (traced/untraced register,
+grounding counts and the cited contract in the drawer) and touches no score. Timing fits: the
+`keep-paid-books` corpus supports a real time-split ~**2026-09-23 → 10-07**.
+
+**Culled from this direction (recorded so they are not re-proposed as new):**
+- *An AI read per scanner row* — culled: multiplies untraceable assertions across the densest surface, and
+  the failure mode is silent (a plausible number with no provenance looks identical to a computed one).
+- *AI everywhere as a phase* — culled: **cost is metered per user** (see below), so every added surface
+  raises the user's own bill and consumes their daily cap faster.
+- *Ship it as an AI-powered Claude Artifact* — culled **as a product path**, viable as an internal
+  prototype only. See the cost note.
+
+**Cost / multi-user note (verified at source 2026-09-06, not assumed).** Two different models, and they
+must not be conflated in any future brief:
+| path | who pays | multi-user | where it runs |
+|---|---|---|---|
+| **Convexa product** (`features/auth/aiProviderLabels.ts`) | the **user's own provider API key** — `own_key` for Anthropic `sk-ant-…` / OpenAI `sk-…` / Grok `xai-…` / Gemini `AIza…`, or the one subscription path `grok_subscription` ("your Grok subscription") | yes — key stored **per user**, encrypted at rest (`secret-encrypted-at-rest`), with a **per-user daily cap + cooldown** enforced server-side | anywhere the app is served |
+| **Claude Artifact `sample`** capability | **the viewer pays**, from their own Claude pool, consent-prompted on first call | yes — each viewer's own pool | only inside claude.ai, for people who can open the artifact |
+**There is no Convexa-funded pool in either model**, and the codebase actively guards the copy against
+implying one: `aiProviderLabels.ts:4` — *"never the BYO 'Grok' label, **never 'Convexa Grok pool'**"*.
+The artifact path is therefore fine for an internal prototype and wrong for product delivery: it cannot
+reach a trader who is not a claude.ai viewer, and an `mcp` grant additionally bars public sharing.
+
+---
+
 ## Harvest — 2026-09-03 (design re-baseline → Curvature Terminal v2)
 <!-- atlas: theme=trust-the-signal horizon=next -->
 Not a GATE I cull and **not** a BRIEF. Owner approved a site-wide redesign on a design canvas and ruled
