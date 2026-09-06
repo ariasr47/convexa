@@ -1,6 +1,38 @@
+# RESUME — spire/curvature-v2-foundations
+
+**Phase 2 of 4 (`curvature-v2-desk-and-read`) is DONE and closed at GATE S on 2026-09-05.**
+Branch has **not** been pushed and there is **no PR** — that is the owner's call.
+
+| phase | scope | state |
+|---|---|---|
+| 1 `curvature-v2-foundations` | tokens, scales, `FigureCell`, connection chip, nav + ⌘K, container panels | **shipped, GATE Q PASS 79/1/1** |
+| 2 `curvature-v2-desk-and-read` | desk masthead, structure-field hero, level ladder, read strip, verdict-first AI read, retention latch | **shipped, GATE Q PASS 60/0/1** |
+| 3 | scanner · positions · settings · alerts **· the eight ticker quiet-band widgets' internals** | not started |
+| 4 | landing · site pages · responsive sweep · the curve text-equivalent · spacing burn-down remainder | not started |
+
+**Read before designing phase 3:**
+`contracts/curvature-v2-desk-and-read/_MANIFEST.md` (gate trail, final measurements, the four defects this
+phase found in shipped code, and the carried-debt list with phases attached),
+`contracts/curvature-v2-desk-and-read/QA_REPORT.md` (**both passes**), and
+`state/spire-curvature-v2-foundations/OVERNIGHT_DECISIONS.md` (the seven DELEGATED calls P1–P5, D-14, D-15,
+each with its reversal — ratified by the owner's spec approval, and two of them corrected later in the
+session when they turned out to be wrong on their facts).
+
+**Phase 2's canon amendments are filed:** rules **11**, **14**, **16** (amber → text-scoped with a closed
+three-item non-text list; nine states → **ten**; composition and dispositions), and **17** (tense only).
+The `tooltip` z-rung is deliberately **not** amended — `theme.ts:83` already ships a working, consumed
+value of **60**, and the gap is in the canon's prose, not the code.
+
+**The one trap that cost the most time this phase**, so phase 3 does not re-chase it: a stale
+`node_modules/.vite` glob transform holding a deleted `_mutation_poison_*` file produces a spurious
+suite failure that **`--skip-nx-cache` does not clear**. Two build lanes misattributed it to
+`pos-params` / `aiProviders` / `app.risk`, which run 5/5 green. Delete `node_modules/.vite`.
+
+---
+
 # RESUME — spire/curvature-v2-foundations (2026-09-03)
 
-**Resume status:** ACTIVE  
+**Resume status:** ACTIVE — **phase 2 closed at GATE S 2026-09-05; the next step is phase 3.**  
 **Written:** 2026-09-03 (GATE R, phase 1 closed at GATE S — a clean phase boundary, not a mid-build checkpoint)
 
 Written at GATE R for a **fresh session on another machine**. Self-contained against `PROJECT_CONTEXT.md`.

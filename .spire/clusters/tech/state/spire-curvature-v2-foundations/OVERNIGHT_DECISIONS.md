@@ -51,6 +51,34 @@ tooltip. Set MUI's `zIndex.tooltip` to it so nothing stays ad-hoc.
 I considered `tooltip: 36` (just above popover, below dialog) and rejected it: it hides tooltips inside
 dialogs, and the trade-entry dialog has ⓘ affordances.
 
+### ⚠️⚠️ D-2 was wrong on its FACTS too, not just its scope (found at GATE S)
+
+Filing the canon amendments, I read `apps/dashboard/src/app/shared/theme/theme.ts:72-84` and found the
+premise of D-2 is false:
+
+```
+    // The canon declares six rungs; MUI has eight slots. `tooltip` is UNDECLARED (SPEC 9-2, an
+    // Amendments-shaped gap for the owner). This is the working mapping: above toast, and no
+    // longer 1500. `AppShell.tsx:42` reads `theme.zIndex.tooltip + 1` for the skip link.
+    tooltip: 60,
+```
+
+**MUI's 1500 default is not live.** Phase 1 already mapped `tooltip` to **60** — above `toast` 50 — and
+`AppShell.tsx:42` depends on it (`theme.zIndex.tooltip + 1` for the skip link). So:
+
+- My "MUI defaults to 1500, above every declared rung" was **stale**; that was fixed before I wrote it.
+- My proposed **45** is **below** toast 50, which would have *reversed* a deliberate shipped decision and
+  put the skip link below the toast. My stated reasoning ("below toast so a toast is never covered") was
+  the opposite of what the code had already chosen, for a reason I had not looked for.
+
+**The real gap is narrower than I described**: the *canon* does not declare the rung, while the *code*
+has a working, consumed value. Whoever closes it should declare **60** to match what ships, not invent a
+number. Nothing is broken today.
+
+I am recording this rather than quietly deleting D-2, because the failure is instructive: I recommended a
+value for a token I had not read, on a premise I had not verified, and only the lane's refusal and this
+close-out read caught it.
+
 ### ⚠️ D-2 was NOT applied this phase - and that is correct
 
 **Status: still open, carried forward.** The council did not scope it in. `SPEC.md:55` says plainly
