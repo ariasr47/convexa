@@ -1,0 +1,30 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "PASS",
+  "mode": "live",
+  "source": ".spire/clusters/tech/contracts/curvature-v2-desk-and-read/INTERFACE_CONTRACT.md",
+  "base_url": "http://localhost:8000",
+  "auth": null,
+  "checked_at": "2026-09-06T01:38:37Z",
+  "summary": {
+    "pass": 2,
+    "fail": 0,
+    "total": 2
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/ticker/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 19,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/recommendation/status/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 9,
+      "failures": []
+    }
+  ]
+}
