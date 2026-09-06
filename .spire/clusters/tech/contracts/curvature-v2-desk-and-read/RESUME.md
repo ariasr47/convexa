@@ -1518,3 +1518,80 @@ gate rather than assuming `npx playwright test`'s own pass/fail was the whole st
 here so a later lane doesn't rediscover the same gate from scratch, and so the build report can note
 it as a necessary-overlap fix in the same documented shape FE-8/9/10/11 already established for their
 own out-of-Owns-row edits.
+
+---
+
+## Done (FE-13) — do not re-do
+
+**FE-13 — extend `design/src/verify-tokens.mjs` to structurally check the seven v2 additions.**
+Commit `2695e09f`. Owns (as landed, exactly PLAN's Owns row): `design/src/verify-tokens.mjs` only.
+
+**The gap, confirmed at source before touching anything:** `verify-tokens.mjs:37-38` (pre-edit)
+only `console.log`'d `design.additions` under "Additions (not in tokens.ts yet)" — zero structural
+check, so the script's exit code carried no information about whether `steel2` (or any of the other
+six) actually matched `tokens.ts`. Phase 1's owed item 2, scoped into this phase as D-8.
+
+**What shipped, per PLAN's two-step shape:**
+1. **Step 1 (set-equality on names).** A `ADDITIONS_MAP` object hardcodes the seven proposed-name →
+   tokens.ts-home mappings PLAN's own text names verbatim (`ink2→extras.well`,
+   `raised2→extras.panelRaised2`, `line→palette.*.divider`, `line2→extras.lineStrong`,
+   `steel2→extras.textTertiary`, `scrim→extras.scrim`, `glass→extras.glass`). The script diffs
+   `Object.keys(design.additions)` (minus `$comment`) against `Object.keys(ADDITIONS_MAP)` in BOTH
+   directions and fails (prints which names are on which side) if they disagree — so an eighth
+   addition landing in `tokens.json` without a matching checker entry (or vice versa) is caught by
+   name alone, before any value is even read.
+2. **Step 2 (per-value equality, both schemes).** Generalized the existing `seq(key)` helper's
+   regex from hex-only (`'(#[0-9A-Fa-f]{6})'`) to any quoted literal (`'([^']+)'`) — needed because
+   five of the seven additions are `rgba(...)` alpha values, not hex. Verified this widening does
+   NOT change any of the eleven pre-existing `seq()`-derived checks: `textAmber`'s dark-mode entry
+   (`textAmber: gammaAmber`, an unquoted identifier reference) still correctly fails to match, so
+   `[textAmberLight] = seq('textAmber')` still resolves to the same single (light) value it always
+   did. Confirmed every one of the 7 new keys (`well`, `panelRaised2`, `divider`, `lineStrong`,
+   `textTertiary`, `scrim`, `glass`) occurs in `tokens.ts` exactly twice, dark declared before light
+   in file order (grep-verified line numbers before writing the mapping, not assumed), matching the
+   same dark-then-light destructure order `seq()` already relies on. Fourteen checks (7 × 2 modes)
+   appended and printed under a new "v2 additions (now structurally checked, not merely printed)"
+   heading, folded into the same `bad` counter that drives `process.exit`.
+
+**Mutation proof actually run (poison → confirm red, with output captured → revert → confirm
+clean), this session:**
+```
+node design/src/verify-tokens.mjs; echo "verify-tokens exit=$?"      # exit=0, 34/34 ✓ (20 shared + 14 v2)
+# poisoned design/tokens/tokens.json "light.steel2" #5D6B84 -> #5D6B85 (one digit)
+node design/src/verify-tokens.mjs; echo "poisoned exit=$?"
+✗ light steel2     design #5D6B85                      tokens.ts extras.textTertiary (light) = #5D6B84
+1 mismatch(es) — design and app tokens have drifted.
+poisoned exit=1
+git checkout -- design/tokens/tokens.json                            # git diff --stat: empty (byte-identical)
+node design/src/verify-tokens.mjs; echo "reverted exit=$?"           # exit=0, 34/34 ✓ again, 0 ✗ lines
+```
+This is the acceptance test PLAN's own Step 3 names, run for real: the poison exits non-zero AND
+the `✗` line names `steel2` specifically (not a generic failure), proving the check is wired to that
+exact value rather than vacuously green. Did NOT restore `steel2`'s original lighter value
+(`#61708A`) at any point — the mutation touched only the poisoned digit, per owner ruling 7's own
+instruction not to "correct" it back.
+
+**Full verification, canonical commands, this session, exit codes checked directly (not printed
+summaries):**
+- `node design/src/verify-tokens.mjs` → exit **0**, 34/34 `✓` (20 pre-existing + 14 new), before and
+  after the mutation-proof cycle.
+- `node -c design/src/verify-tokens.mjs` → syntax check passes.
+- `npm run typecheck` → **0** (unaffected — this is a standalone Node script, not a TS project
+  member; confirmed the change touches nothing under `apps/`).
+- `npm run lint` → **0** (same 4 pre-existing warnings, no new ones — `design/` is not an
+  ESLint-scanned project; grep confirmed via `.eslintrc`/`eslint.config.mjs` project globs).
+- `git diff origin/main...HEAD -- apps/api` → **0 lines** (re-verified per RESUME's own top
+  correction, the three-dot form).
+- `git status --short` → only `design/src/verify-tokens.mjs` modified before commit; `design/tokens/
+  tokens.json` and every other file byte-identical to the pre-task tree.
+
+**Not touched, correctly, per PLAN's own scope note:** `design/tokens/tokens.json` (read and
+temporarily poisoned for the mutation proof, reverted, never left mutated), `design/canvas/**` and
+`design/site/**` (generated — regenerating with `node design/src/build.mjs` was not needed since no
+token VALUE changed, only the checker), `apps/dashboard/src/app/shared/theme/tokens.ts` (read-only
+source of truth for this task — the checker verifies against it, never edits it), and no `.spec.*`
+or `_tmp_*` scratch files were left anywhere (confirmed via `git status --short` showing exactly one
+tracked file changed).
+
+**No GATE Z items raised by this task** — PLAN's Step 1/2/3 mapped cleanly onto the actual file
+contents with no ambiguity requiring a decision outside this lane's authority.
