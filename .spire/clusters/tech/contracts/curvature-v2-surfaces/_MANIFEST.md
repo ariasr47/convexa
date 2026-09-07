@@ -92,6 +92,19 @@ Last gateway:  GATE C @ 2026-09-06 — council complete; owner approval pending
   **53/53 exit 0**, `apps/api` three-dot diff **0 lines**. Two recorded deviations from PLAN's illustrative regex, both
   strict supersets. IDE diagnostics showed mid-edit phantom errors on this tree after the commit; the cold typecheck is the
   evidence, as in phase 2.
+- BUILD lane 2 @ 2026-09-07 — **FE-2 `be7c067b` · FE-3 `d905d26a` · FE-4 `356cea52`** (Sonnet; 549k tokens, 308 tool uses,
+  67 min), then a deliberate **checkpoint before FE-5** with a handover at `contracts/curvature-v2-surfaces/RESUME.md`
+  (`5f310588`). FE-2: liveness fence widened to the four surfaces, banned `genuineIsLive` deleted from `/positions` (proof D
+  red on a planted call, reverted). FE-3: scanner atoms consume the figure module, U-6 lookup-miss split, new
+  `scanner.register.spec.tsx`, a string-radius needle in `radius-scale.spec.ts`, 2 `EXEMPT` entries burned (14 → 12), zero
+  copy diffs (proof E red on a raw-enum poison). FE-4: scanner degraded price arm on `live.offline ∧ provenance`, flash gate on
+  the stream flag, **D-A copy landed** — `Prices per tick · structure ~3 min · hot names sooner` and the gloss without its
+  liveness sentence — T5 measured (the shipped `scanner.risk.spec.tsx:869` stayed green on the offline arm; both arms now pinned
+  separately), proofs F/G red-then-green; the lane ran the app in headless Chromium against the live backend and recorded
+  what it saw (F4 not naturally reachable in dev — covered by the `EventSource`-driven test, said so). One pre-existing
+  out-of-scope defect filed as debt: `ScanTable`'s zero-state grouping drops the live-price overlay. Full suite not run
+  (owed by the closer). **Conductor's cold re-check @ `5f310588`:** typecheck **0**; scanner + positions + liveness + theme
+  **26 files / 290 tests exit 0**; `apps/api` three-dot diff **0 lines**; `labels.ts:29` reads the new header verbatim.
 
 ## Inherited (do not rediscover)
 `state/spire-curvature-v2-foundations/RESUME.md` carries the phase table and the trap that cost phase 2 the
