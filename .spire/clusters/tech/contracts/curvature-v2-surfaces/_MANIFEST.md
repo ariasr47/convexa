@@ -105,6 +105,18 @@ Last gateway:  GATE C @ 2026-09-06 — council complete; owner approval pending
   out-of-scope defect filed as debt: `ScanTable`'s zero-state grouping drops the live-price overlay. Full suite not run
   (owed by the closer). **Conductor's cold re-check @ `5f310588`:** typecheck **0**; scanner + positions + liveness + theme
   **26 files / 290 tests exit 0**; `apps/api` three-dot diff **0 lines**; `labels.ts:29` reads the new header verbatim.
+- BUILD lane 3 @ 2026-09-07 — **FE-5 `bdc992d8`** + handover `9172eafa` (Sonnet; 562k tokens, 266 tool uses, 74 min). Six
+  live-derived positions cells route through `figureStateOf`+`faceFor` (exported `markFigure`/`plFigure`/`plPctFigure`);
+  `PositionCard` consumes the same helpers — closing a real "one datum, two ways" divergence (card showed `—`/empty where the
+  row showed `unavailable`); every `⏸` text mark in positions gone (six class-(1) replacements itemized, Z-2 included);
+  `literal()` tips keyboard-reachable (U-15a, CONDUCTOR call); new `pauseGlyph.spec.ts` (proof H red on a restored glyph);
+  proof I red on a forced last-known clause; orders files face-re-pointed only (Z-1's `⏸` at `OrderRow.tsx:172` untouched —
+  confirmed by sweep); `EXEMPT` 12 → **6** (FE-6 ×1, FE-7 ×5). Lane's measurements: typecheck 0 · targeted 52 files / 650
+  tests 0 · **full suite 234/234 files, 2782/2782, exit 0** on the second run (first run an Nx-flagged worker crash with no
+  named failure) · flaky pair 31/31 · lint 0. App run: seeded AMD call with an unresolvable mark rendered `unavailable`
+  identically in table and card at 1280/393; offline visual not reachable against the dev backend (said so; covered by four
+  SB tests + the SSE-drop flow). **Conductor's cold re-check @ `9172eafa`:** typecheck **0**; positions + figure + theme +
+  orders **57 files / 694 tests exit 0**; `apps/api` diff **0**; remaining `⏸` sources are broker-only (FE-7's).
 
 ## Inherited (do not rediscover)
 `state/spire-curvature-v2-foundations/RESUME.md` carries the phase table and the trap that cost phase 2 the
