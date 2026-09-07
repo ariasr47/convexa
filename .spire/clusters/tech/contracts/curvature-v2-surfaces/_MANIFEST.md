@@ -117,6 +117,16 @@ Last gateway:  GATE C @ 2026-09-06 — council complete; owner approval pending
   identically in table and card at 1280/393; offline visual not reachable against the dev backend (said so; covered by four
   SB tests + the SSE-drop flow). **Conductor's cold re-check @ `9172eafa`:** typecheck **0**; positions + figure + theme +
   orders **57 files / 694 tests exit 0**; `apps/api` diff **0**; remaining `⏸` sources are broker-only (FE-7's).
+- BUILD lane 4 @ 2026-09-07 — **FE-6 `5e1fa577`** (positions header readout → `FigureCell` in `PanelContainer`; `netPl.ts`
+  five Net P/L states — the green `+$0` defect closed) · **FE-7 `b2a8cf15`** (Broker tab register conversion, `not provided`
+  non-synonymy, pause icon; N-1 `EXEMPT` map **5 → 0**). **Lane stopped by the conductor immediately after FE-7's commit, at
+  the owner's request (machine restart)** — FE-8/9/10 not started; working tree clean at the stop. **Conductor's cold
+  re-check @ `b2a8cf15`:** typecheck **0**; broker + positions + theme + figure 70 files / 955 tests → **954 pass + 1 real
+  failure**: `pauseGlyph.spec.ts`'s own live-checked `EXEMPT` map still named the two Broker files FE-7 had just cleaned
+  ("no longer violates — DELETE the entry"); the lane's targeted run had not included that spec. **Fixed by the conductor**
+  in a follow-up `fix(dashboard)` commit (map emptied; affected suites re-run green; typecheck 0; lint 0). `apps/api` diff
+  **0**; no `⏸` left in code under `apps/dashboard/src/app`. Handover for FE-8 → FE-10 rewritten by the conductor in
+  `contracts/curvature-v2-surfaces/RESUME.md` (gotcha 10 added: run every spec whose `EXEMPT` map names your task).
 
 ## Inherited (do not rediscover)
 `state/spire-curvature-v2-foundations/RESUME.md` carries the phase table and the trap that cost phase 2 the
