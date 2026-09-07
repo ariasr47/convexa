@@ -64,7 +64,7 @@ function PanelCard({
     <Card
       variant="outlined"
       data-testid={testId}
-      sx={{ bgcolor: 'background.paper', borderColor: 'divider', borderRadius: 2.5, p: 3 }}
+      sx={{ bgcolor: 'background.paper', borderColor: 'divider', borderRadius: 1, p: 3 }}
     >
       <Typography sx={{ fontWeight: 700, fontSize: '1.0625rem', mb: 2 }}>{heading}</Typography>
       {children}
@@ -131,19 +131,37 @@ export function SettingsPage() {
     ...persona.customs.map((p) => ({ id: p.id, name: p.name })),
   ];
 
+  // curvature-v2-surfaces criterion 40 (SB): a failed write is non-blocking, reverts the control to
+  // its last known value, and shows NO confirmation. `useSettings.writeServer` now re-throws on
+  // failure (mirroring `setRiskInputs`'s own idiom) precisely so this closure can tell success from
+  // failure — `settings.saveError` is read from a stale render closure and cannot be trusted here.
   const onPersona = async (id: string) => {
-    await settings.setPersona(id);
-    flashSaved();
+    try {
+      await settings.setPersona(id);
+      flashSaved();
+    } catch {
+      // settings.saveError already reflects the failure (the error Alert renders from it); the
+      // Select is a pure reflection of settings.effective.personaId, which never moved.
+    }
   };
   const onTheme = async (t: ThemePref) => {
-    await settings.setTheme(t);
-    flashSaved();
+    try {
+      await settings.setTheme(t);
+      flashSaved();
+    } catch {
+      // Same as above — the ToggleButtonGroup reflects settings.effective.theme, which never moved.
+    }
   };
   const commitTicker = async () => {
     const norm = tickerDraft.trim() ? tickerDraft.trim().toUpperCase() : SETTINGS_DEFAULTS.ticker;
-    setTickerDraft(norm);
-    await settings.setDefaultTicker(norm);
-    flashSaved();
+    try {
+      await settings.setDefaultTicker(norm);
+      setTickerDraft(norm);
+      flashSaved();
+    } catch {
+      // Reverts the draft to the last CONFIRMED value — never left showing text that failed to save.
+      setTickerDraft(settings.effective.defaultTicker);
+    }
   };
 
   // Show the display name when set; otherwise the email is the single primary line (don't repeat it
@@ -230,6 +248,18 @@ export function SettingsPage() {
           <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
             {C.themeHelper}
           </Typography>
+
+          {/* U-19: one line while the session is still resolving, removed the instant it resolves —
+              `auth.ready === false` otherwise freezes these three controls with no explanation. */}
+          {!auth.ready && (
+            <Typography
+              variant="body2"
+              sx={{ color: 'text.secondary', mb: 2 }}
+              data-testid="settings-session-resolving"
+            >
+              {C.sessionResolving}
+            </Typography>
+          )}
 
           <Stack spacing={2.5}>
             {/* Active persona */}
@@ -384,7 +414,10 @@ export function SettingsPage() {
         onClose={() => setSavedOpen(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity="success" data-testid="settings-saved">
+        {/* curvature-v2-surfaces criterion 41 (SB): the confirmation is neutral chrome — it keeps the
+            word it ships with and loses the direction-reserved success palette. An error is a STATE
+            (the settings-save-error Alert above keeps severity="error" and its icon, unchanged). */}
+        <Alert severity="info" data-testid="settings-saved">
           {C.saved}
         </Alert>
       </Snackbar>

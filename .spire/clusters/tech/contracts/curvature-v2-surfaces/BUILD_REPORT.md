@@ -854,3 +854,157 @@ ports:free`) before handing off.
 assertion of this fact should read green without any further work from this phase's remaining tasks.
 
 ---
+
+## FE-8 — Settings: register, `not set`, neutral confirmation, browser-only persistence, the scales
+
+**Landed:** 2026-09-07, one commit. **Criteria:** 36 (SB), 39 (SB), 40 (SB), 41 (SB), 42 (SB), 43
+(review), U-19, U-35 (settings half). **GATE Z items: none.** Two real defects found and fixed
+in-lane (§2), plus one deliberate scope extension beyond the three "Owns" files (§3), both itemized
+rather than hidden.
+
+### 1. What shipped
+
+| File | Change |
+|---|---|
+| `features/auth/copy.ts` | +1 line: `AUTH_COPY.settings.sessionResolving` (U-19's new sentence). |
+| `features/auth/SettingsPage.tsx` | `PanelCard`'s `borderRadius: 2.5` (30px) → `1` (12px, the panel role, U-35). The save confirmation `<Alert severity="success">` → `severity="info"` (41), same testid/word. A new line above the Preferences fields, `{!auth.ready && <Typography data-testid="settings-session-resolving">}`, shown only while resolving (U-19). `onPersona`/`onTheme`/`commitTicker` wrapped in `try/catch`: `flashSaved()` only fires in the `try` (40); `commitTicker` defers its optimistic `setTickerDraft` until AFTER a confirmed write and reverts the draft to `settings.effective.defaultTicker` on failure. |
+| `features/auth/RiskInputsSection.tsx` | Deleted the local `const MONO`; both inputs spread `faceFor(true)` (`@/shared/figure`) and carry `data-figure-register="mono"` (36, D-D). `placeholder="0"` → `placeholder="not set"` on both inputs (36 — a closed-nine member, `notANumber.ts:30`). Save confirmation `severity="success"` → `severity="info"` (41); the error alert (`:300`, unchanged) keeps `severity="error"`. |
+| `features/auth/useSettings.ts` | `writeServer`'s `catch` now **re-throws** after `setSaveError('save_failed')` — a real pre-existing defect fix (§2). |
+| `features/auth/useSettings.spec.tsx` | The one existing failure-path test updated to `await expect(...).rejects.toThrow('save_failed')`, matching the new contract. |
+| `features/auth/AiKeySection.tsx`, `features/auth/BrokerageSection.tsx` | Their own save confirmations: `severity="success"` → `severity="info"` (§3 — scope note). Nothing else touched. |
+| `features/auth/settings.register.spec.tsx` | **New** — 15 tests across criteria 36/39/40/41/42/U-19/U-35, four of them raw-source mutation guards. |
+
+### 2. Two real defects found and fixed, not merely converted around
+
+**A. Criterion 40 was unsatisfiable as shipped — a failed persona/theme/ticker write ALSO showed
+"Saved".** `writeServer` (`useSettings.ts`) caught the PUT failure, set `saveError`, and returned
+**without re-throwing**. Its three callers (`setPersona`/`setTheme`/`setDefaultTicker`) therefore
+always resolved, so `SettingsPage.tsx`'s `onPersona`/`onTheme`/`commitTicker` — each written as
+`await settings.setX(...); flashSaved();` — called `flashSaved()` **unconditionally**, showing the
+"Saved" toast even on a failed write (gated only on `settings.serverBacked`, which a failed PUT never
+flips). Verified at source before touching anything, then confirmed by writing the test FIRST (TDD
+red: `settings-saved` was present after a forced `auth_unavailable` write). **Why the fix has to touch
+`useSettings.ts` (outside FE-8's literal "Owns" list):** the caller's `settings` object is a **stale
+JS closure** over the render that created the handler; `settings.saveError`, set inside `writeServer`
+in a **later** render, can never be read by that closure no matter how the timing is arranged. The
+only two ways to make the caller distinguish success from failure are (a) have the setter throw, or
+(b) restructure state management entirely. (a) mirrors the file's OWN existing idiom
+(`setRiskInputs` already throws on failure for exactly this reason) — applying an existing pattern
+consistently, not inventing new policy. Fixed by re-throwing in `writeServer`'s catch; all three
+callers now `try { await settings.setX(...); flashSaved(); } catch { /* saveError already renders */ }`.
+`commitTicker` additionally had its own variant: it optimistically wrote `tickerDraft` **before** the
+write settled, so a failed save left the draft showing the FAILED text forever (nothing else would
+ever revert it, since `settings.effective.defaultTicker` — the only thing the sync `useEffect`
+watches — never moves on a failed PUT). Fixed by moving the optimistic `setTickerDraft(norm)` into the
+`try` block (after confirmed success) and explicitly reverting to `settings.effective.defaultTicker`
+in the `catch`.
+
+**B. AiKeySection.tsx / BrokerageSection.tsx also rendered a green "Saved" confirmation on the SAME
+settings page — outside FE-8's literal "Owns" list, fixed anyway (§3).**
+
+### 3. Scope note — the fix under (B) above, recorded rather than silently taken or silently skipped
+
+PLAN's FE-8 "Owns" line names exactly `SettingsPage.tsx`, `RiskInputsSection.tsx`, `copy.ts`, and its
+item 3 illustrates criterion 41 with exactly those two files' confirmations. But criterion 41 itself
+reads: *"no chip, confirmation or readiness mark **on settings** renders in the direction-reserved
+colours"* — plainly page-wide, and `AiKeySection`/`BrokerageSection` are two more `<Alert
+severity="success">` confirmations rendered on that same `/settings` page (`grep -rln
+'severity="success"' features/auth` found exactly these four files, no more). Both components are
+**only** ever mounted from `SettingsPage.tsx` (confirmed: `grep -rln "AiKeySection\|BrokerageSection"
+apps/dashboard/src/app --include=*.tsx` names three files total — themselves and `SettingsPage.tsx`),
+so the fix carries zero risk of touching a surface outside settings. Leaving them unfixed would have
+forced a choice between an SB test that is **vacuous** (scoped to only the two named files, silently
+passing while two more violations render) or one that is **honest and fails** — neither of which is an
+acceptable SB verification. The fix is the identical one-word mechanical change already applied twice
+elsewhere in this same task (`severity="success"` → `severity="info"`); nothing else in either file
+changed. Recorded here rather than either silently expanding scope with no note, or silently leaving
+the criterion half-satisfied.
+
+### 4. Mutation proof — run red (verbatim), then reverted to green
+
+**MUTATION PROOF M (criterion 41, SB).** Restored `severity="success"` on `SettingsPage.tsx`'s save
+confirmation (`git diff` confirmed this was the ONLY change).
+
+- **Red (verbatim), 2 of 15 failed:**
+  `AssertionError: expected 'MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation0
+  MuiAlert-root MuiAlert-colorSuccess MuiAlert-standard …' not to match /colorSuccess|MuiAlert-
+  standardSuccess/` (the rendered-confirmation test) and
+  `AssertionError: SettingsPage.tsx still carries severity="success"` (the raw-source mutation
+  guard) — both from `settings.register.spec.tsx`.
+- **Restore:** poison reverted; `git diff -- SettingsPage.tsx` confirmed clean; re-ran
+  `settings.register.spec.tsx` → **exit 0, 15/15**.
+
+**Reviewer probe answered:** the save-**error** alert's own dedicated test
+(`the save-error alert is untouched: severity="error" with its icon rendered`) stayed green
+throughout the poison — it asserts `.MuiAlert-icon` presence and `colorError`/`standardError`
+independently of the confirmation test, so the poison only broke the confirmation's own assertions,
+confirming the confirmation is the *only* thing that lost its palette.
+
+No proof above is a narrated `expect(true).toBe(true)`; both reds are copied from this session's
+terminal.
+
+### 5. Verification — exit codes, read directly
+
+| Command | Result |
+|---|---|
+| `npx vitest run src/app/features/auth/settings.register.spec.tsx` (new file, first run) | **exit 0** — 15/15 |
+| `npx vitest run src/app/features/auth src/app/shared/theme/radius-scale.spec.ts` | **exit 0** — 11 files / 100 tests |
+| `npx nx test @convexa/dashboard --skip-nx-cache -- src/app/features/auth src/app/shared/theme src/app/shared/figure` (the task's mandated targeted command) | **exit 0** — 27 files / 226 tests |
+| `npm run typecheck` (cold — `dist`/`out-tsc`/`*.tsbuildinfo` deleted first, per the documented stale-build-output trap) | **exit 0** |
+| `npm run lint` | **exit 0** — 0 errors, **5 warnings**, all pre-existing (same set FE-6/FE-7 recorded), **0 new** |
+| `npx nx format:write --files <the 8 changed/new paths>` | **exit 0**, scoped (never a bare `format:write`) |
+
+### 6. Copy diffs — itemized
+
+| Site | Shipped | New | Class |
+|---|---|---|---|
+| `copy.ts` (`AUTH_COPY.settings`) | — | `sessionResolving: 'Checking your session — these controls unlock in a moment.'` | new honesty line, authorized by SPEC §4.4 ("one line states that the session is still resolving") |
+| `SettingsPage.tsx` (confirmation) | word `Saved`, `severity="success"` | word `Saved` (byte-identical), `severity="info"` | palette only — no wording change |
+| `RiskInputsSection.tsx` (confirmation) | word from `C.saved`, `severity="success"` | same word, `severity="info"` | palette only |
+| `RiskInputsSection.tsx` (both inputs) | `placeholder="0"` | `placeholder="not set"` | closed-nine member replacing a pre-filled-looking number (`notANumber.ts:30`) |
+| `AiKeySection.tsx` / `BrokerageSection.tsx` (confirmations) | `severity="success"` | `severity="info"` | palette only, same word |
+
+No shipped sentence's wording, meaning or order changed anywhere in this task — settings copy is not
+frozen by §2.7 (that freeze is scanner/positions/quiet-band only), so this table is exhaustive by
+review rather than by scan.
+
+### 7. What was run in the app
+
+`npm run ports:free` (clear) → `npm run dev` → a Playwright-driven real headless Chromium signed up
+**two** throwaway accounts (one per width; a shared-email scripting mistake — reusing one email
+across two signups — was caught by the SECOND signup returning `409 email_taken`, fixed, re-run) →
+`/settings`.
+
+- **Signed in, 1280px and 393px:** all **five** panels reachable (Account, Preferences, Risk inputs,
+  AI providers, Brokerage), `document.documentElement.scrollWidth > innerWidth` **false** at both
+  (no page-body overflow, criterion 37A). Clicking the theme toggle produced the "Saved" confirmation
+  rendered with class `MuiAlert-colorInfo` (never `colorSuccess`) at both widths — screenshots
+  captured. `risk-inputs-account-size` carries `placeholder="not set"` and
+  `data-figure-register="mono"` at both widths, rendered visibly in a distinct (monospace) face from
+  the surrounding Sans text.
+- **Signed out, 393px (the first, mis-scripted run before the email-collision fix):** incidentally
+  also confirmed criterion 37A/39 in the anonymous state — five panels reachable, no overflow, the
+  `Stored in this browser.` subtitle rendered, `Saved to your account.` absent from the DOM.
+- **Not observed live:** the save-**error** Alert (forcing a real `PUT /api/auth/settings` failure
+  against the dev backend was not attempted — it is not exposed by any dev-server flag) and the U-19
+  session-resolving line (who-am-I resolves in well under a frame against a local backend, too fast
+  to observe by eye). Both are covered instead by the automated suite: the error-alert tests drive
+  `settingsWrite: 'auth_unavailable'` through `testBackend.ts`, and the U-19 test holds the
+  `/api/auth/session` fetch pending via a controlled, never-auto-resolving `Promise` until the
+  assertion runs, then resolves it and confirms the line disappears.
+
+Screenshots and the throwaway browser-driver script were written to the repo root (the sandbox
+write-guard blocks the OS temp dir directly, same as FE-6/FE-7) and deleted before this commit —
+confirmed by `git status --porcelain` showing no `_tmp_*` file; the dev server and its ports were torn
+down (`npm run ports:free`) before handing off.
+
+### 8. `EXEMPT` map after FE-8
+
+Unchanged — FE-8 touches `features/auth/`, which is outside N-1's three scanned trees
+(`features/trading/`, `pages/positions/`, `pages/scanner/`) by the criterion's own stated scope.
+`shared/theme/fonts.spec.ts`'s `EXEMPT` map stays **0** (confirmed still empty by this session's own
+run); `pauseGlyph.spec.ts`'s stays **0**. Criterion 1's register conversion on `RiskInputsSection.tsx`
+is proven instead by this task's own component assertions (`settings.register.spec.tsx`'s
+`data-figure-register="mono"` + raw-source guard) — recorded per PLAN's note as FE-14 item 9.
+
+---

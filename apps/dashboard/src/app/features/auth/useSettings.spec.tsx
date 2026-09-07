@@ -119,8 +119,12 @@ describe('useSettings — save error reverts (UX_BLUEPRINT §2.9)', () => {
     });
     const { result } = renderHook(() => useSettings(), { wrapper });
     await waitFor(() => expect(result.current.serverBacked).toBe(true));
+    // curvature-v2-surfaces criterion 40 (SB): `writeServer` now RE-THROWS on failure (mirroring
+    // `setRiskInputs`'s own idiom) so a caller — SettingsPage.tsx — can suppress its own success
+    // confirmation. `settings.saveError` is a later render's state and cannot be read from the
+    // caller's stale closure, so a silent (non-throwing) failure is unobservable to the caller.
     await act(async () => {
-      await result.current.setTheme('light');
+      await expect(result.current.setTheme('light')).rejects.toThrow('save_failed');
     });
     expect(result.current.saveError).toBe('save_failed');
     expect(result.current.effective.theme).toBe('dark'); // reverted (never optimistically mutated)

@@ -9,7 +9,7 @@
  * HTML `disabled` attribute, which would swallow pointer events and remove the reason from the
  * accessibility tree — plus the sign-in line. Nothing is written to any durable client store.
  */
-import { typographyTokens } from '@/shared/theme/tokens';
+import { faceFor } from '@/shared/figure';
 import type { CapUnit } from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -25,8 +25,6 @@ import { useAuth } from './AuthContext';
 import { RISK_INPUTS_COPY as C, SETTINGS_DEFAULTS } from './copy';
 import { formatAmount, validateAccountSize, validateCap } from './riskInputs';
 import { useSettings } from './useSettings';
-
-const MONO = typographyTokens.monoFontFamily;
 
 /** Field label — matches the auth-modal / Settings uppercase idiom. */
 function FieldLabel({ children }: { children: ReactNode }) {
@@ -150,11 +148,12 @@ export function RiskInputsSection() {
               aria-disabled={anonymous}
               disabled={saving}
               data-testid="risk-inputs-account-size"
+              data-figure-register="mono"
               value={accountDraft}
-              placeholder="0"
+              placeholder="not set"
               onChange={(e) => !anonymous && setAccountDraft(e.currentTarget.value)}
               sx={{
-                fontFamily: MONO,
+                ...faceFor(true),
                 fontSize: 15,
                 px: 1.25,
                 py: 1,
@@ -194,11 +193,12 @@ export function RiskInputsSection() {
               aria-disabled={anonymous}
               disabled={saving}
               data-testid="risk-inputs-cap-value"
+              data-figure-register="mono"
               value={capDraft}
-              placeholder="0"
+              placeholder="not set"
               onChange={(e) => !anonymous && setCapDraft(e.currentTarget.value)}
               sx={{
-                fontFamily: MONO,
+                ...faceFor(true),
                 fontSize: 15,
                 px: 1.25,
                 py: 1,
@@ -308,7 +308,9 @@ export function RiskInputsSection() {
         onClose={() => setSaved(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity="success" data-testid="risk-inputs-saved">
+        {/* criterion 41 (SB): neutral chrome, word unchanged — the error Alert above (severity="error",
+            :300, unchanged) keeps its icon; an error is a state, not a direction. */}
+        <Alert severity="info" data-testid="risk-inputs-saved">
           {C.saved}
         </Alert>
       </Snackbar>

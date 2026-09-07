@@ -389,7 +389,12 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
         onClose={() => setToast(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity="success" data-testid="settings-ai-key-saved">
+        {/* curvature-v2-surfaces criterion 41 (SB, extended in-lane): this panel renders on the SAME
+            settings page as the readout the criterion names, and the whole page is the one surface
+            criterion 41 covers — "no confirmation on settings renders in the direction-reserved
+            colours" — so this confirmation loses the same success palette. Nothing else here changes;
+            this file is otherwise untouched by FE-8. */}
+        <Alert severity="info" data-testid="settings-ai-key-saved">
           {toast ?? ''}
         </Alert>
       </Snackbar>

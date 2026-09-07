@@ -93,6 +93,9 @@ export const AUTH_COPY = {
     themeSystem: 'System',
     saved: 'Saved',
     saveError: "Couldn't save that setting. Please try again.",
+    // curvature-v2-surfaces U-19: one line, above the fields it freezes, removed the instant the
+    // session resolves. Never claims signed-out or signed-in — the session state is not yet known.
+    sessionResolving: 'Checking your session — these controls unlock in a moment.',
     // ai-providers (SPEC §4). Write-only keys; closed labels; no free / pool / cheaper / included.
     aiKey: {
       heading: 'AI providers',

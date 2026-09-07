@@ -86,8 +86,13 @@ export function useSettings(): SettingsApi {
         setSaveError(null);
       } catch {
         // Save-error (UX_BLUEPRINT §2.9): surface a non-blocking error; the control reverts to the last
-        // confirmed (server) value because we never optimistically mutated it.
+        // confirmed (server) value because we never optimistically mutated it. Re-throw (mirroring
+        // `setRiskInputs` below) so the CALLER can tell success from failure — curvature-v2-surfaces
+        // criterion 40 (SB): a failed write must show no confirmation, and the caller's own closure
+        // over this hook's return value cannot see `saveError` update any other way (it is a later
+        // render's state, not this one's).
         setSaveError('save_failed');
+        throw new Error('save_failed');
       }
     },
     [auth],

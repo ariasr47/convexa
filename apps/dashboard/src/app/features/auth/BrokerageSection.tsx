@@ -268,7 +268,9 @@ export function BrokerageSection({ embedded = false }: { embedded?: boolean } = 
         onClose={() => setToast(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity="success" data-testid="settings-brokerage-saved">
+        {/* curvature-v2-surfaces criterion 41 (SB, extended in-lane) — same reasoning as
+            AiKeySection.tsx: one settings page, one confirmation-palette rule. */}
+        <Alert severity="info" data-testid="settings-brokerage-saved">
           {toast ?? ''}
         </Alert>
       </Snackbar>
