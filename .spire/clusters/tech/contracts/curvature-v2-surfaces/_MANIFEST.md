@@ -11,8 +11,8 @@ Open amendments: none yet. Phase 2 filed four (canon rules **11**, **14**, **16*
                  of **60** (`AppShell.tsx:42` reads `tooltip + 1`). Closing it means declaring 60, not
                  inventing a number.
 QA (GATE Q):  n/a
-Workers:      n/a — council not yet dispatched
-Last gateway:  GATE I @ 2026-09-05
+Workers:      council R1x3 dispatched 2026-09-06 (architect, pm, ux — parallel, blind); R2/R3/R4/S2 pending
+Last gateway:  GATE I @ 2026-09-05 — GATE C opened 2026-09-06
 
 ## Gate trail
 - GATE I @ 2026-09-05 — brief + cull recorded (6 candidates, 1 chosen, 5 culled with cause). Five facts read

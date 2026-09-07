@@ -75,6 +75,38 @@ implying one: `aiProviderLabels.ts:4` — *"never the BYO 'Grok' label, **never 
 The artifact path is therefore fine for an internal prototype and wrong for product delivery: it cannot
 reach a trader who is not a claude.ai viewer, and an `mcp` grant additionally bars public sharing.
 
+**PARKED 2026-09-06 (owner): revisit after the v2 redesign (phases 3–4).** Findings from the same day,
+recorded so they are not re-derived — verified against primary sources, not assumed:
+- **Provider rules, in writing.** Anthropic: *"does not permit third-party developers to offer Claude.ai
+  login into their own applications, or to route requests through Free, Pro, or Max plan credentials on
+  behalf of their users"* — API key required, no exception (Claude Code legal page; enforcement reported
+  2026-04-04). OpenAI: "Sign in with ChatGPT" is identity only; the request to run the Codex SDK on a
+  subscription was closed *not planned* (openai/codex#8494, 2025-12-23); general "subscription sharing"
+  (ChatPass) is **unreleased** as of 2026-08-27 — **watch item**, dated.
+- **The one sanctioned in-app path: the Codex app server** (`codex app-server`, JSON-RPC over stdio /
+  experimental WebSocket; official doc: *"Embed Codex into your product with the app-server protocol"*).
+  Runs on the **user's own machine**, signed in with their own ChatGPT account, so turns bill to **their**
+  plan. Not hostable — *"Don't try to serve multi-tenant workloads with a single shared app-server
+  instance"*. `turn/start` takes an `outputSchema`, so the read returns typed JSON and the panel keeps the
+  type register. Candidate power path **`codex_local`** beside `own_key` / `grok_subscription`
+  (`libs/api/src/lib/convexa.ts:1480`): ChatGPT subscribers only; user installs Codex; browser→loopback
+  `ws://` works in Chrome/Firefox, **not Safari**; stdio via a small local companion is the supported shape.
+  No Claude twin: Anthropic's carve-out is the *unmodified Claude Code binary* under Commercial ToS with
+  "contact sales" — ask before building, do not build on it.
+- **Correction to the table above:** a Claude Artifact cannot `fetch` Convexa's API, but the `mcp`
+  capability is the sanctioned bridge to a Convexa **connector** — so the artifact becomes viable as an
+  advisory **reach channel** (viewer's pool via `sample`) once an MCP server exists. Same for a ChatGPT App
+  (Apps SDK: UI in an iframe inside chatgpt.com, `sendFollowUpMessage` → a ChatGPT turn on the user's
+  plan). In both hosts the prose is the model's, so neither can enforce the register — advisory, read-only,
+  `no-real-order-path` intact.
+- **Shape if resumed:** phase 3 (register everywhere) → **`convexa-mcp-server`** (precondition for all
+  three) → `codex_local` → the two hosts. `own_key` stays for Claude users, mobile, and anyone without Codex.
+- Sources: learn.chatgpt.com/docs/app-server · learn.chatgpt.com/docs/auth · learn.chatgpt.com/docs/codex-sdk
+  · code.claude.com/docs/en/legal-and-compliance · github.com/openai/codex/issues/8494 ·
+  runtimewire.com/article/openai-is-building-subscription-sharing-for-ai-apps ·
+  developers.openai.com/plugins/build/chatgpt-ui · issues.chromium.org/issues/40386732 ·
+  developer.apple.com/forums/thread/120869.
+
 ---
 
 ## Harvest — 2026-09-03 (design re-baseline → Curvature Terminal v2)
