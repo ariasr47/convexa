@@ -11,6 +11,15 @@
  *     dotted rule = asserted-but-untraced) and, independently, the closed `NotANumber` vocabulary
  *     (always Sans, never a figure, never a unit).
  *
+ * WHERE THE DECISION LIVES NOW (curvature-v2-surfaces SPEC §2.1, FE-1). The whole F1–F9 branch,
+ * both marks and the face binding MOVED to `shared/figure/` — `figureState.ts` (pure),
+ * `FigureMarks.tsx` (`LiveDot`/`PauseMark`, now named exports) and `figureFace.ts`. This file is
+ * one CALLER of that module, not its home: `ScanCard` is a single anchor and `ScanTable`'s column
+ * header already IS the label row, so neither can host this card — but both must render the same
+ * nine states. A MOVE, not a copy: two copies of this branch would drift, and the phase would
+ * create the inconsistency it exists to close. What stays here is the chrome and the SIZE ladder
+ * (20/17/15 and the fixed literal size) — register and state travel, size does not.
+ *
  * Nine states (F1–F9, SPEC §4.1): F1 default · F2 loading (`StatSkeleton`, a separate export whose
  * NAME is carried forward byte-for-byte, preserving the `cold-skeleton` testid ~18 specs key on)
  * · F3 live · F4 offline-retained · F5
@@ -37,12 +46,17 @@
  * animate. Reusing the chip's keyframe by name here would be a fragile, undeclared cross-component
  * runtime dependency for no acceptance-criterion benefit, so the dot stays a plain static mark.
  */
-import { isNotANumber, type NotANumber } from '@/shared/copy/notANumber';
+import type { NotANumber } from '@/shared/copy/notANumber';
+import {
+  faceFor,
+  figureStateOf,
+  LiveDot,
+  MONO_FACE,
+  PauseMark,
+  UNTRACED_RULE,
+} from '@/shared/figure';
 import { flashColorSx, type FlashState } from '@/shared/hooks/useFlashOnChange';
 import type { LiveClaim } from '@/shared/liveness/liveClaim';
-import { typographyTokens } from '@/shared/theme/tokens';
-import PauseIcon from '@mui/icons-material/Pause';
-import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Skeleton from '@mui/material/Skeleton';
@@ -50,22 +64,6 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { styled, type Theme } from '@mui/material/styles';
 import { AccessibleHelp } from '../ai-rec/AccessibleHelp';
-
-const MONO = typographyTokens.monoFontFamily;
-
-/** Standard MUI clip-rect visually-hidden technique (matches the established local pattern in
- *  `pages/scanner/ScanCard.tsx` — no shared util exists yet, so this follows that convention). */
-const visuallyHidden = {
-  position: 'absolute',
-  width: 1,
-  height: 1,
-  p: 0,
-  m: -1,
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-  border: 0,
-} as const;
 
 // The card chrome: paper surface, divider border, radius-clipped. NO accent bar of any kind — the
 // `&::before` colour edge from `StatTile` is gone, not merely unused (AC-13a).
@@ -123,36 +121,6 @@ function CapsLabel({ children }: { children: React.ReactNode }) {
       {children}
     </Typography>
   );
-}
-
-/** The label-row live dot — the FIGURE's own claim, never the widget/chip claim (SPEC §4.1: three
- *  scopes never merge). Decorative + static; carries the single visually-hidden word "live". */
-function LiveDot() {
-  return (
-    <Box
-      component="span"
-      data-testid="figure-live-dot"
-      sx={{
-        display: 'inline-block',
-        width: 6,
-        height: 6,
-        borderRadius: '50%',
-        bgcolor: 'info.main',
-        flex: '0 0 auto',
-      }}
-    >
-      <Box component="span" sx={visuallyHidden}>
-        live
-      </Box>
-    </Box>
-  );
-}
-
-/** The value-row pause mark (F4/F5 only) — a real SVG icon component, never the literal `⏸` glyph
- *  in the copy (canon Icons row: any platform that colour-emoji-renders it must get the stroke
- *  icon instead). Decorative — the caption words already say "offline". */
-function PauseMark() {
-  return <PauseIcon aria-hidden sx={{ fontSize: 14, color: 'text.secondary', flex: '0 0 auto' }} />;
 }
 
 export interface FigureCellProps {
@@ -222,10 +190,12 @@ function ValueGlyph({
         {
           fontWeight: 500,
           lineHeight: 1.15,
-          fontFamily: mono ? MONO : typographyTokens.fontFamily,
+          // The face comes from `shared/figure/figureFace.ts` — the one binding outside
+          // `shared/theme/tokens.ts` (criterion N-1). The SIZE above does not travel with it.
+          ...faceFor(mono),
           color: 'text.primary',
           ...(dim ? { opacity: 0.5 } : {}),
-          ...(untraced ? { borderBottom: '1px dotted', borderColor: 'text.secondary' } : {}),
+          ...(untraced ? UNTRACED_RULE : {}),
         },
         flashColorSx(flash ?? null),
       ]}
@@ -247,57 +217,45 @@ export function FigureCell({
   assertedBy,
   flash,
 }: FigureCellProps) {
-  const literal = isNotANumber(value);
+  // THE ONE DECISION, made once, in `shared/figure/figureState.ts` (SPEC §2.1). This component
+  // holds no F1–F9 branch of its own any more — it renders that decision inside its card.
+  const {
+    figureState,
+    mono,
+    isFigure,
+    dim,
+    untraced,
+    showDot,
+    showPause,
+    caption: effectiveCaption,
+  } = figureStateOf({ value, register, live, offline, replay, caption, assertedBy });
 
-  let figureState: string;
-  let effectiveCaption: string | null = caption ?? null;
-  let body: React.ReactNode;
-  let showDot = false;
+  // The flash rides only the arms that shipped it — F4-retained and F1/F3. A literal, a replayed
+  // value, an untraced figure and the bare offline arm never pulse (unchanged behaviour).
+  const activeFlash =
+    figureState === 'offline-retained' || figureState === 'default' || figureState === 'live'
+      ? (flash ?? null)
+      : null;
 
-  if (offline != null) {
-    // F4 / F5 — offline. Register is not read here (SPEC §2.3): a dropped stream always shows
-    // either a retained TRACED figure or the bare literal, never an asserted one this phase.
-    if (offline.retained) {
-      figureState = 'offline-retained';
-      effectiveCaption = 'offline · last known';
-      body = (
-        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'baseline' }}>
-          <PauseMark />
-          <ValueGlyph value={value} mono={!literal} isFigure={!literal} dim flash={flash} />
-        </Stack>
-      );
-    } else {
-      figureState = 'offline-bare';
-      effectiveCaption = 'offline';
-      body = (
-        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'baseline' }}>
-          <PauseMark />
-          <ValueGlyph value={value} mono={false} isFigure={false} dim />
-        </Stack>
-      );
-    }
-  } else if (replay) {
-    // F6 — no dot, no pause mark, no offline caption, full strength.
-    figureState = 'replay';
-    effectiveCaption = 'session replay';
-    body = <ValueGlyph value={value} mono={!literal} isFigure={!literal} />;
-  } else if (literal) {
-    // F7 (the bare `—`) / F8 (every other member) — always Sans, register ignored (AC-19). NOT a
-    // figure (SPEC §4.1) — fixed at the literal size, never steps with the container.
-    figureState = value === '—' ? 'empty' : 'unavailable';
-    body = <ValueGlyph value={value} mono={false} isFigure={false} />;
-  } else if (register === 'asserted') {
-    // F9 — untraced. No phase-1 call site reaches this arm (AC-15b). Still A FIGURE (canon rule
-    // 23) — Sans register, but steps with the container like any other figure.
-    figureState = 'untraced';
-    effectiveCaption = assertedBy ? `${assertedBy} · untraced` : 'AI-stated · untraced';
-    body = <ValueGlyph value={value} mono={false} isFigure untraced />;
-  } else {
-    // F1 (default) / F3 (live) — the only arms that may show the label-row dot.
-    figureState = live ? 'live' : 'default';
-    showDot = Boolean(live);
-    body = <ValueGlyph value={value} mono isFigure flash={flash} />;
-  }
+  const glyph = (
+    <ValueGlyph
+      value={value}
+      mono={mono}
+      isFigure={isFigure}
+      dim={dim}
+      untraced={untraced}
+      flash={activeFlash}
+    />
+  );
+
+  const body = showPause ? (
+    <Stack direction="row" spacing={0.5} sx={{ alignItems: 'baseline' }}>
+      <PauseMark />
+      {glyph}
+    </Stack>
+  ) : (
+    glyph
+  );
 
   return (
     <CellCard dim={false} variant="outlined" data-figure-state={figureState}>
@@ -313,7 +271,7 @@ export function FigureCell({
             component="p"
             data-testid="stat-secondary"
             sx={{
-              fontFamily: MONO,
+              ...MONO_FACE,
               color: 'text.secondary',
               fontSize: 11,
               mt: 0.25,
