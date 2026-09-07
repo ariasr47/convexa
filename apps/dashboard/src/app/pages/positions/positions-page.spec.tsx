@@ -456,13 +456,27 @@ describe('net-pl-readout', () => {
     expect(readout).toBeInTheDocument();
   });
 
-  it('renders the readout (never blank) even when no marks resolve', async () => {
+  it('35b (SB): renders `unavailable` — never a number, never a zero, never a tint — when the one open row cannot be marked', async () => {
+    // curvature-v2-surfaces FE-6 closes a shipped defect here: this state used to render a green
+    // `+$0` — a computed-looking number and a direction colour for a book with nothing computable.
     contractMode = 'throw';
     seedPosition();
     renderAt('/positions');
     const readout = await screen.findByTestId('positions-net-pl');
-    // Unavailable members contribute nothing; the readout shows a $0 baseline, never blanks/throws.
-    expect(readout.textContent).toMatch(/\$0/);
+    await vi.waitFor(() => expect(readout.textContent).toMatch(/unavailable/));
+    expect(readout.textContent).toMatch(/0 of 1 open marked/);
+    // Never a number at all (closes the `+$0` defect) — `$` cannot appear anywhere in the readout.
+    expect(readout.textContent).not.toMatch(/\$/);
+    // Never a direction colour: the value glyph carries none of `netPlTintSx`'s override rule.
+    const value = readout.querySelector('[data-figure-register]');
+    expect(value).toHaveAttribute('data-figure-register', 'sans'); // unavailable is a literal, not a figure
+  });
+
+  it('35a (SB): renders `—` — no number, no tint — with no open positions at all', async () => {
+    renderAt('/positions');
+    const readout = await screen.findByTestId('positions-net-pl');
+    await vi.waitFor(() => expect(readout.textContent).toMatch(/Net P\/L \(open\)—/));
+    expect(readout.textContent).not.toMatch(/\$/);
   });
 });
 
@@ -535,10 +549,20 @@ describe('track-record (outcome-ledger)', () => {
         vi.advanceTimersByTime(20_000);
       });
 
-      // The LIVE readout degraded — its emotion class flips as `opacity` goes 1 → 0.5.
-      // (jsdom's getComputedStyle does not resolve emotion's injected classes, so the class name is
-      // the observable here.)
-      await vi.waitFor(() => expect(netPl.className).not.toBe(netPlClassBefore));
+      // The LIVE readout degraded to the F4 (`offline-retained`) shape (SPEC §4.3, 35e): the
+      // marked, single OPEN row's retained total renders dim + the declared stroke pause icon +
+      // `offline · last known`, and the direction tint (present while online, since the one open
+      // row is marked and the sum is a gain) drops out — the wrapper's own emotion class flips
+      // because `netPlTintSx` stops emitting an override rule the moment the offline arm lands.
+      await vi.waitFor(() =>
+        expect(netPl.querySelector('[data-figure-state]')).toHaveAttribute(
+          'data-figure-state',
+          'offline-retained',
+        ),
+      );
+      expect(netPl.querySelector('svg[data-testid="PauseIcon"]')).toBeTruthy();
+      expect(netPl.textContent).toMatch(/offline · last known/);
+      expect(netPl.className).not.toBe(netPlClassBefore);
       // ...and the STATIC read is byte-identical: no dimming, no offline chip, no stale treatment.
       // Its markup carries every class name in the subtree, so a restyle anywhere would show up.
       expect(section.innerHTML).toBe(trackRecordBefore);

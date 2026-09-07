@@ -643,3 +643,108 @@ entry was deleted, per the map's own "must still violate" check). The six remain
 one (`pages/positions/PositionsPage.tsx`) and FE-7's five (`features/trading/broker/*.tsx`) —
 unchanged, both still exist and both still violate, confirmed by this session's own run of
 `fonts.spec.ts`.
+
+---
+
+## FE-6 — The positions header readout: `FigureCell`, five states, and the rendered container step
+
+**Landed:** 2026-09-07, one commit (`ede3ddd4`). **Criteria:** 35a (SB), 35b (SB), 35c, 35d, 35e (SB),
+7a, 7b, 8, 23 (SB, header). **GATE Z items: none** — buildable exactly as planned; one implementation
+detail resolved in-lane rather than bounced (§2 below).
+
+### 1. What shipped
+
+| File | Change |
+|---|---|
+| `pages/positions/netPl.ts` | **New.** Pure `netPlStateOf({ views, streamOffline, retainedTotal }) → { value, register, caption, tint, offline }` over the five SPEC §4.3 arms. `formatNetPl` (the shipped `+$/−$` sign format) moved here verbatim from `PositionsPage.tsx`. `retainedTotal` is an explicit input (not re-derived from `views`) so the offline arms are testable with a bare number, and because `usePortfolio`'s own mark ladder already keeps a marked row's `pl_dollar` at its last-good value while the stream is down — the caller's marked-sum already IS the retained total. Both offline arms return `caption: null` **by design**: `figureStateOf` overrides a non-null-`offline` caller caption unconditionally (`FigureCell.tsx:253,262,271`), so computing a coverage caption here would be dead code masquerading as behaviour. |
+| `pages/positions/PositionsPage.tsx` | The hand-bound `Typography` (mono face, `opacity: streamOffline ? 0.5 : 1`, direction colour) is replaced by `<PanelContainer data-testid="positions-net-pl"><FigureCell label="Net P/L (open)" register={...} value={...} caption={...} offline={...} /></PanelContainer>`. `formatNetPl` and the inline `netPl` number `useMemo` are gone; a new `useMemo` computes `retainedTotal` (marked-sum over open rows) and calls `netPlStateOf`. A local `netPlTintSx(tint)` applies the SPEC §4.3 "direction permitted" tint from **outside** `FigureCell` (which has no colour prop) via a CSS override on the value glyph's own stable `[data-figure-register="mono"]` attribute — never by editing `FigureCell.tsx` (FE-1's file, not owned by this task). `data-testid="positions-net-pl"` and the label `Net P/L (open)` are byte-identical, now carried by the `PanelContainer` wrapper. |
+| `pages/positions/positions-page.spec.tsx` | The `net-pl-readout` describe block's second test (`renders the readout (never blank) even when no marks resolve`) asserted the **shipped `+$0` defect itself** (`toMatch(/\$0/)`) — confirmed present before this task touched it, then rewritten to assert the fix: `unavailable` + `0 of 1 open marked`, never a `$`. A new 35a test asserts the empty-book `—` arm. `AC-E17` (the real-SSE-drop test) is strengthened from a bare `className` diff to asserting the actual `data-figure-state="offline-retained"` transition, the rendered `PauseIcon`, and the `offline · last known` caption text — the className check is kept alongside as a because-it-still-holds fact, not the only signal. |
+| `shared/theme/fonts.spec.ts` | This task's one `EXEMPT` entry (`pages/positions/PositionsPage.tsx`) deleted — live-checked before deletion (the file no longer binds a face locally: `netPlTintSx` sets `color`, never `fontFamily`). |
+
+### 2. An implementation decision resolved in-lane, not silently and not bounced
+
+**The cross-page import.** `FigureCell` lives at `pages/ticker/widgets/_kit/FigureCell.tsx`; `pages/positions/PositionsPage.tsx` importing it directly is, in the app's own stated terms, "a page importing a sibling page" (`apps/dashboard/src/app/README.md:5`; `_context-pack.md:45`). This is exactly the concern the architect raised at R1 (`council/R1-architect.md:83-84`) and proposed fixing by promoting the WHOLE `FigureCell` component to `shared/ui/`. **That proposal was narrowed, not adopted, by the same architect at R3**: `council/R3-architect.md:12-16` explicitly names "the positions header readout (`PositionsPage.tsx:181-194`, which is panel-shaped and keeps `FigureCell` itself)" as the final shape, and SPEC §2.1/§2.3 and `decisions.md` §3 #0+#16 both restate it the same way. Promoting the whole card now would also require promoting `FigureCell`'s own `AccessibleHelp` import (a `pages/ticker/widgets/ai-rec/` file) — which is FE-12's job (§2.8), not this task's. **Taken as planned**: `PositionsPage.tsx` imports `FigureCell` directly from its existing path, documented in-line with the citations above, rather than either (a) silently doing it with no note, or (b) bouncing a GATE Z question the council already closed twice (R1 raised, R3 settled).
+
+**The tint mechanism.** `FigureCell` has no colour prop — its value glyph is hard-coded `color: 'text.primary'`. SPEC §4.3's "direction permitted" for 35c/35d has no primitive-level hook, and editing `FigureCell.tsx` is out of this task's file ownership (FE-1's). Resolved by targeting the value glyph's own stable, already-cross-surface-tested `data-figure-register="mono"` attribute from a wrapping `sx` override (`PositionRow.tsx:934`'s `'& > span': { color: 'info.main' }` is the shipped precedent for a nested-selector theme colour string) — confined to `pages/positions/`, touches nothing shared.
+
+**A real rendered defect found and fixed, not just described.** `PanelContainer` declares `container-type: inline-size`, which CSS-contains the element's own intrinsic size. As a flex item with no floor, this collapsed the readout to a **zero-width, invisible column** in a real browser (bounding box `{width: 0}`, confirmed by Playwright — jsdom cannot see this, since it does not evaluate container queries or layout at all). Fixed with `minWidth: 200, flexShrink: 0` — the exact shape `ReadStrip.tsx:57`'s own nested `PanelContainer`s already carry (`minWidth: 140`) for the identical reason. Caught only by the mandated run-the-app pass (§6 below), not by any automated test — recorded here as the reason that pass is not optional.
+
+### 3. Copy diffs — none
+
+Label `Net P/L (open)` and `data-testid="positions-net-pl"` are byte-identical. The coverage caption
+template `{n} of {m} open marked` is the ONE addition §2.7/CF-2 authorize (used by both the 35b and
+35c/mandatory arms — never a second sentence minted). The `—`/`unavailable` values are the shipped
+closed-nine members, not new copy. No other positions string changed.
+
+### 4. Mutation proofs — both run red (verbatim), then reverted to green
+
+| Proof | Poison | Red result (verbatim) | Restore |
+|---|---|---|---|
+| **J** — criterion 35b (SB): the unmarked-book arm must never return a number or a tint | `netPl.ts`'s `n === 0` branch: `value: 'unavailable', tint: null` → `value: formatNetPl(0), tint: 'positive'` | `netPl.spec.ts` **exit 1** — `AssertionError: expected '+$0' to be 'unavailable' // Object.is equality` on the 35b test (the very shape of the shipped `+$0` defect this criterion closes) | reverted; `grep -n MUTATION_POISON netPl.ts` → 0 hits; `netPl.spec.ts` **exit 0, 10/10** |
+| **K** — criterion 35e (SB): the coverage caption must never win over the offline caption during a drop | `netPl.ts`'s `if (streamOffline)` early-return disabled (`if (false && streamOffline)`), so a drop fell through to the coverage-caption computation | `netPl.spec.ts` **exit 1, 3 failed** — the load-bearing one: `AssertionError: expected '1 of 2 open marked' to be null` on the new 35e-precedence test (`views` shaped exactly like the 35c coverage-caption case, `streamOffline: true`) — proving the coverage caption DOES leak through once the offline branch is bypassed | reverted; `grep -n "MUTATION_POISON\|false && streamOffline" netPl.ts` → 0 hits; `netPl.spec.ts` **exit 0, 10/10** |
+
+Neither proof is a narrated `expect(true).toBe(true)`; both reds are copied from this session's
+terminal, and both name the exact assertion the poison broke.
+
+### 5. Verification — exit codes, read directly
+
+| Command | Result |
+|---|---|
+| `npx vitest run src/app/pages/positions/netPl.spec.ts` | **exit 0** — 10/10 (a fixture-sign mistake in the first draft — `FX_LONG_CALL`'s default mark is a LOSS, not a gain — was caught by a real failing assertion and fixed by adding explicit `gainingOpen()`/`losingOpen()` fixtures, not by loosening the test) |
+| `npx vitest run src/app/pages/positions` | **exit 0** — 3 files / 40 tests (`netPl.spec.ts`, `positions.integration.spec.tsx`, `positions-page.spec.tsx`) |
+| `npx vitest run src/app/pages/positions src/app/shared/theme/fonts.spec.ts src/app/shared/figure src/app/features/trading/positions` | **exit 0** — 38 files / 557 tests |
+| `npx nx test @convexa/dashboard --skip-nx-cache -- src/app/pages/positions src/app/shared/theme src/app/shared/figure src/app/features/trading/positions` (the task's mandated targeted command) | **exit 0** — 53 files / 661 tests |
+| `npm run typecheck` (cold — `dist`/`tsbuildinfo` deleted first per the documented stale-build-output trap, `tsconfig.app.json` rebuilt before `tsconfig.spec.json`) | **exit 0** |
+| `npm run lint` | **exit 0** — 0 errors, **5 warnings**, all pre-existing (same set FE-5 recorded), **0 new** |
+| `npx nx format:write --files <the 5 changed/new paths>` | **exit 0**, scoped |
+
+**One real type error found and fixed during this task, recorded rather than silently patched
+around.** The first `netPlTintSx` draft returned `SxProps<Theme>` and was spread into an `sx` ARRAY
+(`sx={[{maxWidth:320}, netPlTintSx(...)]}`) — `tsc --build` failed with TS2322 because `SxProps<Theme>`
+itself admits arrays, and MUI's array-`sx` flattening type does not accept a nested array element.
+Fixed by letting the function's return type infer (a plain object, one variant with the extra selector
+key, one without) and merging it into a SINGLE `sx` object via spread (`sx={{ maxWidth: 320,
+...netPlTintSx(tint) }}`) instead of an array — `tsc --build tsconfig.app.json` then `tsconfig.spec.json`
+individually confirmed clean before the full `npm run typecheck` was trusted.
+
+### 6. What was run in the app
+
+`npm run ports:free` (clear) → `npm run dev` → signed up a throwaway account each time (`/positions` is
+behind `RequireAuth`) via a real headless Chromium (Playwright), driving the UI rather than seeding
+through RTL — genuine browser rendering against the real `cargo run` backend.
+
+- **Signed out, 1280px:** `require-auth-wall` renders, naming the surface — confirmed unaffected by
+  this task (no change here).
+- **Signed in, no positions seeded at all (35a, F7), 1280px:** the header reads **`NET P/L (OPEN)` /
+  `—`** — no number, no colour, exactly closing the shipped `+$0` green defect. `data-figure-state="empty"`
+  confirmed via the DOM. Screenshot captured.
+- **Signed in, two open positions seeded (`convexa.positions.v2`, the v3-anti-resurrection key removed
+  in the same `page.evaluate` per the documented gotcha) whose contracts did not resolve against this
+  dev backend's chain (35b, F8), 1280px and 393px:** the header reads **`NET P/L (OPEN)` / `unavailable`
+  / `0 of 2 open marked`** at both widths — no bare `—`, no number, no tint, the mandatory-caption text
+  present. `data-figure-state="unavailable"` confirmed. Screenshots captured at both widths; the card
+  wraps to full width below the title at 393px with no overflow.
+- **Not observed live:** the F4/F5 offline-retained/offline-bare arms. `page.route('**/api/stream/**',
+  r => r.abort())` + reload + a 20s wait left `data-figure-state` at `unavailable` (the online arm) —
+  the same class of limitation FE-3/4/5's own sessions already recorded against this real dev backend.
+  These arms are covered instead by `netPl.spec.ts`'s two dedicated 35e tests (SB) plus the strengthened
+  `AC-E17` integration test, which DOES reach `offline-retained` in the suite (via a stubbed
+  `EventSource` + fake timers rather than the real backend's reconnect behaviour) and asserts the
+  rendered `PauseIcon` and caption text directly.
+- **A real rendered defect found only by this pass**, fixed in the same commit: the readout collapsed
+  to a zero-width column at 1280px before `minWidth`/`flexShrink` were added (§2 above) — invisible in
+  a screenshot, only caught by reading the bounding box.
+
+Screenshots and the throwaway browser-driver scripts were written to the session scratchpad (one had
+to land at the repo root first since the sandbox write-guard blocks the OS temp dir directly, then was
+deleted before this commit — confirmed by `git status --porcelain` showing no `_tmp_*` file); the dev
+server and its ports were torn down (`npm run ports:free`) before handing off.
+
+### 7. `EXEMPT` map after FE-6
+
+`shared/theme/fonts.spec.ts`'s `EXEMPT` map: **6 → 5** (`pages/positions/PositionsPage.tsx` removed,
+live-checked before deletion). The five remaining entries are all FE-7's
+(`features/trading/broker/{BrokerPositionRow,BrokerPositionCard,BrokerGroupHeader,ProvenanceHeader,
+reassess}.tsx`), unchanged, confirmed still present and still violating by this session's own run.
+
+---

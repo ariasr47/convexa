@@ -268,7 +268,6 @@ const EXEMPT: Record<string, string> = {
   'features/trading/broker/BrokerGroupHeader.tsx': 'FE-7 — Broker tab register conversion',
   'features/trading/broker/ProvenanceHeader.tsx': 'FE-7 — Broker tab register conversion',
   'features/trading/broker/reassess.tsx': 'FE-7 — Broker tab register conversion',
-  'pages/positions/PositionsPage.tsx': 'FE-6 — the header readout converts to `FigureCell`',
 };
 
 const isExempt = (key: string) => Object.keys(EXEMPT).some((rel) => key === `/src/app/${rel}`);
