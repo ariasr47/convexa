@@ -748,3 +748,109 @@ live-checked before deletion). The five remaining entries are all FE-7's
 reassess}.tsx`), unchanged, confirmed still present and still violating by this session's own run.
 
 ---
+
+## FE-7 — The Broker tab: register on its figures, `not provided` non-synonymy, read-only
+
+**Landed:** 2026-09-07, one commit. **Criteria:** 23 (SB), 25 (SB, broker arm), 34 (SB), 29 (broker
+sites). **GATE Z items: none** — buildable exactly as planned; two real defects found and fixed
+in-lane, itemized in §2, neither invented product policy nor a scope change.
+
+### 1. What shipped
+
+| File | Change |
+|---|---|
+| `features/trading/broker/BrokerPositionRow.tsx` | `FactText`'s two literal branches (`not provided`/`unavailable`) now spread `...SANS_FACE` explicitly (§2's inheritance defect). `ModeledPl`'s value branch routes through `figureStateOf` + `faceFor` — `PauseMark` (an SVG, `aria-hidden`) replaces the literal `⏸ ` prefix inside a `Stack` that carries the SAME `data-testid="broker-pl"` and the SAME dim-on-drop opacity, now via `figureStateOf`'s `dim` output. The label Typography, `LegLines`, the row's own `structure_line_collapsed` cell and the `Mono` helper all re-point their face binding to `...MONO_FACE`. A new local `DASH` constant (a unicode escape, not a quoted literal glyph — see §3) replaces the one raw `'—'` comparison the needle-1 scan would otherwise flag as a false positive. |
+| `features/trading/broker/BrokerPositionCard.tsx` | Same face re-point (`structure_line_collapsed`, `Meta`'s value cell) to `...MONO_FACE`; no other change — `FactText`/`ModeledPl` are imported, not duplicated, so the card inherits every fix above by construction. |
+| `features/trading/broker/BrokerGroupHeader.tsx` | Local `const MONO` deleted; its six call sites (`CountClause`, `NetEntry`'s two, `GroupPl`'s figure and label, `LoneLegClause`) re-point to `...MONO_FACE`. `GroupPl`'s value branch gets the SAME `figureStateOf`/`PauseMark`/`Stack` conversion as `ModeledPl` — one member's figure, one group's figure, one decision, never two hand-rolled offline branches that could drift. |
+| `features/trading/broker/ProvenanceHeader.tsx` | The `broker-as-of-stamp` Typography's face re-points to `...MONO_FACE`. |
+| `features/trading/broker/reassess.tsx` | The advisory dialog's basis-line and JSON-preview faces re-point to `...MONO_FACE`. |
+| `shared/theme/fonts.spec.ts` | This task's five `EXEMPT` entries deleted — the map is now **empty**, live-checked (every entry's file still exists and no longer violates before removal). |
+| `features/trading/broker/{BrokerGroupHeader,BrokerTabPanel}.spec.tsx`, `brokerCrossTicker.integration.spec.tsx` | The four glyph-textContent assertions PLAN names re-point to querying the rendered `svg[data-testid="PauseIcon"]` icon, never the retired character — a negative assertion that only trivially passed after the glyph left `textContent` (e.g. `not.toContain('⏸')`) is re-pointed to a real check (`querySelector(...).toBeNull()`) so it still means something. |
+| `features/trading/broker/genericOptionRow.spec.tsx` | New `describe` block naming criterion 25's "positive half" explicitly: `POS_NO_COST_BASIS` reaching both the modeled-P/L branch (`ModeledPl`) and the leg cost-basis branch (`LegLines`), each asserted `not provided`, never `not recorded` — the broker arm's own fixture-to-arm proof, alongside the shipped `ALL_ARMS` census (unchanged) and FE-5's sim-book arm (unaffected, cited not duplicated). |
+
+### 2. Two real defects found and fixed, not merely converted around
+
+**A closed-nine literal inheriting the Mono typeface via component nesting the raw-text scan cannot see (criterion 3, SB — cross-surface, Section A).** `FactText`'s literal branches (`not provided`, `unavailable`) never set their own `fontFamily` — they inherit whatever the CALLER established. Three call sites wrap `FactText` inside a `Mono`-styled ancestor (`LegLines`' Typography, `NetEntry`'s `broker-group-net` Typography, `BrokerPositionRow`'s `Mono` helper around `broker-net-entry`), so today a `not provided`/`unavailable` literal on those three cells renders in Plex Mono — the exact register inversion criterion 3 forbids. **The shipped `fonts.spec.ts` scan cannot catch this**: it is line-proximity based, and the component name is `Mono` (mixed case), which does not match the needle's case-sensitive `\bMONO\b` pattern — confirmed by grep before relying on the scan for anything here. Fixed at the source (`FactText` itself spreads `...SANS_FACE`), not at each of the three call sites, so no future `Mono`-wrapped `FactText` use can silently reintroduce it.
+
+**A needle-1 false positive this task's own `DASH` fix would have created, caught before it shipped.** Naming the sentinel `const DASH = '—';` (the FE-5 idiom) still contains the raw quoted em dash character, and this file's imports (`MONO_FACE`, `PauseMark`, `SANS_FACE`, `figureStateOf`, `faceFor`) sit only lines away — the windowed scan flagged the DECLARATION itself as "a closed-nine member in a mono run," a self-inflicted version of the exact false-positive class FE-5's `BUILD_REPORT.md` §3 documents. Fixed by declaring `DASH` as a unicode escape (`'—'`) rather than a quoted literal glyph — verified at a Node REPL that it evaluates to the identical U+2014 character at runtime (so `leg.expiry_text !== DASH` is behaviourally unchanged), while the SOURCE TEXT the raw-text scan reads no longer contains the literal character between quotes. The file's own top docblock (pre-existing, not authored by this task) also fell inside the same import's window and repeated `not provided` in backticks — reworded without backticks (meaning unchanged) for the same reason.
+
+### 3. Copy diffs — itemized (class 1 only, per PLAN)
+
+| Site | Shipped | New |
+|---|---|---|
+| `BrokerPositionRow.tsx` (`ModeledPl`, was `:128`) | `{streamOffline ? '⏸ ' : ''}` prepended to the figure | `PauseMark` (the declared stroke icon) beside the figure, inside a `Stack` |
+| `BrokerGroupHeader.tsx` (`GroupPl`, was `:215`) | `{streamOffline ? '⏸ ' : ''}` prepended to the figure | `PauseMark`, same shape |
+
+Both are class (1) — a typographic truth mark replaced by the declared stroke icon; the sentence/label
+around each figure is byte-identical. No other broker string changed. `data-testid="broker-pl"` /
+`broker-group-pl` stay byte-identical, now on the wrapping `Stack` rather than the bare `Typography` —
+a structural move, not a copy change, and `.textContent` for the FIGURE half is unchanged (`+$1000`
+reads `+$1000` online and offline alike now, since the glyph never entered `textContent` at all).
+
+### 4. Mutation proof — run red (verbatim), then reverted to green
+
+**MUTATION PROOF L (criterion 25, SB).** Poisoned `brokerView.ts`'s `brokerFactText` (NOT an FE-7-owned
+file — a temporary poison-and-revert on the pure function the proof targets, per PLAN, mirroring FE-2's
+own precedent of poisoning a non-owned file for its mutation proof) to return `NOT_RECORDED` instead of
+`NOT_PROVIDED` for `state: 'not_supplied'`.
+
+- **Red (verbatim), two failures:** the shipped census —
+  `AssertionError: expected 'SPY…cost not recordedQty1 ×Net entrynot providednot provided…' not to
+  contain 'not recorded'` (`genericOptionRow.spec.tsx` "the string `not recorded` appears in NO broker
+  state: no cost basis`) — and this task's own new positive-half test —
+  `AssertionError: expected 'Short 1 × $500 Put · Dec 18 · cost no…' to contain 'not provided'`
+  (`… LegLines renders 'not provided'`).
+- **Restore:** poison reverted; `git diff -- .../brokerView.ts` = **0 lines** (confirmed by `git status
+  --porcelain` showing the file absent, not merely `git diff` — it was never staged); re-ran
+  `genericOptionRow.spec.tsx` + `brokerView.spec.ts` → **exit 0, 58/58**.
+
+No proof above is a narrated `expect(true).toBe(true)`; the red text is copied from this session's
+terminal.
+
+### 5. Verification — exit codes, read directly
+
+| Command | Result |
+|---|---|
+| `npx vitest run src/app/features/trading/broker` (first run, before the four glyph-assertion re-points) | **exit 1** — 4 failed, exactly the sites PLAN named (`BrokerGroupHeader.spec.tsx:268`, `BrokerTabPanel.spec.tsx:293/301/302/314`, `brokerCrossTicker.integration.spec.tsx:173`) |
+| `npx vitest run src/app/features/trading/broker` (after the re-points) | **exit 0** — 17 files / 292 tests |
+| `npx vitest run src/app/shared/theme/fonts.spec.ts` (before the `DASH`-declaration false positive was found) | **exit 1** — 1 failed, naming `BrokerPositionRow.tsx` lines 17 (`not provided` in the docblock) and 33 (the `DASH` declaration itself) |
+| `npx vitest run src/app/shared/theme/fonts.spec.ts` (after both fixes in §2) | **exit 0** — 14/14 |
+| `npx vitest run src/app/features/trading/broker src/app/shared/theme src/app/shared/figure` | **exit 0** — 34 files / 428 tests |
+| `npx nx test @convexa/dashboard --skip-nx-cache -- src/app/features/trading/broker` (the task's mandated targeted command) | **exit 0** — 17 files / 294 tests |
+| `npm run typecheck` (cold — `dist`/`out-tsc` deleted, forced past the Nx cache with `--skip-nx-cache` on the dashboard target specifically to confirm it actually re-ran `tsc`, not just read a cache hit) | **exit 0** |
+| `npm run lint` | **exit 0** — 0 errors, **5 warnings**, all pre-existing (same set FE-6 recorded), **0 new** |
+| `npx nx format:write --files <the 10 changed paths>` | **exit 0**, scoped |
+
+### 6. What was run in the app
+
+`npm run ports:free` (clear) → `npm run dev` → signed up a throwaway account (the Broker tab is the
+second tab of `/positions`, itself behind `RequireAuth`) via a real headless Chromium (Playwright).
+
+- **Signed in, Broker tab, 1280px:** renders the shipped S1 `Connect your brokerage` gate — heading,
+  the read-only guarantee sentence ("Convexa never places, changes, or cancels an order"), a single
+  `Connect Webull` CTA, and the encrypted-keys footnote. No populated rows reachable without a real
+  Webull credential (consistent with FE-5's own session finding); no entry/order/cancel affordance
+  anywhere on the gate — visual confirmation of criterion 34's negative space, screenshot captured.
+- **Not observed live:** every populated wire state (S2–S9), the two-axis degradation grid, and the
+  register/figure conversions themselves — none reachable without a real broker credential in the time
+  available. These are covered instead by the automated suite exhaustively: `broker.risk.spec.tsx`'s
+  `it.each(ALL_ARMS)` sweep (11 wire arms) asserts the negative space on EVERY reachable state
+  structurally, and `genericOptionRow.spec.tsx` / `BrokerTabPanel.spec.tsx` / `BrokerGroupHeader.spec.tsx`
+  render the populated figures directly against typed fixtures rather than a live credential.
+- **Criterion 34's "no new network call" half** is not independently re-tested by this task: FE-7
+  touches zero data-fetching code (`useBrokerBook.ts`, `renderState.ts`, `grouping.ts`, `brokerView.ts`
+  are all outside this task's diff — confirmed by `git diff --stat` naming only presentational files),
+  so the shipped fetch-call scoping this criterion depends on is structurally unchanged, not merely
+  re-asserted.
+
+Screenshots and the throwaway browser-driver script were written to the repo root (the sandbox
+write-guard blocks the OS temp dir directly) and deleted before this commit — confirmed by `git status
+--porcelain` showing no `_tmp_*` file; the dev server and its ports were torn down (`npm run
+ports:free`) before handing off.
+
+### 7. `EXEMPT` map after FE-7
+
+`shared/theme/fonts.spec.ts`'s `EXEMPT` map: **5 → 0**. The map is now **empty** — FE-14's own
+assertion of this fact should read green without any further work from this phase's remaining tasks.
+
+---

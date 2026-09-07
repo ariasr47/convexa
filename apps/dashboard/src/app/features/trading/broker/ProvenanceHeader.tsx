@@ -9,7 +9,7 @@
  * `LIVE` badge, no padlock. The stale (S6) clause FOREGROUNDS the age; staleness never blanks or
  * re-dresses the snapshot fields (their treatment lives on the rows).
  */
-import { typographyTokens } from '@/shared/theme/tokens';
+import { MONO_FACE } from '@/shared/figure';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
@@ -67,8 +67,7 @@ export function ProvenanceHeader({ asOf, isStale, ageSeconds, onRefresh, refresh
           component="span"
           data-testid="broker-as-of-stamp"
           sx={{
-            fontFamily: typographyTokens.monoFontFamily,
-            fontVariantNumeric: 'tabular-nums',
+            ...MONO_FACE,
             fontSize: '0.8125rem',
             fontWeight: 600,
             color: isStale ? 'text.primary' : 'text.secondary',

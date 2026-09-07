@@ -284,22 +284,27 @@ describe('BrokerTabPanel · degraded/warning family', () => {
 // =================================================================================================
 
 describe('BrokerTabPanel · two-axis degradation', () => {
-  it('SSE drop: the modeled P/L dims to ⏸ last-known (never blank); snapshot fields BYTE-IDENTICAL', async () => {
+  it('SSE drop: the modeled P/L dims to the declared stroke icon, last-known (never blank); snapshot fields BYTE-IDENTICAL', async () => {
     installFetch({ book: equityBook() });
     const up = renderPanel({ streamOffline: false });
     await screen.findByTestId('broker-row');
     const plUp = screen.getByTestId('broker-pl').textContent;
     const snapshotUp = screen.getByTestId('broker-snapshot-fields').innerHTML;
-    expect(plUp).not.toContain('⏸');
+    // The declared stroke icon replaces the retired `⏸` glyph (criterion 29) — query the rendered
+    // icon, never the character, so a weakened assertion cannot pass against its `aria-hidden` markup.
+    expect(
+      screen.getByTestId('broker-pl').querySelector('svg[data-testid="PauseIcon"]'),
+    ).toBeNull();
     up.unmount();
     cleanup();
 
     installFetch({ book: equityBook() });
     renderPanel({ streamOffline: true });
     await screen.findByTestId('broker-row');
-    const plDown = screen.getByTestId('broker-pl').textContent ?? '';
-    expect(plDown).toContain('⏸'); // dimmed last-known, never a blank
-    expect(plDown.replace('⏸ ', '')).toBe(plUp); // the FIGURE is retained
+    const plDownEl = screen.getByTestId('broker-pl');
+    const plDown = plDownEl.textContent ?? '';
+    expect(plDownEl.querySelector('svg[data-testid="PauseIcon"]')).toBeTruthy(); // dimmed last-known, never a blank
+    expect(plDown).toBe(plUp); // the FIGURE is retained, byte-identical (no glyph ever entered the text)
     // The book-snapshot family is untouched by the market-data axis.
     expect(screen.getByTestId('broker-snapshot-fields').innerHTML).toBe(snapshotUp);
   });
@@ -311,7 +316,9 @@ describe('BrokerTabPanel · two-axis degradation', () => {
     const label = screen.getByTestId('broker-pl-label').textContent ?? '';
     expect(label).toBe(BROKER_COPY.modeled.dualLabel(stampTime(BOOK_OK_STALE.as_of as string)));
     expect(label).not.toBe(BROKER_COPY.modeled.label);
-    expect(screen.getByTestId('broker-pl').textContent).not.toContain('⏸');
+    expect(
+      screen.getByTestId('broker-pl').querySelector('svg[data-testid="PauseIcon"]'),
+    ).toBeNull();
     // The snapshot fields carry the S6 treatment + the age-foregrounded stamp.
     expect(screen.getByTestId('broker-as-of-stamp').textContent).toContain('old — refresh');
   });

@@ -262,13 +262,7 @@ export const bindsFaceLocally = (src: string): boolean =>
  * Measured at FE-1 (the site list is in the build report). Live-checked below on BOTH arms: the
  * file must still exist in the scan, and it must still violate. FE-14 asserts this map is empty.
  */
-const EXEMPT: Record<string, string> = {
-  'features/trading/broker/BrokerPositionRow.tsx': 'FE-7 — Broker tab register conversion',
-  'features/trading/broker/BrokerPositionCard.tsx': 'FE-7 — Broker tab register conversion',
-  'features/trading/broker/BrokerGroupHeader.tsx': 'FE-7 — Broker tab register conversion',
-  'features/trading/broker/ProvenanceHeader.tsx': 'FE-7 — Broker tab register conversion',
-  'features/trading/broker/reassess.tsx': 'FE-7 — Broker tab register conversion',
-};
+const EXEMPT: Record<string, string> = {};
 
 const isExempt = (key: string) => Object.keys(EXEMPT).some((rel) => key === `/src/app/${rel}`);
 

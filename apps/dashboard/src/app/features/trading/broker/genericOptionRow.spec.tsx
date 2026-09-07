@@ -20,7 +20,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { BrokerPositionCard } from './BrokerPositionCard';
 import { BrokerPositionRow } from './BrokerPositionRow';
-import { buildBrokerPositionView } from './brokerView';
+import { buildBrokerPositionView, NOT_PROVIDED } from './brokerView';
 import { BROKER_COPY } from './copy';
 import {
   BOOK_CAPTURE_SHAPED_POSITIONS,
@@ -212,6 +212,33 @@ describe('R4 · G2 — the feed literal, never the own-record one', () => {
       dte: null,
     });
     expect(v.legs[0].instrument_text).toBe(NOT_RECORDED);
+  });
+});
+
+// =================================================================================================
+// curvature-v2-surfaces FE-7, criterion 25 — non-synonymy is THREE FACTS, not a count: the sim book
+// renders `not recorded` and NEVER `not provided`; the Broker tab renders `not provided` and NEVER
+// `not recorded` (its own arm, added here); `no basis` appears only on `pl_pct` (FE-5's sim-book
+// proof, `positions.risk.spec.tsx:882-887`, unaffected by this task). Three different fixtures reach
+// three different arms — this file is the broker arm's home, so its "positive half" (a fixture whose
+// FEED withheld the fact) belongs here, named explicitly rather than left implicit inside G2/G3.
+// =================================================================================================
+
+describe('FE-7 · criterion 25 (SB) — the broker arm renders `not provided`, never `not recorded`', () => {
+  it('the modeled-P/L withheld branch (BrokerPositionRow.tsx ModeledPl) renders `not provided`', () => {
+    // POS_NO_COST_BASIS: the feed never sent a cost basis — PERMANENT withholding (G3), not a
+    // this-cycle `unavailable`. Exercises the exact branch cited by PLAN FE-7 step 2.
+    renderRow(POS_NO_COST_BASIS);
+    const pl = screen.getByTestId('broker-pl').textContent;
+    expect(pl).toBe(NOT_PROVIDED);
+    expect(pl).not.toBe('not recorded');
+  });
+
+  it('the leg cost-basis withheld branch (BrokerPositionRow.tsx LegLines) renders `not provided`', () => {
+    renderRow(POS_NO_COST_BASIS);
+    const legLine = screen.getByTestId('broker-leg-line').textContent ?? '';
+    expect(legLine).toContain(NOT_PROVIDED);
+    expect(legLine).not.toContain('not recorded');
   });
 });
 
