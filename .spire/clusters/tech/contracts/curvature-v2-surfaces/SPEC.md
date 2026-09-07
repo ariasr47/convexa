@@ -4,17 +4,20 @@
 **Council:** R1 positions · R2 critiques · R3 resolutions · decisions.md   (under council/)
 **Status:** draft
 
-> **Provenance markings — four OWNER rulings, one CONDUCTOR call, and nothing else is a "call".**
+> **Provenance markings — four OWNER rulings, two CONDUCTOR calls, and nothing else is a "call".**
 > Four product questions were surfaced to the owner one at a time and ruled on 2026-09-06:
 > **D-A** (scanner price liveness → **A**), **D-B** (settings section navigation → **OUT, phase 4**),
 > **D-C** (widget-frame ⓘ as a focusable control → **IN**), **D-D** (register of a user-entered number
-> → **TRACED**). One further call was taken by the **conductor** and is reversible: the hover-only
-> positions literal tips are repaired **IN** this phase (`council/decisions.md` §3 #3). Every criterion
-> that depends on one of these carries **OWNER** or **CONDUCTOR** on the row itself, so GATE Q and the
-> ledger can tell a ruled call from a converged technical resolution. Untagged rows come from the
-> eleven technical conflicts the three voices settled at `file:line`, from the seven self-revisions, or
-> from the BRIEF's invariant watch. Phase-1's eight owner rulings still bind, and **ruling 6 assigns
-> this phase its quiet-band work by name**.
+> → **TRACED**). **Two** further calls were taken by the **conductor** and both are reversible: the
+> hover-only positions literal tips are repaired **IN** this phase (`council/decisions.md` §3 #3), and
+> D-A's closed set of scanner sentences is widened from the cadence header alone to **the header and
+> its gloss** (`council/decisions.md` §4 D-A — the gloss is a second liveness sentence no voice cited,
+> so the owner ruled a set of one without that fact). Every criterion that depends on one of these
+> carries **OWNER** or **CONDUCTOR** on the row itself, so GATE Q and the ledger can tell a ruled call
+> from a converged technical resolution. Untagged rows come from the eleven technical conflicts the
+> three voices settled at `file:line`, from the seven self-revisions, or from the BRIEF's invariant
+> watch. Phase-1's eight owner rulings still bind, and **ruling 6 assigns this phase its quiet-band
+> work by name**.
 
 ## 1. Goal + scope
 
@@ -36,9 +39,10 @@ and so do the eight quiet-band widgets — which **corrects phase 2's brief**, w
 position). Three of the BRIEF's own framings are corrected here and do not survive into scope:
 
 - **The scanner is not a snapshot surface.** It runs a real price SSE (`useLivePrices.ts:39-57`) and
-  ships a page-level prose liveness claim (`labels.ts:25`). All three voices falsified the BRIEF's
-  "Scanner rows and positions rows are **snapshot** surfaces" as an absolute. Liveness is per **datum**
-  — and on the scanner, per **D-A**, no datum may claim it this phase.
+  ships **two** page-level prose liveness claims — the cadence header (`labels.ts:25`) and its gloss
+  (`labels.ts:26-29`). All three voices falsified the BRIEF's "Scanner rows and positions rows are
+  **snapshot** surfaces" as an absolute. Liveness is per **datum** — and on the scanner, per **D-A**,
+  no datum may claim it this phase, and no page sentence may either.
 - **Settings has no rail to collapse.** `SettingsPage.tsx:156` is a 640px centred column of five
   stacked panels. "Brought under the same responsive discipline" sizes construction as a media query;
   that wording does **not** survive into this SPEC (**OWNER — D-B**).
@@ -58,7 +62,8 @@ against **seeded, non-empty** pages.
   consumed by `FigureCell`, the scanner atoms and the positions row cells.
 - **Scanner** — register + closed nine on every figure in **both** layouts; the degraded price arm
   (retained value, stroke pause mark, `offline · last known`); the flash gated on the stream; the
-  cadence header reworded (**OWNER — D-A**).
+  cadence header **and its gloss** reworded (**OWNER — D-A**; the set widened from one sentence to two
+  by **CONDUCTOR**, `council/decisions.md` §4 D-A).
 - **Positions (sim book + Broker tab + header readout)** — register on every figure; the three-way
   non-synonymy asserted as three facts; the offline contract on the six live-derived cells; the Net P/L
   readout's five states; one register inversion removed; the literal tips made keyboard-reachable
@@ -223,9 +228,19 @@ only narrows an existing claim. All three voices rejected "option A with `Prices
 - **No scanner figure — the price included — carries a live mark in any connection state**
   (criterion 11A). pm row 11 is withdrawn as written and row 15 is amended so the basis line states the
   two cadences and asserts liveness in **no** state.
-- **`labels.ts:25` is reworded without the word `live`** — the **one** scanner sentence this phase may
-  touch. It edits the shipped `scanner.risk.spec.tsx:869`, which pins `/Prices (live|offline)/` on the
-  page text; that edit is expected, not incidental.
+- **The cadence header and its gloss are reworded so neither asserts liveness** — the **two** scanner
+  sentences this phase may touch, and the closed set stops there. `cadenceHeader` (`labels.ts:25`)
+  loses the word `live`; `cadenceGloss` (`labels.ts:26-29`), rendered as the `Jargon` gloss of that
+  same header at `Scanner.tsx:143-146`, loses its opening `Prices stream live.` and keeps its
+  structure-cadence meaning. **CONDUCTOR, reversible** (`council/decisions.md` §4 D-A): the gloss is a
+  second liveness sentence **no voice cited**, so the owner ruled a closed set of one sentence without
+  that fact, and D-A's own stated reason — a page sentence asserting liveness that no datum vouches
+  for — reaches the gloss exactly as it reaches the header, which is also the element the gloss hangs
+  off. `cadenceHeaderOffline` (`labels.ts:32`) is a truthful degraded statement and is untouched. The
+  header edit edits the shipped `scanner.risk.spec.tsx:869`, which pins `/Prices (live|offline)/` on
+  the page text; that edit is expected, not incidental. The gloss is a MUI `Tooltip` title
+  (`Jargon.tsx:19-30`) and is not in the page text at rest, and no spec under `apps/dashboard/src`
+  names `cadenceGloss` or its opening sentence, so the gloss edit lands on no shipped assertion.
 - **A stream drop renders the F4 retained arm through the unbranded `offline.retained` route**
   (`FigureCell.tsx:174,257-268`) — dim + stroke pause mark + `offline · last known` — computed at
   `Scanner.tsx:119-126` and driven by the **age of the per-symbol `ts`** (`useLivePrices.ts:24-27`).
@@ -427,8 +442,11 @@ R2-class conflict, not a lane decision.
 **The closed set of sentences this phase may touch is enumerated as criteria CF-1 / CF-2 / 56a**, and
 everything else is proven byte-identical by a scan:
 
-- **Scanner: exactly one sentence** — the cadence header at `labels.ts:25`, and only under D-A(A).
-  **Nothing else on scanner.** Two consequences follow and are recorded rather than absorbed:
+- **Scanner: exactly two sentences** — the cadence header `cadenceHeader` (`labels.ts:25`) and its
+  gloss `cadenceGloss` (`labels.ts:26-29`), both only under D-A(A), the second added by the
+  **CONDUCTOR** clarification of D-A (`council/decisions.md` §4 D-A) because it is that same header's
+  gloss and asserts the same liveness. **Nothing else on scanner** — `cadenceHeaderOffline`
+  (`labels.ts:32`) included. Two consequences follow and are recorded rather than absorbed:
   ux's **U-8** (a new foot line *"Per-row age is the structure snapshot, never the price."* from the
   canvas) is a new sentence on a surface the residual closes — it is **withdrawn** and future-dated to
   phase 4; and ux's **U-6** survives only in its **member** half (below).
@@ -495,8 +513,10 @@ used, so GATE Q can trace a row to its origin: plain numbers are pm's R1 set as 
 (§1), U-8 and U-30 (§2.7), U-17 and U-18 (D-B), U-23's second clause (§2.5).
 
 **Provenance tags ride the row.** **OWNER** marks a row that exists because of D-A / D-B / D-C / D-D;
-**CONDUCTOR** marks the one reversible conductor call. Reversing a tagged call removes or rewrites that
-row and is a spec edit, not a rebuild.
+**CONDUCTOR** marks a reversible conductor call, and there are **two** — the keyboard-reachable
+positions tips (U-15a) and the widening of D-A's closed scanner copy set from the header alone to the
+header **and its gloss** (rows 15 and CF-1, `council/decisions.md` §4 D-A). Reversing a tagged call
+removes or rewrites that row and is a spec edit, not a rebuild.
 
 ### A. Cross-surface — the register becomes a property of the app
 
@@ -523,7 +543,7 @@ row and is a spec edit, not a rebuild.
 | 12 | S6 | On a price-stream drop, a price whose displayed value came from the **now-dead stream** renders at reduced emphasis with the declared stroke pause mark and the caption `offline · last known` — observable as `[data-testid="cell-price"][data-figure-state="offline-retained"]` — while every structure figure beside it keeps **identical text** and is **not** dimmed | test (**SB**) |
 | 13 | S6 | On the same drop, a symbol that **never** received a streamed price renders its swept price at full strength, with no pause mark and no last-known wording; `offline-bare` never occurs on a scanner price | test (**SB**) |
 | 14 | S6 | While the price stream is down, **no price figure flashes on change** | test (**SB**) |
-| 15 | S6 | The cadence header states the **price cadence** and the **structure cadence** as two claims and asserts liveness in **no** state; the word `live` does not appear in it (**OWNER — D-A**) | review |
+| 15 | S6 | **No scanner prose asserts liveness in any connection state** (**OWNER — D-A**; the closed set widened from the header alone to the header **and its gloss** by **CONDUCTOR**, `council/decisions.md` §4 D-A): the cadence header states the **price cadence** and the **structure cadence** as two claims and the word `live` does not appear in it; its gloss (`labels.ts:26-29`, rendered at `Scanner.tsx:143-146`) states **cadence and basis only** — structure re-computes about every 3 minutes, names that just moved sooner, and those numbers are a recent snapshot rather than a live read — and opens with **no** claim that prices stream live; `cadenceHeaderOffline` (`labels.ts:32`) is byte-identical | review |
 | 16 | S6 | With the sweep worker down, rows keep their last-known values under the warning treatment (burnt orange + icon), every figure keeps its register, and **no row is blanked** | test |
 | 17 | S6 | A row the sweep has not computed yet renders its status chip plus closed-nine members in its figure cells — never a `0`, never a **mono** em-dash | test |
 | U-6 | S6 | A closed-lookup **miss** on tier / regime / vol renders the member `unavailable`, not `—`: the two are non-synonymous, and "the wire sent an enum this build does not know" is a fact this build can observe | test |
@@ -532,7 +552,7 @@ row and is a spec edit, not a rebuild.
 | 20 | S7 | Signed out, the scanner renders the sign-in wall **naming the surface** — never an empty table, never a converted-but-blank page | test |
 | 21 | S1 | At every checked width where the dense table renders, no column is clipped, the table scrolls **inside its own container**, and the page itself never scrolls sideways | e2e (**SB**) |
 | 22 | S1 | At phone width the card layout carries **every** datum the table row carries, in the same register and the same words, and the card stays **one** anchor to `/ticker/{SYMBOL}` with no focusable control nested inside it | test (**SB**) |
-| CF-1 | S6 | **The scanner's closed copy set is exactly one sentence** — the cadence header (`labels.ts:25`). Every other shipped scanner string, including the `⚠ Stale` / `⚠ Error` status labels and every tooltip, is **byte-identical** after the conversion, proven by a scan (**OWNER — D-A** for the one exception) | test (**SB**) |
+| CF-1 | S6 | **The scanner's closed copy set is exactly two sentences, in one constant object** — `cadenceHeader` (`labels.ts:25`) and `cadenceGloss` (`labels.ts:26-29`). Every other shipped scanner string — `cadenceHeaderOffline` (`labels.ts:32`), the `⚠ Stale` / `⚠ Error` status labels and every tooltip — is **byte-identical** after the conversion, proven by a scan whose exemption list names exactly those two constants and no third (**OWNER — D-A** for the exception; widened from one constant to two by **CONDUCTOR**, `council/decisions.md` §4 D-A) | test (**SB**) |
 
 ### C. Positions — sim book · Broker tab · header readout
 
@@ -706,11 +726,16 @@ arrangement.
 | **Alerts** | rules read back in the composer's own words; unread carried in the label row and in type | — | **three** distinct empties: no rules · rules armed nothing fired · nothing evaluated yet | read-fault latch engaged → banner, writes refused but focusable and explained, **nothing dims, no pause mark** | nothing on alerts is live: **no** live mark, **no** pulse; the page says rules evaluate on structure snapshots |
 | **Quiet-band widget** | figures state their register and step against their own nested `panel` container | its shipped skeleton | checked-and-empty keeps its shipped sentence; the value slot holds a **member** of the closed nine with the qualifier in the caption | never-delivered renders its **own** words and asserts **no** market fact; an unavailable widget never degrades a neighbour | **never** — the quiet band wears no live mark and no pause mark in any connection state |
 
-### 4.2 Scanner copy — one sentence changes (**OWNER — D-A**)
+### 4.2 Scanner copy — two sentences change (**OWNER — D-A**, set widened by **CONDUCTOR**)
 
-The cadence header is the **only** scanner sentence this phase may touch. Shipped:
-`Prices live · structure ~3 min · hot names sooner` (`labels.ts:25`). It becomes a two-cadence basis
-line that asserts liveness in no state — this spec's authored value is:
+The cadence header **and its gloss** are the only scanner sentences this phase may touch. They are two
+values of one constant object and one UI element: `Scanner.tsx:143-146` renders `cadenceHeader` as the
+`Jargon` term and `cadenceGloss` as that same term's tooltip. The set was one sentence in D-A as ruled
+and is two after the conductor's clarification (`council/decisions.md` §4 D-A) — the gloss opens with a
+liveness claim no voice had cited, and D-A's reason reaches it exactly as it reaches the header.
+
+**(1) The header.** Shipped: `Prices live · structure ~3 min · hot names sooner` (`labels.ts:25`). It
+becomes a two-cadence basis line that asserts liveness in no state — this spec's authored value is:
 
 > **`Prices per tick · structure ~3 min · hot names sooner`**
 
@@ -720,10 +745,31 @@ byte-identical; and it removes the banned token, which the file's own header com
 (`labels.ts:4-9`) records as this surface's standing discipline for two other clauses. Any substitute
 that satisfies criterion 15 is acceptable at GATE Z; the *criterion*, not this string, is the contract.
 
+**(2) The gloss.** Shipped (`labels.ts:26-29`): `Prices stream live.` followed by the structure
+sentence. Only the **opening** sentence is a liveness claim; the rest is the cadence and the basis, and
+is the meaning the gloss exists to carry — about 3 minutes, names that just moved sooner, a recent
+snapshot rather than a live read. So the opening clause goes and the rest stands. An **example** value,
+offered exactly as the header's is and mandated no more than it:
+
+> **`Prices change tick by tick. The options structure — score, tier, flip and walls — re-computes
+> about every 3 minutes, and names that just moved re-compute sooner, so those numbers are a recent
+> snapshot rather than a live read.`**
+
+Deleting the opening sentence outright also satisfies criterion 15. What the criterion fixes is the
+**property** — the gloss states cadence and basis only and asserts liveness in no connection state —
+not this string. The word `live` may still stand inside the closing **denial** (*"rather than a live
+read"*): that clause is the honesty the gloss exists for, and criterion 15 bans the assertion, not the
+token. The gloss keeps its `Jargon` host, so no DOM node, no element and no testid changes
+(`data-testid="scan-cadence-header"`, `Scanner.tsx:140`).
+
 The **offline** arm is unchanged: `Prices offline · showing last known · structure ~3 min`
-(`labels.ts:32`) — and it becomes **true** for the first time, because the figures now dim
-(criterion 12). Both edits land on the shipped `scanner.risk.spec.tsx:869`, which pins
-`/Prices (live|offline)/` on the page text.
+(`labels.ts:32` — `council/decisions.md` §4 D-A cites `:31`, which is the doc-comment line above the
+constant; `:32` is the constant, verified at source) — and it becomes **true** for the first time,
+because the figures now dim (criterion 12). The **header** edit lands on the shipped
+`scanner.risk.spec.tsx:869`, which pins `/Prices (live|offline)/` on the page text; that edit is
+expected, not incidental. The **gloss** edit lands on no shipped assertion: it is a MUI `Tooltip` title
+(`Jargon.tsx:19-30`), absent from the page text until it opens, and no spec under `apps/dashboard/src`
+names `cadenceGloss` or its opening sentence.
 
 Everything else on the scanner is byte-identical, including `'⚠ Stale'` and `'⚠ Error'` (§1) and every
 tooltip (CF-1).
@@ -928,10 +974,10 @@ From the BRIEF's invariant watch, restated with **where each one bites**:
 
 - **`[live-vs-static-isolation]` / ledger key `one-liveness-predicate`** — bites at criterion 6 (the
   widened fence and the deleted `genuineIsLive`), at 11A (no scanner mark in any state, **OWNER —
-  D-A**), at 5 and 10 (no page-level or widget-level claim), at 58 (the quiet band wears none) and at
-  42 and 49 (settings and alerts wear none). The BRIEF's "scanner and positions are snapshot surfaces"
-  is corrected: liveness belongs to the **datum**, and the scanner's answer this phase is *no datum
-  claims it*.
+  D-A**), at 5 and 10 (no page-level or widget-level claim), at 15 (no scanner *prose* claim either,
+  header and gloss both), at 58 (the quiet band wears none) and at 42 and 49 (settings and alerts wear
+  none). The BRIEF's "scanner and positions are snapshot surfaces" is corrected: liveness belongs to
+  the **datum**, and the scanner's answer this phase is *no datum claims it*.
 - **`[absent-is-not-none]`** — bites at 3, 4, 17, 46, 47d and 56a, and hardest at 24/25, where the
   three positions-side members must stay non-synonymous, asserted by **three fixtures reaching three
   arms**. No tenth member: `not set` was checked against `notANumber.ts:26-36` and **is** a member;
@@ -959,22 +1005,30 @@ From the BRIEF's invariant watch, restated with **where each one bites**:
   the signed R3 text was read for the exact wording; six facts were re-read at source for this
   synthesis, and two of them changed what is written here: `not set` **is** a member of the closed nine
   (`notANumber.ts:30`), so no substitution and no Amendments line is needed; and the Net P/L sum is
-  consumed only by its own render (`PositionsPage.tsx:189,193`), which answers pm's open ask.
+  consumed only by its own render (`PositionsPage.tsx:189,193`), which answers pm's open ask. The same
+  rule settles one citation drift: `decisions.md` §4 D-A cites `cadenceHeaderOffline` at `labels.ts:31`,
+  which is the doc-comment line; the constant is at `:32` and this spec cites `:32` throughout.
 - **`[best-effort-isolated-or-null]`** — bites at 16, 57 and §5: a dropped stream never blanks a row,
   and an unavailable widget never degrades a neighbour.
 
 ## 9. Open questions
 
-1. **The scanner's cadence *gloss* still says "Prices stream live." and D-A's closed set does not reach
-   it.** Read at source for this synthesis: `labels.ts:26-29` (`cadenceGloss`, rendered on the page at
-   `Scanner.tsx:145`) opens *"Prices stream live."* — a second page sentence asserting liveness, in the
-   same constant object as the header D-A reworded. **No voice cited it**, so the owner ruled a closed
-   set of one sentence without this fact. Under the ruling as written the gloss **stands**, and no
-   criterion in §3 claims otherwise — criterion 15 and CF-1 are scoped to the header. The file's own
-   comment (`labels.ts:4-9`) records that two neighbouring clauses already shipped with the banned token
-   removed and their meaning intact, so a one-clause repair has a ready form and a shipped precedent.
-   **This is an owner call at GATE Z: extend the closed set by one sentence, or carry the gloss as debt
-   with the citation.** It is one constant either way.
+1. **The scanner's cadence *gloss* asserted liveness too — CLOSED by the conductor, not open.** Read at
+   source for this synthesis: `labels.ts:26-29` (`cadenceGloss`, rendered as the `Jargon` gloss of the
+   same header at `Scanner.tsx:143-146`) opens *"Prices stream live."* — a second page sentence
+   asserting liveness, in the same constant object as the header D-A reworded. **No voice cited it**, so
+   the owner ruled a closed set of one sentence without that fact. **Ruled by the CONDUCTOR, 2026-09-06,
+   reversible** (`council/decisions.md` §4 D-A): D-A's stated reason — a page sentence asserting
+   liveness that no datum vouches for — reaches the gloss exactly as it reaches the header, and the
+   gloss is that same header's tooltip, so **the closed set is the header AND its gloss, both reworded
+   without asserting liveness; still nothing else on scanner**. `cadenceHeaderOffline` (`labels.ts:32`)
+   is a truthful degraded statement and stays. It is folded, not open: §1, §2.2, §2.7, §4.2, criterion
+   15 and CF-1 all state two sentences and the same exemption pair. The file's own comment
+   (`labels.ts:4-9`) records that two neighbouring clauses already shipped with the banned token removed
+   and their meaning intact, so the repair has a ready form and a shipped precedent.
+   **Reversal, one line:** the owner says the set stays at one → the gloss keeps its shipped text
+   byte-identical, criterion 15 and CF-1 re-narrow to `cadenceHeader` alone, and the standing
+   *"Prices stream live."* becomes GATE Z debt with `labels.ts:26-29` attached.
 2. **The e2e seeding work is required by criterion 62 and is not yet sized.** Extending `seed()` with an
    alerts blob and a scan-row guarantee is the difference between a headline responsive criterion and a
    green run over empty pages. It is named as required (§7), but it is the item most likely to be
@@ -995,7 +1049,8 @@ From the BRIEF's invariant watch, restated with **where each one bites**:
 5. **The conductor's call on the hover-only tips (U-15a) is reversible until the build lane starts.**
    Reversing it is a spec edit, not a rebuild: U-15a is removed and the defect lands in carried debt with
    `PositionRow.tsx:147-151` attached. It is recorded here so a reader can tell it from the four owner
-   rulings, which are not reversible by the same route.
+   rulings, which are not reversible by the same route. The same is true of item 1's widened scanner copy
+   set, which is the second and last conductor call in this spec.
 6. **The canon amendment queued for GATE S is one clause and must not widen at close-out.** Rule 13
    becomes *"traced to Convexa's computation **or to a record the trader entered**"*. Phase 2 landed four
    amendments and the skeptic's standing check applies: verify none of them widens beyond its stated

@@ -175,7 +175,8 @@ IN:** widen `liveClaim.spec.ts:68-80`'s glob to the four surfaces with explicit 
 without that fact. The ruling's stated reason ("a page sentence asserting liveness that no datum vouches for") reaches the
 gloss exactly as it reaches the header, and the gloss is the same UI element's tooltip. **Ruled: the closed set is the
 header AND its gloss — two sentences in one constant object, both reworded without asserting liveness; still nothing else on
-scanner.** `cadenceHeaderOffline` (`:31`, "Prices offline · showing last known") is a truthful degraded statement and stays.
+scanner.** `cadenceHeaderOffline` (`:32`, "Prices offline · showing last known") is a truthful degraded statement and stays. (First
+written as `:31`, which is the doc-comment line; R4's targeted fold corrected it at source.)
 Reversal: owner says the set stays at one → the gloss keeps its shipped text and R4's §9 item 1 becomes GATE Z debt.
 
 **D-B — settings section navigation (rail ≥900 → horizontal control <900)** (#5 `fac0c6c7cb`, #9 `faf6bdeea6`, #19 `ae12488953`).
