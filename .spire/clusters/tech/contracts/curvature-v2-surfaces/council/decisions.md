@@ -31,18 +31,18 @@ Converged → folded here; not converged → promoted to a product call.
 | pair | # | id | question |
 |---|---|---|---|
 | architect ↔ ux | 0 | `6c2cf2c5e9` | `FigureCell` cannot enter the scanner (single-anchor card; sticky nowrap table cells; header IS the label row) → extract the register/vocabulary/step decision into a pure module |
-| architect ↔ ux | 16 | `154fb2122f` | …and whether the extraction must carry the WHOLE F1–F9 branch (`FigureCell.tsx:250-300`: dot, pause, `offline · last known`, `data-figure-state`) so the scanner/positions degraded arms have a host |
+| architect ↔ ux | 16 | `7da0330a44` | …and whether the extraction must carry the WHOLE F1–F9 branch (`FigureCell.tsx:250-300`: dot, pause, `offline · last known`, `data-figure-state`) so the scanner/positions degraded arms have a host |
 | architect ↔ ux | 2 | `cbef7514e4` | `off-exchange-blocks` (`:24,79-81`) and `fresh-positioning` (`:15,56-58`) DO carry mono runs from widget-local constants, with `'—'` interpolated into a mono run → split by figure, not by widget |
 | architect ↔ ux | 3 | `b0f85405a7` | positions `literal()` tips (`PositionRow.tsx:145-153`) are the only non-synonymy affordance; `FigureCell` has no value-row help host → keep `literal()`, scope conversion to the header readout, or fund a help host on the primitive |
 | architect ↔ ux | 17 | `66cd71c107` | `PositionRow.tsx:374-377` renders `DASH` inside a `MONO` cell → every absent-value path routes through `literal()`; `?raw` scan extended to `features/trading/positions/` |
 | architect ↔ ux | 4 | `50ef9a81be` | stored `AlertEvent.message` is pre-rendered (`types.ts:32`) → forward-only criterion + carried debt, or an additive read-new-else-old shape change with a pre-phase fixture |
 | architect ↔ pm | 1 | `d09285682d` | rows 6 and 11 unsatisfiable together on the scanner — exchange the FEASIBILITY/cost of options A / B / C only; the choice is **D-A** |
 | architect ↔ pm | 13 | `1f765d5bd8` | "the table keeps its atoms" is mechanism, not scope — the live-derived cells (`:68,378,388`) still owe the offline contract |
-| pm ↔ ux | 21 | `77667a5927` | row 56's composition freeze must carve out `_kit/copy.ts:355` (value slot holds a non-member) and `Setups.tsx:52` (one sentence for `undefined` and `[]`) |
-| pm ↔ ux | 22 | `338807da91` | row 47: a score gate has no unit — split by threshold type; **register of a user-entered number** is a precedent question (promote if unresolved) |
-| pm ↔ ux | 23 | `3dba77c9ca`* | row 35 certifies the green `+$0` on a fully-unmarked book (`PositionsPage.tsx:147-154,189`) → add a Net P/L row (`unavailable` when no open row is marked; coverage caption when partial) |
+| pm ↔ ux | 21 | `154fb2122f` | row 56's composition freeze must carve out `_kit/copy.ts:355` (value slot holds a non-member) and `Setups.tsx:52` (one sentence for `undefined` and `[]`) |
+| pm ↔ ux | 22 | `77667a5927` | row 47: a score gate has no unit — split by threshold type; **register of a user-entered number** is a precedent question (promote if unresolved) |
+| pm ↔ ux | 23 | `338807da91` | row 35 certifies the green `+$0` on a fully-unmarked book (`PositionsPage.tsx:147-154,189`) → add a Net P/L row (`unavailable` when no open row is marked; coverage caption when partial) |
 
-\* id per `conflicts.json`; verify at fold time.
+Ids in this table were re-checked against `conflicts.json` after the pm's R3 flagged a one-row shift in the `pm ↔ ux` block (2026-09-06); the inbox files were generated from `conflicts.json` and were never wrong.
 
 ## 4. Product calls — the owner's, surfaced one at a time (Decision cards)
 
