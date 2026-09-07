@@ -153,3 +153,138 @@ checked against the actual source file, not against the council's paraphrase of 
   and correctly corrected in §1.
 
 ## Verdict: PASS WITH FINDINGS
+
+## S2 pass 2 — 2026-09-06
+
+**Closure status of the five pass-1 findings.**
+
+1. **D-C's "seven vs eight" miscount — CLOSED.** SPEC §1's in-scope bullet, §2.8, criterion U-32 and
+   `decisions.md` §4 D-C's fact statement all now read **eight** and enumerate `LiveTape.tsx:179`
+   alongside `StructureHeroPanel.tsx:216`. Re-verified at source: a grep of `<Widget ... info={…}>` call
+   sites confirms exactly eight — `OffExchangeBlocks.tsx:39`, `DealerFlowProjection.tsx:159`,
+   `TermStructure.tsx:34`, `MarketContext.tsx:417`, `FreshPositioning.tsx:38`, `IvRank.tsx:276`,
+   `StructureHeroPanel.tsx:216`, `LiveTape.tsx:179` — and `decisions.md`'s own headline now documents the
+   "first written as seven" correction inline (§4 D-C) rather than silently rewording it. Genuinely fixed
+   at every site named in the pass-1 finding, not merely reworded.
+
+2. **N-1's vacuous mutation-guard reuse — CLOSED.** §2.3, criterion N-1, §7 item 2 and §8's
+   `[structural-over-prose-enforcement]` bullet now all state, in matching language, that
+   `fonts.spec.ts:157-161`'s existing guard "exercises neither new needle" and "is not inherited" — each
+   needle must ship its **own** red-going poison test. Re-read `fonts.spec.ts:154-167` at source: the
+   guard is exactly the `RETIRED_FACES` regex test (`Inter`/`Roboto Mono`/`Cascadia Code`), confirming the
+   pass-1 diagnosis and the pass-2 fix are both accurate.
+
+3. **The undefined `retained` staleness threshold — CLOSED, and closed correctly.**
+   `R3-architect-addendum.md` withdraws the age-based repair entirely (it was arithmetically wrong — ms
+   vs. ns, and a `0`-if-missing sentinel that would make a live symbol look permanently offline) and
+   replaces it with a boolean predicate that needs no threshold at all:
+   `live.offline && live.prices[sym] != null ? { retained: true } : null`. Re-verified at source
+   (`useLivePrices.ts`, `Scanner.tsx:100-160`): `live` is in scope at `Scanner.tsx:115` and `lp` (i.e.
+   `live.prices[r.symbol]`) at `:122`, so the predicate is genuinely computable where SPEC says it is
+   computed (`:119-126`); `es.onerror` (`:79-82`) sets `offline` synchronously; the watchdog's strict `>`
+   at `:85` on the `5_000`ms tick (`:86`) against `SILENCE_MS = 45_000` (`:37`) does produce a bounded
+   window after the last price frame, matching criterion 12's "[45 s, 50 s)" language; and the header swap
+   at `Scanner.tsx:144` reads the identical `live.offline` used in the predicate, so criterion 12's
+   "one flag" clause holds. Because the predicate returns only `{retained: true}` or `null`, `retained:
+   false` is unreachable on this code path by construction — criterion 13's "structurally, not by
+   convention" claim is correct, not just asserted.
+
+4. **INTERFACE_CONTRACT.md's 503 mislabel — CLOSED.** Now reads "503 (universe unavailable —
+   `state.universe` is `None`, `scan.rs:776-782`, a config/data-availability fault, **not** the auth
+   service's own `auth_unavailable()`)". Re-read `scan.rs:776-782` at source: matches exactly, including
+   the `SERVICE_UNAVAILABLE` status and the guard on `state.universe.as_ref()`.
+
+5. **`decisions.md`'s "3 product calls" headline undercount — CLOSED.** The headline now reads "(First
+   written as '3'; S2 Minor #2 caught the undercount — D-D was added after the technical exchange
+   surfaced the register precedent.)" — the correction is recorded in place rather than silently applied.
+
+**New finding, attacking §2.8/D-C's repair.**
+
+### Critical
+
+- **U-32's own text says the desk's shipped specs are re-run "for the hero AND the live tape," but no
+  spec named anywhere in §2.8/U-32 ever touches the hero's `Widget`-frame info icon — before the repair or
+  after it.** `StructureHeroPanel.tsx:216` (`info={HERO_INFO}`) is one of the eight sites D-C's fix must
+  convert. The only hero-scoped entry in the AC-35 suite is `ladder-foot` (`curvature-v2.spec.ts:585-589`,
+  correctly described by SPEC itself as "one **FigureCell** site"), which locates
+  `page.getByTestId('ladder-foot')` — a `data-testid` that belongs to `LadderFoot.tsx:23`
+  (`level-ladder/LadderFoot.tsx`, mounted inside the hero at `StructureHeroPanel.tsx:261`), a completely
+  different DOM subtree carrying its **own** `FigureCell`-level `info` (Vol-norm GEX / Raw GEX 1% shock),
+  unrelated to the shared `Widget` header's `info` prop that D-C actually repairs. `'structure-hero'` does
+  not appear in `HOVER_INFO_WIDGETS` (`curvature-v2.spec.ts:502-507`) either. So the hero's frame-level ⓘ
+  has **zero** AC-35 coverage today, and SPEC's own diagnosis of the gap — *"live-tape appears only in the
+  AC-20b width block … so the tape's frame ⓘ is covered by nothing today. This suite must be extended, not
+  merely re-run"* (§2.8) — correctly names live-tape's half of this exact problem while silently missing
+  its own twin on the hero. The fix pass 2 shipped (adding live-tape) therefore leaves U-32 — an
+  **OWNER**-ruled, **SB** (ship-blocking) criterion — provably unable to catch a build that ships the
+  `Widget.tsx` conversion for every site *except* the hero's: AC-35 would stay green regardless, because
+  the only assertion it makes anywhere near the hero targets a different, already-focusable control that
+  D-C does not touch. This is the same failure class criterion 69 and `[structural-over-prose-enforcement]`
+  exist to catch (§8: *"phase 1 shipped two `expect(true).toBe(true)` bodies under a 'MUTATION PROOF'
+  heading"*) — a gate that reads as enforcement but is vacuous for the specific regression it is invoked to
+  prevent — landing here on the very criterion (U-32) that pass 1's Critical finding was about, and on the
+  same "the churn is measured here, not discovered at GATE Q" promise `decisions.md` §4 D-C makes for this
+  exact criterion. **Fix:** name a hero-scoped assertion in §2.8/U-32 (analogous to the live-tape fix, but
+  targeting the `Widget`-frame header specifically, not `ladder-foot`) alongside the live-tape one.
+
+### Important
+
+- **Even with live-tape (and the hero, once named) added, the reused `HOVER_INFO_WIDGETS`-style assertion
+  is not guaranteed to exercise the newly-converted `Widget`-frame button rather than a pre-existing,
+  unrelated one, because neither §2.8 nor U-32 states what accessible name the promoted call must carry.**
+  Three of the four widgets already in `HOVER_INFO_WIDGETS` — `iv-rank`, `market-context`,
+  `dealer-flow-projection` — are *also* three of D-C's eight `info=` sites, and all three already ship
+  **other** `AccessibleHelp` buttons inside their bodies from phase 1's ruling 6, each also named
+  `About {label}` and each unrelated to the widget-level `info` D-C repairs: `IvRank.tsx:107-121`
+  (`CaptionLabel`, `:118` `<AccessibleHelp label={`About ${label}`} …>`) vs. `IvRank.tsx:276`
+  (`info={IVR_INFO}`); `MarketContext.tsx:134-146` (`CaptionLabel`) vs. `MarketContext.tsx:417`
+  (`info={MC_INFO}`); `DealerFlowProjection.tsx:71-83` (`LimbLabel`) vs. `DealerFlowProjection.tsx:159`
+  (`info={DFP_INFO}`). `live-tape` has the same shape one level down: `FigureCell.tsx:307`
+  (`{info && <AccessibleHelp label={`About ${label}`} …>}`) already fires for every `FigureCell` `info`
+  prop `LiveTape.tsx` supplies (Net flow `:200`, Spread `:211`, …), all unrelated to
+  `LiveTape.tsx:179`'s own `info={info}`. The AC-35 assertion (`curvature-v2.spec.ts:574-579`) is
+  `container.getByRole('button', { name: /^About /i }).first()` scoped to the **whole widget container** —
+  so today, before D-C ships, `.first()` necessarily resolves to one of these pre-existing body buttons
+  (the header's info isn't a button yet). After D-C ships, `Widget.tsx`'s header renders before its body
+  in every consumer (`Widget.tsx:452-453`: `header(false)` box before the `body` box), so `.first()`
+  *would* very likely pick up the new header button **if** it is named with the same `About {X}` prefix
+  every other `AccessibleHelp` call in this codebase uses — but that convention is nowhere required by
+  §2.8, U-32, or `decisions.md` §4 D-C; it is only observable by reading the other call sites. A build
+  that promotes `AccessibleHelp` into `Widget.tsx` with a differently-worded `label` (e.g. `label={title}`,
+  or a fixed string) would silently leave `.first()` matching the same pre-existing, already-passing body
+  button it always matched, and the "re-run" would report green without having exercised the header
+  control at all. **Fix:** state the accessible name the promoted `Widget.tsx` call must use (e.g.
+  `About {title}`, matching the established convention) as part of §2.8/U-32, not left implicit.
+
+**Collateral, checked.** `SPEC.md`'s header banner still declares `Status: **draft**` and the same "four
+OWNER rulings, two CONDUCTOR calls" provenance text (line 5, lines 7–20). All 27
+`<!-- spire:council-resolution:v1 … folded -->` markers are present in `SPEC.md`
+(`grep -c` = 27), matching `decisions.md`'s 27-entry `conflicts.json` count carried over from pass 1 —
+no marker was dropped or duplicated by the pass-2 edit. `**SB**` occurs 54 times (53 criteria rows + the
+one prose-legend use at line 629), an unchanged count from pass 1's independently-verified 53, meaning the
+pass-2 edits (rewording rows 11A, 12, 13, 15, N-1, U-32, CF-1 and §1/§2.1/§2.2/§2.3/§2.7/§2.8) changed text
+in place without adding or removing a criterion row. §9 item 4 (the "`not recorded` on a fourth surface"
+contingency) is recorded **CLOSED**, matching pass 1's "tested and resolved" finding rather than leaving it
+as an open item after the review that closed it. I did not find anything in the new §2.7 "not buildable"
+entries, the new §2.8 section, or the eight further facts §8 lists as re-read for pass 2 (the `<Widget
+info=>` count; `SILENCE_MS`/strict `>`/5s interval; the SSE heartbeat comments; `ts_ns`'s units and its
+"0 if missing"; the `fonts.spec.ts` guard's actual needle; the `PUT /api/scan/view` 503 arm;
+`AccessibleHelp`'s location/export/importer count; canon rule 24's accepted-cost clause) that contradicts
+`decisions.md`, beyond the AC-35 desk-spec gap above. `AccessibleHelp.tsx` itself (read in full) imports
+only from `@mui/*` — promoting it into `shared/` does not relocate the `pages/` → `shared/` inversion
+D-C's mechanism exists to avoid, and its **nine** importers are exactly the nine files a repo-wide grep of
+`AccessibleHelp` turns up (`IvRank.tsx`, `MarketContext.tsx`, `DealerFlowProjection.tsx`, `FigureCell.tsx`,
+`StraddleMove.tsx`, `DecisionCard.tsx`, `GroundingNote.tsx`, `ProvenanceChip.tsx`, `reasoning.tsx`) —
+matching §2.8's stated count exactly. `shared/ui/` and `shared/a11y/` both already exist on disk, matching
+§2.8's claim that the promotion needs no new directory.
+
+## Verdict (pass 2): PASS WITH FINDINGS
+
+The loop is capped at this pass. Four of the five pass-1 findings are cleanly closed at source; the fifth
+(the `retained` predicate) is closed correctly and with the right mechanism. Pass 2's own repair to D-C
+(§2.8, the `AccessibleHelp` promotion, and the desk-spec re-run list) introduces one new Critical gap — the
+hero's own `Widget`-frame info icon has no AC-35 coverage, contradicting U-32's explicit "hero AND the live
+tape" text — and one new Important gap in the same area (the reused assertion's correctness depends on an
+unstated naming convention). Both remain open and are surfaced to the owner as-is: this is the same
+OWNER-ruled, ship-blocking criterion (U-32/D-C) pass 1 flagged, and it is not yet in a state where its own
+stated verification mechanism can be trusted to catch the regression it names.
