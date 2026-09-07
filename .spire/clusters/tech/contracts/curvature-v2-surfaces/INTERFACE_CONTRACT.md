@@ -34,9 +34,9 @@ parsed shape decides SPEC §2.2's liveness ruling.
 |---|---|---|---|---|
 | `GET` | `/api/scan` | **The sweep behind every scanner figure** — price, chg %, score, tier, regime, vol, flip, walls, both distances, status and as-of, plus the caller's effective view and the sweep heartbeat. Consumed via the shipped `getScan()` client from `useScan`, on a `SCAN_POLL_MS = 30_000` interval (`useScan.ts:60`). | **optional-session** (`apps/api/src/routes/scan.rs:318`) — anonymous-open, so it is **not** marked `auth` below | Best-effort at the client: a failed poll keeps the last-known rows and flips `degraded` (`useScan.ts:156-161`); the table never blanks and never throws. Absent computations are `null` per field, never an HTTP error. |
 | `GET` | `/api/ticker/{ticker}` | The anchor bundle the **positions** page polls for marks (`PositionsPage.tsx:95` `getTicker(ticker)`). A failure leaves the prior bundle in place and degrades per-row marks; records never drop. | Anonymous-open | `404` only when the ticker has no chain at all. The full field list is pinned by phase 2's contract and is **not** restated here; this file pins only the structural spine positions binds to. |
-| `GET` | `/api/stream/prices?symbols=…` (SSE) | The per-symbol live price overlay on the scanner (`useLivePrices.ts:57`). One `EventSource` for every rendered symbol, fanned out server-side. | Anonymous-open | Auto-reconnects; `onerror` flips `offline` (`:79-82`), plus a 45s silence watchdog (`:37,84-86`). Never blanks a row, never throws. **Not machine-checkable by `interface_conformance.mjs`** — the runner does not read event streams. **Not pinned below.** |
+| `GET` | `/api/stream/prices?symbols=…` (SSE) | The per-symbol live price overlay on the scanner (`useLivePrices.ts:57`). One `EventSource` for every rendered symbol, fanned out server-side. | Anonymous-open | Auto-reconnects; `onerror` flips `offline` (`:79-82`), plus a 45s silence watchdog (`:37,84-86`). Never blanks a row, never throws. The watchdog counts **price frames only**: this route's heartbeats are SSE *comments* (`stream.rs:434,446,500`) that `EventSource` never dispatches to `onmessage`, so a healthy stream on a quiet tape trips it. That is pre-existing, is **not** repaired here (the honest fix is a backend change criterion 67 forbids), and is named as carried debt in SPEC §2.2. **Not machine-checkable by `interface_conformance.mjs`** — the runner does not read event streams. **Not pinned below.** |
 | `GET` | `/api/stream/{ticker}` (SSE) | The page-scoped tape the **positions** page opens for its live-derived cells (`PositionsPage.tsx:118` `streamTicker`; the client builds the URL at `libs/api/src/lib/convexa.ts:1290`). Consumed unchanged. | Anonymous-open | Gap watchdog flips `streamOffline`; live marks degrade to the retained/bare arms while durable records persist. **Not machine-checkable; not pinned below.** |
-| `PUT` | `/api/scan/view` | The scanner's one gated, state-bearing action (save view). **Untouched by this phase.** | **session** (`scan.rs:343`) | `403 auth_required` signed-out, `422 validation` off-universe, `503 auth_unavailable`. **Deliberately NOT pinned**: it is a **mutating**, session-bound write that would persist a view against the caller's account on every conformance sweep. |
+| `PUT` | `/api/scan/view` | The scanner's one gated, state-bearing action (save view). **Untouched by this phase.** | **session** (`scan.rs:343`) | `403 auth_required` signed-out, `422 validation` off-universe, `503` (**universe unavailable** — `state.universe` is `None`, `scan.rs:776-782`, a config/data-availability fault, **not** the auth service's own `auth_unavailable()`). **Deliberately NOT pinned**: it is a **mutating**, session-bound write that would persist a view against the caller's account on every conformance sweep. |
 | `GET` | `/api/broker/credential`, `GET /api/broker/book` | The Broker tab's reads (`useBrokerBook.ts:62`, `renderState.ts:44`). This phase converts that tab's **figures** for register and vocabulary and touches **none** of its data. | **session** + a stored brokerage credential | **Deliberately NOT pinned**: SPEC §1 declares *no broker DATA work and no `/api/broker/*` change*; a sweep with a throwaway signup holds no brokerage credential, so pinning it would encode a configuration outcome as a contract FAIL. |
 
 **Wire facts that are load-bearing for the SPEC.**
@@ -51,11 +51,16 @@ parsed shape decides SPEC §2.2's liveness ruling.
   scanner figure carries a live mark this phase** (SPEC §3 criterion 11A, **OWNER — D-A**), and why
   adding the two fields here is named as the future phase that unlocks per-symbol marks. **Nothing in
   this phase changes this frame.**
-- **The per-symbol `ts` is what drives the retained arm, and it is already on the wire.** The
-  scanner's `{ retained: boolean } | null` prop (SPEC §2.1) is computed at `Scanner.tsx:119-126` from
-  the age of that timestamp. **Staleness of a timestamp is not a claim about the venue**, so it mints
-  no second liveness answer and needs no new field. This is a client-side derivation over an existing
-  field, not a wire change.
+- **The retained arm needs no new wire field — and it is NOT an age.** The scanner's
+  `{ retained: boolean } | null` prop (SPEC §2.1) is computed at `Scanner.tsx:119-126` as
+  `live.offline && live.prices[sym] != null ? { retained: true } : null` — the stream's own offline
+  flag ANDed with the datum's provenance, which is exactly what the shipped prop shape means (outer
+  null/non-null = the stream, inner boolean = the datum). It is **not** derived from the per-symbol
+  `ts`: that field carries the server's `ev.ts_ns` (`stream.rs:454,480`), declared *"Vendor timestamp
+  (nanoseconds when available; **0 if missing**)"* (`apps/api/src/domain/price.rs:18-19`), so an age
+  taken against `Date.now()` would be off by 10⁶ and every symbol whose vendor omitted the timestamp
+  would read permanently stale. SPEC §2.2 records that withdrawal. This is a client-side derivation
+  over state the client already holds — **not** a wire change, and no second liveness answer.
 - **`/api/scan`'s row fields are required keys with nullable values** (`ScanEnvelope` /
   `ScanRowDto`, `libs/api/src/generated/schema.ts:2235-2265`): `price`, `chg_pct`, `score`, `tier`,
   `regime`, `vol_regime`, `flip`, `call_wall`, `put_wall`, `dist_to_flip_pct` and

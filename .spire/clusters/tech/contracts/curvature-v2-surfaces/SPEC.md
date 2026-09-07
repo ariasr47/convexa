@@ -75,8 +75,18 @@ against **seeded, non-empty** pages.
   `convexa.alerts.v1`.
 - **The eight quiet-band widgets** — register enforcement and container steps, converted **in place**
   (ruling 6's layout freeze stands); the two mono-run widgets split **by figure, not by widget**.
-- **The `Widget` frame's ⓘ** becomes a focusable control at all seven live `info=` sites; **the ticker
-  desk is reopened for this single shared-frame change and nothing else** (**OWNER — D-C**).
+- **The `Widget` frame's ⓘ** becomes a focusable control at all **eight** live `info=` sites —
+  `OffExchangeBlocks.tsx:39`, `DealerFlowProjection.tsx:159`, `TermStructure.tsx:34`,
+  `MarketContext.tsx:417`, `FreshPositioning.tsx:38`, `IvRank.tsx:276` and the **two desk** sites,
+  `StructureHeroPanel.tsx:216` and `LiveTape.tsx:179` (whose `info={info}` is passed unconditionally,
+  `LiveTape.tsx:173-181`). The council's fact statement and this spec's first pass both said
+  **seven**; S2 re-counted `<Widget … info=…>` against the tree and the conductor confirmed it at
+  source, so the enumerated count is **eight** (`council/decisions.md` §4 D-C and §6). The mechanism —
+  one change at the single render site `Widget.tsx:245-249` — reaches all eight by construction and is
+  count-independent, but the count decides which desk specs re-run (§2.8, criterion U-32). **The
+  ticker desk is reopened for this single shared-frame change and nothing else** (**OWNER — D-C**),
+  and the promotion of `AccessibleHelp` out of `pages/` into `shared/` that the change requires is
+  **part of it, not a second change** (§2.8).
   <!-- spire:council-resolution:v1 db0bcfc326c947b21aaabf909014cb358d08993e3ee249ce6912f7470d0d4849 folded -->
 - **Widening the liveness fence** — `liveClaim.spec.ts:68-80`'s glob reaches the four surfaces with
   explicit EXEMPT entries, and `PositionsPage.tsx:88`'s banned `genuineIsLive` is replaced. Independent
@@ -107,6 +117,12 @@ against **seeded, non-empty** pages.
 - **Per-symbol live marks on `/scanner` — carried debt, dated** (**OWNER — D-A**), against the phase
   that adds `market_session` and a `live` flag to `/api/stream/prices`. Until then the scanner's
   branded predicate can only produce `NOT_LIVE`.
+- **The quiet-tape watchdog falsehood on `/scanner` — carried debt, dated, and NOT repaired here.**
+  `useLivePrices.ts:66` refreshes `lastSeen` only on a **price** frame, so a healthy stream on a quiet
+  tape trips the 45 s watchdog (`:84-86`) and the page reads `Prices offline · showing last known`
+  with nothing wrong. No frontend-only change can fix it — the separating signal is a heartbeat
+  **comment** (`stream.rs:444-449`) that `EventSource` never dispatches — so it rides the same dated
+  debt as the item above (§2.2).
 - **No broker DATA work.** No `/api/broker/*` change, no new broker network call, and **no change to
   the deliberate `NOT_RECORDED → NOT_PROVIDED` per-surface substitution** that `notANumber.ts:15-16`
   records as by design. The Broker tab's **figures** are in scope for register enforcement and for the
@@ -133,6 +149,9 @@ against **seeded, non-empty** pages.
 **Future (deliberately deferred), each booked in `BUILD_REPORT.md` with `file:line` and a phase**
 
 - Per-symbol live marks on `/scanner` — the phase that adds session fields to `/api/stream/prices`.
+- The quiet-tape watchdog falsehood — the **same** phase, because the honest fix is one line on that
+  same route (the heartbeat sent as a `data:` frame instead of a comment), and it is a backend change
+  criterion 67 forbids here (`useLivePrices.ts:66,84-86`; `stream.rs:444-449`).
 - Alert-history re-labelling as an **additive**, read-new-else-old shape change with `message` retained
   as fallback and a fixture authored from a pre-phase blob.
 - Settings section navigation — phase 4, with the three behaviours named above.
@@ -204,7 +223,9 @@ clip the sticky first column.
   `{ retained: boolean } | null`, computed once at `Scanner.tsx:119-126` where the live price is already
   in hand. `retained` is true **only** when the displayed price came from the now-dead stream; a symbol
   that never ticked keeps the polled swept price, which the poll still refreshes — no pause mark, no
-  F5. **Offline-bare therefore does not occur on scanner prices** (criterion 13).
+  F5. **Offline-bare therefore does not occur on scanner prices** (criterion 13), and it cannot: §2.2
+  states the predicate once, and under it `retained: false` is unreachable on this surface **by
+  construction**.
 
 <!-- spire:council-resolution:v1 6c2cf2c5e93575614599ab70258ced726ec21b5b55f570477ba3ecc4d14cded4 folded -->
 <!-- spire:council-resolution:v1 7da0330a44483301c998f19632bec0a5c147878ed449e89b297191331a0b090d folded -->
@@ -242,12 +263,61 @@ only narrows an existing claim. All three voices rejected "option A with `Prices
   (`Jargon.tsx:19-30`) and is not in the page text at rest, and no spec under `apps/dashboard/src`
   names `cadenceGloss` or its opening sentence, so the gloss edit lands on no shipped assertion.
 - **A stream drop renders the F4 retained arm through the unbranded `offline.retained` route**
-  (`FigureCell.tsx:174,257-268`) — dim + stroke pause mark + `offline · last known` — computed at
-  `Scanner.tsx:119-126` and driven by the **age of the per-symbol `ts`** (`useLivePrices.ts:24-27`).
-  This repairs a real shipped defect on the way: `useLivePrices.ts:65-67` calls `setOffline(false)` on
-  **any** frame, including a payload-less heartbeat, so the pause mark would otherwise clear while
-  prices are stale. **Staleness of a timestamp is not a claim about the venue**, so it mints nothing and
-  `[one-liveness-predicate]` is untouched.
+  (`FigureCell.tsx:174,257-268`) — dim + stroke pause mark + `offline · last known`. The predicate is
+  **watchdog ∧ provenance**, stated once here and computed once at `Scanner.tsx:119-126`, where `live`
+  (`:115`) and the per-symbol live price (`:122`) are already in hand:
+
+  > `priceOffline(sym) = live.offline && live.prices[sym] != null ? { retained: true } : null`
+
+  No per-symbol age and **no third number**. The prop's shipped shape says exactly this: the outer
+  null/non-null is **the stream's** state, the inner boolean is **the datum's** provenance
+  (`FigureCell.tsx:174`), which is how the shipped desk precedent already reads it —
+  `offline={tileOffline ? { retained: latch.retained } : null}` (`LiveTape.tsx:126,197,208,223`) over
+  `useStreamLatch.ts:19-20,42` (*"the ONLY thing that licenses `· last known`"*). Provenance, never
+  age — so scanner and desk render one concept one way.
+- **When criterion 12 becomes true, in shipped constants, none invented.** `live.offline`
+  (`useLivePrices.ts:33,94`) turns true **immediately on `es.onerror`** (`:79-82`), or at the first
+  watchdog tick strictly past `SILENCE_MS = 45_000` with no **price** frame (`:37`, strict `>` at
+  `:85`, `5_000`ms interval at `:86`) — a bounded **[45 s, 50 s)** window after the last price frame.
+  A test names that **event** and drives it (a mocked `EventSource` firing `onerror`, the repo's own
+  idiom, or fake timers); it never waits 45 s of wall clock.
+- **`retained: false` is unreachable on scanner by construction**, because the arm is only reachable
+  when `live.prices[sym]` exists. That is what makes criterion 13's *"`offline-bare` never occurs"*
+  **structural** rather than conventional — a property of the expression, not a convention a build
+  lane must remember.
+- **One flag, so the header and the figures cannot disagree.** `Scanner.tsx:144` swaps
+  `cadenceHeaderOffline` for `cadenceHeader` on `live.offline`, and the per-figure retained arm is
+  `live.offline && …` — the **same** flag from the **same** `useLivePrices` call (`:115`) in the same
+  render. Under this predicate that agreement is automatic; a per-symbol-age predicate would key the
+  header on a page flag and the figures on row ages, and they could disagree in both directions.
+  Criterion 12 carries the clause.
+- **The `ts`-age repair this spec asserted in pass 1 is WITHDRAWN, and the reason is a source fact.**
+  It rested on the premise that `useLivePrices.ts:65-67` clears `offline` on a **payload-less
+  heartbeat**. That premise is false on this route: `/api/stream/prices` heartbeats are SSE
+  **comments** — `stream.rs:434` (`.comment("connected")`), `:446` (`.comment("heartbeat")`, sent
+  exactly when `dirty` is empty, `:444-449`) and the transport keep-alive at `:500` — and
+  `EventSource` never dispatches `message` for a comment. The only frames that reach `onmessage` are
+  `data:` frames, emitted only when the batch is non-empty (`:457-464`), and every one carries
+  `prices`. So `setOffline(false)` at `:65-67` fires **only on a real price frame**, where under D-A it
+  asserts nothing beyond *"a price arrived"* — which is true. **It is not a defect, and this phase does
+  not touch it.** The withdrawn option was also arithmetically wrong, not merely uncited: the `ts` on
+  `LivePrice` (`useLivePrices.ts:24-27`, whose own comment at `:23` calls it an arrival time — it is
+  not) carries the server's `ev.ts_ns` (`stream.rs:454,480`), declared *"Vendor timestamp
+  (nanoseconds when available; **0 if missing**)"* (`apps/api/src/domain/price.rs:18-19`). `Date.now()
+  − lp.ts` would compare milliseconds to nanoseconds, and any symbol whose vendor omitted the
+  timestamp carries `ts: 0` and would render `offline · last known` **permanently, while live**.
+- **The real defect is the mirror image, it ships today, and it is carried debt — not repaired here.**
+  Because only price frames refresh `lastSeen` (`useLivePrices.ts:66`), a **healthy** stream on a
+  **quiet tape** — exactly when the server is sending heartbeat comments (`stream.rs:444-449`) — trips
+  `SILENCE_MS` and flips `offline` true (`:84-86`), so the page reads `Prices offline · showing last
+  known` (`Scanner.tsx:144`, `labels.ts:32`) with nothing wrong. No frontend-only change repairs it:
+  the signal that separates a quiet tape from a wedged socket **is** the heartbeat, and it is a
+  comment, structurally invisible to `EventSource`. The honest fix is one line on the same route (the
+  heartbeat as a `data:` frame) — a **backend** change criterion 67 forbids this phase — so it is
+  booked against D-A's already-dated carried debt (§1), against the phase that adds `market_session` +
+  `live` to `/api/stream/prices`. The chosen predicate **inherits this gap unchanged and adds no new
+  falsehood**; the withdrawn `ts`-age option would have added one at row scope and left this one
+  standing.
 - **Options B and C are closed, with their real costs recorded** so nobody re-proposes them cheaply.
   **B** (a second mint in `liveClaim.ts`) needs **no** backend change — the R1 claim that it did was
   withdrawn — but it *defeats the only shipped enforcement of the rule it re-opens*:
@@ -334,11 +404,15 @@ correct. The header readout hand-binds the mono face at `PositionsPage.tsx:185`,
 `FigureCell` conversion.
 
 **Enforcement is an extension of a shipped scan, not a new one.** `fonts.spec.ts:154-167` is already
-`?raw` over `/src/app/**` and already mutation-guarded (`:157-161`). It gains **two needles** —
-(1) no closed-nine member inside a mono-bound `sx`; (2) no font-family literal or widget-local
-`monoFontFamily` binding outside `shared/theme/tokens.ts` and the shared figure module — scoped to
-`features/trading/`, `pages/positions/` and `pages/scanner/` (criterion N-1). Forty-nine spec files
-already use this idiom.
+`?raw` over `/src/app/**`. It gains **two needles** — (1) no closed-nine member inside a mono-bound
+`sx`; (2) no font-family literal or widget-local `monoFontFamily` binding outside
+`shared/theme/tokens.ts` and the shared figure module — scoped to `features/trading/`,
+`pages/positions/` and `pages/scanner/` (criterion N-1). Forty-nine spec files already use this idiom.
+**The file's shipped mutation guard does NOT cover the extension, and the criterion says so.** The
+guard at `:157-161` asserts only that the `RETIRED_FACES` regex catches a retired **face literal**
+(`Inter`, `Roboto Mono`, `Cascadia Code`); it exercises neither new needle. So **each needle ships its
+own poison test that goes red** — the guard is not inherited. Claiming otherwise would ship exactly the
+vacuous poison-proof `[structural-over-prose-enforcement]` and criterion 69 exist to catch (§8).
 
 <!-- spire:council-resolution:v1 66cd71c1073343c1d28610a3a99270ffd80a1ebe3926d7f866e6aea77ca92557 folded -->
 
@@ -481,6 +555,12 @@ them:
   of the rule it re-opens (§2.2).
 - **Adding `market_session` / `live` to `/api/stream/prices`** (option C) — re-opens
   NO_BACKEND_CHANGE and criterion 67 this phase.
+- **Driving the scanner's retained arm from the age of the per-symbol `ts`** — withdrawn at source:
+  the premise (a payload-less heartbeat clearing `offline`) is false on this route, and the arithmetic
+  compares ms to ns with a `0 if missing` sentinel (§2.2).
+- **Wiring `pages/ticker/widgets/ai-rec/AccessibleHelp` into `shared/ui/Widget/Widget.tsx` where it
+  stands** — it makes `shared/` import from `pages/`, the same inversion §2.1 refuses for the figure
+  module. The component is promoted instead (§2.8).
 - **A value-row help host on `FigureCell`** — the duplicate focusable-help pattern ruling 6 bans, in the
   one component that currently proves the pattern is single (§2.3).
 - **Converting the positions `literal()` cells to `FigureCell`** — it deletes the three tips.
@@ -493,6 +573,49 @@ them:
   figure, so any tally is unsatisfiable without inventing figures. The deliverable is the property.
 - **Any new persisted user preference on these surfaces** — it would create a durable key and pull
   `[loss-free-durable-migration]` from "satisfied by absence" to the phase's sharpest risk.
+
+### 2.8 The `Widget` frame's ⓘ — one shared-frame change, and the move it requires (**OWNER — D-C**)
+
+`Widget.tsx:245-249` renders `info` as a bare icon in a hover tooltip, and **every** `<Widget info=…>`
+call site inherits that — **eight** of them today (§1), two on the desk (`StructureHeroPanel.tsx:216`
+and `LiveTape.tsx:179`). The ruling makes that icon the **one shipped focusable-help pattern**,
+`AccessibleHelp`, at the single render site; all eight sites are fixed by construction, which is why
+the owner could rule the mechanism while the count was still wrong.
+
+**The move is part of this change, not a follow-up.** `AccessibleHelp` is exported from
+`pages/ticker/widgets/ai-rec/AccessibleHelp.tsx:37`. Wiring it into `shared/ui/Widget/Widget.tsx` where
+it stands would make `shared/` import from `pages/` — **the exact inversion §2.1 refuses for the figure
+module**, recorded twice in shipped code (`notANumber.ts:18-23`, `liveClaim.ts:9-14`). So the component
+is **promoted into `shared/`** (under `shared/ui/`; the precise path is the build lane's — both
+`shared/ui/` and `shared/a11y/` already exist), and its **nine existing importers re-point with zero
+behaviour change**: the component itself is untouched — same props (`label`, `text`), same
+`aria-label`, same `stopPropagation` on click and focus, same `enterTouchDelay={0}`. Promotion and the
+`Widget.tsx` edit land together: U-32 is not satisfiable by either half alone, and shipping the frame
+edit without the move would leave a `shared/` → `pages/` import in the tree.
+
+**Which desk specs this reopens — named here rather than discovered at GATE Q.** U-32 re-runs all five,
+for the **hero AND the live tape**:
+
+- `apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts:496-592` — the AC-35 suite. It walks a **closed**
+  list of four widgets (`:502-507`) plus one `FigureCell` site (`ladder-foot`, `:585-589`);
+  `live-tape` appears only in the AC-20b width block (`:626,641`), so the tape's frame ⓘ is covered by
+  **nothing** today. This suite must be **extended**, not merely re-run.
+- `apps/dashboard/src/app/pages/ticker/ticker-hierarchy.spec.tsx:85,100,117-119` — it asserts the zone
+  labels are non-headings and reads `live-tape`; a new focusable button inside the shared frame changes
+  the desk's accessible tree and tab order at all eight sites.
+- `apps/dashboard/src/app/shared/theme/single-motion-moment.spec.ts:228-236,265-277` — its (e)
+  predicate asserts `widgetLivePulse` sits behind `...(live &&` plus the reduced-motion media query,
+  and its poison run string-transforms the **real** `Widget.tsx` source. D-C edits that same file, so
+  this suite is in scope by construction.
+- `apps/dashboard/src/app/pages/ticker/live-dot-census.spec.tsx:170-184,221-223,283-294` — it mounts
+  `LiveTape` + `StructureHeroPanel` + `ReadStrip` together, asserts the tape's own dot count, and
+  asserts a page-wide zero on a drop.
+- `apps/dashboard/src/app/pages/ticker/widgets/live-tape/LiveTape.spec.tsx:114-436` — the tape's own
+  spec.
+
+`ticker-desk-composition.spec.tsx:129` reads `widget-live-tape`'s `textContent` and `AccessibleHelp`
+renders an `aria-label` with no visible text, so it should be unaffected — cheap to include, and its
+greenness is evidence rather than an assumption.
 
 ## 3. Acceptance criteria (with user stories)
 
@@ -531,7 +654,7 @@ removes or rewrites that row and is a spec edit, not a rebuild.
 | 7a | S5 | Every figure that renders at the **20px base** steps 20 → 17 → 15 against its **own named `panel` container**, proven by a **rendered** assertion at a narrowed container width — never by the presence of the declaration | test |
 | 7b | S5 | A figure deliberately off the base ladder (a 12px list row; a table cell at `fontSize: 'inherit'`) keeps its **shipped size**, and every such site is named with its reason in the build report | review (build report) |
 | 8 | S5 | Every panel that hosts a stepped figure is a container-query context under the single shipped name `panel` — nested `PanelContainer`s where a widget lays several figures across one panel — and **no second container name** is introduced anywhere this phase touches | test |
-| N-1 | S2·S6 | **Negative space, mutation-proved:** no closed-nine member renders inside a mono-bound `sx`, and no font-family literal or widget-local mono binding exists outside `shared/theme/tokens.ts` and the shared figure module, across `features/trading/`, `pages/positions/` and `pages/scanner/` — the shipped `?raw` scan at `fonts.spec.ts:154-167` extended with two needles, keeping its mutation guard (`:157-161`) | test (**SB**) |
+| N-1 | S2·S6 | **Negative space, mutation-proved:** no closed-nine member renders inside a mono-bound `sx`, and no font-family literal or widget-local mono binding exists outside `shared/theme/tokens.ts` and the shared figure module, across `features/trading/`, `pages/positions/` and `pages/scanner/` — the shipped `?raw` scan at `fonts.spec.ts:154-167` extended with two needles, **each needle shipping its OWN poison test that goes red**. The file's existing guard (`:157-161`) proves only that a retired **face literal** (`Inter`) is caught and exercises **neither** new needle, so it is not inherited and does not certify the extension | test (**SB**) |
 
 ### B. Scanner
 
@@ -540,8 +663,8 @@ removes or rewrites that row and is a spec edit, not a rebuild.
 | 9 | S1 | Every scanner figure — price, chg %, score, tier, regime, vol, flip, walls, distances, as-of — states its register in **both** the table and the card layout, and the two layouts render the same datum **identically** | test (**SB**) |
 | 10 | S1 | Scanner **structure** figures (score, tier, regime, vol, flip, walls, distances, as-of) carry **no** live mark in any connection state | test (**SB**) |
 | 11A | S1 | **No scanner figure — the price included — carries a live mark in any connection state** (**OWNER — D-A**) | test (**SB**) |
-| 12 | S6 | On a price-stream drop, a price whose displayed value came from the **now-dead stream** renders at reduced emphasis with the declared stroke pause mark and the caption `offline · last known` — observable as `[data-testid="cell-price"][data-figure-state="offline-retained"]` — while every structure figure beside it keeps **identical text** and is **not** dimmed | test (**SB**) |
-| 13 | S6 | On the same drop, a symbol that **never** received a streamed price renders its swept price at full strength, with no pause mark and no last-known wording; `offline-bare` never occurs on a scanner price | test (**SB**) |
+| 12 | S6 | On a price-stream drop, a price whose displayed value came from the **now-dead stream** renders at reduced emphasis with the declared stroke pause mark and the caption `offline · last known` — observable as `[data-testid="cell-price"][data-figure-state="offline-retained"]` — while every structure figure beside it keeps **identical text** and is **not** dimmed. The **event** is `live.offline` turning true: immediately on the stream's `onerror` (`useLivePrices.ts:79-82`), or at the first watchdog tick strictly past `SILENCE_MS = 45_000` with no price frame (`:37,85,86`) — a bounded **[45 s, 50 s)** window, driven in test by a mocked `EventSource` or fake timers and never by wall-clock waiting. The offline **header** (`Scanner.tsx:144`) and this per-figure arm read the **same** `live.offline` from the same hook call, so they never disagree in either direction | test (**SB**) |
+| 13 | S6 | On the same drop, a symbol that **never** received a streamed price renders its swept price at full strength, with no pause mark and no last-known wording; `offline-bare` never occurs on a scanner price — **structurally**, because the prop is `live.offline && live.prices[symbol] != null ? { retained: true } : null` (§2.2), so `retained: false` is unreachable on this surface by construction rather than by convention | test (**SB**) |
 | 14 | S6 | While the price stream is down, **no price figure flashes on change** | test (**SB**) |
 | 15 | S6 | **No scanner prose asserts liveness in any connection state** (**OWNER — D-A**; the closed set widened from the header alone to the header **and its gloss** by **CONDUCTOR**, `council/decisions.md` §4 D-A): the cadence header states the **price cadence** and the **structure cadence** as two claims and the word `live` does not appear in it; its gloss (`labels.ts:26-29`, rendered at `Scanner.tsx:143-146`) states **cadence and basis only** — structure re-computes about every 3 minutes, names that just moved sooner, and those numbers are a recent snapshot rather than a live read — and opens with **no** claim that prices stream live; `cadenceHeaderOffline` (`labels.ts:32`) is byte-identical | review |
 | 16 | S6 | With the sweep worker down, rows keep their last-known values under the warning treatment (burnt orange + icon), every figure keeps its register, and **no row is blanked** | test |
@@ -629,7 +752,7 @@ removes or rewrites that row and is a spec edit, not a rebuild.
 | 57b | S5·S6 | A widget whose input was **never delivered** says so in its own words and states **no market fact** about a ticker nobody scored | test |
 | 58 | S5 | **No** quiet-band figure carries a live mark in any connection state | test (**SB**) |
 | 59 | S5 | Every hover-revealed help control across the eight widgets is reachable **by tap and by keyboard focus** at every checked width — including the off-exchange proximity chip, which sits outside the four widgets ruling 6 fixed | test (**SB**) |
-| U-32 | S5 | The **`Widget` frame's ⓘ** is a focusable control (tap, Enter/Space, Escape) at **all seven** live `info=` sites, using the ONE shipped focusable-help pattern. **The ticker desk is reopened for this single shared-frame change and nothing else** — no desk layout, copy, state or spec content changes — and the desk's own shipped specs (a11y tree, focus order, single-motion-moment, live-dot census) are **re-run inside this criterion** and stay green (**OWNER — D-C**) | test (**SB**) |
+| U-32 | S5 | The **`Widget` frame's ⓘ** is a focusable control (tap, Enter/Space, Escape) at **all eight** live `info=` sites — `OffExchangeBlocks.tsx:39`, `DealerFlowProjection.tsx:159`, `TermStructure.tsx:34`, `MarketContext.tsx:417`, `FreshPositioning.tsx:38`, `IvRank.tsx:276`, `StructureHeroPanel.tsx:216` and `LiveTape.tsx:179` — using the ONE shipped focusable-help pattern, **promoted into `shared/` in the same change** so the shared frame never imports from `pages/`, its existing importers re-pointed with **zero behaviour change** (§2.8). **The ticker desk is reopened for this single shared-frame change and nothing else** — no desk layout, copy, state or spec content changes — and the desk's own shipped specs are **re-run inside this criterion** and stay green for the **hero AND the live tape**: `curvature-v2.spec.ts:496-592` (AC-35 — **extended**, because its site list at `:502-507` does not contain `live-tape`), `ticker-hierarchy.spec.tsx:85,100,117-119`, `single-motion-moment.spec.ts:228-236,265-277`, `live-dot-census.spec.tsx:170-184,221-223,283-294` and `LiveTape.spec.tsx:114-436` (**OWNER — D-C**) | test (**SB**) |
 | 60 | S5 | Each widget states its **own** basis and as-of, and none is a scoring input | review |
 | 61 | S5 | The off-exchange band stays neutral and **context-only**: no directional colour, no side claim, block prints display-only | test |
 
@@ -686,7 +809,8 @@ a single fixture asserting three strings differ proves nothing about the app, an
 criterion demanding two marks the app cannot produce together goes green against an unreachable state.
 12/13, 27a/27b and 35a–35e each name their arm; if a fixture cannot reach one, the honest outcome is a
 bounce, not a pass. Criterion 13 records the reachability fact that makes the scanner pair honest:
-under the `retained` computation of §2.1, **offline-bare does not occur on scanner prices at all**.
+under §2.2's `retained` predicate, **offline-bare does not occur on scanner prices at all**, and it
+cannot — `retained: false` is unreachable there by construction.
 
 **Row 62 measures seeded pages, because the shipped suite does not.** `no-overflow.spec.ts`'s `seed()`
 takes `{ scheme, positions }` only; `/alerts` is walked with **no rules and no events**, so it measures
@@ -825,13 +949,18 @@ is (U-19), and is removed the moment it resolves.
 - **`not set` is a member of the closed nine, confirmed at source** (`notANumber.ts:30`, third position
   in the `NOT_A_NUMBER` tuple at `:26-36`). ux's proposal needed no substitution and mints nothing; the
   Amendments fallback the council reserved is **not** used.
-- **`not recorded` on alerts is a per-surface subset, not a second vocabulary.** Canon rule 24 says the
-  three ship *"on the positions and broker surfaces"*, and it also states the accepted cost in the same
-  rule: *"the fix if one appears is a per-surface subset, not a second vocabulary."* Alerts is a third
-  durable client store with the same failure mode, and the alternative shipped today is the bare word
-  `level` — a **tenth** literal outside the closed set. Using an existing member on a fourth surface
-  keeps the vocabulary closed; minting `level` does not. (If the skeptic disagrees, this becomes an
-  Amendments line rather than a criterion — §9 item 4.)
+- **`not recorded` on alerts is a per-surface subset, not a second vocabulary — tested at source and
+  settled.** Canon rule 24 says the three ship *"on the positions and broker surfaces"*, and the **same
+  rule's very next sentence** states its accepted cost: *"nothing structurally stops a ticker surface
+  rendering `no basis`; no code path produces it, and the fix if one appears is a per-surface subset,
+  not a second vocabulary"* (`DESIGN_SYSTEM.md:179`). A rule that **pre-approves** one of these members
+  appearing on an unlisted surface is **descriptive** of where the three originated, not exhaustive of
+  where they may be used. The skeptic tested exactly that reading at source and resolved it on those
+  grounds (`council/S2-findings.md`; `council/decisions.md` §6). Alerts is a third durable client store
+  with the same failure mode, and the alternative shipped today is the bare word `level` — a **tenth**
+  literal outside the closed set. Using an existing member on a fourth surface keeps the vocabulary
+  closed; minting `level` does not. **Closed, not contingent** — no Amendments line is filed and
+  criterion 47d stands as written (§9 item 4).
 - The unread mark moves off the coloured left edge into the label row and type (44); the honesty line
   about back-fill and the "stored in this browser" disclosure are both present (U-24); every firing
   timestamp names its zone (U-27); and the three empties are three sentences (48).
@@ -902,6 +1031,8 @@ figure). It lands **one queued canon amendment** and files **one Amendments ques
   and the `?raw` scan's two needles land in **one** change: extracting the marks while `FigureCell`
   still declares them locally, or deleting a widget's `MONO` while the scan is not yet extended, leaves
   the phase's central guarantee unenforced in a green build. That coupling is intended, not a surprise.
+  The same is true of D-C's pair: the `Widget.tsx` frame edit and `AccessibleHelp`'s promotion to
+  `shared/` land together or not at all (§2.8).
 
 ## 6. Interface — pointer
 
@@ -934,9 +1065,10 @@ component. Browser (Playwright) for overflow, container stepping, touch targets 
 1. **One liveness answer.** The `LiveClaim` brand on every claim prop (compile-time), plus the widened,
    mutation-guarded banned-name scan with live-checked EXEMPT entries (criterion 6). A stale exemption
    red-builds.
-2. **One register decision.** The `?raw` scan of criterion N-1, extending the shipped, already
-   mutation-guarded scan rather than minting a new one — no closed-nine member in a mono-bound `sx`, no
-   font-family literal outside the tokens module and the shared figure module.
+2. **One register decision.** The `?raw` scan of criterion N-1, extending the shipped scan rather than
+   minting a new one — no closed-nine member in a mono-bound `sx`, no font-family literal outside the
+   tokens module and the shared figure module. That file's shipped guard covers only its retired-face
+   needle, so **each new needle ships its own poison run** and inherits nothing (§2.3).
 3. **The two offline arms**, on both surfaces, each keyed on the DOM marker at the cell testid — never
    assuming co-location with `data-figure-register` (§2.1).
 4. **The closed nine stays closed** — membership, non-synonymy against three shipped testids, Sans
@@ -962,7 +1094,10 @@ criterion 62 is green on empty pages.
 
 **Desk churn is measured here, not discovered at GATE Q.** D-C reopens the desk for one shared-frame
 change; U-32 re-runs the desk's own shipped specs — a11y tree, focus order, single-motion-moment, live
-dot census — inside the criterion.
+dot census, and the tape's own spec — inside the criterion, for the **hero AND the live tape** (§2.8).
+One of them is **extended, not merely re-run**: the AC-35 e2e suite walks a closed site list that does
+not contain `live-tape` (`curvature-v2.spec.ts:502-507`), so the tape's frame ⓘ is covered by nothing
+today.
 
 **Reviewed rather than automated:** 7b, 15, 43, 47c, 56, 60, 63, 69, U-15, U-19, U-24, U-27, U-37 —
 pinning those strings or that composition in assertions buys nothing a reviewer does not already give,
@@ -992,7 +1127,8 @@ From the BRIEF's invariant watch, restated with **where each one bites**:
 - **`[structural-over-prose-enforcement]`** — bites at 2, N-1, 7a and 69. Every rule this phase lands
   ships as a scan or a type with a poison run that goes red and an anti-vacuity assertion. Phase 1
   shipped two `expect(true).toBe(true)` bodies under a "MUTATION PROOF" heading; that is the failure
-  69 exists to catch.
+  69 exists to catch — and it is why N-1 now demands a **new** poison test per needle instead of
+  inheriting `fonts.spec.ts:157-161`, which exercises neither of them (§2.3).
 - **`[single-shared-sim-entry-dialog]` + `[no-real-order-path]`** — bite at 34: the Broker tab stays
   read-only with no entry, order or cancel control, and the one entry affordance opens the single shared
   `TradeEntryDialog` as a variant, never a fork.
@@ -1001,13 +1137,27 @@ From the BRIEF's invariant watch, restated with **where each one bites**:
 - **`[loss-free-durable-migration]` — the sharpest risk on this surface set** — bites at 51, 52, 70 and
   N-5. No key and no shape changes; the one repair is a **read-path** guarantee. `convexa.uiprefs.v1` is
   untouched, which is also why criterion 39 forbids importing the canvas's account-persistence footnote.
-- **`[cited-code-is-verified-not-assumed]`** — bites on this document. Where `decisions.md` summarises,
-  the signed R3 text was read for the exact wording; six facts were re-read at source for this
-  synthesis, and two of them changed what is written here: `not set` **is** a member of the closed nine
-  (`notANumber.ts:30`), so no substitution and no Amendments line is needed; and the Net P/L sum is
-  consumed only by its own render (`PositionsPage.tsx:189,193`), which answers pm's open ask. The same
-  rule settles one citation drift: `decisions.md` §4 D-A cites `cadenceHeaderOffline` at `labels.ts:31`,
-  which is the doc-comment line; the constant is at `:32` and this spec cites `:32` throughout.
+- **`[cited-code-is-verified-not-assumed]`** — bites on this document, and in pass 1 it bit. Where
+  `decisions.md` summarises, the signed R3 text was read for the exact wording, and **six** facts were
+  re-read at source for that pass — each one this document itself marks as read: (1) `not set`'s
+  membership (`notANumber.ts:26-36,30`); (2) the Net P/L sum's only consumers
+  (`PositionsPage.tsx:147-154,189,193`); (3) `cadenceHeaderOffline`'s true line (`labels.ts:32`, not the
+  `:31` doc comment `decisions.md` §4 D-A cites); (4) the cadence **gloss** and its render
+  (`labels.ts:26-29`, `Scanner.tsx:143-146`); (5) `literal()`'s missing `tabIndex` / `describeChild`
+  (`PositionRow.tsx:145-153`); (6) `dashCell`'s deliberate absence of a testid
+  (`PositionRow.tsx:167,69`). Two of them changed what is written here — `not set` **is** a member, so
+  no substitution and no Amendments line is needed, and the Net P/L sum is purely presentational, which
+  answers pm's open ask. **The `info=` site count was NOT among the six.** Pass 1 carried the council's
+  "seven" through unchecked into §1 and into the ship-blocking U-32; S2 enumerated the tree and found
+  **eight** (`LiveTape.tsx:179`), and the conductor confirmed it at source — the correction is folded at
+  §1, §2.8 and U-32. Pass 2 re-read eight further facts at source and every one of them changed text
+  above: the eight `<Widget info=…>` call sites; `SILENCE_MS`, the strict `>` and the 5 s interval
+  (`useLivePrices.ts:37,85,86`); the SSE heartbeat **comments** that withdraw §2.2's old `ts`-age
+  premise (`stream.rs:434,446,500` and the price-frame path `:457-464`); `ts_ns`'s units and its
+  *"0 if missing"* (`apps/api/src/domain/price.rs:18-19`); the needle the `fonts.spec.ts` guard
+  actually tests (`:154-167`); the `503` arm on `PUT /api/scan/view` (`scan.rs:776-782`);
+  `AccessibleHelp`'s location, export and nine importers; and canon rule 24's accepted-cost clause
+  (`DESIGN_SYSTEM.md:179`).
 - **`[best-effort-isolated-or-null]`** — bites at 16, 57 and §5: a dropped stream never blanks a row,
   and an unavailable widget never degrades a neighbour.
 
@@ -1040,12 +1190,19 @@ From the BRIEF's invariant watch, restated with **where each one bites**:
    rendering applies to `U+26A0` exactly as it does to `⏸`), but it is an **Amendments** line for the
    owner with `labels.ts:196,205,211` attached — not a criterion this phase may assert. The chips ship
    byte-identical.
-4. **`not recorded` on a fourth surface is stated as settled here and is the skeptic's to test.** §4.5
-   applies canon rule 24's own *"per-surface subset, not a second vocabulary"* clause, on the ground
-   that the shipped alternative is the bare word `level` — a tenth literal outside the closed set. If the
-   skeptic reads rule 24's *"ship on the positions and broker surfaces"* as exhaustive rather than
-   descriptive, this becomes an **Amendments** line and criterion 47d's absent arm re-points to a member
-   already licensed on alerts.
+4. **`not recorded` on a fourth surface — CLOSED, tested at source by the skeptic, not open.** This item
+   was filed as a live contingency: if rule 24's *"ship on the positions and broker surfaces"* were
+   **exhaustive**, §4.5's routing of `not recorded` onto alerts would become an Amendments line and
+   criterion 47d's absent arm would have to re-point. S2 tested exactly that reading at
+   `DESIGN_SYSTEM.md:179` and resolved it: the clause is **immediately followed by the same rule's own
+   accepted-cost sentence**, which pre-approves one of these members appearing on an unlisted surface as
+   *"a per-surface subset, not a second vocabulary"* rather than treating it as a violation. A rule that
+   pre-approves the case is **descriptive** of where the three originated, not exhaustive of where they
+   may be used — so routing `not recorded` onto alerts is **consistent with the canon**, reusing an
+   existing member instead of minting a tenth, while the shipped alternative (`level`) is itself outside
+   the closed set. **No Amendments line is filed; criterion 47d stands as written, SB included**
+   (`council/S2-findings.md`; `council/decisions.md` §6). Recorded as closed rather than deleted so the
+   reading is on the record at GATE Q instead of being re-derived there.
 5. **The conductor's call on the hover-only tips (U-15a) is reversible until the build lane starts.**
    Reversing it is a spec edit, not a rebuild: U-15a is removed and the defect lands in carried debt with
    `PositionRow.tsx:147-151` attached. It is recorded here so a reader can tell it from the four owner
