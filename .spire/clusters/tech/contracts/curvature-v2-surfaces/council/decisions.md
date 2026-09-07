@@ -260,3 +260,17 @@ rule's own next sentence pre-approves a member on an unlisted surface as "a per-
 closes §9 item 4. Everything else S2 checked held (27/27 conflicts traced; D-A/D-D mechanics; the single positions register
 inversion; the alerts loss path; the quiet-band freeze; durable-key inventory; the conformance block vs the generated schema;
 95 criteria / 53 SB re-counted; no scope leakage).
+
+## 7. S2 adversarial review — pass 2, 2026-09-06: **PASS WITH FINDINGS** — 5/5 pass-1 findings CLOSED; loop capped
+
+| sev | finding (new, on the pass-2 repair) | status |
+|---|---|---|
+| Critical | U-32 says the desk specs are re-run "for the hero AND the live tape", but no named spec exercises the **hero's** `Widget`-frame ⓘ (`StructureHeroPanel.tsx:216`): the only hero-scoped AC-35 assertion targets `ladder-foot` (`LadderFoot.tsx:23`, a different `FigureCell` control), and `structure-hero` is absent from `HOVER_INFO_WIDGETS` (`curvature-v2.spec.ts:502-507`). A build that converts every site except the hero would pass U-32. | **OPEN — owner** |
+| Important | Neither §2.8 nor U-32 pins the accessible name of the promoted `Widget`-frame button; the reused assertion `getByRole('button', { name: /^About /i }).first()` would keep matching pre-existing body buttons (`IvRank.tsx:118`, `MarketContext.tsx:134-146`, `DealerFlowProjection.tsx:71-83`, `FigureCell.tsx:307`) if the new button were named differently. | **OPEN — owner** |
+
+Conductor's proposed disposition (not applied — the cap says these are the owner's): fold both in ONE targeted synthesizer
+pass on approval, before GATE PLAN — (1) §2.8/U-32 name a hero-scoped assertion on the `Widget`-frame header ⓘ (extend AC-35's
+site list to all eight `info=` sites, hero and live tape included, asserting the header control, not `ladder-foot`); (2) the
+promoted call carries the accessible name **`About {title}`**, matching every shipped `AccessibleHelp` call, stated in §2.8 and
+U-32. Neither changes a ruling; both make U-32's teeth real. Reversal: the owner declines → both stay OPEN into GATE PLAN and
+the planner bounces U-32 at GATE Z (it cannot plan a verification it cannot run).

@@ -1,14 +1,21 @@
 # curvature-v2-surfaces — pipeline manifest
-Stage:        GATE I — brief written 2026-09-05 (phase 3 of 4 of the Curvature Terminal v2 build)
+Stage:        GATE C complete 2026-09-06 — SPEC + INTERFACE_CONTRACT drafted, S2 ×2 PASS WITH FINDINGS, loop capped with
+              **two open items on U-32 surfaced to the owner**; **awaiting owner approval** (phase 3 of 4 of the Curvature
+              Terminal v2 build)
 Repos:        frontend
 Brief:        BRIEF.md present
 Contracts:
-  - SPEC.md                    **draft** (R4 2026-09-06, 1006 lines) — 95 acceptance criteria, 53 `SB`; 27/27 council conflicts
-                               folded with inline markers; four OWNER rulings + one CONDUCTOR call tagged inline. Awaiting S2,
-                               `contract_lint`, then owner approval.
-  - INTERFACE_CONTRACT.md      **draft** (R4 2026-09-06, 182 lines) — NO_BACKEND_CHANGE measured three-dot; Conformance block
-                               pins `GET /api/scan` + the `/api/ticker/{ticker}` spine, deliberately NOT `PUT /api/scan/view`
-                               or `/api/broker/*`; durable client stores named with their loss-free rule.
+  - SPEC.md                    **draft, awaiting approval** (R4 ×2 + one targeted fold, 2026-09-06, **1218 lines**) — 95
+                               acceptance criteria, 53 `SB`; 27/27 council conflicts folded with inline markers (receipt verified
+                               27/27); four OWNER rulings + two CONDUCTOR calls tagged inline; `contract_lint` **0 errors** (12
+                               size warnings, advisory). S2 pass 1: 1 Critical + 2 Important + 2 Minor, **all five CLOSED at
+                               source** by R4 pass 2. S2 pass 2: **1 Critical + 1 Important still OPEN, both on U-32** (the
+                               ⓘ criterion's own verification never exercises the desk hero's frame ⓘ; the promoted button's
+                               accessible name is unpinned) — loop capped, owner to rule.
+  - INTERFACE_CONTRACT.md      **draft, awaiting approval** (187 lines) — NO_BACKEND_CHANGE measured three-dot; Conformance
+                               block pins `GET /api/scan` + the `/api/ticker/{ticker}` spine, deliberately NOT `PUT /api/scan/view`
+                               or `/api/broker/*`; `GET /api/stream/prices` wire facts (heartbeats are SSE comments; `ts_ns`);
+                               durable client stores named with their loss-free rule.
 Open amendments: **two queued for GATE S, neither applied mid-build.** (1) Rule 13 — owner ruling D-D 2026-09-06: the traced
                  clause widens to "traced to Convexa's computation **or to a record the trader entered**", so a user-entered
                  number (alert threshold, risk input, sim entry) renders Mono with no dotted rule. (2) Icons row — an owner
@@ -22,8 +29,9 @@ Open amendments: **two queued for GATE S, neither applied mid-build.** (1) Rule 
                  inventing a number.
 QA (GATE Q):  n/a
 Workers:      council R1x3 blind (402 / 273 / 422 lines), R2x3 sighted (27 conflicts, 27/27 quotes verified), R3x3 one
-              exchange (22/22 CONVERGE) — all 2026-09-06; R4 synthesizer + S2 skeptic pending on four owner rulings
-Last gateway:  GATE I @ 2026-09-05 — GATE C opened 2026-09-06
+              exchange (22/22 CONVERGE) + 1 architect addendum; R4 synthesizer x2 + 1 targeted fold; S2 skeptic x2 — all
+              2026-09-06
+Last gateway:  GATE C @ 2026-09-06 — council complete; owner approval pending
 
 ## Gate trail
 - GATE I @ 2026-09-05 — brief + cull recorded (6 candidates, 1 chosen, 5 culled with cause). Five facts read
@@ -47,6 +55,17 @@ Last gateway:  GATE I @ 2026-09-05 — GATE C opened 2026-09-06
   empty on a parse failure while the next write overwrites the key — a live `loss-free-durable-migration` breach;
   `PauseMark`/`LiveDot` module-private in `FigureCell.tsx`, so no surface outside the primitive can render the declared
   pause icon today.
+- GATE C (R4 + S2) @ 2026-09-06 — four owner rulings (D-A → A · D-B → OUT, phase 4 · D-C → IN · D-D → TRACED) taken one
+  card at a time; two CONDUCTOR calls, both reversible and recorded (hover-only positions tips fixed IN; D-A's closed set is the
+  header **and its gloss**, after R4 read `labels.ts:26-29` at source). R4 wrote SPEC (95 criteria / 53 SB) + INTERFACE_CONTRACT
+  (NO_BACKEND_CHANGE). **S2 pass 1:** 1 Critical — the D-C count was **eight** `info=` sites, not seven (`LiveTape.tsx:179`
+  missed; the miscount began in the conductor's decision card, ruling unaffected) — plus 2 Important (a mutation guard that
+  covered neither new lint needle; an unstated `retained` cutoff) and 2 Minor. An architect addendum settled the cutoff with
+  a finding of its own: the proposed `ts`-age repair was **arithmetically wrong** (`ts_ns` is nanoseconds or `0 if missing`,
+  `price.rs:18-19`) and heartbeats are SSE comments never seen by `onmessage` (`stream.rs:434,446,500`) — so `retained` =
+  the shipped 45 s watchdog ∧ stream provenance, no new constant; and D-C's fix needs `AccessibleHelp` promoted from
+  `pages/ticker/widgets/ai-rec/` to `shared/` or `shared/` imports from `pages/`. R4 pass 2 repaired all five. **S2 pass 2:**
+  5/5 CLOSED at source; **1 new Critical + 1 Important, both on U-32**, left open at the cap and surfaced to the owner.
 
 ## Inherited (do not rediscover)
 `state/spire-curvature-v2-foundations/RESUME.md` carries the phase table and the trap that cost phase 2 the
