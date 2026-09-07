@@ -1,14 +1,21 @@
 # RESUME — spire/curvature-v2-foundations
 
+**Phase 3 of 4 (`curvature-v2-surfaces`) is at GATE PLAN — spec approved by the owner 2026-09-06; planner dispatched 2026-09-07.**
 **Phase 2 of 4 (`curvature-v2-desk-and-read`) is DONE and closed at GATE S on 2026-09-05.**
-Branch has **not** been pushed and there is **no PR** — that is the owner's call.
+Branch is **19 commits ahead of origin, not pushed** (phase 2 was pushed; everything since is local) and there is **no PR** — the owner's call.
 
 | phase | scope | state |
 |---|---|---|
 | 1 `curvature-v2-foundations` | tokens, scales, `FigureCell`, connection chip, nav + ⌘K, container panels | **shipped, GATE Q PASS 79/1/1** |
 | 2 `curvature-v2-desk-and-read` | desk masthead, structure-field hero, level ladder, read strip, verdict-first AI read, retention latch | **shipped, GATE Q PASS 60/0/1** |
-| 3 | scanner · positions · settings · alerts **· the eight ticker quiet-band widgets' internals** | not started |
-| 4 | landing · site pages · responsive sweep · the curve text-equivalent · spacing burn-down remainder | not started |
+| 3 `curvature-v2-surfaces` | scanner · positions (sim + Broker tab) · settings · alerts **· the eight ticker quiet-band widgets' internals** | **GATE PLAN** — GATE I 2026-09-05 · GATE C 2026-09-06 (27 conflicts, 27/27 verified, 22/22 converged voice-to-voice, 4 owner rulings D-A/D-B/D-C/D-D, S2 ×2) · **SPEC approved 2026-09-06** · PLAN.md pending |
+| 4 | landing · site pages · responsive sweep · the curve text-equivalent · spacing burn-down remainder · **settings section navigation (deferred from phase 3 by owner ruling D-B)** | not started |
+
+**Read before building phase 3:** `contracts/curvature-v2-surfaces/_MANIFEST.md` (gate trail, the BRIEF facts the council
+falsified, the shipped defects it found, the baseline), `contracts/curvature-v2-surfaces/council/decisions.md` (§1–§7 — every
+ruling with its reversal; the two CONDUCTOR calls are the only reversible ones), then `SPEC.md` (95 criteria / 53 SB) and
+`PLAN.md` once written. The AI-powered direction is **PARKED** in `context/BACKLOG.md` (2026-09-06 harvest) with the verified
+provider rules and the resume shape — do not re-derive it.
 
 **Read before designing phase 3:**
 `contracts/curvature-v2-desk-and-read/_MANIFEST.md` (gate trail, final measurements, the four defects this
