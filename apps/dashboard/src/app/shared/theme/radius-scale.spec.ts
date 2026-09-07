@@ -84,3 +84,55 @@ describe('AC-45b — the four declared radius roles', () => {
     expect(bad, `numeric borderRadius is a MULTIPLIER (n x 12px):\n${bad.join('\n')}`).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------------------------
+// U-35 (curvature-v2-surfaces, scanner half) — the panel-role container radius is on the ladder.
+//
+// The NUMERIC_RADIUS regex above cannot see a STRING radius (`borderRadius: '10px'`) at all — that
+// is exactly why `ScanTable.tsx` and `ScanCard.tsx` survived the scan above with a hand-pasted
+// '10px' where the panel role (`shape.borderRadius` = 12, i.e. `borderRadius: 1`) belongs. This is
+// scoped to the two named sites (not a whole-app string-radius sweep): U-35 names exactly THREE
+// off-ladder sites phase-wide (SettingsPage.tsx:67, owned by FE-8, plus these two), and a blanket
+// scan would fail dozens of unrelated, out-of-scope files this phase does not touch.
+// ---------------------------------------------------------------------------------------------
+const STRING_PX_RADIUS = /borderRadius:\s*'(\d+)px'/g;
+
+/**
+ * Live-checked: a listed site that no longer carries its named string px radius red-builds — the
+ * arc importer-set idiom, same shape as `PILL_SITES` above. Scoped to the EXACT '10px' the panel
+ * containers carried (not a blanket string-radius ban): both files also carry unrelated '4px'
+ * CONTROL-role radii (`ScanTable.tsx` sort button, symbol link) that are pre-existing carried debt,
+ * not named by U-35, and out of scope for this task.
+ */
+const SCANNER_PANEL_RADIUS_SITES = ['pages/scanner/ScanTable.tsx', 'pages/scanner/ScanCard.tsx'];
+const PANEL_ROLE_PX = '10';
+
+describe('U-35 (scanner half) — the panel container radius is `1`, never a raw px string', () => {
+  it('MUTATION GUARD: the string-radius needle catches what NUMERIC_RADIUS cannot', () => {
+    const fixture = `borderRadius: '10px',`;
+    expect(/borderRadius:\s*([0-9]+(?:\.[0-9]+)?)\s*[,}\n]/.test(fixture)).toBe(false);
+    expect([...fixture.matchAll(STRING_PX_RADIUS)]).toHaveLength(1);
+  });
+
+  it('neither scanner panel container carries the old `10px` string radius any more', () => {
+    const offenders: string[] = [];
+    for (const file of SCANNER_PANEL_RADIUS_SITES) {
+      const entry = Object.entries(SOURCES).find(([k]) => appPath(k) === file);
+      if (!entry) throw new Error(`${file} missing from the source scan`);
+      for (const m of entry[1].matchAll(STRING_PX_RADIUS)) {
+        if (m[1] === PANEL_ROLE_PX) offenders.push(`${file} → borderRadius: '${m[1]}px'`);
+      }
+    }
+    expect(offenders, `string px borderRadius survives:\n${offenders.join('\n')}`).toEqual([]);
+  });
+
+  it('both sites carry the panel-role multiplier (borderRadius: 1) instead', () => {
+    for (const file of SCANNER_PANEL_RADIUS_SITES) {
+      const entry = Object.entries(SOURCES).find(([k]) => appPath(k) === file);
+      if (!entry) throw new Error(`${file} missing from the source scan`);
+      expect(entry[1], `${file} must declare borderRadius: 1 (the panel role)`).toMatch(
+        /borderRadius:\s*1\s*,/,
+      );
+    }
+  });
+});

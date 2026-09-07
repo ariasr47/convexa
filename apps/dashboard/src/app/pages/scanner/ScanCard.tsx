@@ -7,24 +7,22 @@
  * action (`[no-real-order-path]`, AC-11). It reuses the SAME `ScanCells` atoms as the table, so a
  * datum can never be rendered two ways.
  */
+import { MONO_FACE } from '@/shared/figure';
 import type { ScanRow } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { useId } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import type { PollDelta } from './format';
-import { whyThisRow } from './labels';
+import { regimeLookup, volLookup, whyThisRow } from './labels';
 import {
   ChgCell,
   LabelCell,
   LevelDistCell,
-  MONO,
   PriceCell,
-  regimeTextOf,
   ScoreCell,
   StatusCell,
   TierCell,
   UpdatedCell,
-  volTextOf,
 } from './ScanCells';
 
 export interface ScanCardProps {
@@ -67,7 +65,8 @@ export function ScanCard({ row, nowS, flashActive, delta }: ScanCardProps) {
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: '10px',
+        // U-35 (scanner half): the panel role is 12 (`shape.borderRadius`), not a raw '10px' string.
+        borderRadius: 1,
         padding: '13px',
       }}
     >
@@ -81,7 +80,7 @@ export function ScanCard({ row, nowS, flashActive, delta }: ScanCardProps) {
           mb: '10px',
         }}
       >
-        <Box component="span" sx={{ ...MONO, fontWeight: 700, fontSize: '1rem' }}>
+        <Box component="span" sx={{ ...MONO_FACE, fontWeight: 700, fontSize: '1rem' }}>
           {row.symbol}
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
@@ -125,13 +124,13 @@ export function ScanCard({ row, nowS, flashActive, delta }: ScanCardProps) {
           <Box component="span" sx={factLabelSx}>
             Regime
           </Box>
-          <LabelCell testid="cell-regime" text={regimeTextOf(row)} />
+          <LabelCell testid="cell-regime" result={regimeLookup(row.regime)} />
         </Box>
         <Box sx={factSx}>
           <Box component="span" sx={factLabelSx}>
             Vol
           </Box>
-          <LabelCell testid="cell-vol" text={volTextOf(row)} />
+          <LabelCell testid="cell-vol" result={volLookup(row.vol_regime)} />
         </Box>
         <Box sx={factSx}>
           <Box component="span" sx={factLabelSx}>

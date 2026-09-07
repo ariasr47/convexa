@@ -261,6 +261,33 @@ export const regimeLabel = (v: string | null | undefined) => closed(REGIME_LABEL
 export const volRegimeLabel = (v: string | null | undefined) => closed(VOL_REGIME_LABEL, v);
 
 /**
+ * U-6 (SPEC §2.7 (i)) — a closed-lookup MISS ("the wire sent an enum this build does not know") is
+ * a fact this build can observe, and it is NOT the same fact as a genuine absence (`null`). The
+ * `closed()` helper above collapses both into `null` for `whyThisRow`'s driver text, where the
+ * distinction doesn't matter; the atoms that render tier/regime/vol on the row need to tell them
+ * apart, so this is an ADDITION beside `closed()`, not a replacement of it.
+ */
+export type ClosedLookupResult =
+  { kind: 'value'; text: string } | { kind: 'absent' } | { kind: 'miss' };
+
+function closedLookup(
+  map: Record<string, string>,
+  value: string | null | undefined,
+): ClosedLookupResult {
+  if (value == null) return { kind: 'absent' };
+  return Object.prototype.hasOwnProperty.call(map, value)
+    ? { kind: 'value', text: map[value] }
+    : { kind: 'miss' };
+}
+
+export const tierLookup = (v: string | null | undefined): ClosedLookupResult =>
+  closedLookup(TIER_LABEL, v);
+export const regimeLookup = (v: string | null | undefined): ClosedLookupResult =>
+  closedLookup(REGIME_LABEL, v);
+export const volLookup = (v: string | null | undefined): ClosedLookupResult =>
+  closedLookup(VOL_REGIME_LABEL, v);
+
+/**
  * "Why this row" — 1–2 plain-language score drivers.
  * Prefers wire `score_drivers` (quant-engine breakdown) when present; otherwise closed field
  * lookups. Never re-derives score math on the FE; never claims a real-time feed.

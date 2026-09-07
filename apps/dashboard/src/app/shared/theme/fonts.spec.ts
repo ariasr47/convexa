@@ -263,8 +263,6 @@ export const bindsFaceLocally = (src: string): boolean =>
  * file must still exist in the scan, and it must still violate. FE-14 asserts this map is empty.
  */
 const EXEMPT: Record<string, string> = {
-  'pages/scanner/ScanCells.tsx': 'FE-3 — the atoms consume the module; local `MONO` deleted',
-  'pages/scanner/ViewEditorDialog.tsx': 'FE-3 — `MONO.fontFamily` becomes `...MONO_FACE`',
   'features/trading/positions/PositionRow.tsx': 'FE-5 — six live-derived cells take the module',
   'features/trading/positions/PositionCard.tsx': 'FE-5 — the card takes the module route too',
   'features/trading/positions/LegDisclosure.tsx': 'FE-5 — face re-point',

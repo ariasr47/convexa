@@ -10,10 +10,24 @@
  *   - `TierCell` is the row's SINGLE amber spend (`TintChip tone="emphasis"` ⇒ the text-grade
  *     `textAmber` resolved through `extrasFor` inside TintChip). Nothing else on a row is amber.
  *   - `StatusCell` warning tones carry a ⚠ GLYPH in the label — hue never carries "warning" alone.
- * Every nullable value renders the em-dash, never `0`. All colour is a theme token; zero hex.
+ * Every nullable value renders one of the closed nine, never `0` (curvature-v2-surfaces criteria 3,
+ * 4, 17). All colour is a theme token; zero hex.
+ *
+ * REGISTER (curvature-v2-surfaces SPEC §2.1). Every atom below resolves its type register through
+ * `shared/figure`'s `figureStateOf` + `faceFor` — the ONE figure-state decision FE-1 extracted from
+ * `FigureCell`. This file no longer binds a font family of its own (criterion N-1, needle 2): the
+ * mono constant this file used to declare is gone, replaced everywhere by a call to `faceFor`. The
+ * absent-value arm of every atom below now renders through the module's literal branch instead —
+ * always the Sans face, never stepped, never a unit, and — the defect this closes (criterion 17) —
+ * never sharing a typeface with the traced numeric figures beside it.
+ *
+ * `data-figure-state` and `data-figure-register` sit on the atom's OWN node (never assume
+ * co-location elsewhere on the surface, SPEC §2.1) — no scanner figure ever carries a `live` claim
+ * (criteria 10, 11A: the price included), so every call below either omits `live` entirely or the
+ * type system rejects anything but the branded `NOT_LIVE`.
  */
+import { faceFor, figureStateOf } from '@/shared/figure';
 import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
-import { typographyTokens } from '@/shared/theme/tokens';
 import { TintChip } from '@/shared/ui/TintChip';
 import type { ScanRow } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -31,31 +45,24 @@ import {
   updatedText,
   type PollDelta,
 } from './format';
-import {
-  regimeLabel,
-  SCAN_COPY,
-  statusMeta,
-  tierLabel,
-  volRegimeLabel,
-  whyThisRow,
-} from './labels';
+import { SCAN_COPY, statusMeta, tierLookup, whyThisRow, type ClosedLookupResult } from './labels';
 
-/** Figures are mono + tabular by construction — numerals are the personality (skill rule 6). */
-export const MONO = {
-  fontFamily: typographyTokens.monoFontFamily,
-  fontVariantNumeric: 'tabular-nums',
-  letterSpacing: 0,
-} as const;
-
-/** Honestly-missing. */
-export function Dash({ testid }: { testid?: string }) {
+/**
+ * Honestly-missing (U-6 + criterion 17). `value` is a member of the closed nine (`unavailable` on a
+ * closed-lookup MISS, the bare `—` on a genuine absence) — always Sans, register ignored (AC-19),
+ * never the mono run the shipped em-dash used to sit inside.
+ */
+export function Dash({ testid, value = EM_DASH }: { testid?: string; value?: string }) {
+  const { figureState, mono } = figureStateOf({ value, register: 'traced' });
   return (
     <Typography
       component="span"
       data-testid={testid}
-      sx={{ ...MONO, fontSize: 'inherit', color: 'text.secondary' }}
+      data-figure-state={figureState}
+      data-figure-register={mono ? 'mono' : 'sans'}
+      sx={{ ...faceFor(mono), fontSize: 'inherit', color: 'text.secondary' }}
     >
-      {EM_DASH}
+      {value}
     </Typography>
   );
 }
@@ -63,30 +70,40 @@ export function Dash({ testid }: { testid?: string }) {
 /**
  * Price — the page's ONE motion cue: a paint-only colour pulse on change via the shared
  * `useFlashOnChange` (which is inert under `prefers-reduced-motion` and declares no new keyframe
- * family). It is a polled data signal, NOT a stream, and is never labelled as one.
+ * family). It is a polled data signal, NOT a stream, and is never labelled as one — no `live` claim
+ * is ever passed here (criterion 11A: no scanner figure, the price included, carries a live mark in
+ * any connection state).
  */
 export function PriceCell({ row, active }: { row: ScanRow; active: boolean }) {
   const flash = useFlashOnChange(row.price, { active });
+  const value = dash(row.price, fmtPrice);
+  const { figureState, mono } = figureStateOf({ value, register: 'traced' });
   return (
     <Typography
       component="span"
       data-testid="cell-price"
-      sx={[{ ...MONO, fontSize: 'inherit', color: 'text.primary' }, flashColorSx(flash)]}
+      data-figure-state={figureState}
+      data-figure-register={mono ? 'mono' : 'sans'}
+      sx={[{ ...faceFor(mono), fontSize: 'inherit', color: 'text.primary' }, flashColorSx(flash)]}
     >
-      {dash(row.price, fmtPrice)}
+      {value}
     </Typography>
   );
 }
 
 /** Chg % — THE only direction colour on this surface. */
 export function ChgCell({ row }: { row: ScanRow }) {
+  const value = dash(row.chg_pct, fmtSignedPct);
+  const { figureState, mono } = figureStateOf({ value, register: 'traced' });
   return (
     <Typography
       component="span"
       data-testid="cell-chg"
-      sx={{ ...MONO, fontSize: 'inherit', color: directionColor(row.chg_pct) }}
+      data-figure-state={figureState}
+      data-figure-register={mono ? 'mono' : 'sans'}
+      sx={{ ...faceFor(mono), fontSize: 'inherit', color: directionColor(row.chg_pct) }}
     >
-      {dash(row.chg_pct, fmtSignedPct)}
+      {value}
     </Typography>
   );
 }
@@ -109,14 +126,18 @@ export function ScoreCell({
     delta?.scoreDelta != null && Number.isFinite(delta.scoreDelta)
       ? fmtDelta(delta.scoreDelta, 0)
       : '';
+  const value = dash(row.score, fmtScore);
+  const { figureState, mono } = figureStateOf({ value, register: 'traced' });
   const score = (
     <Typography
       component="span"
       {...(focusableHelp ? { tabIndex: 0 } : {})}
       data-testid="cell-score"
+      data-figure-state={figureState}
+      data-figure-register={mono ? 'mono' : 'sans'}
       aria-label={SCAN_COPY.whyScoreAria}
       sx={{
-        ...MONO,
+        ...faceFor(mono),
         fontSize: 'inherit',
         fontWeight: 600,
         color: 'text.primary',
@@ -126,7 +147,7 @@ export function ScoreCell({
         borderRadius: '2px',
       }}
     >
-      {dash(row.score, fmtScore)}
+      {value}
     </Typography>
   );
   return (
@@ -142,7 +163,7 @@ export function ScoreCell({
         <Typography
           component="span"
           data-testid="cell-score-delta"
-          sx={{ ...MONO, fontSize: '0.7rem', color: 'text.secondary' }}
+          sx={{ ...faceFor(true), fontSize: '0.7rem', color: 'text.secondary' }}
         >
           {d}
         </Typography>
@@ -151,27 +172,35 @@ export function ScoreCell({
   );
 }
 
-/** Tier — the row's single amber spend, via the closed lookup. A miss renders nothing but a dash. */
+/** Tier — the row's single amber spend, via the closed lookup. A MISS renders `unavailable`, a
+ *  genuine absence renders `—` (U-6) — never the raw enum, never conflated. */
 export function TierCell({ row }: { row: ScanRow }) {
-  const label = tierLabel(row.tier);
-  return label ? <TintChip tone="emphasis" label={label} /> : <Dash testid="cell-tier" />;
-}
-
-/** Regime / Vol — closed-lookup labels, neutral. A lookup miss renders the dash, never the raw enum. */
-export function LabelCell({ text, testid }: { text: string | null; testid: string }) {
-  return (
-    <Typography
-      component="span"
-      data-testid={testid}
-      sx={{ fontSize: 'inherit', color: 'text.secondary' }}
-    >
-      {text ?? EM_DASH}
-    </Typography>
+  const result = tierLookup(row.tier);
+  return result.kind === 'value' ? (
+    <TintChip tone="emphasis" label={result.text} />
+  ) : (
+    <Dash testid="cell-tier" value={result.kind === 'miss' ? 'unavailable' : EM_DASH} />
   );
 }
 
-export const regimeTextOf = (row: ScanRow) => regimeLabel(row.regime);
-export const volTextOf = (row: ScanRow) => volRegimeLabel(row.vol_regime);
+/** Regime / Vol — closed-lookup labels, neutral. A MISS renders `unavailable`, a genuine absence
+ *  renders `—` (U-6) — never the raw enum. The lookup HIT keeps its shipped byte-identical render
+ *  (plain Sans secondary text; CF-1 touches no scanner sentence, and this is not one). */
+export function LabelCell({ result, testid }: { result: ClosedLookupResult; testid: string }) {
+  if (result.kind === 'value') {
+    return (
+      <Typography
+        component="span"
+        data-testid={testid}
+        data-figure-register="sans"
+        sx={{ fontSize: 'inherit', color: 'text.secondary' }}
+      >
+        {result.text}
+      </Typography>
+    );
+  }
+  return <Dash testid={testid} value={result.kind === 'miss' ? 'unavailable' : EM_DASH} />;
+}
 
 /** A consumed level + its consumed signed distance. Both arrive pre-computed on the wire; the
  *  distance is a NO-SIDE datum and stays neutral. Optional poll delta is also neutral. */
@@ -187,24 +216,36 @@ export function LevelDistCell({
   /** Change in dist% since last poll (structure only). */
   distDelta?: number | null;
 }) {
+  const levelValue = dash(level, fmtPrice);
+  const levelState = figureStateOf({ value: levelValue, register: 'traced' });
+  const distValue = dash(distPct, fmtSignedPct);
+  const distState = figureStateOf({ value: distValue, register: 'traced' });
   const d = distDelta != null && Number.isFinite(distDelta) ? fmtDelta(distDelta, 1) : '';
   return (
     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'baseline', gap: '6px' }}>
-      <Box component="span" sx={{ ...MONO, fontSize: 'inherit', color: 'text.primary' }}>
-        {dash(level, fmtPrice)}
+      <Box
+        component="span"
+        data-testid={`${testid}-level`}
+        data-figure-state={levelState.figureState}
+        data-figure-register={levelState.mono ? 'mono' : 'sans'}
+        sx={{ ...faceFor(levelState.mono), fontSize: 'inherit', color: 'text.primary' }}
+      >
+        {levelValue}
       </Box>
       <Box
         component="span"
         data-testid={testid}
-        sx={{ ...MONO, fontSize: '0.6875rem', color: 'text.secondary' }}
+        data-figure-state={distState.figureState}
+        data-figure-register={distState.mono ? 'mono' : 'sans'}
+        sx={{ ...faceFor(distState.mono), fontSize: '0.6875rem', color: 'text.secondary' }}
       >
-        {dash(distPct, fmtSignedPct)}
+        {distValue}
       </Box>
       {d ? (
         <Box
           component="span"
           data-testid={`${testid}-delta`}
-          sx={{ ...MONO, fontSize: '0.6875rem', color: 'text.secondary' }}
+          sx={{ ...faceFor(true), fontSize: '0.6875rem', color: 'text.secondary' }}
         >
           {d}
         </Box>
@@ -213,17 +254,20 @@ export function LevelDistCell({
   );
 }
 
-/** "Structure as-of {rel}" — or the dash when there is no honest claim (`building`, or a
+/** "Structure as-of {rel}" — or a closed-nine member when there is no honest claim (`building`, or a
  *  non-positive `as_of`). `updatedText` branches on status BEFORE it reads `as_of`. */
 export function UpdatedCell({ row, nowS }: { row: ScanRow; nowS: number }) {
-  const text = updatedText(row, nowS);
+  const value = updatedText(row, nowS) ?? EM_DASH;
+  const { figureState, mono } = figureStateOf({ value, register: 'traced' });
   return (
     <Typography
       component="span"
       data-testid="cell-updated"
-      sx={{ ...MONO, fontSize: '0.7rem', color: 'text.secondary' }}
+      data-figure-state={figureState}
+      data-figure-register={mono ? 'mono' : 'sans'}
+      sx={{ ...faceFor(mono), fontSize: '0.7rem', color: 'text.secondary' }}
     >
-      {text ?? EM_DASH}
+      {value}
     </Typography>
   );
 }

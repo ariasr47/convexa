@@ -9,6 +9,7 @@
  * ring) and the row body forwards a click to the same route. There is no order, trade, or broker
  * affordance anywhere on this surface.
  */
+import { MONO_FACE } from '@/shared/figure';
 import { extrasFor } from '@/shared/theme/tokens';
 import type { ScanDensity, ScanRow, ScanViewSort } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -17,23 +18,22 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import type { PollDelta } from './format';
 import {
   COLUMN_LABELS,
+  regimeLookup,
   SCAN_COLUMNS,
   SCAN_COPY,
   SORTABLE_COLUMNS,
+  volLookup,
   type ScanColumn,
 } from './labels';
 import {
   ChgCell,
   LabelCell,
   LevelDistCell,
-  MONO,
   PriceCell,
-  regimeTextOf,
   ScoreCell,
   StatusCell,
   TierCell,
   UpdatedCell,
-  volTextOf,
 } from './ScanCells';
 
 /** index-first-defaults AC-3 — one table section. `label: null` renders no header row (the
@@ -161,7 +161,7 @@ function cellContent(
           // Spine #6: fill the cell so the real <a> is the keyboard + touch target (≥44 on coarse
           // via theme floor). Row body click remains mouse convenience only.
           sx={{
-            ...MONO,
+            ...MONO_FACE,
             fontWeight: 600,
             color: 'text.primary',
             textDecoration: 'none',
@@ -186,9 +186,9 @@ function cellContent(
     case 'tier':
       return <TierCell row={row} />;
     case 'regime':
-      return <LabelCell testid="cell-regime" text={regimeTextOf(row)} />;
+      return <LabelCell testid="cell-regime" result={regimeLookup(row.regime)} />;
     case 'vol_regime':
-      return <LabelCell testid="cell-vol" text={volTextOf(row)} />;
+      return <LabelCell testid="cell-vol" result={volLookup(row.vol_regime)} />;
     case 'flip':
       return (
         <LevelDistCell
@@ -286,7 +286,8 @@ export function ScanTable({
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: '10px',
+        // U-35 (scanner half): the panel role is 12 (`shape.borderRadius`), not a raw '10px' string.
+        borderRadius: 1,
         // The WIDE content scrolls inside its own container — the page body never scrolls sideways.
         overflowX: 'auto',
         maxHeight: '70vh',

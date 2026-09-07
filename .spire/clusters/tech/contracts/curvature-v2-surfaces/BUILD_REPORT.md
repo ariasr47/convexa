@@ -251,3 +251,82 @@ boolean-typed prop chain (`isLive` still flows to `usePortfolio`, `PortfolioPane
 Not run for FE-2 — no visible behaviour changed (confirmed by the unmoved 30/30 page-spec result
 above, and PLAN scopes FE-2 as non-rendering: "Copy diffs: none"). The rendered/browser pass is owed by
 FE-3/FE-4 (scanner) and is recorded there.
+
+---
+
+## FE-3 — Scanner: register + the closed nine on every figure, both layouts, and the lookup-miss member
+
+**Landed:** 2026-09-07, one commit. **Criteria:** 9 (SB), 10 (SB), 11A (SB), 17, U-6, 18, 19, 20,
+22 (SB), U-35 (scanner half). **GATE Z items: none** — buildable exactly as planned.
+
+### 1. What shipped
+
+| File | Change |
+|---|---|
+| `pages/scanner/ScanCells.tsx` | Local `export const MONO` (`:44-48`) deleted. Every atom (`Dash`, `PriceCell`, `ChgCell`, `ScoreCell`, `TierCell`, `LabelCell`, `LevelDistCell`, `UpdatedCell`) now resolves its face through `figureStateOf` + `faceFor` from `@/shared/figure`, emitting `data-figure-state` + `data-figure-register` on its own node. The absent-value arm of every numeric atom now renders through the module's literal branch (Sans) instead of the shipped `...MONO` spread — the criterion-17 fix. `TierCell`/`LabelCell` gained the U-6 split (`ClosedLookupResult` from `labels.ts`): a lookup MISS renders `unavailable`, a genuine absence renders `—`, routed through the same `Dash` component (now `value`-parametrized). |
+| `pages/scanner/labels.ts` | **Addition only** (no existing line changed): `ClosedLookupResult` type, `closedLookup()`, and `tierLookup`/`regimeLookup`/`volLookup` exports, sitting beside the untouched `closed()`/`tierLabel`/`regimeLabel`/`volRegimeLabel` (`whyThisRow` still uses the old null-collapsing form — unaffected). |
+| `pages/scanner/ScanTable.tsx` | `MONO` import from `./ScanCells` → `MONO_FACE` from `@/shared/figure` (symbol-link styling, byte-identical render — `MONO_FACE` is the old `MONO`'s exact shape). `regimeTextOf`/`volTextOf` calls → `regimeLookup(row.regime)`/`volLookup(row.vol_regime)` feeding `LabelCell`'s new `result` prop. Panel radius `borderRadius: '10px'` → `borderRadius: 1` (U-35). |
+| `pages/scanner/ScanCard.tsx` | Same `MONO` → `MONO_FACE` re-point (symbol span), same `LabelCell` prop change, same radius fix (`:70`). |
+| `pages/scanner/ViewEditorDialog.tsx` | `import { MONO } from './ScanCells'` deleted; `fontFamily: MONO.fontFamily` → `...MONO_FACE` (a spread, not a `fontFamily:` key — needle 2 forbids the bare token, not just a literal string); `...MONO` (view-name-editor row) → `...MONO_FACE`. |
+| `pages/scanner/scanner.register.spec.tsx` | **New.** 41 tests covering criteria 9, 10/11A, 17/U-6, 19, 20, 22 (18 is already pinned by the shipped `scanner.risk.spec.tsx` skeleton test, cited rather than duplicated). |
+| `shared/theme/fonts.spec.ts` | FE-3's two `EXEMPT` entries (`ScanCells.tsx`, `ViewEditorDialog.tsx`) deleted — both files no longer violate either needle (confirmed by the full suite run below, not merely asserted). |
+| `shared/theme/radius-scale.spec.ts` | New `describe` block: a `STRING_PX_RADIUS` needle (`/borderRadius:\s*'(\d+)px'/`) that the shipped `NUMERIC_RADIUS` regex cannot see, scoped to the two named scanner panel sites only — **not** a blanket app-wide string-radius ban, because both files also carry unrelated `'4px'` CONTROL-role radii (sort button, symbol link) that are pre-existing carried debt, out of this task's scope, and would false-positive a wider scan. |
+
+### 2. Copy diffs — none
+
+CF-1's two constants (`cadenceHeader`, `cadenceGloss`) are FE-4's. Every scanner string FE-3 touches
+is byte-identical, including `'⚠ Stale'` / `'⚠ Error'` and every tooltip. `LabelCell`'s lookup-HIT
+render (e.g. `Pos γ`, `IV rich`) is byte-identical to the shipped Sans render — only its MISS/ABSENT
+fallback changed, from a bare `—` in both cases to `unavailable` (miss) vs `—` (absent).
+
+### 3. A design question resolved, recorded rather than left implicit
+
+**Does a present regime/vol/tier value move to the Mono register too, now that the mechanism exists?**
+No. PLAN's step-1 atom list (`PriceCell`, `ChgCell`, `ScoreCell`, `LevelDistCell`, `UpdatedCell`,
+`Dash`) is exactly the set of atoms that already spread the shipped local `MONO` — `LabelCell`'s
+lookup-HIT arm never did (it inherits the ambient Sans body font by omission, not by a deliberate
+register decision), and PLAN's own U-6 step names only the miss/absent split as `LabelCell`'s
+assigned change. Retrofitting Mono onto a present closed-lookup label would be an unrequested visual
+change with no criterion asking for it, so the HIT arm's render is untouched; only its literal
+fallback (now U-6-correct) and a new `data-figure-register="sans"` attribute (zero visual effect)
+were added.
+
+### 4. Mutation proof — run red, then reverted to green
+
+**MUTATION PROOF E (criterion 9, SB).** In `ScanCard.tsx`, replaced `regimeLookup(row.regime)` with
+an inline pass-through of the raw wire enum (`row.regime != null ? { kind: 'value', text: row.regime }
+: { kind: 'absent' }`), bypassing the closed lookup on the CARD layout only.
+
+- **Red (verbatim):** `AssertionError: cell-regime table vs card: expected { text: 'Pos γ', …(2) } to
+  deeply equal { text: 'positive_gamma', …(2) }` — the both-layouts assertion named the exact
+  mismatch (closed label vs raw enum) and the exact cell.
+- **Restore:** poison reverted; `git diff --stat -- apps/dashboard/src/app/pages/scanner/ScanCard.tsx`
+  shows only this task's real changes (`7 insertions(+), 8 deletions(-)`, matching the `MONO_FACE`
+  re-point + `LabelCell` prop change) — **zero** residual poison lines; re-ran
+  `scanner.register.spec.tsx` → **exit 0, 41/41**.
+
+No proof above is a narrated `expect(true).toBe(true)`; the red text is copied from this session's
+terminal.
+
+### 5. Verification — exit codes, read directly
+
+| Command | Result |
+|---|---|
+| `npx vitest run src/app/pages/scanner src/app/shared/theme` (first run, before `radius-scale.spec.ts`'s docstring fix and the mutation-fixture false positive were resolved) | **exit 1** — 3 failures: (a) `fonts.spec.ts` needle 1 false-positive on this file's OWN prose (`ScanCells.tsx`'s doc comment said `` `MONO` `` and `` `"unavailable""` `` inside the same 18-line window — rewritten to name neither token near the other); (b) `radius-scale.spec.ts`'s new needle over-matched `ScanTable.tsx`'s two unrelated `'4px'` CONTROL radii (narrowed to the named `'10px'` panel-role value only); (c) my own new `scan-empty-filter` test asserted no `role="alert"` on the WHOLE page, tripping on the toolbar's unrelated sign-in nudge (`role="alert"`, `severity="info"`) — narrowed the query to `within(empty)`. All three were test-authoring defects on my side, not product defects; fixed and re-run. |
+| `npx vitest run src/app/pages/scanner src/app/shared/theme` (after the three fixes) | **exit 0** — 22 files / **235** tests |
+| `npm run typecheck` | **exit 0** |
+| `npm run lint` | **exit 0** — 0 errors, **5 warnings**, all pre-existing, **0 new** |
+| `npx nx format:write --files <the 8 changed/new paths>` | **exit 0**, scoped |
+
+### 6. What was seen — structural (not yet the browser pass; that is FE-4's, once the header/offline arm land)
+
+Not run against the dev server for FE-3 alone: FE-3 changes zero pixels (the register conversion is
+either invisible — same face, same size — or additive DOM attributes), and the one visible U-6 fix
+(a lookup-miss tier/regime/vol cell reading `unavailable` instead of `—`) has no reachable fixture on
+the real `/api/scan` wire today (the sweep only emits known enum values). Verified structurally
+instead, in `scanner.register.spec.tsx`: a fully-populated row and an absent/miss row both render
+identically across the table and the card (text, register, and state all equal); the live-dot testid
+never appears in either layout; a null numeric renders `—` in the Sans register with
+`data-figure-state="empty"`; a lookup miss renders `unavailable` with `data-figure-state="unavailable"`.
+The combined browser pass for `/scanner` (including this fix, live in the running app) is recorded
+under FE-4, once the header/offline-arm change lands in the same surface.
