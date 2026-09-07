@@ -169,6 +169,14 @@ with no mint and no backend change). `[one-liveness-predicate]` untouched. **Car
 `/scanner` wait for the phase that adds `market_session` + `live` to `/api/stream/prices`. **Independent of the ruling and
 IN:** widen `liveClaim.spec.ts:68-80`'s glob to the four surfaces with explicit EXEMPT entries, and replace the banned
 `genuineIsLive` at `PositionsPage.tsx:88`.
+**CONDUCTOR clarification of A, 2026-09-06 (reversible):** R4 read at source that the header's companion gloss —
+`labels.ts:26-29` `cadenceGloss`, opening `Prices stream live.`, rendered as the `Jargon` gloss of the same header at
+`Scanner.tsx:143-146` — is a second liveness sentence no voice had cited, so the owner ruled a closed set of ONE sentence
+without that fact. The ruling's stated reason ("a page sentence asserting liveness that no datum vouches for") reaches the
+gloss exactly as it reaches the header, and the gloss is the same UI element's tooltip. **Ruled: the closed set is the
+header AND its gloss — two sentences in one constant object, both reworded without asserting liveness; still nothing else on
+scanner.** `cadenceHeaderOffline` (`:31`, "Prices offline · showing last known") is a truthful degraded statement and stays.
+Reversal: owner says the set stays at one → the gloss keeps its shipped text and R4's §9 item 1 becomes GATE Z debt.
 
 **D-B — settings section navigation (rail ≥900 → horizontal control <900)** (#5 `fac0c6c7cb`, #9 `faf6bdeea6`, #19 `ae12488953`).
 Facts agreed: no rail ships (`SettingsPage.tsx:156` is a 640px centred column); the canvas draws it

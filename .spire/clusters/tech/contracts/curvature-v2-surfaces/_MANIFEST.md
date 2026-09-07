@@ -3,8 +3,12 @@ Stage:        GATE I — brief written 2026-09-05 (phase 3 of 4 of the Curvature
 Repos:        frontend
 Brief:        BRIEF.md present
 Contracts:
-  - SPEC.md                    n/a — GATE C not yet run
-  - INTERFACE_CONTRACT.md      n/a — expected NO_BACKEND_CHANGE (frontend-only; `apps/api` three-dot diff must be empty)
+  - SPEC.md                    **draft** (R4 2026-09-06, 1006 lines) — 95 acceptance criteria, 53 `SB`; 27/27 council conflicts
+                               folded with inline markers; four OWNER rulings + one CONDUCTOR call tagged inline. Awaiting S2,
+                               `contract_lint`, then owner approval.
+  - INTERFACE_CONTRACT.md      **draft** (R4 2026-09-06, 182 lines) — NO_BACKEND_CHANGE measured three-dot; Conformance block
+                               pins `GET /api/scan` + the `/api/ticker/{ticker}` spine, deliberately NOT `PUT /api/scan/view`
+                               or `/api/broker/*`; durable client stores named with their loss-free rule.
 Open amendments: **two queued for GATE S, neither applied mid-build.** (1) Rule 13 — owner ruling D-D 2026-09-06: the traced
                  clause widens to "traced to Convexa's computation **or to a record the trader entered**", so a user-entered
                  number (alert threshold, risk input, sim entry) renders Mono with no dotted rule. (2) Icons row — an owner
