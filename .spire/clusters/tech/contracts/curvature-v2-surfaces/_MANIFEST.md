@@ -1,6 +1,7 @@
 # curvature-v2-surfaces — pipeline manifest
-Stage:        GATE PLAN closed 2026-09-07 — PLAN.md written (15 tasks, no GATE Z bounce; three scope readings ruled in
-              `council/decisions.md` §8). **BUILD awaiting the owner's go** (phase 3 of 4 of the Curvature Terminal v2 build)
+Stage:        **BUILD** — owner go 2026-09-07. Lane 1 = FE-1 (Opus; the `shared/figure/` extraction every later task
+              consumes), then Sonnet lanes FE-2–5 · FE-6–10 · FE-11–14, then BE-1 verification, then GATE Q. One lane at a
+              time (Independence all-`no`); lanes commit per task (phase 3 of 4 of the Curvature Terminal v2 build)
 Repos:        frontend
 Brief:        BRIEF.md present
 Contracts:
