@@ -1,0 +1,164 @@
+{
+  "role": "ux",
+  "note": "Folded already by the controller (do NOT re-litigate): self-revisions #7 #8 #14 #15 #24 #25 #26; #11 (Broker tab IN for register + vocabulary, read-only, no new network call, no entry/order/cancel control - converged via architect self-revision #7) and #12 (U-1 restated as an observable outcome - converged via ux self-revision #24). Product calls are with the OWNER, not this exchange: D-A scanner price liveness (#10/#18, with #1 as its feasibility substrate), D-B settings section navigation IN/OUT (#5/#9/#19), D-C Widget-frame info button = desk reopened for one shared change (#6). On #1 exchange ONLY the feasibility and cost of each option; the choice is the owner's. See council/decisions.md sections 1-4.",
+  "r2_files": {
+    "architect": ".spire/clusters/tech/contracts/curvature-v2-surfaces/council/R2-architect.md",
+    "pm": ".spire/clusters/tech/contracts/curvature-v2-surfaces/council/R2-pm.md",
+    "ux": ".spire/clusters/tech/contracts/curvature-v2-surfaces/council/R2-ux.md"
+  },
+  "conflicts": [
+    {
+      "index": 0,
+      "quote": "Every figure on scanner/positions/settings/alerts renders through `FigureCell` with an explicit `register`; no call site relies on a default",
+      "source": "ux",
+      "why": "Verified at source: `FigureCell` is not a value renderer, it is a card. `FigureCell.tsx:72-106` styles `CellCard` with `overflow: 'hidden'` (`:77`) and a hover `transform: translateY(-2px)` (`:94-101`); `:302-329` renders a label row, a body and a caption row; `:307` mounts `AccessibleHelp`, which the file's own header (`:26-28`) records as a real focusable `button`. Two shipped structures on the scanner refuse that shape. (a) `ScanCard.tsx:54-59` makes the ENTIRE card one anchor — `component={RouterLink} to={`/ticker/${row.symbol}`}` — and `no-overflow.spec.ts:938` pins it (`toHaveAttribute('href', '/ticker/SPY')`); a focusable `button` inside that anchor is interactive content nested in a link, and the scanner already passes help text today (`ScanCells.tsx:115,132-140`), so `info` is not optional there. (b) In the table, cells sit in `<td>`s with `whiteSpace: 'nowrap'` and a `position: sticky` first column (`ScanTable.tsx:62-63`), and the column header already IS the label row (`ScanTable.tsx:107-145`), so a per-cell card duplicates the label eleven times per row and clips the sticky column. U-1 as written cannot be satisfied on `/scanner` without deleting the single-anchor navigation contract and re-writing a pinned e2e.",
+      "proposal": "Split the primitive from the decision. Extract the register / vocabulary / container-step branch that `FigureCell.tsx:250-300` computes into a pure module; `FigureCell` calls it and so do the `ScanCells.tsx` atoms. Scanner cells then carry the same register, the same closed-nine literal branch and the same step declaration with no card chrome, no second label row and no nested button. Reword U-1 to 'renders through the shared register/vocabulary decision' and keep 'renders through `FigureCell`' for the panel-shaped figures (positions header readout, settings, alerts, quiet band). PM's P3 already accepts this outcome-not-mechanism framing; UX's U-1 is the only sentence that pins the component.",
+      "kind": "technical",
+      "conflict_id": "6c2cf2c5e93575614599ab70258ced726ec21b5b55f570477ba3ecc4d14cded4",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true,
+      "exchange_between": [
+        "architect",
+        "ux"
+      ],
+      "counterpart": "architect"
+    },
+    {
+      "index": 2,
+      "quote": "`term-structure`, `off-exchange-blocks` and `setups` carry no `monoFontFamily` anywhere.",
+      "source": "ux",
+      "why": "False for `off-exchange-blocks`, read at source: `OffExchangeBlocks.tsx:24` is `const MONO = typographyTokens.monoFontFamily;` and `:79-81` renders `{b.shares.toLocaleString()} sh @ ${b.price.toFixed(2)}` with `sx={{ fontFamily: MONO, fontSize: 12 }}` — real numerals in the mono figure register, from a widget-local font constant. `fresh-positioning` is the same shape (`:15`, `:56-58`) and additionally interpolates the vocabulary literal `'—'` INTO that mono run at `:58`. So the 'four convert, four do not' split leaves two widgets that (a) set a figure typeface from a widget-local constant, which PM row 53 (SB) forbids by name, (b) never step, because 12px is off the 20/17/15 ladder `FigureCell.tsx:216-221` declares, and (c) render a closed-vocabulary member inside a mono string, the inversion ruling 3 exists to prevent. Only `TermStructure.tsx` and `Setups.tsx` are genuinely figure-free.",
+      "proposal": "Split by figure, not by widget: term-structure and setups have no figure and are out of conversion scope; off-exchange-blocks and fresh-positioning have mono runs whose register must be resolved through the extracted register module (conflict 1's mechanism), which preserves their list layout under ruling 6's freeze while removing the local `MONO` constant and lifting `'—'` out of the mono run. State the deliverable as the property PM row 53/54 already writes — no widget-local font constant, no untraced mono figure — not as a count of conversions.",
+      "kind": "technical",
+      "conflict_id": "cbef7514e4f4d78dbe8d130859c845c98f464b1980353a9bff26184e390eab38",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true,
+      "exchange_between": [
+        "architect",
+        "ux"
+      ],
+      "counterpart": "architect"
+    },
+    {
+      "index": 3,
+      "quote": "Each of the three positions-side members keeps its own distinct tip",
+      "source": "ux",
+      "why": "U-15 and U-1 cannot both hold at `PositionRow.tsx:145-153`. The shipped `literal()` wraps the VALUE in `<Tooltip arrow title={tip}>` (`:147-151`) — that tooltip on the value is the only affordance that makes `not recorded` / `unavailable` / `no basis` non-synonymous to a user, and the comment at `:139-144` says it is built once for exactly that reason. `FigureCell` has no value-row help host: `:307` mounts `AccessibleHelp` in the LABEL row with the fixed accessible name `About {label}`, and the literal branch renders a bare `<ValueGlyph>` (`:284-288`) with a caption that is only `caption ?? null` (`:253`). Converting those cells therefore deletes the tips, and U-15's `review` verdict would read green while the distinction went invisible — the failure shape UX's own risk 7 names for negative-space rows.",
+      "proposal": "Either (a) positions table cells keep `literal()` and the non-synonymy assertion is written against the shipped testids and tips (`cell-not-recorded`, `cell-unavailable` at `:164,166`), with positions' `FigureCell` conversion scoped to its panel-shaped figures — the page header readout at `PositionsPage.tsx:181-194`, where UX's U-12/U-13 land anyway; or (b) fund a value-row help host on `FigureCell` explicitly, as a change to the primitive sixteen shipped desk call sites depend on, with its own regression proof. It cannot be left implicit in 'renders through `FigureCell`'.",
+      "kind": "technical",
+      "conflict_id": "b0f85405a787d1728f858066f4a117e8c5e9b4ff2f4f9a7f024b7c857e2f0a17",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true,
+      "exchange_between": [
+        "architect",
+        "ux"
+      ],
+      "counterpart": "architect"
+    },
+    {
+      "index": 4,
+      "quote": "Alert **event messages** are built from the closed lookups, so stored history renders the same labels as the rule list",
+      "source": "ux",
+      "why": "The first clause is buildable; the second is not, without a durable shape change both of us excluded. `AlertEvent` (`features/alerts/types.ts:27-37`) persists a pre-rendered `message: string` (`:32`) and carries only `kind` and `symbol` — no `level`, no `scoreMin`. `AlertsPage.tsx:225` renders `{e.message}` verbatim. Fixing `evaluate.ts:73,94,116` repairs only firings written after the fix; every firing already in `convexa.alerts.v1` keeps its string, including `evaluate.ts:83`'s `rule.scoreMin ?? 60` baked into a durable `SPY score ≥ 60` for a rule whose record holds no minimum. Re-labelling history needs new structured fields on `AlertEvent`, which is a shape change on the store the BRIEF calls the sharpest `[loss-free-durable-migration]` risk — and UX's own assumption to me says no shape change on `convexa.alerts.v1`.",
+      "proposal": "Split U-23 into a forward criterion ('a firing recorded after this phase builds its label from the closed lookups') plus an explicit carried-debt line naming pre-phase event strings as legacy content with `types.ts:32` and `evaluate.ts:83` attached. If the council wants history repaired, say so as a decision: it is an additive shape change to `AlertEvent`, read-new-else-old with the old `message` retained as the fallback, never deleted — and then it needs PM row 70's fixture written against a blob authored before the phase.",
+      "kind": "technical",
+      "conflict_id": "50ef9a81beb6c8cd5a2d6899d7fec0c385d9267cbe4e672a2eafcfbeb4ef4da5",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true,
+      "exchange_between": [
+        "architect",
+        "ux"
+      ],
+      "counterpart": "architect"
+    },
+    {
+      "index": 16,
+      "quote": "**Therefore: `FigureCell` never enters `/scanner`.**",
+      "source": "architect",
+      "why": "I accept the exclusion of the component (see my U-1 self-revision below) but not the scope of the substitute. §2.2 names the extracted module's outputs as register/vocabulary/container-step only ('mono-vs-sans, figure-vs-literal, and the container-step declaration'), and non-goal 4 says 'The register and the vocabulary do.' Rule 13 puts the REST of the state in the cell: the label-row live dot, the pause marker, and the conditional 'offline · last known' clause. Those are computed at `FigureCell.tsx:257-278` from `offline.retained` — none of them is register or vocabulary. If the extraction ships as scoped, the scanner's degraded arm has no host: today `Scanner.tsx:144` swaps one header string, `ScanTableProps` (`ScanTable.tsx:47-60`) and `ScanCardProps` (`ScanCard.tsx:30-35`) take no offline input, and `labels.ts:30-32` already promises 'the figures stay, dimmed, and say why' — a promise nothing renders. My U-5 and pm rows 12/13 would then go green against prose, which is the exact vacuity shape the architect's own Risk 2 names.",
+      "proposal": "Extract the whole F1–F9 branch (`FigureCell.tsx:250-300`), not just the register/vocabulary branch: a pure function returning `{ figureState, mono, isFigure, showDot, showPause, caption }`, with `data-figure-state` emitted by every consumer. `FigureCell` becomes one caller; `ScanCells` atoms and `PositionRow` cells are the others, each keeping its own chrome (no card, no label row, no hover lift). Then U-5 / rows 12-13 / 27-28 are assertable on the DOM marker on every surface, and the atoms keep their shipped tooltips and `aria-describedby`.",
+      "kind": "technical",
+      "conflict_id": "7da0330a44483301c998f19632bec0a5c147878ed449e89b297191331a0b090d",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true,
+      "exchange_between": [
+        "architect",
+        "ux"
+      ],
+      "counterpart": "architect"
+    },
+    {
+      "index": 17,
+      "quote": "**C4 — positions already conforms to rule 24; the scanner does not.**",
+      "source": "architect",
+      "why": "Half true, and the false half is load-bearing for non-goal 5. `literal()` (`PositionRow.tsx:145-153`) is Sans and correct, but it is not the only absent-value path on the row. `PositionRow.tsx:374` styles the `delta_entry` cell with `...MONO` and `:377` renders `DASH` — `'—'`, member one of the closed nine (`:70`) — inside it whenever `view.pl_dollar == null`. That is a not-a-number member in the mono figure register on POSITIONS, the surface canon rule 24 names by name, and it survives untouched if the table cells are left as they ship. So 'The vocabulary work is scanner-side.' understates the work by one surface, and a criterion set built on C4 would certify positions as conforming while the inversion renders.",
+      "proposal": "Keep `literal()` and its tooltips — I accept §2.3's a11y reason and withdraw nothing there. Add: every absent-value path in `PositionRow.tsx` routes through `literal()`, with no cell-local `DASH` inside a `MONO` sx. Enforce with the same `?raw` scan §2.2 proposes for font families, extended to `features/trading/positions/`, with the mutation proof. This is one cell, not a re-conversion.",
+      "kind": "technical",
+      "conflict_id": "66cd71c1073343c1d28610a3a99270ffd80a1ebe3926d7f866e6aea77ca92557",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true,
+      "exchange_between": [
+        "architect",
+        "ux"
+      ],
+      "counterpart": "architect"
+    },
+    {
+      "index": 21,
+      "quote": "Each widget keeps its shipped composition: label wording, ordering, grouping and tooltip text are unchanged by the conversion",
+      "source": "pm",
+      "why": "Row 56 as written forbids two repairs that pm's own rows 3 and 57 require. Verified: (1) `Setups.tsx:32` renders ONE string — `<Alert severity=\"info\">No clean setup right now.</Alert>` (`:52`) — for both `undefined` (the bundle never carried setups) and `[]` (computed, none found). 'No clean setup right now.' is a positive claim about the market for a ticker nobody scored, which is exactly the fabrication `[absent-is-not-none]` exists to stop, and pm row 57 requires the unavailable-this-cycle arm to render 'its own message'. `FreshPositioning.tsx:41` vs `:45` already does this correctly in the same band. (2) `_kit/copy.ts:355` `MC_CELL_EMPTY = 'unavailable this cycle'` sits in a figure VALUE slot (`MarketContext.tsx:291,299,375`) and is not a member of the closed nine — pm row 3 requires a member there, and canon rule 24 closes the set. Row 56 would make both a violation of the criteria set.",
+      "proposal": "Carve row 56 out at two named sites, so it stays a wall and not a licence: composition, ordering and grouping unchanged; wording unchanged EXCEPT where a shipped string (a) occupies a figure value slot and is not a member of the closed nine — `_kit/copy.ts:355`, split to value `unavailable` + caption `this cycle` as `design/src/components/figure-cell.mjs:40` already draws it — or (b) renders one sentence for both never-checked and checked-and-empty — `Setups.tsx:52`, where `[]` keeps the shipped sentence and `undefined` gets the `*_WHOLE_EMPTY` family idiom. The prose `*_WHOLE_EMPTY` sentences are untouched; they are prose, not values.",
+      "kind": "technical",
+      "conflict_id": "154fb2122f510075e58a1dbef185abb14ce4af91eeb519a3f0483a60a2197773",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true,
+      "exchange_between": [
+        "pm",
+        "ux"
+      ],
+      "counterpart": "pm"
+    },
+    {
+      "index": 22,
+      "quote": "Every threshold a rule does carry renders in the traced register with its unit visible beside it",
+      "source": "pm",
+      "why": "Unsatisfiable for the commonest rule without inventing a unit — my defining failure mode. `features/alerts/types.ts:20-22` carries exactly two thresholds: `priceThreshold?: number` (dollars, a real unit) and `scoreMin?: number`, the opportunity score, a unitless 0–100 index. There is no unit to render beside a score gate, and rendering one would be the inferred-unit failure the 2026-08-12 canon amendment names ('A bare number with an inferred unit is forbidden') — where the fix was a visible unit CONTROL, not a fabricated suffix. Second, smaller: 'traced register' is a provenance word, and a score gate is the user's own typed input — neither Convexa's computation nor an untraced assertion. The register has two values and this datum is a third thing.",
+      "proposal": "Split row 47 by threshold type: a price threshold renders with its currency prefix; a score gate renders the bare index beside its closed-lookup label `Score gate`, with no unit and no invented suffix (`≥ 72`, never `≥ 72 pts`). And rule the register question rather than assuming it: I read a user-entered threshold as `traced` — it is exactly the record, reproducible from it — but it should be an owner or architect line, not a lane guess, because it sets the precedent for every user-entered number this app renders.",
+      "kind": "technical",
+      "conflict_id": "77667a5927811e72e01a8f47e963f87b338200d2e1b57748d119aeeb35b1a7be",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true,
+      "exchange_between": [
+        "pm",
+        "ux"
+      ],
+      "counterpart": "pm"
+    },
+    {
+      "index": 23,
+      "quote": "Tinting on this surface stays signed-P&L direction only — never by side, never call-vs-put, never by tier",
+      "source": "pm",
+      "why": "As written, row 35 CERTIFIES the surface's worst shipped defect, because that tint IS signed-P&L direction. Verified: `PositionsPage.tsx:147-154` reduces only rows where `pl_dollar != null`, so when every open mark fails the sum is `0`; `:189` paints it `netPl >= 0 ? 'success.main' : 'error.main'` — green; `:193` renders `formatNetPl(0)`. 'Net P/L (open) +$0' in green is a total mark failure wearing the costume of a flat book. `:190` then dims the whole readout to `opacity: 0.5` with no pause marker and no basis clause — F4's costume without F4's disclosure. No pm row covers this figure at all: rows 23–35 are row- and cell-scoped, so the largest number on the surface can fabricate a zero and pass the whole set.",
+      "proposal": "Add one positions row and one clause. Row: with no open row marked, Net P/L renders the vocabulary member `unavailable` — never a number, never a direction colour; with some open rows unmarked, the figure carries a coverage caption naming how many of the open rows it covers, so a partial total can never read as complete. Clause on row 35: '…signed-P&L direction only, and only where the value is a computed P&L — never a zero standing in for an unmarked book.' The dim also becomes the F4/F5 arm (pause marker + the conditional last-known clause), not a bare opacity.",
+      "kind": "technical",
+      "conflict_id": "338807da910a82d14a08017f624036f616802f14d023d5e8c469341a401cc2f0",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true,
+      "exchange_between": [
+        "pm",
+        "ux"
+      ],
+      "counterpart": "pm"
+    }
+  ]
+}

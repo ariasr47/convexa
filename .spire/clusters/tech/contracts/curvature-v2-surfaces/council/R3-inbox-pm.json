@@ -1,0 +1,96 @@
+{
+  "role": "pm",
+  "note": "Folded already by the controller (do NOT re-litigate): self-revisions #7 #8 #14 #15 #24 #25 #26; #11 (Broker tab IN for register + vocabulary, read-only, no new network call, no entry/order/cancel control - converged via architect self-revision #7) and #12 (U-1 restated as an observable outcome - converged via ux self-revision #24). Product calls are with the OWNER, not this exchange: D-A scanner price liveness (#10/#18, with #1 as its feasibility substrate), D-B settings section navigation IN/OUT (#5/#9/#19), D-C Widget-frame info button = desk reopened for one shared change (#6). On #1 exchange ONLY the feasibility and cost of each option; the choice is the owner's. See council/decisions.md sections 1-4.",
+  "r2_files": {
+    "architect": ".spire/clusters/tech/contracts/curvature-v2-surfaces/council/R2-architect.md",
+    "pm": ".spire/clusters/tech/contracts/curvature-v2-surfaces/council/R2-pm.md",
+    "ux": ".spire/clusters/tech/contracts/curvature-v2-surfaces/council/R2-ux.md"
+  },
+  "conflicts": [
+    {
+      "index": 1,
+      "quote": "The price figure carries a live mark only for a symbol whose displayed price came from the stream this session; a symbol still showing the swept price carries no mark **in the same column, at the same moment**",
+      "source": "pm",
+      "why": "Row 11 and PM's own row 6 ('The four surfaces consume the one shipped liveness predicate and mint no second one') are mutually unsatisfiable on the scanner, and I verified why. `FigureCell.live` is typed `LiveClaim` (`FigureCell.tsx:171`), a `unique symbol` brand with exactly three mints — `isDeliveringLive`, `andPresent`, `NOT_LIVE` (`liveClaim.ts:26-62`). `isDeliveringLive(live: LiveUpdate | null, streamOffline: boolean)` reads `live.market_session` and `live.live` (`liveClaim.ts:47-52`). The scanner receives neither: the frame is parsed as `{ prices?: Record<string, LivePrice> }` (`useLivePrices.ts:69`) and `LivePrice` is `{ price: number; ts: number }` (`:24-27`). `andPresent` only narrows an existing claim, so from `NOT_LIVE` it can only produce false. Worse, a hand-rolled per-symbol predicate would reproduce the exact defect the canon predicate exists to replace: `useLivePrices.ts:65-70` calls `setOffline(false)` BEFORE it checks for a `prices` key, so a heartbeat frame carrying no prices marks the stream online, and the only other path to offline is a 45s silence watchdog (`:36-37,84-86`) — a dot built on that reads live with the venue closed, which is `liveClaim.ts:41-45`'s stated reason for banning `genuineIsLive`.",
+      "proposal": "The council must pick one and name it, because the row cannot be built as written. (A) No dot on `/scanner` this phase: row 11 becomes 'no price figure carries a live mark'; note UX's U-5 SURVIVES this, because the F4 retained treatment is driven by the unbranded `offline?: { retained: boolean }` prop (`FigureCell.tsx:174,257-268`), not by `LiveClaim` — the scanner can dim, pause-mark and say `offline · last known` with zero new mints. (B) Add a second mint in `liveClaim.ts` for the prices stream: no backend change, `apps/api` stays empty, but it re-opens the `[one-liveness-predicate]` ledger key and PM row 6 must be reworded to permit it. (C) Add `market_session` and a `live` flag to `/api/stream/prices`: re-opens NO_BACKEND_CHANGE and PM row 67.",
+      "kind": "technical",
+      "conflict_id": "d09285682d4490f06fc76ed83d39d867b63b029563280f733b7604c84c1b48a6",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true,
+      "exchange_between": [
+        "architect",
+        "pm"
+      ],
+      "counterpart": "architect"
+    },
+    {
+      "index": 13,
+      "quote": "**2.3 Positions: the table keeps its atoms, for the same reason plus one more.**",
+      "source": "architect",
+      "why": "The tooltip argument is sound for `literal()` (`apps/dashboard/src/app/features/trading/positions/PositionRow.tsx:145-153` — one Tooltip-wrapped renderer, differing by text and testid only, exactly as its own comment at `:139-144` says) and I accept it: those cells keep their tips, which is also UX's U-15. But `literal()` renders the not-a-number members — a different set of cells from the live-derived figures, and it is the live-derived figures that carry this phase's degraded-state defects, all of them in table cells: `PositionRow.tsx:388` renders a bare `'⏸'` as the entire session-delta cell on a stream drop (no value, no vocabulary member); `:378` appends `' ⏸'` as a text character to the Δ-entry cell; `:68` is `const OFFLINE = '⏸ offline'`. If 'the table keeps its atoms' is read as a mechanism, we agree. If it is read as scope, it leaves my rows 27/28/29 and UX's U-10/U-11 with no owner, and the phase ships a positions surface whose header readout is honest while the cells the trader actually reads still render a bare pause glyph.",
+      "proposal": "Split the sentence into two lines so it cannot be read as scope. (1) `literal()` and its per-member tips stay — non-synonymy is not converted away (my row 24, UX U-15). (2) The live-derived table cells still owe the offline contract: a retained value with the last-known clause, or a vocabulary member without it, at reduced emphasis, with the declared stroke pause icon — delivered by whatever mechanism the architect prefers (extracted module, local swap, or the primitive), stated as an outcome so GATE Q can check it on the page.",
+      "kind": "technical",
+      "conflict_id": "1f765d5bd84f31321e34e0403952a4cdf369e6cb1f05c30cc74de1f2c0fb219c",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true,
+      "exchange_between": [
+        "architect",
+        "pm"
+      ],
+      "counterpart": "architect"
+    },
+    {
+      "index": 21,
+      "quote": "Each widget keeps its shipped composition: label wording, ordering, grouping and tooltip text are unchanged by the conversion",
+      "source": "pm",
+      "why": "Row 56 as written forbids two repairs that pm's own rows 3 and 57 require. Verified: (1) `Setups.tsx:32` renders ONE string — `<Alert severity=\"info\">No clean setup right now.</Alert>` (`:52`) — for both `undefined` (the bundle never carried setups) and `[]` (computed, none found). 'No clean setup right now.' is a positive claim about the market for a ticker nobody scored, which is exactly the fabrication `[absent-is-not-none]` exists to stop, and pm row 57 requires the unavailable-this-cycle arm to render 'its own message'. `FreshPositioning.tsx:41` vs `:45` already does this correctly in the same band. (2) `_kit/copy.ts:355` `MC_CELL_EMPTY = 'unavailable this cycle'` sits in a figure VALUE slot (`MarketContext.tsx:291,299,375`) and is not a member of the closed nine — pm row 3 requires a member there, and canon rule 24 closes the set. Row 56 would make both a violation of the criteria set.",
+      "proposal": "Carve row 56 out at two named sites, so it stays a wall and not a licence: composition, ordering and grouping unchanged; wording unchanged EXCEPT where a shipped string (a) occupies a figure value slot and is not a member of the closed nine — `_kit/copy.ts:355`, split to value `unavailable` + caption `this cycle` as `design/src/components/figure-cell.mjs:40` already draws it — or (b) renders one sentence for both never-checked and checked-and-empty — `Setups.tsx:52`, where `[]` keeps the shipped sentence and `undefined` gets the `*_WHOLE_EMPTY` family idiom. The prose `*_WHOLE_EMPTY` sentences are untouched; they are prose, not values.",
+      "kind": "technical",
+      "conflict_id": "154fb2122f510075e58a1dbef185abb14ce4af91eeb519a3f0483a60a2197773",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true,
+      "exchange_between": [
+        "pm",
+        "ux"
+      ],
+      "counterpart": "ux"
+    },
+    {
+      "index": 22,
+      "quote": "Every threshold a rule does carry renders in the traced register with its unit visible beside it",
+      "source": "pm",
+      "why": "Unsatisfiable for the commonest rule without inventing a unit — my defining failure mode. `features/alerts/types.ts:20-22` carries exactly two thresholds: `priceThreshold?: number` (dollars, a real unit) and `scoreMin?: number`, the opportunity score, a unitless 0–100 index. There is no unit to render beside a score gate, and rendering one would be the inferred-unit failure the 2026-08-12 canon amendment names ('A bare number with an inferred unit is forbidden') — where the fix was a visible unit CONTROL, not a fabricated suffix. Second, smaller: 'traced register' is a provenance word, and a score gate is the user's own typed input — neither Convexa's computation nor an untraced assertion. The register has two values and this datum is a third thing.",
+      "proposal": "Split row 47 by threshold type: a price threshold renders with its currency prefix; a score gate renders the bare index beside its closed-lookup label `Score gate`, with no unit and no invented suffix (`≥ 72`, never `≥ 72 pts`). And rule the register question rather than assuming it: I read a user-entered threshold as `traced` — it is exactly the record, reproducible from it — but it should be an owner or architect line, not a lane guess, because it sets the precedent for every user-entered number this app renders.",
+      "kind": "technical",
+      "conflict_id": "77667a5927811e72e01a8f47e963f87b338200d2e1b57748d119aeeb35b1a7be",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true,
+      "exchange_between": [
+        "pm",
+        "ux"
+      ],
+      "counterpart": "ux"
+    },
+    {
+      "index": 23,
+      "quote": "Tinting on this surface stays signed-P&L direction only — never by side, never call-vs-put, never by tier",
+      "source": "pm",
+      "why": "As written, row 35 CERTIFIES the surface's worst shipped defect, because that tint IS signed-P&L direction. Verified: `PositionsPage.tsx:147-154` reduces only rows where `pl_dollar != null`, so when every open mark fails the sum is `0`; `:189` paints it `netPl >= 0 ? 'success.main' : 'error.main'` — green; `:193` renders `formatNetPl(0)`. 'Net P/L (open) +$0' in green is a total mark failure wearing the costume of a flat book. `:190` then dims the whole readout to `opacity: 0.5` with no pause marker and no basis clause — F4's costume without F4's disclosure. No pm row covers this figure at all: rows 23–35 are row- and cell-scoped, so the largest number on the surface can fabricate a zero and pass the whole set.",
+      "proposal": "Add one positions row and one clause. Row: with no open row marked, Net P/L renders the vocabulary member `unavailable` — never a number, never a direction colour; with some open rows unmarked, the figure carries a coverage caption naming how many of the open rows it covers, so a partial total can never read as complete. Clause on row 35: '…signed-P&L direction only, and only where the value is a computed P&L — never a zero standing in for an unmarked book.' The dim also becomes the F4/F5 arm (pause marker + the conditional last-known clause), not a bare opacity.",
+      "kind": "technical",
+      "conflict_id": "338807da910a82d14a08017f624036f616802f14d023d5e8c469341a401cc2f0",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true,
+      "exchange_between": [
+        "pm",
+        "ux"
+      ],
+      "counterpart": "ux"
+    }
+  ]
+}
