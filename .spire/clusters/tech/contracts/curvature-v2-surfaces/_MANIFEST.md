@@ -5,7 +5,13 @@ Brief:        BRIEF.md present
 Contracts:
   - SPEC.md                    n/a — GATE C not yet run
   - INTERFACE_CONTRACT.md      n/a — expected NO_BACKEND_CHANGE (frontend-only; `apps/api` three-dot diff must be empty)
-Open amendments: none yet. Phase 2 filed four (canon rules **11**, **14**, **16**, **17**); this phase
+Open amendments: **two queued for GATE S, neither applied mid-build.** (1) Rule 13 — owner ruling D-D 2026-09-06: the traced
+                 clause widens to "traced to Convexa's computation **or to a record the trader entered**", so a user-entered
+                 number (alert threshold, risk input, sim entry) renders Mono with no dotted rule. (2) Icons row — an owner
+                 QUESTION, not yet a ruling, filed by ux self-revision #25: does the colour-emoji clause reach `U+26A0` in a
+                 scanner chip label (`labels.ts:196,205,211`), or is the `⚠` glyph a deliberate third truth mark? The chip
+                 ships byte-identical this phase either way.
+                 Phase 2 filed four (canon rules **11**, **14**, **16**, **17**); this phase
                  inherits them as settled. One named, non-blocking gap carries in: the **`tooltip` z-rung
                  is undeclared in the canon** while `theme.ts:83` already ships a working, consumed value
                  of **60** (`AppShell.tsx:42` reads `tooltip + 1`). Closing it means declaring 60, not

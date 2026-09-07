@@ -1,6 +1,7 @@
 # curvature-v2-surfaces — council decisions (R3 reconcile)
 
-Status: **R3 in progress** — 2026-09-06. Input: `council/conflicts.json` — **27 conflicts, 27/27 quotes machine-verified**
+Status: **R3 complete — four owner rulings recorded 2026-09-06 (D-A → A · D-B → OUT, phase 4 · D-C → IN · D-D → TRACED);
+R4 synthesis dispatched the same day.** Input: `council/conflicts.json` — **27 conflicts, 27/27 quotes machine-verified**
 (`council_conflicts` exit 0). 7 self-revisions folded · 2 technical conflicts converged by those self-revisions ·
 11 technical conflicts dispatched for ONE resolution exchange · **3 product calls surfaced to the owner one at a time**
 (one further product conflict collapsed into a self-revision + D-A, see §4). Conflict ids are the first 10 hex of
@@ -159,7 +160,15 @@ All three reject "option A with the `Prices live` header left standing".
   Per-symbol live marks → carried debt against the phase that adds session fields to `/api/stream/prices`. **Conductor recommends.**
 - (B) per-symbol "streamed" mark → second mint (re-opens `[one-liveness-predicate]`) or a mark the canon lacks; reads live with the venue closed.
 - (C) add `market_session` + `live` to `/api/stream/prices` → re-opens NO_BACKEND_CHANGE.
-**Ruling: PENDING.**
+**Ruling: A — OWNER, 2026-09-06.** No live mark on any scanner figure in any connection state (pm row 11 → **11A**; row 15
+amended so the basis line states the two cadences and asserts liveness in no state). `labels.ts:25` is reworded without the
+word "live" — the one scanner sentence this phase may touch (closes §4's copy-freeze residual; edits the shipped
+`scanner.risk.spec.tsx:869`). Stream drop → the F4 retained arm through the unbranded `offline.retained` route, computed at
+`Scanner.tsx:119-126` and driven by per-symbol `ts` age (repairs `useLivePrices.ts:65-67`'s heartbeat-clears-offline defect
+with no mint and no backend change). `[one-liveness-predicate]` untouched. **Carried debt, dated:** per-symbol live marks on
+`/scanner` wait for the phase that adds `market_session` + `live` to `/api/stream/prices`. **Independent of the ruling and
+IN:** widen `liveClaim.spec.ts:68-80`'s glob to the four surfaces with explicit EXEMPT entries, and replace the banned
+`genuineIsLive` at `PositionsPage.tsx:88`.
 
 **D-B — settings section navigation (rail ≥900 → horizontal control <900)** (#5 `fac0c6c7cb`, #9 `faf6bdeea6`, #19 `ae12488953`).
 Facts agreed: no rail ships (`SettingsPage.tsx:156` is a 640px centred column); the canvas draws it
@@ -169,7 +178,14 @@ construction and drags unanswered behaviour (click vs scroll-spy; deep-link land
 - (OUT → phase 4) recorded as carried debt with the canvas citation; settings criterion becomes "five sections reachable at
   every checked width, no page-body overflow"; U-17/U-18 and pm rows 37/38 withdrawn. **Conductor recommends** — keeps
   phase 3 a pure conversion phase; phase 4 already owns the responsive sweep.
-**Ruling: PENDING.**
+**Ruling: OUT → phase 4 — OWNER, 2026-09-06.** Settings ships its single 640px column this phase; its figures convert and
+its panels adopt the declared scales, nothing else. pm rows 37/38 and ux U-17/U-18 are withdrawn; the settings responsive
+criterion is "every one of the five sections is reachable at every checked width with no page-body overflow".
+**Carried debt, dated, with the canvas citation** `design/src/screens/settings.mjs:1,5,15,28-31`: the section navigation is
+phase 4's, and its GATE I must answer three behaviours before build — active item on click vs scroll-spy, deep-link landing
+below 900, focus order — plus the 44px floor on the horizontal strip. The BRIEF's "brought under the same responsive
+discipline" wording for Settings does **not** survive into SPEC. One copy hazard travels with the debt: the canvas footnote
+"Saved to your account." (`settings.mjs:30`) is false for `convexa.uiprefs.v1` (`localPrefs.ts:15`) and must not be imported.
 
 **D-C — Widget-frame ⓘ as a focusable control** (#6 `db0bcfc326` architect→ux).
 Fact: `Widget.tsx:245-249` renders `info` as a bare icon in a hover tooltip at seven live sites, one of them the desk hero
@@ -177,7 +193,13 @@ Fact: `Widget.tsx:245-249` renders `info` as a bare icon in a hover tooltip at s
 - (IN) desk reopened for this ONE shared-frame change only; the desk's shipped specs re-run inside the criterion. **Conductor recommends** —
   the alternative mints the duplicate focusable-help pattern ruling 6 bans.
 - (OUT) U-32 narrows to a wrapper at the quiet band's five sites (duplicate pattern) or drops.
-**Ruling: PENDING.**
+**Ruling: IN — OWNER, 2026-09-06.** The `Widget` frame's `info` becomes a focusable control (tap, Enter/Space, Escape) using
+the ONE shipped focusable-help pattern (`AccessibleHelp`), at all seven live `info=` sites. **The ticker desk is reopened for
+this single shared-frame change and nothing else**: no desk layout, copy, state or spec content changes; the desk's own
+shipped specs (a11y tree, focus order, the single-motion-moment and live-dot census suites) are re-run inside this
+criterion and must stay green, so the churn is measured here rather than discovered at GATE Q. Phase-1 ruling 6's AC-35
+("page-wide on the ticker surface and true") is recorded as having been **false at the time it was declared** — `Widget.tsx:245-249`
+never had a focusable host — and becomes true with this change.
 
 **D-D — register of a user-entered number** (from #22 `77667a5927`; pm and ux both marked it `PRECEDENT — owner/architect line`).
 The trader types a score gate (`≥ 72`) or a price threshold (`$500`). Canon rule 13 defines Mono as "traced to Convexa's
@@ -188,7 +210,11 @@ caption `${assertedBy} · untraced` (`FigureCell.tsx:293`), which on the trader'
   path; it binds risk inputs, sim entry and alert thresholds alike.
 - (THIRD REGISTER) declare a third register value → an Amendments event, out of phase 3; alerts thresholds would render
   Sans without the dotted rule in the meantime.
-**Ruling: PENDING (card 4 of 4).**
+**Ruling: A (TRACED) — OWNER, 2026-09-06.** A user-entered number renders in the Mono (traced) register with no dotted rule;
+the F9 caption `${assertedBy} · untraced` is never produced for a user-entered value. Rows 47a/47b render Mono. R4 states this
+ONCE as a cross-surface rule (it binds risk inputs, sim entry and alert thresholds), not per row. **Canon amendment queued for
+GATE S** (filed now under `_MANIFEST.md` Open amendments): rule 13's clause becomes "traced to Convexa's computation **or to a
+record the trader entered**" — a one-clause widening, applied at close-out like phase 2's four, never mid-build.
 
 **Collapsed, not surfaced — copy-freeze scope** (#20 `3dba77c9ca` ux→pm): its target sentence was withdrawn by pm's #15.
 Residual is an instruction to R4: enumerate the closed set of sentences this phase may touch as explicit AC lines —
