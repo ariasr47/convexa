@@ -1086,3 +1086,183 @@ Unchanged — this task touches `features/alerts/store.ts`, outside N-1's three 
 maps confirmed still **0** by this session's own run (`fonts.spec.ts`, `pauseGlyph.spec.ts`).
 
 ---
+
+## FE-10 — Alerts page: closed lookups, thresholds by type, unread off the coloured edge, three empties
+
+**Landed:** 2026-09-07, one commit (`fix` — repairs three shipped defects: the hidden price
+threshold, the fabricated `≥ 60`, the colour-only unread state, plus one found in-lane, §2).
+**Criteria:** 44 (SB), 45 (SB), 46 (SB), 47a (SB), 47c (review), 47d (SB), 48, 49 (SB), 50, N-5,
+U-23a, U-24, U-27. **GATE Z items: none** — buildable exactly as planned. **Depends on FE-9**,
+landed after it, per the ordering constraint (the latch before any alerts UI change).
+
+### 1. What shipped
+
+| File | Change |
+|---|---|
+| `features/alerts/labels.ts` | **New.** `KINDS`/`LEVELS` (moved verbatim from `AlertsPage.tsx`) plus `KIND_LABEL`/`LEVEL_LABEL` record maps and `NOT_SET`. One source, two consumers (U-23a). |
+| `features/alerts/evaluate.ts` | The `level_touch` firing's label now reads `LEVEL_LABEL[rule.level]` instead of `(rule.level ?? 'level').replace('_', ' ')` — a firing and its rule row read the SAME closed-lookup word (U-23a). The `price` arm is unchanged (`$${thr}`, a real value, not a label). |
+| `features/alerts/evaluate.spec.ts` | **Edited** (PLAN's own note) — one existing assertion kept (case-insensitive, still passes with `Gamma flip`), one new test pins the exact label byte-for-byte, one new test pins the price arm is untouched by the label change. |
+| `features/alerts/useAlerts.ts` | New module-level `evaluatedThisSession` flag, set in `evaluateSnap`, exposed as `hasEvaluated` (criterion 48's third empty — ephemeral, no durable key). New `notifyPermission` state (`NotificationPermission \| 'unavailable'`), reconciled on mount and after every `requestBrowserPermission` call; the returned `notifyBrowser` is now `notifyPermission === 'granted' && state.notifyBrowser` — computed from the ACTUAL permission, never trusted from the stored flag alone (criterion 50, §2 below). |
+| `pages/alerts/AlertsPage.tsx` | Full rewrite of the rule-summary line (four arms per §4.5), the unread marker (label + type, edge kept redundant), the events-empty split (`hasEvaluated`), the notify-permission explain line, the N-5 faulted posture (a local `AlertsRefused`/`AlertsFaultedBanner` pair mirroring `FaultedBanner.tsx`'s attribute set), the U-24 disclosure lines, and U-27's `timeZoneName: 'short'`. The price-threshold composer field gains a `$` `InputAdornment` (47c). |
+| `pages/alerts/alerts.risk.spec.tsx` | **New** — 23 tests across every criterion this task owns, two of them the required mutation-proof targets. |
+
+### 2. Three real defects found and fixed, not merely converted around
+
+**A. A price threshold never rendered at all (47a) — written at `:48` (composer), evaluated at
+`evaluate.ts:110`, absent from the summary line entirely.** A trader who set a price-threshold rule
+had no way to see what price they'd set. Fixed: the summary's `level_touch` arm now branches on
+`rule.level === 'price'` FIRST, rendering `Price threshold: $500` in the Mono register — the same
+`TracedValue` component the score-gate arm uses, so a threshold can never drift between the two
+render paths.
+
+**B. The score-gate summary fabricated `≥ 60` for a rule whose record holds no minimum (46).** The
+old line, `≥ ${r.scoreMin ?? 60}`, asserted a number the STORED RULE never carried — a `60` that
+exists nowhere in `AlertRule` (`types.ts:22`, `scoreMin?: number`, no default). Fixed: the summary
+renders the closed-nine `not set` when `scoreMin` is absent, never a substitute number.
+
+**C. The unread state was carried by the coloured left edge ALONE (44) — invisible in a
+black-and-white screenshot, the exact failure the canon Banned row names ("Accent-bar stat tiles").**
+Fixed: an uppercase "Unread" word in the label row plus a font-weight difference on the message
+itself (700 vs 400); the coloured edge stays, now redundant rather than load-bearing.
+
+**D. Found in-lane, not planned: the stored `notifyBrowser` flag could read stale-`true` after the
+trader revoked the browser's notification permission (criterion 50).** `useAlerts.ts`'s shipped
+mount effect only ever SET the flag to `true` on a granted permission; nothing ever corrected it
+back to `false` if the permission was later revoked (this app has no event to observe a revocation),
+so the button could keep reading "Browser notify on" for a permission the browser no longer grants —
+exactly what criterion 50 forbids ("the control never reads as 'on' for a permission the browser did
+not grant"). Fixed by computing the returned `notifyBrowser` from `notifyPermission === 'granted' &&
+state.notifyBrowser` rather than the stored flag alone — the ACTUAL permission is now the final
+word, every render, with no dependency on an effect having already run.
+
+### 3. Copy diffs — itemized (alerts copy is not frozen by §2.7; the criteria in §3 E/§4.5 govern)
+
+| Site | Shipped | New |
+|---|---|---|
+| Rule label | `${r.symbol} · ${r.kind}` (raw wire token) | `${r.symbol} · ${KIND_LABEL[r.kind]}` (45) |
+| Score-gate summary | `≥ ${r.scoreMin ?? 60}` | `Score gate: ≥ ${scoreMin}` or `Score gate: not set` (46, 47b) |
+| Level-touch (price) summary | absent entirely | `Price threshold: $${priceThreshold}` or `Price threshold: not set` (47a, new) |
+| Level-touch (structure) summary | `r.level ?? 'level'` (bare word) | `LEVEL_LABEL[r.level]` or `not recorded` (47d) |
+| Tier-change summary | `any tier transition` | byte-identical |
+| Unread marker | (none — colour only) | `Unread` word, uppercase, in the label row (44, new) |
+| Firing timestamp | `toLocaleString()` | `toLocaleString(undefined, { timeZoneName: 'short' })` (U-27) |
+| Recent-list disclosure | (none) | `Stored in this browser only — not synced to your account or across devices. Firings recorded before this update keep their original wording; new firings use the labels above.` (U-24, new) |
+| Events-empty (never evaluated) | one shared sentence for both empty states | `No snapshot has been evaluated yet this session — open a ticker so rules can evaluate.` (48, new) |
+| Events-empty (evaluated, nothing fired) | (same shared sentence as above) | `No firings yet — open a ticker so a new snapshot can be evaluated against your rules.` (48, new) |
+| Rules-empty | `No rules yet — add a score gate on SPY to try the path.` | byte-identical (48) |
+| Notify explain (denied) | (none) | `Browser notifications are blocked for this site. Alerts still show here, but nothing pops from the browser.` (50, new) |
+| Notify explain (unavailable) | (none) | `Browser notifications aren't available in this browser.` (50, new) |
+| Faulted banner (N-5) | did not exist on this surface | four blocks mirroring `FaultedBanner.tsx`'s shape, worded for alerts (new, N-5) |
+| Level-touch firing label (`evaluate.ts`) | `(rule.level ?? 'level').replace('_', ' ')` | `LEVEL_LABEL[rule.level]` — same words the rule row reads (U-23a) |
+
+Stored `message` strings on existing events are **never** rewritten — `AlertEvent.message` is
+untouched by this task, and the Recent list renders it verbatim (U-23a), confirmed by a dedicated
+test.
+
+### 4. Mutation proofs — both run red (verbatim), then reverted to green
+
+**MUTATION PROOF O (criterion 46, SB).** Restored `≥ ${rule.scoreMin ?? 60}` on the score-gate
+summary arm (poison comment attached).
+
+- **Red (verbatim), 1 failed:** `Expected element to have text content: "Score gate: not set" /
+  Received: "Score gate: ≥ 60"` — the absent-`scoreMin` rule fixture rendering the fabricated
+  default the record does not hold.
+- **Restore:** poison reverted; `grep -n MUTATION_POISON AlertsPage.tsx` → 0 hits; re-ran
+  `alerts.risk.spec.tsx` → **exit 0, 23/23**.
+
+**MUTATION PROOF P (criterion 44, SB).** Disabled the "Unread" label (`{false && (...)}`) and
+equalized both cards' font-weight to 400 — read/unread now differ ONLY by the edge colour.
+
+- **Red (verbatim), 2 failed:** `Unable to find an element by: [data-testid="alerts-event-unread-
+  label"]` (the label-presence test) and `expected 'A12/31/1969, 4:00:00 PM PST' to match /Unread/`
+  (the black-and-white DOM-content test, run against the two cards' `textContent` with every colour
+  class present but ignored) — proving the distinction had collapsed to the coloured edge alone.
+- **Restore:** poison reverted; `grep -n MUTATION_POISON AlertsPage.tsx` → 0 hits; re-ran
+  `alerts.risk.spec.tsx` → **exit 0, 23/23**.
+
+**Reviewer probe answered:** `≥ 72` renders with no unit suffix in every passing test (asserted as
+an exact string, `'Score gate: ≥ 72'`, never a regex tolerant of a trailing token), and the
+absent-level test asserts BOTH that `not recorded` is present AND that the bare word `level` (word
+boundary, case-insensitive) is absent from the same node.
+
+No proof above is a narrated `expect(true).toBe(true)`; both reds are copied from this session's
+terminal.
+
+### 5. Verification — exit codes, read directly
+
+| Command | Result |
+|---|---|
+| `npx vitest run src/app/pages/alerts/alerts.risk.spec.tsx` (new file, first run) | **exit 0** — 23/23 |
+| `npx vitest run src/app/features/alerts/evaluate.spec.ts` (edited file) | **exit 0** — 5/5 |
+| `npx vitest run src/app/pages/alerts src/app/features/alerts` | **exit 0** — 3 files / 37 tests |
+| `npx nx test @convexa/dashboard --skip-nx-cache -- src/app/pages/alerts src/app/features/alerts` (the task's mandated targeted command) | **exit 0** — 3 files / 37 tests |
+| `npm run typecheck` (cold — `dist`/`out-tsc`/`*.tsbuildinfo` deleted first) | **exit 0** |
+| `npm run lint` | **exit 0** — 0 errors, **5 warnings**, all pre-existing (same set FE-6/7/8/9 recorded), **0 new** |
+| `grep -rln "FE-10" apps/dashboard/src --include=*.spec.*` (gotcha 10) | Named only this task's own two files (`evaluate.spec.ts`, `alerts.risk.spec.tsx`) — no stray `EXEMPT` map. |
+| `npx nx format:write --files <the 6 changed/new paths>` | **exit 0**, scoped |
+
+### 6. What was run in the app
+
+`npm run ports:free` → `npm run dev` → a Playwright-driven real headless Chromium, `/alerts` against
+the real `cargo run` backend (no sign-in required on this page).
+
+- **1280px and 393px, three rule types added (score gate `≥ 72`, price threshold `$500`, structure
+  level `Call wall`):** all three summary lines rendered exactly as the criteria require —
+  `Score gate: ≥ 72`, `Price threshold: $500`, `Call wall` — the two Mono values visibly in a
+  distinct (monospace) face from the surrounding Sans text in the screenshot. No page-body overflow
+  at either width (`scrollWidth > innerWidth` false both times).
+  **A genuinely unplanned, real confirmation of criterion 50**: this headless Chromium's default
+  `Notification.permission` for a fresh context reports **denied**, so the shipped page rendered
+  `Browser notifications are blocked for this site. Alerts still show here, but nothing pops from
+  the browser.` without any test-only stubbing — the denied state is not merely unit-tested, it was
+  observed live.
+- **A real firing, driven by the real dev backend:** added a `score_gate` rule with a low threshold,
+  visited `/ticker/SPY`, waited for a structure poll, returned to `/alerts`. `Recent (1)` rendered a
+  genuine firing — `UNREAD` label, bold message `SPY score ≥ 1 (now 69)`, detail `tier actionable`,
+  timestamp `9/7/2026, 4:01:37 PM PDT` (the `PDT` zone name rendered live, confirming U-27 in a real
+  browser, not just jsdom's `Intl`). `Mark 1 read` appeared, matching `a.unread > 0`'s gating.
+- **Not observed live:** the N-5 faulted posture (forcing a real unreadable `localStorage` blob
+  against a live page reload was not attempted — the automated `store.ts` corruption is direct and
+  exhaustive) and the `granted` notify-permission arm (the real browser defaulted to `denied`, not
+  `default`, so the request-flow's grant path was not exercised live). Both are covered instead by
+  `alerts.risk.spec.tsx`'s dedicated tests (a stubbed `Notification` class for `granted`/`denied`,
+  and a corrupted `localStorage` write for the faulted census).
+
+Screenshots and the throwaway browser-driver scripts were written to the repo root (the sandbox
+write-guard blocks the OS temp dir directly, same as FE-6/7/8) and deleted before this commit —
+confirmed by `git status --porcelain` showing no `_tmp_*` file; the dev server and its ports were
+torn down (`npm run ports:free`) before handing off.
+
+### 7. `EXEMPT` map after FE-10
+
+Unchanged — this task touches `features/alerts/` and `pages/alerts/`, outside N-1's three scanned
+trees. Both maps confirmed still **0** by this session's own run.
+
+### 8. Full dashboard suite after FE-10 (mandated) — run TWICE, one flaky worker crash recorded
+
+Per the lane rule: *"an Nx 'flaky worker crash' with no named failure is re-run once and both
+results recorded."*
+
+- **Run 1:** `npx nx test @convexa/dashboard --skip-nx-cache` → **exit 1**, **237/238 files passed**.
+  The one failed file, `shared/theme/stage3-amber.spec.ts`, threw
+  `Error: ENOENT: no such file or directory, open
+  '…\apps\dashboard\src\app\_mutation_poison_replay_outcome_join.ts'` — **not a named test
+  assertion failure**. Traced to source: `replay-outcome-join.structural.spec.ts:195-198` (an
+  UNRELATED, pre-existing file this task never touches) writes a temporary poison file at exactly
+  that path as part of ITS OWN mutation test, then deletes it; `stage3-amber.spec.ts` eagerly
+  `import.meta.glob`s every `.ts` file under `src/app/**`. Under parallel workers the two raced: the
+  poison file existed at glob-collection time and was gone by transform time. Confirmed environmental,
+  not logical: `npx vitest run src/app/shared/theme/stage3-amber.spec.ts
+  src/app/replay-outcome-join.structural.spec.ts` in isolation → **exit 0, 32/32**, both files, same
+  session.
+- **Run 2:** `npx nx test @convexa/dashboard --skip-nx-cache` → **exit 0**, **238/238 files, 2844/2844
+  tests**. Nx's own output flagged this pairing as a **detected flaky task**, corroborating the
+  isolation-run diagnosis independently.
+- **Test-count arithmetic, so the delta is auditable:** run 2's 2844, against the phase's running
+  total after FE-9 (not independently re-measured this session, carried from FE-1–FE-9's own
+  reports) — this session's own additions are **+15** (`settings.register.spec.tsx`, FE-8) **+9**
+  (`store.spec.ts`, FE-9) **+23** (`alerts.risk.spec.tsx`, FE-10) **+2** (`evaluate.spec.ts`'s two new
+  tests, FE-10) = **+49** new tests across FE-8/9/10, plus whatever FE-1–FE-7 already added. No
+  shipped test was deleted or weakened in any of the three tasks this session landed.
+
+---

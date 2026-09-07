@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { evaluateRule } from './evaluate';
+import { LEVEL_LABEL } from './labels';
 import type { AlertRule } from './types';
 
 const baseRule = (over: Partial<AlertRule>): AlertRule => ({
@@ -38,5 +39,24 @@ describe('evaluateRule', () => {
     expect(a.event).toBeNull();
     const b = evaluateRule(rule, { symbol: 'SPY', price: 106, gamma_flip: 105 }, a.memory);
     expect(b.event?.message).toMatch(/touched gamma flip/i);
+  });
+
+  // curvature-v2-surfaces U-23a (FE-10): the firing's label now comes from the SAME closed
+  // `LEVELS` lookup `AlertsPage.tsx`'s rule row reads — a new firing and its rule read the same
+  // words, byte-for-byte, never a raw `level.replace('_', ' ')` transform of the wire token.
+  it('the level_touch firing label is the closed LEVELS lookup label, byte-for-byte — not a raw transform of the wire token', () => {
+    const rule = baseRule({ kind: 'level_touch', level: 'call_wall' });
+    const a = evaluateRule(rule, { symbol: 'SPY', price: 100, call_wall: 105 }, { lastPrice: 100 });
+    const b = evaluateRule(rule, { symbol: 'SPY', price: 106, call_wall: 105 }, a.memory);
+    expect(b.event?.message).toBe(`SPY touched ${LEVEL_LABEL.call_wall}`);
+    expect(b.event?.message).toBe('SPY touched Call wall');
+  });
+
+  it('a price-threshold level_touch firing still renders the raw `$` value, never the "Price threshold" label', () => {
+    const rule = baseRule({ kind: 'level_touch', level: 'price', priceThreshold: 500 });
+    const a = evaluateRule(rule, { symbol: 'SPY', price: 495 }, {});
+    expect(a.event).toBeNull();
+    const b = evaluateRule(rule, { symbol: 'SPY', price: 502 }, a.memory);
+    expect(b.event?.message).toBe('SPY touched $500');
   });
 });
