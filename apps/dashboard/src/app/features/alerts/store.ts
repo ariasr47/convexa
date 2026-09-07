@@ -18,6 +18,29 @@ let memory: AlertsState | null = null;
 let version = 0;
 const listeners = new Set<() => void>();
 
+/**
+ * The read-fault latch (curvature-v2-surfaces SPEC §2.5, criteria 51/52/70/N-5).
+ *
+ * `readAlerts()`'s catch branch below sets this true the moment `JSON.parse` throws — correct so
+ * far, nothing has been written yet. But the SHIPPED defect was the next write: `upsertRule` /
+ * `pushEvent` / `setNotifyBrowser` all call `persist()`, which unconditionally `setItem`s the
+ * degraded-to-empty in-memory state over the SAME key the corrupt blob still occupies, destroying
+ * it. This latch closes that loss path: once a read has faulted, `persist()` keeps updating
+ * `memory` (so the session still functions) and still calls `notify()` (so subscribers still
+ * re-render), but skips `localStorage.setItem` entirely for the rest of the session. It is a
+ * READ-PATH guarantee, not a key or shape change — `ALERTS_KEY`, `AlertsState` and `AlertEvent`
+ * are untouched, which is why criterion 51 is a no-op migration rather than a version chain.
+ *
+ * Per-session, never auto-clears (case c of `store.spec.ts`): there is no code path that sets this
+ * back to `false`. A reload is the only way to re-attempt the read.
+ */
+let readFaulted = false;
+
+/** Exported for the UI (`/alerts`, PLAN N-5) — the SAME shape as positions' `faulted` posture. */
+export function alertsReadFaulted(): boolean {
+  return readFaulted;
+}
+
 function notify() {
   version += 1;
   listeners.forEach((l) => {
@@ -40,10 +63,15 @@ export function getAlertsVersion(): number {
 
 function persist(state: AlertsState) {
   memory = state;
-  try {
-    localStorage.setItem(ALERTS_KEY, JSON.stringify(state));
-  } catch {
-    /* quota / private mode — keep memory only */
+  // While the read is faulted, the durable key is left EXACTLY as the corrupt blob left it — never
+  // overwritten by the degraded-to-empty in-memory state (criterion 52's loss-free guarantee). The
+  // in-memory update and the notify() below still happen, so the current session is not wedged.
+  if (!readFaulted) {
+    try {
+      localStorage.setItem(ALERTS_KEY, JSON.stringify(state));
+    } catch {
+      /* quota / private mode — keep memory only */
+    }
   }
   notify();
 }
@@ -64,6 +92,7 @@ export function readAlerts(): AlertsState {
       notifyBrowser: parsed.notifyBrowser === true,
     };
   } catch {
+    readFaulted = true;
     memory = empty();
   }
   return memory;
@@ -109,4 +138,11 @@ export function setNotifyBrowser(on: boolean): void {
 
 export function newRuleId(): string {
   return `ar_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** Test/internal seam: reset the in-memory cache AND the latch, mirroring
+ *  `features/trading/positions/store.ts`'s `__resetMemory` idiom. */
+export function __resetAlertsMemory() {
+  memory = null;
+  readFaulted = false;
 }

@@ -1008,3 +1008,81 @@ is proven instead by this task's own component assertions (`settings.register.sp
 `data-figure-register="mono"` + raw-source guard) — recorded per PLAN's note as FE-14 item 9.
 
 ---
+
+## FE-9 — Alerts store: the read-fault latch (loss-free), and the pre-phase blob proof
+
+**Landed:** 2026-09-07, one commit (`fix`, per the lane rule — this repairs a shipped defect).
+**Criteria:** 51 (SB), 52 (SB), 70 (SB), N-5 (store half). **GATE Z items: none** — buildable exactly
+as planned. **Copy diffs: none.** This task precedes FE-10 (any alerts UI change), per the ordering
+constraint.
+
+### 1. What shipped
+
+| File | Change |
+|---|---|
+| `features/alerts/store.ts` | New module-level `let readFaulted = false;`, set **only** in `readAlerts()`'s catch branch (`JSON.parse` failure). `persist()` now skips `localStorage.setItem` while `readFaulted` is true — it still updates `memory` and still calls `notify()`, so the current session keeps working. New export `alertsReadFaulted()` for the UI (FE-10). New test-only `__resetAlertsMemory()` (mirrors `features/trading/positions/store.ts`'s own `__resetMemory` idiom). `ALERTS_KEY`, `AlertsState`, `AlertEvent` — untouched; `message` is never deleted. |
+| `features/alerts/store.spec.ts` | **New** — 9 tests across all four required cases (a–d) plus two extra checks (durable-shape stability, non-object-JSON never throwing). |
+
+### 2. The live breach, closed
+
+Verified at source before touching anything (matching the PLAN's own citation): `store.ts`'s
+`readAlerts()` catch branch degraded to `empty()` on a parse failure — correct so far, nothing
+written — but the **next** `upsertRule` / `pushEvent` / `setNotifyBrowser` called `persist()`, which
+unconditionally `setItem`s the degraded-to-empty state over the **same key** the corrupt blob still
+occupied, permanently destroying whatever was recoverable in it. `resolveDurable`'s "never delete
+old" guarantee (the shared durable-store idiom) never applied here, because this store reads one key
+and writes the same one, not two. The latch closes exactly that path and nothing else: `readAlerts`
+is otherwise byte-identical, and the four `Array.isArray` guards (rules/events shape tolerance) are
+untouched — a **parseable-but-wrong-shaped** value (e.g. the bare JSON number `42`, tested explicitly)
+degrades its fields via those existing guards **without** latching, because no `JSON.parse` exception
+was thrown. Only a genuine parse failure latches, matching the criterion's own wording ("an
+**unreadable** alerts blob").
+
+### 3. Mutation proof — run red (verbatim), then reverted to green
+
+**MUTATION PROOF N (criterion 52, SB).** Removed the `if (!readFaulted)` guard from `persist()`
+(replaced with an unconditional block, `MUTATION_POISON` comment attached).
+
+- **Red (verbatim), 2 of 9 failed** — both against the **raw stored string**, not the parsed object
+  (the reviewer probe's own question, answered: an assertion on the parsed value cannot see the
+  overwrite):
+  `AssertionError: expected '{"schema_version":1,"rules":[{"id":"a…' to be '{not json, and definitely
+  not an Aler…' // Object.is equality` (the MUTATION PROOF N target test) and
+  `AssertionError: expected '{"schema_version":1,"rules":[{"id":"f…' to be '{ broken' // Object.is
+  equality` (the "stays latched across repeated writes" case-(c) test) — both show the corrupt
+  original overwritten with a freshly-serialized `AlertsState`, exactly the loss path this task
+  closes.
+- **Restore:** poison reverted; `grep -n MUTATION_POISON store.ts` → **0 hits** (exit 1); re-ran
+  `store.spec.ts` → **exit 0, 9/9**.
+
+No proof above is a narrated `expect(true).toBe(true)`; both reds are copied from this session's
+terminal.
+
+### 4. Verification — exit codes, read directly
+
+| Command | Result |
+|---|---|
+| `npx vitest run src/app/features/alerts/store.spec.ts` (new file, first run) | **exit 0** — 9/9 |
+| `npx vitest run src/app/features/alerts` | **exit 0** — 2 files / 12 tests (`evaluate.spec.ts` unaffected, `store.spec.ts` new) |
+| `npx nx test @convexa/dashboard --skip-nx-cache -- src/app/features/alerts src/app/pages/alerts` (the task's mandated targeted command) | **exit 0** — 2 files / 12 tests |
+| `npm run typecheck` (cold — `dist`/`out-tsc`/`*.tsbuildinfo` deleted first) | **exit 0** |
+| `npm run lint` | **exit 0** — 0 errors, **5 warnings**, all pre-existing (same set FE-6/7/8 recorded), **0 new** |
+| `grep -rln "FE-9" apps/dashboard/src --include=*.spec.*` (gotcha 10) | Named 5 files; 4 are a DIFFERENT feature's task numbering (`curvature-v2-desk-and-read` FE-9 — `DecisionCard.spec.tsx`, `readLayout.render.spec.tsx`, `readLayout.spec.ts`, `AppShell.keyboard.spec.tsx`, confirmed by reading each citation), the fifth is this task's own new `store.spec.ts`. No `EXEMPT` map names this task's FE-9 — no further action. |
+| `npx nx format:write --files <the 2 changed/new paths>` | **exit 0**, scoped |
+
+### 5. Fixture provenance (criterion 51/70)
+
+`prePhaseBlob()` is authored directly from the shipped `AlertsState`/`AlertRule`/`AlertEvent` shapes
+(`types.ts:10-45`, unchanged by this task) — the literal shape "the shipped writer" would have
+produced before this phase, per PLAN's own instruction ("an old shape from git history or the shipped
+writer"). Since **no shape change ships this phase** (criterion 51 is a no-op migration, not a version
+chain), a fixture built from the current shape IS a pre-phase fixture; there is no second shape to
+diff against. It carries one disabled rule and one already-read event specifically to prove `enabled`
+and `read` round-trip exactly as saved, not merely that the read doesn't throw.
+
+### 6. `EXEMPT` map after FE-9
+
+Unchanged — this task touches `features/alerts/store.ts`, outside N-1's three scanned trees. Both
+maps confirmed still **0** by this session's own run (`fonts.spec.ts`, `pauseGlyph.spec.ts`).
+
+---
