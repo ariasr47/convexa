@@ -24,7 +24,7 @@
  * gone after reload (AC-36).
  */
 import { MARK_BASIS_META } from '@/features/trading/model/mark';
-import { typographyTokens } from '@/shared/theme/tokens';
+import { MONO_FACE } from '@/shared/figure';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
@@ -54,13 +54,10 @@ function revealFocusedControl(event: FocusEvent<HTMLElement>) {
   window.scrollBy({ left: dx, top: dy, behavior: 'auto' });
 }
 
-/** 0.8rem = 12.8px — above the 11px floor, in the mono data face with tabular numerals. */
-const LEG_MONO = {
-  fontFamily: typographyTokens.monoFontFamily,
-  fontVariantNumeric: 'tabular-nums',
-  fontSize: '0.8rem',
-  letterSpacing: 0,
-} as const;
+/** 0.8rem = 12.8px — above the 11px floor, in the mono data face with tabular numerals. The face
+ *  itself comes from `shared/figure` (curvature-v2-surfaces criterion N-1); the size is this row's
+ *  own — the ladder does not travel (SPEC §2.1). */
+const LEG_MONO = { ...MONO_FACE, fontSize: '0.8rem' } as const;
 
 /** The coarse-pointer touch floor. The theme enforces it globally; stated here for the card CTA. */
 const HIT_TARGET = 44;

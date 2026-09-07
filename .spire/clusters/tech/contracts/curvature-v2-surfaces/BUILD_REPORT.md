@@ -470,3 +470,176 @@ against the real `cargo run` backend, not a mock.
 Screenshots and the throwaway browser-driver scripts were written to the session scratchpad and are
 not part of this commit; the dev server and its ports were torn down (`npm run ports:free`) before
 handing off.
+
+---
+
+## FE-5 — Positions rows: the offline contract on six cells, the `⏸` removal, the one inversion, the keyboard tips
+
+**Landed:** 2026-09-07, one commit. **Criteria:** 23 (SB), 24 (SB), 25 (SB, sim arm), 26, 27a (SB),
+27b (SB), 28 (SB), 29 (SB), U-9, U-15, U-15a (SB), 30, 31, 32, 33, 35, CF-2 (SB). **GATE Z items:
+none** — buildable exactly as planned; no scope reading needed re-litigating beyond the ones already
+ruled at GATE PLAN (Z-1 OUT, Z-2 delete-under-class-1), both implemented per the ruling.
+
+### 1. What shipped
+
+| File | Change |
+|---|---|
+| `features/trading/positions/PositionRow.tsx` | `mark`/`pl`/`pl_pct`/`delta_entry`/`session_delta` route through `figureStateOf` + `faceFor`, both from `@/shared/figure`. Each computes a `{ text, hasValue }` fact (three new exported pure helpers `markFigure`/`plFigure`/`plPctFigure`, also imported by `PositionCard`) and passes `offline: streamOffline ? { retained: hasValue } : null`. The bare/no-value arm still renders through the shipped `unavailableCell`/`dashCell`/`literal()` (unchanged, per council #3), decorated with a new `offlineDecoration(caption, testid)` helper (`PauseMark` + a caption `Typography` on its own line via `flexBasis: '100%'`) whenever `showPause` is true. Local `OFFLINE`/`MONO` consts deleted; the panel-local `CELL_MONO_SIZE = { fontSize: '0.86rem' }` replaces `MONO`'s size half, `faceFor(mono)` replaces its face half. `literal()` gained an optional `helpId` parameter (the position id): when present, the three testid'd members (`cell-unavailable`/`cell-not-recorded`/`cell-no-basis`) render inside a focusable (`tabIndex={-1}`) wrapper with `aria-describedby` pointing at a `VISUALLY_HIDDEN` sibling carrying the tip text — the file's own `trend-help` idiom (`:396-401` pre-edit), copied attribute-for-attribute (U-15a). `dashCell`'s untestidded call (`helpId` omitted) is byte-for-byte unchanged. `PendingAffordance`'s `⏸` and `PositionRow`'s two doc-comments mentioning it are updated. |
+| `features/trading/positions/PositionCard.tsx` | The big P/L block (`card-pl`) and the Mark footer value (`card-mark`/`card-mark-value`) now read `plFigure`/`plPctFigure`/`markFigure` — the SAME helpers the row calls — and resolve dim/pause/caption via the SAME `figureStateOf`, so the card can never render a different closed-nine member or a different register than the row for one datum. New `card-pl-caption`/`card-mark-caption` testids carry the offline caption. Local `monoSx` deleted; `faceFor(...)` used throughout (hero size 1.5rem / footer 0.76rem-scale kept — the ladder does not travel). |
+| `features/trading/positions/PositionsView.tsx` | The group-header's bare `⏸` (`:367` pre-edit) → `<PauseMark />` inside an `inline-flex` wrapper. |
+| `features/trading/positions/labels.ts` | `SESSION_DELTA_TIP` loses the parenthetical ` (⏸)` (Z-2). |
+| `features/trading/positions/LegDisclosure.tsx` | `LEG_MONO` re-pointed to `...MONO_FACE` (from `@/shared/figure`) + its own `fontSize: '0.8rem'`; byte-identical CSS (same three face properties, same size). |
+| `features/trading/outcomes/TrackRecordSection.tsx` | Local `const MONO = typographyTokens.monoFontFamily` deleted; the one consuming `sx` spreads `...MONO_FACE`. |
+| `features/trading/orders/OrderRow.tsx` | Local `MONO` (byte-identical properties to `MONO_FACE`) deleted; all four `...MONO` sites → `...MONO_FACE`. Face-only — `:172`'s `⏸ offline` untouched (Z-1 carried debt). |
+| `features/trading/orders/OrderDetailDialog.tsx` | Local `MONO` (missing `fontVariantNumeric` vs. the shipped `MONO_FACE` — `tabular-nums` is already global via `theme.ts:114`, so this is a measured no-op, the same class FE-1 documented) deleted; two `sx={MONO}`/`{...MONO}` sites → `MONO_FACE`. The `'—'` fallback at the old `:145`/`:180`/`:181` (a needle-1 false-positive the windowed scan picked up from proximity to the mono usage, not from being inside a mono run) extracted into a named `DASH` constant — same rendered byte, no longer a raw quoted literal for the raw-text scan to catch near an unrelated mono site. |
+| `shared/theme/fonts.spec.ts` | This task's six `EXEMPT` entries deleted (`PositionRow.tsx`, `PositionCard.tsx`, `LegDisclosure.tsx`, `TrackRecordSection.tsx`, `OrderRow.tsx`, `OrderDetailDialog.tsx`). |
+| `features/trading/positions/pauseGlyph.spec.ts` | **New.** The `?raw` scan Mutation Proof H calls for (criterion 29's enforcement mechanism), scoped to `features/trading/{positions,broker}/**` + `pages/positions/**`, excluding `orders/` (Z-1). Detects the glyph inside a rendered string (quoted/backtick/bare-JSX-text) and explicitly ignores comment lines, so historical doc-comments narrating the old treatment don't trip it. Carries a two-entry live-checked `EXEMPT` for Broker's two still-unconverted sites (`BrokerGroupHeader.tsx:215`, `BrokerPositionRow.tsx:128`), named for FE-7. |
+| `features/trading/positions/positions.risk.spec.tsx` | `:424`(pre-edit) `⏸ offline` text query → the rendered `PauseIcon` svg + the `offline · last known` caption text. Added: the sim-arm non-synonymy assertion (`not provided` never appears), a new describe block for 27a/27b/28/29 (SB), a new describe block for U-15a (SB) plus a `dashCell`-stays-untestidded regression guard. |
+| `features/trading/positions/offlineLayout.spec.tsx` | `:60` re-pointed from `getByText(/⏸ offline/)` to the `PauseIcon` + the `cell-pl-caption` testid (same `flexBasis` assertion). |
+| `features/trading/positions/tint.spec.tsx` | `:202` re-pointed from an `innerHTML` regex on the glyph to a `querySelector('svg[data-testid="PauseIcon"]')` check. |
+| `pages/positions/positions.integration.spec.tsx` | `:497-498`/`:523` re-pointed from the glyph text to the `PauseIcon` svg + the `offline · last known` caption text (both the drop and the reconnect-clears-it assertions). |
+
+**Zero desk-spec edits** beyond the two named as evidence (`LiveTape.spec.tsx`, `orders.risk.spec.tsx`
+— both re-run, both green, `git diff` on `OrderRow.tsx`/`OrderDetailDialog.tsx` confined to the face
+re-point).
+
+### 2. The mechanism, restated against the shipped file (decisions.md §3 #13/#17)
+
+The six live-derived cells each compute a `hasValue` fact independent of the connection state (does
+this specific figure currently have a real number — `view.mark.net_mark`, `view.pl_dollar`,
+`view.pl_pct.kind === 'value'`, `ctx.sessionDelta`), then hand `figureStateOf` exactly that plus
+`offline: streamOffline ? { retained: hasValue } : null`. The module's own precedence does the rest:
+`offline != null` always wins, `retained` decides F4 vs. F5, and `dim`/`showPause`/`caption` come back
+as ONE fact each — never re-derived per cell. This is the same shape `ScanCells.tsx`'s `PriceCell`
+already proved out (FE-3/4), applied to five cells instead of one. `trend` is explicitly **not**
+converted — `PlSparkline` already dims + breaks the line under `offline` (its own shipped contract,
+`TREND_TIP`'s "shows a gap … while the feed is offline"), and it is a chart, not a text figure the
+closed-nine vocabulary targets; it is outside FE-5's owned-file list (`PlSparkline.tsx`) and untouched.
+
+**The needle-1 false positives, resolved without changing behaviour.** `fonts.spec.ts`'s `MONO_BOUND`
+regex windows ±6/+12 lines around *any* line naming `MONO`/`MONO_FACE`/`monoSx`/`monoFontFamily` — it
+has no notion of "inside this JSX element" vs. "eighteen lines below it in the same file." Three of
+the six pre-existing violations were pure false positives: two doc-comments (`PositionRow.tsx`'s
+`no basis`/`—` prose, backtick-wrapped, read as rendered text by the windowed scan) fixed by
+rewording without backticks, and `OrderDetailDialog.tsx`'s `stop`/`target` dash fallbacks fixed by
+naming the fallback (`DASH`) instead of repeating the quoted literal near the mono line. The real
+fixes — `PositionRow.tsx`/`PositionCard.tsx`'s local `MONO` consts and `PositionCard.tsx`'s two
+`'—'`/`''` fallbacks silently sitting inside a mono-styled `Box` — are covered in §3 below. **Neither
+`PositionRow.tsx` nor `PositionCard.tsx` names `MONO`/`MONO_FACE`/`monoSx`/`monoFontFamily` anywhere
+after this task** (`grep -c` both patterns → 0 in both files), which is what makes the false-positive
+class structurally unreachable in these two files going forward, not just fixed today.
+
+### 3. A "one datum, two ways" defect found and closed on `PositionCard` (SPEC §2.3, not a copy change)
+
+Before this task, `PositionCard`'s big P/L block computed its own fallback independently of the row:
+`p.status === 'open' && view.pl_dollar != null ? money(view.pl_dollar) : '—'` (`:158` pre-edit) and
+`p.status === 'open' && view.pl_pct.kind === 'value' ? pctStr(view.pl_pct.value) : ''` (`:161`
+pre-edit). For an OPEN position whose P/L the app cannot compute — the AMD $160 call seeded during the
+app pass below is exactly this case — the row renders `unavailable` (with its tip, via
+`unavailableCell`) while the card rendered a bare, untooltipped `—` / an empty second line. That is
+the SPEC §2.3 defect named by construction ("the card takes the module route so table and card cannot
+render one datum two ways") — not a wording change under the copy freeze (§2.7): `unavailable` is
+already one of the closed nine, and moving WHICH closed-nine member (or dash) appears for a given
+data state to match the row's own answer is the U-6 precedent (a lookup MISS vs. a genuine absence),
+not new copy. Fixed by routing both through the SAME `plFigure`/`plPctFigure` the row calls, gated on
+`isOpen` exactly as shipped (a closed/pending position still renders the bare literals unchanged).
+Itemized here per the reporting instruction, since it is a rendered-text change even though it is not
+a copy-freeze class.
+
+### 4. Copy diffs — itemized (positions = additions only + the three permitted classes, §2.7)
+
+All six are class (1) — a typographic truth mark replaced by the declared stroke icon:
+
+| Site | Shipped | New |
+|---|---|---|
+| `PositionRow.tsx:68` | `const OFFLINE = '⏸ offline';` (appended beside the mark chip) | Deleted; `PauseMark` + `offline · last known`/`offline` caption via `offlineDecoration` |
+| `PositionRow.tsx:378` | `{streamOffline ? ' ⏸' : ''}` (appended to `delta_entry`) | `PauseMark` + caption, same placement |
+| `PositionRow.tsx:388` | `{streamOffline ? '⏸' : ...}` (replaced the WHOLE `session_delta` value) | The retained value (dimmed) or `—`, + `PauseMark` + caption — never a naked glyph (27a/27b) |
+| `PositionRow.tsx:549` | `Paused — resumes pricing when the live feed returns. ⏸` | `Paused — resumes pricing when the live feed returns.` + `PauseMark` (sentence byte-identical minus the trailing glyph) |
+| `PositionsView.tsx:367` | bare `⏸` (group header, offline) | `PauseMark` |
+| `labels.ts:57` `SESSION_DELTA_TIP` | `…re-anchors fresh each reload and freezes (⏸) while the feed is offline…` | `…re-anchors fresh each reload and freezes while the feed is offline…` (Z-2 — the icon has no host inside a `Tooltip title` string; the sentence's meaning survives without the parenthetical) |
+
+No other shipped positions label, tooltip, column name or status changed. The new caption strings
+that now appear (`offline · last known`, `offline`) are **not new copy** — they are the shipped
+`figureStateOf` captions (`FigureCell.tsx:262,271` originally, byte-for-byte per FE-1) applied to five
+new call sites; no string was authored by this task. §3's `PositionCard` fix is a rendered-text change
+but not a copy-freeze class, itemized separately above rather than folded in here.
+
+### 5. Mutation proofs — every one actually run (red text captured), then reverted to green
+
+| Proof | Poison | Red result (verbatim) | Restore |
+|---|---|---|---|
+| **H** — criterion 29 (SB): the new `pauseGlyph.spec.ts` scan catches a restored `⏸` | `PositionRow.tsx`'s `session_delta` no-value arm: `DASH` → `'⏸_MUTATION_POISON_H'` | `AssertionError: criterion-29 violation:\n/src/app/features/trading/positions/PositionRow.tsx → 587:const sdValue = hasDelta ? money(ctx.sessionDelta as number) : '⏸_MUTATION_POISON_H';` | reverted; `git diff` on the file after = the real 318-insertion/77-deletion diff only, zero `POISON` markers (`grep -c POISON` → 0) |
+| **I** — criterion 27b (SB): the bare/no-retained arm must never say "last known" | `mark`'s no-value branch: `offlineDecoration(markState.caption, ...)` → `offlineDecoration('offline · last known', ...)` | `AssertionError: expected 'offline · last known' to be 'offline' // Object.is equality` on the 27b test | reverted; same file, zero residual poison |
+
+Neither proof is a narrated `expect(true).toBe(true)`; both reds are copied from this session's
+terminal, naming the exact assertion that caught the planted defect.
+
+### 6. Verification — exit codes, read directly
+
+| Command | Result |
+|---|---|
+| `npx vitest run src/app/shared/theme/fonts.spec.ts` (after the six-file re-point) | **exit 0** — 14/14, including the anti-vacuity and both mutation-guard `it`s |
+| `npx vitest run src/app/features/trading/positions src/app/features/trading/orders src/app/features/trading/outcomes src/app/pages/positions src/app/shared/theme` | **exit 0** — 61 files / **810** tests |
+| `npx nx test @convexa/dashboard --skip-nx-cache -- src/app/features/trading/positions src/app/pages/positions src/app/shared/theme src/app/shared/figure` (the task's mandated targeted command) | **exit 0** — 52 files / **650** tests |
+| isolated re-run: `npx vitest run src/app/features/trading/orders/orders.risk.spec.tsx src/app/app.risk.spec.tsx` | **exit 0** — 2 files / **31** tests — matches the baseline note exactly |
+| `npx nx test @convexa/dashboard --skip-nx-cache` (full suite, 1st run) | **exit 1**, Nx flagged it **flaky** itself — a worker fork crashed (233/234 files, no NAMED assertion failure), an infra fault of the same class the documented baseline already carries |
+| `npx nx test @convexa/dashboard --skip-nx-cache` (full suite, 2nd run) | **exit 0** — **234/234 files, 2782/2782 tests** |
+| `npm run typecheck` | **exit 0** |
+| `npx nx run @convexa/dashboard:typecheck --skip-nx-cache` | **exit 0** (forced once, to rule out a stale cache after the poison/revert cycles) |
+| `npm run lint` | **exit 0** — 0 errors, **5 warnings**, all pre-existing (4 × e2e config `no-explicit-any`, 1 × `react-hooks/exhaustive-deps`) — same count as FE-4's landing, **0 new** |
+| `git status --porcelain` before staging | exactly this task's owned files + `pauseGlyph.spec.ts` (new) — no stray file, no unrelated `docs/research/...` directory staged |
+
+**Test-count arithmetic.** `positions.risk.spec.tsx` gained 7 tests (25 → 32: the sim-arm
+non-synonymy addition, 27a/27b/28/29, the U-15a wording+focus test, the `dashCell` regression guard).
+`pauseGlyph.spec.ts` is new at 4 tests. No shipped test was deleted or weakened.
+
+### 7. What was run in the app
+
+`npm run ports:free` (clear) → `npm run dev` → signed up a throwaway account (`/positions` is behind
+`RequireAuth`, same pattern as `/scanner`) — the seeded `demo@convexa.io` account only auto-populates
+when the backend advertises `SEED_TEST_ACCOUNT`, which this local run did not, so positions were
+seeded directly into `localStorage`'s `convexa.positions.v2` (the app's own read-new-else-old union
+lifted them into v3 on the next read — the same mechanism `positions.risk.spec.tsx`'s own v1-migration
+test exercises, not a bypass of it).
+
+- **Signed out, 1280px:** `/positions` renders `require-auth-wall` naming the surface — "Sign in to
+  open your positions" — never an empty book (criterion 32).
+- **Signed in, empty book, 1280 + 393px:** "No simulated positions yet. Open one to start your book."
+  — distinct from the wall and from a load failure (criterion 33); `Net P/L (open)` still shows the
+  pre-FE-6 `+$0` green defect PLAN assigns to FE-6, confirmed out of this task's scope and untouched.
+- **Signed in, one seeded OPEN AMD $160 call whose mark could not be resolved against this dev
+  backend's chain, 1280px:** the row renders `Mark`/`P/L`/`P/L %` each as `unavailable` in the Sans
+  register, `text.disabled`, untinted — no bare `—`, no direction colour — while `Net entry $1040
+  debit` (Mono), `Max loss $1040` (Mono, static) and `Aug 21 · 0d` render normally beside it,
+  confirming U-9's "static fields never dim" and criterion 26's cell-level scoping live against a real
+  chain miss, not a fixture.
+- **Same position, card layout, 393px:** the big P/L hero and its second line both read `unavailable`
+  in the same Sans/disabled register as the table cell — the §2.3 "one datum, two ways" fix from §3
+  confirmed live: before this task's fix the card would have shown a bare, undecorated `—` here.
+- **Broker tab, 1280px:** renders the shipped `Connect your brokerage` gate (no credential connected
+  in this session) — read-only, no entry/order control, confirming criterion 34's negative space;
+  no Broker figures were reachable to inspect without a connection, which is FE-7's conversion, not
+  this task's.
+- **Not observed live:** the F4/F5 pause-icon/caption visual on a real SSE drop — blocking
+  `**/api/stream/**` via the Playwright route API against the real dev backend did not flip
+  `offline-banner` within 60s (the same class of limitation FE-3/4's own session recorded: the real
+  backend's reconnect/retry behaviour does not reproduce a clean `onerror` the way the repo's
+  `SilentEventSource`/`CapturingEventSource` test stubs do). This arm is the most heavily automated
+  surface in this task instead — 4 dedicated SB tests (27a/27b/28/29) plus the centerpiece end-to-end
+  flow's real SSE-drop assertion in `positions.risk.spec.tsx`, all passing, all reading the rendered
+  `PauseIcon` svg and the caption text rather than the retired glyph.
+
+Screenshots and the throwaway browser-driver scripts were written to the session scratchpad and are
+not part of this commit; the dev server and its ports were torn down (`npm run ports:free`) before
+handing off.
+
+### 8. `EXEMPT` map — this task's six entries deleted
+
+`shared/theme/fonts.spec.ts`'s `EXEMPT` map: **12 → 6** (`PositionRow.tsx`, `PositionCard.tsx`,
+`LegDisclosure.tsx`, `TrackRecordSection.tsx`, `OrderRow.tsx`, `OrderDetailDialog.tsx` all removed,
+each live-checked before deletion — the enforcement test failed until both the code was fixed AND the
+entry was deleted, per the map's own "must still violate" check). The six remaining entries are FE-6's
+one (`pages/positions/PositionsPage.tsx`) and FE-7's five (`features/trading/broker/*.tsx`) —
+unchanged, both still exist and both still violate, confirmed by this session's own run of
+`fonts.spec.ts`.

@@ -31,7 +31,7 @@
  *    `[score-change-is-deliberate-and-measured]`'s enabler, never its exerciser.
  *  - `[theme-token-discipline]` — MUI theme tokens only; zero hardcoded hex; dark/light parity.
  */
-import { typographyTokens } from '@/shared/theme/tokens';
+import { MONO_FACE } from '@/shared/figure';
 import { ArcDivider } from '@/shared/ui/ArcDivider';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Box from '@mui/material/Box';
@@ -85,8 +85,6 @@ import {
 import { computeLedgerRead } from './ledger';
 import { Cell, CellFamily, EXCLUSION_PRECEDENCE, LedgerRead, N_MIN } from './types';
 
-const MONO = typographyTokens.monoFontFamily;
-
 /** The house ⓘ idiom, reimplemented locally (`features/` may not import `pages/ticker/widgets/_kit`).
  *  A tooltip EXPLAINS; it never INFORMS — none of these carries a number, a rate or a count. */
 function InfoTip({ title, testid }: { title: string; testid?: string }) {
@@ -133,7 +131,7 @@ function CellView({ cell, sourcesComplete }: { cell: Cell; sourcesComplete: bool
       <Typography
         variant="body2"
         data-testid={`tr-read-${cell.key}`}
-        sx={{ color: 'text.primary', fontFamily: MONO, fontVariantNumeric: 'tabular-nums' }}
+        sx={{ color: 'text.primary', ...MONO_FACE }}
       >
         {lines.read}
       </Typography>

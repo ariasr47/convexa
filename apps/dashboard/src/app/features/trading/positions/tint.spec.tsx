@@ -199,7 +199,10 @@ describe('tint discipline — className identity (AC-78)', () => {
     expect(unavailable.length).toBeGreaterThan(0);
     // Every `unavailable` cell wears one class, and a degraded state is NEVER directional.
     expect(new Set(unavailable.map(cls)).size).toBe(1);
-    expect(screen.getByTestId('positions-table').innerHTML).toMatch(/⏸ offline/);
+    // The pause mark is the declared stroke icon, never the text character (criterion 29).
+    expect(
+      screen.getByTestId('positions-table').querySelector('svg[data-testid="PauseIcon"]'),
+    ).toBeTruthy();
   });
 
   it('the card mirrors the row: no tint on the chip, the entry qualifier or the risk slot', () => {

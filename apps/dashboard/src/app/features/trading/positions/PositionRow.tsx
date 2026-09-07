@@ -8,10 +8,17 @@
  * sim-now and broker-later without a fork.
  *
  * Component states (SPEC §4): live cells (mark, P/L, P/L%, Δ since entry, Session Δ, trend) dim +
- * show `⏸ offline` + last-known on an SSE drop; STATIC cells (structure line, qty, net entry, MAX
- * LOSS, expiry, status) keep rendering and never dim. A leg's lookup failure withholds the whole
- * aggregate — never a partial sum — while per-leg truth stays visible in the disclosure. Pending
- * limits show the waiting affordance + Cancel; nothing here can place a real order.
+ * show the stroke `PauseMark` + last-known on an SSE drop; STATIC cells (structure line, qty, net
+ * entry, MAX LOSS, expiry, status) keep rendering and never dim. A leg's lookup failure withholds
+ * the whole aggregate — never a partial sum — while per-leg truth stays visible in the disclosure.
+ * Pending limits show the waiting affordance + Cancel; nothing here can place a real order.
+ *
+ * REGISTER (curvature-v2-surfaces SPEC §2.3). The six live-derived cells above resolve their type
+ * register and their offline treatment through `shared/figure`'s `figureStateOf` + `faceFor` — the
+ * ONE figure-state decision FE-1 extracted from `FigureCell`. `literal()` and its three per-member
+ * tips (`cell-unavailable` / `cell-not-recorded` / `cell-no-basis`) do NOT route through the module
+ * (council `decisions.md` §3 #3): `FigureCell` has no value-row help host, so converting those cells
+ * would delete the three distinct tips. `dashCell`'s `—` stays deliberately untestidded.
  *
  * TWO FIGURES CHANGED UNITS FROM THE SHIPPED ROW, deliberately and together: `Net entry` and `Mark`
  * are now DOLLAR NETS (`$840`, `$500`), not per-unit prices (`$8.40`, `$5.00`). A per-unit price is
@@ -20,7 +27,7 @@
  * arithmetically legible as a result: mark − net entry = P/L.
  */
 import { MARK_BASIS_META } from '@/features/trading/model/mark';
-import { typographyTokens } from '@/shared/theme/tokens';
+import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -65,17 +72,12 @@ import type { ColumnKey } from './types';
 import type { PlSample } from './useTrends';
 import type { PositionView } from './view';
 
-const OFFLINE = '⏸ offline';
 /** Not-applicable. Keeps its shipped treatment and stays UNTESTIDDED (SPEC §4). */
 const DASH = '—';
-// Figma table cell numerics: Roboto Mono, 13.8px (0.86rem), letterSpacing 0 (MUI `body2` would
-// otherwise force 0.875rem + its own letter-spacing). Spread LAST in each cell's sx so it wins.
-const MONO = {
-  fontFamily: typographyTokens.monoFontFamily,
-  fontVariantNumeric: 'tabular-nums',
-  fontSize: '0.86rem',
-  letterSpacing: 0,
-} as const;
+// Figma table cell numerics: 13.8px (0.86rem) — the size ladder does NOT travel with the register
+// (SPEC §2.1): `faceFor(mono)` supplies the face (family/tabular-nums/tracking), this file keeps the
+// panel-local size. Spread the face LAST in each cell's sx so it wins.
+const CELL_MONO_SIZE = { fontSize: '0.86rem' } as const;
 const VISUALLY_HIDDEN = {
   position: 'absolute',
   width: '1px',
@@ -120,9 +122,9 @@ export interface RowContext {
   sessionDelta: number | null;
   streamOffline: boolean;
   /**
-   * The durable store is faulted (SPEC §2.9). NOTHING dims and no ⏸ appears — faulted and offline
-   * are independent states — but every WRITE affordance on the row is refused: `aria-disabled`,
-   * still focusable, tooltip-reachable, and a no-op.
+   * The durable store is faulted (SPEC §2.9). NOTHING dims and no pause mark appears — faulted and
+   * offline are independent states — but every WRITE affordance on the row is refused:
+   * `aria-disabled`, still focusable, tooltip-reachable, and a no-op.
    */
   faulted?: boolean;
   onClose: (id: string) => void;
@@ -141,13 +143,46 @@ function statusChipColor(status: string): 'default' | 'info' {
  * `color: 'text.disabled'`, the same `Tooltip arrow` — and differ BY TEXT AND TESTID ONLY. They are
  * built here, once, so "let's shorten the unavailable cell" cannot quietly collapse two of them into
  * one (SPEC §4, AC-31). A degraded state is NEVER directional, so none of them is ever tinted.
+ *
+ * U-15a (CONDUCTOR, reversible) — the three TESTID'd members (`cell-unavailable` / `cell-not-recorded`
+ * / `cell-no-basis`) are keyboard-reachable: the file's own idiom 300 lines down (the `trend` cell's
+ * `Tooltip describeChild` + `aria-describedby` + a visually-hidden description sibling) applied here,
+ * attributes only, zero wording change. `dashCell`'s untestidded `—` (`helpId` omitted) is UNCHANGED —
+ * it stays hover-only, exactly as shipped; no assertion may assume a DOM hook for it. The hidden
+ * description is a SIBLING of the testid'd node, never its child, so `getByTestId(testid).textContent`
+ * stays exactly `text` (the tip's prose never leaks into it).
  */
-function literal(text: string, tip: string, testid?: string) {
+function literal(text: string, tip: string, testid?: string, helpId?: string) {
+  if (!testid || !helpId) {
+    return (
+      <Tooltip arrow title={tip}>
+        <Typography variant="body2" sx={{ color: 'text.disabled' }} data-testid={testid}>
+          {text}
+        </Typography>
+      </Tooltip>
+    );
+  }
+  const descriptionId = `${helpId}-${testid}-description`;
   return (
-    <Tooltip arrow title={tip}>
-      <Typography variant="body2" sx={{ color: 'text.disabled' }} data-testid={testid}>
-        {text}
-      </Typography>
+    <Tooltip arrow describeChild title={tip}>
+      <Box
+        component="span"
+        tabIndex={-1}
+        aria-describedby={descriptionId}
+        sx={{ display: 'inline-block' }}
+      >
+        <Typography
+          component="span"
+          variant="body2"
+          sx={{ color: 'text.disabled' }}
+          data-testid={testid}
+        >
+          {text}
+        </Typography>
+        <Box component="span" id={descriptionId} sx={VISUALLY_HIDDEN}>
+          {tip}
+        </Box>
+      </Box>
     </Tooltip>
   );
 }
@@ -162,9 +197,41 @@ const unavailableCell = (view: PositionView) =>
         ? partialMarkTip(view.mark.resolved_legs, view.mark.total_legs)
         : ROW_UNAVAILABLE_TIP,
     'cell-unavailable',
+    view.position.id,
   );
-const notRecordedCell = () => literal('not recorded', NOT_RECORDED_TIP, 'cell-not-recorded');
+const notRecordedCell = (helpId: string) =>
+  literal('not recorded', NOT_RECORDED_TIP, 'cell-not-recorded', helpId);
 const dashCell = (tip: string) => literal(DASH, tip, undefined);
+
+/** A closed-nine member as PLAIN TEXT (never inside a mono-bound run — needle 1). Threaded through
+ *  `figureStateOf` alongside the six live-derived cells' real figures so a stream drop can decide
+ *  retained-vs-bare from ONE fact (`hasValue`), never a cell-local branch (SPEC §2.3, criteria
+ *  27a/27b). `PositionCard` imports these so the row and the card can never disagree on the text. */
+export interface CellFigure {
+  text: string;
+  hasValue: boolean;
+}
+export function markFigure(view: PositionView): CellFigure {
+  if (view.mark.unavailable || view.mark.net_mark == null) {
+    return { text: 'unavailable', hasValue: false };
+  }
+  return {
+    text: `${view.mark.basis === 'modeled' ? '≈ ' : ''}${netMoney(view.mark.net_mark)}`,
+    hasValue: true,
+  };
+}
+export function plFigure(view: PositionView): CellFigure {
+  return view.pl_dollar == null
+    ? { text: 'unavailable', hasValue: false }
+    : { text: money(view.pl_dollar), hasValue: true };
+}
+export function plPctFigure(view: PositionView): CellFigure {
+  const st = view.pl_pct;
+  if (st.kind === 'no_basis') return { text: NO_BASIS_LABEL, hasValue: false };
+  if (st.kind === 'not_applicable') return { text: DASH, hasValue: false };
+  if (st.kind === 'unavailable') return { text: 'unavailable', hasValue: false };
+  return { text: pct(st.value), hasValue: true };
+}
 
 /** The three-way strike/right/expiry answer: not applicable · never recorded · one level down. */
 type FactState = 'value' | 'shares' | 'multi_leg' | 'not_recorded';
@@ -188,6 +255,30 @@ export interface DisclosureSlot {
   panelId: string;
 }
 
+/**
+ * The value-row degraded decoration (F4/F5 only) — the stroke `PauseMark` plus the module's own
+ * caption, rendered on its own line so repeated markers wrap cleanly (SPEC §2.3, criteria
+ * 27a/27b/28/29). `caption` is `figureStateOf`'s output, never re-derived here, so a cell can never
+ * show a pause mark without either the value beside it or a stated reason (criterion 28).
+ */
+function offlineDecoration(caption: string | null, testid: string) {
+  return (
+    <>
+      <PauseMark />
+      {caption ? (
+        <Typography
+          component="span"
+          variant="caption"
+          data-testid={testid}
+          sx={{ color: 'text.disabled', flexBasis: '100%', lineHeight: 1.2 }}
+        >
+          {caption}
+        </Typography>
+      ) : null}
+    </>
+  );
+}
+
 export function cellContent(
   col: ColumnKey,
   ctx: RowContext,
@@ -197,17 +288,6 @@ export function cellContent(
   const p = view.position;
   const [leg0] = p.legs;
   const isTerminal = p.status === 'closed' || p.status === 'cancelled';
-  const liveDim = streamOffline ? 0.5 : 1;
-  const offlineTag = streamOffline ? (
-    <Typography
-      component="span"
-      variant="caption"
-      data-testid="offline-tag"
-      sx={{ color: 'text.disabled', display: 'block', flexBasis: '100%', lineHeight: 1.2 }}
-    >
-      {OFFLINE}
-    </Typography>
-  ) : null;
   const plColor =
     view.pl_dollar == null ? 'text.primary' : view.pl_dollar >= 0 ? 'success.main' : 'error.main';
 
@@ -230,7 +310,11 @@ export function cellContent(
           sx={{ alignItems: 'baseline' }}
           data-testid="cell-contract"
         >
-          <Typography component="span" variant="body2" sx={{ ...MONO, fontWeight: 600 }}>
+          <Typography
+            component="span"
+            variant="body2"
+            sx={{ ...faceFor(true), ...CELL_MONO_SIZE, fontWeight: 600 }}
+          >
             {leg0?.ticker}
           </Typography>
           <Typography
@@ -292,7 +376,31 @@ export function cellContent(
         );
       }
       if (isTerminal) return dashCell(PENDING_PL_TIP);
-      if (view.mark.unavailable || view.mark.net_mark == null) return unavailableCell(view);
+      // The six live-derived cells owe the offline contract via `shared/figure` (SPEC §2.3,
+      // decisions.md §3 #13): `dim` and the pause treatment come from the module's own output,
+      // never a cell-local `liveDim` — that is what stops one shape (opacity, no pause, no caption)
+      // being re-minted per cell.
+      const markFig = markFigure(view);
+      const markState = figureStateOf({
+        value: markFig.text,
+        register: 'traced',
+        offline: streamOffline ? { retained: markFig.hasValue } : null,
+      });
+      if (!markFig.hasValue) {
+        if (!markState.showPause) return unavailableCell(view);
+        return (
+          <Stack
+            direction="row"
+            spacing={0.5}
+            useFlexGap
+            sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.25 }}
+            data-testid="cell-mark"
+          >
+            {unavailableCell(view)}
+            {offlineDecoration(markState.caption, 'cell-mark-caption')}
+          </Stack>
+        );
+      }
       const basisMeta = MARK_BASIS_META[view.mark.basis];
       // The chip shows the WEAKEST leg basis — a structure containing a theoretical leg IS a
       // theoretical structure — and says so explicitly once the legs disagree.
@@ -302,91 +410,220 @@ export function cellContent(
           direction="row"
           spacing={0.5}
           useFlexGap
-          sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.25, opacity: liveDim }}
+          sx={{
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            rowGap: 0.25,
+            opacity: markState.dim ? 0.5 : 1,
+          }}
           data-testid="cell-mark"
         >
-          <Typography variant="body2" sx={MONO}>
-            {view.mark.basis === 'modeled' ? '≈ ' : ''}
-            {netMoney(view.mark.net_mark)}
+          <Typography variant="body2" sx={{ ...faceFor(markState.mono), ...CELL_MONO_SIZE }}>
+            {markFig.text}
           </Typography>
           {basisMeta && (
             <Tooltip arrow title={mixed ? `${basisMeta.tip} ${WEAKEST_BASIS_TIP}` : basisMeta.tip}>
               <Chip size="small" variant="outlined" label={basisMeta.label} />
             </Tooltip>
           )}
-          {offlineTag}
+          {markState.showPause && offlineDecoration(markState.caption, 'cell-mark-caption')}
         </Stack>
       );
     }
     case 'pl': {
       if (p.status === 'pending') return dashCell(PENDING_PL_TIP);
       if (isTerminal) return dashCell(PENDING_PL_TIP);
-      if (view.pl_dollar == null) return unavailableCell(view);
+      const plFig = plFigure(view);
+      const plState = figureStateOf({
+        value: plFig.text,
+        register: 'traced',
+        offline: streamOffline ? { retained: plFig.hasValue } : null,
+      });
+      if (!plFig.hasValue) {
+        if (!plState.showPause) return unavailableCell(view);
+        return (
+          <Stack
+            direction="row"
+            spacing={0.5}
+            useFlexGap
+            sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.25 }}
+            data-testid="cell-pl"
+          >
+            {unavailableCell(view)}
+            {offlineDecoration(plState.caption, 'cell-pl-caption')}
+          </Stack>
+        );
+      }
       return (
         <Stack
           direction="row"
           spacing={0.5}
           useFlexGap
-          sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.25, opacity: liveDim }}
+          sx={{
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            rowGap: 0.25,
+            opacity: plState.dim ? 0.5 : 1,
+          }}
           data-testid="cell-pl"
         >
           <Tooltip arrow title={PL_TIP}>
-            <Typography variant="body2" sx={{ color: plColor, fontWeight: 600, ...MONO }}>
-              {money(view.pl_dollar)}
+            <Typography
+              variant="body2"
+              sx={{ color: plColor, fontWeight: 600, ...faceFor(plState.mono), ...CELL_MONO_SIZE }}
+            >
+              {plFig.text}
             </Typography>
           </Tooltip>
-          {offlineTag}
+          {plState.showPause && offlineDecoration(plState.caption, 'cell-pl-caption')}
         </Stack>
       );
     }
     case 'pl_pct': {
       if (isTerminal) return dashCell(PENDING_PL_TIP);
       const st = view.pl_pct;
-      // `no basis` is a CELL-level state, not a row-level one: Convexa holds BOTH numbers it needs
-      // and the denominator is about zero, which is exactly why the dollar P/L beside it still
-      // renders a real figure while this one does not (SPEC §4, AC-31).
-      if (st.kind === 'no_basis') return literal(NO_BASIS_LABEL, NO_BASIS_TIP, 'cell-no-basis');
       if (st.kind === 'not_applicable') return dashCell(PENDING_PL_TIP);
-      if (st.kind === 'unavailable') return unavailableCell(view);
+      const pctFig = plPctFigure(view);
+      const pctState = figureStateOf({
+        value: pctFig.text,
+        register: 'traced',
+        offline: streamOffline ? { retained: pctFig.hasValue } : null,
+      });
+      if (st.kind !== 'value') {
+        // no basis is a CELL-level state, not a row-level one: Convexa holds BOTH numbers it
+        // needs and the denominator is about zero, which is exactly why the dollar P/L beside it
+        // still renders a real figure while this one does not (SPEC §4, AC-31).
+        const bare =
+          st.kind === 'no_basis'
+            ? literal(NO_BASIS_LABEL, NO_BASIS_TIP, 'cell-no-basis', p.id)
+            : unavailableCell(view);
+        if (!pctState.showPause) return bare;
+        return (
+          <Stack
+            direction="row"
+            spacing={0.5}
+            useFlexGap
+            sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.25 }}
+            data-testid="cell-pl-pct"
+          >
+            {bare}
+            {offlineDecoration(pctState.caption, 'cell-pl-pct-caption')}
+          </Stack>
+        );
+      }
       return (
         <Stack
           direction="row"
           spacing={0.5}
           useFlexGap
-          sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.25, opacity: liveDim }}
+          sx={{
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            rowGap: 0.25,
+            opacity: pctState.dim ? 0.5 : 1,
+          }}
           data-testid="cell-pl-pct"
         >
           <Tooltip arrow title={plPctBasisTip(st.basis)}>
-            <Typography variant="body2" sx={{ color: plColor, ...MONO }}>
-              {pct(st.value)}
+            <Typography
+              variant="body2"
+              sx={{ color: plColor, ...faceFor(pctState.mono), ...CELL_MONO_SIZE }}
+            >
+              {pctFig.text}
             </Typography>
           </Tooltip>
-          {offlineTag}
+          {pctState.showPause && offlineDecoration(pctState.caption, 'cell-pl-pct-caption')}
         </Stack>
       );
     }
     case 'delta_entry': {
       if (p.status !== 'open') return dashCell(DELTA_ENTRY_TIP);
-      return (
-        <Tooltip arrow title={DELTA_ENTRY_TIP}>
-          <Typography
-            variant="body2"
-            sx={{ opacity: liveDim, ...MONO, color: 'text.secondary' }}
+      const hasValue = view.pl_dollar != null;
+      const deltaState = figureStateOf({
+        value: hasValue ? money(view.pl_dollar as number) : DASH,
+        register: 'traced',
+        offline: streamOffline ? { retained: hasValue } : null,
+      });
+      if (!hasValue) {
+        // The word `—` stays byte-identical; only the register moves Mono → Sans (rule 24's one
+        // inversion, decisions.md §3 #17) — routed through the shipped `dashCell`, same tip.
+        const bare = dashCell(DELTA_ENTRY_TIP);
+        if (!deltaState.showPause) return bare;
+        return (
+          <Stack
+            direction="row"
+            spacing={0.5}
+            useFlexGap
+            sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.25 }}
             data-testid="cell-delta-entry"
           >
-            {view.pl_dollar == null ? DASH : money(view.pl_dollar)}
-            {streamOffline ? ' ⏸' : ''}
-          </Typography>
+            {bare}
+            {offlineDecoration(deltaState.caption, 'cell-delta-entry-caption')}
+          </Stack>
+        );
+      }
+      return (
+        <Tooltip arrow title={DELTA_ENTRY_TIP}>
+          <Stack
+            direction="row"
+            spacing={0.5}
+            useFlexGap
+            sx={{
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              rowGap: 0.25,
+              opacity: deltaState.dim ? 0.5 : 1,
+            }}
+            data-testid="cell-delta-entry"
+          >
+            <Typography
+              component="span"
+              variant="body2"
+              sx={{ ...faceFor(true), ...CELL_MONO_SIZE, color: 'text.secondary' }}
+            >
+              {money(view.pl_dollar as number)}
+            </Typography>
+            {deltaState.showPause &&
+              offlineDecoration(deltaState.caption, 'cell-delta-entry-caption')}
+          </Stack>
         </Tooltip>
       );
     }
     case 'session_delta': {
       if (p.status !== 'open') return dashCell(SESSION_DELTA_TIP);
+      const hasDelta = ctx.sessionDelta != null;
+      const sdValue = hasDelta ? money(ctx.sessionDelta as number) : DASH;
+      const sdState = figureStateOf({
+        value: sdValue,
+        register: 'traced',
+        offline: streamOffline ? { retained: hasDelta } : null,
+      });
       return (
         <Tooltip arrow title={SESSION_DELTA_TIP}>
-          <Typography variant="body2" sx={{ opacity: liveDim }} data-testid="cell-session-delta">
-            {streamOffline ? '⏸' : ctx.sessionDelta == null ? DASH : money(ctx.sessionDelta)}
-          </Typography>
+          <Stack
+            direction="row"
+            spacing={0.5}
+            useFlexGap
+            sx={{
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              rowGap: 0.25,
+              opacity: sdState.dim ? 0.5 : 1,
+            }}
+            data-testid="cell-session-delta"
+          >
+            <Typography
+              component="span"
+              variant="body2"
+              sx={{
+                ...faceFor(sdState.mono),
+                ...(sdState.mono ? CELL_MONO_SIZE : {}),
+              }}
+            >
+              {sdValue}
+            </Typography>
+            {sdState.showPause && offlineDecoration(sdState.caption, 'cell-session-delta-caption')}
+          </Stack>
         </Tooltip>
       );
     }
@@ -418,7 +655,7 @@ export function cellContent(
           <Typography
             component="span"
             variant="body2"
-            sx={{ ...MONO, color: 'text.secondary' }}
+            sx={{ ...faceFor(true), ...CELL_MONO_SIZE, color: 'text.secondary' }}
             data-testid="cell-entry"
           >
             {dollars(view.net_entry_cost)}{' '}
@@ -430,7 +667,11 @@ export function cellContent(
     case 'qty':
       return (
         <Tooltip arrow title={view.qty_tip}>
-          <Typography variant="body2" sx={MONO} data-testid="cell-qty">
+          <Typography
+            variant="body2"
+            sx={{ ...faceFor(true), ...CELL_MONO_SIZE }}
+            data-testid="cell-qty"
+          >
             {view.qty_text}
           </Typography>
         </Tooltip>
@@ -438,7 +679,7 @@ export function cellContent(
     case 'expiry': {
       const state = factStateOf(view);
       if (state === 'shares') return dashCell(SHARES_FIELD_TIP);
-      if (view.nearest_expiration == null) return notRecordedCell();
+      if (view.nearest_expiration == null) return notRecordedCell(p.id);
       // Multi-expiry structures carry their expiries IN the structure line; this column then shows
       // the NEAREST with the multi-expiry tip. Never two dates crammed into one slot.
       const body = (
@@ -463,14 +704,14 @@ export function cellContent(
       const state = factStateOf(view);
       if (state === 'shares') return dashCell(SHARES_FIELD_TIP);
       if (state === 'multi_leg') return dashCell(MULTI_LEG_STRIKE_TIP);
-      if (state === 'not_recorded') return notRecordedCell();
+      if (state === 'not_recorded') return notRecordedCell(p.id);
       return <Typography variant="body2">${p.legs[0].strike}</Typography>;
     }
     case 'right': {
       const state = factStateOf(view);
       if (state === 'shares') return dashCell(SHARES_FIELD_TIP);
       if (state === 'multi_leg') return dashCell(MULTI_LEG_STRIKE_TIP);
-      if (state === 'not_recorded') return notRecordedCell();
+      if (state === 'not_recorded') return notRecordedCell(p.id);
       return <Typography variant="body2">{p.legs[0].right === 'call' ? 'Call' : 'Put'}</Typography>;
     }
     case 'structure':
@@ -491,13 +732,18 @@ export function cellContent(
       );
     // The risk slot's TABLE home (`lg` and above only — SPEC §4 GATE Z ruling). STATIC: not
     // live-derived, so it NEVER dims, and untinted, because a risk figure is not a P/L direction
-    // (AC-78). One unsigned figure, or ONE stated reason — never both, never blank, never `0`,
-    // never a bare `—`, never the word `Unlimited` standing alone.
+    // (AC-78). One unsigned figure, or ONE stated reason — never both, never blank, never zero,
+    // never a bare em dash, never the word Unlimited standing alone.
     case 'max_loss': {
       const ml = view.max_loss;
       return ml.kind === 'figure' ? (
         <Tooltip arrow title={MAX_LOSS_TIP}>
-          <Typography component="span" variant="body2" sx={{ ...MONO }} data-testid="cell-max-loss">
+          <Typography
+            component="span"
+            variant="body2"
+            sx={{ ...faceFor(true), ...CELL_MONO_SIZE }}
+            data-testid="cell-max-loss"
+          >
             {dollars(ml.dollars)}
           </Typography>
         </Tooltip>
@@ -545,9 +791,12 @@ export function PendingAffordance({ ctx }: { ctx: RowContext }) {
       data-testid="pending-affordance"
     >
       {streamOffline ? (
-        <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-          Paused — resumes pricing when the live feed returns. ⏸
-        </Typography>
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+          <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+            Paused — resumes pricing when the live feed returns.
+          </Typography>
+          <PauseMark />
+        </Stack>
       ) : (
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
           Waiting for mark ≤ ${(p.limit_price ?? 0).toFixed(2)}
@@ -605,8 +854,8 @@ export const rowActionSx = {
 /**
  * PositionRow (convexa-redesign · Positions — Figma PositionRow `106:52`). One position rendered as a
  * table `<tr>` of `cellContent` cells across the passed column set + a trailing actions cell.
- * Mono figures + direction-coloured P/L come from `cellContent`; live cells dim + show `⏸ offline`
- * on an SSE drop while static cells keep rendering. Nothing here places a real order.
+ * Mono figures + direction-coloured P/L come from `cellContent`; live cells dim + show the stroke
+ * `PauseMark` on an SSE drop while static cells keep rendering. Nothing here places a real order.
  */
 export function PositionRow({
   ctx,

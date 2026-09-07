@@ -263,12 +263,6 @@ export const bindsFaceLocally = (src: string): boolean =>
  * file must still exist in the scan, and it must still violate. FE-14 asserts this map is empty.
  */
 const EXEMPT: Record<string, string> = {
-  'features/trading/positions/PositionRow.tsx': 'FE-5 — six live-derived cells take the module',
-  'features/trading/positions/PositionCard.tsx': 'FE-5 — the card takes the module route too',
-  'features/trading/positions/LegDisclosure.tsx': 'FE-5 — face re-point',
-  'features/trading/outcomes/TrackRecordSection.tsx': 'FE-5 — face re-point',
-  'features/trading/orders/OrderRow.tsx': 'FE-5 — face re-point only (the `⏸` at :172 is Z-1 debt)',
-  'features/trading/orders/OrderDetailDialog.tsx': 'FE-5 — face re-point only',
   'features/trading/broker/BrokerPositionRow.tsx': 'FE-7 — Broker tab register conversion',
   'features/trading/broker/BrokerPositionCard.tsx': 'FE-7 — Broker tab register conversion',
   'features/trading/broker/BrokerGroupHeader.tsx': 'FE-7 — Broker tab register conversion',
