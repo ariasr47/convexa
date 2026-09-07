@@ -2,7 +2,7 @@
 
 **Source brief:** .spire/clusters/tech/contracts/curvature-v2-surfaces/BRIEF.md
 **Council:** R1 positions · R2 critiques · R3 resolutions · decisions.md   (under council/)
-**Status:** draft
+**Status:** approved — owner, 2026-09-06 (option A: approved with the two S2 pass-2 U-32 repairs folded first; folded the same day, status flipped by the conductor)
 
 > **Provenance markings — four OWNER rulings, two CONDUCTOR calls, and nothing else is a "call".**
 > Four product questions were surfaced to the owner one at a time and ruled on 2026-09-06:
@@ -573,6 +573,10 @@ them:
   figure, so any tally is unsatisfiable without inventing figures. The deliverable is the property.
 - **Any new persisted user preference on these surfaces** — it would create a durable key and pull
   `[loss-free-durable-migration]` from "satisfied by absence" to the phase's sharpest risk.
+- **Scoping a frame-ⓘ assertion to a widget's own body testid** — `structure-hero`
+  (`StructureHeroPanel.tsx:239`), `live-tape` (`LiveTape.tsx:183`), `iv-rank` (`IvRank.tsx:280`) and
+  their peers are `<Box>`es **inside** `<Widget>`'s body; the frame header is not in that subtree, so
+  such an assertion can never reach the control D-C repairs (§2.8).
 
 ### 2.8 The `Widget` frame's ⓘ — one shared-frame change, and the move it requires (**OWNER — D-C**)
 
@@ -593,13 +597,46 @@ behaviour change**: the component itself is untouched — same props (`label`, `
 `Widget.tsx` edit land together: U-32 is not satisfiable by either half alone, and shipping the frame
 edit without the move would leave a `shared/` → `pages/` import in the tree.
 
+**The promoted call's accessible name is `About {title}`, and that is part of the criterion, not a
+style choice.** The call carries the widget's own `title` prop as `About ${title}`, matching every
+shipped `AccessibleHelp` call in the tree (`FigureCell.tsx:307`, `About ${label}`). The reason is
+mechanical, and without it U-32's verification is vacuous: the AC-35 helper resolves its target as
+`container.getByRole('button', { name: /^About /i }).first()` (`curvature-v2.spec.ts:574-579`), and a
+frame-scoped container holds the header **and** the body. Because `Widget.tsx` renders the header box
+before the body box (`:452-453`), `.first()` resolves to the **new header control only if it is named
+with that `About ` prefix**. Named anything else, `.first()` falls through to a pre-existing body
+button — `IvRank.tsx:118`, `MarketContext.tsx:134-146`, `DealerFlowProjection.tsx:71-83`, or a
+`FigureCell` ⓘ (`FigureCell.tsx:307`) inside the tape (`LiveTape.tsx:200,211,227,237`) or the hero —
+and the suite reports green **without ever exercising the control D-C repairs**. **Poison, required:**
+rename the promoted header button, or drop the `About ` prefix, and AC-35 must go **red at all eight
+frame sites**. A rename that leaves it green is the vacuous gate
+`[structural-over-prose-enforcement]` and criterion 69 exist to catch.
+
 **Which desk specs this reopens — named here rather than discovered at GATE Q.** U-32 re-runs all five,
 for the **hero AND the live tape**:
 
-- `apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts:496-592` — the AC-35 suite. It walks a **closed**
-  list of four widgets (`:502-507`) plus one `FigureCell` site (`ladder-foot`, `:585-589`);
-  `live-tape` appears only in the AC-20b width block (`:626,641`), so the tape's frame ⓘ is covered by
-  **nothing** today. This suite must be **extended**, not merely re-run.
+- `apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts:496-592` — the AC-35 suite, **extended, not merely
+  re-run**. Today it walks a **closed** list of four widgets (`HOVER_INFO_WIDGETS`, `:502-507`) plus one
+  `FigureCell` site (`ladder-foot`, `:585-589`), and **not one of those assertions can reach a `Widget`
+  frame header**. The four scope to widget **body** testids — `iv-rank` (`IvRank.tsx:280`),
+  `market-context` (`MarketContext.tsx:421`), `straddle-move` (`StraddleMove.tsx:56`),
+  `dealer-flow-projection` (`DealerFlowProjection.tsx:163`) — each a `<Box>` rendered as `<Widget>`'s
+  child, while the frame's header renders one level up (`Widget.tsx:452-453`). `ladder-foot` is the
+  same shape one level deeper: `LadderFoot.tsx:23`, mounted in the hero's **body** at
+  `StructureHeroPanel.tsx:261`, carrying its **own** `FigureCell` ⓘ — a different control D-C does not
+  touch, so **it does not count toward U-32**, and neither does any other body-level `FigureCell`
+  control. `live-tape` appears elsewhere in the file only in the AC-20b width block (`:626,641`), which
+  asserts nothing about help affordances. **So the hero's frame ⓘ and the tape's frame ⓘ are covered by
+  nothing today**, and the fix is a **second, frame-scoped site list enumerating all eight `info=`
+  sites** — hero and live tape included — each scoped to the **frame root**
+  `data-testid="widget-{id}"` (`Widget.tsx:335`): `widget-structure-hero` for the hero
+  (`StructureHeroPanel.tsx:213,216`) and `widget-live-tape` for the tape (`LiveTape.tsx:174,179`).
+  Each entry asserts, on that frame's **header** ⓘ under the accessible name above, the four properties
+  the shipped helper already asserts (`:530-557`): a real `<button>`, revealed by a genuine tap,
+  revealed by keyboard focus, dismissed by Escape. The five shipped entries stay exactly as they are
+  and are **not** interchangeable with the frame list — they prove ruling 6's body controls and the
+  `FigureCell` primitive, and `straddle-move` (`:55`) passes no `info` prop at all, so it has no frame
+  ⓘ to assert.
 - `apps/dashboard/src/app/pages/ticker/ticker-hierarchy.spec.tsx:85,100,117-119` — it asserts the zone
   labels are non-headings and reads `live-tape`; a new focusable button inside the shared frame changes
   the desk's accessible tree and tab order at all eight sites.
@@ -752,7 +789,7 @@ removes or rewrites that row and is a spec edit, not a rebuild.
 | 57b | S5·S6 | A widget whose input was **never delivered** says so in its own words and states **no market fact** about a ticker nobody scored | test |
 | 58 | S5 | **No** quiet-band figure carries a live mark in any connection state | test (**SB**) |
 | 59 | S5 | Every hover-revealed help control across the eight widgets is reachable **by tap and by keyboard focus** at every checked width — including the off-exchange proximity chip, which sits outside the four widgets ruling 6 fixed | test (**SB**) |
-| U-32 | S5 | The **`Widget` frame's ⓘ** is a focusable control (tap, Enter/Space, Escape) at **all eight** live `info=` sites — `OffExchangeBlocks.tsx:39`, `DealerFlowProjection.tsx:159`, `TermStructure.tsx:34`, `MarketContext.tsx:417`, `FreshPositioning.tsx:38`, `IvRank.tsx:276`, `StructureHeroPanel.tsx:216` and `LiveTape.tsx:179` — using the ONE shipped focusable-help pattern, **promoted into `shared/` in the same change** so the shared frame never imports from `pages/`, its existing importers re-pointed with **zero behaviour change** (§2.8). **The ticker desk is reopened for this single shared-frame change and nothing else** — no desk layout, copy, state or spec content changes — and the desk's own shipped specs are **re-run inside this criterion** and stay green for the **hero AND the live tape**: `curvature-v2.spec.ts:496-592` (AC-35 — **extended**, because its site list at `:502-507` does not contain `live-tape`), `ticker-hierarchy.spec.tsx:85,100,117-119`, `single-motion-moment.spec.ts:228-236,265-277`, `live-dot-census.spec.tsx:170-184,221-223,283-294` and `LiveTape.spec.tsx:114-436` (**OWNER — D-C**) | test (**SB**) |
+| U-32 | S5 | The **`Widget` frame's ⓘ** is a focusable control (tap, Enter/Space, Escape) at **all eight** live `info=` sites — `OffExchangeBlocks.tsx:39`, `DealerFlowProjection.tsx:159`, `TermStructure.tsx:34`, `MarketContext.tsx:417`, `FreshPositioning.tsx:38`, `IvRank.tsx:276`, `StructureHeroPanel.tsx:216` and `LiveTape.tsx:179` — using the ONE shipped focusable-help pattern, **promoted into `shared/` in the same change** so the shared frame never imports from `pages/`, its existing importers re-pointed with **zero behaviour change** (§2.8), and carrying the accessible name **`About {title}`** (the widget's own `title` prop), matching every shipped `AccessibleHelp` call (`FigureCell.tsx:307`). **AC-35 (`curvature-v2.spec.ts:496-592`) is extended to enumerate all eight sites**, each scoped to the **frame root** `data-testid="widget-{id}"` (`Widget.tsx:335`) — `widget-structure-hero` and `widget-live-tape` for the two desk sites — and asserting the **frame header's** ⓘ specifically: a real `<button>`, reachable by tap, by Enter/Space and by Escape, focusable, under that name. The shipped hero-scoped assertion on `ladder-foot` (`:585-589`) targets a **different** control — `LadderFoot.tsx:23`'s own `FigureCell` ⓘ inside the hero body — and **does not count** toward this row, nor does any other body-level `FigureCell` control. **Poison:** renaming the promoted header button, or dropping the `About ` prefix, must turn AC-35 **red at all eight sites**. **The ticker desk is reopened for this single shared-frame change and nothing else** — no desk layout, copy, state or spec content changes — and the desk's own shipped specs are **re-run inside this criterion** and stay green for the **hero AND the live tape**: `curvature-v2.spec.ts:496-592` (AC-35 — **extended**, because its shipped site list at `:502-507` names four widget **body** containers and reaches no frame header at all), `ticker-hierarchy.spec.tsx:85,100,117-119`, `single-motion-moment.spec.ts:228-236,265-277`, `live-dot-census.spec.tsx:170-184,221-223,283-294` and `LiveTape.spec.tsx:114-436` (**OWNER — D-C**) | test (**SB**) |
 | 60 | S5 | Each widget states its **own** basis and as-of, and none is a scoring input | review |
 | 61 | S5 | The off-exchange band stays neutral and **context-only**: no directional colour, no side claim, block prints display-only | test |
 
@@ -1095,9 +1132,13 @@ criterion 62 is green on empty pages.
 **Desk churn is measured here, not discovered at GATE Q.** D-C reopens the desk for one shared-frame
 change; U-32 re-runs the desk's own shipped specs — a11y tree, focus order, single-motion-moment, live
 dot census, and the tape's own spec — inside the criterion, for the **hero AND the live tape** (§2.8).
-One of them is **extended, not merely re-run**: the AC-35 e2e suite walks a closed site list that does
-not contain `live-tape` (`curvature-v2.spec.ts:502-507`), so the tape's frame ⓘ is covered by nothing
-today.
+One of them is **extended, not merely re-run**, and for both desk sites at once: AC-35's shipped site
+list (`curvature-v2.spec.ts:502-507`) names four widget **body** containers, and its one hero-scoped
+entry (`ladder-foot`, `:585-589`) is a `FigureCell` control D-C does not touch, so **no assertion in
+that suite reaches a `Widget` frame header today** — the hero's and the tape's least of all. The
+extension enumerates all eight `info=` sites at the frame root `widget-{id}` (`Widget.tsx:335`), and
+the promoted control's accessible name (`About {title}`) is what makes the suite's `.first()` resolve
+to it rather than to a pre-existing body button (§2.8).
 
 **Reviewed rather than automated:** 7b, 15, 43, 47c, 56, 60, 63, 69, U-15, U-19, U-24, U-27, U-37 —
 pinning those strings or that composition in assertions buys nothing a reviewer does not already give,
@@ -1128,7 +1169,10 @@ From the BRIEF's invariant watch, restated with **where each one bites**:
   ships as a scan or a type with a poison run that goes red and an anti-vacuity assertion. Phase 1
   shipped two `expect(true).toBe(true)` bodies under a "MUTATION PROOF" heading; that is the failure
   69 exists to catch — and it is why N-1 now demands a **new** poison test per needle instead of
-  inheriting `fonts.spec.ts:157-161`, which exercises neither of them (§2.3).
+  inheriting `fonts.spec.ts:157-161`, which exercises neither of them (§2.3). It is also why U-32 pins
+  the promoted button's accessible name and demands a rename poison: an extended AC-35 that still
+  resolves `.first()` to a pre-existing body button is the same vacuous gate wearing a new site list
+  (§2.8).
 - **`[single-shared-sim-entry-dialog]` + `[no-real-order-path]`** — bite at 34: the Broker tab stays
   read-only with no entry, order or cancel control, and the one entry affordance opens the single shared
   `TradeEntryDialog` as a variant, never a fork.
@@ -1157,7 +1201,16 @@ From the BRIEF's invariant watch, restated with **where each one bites**:
   *"0 if missing"* (`apps/api/src/domain/price.rs:18-19`); the needle the `fonts.spec.ts` guard
   actually tests (`:154-167`); the `503` arm on `PUT /api/scan/view` (`scan.rs:776-782`);
   `AccessibleHelp`'s location, export and nine importers; and canon rule 24's accepted-cost clause
-  (`DESIGN_SYSTEM.md:179`).
+  (`DESIGN_SYSTEM.md:179`). A third, **targeted** pass — folding S2 pass 2's two U-32 findings on the
+  owner's approval (`council/decisions.md` §7) — re-read three more, and the first of them changed the
+  repair: (a) the frame's own DOM hook is `data-testid="widget-{id}"` on the `Widget` root
+  (`Widget.tsx:335`), while the testids AC-35 actually scopes to are widget **body** `<Box>`es
+  (`IvRank.tsx:280`, `MarketContext.tsx:421`, `StraddleMove.tsx:56`, `DealerFlowProjection.tsx:163`,
+  and on the desk `StructureHeroPanel.tsx:239`, `LiveTape.tsx:183`), so a hero assertion scoped to
+  `structure-hero` would sit **inside** the body and never reach the header; (b) the header box renders
+  before the body box (`Widget.tsx:452-453`), which is what makes `.first()` usable at all; (c)
+  `AccessibleHelp`'s established name form (`FigureCell.tsx:307`, `About ${label}`), which U-32 now
+  pins as `About {title}` for the frame.
 - **`[best-effort-isolated-or-null]`** — bites at 16, 57 and §5: a dropped stream never blanks a row,
   and an unavailable widget never degrades a neighbour.
 
@@ -1212,6 +1265,18 @@ From the BRIEF's invariant watch, restated with **where each one bites**:
    becomes *"traced to Convexa's computation **or to a record the trader entered**"*. Phase 2 landed four
    amendments and the skeptic's standing check applies: verify none of them widens beyond its stated
    clause.
+7. **U-32's two S2 pass-2 findings are RULED and folded, not open — recorded here so the ruling is
+   visible at GATE Q.** S2 pass 2 found (a) that U-32's "hero AND the live tape" text was unenforceable
+   because no named spec touched the **hero's** frame ⓘ — the only hero-scoped AC-35 assertion targets
+   `ladder-foot`, a different `FigureCell` control — and (b) that the reused
+   `getByRole('button', { name: /^About /i }).first()` would keep matching pre-existing body buttons if
+   the promoted call were named differently. **OWNER, 2026-09-06: SPEC APPROVED, option A — approved
+   with the two U-32 repairs folded first** (`council/decisions.md` §7). Both are folded into §2.8, U-32
+   and §7: AC-35 is **extended** to all eight `info=` sites, each scoped to the frame root
+   `widget-{id}`, asserting the **header** control (`ladder-foot` explicitly does not count), and the
+   promoted call carries the accessible name **`About {title}`** with a rename poison that must go red
+   at all eight sites. Neither repair changes a ruling; both make U-32's teeth real. Nothing about D-C
+   is open.
 
 <!-- spire:council-folding:v1
 {"schema_version":1,"resolutions":[{"source":"R2-architect.md","index":0,"conflict_id":"6c2cf2c5e93575614599ab70258ced726ec21b5b55f570477ba3ecc4d14cded4","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":1,"conflict_id":"d09285682d4490f06fc76ed83d39d867b63b029563280f733b7604c84c1b48a6","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":2,"conflict_id":"cbef7514e4f4d78dbe8d130859c845c98f464b1980353a9bff26184e390eab38","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":3,"conflict_id":"b0f85405a787d1728f858066f4a117e8c5e9b4ff2f4f9a7f024b7c857e2f0a17","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":4,"conflict_id":"50ef9a81beb6c8cd5a2d6899d7fec0c385d9267cbe4e672a2eafcfbeb4ef4da5","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":5,"conflict_id":"fac0c6c7cb9d520bed8cd172d20621a41cbb9dc6c8e403c6fa76d7361bf13303","disposition":"folded","section":"§1"},{"source":"R2-architect.md","index":6,"conflict_id":"db0bcfc326c947b21aaabf909014cb358d08993e3ee249ce6912f7470d0d4849","disposition":"folded","section":"§1"},{"source":"R2-architect.md","index":7,"conflict_id":"8ba032e3b5182d3fa9d37d5366463a8d5c744786ac49def808a374f5b53e9d7b","disposition":"folded","section":"§1"},{"source":"R2-architect.md","index":8,"conflict_id":"2c93136ce62c937e4d523a88e246921fc732d1d43ae424e232c407fbeac7f54e","disposition":"folded","section":"§2"},{"source":"R2-pm.md","index":0,"conflict_id":"faf6bdeea68ca330fb0ec69ddc959c2f2cde9b33d1c27fd1c60ffa42b27d3996","disposition":"folded","section":"§1"},{"source":"R2-pm.md","index":1,"conflict_id":"f81c19bae589857ec75639d1474a2787f03d93eb8c346901ef30f94d2bfbacc8","disposition":"folded","section":"§4"},{"source":"R2-pm.md","index":2,"conflict_id":"a3216467da2136193323c885d477a9bffcd78fe6c5f36e06e99ab31835e60339","disposition":"folded","section":"§1"},{"source":"R2-pm.md","index":3,"conflict_id":"eebd259eca1f92682e5e9d916b09d21c56c93367a9186e2572a906b9a3d30cf9","disposition":"folded","section":"§3"},{"source":"R2-pm.md","index":4,"conflict_id":"1f765d5bd84f31321e34e0403952a4cdf369e6cb1f05c30cc74de1f2c0fb219c","disposition":"folded","section":"§2"},{"source":"R2-pm.md","index":5,"conflict_id":"d000b908a8a2d352ef7c18efcbc1b63ea54cb8794b9d1412cd04a88d84957f5b","disposition":"folded","section":"§3"},{"source":"R2-pm.md","index":6,"conflict_id":"65bd9b07f217cdbe9cb38ea758360b3d3cf3fd0b53b7102a6365aff22958b24f","disposition":"folded","section":"§2"},{"source":"R2-ux.md","index":0,"conflict_id":"7da0330a44483301c998f19632bec0a5c147878ed449e89b297191331a0b090d","disposition":"folded","section":"§2"},{"source":"R2-ux.md","index":1,"conflict_id":"66cd71c1073343c1d28610a3a99270ffd80a1ebe3926d7f866e6aea77ca92557","disposition":"folded","section":"§2"},{"source":"R2-ux.md","index":2,"conflict_id":"918e6655610811bcf259e38e34d95236f39cb8228e0d36f31ff198a739bf4006","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":3,"conflict_id":"ae1248895375efba2db214ba22c43a8a3b6fed751d82b839e0ac8e8416d392a9","disposition":"folded","section":"§1"},{"source":"R2-ux.md","index":4,"conflict_id":"3dba77c9ca6f8fb70f14c9dfb1f37e8b4ff5c8e2a46aff0e85db8767c084d5c8","disposition":"folded","section":"§3"},{"source":"R2-ux.md","index":5,"conflict_id":"154fb2122f510075e58a1dbef185abb14ce4af91eeb519a3f0483a60a2197773","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":6,"conflict_id":"77667a5927811e72e01a8f47e963f87b338200d2e1b57748d119aeeb35b1a7be","disposition":"folded","section":"§2"},{"source":"R2-ux.md","index":7,"conflict_id":"338807da910a82d14a08017f624036f616802f14d023d5e8c469341a401cc2f0","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":8,"conflict_id":"1eee801a384f28f17b062101b1c2776f350b2955a0ae42d5876f55871d5e1ddf","disposition":"folded","section":"§3"},{"source":"R2-ux.md","index":9,"conflict_id":"7374669048f7e8a04a8ce276b1bef3c6ee9589dd0c558862cec0f93d8c0955cd","disposition":"folded","section":"§1"},{"source":"R2-ux.md","index":10,"conflict_id":"4f915a4ad0c90fc3bac8a153606c3d2aab488976872efbef3b6f1dd0ca68adb6","disposition":"folded","section":"§2"}]}

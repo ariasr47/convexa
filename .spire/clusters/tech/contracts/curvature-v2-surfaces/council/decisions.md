@@ -274,3 +274,7 @@ site list to all eight `info=` sites, hero and live tape included, asserting the
 promoted call carries the accessible name **`About {title}`**, matching every shipped `AccessibleHelp` call, stated in §2.8 and
 U-32. Neither changes a ruling; both make U-32's teeth real. Reversal: the owner declines → both stay OPEN into GATE PLAN and
 the planner bounces U-32 at GATE Z (it cannot plan a verification it cannot run).
+
+**OWNER, 2026-09-06 — SPEC APPROVED, option A: approved with the two U-32 repairs folded first.** Both S2 pass-2 findings
+move from OPEN to **RULED — fold**; one targeted synthesizer pass applies them; the conductor then flips `SPEC.md` status
+`draft → approved` and opens GATE PLAN. Nothing else in the spec changes on approval.

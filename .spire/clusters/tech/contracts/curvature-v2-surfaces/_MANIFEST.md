@@ -1,7 +1,7 @@
 # curvature-v2-surfaces — pipeline manifest
-Stage:        GATE C complete 2026-09-06 — SPEC + INTERFACE_CONTRACT drafted, S2 ×2 PASS WITH FINDINGS, loop capped with
-              **two open items on U-32 surfaced to the owner**; **awaiting owner approval** (phase 3 of 4 of the Curvature
-              Terminal v2 build)
+Stage:        GATE PLAN — opened 2026-09-07 after **owner approval of the spec 2026-09-06** (option A: the two S2 pass-2
+              U-32 repairs folded first, then status flipped). Planner dispatched; PLAN.md pending (phase 3 of 4 of the
+              Curvature Terminal v2 build)
 Repos:        frontend
 Brief:        BRIEF.md present
 Contracts:
@@ -66,6 +66,16 @@ Last gateway:  GATE C @ 2026-09-06 — council complete; owner approval pending
   the shipped 45 s watchdog ∧ stream provenance, no new constant; and D-C's fix needs `AccessibleHelp` promoted from
   `pages/ticker/widgets/ai-rec/` to `shared/` or `shared/` imports from `pages/`. R4 pass 2 repaired all five. **S2 pass 2:**
   5/5 CLOSED at source; **1 new Critical + 1 Important, both on U-32**, left open at the cap and surfaced to the owner.
+- Owner approval @ 2026-09-06 — **option A: approved with the two U-32 repairs folded first** (hero-scoped assertion named;
+  promoted button named `About {title}`). One targeted synthesizer fold applies them; the conductor flips the status.
+- Baseline @ 2026-09-06 — conductor's own runs on `spire/curvature-v2-foundations` @ `dd1326d9`, **exit codes checked**:
+  `npm run typecheck` **exit 0** · `npm run lint` **exit 0** · `npx nx test @convexa/dashboard --skip-nx-cache` **exit 1** —
+  **2691 / 2694 tests, 3 timeouts** (`app.risk.spec.tsx` "/_ops/metrics renders WITHOUT the trader shell" 23.9 s;
+  `orders.risk.spec.tsx` `act_confirm_live_cross_fill…` 20.4 s and `cancel_is_terminal…` 8.4 s, all against a 15 s
+  `testTimeout`) while a synthesizer lane was loading the machine. **Re-run of those two files in isolation: exit 0, 31/31,
+  the three at 1.2 s / 6.5 s / 0.8 s.** `git diff --stat f8957d3f..HEAD -- apps libs` is **empty** — no source has changed since
+  phase 2 closed at 231 files / 2694 tests exit 0 — so the baseline is treated as green with the load-timeout named. e2e
+  honestly **NOT RUN** at baseline (phase 2 closed it at 86/86 against the production build).
 
 ## Inherited (do not rediscover)
 `state/spire-curvature-v2-foundations/RESUME.md` carries the phase table and the trap that cost phase 2 the
