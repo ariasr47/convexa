@@ -1,4 +1,4 @@
-# RESUME — curvature-v2-surfaces frontend lane (FE-2 → FE-5)
+# RESUME — curvature-v2-surfaces frontend lane (FE-6 → FE-10)
 
 **Resume status:** ACTIVE
 
@@ -9,178 +9,164 @@
 | FE-2 | `be7c067b` | `shared/liveness/liveClaim.spec.ts`, `pages/positions/PositionsPage.tsx` |
 | FE-3 | `d905d26a` | `pages/scanner/{ScanCells,ScanTable,ScanCard,ViewEditorDialog,labels}.tsx/.ts`, new `pages/scanner/scanner.register.spec.tsx`, `shared/theme/{fonts,radius-scale}.spec.ts` |
 | FE-4 | `356cea52` | `pages/scanner/{Scanner,ScanTable,ScanCard,ScanCells,labels,scanner.risk.spec,scanner.register.spec}` |
+| FE-5 | `bdc992d8` | `features/trading/positions/{PositionRow,PositionCard,PositionsView,labels,LegDisclosure}`, new `positions/pauseGlyph.spec.ts`, `features/trading/outcomes/TrackRecordSection.tsx`, `features/trading/orders/{OrderRow,OrderDetailDialog}` (face only), `shared/theme/fonts.spec.ts`, `positions.risk.spec.tsx`, `offlineLayout.spec.tsx`, `tint.spec.tsx`, `pages/positions/positions.integration.spec.tsx` |
 
-All three: `npm run typecheck` exit 0, `npm run lint` exit 0 (0 errors, baseline warnings only),
-targeted `npx vitest run src/app/pages/scanner src/app/shared/theme` exit 0 (246/246 at FE-4's
-landing). `BUILD_REPORT.md` has one full section per task (measured numbers, poison-run text,
-copy-diff tables, what was seen in the running app). Branch: `spire/curvature-v2-foundations`
-(no new branch created, nothing pushed).
+All four: `npm run typecheck` exit 0, `npm run lint` exit 0 (0 errors, 5 warnings — all
+pre-existing, 0 new). FE-5's targeted run: `npx nx test @convexa/dashboard --skip-nx-cache --
+src/app/features/trading/positions src/app/pages/positions src/app/shared/theme
+src/app/shared/figure` → 52 files / 650 tests, exit 0. Full suite
+(`npx nx test @convexa/dashboard --skip-nx-cache`, no path filter) → **234/234 files, 2782/2782
+tests, exit 0** on a clean second run (the first run hit an Nx-flagged **flaky** worker crash — no
+named assertion failed, one worker fork died — the same infra-flake class the baseline's own three
+load-timeout files already document; re-run confirmed clean). `BUILD_REPORT.md` has one full
+section per task. Branch: `spire/curvature-v2-foundations` (no new branch created, nothing
+pushed).
 
-**Why stopped here, not mid-FE-5:** FE-5 is the largest remaining task (nine owned files, six
-`EXEMPT` deletions, two ship-blocking mutation proofs, a keyboard-reachability retrofit, an orders
-face re-point that reopens two baseline-flaky spec files) and the session was already deep after
-three completed tasks with substantial exploratory reading (PLAN/SPEC/decisions in full, plus a
-real debugging detour — see Gotcha 1 below). Starting FE-5 fresh with full budget is safer than
-pushing into it here and leaving it half-verified.
+**Why stopped here, not mid-FE-6:** FE-5 landed clean and the session was already deep (reading five
+council/plan/spec sections in full, building six source files' worth of a new mechanism, tracing and
+fixing three needle-1 false positives, and a real browser-verification detour that needed a
+localStorage-seeding fix before it produced evidence — see Gotcha 7). Starting FE-6 fresh with full
+budget is safer than pushing into the header-readout task half-verified.
 
-## Next concrete step: FE-5 — Positions rows conversion (one commit)
+## Next concrete step: FE-6 — The positions header readout (`FigureCell`, five Net P/L states, the rendered container step)
 
-**Owns (PLAN.md, read FE-5's full section before touching anything — currently lines ~568-621 of
+**Owns (PLAN.md, read FE-6's full section before touching anything — currently lines ~638-679 of
 `PLAN.md`, may drift if the file is re-saved):**
-`features/trading/positions/{PositionRow.tsx,PositionCard.tsx,PositionsView.tsx,labels.ts,LegDisclosure.tsx,PortfolioPanel.tsx,PositionsPanel.tsx,positions.risk.spec.tsx,offlineLayout.spec.tsx,tint.spec.tsx}`
-· `features/trading/outcomes/TrackRecordSection.tsx` ·
-`features/trading/orders/{OrderRow.tsx,OrderDetailDialog.tsx}` (**face re-point only**) ·
-`shared/theme/fonts.spec.ts` (its six `EXEMPT` entries — listed below, already present in the file,
-each names `FE-5` as the removing task).
+`pages/positions/PositionsPage.tsx` · new `pages/positions/netPl.ts` + `netPl.spec.ts` ·
+`pages/positions/positions-page.spec.tsx` · `shared/theme/fonts.spec.ts` (its **one** remaining
+EXEMPT entry, `pages/positions/PositionsPage.tsx`).
 
-**Criteria:** 23 (SB), 24 (SB), 25 (SB, sim arm), 26, 27a (SB), 27b (SB), 28 (SB), 29 (SB), U-9,
-U-15, U-15a (SB), 30, 31, 32, 33, 35, CF-2 (SB).
+**Depends on:** FE-1 (done, `shared/figure` module ships `figureStateOf`/`FigureCell` is already
+re-pointed to it), FE-2 (done, `PositionsPage.tsx:31,88` already reads `isDeliveringLive` — do not
+re-touch those two lines). **Independent: no** — FE-2 already edited this same file; re-read it
+fresh rather than trusting the FE-2 section's line citations, which will have drifted after FE-6's
+own edits land on top.
 
-**Read before building** (all already read once this session, re-read fresh in the new lane):
-PLAN.md FE-5 section in full; SPEC.md §2.3 (positions mechanism), §4.3 (positions copy table);
-`council/decisions.md` §3 #3 (literal() stays), #13 (six live-derived cells), #17 (the one
-inversion); §8 Z-1/Z-2 rulings (both already ruled — Z-1 OUT, Z-2 delete-under-class-1 — do not
-re-litigate them, just implement per the ruling). Source: `PositionRow.tsx` in full (it's the
-biggest file — read all of it, not just the cited line ranges, since line numbers may have drifted
-slightly from the plan's citations — verify with `grep -n` before trusting any PLAN line number).
+**Criteria:** 35a (SB), 35b (SB), 35c, 35d, 35e (SB), 7a, 7b, 8, 23 (SB, header only — the sim-book
+half of 23 is FE-5's, already shipped).
 
-### The six live-derived cells → the `shared/figure` module (mechanism, from FE-1)
-`mark` (`:284-320`), `pl` (`:321-341`), `pl_pct` (`:342-367`), `delta_entry` (`:368-382`),
-`session_delta` (`:383-392`), `trend` (`:393-411`) all route through `figureStateOf` + `faceFor`
-imported from `@/shared/figure` — same pattern FE-3/FE-4 already proved out on the scanner atoms.
-`dim` MUST come from the module's output, never a cell-local `liveDim` (`:200` today).
+**Read before building:** PLAN.md FE-6 section in full (verify every cited line number with `grep -n`
+first — the gotcha below is not hypothetical, it already cost FE-5 real time); SPEC.md §2.2's last
+block (the offline caption precedence) and §4.3 (positions copy — the Net P/L five-state table);
+`council/decisions.md` §3 #23 (the full 35a-35e ruling with the shipped defect it closes: `+$0` green
+on a fully-unmarked book) and §2.4's container-step hazard section (`PanelContainer`, why
+`containerName` on a widget's own grid never fires). Source: `PositionsPage.tsx` in full (small file,
+read all of it) — its current `:177-195` (FE-1's citation) or wherever the header readout block has
+drifted to; `FigureCell.tsx` for the exact props it takes (`value`, `register`, `caption`, `offline`,
+`live`) since FE-6 renders THROUGH it (not through `figureStateOf` directly, unlike FE-5's cells) —
+this is the phase's only remaining `FigureCell` conversion outside the ticker desk.
 
-### What does NOT convert
-`literal()` (`PositionRow.tsx:145-153`) and its three per-member tips **stay** — do not route them
-through `FigureCell` or the module (it would delete the three distinct tips, and the
-non-synonymy criterion would read green while the distinction went invisible). `dashCell` (`:167`)
-is deliberately **untestidded** (`:69`) — no new assertion may assume a DOM hook for `—`.
+### The shape (from PLAN, restated)
+1. Pure `netPlStateOf({ views, streamOffline, retainedTotal }) → { value, register, caption, tint,
+   offline }`, over the same set the sum already walks. Five arms: no open rows → `—`/F7/no
+   tint/caller's basis line (**closes the shipped `+$0` green defect** — verify this defect is still
+   present before claiming the fix, the same way every lane in this phase re-verifies a cited defect
+   rather than trusting the citation); open+none marked → `unavailable`/F8/no tint/caption `0 of {m}
+   open marked`; some marked → the sum/Mono/direction permitted/caption `{n} of {m} open marked`
+   (**mandatory** whenever some-but-not-all are marked); all marked → total/no caption; stream drop →
+   F4 or F5, **offline caption overrides the coverage caption** (this is the primitive's own shipped
+   precedence at `FigureCell.tsx:253,262,271` — not a new rule FE-6 invents).
+2. Render through `FigureCell` itself (the header readout is the ONE positions surface that uses the
+   card, per SPEC §2.3 — everywhere else stays FE-5's module-only route). Delete the hand-bound mono
+   face and the bare `opacity: 0.5` this absorbs, and delete the file's one remaining `fonts.spec.ts`
+   EXEMPT entry in the same commit (live-checked — same "must still violate before you delete" trap
+   FE-5 hit repeatedly, see Gotcha 3 below).
+3. Wrap the readout in `PanelContainer` (`shared/ui/PanelContainer.tsx`) — without a named ancestor
+   the container-query step never fires at any viewport, with a fully green build. No second
+   container name anywhere. The RENDERED proof (does it actually step at a narrow container width) is
+   FE-13's job, not FE-6's — jsdom cannot evaluate a container query; FE-6's own test only asserts a
+   `PanelContainer` ancestor exists and no second name does.
+4. 7b — name the off-ladder sites in the build report (scanner's `fontSize: 'inherit'`, the two
+   quiet-band 12px list rows, positions' own `0.86rem` cells) with their reason; these are NOT bugs,
+   they're intentional and already correct — 7b is a documentation criterion, not a code change.
 
-### The `⏸` removal — six sites, one deletion pattern each
-Replace the text glyph with `PauseMark` (from `@/shared/figure`, renders MUI's `PauseIcon`) plus
-either a retained value or a closed-nine member beside it — never a bare pause marker (criterion 28):
-1. `PositionRow.tsx:68` (`'⏸ offline'`)
-2. `PositionRow.tsx:378` (`' ⏸'`)
-3. `PositionRow.tsx:388` (bare `'⏸'` — today replaces the WHOLE `session_delta` value; it has a
-   retained arm available at `ctx.sessionDelta`, `RowContext:119-120` — render the retained value
-   dimmed + `PauseMark` + `offline · last known`, never a naked glyph — criterion 27a)
-4. `PositionRow.tsx:549` (`Paused — resumes pricing when the live feed returns. ⏸`)
-5. `PositionsView.tsx:367` (bare `'⏸'`)
-6. `features/trading/positions/labels.ts:57` (`SESSION_DELTA_TIP`, ` (⏸)` inside a frozen tooltip
-   **string** — Z-2's ruling: delete the three characters ` (⏸)` under §2.7 class (1), change
-   nothing else in that sentence, itemize it in the build report)
+### Two mutation proofs required (both SB)
+**Proof J (35b):** make the unmarked-book arm return `0` instead of `unavailable` — the 35b test must
+go red on a number AND on a direction colour appearing. **Proof K (35e):** let the coverage caption
+win over the offline caption during a drop — the 35e test must go red on `{n} of {m} open marked`
+appearing where the offline caption should have overridden it. Both: run red, capture the exact
+assertion text, revert, confirm `git diff` on the touched file is the real diff only.
 
-`features/trading/orders/OrderRow.tsx:172` (`⏸ offline`) is **Z-1: OUT of scope, carried debt.**
-Do not touch it, do not add it to any scan's fixed set.
-
-### The one inversion
-`delta_entry` (`PositionRow.tsx:374` `...MONO` + `:377` `DASH`) routes through the shipped
-`dashCell` (`:167`, same `DELTA_ENTRY_TIP`) — the word `—` stays byte-identical, only the register
-moves Mono → Sans.
-
-### U-15a — keyboard-reachable tips (CONDUCTOR, reversible, already ruled IN)
-Use the file's own idiom 300 lines down (`PositionRow.tsx:396-401`: `Tooltip describeChild` +
-`aria-describedby` + focusability) on `literal()`'s three tips. Attributes only, zero wording change.
-
-### Face re-point (needle 2) — six `EXEMPT` entries, delete each in the SAME commit as its fix
-Already in `shared/theme/fonts.spec.ts` (live-checked on both arms — exists AND still violates):
-```
-features/trading/positions/PositionRow.tsx        → FE-5, needle-1 sites 70:—, 345:no basis, 495:—
-features/trading/positions/PositionCard.tsx        → FE-5, needle-1 sites 69:—, 158:—
-features/trading/positions/LegDisclosure.tsx       → FE-5
-features/trading/outcomes/TrackRecordSection.tsx   → FE-5
-features/trading/orders/OrderRow.tsx               → FE-5 (face only — the ⏸ at :172 is Z-1 debt)
-features/trading/orders/OrderDetailDialog.tsx      → FE-5
-```
-Delete local face bindings, spread `...MONO_FACE` instead, byte-identical render. **`OrderRow.tsx`
-is shared with the desk** — the re-point must change zero rendered bytes; re-run
-`LiveTape.spec.tsx` and `orders.risk.spec.tsx` as evidence it stayed clean. `orders.risk.spec.tsx`
-is one of the baseline's own flaky-under-load files (`act_confirm_live_cross_fill…`,
-`cancel_is_terminal…`) — if the full-suite run times it out, re-run it alone and record both
-results, exactly like the conductor's own baseline note says.
-
-### Non-synonymy, sim arm (24, 25, 26)
-Three different fixtures must reach three different arms against the shipped testids
-`cell-unavailable` (`:164`), `cell-not-recorded` (`:166`), `cell-no-basis` (`:348`). Extend
-`positions.risk.spec.tsx:851-869` with "the sim book never renders `not provided`"; keep the
-existing `:882-887` cell-level `no basis` proof.
-
-### Record fields / faulted / closed rows
-U-9: contract, structure line, qty, net entry, max loss, expiry, status never dim, never mark.
-Criterion 30: faulted (durable store) is NOT offline — write affordances refused-but-focusable-and-
-explained, nothing dims, no pause mark (mirror `FaultedBanner.tsx:92-117`'s attribute set).
-Criterion 31: closed/cancelled rows carry neither mark in any connection state.
-
-### Mutation proofs required (both SB, both must be run red then reverted, text captured verbatim)
-- **Proof H (criterion 29):** restore `'⏸'` at `PositionRow.tsx:388`. A **new** `?raw` scan (author
-  it in this task — not inherited from `fonts.spec.ts`) over
-  `features/trading/{positions,broker}/**` + `pages/positions/**` for `/⏸/` must go red naming the
-  file. This scan is itself a new deliverable of FE-5 (the enforcement mechanism for criterion 29).
-- **Proof I (criterion 27b):** give the bare/no-retained arm the `offline · last known` caption
-  instead of a closed-nine member with no last-known words. The 27b test must go red on "last known"
-  appearing where nothing was retained.
-
-### Specs this task edits (fixtures/assertions, not new files except where noted)
-`positions.risk.spec.tsx` (`:420-424` `'⏸ offline'` query → query the rendered icon, not the
-character; extend `:851-869` per the non-synonymy note above), `offlineLayout.spec.tsx:60`,
-`tint.spec.tsx:202`, `positions.integration.spec.tsx:497-498,523`.
-
-### Commit
-One commit for FE-5 (conventional scope `feat(dashboard):`), `BUILD_REPORT.md` FE-5 section in the
-same commit, trailer `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`. Stage only FE-5's
-files (never `git add -A`) — `git status --porcelain` should show exactly FE-5's owned files plus
-`BUILD_REPORT.md` before committing.
-
-### Verification checklist (mirror FE-2/3/4's pattern in `BUILD_REPORT.md`)
-1. `npx vitest run src/app/features/trading src/app/pages/positions` — record files/tests/exit code.
-2. `npm run typecheck` — exit 0, recorded separately (force `--skip-nx-cache` on the dashboard
-   project once if you did any poison/revert cycles, to rule out a stale cache masking a real error).
-3. `npm run lint` — exit 0, compare warning count to baseline (5 warnings at FE-4's landing — see
-   `BUILD_REPORT.md` FE-4 §6).
-4. Both mutation proofs, red text quoted, then reverted (`git diff --stat` on the touched file = the
-   real diff only, zero residual poison).
-5. Run the app: `npm run ports:free`, `npm run dev`, sign up a throwaway account (route is behind
-   `RequireAuth` — same pattern as `/scanner`; `/positions` also needs seeded position(s), the repo's
-   own dev-seed mechanism (`testSeed.ts`, referenced in `PositionsPage.tsx`'s import list) may
-   already do this on signup — check `features/trading/positions/testSeed.ts` for
-   `seedTestPositionsIfNeeded`), open `/positions` at 1280 and 393. Force an offline drop if
-   feasible (kill/observe the SSE) to see the pause-icon treatment live; if not feasible in the time
-   available, say so explicitly (FE-4 hit this same limit on scanner and said so rather than
-   fabricating a screenshot).
+### Verification checklist (mirror FE-5's pattern in `BUILD_REPORT.md`)
+1. `npx vitest run src/app/pages/positions` — record files/tests/exit code.
+2. `npm run typecheck` — exit 0, recorded separately.
+3. `npm run lint` — exit 0, compare warning count to FE-5's landing (5 warnings, all pre-existing —
+   see `BUILD_REPORT.md` FE-5 §6).
+4. Both mutation proofs, red text quoted, then reverted.
+5. Run the app: `npm run ports:free`, `npm run dev`, sign up a throwaway account, seed at least one
+   OPEN and one MARKED position (see Gotcha 7 — the dev-seed account only auto-populates when the
+   backend advertises `SEED_TEST_ACCOUNT`, which a fresh local `npm run dev` does NOT; seed
+   `localStorage['convexa.positions.v2']` directly instead, shape below), open `/positions` at 1280
+   and 393, and specifically look at the header readout in each reachable state (no rows / some
+   marked / all marked). Force an offline drop if feasible to see F4/F5 on the header; if not
+   reachable in the time available, say so explicitly and point to the automated 35e test — FE-5's own
+   session tried this for 20+ minutes against the real dev backend and could not get `offline-banner`
+   to flip within 60s via a blocked SSE route; do not burn the same budget twice without a new idea.
 
 ## Gotchas hit this session (don't rediscover them)
 
 1. **A price-merge bug in `Scanner.tsx`'s zero-state lead grouping was found and NOT fixed** (out of
-   FE-4's scope, filed as carried debt in `BUILD_REPORT.md` FE-4 §3): `ScanTable` renders from
-   `groups[*].rows` (pre-live-merge) instead of the `rows` prop (`displayRows`, post-merge) whenever
-   `groups` is present. If FE-5/FE-6/FE-7's positions work ever touches a similar
-   grouped-vs-merged-rows split, check for the same class of defect before assuming a live update
-   isn't reaching the DOM — verify with `console.log`-driven instrumentation (add, observe, remove
-   before committing — confirmed via `git diff` = 0 lines) rather than assuming the test fixture is
-   wrong.
-2. **jsdom has no global `EventSource`.** Any component that calls `new EventSource(...)` directly
-   (not through a stub) will have its `offline`-style flag flip true almost immediately (the
-   constructor throws, caught, flag set). If positions' live-derived cells need an "online" fixture,
-   stub a controllable class first (`ticker-hierarchy.spec.tsx:24-30`'s `SilentEventSource` idiom, or
-   this session's `CapturingEventSource` in `scanner.register.spec.tsx` if you need to fire messages).
-3. **Scripted `sed`/heredoc edits risk silently no-op'ing on this repo's CRLF files** — this session
-   confirmed the Edit tool is reliable; a `py -3` heredoc attempt hung/backgrounded once for no
-   diagnosed reason and was abandoned in favor of the Edit tool. Prefer Edit tool for all source
-   changes; grep-verify after any scripted replace if one is ever necessary.
-4. **New `EXEMPT` map entries in `fonts.spec.ts` are live-checked on BOTH arms** (exists AND still
-   violates) — deleting a task's own entries without actually fixing the violation red-builds by
-   design; fixing the violation without deleting the entry ALSO red-builds (the "must still violate"
-   check fails). Do both in the same edit pass before running the test.
-5. **Debug/scratch files:** this session used throwaway `_tmp_shot*.mjs` Playwright driver scripts
-   at the repo root for browser verification (chromium is already installed via the
-   `dashboard-e2e`'s Playwright dependency — `npx playwright --version` confirmed 1.62.1 with no
-   extra install needed). Delete them before finishing (`rm _tmp_shot*.mjs`) — they must never be
-   staged or committed. Screenshots went to the session scratchpad, not the repo.
-6. **`npm run ports:free`** was run both before starting `npm run dev` and again before ending the
-   session — confirmed both times ("Nothing listening" / "Freed N listener(s)"). Do the same at the
-   end of the FE-5 lane's app-verification pass.
+   scope, filed as carried debt in `BUILD_REPORT.md` FE-4 §3) — `ScanTable` renders from
+   `groups[*].rows` instead of the `rows` prop whenever `groups` is present. Still unfixed; still not
+   this lane's job unless a task explicitly owns it.
+2. **jsdom has no global `EventSource`.** Stub a controllable class (`ticker-hierarchy.spec.tsx:24-30`'s
+   `SilentEventSource`, or FE-3/4's `CapturingEventSource`) — never assume `new EventSource(...)`
+   degrades gracefully in a test.
+3. **`fonts.spec.ts`'s `EXEMPT` map is live-checked on BOTH arms** (file must exist AND still
+   violate) — fixing the violation without deleting your task's entry ALSO red-builds ("must still
+   violate" fails). Do both edits in the same pass. FE-6 has exactly **one** entry left to delete
+   (`pages/positions/PositionsPage.tsx`) — do not touch the other five (FE-7's).
+4. **The `MONO_BOUND` needle-1 regex windows ±6/+12 lines around ANY line naming
+   `MONO`/`MONO_FACE`/`monoSx`/`monoFontFamily` — including inside a comment.** FE-5 lost real time to
+   this twice: a doc-comment mentioning `` `no basis` `` or `` `—` `` in backticks near an unrelated
+   mono-styled line read as "a closed-nine member inside a mono run" to the raw-text scan. If FE-6's
+   own edit to `PositionsPage.tsx` introduces a new `MONO_FACE` usage (it will, absorbing `:185`'s
+   hand-bound face) and the scan complains about an unrelated nearby literal, the fix is almost always
+   rewording a comment (drop the backticks) or naming a fallback string as a constant — never restyle
+   the actual render to dodge a heuristic.
+5. **Scripted `sed`/heredoc edits risk silently no-op'ing on this repo's CRLF files.** Use the Edit
+   tool for all source changes; grep-verify after any scripted replace if one is ever unavoidable.
+6. **`npm run ports:free`** at both the start and the end of any app-verification pass — confirmed
+   both times this session ("all clear" / "Freed N listener(s)").
+7. **Seeding a populated `/positions` in a fresh `npm run dev` is a two-step trap.** The demo account
+   (`demo@convexa.io` / `convexa-test-2026`, from `testSeed.ts`) only auto-populates when the backend
+   reports `demoSeed` active (`SEED_TEST_ACCOUNT` env var) — a bare `npm run dev` does NOT set this,
+   so logging in with those credentials fails with "those credentials didn't match" (no such account
+   exists yet). Sign UP a throwaway account instead. **Then**, merely visiting `/positions` once
+   already triggers the store's mount-time read, which — finding no `convexa.positions.v3` — runs the
+   (empty) union and WRITES an empty v3 blob. Because "once v3 exists, no source is read again, for
+   any reason" (the store's own anti-resurrection rule), seeding `convexa.positions.v2` AFTER that
+   point and reloading does nothing. Fix: `localStorage.removeItem('convexa.positions.v3')` in the
+   SAME `page.evaluate` call that sets `convexa.positions.v2`, before the reload. The v2 shape is an
+   OBJECT, not a bare array — `{ schema_version: 2, positions: { [id]: PositionRecord, ... },
+   decisions: [] }` (`readLogicalSource`'s `recordsOf: (b) => b.positions` in `store.ts` expects a
+   map, and `Object.values` unwraps it) — a bare array of records silently reads as zero
+   (`source_counts` reports `read:0` with no error, no throw, just an empty book). Confirmed working
+   this session against the real dev backend with `testSeed.ts`'s own `SEED_POSITIONS` shape (a legacy
+   flat `Position` record, e.g. `{ id, ticker, expiration, strike, right, side, qty, entry_mark,
+   entry_basis, entry_mode, entry_time, status: 'open', schema_version: 2 }`).
+8. **Forcing a live SSE drop against the real dev backend is unreliable in the time this lane has.**
+   `page.route('**/api/stream/**', r => r.abort())` + reload did not flip `offline-banner` within 60s
+   in FE-5's session (same limitation FE-3/4's own `BUILD_REPORT.md` section records). The automated
+   `EventSource`-stub tests are the reliable coverage for every offline arm; the browser pass is for
+   the reachable states (empty/populated/wall) and should say so explicitly rather than burning
+   another 20 minutes on the same approach.
+9. **Debug/scratch files:** throwaway Playwright driver scripts (`_tmp_*.mjs`) at the repo root —
+   chromium is pre-installed via `dashboard-e2e`'s Playwright dependency, no extra install needed.
+   Delete them before finishing; screenshots go to the session scratchpad, never the repo.
 
-## `EXEMPT` map size after FE-2/3/4
+## `EXEMPT` map size after FE-2/3/4/5
 
-12 entries remain (started at 14 after FE-1; FE-3 removed 2). FE-5 removes 6 more (down to 6, all
-FE-6/FE-7's remaining entries: `PositionsPage.tsx` for FE-6, five `broker/*.tsx` files for FE-7).
+**6 entries remain** (started at 14 after FE-1; FE-3 removed 2 → 12; FE-5 removed 6 → 6). All six
+remaining are FE-6's one (`pages/positions/PositionsPage.tsx`) and FE-7's five
+(`features/trading/broker/{BrokerPositionRow,BrokerPositionCard,BrokerGroupHeader,ProvenanceHeader,
+reassess}.tsx`). FE-6 should land the map at **5**; FE-14 asserts it **empty**.
+
+## After FE-6: the remaining arc (unchanged from PLAN, restated for orientation only)
+
+FE-7 (Broker tab register + `not provided` non-synonymy, read-only) → FE-8 (settings) → FE-9/FE-10
+(alerts) → FE-11 (quiet band) → FE-12 (D-C's shared-frame change) → FE-13 (the browser/e2e layer,
+Playwright `testMatch` allowlist extension) → FE-14 (frontend closer: whole-phase verification,
+asserts the `EXEMPT` map empty). Each of these is a **separate lane** per the conductor's own
+sequencing note in `decisions.md` §8 — do not start FE-7+ from this resume; write a fresh RESUME.md
+when FE-6 lands.
