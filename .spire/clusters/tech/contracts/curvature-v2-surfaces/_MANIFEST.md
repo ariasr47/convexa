@@ -11,7 +11,8 @@ Open amendments: none yet. Phase 2 filed four (canon rules **11**, **14**, **16*
                  of **60** (`AppShell.tsx:42` reads `tooltip + 1`). Closing it means declaring 60, not
                  inventing a number.
 QA (GATE Q):  n/a
-Workers:      council R1x3 dispatched 2026-09-06 (architect, pm, ux — parallel, blind); R2/R3/R4/S2 pending
+Workers:      council R1x3 blind (402 / 273 / 422 lines), R2x3 sighted (27 conflicts, 27/27 quotes verified), R3x3 one
+              exchange (22/22 CONVERGE) — all 2026-09-06; R4 synthesizer + S2 skeptic pending on four owner rulings
 Last gateway:  GATE I @ 2026-09-05 — GATE C opened 2026-09-06
 
 ## Gate trail
@@ -21,6 +22,21 @@ Last gateway:  GATE I @ 2026-09-05 — GATE C opened 2026-09-06
   neither do scanner / positions / alerts / settings. `StatTile` is gone as a component; every surviving
   mention is a comment. Settings lives at `features/auth/SettingsPage.tsx`, not `pages/`. Alerts already
   ships `level_touch` + price threshold to `convexa.alerts.v1`.
+- GATE C (in progress) @ 2026-09-06 — R1 ×3 blind (architect 402 / pm 273 / ux 422 lines); R2 ×3 sighted: **27 conflicts,
+  27/27 quotes machine-verified**; 7 self-revisions folded, 2 technical converged by them, 11 technical settled in ONE
+  exchange at **22/22 CONVERGE, zero promoted**. Four product calls to the owner, one card at a time: D-A scanner price
+  liveness · D-B settings section navigation (net-new construction) · D-C `Widget`-frame ⓘ (desk reopened for one shared
+  change) · D-D register of a user-entered number. **All three R1s falsified BRIEF facts:** the scanner runs a real price
+  SSE (`useLivePrices.ts:39-57`) so "scanner rows are snapshot surfaces" was false as an absolute; Settings has **no rail**
+  (`SettingsPage.tsx:156`), so "rail → tabs at 900" is construction, not a responsive fix; four of the eight quiet-band
+  widgets carry no mono figure, and `term-structure`'s only numeral is painted on a canvas (`TermHeatChart.tsx:105-106`).
+  **Shipped defects found by the council:** green `+$0` on a fully-unmarked book (`PositionsPage.tsx:147-154,189`); a
+  fabricated `≥ 60` on alerts rules with no threshold (`AlertsPage.tsx:192`) and a price threshold that never renders at all;
+  `Widget`'s ⓘ non-focusable at seven live sites (`Widget.tsx:245-249`) despite phase-1 ruling 6 declaring AC-35 satisfied;
+  `PositionsPage.tsx:88` calling the banned `genuineIsLive` outside the fence's glob; `alerts/store.ts:66-68` resetting to
+  empty on a parse failure while the next write overwrites the key — a live `loss-free-durable-migration` breach;
+  `PauseMark`/`LiveDot` module-private in `FigureCell.tsx`, so no surface outside the primitive can render the declared
+  pause icon today.
 
 ## Inherited (do not rediscover)
 `state/spire-curvature-v2-foundations/RESUME.md` carries the phase table and the trap that cost phase 2 the

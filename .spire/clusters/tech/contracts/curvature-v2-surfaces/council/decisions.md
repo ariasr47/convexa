@@ -23,10 +23,113 @@ Status: **R3 in progress** — 2026-09-06. Input: `council/conflicts.json` — *
 - **#11** `a3216467da` (pm → architect, Broker tab): resolved by #7. **Broker tab IN** for register + vocabulary on its figures — read-only, no new network calls, **no entry/order/cancel control** (`no-real-order-path` intact). The `not provided` arm of the non-synonymy criterion is therefore assertable this phase.
 - **#12** `eebd259eca` (pm → ux, U-1 not observable): resolved by #24. Criterion states the outcome (visible register; poison run proves no call site renders a figure without one; no not-a-number in the mono register; table and card never disagree about one datum); the component name lives in the architecture contract only.
 
-## 3. Technical conflicts — ONE resolution exchange dispatched 2026-09-06
+## 3. Technical conflicts — ONE resolution exchange, 2026-09-06 — **22/22 verdicts CONVERGE, zero promoted**
 
-Inboxes: `R3-inbox-architect.json`, `R3-inbox-pm.json`, `R3-inbox-ux.json`. Responses land as `R3-{role}.md`.
-Converged → folded here; not converged → promoted to a product call.
+Inboxes: `R3-inbox-architect.json`, `R3-inbox-pm.json`, `R3-inbox-ux.json`. Signed text: `R3-architect.md` (230 lines),
+`R3-pm.md` (161), `R3-ux.md` (249) — **R4 reads those three files for the exact wording**; this section is the controller's
+fold, checked pairwise (each side wrote what it would sign without seeing the other; every pair landed on the same mechanism).
+
+- **#0 + #16 — the central mechanism (SETTLED).** Extract the **whole** F1–F9 branch (`FigureCell.tsx:250-300`) into
+  `shared/figure/figureState.ts` (pure, no JSX) + `shared/figure/FigureMarks.tsx` (`PauseMark` `:154-156` and `LiveDot`
+  `:130-149` are module-private today — the file exports only `:158,:238,:339,:355` — so they move out as named exports and
+  `FigureCell` imports them back). **Not** under `pages/ticker/widgets/_kit/`: `features/trading/positions/` importing from
+  `pages/` inverts the dependency direction the repo records at `notANumber.ts:18-23` and `liveClaim.ts:9-14`. Signature:
+  `figureStateOf({ value, register, live, offline, replay, caption, assertedBy }) → { figureState, isLiteral, mono, isFigure,
+  dim, untraced, showDot, showPause, caption }` — `dim` (`:266,275`) and `untraced` (`:294`) included, or the scanner's
+  "figures stay, dimmed" (`labels.ts:30-32`) still has nothing behind it. `live` keeps the `LiveClaim` brand
+  (`FigureCell.tsx:171`, `liveClaim.ts:23-29`) so the extraction is no back door around the one-mint rule; a scanner caller
+  can pass only `NOT_LIVE`. Consumers: `FigureCell` (`:238`), the `ScanCells` atoms (`:51,68,82,98,161,178,218`),
+  `PositionRow.cellContent` (`:191`); the positions header readout (`PositionsPage.tsx:177-195`) keeps `FigureCell` itself.
+  Every consumer emits `data-figure-state` on the element wrapping the value: `FigureCell` keeps it on the card root (`:303`)
+  so the nine shipped specs keyed on it are untouched; atoms/cells emit it on their own node (e.g. `cell-price`,
+  `ScanCells.tsx:71-77`) — an assertion queries state at the cell testid and never assumes co-location with
+  `data-figure-register` (`:212`). **Chrome does not travel:** no `CellCard`, no second label row (`ScanTable.tsx:107-145`
+  IS rule 13's label row), no nested button inside `ScanCard`'s single anchor (`:54-59`, `focusableHelp={false}` `:107`
+  stays; shipped tip + `aria-describedby` `ScanCells.tsx:115,132-140` stay). **The ladder does not travel:** 20/17/15 and
+  the 15px literal size are `FigureCell`'s panel-scale constants; table cells (`fontSize: 'inherit'`, `ScanCells.tsx:74`)
+  and 12px list rows keep inherited size — register and state travel, size does not (pm 7b). Input plumbing:
+  `ScanTableProps` (`ScanTable.tsx:47-60`) and `ScanCardProps` (`ScanCard.tsx:30-35`) gain **one** prop, per-symbol
+  `{ retained: boolean } | null`, computed once at `Scanner.tsx:119-126` (`retained` true only when the displayed price came
+  from the now-dead stream; a symbol that never ticked keeps the polled swept price — no pause mark).
+- **#2 (SETTLED).** Split by figure, not widget. `off-exchange-blocks` (`:24,79-81`) and `fresh-positioning` (`:15,56-58`):
+  delete the local `MONO`, resolve register through the module, lift `'—'` into its own Sans span **at the row's 12px**
+  (never the 15px literal size), no size/layout/order change, named in the build report. `term-structure` and `setups` are
+  figure-free in the DOM. **Explicit non-goal, cited:** `TermHeatChart.tsx:105-106` paints `${p.atm_iv.toFixed(1)}%` onto a
+  canvas with a hard-coded `'600 10px "IBM Plex Mono"'` — no DOM assertion can reach it. Deliverable is pm rows 53/54's
+  property, not a count. (`lookalikes.spec.ts:22-27,47-55` exempts four OTHER widgets; neither of these two — converting them
+  edits no spec.)
+- **#3 (SETTLED — option a).** Positions table cells keep `literal()` (`PositionRow.tsx:145-153`) and its per-member tips;
+  the three-way distinction is asserted by `test` against the shipped testids `cell-unavailable` (`:164`),
+  `cell-not-recorded` (`:166`), `cell-no-basis` (`:348`) — already asserted at `positions.risk.spec.tsx:858,859,885`; the tip
+  texts are `review`. Option (b) withdrawn by both: a value-row help host would put two focusable-help affordances in one
+  cell of the primitive 16 sites depend on — the duplicate pattern ruling 6 bans. `FigureCell` conversion on positions = the
+  header readout only. `dashCell` (`:167`) is deliberately untestidded (`:69`) — no assertion may assume a DOM hook for `—`.
+  **CONDUCTOR call (reversible):** the tips are hover-only — `literal()` wraps a plain `<Typography>` with no `tabIndex`
+  and no `describeChild` (rule 20; Banned "Hover-only affordances") — fix **IN** this phase with the file's own idiom at
+  `PositionRow.tsx:396-401` (`Tooltip describeChild` + `aria-describedby`), attributes only, zero wording change. Reason:
+  a `review` mark must not certify an affordance a keyboard cannot reach on the very cells the non-synonymy criterion
+  rests on. Reversal: OUT → carried debt with `PositionRow.tsx:147-151` attached.
+- **#4 (SETTLED).** **U-23a** forward-only: a firing recorded after this phase builds its label from the closed lookups
+  (`evaluate.ts:73,94,116`), and the rule list stops rendering a threshold the record does not hold (`AlertsPage.tsx:192`
+  `≥ ${r.scoreMin ?? 60}` against `types.ts:22` and `evaluate.ts:83`'s third copy of `60`). **U-23b** carried debt: pre-phase
+  event strings are legacy content (`types.ts:32`, `AlertsPage.tsx:225`); the Recent list may not claim history was
+  re-labelled. History repair **not chosen**; if ever: additive fields, read-new-else-old, `message` never deleted, never
+  gated behind a read that can throw — `store.ts:66-68` resets to `empty()` on a parse failure and `:41-49` overwrites the
+  durable key (the live `loss-free-durable-migration` breach; pm's P4 read-fault latch is the fix and R4 carries it).
+- **#17 (SETTLED).** Exactly one positions cell inverts rule 24: `delta_entry` (`PositionRow.tsx:374` `...MONO` + `:377`
+  `DASH`) → route through the shipped `dashCell` (`:167`, same `DELTA_ENTRY_TIP`); the word `—` is byte-identical, only the
+  register changes Mono → Sans (inside #15's freeze). `session_delta` (`:387-388`) is #13's icon/vocabulary defect, not
+  this. The header readout hand-binds the mono face at `PositionsPage.tsx:185` — absorbed by its `FigureCell` conversion.
+  Enforcement: extend the **shipped** `?raw` scan at `fonts.spec.ts:154-167` (already mutation-guarded `:157-161`) with two
+  needles — (1) no closed-nine member inside a mono-bound `sx`; (2) no font-family literal or widget-local `monoFontFamily`
+  binding outside `shared/theme/tokens.ts` and the module — scoped to `features/trading/`, `pages/positions/`,
+  `pages/scanner/`.
+- **#1 (feasibility SETTLED; the choice is D-A).** Both sign this cost table. **(A)** zero new mints, buildable today: the
+  retained arm rides the unbranded `offline` prop (`FigureCell.tsx:174,257-268`); repair `useLivePrices.ts:65-67`
+  (`setOffline(false)` on ANY frame, including a payload-less heartbeat) by driving `retained` from the per-symbol `ts`
+  age (`:24-27`) — staleness of a timestamp is not a venue claim, so no mint; header rewording edits the shipped
+  `scanner.risk.spec.tsx:869` (`/Prices (live|offline)/`). **(B)** defeats the only shipped enforcement of pm row 6 —
+  `liveClaim.spec.ts:68-80` scans banned **names** globbed at `pages/ticker/widgets/**`, so a fourth mint passes by
+  construction; and its dot cannot be censused against a closed venue (`live-dot-census.spec.tsx:1-31` builds its worst
+  case from `market_session:'closed'` + `live:true`, which the prices frame never carries). **(C)** client cost small
+  (`LivePrice` is declared locally at `useLivePrices.ts:24-27`); the whole cost is the backend fence + pm row 67.
+  **Shared under all three:** the per-symbol streamed/swept input lands at one atom (`ScanCells.tsx:68`, used by
+  `ScanTable.tsx:181` and `ScanCard.tsx:95`) and the stream's offline flag enters row 14's flash gate.
+  **Independent of A/B/C:** `PositionsPage.tsx:88` still calls the banned `genuineIsLive` and the fence's glob does not
+  reach `pages/positions/` — widen the glob to the four surfaces with explicit EXEMPT entries (row 6 becomes enforceable).
+- **#13 (SETTLED).** Two lines: (1) `literal()` + tips stay; (2) the live-derived cells — `mark` (`:284-320`), `pl`
+  (`:321-341`), `pl_pct` (`:342-367`), `delta_entry` (`:368-382`), `session_delta` (`:383-392`), `trend` (`:393-411`) — owe
+  the offline contract via the #16 module: pm **27a** (retained value, reduced emphasis, stroke pause, `offline · last known`),
+  **27b** (closed-nine member + pause icon, no last-known words), **28** (no bare pause marker), **29** (stroke icon, never a
+  character). The three character marks go (`OFFLINE` `:68`, `' ⏸'` `:378`, the bare `'⏸'` that replaces the whole
+  session-delta value `:388` — which has a retained arm, `ctx.sessionDelta` `RowContext:119-120`). `dim` comes from the
+  module, never a cell-local `liveDim` (`:200`) — that is what stops `PositionsPage.tsx:190`'s shape (opacity, no pause,
+  no caption) being re-minted per cell. `PositionCard.tsx:76-87` roots on a plain `Box` (no anchor) — it CAN host the
+  primitive but takes the module route so table and card cannot render one datum two ways (`ScanCells.tsx:1-3` precedent).
+- **#21 (SETTLED).** Row 56 amended + **56a closed two-site carve-out** + **57b**: (i) `_kit/copy.ts:355` `MC_CELL_EMPTY =
+  'unavailable this cycle'` sits in a figure **value** slot (`MarketContext.tsx:291,299,375`) → value `unavailable`,
+  caption `this cycle` (`design/src/components/figure-cell.mjs:40`); (ii) `Setups.tsx:52` renders one sentence for
+  `undefined` and `[]` (`:32`) → `[]` keeps `No clean setup right now.` byte-for-byte, `undefined` renders
+  `Setups unavailable this cycle.` **Nothing else**; `*_WHOLE_EMPTY` prose (`copy.ts:297,352-354`) untouched. Only
+  collapse in the band — `FreshPositioning.tsx:41/45` and `OffExchangeBlocks.tsx:46/50` already split the two arms.
+- **#22 (SETTLED except the precedent → D-D).** Row 47 → **47a** a price threshold renders in the rule's own summary line
+  with the `$` prefix — today it does not render at all (written `AlertsPage.tsx:48`, evaluated `evaluate.ts:110`, absent
+  from `:191-195`); **47b** a score gate renders the bare index beside its closed-lookup label `Score gate` (`≥ 72`, never
+  `≥ 72 pts`); **47c** no numeric control takes a value whose unit is only implied — a money input states its unit as part
+  of the control; a structure-level rule: label from `LEVELS`, no number of the rule's own, absent → a closed-nine member
+  (per §5's fourth-surface routing), never the bare word `level` (`:193`); tier change stays byte-identical. Absent
+  threshold → ux proposes `not set`: **R4 must confirm it is a member of the closed nine at `notANumber.ts:26-36`**;
+  if not, use the nearest member or file an Amendments line rather than minting a tenth literal.
+- **#23 (SETTLED).** Row 35 amended: "…signed-P&L direction only, and only where the tinted value is a computed P&L over
+  marked rows — never a zero standing in for an unmarked or empty book, never on a closed-vocabulary member." States, label
+  `Net P/L (open)` and `data-testid="positions-net-pl"` unchanged: **35a** no open rows → `—` (F7, no tint) — today `+$0`
+  green (`PositionsPage.tsx:189,193`); **35b** open rows, none marked → `unavailable` (F8), no number, no tint, caption
+  `0 of {m} open marked`; **35c** some marked → the computable sum + mandatory caption `{n} of {m} open marked`; **35d** all
+  marked → total, no caption; **35e** stream drop → F4/F5 (pause mark + `offline · last known` when retained) replacing the
+  bare `opacity: 0.5` at `:190`; offline captions take precedence over the coverage caption (the primitive's shipped
+  behaviour `FigureCell.tsx:253,262,271`). Coverage is countable from the set the sum already walks (`:147-154`).
+
+Index of the eleven (ids re-checked against `conflicts.json`, 25/25 match):
 
 | pair | # | id | question |
 |---|---|---|---|
@@ -42,7 +145,8 @@ Converged → folded here; not converged → promoted to a product call.
 | pm ↔ ux | 22 | `77667a5927` | row 47: a score gate has no unit — split by threshold type; **register of a user-entered number** is a precedent question (promote if unresolved) |
 | pm ↔ ux | 23 | `338807da91` | row 35 certifies the green `+$0` on a fully-unmarked book (`PositionsPage.tsx:147-154,189`) → add a Net P/L row (`unavailable` when no open row is marked; coverage caption when partial) |
 
-Ids in this table were re-checked against `conflicts.json` after the pm's R3 flagged a one-row shift in the `pm ↔ ux` block (2026-09-06); the inbox files were generated from `conflicts.json` and were never wrong.
+The id column above was wrong by one row across the `pm ↔ ux` block in the first draft; pm's R3 caught it, it was corrected
+against `conflicts.json` (25/25 ids verified by script), and the inbox files — generated from `conflicts.json` — were never wrong.
 
 ## 4. Product calls — the owner's, surfaced one at a time (Decision cards)
 
@@ -74,6 +178,17 @@ Fact: `Widget.tsx:245-249` renders `info` as a bare icon in a hover tooltip at s
   the alternative mints the duplicate focusable-help pattern ruling 6 bans.
 - (OUT) U-32 narrows to a wrapper at the quiet band's five sites (duplicate pattern) or drops.
 **Ruling: PENDING.**
+
+**D-D — register of a user-entered number** (from #22 `77667a5927`; pm and ux both marked it `PRECEDENT — owner/architect line`).
+The trader types a score gate (`≥ 72`) or a price threshold (`$500`). Canon rule 13 defines Mono as "traced to Convexa's
+computation" and Sans + dotted rule as "asserted but untraced"; the shipped primitive renders `register: 'asserted'` with the
+caption `${assertedBy} · untraced` (`FigureCell.tsx:293`), which on the trader's own number would read `you · untraced`.
+- (TRACED) user-entered numbers render Mono; at GATE S amend rule 13's clause to "traced to Convexa's computation **or to a
+  record the trader entered**". **Conductor recommends** — the number IS the record, reproducible exactly, no model in the
+  path; it binds risk inputs, sim entry and alert thresholds alike.
+- (THIRD REGISTER) declare a third register value → an Amendments event, out of phase 3; alerts thresholds would render
+  Sans without the dotted rule in the meantime.
+**Ruling: PENDING (card 4 of 4).**
 
 **Collapsed, not surfaced — copy-freeze scope** (#20 `3dba77c9ca` ux→pm): its target sentence was withdrawn by pm's #15.
 Residual is an instruction to R4: enumerate the closed set of sentences this phase may touch as explicit AC lines —
