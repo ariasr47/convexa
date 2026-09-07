@@ -82,6 +82,16 @@ Last gateway:  GATE C @ 2026-09-06 — council complete; owner approval pending
   Opus — the `shared/figure/` extraction every later task consumes — the rest Sonnet). **No GATE Z bounce**; three scope
   readings (Z-1 orders `⏸` OUT as debt, Z-2 tooltip-string glyph deleted under class (1), U-8 residual) ruled by the
   conductor in `council/decisions.md` §8, each with its reversal.
+- BUILD lane 1 @ 2026-09-07 — **FE-1 landed `2cace383`** (Opus; 8 files, +945/−102): `shared/figure/{figureState,figureFace,
+  FigureMarks,index}.ts(x)` + `figureState.spec.ts`; `FigureCell.tsx` 355 → 313 lines and now a caller (`fontFamily` count 0);
+  N-1's two needles enforcing in `fonts.spec.ts` behind a **14-entry live-checked `EXEMPT` map** (FE-3 ×2 · FE-5 ×6 · FE-6 ×1
+  · FE-7 ×5). Lane's measurements: typecheck 0 · targeted 4 files / 50 tests 0 · the nine `data-figure-state` specs 10 files /
+  137 tests 0 with **zero assertion edits** · full suite exit 1 at **2715/2716** (sole failure the baseline load timeout;
+  isolated re-run 31/31) · lint 0 · verify-tokens 34/34. Poisons A/B/C red-then-green with output quoted; B′/C′ (needles
+  disabled) → 4 failures, guards non-vacuous. **Conductor's cold re-check:** typecheck **0**, `fonts`/`figureState`/`FigureCell`
+  **53/53 exit 0**, `apps/api` three-dot diff **0 lines**. Two recorded deviations from PLAN's illustrative regex, both
+  strict supersets. IDE diagnostics showed mid-edit phantom errors on this tree after the commit; the cold typecheck is the
+  evidence, as in phase 2.
 
 ## Inherited (do not rediscover)
 `state/spire-curvature-v2-foundations/RESUME.md` carries the phase table and the trap that cost phase 2 the
