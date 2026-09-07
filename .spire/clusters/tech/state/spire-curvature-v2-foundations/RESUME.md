@@ -4,7 +4,7 @@
 follow-up `e02350f6`); paused cleanly after FE-7 on 2026-09-07 at the owner's request (machine restart). Next: dispatch one
 Sonnet lane for FE-8 → FE-10 from `contracts/curvature-v2-surfaces/RESUME.md`; then FE-11 → FE-14, BE-1, GATE Q.**
 **Phase 2 of 4 (`curvature-v2-desk-and-read`) is DONE and closed at GATE S on 2026-09-05.**
-Branch is **19 commits ahead of origin, not pushed** (phase 2 was pushed; everything since is local) and there is **no PR** — the owner's call.
+Branch is **pushed to origin as a backup** (owner's call, 2026-09-07, through `d34e861c`) and there is **no PR** — the owner's call.
 
 | phase | scope | state |
 |---|---|---|

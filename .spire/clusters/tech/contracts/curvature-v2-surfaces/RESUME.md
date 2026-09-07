@@ -5,7 +5,7 @@
 the conductor's cold check found (a stale live-checked exemption in `pauseGlyph.spec.ts`) is committed. Lane 4
 was killed after committing FE-7 and before writing its own handover, so this file is the conductor's.
 
-## Done (all committed on `spire/curvature-v2-foundations`, nothing pushed — re-run before trusting)
+## Done (all committed on `spire/curvature-v2-foundations`, pushed to origin as a backup 2026-09-07, no PR — re-run before trusting)
 
 | Task | Commit | What landed |
 |---|---|---|
