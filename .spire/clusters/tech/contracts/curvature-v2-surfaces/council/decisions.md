@@ -3,8 +3,9 @@
 Status: **R3 complete — four owner rulings recorded 2026-09-06 (D-A → A · D-B → OUT, phase 4 · D-C → IN · D-D → TRACED);
 R4 synthesis dispatched the same day.** Input: `council/conflicts.json` — **27 conflicts, 27/27 quotes machine-verified**
 (`council_conflicts` exit 0). 7 self-revisions folded · 2 technical conflicts converged by those self-revisions ·
-11 technical conflicts dispatched for ONE resolution exchange · **3 product calls surfaced to the owner one at a time**
-(one further product conflict collapsed into a self-revision + D-A, see §4). Conflict ids are the first 10 hex of
+11 technical conflicts dispatched for ONE resolution exchange · **4 product calls surfaced to the owner one at a time
+(D-A · D-B · D-C · D-D)** — one further product conflict collapsed into a self-revision + D-A, see §4. (First written as
+"3"; S2 Minor #2 caught the undercount — D-D was added after the technical exchange surfaced the register precedent.) Conflict ids are the first 10 hex of
 `conflict_id`; `#n` is the index in `conflicts.json`.
 
 ## 1. Self-revisions — folded, no exchange (a voice withdrawing its own R1 claim)
@@ -197,16 +198,22 @@ discipline" wording for Settings does **not** survive into SPEC. One copy hazard
 "Saved to your account." (`settings.mjs:30`) is false for `convexa.uiprefs.v1` (`localPrefs.ts:15`) and must not be imported.
 
 **D-C — Widget-frame ⓘ as a focusable control** (#6 `db0bcfc326` architect→ux).
-Fact: `Widget.tsx:245-249` renders `info` as a bare icon in a hover tooltip at seven live sites, one of them the desk hero
-(`StructureHeroPanel.tsx:216`); phase 1's ruling 6 declared AC-35 satisfied page-wide and it is not.
+Fact: `Widget.tsx:245-249` renders `info` as a bare icon in a hover tooltip at **eight** live `<Widget info=…>` sites —
+`OffExchangeBlocks.tsx:39`, `DealerFlowProjection.tsx:159`, `TermStructure.tsx:34`, `MarketContext.tsx:417`,
+`FreshPositioning.tsx:38`, `IvRank.tsx:276`, `StructureHeroPanel.tsx:216`, **`LiveTape.tsx:179`** — two of them on the desk
+(hero and live tape); phase 1's ruling 6 declared AC-35 satisfied page-wide and it is not. (The council and the decision card
+said **seven**; S2's Critical corrected it against the tree and the conductor re-counted at source 2026-09-06 — `LiveTape.tsx:173-181`
+passes `info={info}` unconditionally. The ruling's mechanism — one change at the single render site — reaches all eight by
+construction; the count matters for the enumerated criterion and for which desk specs re-run.)
 - (IN) desk reopened for this ONE shared-frame change only; the desk's shipped specs re-run inside the criterion. **Conductor recommends** —
   the alternative mints the duplicate focusable-help pattern ruling 6 bans.
 - (OUT) U-32 narrows to a wrapper at the quiet band's five sites (duplicate pattern) or drops.
 **Ruling: IN — OWNER, 2026-09-06.** The `Widget` frame's `info` becomes a focusable control (tap, Enter/Space, Escape) using
-the ONE shipped focusable-help pattern (`AccessibleHelp`), at all seven live `info=` sites. **The ticker desk is reopened for
-this single shared-frame change and nothing else**: no desk layout, copy, state or spec content changes; the desk's own
-shipped specs (a11y tree, focus order, the single-motion-moment and live-dot census suites) are re-run inside this
-criterion and must stay green, so the churn is measured here rather than discovered at GATE Q. Phase-1 ruling 6's AC-35
+the ONE shipped focusable-help pattern (`AccessibleHelp`), at all **eight** live `info=` sites (count corrected after S2; the
+owner ruled the mechanism, which is count-independent). **The ticker desk is reopened for this single shared-frame change and
+nothing else**: no desk layout, copy, state or spec content changes; the desk's own shipped specs (a11y tree, focus order, the
+single-motion-moment and live-dot census suites — for the **hero AND the live tape**) are re-run inside this criterion and must
+stay green, so the churn is measured here rather than discovered at GATE Q. Phase-1 ruling 6's AC-35
 ("page-wide on the ticker surface and true") is recorded as having been **false at the time it was declared** — `Widget.tsx:245-249`
 never had a focusable host — and becomes true with this change.
 
@@ -236,3 +243,20 @@ per #23) plus the three permitted classes in #15. Everything else byte-identical
   if the skeptic disagrees it becomes an Amendments line.
 - Direction-reserved colours on the settings save-ERROR alert (ux ask) → pm↔ux may settle in #22/#23's exchange; else R4 applies
   rule 16's ten-state list literally (an error alert is a state, not a direction).
+
+## 6. S2 adversarial review — pass 1, 2026-09-06: **PASS WITH FINDINGS** (1 Critical · 2 Important · 2 Minor) → R4 pass 2
+
+| sev | finding | disposition |
+|---|---|---|
+| Critical | D-C's closed count "seven `info=` sites" is false — eight (`LiveTape.tsx:179` missed); SB criterion U-32 inherits it | **Verified at source by the conductor** (grep of `<Widget … info=` → 8). Fixed in §4 D-C above; R4 pass 2 corrects §1, U-32 and the desk-spec re-run scope (hero + live tape). |
+| Important | N-1 says the extended `fonts.spec.ts:154-167` scan "keeps its mutation guard", but `:157-161` only proves an `Inter` literal is caught — neither new needle has a guard | R4 pass 2: each new needle ships its own red-going poison test; "keeps" wording removed. |
+| Important | The `retained` staleness cutoff behind criteria 12/13 is never given a number or a cited constant | Routed to the **architect** for one targeted answer (`R3-architect-addendum.md`): the predicate, the constant, the moment criterion 12 becomes true; R4 pass 2 folds it. |
+| Minor | `INTERFACE_CONTRACT.md` labels `PUT /api/scan/view`'s 503 as `auth_unavailable`; at source it is universe-unavailable (`scan.rs:776-782`) | R4 pass 2 relabels. |
+| Minor | This file's headline said "3 product calls"; §4 records four | Fixed above. |
+
+S2 also **tested and resolved** §9 item 4: canon rule 24's "ship on the positions and broker surfaces" is **descriptive** (the
+rule's own next sentence pre-approves a member on an unlisted surface as "a per-surface subset, not a second vocabulary",
+`DESIGN_SYSTEM.md:179`), so `not recorded` on alerts is consistent with the canon → R4 pass 2 records that reading in §4.5 and
+closes §9 item 4. Everything else S2 checked held (27/27 conflicts traced; D-A/D-D mechanics; the single positions register
+inversion; the alerts loss path; the quiet-band freeze; durable-key inventory; the conformance block vs the generated schema;
+95 criteria / 53 SB re-counted; no scope leakage).
