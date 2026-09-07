@@ -180,3 +180,74 @@ chrome stayed too** (the help button appears only where `info` is passed).
 4. `figureStateOf` takes a **branded** `live`; a scanner caller passes `NOT_LIVE` (criterion 11A) and a
    raw `true` is a type error — asserted with a `@ts-expect-error` in `figureState.spec.ts` that
    `npm run typecheck` would flag as unused if the brand ever weakened.
+
+---
+
+## FE-2 — The liveness fence reaches four surfaces; `/positions` stops calling the banned predicate
+
+**Landed:** 2026-09-07, one commit. **Criteria:** 6 (SB). **GATE Z items: none** — buildable exactly as
+planned; measured zero new `EXEMPT` entries, exactly as PLAN predicted.
+
+### 1. What shipped
+
+| File | Change |
+|---|---|
+| `apps/dashboard/src/app/shared/liveness/liveClaim.spec.ts` | `DESK_SOURCES` → `FENCED_SOURCES`, glob widened from one tree (`pages/ticker/widgets/**`) to five: `pages/ticker/widgets/**`, `pages/scanner/**`, `pages/positions/**`, `pages/alerts/**`, `features/trading/positions/**`, `features/auth/**`. `BANNED` and the mutation guard (`violatesLivenessFence`) **byte-unchanged**. The live-checked `EXEMPT` idiom kept exactly as shipped (existence check on the wider source map). Anti-vacuity strengthened to also assert a `pages/alerts/` path is present in the glob (the new tree criterion 6 names by name). |
+| `apps/dashboard/src/app/pages/positions/PositionsPage.tsx` | **lines 31 and 88 only**, as scoped. `:31` `import { genuineIsLive } from '@/pages/ticker/sessionTapeStanding';` → `import { isDeliveringLive } from '@/shared/liveness/liveClaim';`. `:88` `const isLive = genuineIsLive(live, streamOffline);` → `const isLive = isDeliveringLive(live, streamOffline);`. One predicate left the tree, none arrived — a deletion, exactly as PLAN step 3 describes. |
+
+**Measured: no new `EXEMPT` entry was required**, confirmed independently of the plan's own grep:
+`grep -rnE "\bgenuineIsLive\b|\btape\s*\.\s*isLive\b|\bisLive\s*&&"` across the five widened trees
+(non-spec sources) returned **exactly** `PositionsPage.tsx:31,88` — the two lines this task deletes —
+and nothing else. The shipped `live-tape/LiveTape.tsx` entry is untouched and still accurate.
+
+### 2. Behaviour delta — checked against the two page specs, not assumed
+
+Per PLAN step 3, both full-page specs under `pages/positions/` were run **before** trusting the swap:
+`positions.integration.spec.tsx` (15 tests) and `positions-page.spec.tsx` (15 tests). **Zero cases
+moved** — all 30 passed unchanged, before and after the predicate swap. Read at source rather than
+assumed: every fixture in both files that drives `streamTicker`'s mocked SSE already carries
+`market_session: 'regular'` (`positions.integration.spec.tsx:241`) or omits `market_session` entirely
+while never setting it to `'closed'` (`positions-page.spec.tsx:531`) — `isDeliveringLive`'s one added
+check (`market_session === 'closed'`) never fires against either fixture set, so no fixture needed
+repair. The `market_session: 'regular'` value is also **not** `'closed'` under either predicate, so this
+is not a coincidence of one lucky fixture — it is the actual fixture shape in both files. Recorded
+rather than silently passed over, since PLAN's step 3 explicitly anticipated a fixture repair that
+measurement shows was not needed here.
+
+### 3. Verification — exit codes, read directly
+
+| Command | Result |
+|---|---|
+| `npx vitest run src/app/shared/liveness` (before the glob widened — TDD red) | **exit 1** — `AssertionError: expected [ Array(1) ] to deeply equal []` naming `/src/app/pages/positions/PositionsPage.tsx` (the pre-existing offender, now visible under the widened glob) |
+| `npx vitest run src/app/shared/liveness src/app/pages/positions` (after the deletion) | **exit 0** — 4 files / **44** tests (`liveClaim.typeproof.spec.ts` 1, `liveClaim.spec.ts` 13, `positions.integration.spec.tsx` 15, `positions-page.spec.tsx` 15) |
+| `npm run typecheck` | **exit 0** |
+| `npm run lint` | **exit 0** — 0 errors, **5 warnings**, all pre-existing (same set FE-1 recorded), **0 new** |
+| `npx nx format:write --files apps/dashboard/src/app/shared/liveness/liveClaim.spec.ts,apps/dashboard/src/app/pages/positions/PositionsPage.tsx` | **exit 0**, scoped |
+
+### 4. Mutation proof — run red, then reverted to green
+
+**MUTATION PROOF D (criterion 6, SB).** Planted `const _mutationProofD = genuineIsLive(live, false);`
+in `pages/scanner/Scanner.tsx` — one of the five **new** globs (not the desk, so the red proves the
+*widened* fence rather than re-proving the shipped one).
+
+- **Red (verbatim):** `fonts`-idiom `AssertionError: expected [ Array(1) ] to deeply equal []` with
+  `- []` / `+ ["/src/app/pages/scanner/Scanner.tsx"]` — the scan named the planted file exactly.
+- **Restore:** poison line deleted; `git diff --stat -- apps/dashboard/src/app/pages/scanner/Scanner.tsx`
+  = **0 lines** (clean revert, confirmed by `git diff`, not by memory); re-run
+  `npx vitest run src/app/shared/liveness src/app/pages/positions` → **exit 0**, all 44 tests green
+  again.
+
+No proof above is a narrated `expect(true).toBe(true)`; the red text is copied from this session's
+terminal.
+
+### 5. Visible copy diffs — none
+
+FE-2 changes zero user-visible strings and zero DOM. It is a predicate swap behind an unchanged
+boolean-typed prop chain (`isLive` still flows to `usePortfolio`, `PortfolioPanel`,
+`useOrderEngine` unchanged in shape).
+
+### 6. What was run in the app
+
+Not run for FE-2 — no visible behaviour changed (confirmed by the unmoved 30/30 page-spec result
+above, and PLAN scopes FE-2 as non-rendering: "Copy diffs: none"). The rendered/browser pass is owed by
+FE-3/FE-4 (scanner) and is recorded there.

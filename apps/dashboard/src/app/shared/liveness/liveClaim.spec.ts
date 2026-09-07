@@ -65,8 +65,16 @@ describe('andPresent — composes "live AND value present", preserving the brand
 // name a second liveness expression. Follows the `arc.spec.ts` importer-set idiom.
 // ---------------------------------------------------------------------------------------------
 
-const DESK_SOURCES = import.meta.glob(
-  ['/src/app/pages/ticker/widgets/**/*.{ts,tsx}', '!**/*.spec.{ts,tsx}'],
+const FENCED_SOURCES = import.meta.glob(
+  [
+    '/src/app/pages/ticker/widgets/**/*.{ts,tsx}',
+    '/src/app/pages/scanner/**/*.{ts,tsx}',
+    '/src/app/pages/positions/**/*.{ts,tsx}',
+    '/src/app/pages/alerts/**/*.{ts,tsx}',
+    '/src/app/features/trading/positions/**/*.{ts,tsx}',
+    '/src/app/features/auth/**/*.{ts,tsx}',
+    '!**/*.spec.{ts,tsx}',
+  ],
   {
     query: '?raw',
     import: 'default',
@@ -116,9 +124,10 @@ const EXEMPT: Record<string, string> = {
 };
 
 describe('the source scan — no second liveness expression in a presentational desk file', () => {
-  it('is not vacuous (desk sources actually loaded, including a live-tape and a read-strip path once they exist)', () => {
-    expect(Object.keys(DESK_SOURCES).length).toBeGreaterThan(20);
-    expect(Object.keys(DESK_SOURCES).some((f) => f.includes('live-tape/'))).toBe(true);
+  it('is not vacuous (fenced sources actually loaded, including a live-tape path and an alerts path)', () => {
+    expect(Object.keys(FENCED_SOURCES).length).toBeGreaterThan(20);
+    expect(Object.keys(FENCED_SOURCES).some((f) => f.includes('live-tape/'))).toBe(true);
+    expect(Object.keys(FENCED_SOURCES).some((f) => f.includes('pages/alerts/'))).toBe(true);
   });
 
   it('MUTATION GUARD: the checker flags a planted second expression and ignores a clean source', () => {
@@ -128,14 +137,14 @@ describe('the source scan — no second liveness expression in a presentational 
     expect(violatesLivenessFence(`const x = andPresent(claim, live?.gamma_flip);`)).toBe(false);
   });
 
-  it('every EXEMPT entry still exists as a desk source (no stale exemption)', () => {
+  it('every EXEMPT entry still exists as a fenced source (no stale exemption)', () => {
     for (const rel of Object.keys(EXEMPT)) {
-      expect(DESK_SOURCES[`/src/app/${rel}`], `EXEMPT entry ${rel} must exist`).toBeTruthy();
+      expect(FENCED_SOURCES[`/src/app/${rel}`], `EXEMPT entry ${rel} must exist`).toBeTruthy();
     }
   });
 
-  it('no non-exempt desk file names a second liveness expression', () => {
-    const offenders = Object.entries(DESK_SOURCES)
+  it('no non-exempt fenced file names a second liveness expression', () => {
+    const offenders = Object.entries(FENCED_SOURCES)
       .filter(([file]) => !Object.keys(EXEMPT).some((rel) => file === `/src/app/${rel}`))
       .filter(([, src]) => violatesLivenessFence(src))
       .map(([file]) => file);

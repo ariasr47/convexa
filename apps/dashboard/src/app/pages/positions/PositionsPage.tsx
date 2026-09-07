@@ -28,7 +28,7 @@ import { TrackRecordSection } from '@/features/trading/outcomes/TrackRecordSecti
 import { PortfolioPanel } from '@/features/trading/positions/PortfolioPanel';
 import { allPositions } from '@/features/trading/positions/store';
 import { usePortfolio } from '@/features/trading/positions/usePortfolio';
-import { genuineIsLive } from '@/pages/ticker/sessionTapeStanding';
+import { isDeliveringLive } from '@/shared/liveness/liveClaim';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { getTicker, LiveUpdate, streamTicker, TickerBundle } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -85,7 +85,7 @@ export function PositionsPage() {
   const [live, setLive] = useState<LiveUpdate | null>(null);
   const [streamOffline, setStreamOffline] = useState(false);
 
-  const isLive = genuineIsLive(live, streamOffline);
+  const isLive = isDeliveringLive(live, streamOffline);
 
   // Anchor bundle: best-effort. A failure leaves `data` null — `usePortfolio` then degrades marks to
   // `tracking unavailable` / last-known per row, never blanking the records. Polls on the cache cadence.
