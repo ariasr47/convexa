@@ -1266,3 +1266,138 @@ results recorded."*
   shipped test was deleted or weakened in any of the three tasks this session landed.
 
 ---
+
+## FE-11 — The quiet band: register, container steps, the two copy sites, the proximity chip
+
+**Landed:** 2026-09-07, one commit. **Criteria:** 53 (SB), 54 (SB), 56, 56a, 57, 57b, 58 (SB), 59
+(SB), 61, 7a/8 (quiet-band containers — satisfied by absence, see §4 below). **GATE Z items: none.**
+
+### 1. What shipped
+
+| File | Change |
+|---|---|
+| `pages/ticker/widgets/off-exchange-blocks/OffExchangeBlocks.tsx` | Deleted the local `MONO`; the block print (`N sh @ $price`) now resolves through `figureStateOf`/`faceFor` (`@/shared/figure`), carrying `data-figure-state`/`data-figure-register`. The proximity chip (`:85-89` shipped) — hover-only, outside ruling 6's four fixed widgets — gained the file-local `Tooltip describeChild` + `tabIndex={0}` + `aria-describedby` + visually-hidden-description idiom (criterion 59); `PROXIMITY_TOOLTIP` wording byte-identical. No size/layout/order change. |
+| `pages/ticker/widgets/fresh-positioning/FreshPositioning.tsx` | Deleted the local `MONO`. The row's two figures are now resolved separately: the strike+ratio head (`$strike · Vol/OI N×`, always present) and the contract count (which can be absent). The absent-volume token is lifted out of the mono run into its **own Sans span at the row's 12px** (never `FigureCell`'s 15px literal) — this is the one real register-shape defect the task named (`'—'` used to render *inside* the mono `Typography`). |
+| `pages/ticker/widgets/_kit/copy.ts:361-362` | `MC_CELL_EMPTY` split (criterion 56a): was `'unavailable this cycle'` sitting in a figure value slot; now the value is `'unavailable'` (the closed-nine member) and a new `MC_CELL_EMPTY_CAPTION = 'this cycle'` carries the this-cycle meaning as the figure's own caption, exactly as `design/src/components/figure-cell.mjs:40` draws the Unavailable state. |
+| `pages/ticker/widgets/market-context/MarketContext.tsx` | New `EmptyFigureCell` component renders the split: value line through `figureStateOf({value: MC_CELL_EMPTY, register: 'traced'})` (Sans, `data-figure-state="unavailable"`) + a separate caption line for `MC_CELL_EMPTY_CAPTION`. Wired at the three sites that used the old single sentence — `ShapeCard`'s concentration/balance rows (`LabelRow`, detected via `emptyText === MC_CELL_EMPTY`) and every `AtrRow` horizon. The four look-alike widgets' own `const MONO = typographyTokens.monoFontFamily` (`:114`) and every other scalar line are **untouched** — `lookalikes.spec.ts` still finds it. |
+| `pages/ticker/widgets/setups/Setups.tsx` | `setups === undefined` (never delivered) now renders its own sentence, `Alert severity="info"`, `Setups unavailable this cycle.`; `setups.length === 0` (checked and empty) keeps the shipped `No clean setup right now.` byte-for-byte. U-30 (`.toUpperCase()`) untouched, as withdrawn debt. |
+| new `pages/ticker/widgets/quiet-band.register.spec.tsx` | 12 tests: criterion 58's live-mark source scan over all eight widgets (with its own mutation guard); OffExchangeBlocks' stated-register + source-scan-for-MONO tests; the proximity chip's keyboard-focus reveal; FreshPositioning's populated-vs-absent register split (including the criterion-54 DOM scan used for mutation proof Q); MarketContext's value/caption split; Setups' three states. |
+
+**Zero desk-spec edits.** `lookalikes.spec.ts:22-27,47-55` was not touched and stays green — neither
+converted widget is on its exemption list, and the four look-alikes (`IvRank`, `MarketContext`,
+`StraddleMove`, `DealerFlowProjection`) keep binding `typographyTokens.monoFontFamily` by hand for
+every scalar line the plan left unconverted. `MarketContext.spec.tsx`'s own five-level null matrix
+(`:155,261`) needed **no edit**: it imports `MC_CELL_EMPTY` as a reference, not a literal, and
+`EmptyFigureCell` still renders that string as its own leaf text node, so `getByText(MC_CELL_EMPTY)`
+resolves unchanged.
+
+### 2. `term-structure` and `setups` (list-empty arm), and the explicit non-goal
+
+`term-structure` carries no DOM figure (`TermHeatChart.tsx:105-106` paints
+`${p.atm_iv.toFixed(1)}%` onto a `<canvas>` with a hard-coded `'600 10px "IBM Plex Mono"'` — no
+`data-figure-register` and no DOM assertion can reach it; named here per SPEC's own explicit
+non-goal, not left to read green under 53/54). `setups`'s populated-list card body (name, conviction
+chip, rationale) carries no figure either — only its two empty-state sentences changed.
+
+### 3. Copy diffs — itemized (the closed two-site set, 56a)
+
+1. `_kit/copy.ts:361` `MC_CELL_EMPTY`: `'unavailable this cycle'` → `'unavailable'` (value slot) +
+   new `MC_CELL_EMPTY_CAPTION = 'this cycle'` (caption slot). Rendered at the three sites named in
+   §1 above. The `*_WHOLE_EMPTY`/`*_ROW_EMPTY` prose family (`copy.ts:346-354`) — full sentences at
+   the sub-card and label-row levels — is **untouched**, byte-identical.
+2. `Setups.tsx:31-56`: `undefined` now renders `Setups unavailable this cycle.` (new); `[]` keeps
+   `No clean setup right now.` (unchanged, byte-for-byte). Nothing else in the widget's copy moved.
+
+No third site touched — verified by re-reading every string literal changed in the diff (`git diff`
+on the five source files above shows exactly these two sentence changes and the register-attribute
+plumbing; no other JSX text content differs).
+
+### 4. Criteria 7a/8 — satisfied by absence, not by a new container (recorded rather than assumed)
+
+Neither converted widget introduces a stepped (20/17/15-ladder) figure: `OffExchangeBlocks` and
+`FreshPositioning` both keep their figures fixed at the row's shipped 12px (task instruction: "no
+size, layout or order change") — they are 7b's off-ladder sites, not 7a's. `MarketContext`,
+`IvRank`, `StraddleMove`, `DealerFlowProjection` are the four look-alikes, explicitly not converted
+this task. `term-structure` and `setups` carry no DOM figure at all. **None of the eight quiet-band
+widgets calls `theme.containerQueries('panel')`** — confirmed by
+`grep -rn "containerQueries" apps/dashboard/src/app/pages/ticker/widgets` returning only
+`FigureCell.tsx` (the one existing ladder host, already `PanelContainer`-wrapped by FE-6's
+positions-header-readout work and by the shipped `ReadStrip.tsx` precedent) — so criterion 8's
+"every panel that hosts a stepped figure" premise is vacuously true for this task's own files:
+there is no stepped figure in the quiet band to host, and no second container name was introduced
+anywhere this task touched (`git diff` shows zero occurrences of `containerName` in any of the five
+changed files). Criterion 7a's rendered proof is FE-13's/FE-6's (positions), not owed here.
+
+### 5. A discrepancy between PLAN's stated mutation-proof-Q expectation and the measured tree (recorded, not hidden)
+
+PLAN's own text for MUTATION PROOF Q says *"Render `'unavailable'` inside the mono run of
+`FreshPositioning.tsx`. The register test **and** `fonts.spec.ts` needle 1 must both go red."*
+Measured at source before writing a single test: `shared/theme/fonts.spec.ts`'s `N1_SOURCES` glob
+(`:186-193`) scopes to exactly three trees — `features/trading/**`, `pages/positions/**`,
+`pages/scanner/**` — and **does not include `pages/ticker/widgets/**`**. PLAN's own Independence
+table (`PLAN.md:1273`) agrees: FE-11's row lists only `pages/ticker/widgets/**` as an owned path,
+with no `fonts.spec.ts` entry (contrast FE-3/5/6/7, each of which explicitly owns
+`shared/theme/fonts.spec.ts` for its own `EXEMPT` removals). Consequently the poison below —
+run for real, not asserted — turns `quiet-band.register.spec.tsx`'s own criterion-54 test **red**
+while `fonts.spec.ts` stays **green**, exactly as the glob scope predicts. This session's own new
+spec is therefore the actual enforcement mechanism for criterion 54 in the quiet band; N-1 was never
+going to reach it. (The launch dispatch's own claim that "FE-11 touches N-1's scanned trees" does
+not hold against either the shipped glob or PLAN's Independence table — recorded here rather than
+silently acted on.)
+
+### 6. Mutation proofs — both run red (verbatim), then reverted to green
+
+| Proof | Poison | Red result (verbatim) | `fonts.spec.ts` in the same run | Restore |
+|---|---|---|---|---|
+| **Q** (criterion 54, SB) | `FreshPositioning.tsx`'s volume span: forced `data-figure-register="mono"` / `sx={{ ...faceFor(true), fontSize: 12 }}` regardless of whether the value was the absent-token `'—'` | `quiet-band.register.spec.tsx` **2 failed**: `expect(dash).toHaveAttribute('data-figure-register', 'sans')` → *"Received: data-figure-register=\"mono\""*; and the DOM scan — `AssertionError: expected '—' not to be '—'` (the closed-nine member `'—'` found inside a `[data-figure-register="mono"]` node) | `fonts.spec.ts` **exit 0, 14/14** — unaffected, confirming §5 above | reverted (`git diff` on the file after restore = 0 lines vs the committed version); `quiet-band.register.spec.tsx` back to **12/12** |
+| **R** (56a) | `Setups.tsx`: reverted to the shipped single ternary (`setups?.length ? … : <Alert>No clean setup right now.</Alert>`), collapsing the `undefined`/`[]` arms back to one sentence | `quiet-band.register.spec.tsx` **1 failed**: *`TestingLibraryElementError: Unable to find an element with the text: Setups unavailable this cycle.`* — the `undefined` arm's own test (the `[]` arm's test still passed, since both arms then coincidentally render the same shipped sentence — exactly the collapse the criterion exists to catch) | not applicable (Setups carries no font-family binding) | reverted; **12/12** |
+
+No proof above is a narrated `expect(true).toBe(true)`; both reds are copied from this session's own
+terminal output.
+
+### 7. Verification — exit codes, read directly
+
+| Command | Result |
+|---|---|
+| `cd apps/dashboard && npx vitest run src/app/pages/ticker/widgets/quiet-band.register.spec.tsx` | **exit 0**, 12/12 (first write, after the fixture-type fix noted below) |
+| `cd apps/dashboard && npx vitest run src/app/pages/ticker/widgets src/app/shared/theme/fonts.spec.ts` | **exit 0** — **57 files / 795 tests** (baseline widgets-tree count + this task's 12 new + 3 pre-existing files' own count unaffected) |
+| `cd apps/dashboard && npx vitest run src/app/pages/ticker` (whole surface, since this task touches shared desk chrome only indirectly) | **exit 0** — **73 files / 907 tests** |
+| `npm run typecheck` (cold: `dist`/`out-tsc`/every `*.tsbuildinfo` deleted first) | **exit 0**. First cold run caught two fixture type errors in the new spec (missing `notional` on a `BlockPrintWire` fixture, missing `method` on an `AtrRead` fixture) — fixed, re-run cold, exit 0. This is exactly why criterion 68 requires the typecheck read separately: `nx test` was green throughout both states. |
+| `npm run lint` | **exit 0** — 5 warnings, all pre-existing (4× e2e-config `no-explicit-any`, 1× `react-hooks/exhaustive-deps` in an unrelated file), **0 new** |
+| `npx nx format:write --files <the six changed/added paths>` | **exit 0**, scoped |
+| `grep -rln "FE-11" apps/dashboard/src --include=*.spec.*` (gotcha 10) | **8 files**, all opened and confirmed to cite the **prior feature's** own FE-11 (`curvature-v2-desk-and-read`'s `GexProfileChart` deletion / `StructureHeroPanel` consolidation) — a coincidental task-ID collision across features, exactly the shape gotcha 10 warns about. None reference this task. The whole `pages/ticker` suite (row above) was run anyway, as a superset. |
+
+### 8. What was run in the app
+
+`npm run ports:free` (clean) → `npm run dev` → real Chromium (Playwright, headless) against the live
+dev backend, **not** a seeded/mocked page (no `/ticker/SPY`-style throwaway fixture exists for this
+route the way `no-overflow.spec.ts` seeds `/positions`/`/alerts`).
+
+- **Confirmed live, real DOM, real market data (`/ticker/IWM`, warm cache):** the `FreshPositioning`
+  row's head figure and volume figure both carry `data-figure-register="mono"` /
+  `data-figure-state="default"` in the production render — e.g. `"$264 · Vol/OI 1.82× · "` +
+  `"11,888"` as two adjacent nodes, matching the jsdom assertions exactly. `MarketContext`, `Setups`
+  and `OffExchangeBlocks` all mounted without a runtime error. **No horizontal page overflow** at
+  either checked width — `document.body.scrollWidth === window.innerWidth` measured `true` at both
+  **1280** and **393**.
+- **Not reachable live, this session:** no currently-tracked symbol (`SPY`, `IWM`, `TSLA`, `AAPL`,
+  `NVDA`, `MSFT`, `DIA`, `AMZN`, `META` — every symbol the dev backend had warm) carries a non-empty
+  `off_exchange.blocks` array right now (checked directly against the API response for all nine), so
+  the print/proximity-chip's **populated** row and the `MC_CELL_EMPTY` split's **degraded** ATR/shape
+  rows were not observable live this session — real market data is simply fully populated for every
+  bundle this backend currently holds warm. Both states are covered instead by
+  `quiet-band.register.spec.tsx`'s own dedicated tests (the block-print register test with a
+  synthetic fixture; the value/caption split test with a synthetic null-ATR pack) — matching the
+  RESUME's own carried gotcha 8 pattern ("forcing a live state against the real dev backend is
+  unreliable in lane time; the stub/fixture tests are the reliable coverage, the browser pass is for
+  reachable states only"). `SPY` itself timed out on a cold options-chain fetch (a real, slow vendor
+  call unrelated to this change) during this check; abandoned in favor of the already-warm symbols.
+- Screenshots were captured at both widths (full-page); below-the-fold quiet-band widgets rendered
+  as blank/skeleton placeholders in the screenshot pixels — this is `Widget.tsx`'s own pre-existing
+  `content-visibility: auto` + `contain-intrinsic-size` off-screen-render-skip (`Widget.tsx:14-15`),
+  not a defect introduced here; the DOM `evaluate()` query above bypassed the paint-skip and read
+  the real attributes/text directly. `npm run ports:free` run again at the end; HEAD confirmed
+  unchanged (`e25ff84b`) and the sibling `docs/research/…` directory confirmed untouched, both
+  before and after.
+
+---

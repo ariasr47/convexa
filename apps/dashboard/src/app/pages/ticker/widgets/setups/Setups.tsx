@@ -27,9 +27,15 @@ const convictionTone = (c: string): 'emphasis' | 'info' | 'neutral' => {
 };
 
 export function Setups({ setups, structureAgeSeconds = null }: Props) {
+  // Two states collapsed to one sentence (SPEC §4.6 criterion 56a): `undefined` — never delivered,
+  // a ticker nobody scored, no market fact to state — reads "Setups unavailable this cycle."; `[]`
+  // — checked and genuinely empty — keeps the shipped sentence byte-for-byte. Nothing else in this
+  // widget's copy changes.
   return (
     <Widget id="setups" title="Setups" subtitle={setupsSubtitle(structureAgeSeconds)} span={2}>
-      {setups?.length ? (
+      {setups === undefined ? (
+        <Alert severity="info">Setups unavailable this cycle.</Alert>
+      ) : setups.length ? (
         <Stack spacing={1.5}>
           {setups.map((s, i) => (
             <Card key={i} variant="outlined" sx={{ borderRadius: 3 }}>

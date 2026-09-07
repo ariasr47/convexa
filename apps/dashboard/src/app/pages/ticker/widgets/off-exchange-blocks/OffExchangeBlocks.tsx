@@ -5,7 +5,7 @@
  * live stream), no offline state of its own, ages with the bundle freshness. Hidden when the Dark
  * pool toggle is off. Best-effort: off_exchange absent → its own "unavailable this cycle" copy.
  */
-import { typographyTokens } from '@/shared/theme/tokens';
+import { faceFor, figureStateOf } from '@/shared/figure';
 import { TintChip } from '@/shared/ui/TintChip';
 import { Widget } from '@/shared/ui/Widget';
 import type { OffExchange } from '@convexa/api';
@@ -21,7 +21,20 @@ import {
   withStructureAge,
 } from '../_kit/copy';
 
-const MONO = typographyTokens.monoFontFamily;
+// The proximity chip's hover tip needs a keyboard/focus path too (criterion 59) — the file-local
+// `Tooltip describeChild` + `aria-describedby` + visually-hidden-description idiom
+// (`PositionRow.tsx:154-185`'s pattern), not `AccessibleHelp` (a data chip, not a help icon).
+const VISUALLY_HIDDEN = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  p: 0,
+  m: -1,
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+} as const;
 
 interface Props {
   offExchange: OffExchange | null | undefined;
@@ -59,6 +72,14 @@ export function OffExchangeBlocks({ offExchange, structureAgeSeconds = null }: P
             {offExchange.blocks.map((b, i) => {
               const pct = b.proximity_pct * 100; // payload is a signed ratio vs spot
               const prox = `${pct >= 0 ? '+' : '−'}${Math.abs(pct).toFixed(1)}% vs spot`;
+              // The print — a real Convexa-computed figure, always present on a delivered block
+              // (SPEC §2.4): traced register resolved through the shared module rather than a
+              // widget-local face constant (criterion 53).
+              const printState = figureStateOf({
+                value: `${b.shares.toLocaleString()} sh @ $${b.price.toFixed(2)}`,
+                register: 'traced',
+              });
+              const proximityDescId = `off-exchange-proximity-${i}`;
               return (
                 <Box
                   key={i}
@@ -76,16 +97,31 @@ export function OffExchangeBlocks({ offExchange, structureAgeSeconds = null }: P
                   }}
                 >
                   <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center' }}>
-                    <Typography sx={{ fontFamily: MONO, fontSize: 12 }}>
+                    <Typography
+                      component="span"
+                      data-figure-state={printState.figureState}
+                      data-figure-register={printState.mono ? 'mono' : 'sans'}
+                      sx={{ ...faceFor(printState.mono), fontSize: 12 }}
+                    >
                       {b.shares.toLocaleString()} sh @ ${b.price.toFixed(2)}
                     </Typography>
                     {/* Proximity is context, not direction — NEUTRAL (stage-3 §5.3: the old
                         `success` tint tripped the green/red reservation on a datum whose own
-                        subtitle says "no side or direction"). */}
-                    <Tooltip arrow title={PROXIMITY_TOOLTIP}>
-                      <span>
+                        subtitle says "no side or direction"). Hover AND keyboard-focus reachable
+                        (criterion 59) — the file-local idiom, `AccessibleHelp`'s button chrome
+                        would misrepresent a data chip as a help control. */}
+                    <Tooltip arrow describeChild title={PROXIMITY_TOOLTIP}>
+                      <Box
+                        component="span"
+                        tabIndex={0}
+                        aria-describedby={proximityDescId}
+                        sx={{ display: 'inline-block' }}
+                      >
                         <TintChip tone="neutral" label={prox} />
-                      </span>
+                        <Box component="span" id={proximityDescId} sx={VISUALLY_HIDDEN}>
+                          {PROXIMITY_TOOLTIP}
+                        </Box>
+                      </Box>
                     </Tooltip>
                   </Stack>
                   <Typography variant="caption" sx={{ color: 'text.secondary' }}>

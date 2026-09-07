@@ -27,6 +27,7 @@
  *     `divider`, mono via tokens), zero hardcoded hex; dark/light parity from the shared chrome.
  *   - No auth gate — renders for anonymous visitors; no session/gate call anywhere in it.
  */
+import { faceFor, figureStateOf } from '@/shared/figure';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { Widget } from '@/shared/ui/Widget';
 import type {
@@ -48,6 +49,7 @@ import {
   MC_ATR_TITLE,
   MC_BALANCE_DISPLAY,
   MC_CELL_EMPTY,
+  MC_CELL_EMPTY_CAPTION,
   MC_COMPOSITION_DISPLAY,
   MC_COMPOSITION_ROW_EMPTY,
   MC_CONCENTRATION_DISPLAY,
@@ -127,6 +129,32 @@ function EmptyLine({ text, testid }: { text: string; testid: string }) {
 }
 
 /**
+ * A single-row cell degrading to the closed-nine member `unavailable` (SPEC §4.6 criterion 56a) —
+ * the ONE quiet-band site where the empty state occupies a figure's own VALUE slot rather than a
+ * widget-body sentence. Resolved through the shared module (register `traced`: this cell states no
+ * asserted/untraced fact, only "we have nothing this cycle") so the literal renders Sans, never mono
+ * (criterion 54), with the this-cycle meaning carried on its own caption underneath.
+ */
+function EmptyFigureCell({ testid }: { testid: string }) {
+  const { figureState, mono } = figureStateOf({ value: MC_CELL_EMPTY, register: 'traced' });
+  return (
+    <Box data-testid={testid}>
+      <Typography
+        variant="body2"
+        data-figure-state={figureState}
+        data-figure-register={mono ? 'mono' : 'sans'}
+        sx={{ ...faceFor(mono), color: 'text.secondary' }}
+      >
+        {MC_CELL_EMPTY}
+      </Typography>
+      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+        {MC_CELL_EMPTY_CAPTION}
+      </Typography>
+    </Box>
+  );
+}
+
+/**
  * A caption label + optional ⓘ info affordance (the row/card tooltip carrier). Ruling 6
  * (curvature-v2-foundations): converted to the shipped `AccessibleHelp` pattern — a real focusable
  * `button`, reachable by tap and keyboard, not just hover (AC-35).
@@ -200,7 +228,13 @@ function LabelRow({
     <Box sx={{ mb: 1 }} data-testid={testid}>
       <CaptionLabel label={rowLabel} info={info} />
       {display == null ? (
-        <EmptyLine text={emptyText} testid={`${testid}-empty`} />
+        // `MC_CELL_EMPTY` is the ONE value-slot member (SPEC §4.6 criterion 56a); every other
+        // `emptyText` here is body prose and keeps the plain single-line render.
+        emptyText === MC_CELL_EMPTY ? (
+          <EmptyFigureCell testid={`${testid}-empty`} />
+        ) : (
+          <EmptyLine text={emptyText} testid={`${testid}-empty`} />
+        )
       ) : (
         <>
           <Typography variant="body1" sx={{ fontWeight: 600 }} data-testid={`${testid}-label`}>
@@ -372,7 +406,7 @@ function AtrRow({
     <Box sx={{ mb: 1 }} data-testid={testid}>
       <CaptionLabel label={rowLabel} />
       {horizon == null ? (
-        <EmptyLine text={MC_CELL_EMPTY} testid={`${testid}-empty`} />
+        <EmptyFigureCell testid={`${testid}-empty`} />
       ) : (
         <Typography
           variant="body1"

@@ -352,7 +352,14 @@ export const MC_STRENGTH_ROW_EMPTY = 'Strength unavailable this cycle.';
 export const MC_MOMENTUM_ROW_EMPTY = 'Momentum unavailable this cycle.';
 export const MC_LOCATION_ROW_EMPTY = 'Location unavailable this cycle.';
 export const MC_COMPOSITION_ROW_EMPTY = 'Composition unavailable this cycle.';
-export const MC_CELL_EMPTY = 'unavailable this cycle';
+// Split (curvature-v2-surfaces SPEC §4.6 criterion 56a): this sentence sat in a figure VALUE slot
+// (`MarketContext.tsx` concentration/balance/ATR-horizon rows), so it becomes the closed-nine member
+// `unavailable` in the value slot, with the this-cycle meaning moved to that figure's own caption —
+// exactly as `design/src/components/figure-cell.mjs:40` draws the "Unavailable" state (value
+// `unavailable`, caption `this cycle`). The `*_WHOLE_EMPTY`/`*_ROW_EMPTY` prose sentences above are
+// widget-body prose, not values, and are untouched.
+export const MC_CELL_EMPTY = 'unavailable';
+export const MC_CELL_EMPTY_CAPTION = 'this cycle';
 
 // Row-level tooltips (§5.5 — each reveals its window + the exact pinned v1 thresholds).
 export const MC_TIP_TREND =
