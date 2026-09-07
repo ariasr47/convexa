@@ -56,8 +56,8 @@ const PAUSE_SOURCES = import.meta.glob(
  * entry here would red-build, exactly like `fonts.spec.ts`'s idiom.
  */
 const EXEMPT: Record<string, string> = {
-  'features/trading/broker/BrokerGroupHeader.tsx': 'FE-7 — Broker tab register conversion',
-  'features/trading/broker/BrokerPositionRow.tsx': 'FE-7 — Broker tab register conversion',
+  // FE-7 (`b2a8cf15`) converted both Broker sites to the stroke icon; the live check then demanded
+  // these two entries be deleted — done in the FE-7 follow-up. The map stays so FE-14 can assert it empty.
 };
 const isExempt = (key: string) => Object.keys(EXEMPT).some((rel) => key === `/src/app/${rel}`);
 
