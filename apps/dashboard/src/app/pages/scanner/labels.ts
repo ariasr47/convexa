@@ -21,12 +21,19 @@ export const SCAN_COPY = {
     'One dense read of the tracked universe — which ticker deserves the deep-dive right now. ' +
     'Structure is a snapshot; see methodology for how it is built.',
   methodologyLink: 'How structure is computed',
-  /** The two-speed basis, always above the table (UX §2.1). */
-  cadenceHeader: 'Prices live · structure ~3 min · hot names sooner',
+  /** The two-speed basis, always above the table (UX §2.1). Reworded under curvature-v2-surfaces
+   *  OWNER ruling D-A (`council/decisions.md` §4): neither this header nor its gloss below may
+   *  assert liveness in any connection state — "per tick" names the price CADENCE without claiming
+   *  a tick is arriving now, parallel to the structure cadence; separator, order and third clause
+   *  are byte-identical to the shipped string (SPEC §4.2, CF-1). */
+  cadenceHeader: 'Prices per tick · structure ~3 min · hot names sooner',
+  /** D-A, CONDUCTOR-widened (SPEC §4.2): the opening liveness sentence is gone; the rest — cadence
+   *  and basis only — stands. The word "live" may stand inside the closing DENIAL ("rather than a
+   *  live read") — the criterion bans the assertion, not the token. */
   cadenceGloss:
-    'Prices stream live. The options structure — score, tier, flip and walls — re-computes about ' +
-    'every 3 minutes, and names that just moved re-compute sooner, so those numbers are a recent ' +
-    'snapshot rather than a live read.',
+    'Prices change tick by tick. The options structure — score, tier, flip and walls — re-computes ' +
+    'about every 3 minutes, and names that just moved re-compute sooner, so those numbers are a ' +
+    'recent snapshot rather than a live read.',
   /** Shown in place of the header when the price stream drops: the figures stay, dimmed, and say
    *  why. Never blanks a row — the structure below is unaffected. */
   cadenceHeaderOffline: 'Prices offline · showing last known · structure ~3 min',

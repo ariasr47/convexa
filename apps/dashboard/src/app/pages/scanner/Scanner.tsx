@@ -23,7 +23,7 @@ import Skeleton from '@mui/material/Skeleton';
 import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { EMPTY_FILTERS, filtersActive, partitionLeadGroup } from './format';
 import { SCAN_COPY } from './labels';
@@ -85,8 +85,6 @@ export function Scanner() {
   const [editorOpen, setEditorOpen] = useState(false);
   // `useMediaQuery` takes the STRING form; jsdom has no matchMedia ⇒ false ⇒ the desktop table.
   const isNarrow = useMediaQuery(useTheme().breakpoints.down('sm'));
-  // The sanctioned price flash only fires when the data really is turning over.
-  const flashActive = !scan.workerDown && !scan.degraded;
 
   // index-first-defaults AC-3 — the ZERO-STATE lead group. Only a view that is NOT a saved one
   // (`source !== 'account'`) is regrouped: a user's saved view renders exactly as saved. The
@@ -114,6 +112,10 @@ export function Scanner() {
   // market-hours gate removed. One SSE connection covers all of them.
   const live = useLivePrices(useMemo(() => polledRows.map((r) => r.symbol), [polledRows]));
 
+  // The sanctioned price flash only fires when the data really is turning over — a drop stops it
+  // too (criterion 14): nothing on a dead stream should read as "just changed".
+  const flashActive = !scan.workerDown && !scan.degraded && !live.offline;
+
   // Overlay, never replace: a symbol with no live tick yet keeps the swept price, so a quiet tape
   // or a dropped stream leaves the table fully populated ([best-effort-isolated-or-null]).
   const displayRows = useMemo(
@@ -123,6 +125,18 @@ export function Scanner() {
         return lp ? { ...r, price: lp.price } : r;
       }),
     [polledRows, live.prices],
+  );
+
+  // SPEC §2.2 — the ONE predicate, computed once, in shipped constants: the outer null/non-null is
+  // the STREAM's own state, the inner boolean is the DATUM's provenance. `retained: true` only when
+  // the displayed price came from the now-dead stream; a symbol that never ticked keeps the polled
+  // swept price and this returns `null` regardless of `live.offline` — `offline-bare` is therefore
+  // unreachable on scanner prices BY CONSTRUCTION (criterion 13), not by convention. No per-symbol
+  // age, no third number (the withdrawn `ts`-age option, §2.2).
+  const priceOffline = useCallback(
+    (sym: string): { retained: boolean } | null =>
+      live.offline && live.prices[sym] != null ? { retained: true } : null,
+    [live.offline, live.prices],
   );
 
   return (
@@ -225,6 +239,7 @@ export function Scanner() {
           nowS={scan.nowS}
           flashActive={flashActive}
           deltas={scan.deltas}
+          priceOffline={priceOffline}
         />
       ) : (
         <ScanTable
@@ -236,6 +251,7 @@ export function Scanner() {
           onSort={scan.setSort}
           groups={groups}
           deltas={scan.deltas}
+          priceOffline={priceOffline}
         />
       )}
 

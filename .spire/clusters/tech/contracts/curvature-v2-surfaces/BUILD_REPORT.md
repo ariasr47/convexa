@@ -330,3 +330,143 @@ never appears in either layout; a null numeric renders `—` in the Sans registe
 `data-figure-state="empty"`; a lookup miss renders `unavailable` with `data-figure-state="unavailable"`.
 The combined browser pass for `/scanner` (including this fix, live in the running app) is recorded
 under FE-4, once the header/offline-arm change lands in the same surface.
+
+---
+
+## FE-4 — Scanner: the degraded price arm, the flash gate, and D-A's two sentences
+
+**Landed:** 2026-09-07, one commit. **Criteria:** 12 (SB), 13 (SB), 14 (SB), 15, 16, CF-1 (SB).
+**GATE Z items: none** — buildable exactly as planned.
+
+### 1. What shipped
+
+| File | Change |
+|---|---|
+| `pages/scanner/Scanner.tsx` | `flashActive` moved after `live` is in scope and gained `&& !live.offline` (criterion 14). New `priceOffline = useCallback((sym) => live.offline && live.prices[sym] != null ? { retained: true } : null, [live.offline, live.prices])` (SPEC §2.2's exact predicate, `:136-140`), passed to both `<ScanTable>` and `<ScanCardList>`. Header/gloss wiring (`Scanner.tsx:143-146`) is byte-unchanged — only `labels.ts`'s two constants moved under it. |
+| `pages/scanner/labels.ts` | `cadenceHeader` → `Prices per tick · structure ~3 min · hot names sooner`; `cadenceGloss` → the SPEC-authored two-sentence replacement (opening liveness clause removed, cadence/basis meaning kept, the denial `"...rather than a live read"` retained). `cadenceHeaderOffline` byte-identical. |
+| `pages/scanner/ScanTable.tsx` / `ScanCard.tsx` | Both gain the required `priceOffline: (symbol: string) => { retained: boolean } \| null` prop, threaded through `cellContent`/`ScanTableRow` (table) and `ScanCard`/`ScanCardList` (card) to `PriceCell` only — no structure atom ever receives it (criterion 10). |
+| `pages/scanner/ScanCells.tsx` | `PriceCell` takes the new `offline` prop, calls `figureStateOf({ value, register: 'traced', offline: offline ?? null })`, and renders `PauseMark` (from `@/shared/figure`) + a new `data-testid="cell-price-caption"` span (`offline · last known`) when `showPause` is true. Dim (`opacity: 0.5`) applied via the module's `dim` output, never a cell-local flag. |
+| `pages/scanner/scanner.risk.spec.tsx` | T5's pin (`:869` pre-edit) strengthened into two tests: the shipped offline-arm assertion now pins the exact byte-identical `cadenceHeaderOffline` string (not just the `/live\|offline/` alternation), plus a **new** ONLINE-arm test using a controllable `SilentEventSource` stub (the `ticker-hierarchy.spec.tsx:24-30` idiom) that keeps `live.offline` at its initial `false`, pinning the new header byte-for-byte and asserting the word "live" never reaches the page text. |
+| `pages/scanner/scanner.register.spec.tsx` | Extended (FE-3's Owns note anticipated this): all six `<ScanTable>`/`<ScanCardList>` call sites across both spec files updated with `priceOffline` (required, no default — matches the `register` precedent). New sections for criteria 12/13 (a real `EventSource` stub delivers a price then errors), 14 (flash-class assertion + its own anti-vacuity contrast), 16 (worker-down register survival), and CF-1 (the copy freeze scan, below). |
+
+### 2. Copy diffs — itemized (CF-1's closed set of exactly two)
+
+| Constant | Shipped | New |
+|---|---|---|
+| `labels.ts:29` `cadenceHeader` | `Prices live · structure ~3 min · hot names sooner` | `Prices per tick · structure ~3 min · hot names sooner` |
+| `labels.ts:34-36` `cadenceGloss` | `Prices stream live. The options structure — score, tier, flip and walls — re-computes about every 3 minutes, and names that just moved re-compute sooner, so those numbers are a recent snapshot rather than a live read.` | `Prices change tick by tick. The options structure — score, tier, flip and walls — re-computes about every 3 minutes, and names that just moved re-compute sooner, so those numbers are a recent snapshot rather than a live read.` |
+
+Both are the SPEC §4.2-authored strings, copied verbatim. Nothing else on scanner changes — proven
+by the new CF-1 scan (§4 below), which checks every other `SCAN_COPY` value (string entries against
+a frozen table copied from `git show d905d26a~1` — the commit immediately preceding FE-3 — and
+function entries by their sample output) and passed clean on the first run.
+
+### 3. A pre-existing defect found, not fixed here (carried debt)
+
+**`ScanTable`'s zero-state lead grouping silently drops the live-price overlay when it applies.**
+Found while writing the criterion-12 test: `Scanner.tsx`'s `groups` (index-first-defaults AC-3) is
+computed from `scan.rows` (the polled sweep, pre-live-merge) and passed to `<ScanTable groups={…}>`;
+inside `ScanTable`, `const sections = groups ?? [{ key: 'all', rows }]` — whenever `groups` is
+present (any DEFAULT, non-account view with a lead member, e.g. the anonymous zero-state), `sections`
+walks `groups[*].rows` and the `rows` prop that actually carries the live-merged `displayRows` is
+**never read**. A symbol whose price ticks over the live wire while the zero-state grouping is active
+therefore never shows the updated price — the SWEPT price renders forever, silently. Confirmed by
+instrumenting `Scanner.tsx`'s own render output during test authoring (not asserted from outside):
+`displayRows` computed the correct merged price on every render, but `ScanTable` rendered the stale
+one whenever `groups` was non-`undefined`. **Not fixed here**: it predates this phase (the
+`groups`/`polledRows`/`displayRows` split already shipped before FE-3), none of FE-4's assigned
+criteria (12/13/14/15/16/CF-1) name it, and `Scanner.tsx`'s grouping logic is product behavior this
+lane's mandate does not extend to touching without a criterion. **Worked around in this task's own
+tests** by using an authenticated `view.source: 'account'` fixture (never regrouped, per
+index-first-defaults AC-3's own "a saved view is never regrouped" rule) so the criterion-12/13/14/16
+tests exercise `displayRows` directly. Filed here with `file:line` for a later phase:
+`ScanTable.tsx`'s `sections = groups ?? […]` line should read from `rows` per-row rather than from
+`groups[*].rows` wholesale, or `Scanner.tsx`'s `groups` should be built from `displayRows` instead of
+`scan.rows`.
+
+### 4. T5 — run before and after, exactly as PLAN required
+
+- **Before** (D-A header edit not yet landed — this is a re-confirmation, since FE-3 already landed
+  without touching `labels.ts`'s copy): `scanner.risk.spec.tsx`'s `/Prices (live|offline)/` pin —
+  **GREEN**, exit 0. Renders the offline arm (jsdom has no `EventSource`; `useLivePrices` throws
+  inside its `try` and flips `offline: true` on the very first effect run), exactly as PLAN's T5 note
+  predicted.
+- **After** (header/gloss rewritten): same pin — still **GREEN**, exit 0 (confirmed the alternation
+  regex is insensitive to which string ships, by design — that is precisely why PLAN calls it a trap).
+  Both arms are now pinned by name: the strengthened offline test asserts the byte-identical
+  `cadenceHeaderOffline` string; the new online-arm test (a `SilentEventSource` stub keeps
+  `live.offline` at its initial `false`) asserts the byte-identical new header AND that `/\blive\b/i`
+  never appears anywhere in `page.textContent`.
+
+### 5. Mutation proofs — run red, then reverted to green
+
+**MUTATION PROOF F (criterion 12, SB).** In `Scanner.tsx`, changed
+`live.offline && live.prices[sym] != null ? { retained: true } : null` to
+`live.offline ? { retained: true } : null` — dropping the provenance term, keeping only the stream
+flag.
+
+- **Red (verbatim), two tests named the exact defect:**
+  `expect(qqqPrice).toHaveAttribute('data-figure-state', 'default')` → *"Expected the element to have
+  attribute: data-figure-state="default" / Received: data-figure-state="offline-retained""* (a
+  never-ticked symbol got the retained treatment it must never reach), and the dedicated poison test
+  → *"expected SVGSVGElement{…} to be null"* (a `PauseIcon` rendered on a never-ticked symbol).
+- **Restore:** predicate reverted; `git diff --stat -- apps/dashboard/src/app/pages/scanner/Scanner.tsx`
+  shows only this task's real 19-insertion/3-deletion diff (matches the `flashActive` move +
+  `priceOffline` addition), **zero** residual poison; re-ran `scanner.register.spec.tsx` → **exit 0,
+  51/51**.
+
+**MUTATION PROOF G (CF-1, SB).** `cf1Offenders({ ...SCAN_COPY, loading: 'Loading scan...' })` (the
+real ellipsis `…` swapped for three ASCII dots) — **red, naming exactly `['loading']`** and no other
+key, proving the scan is byte-precise rather than merely "some string changed". This is the in-test
+poison-and-check idiom (the same shape FE-1 used for its own needle guards); no separate revert step
+is needed since the mutation is a local object spread, never written to `labels.ts`.
+
+No proof above is a narrated `expect(true).toBe(true)`; both reds are copied from this session's
+terminal.
+
+### 6. Verification — exit codes, read directly
+
+| Command | Result |
+|---|---|
+| `npx vitest run src/app/pages/scanner/scanner.register.spec.tsx -t "criteria 12"` (poisoned predicate, T5 debugging pass included) | **exit 1** — 2 failed (the two reds quoted above); the debugging session that found this also traced a false start (the pre-existing grouping defect, §3) via temporary `console.log` instrumentation in `Scanner.tsx`/`useLivePrices.ts`, all removed before this run (`git diff` on `useLivePrices.ts` = 0 lines, confirmed) |
+| `npx vitest run src/app/pages/scanner src/app/shared/theme` (after the fixture fix + revert) | **exit 0** — 22 files / **246** tests |
+| `npm run typecheck` (via `npx nx run @convexa/dashboard:typecheck --skip-nx-cache`, forced past the cache after the poison/revert cycle) | **exit 0** |
+| `npm run lint` | **exit 0** — 0 errors, **1 warning** (pre-existing, unrelated file), **0 new** |
+| `npx nx format:write --files <the 7 changed paths>` | **exit 0**, scoped |
+
+### 7. What was run in the app — both FE-3 and FE-4 together
+
+`npm run ports:free` (clean), `npm run dev` (api :8000 + dashboard :4200), confirmed both up
+(`curl` 200 on `/` and `/api/scan`). Opened `/scanner` in a real headless Chromium (Playwright,
+already a repo dependency) at 1280 and 393, signing up a fresh throwaway account each time (the
+route is behind `RequireAuth`, confirmed below) rather than driving RTL — genuine browser rendering
+against the real `cargo run` backend, not a mock.
+
+- **Signed out, 1280px:** `require-auth-wall` renders, titled *"Sign in to open the scanner"*, with
+  the scanner-specific unlock copy and the free-Ticker escape hatch — no empty table, no scanner
+  chrome at all (criterion 20, confirmed against the real route wiring, not just the isolated test).
+- **Signed in, 1280px, populated:** the header reads **`Prices per tick · structure ~3 min · hot
+  names sooner`** with the dotted-underline `Jargon` host; hovering it reveals the gloss tooltip,
+  read back **byte-for-byte**: *"Prices change tick by tick. The options structure — score, tier,
+  flip and walls — re-computes about every 3 minutes, and names that just moved re-compute sooner,
+  so those numbers are a recent snapshot rather than a live read."* The table renders real sweep
+  data — tier chips (amber `Actionable`/`Watch`/`Dormant`), regime (`Neg γ`/`Pos γ`, plain Sans, as
+  FE-3 decided), vol, flip/wall level+distance in Mono, and — observed live against the real
+  backend, not seeded — several symbols whose live price had not yet ticked rendered their price
+  cell as a plain, undimmed `—` with no pause mark, which is criterion 13's structural guarantee
+  holding under real network conditions, not just a fixture.
+- **Signed in, 393px:** the card layout carries every datum the table row carries (symbol, tier
+  chip, status, price + chg%, score, regime/vol, flip/wall, updated), one card per symbol, no
+  horizontal overflow observed at this width.
+- **Filter-matches-nothing, 1280px:** clicking `Dormant` + `Score ≥70` (no seeded row satisfies
+  both) renders `"No names match these filters."` with its own `Clear filters` recovery control —
+  distinct from the empty-saved-view message, confirming criterion 19 end-to-end.
+- **Not observed live:** the F4 offline-retained visual (dim + pause icon + caption) — the real dev
+  backend's price stream stayed connected throughout the session, so a genuine drop was not
+  naturally reachable in the time available; this arm is covered by the `EventSource`-driven
+  automated test in §1/§5 instead, which drives the exact same code path via a real (mocked)
+  `onerror` event rather than a fixture assumption.
+
+Screenshots and the throwaway browser-driver scripts were written to the session scratchpad and are
+not part of this commit; the dev server and its ports were torn down (`npm run ports:free`) before
+handing off.

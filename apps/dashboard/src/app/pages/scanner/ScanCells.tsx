@@ -26,7 +26,7 @@
  * (criteria 10, 11A: the price included), so every call below either omits `live` entirely or the
  * type system rejects anything but the branded `NOT_LIVE`.
  */
-import { faceFor, figureStateOf } from '@/shared/figure';
+import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
 import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
 import { TintChip } from '@/shared/ui/TintChip';
 import type { ScanRow } from '@convexa/api';
@@ -74,20 +74,59 @@ export function Dash({ testid, value = EM_DASH }: { testid?: string; value?: str
  * is ever passed here (criterion 11A: no scanner figure, the price included, carries a live mark in
  * any connection state).
  */
-export function PriceCell({ row, active }: { row: ScanRow; active: boolean }) {
+export function PriceCell({
+  row,
+  active,
+  offline,
+}: {
+  row: ScanRow;
+  active: boolean;
+  /** SPEC §2.2 — `null`/`undefined` outside a drop; `{ retained: true }` only when the displayed
+   *  price came from the now-dead stream. `retained: false` cannot occur on this surface (criterion
+   *  13) because the caller only ever produces it when a live price already exists. */
+  offline?: { retained: boolean } | null;
+}) {
   const flash = useFlashOnChange(row.price, { active });
   const value = dash(row.price, fmtPrice);
-  const { figureState, mono } = figureStateOf({ value, register: 'traced' });
-  return (
+  const { figureState, mono, dim, showPause, caption } = figureStateOf({
+    value,
+    register: 'traced',
+    offline: offline ?? null,
+  });
+  const glyph = (
     <Typography
       component="span"
       data-testid="cell-price"
       data-figure-state={figureState}
       data-figure-register={mono ? 'mono' : 'sans'}
-      sx={[{ ...faceFor(mono), fontSize: 'inherit', color: 'text.primary' }, flashColorSx(flash)]}
+      sx={[
+        {
+          ...faceFor(mono),
+          fontSize: 'inherit',
+          color: 'text.primary',
+          ...(dim ? { opacity: 0.5 } : {}),
+        },
+        flashColorSx(flash),
+      ]}
     >
       {value}
     </Typography>
+  );
+  if (!showPause) return glyph;
+  return (
+    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'baseline', gap: '4px' }}>
+      <PauseMark />
+      {glyph}
+      {caption ? (
+        <Typography
+          component="span"
+          data-testid="cell-price-caption"
+          sx={{ ...faceFor(true), fontSize: '0.6875rem', color: 'text.secondary' }}
+        >
+          {caption}
+        </Typography>
+      ) : null}
+    </Box>
   );
 }
 

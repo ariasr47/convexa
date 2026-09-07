@@ -30,12 +30,15 @@ export interface ScanCardProps {
   nowS: number;
   flashActive: boolean;
   delta?: PollDelta | null;
+  /** SPEC §2.2 — `{ retained: boolean } | null` per symbol, computed once at `Scanner.tsx`. Price
+   *  ONLY — no structure figure ever takes this prop (criterion 10). */
+  priceOffline: (symbol: string) => { retained: boolean } | null;
 }
 
 const factSx = { display: 'flex', flexDirection: 'column' as const, gap: '2px', minWidth: 0 };
 const factLabelSx = { fontSize: '0.6875rem', color: 'text.secondary' };
 
-export function ScanCard({ row, nowS, flashActive, delta }: ScanCardProps) {
+export function ScanCard({ row, nowS, flashActive, delta, priceOffline }: ScanCardProps) {
   const scoreDescriptionId = useId();
   const visuallyHidden = {
     position: 'absolute',
@@ -91,7 +94,7 @@ export function ScanCard({ row, nowS, flashActive, delta }: ScanCardProps) {
 
       {/* Primary line: price (flash) · chg % (the one direction colour). */}
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '10px', fontSize: '1.1rem' }}>
-        <PriceCell row={row} active={flashActive} />
+        <PriceCell row={row} active={flashActive} offline={priceOffline(row.symbol)} />
         <Box component="span" sx={{ fontSize: '0.9rem' }}>
           <ChgCell row={row} />
         </Box>
@@ -180,6 +183,7 @@ export function ScanCardList({
   nowS,
   flashActive,
   deltas,
+  priceOffline,
 }: { rows: ScanRow[]; deltas?: Map<string, PollDelta> } & Omit<ScanCardProps, 'row' | 'delta'>) {
   return (
     <Box data-testid="scan-cards" sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
@@ -190,6 +194,7 @@ export function ScanCardList({
           nowS={nowS}
           flashActive={flashActive}
           delta={deltas?.get(row.symbol)}
+          priceOffline={priceOffline}
         />
       ))}
     </Box>

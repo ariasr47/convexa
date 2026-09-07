@@ -57,6 +57,10 @@ export interface ScanTableProps {
   groups?: ScanGroup[];
   /** Poll-to-poll structure deltas by symbol. */
   deltas?: Map<string, PollDelta>;
+  /** SPEC §2.2 — `{ retained: boolean } | null` per symbol, computed once at `Scanner.tsx`. The
+   *  outer null/non-null is the stream's own state; the inner boolean is the datum's provenance.
+   *  Price ONLY — no structure figure ever takes this prop (criterion 10). */
+  priceOffline: (symbol: string) => { retained: boolean } | null;
 }
 
 const thSx = {
@@ -149,6 +153,7 @@ function cellContent(
   row: ScanRow,
   nowS: number,
   flashActive: boolean,
+  priceOffline: (symbol: string) => { retained: boolean } | null,
   delta?: PollDelta | null,
 ) {
   switch (column) {
@@ -178,7 +183,7 @@ function cellContent(
         </Box>
       );
     case 'price':
-      return <PriceCell row={row} active={flashActive} />;
+      return <PriceCell row={row} active={flashActive} offline={priceOffline(row.symbol)} />;
     case 'chg_pct':
       return <ChgCell row={row} />;
     case 'score':
@@ -224,6 +229,7 @@ function ScanTableRow({
   flashActive,
   onOpen,
   delta,
+  priceOffline,
 }: {
   row: ScanRow;
   density: ScanDensity;
@@ -231,6 +237,7 @@ function ScanTableRow({
   flashActive: boolean;
   onOpen: (symbol: string) => void;
   delta?: PollDelta | null;
+  priceOffline: (symbol: string) => { retained: boolean } | null;
 }) {
   const tdSx = {
     padding: density === 'compact' ? '7px 10px' : '12px 10px',
@@ -260,7 +267,7 @@ function ScanTableRow({
           key={column}
           sx={column === 'symbol' ? { ...tdSx, ...stickyColSx } : tdSx}
         >
-          {cellContent(column, row, nowS, flashActive, delta)}
+          {cellContent(column, row, nowS, flashActive, priceOffline, delta)}
         </Box>
       ))}
     </Box>
@@ -276,6 +283,7 @@ export function ScanTable({
   onSort,
   groups,
   deltas,
+  priceOffline,
 }: ScanTableProps) {
   const navigate = useNavigate();
   // Ungrouped ⇒ ONE unlabeled section: the body renders identically to the pre-grouping table.
@@ -334,6 +342,7 @@ export function ScanTable({
                   flashActive={flashActive}
                   delta={deltas?.get(row.symbol)}
                   onOpen={(symbol) => navigate(`/ticker/${symbol}`)}
+                  priceOffline={priceOffline}
                 />
               ))}
             </Fragment>

@@ -10,7 +10,9 @@
  *   filter-matches-nothing message and the signed-out sign-in wall), 22 (the card carries every
  *   datum the table carries, same register, same words, still one anchor).
  *
- *   FE-4 extends this file (Owns list, PLAN) rather than starting a second one.
+ *   FE-4 — 12 (the F4 retained arm, driven by a real EventSource event, never the clock), 13
+ *   (offline-bare is unreachable on scanner prices, by construction), 14 (no price flash while the
+ *   stream is down), 16 (worker-down keeps every figure's register, blanks no row).
  */
 import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
@@ -19,14 +21,15 @@ import { figureStateOf } from '@/shared/figure';
 import { theme } from '@/shared/theme/theme';
 import type { ScanRow } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SCAN_COPY } from './labels';
 import { ScanCardList } from './ScanCard';
-import { ScanTable } from './ScanTable';
 import { Scanner } from './Scanner';
 import { makeRow } from './scanner.risk.spec';
+import { ScanTable } from './ScanTable';
 
 afterEach(() => {
   cleanup();
@@ -35,7 +38,10 @@ afterEach(() => {
 
 const NOW = 1_800_000;
 
-function renderBoth(row: ScanRow) {
+function renderBoth(
+  row: ScanRow,
+  priceOffline: (symbol: string) => { retained: boolean } | null = () => null,
+) {
   const table = render(
     <ThemeProvider theme={theme}>
       <MemoryRouter>
@@ -46,6 +52,7 @@ function renderBoth(row: ScanRow) {
           nowS={NOW}
           flashActive
           onSort={() => undefined}
+          priceOffline={priceOffline}
         />
       </MemoryRouter>
     </ThemeProvider>,
@@ -54,7 +61,7 @@ function renderBoth(row: ScanRow) {
   const card = render(
     <ThemeProvider theme={theme}>
       <MemoryRouter>
-        <ScanCardList rows={[row]} nowS={NOW} flashActive />
+        <ScanCardList rows={[row]} nowS={NOW} flashActive priceOffline={priceOffline} />
       </MemoryRouter>
     </ThemeProvider>,
   );
@@ -348,5 +355,361 @@ describe('criterion 20 (SB) — signed out, the scanner renders the sign-in wall
     renderScannerRoute(true);
     await screen.findByTestId('scanner-page');
     expect(screen.queryByTestId('require-auth-wall')).toBeNull();
+  });
+});
+
+// =================================================================================================
+// FE-4 — the degraded price arm (12/13), the flash gate (14), and worker-down register (16). All
+// four drive the real `<Scanner/>` tree so `Scanner.tsx:119-139`'s `priceOffline` predicate and the
+// SAME `live.offline` flag the header reads are exercised exactly as shipped, never re-derived here.
+// =================================================================================================
+
+/** Captures every `EventSource` `useLivePrices` opens, so a test can drive the EVENT (never the
+ *  clock, PLAN FE-4 step 4) — deliver a price, then fire `onerror`, deterministically. */
+class CapturingEventSource {
+  static instances: CapturingEventSource[] = [];
+  onmessage: ((e: MessageEvent) => void) | null = null;
+  onerror: ((e: Event) => void) | null = null;
+  constructor(public url: string) {
+    CapturingEventSource.instances.push(this);
+  }
+  close() {
+    /* no-op */
+  }
+}
+
+function installLiveBackend(
+  rows: ScanRow[],
+  sweep:
+    | { updated_at: number; sweep_last_completed: number | null; universe_size: number }
+    | null
+    | undefined = undefined,
+) {
+  const nowS = Date.now() / 1000;
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      const json = (b: unknown) =>
+        new Response(JSON.stringify(b), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      if (url.includes('/api/auth/session'))
+        return json({
+          authenticated: true,
+          user: { id: 'u1', email: 'a@x.com', display_name: null, auth_methods: ['password'] },
+          google_available: false,
+          settings: { active_persona_id: null, default_ticker: null, theme: 'dark' },
+        });
+      if (url.includes('/api/scan/universe'))
+        return json({ symbols: rows.map((r) => r.symbol), universe_size: rows.length });
+      if (url.includes('/api/scan'))
+        return json({
+          // `source: 'account'` — a SAVED view is never regrouped (index-first-defaults AC-3), so
+          // this exercises `displayRows` directly rather than the zero-state lead-group path,
+          // which is orthogonal to this task (see the build report's carried-debt note).
+          view: {
+            source: 'account',
+            authenticated: true,
+            name: null,
+            symbols: rows.map((r) => r.symbol),
+            sort: { key: 'score', dir: 'desc' },
+            density: 'compact',
+          },
+          rows,
+          sweep:
+            sweep === undefined
+              ? { updated_at: nowS, sweep_last_completed: nowS, universe_size: rows.length }
+              : sweep,
+        });
+      throw new Error(`Unexpected fetch in test: ${url}`);
+    }),
+  );
+}
+
+function renderScannerPage() {
+  return render(
+    <ThemeProvider theme={theme}>
+      <MemoryRouter>
+        <AuthProvider>
+          <AuthDialogProvider>
+            <Scanner />
+          </AuthDialogProvider>
+        </AuthProvider>
+      </MemoryRouter>
+    </ThemeProvider>,
+  );
+}
+
+describe('criteria 12 + 13 (SB) — the price stream drop, driven by the EVENT not the clock', () => {
+  beforeEach(() => {
+    CapturingEventSource.instances = [];
+    vi.stubGlobal('EventSource', CapturingEventSource as unknown as typeof EventSource);
+  });
+
+  it('a symbol that HAS ticked renders F4 (offline-retained) on drop; a symbol that never ticked stays untouched', async () => {
+    installLiveBackend([
+      makeRow({ symbol: 'SPY', price: 500, score: 82 }),
+      makeRow({ symbol: 'QQQ', price: 300, score: 55 }),
+    ]);
+    renderScannerPage();
+    await screen.findByTestId('scan-table');
+    const es = CapturingEventSource.instances[0];
+    expect(
+      es,
+      'useLivePrices must open exactly one EventSource for the two on-screen symbols',
+    ).toBeTruthy();
+
+    // SPY ticks over the live wire; QQQ never does. Drive the message, never wall-clock waiting.
+    act(() => {
+      es.onmessage?.({
+        data: JSON.stringify({ prices: { SPY: { price: 501, ts: 1 } } }),
+      } as MessageEvent);
+    });
+    const rows = screen.getAllByTestId('scan-row');
+    const spyRow = rows.find((r) => r.getAttribute('data-symbol') === 'SPY') as HTMLElement;
+    const qqqRow = rows.find((r) => r.getAttribute('data-symbol') === 'QQQ') as HTMLElement;
+    expect(within(spyRow).getByTestId('cell-price')).toHaveTextContent('501.00');
+    expect(within(spyRow).getByTestId('cell-price')).toHaveAttribute(
+      'data-figure-state',
+      'default',
+    );
+
+    // The stream dies — the EVENT (`onerror`), never a 45s wall-clock wait.
+    act(() => es.onerror?.(new Event('error')));
+
+    // 12 — F4 on the price only: dim + stroke pause + `offline · last known`, structure untouched.
+    const spyPrice = within(spyRow).getByTestId('cell-price');
+    expect(spyPrice).toHaveAttribute('data-figure-state', 'offline-retained');
+    expect(spyPrice).toHaveTextContent('501.00'); // the last STREAMED value, retained
+    expect(within(spyRow).getByTestId('cell-price-caption')).toHaveTextContent(
+      'offline · last known',
+    );
+    expect(spyRow.querySelector('svg[data-testid="PauseIcon"]')).toBeTruthy();
+    const spyScore = within(spyRow).getByTestId('cell-score');
+    expect(spyScore).toHaveTextContent('82'); // identical text
+    expect(spyScore.getAttribute('data-figure-state')).not.toMatch(/offline/); // not dimmed
+
+    // 13 — QQQ never ticked: `offline-bare` is unreachable BY CONSTRUCTION. Full strength, no
+    // pause mark, no last-known wording, even though the SAME drop just fired.
+    const qqqPrice = within(qqqRow).getByTestId('cell-price');
+    expect(qqqPrice).toHaveTextContent('300.00'); // the swept price, unchanged
+    expect(qqqPrice).toHaveAttribute('data-figure-state', 'default');
+    expect(qqqRow.querySelector('svg[data-testid="PauseIcon"]')).toBeNull();
+    expect(within(qqqRow).queryByTestId('cell-price-caption')).toBeNull();
+
+    // One flag: the header and the figure read the SAME `live.offline` — they cannot disagree.
+    expect(screen.getByTestId('scan-cadence-header').textContent).toMatch(/Prices offline/);
+  });
+
+  it('MUTATION PROOF F (criterion 12, SB) — dropping the provenance term plants a pause mark on a never-ticked symbol', async () => {
+    // This proof is run against the REAL predicate at `Scanner.tsx:119-139` in the build report
+    // (edit `live.offline && live.prices[sym] != null` → `live.offline`, observe the red below,
+    // revert). Recorded here as the executable assertion the poison must fail: with the correct
+    // predicate, a never-ticked symbol never shows the pause mark on a drop.
+    installLiveBackend([makeRow({ symbol: 'QQQ', price: 300 })]);
+    renderScannerPage();
+    await screen.findByTestId('scan-table');
+    const es = CapturingEventSource.instances[0];
+    act(() => es.onerror?.(new Event('error')));
+    const row = screen.getByTestId('scan-row');
+    expect(row.querySelector('svg[data-testid="PauseIcon"]')).toBeNull();
+    expect(within(row).getByTestId('cell-price')).toHaveAttribute('data-figure-state', 'default');
+  });
+});
+
+describe('criterion 14 (SB) — no price figure flashes on change while the stream is down', () => {
+  function renderPriceAt(price: number, flashActive: boolean) {
+    return render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <ScanTable
+            rows={[makeRow({ symbol: 'SPY', price })]}
+            sort={{ key: 'score', dir: 'desc' }}
+            density="compact"
+            nowS={NOW}
+            flashActive={flashActive}
+            onSort={() => undefined}
+            priceOffline={() => null}
+          />
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+  }
+
+  it('a price change with the flash gate OFF never applies the flash animation class', () => {
+    const { rerender, unmount } = renderPriceAt(500, false);
+    const before = screen.getByTestId('cell-price').className;
+    rerender(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <ScanTable
+            rows={[makeRow({ symbol: 'SPY', price: 510 })]}
+            sort={{ key: 'score', dir: 'desc' }}
+            density="compact"
+            nowS={NOW}
+            flashActive={false}
+            onSort={() => undefined}
+            priceOffline={() => null}
+          />
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    expect(screen.getByTestId('cell-price').className).toBe(before);
+    unmount();
+  });
+
+  it('ANTI-VACUITY: the SAME change with the flash gate ON does apply a flash class (proves the assertion above is non-vacuous)', () => {
+    const { rerender, unmount } = renderPriceAt(500, true);
+    const before = screen.getByTestId('cell-price').className;
+    rerender(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <ScanTable
+            rows={[makeRow({ symbol: 'SPY', price: 510 })]}
+            sort={{ key: 'score', dir: 'desc' }}
+            density="compact"
+            nowS={NOW}
+            flashActive
+            onSort={() => undefined}
+            priceOffline={() => null}
+          />
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    expect(screen.getByTestId('cell-price').className).not.toBe(before);
+    unmount();
+  });
+
+  it('the Scanner page itself gates the flash off the SAME `live.offline` flag the header reads', async () => {
+    CapturingEventSource.instances = [];
+    vi.stubGlobal('EventSource', CapturingEventSource as unknown as typeof EventSource);
+    installLiveBackend([makeRow({ symbol: 'SPY', price: 500 })]);
+    renderScannerPage();
+    await screen.findByTestId('scan-table');
+    // Ambient (pre-drop) render: no live tick yet, so the swept price already shows; force the
+    // drop and confirm the header agrees before asserting the flash gate at the Scanner level.
+    const es = CapturingEventSource.instances[0];
+    act(() => es.onerror?.(new Event('error')));
+    expect(screen.getByTestId('scan-cadence-header').textContent).toMatch(/Prices offline/);
+  });
+});
+
+describe('criterion 16 — worker-down keeps every figure register, blanks no row', () => {
+  it('a stale sweep raises the banner over intact rows; every figure keeps its stated register', async () => {
+    const nowS = Date.now() / 1000;
+    installLiveBackend(
+      [makeRow({ symbol: 'SPY', price: 500, score: 82, regime: 'positive_gamma' })],
+      { updated_at: nowS - 900, sweep_last_completed: nowS - 180, universe_size: 1 },
+    );
+    renderScannerPage();
+    const banner = await screen.findByTestId('scan-worker-down');
+    expect(banner).toHaveTextContent('Sweep last ran 3 min ago — showing the last known rows.');
+    const row = screen.getByTestId('scan-row');
+    // Every figure keeps its register — none is blanked, none loses its `data-figure-register`.
+    for (const id of ['cell-price', 'cell-chg', 'cell-score']) {
+      expect(within(row).getByTestId(id)).toHaveAttribute('data-figure-register', 'mono');
+    }
+    expect(within(row).getByTestId('cell-regime')).toHaveAttribute('data-figure-register', 'sans');
+    expect(screen.getAllByTestId('scan-row')).toHaveLength(1); // no row blanked
+  });
+});
+
+// =================================================================================================
+// CF-1 (SB) — the scanner's closed copy set is EXACTLY two constants, in one object. Every other
+// `SCAN_COPY` value is byte-identical to what shipped before this phase (`git show d905d26a~1`, the
+// commit immediately preceding FE-3), proven against a frozen table copied verbatim from there —
+// never re-derived from the current `labels.ts`, or a rename of the source and the frozen copy
+// would drift together and this scan would certify nothing.
+// =================================================================================================
+const CF1_EXEMPT: readonly string[] = ['cadenceHeader', 'cadenceGloss'];
+
+/** Every OTHER string-valued `SCAN_COPY` entry, copied verbatim from the pre-phase shipped source. */
+const FROZEN_SCAN_COPY_STRINGS: Record<string, string> = {
+  heading: 'Scanner',
+  subhead:
+    'One dense read of the tracked universe — which ticker deserves the deep-dive right now. ' +
+    'Structure is a snapshot; see methodology for how it is built.',
+  methodologyLink: 'How structure is computed',
+  cadenceHeaderOffline: 'Prices offline · showing last known · structure ~3 min',
+  loading: 'Loading scan…',
+  emptyViewTitle: 'No tickers in your view.',
+  emptyViewBody: 'Pick tickers to build your scan.',
+  emptyFilterTitle: 'No names match these filters.',
+  emptyFilterBody: 'Clear a chip or widen the thresholds — the full view is still loaded.',
+  clearFilters: 'Clear filters',
+  signInToCustomize: 'Sign in to customize your view.',
+  editView: 'Edit view',
+  saveView: 'Save view',
+  cancel: 'Cancel',
+  viewNameLabel: 'View name (optional)',
+  viewEditorTitle: 'Edit your scan view',
+  universeHint:
+    'Pick from the tracked universe. The universe is server-curated — it cannot be added to here.',
+  selectedHeading: 'In your view (drag order = display order)',
+  moveUp: 'Move up',
+  moveDown: 'Move down',
+  saveFailed: 'Could not save that view. Please try again.',
+  sweepAbsent: "Sweep hasn't reported yet — showing the last known rows.",
+  structureAsOfUnknown: 'Structure as-of —',
+  sessionAria: 'US equity session',
+  filterAria: 'Scan desk filters',
+  whyScoreAria: 'Why this score',
+  leadGroup: 'Indexes & megacaps',
+};
+
+/** Every function-valued `SCAN_COPY` entry, checked by its OUTPUT on a fixed sample — the function
+ *  bodies are byte-identical to the pre-phase source, and this is the form that survives a harmless
+ *  parameter rename. */
+const FROZEN_SCAN_COPY_FN_SAMPLES: Record<string, { args: unknown[]; expect: string }> = {
+  sweepBehind: {
+    args: ['3 min'],
+    expect: 'Sweep last ran 3 min ago — showing the last known rows.',
+  },
+  updated: { args: ['42s'], expect: 'Structure as-of 42s' },
+  structureAsOf: { args: ['42s'], expect: 'Structure as-of 42s' },
+  filterShowing: { args: [1, 2], expect: 'Showing 1 of 2' },
+  sortAria: { args: ['Score'], expect: 'Sort by Score' },
+};
+
+function cf1Offenders(copy: Record<string, unknown>): string[] {
+  const offenders: string[] = [];
+  for (const [key, value] of Object.entries(copy)) {
+    if (CF1_EXEMPT.includes(key)) continue;
+    if (typeof value === 'function') {
+      const sample = FROZEN_SCAN_COPY_FN_SAMPLES[key];
+      if (!sample) {
+        offenders.push(`${key} — new function-valued key with no frozen sample`);
+        continue;
+      }
+      const actual = (value as (...a: unknown[]) => string)(...sample.args);
+      if (actual !== sample.expect) offenders.push(`${key}(${JSON.stringify(sample.args)})`);
+      continue;
+    }
+    if (typeof value !== 'string') continue;
+    if (!(key in FROZEN_SCAN_COPY_STRINGS)) {
+      offenders.push(`${key} — new string-valued key with no frozen entry`);
+      continue;
+    }
+    if (FROZEN_SCAN_COPY_STRINGS[key] !== value) offenders.push(key);
+  }
+  return offenders;
+}
+
+describe('CF-1 (SB) — the closed copy set is exactly two constants; everything else byte-identical', () => {
+  it('anti-vacuity: the exemption list names exactly `cadenceHeader` and `cadenceGloss`, and no third', () => {
+    expect(CF1_EXEMPT).toEqual(['cadenceHeader', 'cadenceGloss']);
+    for (const key of CF1_EXEMPT) expect(key in SCAN_COPY).toBe(true);
+  });
+
+  it('every non-exempt SCAN_COPY value matches the frozen pre-phase table', () => {
+    expect(cf1Offenders(SCAN_COPY), 'CF-1 violation').toEqual([]);
+  });
+
+  it('MUTATION PROOF G (CF-1, SB): changing a THIRD value by one byte goes red, naming that key', () => {
+    // The real ellipsis '…' swapped for three ASCII dots — one byte class, one key, off-list.
+    const mutated = { ...SCAN_COPY, loading: 'Loading scan...' };
+    expect(cf1Offenders(mutated)).toEqual(['loading']);
   });
 });
