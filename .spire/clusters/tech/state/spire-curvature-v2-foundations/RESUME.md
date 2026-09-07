@@ -1,6 +1,8 @@
 # RESUME — spire/curvature-v2-foundations
 
-**Phase 3 of 4 (`curvature-v2-surfaces`) is at GATE PLAN — spec approved by the owner 2026-09-06; planner dispatched 2026-09-07.**
+**Phase 3 of 4 (`curvature-v2-surfaces`) is in BUILD — 7 of 14 frontend tasks landed (FE-1…FE-7, through `b2a8cf15` +
+follow-up `e02350f6`); paused cleanly after FE-7 on 2026-09-07 at the owner's request (machine restart). Next: dispatch one
+Sonnet lane for FE-8 → FE-10 from `contracts/curvature-v2-surfaces/RESUME.md`; then FE-11 → FE-14, BE-1, GATE Q.**
 **Phase 2 of 4 (`curvature-v2-desk-and-read`) is DONE and closed at GATE S on 2026-09-05.**
 Branch is **19 commits ahead of origin, not pushed** (phase 2 was pushed; everything since is local) and there is **no PR** — the owner's call.
 
