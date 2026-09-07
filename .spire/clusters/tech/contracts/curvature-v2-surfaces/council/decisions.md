@@ -278,3 +278,23 @@ the planner bounces U-32 at GATE Z (it cannot plan a verification it cannot run)
 **OWNER, 2026-09-06 — SPEC APPROVED, option A: approved with the two U-32 repairs folded first.** Both S2 pass-2 findings
 move from OPEN to **RULED — fold**; one targeted synthesizer pass applies them; the conductor then flips `SPEC.md` status
 `draft → approved` and opens GATE PLAN. Nothing else in the spec changes on approval.
+
+## 8. GATE PLAN — 2026-09-07: PLAN.md written, **no GATE Z bounce**; three scope readings flagged by the planner, ruled here
+
+PLAN.md: 1366 lines · 15 tasks (BE-1 verification-only closer; FE-1…FE-14, FE-1 on Opus, the rest Sonnet) · V1–V20 · 19
+mutation proofs A–S · all 95 criteria mapped, all 53 SB rows carry a named red-going poison · Independence all-`no` with
+measured grounds → one sequential frontend lane (run as several shorter lanes, committing per task) + one backend
+verification lane at the end.
+
+| id | planner's reading | conductor ruling (CONDUCTOR, reversible) |
+|---|---|---|
+| **Z-1** | `features/trading/orders/OrderRow.tsx:172` renders a `⏸` text mark and mounts on **both** `/positions` (`OrdersPanel.tsx:2,150`) and the desk (`OrdersWidget.tsx:161,183`). SPEC §1 / §3 C enumerate the positions scope as sim book · Broker tab · header readout — the orders panel is not named. Wider reading would edit a component the desk mounts, colliding with D-C's "the desk is reopened for this single change and nothing else". | **Narrow reading confirmed — OUT, booked as carried debt** with `OrderRow.tsx:172` attached, to the phase that next touches orders. Grounds: it is the reading consistent with two owner rulings (D-C's single desk change; the BRIEF's "the ticker desk is not reopened"), and the mark is a text glyph on a surface this phase does not otherwise convert. Reversal: owner says IN → FE-5 gains the orders rows, D-C's desk-spec re-run list gains `OrdersWidget`, and the owner has consciously widened the desk reopening. |
+| **Z-2** | `positions/labels.ts:57` carries ` (⏸)` inside a tooltip **string**, where no icon can render. | **Accepted — delete under §2.7's permitted class (1)** (typographic truth mark → declared icon; here the icon has no host, so the glyph goes and the sentence keeps its meaning), itemized in the build report. Reversal: a named live-checked exemption + GATE Z debt. |
+| **U-8** | `features/alerts/**` sits outside criterion 6's five globs (which name `pages/alerts/**` only); measured clean today. | **Recorded as a residual, not widened** — the glob set is the spec's; FE-9/FE-10's own tests cover `features/alerts/` behaviourally. If a later census finds a local face binding there, that is a spec amendment, not a lane decision. |
+
+Planner facts the lanes inherit (verified at source by the planner, not re-derived here): exactly **8** `<Widget … info=…>`
+sites and **9** `AccessibleHelp` importers; **14** files with a local face binding in N-1's three trees (FE-1 ships the
+needles enforcing from its first commit behind a live-checked `EXEMPT` map that FE-14 asserts empty); **6** in-scope `⏸`
+sites on positions/broker where SPEC §2.3 names three; `theme.ts:132-137` already floors touch targets at 44×44 on coarse
+pointers; `scanner.risk.spec.tsx:869` may stay green on the D-A header edit because it renders the offline arm — run it,
+record which, pin both arms (T5).

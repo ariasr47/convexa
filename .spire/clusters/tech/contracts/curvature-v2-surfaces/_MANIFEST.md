@@ -1,7 +1,6 @@
 # curvature-v2-surfaces — pipeline manifest
-Stage:        GATE PLAN — opened 2026-09-07 after **owner approval of the spec 2026-09-06** (option A: the two S2 pass-2
-              U-32 repairs folded first, then status flipped). Planner dispatched; PLAN.md pending (phase 3 of 4 of the
-              Curvature Terminal v2 build)
+Stage:        GATE PLAN closed 2026-09-07 — PLAN.md written (15 tasks, no GATE Z bounce; three scope readings ruled in
+              `council/decisions.md` §8). **BUILD awaiting the owner's go** (phase 3 of 4 of the Curvature Terminal v2 build)
 Repos:        frontend
 Brief:        BRIEF.md present
 Contracts:
@@ -76,6 +75,12 @@ Last gateway:  GATE C @ 2026-09-06 — council complete; owner approval pending
   the three at 1.2 s / 6.5 s / 0.8 s.** `git diff --stat f8957d3f..HEAD -- apps libs` is **empty** — no source has changed since
   phase 2 closed at 231 files / 2694 tests exit 0 — so the baseline is treated as green with the load-timeout named. e2e
   honestly **NOT RUN** at baseline (phase 2 closed it at 86/86 against the production build).
+- GATE PLAN @ 2026-09-07 — PLAN.md: **15 tasks** (BE-1 verification-only closer · FE-1…FE-14), 3 tracks, verification rows
+  V1–V20, **19 mutation proofs** each with a red-going poison, **all 95 criteria mapped / all 53 SB rows poisoned**;
+  Independence all-`no` on measured grounds (one sequential frontend lane, run as shorter lanes committing per task; FE-1 on
+  Opus — the `shared/figure/` extraction every later task consumes — the rest Sonnet). **No GATE Z bounce**; three scope
+  readings (Z-1 orders `⏸` OUT as debt, Z-2 tooltip-string glyph deleted under class (1), U-8 residual) ruled by the
+  conductor in `council/decisions.md` §8, each with its reversal.
 
 ## Inherited (do not rediscover)
 `state/spire-curvature-v2-foundations/RESUME.md` carries the phase table and the trap that cost phase 2 the
