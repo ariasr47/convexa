@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "authorization_id": "win32-curvature-v2-bdb93b9-20260908",
+  "decision": "authorize_candidate_generation",
+  "state": "authorized",
+  "actor": {
+    "id": "workspace-owner",
+    "role": "owner"
+  },
+  "source_revision": "bdb93b9b9076a4bce4ada9e170a55f0bec7d6b3b",
+  "platform": "win32",
+  "created_at": "2026-09-08T23:04:11.825Z",
+  "failed_compare": {
+    "run_id": "local-1788908546804-9d816d0a",
+    "summary_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/summary.json",
+    "summary_sha256": "a80253e9db802e6d5bb46cbddf7b41bff25fbfcc21938773a5ffdaf44fe9b644"
+  },
+  "scenarios": [
+    {
+      "scenario_id": "landing",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/landing-expected.png",
+      "expected_sha256": "837a123fe5a4ba97ea43b6a95fa29c4a6fccfb9008a25596b7682da872720ec2",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/landing.png",
+      "actual_sha256": "dcd5af69caaab82f2d9e06165cf268aec82b43a52cd7578d92c6380558f6c2e8",
+      "diff_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/landing-diff.png",
+      "diff_sha256": "3ca782005d38b0e24ef0d0b3221454ccb173c33d681b90b1179360ae78c4503a"
+    },
+    {
+      "scenario_id": "ticker-desktop",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/ticker-desktop-expected.png",
+      "expected_sha256": "e160356c603dc36e180425f43694abf89afeb053e2e5d13c2cbd41647541c1eb",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/ticker-desktop.png",
+      "actual_sha256": "1c67d05182e52b711acf49f9aae97fc7f089efb6b922e680ddef2a54bfd34a30",
+      "diff_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/ticker-desktop-diff.png",
+      "diff_sha256": "149bb1e2289bc9667c036d635f646fa83f7d1d970b0b49c95c4395e08f859810"
+    },
+    {
+      "scenario_id": "ticker-offline-mobile",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/ticker-offline-mobile-expected.png",
+      "expected_sha256": "eb365fd9945f3d03a713ea51a15a1ba44e4aaf26b191ddf5ff8db02c8c18f175",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/ticker-offline-mobile.png",
+      "actual_sha256": "04517b4c6e21b3ded6ea71327d8165ba692791085c0d4e6d19c5f54bbb986ac5",
+      "diff_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/ticker-offline-mobile-diff.png",
+      "diff_sha256": "7372eaff0c658b4e3c0c0513e6cd517fe4195188e66b12b0080ba93ba877011d"
+    },
+    {
+      "scenario_id": "positions-dense",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/positions-dense-expected.png",
+      "expected_sha256": "4303acfe56911757d530588ee2d576bdcdf2db6f901b7ed5a93f3417b8b07bf8",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/positions-dense.png",
+      "actual_sha256": "59ba1436fb3d7d5c38e7f671c3290137ac13ce8722bd2f556e58d2ac42f8c750",
+      "diff_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/positions-dense-diff.png",
+      "diff_sha256": "4b38a541283cdbbb0831ae58c64dc13b1fe1e0cdb1966ef047c2ff070ba7befa"
+    },
+    {
+      "scenario_id": "scanner-dense",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/scanner-dense-expected.png",
+      "expected_sha256": "25d10e356ccf073a9e383967047d13d6714c35f2e707d9149cbd2b20baf32f0b",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/scanner-dense.png",
+      "actual_sha256": "dcd1ca53541dadfb34dca632252eb00d020a518fd74f2e3c241fb356de9074c8",
+      "diff_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/scanner-dense-diff.png",
+      "diff_sha256": "342588233cd0623d6aa7c9d5235700dca4984b7dc398338722b26f3353a0cee5"
+    },
+    {
+      "scenario_id": "ai-recommendation",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/ai-recommendation-expected.png",
+      "expected_sha256": "abe4f38480153d8189e8c7ebe286c9874b81921dd2e8bfb0b7305a1c43040a48",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-bdb93b9-20260908/ai-recommendation.png",
+      "actual_sha256": "abe4f38480153d8189e8c7ebe286c9874b81921dd2e8bfb0b7305a1c43040a48",
+      "diff_path": null,
+      "diff_sha256": null
+    }
+  ]
+}

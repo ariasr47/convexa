@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "acceptance_id": "accept-e2a1eea5690ec3f68ac293c384ec5f39-20260908",
+  "candidate_set_id": "e2a1eea5690ec3f68ac293c384ec5f39",
+  "decision": "accept_candidates",
+  "state": "accepted",
+  "actor": {
+    "id": "workspace-code-reviewer",
+    "role": "code_reviewer"
+  },
+  "source_revision": "bdb93b9b9076a4bce4ada9e170a55f0bec7d6b3b",
+  "platform": "win32",
+  "reviewed_at": "2026-09-08T23:08:57.897Z",
+  "authorization_path": "apps/dashboard-e2e/visual-review/authorizations/win32-curvature-v2-bdb93b9-20260908.json",
+  "authorization_sha256": "8c0845d31c893b2ae20e492690842be3763081374f31d6125d1810d1ff4a9b0d",
+  "candidate_receipt_path": "apps/dashboard-e2e/visual-review/candidate-sets/e2a1eea5690ec3f68ac293c384ec5f39.json",
+  "candidate_receipt_sha256": "9e933abecdbfa3e44df01b192a5ac18f0f52278b8753fc4fc62a5ec71e7c612f",
+  "source_diff_path": "apps/dashboard-e2e/visual-review/diffs/e2a1eea5690ec3f68ac293c384ec5f39.patch",
+  "source_diff_sha256": "d2e05ea8b3f96173d50f8769e3ab75355d674cce851dfdd155c1c19ac2783faf",
+  "candidates": [
+    {
+      "scenario_id": "landing",
+      "path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/landing.png",
+      "sha256": "dcd5af69caaab82f2d9e06165cf268aec82b43a52cd7578d92c6380558f6c2e8"
+    },
+    {
+      "scenario_id": "ticker-desktop",
+      "path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/ticker-desktop.png",
+      "sha256": "a7542ea13521aaf545ad5dd7c33321834b4f65b84b272d8c28286d22f4334def"
+    },
+    {
+      "scenario_id": "ticker-offline-mobile",
+      "path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/ticker-offline-mobile.png",
+      "sha256": "04517b4c6e21b3ded6ea71327d8165ba692791085c0d4e6d19c5f54bbb986ac5"
+    },
+    {
+      "scenario_id": "positions-dense",
+      "path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/positions-dense.png",
+      "sha256": "59ba1436fb3d7d5c38e7f671c3290137ac13ce8722bd2f556e58d2ac42f8c750"
+    },
+    {
+      "scenario_id": "scanner-dense",
+      "path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/scanner-dense.png",
+      "sha256": "dcd1ca53541dadfb34dca632252eb00d020a518fd74f2e3c241fb356de9074c8"
+    },
+    {
+      "scenario_id": "ai-recommendation",
+      "path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/ai-recommendation.png",
+      "sha256": "abe4f38480153d8189e8c7ebe286c9874b81921dd2e8bfb0b7305a1c43040a48"
+    }
+  ]
+}
