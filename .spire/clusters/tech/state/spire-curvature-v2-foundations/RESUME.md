@@ -8,19 +8,14 @@ plan's placeholder stack, 1,225 px vs the design's 488 px, and that the divergen
 phase installed v2's vocabulary on v1's layouts because no BRIEF/SPEC/QA row ever compared composition to
 `design/site/*.html`. Owner ruling (2026-09-07): **"Just fix the ticker screen for now."**
 
-**What was in flight when this was written.** One Sonnet `spire-tech-frontend` repair lane executing
-`STRUCTURE_HERO_REPAIR_TASK.md` (ten numbered changes, S1 first) directly on this branch, committing as it
-goes as `fix(dashboard): …`, no push. **Its state is only knowable from git:**
-1. `git log --oneline 71e8ceb1..HEAD` — every `fix(dashboard)` commit is the lane's; map them to the task
-   file's items 1–10.
-2. `git status` — uncommitted changes under `apps/dashboard/` are the lane's half-finished step. **Do not
-   `git stash`** (a sibling process keeps 27 untracked files under `docs/research/convexa-business-review-2026-09-05/`).
-   Read the diff, decide whether it is coherent, then either finish that step or `git checkout -- <those files only>`.
-3. Re-verify whatever the lane claimed: `npx nx typecheck @convexa/dashboard --skip-nx-cache`, the dashboard
-   suite, lint, `git diff --stat origin/main...HEAD -- apps/api` (must be empty).
-4. Finish the remaining items of the task file (a fresh Sonnet lane with the same prompt is fine), then the
-   conductor's own verification: hero height at 1280 (target 490–560 px), screenshots at 1280/1000/393
-   against `design/site/desk.html`.
+**UPDATE 2026-09-08 — the hero repair LANDED and is verified by the conductor's own runs.** Five lane
+commits `57525861 · 9b57e338 · a8f822b1 · 003853cc · 1ac1f339` (17 files, frontend only), all ten task items
+done. Conductor re-ran cold: typecheck **0** · dashboard suite **239 files / 2,861 tests, exit 0** · lint **0**
+(one pre-existing warning) · e2e `--grep "desk|curvature|overflow"` against the production build **108/108,
+exit 0** · `apps/api` diff **empty** · NUL scan clean. Measured hero at 1280: **550 px** (was 1,225; design
+488), Magnet view also 550 (no height jump); 1000: 760 px, one column, 5-cell ladder row; 393: 1,041 px, 2×2
+ladder; no horizontal overflow, 0 console errors. Pushed to origin as a backup. Residuals recorded in
+`STRUCTURE_HERO_REVIEW.md` § "Repair result" — none blocking.
 
 **Open owner question, unanswered when written:** the rest of `/ticker` also diverges (masthead framing,
 read strip chrome + an 8th-cell clip at 1280, the tape-&-plan grid, the context-band grid/density — table in

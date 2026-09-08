@@ -107,6 +107,41 @@ semantic change; they are composition, scale and type.
 - Not recommended: fold it into the phase-4 responsive sweep unlabelled — the desktop composition is the
   actual defect, not the breakpoints.
 
+## Repair result (2026-09-08, conductor-verified)
+
+Lane commits `57525861 · 9b57e338 · a8f822b1 · 003853cc · 1ac1f339`. Every finding above is addressed:
+field-grid with the 300 px ladder column and the foot pinned; one-line ladder rows via a new `FigureRow`
+that reuses `figureStateOf` / `FigureMarks`; window = walls ± max(1.5 % spot, 25 % span) widened to include
+flip and max pain (SPY now plots 750–790 with the wall span at ~50 % of the plot); strike ticks at a round
+step + `±$1.43B` / `0`; level labels above the plot in Mono; the spot label gone, one mid pill; max pain
+drawn dashed; `Structure field` title, basis subtitle, legend, `Field | Magnet`; flat tape and path rows;
+compact foot; magnet from `palette` / `surfaces` with the reading line and footnote.
+
+**Conductor's own measurements** (not the lane's): hero **550 px** at 1280 (design 488, target 490–560),
+550 in Magnet; 760 px at 1000 (one column, 5-cell ladder row); 1,041 px at 393 (2×2 ladder); horizontal
+overflow **false** at all three; **0** console errors. Whole page at 1280: 4,615 → **4,130 px** (the
+remaining gap is the tape-&-plan and context bands, out of this task's scope).
+
+**Gates, cold:** typecheck 0 · 239 files / 2,861 tests 0 · lint 0 (one pre-existing `react-hooks` warning
+in an untouched file) · e2e `desk|curvature|overflow` vs the production build 108/108, 0 flaky, exit 0 ·
+`apps/api` diff empty · NUL scan clean. Assertion edits (four, all layout/copy pins): `LevelLadder.spec`
+tick colour → `borderTopColor`; `ticker-semantics.spec` ancestor selector `.MuiCard-root` →
+`[data-figure-state]`; `chart.spec` rewritten for the new window; `hex-discipline.spec` two exemptions
+**removed** (the file's own liveness check requires it).
+
+**Residuals — cosmetic, not blocking; fold into the next ticker pass:**
+- In the 300 px ladder column the **Gamma flip row wraps to two lines** (`$771.1` + `+$0.91 · 0.1% above`)
+  while the others stay on one — the phase-2 distance string (`±$x · y% above`) is longer than the design's
+  bare `−0.81%`. Either shorten the distance to the percentage with the dollar delta in a title, or let the
+  column grow to 340 earlier.
+- The **Magnet** canvas still labels `put $760 · flip · call $780` and the mid as bare `$770.19` — the old
+  label style; the field now says `put wall 760 · flip 771.10 · call wall 780` and `● mid`. Align them.
+- At **393** the level labels above the plot collide (`put wall 760` runs into the flip line) — the design's
+  narrow variant drops labels (`showLabels: false`); do the same under ~480 px container.
+- In the 1000 px **5-cell ladder row** the Mid cell's baseline differs from the other four (one line vs two).
+- The path row's basis sentence (from the API's `basis` field) is two lines of explanation the design
+  renders as `session path · 14 samples · not live ticks`; the note is honest, just long.
+
 ## The rest of `/ticker`, region by region (added the same day)
 
 Live page **4,615 px** tall at 1280 vs the design's **2,601 px**. The hero explains ~740 px of the gap; the
