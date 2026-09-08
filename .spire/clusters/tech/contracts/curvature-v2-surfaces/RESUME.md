@@ -1,11 +1,55 @@
-# RESUME — curvature-v2-surfaces (build track COMPLETE; GATE Q next)
+# RESUME — curvature-v2-surfaces (GATE Z repair pass 2 DONE; GATE Q pass 2 next)
 
-**Resume status:** ACTIVE — **BE-1 (backend closer) is DONE. The entire build track for this phase is
-now complete.** One docs/receipt-only commit
-(`docs(spire): BE-1 backend closer — NO_BACKEND_CHANGE verification (curvature-v2-surfaces)`) appended
-a closer section to `BUILD_REPORT.md` and added `conformance-receipt.json`; no `apps/api`,
-`libs/quant-engine`, `Cargo.lock`/`Cargo.toml`, `apps/dashboard`, `SPEC.md`, `PLAN.md`,
-`INTERFACE_CONTRACT.md`, `decisions.md` or `design/` file was touched. **Next concrete step: GATE Q.**
+**Resume status:** ACTIVE — **GATE Q pass 1 returned FAIL (91 PASS / 4 FAIL / 0 UNVERIFIABLE). GATE Z
+repair pass 2 is now DONE, three commits, HEAD moved from `0304132d` (unchanged start) forward through
+the fix commits below.** Criterion 7a stays the owner's open decision, untouched by this pass. **Next
+concrete step: GATE Q pass 2** — re-run the four failed criteria (9, 12, 66) plus a normal spot-check
+of the rest; QA does not need to re-derive evidence this pass already re-measured, but should verify
+independently per its own standing practice.
+
+**This pass's three commits, each with its own `BUILD_REPORT.md` "GATE Z repair, pass 2" subsection:**
+
+1. `fix(dashboard): GATE Z — findings 1+2, scanner groups discarded the live overlay
+   (curvature-v2-surfaces)` — `Scanner.tsx`'s `groups` now carries the live-price-overlaid rows
+   (`displayGroups`, re-sliced from `displayRows`), never the raw `scan.rows` partition. Table and
+   card now render the identical price/state for the same symbol in the same frame, verified by a
+   NEW test that mounts the real `<Scanner/>` with a grouped (`source: 'default'`) view — the old
+   test structurally could not reach this (`ScanTable` rendered with no `groups` prop at all).
+   Poison-confirmed red, reverted green.
+2. `fix(dashboard): GATE Z — finding 3, the 44px coarse-pointer floor now reaches inputs and selects
+   (curvature-v2-surfaces)` — `theme.ts` gained `input` in its coarse-pointer selector (real
+   `<input>`s now clear 44px); MUI `Select`'s combobox needed a LOCAL doubled-class override per
+   call site (`SettingsPage.tsx`, `AlertsPage.tsx`) because it self-duplicates its own class
+   specifically to beat a global rule — confirmed by measuring computed styles in a real browser, not
+   assumed. Desktop/fine-pointer geometry confirmed byte-identical (throwaway probe, deleted).
+   `ScanToolbar.tsx`'s chips are itemized as carried debt (untouched this phase, a different
+   specificity tie), not fixed. Manifest bumped 100 → 103.
+3. `fix(dashboard): GATE Z — latent FE-5 duplicate on trend-help; /positions offline observed
+   (curvature-v2-surfaces)` — `PositionRow.tsx`'s `trend-help` wrapper gained `position: 'relative'`
+   (the same FE-5 regression shape as the already-fixed `literal()` helper). Whole-tree grep found
+   one more matching shape (`ScanCard.tsx`) that does NOT reproduce the risk (no scroll container to
+   escape into) — itemized, not fixed. `/positions` was driven into `streamOffline` in a REAL
+   browser (an `EventSource` init-script stub, gotcha 8's predicted reliable route) and the retained
+   arm was directly observed: Net P/L header, Mark, P/L, P/L%, Δ Entry all show value + pause +
+   `offline · last known`; record fields stayed undimmed with no pause mark.
+
+**Then a docs-only commit** (`docs(spire): GATE Z repair pass 2 — RESUME for GATE Q pass 2
+(curvature-v2-surfaces)`) updating this file.
+
+**This pass's own verification (HEAD confirmed unchanged before, then after each commit):**
+`npm run typecheck` **0** (cold) · `npx nx test @convexa/dashboard --skip-nx-cache` **0, 239/239
+files, 2857/2857 tests** · `npm run lint` **0**, 5 pre-existing warnings, 0 new ·
+`node --test manifest.spec.mjs mutations.spec.mjs` **0, 7/7** · `npm run build` **0** ·
+`BROWSER_QUALITY_PREBUILD_STATUS=pass npx nx e2e dashboard-e2e --skip-nx-cache` **0, 103/103 passed,
+0 flaky** · `npm run ports:free` clean, both first and last · the sibling
+`docs/research/convexa-business-review-2026-09-05/` directory confirmed present and untouched
+throughout.
+
+## Superseded — everything below is prior-session history, kept for context only
+
+The section immediately below (BE-1's own measurements, then FE-14's, then the original GATE Z repair
+pass) predates this session and is NOT current state. Read it for history; do not act on it as today's
+status.
 
 **BE-1's own measurements this session (HEAD `d64ab692` unchanged start-to-end):**
 
