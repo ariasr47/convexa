@@ -32,6 +32,7 @@ import { ConnectionChip } from '../../connection/ConnectionChip';
 import { connectionStateFor } from '../../connection/connectionState';
 import { useLiveTape } from '../../liveTapeStore';
 import { sessionTapeOf, type SessionTapeOccupancy } from '../../sessionTapeStanding';
+import { TICKER_BUNDLE_POLL_MS } from '../../useTickerBundle';
 import {
   LAST_TRADE_NO_TAPE_PRINT,
   LAST_TRADE_REPLAY_TOOLTIP,
@@ -43,6 +44,15 @@ import { FreshnessLine } from './FreshnessLine';
 const REGIME_TIP =
   'Positive gamma: dealers dampen moves → range-bound, fade extremes. Negative gamma: dealers ' +
   "amplify moves → trending, don't fade.";
+
+/** A dim `·` divider between second-line meta items (design: `desk.mjs`'s `<span class="dim">·`). */
+function MetaDot() {
+  return (
+    <Typography component="span" variant="body2" aria-hidden sx={{ color: 'text.disabled' }}>
+      ·
+    </Typography>
+  );
+}
 
 /**
  * Tinted status chip (Figma: colored text on a subtle same-color tint). `neutral` = muted grey.
@@ -282,9 +292,13 @@ export function TickerHeader({
         sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'flex-start' } }}
       >
         <Stack spacing={1} sx={{ minWidth: 0 }}>
-          {/* Status row — regime + the ONE stream-driven connection chip (Figma 149:96). The chip
-              slot is UNCONDITIONAL (ruling 1 / AC-9): before the first stream fact it renders the
-              wordless placeholder, never nothing — so the row itself always renders once mounted. */}
+          {/* Ticker fidelity repair, change 3 (F3) — the design's chip row
+              (`design/src/screens/desk.mjs:264-272`'s `.mast-meta`): regime + the ONE stream-driven
+              connection chip + the last-trade readout, all on one row (last-trade MOVES here from
+              the old separate meta line — still the SAME `LastTradeReadout`, byte-identical states
+              and testid). The chip slot is UNCONDITIONAL (ruling 1 / AC-9): before the first stream
+              fact it renders the wordless placeholder, never nothing — so the row itself always
+              renders once mounted. */}
           <Stack
             direction="row"
             spacing={1}
@@ -303,10 +317,20 @@ export function TickerHeader({
               routeSymbol={m.ticker}
               reduced={reduced}
             />
+            <LastTradeReadout
+              live={live}
+              streamOffline={streamOffline}
+              displayActive={numbersActive}
+            />
           </Stack>
 
-          {/* Headline ANCHOR (NBBO mid when live or display-active, else the static price). The last-trade
-            readout below is DISPLAY-ONLY and NEVER feeds this anchor (`live-spot=NBBO-mid`). Mono figure. */}
+          {/* Headline ANCHOR — SYMBOL + mid only (design: `SPY 573.12 +1.84 · +0.32%`). The bundle
+              carries no prior close, signed change or instrument name (`market_state` has
+              `price`/`gex_spot` only, checked against the saved real bundle) — the design's
+              `+1.84 · +0.32%` and `SPDR S&P 500 ETF` are OMITTED here, not faked and not rendered as
+              `—` (F3 — filed as an API follow-up in this folder's `RESUME.md`). The "levels @ ·
+              expirations" parenthetical moves to the second line below, matching the design. Mono
+              figure; last-trade is DISPLAY-ONLY and NEVER feeds this anchor (`live-spot=NBBO-mid`). */}
           <Typography variant="h1" sx={{ fontSize: 32, fontWeight: 700, lineHeight: 1.12 }}>
             <Box
               component="span"
@@ -314,51 +338,43 @@ export function TickerHeader({
             >
               {m.ticker} · ${(numbersActive && live ? live.mid : m.price)?.toFixed(2)}
             </Box>
-            <Typography
-              component="span"
-              variant="body2"
-              sx={{ color: 'text.secondary', ml: 1.25, fontWeight: 400 }}
-            >
-              (levels @ ${m.gex_spot?.toFixed(2)} ·{' '}
-              {selected === null
-                ? 'all expirations'
-                : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`}
-              )
-            </Typography>
           </Typography>
 
-          {/* META line — folds the SECONDARY last-trade readout (AC-LastTrade-4) with the relocated
-            REST-bundle freshness ("● Last trade $X · Structure as-of Ns"). Both stay subordinate to
-            the h1; last-trade degrades WITH the live tiles on a drop, freshness names STRUCTURE
-            (spine #4) and never the live stream. */}
+          {/* Second line (design: `Levels @ · Structure as-of · refreshes · All expirations`,
+              `desk.mjs:269-271`) — levels anchor, the relocated REST-bundle freshness (STRUCTURE,
+              spine #4, never the live stream), the documented ~60s bundle poll
+              (`useTickerBundle.ts`'s `TICKER_BUNDLE_POLL_MS`, not invented), then the expirations
+              count that used to live in the headline's parenthetical. */}
           <Stack
             direction="row"
             data-testid="deck-meta"
             sx={{ alignItems: 'center', flexWrap: 'wrap', columnGap: 1, rowGap: 0.25 }}
           >
-            <LastTradeReadout
-              live={live}
-              streamOffline={streamOffline}
-              displayActive={numbersActive}
-            />
+            {m.gex_spot != null && (
+              <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}>
+                Levels @ ${m.gex_spot.toFixed(2)}
+              </Typography>
+            )}
             {freshness && (
               <>
-                <Typography
-                  component="span"
-                  variant="body2"
-                  aria-hidden
-                  sx={{ color: 'text.disabled' }}
-                >
-                  ·
-                </Typography>
+                {m.gex_spot != null && <MetaDot />}
                 <FreshnessLine
                   snapshotIso={freshness.snapshotIso}
                   dataAgeSeconds={freshness.dataAgeSeconds}
                   refreshing={freshness.refreshing}
                   inline
                 />
+                <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}>
+                  · refreshes ~{Math.round(TICKER_BUNDLE_POLL_MS / 1000)}s
+                </Typography>
               </>
             )}
+            <MetaDot />
+            <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}>
+              {selected === null
+                ? 'All expirations'
+                : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`}
+            </Typography>
           </Stack>
 
           {/* index-first-defaults AC-4 — the single-name honesty caption, on the freshness/context

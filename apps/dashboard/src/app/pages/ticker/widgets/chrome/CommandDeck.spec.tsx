@@ -11,9 +11,14 @@
  *   3. The Expirations tri-state WIRE semantics: all-ticked → null (no filter), a partial pick → the
  *      explicit subset, none → [] — a refactor sending the full list instead of null changes backend
  *      scoping with zero visible UI difference.
- * NOT asserted (visible + intentional → review/page): deck composition/panel structure, meta-line
- * folding, symbol input behavior, persona picker contents, CTA wiring, loading spinner,
- * reduced-motion transition styling.
+ *   4. Ticker fidelity repair, change 3 (F3) — the masthead is bare on the ink (no raised-panel
+ *      chrome), the chip row groups regime/connection/last-trade, the headline carries no
+ *      parenthetical, the second line carries Levels@/Structure-as-of/refreshes/expirations, the
+ *      embedded toolbar carries no bare ticker input, and the quick row forwards the caller's
+ *      `universeMemberNote`. This composition WAS explicitly out of this file's scope before F3;
+ *      it is now pinned because this task's own rules require a layout change to get a test.
+ * NOT asserted (visible + intentional → review/page): persona picker contents, CTA wiring, loading
+ * spinner, reduced-motion transition styling.
  */
 import { usePersona } from '@/features/personas/usePersona';
 import { __resetMemory } from '@/features/trading/positions/store';
@@ -26,6 +31,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { connectionStateFor } from '../../connection/connectionState';
 import { resolveChipContent } from '../../connection/copy';
 import type { SessionTapeOccupancy } from '../../sessionTapeStanding';
+import { allRulesForClass, emotionClassOf, joinedStyleText } from '../_kit/emotionCssReader';
 import { CommandDeck } from './CommandDeck';
 
 /**
@@ -458,5 +464,100 @@ describe('CommandDeck — Quick symbols row (recent-ticker-chips)', () => {
     const sticky = screen.getByTestId('deck-sticky');
     expect(within(sticky).queryByTestId('quick-symbols')).toBeNull();
     expect(within(sticky).queryByText('QUICK')).toBeNull();
+  });
+
+  it('forwards `universeMemberNote` through to the quick row, verbatim', () => {
+    renderDeck({ universeMemberNote: 'Universe member · 69 tracked names' });
+    expect(screen.getByTestId('quick-symbols-note')).toHaveTextContent(
+      'Universe member · 69 tracked names',
+    );
+  });
+
+  it('omits the quick-row note when the caller sends none (nonmember/unknown/unresolved)', () => {
+    renderDeck({ universeMemberNote: null });
+    expect(screen.queryByTestId('quick-symbols-note')).toBeNull();
+  });
+});
+
+// ============================================================================================
+// Ticker fidelity repair, change 3 (F3) — the masthead is bare on the ink
+// (`design/src/screens/desk.mjs:255-288`), not a raised panel: the chip row groups regime,
+// connection and last-trade; the headline carries no parenthetical; the second line carries
+// Levels@/Structure-as-of/refreshes/expirations; the EMBEDDED toolbar has no bare ticker input.
+// This composition was explicitly out of this file's scope before F3 (no `command-deck` chrome or
+// `deck-meta` content was pinned anywhere) — every assertion below is a fresh pin.
+// ============================================================================================
+describe('CommandDeck — masthead composition (ticker fidelity repair F3)', () => {
+  it('the deck surface carries no raised-panel chrome — no border, fill or shadow', () => {
+    renderDeck();
+    const deck = screen.getByTestId('command-deck');
+    const cls = emotionClassOf(deck);
+    expect(cls, 'command-deck should carry an emotion (sx) class').toBeTruthy();
+    const rules = allRulesForClass(joinedStyleText(), cls as string)
+      .join(';')
+      .replace(/\s+/g, '');
+
+    expect(rules).not.toContain('border:1pxsolid');
+    expect(rules).not.toContain('box-shadow');
+    expect(rules).not.toContain('border-radius');
+    expect(rules).not.toMatch(/background-color:(?!transparent)/);
+  });
+
+  it('the chip row groups regime, connection and last-trade on one row, ahead of the headline', () => {
+    // A real `live` update, not the pre-first-fact placeholder (rule 18) — so the RESOLVED chip
+    // (`connection-chip`, not `connection-chip-placeholder`) is the one under test.
+    renderDeck({ live: liveUpdate({ live: true, mid: 416.5 }), isLive: true });
+    const deck = screen.getByTestId('command-deck');
+    const connectionChip = within(deck).getByTestId('connection-chip');
+    const lastTrade = within(deck).getByTestId('last-trade');
+    const headline = screen.getByRole('heading', { level: 1 });
+    const deckMeta = within(deck).getByTestId('deck-meta');
+
+    // Same row: last-trade's row-level ancestor also contains the connection chip.
+    const chipRow = connectionChip.closest('div');
+    expect(chipRow).not.toBeNull();
+    expect(chipRow?.contains(lastTrade)).toBe(true);
+
+    // Chip row before the headline; headline before the second line.
+    expect(
+      (chipRow?.compareDocumentPosition(headline) ?? 0) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      headline.compareDocumentPosition(deckMeta) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('the headline carries only symbol + mid — no "(levels @ … · expirations)" parenthetical', () => {
+    renderDeck({ m: marketState({ ticker: 'TSLA', price: 415.99, gex_spot: 410 }) });
+    const headline = screen.getByRole('heading', { level: 1 });
+    expect(headline).toHaveTextContent('TSLA · $415.99');
+    expect(headline.textContent).not.toContain('levels @');
+    expect(headline.textContent).not.toContain('expiration');
+  });
+
+  it('the second line carries Levels@, Structure as-of, the documented refresh cadence, and the expirations count', () => {
+    renderDeck({
+      m: marketState({ gex_spot: 410 }),
+      selected: ['2026-06-26', '2026-07-03'],
+      freshness: { snapshotIso: null, dataAgeSeconds: 30, refreshing: false },
+    });
+    const meta = screen.getByTestId('deck-meta');
+    expect(meta).toHaveTextContent('Levels @ $410.00');
+    expect(meta).toHaveTextContent('Structure as-of');
+    expect(meta).toHaveTextContent('refreshes ~60s');
+    expect(meta).toHaveTextContent('2 expirations');
+  });
+
+  it('all expirations selected reads "All expirations" on the second line, not a bare count', () => {
+    renderDeck({ selected: null });
+    expect(screen.getByTestId('deck-meta')).toHaveTextContent('All expirations');
+  });
+
+  it('the embedded toolbar (inside the deck) carries no bare ticker input — EXPIRATIONS/PERSONA only', () => {
+    renderDeck();
+    const toolbar = screen.getByTestId('ticker-toolbar');
+    expect(within(toolbar).queryByLabelText('Ticker')).toBeNull();
+    expect(document.getElementById('ticker-input')).toBeNull();
+    expect(within(toolbar).getByLabelText('Expirations')).toBeInTheDocument();
   });
 });

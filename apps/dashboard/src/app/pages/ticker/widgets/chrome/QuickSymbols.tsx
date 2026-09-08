@@ -17,9 +17,14 @@ export interface QuickSymbolsProps {
   /** Route symbol (not the uncommitted input). Compared case-insensitively. */
   currentSymbol: string;
   onSelect: (symbol: string) => void;
+  /** Ticker fidelity repair, change 3 (F3) — the row's trailing `Universe member · N tracked names`
+   *  note (`design/src/screens/desk.mjs:285`'s `quick-note`), pre-formatted by the caller
+   *  (`useUniverseMembership`'s `size`); omitted for a nonmember/unknown symbol or before the read
+   *  resolves — never a fabricated count. */
+  note?: string | null;
 }
 
-export function QuickSymbols({ currentSymbol, onSelect }: QuickSymbolsProps) {
+export function QuickSymbols({ currentSymbol, onSelect, note }: QuickSymbolsProps) {
   const current = currentSymbol.trim().toUpperCase();
   const recents = listRecents();
   const pins = [...PINNED_TICKERS];
@@ -98,6 +103,24 @@ export function QuickSymbols({ currentSymbol, onSelect }: QuickSymbolsProps) {
           />
         ))}
       </Stack>
+
+      {note && (
+        <Typography
+          component="span"
+          variant="caption"
+          data-testid="quick-symbols-note"
+          sx={{
+            color: 'text.secondary',
+            ml: 'auto',
+            pt: 0.75,
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+            display: { xs: 'none', sm: 'block' },
+          }}
+        >
+          {note}
+        </Typography>
+      )}
     </Box>
   );
 }

@@ -34,6 +34,16 @@ export const SINGLE_NAME_CAVEAT =
   'Single-name read — dealer-positioning evidence is strongest on index and high-liquidity ' +
   'tickers. Treat these levels as context, not a forecast.';
 
+/**
+ * Ticker fidelity repair, change 3 (F3) — the masthead's `Universe member · N tracked names` note
+ * (`design/src/screens/desk.mjs:285`, the quick row's `quick-note`) — the reciprocal of
+ * `SINGLE_NAME_CAVEAT`: renders ONLY for a symbol confirmed IN the scanner universe (member), never
+ * fabricating a count (`useUniverseMembership.ts`'s `size` stays `null` on a failed/garbled read, so
+ * this never renders with an invented N).
+ */
+export const universeMemberNote = (size: number): string =>
+  `Universe member · ${size} tracked name${size === 1 ? '' : 's'}`;
+
 export const LAST_TRADE_TOOLTIP =
   'The last actual trade printed for this ticker, live off the trade tape — use it to reconcile ' +
   "against your broker's last trade (e.g. Webull). This is a readout only: the headline price and " +

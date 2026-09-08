@@ -79,7 +79,7 @@ import {
   StraddleMove,
   TermStructureCard,
 } from './widgets';
-import { humanAge, StatSkeleton } from './widgets/_kit';
+import { humanAge, StatSkeleton, universeMemberNote } from './widgets/_kit';
 import { CommandDeck, LastTradeReadout, TickerToolbar } from './widgets/chrome';
 import { buildReadStrip, ReadStrip } from './widgets/read-strip';
 import { StructureHeroPanel } from './widgets/structure-hero';
@@ -494,7 +494,15 @@ export function TickerDashboard() {
                 dataAgeSeconds: fresh?.data_age_seconds ?? null,
                 refreshing: loading,
               }}
-              singleNameCaveat={universeMembership === 'nonmember'}
+              singleNameCaveat={universeMembership.membership === 'nonmember'}
+              // Ticker fidelity repair, change 3 (F3) — the masthead's `Universe member · N tracked
+              // names` note (`quick-note`, `design/src/screens/desk.mjs:285`); `size` stays `null`
+              // (never a fabricated 0) until a well-formed, non-empty universe read resolves.
+              universeMemberNote={
+                universeMembership.membership === 'member' && universeMembership.size != null
+                  ? universeMemberNote(universeMembership.size)
+                  : null
+              }
               symbol={symbol}
               onSymbolChange={setSymbol}
               onSubmitSymbol={onSubmitSymbol}

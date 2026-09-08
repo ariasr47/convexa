@@ -73,6 +73,10 @@ interface CommandDeckProps {
   routeSymbol: string;
   /** Chip click — parent navigates + syncs input (same path as submit). */
   onSelectQuickSymbol: (symbol: string) => void;
+  /** Ticker fidelity repair, change 3 (F3) — the quick row's trailing `Universe member · N tracked
+   *  names` note (`useUniverseMembership`'s `size`, pre-formatted by the caller); `null` for a
+   *  nonmember/unknown symbol or before the universe read resolves (no invented count). */
+  universeMemberNote?: string | null;
 }
 
 /** The slim condensed bar shown once the deck has scrolled out of view — restores mark · ticker ·
@@ -184,6 +188,7 @@ export function CommandDeck(props: CommandDeckProps) {
     loading,
     routeSymbol,
     onSelectQuickSymbol,
+    universeMemberNote,
   } = props;
 
   const reduced = useReducedMotion();
@@ -262,24 +267,21 @@ export function CommandDeck(props: CommandDeckProps) {
         )}
       </Box>
 
-      {/* Deck surface — same elevation ladder + radius as Widget frames (NOT a third shadow dialect). */}
+      {/* Deck surface — ticker fidelity repair, change 3 (F3): the masthead is BARE ON THE INK
+          (`design/src/screens/desk.mjs:255-288`'s `.mast`), not a raised panel — no border, no
+          paper fill, no elevation, no radius (that chrome used to make it 273px tall on its own,
+          `FIDELITY_AUDIT.md` F3). Vertical padding only (matches `.mast`'s own 20px/12px); the
+          outer page `Container` already supplies the horizontal gutter every other section on this
+          page shares, so this deck adds no horizontal padding of its own. `StickyCondensed` above
+          keeps its OWN raised-panel treatment on purpose — it is a pinned overlay, not the masthead. */}
       <Box
         data-testid="command-deck"
-        sx={(t) => ({
+        sx={{
           position: 'relative',
-          borderRadius: DECK_RADIUS,
-          border: `1px solid ${t.palette.divider}`,
-          // Stage-3 §4.1: neutral top sheen only (no amber wash). Light mode needs no sheen.
-          backgroundColor: t.palette.background.paper,
-          backgroundImage:
-            t.palette.mode === 'dark'
-              ? 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 42%)'
-              : 'none',
-          boxShadow: elevationFor(t).e1,
-          // Tight hand-off into the board: elevation + this margin only (no divider-fog gradient).
           mb: 1.5,
-          p: { xs: 2, sm: 2.5 },
-        })}
+          pt: 2.5,
+          pb: 1.5,
+        }}
       >
         <Stack spacing={2}>
           {/* Tier 1 — hero identity row (regime + connection chips, anchor, meta line, CTA). */}
@@ -317,7 +319,11 @@ export function CommandDeck(props: CommandDeckProps) {
           />
 
           {/* Tier 3 — Quick symbols row (pins + durable recents). Not on sticky bar. */}
-          <QuickSymbols currentSymbol={routeSymbol} onSelect={onSelectQuickSymbol} />
+          <QuickSymbols
+            currentSymbol={routeSymbol}
+            onSelect={onSelectQuickSymbol}
+            note={universeMemberNote}
+          />
         </Stack>
       </Box>
 

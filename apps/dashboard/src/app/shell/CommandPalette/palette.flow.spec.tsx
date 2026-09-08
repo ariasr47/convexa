@@ -5,8 +5,16 @@
  *
  * AC-24 (⌘K opens from anywhere, all four surfaces reachable without a mouse) · AC-25 (Escape
  * closes + returns focus) · AC-26 (scrim click — its OWN arm, not a reuse of Escape's) · AC-28
- * (signed-out gated surface → the same visible wall the nav link produces) · AC-33 (unsaved field
- * text survives open/dismiss).
+ * (signed-out gated surface → the same visible wall the nav link produces).
+ *
+ * AC-33 (unsaved field text survives open/dismiss) WAS pinned here against the ticker desk's bare
+ * `#ticker-input` — removed by the ticker fidelity repair (F3: "the design has no bare ticker input
+ * on the desk", `TickerToolbar.tsx`'s own module doc) since the palette's own "open anyway" item
+ * (`CommandPalette.tsx`) now does that job. The mechanism this AC actually guards
+ * (`shared/a11y/modalFocusHandoff.ts` never clobbering an unrelated focused/typed field elsewhere on
+ * the page) keeps its OWN direct coverage in `modalFocusHandoff.spec.tsx` ("Dialog with an
+ * autoFocus field: no violation on the CLOSE path either") — this file drops only the one
+ * ticker-page vehicle that no longer exists, not the guarantee.
  */
 import type { TickerBundle } from '@convexa/api';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -269,25 +277,5 @@ describe('AC-28 — signed out, a gated surface from the palette lands on the sa
     await waitFor(() => expect(screen.queryByTestId('command-palette')).toBeNull());
     expect(await screen.findByTestId('require-auth-wall')).toBeInTheDocument();
     expect(screen.getByTestId('require-auth-ticker')).toBeInTheDocument(); // the onward free path
-  });
-});
-
-describe('AC-33 — opening/dismissing the palette leaves an unsaved form field intact', () => {
-  it('text typed in the ticker symbol field survives an open+Escape cycle', async () => {
-    const user = userEvent.setup();
-    renderAt('/ticker/SPY');
-    await screen.findByTestId('command-deck');
-
-    const symbolInput = document.getElementById('ticker-input') as HTMLInputElement;
-    await user.click(symbolInput);
-    await user.type(symbolInput, 'ZZ');
-    expect(symbolInput.value).toContain('ZZ');
-
-    await user.keyboard('{Meta>}k{/Meta}');
-    await screen.findByTestId('command-palette');
-    await user.keyboard('{Escape}');
-    await waitFor(() => expect(screen.queryByTestId('command-palette')).toBeNull());
-
-    expect((document.getElementById('ticker-input') as HTMLInputElement).value).toContain('ZZ');
   });
 });

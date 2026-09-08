@@ -133,18 +133,28 @@ export function TickerToolbar({
         },
       })}
     >
-      <Segment label="Ticker" htmlFor="ticker-input">
-        <TextField
-          id="ticker-input"
-          size="small"
-          value={symbol}
-          sx={{ width: 120 }}
-          onChange={(e) => onSymbolChange(e.target.value.toUpperCase())}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && symbol) onSubmitSymbol();
-          }}
-        />
-      </Segment>
+      {/* Ticker fidelity repair, change 3 (F3) — the design's desk carries no bare ticker input
+          (`design/src/screens/desk.mjs:274-278`'s `.mast-controls`: EXPIRATIONS / PERSONA / the one
+          CTA only); the palette (⌘K / Ctrl+K, `shell/AppShell.tsx`) is the ticker-entry job on the
+          populated desk, and it already accepts an arbitrary plausible symbol
+          (`CommandPalette.tsx`'s "open anyway" item), so nothing becomes unreachable. Kept ONLY for
+          the standalone (non-`embedded`) cold-load/error fallback in `TickerDashboard.tsx` — before
+          `m` exists there is no masthead (no "desk") for the palette to stand in for yet, and this
+          is the page's one remaining way to change ticker in that state. */}
+      {!embedded && (
+        <Segment label="Ticker" htmlFor="ticker-input">
+          <TextField
+            id="ticker-input"
+            size="small"
+            value={symbol}
+            sx={{ width: 120 }}
+            onChange={(e) => onSymbolChange(e.target.value.toUpperCase())}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && symbol) onSubmitSymbol();
+            }}
+          />
+        </Segment>
+      )}
 
       <Segment label="Expirations">
         <FormControl
