@@ -44,8 +44,18 @@
 import type { LevelPalette } from './levelStrokes';
 import { withAlpha } from './levelStrokes';
 import type { MarkerLayoutBox } from './markerLayout';
-import { layoutMarkerLabels, layoutTapeLabel } from './markerLayout';
+import { layoutMarkerLabels } from './markerLayout';
 import type { FieldSample, StructureFieldModel } from './types';
+
+/** Round strike-axis step chosen so 5–8 ticks fit the window (repair task item 4). */
+const STRIKE_AXIS_STEPS = [1, 2.5, 5, 10, 25] as const;
+
+export function chooseStrikeStep(range: number): number {
+  for (const step of STRIKE_AXIS_STEPS) {
+    if (range / step <= 8) return step;
+  }
+  return STRIKE_AXIS_STEPS[STRIKE_AXIS_STEPS.length - 1];
+}
 
 export interface StructureFieldSurfaces {
   ink: string;
@@ -413,65 +423,104 @@ export function paintStructureStep(
     o.restore();
   }
 
-  // Measure and place every marker label as a box before painting, so clustered
-  // levels and tape labels never cover one another or the fixed captions.
-  o.font = '600 11px "IBM Plex Sans", system-ui, sans-serif';
+  // Max pain — dashed, steel (repair task item 5). Data-presence gated (a missing max pain drops
+  // the line, never a synthetic zero), NOT liveness-gated — it paints in every `m.live` standing,
+  // same as put/call/flip above, so the census above still holds.
+  const hasMaxPain = m.maxPain != null && Number.isFinite(m.maxPain);
+  if (hasMaxPain) {
+    const x = xOf(geom, m.maxPain as number);
+    if (x >= pad.l && x <= pad.l + plotW) {
+      o.strokeStyle = palette.maxPain;
+      o.lineWidth = 1;
+      o.globalAlpha = 0.88;
+      o.setLineDash([3, 3]);
+      o.beginPath();
+      o.moveTo(x, pad.t);
+      o.lineTo(x, pad.t + plotH);
+      o.stroke();
+      o.setLineDash([]);
+      o.globalAlpha = 1;
+    }
+  }
+
+  // Measure and place every marker label ABOVE the plot, Mono 10 600, in the level's own colour
+  // (repair task item 4) — collisions resolved by the existing lane solver so clustered levels
+  // never cover one another. The bare `spot` label is REMOVED: the spot line stays, thin steel,
+  // unlabelled (it is the ladder anchor, not a second price) — the tape/mid pill below is the one
+  // price label on the field.
+  o.font = '600 10px "IBM Plex Mono", ui-monospace, monospace';
   const markerDefs = [
     {
       id: 'put',
       x: xOf(geom, m.putWall),
-      label: `put $${m.putWall.toFixed(0)}`,
+      label: `put wall ${m.putWall.toFixed(0)}`,
       color: palette.putWall,
       preferredLane: 0,
     },
     {
       id: 'call',
       x: xOf(geom, m.callWall),
-      label: `call $${m.callWall.toFixed(0)}`,
+      label: `call wall ${m.callWall.toFixed(0)}`,
       color: palette.callWall,
       preferredLane: 0,
     },
     {
       id: 'flip',
       x: xOf(geom, m.gammaFlip),
-      label: 'flip',
+      label: `flip ${m.gammaFlip.toFixed(2)}`,
       color: palette.gammaFlip,
       preferredLane: 1,
     },
-    {
-      id: 'spot',
-      x: xOf(geom, m.spot),
-      label: `spot $${m.spot.toFixed(1)}`,
-      color: surfaces.steel,
-      preferredLane: 2,
-    },
+    ...(hasMaxPain
+      ? [
+          {
+            id: 'maxPain',
+            x: xOf(geom, m.maxPain as number),
+            label: `max pain ${(m.maxPain as number).toFixed(0)}`,
+            color: palette.maxPain,
+            preferredLane: 1,
+          },
+        ]
+      : []),
   ].filter((marker) => Number.isFinite(marker.x) && marker.x >= pad.l && marker.x <= pad.l + plotW);
   const markerBoxes = layoutMarkerLabels({
     bounds: { left: pad.l, right: pad.l + plotW, top: pad.t + 2, bottom: pad.t + plotH - 2 },
     markers: markerDefs,
     measure: (label) => o.measureText(label).width,
-    laneHeight: 16,
+    laneHeight: 14,
     laneGap: 2,
     reserved: [
-      { x: pad.l, y: pad.t + 2, width: 76, height: 16 },
-      // Fixed axis captions occupy the top and bottom-left corners; marker labels,
-      // including live/mid, must never be placed over either caption.
-      { x: pad.l, y: pad.t + plotH - 22, width: 76, height: 20 },
+      // The three left-edge y-axis value labels (`+$…M` / `0` / `−$…M`) — marker labels must never
+      // be placed over any of them.
+      { x: pad.l, y: pad.t, width: 56, height: 14 },
+      { x: pad.l, y: y0 - 8, width: 40, height: 14 },
+      { x: pad.l, y: pad.t + plotH - 18, width: 56, height: 14 },
     ],
   });
-  o.font = '600 11px "IBM Plex Sans", system-ui, sans-serif';
+  o.font = '600 10px "IBM Plex Mono", ui-monospace, monospace';
   for (const marker of markerBoxes) {
     o.fillStyle = marker.color ?? surfaces.phosphor;
-    o.fillText(marker.label, marker.x + 8, marker.y + 12);
+    o.fillText(marker.label, marker.x + 8, marker.y + 11);
   }
 
-  // Axis labels (structure)
+  // Axis (repair task item 4): strike ticks at a round step along the bottom, `±$<max>M` and `0` on
+  // the left — both Mono 10 steel. Replaces the old two-corner `$min`/`$max` + `± dealer γ` labels.
   o.fillStyle = surfaces.steel;
-  o.font = '500 11px "IBM Plex Sans", system-ui, sans-serif';
-  o.fillText(`$${minK.toFixed(0)}`, pad.l, geom.h - 16);
-  o.fillText(`$${maxK.toFixed(0)}`, pad.l + plotW - 40, geom.h - 16);
-  o.fillText('+ dealer γ', pad.l + 4, pad.t + 14);
-  o.fillText('− dealer γ', pad.l + 4, pad.t + plotH - 8);
+  o.font = '500 10px "IBM Plex Mono", ui-monospace, monospace';
+  const strikeStep = chooseStrikeStep(maxK - minK);
+  const firstTick = Math.ceil(minK / strikeStep) * strikeStep;
+  const tickDecimals = Number.isInteger(strikeStep) ? 0 : 1;
+  const axisY = Math.min(geom.h - 6, pad.t + plotH + 18);
+  for (let k = firstTick; k <= maxK + 1e-9; k += strikeStep) {
+    const x = xOf(geom, k);
+    if (x < pad.l || x > pad.l + plotW) continue;
+    const label = k.toFixed(tickDecimals);
+    const w = o.measureText(label).width;
+    o.fillText(label, x - w / 2, axisY);
+  }
+  o.fillText(`+$${fmtM(geom.maxAbs)}`, pad.l, pad.t + 10);
+  o.fillText('0', pad.l, y0 + 3);
+  o.fillText(`−$${fmtM(geom.maxAbs)}`, pad.l, pad.t + plotH - 4);
 
   return markerBoxes;
 }
@@ -676,35 +725,27 @@ export function paintFrameStep(
     ctx.arc(x, y0, 8 + pulse * 4, 0, Math.PI * 2);
     ctx.stroke();
 
-    ctx.font = '600 11px "IBM Plex Sans", system-ui, sans-serif';
-    const tapeBox = layoutTapeLabel({
-      anchorX: x,
-      label: `${m.live ? 'live' : 'mid'} $${m.liveMid.toFixed(2)}`,
-      bounds: { left: pad.l, right: pad.l + plotW, top: pad.t + 2, bottom: pad.t + plotH - 2 },
-      measure: (label) => ctx.measureText(label).width,
-      reserved: [
-        ...frame.markerBoxes,
-        { x: pad.l, y: pad.t + 2, width: 76, height: 16 },
-        { x: pad.l, y: pad.t + plotH - 22, width: 76, height: 20 },
-      ],
-    });
-    if (tapeBox) {
-      ctx.fillStyle = surfaces.phosphor;
-      ctx.font = '600 11px "IBM Plex Sans", system-ui, sans-serif';
-      ctx.fillText(tapeBox.label, tapeBox.x + 8, tapeBox.y + 12);
-      if (tapeBox.edgeTreatment !== 'none') {
-        ctx.strokeStyle = palette.mid;
-        ctx.globalAlpha = 0.8;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(tapeBox.anchorX, tapeBox.y + tapeBox.height / 2);
-        ctx.lineTo(
-          tapeBox.edgeTreatment === 'left' ? tapeBox.x : tapeBox.x + tapeBox.width,
-          tapeBox.y + tapeBox.height / 2,
-        );
-        ctx.stroke();
-      }
-    }
+    // ONE pill on the zero line (repair task item 4) — `● mid X` while live, `○ mid X` while
+    // retained/offline (the SAME `m.live` branch the label already used), panel fill + a signal
+    // (mid) stroke. Fixed at the zero line beside the mid's own vertical line, never lane-stacked
+    // with the level markers above the plot — this is the field's ONE price label.
+    ctx.font = '600 11px "IBM Plex Mono", ui-monospace, monospace';
+    const pillLabel = `${m.live ? '●' : '○'} mid ${m.liveMid.toFixed(2)}`;
+    const textW = ctx.measureText(pillLabel).width;
+    const boxW = textW + 16;
+    const boxH = 18;
+    let boxX = x + 8;
+    if (boxX + boxW > pad.l + plotW) boxX = x - 8 - boxW;
+    boxX = Math.max(pad.l, Math.min(boxX, pad.l + plotW - boxW));
+    const boxY = y0 - boxH / 2;
+    ctx.fillStyle = surfaces.panel;
+    ctx.strokeStyle = withAlpha(palette.mid, 0.6);
+    ctx.lineWidth = 1;
+    roundRect(ctx, boxX, boxY, boxW, boxH, 4);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = palette.mid;
+    ctx.fillText(pillLabel, boxX + 8, boxY + 13);
     ctx.restore();
   }
 

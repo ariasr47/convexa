@@ -15,16 +15,44 @@
 import type { FieldSample } from '@/shared/charts/structure-field';
 import type { StrikeRow } from '@convexa/api';
 
-/** The readable strike window around spot, always wide enough to include the walls it labels.
- *  Shared with the section wrapper so it can decide whether to render the widget at all. */
+/**
+ * The readable strike window (repair task item 3 — `STRUCTURE_HERO_REPAIR_TASK.md`): the old
+ * `spot ± 10%` window kept every wall inside it but gave the walls no more than ~13% of the plot
+ * (SPY: $694–$847 while every level sat between $751–$780) — the structure the field exists to show
+ * read as a flat tail of noise. The window is now anchored on the WALLS themselves: `lo/hi = walls ±
+ * max(1.5% of spot, 25% of the wall span)`, widened only as far as needed so `gammaFlip`/`maxPain`
+ * sit inside too, then the filter below naturally clamps to whatever strikes actually exist.
+ * Non-positive walls fall back to the old plain `±10%` spot window (unchanged case).
+ */
 export function windowedStrikes(
   strikes: StrikeRow[],
   spot: number,
   callWall: number,
   putWall: number,
+  gammaFlip?: number | null,
+  maxPain?: number | null,
 ): StrikeRow[] {
-  const lo = Math.min(spot * 0.9, putWall > 0 ? putWall : spot * 0.9);
-  const hi = Math.max(spot * 1.1, callWall > 0 ? callWall : spot * 1.1);
+  const wallsValid = callWall > 0 && putWall > 0;
+  let lo: number;
+  let hi: number;
+  if (wallsValid) {
+    const wallLo = Math.min(callWall, putWall);
+    const wallHi = Math.max(callWall, putWall);
+    const span = wallHi - wallLo;
+    const pad = Math.max(spot * 0.015, span * 0.25);
+    lo = wallLo - pad;
+    hi = wallHi + pad;
+  } else {
+    lo = spot * 0.9;
+    hi = spot * 1.1;
+  }
+  // Widen only as far as needed so the flip and max pain — also plotted on the field — sit inside.
+  for (const level of [gammaFlip, maxPain]) {
+    if (level != null && Number.isFinite(level) && level > 0) {
+      lo = Math.min(lo, level);
+      hi = Math.max(hi, level);
+    }
+  }
   return strikes
     .filter((s) => s.strike >= lo && s.strike <= hi)
     .toSorted((a, b) => a.strike - b.strike);

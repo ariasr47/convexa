@@ -31,15 +31,30 @@ const strike = (over: Partial<StrikeRow>): StrikeRow => ({
   ...over,
 });
 
-describe('windowedStrikes (pure windowing, shared by StructureHeroPanel)', () => {
-  it('widens the ±10% spot window to always include the walls it labels, and sorts ascending', () => {
-    // Walls OUTSIDE ±10% of spot 250 (225–275): put wall 200, call wall 300.
-    const rows = [320, 300, 250, 200, 180].map((k) => strike({ strike: k }));
+describe('windowedStrikes (pure windowing, shared by StructureHeroPanel — repair task item 3)', () => {
+  it('windows on the walls themselves — max(1.5% of spot, 25% of the wall span) — not a flat ±10% spot band', () => {
+    // Walls 200/300 → span 100, pad = max(250*0.015=3.75, 100*0.25=25) = 25 → window [175, 325].
+    const rows = [340, 320, 300, 250, 200, 180, 150].map((k) => strike({ strike: k }));
     const out = windowedStrikes(rows, 250, 300, 200);
-    expect(out.map((s) => s.strike)).toEqual([200, 250, 300]); // walls kept, out-of-window dropped, sorted
+    expect(out.map((s) => s.strike)).toEqual([180, 200, 250, 300, 320]); // 175–325, sorted
   });
 
-  it('non-positive walls fall back to the plain ±10% spot window', () => {
+  it('a tight wall span still gets the 1.5%-of-spot floor, not a vanishingly small pad', () => {
+    // Walls 248/252 → span 4, 25% of span = 1, 1.5% of spot 250 = 3.75 → pad = 3.75 → [244.25, 255.75].
+    const rows = [240, 244, 246, 248, 252, 254, 256, 260].map((k) => strike({ strike: k }));
+    const out = windowedStrikes(rows, 250, 252, 248);
+    expect(out.map((s) => s.strike)).toEqual([246, 248, 252, 254]);
+  });
+
+  it('widens only as far as needed to keep gammaFlip and maxPain inside the window', () => {
+    // Base window (walls 300/200, pad 25) is [175, 325]; a flip at 160 and max pain at 340 sit
+    // outside it and must pull the bounds out to include them — nothing more.
+    const rows = [340, 320, 300, 250, 200, 180, 160, 150].map((k) => strike({ strike: k }));
+    const out = windowedStrikes(rows, 250, 300, 200, 160, 340);
+    expect(out.map((s) => s.strike)).toEqual([160, 180, 200, 250, 300, 320, 340]);
+  });
+
+  it('non-positive walls fall back to the plain ±10% spot window (unchanged case)', () => {
     const rows = [200, 230, 250, 270, 300].map((k) => strike({ strike: k }));
     const out = windowedStrikes(rows, 250, 0, 0);
     expect(out.map((s) => s.strike)).toEqual([230, 250, 270]); // 225–275 only
