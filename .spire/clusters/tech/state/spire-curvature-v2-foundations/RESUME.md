@@ -1,5 +1,20 @@
 # RESUME — spire/curvature-v2-foundations
 
+## ⬆ UPDATE — 2026-09-08, conductor: the /ticker fidelity lane is VERIFIED and accepted; four owner decisions pending
+
+Cold re-verification (every gate re-run, a fresh build, the harness into `ticker-repair-verify/`, the
+desk e2e 108/108) matches the lane's report to the pixel — see the last section of
+`TICKER_FIDELITY_REPAIR_REPORT.md`. Desk at 1280: 4,046 → 2,818 px (1.57× → 1.11× the design).
+Fourteen lane commits `c6afe2c6..810da249`, pushed with this note. **Pending, the owner's:**
+(1) masthead 243 vs ≤ 200 — the headline row still sits above a separate controls row; the design puts
+`EXPIRATIONS` / `PERSONA` / the CTA on the headline's right at ≥ 1100; (2) the `IvRank` card in the
+context band is not in the design's band and repeats the read strip's IV-rank cell — remove it from the
+band (frees a grid row, −85 px) or keep it; (3) the hero header collapses at 390 (`S…`, one word per
+line) — a bounded wrap fix inside the fenced hero, needs leave; (4) the Live tape flow sparkline has no
+wire trail (GATE Z above) — server-side trail on the SSE event (backend backlog) or a client ring-buffer
+(product call). Then phase 4 with a composition row per surface, or a second direct lane for
+positions / alerts / settings (F5–F8) first.
+
 ## ⬆ UPDATE — 2026-09-08, ticker fidelity repair lane resumed (rate-limit kill) — GATE Z filed, composition
 ## gaps closed further
 

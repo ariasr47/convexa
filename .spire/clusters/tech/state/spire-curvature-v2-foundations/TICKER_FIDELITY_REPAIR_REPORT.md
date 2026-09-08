@@ -282,3 +282,48 @@ PNGs are gitignored there per that folder's own `.gitignore` — JSON/JPG/tools 
   during the original audit and this task's captures also render the saved 2026-09-08T10:59Z bundle
   through the strict fixture, never a live `/api/ticker/SPY` response. `AUDIT_LIVE=1` is the harness's
   documented mode for that; not run this lane.
+
+## Conductor's cold re-verification (2026-09-08, the Mac session — not the lane's numbers)
+
+Re-run from a clean tree at `810da249` without reusing anything the lane produced: fresh production
+build (`--skip-nx-cache`) → the audit harness into a **separate** folder (`ticker-repair-verify/`) →
+the desk e2e; the unit suite, typecheck, lint and format run again from cold.
+
+| gate | result |
+|---|---|
+| `npx nx typecheck @convexa/dashboard --skip-nx-cache` | exit 0 |
+| `npx nx test @convexa/dashboard --skipNxCache` | exit 0 — 239 files / **2,905** tests |
+| `npm run lint` | exit 0 (4 pre-existing warnings) |
+| `npm run format:check` | exit 0 |
+| `git diff --stat origin/main...HEAD -- apps/api` | empty |
+| NUL scan, all 63 text files both lanes touched | 0 |
+| harness `--grep desk-real` against the fresh build | 11/11, exit 0 |
+| e2e `desk\|curvature\|overflow` against the fresh build | **108/108, 0 flaky, exit 0** |
+
+**Every composition number matches the lane's to the pixel** (`ticker-repair-verify/app/*.json`):
+page 2,818 at 1440 and 1280 (dark and light), 3,848 at 834, 5,566 at 390; `command-deck` 243,
+`widget-read-strip` 131, `widget-ai-rec` 759 wide beside a 379 side column, `widget-live-tape` 318,
+band span 1,052; `overflowX` false everywhere; the light capture's ground is `rgb(246,246,243)` with
+no dark-filled canvas. Note the design side is now measured on the **rebuilt** oracle (the generator
+leak fix, `ad1e7696`), so its heights moved a little: 2,532 at 1280 (was 2,570), 2,483 at 1440,
+3,290 at 834, 4,416 at 390 — the 390 miss is therefore 46 px against the +25 % rule, not 92.
+
+**Against the audit baseline at 1280:** page 4,046 → **2,818** (1.57× → **1.11×** the design);
+masthead 273 → 243; read strip 209 → 131; AI read half-width → wide; live tape full-width 209 →
+side-column 318; band ≈2,125 → 1,052; term structure 470 → 172 and scheme-correct. Composites:
+`ticker-repair-verify/pairs/desk-real-*.jpg`.
+
+**One phone-width defect the lane observed but could not touch (hero = must-not-change):** at 390
+the hero's header collapses — the title truncates to `S…` and the subtitle wraps one word per line
+into a ~70 px column, because the header's action cluster (the new `● mid · tape` chip + the
+`FIELD | MAGNET` toggle) does not wrap at that width. Evidence:
+`ticker-repair-verify/crops/app-hero-real-390-dark-top.png` vs `design-hero-real-390-dark-top.png`
+(the design keeps the chip beside the title, the subtitle full width, and drops the legend). This is
+most of the hero's 1,137 px at 390 (design 905) and most of the phone's remaining 46 px miss. Fix is
+bounded to the hero header's wrap rule below a ~480 px container; needs the owner's leave because the
+hero was fenced for this lane.
+
+**Verdict on the lane:** accepted as landed — the four fenced regions moved from far to close, every
+gate is green cold, nothing was faked, and the three misses are named with causes. The residual
+decisions are the owner's (masthead tier-1 row, the IvRank card's place in the band, the phone hero
+header, the flow-spark data) and are listed in `RESUME.md`.
