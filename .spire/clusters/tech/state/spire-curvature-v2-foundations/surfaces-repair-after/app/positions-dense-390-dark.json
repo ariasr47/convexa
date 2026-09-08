@@ -1,0 +1,565 @@
+{
+  "id": "positions-dense-390-dark",
+  "side": "app",
+  "surface": "positions",
+  "state": "dense",
+  "width": 390,
+  "scheme": "dark",
+  "url": "/positions",
+  "pageHeight": 3075,
+  "overflowX": false,
+  "scrollWidth": 390,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "app-shell",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 3075,
+      "text": "Skip to main contentCONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality"
+    },
+    {
+      "key": "skip-to-main",
+      "x": 0,
+      "y": -53,
+      "w": 158,
+      "h": 44,
+      "text": "Skip to main content"
+    },
+    {
+      "key": "top-nav",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 57,
+      "text": "CONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality-user@fixture.invali"
+    },
+    {
+      "key": "positions-capital-at-risk",
+      "x": 24,
+      "y": 216,
+      "w": 160,
+      "h": 112,
+      "text": "Capital at risk$4001 of 3 open have a max-loss figure"
+    },
+    {
+      "key": "stat-secondary",
+      "x": 43,
+      "y": 274,
+      "w": 124,
+      "h": 29,
+      "text": "1 of 3 open have a max-loss figure"
+    },
+    {
+      "key": "positions-net-pl",
+      "x": 24,
+      "y": 347,
+      "w": 200,
+      "h": 81,
+      "text": "Net P/L (open)−$2,370"
+    },
+    {
+      "key": "portfolio-panel",
+      "x": 24,
+      "y": 434,
+      "w": 342,
+      "h": 1583,
+      "text": "SimulatedPAPERBrokerSimulated ordersSIMULATEDExport JSONRec-driven entries watch"
+    },
+    {
+      "key": "tab-simulated",
+      "x": 28,
+      "y": 458,
+      "w": 144,
+      "h": 38,
+      "text": "SimulatedPAPER"
+    },
+    {
+      "key": "simulated-surface",
+      "x": 24,
+      "y": 500,
+      "w": 342,
+      "h": 1516,
+      "text": "Simulated ordersSIMULATEDExport JSONRec-driven entries watched against live data"
+    },
+    {
+      "key": "orders-panel",
+      "x": 24,
+      "y": 500,
+      "w": 342,
+      "h": 228,
+      "text": "Simulated ordersSIMULATEDExport JSONRec-driven entries watched against live data"
+    },
+    {
+      "key": "orders-empty-open",
+      "x": 41,
+      "y": 675,
+      "w": 308,
+      "h": 37,
+      "text": "No simulated orders yet. On a ticker page, Act on a produced AI read to create o"
+    },
+    {
+      "key": "customization-toolbar",
+      "x": 24,
+      "y": 745,
+      "w": 342,
+      "h": 254,
+      "text": "ViewAll positions▾TableCardsComfortableCompactGroupNoneTickerStructureopen · 3pe"
+    },
+    {
+      "key": "view-picker",
+      "x": 24,
+      "y": 748,
+      "w": 139,
+      "h": 37,
+      "text": "ViewAll positions▾"
+    },
+    {
+      "key": "layout-toggle",
+      "x": 184,
+      "y": 745,
+      "w": 128,
+      "h": 43,
+      "text": "TableCards"
+    },
+    {
+      "key": "density-toggle",
+      "x": 24,
+      "y": 795,
+      "w": 187,
+      "h": 43,
+      "text": "ComfortableCompact"
+    },
+    {
+      "key": "group-select",
+      "x": 24,
+      "y": 846,
+      "w": 252,
+      "h": 43,
+      "text": "GroupNoneTickerStructure"
+    },
+    {
+      "key": "status-chips",
+      "x": 24,
+      "y": 897,
+      "w": 342,
+      "h": 56,
+      "text": "open · 3pending · 0closed · 0cancelled · 0History · 0"
+    },
+    {
+      "key": "open-entry",
+      "x": 175,
+      "y": 961,
+      "w": 191,
+      "h": 38,
+      "text": "+ Open simulated position"
+    },
+    {
+      "key": "positions-disclosure",
+      "x": 24,
+      "y": 1012,
+      "w": 342,
+      "h": 52,
+      "text": "Simulated positions are stored in this browser, not tied to your account yet. Th"
+    },
+    {
+      "key": "positions-cards",
+      "x": 24,
+      "y": 1076,
+      "w": 342,
+      "h": 941,
+      "text": "SPY2 legsCustom−$1780−63.6%A small recent-trend line of this position’s P/L this"
+    },
+    {
+      "key": "position-card",
+      "x": 24,
+      "y": 1076,
+      "w": 342,
+      "h": 306,
+      "text": "SPY2 legsCustom−$1780−63.6%A small recent-trend line of this position’s P/L this"
+    },
+    {
+      "key": "card-pl",
+      "x": 40,
+      "y": 1131,
+      "w": 310,
+      "h": 62,
+      "text": "−$1780−63.6%A small recent-trend line of this position’s P/L this session. In-br"
+    },
+    {
+      "key": "card-footer",
+      "x": 40,
+      "y": 1205,
+      "w": 310,
+      "h": 69,
+      "text": "Qty 3 ×Net debit $2800Mark $1020Sep 18 · 26dMax loss unnamed shape"
+    },
+    {
+      "key": "leg-disclosure-toggle",
+      "x": 40,
+      "y": 1284,
+      "w": 310,
+      "h": 44,
+      "text": "2 legs⌄"
+    },
+    {
+      "key": "position-card",
+      "x": 24,
+      "y": 1394,
+      "w": 342,
+      "h": 306,
+      "text": "SPY2 legsCustom−$490−32.7%A small recent-trend line of this position’s P/L this "
+    },
+    {
+      "key": "card-pl",
+      "x": 40,
+      "y": 1448,
+      "w": 310,
+      "h": 62,
+      "text": "−$490−32.7%A small recent-trend line of this position’s P/L this session. In-bro"
+    },
+    {
+      "key": "card-footer",
+      "x": 40,
+      "y": 1522,
+      "w": 310,
+      "h": 69,
+      "text": "Qty 2 ×Net debit $1500Mark $1010Sep 18 · 26dMax loss unnamed shape"
+    },
+    {
+      "key": "leg-disclosure-toggle",
+      "x": 40,
+      "y": 1601,
+      "w": 310,
+      "h": 44,
+      "text": "2 legs⌄"
+    },
+    {
+      "key": "position-card",
+      "x": 24,
+      "y": 1711,
+      "w": 342,
+      "h": 306,
+      "text": "SPY$500/$505 CallCall debit spread−$100−25.0%A small recent-trend line of this p"
+    },
+    {
+      "key": "card-pl",
+      "x": 40,
+      "y": 1766,
+      "w": 310,
+      "h": 62,
+      "text": "−$100−25.0%A small recent-trend line of this position’s P/L this session. In-bro"
+    },
+    {
+      "key": "card-footer",
+      "x": 40,
+      "y": 1840,
+      "w": 310,
+      "h": 69,
+      "text": "Qty 1 ×Net debit $400Mark $300Sep 18 · 26dMax loss $400"
+    },
+    {
+      "key": "leg-disclosure-toggle",
+      "x": 40,
+      "y": 1919,
+      "w": 310,
+      "h": 44,
+      "text": "2 legs⌄"
+    },
+    {
+      "key": "track-record",
+      "x": 24,
+      "y": 2049,
+      "w": 342,
+      "h": 1002,
+      "text": "Track recordSIMULATEDHow your own recorded simulated decisions actually closed.H"
+    },
+    {
+      "key": "tr-subtitle",
+      "x": 24,
+      "y": 2130,
+      "w": 342,
+      "h": 37,
+      "text": "How your own recorded simulated decisions actually closed."
+    },
+    {
+      "key": "tr-sim-disclosure",
+      "x": 24,
+      "y": 2264,
+      "w": 342,
+      "h": 74,
+      "text": "Simulated fills. The sim has no slippage, no partial fills, no queue position, n"
+    },
+    {
+      "key": "tr-storage",
+      "x": 24,
+      "y": 2344,
+      "w": 342,
+      "h": 37,
+      "text": "Stored in this browser only — not tied to your account. Export an archive to bac"
+    },
+    {
+      "key": "tr-coverage",
+      "x": 24,
+      "y": 2394,
+      "w": 325,
+      "h": 37,
+      "text": "Counted 0 of 0 recorded closed positions. 3 still open — not yet counted. 0 orde"
+    },
+    {
+      "key": "tr-epoch",
+      "x": 24,
+      "y": 2431,
+      "w": 325,
+      "h": 74,
+      "text": "We haven’t recorded entry context on any trade yet. Setup, AI-rec, IV-band and p"
+    },
+    {
+      "key": "tr-how-to-read",
+      "x": 24,
+      "y": 2513,
+      "w": 342,
+      "h": 396,
+      "text": "A hit is a closed sim position that realized more than zero. A zero result is no"
+    },
+    {
+      "key": "tr-hit-def",
+      "x": 24,
+      "y": 2513,
+      "w": 342,
+      "h": 74,
+      "text": "A hit is a closed sim position that realized more than zero. A zero result is no"
+    },
+    {
+      "key": "tr-range-def",
+      "x": 24,
+      "y": 2593,
+      "w": 342,
+      "h": 74,
+      "text": "“Plausibly X–Y%” is the 95% Wilson confidence interval around the rate — the ban"
+    },
+    {
+      "key": "tr-return-def",
+      "x": 24,
+      "y": 2674,
+      "w": 342,
+      "h": 74,
+      "text": "“Avg per trade” is the plain average of each trade’s percent return — every trad"
+    },
+    {
+      "key": "tr-basis-def",
+      "x": 24,
+      "y": 2754,
+      "w": 342,
+      "h": 93,
+      "text": "“Quoted fills only” means both ends of the trade were priced off a real market q"
+    },
+    {
+      "key": "tr-overlap",
+      "x": 24,
+      "y": 2853,
+      "w": 342,
+      "h": 56,
+      "text": "One closed trade appears in every cell it qualifies for — its tier and its setup"
+    },
+    {
+      "key": "tr-lead-explainer",
+      "x": 24,
+      "y": 2917,
+      "w": 342,
+      "h": 74,
+      "text": "Once a cell reaches 20 closed trades, it'll show how that cut of your decisions "
+    },
+    {
+      "key": "tr-multiplicity",
+      "x": 24,
+      "y": 2997,
+      "w": 342,
+      "h": 37,
+      "text": "Across this many cells and this few trades, some cell will look extreme by chanc"
+    },
+    {
+      "key": "tr-adjacent-unreadable_records",
+      "x": 24,
+      "y": 2371,
+      "w": 342,
+      "h": 40,
+      "text": "Unreadable record — not counted (couldn’t tell if it was closed) · 0"
+    },
+    {
+      "key": "tr-families",
+      "x": 24,
+      "y": 2244,
+      "w": 342,
+      "h": 663,
+      "text": "TierOf your 0 counted outcomes, 0 carry a tier.Nothing recorded yet for this cut"
+    },
+    {
+      "key": "tr-family-tier",
+      "x": 24,
+      "y": 2244,
+      "w": 342,
+      "h": 119,
+      "text": "TierOf your 0 counted outcomes, 0 carry a tier.Nothing recorded yet for this cut"
+    },
+    {
+      "key": "tr-family-empty-tier",
+      "x": 41,
+      "y": 2311,
+      "w": 308,
+      "h": 37,
+      "text": "Nothing recorded yet for this cut. Cells appear as trades close with a recorded "
+    },
+    {
+      "key": "tr-family-ai_rec",
+      "x": 24,
+      "y": 2375,
+      "w": 342,
+      "h": 119,
+      "text": "AI recOf your 0 counted outcomes, 0 carry a recorded AI rec.Nothing recorded yet"
+    },
+    {
+      "key": "tr-family-empty-ai_rec",
+      "x": 41,
+      "y": 2442,
+      "w": 308,
+      "h": 37,
+      "text": "Nothing recorded yet for this cut. Cells appear as trades close with a recorded "
+    },
+    {
+      "key": "tr-family-setup",
+      "x": 24,
+      "y": 2506,
+      "w": 342,
+      "h": 119,
+      "text": "SetupOf your 0 counted outcomes, 0 carry a recorded setup.Nothing recorded yet f"
+    },
+    {
+      "key": "tr-family-empty-setup",
+      "x": 41,
+      "y": 2573,
+      "w": 308,
+      "h": 37,
+      "text": "Nothing recorded yet for this cut. Cells appear as trades close with a recorded "
+    },
+    {
+      "key": "tr-family-iv_band",
+      "x": 24,
+      "y": 2637,
+      "w": 342,
+      "h": 139,
+      "text": "IV-rank bandOf your 0 counted outcomes, 0 carry a recorded IV-rank band.Nothing "
+    },
+    {
+      "key": "tr-family-coverage-iv_band",
+      "x": 41,
+      "y": 2676,
+      "w": 308,
+      "h": 40,
+      "text": "Of your 0 counted outcomes, 0 carry a recorded IV-rank band."
+    },
+    {
+      "key": "tr-family-empty-iv_band",
+      "x": 41,
+      "y": 2724,
+      "w": 308,
+      "h": 37,
+      "text": "Nothing recorded yet for this cut. Cells appear as trades close with a recorded "
+    },
+    {
+      "key": "tr-family-persona",
+      "x": 24,
+      "y": 2788,
+      "w": 342,
+      "h": 119,
+      "text": "PersonaOf your 0 counted outcomes, 0 carry a recorded persona.Nothing recorded y"
+    },
+    {
+      "key": "tr-family-empty-persona",
+      "x": 41,
+      "y": 2855,
+      "w": 308,
+      "h": 37,
+      "text": "Nothing recorded yet for this cut. Cells appear as trades close with a recorded "
+    },
+    {
+      "key": "tr-archive",
+      "x": 24,
+      "y": 2923,
+      "w": 342,
+      "h": 128,
+      "text": "ArchiveYour trading history lives in this browser only. There’s no server backup"
+    },
+    {
+      "key": "tr-archive-lead",
+      "x": 86,
+      "y": 2923,
+      "w": 280,
+      "h": 93,
+      "text": "Your trading history lives in this browser only. There’s no server backup — if y"
+    }
+  ],
+  "probes": {
+    "connectionState": null,
+    "skeletons": 0,
+    "monoElements": 52,
+    "sansElements": 128,
+    "archivoElements": 2,
+    "otherFontElements": 1,
+    "htmlBackground": "rgb(11, 15, 23)",
+    "bodyBackground": "rgb(11, 15, 23)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", Roboto, sans-serif",
+    "bodyFontSize": "15px",
+    "panelSelector": "top-nav",
+    "panelRadius": "0px",
+    "panelBackground": "rgba(19, 26, 36, 0.82)",
+    "panelBorder": "0px none rgba(0, 0, 0, 0)",
+    "monoFont": null,
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": true,
+    "plexSansLoaded": true,
+    "scrollHeight": 3075,
+    "scrollWidth": 390,
+    "clientWidth": 390
+  },
+  "panels": [
+    {
+      "key": "portfolio-panel",
+      "radius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "0px none rgb(233, 228, 214)",
+      "shadow": "none"
+    },
+    {
+      "key": "orders-panel",
+      "radius": "10px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    },
+    {
+      "key": "leg-disclosure-panel",
+      "radius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "0px none rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    },
+    {
+      "key": "leg-disclosure-panel",
+      "radius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "0px none rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    },
+    {
+      "key": "leg-disclosure-panel",
+      "radius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "0px none rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    }
+  ],
+  "png": "app/positions-dense-390-dark.png"
+}
