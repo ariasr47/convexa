@@ -33,6 +33,7 @@
  */
 import { StructureFieldCanvas, type StructureFieldModel } from '@/shared/charts/structure-field';
 import { resolveLevelPalette } from '@/shared/charts/structure-field/levelStrokes';
+import { LiveDot } from '@/shared/figure';
 import { andPresent, isDeliveringLive } from '@/shared/liveness/liveClaim';
 import { extrasFor } from '@/shared/theme/tokens';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
@@ -77,6 +78,44 @@ const HERO_INFO =
   'preference — it never changes what is measured, only how the same levels are drawn.';
 
 type ViewMode = 'levels' | 'magnet';
+
+/**
+ * Ticker fidelity repair, change 6 (F10 hero residual) — the design's `● mid · tape` header chip
+ * (`design/src/screens/desk.mjs:295`'s `widgetHead(..., { live: 'mid · tape' })`), which the app
+ * showed as an ⓘ where the design shows this instead (`STRUCTURE_HERO_REVIEW.md`'s own F10 finding).
+ * Reuses `shared/figure`'s `LiveDot` — the SAME per-figure provenance mark every other live value on
+ * this page wears (canon 13) — never a second page-level connection claim (canon 18 is explicit that
+ * rule 13's dot is chip-SCOPED, a mark on ONE value, not a competing page claim; the text here names
+ * exactly which value: the mid, sourced from the tape). Genuinely live-gated (canon 22): mounted
+ * only while `claim` (`isDeliveringLive`) is true, never a "not live" variant the design doesn't
+ * specify — absence is the honest signal, the same shape the read strip's ring/other additive marks
+ * already use.
+ */
+function MidTapeChip() {
+  return (
+    <Box
+      component="span"
+      data-testid="structure-hero-mid-tape-chip"
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 1,
+        height: 20,
+        px: 1,
+        borderRadius: 999,
+        bgcolor: 'action.selected',
+        fontSize: 11,
+        fontWeight: 600,
+        color: 'info.main',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+      }}
+    >
+      <LiveDot />
+      mid · tape
+    </Box>
+  );
+}
 
 /**
  * The field legend (repair task item 6; `design/src/screens/desk.mjs:296`): `■ call-dominated`,
@@ -283,6 +322,7 @@ export function StructureHeroPanel({
       bodyPad="none"
       actions={
         <Stack direction="row" spacing={1.75} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+          {claim && <MidTapeChip />}
           <FieldLegend />
           <ToggleButtonGroup
             exclusive

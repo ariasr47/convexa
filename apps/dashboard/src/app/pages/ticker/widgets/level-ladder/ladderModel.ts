@@ -17,7 +17,7 @@
 import type { LadderRowId } from '@/shared/charts/structure-field/levelStrokes';
 import type { NotANumber } from '@/shared/copy/notANumber';
 import { NOT_LIVE, type LiveClaim } from '@/shared/liveness/liveClaim';
-import { distanceToLevel } from '../_kit/distanceToLevel';
+import { distancePercentOnly, distanceToLevel } from '../_kit/distanceToLevel';
 
 /**
  * D-14 (DELEGATED). ONE member for all five level absences, chosen by a rule the frontend can
@@ -42,7 +42,22 @@ export interface LadderRow {
    *  anchor `no-overflow.spec.ts:398` keys on `Call wall`. */
   label: 'Call wall' | 'Mid' | 'Max pain' | 'Gamma flip' | 'Put wall';
   price: string | NotANumber;
+  /**
+   * Ticker fidelity repair, change 6 (F10 hero residual) — the design's bare column
+   * (`design/src/screens/desk.mjs:320`'s `dist: '−0.81%'`): signed percentage ONLY
+   * (`distancePercentOnly`), never the dollar delta — that moved to `distanceTitle` (a hover title,
+   * never a second visible line) so the 300px ladder column's tick/label/value/distance line no
+   * longer wraps on a real (often-long) distance the way it used to
+   * (`STRUCTURE_HERO_REVIEW.md`'s F10, "the column content is 263 px against the design's bare
+   * `−0.81%`").
+   */
   distance: string | NotANumber;
+  /**
+   * The FULL `distanceToLevel` line (`+$10 · 4.0% above`) for a hover/title affordance — `undefined`
+   * for the mid row (whose `distance` is always `ABSENT_DISTANCE`, nothing to elaborate) and for a
+   * null level (nothing computed). Never a SECOND visible line — `FigureRow`'s `captionTitle`.
+   */
+  distanceTitle?: string;
   /** True on the MID ROW ONLY. Branded (FE-1) so no row can invent a sixth expression. */
   live: LiveClaim;
   /** A token key, never a colour (SPEC §2.7). */
@@ -96,7 +111,14 @@ const price = (v: number | null | undefined): string | NotANumber =>
  * `[absent-is-not-none]` in the column axis (SPEC §4.3).
  */
 const dist = (v: number | null | undefined, anchor: number | null): string | NotANumber =>
-  distanceToLevel(v, anchor) ?? ABSENT_DISTANCE;
+  distancePercentOnly(v, anchor) ?? ABSENT_DISTANCE;
+
+/** The full line, for the row's hover title — `undefined` (no `title` attribute) when there is
+ *  nothing to elaborate beyond the short form already shown (`at spot`, or an absent level/anchor). */
+const distTitle = (v: number | null | undefined, anchor: number | null): string | undefined => {
+  const full = distanceToLevel(v, anchor);
+  return full == null || full === 'at spot' ? undefined : full;
+};
 
 /** The header's one anchor statement (criterion 4, review): `$<gex_spot>` or, when absent, `$<price>`. */
 export function formatAnchorText(anchor: number | null): string | NotANumber {
@@ -117,6 +139,7 @@ export function buildLadder(input: LadderInput): LadderRows {
       label: 'Call wall',
       price: price(input.callWall),
       distance: dist(input.callWall, input.anchor),
+      distanceTitle: distTitle(input.callWall, input.anchor),
       live: NOT_LIVE,
       stroke: 'callWall',
       offline: null,
@@ -127,6 +150,7 @@ export function buildLadder(input: LadderInput): LadderRows {
       label: 'Max pain',
       price: price(input.maxPain),
       distance: dist(input.maxPain, input.anchor),
+      distanceTitle: distTitle(input.maxPain, input.anchor),
       live: NOT_LIVE,
       stroke: 'maxPain',
       offline: null,
@@ -137,6 +161,7 @@ export function buildLadder(input: LadderInput): LadderRows {
       label: 'Gamma flip',
       price: price(input.gammaFlip),
       distance: dist(input.gammaFlip, input.anchor),
+      distanceTitle: distTitle(input.gammaFlip, input.anchor),
       live: NOT_LIVE,
       stroke: 'gammaFlip',
       offline: null,
@@ -147,6 +172,7 @@ export function buildLadder(input: LadderInput): LadderRows {
       label: 'Put wall',
       price: price(input.putWall),
       distance: dist(input.putWall, input.anchor),
+      distanceTitle: distTitle(input.putWall, input.anchor),
       live: NOT_LIVE,
       stroke: 'putWall',
       offline: null,

@@ -427,4 +427,39 @@ describe('StructureHeroPanel', () => {
       }
     });
   });
+
+  // ===============================================================================================
+  // Ticker fidelity repair, change 6 (F10 hero residual) — the header's `● mid · tape` chip
+  // (`design/src/screens/desk.mjs:295`), which the app showed an ⓘ where the design shows this
+  // instead (`STRUCTURE_HERO_REVIEW.md`'s own F10 finding). Genuinely live-gated (canon 22): mounted
+  // only while the delivering-stream claim is true; absent (never a "not live" variant) otherwise —
+  // before this repair `structure-hero-mid-tape-chip` did not exist at all.
+  // ===============================================================================================
+  describe('the header’s `● mid · tape` chip (F10 hero residual)', () => {
+    it('mounts, with the live dot, while the stream is genuinely delivering', () => {
+      publishLiveTape({ ticker: 'SPY', live: liveUpdate(), streamOffline: false });
+      renderHero();
+      const chip = screen.getByTestId('structure-hero-mid-tape-chip');
+      expect(chip).toHaveTextContent('mid · tape');
+      expect(within(chip).getByTestId('figure-live-dot')).toBeInTheDocument();
+    });
+
+    it('is ABSENT (never a muted/hollow variant) when the stream is offline', () => {
+      publishLiveTape({ ticker: 'SPY', live: null, streamOffline: true });
+      renderHero();
+      expect(screen.queryByTestId('structure-hero-mid-tape-chip')).toBeNull();
+    });
+
+    it('is ABSENT before the first stream fact (no payload yet)', () => {
+      renderHero();
+      expect(screen.queryByTestId('structure-hero-mid-tape-chip')).toBeNull();
+    });
+
+    it('is ABSENT during a session-tape replay standing — `claim` is always false in replay (SPEC §2.1)', () => {
+      const live = liveUpdate({ mid: 573.12, session_tape: occ() } as Partial<LiveUpdate>);
+      publishLiveTape({ ticker: 'SPY', live, streamOffline: false });
+      renderHero();
+      expect(screen.queryByTestId('structure-hero-mid-tape-chip')).toBeNull();
+    });
+  });
 });

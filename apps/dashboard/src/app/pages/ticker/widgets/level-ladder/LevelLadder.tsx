@@ -94,6 +94,7 @@ function LadderLine({ row, palette }: { row: LadderRow; palette: LevelPalette })
       offline={row.offline}
       replay={row.replay}
       caption={row.distance}
+      captionTitle={row.distanceTitle}
       direction="row"
       valueSize={big ? 18 : 14}
       liveBadge={big ? 'tape' : undefined}

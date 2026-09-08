@@ -25,6 +25,15 @@
  * every case below, checked individually by label so the ladder's own two new rows (Mid, Gamma flip)
  * never get silently folded into that count.
  *
+ * A SECOND genuinely new live mark, disclosed the same way (ticker fidelity repair, change 6 / F10
+ * hero residual): the structure hero's header carries a `● mid · tape` chip
+ * (`structure-hero-mid-tape-chip`, `StructureHeroPanel.tsx`'s `MidTapeChip`) — a per-FIGURE
+ * provenance mark on the SAME mid value the ladder's own row already marks (canon 13/18: a mark on
+ * one value, not a second page-level connection claim), genuinely live-gated the same way. The
+ * page-wide LIVE count is therefore FIVE now (Net flow, Spread, Gamma flip, ladder Mid, the header
+ * chip's dot) — checked below by testid, not folded into the ladder's own count, for the same
+ * "would silently stop proving X participates" reason the Mid row's own dot is checked explicitly.
+ *
  * Before the fix (`LiveTape.tsx` deriving its liveness from `numbersActive` instead of the shared
  * `isDeliveringLive` predicate) the "closed with a live:true glitch" and every "replay standing" case
  * below fails (3 dots, not 0). After the fix they pass. See BUILD_REPORT.md's GATE Q bounce entry for
@@ -213,7 +222,7 @@ function inheritedCells(): HTMLElement[] {
 }
 
 describe('AC-1c (SB) — the dot census: LiveTape + StructureHeroPanel + ReadStrip together, every connection kind', () => {
-  it('LIVE — exactly FOUR dots page-wide (Net flow, Spread, Gamma flip, ladder Mid); VWAP and all 12 cells inherited from the old dealer positioning widget are dotless', () => {
+  it('LIVE — exactly FIVE dots page-wide (Net flow, Spread, Gamma flip, ladder Mid, the header’s mid·tape chip); VWAP and all 12 cells inherited from the old dealer positioning widget are dotless', () => {
     const live = liveUpdate();
     expect(resolveConnectionState({ live, streamOffline: false, routeSymbol: TICKER }).kind).toBe(
       'live',
@@ -225,12 +234,16 @@ describe('AC-1c (SB) — the dot census: LiveTape + StructureHeroPanel + ReadStr
     expect(liveTapeCells).toHaveLength(4);
     expect(inherited).toHaveLength(12);
 
-    // The ladder's `Mid` row is the ONE genuinely new live figure (module doc above) — the census
-    // must find it, or this test would silently stop proving the ladder participates at all.
-    expect(totalDots()).toBe(4);
+    // The ladder's `Mid` row and the header's `mid · tape` chip (ticker fidelity repair, change 6 /
+    // F10) are the TWO genuinely new live figures (module doc above) — the census must find both, or
+    // this test would silently stop proving either participates at all.
+    expect(totalDots()).toBe(5);
     expect(inherited.every((c) => c.querySelector('[data-testid="figure-live-dot"]') == null)).toBe(
       true,
     );
+    expect(
+      within(screen.getByTestId('structure-hero-mid-tape-chip')).getByTestId('figure-live-dot'),
+    ).toBeInTheDocument();
 
     const vwapCell = screen.getByText('VWAP').closest('[data-figure-state]') as HTMLElement;
     expect(within(vwapCell).queryByTestId('figure-live-dot')).toBeNull();

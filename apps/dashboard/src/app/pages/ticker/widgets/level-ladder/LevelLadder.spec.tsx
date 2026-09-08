@@ -108,11 +108,25 @@ describe('LevelLadder — the mid row distance, never a computed zero (criterion
     expect(midCard).not.toHaveTextContent('at spot');
   });
 
-  it('a non-mid row shows a real computed distance', () => {
+  it('a non-mid row shows the bare percentage, the dollar delta on the caption’s hover title (ticker fidelity repair, F10 hero residual)', () => {
     wrap(FULL_INPUT);
     const callWallValue = screen.getByText('$260');
     const callWallCard = callWallValue.closest('[data-figure-state]')!;
-    expect(callWallCard).toHaveTextContent('+$10 · 4.0% above');
+    // The VISIBLE caption is the design's bare form — no dollar, no "above"/"below" word — which is
+    // what stopped this cell wrapping onto a second line in a 300px ladder column
+    // (`STRUCTURE_HERO_REVIEW.md`'s own F10 residual).
+    expect(callWallCard).toHaveTextContent('+4.0%');
+    expect(callWallCard).not.toHaveTextContent('+$10');
+    // The full line survives as a native hover `title` on that same caption node.
+    const caption = screen.getByText('+4.0%');
+    expect(caption).toHaveAttribute('title', '+$10 · 4.0% above');
+  });
+
+  it('the mid row’s distance caption carries no hover title — nothing to elaborate on `—`', () => {
+    wrap(FULL_INPUT);
+    const midCard = screen.getByText('Mid').closest('[data-figure-state]') as HTMLElement;
+    const dashes = within(midCard).getAllByText('—');
+    for (const dash of dashes) expect(dash).not.toHaveAttribute('title');
   });
 });
 

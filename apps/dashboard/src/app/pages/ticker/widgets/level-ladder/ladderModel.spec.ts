@@ -101,13 +101,26 @@ describe('buildLadder — row 2 labels, the e2e anchor (criterion 2)', () => {
 });
 
 describe('buildLadder — distance anchor is the levels spot, never the mid (criterion 3)', () => {
-  it('every non-mid row is distanceToLevel(level, anchor)', () => {
+  it('every non-mid row is distancePercentOnly(level, anchor) — the bare percentage, dollar delta moved to distanceTitle (F10 hero residual)', () => {
     const rows = buildLadder(FULL_INPUT);
     const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
-    expect(byId['callWall'].distance).toBe('+$10 · 4.0% above');
-    expect(byId['putWall'].distance).toBe('−$10 · 4.0% below');
+    // The VISIBLE distance is the design's bare form (`desk.mjs:320`'s `dist: '−0.81%'`) — no
+    // dollar, no "above"/"below" word (the ticker fidelity repair, change 6/F10: this is what
+    // shortened the ladder column enough to stop wrapping — `STRUCTURE_HERO_REVIEW.md`'s own
+    // residual). `distanceToLevel` itself is UNCHANGED (`distanceToLevel.spec.ts`, untouched) —
+    // `LiveTape.tsx`'s gamma-flip caption keeps the full form; this is a second, shorter rendering
+    // of the SAME projection, not a reformat of the shared helper.
+    expect(byId['callWall'].distance).toBe('+4.0%');
+    expect(byId['putWall'].distance).toBe('−4.0%');
     expect(byId['maxPain'].distance).toBe('at spot');
-    expect(byId['gammaFlip'].distance).toBe('−$2.0 · 0.8% below');
+    expect(byId['gammaFlip'].distance).toBe('−0.8%');
+
+    // The full line survives — moved to `distanceTitle`, a hover affordance (`FigureRow`'s
+    // `captionTitle`), never a second visible line. `at spot` has nothing to elaborate.
+    expect(byId['callWall'].distanceTitle).toBe('+$10 · 4.0% above');
+    expect(byId['putWall'].distanceTitle).toBe('−$10 · 4.0% below');
+    expect(byId['maxPain'].distanceTitle).toBeUndefined();
+    expect(byId['gammaFlip'].distanceTitle).toBe('−$2.0 · 0.8% below');
   });
 
   it('falls back to price when gex_spot (the anchor) is absent', () => {

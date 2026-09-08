@@ -333,6 +333,14 @@ export interface FigureRowProps {
    *  still the SAME label-row dot underneath (canon 13: one dot, this figure's own claim), just
    *  labelled. Ignored when the figure state does not show a dot. */
   liveBadge?: string;
+  /**
+   * Ticker fidelity repair, change 6 (F10 hero residual) — a native HTML `title` (hover tooltip) on
+   * the caption, for a FULLER form of a SHORTENED visible `caption` (the ladder's own use: the
+   * visible distance is the bare percentage, this carries the dollar-delta line). Never a second
+   * visible line, never the `AccessibleHelp` ⓘ system (that is a distinct, tap/keyboard-reachable
+   * affordance for a DIFFERENT kind of copy — a figure's own methodology, not an elaborated caption).
+   */
+  captionTitle?: string;
 }
 
 export function FigureRow({
@@ -349,6 +357,7 @@ export function FigureRow({
   direction = 'row',
   valueSize = 14,
   liveBadge,
+  captionTitle,
 }: FigureRowProps) {
   const {
     figureState,
@@ -413,6 +422,11 @@ export function FigureRow({
   const captionNode = effectiveCaption ? (
     <Typography
       component="span"
+      // Ticker fidelity repair, change 6 (F10) — a hover title for a fuller form of a shortened
+      // visible caption (the ladder's own use). `undefined` when the caller has nothing to elaborate
+      // (e.g. the offline/replay arms already overwrite `effectiveCaption` above and carry no
+      // `captionTitle` of their own — `title` stays absent, never a stale/mismatched leftover).
+      title={captionTitle}
       sx={{ ...MONO_FACE, color: 'text.secondary', fontSize: 11, lineHeight: 1.3 }}
     >
       {effectiveCaption}
@@ -473,10 +487,14 @@ export function FigureRow({
           {showPause && <PauseMark />}
           {valueGlyph}
         </Stack>
-        {/* The distance/caption is the ONE cell allowed to wrap onto its own line when the tick +
-            label + value + a real (often long: "+$10 · 4.0% above") distance string cannot all fit
-            a 300px ladder column — a CSS overflow fix, not a copy change: the distance's own text
-            (`_kit/distanceToLevel.ts`) is untouched, and this never truncates the label instead. */}
+        {/* The distance/caption is the ONE cell allowed to wrap onto its own line if the tick +
+            label + value + caption cannot all fit a 300px ladder column — a CSS safety net, not the
+            normal case: the ladder's own caller (`LevelLadder.tsx`) passes the SHORT bare-percentage
+            form (`_kit/distanceToLevel.ts`'s `distancePercentOnly`, ticker fidelity repair F10) as
+            `caption`, with the full "+$10 · 4.0% above" line moved to `captionTitle` (a hover
+            affordance, never a second visible line) — this wrap was the observed defect
+            (`STRUCTURE_HERO_REVIEW.md` F10) when the long form was the visible caption; it stays as
+            a fallback for a genuinely narrow container, never a truncated label instead. */}
         <Box sx={{ ml: 'auto', minWidth: 52, textAlign: 'right', flexShrink: 0 }}>
           {captionNode}
         </Box>
