@@ -580,42 +580,88 @@ export function TickerDashboard() {
                 {/* ── 2. TAPE & PLAN ───────────────────────────────────────────────── */}
                 <BoardZoneLabel zone="plan">Tape & plan</BoardZoneLabel>
 
-                {/* LIVE-DERIVED tiles — dim on an SSE drop (span 2). */}
-                <ErrorBoundary variant="widget" label="Live tape">
-                  <LiveTape m={m} />
-                </ErrorBoundary>
+                {/* Ticker fidelity repair, change 1 (F1) — the design's `.work` grid
+                    (`design/src/screens/desk.mjs:32`, `DESK_CSS`): `minmax(0,8fr) minmax(0,4fr)` at
+                    a ≥1000px CONTAINER (never viewport — canon 21, "panels are containers", the same
+                    authority the hero repair used). Two grid children only, exactly like the design's
+                    markup: the AI read wide on the left, and a `side` column stacking Live tape /
+                    Position brief / Sim orders on the right. Below 1000 the container collapses to one
+                    column, so DOM order alone decides the stack: read → tape → position → orders,
+                    matching `ticker-hierarchy.spec.tsx`'s existing order guards (none of them pin AI
+                    relative to tape/brief/orders — only tape-before-brief, which this preserves). The
+                    outer `containerType` lives on a plain wrapper (never the styled grid element
+                    itself — an element cannot query the container IT establishes). */}
+                <Box
+                  data-testid="ticker-work-container"
+                  sx={{
+                    gridColumn: { xs: '1 / -1', md: 'span 2' },
+                    containerType: 'inline-size',
+                    containerName: 'ticker-work',
+                    minWidth: 0,
+                  }}
+                >
+                  <Box
+                    data-testid="ticker-work"
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr',
+                      gap: '14px',
+                      alignItems: 'stretch',
+                      [theme.containerQueries('ticker-work').up(1000)]: {
+                        gridTemplateColumns: 'minmax(0, 8fr) minmax(0, 4fr)',
+                      },
+                    }}
+                  >
+                    {/* Act → watch as one motion (UX §4.4): AI-rec paired with sim orders — both
+                        live in this work group, the AI read wide on the left. */}
+                    <AiRecPanel
+                      ticker={ticker}
+                      bundle={data}
+                      ai={aiRec}
+                      personas={readPersonas}
+                      activePersonaId={persona.activeId}
+                      dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
+                      onAccept={onAcceptRec}
+                      onAct={onActRec}
+                      onViewExport={openExport}
+                      readPersonaId={readPersonaId}
+                      onChangeReadPersona={setReadPersonaId}
+                      fillHeight
+                    />
+                    <Box
+                      data-testid="ticker-work-side"
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '14px',
+                        minWidth: 0,
+                      }}
+                    >
+                      {/* LIVE-DERIVED tiles — dim on an SSE drop. */}
+                      <ErrorBoundary variant="widget" label="Live tape">
+                        <LiveTape m={m} />
+                      </ErrorBoundary>
 
-                {/* Product spine #5 — position brief bridges structure → plan (your book on this
-                    name). FE-11 moves it INTO the plan zone, beside LiveTape/AiRecPanel/OrdersWidget
-                    (SPEC §1's flow: "AI read brief wide beside tape / position / orders") — it no
-                    longer sits ahead of the zone label, since it now belongs WITH this group, not
-                    before it. */}
-                <PositionBrief
-                  ticker={ticker}
-                  openViews={openBookViews}
-                  storeFaulted={storeFaulted}
-                  entryBlocked={storeFaulted || tradeOpen}
-                  onOpenTrade={() => openEntry()}
-                  tradeAllowed={orderGate.allowed}
-                  onSignIn={() => orderGate.signIn(GATE_SIGN_IN)}
-                />
+                      {/* Product spine #5 — position brief bridges structure → plan (your book on
+                          this name). FE-11 moved it INTO the plan zone, beside
+                          LiveTape/AiRecPanel/OrdersWidget (SPEC §1's flow: "AI read brief wide beside
+                          tape / position / orders"); the ticker fidelity repair (F1) absorbs it as
+                          the side column's position card instead of a full-width bar ahead of the
+                          group — `stripSx` no longer spans `1 / -1` (`position-brief` module). */}
+                      <PositionBrief
+                        ticker={ticker}
+                        openViews={openBookViews}
+                        storeFaulted={storeFaulted}
+                        entryBlocked={storeFaulted || tradeOpen}
+                        onOpenTrade={() => openEntry()}
+                        tradeAllowed={orderGate.allowed}
+                        onSignIn={() => orderGate.signIn(GATE_SIGN_IN)}
+                      />
 
-                {/* Act → watch as one motion (UX §4.4): AI-rec paired with sim orders. */}
-                <AiRecPanel
-                  ticker={ticker}
-                  bundle={data}
-                  ai={aiRec}
-                  personas={readPersonas}
-                  activePersonaId={persona.activeId}
-                  dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
-                  onAccept={onAcceptRec}
-                  onAct={onActRec}
-                  onViewExport={openExport}
-                  readPersonaId={readPersonaId}
-                  onChangeReadPersona={setReadPersonaId}
-                  fillHeight
-                />
-                <OrdersWidget ticker={ticker} />
+                      <OrdersWidget ticker={ticker} />
+                    </Box>
+                  </Box>
+                </Box>
 
                 {/* ── 3. SUPPORTING CONTEXT (tertiary — quieter Widget chrome) ──────── */}
                 <BoardZoneLabel zone="context">Supporting context</BoardZoneLabel>

@@ -177,7 +177,11 @@ export function LiveTape({
       // Spine #4: name the basis (stream) and that structure is separate (`[live-vs-static-isolation]`).
       subtitle={subtitle}
       info={info}
-      span={2}
+      // Ticker fidelity repair, change 1 (F1) — `span={2}` forced full bento width when LiveTape was
+      // a direct 2-col bento child; it now lives in the `.work` grid's flex side column
+      // (`TickerDashboard.tsx`, `ticker-work-side`), where `grid-column` has no effect on a flex
+      // item. Dropped rather than left as dead prop surface — the design puts Live tape in a ~396px
+      // side column (`design/src/screens/desk.mjs:32`), not full width.
       bodyVariant="inset"
     >
       <Box sx={{ ...GRID, ...dimSx }} data-testid="live-tape">

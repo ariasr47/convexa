@@ -17,6 +17,7 @@ import App from '@/app';
 import { makeBundle } from '@/features/auth/testBackend';
 import { __resetMemory } from '@/features/trading/positions/store';
 import { theme } from '@/shared/theme/theme';
+import { allRulesForClass, emotionClassOf, joinedStyleText } from './widgets/_kit/emotionCssReader';
 
 beforeEach(() => {
   localStorage.clear();
@@ -156,5 +157,93 @@ describe('Ticker · board hierarchy (product spine #3)', () => {
 
     expect(docIndex(ai)).toBeLessThan(docIndex(orders));
     expect(docIndex(orders)).toBeLessThan(docIndex(zoneContext));
+  });
+});
+
+// =====================================================================================================
+// Ticker fidelity repair, change 1 (F1) — the `.work` grid (`design/src/screens/desk.mjs:32`,
+// `DESK_CSS`): `minmax(0,8fr) minmax(0,4fr)` behind a ≥1000px CONTAINER query, AI read wide on the
+// left, Live tape / Position brief / Sim orders stacked in the side column on the right. Before this
+// repair `ticker-work`/`ticker-work-side` did not exist at all (Live tape was a full-width `span={2}`
+// bento row, Position brief a full-width `gridColumn:'1 / -1'` bar, and AI-rec/Orders a half-width
+// pair) — every assertion below is a fresh pin, not a copy of pre-existing behaviour.
+// =====================================================================================================
+describe('Ticker · tape & plan work grid (ticker fidelity repair F1)', () => {
+  it('groups the AI read and the tape/position/orders side column under one work container, AI read first in DOM order', async () => {
+    renderTicker();
+    await screen.findByText('Call wall');
+
+    const container = screen.getByTestId('ticker-work-container');
+    const work = screen.getByTestId('ticker-work');
+    const side = screen.getByTestId('ticker-work-side');
+    const ai = screen.getByTestId('widget-ai-rec');
+    const live = screen.getByTestId('live-tape');
+    const brief = screen.getByTestId('position-brief');
+    const orders = screen.getByTestId('widget-orders');
+
+    // The design's markup order (`aiRead()` then `.side`): AI read is the work grid's first child,
+    // the side column's three widgets follow it — matching the design's left-to-right read.
+    expect(container.contains(work)).toBe(true);
+    expect(work.contains(ai)).toBe(true);
+    expect(work.contains(side)).toBe(true);
+    expect(side.contains(live)).toBe(true);
+    expect(side.contains(brief)).toBe(true);
+    expect(side.contains(orders)).toBe(true);
+    expect(docIndex(ai)).toBeLessThan(docIndex(live));
+    // Existing order guard, preserved: tape before brief before orders inside the side column.
+    expect(docIndex(live)).toBeLessThan(docIndex(brief));
+    expect(docIndex(brief)).toBeLessThan(docIndex(orders));
+  });
+
+  it('the work grid is one column by default and declares the design’s 8fr/4fr split behind a ≥1000px `ticker-work` container query (never a viewport media query)', async () => {
+    renderTicker();
+    await screen.findByText('Call wall');
+
+    const work = screen.getByTestId('ticker-work');
+    const cls = emotionClassOf(work);
+    expect(cls, 'the work grid should carry an emotion (sx) class').toBeTruthy();
+    const rules = allRulesForClass(joinedStyleText(), cls as string)
+      .join(';')
+      .replace(/\s+/g, '');
+
+    expect(rules).toContain('grid-template-columns:1fr');
+    expect(rules).toContain('grid-template-columns:minmax(0,8fr)minmax(0,4fr)');
+
+    // MUTATION GUARD (the container-query hazard, `ReadStrip.tsx`'s own module doc): the 8fr/4fr
+    // split must be GATED behind `@container ticker-work`, never unconditional and never a bare
+    // `@media` — a version that dropped the container-query key and always applied 8fr/4fr would
+    // still pass the two `toContain`s above, so the raw prelude is checked on its own here.
+    const squashed = joinedStyleText().replace(/\s+/g, '');
+    expect(squashed).toContain('@containerticker-work(min-width:1000px)');
+    expect(squashed).not.toMatch(/@media\([^)]*min-width:1000px[^)]*\)\{[^}]*8fr/);
+  });
+
+  it('the work container establishes the named `ticker-work` container the grid queries (canon 21 — panels/layout groups are containers)', async () => {
+    renderTicker();
+    await screen.findByText('Call wall');
+
+    const container = screen.getByTestId('ticker-work-container');
+    const cls = emotionClassOf(container);
+    expect(cls, 'the work container should carry an emotion (sx) class').toBeTruthy();
+    const rules = allRulesForClass(joinedStyleText(), cls as string)
+      .join(';')
+      .replace(/\s+/g, '');
+
+    expect(rules).toContain('container-type:inline-size');
+    expect(rules).toContain('container-name:ticker-work');
+  });
+
+  it('position brief no longer spans the full bento row — the "Your book" bar is absorbed into the side column (F1)', async () => {
+    renderTicker();
+    await screen.findByText('Call wall');
+
+    const brief = screen.getByTestId('position-brief');
+    const cls = emotionClassOf(brief);
+    expect(cls, 'position-brief should carry an emotion (sx) class').toBeTruthy();
+    const rules = allRulesForClass(joinedStyleText(), cls as string)
+      .join(';')
+      .replace(/\s+/g, '');
+
+    expect(rules).not.toContain('grid-column:1/-1');
   });
 });
