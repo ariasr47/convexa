@@ -32,8 +32,15 @@ import Typography from '@mui/material/Typography';
 import { type ReactNode } from 'react';
 import { dteLabel } from '../_kit/copy';
 
-/** One segment of the instrument panel — an uppercase micro-label above its control. When `htmlFor`
- *  is given the caption is a real `<label>` so the control keeps an accessible name. */
+/**
+ * One segment of the instrument panel — an uppercase micro-label INLINE beside its control, one
+ * compact row (ticker fidelity repair, change 3 (F3) close-out: was a `Stack` — label stacked ABOVE
+ * the control, two lines tall per segment — against the design's own one-line `.field`
+ * (`design/src/lib.mjs:57`: `height: 36px`, the caps label and value on the same row). Re-skin only:
+ * the SAME `Select`/`PersonaPicker` children, same ids/testids/behaviour, only the wrapping layout
+ * changes — `ticker-toolbar` ran 73px against a segment's own ≈36–40px control height, most of the
+ * remainder the masthead's ≤200px threshold (design 186) was missing by. When `htmlFor` is given the
+ * caption is a real `<label>` so the control keeps an accessible name. */
 function Segment({
   label,
   htmlFor,
@@ -44,7 +51,11 @@ function Segment({
   children: ReactNode;
 }) {
   return (
-    <Stack spacing={0.5} sx={{ px: { xs: 0, sm: 1.75 }, py: 0.25, minWidth: 0, maxWidth: '100%' }}>
+    <Stack
+      direction="row"
+      spacing={1}
+      sx={{ alignItems: 'center', px: { xs: 0, sm: 1.75 }, py: 0.5, minWidth: 0, maxWidth: '100%' }}
+    >
       <Typography
         component={htmlFor ? 'label' : 'span'}
         htmlFor={htmlFor}
@@ -56,6 +67,8 @@ function Segment({
           lineHeight: 1.2,
           letterSpacing: '0.06em',
           textTransform: 'uppercase',
+          whiteSpace: 'nowrap',
+          flexShrink: 0,
         }}
       >
         {label}

@@ -40,9 +40,15 @@ import { distanceToLevel, levelSpot } from '../_kit/distanceToLevel';
 import { FigureCell } from '../_kit/FigureCell';
 import { useStreamLatch } from '../_kit/useStreamLatch';
 
+// Ticker fidelity repair, change 1 (F1) close-out: the design's `.tape-grid` is a FIXED 2-column
+// grid (`design/src/screens/desk.mjs:45`, `grid-template-columns: 1fr 1fr`), not a fluid auto-fill —
+// and at this widget's real rendered width in the `.work` grid's ≈379–396px side column
+// (`design/src/screens/desk.mjs:32`), `auto-fill, minmax(180px, 1fr)` never actually fit 2 columns
+// (2×180=360 > the ≈345px content box measured), so all four figures stacked in one column instead
+// of the intended 2×2 — the dominant reason Live tape ran ≈533px against the design's ≈295px.
 const GRID = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
   gap: 2,
 } as const;
 

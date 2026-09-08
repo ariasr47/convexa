@@ -283,7 +283,12 @@ export function CommandDeck(props: CommandDeckProps) {
           pb: 1.5,
         }}
       >
-        <Stack spacing={2}>
+        {/* Ticker fidelity repair, change 3 (F3) close-out: `spacing={2}` (16px) between all three
+            tiers — 32px of pure gap — was sized for THIS masthead's own visual grouping, not the
+            design's (`.mast-row` merges tier 1+2 into one row, `desk.mjs:256-274`, so the design has
+            only ONE such gap, before `.quick`). Tightened, not removed — the tiers stay three
+            visually distinct groups. */}
+        <Stack spacing={1.5}>
           {/* Tier 1 — hero identity row (regime + connection chips, anchor, meta line, CTA). */}
           <TickerHeader
             m={m}
