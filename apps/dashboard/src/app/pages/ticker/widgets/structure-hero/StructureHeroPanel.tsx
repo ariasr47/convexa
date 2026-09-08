@@ -39,6 +39,7 @@ import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
 import { Widget } from '@/shared/ui/Widget';
 import type { MarketState, StrikeRow, StructureSample } from '@convexa/api';
 import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { useTheme } from '@mui/material/styles';
@@ -64,6 +65,9 @@ export interface StructureHeroPanelProps {
   pathLoading?: boolean;
   pathError?: string | null;
   pathBasis?: string | null;
+  /** "all expirations" / "N expirations" — the SAME phrase `TickerHeader` already states beside the
+   *  headline (repair task item 6's subtitle). Never a second, independent computation. */
+  expirationsLabel?: string;
 }
 
 const HERO_INFO =
@@ -74,6 +78,59 @@ const HERO_INFO =
 
 type ViewMode = 'levels' | 'magnet';
 
+/**
+ * The field legend (repair task item 6; `design/src/screens/desk.mjs:296`): `■ call-dominated`,
+ * `■ put-dominated`, `— flip`, 11px steel — hidden below a 768px container (the legend is a nicety,
+ * not load-bearing; the ladder's own ticks already carry the same colour identity). Plain viewport
+ * `theme.breakpoints`, not `theme.containerQueries('panel')`: the `Widget` header's `actions` slot
+ * renders OUTSIDE the panel-named container (`Widget.tsx`'s body box is the one wrapped in
+ * `containerName: 'panel'`), so a container query here would never match any ancestor.
+ */
+function FieldLegend() {
+  const swatch = (color: string) => (
+    <Box
+      component="span"
+      aria-hidden
+      sx={{ width: 10, height: 10, borderRadius: '3px', bgcolor: color, flexShrink: 0 }}
+    />
+  );
+  const line = (color: string) => (
+    <Box
+      component="span"
+      aria-hidden
+      sx={{ width: 10, height: 2, bgcolor: color, flexShrink: 0 }}
+    />
+  );
+  return (
+    <Box
+      component="span"
+      data-testid="structure-field-legend"
+      sx={(theme) => ({
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 2,
+        fontSize: 11,
+        color: 'text.secondary',
+        flexWrap: 'wrap',
+        [theme.breakpoints.down(768)]: { display: 'none' },
+      })}
+    >
+      <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+        {swatch('success.main')}
+        call-dominated
+      </Box>
+      <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+        {swatch('error.main')}
+        put-dominated
+      </Box>
+      <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+        {line('primary.main')}
+        flip
+      </Box>
+    </Box>
+  );
+}
+
 export function StructureHeroPanel({
   symbol,
   m,
@@ -83,6 +140,7 @@ export function StructureHeroPanel({
   pathLoading = false,
   pathError = null,
   pathBasis = null,
+  expirationsLabel = 'all expirations',
 }: StructureHeroPanelProps) {
   const [view, setView] = useState<ViewMode>('levels');
   const theme = useTheme();
@@ -170,12 +228,17 @@ export function StructureHeroPanel({
   );
   const anchorText = formatAnchorText(anchor);
   const ageLabel = structureAgeSeconds != null ? humanAge(structureAgeSeconds) : 'unknown age';
-  const basis = `levels are REST structure (as-of ${ageLabel}) · the mid is tape`;
+  // Repair task item 6 — the design's basis line (`desk.mjs:294`), verbatim: what the field plots,
+  // the expirations scope (the SAME phrase `TickerHeader` states beside the headline — never a
+  // second computation), then the REST/tape provenance clause this hero already carried.
+  const basis =
+    `Net dealer gamma by strike · ${expirationsLabel} · ` +
+    `levels are REST structure (as-of ${ageLabel}) · the mid is tape`;
   const structureMid = anchor ?? m.price;
 
   const windowed = useMemo(
-    () => windowedStrikes(strikes, structureMid, m.call_wall, m.put_wall),
-    [strikes, structureMid, m.call_wall, m.put_wall],
+    () => windowedStrikes(strikes, structureMid, m.call_wall, m.put_wall, m.gamma_flip, m.max_pain),
+    [strikes, structureMid, m.call_wall, m.put_wall, m.gamma_flip, m.max_pain],
   );
   const fieldModel: StructureFieldModel | null = useMemo(() => {
     if (windowed.length < 2) return null;
@@ -190,6 +253,7 @@ export function StructureHeroPanel({
       callWall: m.call_wall,
       putWall: m.put_wall,
       gammaFlip: m.gamma_flip,
+      maxPain: m.max_pain,
       asOfSec,
       liveMid: displayMid,
       live: midLive,
@@ -204,6 +268,7 @@ export function StructureHeroPanel({
     m.call_wall,
     m.put_wall,
     m.gamma_flip,
+    m.max_pain,
     displayMid,
     midLive,
   ]);
@@ -211,71 +276,114 @@ export function StructureHeroPanel({
   return (
     <Widget
       id="structure-hero"
-      title={symbol}
+      title="Structure field"
       subtitle={basis}
       info={HERO_INFO}
       span={2}
       bodyPad="none"
       actions={
-        <ToggleButtonGroup
-          exclusive
-          size="small"
-          value={view}
-          onChange={(_, v: ViewMode | null) => {
-            if (v) setView(v);
-          }}
-          aria-label="Dealer positioning view"
-          data-testid="dealer-view-toggle"
-        >
-          <ToggleButton value="levels" data-testid="dealer-view-levels">
-            Levels
-          </ToggleButton>
-          <ToggleButton value="magnet" data-testid="dealer-view-magnet">
-            Magnet
-          </ToggleButton>
-        </ToggleButtonGroup>
+        <Stack direction="row" spacing={1.75} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+          <FieldLegend />
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={view}
+            onChange={(_, v: ViewMode | null) => {
+              if (v) setView(v);
+            }}
+            aria-label="Dealer positioning view"
+            data-testid="dealer-view-toggle"
+          >
+            <ToggleButton value="levels" data-testid="dealer-view-levels">
+              Field
+            </ToggleButton>
+            <ToggleButton value="magnet" data-testid="dealer-view-magnet">
+              Magnet
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Stack>
       }
     >
-      <Box data-testid="structure-hero">
-        <ErrorBoundary variant="widget" label="Structure field">
-          {view === 'magnet' ? (
-            <WallMagnetView
-              putWall={m.put_wall}
-              callWall={m.call_wall}
-              gammaFlip={m.gamma_flip}
-              spot={structureMid}
-            />
-          ) : (
-            fieldModel && (
-              <StructureFieldCanvas
-                model={fieldModel}
+      {/*
+       * REPAIR TASK item 1 (composition) — the design's `field-grid` (`desk.mjs:19`): a
+       * `minmax(0,1fr) 300px` grid, 340px above a 1600px container, one column below 1000px. The
+       * Widget BODY box is the named `panel` container (`Widget.tsx`), so every breakpoint below
+       * queries it via `theme.containerQueries('panel')` — the same authority `FigureCell` already
+       * queries, never an unnamed/viewport one for THIS layout decision.
+       */}
+      <Box
+        data-testid="structure-hero"
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 300px',
+          [theme.containerQueries('panel').up(1600)]: {
+            gridTemplateColumns: 'minmax(0, 1fr) 340px',
+          },
+          [theme.containerQueries('panel').down(1000)]: {
+            gridTemplateColumns: '1fr',
+          },
+        }}
+      >
+        <Box sx={{ minWidth: 0, padding: '10px 6px 0' }}>
+          <ErrorBoundary variant="widget" label="Structure field">
+            {view === 'magnet' ? (
+              <WallMagnetView
+                putWall={m.put_wall}
+                callWall={m.call_wall}
+                gammaFlip={m.gamma_flip}
+                spot={structureMid}
                 height={300}
-                variant="ticker"
                 palette={palette}
                 surfaces={surfaces}
               />
-            )
-          )}
-        </ErrorBoundary>
-        <LevelLadder rows={rows} anchorText={anchorText} palette={palette} />
-        <LadderFoot volNormalizedGex={m.vol_normalized_gex} netGex={m.net_gex} />
-        <TapeTrailRow
-          structureMid={structureMid}
-          claim={claim}
-          mid={displayMid}
-          lastTrade={lastTrade}
-          retained={midLatch.retained}
-          paused={tileOffline}
-          palette={palette}
-          surfaces={surfaces}
-        />
-        <StructurePathStrip
-          symbol={symbol || '—'}
-          samples={pathSamples}
-          loading={pathLoading}
-          error={pathError}
-          basis={pathBasis}
-        />
+            ) : (
+              fieldModel && (
+                <StructureFieldCanvas
+                  model={fieldModel}
+                  height={300}
+                  variant="ticker"
+                  palette={palette}
+                  surfaces={surfaces}
+                />
+              )
+            )}
+          </ErrorBoundary>
+          <TapeTrailRow
+            structureMid={structureMid}
+            claim={claim}
+            mid={displayMid}
+            lastTrade={lastTrade}
+            retained={midLatch.retained}
+            paused={tileOffline}
+            palette={palette}
+            surfaces={surfaces}
+          />
+          <StructurePathStrip
+            symbol={symbol || '—'}
+            samples={pathSamples}
+            loading={pathLoading}
+            error={pathError}
+            basis={pathBasis}
+          />
+        </Box>
+        <Box
+          sx={{
+            borderLeft: '1px solid',
+            borderColor: 'divider',
+            padding: '12px 18px 14px',
+            display: 'flex',
+            flexDirection: 'column',
+            [theme.containerQueries('panel').down(1000)]: {
+              borderLeft: 0,
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              padding: '12px 14px',
+            },
+          }}
+        >
+          <LevelLadder rows={rows} anchorText={anchorText} palette={palette} />
+          <LadderFoot volNormalizedGex={m.vol_normalized_gex} netGex={m.net_gex} />
+        </Box>
       </Box>
     </Widget>
   );

@@ -159,6 +159,12 @@ export function TickerDashboard() {
   }, [ticker]);
   // Expiration filter: null = all (no filter), [] = none selected, else an explicit subset.
   const [selected, setSelected] = useState<string[] | null>(null);
+  // The SAME "all expirations" / "N expirations" phrase `TickerHeader` states beside the headline
+  // (structure hero repair task item 6's subtitle) — never a second, independent computation.
+  const expirationsLabel =
+    selected === null
+      ? 'all expirations'
+      : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`;
   // Dark-pool (off-exchange) context: fixed ON (the toolbar toggle was removed to match the Figma).
   const darkPool = true;
 
@@ -554,6 +560,7 @@ export function TickerDashboard() {
                     pathLoading={structHist.loading}
                     pathError={structHist.error}
                     pathBasis={structHist.basis}
+                    expirationsLabel={expirationsLabel}
                   />
                 </ErrorBoundary>
                 <ErrorBoundary variant="widget" label="Read strip">
