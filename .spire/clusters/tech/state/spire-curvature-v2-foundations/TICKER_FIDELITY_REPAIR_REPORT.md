@@ -10,20 +10,20 @@ Setups/phone). `apps/api` diff stays empty throughout (`NO_BACKEND_CHANGE`).
 
 ## Commits (chronological; `*` = this lane)
 
-| commit | change |
-|---|---|
-| `c6afe2c6` | F1 — tape & plan work grid (`8fr/4fr` split) |
-| `d12a08bf` | F2 — context band recomposed to the 3-col quiet grid |
-| `65d29ebb` | F3 — masthead bare on the ink, ticker input dropped |
-| `18ba0c9c` | docs — F3 API follow-up filed in RESUME.md |
-| `29dff32a` | F4 — read strip re-framed (hairline grid, ring, sub-captions) |
-| `b4fa9253` | F9 — TermHeatChart colours from the theme |
-| `89fd41e9` | F10 — hero residuals (ladder wrap, mid·tape chip) |
-| `d08822bc` | F4 — restore ReadStrip's full-bento-row span |
+| commit       | change                                                                    |
+| ------------ | ------------------------------------------------------------------------- |
+| `c6afe2c6`   | F1 — tape & plan work grid (`8fr/4fr` split)                              |
+| `d12a08bf`   | F2 — context band recomposed to the 3-col quiet grid                      |
+| `65d29ebb`   | F3 — masthead bare on the ink, ticker input dropped                       |
+| `18ba0c9c`   | docs — F3 API follow-up filed in RESUME.md                                |
+| `29dff32a`   | F4 — read strip re-framed (hairline grid, ring, sub-captions)             |
+| `b4fa9253`   | F9 — TermHeatChart colours from the theme                                 |
+| `89fd41e9`   | F10 — hero residuals (ladder wrap, mid·tape chip)                         |
+| `d08822bc`   | F4 — restore ReadStrip's full-bento-row span                              |
 | `d5362a82`\* | **finish** the interrupted F2 edit — Market context's compact-cell labels |
-| `a3d53244`\* | F2 residual — context band density + responsive column count |
-| `bea3aed2`\* | F1/F3 residual — Live tape's 2×2 grid, masthead control row |
-| `119bf485`\* | F2/phone residual — Setups card density |
+| `a3d53244`\* | F2 residual — context band density + responsive column count              |
+| `bea3aed2`\* | F1/F3 residual — Live tape's 2×2 grid, masthead control row               |
+| `119bf485`\* | F2/phone residual — Setups card density                                   |
 
 ## Change-by-change
 
@@ -70,6 +70,7 @@ became a tenor-chip ribbon; Fresh positioning / Off-exchange capped at 3 rows; S
 grid of cards.
 
 **This lane's residual close-out**, three commits:
+
 - **`a3d53244`** — `ticker-context-grid`'s CSS-grid default `align-items: stretch` was forcing every
   card in a row to the tallest sibling's height (all three of row 1's cards reported the identical
   464px). Added `alignItems: 'start'` (the design's own `.ctx-grid` has no such override either — its
@@ -80,11 +81,11 @@ grid of cards.
   squeezing all nine cards into three ~110px columns at 390px. `MarketContext.tsx`'s `BasisLine`
   (each cell's as-of/provenance sentence, one ~150 characters) was wrapping to 3–5 lines at the
   cell's ~162px width — the largest single driver of Market context's height; truncated to one line
-  + ellipsis + a `title` attribute carrying the full text (the canon requirement "every card keeps
-  its basis and as-of line" stays literally true — the full text is still in `textContent`, CSS
-  truncation doesn't touch the a11y tree). `DealerFlowProjection.tsx`'s `LimbCard` dropped its
-  bordered `Card`/`CardContent` wrapper (~30px of padding per limb) for a plain `Box`; tightened
-  label margin and the limb grid's gap.
+  - ellipsis + a `title` attribute carrying the full text (the canon requirement "every card keeps
+    its basis and as-of line" stays literally true — the full text is still in `textContent`, CSS
+    truncation doesn't touch the a11y tree). `DealerFlowProjection.tsx`'s `LimbCard` dropped its
+    bordered `Card`/`CardContent` wrapper (~30px of padding per limb) for a plain `Box`; tightened
+    label margin and the limb grid's gap.
 - **`119bf485`** — `Setups.tsx`'s cards used the same bordered `Card`/`CardContent` chrome; re-skinned
   to a plain `Box` matching the design's compact card (`padding: 12px 14px`, one hairline border, no
   elevation).
@@ -99,6 +100,7 @@ Row 1 (dealer flow / market context / term structure), all three previously stre
 
 **Residual, named.** The band is still 1,052px against the ≤800px threshold. Two items are why,
 neither closed this lane:
+
 - **Setups genuinely carries more real data than the design's mockup.** The design's `ctx-2` setups
   example shows 2 cards (248px total at 390px width); the real bundle
   (`_tools/spy-bundle-2026-09-08T1059Z.json`) has **3** setups (`Gamma-flip transition`,
@@ -170,23 +172,23 @@ it this pass).
 All heights are full-page CSS px from the harness's DOM census (`ticker-repair-after/app/*.json`),
 production build, `desk-real` scenario (the real SPY bundle, AI idle).
 
-| width / scheme | audit baseline (pre-repair) | after first pass (inherited) | after this lane | threshold | met? |
-|---|---|---|---|---|---|
-| 1440 dark | 4,046 | 3,251 | **2,818** | ≤ 2,950 | **met** |
-| 1280 dark | 4,046 | 3,251 | **2,818** | ≤ 3,000 (design 2,570) | **met** |
-| 834 dark | 5,166 | 4,145 | **3,848** | ≤ 4,170 (design 3,336 +25%) | **met** |
-| 390 dark | 6,999 | 6,951 | **5,566** | ≤ 5,474 (design 4,379 +25%) | missed by 92 |
-| 1280 light | 4,046 | — | **2,818** | no dark-filled canvas in the band | **met** (verified) |
+| width / scheme | audit baseline (pre-repair) | after first pass (inherited) | after this lane | threshold                         | met?               |
+| -------------- | --------------------------- | ---------------------------- | --------------- | --------------------------------- | ------------------ |
+| 1440 dark      | 4,046                       | 3,251                        | **2,818**       | ≤ 2,950                           | **met**            |
+| 1280 dark      | 4,046                       | 3,251                        | **2,818**       | ≤ 3,000 (design 2,570)            | **met**            |
+| 834 dark       | 5,166                       | 4,145                        | **3,848**       | ≤ 4,170 (design 3,336 +25%)       | **met**            |
+| 390 dark       | 6,999                       | 6,951                        | **5,566**       | ≤ 5,474 (design 4,379 +25%)       | missed by 92       |
+| 1280 light     | 4,046                       | —                            | **2,818**       | no dark-filled canvas in the band | **met** (verified) |
 
 `overflowX`: **false** at every width, both before and after this lane's work.
 
-| region (1280 dark) | audit baseline | after first pass (inherited) | after this lane | design | threshold | met? |
-|---|---|---|---|---|---|---|
-| `command-deck` (masthead) | 273 | 265 | **243** | 186 | ≤ 200 | missed by 43 |
-| `widget-read-strip` | 209 | 131 | **131** | 112 | ≤ 130, 8 cells, none clipped | 1px over (effectively met) |
-| `widget-ai-rec` vs side column | 344w vs full-width tape | 759w vs 379w | **759w vs 379w** | 793w vs 396w | AI wider than side; side ≤ 420 | **met** |
-| `widget-live-tape` | 209 (full width) | 533 | **318** | 295 | (part of the ≤420-side-column check) | **closed to 23px** |
-| `ticker-context-grid` (band) | ≈2,125 | ≈1,250\* | **1,052** | 673 | ≤ 800 | missed by 252 |
+| region (1280 dark)             | audit baseline          | after first pass (inherited) | after this lane  | design       | threshold                            | met?                       |
+| ------------------------------ | ----------------------- | ---------------------------- | ---------------- | ------------ | ------------------------------------ | -------------------------- |
+| `command-deck` (masthead)      | 273                     | 265                          | **243**          | 186          | ≤ 200                                | missed by 43               |
+| `widget-read-strip`            | 209                     | 131                          | **131**          | 112          | ≤ 130, 8 cells, none clipped         | 1px over (effectively met) |
+| `widget-ai-rec` vs side column | 344w vs full-width tape | 759w vs 379w                 | **759w vs 379w** | 793w vs 396w | AI wider than side; side ≤ 420       | **met**                    |
+| `widget-live-tape`             | 209 (full width)        | 533                          | **318**          | 295          | (part of the ≤420-side-column check) | **closed to 23px**         |
+| `ticker-context-grid` (band)   | ≈2,125                  | ≈1,250\*                     | **1,052**        | 673          | ≤ 800                                | missed by 252              |
 
 \* the inherited-baseline "≈1,250" figure is this lane's own first re-measurement (`ticker-context-grid`
 1,162px), taken immediately after finishing the interrupted Market context edit — the true
@@ -194,11 +196,11 @@ pre-edit-completion number was unmeasurable (the component didn't typecheck / wo
 
 Region-level before/after inside the context band (1280 dark, row 1 — the row that was stretching):
 
-| widget | before (stretched) | after `alignItems:'start'` + density | design |
-|---|---|---|---|
-| `widget-dealer-flow-projection` | 464 | **387** | 267 |
-| `widget-market-context` | 464 | **345** | 267 |
-| `widget-term-structure` | 464 | **172** | 267 |
+| widget                          | before (stretched) | after `alignItems:'start'` + density | design |
+| ------------------------------- | ------------------ | ------------------------------------ | ------ |
+| `widget-dealer-flow-projection` | 464                | **387**                              | 267    |
+| `widget-market-context`         | 464                | **345**                              | 267    |
+| `widget-term-structure`         | 464                | **172**                              | 267    |
 
 ## A visual false alarm, recorded so it isn't repeated
 
@@ -211,16 +213,16 @@ not a rendering defect. Recorded here in case a future pass trusts the composite
 
 ## Verification (exit codes)
 
-| gate | command | result |
-|---|---|---|
-| typecheck | `npx nx typecheck @convexa/dashboard --skip-nx-cache` | **exit 0** |
-| unit/component tests | `npx nx test @convexa/dashboard --skipNxCache` (`node_modules/.vite` cleared first) | **exit 0** — 239 files / 2,905 tests |
-| lint | `npm run lint` | **exit 0** (4 pre-existing warnings, unrelated files) |
-| format | `npm run format:check` | **exit 0** |
-| `apps/api` diff | `git diff --stat origin/main...HEAD -- apps/api` | **empty**, throughout |
-| NUL scan | byte scan of every file this task touched (both lanes, incl. specs) | **0** in every file |
-| composition (harness) | `npx nx build --configuration=production` + `playwright test --config playwright.audit.config.ts --grep desk-real` | **11/11 passed** — see table above |
-| e2e | `BROWSER_QUALITY_PREBUILD_STATUS=pass npx nx e2e dashboard-e2e -- --grep "desk\|curvature\|overflow"` (production build, ports 4200/4310 freed manually — not `npm run ports:free`, which also frees 8000) | **exit 0** — 108/108 passed, 0 flaky |
+| gate                  | command                                                                                                                                                                                                    | result                                                |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| typecheck             | `npx nx typecheck @convexa/dashboard --skip-nx-cache`                                                                                                                                                      | **exit 0**                                            |
+| unit/component tests  | `npx nx test @convexa/dashboard --skipNxCache` (`node_modules/.vite` cleared first)                                                                                                                        | **exit 0** — 239 files / 2,905 tests                  |
+| lint                  | `npm run lint`                                                                                                                                                                                             | **exit 0** (4 pre-existing warnings, unrelated files) |
+| format                | `npm run format:check`                                                                                                                                                                                     | **exit 0**                                            |
+| `apps/api` diff       | `git diff --stat origin/main...HEAD -- apps/api`                                                                                                                                                           | **empty**, throughout                                 |
+| NUL scan              | byte scan of every file this task touched (both lanes, incl. specs)                                                                                                                                        | **0** in every file                                   |
+| composition (harness) | `npx nx build --configuration=production` + `playwright test --config playwright.audit.config.ts --grep desk-real`                                                                                         | **11/11 passed** — see table above                    |
+| e2e                   | `BROWSER_QUALITY_PREBUILD_STATUS=pass npx nx e2e dashboard-e2e -- --grep "desk\|curvature\|overflow"` (production build, ports 4200/4310 freed manually — not `npm run ports:free`, which also frees 8000) | **exit 0** — 108/108 passed, 0 flaky                  |
 
 **Assertion edits this lane:** none. Every spec this lane's changes touch
 (`MarketContext.spec.tsx`, `DealerFlowProjection.spec.tsx`, `LiveTape.spec.tsx`, `CommandDeck.spec.tsx`,
@@ -289,16 +291,16 @@ Re-run from a clean tree at `810da249` without reusing anything the lane produce
 build (`--skip-nx-cache`) → the audit harness into a **separate** folder (`ticker-repair-verify/`) →
 the desk e2e; the unit suite, typecheck, lint and format run again from cold.
 
-| gate | result |
-|---|---|
-| `npx nx typecheck @convexa/dashboard --skip-nx-cache` | exit 0 |
-| `npx nx test @convexa/dashboard --skipNxCache` | exit 0 — 239 files / **2,905** tests |
-| `npm run lint` | exit 0 (4 pre-existing warnings) |
-| `npm run format:check` | exit 0 |
-| `git diff --stat origin/main...HEAD -- apps/api` | empty |
-| NUL scan, all 63 text files both lanes touched | 0 |
-| harness `--grep desk-real` against the fresh build | 11/11, exit 0 |
-| e2e `desk\|curvature\|overflow` against the fresh build | **108/108, 0 flaky, exit 0** |
+| gate                                                    | result                               |
+| ------------------------------------------------------- | ------------------------------------ |
+| `npx nx typecheck @convexa/dashboard --skip-nx-cache`   | exit 0                               |
+| `npx nx test @convexa/dashboard --skipNxCache`          | exit 0 — 239 files / **2,905** tests |
+| `npm run lint`                                          | exit 0 (4 pre-existing warnings)     |
+| `npm run format:check`                                  | exit 0                               |
+| `git diff --stat origin/main...HEAD -- apps/api`        | empty                                |
+| NUL scan, all 63 text files both lanes touched          | 0                                    |
+| harness `--grep desk-real` against the fresh build      | 11/11, exit 0                        |
+| e2e `desk\|curvature\|overflow` against the fresh build | **108/108, 0 flaky, exit 0**         |
 
 **Every composition number matches the lane's to the pixel** (`ticker-repair-verify/app/*.json`):
 page 2,818 at 1440 and 1280 (dark and light), 3,848 at 834, 5,566 at 390; `command-deck` 243,
@@ -327,3 +329,285 @@ hero was fenced for this lane.
 gate is green cold, nothing was faked, and the three misses are named with causes. The residual
 decisions are the owner's (masthead tier-1 row, the IvRank card's place in the band, the phone hero
 header, the flow-spark data) and are listed in `RESUME.md`.
+
+## Pass 2 — owner: "Do all four" (2026-09-08)
+
+Direct repair lane on `TICKER_FIDELITY_REPAIR_TASK.md`'s `## Pass 2` section, closing three of the
+owner's four accepted recommendations from the conductor's cold re-verification above (the fourth,
+the Live tape flow sparkline, is filed as a **backend** item in `context/BACKLOG.md`, "Harvest —
+2026-09-08" — not built here, `apps/api` stays untouched throughout). `NO_BACKEND_CHANGE` held: the
+`apps/api` diff is empty from start to finish (quoted below). Started from a clean tree at `1eb2a454`.
+
+### Commits (chronological)
+
+| commit     | change                                                                                                                   |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `1d84505a` | change 7 — hero header collapse at 390 fixed; the shared `Widget` header's title region now keeps the row below `sm`     |
+| `ed1671f6` | change 8 — `IvRank` unmounted from the context band (owner ruling)                                                       |
+| `1f8b606e` | change 9 — the masthead's controls join the headline row at ≥ laptop (1100)                                              |
+| `b91b59ff` | fix — sync the browser-quality manifest to change 8's e2e describe rename (found at the e2e gate, not a numbered change) |
+
+No GATE Z items this pass — every ambiguity change 7/8/9 raised was already resolved by the task's
+own text (the owner-granted header exception, the `context-band-is-the-designs-card-list` ruling, and
+the exact breakpoint/mechanism change 9 names) or by this lane's own testing-strategy judgment (change
+8's assertion moves, below), not a missing contract field or a must-not-change conflict.
+
+### 7. Hero header collapses at 390 (owner leave granted for the header only)
+
+**What changed.** `shared/ui/Widget/Widget.tsx`'s header title region was `flex: 1` — a **0% flex
+basis** — so its "hypothetical main size" for the flex-wrap line-fitting check was ~0: the browser
+always found room for it beside the non-shrinking `actions` region by squeezing the title to nothing
+(`S…`) instead of ever triggering `flexWrap: { xs: 'wrap', sm: 'nowrap' }`. Below `sm` the title
+region now carries `flexBasis: { xs: '100%', sm: 'auto' }` — it keeps the full row, deterministically
+pushing `actions` to row two instead (matches `design/src/lib.mjs:439`'s `widgetHead`: title [+ its
+own `live` chip] on one row, `actions` the next). A new opt-in `titleBadge` prop renders content
+**beside the title, in that same row** — a different region from `actions`, which is why
+`StructureHeroPanel.tsx`'s `● mid · tape` chip (`MidTapeChip`) moved from `actions` into
+`titleBadge`: it keeps that adjacency post-wrap, while the Field/Magnet toggle (still in `actions`)
+now lands on row two alone. The field legend was already hidden below the 1000 px container
+(`StructureHeroPanel.tsx`), unaffected. `titleBadge` is unset by default — every other widget's
+header is byte-identical except for the (uniform, verified) `flexBasis` fix.
+
+**Files:** `shared/ui/Widget/Widget.tsx`, `shared/ui/Widget/Widget.spec.tsx`,
+`pages/ticker/widgets/structure-hero/StructureHeroPanel.tsx`. **Commit:** `1d84505a`.
+**Design anchor:** `design/src/lib.mjs:439` (`widgetHead`), `design/src/screens/desk.mjs:289-296`.
+
+**Assertion edits:** none — `StructureHeroPanel.spec.tsx`'s existing "● mid · tape chip" tests
+(presence/text/live-gating) pass unmodified; they never asserted the chip's container, only its
+presence and gating.
+
+**Tests (new, `Widget.spec.tsx`):** a mutation-guard source scan pinning the `flexBasis` fix; a
+default-render check (no `titleBadge` → the header renders exactly as before, byte-identical
+`textContent`); a presence/placement check (`titleBadge` renders in the title's own row group, a
+different ancestor than `actions`); an absence check (unset → nothing extra in the DOM).
+
+**Measured** (`ticker-repair-after/app/desk-real-390-dark.json`, region census):
+`widget-structure-hero` **1,137 px → 968 px** (design 905; threshold ≤ 950 — **missed by 18 px**, was
+missed by 187). Page at 390: **5,566 px → 5,484 px** (threshold ≤ 5,520; design 4,416 + 25 % — **met**,
+was missed by 92). Visual confirmation:
+`ticker-repair-after/app/desk-real-390-dark.png` cropped at the hero
+(`/private/tmp/.../hero-390-header.png` this session, not repo-committed — see "Screenshots" below)
+shows the full, untruncated "Structure field" title beside the "● mid · tape" chip on one row, the
+subtitle wrapping normally across the full width, and the Field/Magnet toggle on its own row below —
+the exact shape the crop evidence (`ticker-repair-verify/crops/app-hero-real-390-dark-top.png`) named
+as broken. **Shared-header sweep** (the task's own instruction — "check every desk widget's header at
+390, not just the hero"): every other widget header at 390 (read strip, AI recommendation, Live tape,
+Simulated orders, the eight context-band cards) inspected directly in the fresh capture — no
+truncation, no cramped wrap; `widget-orders`' title now renders in full with its `SIMULATED` chip and
+"All orders →" link correctly wrapped to their own row beneath it, an incidental improvement from the
+same fix.
+
+**Residual, named.** `widget-structure-hero` is still 968 px against the ≤ 950 threshold (design 905) — 18 px over, down from 187 over before this pass. Not chased further (the hero's canvas/ladder
+interior is must-not-change; the remaining gap reads as ordinary content-length variance against the
+design's shorter mock subtitle/ladder values, not a wrap defect — the header itself is now visually
+correct).
+
+### 8. Remove the `IvRank` card from the context band (owner ruling)
+
+**What changed.** `IvRank` unmounted from `TickerDashboard.tsx`'s context band (was `:794-801`) per
+the owner ruling recorded in `context/DECISION_LEDGER.md`
+(`context-band-is-the-designs-card-list`, 2026-09-08 "Do all four"): the design's `ctx-grid`
+(`desk.mjs:395-421`) never had this card, and it repeats the read strip's own `IV rank` cell. This is
+an **unmount, not a deletion** — `widgets/iv-rank/IvRank.tsx` and its own unit spec stay; the `iv_rank`
+wire field itself is untouched and still feeds the read strip's cell (`TickerDashboard.tsx:584`).
+
+**Files:** `pages/ticker/TickerDashboard.tsx`. **Commit:** `ed1671f6`.
+**Design anchor:** `design/src/screens/desk.mjs:395-421` (the `ctx-grid` card enumeration).
+
+**Assertion edits** (the widget's DOM presence was pinned in six places; listed with reasons):
+
+- `pages/ticker/ticker.risk.spec.tsx` — `STATIC_WIDGETS` (the static-byte-identity sample) and
+  `NULLABLE_SECTIONS` (the null matrix) drop the `widget-iv-rank`/`iv_rank` entries: the invariants
+  they prove stay covered by the sample's other members. The "wire-label authority" test drops its
+  iv-rank-band fixture/assertions (three examples remain: trend direction, term-structure state,
+  gamma regime) and its title's parenthetical. The "model-read self-description" test drops its
+  iv-rank half (dealer-flow-projection remains) and its title.
+- `pages/ticker/widgets/iv-rank/IvRank.spec.tsx` — the two dropped page-level cases **moved here**
+  rather than being silently lost: "wire band beats a scalar-derived rank label"
+  (`IvRank.tsx:165` reads `read.band` only, via the closed `ivrBandDisplay` lookup, never `read.rank`)
+  and "the rank value and its basis element share the widget body" — both are properties of the
+  component itself, testable in isolation, and the page-level suite can no longer exercise them once
+  unmounted; this file's own docblock already reserves exactly this division of labor.
+- `pages/ticker/ticker-hierarchy.spec.tsx` — the DOM-order test drops `widget-iv-rank` from its
+  enumeration and its title (was "... term structure → (IV rank, kept) → straddle move ...").
+- `pages/ticker/ticker-desk-composition.spec.tsx` — `QUIET_BAND_WIDGETS` (criterion 47's isolation
+  sample) drops `widget-iv-rank`, same reasoning as `STATIC_WIDGETS` above.
+- `apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts` — `HOVER_INFO_WIDGETS` (AC-35) and
+  `FRAME_INFO_SITES` (U-32) drop `iv-rank`; the "eight frame roots"/"eight live `info=` sites" prose
+  (top docblock, U-32's own comment block, the criterion-66 cross-reference, and the U-32
+  `test.describe` title) all become "seven", each noting this change as the reason. Checked whether
+  AC-35's site count is asserted anywhere else (`grep -rn "eight\|FRAME_INFO_SITES.length"
+apps/dashboard-e2e/src`) — no `.length` assertion exists anywhere, only prose; ruling 6's own
+  historical "four widgets / six sites" text is left intact (still factually true about what ruling 6
+  named) with a note that only three of the four are still on the page to test.
+- `apps/dashboard-e2e/src/quality/manifest.json` (commit `b91b59ff`, found at the e2e gate, not
+  during the vitest/typecheck passes) — the U-32 describe-title rename above changed the STRING the
+  `quality-reporter.ts` reporter looks up by (`file`, `project`, `title_path`) exact match; the four
+  matching manifest records' `title_path[0]` updated "eight" → "seven" (the opaque `test_id` values
+  are untouched — same tests, renamed, not new tests).
+
+**Measured** (`ticker-repair-after/app/desk-real-1280-dark.json`): `ticker-context-grid`
+**1,052 px → 968 px** (design 673; ≈ 970 was this task's own predicted value — matched almost exactly).
+Against the ≤ 800 px density threshold: **missed by 168 px** (was missed by 252) — **the ≤ 800 target
+stays an open owner item, per the task's own instruction not to cut fields to reach it; no field was
+cut.** Visual confirmation: the context band composite (`pairs/desk-real-1280-dark.jpg`) shows exactly
+the design's eight-card set (Projected dealer flow, Market context, Term structure, Straddle-implied
+move, Fresh positioning, Off-exchange blocks, Setups, Add widget) — `IvRank` is gone, nothing else
+shifted in content.
+
+### 9. Masthead: the controls join the headline row at ≥ laptop (1100)
+
+**What changed.** The design's `.mast-row` (`desk.mjs:255-274`) puts `EXPIRATIONS` / `PERSONA` / the
+one amber CTA on the headline's right (`.mast-controls`: one flex row, fields then the button,
+`align-items: center`), ahead of the chip row, the second line and the quick row. The shipped masthead
+instead stacked `TickerHeader` (tier 1) above `TickerToolbar` (tier 2) above `QuickSymbols` at every
+width. Fixed at `theme.breakpoints.up('laptop')` (1100 px) — the SAME breakpoint authority
+`TickerHeader.tsx`'s own `xs: column / sm: row` hero-row switch already uses, generalized to the next
+named token (the same one `TickerDashboard.tsx`'s context-band grid already keys off, and the same
+1100 canon rule 19 already uses for the nav's own search-to-icon collapse — not an arbitrary number).
+
+`CommandDeck.tsx` computes `controlsJoinHeadline` via MUI's `useMediaQuery` — the established
+`ai-rec/ReadSheet.tsx` idiom, which degrades to `false` when `window.matchMedia` is absent (jsdom, so
+unit tests keep exercising today's stacked arrangement by default unless they explicitly stub it) —
+and builds exactly **one** `<TickerToolbar>` element, mounted in exactly one of two places: inside
+`TickerHeader`'s new `inlineControls` slot (headline row, before the CTA) when true, or in its own
+tier-2 row when false. Never both — there is never a duplicate id/testid in the DOM. Below 1100,
+today's stacked order is byte-unchanged. `TickerToolbar`'s new `inline` prop (only meaningful with
+`embedded`) drops the full-width-plus-top-divider chrome that only makes sense for the standalone
+tier-2 strip — nothing to divide from when sitting beside the CTA instead of below the header. Same
+`Select`/`PersonaPicker` children, same ids/testids/`aria-label`s either way.
+
+**Files:** `pages/ticker/widgets/chrome/CommandDeck.tsx`,
+`pages/ticker/widgets/chrome/CommandDeck.spec.tsx`, `pages/ticker/widgets/chrome/TickerHeader.tsx`,
+`pages/ticker/widgets/chrome/TickerToolbar.tsx`. **Commit:** `1f8b606e`.
+**Design anchor:** `design/src/screens/desk.mjs:255-274` (`.mast-row`/`.mast-controls`),
+`design/src/lib.mjs:57` (`.field`).
+
+**Assertion edits:** none — every pre-existing `CommandDeck`/`TickerHeader`/`TickerToolbar` test
+passed unmodified (confirmed: `widgets/chrome` directory 48/48 before the new tests were added, then
+52/52 after; `TickerHeader.faulted.spec.tsx`/`TickerHeader.liveStatus.spec.ts` both green, no
+ancestor-chain assumptions broken by the new wrapping `Stack` around the CTA).
+
+**Tests (new, `CommandDeck.spec.tsx`, 4):** below laptop (default, unmocked `matchMedia`) — exactly
+one toolbar mounts, and the CTA precedes it (today's tier-2 order). At ≥ laptop (`matchMedia` stubbed
+for the exact `theme.breakpoints.up('laptop')` query, the same `vi.stubGlobal` idiom
+`ai-rec/ReadSheet.spec.tsx` established) — exactly one toolbar mounts, and it now **precedes** the CTA
+(both inside `TickerHeader`'s own row) — the mechanical proof the join actually happened, not just
+that nothing crashed. The same ids/`aria-label`s stay reachable (`Expirations`, no bare `Ticker`
+field). The Expirations tri-state wiring still fires the same callback once relocated.
+
+**Measured** (`ticker-repair-after/app/desk-real-{1280,1440}-dark.json`): `command-deck`
+**243 px → 215 px** (design 186; threshold ≤ 200 — **missed by 15 px**, was missed by 43) at **both**
+1280 and 1440 (byte-identical at both widths — the page's own content max-width caps the deck the
+same either way). At 834 and 390 (below 1100): `ticker-toolbar` still renders in its own tier-2 row
+(`y=212, h=60` at 834), byte-unchanged; `overflowX` false at both.
+
+**Residual, named — root cause verified by direct measurement, not guesswork.** Still 15 px over the
+≤ 200 threshold. Breaking down `command-deck`'s own 215 px (`pt` 20 + headline-block + tier1↔tier3
+gap 12 + `quick-symbols` 37 + `pb` 12): the headline block itself is **134 px joined vs. 91 px
+unjoined** (measured directly from the same capture at 834, where the toolbar is NOT joined) — a real
+**+43 px** the join adds. Cause: `TickerHeader`'s own chip row (`negative gamma` · the connection chip
+· `Last trade`) has `flexWrap: 'wrap'` and, once the right region widens from "CTA only" (~161 px) to
+"toolbar + CTA" (~589 + 161 px, confirmed in the census), the LEFT column's available width shrinks
+enough that its own chip row now wraps to **two lines** instead of one (visible directly in
+`pairs/desk-real-1280-dark.jpg`: "negative gamma · live · Last trade" split across two lines, where
+the design's own mockup — with fewer/shorter chips, since this bundle omits the instrument name per
+the standing API-follow-up GATE Z — fits on one). This is a genuine content-width tension the same
+kind as the band's Setups residual above, not a bug in the join itself; fixing it would mean touching
+either the chip row's own wrap rule or the toolbar/CTA cluster's width, neither of which change 9's
+instruction (place the controls in the row) licenses — named here, not chased.
+
+## Composition table — Pass 2 (before = the conductor's cold-verified numbers, above)
+
+| width / scheme | before this pass | after this pass | design | threshold                         | met?                       |
+| -------------- | ---------------- | --------------- | ------ | --------------------------------- | -------------------------- |
+| 1440 dark      | 2,818            | **2,705**       | 2,483  | ≤ 2,950                           | **met**                    |
+| 1280 dark      | 2,818            | **2,705**       | 2,532  | ≤ 3,000                           | **met**                    |
+| 834 dark       | 3,848            | **3,628**       | 3,290  | ≤ 4,170 (3,290 + 25 %)            | **met**                    |
+| 390 dark       | 5,566            | **5,484**       | 4,416  | ≤ 5,520 (4,416 + 25 %)            | **met** (was missed by 92) |
+| 1280 light     | 2,818 (parity)   | **2,705**       | —      | no dark-filled canvas in the band | **met** (verified)         |
+
+`overflowX`: **false** at every one of the five captures, before and after this pass.
+
+| region                              | before this pass | after this pass             | design      | threshold               | met?                                  |
+| ----------------------------------- | ---------------- | --------------------------- | ----------- | ----------------------- | ------------------------------------- |
+| `command-deck` @ 1280 & 1440        | 243              | **215**                     | 186         | ≤ 200                   | missed by 15 (was 43)                 |
+| `widget-structure-hero` @ 390       | 1,137            | **968**                     | 905         | ≤ 950                   | missed by 18 (was 187)                |
+| `ticker-context-grid` (band) @ 1280 | 1,052            | **968**                     | 673         | ≤ 800 (open owner item) | missed by 168 (was 252)               |
+| `widget-ai-rec` vs side @ 1280      | 759w / 379w      | **759w / 379w** (unchanged) | 793w / 396w | side ≤ 420              | **met**                               |
+| `widget-read-strip` @ 1280          | 131              | **131** (unchanged)         | 112         | ≤ 130, 8 cells          | 1px over (unchanged, effectively met) |
+
+Every region this pass did not touch (read strip, AI-read/side-column width, Live tape) is
+byte-identical to the conductor's own numbers — confirmed, not assumed.
+
+## Verification (exit codes) — Pass 2
+
+| gate                  | command                                                                                                                                                              | result                                                                                                                                                                                |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| typecheck             | `npx nx typecheck @convexa/dashboard --skip-nx-cache`                                                                                                                | **exit 0**                                                                                                                                                                            |
+| unit/component tests  | `npx nx test @convexa/dashboard --skipNxCache` (`node_modules/.vite` cleared first)                                                                                  | **exit 0** — 239 files / **2,914** tests (was 2,905; net +9 — Widget.spec.tsx +4, IvRank.spec.tsx +2, CommandDeck.spec.tsx +4, ticker.risk.spec.tsx's `NULLABLE_SECTIONS` it.each −1) |
+| lint                  | `npm run lint`                                                                                                                                                       | **exit 0** (4 pre-existing warnings, unrelated files — same as the conductor's baseline)                                                                                              |
+| format                | `npm run format:check`                                                                                                                                               | **exit 0**                                                                                                                                                                            |
+| `apps/api` diff       | `git diff --stat origin/main...HEAD -- apps/api`                                                                                                                     | **empty**                                                                                                                                                                             |
+| NUL scan              | byte scan of every file this pass touched (13 source files + `manifest.json`)                                                                                        | **0** in every file                                                                                                                                                                   |
+| composition (harness) | `npx nx build --configuration=production --skip-nx-cache` + `AUDIT_OUT=.../ticker-repair-after playwright test --config playwright.audit.config.ts --grep desk-real` | **exit 0**, **11/11 passed** — see tables above                                                                                                                                       |
+| e2e                   | `BROWSER_QUALITY_PREBUILD_STATUS=pass npx nx e2e dashboard-e2e -- --grep "desk\|curvature\|overflow"` (production build, ports 4200/4310 freed manually)             | **exit 0** — **108/108 passed, 0 flaky** (first attempt was exit 1 — a stale browser-quality manifest identity, fixed in `b91b59ff`, see change 8's assertion edits)                  |
+
+Directory-scoped counts along the way (`pages/ticker`, a subset of the dashboard-wide total above):
+73 files / 951 tests immediately after changes 7+8, 73 files / 955 after change 9 (+4, matching
+`CommandDeck.spec.tsx`'s new tests) — both exit 0.
+
+## GATE Z items — Pass 2
+
+None. Every decision point this pass reached was already resolved by the task's own text (the
+owner-granted header exception for change 7, the `context-band-is-the-designs-card-list` ruling for
+change 8, the exact breakpoint/mechanism named for change 9) or was a testing-strategy call within
+this lane's own discretion (change 8's assertion moves into `IvRank.spec.tsx`, listed above with
+reasons) — never a missing contract field or an unresolved must-not-change conflict.
+
+## Residuals seen but not fixed — Pass 2
+
+- **`command-deck` still 215 px vs the ≤ 200 px threshold** (design 186, missed by 15, was missed by 43) — root cause verified: joining the toolbar widens the right region enough that `TickerHeader`'s
+  own chip row wraps to two lines at 1280/1440 where the design's shorter mock content does not. Not
+  chased (would require touching either the chip row's own wrap rule or the toolbar/CTA cluster's
+  width — neither in change 9's scope).
+- **`widget-structure-hero` still 968 px vs the ≤ 950 px threshold** (design 905, missed by 18, was
+  missed by 187) at 390 — the hero's canvas/ladder interior is must-not-change; the header itself,
+  the actual defect this pass fixed, is now visually correct (verified against the crop evidence).
+- **`ticker-context-grid` (band) still 968 px vs the ≤ 800 px threshold** (design 673, missed by 168,
+  was missed by 252) at 1280 — landed almost exactly at this task's own predicted "≈ 970" value; the
+  ≤ 800 density target is explicitly named an open owner item in the task text itself ("do not cut
+  fields to reach it") — not chased.
+- The pre-existing residuals the conductor's cold verification already named and this pass did not
+  touch (the flow-spark sparkline GATE Z, the omitted signed-change/instrument-name API follow-up)
+  are unchanged — see `RESUME.md`.
+
+## Screenshots and evidence — Pass 2
+
+Committed, under `ticker-repair-after/` (JSON census + `.jpg` pair composites; `.png` crops are
+gitignored per that folder's own `.gitignore`):
+
+- `app/desk-real-{1440,1280,834,390}-dark.json`, `app/desk-real-1280-light.json` — the refreshed DOM
+  census this report's numbers are read from (`design/*.json` unchanged — the design source was not
+  touched this pass).
+- `pairs/desk-real-{1440,1280,834,390}-dark.jpg`, `pairs/desk-real-1280-light.jpg` — refreshed
+  side-by-side app|design composites (regenerated via `_tools/pairs.py desk-real` this pass).
+- `crops/app-{masthead,hero,read-strip,live-tape,ai-read,dealer-flow,market-context,nav}-real-1280-dark.png`
+  and the `design-*` counterparts, `crops/sizes-real-1280-dark.json` — refreshed by the harness's own
+  `crops · desk-real-1280-dark` test.
+
+Not repo-committed (PNGs; paths on this machine, per the task's "outside the repo or in
+`ticker-repair-after/`" instruction):
+`/private/tmp/claude-501/.../scratchpad/hero-390-header.png` (the change 7 hero-header fix, cropped
+from `app/desk-real-390-dark.png` at the hero's own y-range — title + chip on one row, subtitle full
+width, toggle on its own row below, matching the design shape the original crop evidence named as
+broken); `/private/tmp/claude-501/.../scratchpad/all-headers-390.png` (the shared-header sweep — every
+other desk widget's header at 390, stitched into one image, confirmed clean); `band-1280-{dark,light}.png`
+(the context band without `IvRank`, both schemes — light confirms no dark-filled canvas).
+
+**Verdict on Pass 2:** all three changes landed and measurably closed their named gaps (390 page total
+now meets its threshold — was the one page-level miss; the band landed within 2 px of the task's own
+predicted value). Two region-level thresholds (`command-deck`, `widget-structure-hero`) and one
+already-open owner item (`ticker-context-grid`) remain narrowly missed, each named with a
+directly-measured root cause, not a guess — no field was cut and no content was invented to force a
+number under a line. Every gate is green cold; `apps/api` stayed untouched throughout.
