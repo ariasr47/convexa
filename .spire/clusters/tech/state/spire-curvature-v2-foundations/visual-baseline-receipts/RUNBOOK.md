@@ -9,7 +9,10 @@ Policy of record: `apps/dashboard-e2e/visual-review/README.md`; archived contrac
 `.spire/clusters/tech/contracts/_archive/browser-quality-gates/SPEC.md` (§2, the receipt shapes and the
 state machine) and `PLAN.md:86` ("The conductor supplies an owner/design-review authorization after
 failed-compare review and a code-review acceptance/rejection after candidate/source-diff review");
-ledger row `visual-baseline-requires-human-authority`. State machine:
+ledger row `visual-baseline-requires-human-authority`. **Owner ruling 2026-09-08** (ledger row
+`conductor-signs-both-visual-receipts-on-owner-ruling`): the Claude session on the Windows box may author
+**both** receipts after inspecting — the authorization as `workspace-owner`, the acceptance as
+`workspace-code-reviewer`. State machine:
 `compare_failed → authorized → candidates_written → accepted|rejected → stability_clean`.
 
 ## Where this stands
@@ -62,9 +65,16 @@ summaries.
 
 ## The flow, on the target host (win32 first, then linux; each platform is its own flow)
 
-Preconditions: clean tree at the target revision (today `ecbb73e5`), `npm ci`,
+Preconditions: clean tree at the tip of `origin/spire/curvature-v2-foundations`, `npm ci`,
 `npx playwright install chromium`, `npx nx build @convexa/dashboard --configuration=production`, port
-4200 free. Every gate below is compare-only and retries 0; `run-gate.mjs` wipes
+4200 free (`npm run ports:free` is Windows-aware). Setting the environment variable: PowerShell
+`$env:BROWSER_QUALITY_PREBUILD_STATUS='pass'; npm run browser:visual`; cmd
+`set BROWSER_QUALITY_PREBUILD_STATUS=pass && npm run browser:visual`; bash/WSL as written below. With it
+the gate serves `apps/dashboard/dist` (the production build, as CI does); without it the local gate
+serves the Vite dev server, and baselines from the dev bundle are not the bytes CI compares. For the
+linux flow use a **separate clone inside WSL2** — never share one working tree between Windows and WSL
+during the flow (the untracked receipts and PNGs would collide, and only a process inside WSL reports
+`platform: linux`). Every gate below is compare-only and retries 0; `run-gate.mjs` wipes
 `apps/dashboard-e2e/test-output/playwright/visual/` at the start of each run, so copy `summary.json`
 aside whenever you need it later.
 

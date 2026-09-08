@@ -1,5 +1,66 @@
 # RESUME — spire/curvature-v2-foundations
 
+## ➡ HANDOVER — to a fresh session on the owner's Windows box (written 2026-09-08 on the Mac)
+
+**Read this first.** Claude's per-machine memory does not travel; this file and
+`visual-baseline-receipts/RUNBOOK.md` are the memory the Windows session has. Treat every claim here as a
+claim: re-verify against `git` before acting.
+
+**Branch state at handover:** `spire/curvature-v2-foundations` at the tip of origin (this handover commit,
+on top of `b31956e1`). Pushed; **no PR**; nothing uncommitted on the Mac except two intentionally untracked
+local files (`.claude/launch.json`, `convexa-api-contract-candidate-*.ok`). `main` is untouched.
+
+**What happened on the Mac on 2026-09-08 (newest last):** the fidelity audit → the `/ticker` repair lane
+(two passes, desk 1.07× the design) → the surfaces repair lane (positions 1.16×, settings 1.16×, alerts
+0.90× in two columns, scanner with score bar + notes), both cold re-verified and pushed → owner: _"proceed
+with the visual baseline receipt flow"_ → the flow is **win32/linux-only by schema**, so the Mac could only
+prepare it (`visual-baseline-receipts/`: RUNBOOK, drafting helper, darwin preview of the six compositions)
+→ owner ruling, verbatim: _"the Windows session may sign both, proceed on Windows (i'm on mac right now),
+commit and push everything i need and create a handover so i can continue on a windows machine"_ —
+recorded as ledger row `conductor-signs-both-visual-receipts-on-owner-ruling`.
+
+**The task on this box, in order:**
+
+1. `git fetch && git switch spire/curvature-v2-foundations && git pull --ff-only && git status` → clean.
+2. Run the **win32** flow end to end per `visual-baseline-receipts/RUNBOOK.md` (steps 1–6): compare-only
+   → inspect the six actuals and diffs against `context/DESIGN_SYSTEM.md` + `design/site/*.html` (the
+   darwin preview in `visual-baseline-receipts/preview-darwin-ecbb73e5/` shows the same compositions) →
+   `visual_receipts.mjs authorize` → `npm run browser:visual:update -- --authorization …` → inspect the six
+   candidates and the patch → `visual_receipts.mjs accept` → two clean compare runs →
+   `visual_receipts.mjs stability` → **one** commit → push.
+3. If WSL2 (x86-64 Ubuntu) is available: repeat for **linux** from a separate clone inside WSL (the runbook
+   says why). If not, say so plainly — the linux flow waits, and CI's visual child stays red until it runs.
+4. Do **not** open the PR without asking. Report back: the two candidate-set ids, the acceptance ids, the
+   stability run ids, and the six SHA-256 per platform.
+
+**How to boot on Windows:** `node .spire/bin/spire.mjs run tech --provider claude` then `/spire-tech`.
+Toolchain: Node **26.7.0** (`.nvmrc`; nvm-windows), `npm ci`, `npx playwright install chromium`,
+`npx nx build @convexa/dashboard --configuration=production` (the gate serves `dist` when
+`BROWSER_QUALITY_PREBUILD_STATUS=pass`; PowerShell: `$env:BROWSER_QUALITY_PREBUILD_STATUS='pass'`).
+`.gitattributes` enforces LF — do not set `core.autocrlf`; the helper writes LF. `run-gate.mjs` on win32
+needs `node_modules/npm/bin/npm-cli.js` beside `node.exe` (a standard install has it). `npm run ports:free`
+is Windows-aware. Each gate run wipes `apps/dashboard-e2e/test-output/playwright/visual/` — copy
+`summary.json` aside between runs. The six visual scenarios run on strict fixtures: the API does not
+need to run, no account is needed, and no live vendor is contacted.
+
+**Rules that bind here:** the update command runs only through the authorization receipt — never
+`--update-snapshots` by hand; nothing is committed before `stability_clean`; never `git stash`; never
+commit `.env*`; never create an account or type a password; the helper drafts, the session decides after
+looking — say in the report what was looked at.
+
+**Paste this to open the Windows session:**
+
+```
+/spire-tech
+Boot from .spire/clusters/tech/state/spire-curvature-v2-foundations/RESUME.md — its top block is the Windows handover written on the Mac on 2026-09-08. Task: run the visual-baseline receipt flow on this win32 box end to end per visual-baseline-receipts/RUNBOOK.md, drafting the receipts with visual_receipts.mjs. The owner ruled that this session may author BOTH the authorization and the acceptance, after inspecting the actual/diff images and then the candidate PNGs and the patch. Keep everything untracked until stability_clean, then one commit and push. If WSL2 x86-64 is available, repeat for linux from a separate clone inside WSL; otherwise say so. Do not open a PR without asking. Report the candidate-set ids, acceptance ids, stability run ids and the six SHA-256 per platform.
+```
+
+**Residuals the owner already knows (do not fold into the flow):** the anonymous `/ticker` headline wraps
+at 1280 beside the sign-in card; the scanner header cluster centres under the title at 900; positions at
+1440 is 1.26× the design; the AI-providers panel is 633 px against 420; the scanner fixture's
+`sweep_last_completed: 1` sentinel renders "Structure as-of 496528h" (audit L2). The hosted Linux
+candidates workflow cannot complete as wired (BACKLOG Harvest 2026-09-08 addendum).
+
 ## ⬆ UPDATE — 2026-09-08, owner: "proceed with the visual baseline receipt flow" — prepared; BLOCKED on platform, by design
 
 The flow (`apps/dashboard-e2e/visual-review/README.md`, ledger `visual-baseline-requires-human-authority`) is
