@@ -117,11 +117,16 @@ beforeEach(() => {
             status: 'ok',
           },
         ],
-        sweep: { updated_at: Date.now() / 1000, sweep_last_completed: Date.now() / 1000, universe_size: 1 },
+        sweep: {
+          updated_at: Date.now() / 1000,
+          sweep_last_completed: Date.now() / 1000,
+          universe_size: 1,
+        },
       });
     }
     if (url.includes('/api/auth/session')) return json(sessionBody);
-    if (url.includes('/api/auth/ai-key')) return json({ error: 'auth_required', message: 'sign in' }, 403);
+    if (url.includes('/api/auth/ai-key'))
+      return json({ error: 'auth_required', message: 'sign in' }, 403);
     throw new Error(`Unexpected fetch in test: ${url}`);
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -155,7 +160,10 @@ async function openWithKeyboard(user: ReturnType<typeof userEvent.setup>) {
  * PALETTE_COMMANDS order is Scanner(0)·Ticker(1)·Positions(2)·Alerts(3), so reaching one is N
  * ArrowDown presses from the default index 0, then Enter — never `.focus()` on the row itself).
  */
-async function selectCommandByArrows(user: ReturnType<typeof userEvent.setup>, downPresses: number) {
+async function selectCommandByArrows(
+  user: ReturnType<typeof userEvent.setup>,
+  downPresses: number,
+) {
   for (let i = 0; i < downPresses; i++) await user.keyboard('{ArrowDown}');
   await user.keyboard('{Enter}');
 }

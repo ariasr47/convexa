@@ -40,7 +40,10 @@ const TIP_BY_KIND: Record<
     'The live stream dropped. The positioning levels and the GEX chart below are still current as of the last data load — only live price, the last trade, spread, net flow and the live gamma flip are paused. Reconnecting automatically; no refresh needed.',
 };
 
-const TONE_BY_KIND: Record<Exclude<ConnectionState['kind'], 'replay'>, 'info' | 'warning' | 'neutral'> = {
+const TONE_BY_KIND: Record<
+  Exclude<ConnectionState['kind'], 'replay'>,
+  'info' | 'warning' | 'neutral'
+> = {
   live: 'info',
   closed: 'neutral',
   overnight: 'warning',
@@ -98,7 +101,10 @@ export function resolveChipContent(
 
 /** The chip's own visible label — one per non-replay kind. Replay uses the shipped
  *  `sessionTapeChip().text` verbatim instead (SPEC §4.2), never re-derived here. */
-export function chipLabel(kind: Exclude<ConnectionState['kind'], 'replay'>, live: LiveUpdate | null): string {
+export function chipLabel(
+  kind: Exclude<ConnectionState['kind'], 'replay'>,
+  live: LiveUpdate | null,
+): string {
   const mid = fmtMid(live?.mid);
   const midSuffix = mid != null ? ` · mid $${mid}` : '';
   switch (kind) {

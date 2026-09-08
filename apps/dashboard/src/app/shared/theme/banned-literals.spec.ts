@@ -38,7 +38,7 @@ const BANNED = [
  */
 const EXEMPT: Record<string, string> = {
   'shared/ui/Widget/Widget.tsx':
-    "inset well shadow `inset 0 2px 10px -5px rgba(0,0,0,0.55)` — a neutral depth alpha that predates `scrim` and is not an overlay dim (Widget.tsx:137, dark arm only)",
+    'inset well shadow `inset 0 2px 10px -5px rgba(0,0,0,0.55)` — a neutral depth alpha that predates `scrim` and is not an overlay dim (Widget.tsx:137, dark arm only)',
 };
 
 /**
@@ -66,11 +66,21 @@ describe('banned-literals — no component carries a v2 token value verbatim', (
   it('the ban list and the glob are both non-empty (anti-vacuity)', () => {
     expect(BANNED.length).toBe(14);
     expect(Object.keys(SOURCES).length).toBeGreaterThan(40);
-    expect(Object.keys(SOURCES).map(appPath).some((k) => k.startsWith('pages/'))).toBe(true);
-    expect(Object.keys(SOURCES).map(appPath).some((k) => k.startsWith('shell/'))).toBe(true);
-    expect(Object.keys(SOURCES).map(appPath).every((k) => !k.startsWith('shared/theme/'))).toBe(
-      true,
-    );
+    expect(
+      Object.keys(SOURCES)
+        .map(appPath)
+        .some((k) => k.startsWith('pages/')),
+    ).toBe(true);
+    expect(
+      Object.keys(SOURCES)
+        .map(appPath)
+        .some((k) => k.startsWith('shell/')),
+    ).toBe(true);
+    expect(
+      Object.keys(SOURCES)
+        .map(appPath)
+        .every((k) => !k.startsWith('shared/theme/')),
+    ).toBe(true);
   });
 
   it('MUTATION GUARD: a planted token literal is caught, a clean source is not', () => {

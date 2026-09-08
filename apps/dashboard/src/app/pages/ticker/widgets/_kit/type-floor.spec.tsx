@@ -65,8 +65,7 @@ describe('allRulesForClass — the hardened reader is non-vacuous and sees hoist
 
   it('MUTATION GUARD: a fixture with a HOISTED @container block after the base rule is VISIBLE — the old reader would have missed it entirely', () => {
     const css =
-      '@container panel (max-width:360px){.css-abc{font-size:17px;}}' +
-      '.css-abc{font-size:20px;}';
+      '@container panel (max-width:360px){.css-abc{font-size:17px;}}' + '.css-abc{font-size:20px;}';
     const rules = allRulesForClass(css, 'css-abc');
     // Both the base declaration AND the hoisted @container declaration are captured.
     expect(rules.some((r) => r.includes('font-size:17px'))).toBe(true);
@@ -75,8 +74,7 @@ describe('allRulesForClass — the hardened reader is non-vacuous and sees hoist
 
   it('MUTATION GUARD: deleting the @container block from the fixture removes it from the result — proving the assertion actually depends on that block existing', () => {
     const withContainer =
-      '@container panel (max-width:360px){.css-abc{font-size:17px;}}' +
-      '.css-abc{font-size:20px;}';
+      '@container panel (max-width:360px){.css-abc{font-size:17px;}}' + '.css-abc{font-size:20px;}';
     const withoutContainer = '.css-abc{font-size:20px;}';
     expect(allRulesForClass(withContainer, 'css-abc').join(';')).toContain('font-size:17px');
     expect(allRulesForClass(withoutContainer, 'css-abc').join(';')).not.toContain('font-size:17px');

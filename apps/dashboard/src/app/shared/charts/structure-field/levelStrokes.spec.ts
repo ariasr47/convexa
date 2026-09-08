@@ -53,7 +53,7 @@ describe('resolveLevelPalette — the only place a token key becomes a colour', 
     }
   });
 
-  it('differs in at least one member between schemes (criterion 53\'s structural half — no scheme-invariant stroke)', () => {
+  it("differs in at least one member between schemes (criterion 53's structural half — no scheme-invariant stroke)", () => {
     const dark = resolveLevelPalette(theme);
     const light = resolveLevelPalette(lightTheme);
     const differing = ALL_ROW_IDS.filter((id) => dark[id] !== light[id]);

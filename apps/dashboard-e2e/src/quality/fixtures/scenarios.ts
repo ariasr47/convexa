@@ -512,7 +512,10 @@ export const accessibilityScenarios = [
       { selector: '[data-testid="widget-bento"]' },
       // Re-pointed (curvature-v2-foundations, AC-57): folded into the ONE connection chip; the
       // label no longer carries the literal `⚠`/`⏸` glyph (a stroke icon renders instead).
-      { selector: '[data-testid="connection-chip"][data-connection-state="offline"]', text: 'Live offline' },
+      {
+        selector: '[data-testid="connection-chip"][data-connection-state="offline"]',
+        text: 'Live offline',
+      },
       { selector: '[data-testid="last-trade"]', text: '⏸ Last trade' },
     ]),
     stream: 'payload-gap' as const,

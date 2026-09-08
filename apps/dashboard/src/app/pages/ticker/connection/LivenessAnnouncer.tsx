@@ -12,8 +12,8 @@
  */
 import type { LiveUpdate } from '@convexa/api';
 import { useEffect, useRef, useState } from 'react';
-import { humanSessionDate } from '../widgets/_kit/copy';
 import { sessionTapeOf } from '../sessionTapeStanding';
+import { humanSessionDate } from '../widgets/_kit/copy';
 import type { ConnectionState } from './connectionState';
 import { announceSentence } from './copy';
 

@@ -59,7 +59,13 @@ function resolveToken(theme: Theme, key: StrokeTokenKey): string {
   }
 }
 
-const LADDER_ROW_IDS: readonly LadderRowId[] = ['callWall', 'mid', 'maxPain', 'gammaFlip', 'putWall'];
+const LADDER_ROW_IDS: readonly LadderRowId[] = [
+  'callWall',
+  'mid',
+  'maxPain',
+  'gammaFlip',
+  'putWall',
+];
 
 /** The canvas never reads a theme — this is the only place a token key becomes a colour. */
 export function resolveLevelPalette(theme: Theme): LevelPalette {

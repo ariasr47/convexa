@@ -28,6 +28,8 @@ import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
+import { ConnectionChip } from '../../connection/ConnectionChip';
+import { connectionStateFor } from '../../connection/connectionState';
 import { useLiveTape } from '../../liveTapeStore';
 import { sessionTapeOf, type SessionTapeOccupancy } from '../../sessionTapeStanding';
 import {
@@ -36,8 +38,6 @@ import {
   LAST_TRADE_TOOLTIP,
   SINGLE_NAME_CAVEAT,
 } from '../_kit/copy';
-import { ConnectionChip } from '../../connection/ConnectionChip';
-import { connectionStateFor } from '../../connection/connectionState';
 import { FreshnessLine } from './FreshnessLine';
 
 const REGIME_TIP =
@@ -297,7 +297,12 @@ export function TickerHeader({
                 tip={REGIME_TIP}
               />
             )}
-            <ConnectionChip state={connState} live={live} routeSymbol={m.ticker} reduced={reduced} />
+            <ConnectionChip
+              state={connState}
+              live={live}
+              routeSymbol={m.ticker}
+              reduced={reduced}
+            />
           </Stack>
 
           {/* Headline ANCHOR (NBBO mid when live or display-active, else the static price). The last-trade

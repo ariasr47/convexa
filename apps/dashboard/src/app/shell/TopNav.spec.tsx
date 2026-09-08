@@ -8,8 +8,8 @@ import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
 import { TopNav } from './TopNav';
 
 function renderNav(props: React.ComponentProps<typeof TopNav> = {}, path = '/ticker') {

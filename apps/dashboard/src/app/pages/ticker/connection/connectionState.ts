@@ -27,13 +27,13 @@
  * the props-driven contract both files already have — so the wrapper takes the same inputs the
  * pure resolver does, exactly mirroring the deleted `TickerHeader.connectionChip()`'s signature.
  */
+import type { LiveUpdate } from '@convexa/api';
 import {
   consumeStanding,
   isDeliveringLive,
   type ConsumeStanding,
   type SessionTapeOccupancy,
 } from '../sessionTapeStanding';
-import type { LiveUpdate } from '@convexa/api';
 
 /** Every replay standing except the no-session-tape arm — DERIVED, not retyped, from the shipped
  *  8-member union so an added standing is a compile error at the `sessionTapeChip` switch without

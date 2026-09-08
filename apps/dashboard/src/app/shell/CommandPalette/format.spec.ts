@@ -77,7 +77,11 @@ describe('paletteScoreCell — AC-29/AC-29b: the wire status vocabulary through 
   });
 
   it('stale renders the score WITH its sweep age beside it', () => {
-    const sweep: SweepHeartbeat = { sweep_last_completed: 1900, universe_size: 500, updated_at: 1990 };
+    const sweep: SweepHeartbeat = {
+      sweep_last_completed: 1900,
+      universe_size: 500,
+      updated_at: 1990,
+    };
     const cell = paletteScoreCell(row({ status: 'stale', score: 55, as_of: 1990 }), sweep, NOW_S);
     expect(cell.text).toBe('55');
     expect(cell.freshness).toMatch(/stale/i);
@@ -85,7 +89,11 @@ describe('paletteScoreCell — AC-29/AC-29b: the wire status vocabulary through 
   });
 
   it('building renders the bare em-dash, never a fabricated 0', () => {
-    const cell = paletteScoreCell(row({ status: 'building', score: null, as_of: 1990 }), null, NOW_S);
+    const cell = paletteScoreCell(
+      row({ status: 'building', score: null, as_of: 1990 }),
+      null,
+      NOW_S,
+    );
     expect(cell.text).toBe('—');
     expect(cell.text).not.toBe('0');
   });
@@ -95,23 +103,33 @@ describe('paletteScoreCell — AC-29/AC-29b: the wire status vocabulary through 
     expect(cell.text).toBe('unavailable');
   });
 
-  it('GATE Q bounce finding 4 / [absent-is-not-none] — error with the wire epoch sentinel `as_of: 0` ' +
+  it(
+    'GATE Q bounce finding 4 / [absent-is-not-none] — error with the wire epoch sentinel `as_of: 0` ' +
       'never fabricates a freshness age (projection.rs: project_error clones project_building, which ' +
-      'sets as_of: 0.0 — a real `GET /api/scan` response, not a hypothetical fixture)', () => {
-    const cell = paletteScoreCell(row({ status: 'error', score: null, as_of: 0 }), null, NOW_S);
-    expect(cell.text).toBe('unavailable');
-    // Before the fix this computed `NOW_S - 0` as a real elapsed age (e.g. "496824h ago" against a
-    // real epoch `now`) — an absent timestamp must render as a member of the closed not-a-number
-    // vocabulary (here: no freshness at all), never as a computed age.
-    expect(cell.freshness).toBeNull();
-  });
+      'sets as_of: 0.0 — a real `GET /api/scan` response, not a hypothetical fixture)',
+    () => {
+      const cell = paletteScoreCell(row({ status: 'error', score: null, as_of: 0 }), null, NOW_S);
+      expect(cell.text).toBe('unavailable');
+      // Before the fix this computed `NOW_S - 0` as a real elapsed age (e.g. "496824h ago" against a
+      // real epoch `now`) — an absent timestamp must render as a member of the closed not-a-number
+      // vocabulary (here: no freshness at all), never as a computed age.
+      expect(cell.freshness).toBeNull();
+    },
+  );
 
-  it('the same sentinel at a REAL wall-clock `now` (not the fixture NOW_S=2000) does not fabricate a ' +
-      'huge fake age — reproduces QA\'s exact observed defect shape', () => {
-    const realNowS = Math.floor(Date.now() / 1000);
-    const cell = paletteScoreCell(row({ status: 'error', score: null, as_of: 0 }), null, realNowS);
-    expect(cell.freshness).toBeNull();
-  });
+  it(
+    'the same sentinel at a REAL wall-clock `now` (not the fixture NOW_S=2000) does not fabricate a ' +
+      "huge fake age — reproduces QA's exact observed defect shape",
+    () => {
+      const realNowS = Math.floor(Date.now() / 1000);
+      const cell = paletteScoreCell(
+        row({ status: 'error', score: null, as_of: 0 }),
+        null,
+        realNowS,
+      );
+      expect(cell.freshness).toBeNull();
+    },
+  );
 
   it('an unknown status degrades honestly rather than throwing', () => {
     expect(() =>

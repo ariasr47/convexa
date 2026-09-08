@@ -41,7 +41,9 @@ describe('AC-12b — one announcer, class-change only', () => {
   });
 
   it('a mid-only update (same class) announces ZERO additional times', () => {
-    const { rerender } = render(<LivenessAnnouncer state={{ kind: 'live' }} live={liveUpdate({ mid: 500 })} />);
+    const { rerender } = render(
+      <LivenessAnnouncer state={{ kind: 'live' }} live={liveUpdate({ mid: 500 })} />,
+    );
     const first = screen.getByTestId('connection-liveness-announcer').textContent;
     expect(first).toContain('Live stream connected');
     rerender(<LivenessAnnouncer state={{ kind: 'live' }} live={liveUpdate({ mid: 501 })} />);
@@ -63,7 +65,9 @@ describe('AC-12b — one announcer, class-change only', () => {
     expect(screen.getByTestId('connection-liveness-announcer').textContent).toBe('');
     for (const [state, expectedStart] of cases) {
       rerender(<LivenessAnnouncer state={state} live={liveUpdate()} />);
-      expect(screen.getByTestId('connection-liveness-announcer').textContent).toContain(expectedStart);
+      expect(screen.getByTestId('connection-liveness-announcer').textContent).toContain(
+        expectedStart,
+      );
     }
     const texts = cases.map(([, t]) => t);
     expect(new Set(texts).size).toBe(texts.length); // pairwise distinct

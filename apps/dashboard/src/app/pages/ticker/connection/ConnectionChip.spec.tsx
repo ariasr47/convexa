@@ -178,9 +178,9 @@ describe('AC-11/AC-12 — liveness motion stops on drop; reduced motion strips t
   it('reduced motion renders the dot static and fully opaque, and the chip still states the state in words', () => {
     renderChip(liveUpdate({ live: true, market_session: 'regular' }), false, true);
     const dot = screen.getByTestId('connection-chip-dot');
-    expect(getComputedStyle(dot).animationName === 'none' || getComputedStyle(dot).animationName === '').toBe(
-      true,
-    );
+    expect(
+      getComputedStyle(dot).animationName === 'none' || getComputedStyle(dot).animationName === '',
+    ).toBe(true);
     expect(screen.getByTestId('connection-chip')).toHaveTextContent('live');
   });
 

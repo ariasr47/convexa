@@ -696,7 +696,10 @@ test.describe('criterion 66 (FE-13) — the alerts write affordances at 393px, c
         `rule Switch's FormControlLabel (AlertsPage.tsx:399-402) = ${JSON.stringify(switchLabelBox)}`,
     );
     await expectFloor(removeButton, 'per-rule Remove button (coarse pointer)');
-    await expectFloor(switchLabel, "per-rule enable/disable Switch's FormControlLabel (coarse pointer)");
+    await expectFloor(
+      switchLabel,
+      "per-rule enable/disable Switch's FormControlLabel (coarse pointer)",
+    );
   });
 });
 

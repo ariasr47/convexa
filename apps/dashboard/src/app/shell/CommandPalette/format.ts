@@ -71,7 +71,11 @@ export function paletteScoreCell(
       const sweepAge = relAge(sweep?.sweep_last_completed, nowS);
       return {
         text: row.score != null ? String(Math.round(row.score)) : '—',
-        freshness: sweepAge ? `stale · sweep ${sweepAge}` : asOf ? `stale · as of ${asOf}` : 'stale',
+        freshness: sweepAge
+          ? `stale · sweep ${sweepAge}`
+          : asOf
+            ? `stale · as of ${asOf}`
+            : 'stale',
       };
     }
     case 'ok':

@@ -42,8 +42,16 @@ function row(over: Partial<ScanRow> = {}): ScanRow {
 
 function scanResponse(over: Partial<ScanResponse> = {}): ScanResponse {
   return {
-    rows: [row({ symbol: 'SPY' }), row({ symbol: 'SPX', score: 40 }), row({ symbol: 'AAPL', score: 81 })],
-    sweep: { sweep_last_completed: Math.floor(Date.now() / 1000) - 10, universe_size: 3, updated_at: 0 },
+    rows: [
+      row({ symbol: 'SPY' }),
+      row({ symbol: 'SPX', score: 40 }),
+      row({ symbol: 'AAPL', score: 81 }),
+    ],
+    sweep: {
+      sweep_last_completed: Math.floor(Date.now() / 1000) - 10,
+      universe_size: 3,
+      updated_at: 0,
+    },
     view: {} as ScanResponse['view'],
     ...over,
   };

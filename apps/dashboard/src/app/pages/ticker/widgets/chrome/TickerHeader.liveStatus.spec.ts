@@ -39,7 +39,9 @@ describe('resolveConnectionState — closed wins over live; lag tip drops holida
     const content = resolveChipContent(state, live, 'SPY');
     expect(content.text).toMatch(/^market closed/);
     expect(content.text).not.toContain('live');
-    expect(content.tip).toBe('Market is closed (weekend/holiday). Showing the last completed session.');
+    expect(content.tip).toBe(
+      'Market is closed (weekend/holiday). Showing the last completed session.',
+    );
   });
 
   it('lag tip has no holiday substring and is the replacement sentence', () => {
@@ -48,7 +50,9 @@ describe('resolveConnectionState — closed wins over live; lag tip drops holida
     expect(state.kind).toBe('noTicks');
     const content = resolveChipContent(state, live, 'SPY');
     expect(content.text).toMatch(/^no live ticks/);
-    expect(content.tip).toBe('In a covered session but no ticks are arriving — the feed may be lagging.');
+    expect(content.tip).toBe(
+      'In a covered session but no ticks are arriving — the feed may be lagging.',
+    );
     expect(content.tip?.toLowerCase()).not.toContain('holiday');
   });
 

@@ -24,6 +24,7 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { allRulesForClass, joinedStyleText } from '../_kit/emotionCssReader';
 import {
   ActionRegion,
   LoadingBlock,
@@ -41,7 +42,6 @@ import {
   type PresentationInput,
 } from './presentationPolicy';
 import { readLayoutFor, type Annex, type BodyCase } from './readLayout';
-import { allRulesForClass, joinedStyleText } from '../_kit/emotionCssReader';
 
 afterEach(cleanup);
 
@@ -413,10 +413,9 @@ describe('row 29/30 — the verdict word is the first content node and the only 
       const nonText = nonTextAmberFindings(container);
       expect(otherFindings(nonText), `${label} must have no fourth non-text amber`).toEqual([]);
       expect(fillCount(nonText), `${label} primary-fill count`).toBe(expectedFill);
-      expect(
-        nonText.filter((f) => f.kind === 'in-flight').length,
-        `${label} in-flight count`,
-      ).toBe(expectedInFlight);
+      expect(nonText.filter((f) => f.kind === 'in-flight').length, `${label} in-flight count`).toBe(
+        expectedInFlight,
+      );
       unmount();
       cleanup();
     }

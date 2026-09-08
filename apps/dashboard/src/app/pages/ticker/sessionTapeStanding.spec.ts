@@ -163,7 +163,9 @@ describe('sessionTapeStanding', () => {
     it('true only for a genuinely live, delivering S0 payload', () => {
       expect(isDeliveringLive(live({ live: true, market_session: 'regular' }), false)).toBe(true);
       expect(isDeliveringLive(live({ live: true, market_session: 'premarket' }), false)).toBe(true);
-      expect(isDeliveringLive(live({ live: true, market_session: 'afterhours' }), false)).toBe(true);
+      expect(isDeliveringLive(live({ live: true, market_session: 'afterhours' }), false)).toBe(
+        true,
+      );
     });
 
     it('false when the market is closed, even if the wire still says live:true (finding 1 case A — apps/api/src/routes/stream.rs derives `live` from tick recency and `market_session` from the ET clock independently, so this combination is reachable from the real wire)', () => {
@@ -184,10 +186,7 @@ describe('sessionTapeStanding', () => {
       // this predicate — it only sees the payload, not the route symbol) are still session-tape-
       // poisoned the same way.
       expect(
-        isDeliveringLive(
-          live({ live: true, session_tape: occ({ tape_time_et: null }) }),
-          false,
-        ),
+        isDeliveringLive(live({ live: true, session_tape: occ({ tape_time_et: null }) }), false),
       ).toBe(false);
     });
 
