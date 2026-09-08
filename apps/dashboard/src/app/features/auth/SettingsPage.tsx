@@ -21,6 +21,9 @@ import { usePersona } from '@/features/personas/usePersona';
 import { DisclaimerCopy } from '@/shared/copy/disclaimer';
 import { extrasFor } from '@/shared/theme/tokens';
 import type { ThemePref } from '@convexa/api';
+import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
+import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
+import SettingsBrightnessOutlinedIcon from '@mui/icons-material/SettingsBrightnessOutlined';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -171,7 +174,9 @@ export function SettingsPage() {
   const primaryName = displayName || auth.user?.email || '';
 
   return (
-    <Container maxWidth="sm" sx={{ py: 4, maxWidth: 640 }} data-testid="settings-page">
+    // design/src/screens/settings.mjs:5 — `minmax(0, 760px)` content column; the section rail
+    // (`:28`) is DEFERRED by owner ruling D-B (council/decisions.md) and stays out of scope here.
+    <Container maxWidth="sm" sx={{ py: 4, maxWidth: 760 }} data-testid="settings-page">
       <Stack spacing={0.5} sx={{ mb: 3 }}>
         <Typography variant="h1" sx={{ fontSize: '1.9rem', fontWeight: 700 }}>
           {C.title}
@@ -262,63 +267,74 @@ export function SettingsPage() {
           )}
 
           <Stack spacing={2.5}>
-            {/* Active persona */}
-            <Box>
-              <FieldLabel>{C.activePersona}</FieldLabel>
-              <FormControl fullWidth size="small">
-                <InputLabel id="settings-persona-label" sx={{ display: 'none' }}>
-                  {C.activePersona}
-                </InputLabel>
-                <Select
-                  labelId="settings-persona-label"
-                  aria-label={C.activePersona}
-                  value={settings.effective.personaId}
-                  onChange={(e) => onPersona(String(e.target.value))}
-                  disabled={!auth.ready}
-                  inputProps={{ 'data-testid': 'settings-persona' }}
-                  // GATE Z, finding 3 (criterion 66): MUI `Select` self-duplicates its own class
-                  // (`&.${selectClasses.select}`, `Select/SelectInput.js`) to "win specificity
-                  // over the input base" at (0,2,0) — `theme.ts`'s coarse-pointer floor (a bare
-                  // `[role="combobox"]`, (0,1,0)) cannot reach it; a scoped `sx` descendant
-                  // selector tied at (0,2,0) loses too (confirmed by measuring computed
-                  // `min-height` in a real browser). Doubling the same class here reaches
-                  // (0,3,0), which wins unconditionally.
-                  sx={{
-                    '@media (pointer: coarse)': {
-                      '& .MuiSelect-select.MuiSelect-select': { minHeight: 44 },
-                    },
-                  }}
-                >
-                  {personaOptions.map((p) => (
-                    <MenuItem key={p.id} value={p.id}>
-                      {p.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
+            {/* Active persona + Default ticker side by side ≥ tablet (768px, theme.ts:91 — the
+                design's own breakpoint, design/src/screens/settings.mjs:37-40, `.set-2`). Stacked
+                below, exactly as shipped. */}
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', tablet: '1fr 1fr' },
+                gap: '16px',
+              }}
+            >
+              {/* Active persona */}
+              <Box>
+                <FieldLabel>{C.activePersona}</FieldLabel>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="settings-persona-label" sx={{ display: 'none' }}>
+                    {C.activePersona}
+                  </InputLabel>
+                  <Select
+                    labelId="settings-persona-label"
+                    aria-label={C.activePersona}
+                    value={settings.effective.personaId}
+                    onChange={(e) => onPersona(String(e.target.value))}
+                    disabled={!auth.ready}
+                    inputProps={{ 'data-testid': 'settings-persona' }}
+                    // GATE Z, finding 3 (criterion 66): MUI `Select` self-duplicates its own class
+                    // (`&.${selectClasses.select}`, `Select/SelectInput.js`) to "win specificity
+                    // over the input base" at (0,2,0) — `theme.ts`'s coarse-pointer floor (a bare
+                    // `[role="combobox"]`, (0,1,0)) cannot reach it; a scoped `sx` descendant
+                    // selector tied at (0,2,0) loses too (confirmed by measuring computed
+                    // `min-height` in a real browser). Doubling the same class here reaches
+                    // (0,3,0), which wins unconditionally.
+                    sx={{
+                      '@media (pointer: coarse)': {
+                        '& .MuiSelect-select.MuiSelect-select': { minHeight: 44 },
+                      },
+                    }}
+                  >
+                    {personaOptions.map((p) => (
+                      <MenuItem key={p.id} value={p.id}>
+                        {p.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
 
-            {/* Default ticker */}
-            <Box>
-              <FieldLabel>{C.defaultTicker}</FieldLabel>
-              <TextField
-                fullWidth
-                size="small"
-                helperText={C.defaultTickerHelper}
-                value={tickerDraft}
-                onChange={(e) => setTickerDraft(e.target.value)}
-                onBlur={commitTicker}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    void commitTicker();
-                  }
-                }}
-                disabled={!auth.ready}
-                slotProps={{
-                  htmlInput: { 'aria-label': C.defaultTicker, 'data-testid': 'settings-ticker' },
-                }}
-              />
+              {/* Default ticker */}
+              <Box>
+                <FieldLabel>{C.defaultTicker}</FieldLabel>
+                <TextField
+                  fullWidth
+                  size="small"
+                  helperText={C.defaultTickerHelper}
+                  value={tickerDraft}
+                  onChange={(e) => setTickerDraft(e.target.value)}
+                  onBlur={commitTicker}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      void commitTicker();
+                    }
+                  }}
+                  disabled={!auth.ready}
+                  slotProps={{
+                    htmlInput: { 'aria-label': C.defaultTicker, 'data-testid': 'settings-ticker' },
+                  }}
+                />
+              </Box>
             </Box>
 
             {/* Theme — segmented control (Dark / Light / System) */}
@@ -369,13 +385,20 @@ export function SettingsPage() {
                   },
                 }}
               >
-                <ToggleButton value="dark" data-testid="settings-theme-dark">
+                <ToggleButton value="dark" data-testid="settings-theme-dark" sx={{ gap: '8px' }}>
+                  <DarkModeOutlinedIcon fontSize="small" aria-hidden />
                   {C.themeDark}
                 </ToggleButton>
-                <ToggleButton value="light" data-testid="settings-theme-light">
+                <ToggleButton value="light" data-testid="settings-theme-light" sx={{ gap: '8px' }}>
+                  <LightModeOutlinedIcon fontSize="small" aria-hidden />
                   {C.themeLight}
                 </ToggleButton>
-                <ToggleButton value="system" data-testid="settings-theme-system">
+                <ToggleButton
+                  value="system"
+                  data-testid="settings-theme-system"
+                  sx={{ gap: '8px' }}
+                >
+                  <SettingsBrightnessOutlinedIcon fontSize="small" aria-hidden />
                   {C.themeSystem}
                 </ToggleButton>
               </ToggleButtonGroup>

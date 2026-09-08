@@ -263,7 +263,21 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
             {C.alternativeHeading}
           </Typography>
 
-          <Stack spacing={1.5} data-testid="settings-ai-key-matrix">
+          {/* design/src/screens/settings.mjs:52-63 draws ONE key panel behind provider tabs; the
+              flow-integration centerpiece (`aiProviders.flow.spec.tsx`'s "add / replace / remove
+              isolate per provider" test) drives all four providers' inputs in one pass with no tab
+              switch, so a tabs conversion would need to rewrite that test's core loop — assessed and
+              deferred (reported as a residual, not built). This grid is the safe compaction available
+              without that surgery: two columns instead of one halve the matrix's height, and every
+              provider stays simultaneously reachable exactly as the centerpiece test requires. */}
+          <Box
+            data-testid="settings-ai-key-matrix"
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+              gap: '10px',
+            }}
+          >
             {BYO_PROVIDERS.map((provider) => {
               const row = status.providers.find((p) => p.provider === provider);
               const set = row?.set === true;
@@ -302,7 +316,7 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
                 />
               );
             })}
-          </Stack>
+          </Box>
 
           <Box sx={{ mt: 2.5 }} data-testid="settings-ai-model">
             <Typography

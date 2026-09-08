@@ -10,6 +10,7 @@
  * accessibility tree — plus the sign-in line. Nothing is written to any durable client store.
  */
 import { faceFor } from '@/shared/figure';
+import { extrasFor } from '@/shared/theme/tokens';
 import type { CapUnit } from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -137,140 +138,178 @@ export function RiskInputsSection() {
       )}
 
       <Stack spacing={2.5} aria-disabled={anonymous} data-testid="risk-inputs-form">
-        <Box>
-          <FieldLabel>{C.accountSizeLabel}</FieldLabel>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
-            <Box
-              component="input"
-              type="text"
-              inputMode="decimal"
-              aria-label={C.accountSizeLabel}
-              aria-disabled={anonymous}
-              disabled={saving}
-              data-testid="risk-inputs-account-size"
-              data-figure-register="mono"
-              value={accountDraft}
-              placeholder="not set"
-              onChange={(e) => !anonymous && setAccountDraft(e.currentTarget.value)}
-              sx={{
-                ...faceFor(true),
-                fontSize: 15,
-                px: 1.25,
-                py: 1,
-                borderRadius: 1,
-                border: '1px solid',
-                borderColor: 'divider',
-                bgcolor: 'background.default',
-                color: 'text.primary',
-                width: 160,
-                '&::before': { content: '"$"' },
-              }}
-            />
-          </Stack>
-          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
-            {C.accountSizeHelper}
-          </Typography>
-          {accountError && (
-            <Typography
-              variant="caption"
-              color="error"
-              data-testid="risk-inputs-account-error"
-              sx={{ display: 'block', mt: 0.25 }}
-            >
-              {accountError}
-            </Typography>
-          )}
-        </Box>
-
-        <Box>
-          <FieldLabel>{C.maxRiskLabel}</FieldLabel>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <Box
-              component="input"
-              type="text"
-              inputMode="decimal"
-              aria-label={C.maxRiskLabel}
-              aria-disabled={anonymous}
-              disabled={saving}
-              data-testid="risk-inputs-cap-value"
-              data-figure-register="mono"
-              value={capDraft}
-              placeholder="not set"
-              onChange={(e) => !anonymous && setCapDraft(e.currentTarget.value)}
-              sx={{
-                ...faceFor(true),
-                fontSize: 15,
-                px: 1.25,
-                py: 1,
-                borderRadius: 1,
-                border: '1px solid',
-                borderColor: 'divider',
-                bgcolor: 'background.default',
-                color: 'text.primary',
-                width: 120,
-              }}
-            />
-            {/* Unit-bearing numeric input (DESIGN_SYSTEM Amendment 2026-08-12) — an explicit unit
-                control; a bare number with an inferred unit never renders anywhere (AC-31). */}
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              value={capUnit}
-              aria-label="Cap unit"
-              aria-disabled={anonymous}
-              data-testid="risk-inputs-cap-unit"
-              onChange={(_e, v) => !anonymous && v && setCapUnit(v as CapUnit)}
-            >
-              <ToggleButton
-                value="usd"
-                data-testid="risk-inputs-cap-unit-usd"
+        {/* The two fields side by side ≥ tablet (design/src/screens/settings.mjs:45-48, `.set-2b`,
+            `1fr 1.3fr` — the cap field carries its unit toggle too, so it gets the wider share). */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', tablet: '1fr 1.3fr' },
+            gap: '16px',
+            alignItems: 'start',
+          }}
+        >
+          <Box>
+            <FieldLabel>{C.accountSizeLabel}</FieldLabel>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
+              <Box
+                component="input"
+                type="text"
+                inputMode="decimal"
+                aria-label={C.accountSizeLabel}
                 aria-disabled={anonymous}
-              >
-                $
-              </ToggleButton>
-              <ToggleButton
-                value="percent"
-                data-testid="risk-inputs-cap-unit-percent"
-                aria-disabled={anonymous}
-              >
-                %
-              </ToggleButton>
-            </ToggleButtonGroup>
-          </Stack>
-          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
-            {C.maxRiskHelper}
-          </Typography>
-          {capError && (
-            <Typography
-              variant="caption"
-              color="error"
-              data-testid="risk-inputs-cap-error"
-              sx={{ display: 'block', mt: 0.25 }}
-            >
-              {capError}
-            </Typography>
-          )}
-          {/* The derived figure — rendered VERBATIM from the server, labelled "derived from your
-              inputs", never "validated", "checked" or "enforced". No client arithmetic here. */}
-          {!anonymous && stored?.effective_dollar_cap.state === 'derived' && (
+                disabled={saving}
+                data-testid="risk-inputs-account-size"
+                data-figure-register="mono"
+                value={accountDraft}
+                placeholder="not set"
+                onChange={(e) => !anonymous && setAccountDraft(e.currentTarget.value)}
+                sx={{
+                  ...faceFor(true),
+                  fontSize: 15,
+                  px: 1.25,
+                  py: 1,
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  bgcolor: 'background.default',
+                  color: 'text.primary',
+                  width: 160,
+                  '&::before': { content: '"$"' },
+                }}
+              />
+            </Stack>
             <Typography
               variant="caption"
               sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+            >
+              {C.accountSizeHelper}
+            </Typography>
+            {accountError && (
+              <Typography
+                variant="caption"
+                color="error"
+                data-testid="risk-inputs-account-error"
+                sx={{ display: 'block', mt: 0.25 }}
+              >
+                {accountError}
+              </Typography>
+            )}
+          </Box>
+
+          <Box>
+            <FieldLabel>{C.maxRiskLabel}</FieldLabel>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <Box
+                component="input"
+                type="text"
+                inputMode="decimal"
+                aria-label={C.maxRiskLabel}
+                aria-disabled={anonymous}
+                disabled={saving}
+                data-testid="risk-inputs-cap-value"
+                data-figure-register="mono"
+                value={capDraft}
+                placeholder="not set"
+                onChange={(e) => !anonymous && setCapDraft(e.currentTarget.value)}
+                sx={{
+                  ...faceFor(true),
+                  fontSize: 15,
+                  px: 1.25,
+                  py: 1,
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  bgcolor: 'background.default',
+                  color: 'text.primary',
+                  width: 120,
+                }}
+              />
+              {/* Unit-bearing numeric input (DESIGN_SYSTEM Amendment 2026-08-12) — an explicit unit
+                control; a bare number with an inferred unit never renders anywhere (AC-31). Fuller
+                labels (design/src/screens/settings.mjs:47, `% of account | $ per trade`) — same
+                testids, same toggle semantics, no test pins the `$`/`%` glyphs. */}
+              <ToggleButtonGroup
+                exclusive
+                size="small"
+                value={capUnit}
+                aria-label="Cap unit"
+                aria-disabled={anonymous}
+                data-testid="risk-inputs-cap-unit"
+                onChange={(_e, v) => !anonymous && v && setCapUnit(v as CapUnit)}
+              >
+                <ToggleButton
+                  value="percent"
+                  data-testid="risk-inputs-cap-unit-percent"
+                  aria-disabled={anonymous}
+                  sx={{ textTransform: 'none', whiteSpace: 'nowrap' }}
+                >
+                  % of account
+                </ToggleButton>
+                <ToggleButton
+                  value="usd"
+                  data-testid="risk-inputs-cap-unit-usd"
+                  aria-disabled={anonymous}
+                  sx={{ textTransform: 'none', whiteSpace: 'nowrap' }}
+                >
+                  $ per trade
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Stack>
+            <Typography
+              variant="caption"
+              sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+            >
+              {C.maxRiskHelper}
+            </Typography>
+            {capError && (
+              <Typography
+                variant="caption"
+                color="error"
+                data-testid="risk-inputs-cap-error"
+                sx={{ display: 'block', mt: 0.25 }}
+              >
+                {capError}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+
+        {/* The effective-cap row (design/src/screens/settings.mjs:49, `.cap-row`) — a standalone
+            frame below both fields, spanning the full width. The derived figure is rendered
+            VERBATIM from the server, labelled "derived from your inputs", never "validated",
+            "checked" or "enforced" — no client arithmetic here; same testids/copy as before. */}
+        {!anonymous && stored?.effective_dollar_cap.state === 'derived' && (
+          <Box
+            data-testid="cap-row"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              p: '10px 14px',
+              borderRadius: 1.5,
+              bgcolor: (t) => extrasFor(t).panelRaised,
+              flexWrap: 'wrap',
+            }}
+          >
+            <FieldLabel>Effective cap</FieldLabel>
+            <Typography
+              variant="caption"
+              sx={{ color: 'text.secondary', display: 'block' }}
               data-testid="risk-inputs-effective-cap"
             >
               {`Effective dollar cap (derived from your inputs): $${stored.effective_dollar_cap.value}`}
             </Typography>
-          )}
-          {!anonymous && stored?.effective_dollar_cap.state === 'not_derivable' && (
-            <Typography
-              variant="caption"
-              sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
-              data-testid="risk-inputs-not-derivable"
-            >
-              {C.accountSizeNotSetReason}
-            </Typography>
-          )}
-        </Box>
+          </Box>
+        )}
+        {!anonymous && stored?.effective_dollar_cap.state === 'not_derivable' && (
+          <Typography
+            variant="caption"
+            sx={{ color: 'text.secondary', display: 'block' }}
+            data-testid="risk-inputs-not-derivable"
+          >
+            {C.accountSizeNotSetReason}
+          </Typography>
+        )}
 
         {notSet && (
           <Typography
