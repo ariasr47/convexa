@@ -1,33 +1,44 @@
 # curvature-v2-surfaces — pipeline manifest
-Stage:        **BUILD** — owner go 2026-09-07. Lane 1 = FE-1 (Opus; the `shared/figure/` extraction every later task
-              consumes), then Sonnet lanes FE-2–5 · FE-6–10 · FE-11–14, then BE-1 verification, then GATE Q. One lane at a
-              time (Independence all-`no`); lanes commit per task (phase 3 of 4 of the Curvature Terminal v2 build)
+Stage:        **SHIPPED — closed at GATE S 2026-09-07** (phase 3 of 4 of the Curvature Terminal v2 build).
+              GATE Q **PASS 95/0/0** at pass 4, after three FAIL passes and four GATE Z repair passes. Branch
+              `spire/curvature-v2-foundations`, **pushed as a backup only, no PR** — the owner's call. Not archived:
+              phases 1 and 2 also stay under `contracts/` until the four-phase build closes, and later phases cite
+              their paths.
 Repos:        frontend
 Brief:        BRIEF.md present
 Contracts:
-  - SPEC.md                    **draft, awaiting approval** (R4 ×2 + one targeted fold, 2026-09-06, **1218 lines**) — 95
+  - SPEC.md                    **APPROVED — owner, 2026-09-06** (option A: with the two S2 pass-2 U-32 repairs folded first);
+                               **amended once at GATE Z 2026-09-07 by owner ruling D-E** (row 7a). (R4 ×2 + one targeted fold, 2026-09-06, **1218 lines**) — 95
                                acceptance criteria, 53 `SB`; 27/27 council conflicts folded with inline markers (receipt verified
                                27/27); four OWNER rulings + two CONDUCTOR calls tagged inline; `contract_lint` **0 errors** (12
                                size warnings, advisory). S2 pass 1: 1 Critical + 2 Important + 2 Minor, **all five CLOSED at
                                source** by R4 pass 2. S2 pass 2: **1 Critical + 1 Important still OPEN, both on U-32** (the
                                ⓘ criterion's own verification never exercises the desk hero's frame ⓘ; the promoted button's
                                accessible name is unpinned) — loop capped, owner to rule.
-  - INTERFACE_CONTRACT.md      **draft, awaiting approval** (187 lines) — NO_BACKEND_CHANGE measured three-dot; Conformance
+  - INTERFACE_CONTRACT.md      **APPROVED with the spec, 2026-09-06; unchanged since** (187 lines) — NO_BACKEND_CHANGE measured three-dot; Conformance
                                block pins `GET /api/scan` + the `/api/ticker/{ticker}` spine, deliberately NOT `PUT /api/scan/view`
                                or `/api/broker/*`; `GET /api/stream/prices` wire facts (heartbeats are SSE comments; `ts_ns`);
                                durable client stores named with their loss-free rule.
-Open amendments: **two queued for GATE S, neither applied mid-build.** (1) Rule 13 — owner ruling D-D 2026-09-06: the traced
-                 clause widens to "traced to Convexa's computation **or to a record the trader entered**", so a user-entered
-                 number (alert threshold, risk input, sim entry) renders Mono with no dotted rule. (2) Icons row — an owner
-                 QUESTION, not yet a ruling, filed by ux self-revision #25: does the colour-emoji clause reach `U+26A0` in a
-                 scanner chip label (`labels.ts:196,205,211`), or is the `⚠` glyph a deliberate third truth mark? The chip
-                 ships byte-identical this phase either way.
+Open amendments: **both APPLIED at GATE S 2026-09-07.** (1) Rule 13 — owner ruling D-D: the traced clause now reads
+                 "traced to Convexa's computation **or to a record the trader entered**", so a user-entered number (alert
+                 threshold, risk input, sim entry) renders Mono with no dotted rule and the `· untraced` caption is
+                 unreachable for it. Written into `DESIGN_SYSTEM.md` rule 13 with its date and ruling id. (2) Icons row —
+                 the `U+26A0` question is **filed inline in the canon's Icons row as an OPEN OWNER QUESTION**, not answered:
+                 does the colour-emoji clause reach `⚠` in a scanner chip label (`pages/scanner/labels.ts:196,205,211`), or
+                 is it a deliberate third truth mark? Phase 3 shipped those chips byte-identical either way; the next phase
+                 to touch scanner chips should get an answer first.
+                 A THIRD amendment was made during this phase and is recorded in `council/decisions.md` as **D-E**: criterion
+                 7a scopes to figures whose panel can reach the 20px base (owner ruling at GATE Z, with its reversal).
                  Phase 2 filed four (canon rules **11**, **14**, **16**, **17**); this phase
                  inherits them as settled. One named, non-blocking gap carries in: the **`tooltip` z-rung
                  is undeclared in the canon** while `theme.ts:83` already ships a working, consumed value
                  of **60** (`AppShell.tsx:42` reads `tooltip + 1`). Closing it means declaring 60, not
                  inventing a number.
-QA (GATE Q):  n/a
+QA (GATE Q):  **PASS 95 / 0 FAIL / 0 UNVERIFIABLE** — pass 4, 2026-09-07, `QA_REPORT.md` (all four passes retained).
+              Pass 1 FAIL 91/4/0 · pass 2 FAIL 93/2/0 · pass 3 FAIL 94/1/0 · pass 4 PASS 95/0/0. QA ran on a different
+              model tier from the build lanes by construction. It found two user-facing defects no green suite could see
+              (the scanner table and card disagreeing on one price; a retained-price claim over an em-dash), corrected its
+              own pass-3 advice in pass 4, and independently re-ran the conformance receipt (PASS, matching BE-1's).
 Workers:      council R1x3 blind (402 / 273 / 422 lines), R2x3 sighted (27 conflicts, 27/27 quotes verified), R3x3 one
               exchange (22/22 CONVERGE) + 1 architect addendum; R4 synthesizer x2 + 1 targeted fold; S2 skeptic x2 — all
               2026-09-06
@@ -141,3 +152,55 @@ reversal, including the two later found wrong on their facts.
 ## Debt this phase is scoped to inherit
 The eight quiet-band widgets' register enforcement and container steps (phase 1 ruling 6, deferred by name).
 **Not** this phase: the curve text-equivalent (DELEGATED P1) and the spacing-exemption remainder — both phase 4.
+
+---
+
+## GATE S — close-out, 2026-09-07
+
+**Verdict: SHIPPED.** GATE Q **PASS 95 / 0 / 0** (pass 4). Fifteen build tasks (FE-1…FE-14, BE-1) plus **four** GATE Z
+repair passes. Branch `spire/curvature-v2-foundations`, pushed as a backup only, **no PR** — the owner's call.
+
+### The conductor's own final runs (not the lanes', not QA's)
+| check | result |
+|---|---|
+| `npx nx run-many -t typecheck -p @convexa/dashboard,dashboard-e2e --skip-nx-cache` (cold, build outputs deleted) | **0** |
+| `npx nx test @convexa/dashboard --skip-nx-cache` | **0** @ 239 files / **2857** tests |
+| `npm run lint` | **0**, 5 pre-existing warnings, 0 new |
+| `npm run build` (production) | **0** |
+| `BROWSER_QUALITY_PREBUILD_STATUS=pass npx nx e2e dashboard-e2e --skip-nx-cache` (repo root, production build) | **0** @ **108/108**, 0 flaky |
+| `node design/src/verify-tokens.mjs` | **0** @ 34/34 (v1 **and** the v2 additions) |
+| `git diff --name-only origin/main...HEAD -- apps/api` (three-dot) | **0 files** — also 0 for `libs/quant-engine` and the Cargo manifests |
+| independent conformance (QA's receipt vs BE-1's) | **PASS**, 2 endpoints, `/api/scan` first, byte-identical apart from `checked_at` |
+| `node .claude/tools/gates.mjs contract_lint curvature-v2-surfaces` | **0 errors** (14 advisory size warnings) |
+
+e2e grew **86 → 108** across this phase. Both live-checked `EXEMPT` maps end **empty**; `liveClaim.spec.ts` keeps exactly
+its one justified entry (`LiveTape.tsx`).
+
+### What the gate actually caught — the case for the pipeline
+GATE Q **failed this phase three times** while every suite was green, which is the same shape as phase 1's first pass:
+- **Pass 1 (FAIL 91/4/0)** — the scanner table and card rendered **different prices for the same symbol in the same frame**
+  (`ScanTable.tsx:290` preferred `groups` and discarded the live-price overlay `Scanner.tsx:121` had built), and the
+  degraded arm then claimed **`offline · last known` over an em-dash** — a "last known" statement where nothing was known.
+  The unit test could not reach either: it rendered `ScanTable` with no `groups` prop and a fixture that skipped grouping.
+- **Pass 2 (FAIL 93/2/0)** — four controls under the 44px coarse-pointer floor that the build report itemized nowhere.
+- **Pass 3 (FAIL 94/1/0)** — criterion 7a unreachable; escalated to the owner rather than converted (→ ruling **D-E**).
+- **Pass 4 (PASS)** — and QA **corrected its own pass-3 advice**: the fix it had named (`display: block`) also removes the
+  disclosure marker, and the `::marker` signal it relied on cannot go red for that defect. A lane caught the reviewer.
+
+**A regression this phase introduced, found late and fixed within it:** FE-5's `literal()` wrapper
+(`PositionRow.tsx:168-173`) declared `display:'inline-block'` with no `position`, so its absolutely-positioned
+visually-hidden description sibling escaped `positions-table-frame`'s `overflow-x:auto` clip and widened
+`documentElement.scrollWidth` to **978** at a 900px viewport. FE-13 first recorded it as pre-existing; the conductor
+**overturned that** against phase 2's close-out evidence (86/86, exit 0, twice, QA-re-run at baseline `f8957d3f`) and the
+repair lane confirmed at source that the block did not exist at baseline. Fixed at `5c07dc40` (978 → 900); one latent
+duplicate fixed at `141b2a74`; a third instance measured harmless and itemized.
+
+### Process notes for phase 4
+- **A lane broke the no-`git stash` rule** during FE-13 (recorded as gotcha 17). The conductor verified immediately that
+  nothing was lost — all 27 of the sibling process's untracked files present and unmodified, no stash entry left behind.
+  The rule stands and the warning carries forward.
+- **The IDE's diagnostics were wrong on every lane's tree this phase** — dozens of phantom errors on trees that cold-typecheck
+  at exit 0. The cold exit code was the only evidence, every time.
+- **Two dispatch anchors the conductor supplied were wrong** and lanes corrected them at source (`Widget.tsx` already lived in
+  `shared/ui/`; `AccessibleHelp` had nine importers, not ten). A third (`TrackRecordSection.tsx`'s directory) the conductor
+  got wrong and QA had right. Verify every cited line and path with `grep -n` before acting on it — this held every time.

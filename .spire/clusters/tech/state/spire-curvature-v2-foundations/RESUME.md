@@ -1,25 +1,34 @@
 # RESUME — spire/curvature-v2-foundations
 
-**Phase 3 of 4 (`curvature-v2-surfaces`) is in BUILD — 7 of 14 frontend tasks landed (FE-1…FE-7, through `b2a8cf15` +
-follow-up `e02350f6`); paused cleanly after FE-7 on 2026-09-07 at the owner's request (machine restart). Next: dispatch one
-Sonnet lane for FE-8 → FE-10 from `contracts/curvature-v2-surfaces/RESUME.md`; then FE-11 → FE-14, BE-1, GATE Q.**
+**Phase 3 of 4 (`curvature-v2-surfaces`) is DONE and closed at GATE S on 2026-09-07 — GATE Q PASS 95/0/0.**
 **Phase 2 of 4 (`curvature-v2-desk-and-read`) is DONE and closed at GATE S on 2026-09-05.**
-Branch is **pushed to origin as a backup** (owner's call, 2026-09-07, through `d34e861c`) and there is **no PR** — the owner's call.
+**Phase 1 of 4 is DONE and closed at GATE S on 2026-09-03.**
+**Next: phase 4 of 4 — open it at GATE I.** Branch is **pushed to origin as a backup** (owner's call, 2026-09-07) and there
+is **no PR** — the owner's call. Everything after the backup push is local; push again before relying on it.
 
 | phase | scope | state |
 |---|---|---|
 | 1 `curvature-v2-foundations` | tokens, scales, `FigureCell`, connection chip, nav + ⌘K, container panels | **shipped, GATE Q PASS 79/1/1** |
 | 2 `curvature-v2-desk-and-read` | desk masthead, structure-field hero, level ladder, read strip, verdict-first AI read, retention latch | **shipped, GATE Q PASS 60/0/1** |
-| 3 `curvature-v2-surfaces` | scanner · positions (sim + Broker tab) · settings · alerts **· the eight ticker quiet-band widgets' internals** | **GATE PLAN** — GATE I 2026-09-05 · GATE C 2026-09-06 (27 conflicts, 27/27 verified, 22/22 converged voice-to-voice, 4 owner rulings D-A/D-B/D-C/D-D, S2 ×2) · **SPEC approved 2026-09-06** · PLAN.md pending |
+| 3 `curvature-v2-surfaces` | scanner · positions (sim + Broker tab) · settings · alerts **· the eight ticker quiet-band widgets' internals** | **shipped, GATE Q PASS 95/0/0** (pass 4; passes 1–3 FAILed 91/4/0, 93/2/0, 94/1/0). 5 owner rulings D-A…D-E, 2 conductor calls, S2 ×2, 4 GATE Z repair passes |
 | 4 | landing · site pages · responsive sweep · the curve text-equivalent · spacing burn-down remainder · **settings section navigation (deferred from phase 3 by owner ruling D-B)** | not started |
 
-**Read before building phase 3:** `contracts/curvature-v2-surfaces/_MANIFEST.md` (gate trail, the BRIEF facts the council
-falsified, the shipped defects it found, the baseline), `contracts/curvature-v2-surfaces/council/decisions.md` (§1–§7 — every
-ruling with its reversal; the two CONDUCTOR calls are the only reversible ones), then `SPEC.md` (95 criteria / 53 SB) and
-`PLAN.md` once written. The AI-powered direction is **PARKED** in `context/BACKLOG.md` (2026-09-06 harvest) with the verified
-provider rules and the resume shape — do not re-derive it.
+**Read before designing phase 4:** `contracts/curvature-v2-surfaces/_MANIFEST.md` — the **GATE S close-out section** is the
+most useful page in this branch: the conductor's own final measurements, what the gate caught that three green suites did not,
+the regression this phase introduced and fixed, and the process notes. Then `contracts/curvature-v2-surfaces/QA_REPORT.md`
+(**all four passes** — the three FAILs are where the value is) and `council/decisions.md` §4 (rulings **D-A…D-E**, each with
+its reversal; the two CONDUCTOR calls are the only ones that lapse). `BUILD_REPORT.md` §9 carries the itemized debt with
+`file:line` and an owning phase. The AI-powered direction is **PARKED** in `context/BACKLOG.md` (2026-09-06 harvest) with the
+verified provider rules and the resume shape — do not re-derive it.
 
-**Read before designing phase 3:**
+**Phase 4's scope, and what phase 3 handed it:** landing · site pages · responsive sweep · the curve text-equivalent · the
+spacing burn-down remainder · **settings section navigation** (owner ruling **D-B** deferred it out of phase 3 — it is a real
+scope item with three named behaviours, not leftovers) · the three sub-44px `Select`s on `/ticker` and the 15 `ScanToolbar`
+chips (itemized, untouched this phase so out of criterion 66's reach) · the `/positions` condor width tuning at 900px.
+**Open owner question filed in the canon's Icons row:** does the colour-emoji clause reach `U+26A0` (⚠) in a scanner chip
+label (`pages/scanner/labels.ts:196,205,211`), or is it a deliberate third truth mark? Answer it before touching those chips.
+
+**Read before designing phase 3 (kept for provenance):**
 `contracts/curvature-v2-desk-and-read/_MANIFEST.md` (gate trail, final measurements, the four defects this
 phase found in shipped code, and the carried-debt list with phases attached),
 `contracts/curvature-v2-desk-and-read/QA_REPORT.md` (**both passes**), and
@@ -27,15 +36,28 @@ phase found in shipped code, and the carried-debt list with phases attached),
 each with its reversal — ratified by the owner's spec approval, and two of them corrected later in the
 session when they turned out to be wrong on their facts).
 
+**Phase 3's canon amendment is filed:** rule **13**'s type register now reads "traced to Convexa's computation
+**or to a record the trader entered**" (owner ruling **D-D**), so a number the trader typed renders Mono with no dotted rule.
+Criterion 7a was amended separately by owner ruling **D-E** at GATE Z — it is a contract row, not canon.
+
 **Phase 2's canon amendments are filed:** rules **11**, **14**, **16** (amber → text-scoped with a closed
 three-item non-text list; nine states → **ten**; composition and dispositions), and **17** (tense only).
 The `tooltip` z-rung is deliberately **not** amended — `theme.ts:83` already ships a working, consumed
 value of **60**, and the gap is in the canon's prose, not the code.
 
-**The one trap that cost the most time this phase**, so phase 3 does not re-chase it: a stale
-`node_modules/.vite` glob transform holding a deleted `_mutation_poison_*` file produces a spurious
-suite failure that **`--skip-nx-cache` does not clear**. Two build lanes misattributed it to
-`pos-params` / `aiProviders` / `app.risk`, which run 5/5 green. Delete `node_modules/.vite`.
+**The traps that cost the most time, so phase 4 does not re-chase them:**
+1. A stale `node_modules/.vite` glob transform holding a deleted `_mutation_poison_*` file produces a spurious
+   suite failure that **`--skip-nx-cache` does not clear**. It bit again in phase 3, including one of QA's own runs.
+   Delete `node_modules/.vite`.
+2. **The local e2e run silently falls through to the Vite dev server** unless invoked as
+   `BROWSER_QUALITY_PREBUILD_STATUS=pass npx nx e2e dashboard-e2e` from the repo root, because `process.env.CI` is unset
+   outside CI. `broker-grouping.spec.ts` fails ~74/75 on dev and passes against the production build.
+3. **The browser-quality manifest is four files that must move in lockstep** with the e2e case count, or passing tests
+   report `"status": "incomplete"`.
+4. **The IDE's diagnostics were wrong on every lane's tree this phase** — dozens of phantom errors on trees that
+   cold-typecheck at exit 0. The cold exit code is the only evidence.
+5. **Verify every cited line number and path with `grep -n` before acting on it.** Anchors drifted repeatedly, in both
+   directions: lanes corrected the conductor twice, and QA corrected the conductor once.
 
 ---
 
