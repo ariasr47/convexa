@@ -83,6 +83,17 @@ export interface WidgetProps {
    * Do not add `noBodyPad` — pick a named variant. Independent of `bodyVariant`.
    */
   bodyPad?: 'default' | 'none';
+  /**
+   * Ticker fidelity repair, change 4 (F4) — "no Widget title/subtitle (the strip is the frame)"
+   * (`ReadStrip.tsx`'s own doc comment; `design/src/screens/desk.mjs:334`'s title-less `.panel.strip`).
+   * `title` stays REQUIRED — it becomes the group's accessible name via `aria-label` instead of
+   * `aria-labelledby` — but the whole header ROW is skipped: no visible h2/subtitle, and (for THIS
+   * widget only) no `actions`/`info` affordance, no drag-grip/`⋮`/expand button either — none of
+   * which `ReadStrip.tsx` passes anyway. Opt-in, default `false`; every other widget's header is
+   * byte-unchanged. `live`'s accent edge (a border pseudo-element on the frame, not header content)
+   * is unaffected either way.
+   */
+  hideHeader?: boolean;
 }
 
 /**
@@ -126,6 +137,7 @@ export function Widget({
   bodySx,
   bodyVariant = 'flush',
   bodyPad = 'default',
+  hideHeader = false,
 }: WidgetProps) {
   const reduced = useReducedMotion();
   // `live` (the branded delivering-stream claim) OR `watch` (OrdersWidget's open-orders fact) both
@@ -331,7 +343,8 @@ export function Widget({
         data-testid={`widget-${id}`}
         data-widget-id={id}
         role="group"
-        aria-labelledby={headerId}
+        aria-labelledby={hideHeader ? undefined : headerId}
+        aria-label={hideHeader ? title : undefined}
         aria-current={selected ? 'true' : undefined}
         tabIndex={0}
         onClick={onSelect}
@@ -445,54 +458,65 @@ export function Widget({
           ...(supportsVT && !expanded && { viewTransitionName: vtNameRef.current }),
         })}
       >
-        <Box id={headerId}>{header(false)}</Box>
+        {/* Ticker fidelity repair, change 4 (F4) — `hideHeader` skips the whole row: no visible
+            h2/subtitle (the accessible name moves to `aria-label` above), no actions/info,
+            no drag-grip/`⋮`/expand. `ReadStrip.tsx` is the one caller today. */}
+        {!hideHeader && <Box id={headerId}>{header(false)}</Box>}
         <Box sx={bodyWrapperSx}>{body}</Box>
       </Box>
 
       {/* Expand/peek — the same widget in a larger focus overlay. View Transitions morph it when
-          supported; otherwise MUI `Fade` (inside `Dialog`) provides the graceful fallback. */}
-      <Dialog
-        open={expanded}
-        onClose={collapse}
-        maxWidth="lg"
-        fullWidth
-        // Skip MUI's own transition when View Transitions is driving the morph (avoid double-animating);
-        // keep Fade as the fallback path (and under reduced motion Fade is effectively instant).
-        transitionDuration={supportsVT && !reduced ? 0 : undefined}
-        slots={{ transition: Fade }}
-        slotProps={{
-          // Dim + blur the page behind for a premium "focus" feel.
-          // v2 `scrim` (SPEC §2.1) — the hardcoded `rgba(0,0,0,0.6)` is GONE, not overridden: the
-          // `MuiBackdrop` theme default now supplies `scrim` to every overlay, including this one.
-          backdrop: { sx: { backdropFilter: 'blur(4px)' } },
-          paper: {
-            sx: {
-              // Crisp dark surface: kill MUI's dark-mode elevation overlay (the washed-grey look) and
-              // pin the widget surface, matching the inline widget exactly.
-              bgcolor: 'background.paper',
-              backgroundImage: 'none',
-              // DIALOG role = 16px, declared ONCE via `theme.components.MuiDialog.styleOverrides
-              // .paper` (SPEC §2.2, ruling 4) — no local literal here, so this paper inherits the
-              // single declared dialog radius instead of duplicating (and drifting from) it.
-              border: '1px solid',
-              borderColor: 'divider',
-              boxShadow: 24,
-              // A definite-height flex column so the body fills — this is what lets a `height="100%"`
-              // chart (Term structure) resolve inside the Dialog, and gives a consistent focus view.
-              display: 'flex',
-              flexDirection: 'column',
-              height: 'min(86vh, 720px)',
-              overflow: 'hidden',
-              ...(supportsVT && expanded && { viewTransitionName: vtNameRef.current }),
+          supported; otherwise MUI `Fade` (inside `Dialog`) provides the graceful fallback.
+          Skipped entirely with `hideHeader`: its only trigger (the header's `⤢` button) is also
+          skipped, so an always-closed Dialog would just be unreachable DOM. */}
+      {!hideHeader && (
+        <Dialog
+          open={expanded}
+          onClose={collapse}
+          maxWidth="lg"
+          fullWidth
+          // Skip MUI's own transition when View Transitions is driving the morph (avoid double-animating);
+          // keep Fade as the fallback path (and under reduced motion Fade is effectively instant).
+          transitionDuration={supportsVT && !reduced ? 0 : undefined}
+          slots={{ transition: Fade }}
+          slotProps={{
+            // Dim + blur the page behind for a premium "focus" feel.
+            // v2 `scrim` (SPEC §2.1) — the hardcoded `rgba(0,0,0,0.6)` is GONE, not overridden: the
+            // `MuiBackdrop` theme default now supplies `scrim` to every overlay, including this one.
+            backdrop: { sx: { backdropFilter: 'blur(4px)' } },
+            paper: {
+              sx: {
+                // Crisp dark surface: kill MUI's dark-mode elevation overlay (the washed-grey look) and
+                // pin the widget surface, matching the inline widget exactly.
+                bgcolor: 'background.paper',
+                backgroundImage: 'none',
+                // DIALOG role = 16px, declared ONCE via `theme.components.MuiDialog.styleOverrides
+                // .paper` (SPEC §2.2, ruling 4) — no local literal here, so this paper inherits the
+                // single declared dialog radius instead of duplicating (and drifting from) it.
+                border: '1px solid',
+                borderColor: 'divider',
+                boxShadow: 24,
+                // A definite-height flex column so the body fills — this is what lets a `height="100%"`
+                // chart (Term structure) resolve inside the Dialog, and gives a consistent focus view.
+                display: 'flex',
+                flexDirection: 'column',
+                height: 'min(86vh, 720px)',
+                overflow: 'hidden',
+                ...(supportsVT && expanded && { viewTransitionName: vtNameRef.current }),
+              },
             },
-          },
-        }}
-      >
-        <Box id={`${headerId}-overlay`} data-testid={`widget-overlay-${id}`} sx={{ flexShrink: 0 }}>
-          {header(true)}
-        </Box>
-        <Box sx={[bodyWrapperSx, { flex: 1, minHeight: 0, overflow: 'auto' }]}>{body}</Box>
-      </Dialog>
+          }}
+        >
+          <Box
+            id={`${headerId}-overlay`}
+            data-testid={`widget-overlay-${id}`}
+            sx={{ flexShrink: 0 }}
+          >
+            {header(true)}
+          </Box>
+          <Box sx={[bodyWrapperSx, { flex: 1, minHeight: 0, overflow: 'auto' }]}>{body}</Box>
+        </Dialog>
+      )}
 
       {/* Click-outside-to-clear-selection is owned by the provider region in TickerDashboard; here we
           only stop propagation on the actions/toolbar so interacting with them doesn't re-select. */}

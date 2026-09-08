@@ -101,10 +101,14 @@ describe('Ticker · heading semantics (h1 → h2, data values are never headings
     // (v2, curvature-v2-desk-and-read FE-8: necessary collateral fix on a write-path FE-8 and FE-11
     // both touch, per PLAN.md's own Independence section — the old dealer positioning widget is
     // deleted, its
-    // successor widgets are `StructureHeroPanel` (titled by symbol, not a fixed word) and
-    // `ReadStrip`, titled "Read strip".)
+    // successor widget is `StructureHeroPanel` (titled by symbol, not a fixed word).
+    // `ReadStrip` no longer carries an h2 — the ticker fidelity repair's change 4 (F4) gives it
+    // `Widget`'s new `hideHeader` prop ("no Widget title/subtitle, the strip is the frame"); the
+    // group keeps an accessible name via `aria-label="Read strip"` instead of a visible heading,
+    // asserted directly in `Widget.spec.tsx`'s own `hideHeader` suite and `ReadStrip.spec.tsx`.)
     expect(screen.getByRole('heading', { level: 2, name: /live tape/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: /read strip/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /read strip/i })).toBeNull();
+    expect(screen.getByRole('group', { name: 'Read strip' })).toBeInTheDocument();
 
     // No skipped levels: every heading element on /ticker is h1 or h2.
     const levels = new Set(allHeadings().map((h) => h.tagName.toLowerCase()));

@@ -106,6 +106,7 @@ const FULL_INPUT: ReadStripInput = {
   tierWord: 'Actionable',
   opportunityScore: 73,
   ivRank: ivRank(),
+  setupsCount: 2,
 };
 
 function bySlot(input: ReadStripInput) {
@@ -145,6 +146,7 @@ describe('READ_STRIP_SLOTS — eight fixed slots, in order (criterion 25)', () =
       tierWord: 'Dormant',
       opportunityScore: 0,
       ivRank: null,
+      setupsCount: null,
     });
     expect(empty).toHaveLength(8);
     expect(empty.map((c) => c.slot)).toEqual(READ_STRIP_SLOTS);
@@ -307,5 +309,149 @@ describe('buildReadStrip — IV rank is the eighth cell, closed-lookup digest (c
   it('whole read null — the closed unavailable member', () => {
     const c = bySlot({ ...FULL_INPUT, ivRank: null });
     expect(c.ivRank.value).toBe('unavailable');
+  });
+});
+
+// =================================================================================================
+// Ticker fidelity repair, change 4 (F4) — the per-cell sub-caption (`design/src/screens/desk.mjs:29`'s
+// `cell({ ..., sub })`). Every non-static one is derived from the SAME model data the cell's own
+// `value`/`info` already use (never a new fabricated qualifier); the two static taglines
+// ("delta hedging pressure", "context only, no side") name what the metric IS, not a data claim, so
+// they hold even when `value` itself is unavailable. `—` is the closed-nine dash, never an invented
+// qualifier, where the model has nothing to say this cycle.
+// =================================================================================================
+describe('buildReadStrip — sub-caption (F4): derived from the model, `—` where it has nothing to say', () => {
+  it('opportunity: setups count, singular/plural, "no setups" at zero, `—` when unresolved', () => {
+    expect(bySlot({ ...FULL_INPUT, setupsCount: 2 }).opportunity.sub).toBe('2 setups');
+    expect(bySlot({ ...FULL_INPUT, setupsCount: 1 }).opportunity.sub).toBe('1 setup');
+    expect(bySlot({ ...FULL_INPUT, setupsCount: 0 }).opportunity.sub).toBe('no setups');
+    expect(bySlot({ ...FULL_INPUT, setupsCount: null }).opportunity.sub).toBe('—');
+  });
+
+  it('netDex: a static tagline naming the metric — holds even when the value itself is unavailable', () => {
+    expect(bySlot(FULL_INPUT).netDex.sub).toBe('delta hedging pressure');
+    const c = bySlot({ ...FULL_INPUT, m: marketState({ net_dex: null }) });
+    expect(c.netDex.value).toBe('unavailable');
+    expect(c.netDex.sub).toBe('delta hedging pressure');
+  });
+
+  it('ivHv: derived from the SAME ratio the value renders — >1 expensive, <1 cheap, ===1 fair', () => {
+    expect(bySlot({ ...FULL_INPUT, m: marketState({ iv_hv_ratio: 1.12 }) }).ivHv.sub).toBe(
+      'options look expensive',
+    );
+    expect(bySlot({ ...FULL_INPUT, m: marketState({ iv_hv_ratio: 0.82 }) }).ivHv.sub).toBe(
+      'options look cheap',
+    );
+    expect(bySlot({ ...FULL_INPUT, m: marketState({ iv_hv_ratio: 1 }) }).ivHv.sub).toBe(
+      'options fairly priced',
+    );
+  });
+
+  it('ivRank: quartile + percentile from the SAME `percentile` the full widget’s own descriptor uses, proper English ordinals, `—` when null', () => {
+    // Matches the design's own "2nd quartile · 41st pct" shape (desk.mjs) — the quartile ordinal
+    // from a small fixed table, the percentile's own ordinal from the general 1st/2nd/3rd/…th rule
+    // (11th/12th/13th excepted).
+    expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ percentile: 74 }) }).ivRank.sub).toBe(
+      '3rd quartile · 74th pct',
+    );
+    expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ percentile: 12 }) }).ivRank.sub).toBe(
+      '1st quartile · 12th pct', // the "teens" exception: 12th, not 12nd
+    );
+    expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ percentile: 41 }) }).ivRank.sub).toBe(
+      '2nd quartile · 41st pct',
+    );
+    expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ percentile: 22 }) }).ivRank.sub).toBe(
+      '1st quartile · 22nd pct',
+    );
+    expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ percentile: 63 }) }).ivRank.sub).toBe(
+      '3rd quartile · 63rd pct',
+    );
+    expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ percentile: 90 }) }).ivRank.sub).toBe(
+      '4th quartile · 90th pct',
+    );
+    expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ percentile: null }) }).ivRank.sub).toBe('—');
+    expect(bySlot({ ...FULL_INPUT, ivRank: null }).ivRank.sub).toBe('—');
+  });
+
+  it('volOi: the SAME `unusualCount` the ⓘ tooltip states in full-sentence form, `—` at zero', () => {
+    expect(bySlot({ ...FULL_INPUT, unusualCount: 3 }).volOi.sub).toBe('3 unusual strikes');
+    expect(bySlot({ ...FULL_INPUT, unusualCount: 1 }).volOi.sub).toBe('1 unusual strike');
+    expect(bySlot({ ...FULL_INPUT, unusualCount: 0 }).volOi.sub).toBe('—');
+  });
+
+  it('ivSkew: the SAME closed phrase table `skewTip` spends inline, `—` when the skew read is absent', () => {
+    const fear = bySlot({
+      ...FULL_INPUT,
+      m: marketState({
+        iv_skew: {
+          slope: 5,
+          dte: 30,
+          expiration: '2026-07-03',
+          put_iv: 30,
+          call_iv: 25,
+          reference: 'delta',
+        },
+      }),
+    });
+    expect(fear.ivSkew.sub).toContain('fear');
+    const greed = bySlot({
+      ...FULL_INPUT,
+      m: marketState({
+        iv_skew: {
+          slope: -5,
+          dte: 30,
+          expiration: '2026-07-03',
+          put_iv: 25,
+          call_iv: 30,
+          reference: 'delta',
+        },
+      }),
+    });
+    expect(greed.ivSkew.sub).toContain('greed');
+    expect(bySlot({ ...FULL_INPUT, m: marketState({ iv_skew: null }) }).ivSkew.sub).toBe('—');
+  });
+
+  it('termStructure: the SAME near/far tenor pair `termTip` already names, `—` under two points or absent', () => {
+    const c = bySlot({
+      ...FULL_INPUT,
+      m: marketState({
+        term_structure: {
+          state: 'contango',
+          slope: 3.8,
+          near_iv: 14.2,
+          far_iv: 18.0,
+          points: [
+            { dte: 7, expiration: '2026-06-30', atm_iv: 14.2 },
+            { dte: 90, expiration: '2026-09-21', atm_iv: 18.0 },
+          ],
+        },
+      }),
+    });
+    expect(c.termStructure.sub).toBe('7d 14.2 → 90d 18.0');
+
+    const thin = bySlot({
+      ...FULL_INPUT,
+      m: marketState({
+        term_structure: {
+          state: 'flat',
+          slope: 0,
+          near_iv: 14.2,
+          far_iv: 14.2,
+          points: [{ dte: 7, expiration: '2026-06-30', atm_iv: 14.2 }],
+        },
+      }),
+    });
+    expect(thin.termStructure.sub).toBe('—');
+
+    expect(
+      bySlot({ ...FULL_INPUT, m: marketState({ term_structure: null }) }).termStructure.sub,
+    ).toBe('—');
+  });
+
+  it('offExchange: a static tagline — holds for both the populated and the "not provided" arm', () => {
+    expect(bySlot(FULL_INPUT).offExchange.sub).toBe('context only, no side');
+    const c = bySlot({ ...FULL_INPUT, offExchange: null });
+    expect(c.offExchange.value).toBe('not provided');
+    expect(c.offExchange.sub).toBe('context only, no side');
   });
 });

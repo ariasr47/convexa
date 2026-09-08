@@ -81,7 +81,10 @@ export function skewState(slope: number): 'fear' | 'greed' | 'balanced' {
   if (slope < -SKEW_BAND) return 'greed';
   return 'balanced';
 }
-const SKEW_PHRASE: Record<'fear' | 'greed' | 'balanced', string> = {
+// Exported (ticker fidelity repair, change 4 / F4) so the read strip's compact sub-caption
+// (`readStripModel.ts`) can reuse the SAME phrasing `skewTip` already spends here, rather than a
+// second, shorter phrase table drifting from this one.
+export const SKEW_PHRASE: Record<'fear' | 'greed' | 'balanced', string> = {
   fear: 'downside hedging is bid (fear)',
   greed: 'upside is bid (greed/complacency)',
   balanced: 'balanced',

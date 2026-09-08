@@ -178,7 +178,9 @@ function mountWidgets() {
           tierWord: 'Actionable',
           opportunityScore: 73,
           ivRank: null,
+          setupsCount: null,
         })}
+        ringScore={73}
       />
     </ThemeProvider>,
   );

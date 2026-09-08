@@ -219,3 +219,57 @@ describe('Widget — motion negative space (stage 3: reveal retired)', () => {
     }
   });
 });
+
+// ==================================================================================================
+// Ticker fidelity repair, change 4 (F4) — `hideHeader`, a new opt-in prop
+// ("no Widget title/subtitle" — `ReadStrip.tsx`'s own doc comment). Default `false`; every existing
+// test above this block (title/subtitle/actions were already explicitly OUT of this file's scope
+// per its header comment) is unaffected — confirmed by the full suite staying green. This block is
+// the first direct coverage of the new prop itself.
+// ==================================================================================================
+describe('Widget — `hideHeader` (F4): the frame with no header row, an accessible name via aria-label', () => {
+  it('default (false): the title renders as a visible h2, aria-labelledby names the group', () => {
+    wrap(
+      <Widget id="w" title="Read strip">
+        <div>body</div>
+      </Widget>,
+    );
+    const frame = screen.getByTestId('widget-w');
+    expect(screen.getByRole('heading', { level: 2, name: 'Read strip' })).toBeInTheDocument();
+    expect(frame).toHaveAttribute('aria-labelledby');
+    expect(frame).not.toHaveAttribute('aria-label');
+  });
+
+  it('hideHeader=true: no visible heading, no header row at all — the group is named by aria-label instead', () => {
+    wrap(
+      <Widget id="w" title="Read strip" hideHeader>
+        <div>body</div>
+      </Widget>,
+    );
+    const frame = screen.getByTestId('widget-w');
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull();
+    expect(screen.queryByText('Read strip')).toBeNull();
+    expect(frame).toHaveAttribute('aria-label', 'Read strip');
+    expect(frame).not.toHaveAttribute('aria-labelledby');
+    expect(frame.querySelector('.widget__header')).toBeNull();
+  });
+
+  it('hideHeader=true: no expand overlay is mounted (its only trigger, the header, is also gone)', () => {
+    wrap(
+      <Widget id="w" title="Read strip" hideHeader>
+        <div>body</div>
+      </Widget>,
+    );
+    expect(screen.queryByTestId('widget-overlay-w')).toBeNull();
+    expect(document.querySelector('.MuiDialog-root')).toBeNull();
+  });
+
+  it('hideHeader=true still renders children in a named `panel` container, unaffected', () => {
+    wrap(
+      <Widget id="w" title="Read strip" hideHeader>
+        <div data-testid="probe">body</div>
+      </Widget>,
+    );
+    expect(screen.getByTestId('probe')).toBeInTheDocument();
+  });
+});

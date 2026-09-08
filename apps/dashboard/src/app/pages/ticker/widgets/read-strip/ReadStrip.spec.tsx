@@ -13,7 +13,7 @@ import { andPresent, isDeliveringLive } from '@/shared/liveness/liveClaim';
 import { theme } from '@/shared/theme/theme';
 import type { MarketState, OffExchange } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { allRulesForClass, emotionClassOf, joinedStyleText } from '../_kit/emotionCssReader';
 import { ReadStrip } from './ReadStrip';
@@ -115,12 +115,13 @@ const FULL_INPUT: ReadStripInput = {
     basis_descriptor: 'b',
     advisory_note: 'a',
   },
+  setupsCount: 2,
 };
 
-function wrap(cells: ReadStripCells = buildReadStrip(FULL_INPUT)) {
+function wrap(cells: ReadStripCells = buildReadStrip(FULL_INPUT), ringScore = 73) {
   return render(
     <ThemeProvider theme={theme}>
-      <ReadStrip cells={cells} />
+      <ReadStrip cells={cells} ringScore={ringScore} />
     </ThemeProvider>,
   );
 }
@@ -145,6 +146,7 @@ describe('ReadStrip — eight cells at every state, none dropped (criterion 25)'
       tierWord: 'Dormant',
       opportunityScore: 0,
       ivRank: null,
+      setupsCount: null,
     });
     const { container } = wrap(cells);
     expect(container.querySelectorAll('[data-figure-state]')).toHaveLength(8);
@@ -232,5 +234,77 @@ describe('ReadStrip — the rail is a rail; the page is not (criterion 50)', () 
     const rule = allRulesForClass(joinedStyleText(), cls as string).join(';');
     expect(rule).toContain('overflow-x:auto');
     expect(rule).toContain('min-width:0');
+  });
+});
+
+// =================================================================================================
+// Ticker fidelity repair, change 4 (F4) — no Widget title/subtitle (the strip is the frame); cells
+// on `1.35fr repeat(7, minmax(0,1fr))` behind a ≥1000px `panel` container (flex/rail below it, never
+// clipped); the opportunity cell carries a score ring; every cell carries its sub-caption. Before
+// this repair the widget had a visible "Read strip" h2 + subtitle, fixed 140px flex cells with no
+// grid/rail switch, no ring and no sub-captions — every assertion below is a fresh pin.
+// =================================================================================================
+describe('ReadStrip — masthead-less strip composition (ticker fidelity repair F4)', () => {
+  it('no visible Widget title/subtitle — the group is still accessibly named', () => {
+    wrap();
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull();
+    expect(screen.queryByText('Read strip')).toBeNull();
+    expect(screen.getByRole('group', { name: 'Read strip' })).toBeInTheDocument();
+  });
+
+  it('the opportunity cell alone carries the score ring; no other cell does', () => {
+    wrap();
+    const opportunityCell = screen.getByTestId('read-strip-cell-opportunity');
+    expect(within(opportunityCell).getByTestId('read-strip-ring')).toBeInTheDocument();
+    for (const slot of READ_STRIP_SLOTS) {
+      if (slot === 'opportunity') continue;
+      const cell = screen.getByTestId(`read-strip-cell-${slot}`);
+      expect(within(cell).queryByTestId('read-strip-ring')).toBeNull();
+    }
+  });
+
+  it('the ring is decorative (aria-hidden) — the score is already stated as text beside it', () => {
+    wrap();
+    const ring = screen.getByTestId('read-strip-ring');
+    expect(ring).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByText('73 · Actionable')).toBeInTheDocument();
+  });
+
+  it('every cell renders its own sub-caption text from the model, verbatim (scoped per cell — several legitimately share the closed-nine "—")', () => {
+    const cells = buildReadStrip(FULL_INPUT);
+    wrap(cells);
+    for (const cell of cells) {
+      const wrapper = screen.getByTestId(`read-strip-cell-${cell.slot}`);
+      expect(within(wrapper).getByText(cell.sub)).toBeInTheDocument();
+    }
+  });
+
+  it('the rail is a one-column-per-cell flex rail by default and switches to the design’s `1.35fr repeat(7, minmax(0,1fr))` grid behind a ≥1000px `panel` container (never a viewport media query)', () => {
+    wrap();
+    const rail = screen.getByTestId('read-strip-rail');
+    const cls = emotionClassOf(rail);
+    expect(cls).toBeTruthy();
+    const rules = allRulesForClass(joinedStyleText(), cls as string)
+      .join(';')
+      .replace(/\s+/g, '');
+
+    expect(rules).toContain('display:flex');
+    expect(rules).toContain('grid-template-columns:1.35frrepeat(7,minmax(0,1fr))');
+
+    // MUTATION GUARD (the container-query hazard, this file's own doc): the grid switch must be
+    // GATED behind `@container panel`, never unconditional and never a bare `@media`.
+    const squashed = joinedStyleText().replace(/\s+/g, '');
+    expect(squashed).toContain('@containerpanel(min-width:1000px)');
+  });
+
+  it('no cell forces a fixed minWidth that would clip the strip (the pre-repair defect, F4)', () => {
+    wrap();
+    for (const slot of READ_STRIP_SLOTS) {
+      const cell = screen.getByTestId(`read-strip-cell-${slot}`);
+      const cls = emotionClassOf(cell);
+      if (!cls) continue;
+      const rule = allRulesForClass(joinedStyleText(), cls).join(';').replace(/\s+/g, '');
+      expect(rule).not.toContain('min-width:140px');
+    }
   });
 });

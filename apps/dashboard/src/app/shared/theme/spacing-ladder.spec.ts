@@ -39,6 +39,13 @@ export const SPACING_DEBT_BURNDOWN_PHASE = 'curvature-v2 phase 4 (responsive swe
  * file was touched this phase (`position-brief/PositionBrief.tsx` is READ, not rewritten — only its
  * call site moved in `TickerDashboard.tsx`) — do not widen the fence to files this phase did not
  * actually rewrite; the remainder stays booked to `SPACING_DEBT_BURNDOWN_PHASE`.
+ *
+ * TICKER FIDELITY REPAIR BURN-DOWN (2026-09-08, changes 3/4): `chrome/TickerHeader.tsx`'s one
+ * off-ladder value (`ml: 1.25`, on the headline's "(levels @ …)" parenthetical) is GONE — that
+ * parenthetical moved to the new second line as separate on-ladder spans (change 3, F3) — so its
+ * entry is removed here, not merely re-justified. `read-strip/ReadStrip.tsx` is a NEW file this
+ * repair adds (change 4, F4); its two off-ladder drafts (`py: 1.25`, `gap: 1.25`) were fixed to
+ * `1.5`/`1` before landing, never exempted — new code ships on-ladder, it does not grow this list.
  */
 const EXEMPT: string[] = [
   'app.tsx',
@@ -59,7 +66,6 @@ const EXEMPT: string[] = [
   'pages/ticker/widgets/ai-rec/reasoning.tsx',
   'pages/ticker/widgets/chrome/CommandDeck.tsx',
   'pages/ticker/widgets/chrome/QuickSymbols.tsx',
-  'pages/ticker/widgets/chrome/TickerHeader.tsx',
   'pages/ticker/widgets/chrome/TickerToolbar.tsx',
   'pages/ticker/widgets/dealer-flow-projection/DealerFlowProjection.tsx',
   'pages/ticker/widgets/iv-rank/IvRank.tsx',

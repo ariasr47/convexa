@@ -583,7 +583,9 @@ export function TickerDashboard() {
                       tierWord: tm.word,
                       opportunityScore: sig?.opportunity_score ?? 0,
                       ivRank: m.iv_rank ?? null,
+                      setupsCount: sig?.setups?.length ?? null,
                     })}
+                    ringScore={sig?.opportunity_score ?? 0}
                   />
                 </ErrorBoundary>
 
