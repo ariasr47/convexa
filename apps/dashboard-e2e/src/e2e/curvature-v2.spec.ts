@@ -11,8 +11,9 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
  *   - AC-35 — the six converted hover-only info sites (ruling 6) have BOTH a tap and a keyboard-focus
  *     path, at 393/834/900/1280.
  *   - U-32 (curvature-v2-surfaces, OWNER D-C, added by FE-12) — a SECOND, frame-scoped site list:
- *     all EIGHT live `<Widget info=…>` sites, asserted at the frame root `widget-{id}` (hero and live
- *     tape included), on the frame's own HEADER ⓘ specifically — the shipped AC-35 list above and
+ *     all SEVEN live `<Widget info=…>` sites (was eight — PASS 2 change 8 dropped `iv-rank`, which
+ *     no longer mounts on `/ticker`), asserted at the frame root `widget-{id}` (hero and live tape
+ *     included), on the frame's own HEADER ⓘ specifically — the shipped AC-35 list above and
  *     `ladder-foot` scope to widget/hero BODY testids one level inside the frame and cannot reach a
  *     frame header at all (`Widget.tsx` renders the header box before the body box).
  *   - AC-20b — the rendered container-query step. See the block comment above that test for why it
@@ -516,13 +517,13 @@ test.describe('AC-34 — coarse pointer at 393px: the effective hit area, measur
 
 /** The four "look-alike" widgets ruling 6 names — each keeps its own layout; only the affordance
  *  changed, from a hover-only `Tooltip` wrapping a non-focusable icon to a real `AccessibleHelp`
- *  `button` (`ai-rec/AccessibleHelp.tsx:8-12`, reused verbatim per the ruling). */
-const HOVER_INFO_WIDGETS = [
-  'iv-rank',
-  'market-context',
-  'straddle-move',
-  'dealer-flow-projection',
-] as const;
+ *  `button` (`ai-rec/AccessibleHelp.tsx:8-12`, reused verbatim per the ruling).
+ *  PASS 2 change 8 (owner ruling `context-band-is-the-designs-card-list`, `/ticker` fidelity repair):
+ *  `iv-rank` dropped — `IvRank` no longer mounts on `/ticker` (its card left the context band), so
+ *  it is no longer on this page to reach by tap or keyboard. Ruling 6 still named it historically;
+ *  the remaining three are still exercised below, plus the `ladder-foot` FigureCell site further
+ *  down (the same shipped `AccessibleHelp` primitive/pattern). */
+const HOVER_INFO_WIDGETS = ['market-context', 'straddle-move', 'dealer-flow-projection'] as const;
 
 /**
  * A REAL touch tap — `touchstart` then a brief hold then `touchend` — not Playwright's `.tap()`
@@ -599,7 +600,9 @@ test.describe('AC-35 — the six converted hover-only info sites', () => {
       // The primitive itself (FigureCell's ℹ, shipped in `live-tape`/`ladder-foot` — v2,
       // curvature-v2-desk-and-read FE-8: `dealer-positioning` deleted, re-pointed to `ladder-foot`,
       // the nearest equivalent FigureCell-with-info site; see the AC-34 block above for why) — one
-      // concrete site proves the same shipped pattern; the loop above already covers ruling 6's six.
+      // concrete site proves the same shipped pattern; the loop above covers three of ruling 6's six
+      // (PASS 2 change 8 dropped `iv-rank` — no longer on `/ticker` to reach — leaving three of the
+      // original four "look-alike" widgets, plus this one primitive site, still concretely tested).
       const figureHelp = page
         .getByTestId('ladder-foot')
         .getByRole('button', { name: /^About /i })
@@ -610,14 +613,16 @@ test.describe('AC-35 — the six converted hover-only info sites', () => {
 });
 
 // =====================================================================================================
-// U-32 (curvature-v2-surfaces, OWNER D-C) — the `Widget` frame's ⓘ, at all EIGHT live `info=` sites,
-// scoped to the FRAME ROOT (`widget-{id}`), never a widget's own body testid
+// U-32 (curvature-v2-surfaces, OWNER D-C) — the `Widget` frame's ⓘ, at all SEVEN live `info=` sites
+// (was eight — PASS 2 change 8 dropped `iv-rank`, owner ruling `context-band-is-the-designs-card-list`:
+// `IvRank` no longer mounts on `/ticker`), scoped to the FRAME ROOT (`widget-{id}`), never a widget's
+// own body testid
 // =====================================================================================================
 //
 // This is a SECOND, frame-scoped site list — NOT interchangeable with `HOVER_INFO_WIDGETS` above.
 // That list (and `ladder-foot`) proves ruling 6's BODY controls and the `FigureCell` primitive; not
-// one of those five assertions can reach a `Widget` frame HEADER, because `Widget.tsx` renders the
-// header box before the body box (`:452-453` in source) and every one of those five containers
+// one of those four assertions can reach a `Widget` frame HEADER, because `Widget.tsx` renders the
+// header box before the body box (`:452-453` in source) and every one of those four containers
 // scopes to a widget's own BODY testid, one level inside the frame. `straddle-move` passes no `info`
 // prop at all, so it has no frame ⓘ and is correctly absent from this list.
 const FRAME_INFO_SITES = [
@@ -626,15 +631,15 @@ const FRAME_INFO_SITES = [
   'market-context',
   'dealer-flow-projection',
   'term-structure',
-  'iv-rank',
   'structure-hero',
   'live-tape',
 ] as const;
 
 // =====================================================================================================
 // criterion 66 (FE-13, GATE Z repair below) — the 44px effective hit area at 393px, coarse pointer,
-// for the alerts write affordances this phase's SPEC §3 names alongside the eight frame ⓘs (U-32,
-// above) and the off-exchange proximity chip (its own dedicated describe block further down).
+// for the alerts write affordances this phase's SPEC §3 names alongside the seven frame ⓘs (U-32,
+// above — was eight; PASS 2 change 8 dropped `iv-rank`) and the off-exchange proximity chip (its own
+// dedicated describe block further down).
 //
 // `expectFloor` HARD-ASSERTS ≥44px on both dimensions. FE-13's own investigation measured two
 // controls that did NOT comply (`AlertsPage.tsx:429`'s per-rule "Remove" button, an explicit
@@ -760,7 +765,7 @@ test.describe('criterion 66 (GATE Z repair) — the off-exchange proximity chip 
   });
 });
 
-test.describe('U-32 (SB) — the Widget frame header ⓘ at all eight frame roots (hero + tape included)', () => {
+test.describe('U-32 (SB) — the Widget frame header ⓘ at all seven frame roots (hero + tape included)', () => {
   test.use({ hasTouch: true });
 
   for (const vp of [

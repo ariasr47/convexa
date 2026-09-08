@@ -70,7 +70,6 @@ import { useTickerTradeFlows } from './useTickerTradeFlows';
 import {
   DealerFlowProjection,
   FreshPositioning,
-  IvRank,
   LiveTape,
   MarketContext,
   OffExchangeBlocks,
@@ -791,14 +790,15 @@ export function TickerDashboard() {
                         structureAgeSeconds={structureAgeSeconds}
                       />
 
-                      {/* `IvRank` is not in the design's enumerated ctx-grid card list
-                          (`desk.mjs:43`) — its own figure already surfaces in the read strip's
-                          `IV rank` cell (`readStripModel.ts`). Kept here rather than silently
-                          removed (deletion wasn't instructed and the widget is referenced by
-                          `curvature-v2.spec.ts`/`quiet-band.register.spec.tsx`) — flagged as a
-                          residual in the repair report — beside Straddle-implied move, its existing
-                          pairing. */}
-                      <IvRank read={m.iv_rank ?? null} />
+                      {/* PASS 2 change 8 (owner ruling, `context/DECISION_LEDGER.md` key
+                          `context-band-is-the-designs-card-list`, 2026-09-08 "Do all four"):
+                          `IvRank` is unmounted from the band — it is not in the design's
+                          enumerated ctx-grid card list (`desk.mjs:395-421`) and it repeats the
+                          read strip's `IV rank` cell (one fact, one place). The component and its
+                          own unit spec (`iv-rank/IvRank.spec.tsx`) stay — this is an unmount, not a
+                          deletion; `quiet-band.register.spec.tsx` scans the source file by path and
+                          is correctly unaffected. See `TICKER_FIDELITY_REPAIR_REPORT.md` (Pass 2,
+                          change 8) for the e2e/unit assertion edits this required. */}
                       <StraddleMove move={m.straddle_move} />
 
                       {/* Fresh positioning ‖ Off-exchange blocks. Off-exchange is REST-only; with

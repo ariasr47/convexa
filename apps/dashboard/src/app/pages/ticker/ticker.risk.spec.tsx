@@ -289,11 +289,11 @@ function renderAt(path: string) {
   );
 }
 
-const STATIC_WIDGETS = [
-  'widget-market-context',
-  'widget-iv-rank',
-  'widget-dealer-flow-projection',
-] as const;
+// PASS 2 change 8 (owner ruling `context-band-is-the-designs-card-list`): `widget-iv-rank` dropped —
+// `IvRank` no longer mounts on `/ticker` (its card left the context band; the component/testid still
+// exist for its own consumers, just not this page). The remaining two are still a real static-widget
+// sample for the byte-identity check below.
+const STATIC_WIDGETS = ['widget-market-context', 'widget-dealer-flow-projection'] as const;
 
 // =================================================================================================
 // 1. THE page contract — stream isolation, walked end-to-end once (the centerpiece)
@@ -438,8 +438,12 @@ describe('Ticker · skeleton-first load', () => {
 // =================================================================================================
 // 3. Independent nullability — the null matrix (best-effort-isolated-or-null)
 // =================================================================================================
+// PASS 2 change 8: `iv_rank` dropped from this matrix — `IvRank` no longer renders on `/ticker` (its
+// card left the context band, owner ruling `context-band-is-the-designs-card-list`), so nulling
+// `market_state.iv_rank` no longer has an "IvRank empty copy" to observe on this page. The read
+// strip's own IV-rank cell is a separate, still-mounted consumer, untouched by this pass, and isn't
+// part of this best-effort-isolated-or-null matrix (it was never in this list before either).
 const NULLABLE_SECTIONS: Array<[field: string, emptyCopy: string]> = [
-  ['iv_rank', 'IV rank unavailable this cycle.'],
   ['market_context', 'Market context unavailable this cycle.'],
   ['dealer_flow_projection', 'Projected dealer flow unavailable this cycle.'],
   ['off_exchange', 'Off-exchange data unavailable this cycle.'],
@@ -499,15 +503,13 @@ describe('Ticker · independent nullability (null matrix)', () => {
 // 4. Wire-label authority — labels come from the wire via closed lookups, NEVER re-derived
 // =================================================================================================
 describe('Ticker · wire-label authority (digested-labels-not-raw-dump)', () => {
-  it('when a label CONTRADICTS its scalar, the LABEL wins (iv-rank band, trend direction, term state, gamma regime)', async () => {
+  it('when a label CONTRADICTS its scalar, the LABEL wins (trend direction, term state, gamma regime)', async () => {
     const tmFix = PACK_FIX.trend_momentum;
     const dirFix = tmFix?.direction;
     if (!tmFix || !dirFix) throw new Error('PACK_FIX fixture must carry trend_momentum.direction');
     bundleProvider = () =>
       richBundle(
         {
-          // Rank 82 (≥70 would re-derive "rich") but the wire band says CHEAP.
-          iv_rank: { ...IVR_FIX, rank: 82, band: 'premium_cheap' },
           // Uptrend scalars (close > EMA20 > EMA50) but the wire label says DOWNTREND.
           market_context: {
             ...PACK_FIX,
@@ -534,10 +536,11 @@ describe('Ticker · wire-label authority (digested-labels-not-raw-dump)', () => 
     renderAt('/ticker/TSLA');
     await screen.findByText('Call wall');
 
-    // IV-rank band: the wire label renders; the scalar-derived alternative does not.
-    const ivr = screen.getByTestId('widget-iv-rank');
-    expect(within(ivr).getByTestId('ivr-band')).toHaveTextContent('premium cheap');
-    expect(within(ivr).queryByText('premium rich')).toBeNull();
+    // PASS 2 change 8: the iv-rank-band example (`widget-iv-rank`'s `ivr-band` testid) dropped —
+    // `IvRank` no longer mounts on `/ticker` (owner ruling `context-band-is-the-designs-card-list`).
+    // The invariant (wire label wins over a scalar-derived alternative) stays covered by the three
+    // remaining examples below; `IvRank.spec.tsx`'s own suite (component stays, unmount only) still
+    // covers this same label-authority behavior for the widget itself, in isolation.
 
     // Trend direction: the wire label renders; nothing re-derives "Uptrend" from the EMAs.
     const mc = screen.getByTestId('widget-market-context');
@@ -557,14 +560,14 @@ describe('Ticker · wire-label authority (digested-labels-not-raw-dump)', () => 
 // 5. Model-read self-description — the basis/assumption line rides WITH its value
 // =================================================================================================
 describe('Ticker · model-read self-description', () => {
-  it('the iv-rank basis line and the projection horizon render alongside their values', async () => {
+  it('the projection horizon renders alongside its value', async () => {
     renderAt('/ticker/TSLA');
     await screen.findByText('Call wall');
 
-    // IV rank: the value element AND its window/N basis element share the widget body.
-    const ivr = screen.getByTestId('widget-iv-rank');
-    expect(within(ivr).getByTestId('ivr-rank-value')).toBeInTheDocument();
-    expect(within(ivr).getByTestId('ivr-basis')).toBeInTheDocument();
+    // PASS 2 change 8: the iv-rank half of this pairing test dropped — `widget-iv-rank` no longer
+    // mounts on `/ticker` (owner ruling `context-band-is-the-designs-card-list`). The invariant
+    // (`model-read-carries-its-assumptions`) is still exercised below via dealer-flow-projection,
+    // AND moved to `iv-rank/IvRank.spec.tsx` (component-level) for the rank-value/basis pairing.
 
     // Dealer-flow projection: the charm figure AND its horizon element share the widget body.
     const dfp = screen.getByTestId('widget-dealer-flow-projection');

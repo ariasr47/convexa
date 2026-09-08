@@ -1,8 +1,7 @@
 /**
  * IvRank — RISK-BASED widget spec (qa-verify.md §4, 2026-07-13). The page-level contract (whole-null
- * matrix, wire-band-beats-rank authority, basis-rides-with-value presence) lives in
- * `pages/ticker/ticker.risk.spec.tsx`; this spec keeps ONLY the widget's own state machine, where a
- * silent regression is plausible AND invisible:
+ * matrix) lives in `pages/ticker/ticker.risk.spec.tsx`; this spec keeps the widget's own state
+ * machine, where a silent regression is plausible AND invisible:
  *   1. Building never fabricates — no rank/percentile/band number, not even a placeholder — and stays
  *      DISTINCT from Unavailable (the two honest-empty states must not collapse into one).
  *   2. Degenerate-flat never fabricates a rank midpoint (the classic silent "50") and drops the band,
@@ -10,8 +9,14 @@
  *   3. Fail-honest on unknown wire values — an unknown `state` degrades to Unavailable without
  *      throwing; an unknown `band` renders NO token (never raw pass-through) with the rest intact.
  *   4. The wire descriptors are never rendered — sentinel by construction, across all states.
- * NOT asserted (visible + intentional → review): headline/descriptor/basis/advisory wording, band
- * label wording (closure unit-tested in `../_kit/copy.spec.ts`), auth/chart/theme source scans.
+ *   5. Wire-band-beats-rank authority AND rank-value/basis pairing (BOTH moved here PASS 2 change 8,
+ *      from the page-level suite's "wire-label authority" / "model-read self-description" tests:
+ *      `IvRank` no longer mounts on `/ticker`, owner ruling `context-band-is-the-designs-card-list`,
+ *      so only this widget-level spec can still exercise them) — `ivr-band` is `read.band` via the
+ *      closed lookup ONLY, never re-derived from `read.rank`; `ivr-rank-value` and `ivr-basis` share
+ *      the widget body in the computed state.
+ * NOT asserted (visible + intentional → review): headline/descriptor/advisory wording, band label
+ * wording (closure unit-tested in `../_kit/copy.spec.ts`), auth/chart/theme source scans.
  */
 import { theme } from '@/shared/theme/theme';
 import type { IvRankRead } from '@convexa/api';
@@ -103,6 +108,33 @@ describe('IvRank · state machine honesty', () => {
     expect(screen.queryByTestId('ivr-band')).toBeNull();
     expect(screen.queryByText('wat')).toBeNull();
     expect(screen.getByTestId('ivr-rank-value')).toHaveTextContent('82'); // the rest stays intact
+  });
+
+  // PASS 2 change 8 (moved here from `pages/ticker/ticker.risk.spec.tsx`, which drops this case:
+  // `IvRank` no longer mounts on `/ticker` — owner ruling `context-band-is-the-designs-card-list` —
+  // so the page-level integration test can no longer exercise it; the invariant itself
+  // (`digested-labels-not-raw-dump`) is a property of THIS component and belongs here per this
+  // file's own docblock division. `IvRank.tsx:165` reads `read.band` ONLY, via the closed
+  // `ivrBandDisplay` lookup — this guards against a regression that re-derives the token from
+  // `rank` instead (e.g. an inlined `rank >= 70 ? 'rich' : 'cheap'`).
+  it('the band token is the WIRE band via the closed lookup, never re-derived from rank', () => {
+    // Rank 82 (≥ 70 would derive "rich" under a naive rank-based mapping) but the wire band says
+    // CHEAP — the closed lookup must win.
+    renderIvr(computed({ rank: 82, band: 'premium_cheap' }));
+    expect(screen.getByTestId('ivr-band')).toHaveTextContent('premium cheap');
+    expect(screen.queryByText('premium rich')).toBeNull();
+  });
+
+  // PASS 2 change 8 (moved here from `pages/ticker/ticker.risk.spec.tsx`'s "model-read
+  // self-description" test, for the same reason as the band test above: `IvRank` no longer mounts
+  // on `/ticker`). `model-read-carries-its-assumptions`: the rank VALUE element and its basis
+  // element share the widget body in the fully-computed state (the degenerate-flat test above
+  // already covers the pairing for the percentile limb in the flat state; this is the rank limb in
+  // the default, non-degenerate one).
+  it('the rank value and its basis element share the widget body (model-read-carries-its-assumptions)', () => {
+    renderIvr(computed());
+    expect(screen.getByTestId('ivr-rank-value')).toBeInTheDocument();
+    expect(screen.getByTestId('ivr-basis')).toBeInTheDocument();
   });
 
   it('the wire window/basis/advisory descriptor strings never reach the DOM (any state)', () => {

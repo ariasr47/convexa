@@ -113,14 +113,12 @@ afterEach(() => {
 // Criterion 47 — AI-read isolation
 // ---------------------------------------------------------------------------------------------
 
-/** The quiet band, sampled by three of its own widgets (same discipline `ticker.risk.spec.tsx`'s
+/** The quiet band, sampled by two of its own widgets (same discipline `ticker.risk.spec.tsx`'s
  *  `STATIC_WIDGETS` already established) — never a live-derived figure, so this doubles as the
- *  "quiet band never wears a live mark" half incidentally, though criterion 8 is proven elsewhere. */
-const QUIET_BAND_WIDGETS = [
-  'widget-market-context',
-  'widget-iv-rank',
-  'widget-dealer-flow-projection',
-] as const;
+ *  "quiet band never wears a live mark" half incidentally, though criterion 8 is proven elsewhere.
+ *  PASS 2 change 8 (owner ruling `context-band-is-the-designs-card-list`): `widget-iv-rank` dropped
+ *  — `IvRank` no longer mounts on `/ticker` (was a sample of three before this pass). */
+const QUIET_BAND_WIDGETS = ['widget-market-context', 'widget-dealer-flow-projection'] as const;
 
 /** Captures the four non-AI regions' rendered text, per criterion 47's own naming. */
 function captureRegions(): Record<string, string> {

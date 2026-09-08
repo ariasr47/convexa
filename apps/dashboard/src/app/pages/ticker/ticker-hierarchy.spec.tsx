@@ -280,15 +280,17 @@ describe('Ticker · context band grid (ticker fidelity repair F2)', () => {
     for (const seg of [flow, vol, positioning]) expect(seg).toBeDisabled();
   });
 
-  it('DOM order matches the design’s ctx-grid enumeration: dealer flow → market context → term structure → (IV rank, kept) → straddle move → fresh positioning → off-exchange → setups → add widget', async () => {
+  it('DOM order matches the design’s ctx-grid enumeration: dealer flow → market context → term structure → straddle move → fresh positioning → off-exchange → setups → add widget', async () => {
     renderTicker();
     await screen.findByText('Call wall');
 
+    // PASS 2 change 8 (owner ruling `context-band-is-the-designs-card-list`): `widget-iv-rank`
+    // dropped from this order list — `IvRank` no longer mounts on `/ticker` (was "IV rank, kept" in
+    // this test's own title before this pass; the widget and its own spec still exist, unmounted).
     const order = [
       'widget-dealer-flow-projection',
       'widget-market-context',
       'widget-term-structure',
-      'widget-iv-rank',
       'widget-straddle-move',
       'widget-fresh-positioning',
       'widget-setups',
