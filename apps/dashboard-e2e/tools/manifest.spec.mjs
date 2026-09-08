@@ -17,7 +17,11 @@ test('browser quality manifest is closed and has the required inventories', () =
   // newly reachable — see `lib/manifest.mjs`'s own comment at this same check.
   // (curvature-v2-surfaces GATE Z repair pass 2) 100 → 103 — the input/select 44px floor's 3 new
   // `no-overflow.spec.ts` tests — see `lib/manifest.mjs`'s own comment at this same check.
-  assert.equal(manifest.full_chromium.tests.length, 103);
+  // (curvature-v2-surfaces GATE Z repair pass 3) 103 → 105 — criterion 66's second clause:
+  // `TrackRecordSection.tsx`'s `<summary>` on `/positions` (touched this phase, `bdc992d8`) now
+  // meets the 44px coarse-pointer floor; 2 new `no-overflow.spec.ts` tests (393 coarse + 1280 fine,
+  // the latter proving the fix is inert on a fine pointer).
+  assert.equal(manifest.full_chromium.tests.length, 105);
   assert.equal(manifest.compatibility.journeys.length, 5);
   assert.deepEqual(manifest.compatibility.projects, ['chromium', 'firefox', 'webkit']);
   assert.equal(manifest.accessibility.scans.length, 9);

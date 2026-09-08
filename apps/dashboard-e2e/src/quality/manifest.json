@@ -2,7 +2,7 @@
   "schema_version": 1,
   "support_policy_id": "playwright-engines-1.62.1",
   "full_chromium": {
-    "inventory_id": "curvature-v2-surfaces-103-v1",
+    "inventory_id": "curvature-v2-surfaces-105-v1",
     "tests": [
       {
         "test_id": "d38f0e9816f51aa1922817ddad296f9fcfffdcb98335c43716eb971b1cf4f276",
@@ -918,6 +918,24 @@
         "title_path": [
           "GATE Z finding 3 (criterion 66) — inputs and selects at 393px, coarse pointer",
           "the alerts composer Symbol field and Kind select meet the 44px floor"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "27c826fd5af18fabf6767df25da9708301e23eb3d371577a8ca4151e5a34faee",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "GATE Z criterion 66, pass 3 — /positions track-record summary at 393px, coarse pointer",
+          "the \"What wasn't counted — and why\" summary meets the 44px floor"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "56c7e7605d3865e897330943d828de00476805c5ca19793bca4d3d0d360349da",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "GATE Z criterion 66, pass 3 — /positions track-record summary at 1280px, fine pointer (desktop unmoved)",
+          "the same summary keeps its shipped desktop geometry (no `hasTouch`, fine pointer)"
         ],
         "project": "chromium"
       }

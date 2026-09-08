@@ -225,7 +225,21 @@ function ExclusionBreakdown({ read }: { read: LedgerRead }) {
     <Box component="details" data-testid="tr-breakdown" sx={{ mb: 1.5 }}>
       <Box
         component="summary"
-        sx={{ cursor: 'pointer', color: 'text.secondary', fontSize: '0.8125rem' }}
+        sx={{
+          cursor: 'pointer',
+          color: 'text.secondary',
+          fontSize: '0.8125rem',
+          // GATE Z (criterion 66, pass 3): a native `<summary>` matches none of `theme.ts`'s
+          // coarse-pointer selector list (`button, [role="button"], a, input`) — the SAME escape
+          // mechanism as MUI `Select`'s self-duplicated `.MuiSelect-select` class, just via a
+          // different element instead of a specificity fight. Floored LOCALLY, coarse-pointer only,
+          // so the desktop/fine-pointer row height (measured unchanged at 1280) never moves.
+          '@media (pointer: coarse)': {
+            minHeight: 44,
+            display: 'flex',
+            alignItems: 'center',
+          },
+        }}
       >
         {TR_BREAKDOWN_SUMMARY}
       </Box>

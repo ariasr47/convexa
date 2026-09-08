@@ -1452,3 +1452,61 @@ test.describe('GATE Z finding 3 (criterion 66) — inputs and selects at 393px, 
     await expectFloor(kind, 'alerts composer Kind select (coarse pointer)');
   });
 });
+
+// =====================================================================================================
+// GATE Z, criterion 66, pass 3 — `TrackRecordSection.tsx:226-231`'s `What wasn't counted — and why`
+// `<summary>` on `/positions` (`bdc992d8`, FE-5 — this phase touches this file, so criterion 66 BINDS
+// it; unlike the three sibling under-floor selects QA found on `/ticker`, this one is fixed, not
+// itemized). QA measured 345×21.44 at 393px/coarse — a native `<summary>` matches none of `theme.ts`'s
+// coarse-pointer selector list (`button, [role="button"], a, input`), the same escape shape as MUI
+// `Select`'s self-duplicated class, via a different element. Floored LOCALLY, coarse-pointer only.
+// =====================================================================================================
+test.describe('GATE Z criterion 66, pass 3 — /positions track-record summary at 393px, coarse pointer', () => {
+  test.use({ viewport: { width: 393, height: 852 }, hasTouch: true });
+
+  test('the "What wasn\'t counted — and why" summary meets the 44px floor', async ({ page }) => {
+    await stubNetwork(page);
+    // At least one OPEN, non-closed position is enough to leave the `empty` body arm (`ledger.ts`'s
+    // `openNotCounted` adjacent count) and render the `default` body, which is where
+    // `ExclusionBreakdown`'s `<summary>` lives — no closed/counted decision record is required to
+    // reach this specific control.
+    await seed(page, { scheme: 'dark', positions: 'book' });
+    await page.goto('/positions');
+    await expect(page.getByTestId('portfolio-panel')).toBeAttached();
+    const summary = page.getByTestId('tr-breakdown').locator('summary');
+    await expect(summary).toBeAttached();
+    const box = await summary.boundingBox();
+    console.log(
+      `[criterion 66 evidence, GATE Z pass 3] tr-breakdown summary (TrackRecordSection.tsx:226-231), ` +
+        `393px coarse = ${JSON.stringify(box)}`,
+    );
+    await expectFloor(summary, 'tr-breakdown summary (coarse pointer)');
+  });
+});
+
+test.describe('GATE Z criterion 66, pass 3 — /positions track-record summary at 1280px, fine pointer (desktop unmoved)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('the same summary keeps its shipped desktop geometry (no `hasTouch`, fine pointer)', async ({
+    page,
+  }) => {
+    await stubNetwork(page);
+    await seed(page, { scheme: 'dark', positions: 'book' });
+    await page.goto('/positions');
+    await expect(page.getByTestId('portfolio-panel')).toBeAttached();
+    const summary = page.getByTestId('tr-breakdown').locator('summary');
+    await expect(summary).toBeAttached();
+    const box = await summary.boundingBox();
+    console.log(
+      `[criterion 66 evidence, GATE Z pass 3] tr-breakdown summary (TrackRecordSection.tsx:226-231), ` +
+        `1280px fine pointer = ${JSON.stringify(box)}`,
+    );
+    // The coarse-pointer floor must be inert on a fine pointer: the shipped row stays its
+    // pre-fix, sub-44px height (QA measured 21.44px at 393; this asserts the desktop row never
+    // grew to meet the coarse floor by accident).
+    expect(
+      box!.height,
+      'tr-breakdown summary desktop height stays under the coarse floor',
+    ).toBeLessThan(44);
+  });
+});

@@ -83,7 +83,12 @@ const gateCounts: Record<string, number> = {
   // `no-overflow.spec.ts` tests (Settings risk-inputs account-size/cap-value, Settings
   // ticker/persona, the alerts composer Symbol/Kind controls); bump to
   // `curvature-v2-surfaces-103-v1` (`tools/lib/manifest.mjs` enforces the same number).
-  chromium: 103,
+  // (curvature-v2-surfaces GATE Z repair pass 3, criterion 66 second clause) 103 → 105:
+  // `TrackRecordSection.tsx`'s `<summary>` on `/positions` (touched this phase, `bdc992d8`) FIXED
+  // to meet the coarse-pointer floor, 2 new `no-overflow.spec.ts` tests (393 coarse + 1280 fine,
+  // desktop-unmoved); bump to `curvature-v2-surfaces-105-v1` (`tools/lib/manifest.mjs` enforces the
+  // same number).
+  chromium: 105,
   compatibility: 15,
   accessibility: 16,
   visual: 6,

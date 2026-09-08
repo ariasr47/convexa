@@ -60,11 +60,17 @@ export function validateManifest(value) {
     // `settings-ticker`/`settings-persona`, and the alerts composer's Symbol field + Kind select —
     // all newly reachable once `theme.ts`'s coarse-pointer selector was widened to `input` and
     // `[role="combobox"]`.
-    value.full_chromium?.inventory_id !== 'curvature-v2-surfaces-103-v1' ||
+    // (curvature-v2-surfaces GATE Z repair pass 3, criterion 66 second clause) bumped 103 → 105:
+    // `TrackRecordSection.tsx:226-231`'s `<summary>` on `/positions` was FIXED (this phase touches
+    // the file, `bdc992d8` — unlike the three sibling under-floor `Select`s QA found on `/ticker`,
+    // which stay itemized as carried debt, untouched this phase) — 2 new `no-overflow.spec.ts`
+    // tests: the 393px/coarse floor assertion, and a 1280px/fine-pointer assertion proving the
+    // local coarse-only `sx` never leaks into the desktop row height.
+    value.full_chromium?.inventory_id !== 'curvature-v2-surfaces-105-v1' ||
     !Array.isArray(tests) ||
-    tests.length !== 103
+    tests.length !== 105
   )
-    fail('full Chromium inventory must contain 103 tests');
+    fail('full Chromium inventory must contain 105 tests');
   unique(
     tests.map((x) => x.test_id),
     'full Chromium tests',

@@ -2508,3 +2508,125 @@ instruction ("report what you actually see").
 - `docs/research/convexa-business-review-2026-09-05/` — confirmed present, untouched, `git status`
   checked before and after every step; never staged.
 - Criterion 7a — untouched, not re-derived, not re-argued; still the owner's open decision.
+
+## GATE Z repair, pass 3 — GATE Q pass 2 FAIL (93/2/0), criterion 66's second clause: one fix, three itemizations
+
+GATE Q pass 2 found criterion 66's clause 1 (the 44px floor itself) fully repaired, and its own census
+found **four** sub-floor controls the build report itemized nowhere — a clause-2 miss. The conductor's
+own `git log f8957d3f..HEAD` split them: **one** has a commit this phase (`TrackRecordSection.tsx`,
+`bdc992d8`, FE-5) and is therefore bound by criterion 66 — **fixed here**. The other **three** have
+zero commits this phase and are outside "creates or touches" — **itemized as carried debt**, not
+fixed, exactly like the already-accepted `ScanToolbar.tsx:74,104` exemption.
+
+**The rule this pass applies, stated once so a future reviewer does not have to re-derive it:**
+criterion 66 binds a control if and only if `git log f8957d3f..HEAD -- <file>` is non-empty for the
+file that renders it. Touched ⇒ fixed. Untouched ⇒ itemized as carried debt with `file:line`, the
+measurement, and a phase attached — never fixed (fixing an untouched file's control would be an
+unmandated edit outside this phase's own scope fence, and would move a specificity fight this phase
+has no reason to reopen).
+
+### Fixed — `TrackRecordSection.tsx:226-231`'s `<summary>` on `/positions` (touched this phase, `bdc992d8`)
+
+**Diagnosis, confirmed at source.** The `What wasn't counted — and why` disclosure
+(`ExclusionBreakdown`, rendered inside `TrackRecordSection`, itself edited this phase at `bdc992d8`
+for FE-5) is a native `<summary>` (`Box component="summary"`). QA measured it 345×**21.44** at
+393px/coarse — the widest single-line miss QA found. A `<summary>` matches NONE of `theme.ts`'s
+coarse-pointer selector list (`button, [role="button"], a, input`) — the exact same escape mechanism
+as MUI `Select`'s self-duplicated `.MuiSelect-select` class (GATE Z pass 2, finding 3), just a
+different element instead of a specificity fight: there is no CSS selector reachable from the theme
+layer that can address a bare `<summary>` by role or tag the way the existing list does.
+
+**Fix, local, coarse-pointer only.** `TrackRecordSection.tsx`'s summary `sx` gained a
+`'@media (pointer: coarse)'` block: `minHeight: 44`, `display: 'flex'`, `alignItems: 'center'` (the
+flex centering keeps the text vertically centered in the taller box rather than top-aligned). Width
+was already 345px — well over the 44px floor — so only height needed the floor; no width change was
+made. No local specificity workaround was needed (unlike the `Select` case): a `<summary>` carries no
+competing MUI-authored rule to out-specify, so a plain scoped `sx` wins outright.
+
+**Measured, before → after, real browser (Playwright, `hasTouch: true`, 393×852, seeded `/positions`
+with `positions: 'book'` — an open, non-closed book is enough to leave the `empty` body arm via
+`ledger.ts`'s `openNotCounted` adjacent count and reach the `default` body where the summary lives; no
+closed/counted decision record is required for this control specifically):**
+- `tr-breakdown` summary: **345×21.4375 → 345×44** (`x:24, y:2488.921875, width:345, height:44`).
+
+**Desktop, proven unmoved — real browser, no `hasTouch`, 1280×900, fine pointer, same seed:**
+- `tr-breakdown` summary: **1192×21.4375** — width differs from the 393 case only because the
+  section's own container is wider at 1280 (expected, unrelated to this fix); the **height** is
+  byte-identical to QA's own pre-fix measurement (21.44, printed here as `21.4375` — same float,
+  QA's console rounded for display) — the coarse-only `@media` block is provably inert on a fine
+  pointer, exactly as intended, not merely assumed.
+
+**Regression coverage — e2e, hard-asserted, not merely measured.** Two new tests in
+`no-overflow.spec.ts`: one at 393px/coarse asserting `expectFloor` (width AND height ≥44) on the
+summary; one at 1280px/fine asserting the summary's height stays **under** 44 — a positive assertion
+that the coarse-only mechanism has not leaked to desktop, not just a printed number. Browser-quality
+manifest bumped `103 → 105` in the required four-file lockstep (`manifest.json`,
+`tools/lib/manifest.mjs`, `tools/manifest.spec.mjs`, `quality-reporter.ts`'s `gateCounts.chromium`) —
+`node --test manifest.spec.mjs mutations.spec.mjs` **exit 0, 7/7**; `npx playwright test --list`
+**105 tests in 7 files**; the summary manifest reported `"status":"pass"` with no `"incomplete"`
+anywhere.
+
+**Verification, exit codes:** `npm run typecheck` **0** (cold — `apps/dashboard/dist`, `dist`,
+`out-tsc`, every `*.tsbuildinfo` deleted first; run across `@convexa/dashboard`, `@convexa/api` AND
+`dashboard-e2e`); `npx nx test @convexa/dashboard --skip-nx-cache -- src/app/features/trading/outcomes`
+**0, 133/133** (targeted); full suite **0, 239/239 files, 2857/2857 tests** (standing baseline,
+unchanged — this pass added no vitest tests, only e2e); `npm run lint` **0**, 5 pre-existing warnings,
+0 new; `npx nx format:check --files=<every file this pass touched>` **0**; `npm run ports:free` **0**,
+clean, first and last; `npm run build` **0** (production); `BROWSER_QUALITY_PREBUILD_STATUS=pass npx
+nx e2e dashboard-e2e --skip-nx-cache` against the production build — **0, 105/105 passed, 0 flaky**
+(`[PASS] chromium — 105/105 passed — 0 flaky`).
+
+**Files:** `apps/dashboard/src/app/features/trading/outcomes/TrackRecordSection.tsx`,
+`apps/dashboard-e2e/src/e2e/no-overflow.spec.ts`, `apps/dashboard-e2e/src/quality/manifest.json`,
+`apps/dashboard-e2e/src/quality/reporters/quality-reporter.ts`,
+`apps/dashboard-e2e/tools/lib/manifest.mjs`, `apps/dashboard-e2e/tools/manifest.spec.mjs`.
+
+### Itemized, NOT fixed — three controls with zero commits this phase (carried debt)
+
+Confirmed by `git log f8957d3f..HEAD -- <file>` returning empty for all three, and (for the first)
+`git diff origin/main...HEAD -- <file>` matching QA's own note that the touched region is pure
+re-indentation, not substance:
+
+- **`pages/ticker/widgets/ai-rec/AiRecPanel.tsx:288-300`** — the `Next read persona` `Select`,
+  measured **327×38.5625** at 393px/coarse. Outside this phase's mandate (no commit this phase); the
+  same MUI `.MuiSelect-select.MuiSelect-select` specificity shape the pass-2 repair already diagnosed
+  and fixed at its own three call sites, so a future phase touching this file has the pattern ready to
+  reuse. **Phase to fix it in: whichever phase next substantively touches `AiRecPanel.tsx`.**
+- **`pages/ticker/widgets/chrome/TickerToolbar.tsx:155-182`** — the `Expirations` `Select`, measured
+  **190×38.5625** at 393px/coarse. Same mechanism, same fix pattern available. **Phase to fix it in:
+  whichever phase next substantively touches `TickerToolbar.tsx`.**
+- **`features/personas/components.tsx:55`** — the toolbar `Persona` `Select`, measured **190×38.5625**
+  at 393px/coarse. Same mechanism, same fix pattern available. **Phase to fix it in: whichever phase
+  next substantively touches `features/personas/components.tsx`.**
+
+Widening `theme.ts`'s coarse-pointer selector further to reach these three (rather than fixing each
+locally) was considered and rejected: QA's own pass-2 measurement already confirmed desktop stays
+unmoved only for the CURRENT selector set, and any further widening would touch controls this phase
+has no mandate over, re-opening a specificity fight this phase's own scope fence does not authorize.
+
+**Untouched, per the launch instruction, confirmed by diff:** `pages/positions/PositionsPage.tsx`
+(criterion 7a, owner decision — `git diff cc6e3ae2..HEAD -- apps/dashboard/src/app/pages/positions/PositionsPage.tsx` = 0 lines), `features/trading/orders/OrderRow.tsx:172` (Z-1), `SPEC.md`, `PLAN.md`,
+`INTERFACE_CONTRACT.md`, `decisions.md`, `QA_REPORT.md`, `design/`, `apps/api`.
+
+### Whole-phase verification, this pass (HEAD `cc6e3ae2` unchanged start-to-end, confirmed before and after)
+
+- `git branch --show-current` / `git rev-parse HEAD` — `spire/curvature-v2-foundations` / `cc6e3ae2`,
+  confirmed unchanged before the first edit and again immediately before this commit.
+- `npm run typecheck` — **exit 0**, cold (`apps/dashboard/dist`, `apps/dashboard-e2e/dist`, `out-tsc`,
+  every `*.tsbuildinfo` deleted first), across `@convexa/dashboard`, `@convexa/api`, `dashboard-e2e`.
+- `npx nx test @convexa/dashboard --skip-nx-cache -- src/app/features/trading/outcomes` — **exit 0,
+  133/133** (targeted tree).
+- `npx nx test @convexa/dashboard --skip-nx-cache` (full suite, once) — **exit 0, 239/239 files,
+  2857/2857 tests** — the exact standing baseline, unmoved.
+- `npm run lint` — **exit 0**, 5 pre-existing warnings, 0 new.
+- `npx nx format:check --files=<every file this pass touched>` — **exit 0**.
+- `node --test apps/dashboard-e2e/tools/manifest.spec.mjs apps/dashboard-e2e/tools/mutations.spec.mjs`
+  — **exit 0, 7/7**.
+- `npm run ports:free` — exit 0, clean, both first and last.
+- `npm run build` — **exit 0** (production, `node_modules/.vite` cleared first per gotcha 15/16).
+- `npx playwright test --list` — **105 tests in 7 files**.
+- `BROWSER_QUALITY_PREBUILD_STATUS=pass npx nx e2e dashboard-e2e --skip-nx-cache` (production build) —
+  **exit 0, 105/105 passed, 0 flaky**, `summary.json` `status: "pass"`, no `"incomplete"` anywhere.
+- `docs/research/convexa-business-review-2026-09-05/` — confirmed present, untouched throughout.
+- Criterion 7a — untouched, not re-derived, not re-argued; still the owner's open decision.
+- `PositionsPage.tsx` — confirmed byte-unchanged (`git diff cc6e3ae2..HEAD` = 0 lines for this file).
