@@ -112,7 +112,19 @@ export function ReadStrip({ cells, ringScore }: ReadStripProps) {
   const theme = useTheme();
 
   return (
-    <Widget id="read-strip" title="Read strip" hideHeader bodyVariant="inset" bodyPad="none">
+    // `span={2}` — the SAME full-bento-row placement the strip carried before this repair (and
+    // `StructureHeroPanel` above it still carries): without it the strip sits in ONE bento column
+    // (≈568px at 1280), which never reaches the rail's own `panel` container's 1000px grid
+    // threshold — a measured composition-gate regression this repair's own gate caught and fixed
+    // before landing, not a residual.
+    <Widget
+      id="read-strip"
+      title="Read strip"
+      hideHeader
+      span={2}
+      bodyVariant="inset"
+      bodyPad="none"
+    >
       <Box
         data-testid="read-strip-rail"
         sx={{

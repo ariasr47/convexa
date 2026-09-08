@@ -307,4 +307,15 @@ describe('ReadStrip — masthead-less strip composition (ticker fidelity repair 
       expect(rule).not.toContain('min-width:140px');
     }
   });
+
+  it('spans the full bento row (span={2}), the same placement the strip carried before this repair — a measured composition-gate regression this repair caught before landing', () => {
+    wrap();
+    const strip = screen.getByTestId('widget-read-strip');
+    const cls = emotionClassOf(strip);
+    expect(cls, 'widget-read-strip should carry an emotion (sx) class').toBeTruthy();
+    const rule = allRulesForClass(joinedStyleText(), cls as string)
+      .join(';')
+      .replace(/\s+/g, '');
+    expect(rule).toContain('grid-column:span2');
+  });
 });
