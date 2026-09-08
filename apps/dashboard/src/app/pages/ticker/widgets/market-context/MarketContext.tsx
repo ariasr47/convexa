@@ -55,23 +55,22 @@ import Typography from '@mui/material/Typography';
 import {
   MC_ADVISORY,
   MC_ATR_EMPTY,
-  MC_ATR_TITLE,
+  MC_ATR_SHORT,
   MC_CELL_EMPTY,
   MC_CELL_EMPTY_CAPTION,
   MC_CONCENTRATION_DISPLAY,
   MC_DIRECTION_DISPLAY,
   MC_FLOW_BASIS,
   MC_FLOW_EMPTY,
-  MC_FLOW_TITLE,
+  MC_FLOW_SHORT,
   MC_INFO,
   MC_LOCATION_DISPLAY,
   MC_LOCATION_ROW_EMPTY,
-  MC_ROW_ATR_14D,
+  MC_ROW_TREND,
   MC_SHAPE_EMPTY,
-  MC_SHAPE_TITLE,
+  MC_SHAPE_SHORT,
   MC_SUBTITLE,
   MC_TI_EMPTY,
-  MC_TI_TITLE,
   MC_TIP_ATR_CARD,
   MC_TIP_FLOW_CARD,
   MC_TIP_SHAPE_CARD,
@@ -81,12 +80,9 @@ import {
   MC_WHOLE_EMPTY,
   mcAtrBasis,
   mcAtrLine,
-  mcConcentrationLine,
   mcDisplay,
-  mcLocationLine,
   mcShapeBasis,
   mcTiBasis,
-  mcTrendLine,
 } from '../_kit/copy';
 
 const MONO = typographyTokens.monoFontFamily;
@@ -239,7 +235,7 @@ function CompactCell({
 function TrendCell({ read }: { read: TrendMomentumRead | null }) {
   return (
     <CompactCell
-      title={MC_TI_TITLE}
+      title={MC_ROW_TREND}
       info={MC_TIP_TI_CARD}
       testid="mc-ti"
       rowTestid="mc-trend"
@@ -248,7 +244,6 @@ function TrendCell({ read }: { read: TrendMomentumRead | null }) {
       display={
         read?.direction == null ? null : mcDisplay(MC_DIRECTION_DISPLAY, read.direction.label)
       }
-      scalar={read?.direction == null ? undefined : mcTrendLine(read.direction)}
       rowEmptyText={MC_TREND_ROW_EMPTY}
       basisText={read ? mcTiBasis(read.as_of_session) : ''}
     />
@@ -259,14 +254,13 @@ function TrendCell({ read }: { read: TrendMomentumRead | null }) {
 function ShapeCell({ read }: { read: GexProfileShapeRead | null }) {
   return (
     <CompactCell
-      title={MC_SHAPE_TITLE}
+      title={MC_SHAPE_SHORT}
       info={MC_TIP_SHAPE_CARD}
       testid="mc-shape"
       rowTestid="mc-concentration"
       whole={read}
       wholeEmptyText={MC_SHAPE_EMPTY}
       display={read == null ? null : mcDisplay(MC_CONCENTRATION_DISPLAY, read.concentration_label)}
-      scalar={read == null ? undefined : mcConcentrationLine(read.concentration)}
       rowEmptyText={MC_CELL_EMPTY}
       basisText={read ? mcShapeBasis(read.spot_basis, read.eligible_strikes) : ''}
     />
@@ -277,14 +271,13 @@ function ShapeCell({ read }: { read: GexProfileShapeRead | null }) {
 function FlowCell({ read }: { read: FlowVsPositioningRead | null }) {
   return (
     <CompactCell
-      title={MC_FLOW_TITLE}
+      title={MC_FLOW_SHORT}
       info={MC_TIP_FLOW_CARD}
       testid="mc-flow"
       rowTestid="mc-location"
       whole={read}
       wholeEmptyText={MC_FLOW_EMPTY}
       display={read?.location == null ? null : mcDisplay(MC_LOCATION_DISPLAY, read.location.label)}
-      scalar={read?.location == null ? undefined : mcLocationLine(read.location)}
       rowEmptyText={MC_LOCATION_ROW_EMPTY}
       basisText={MC_FLOW_BASIS}
     />
@@ -295,7 +288,7 @@ function FlowCell({ read }: { read: FlowVsPositioningRead | null }) {
 function AtrCell({ read }: { read: AtrRead | null }) {
   return (
     <CompactCell
-      title={`${MC_ATR_TITLE} · ${MC_ROW_ATR_14D}`}
+      title={MC_ATR_SHORT}
       info={MC_TIP_ATR_CARD}
       testid="mc-atr"
       rowTestid="mc-atr-14d"

@@ -326,6 +326,16 @@ export const MC_ROW_ATR_5D = '5-day';
 export const MC_ROW_ATR_14D = '14-day';
 export const MC_ROW_ATR_30D = '30-day';
 
+// Compact-card captions (ticker fidelity repair F2, `design/src/screens/desk.mjs:413`'s `ctx-2`
+// cells: `['Trend', ...]`, `['Profile shape', ...]`, `['Flow vs positioning', ...]`,
+// `['ATR 14d', ...]`) — the short label the 2×2 context-band card shows per cell, distinct from the
+// longer `MC_*_TITLE` family name (still the ⓘ tooltip's accessible-name root). Copied verbatim from
+// the design source, not authored here. `MC_ROW_TREND` above already matches `'Trend'` exactly and is
+// reused rather than duplicated.
+export const MC_SHAPE_SHORT = 'Profile shape';
+export const MC_FLOW_SHORT = 'Flow vs positioning';
+export const MC_ATR_SHORT = 'ATR 14d';
+
 // Scalar-line builders (mono, text.secondary — §5.3). Display-only; never threshold math.
 export const mcTrendLine = (d: { close: number; ema20: number; ema50: number }): string =>
   `close ${fmt2(d.close)} · EMA20 ${fmt2(d.ema20)} · EMA50 ${fmt2(d.ema50)}`;
