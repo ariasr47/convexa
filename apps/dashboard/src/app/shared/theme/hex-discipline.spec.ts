@@ -67,8 +67,16 @@ const EXEMPT: Record<string, string> = {
   // module-level `INK`/`PANEL`/`PHOSPHOR`/`STEEL`/`AMBER`/`SIGNAL`/`GREEN`/`RED` hex literals — the
   // coupled removal `hex-discipline.spec.ts`'s "the exemption list is live" check requires (a
   // stale entry with no remaining hex/rgb(a) would fail that check on its own).
-  'pages/ticker/widgets/term-structure/TermHeatChart.tsx':
-    'Term Heat Canvas2D — brand token literals (cannot use MUI sx)',
+  //
+  // REMOVED (ticker fidelity repair, change 5 / F9, 2026-09-08): `TermHeatChart.tsx` now resolves
+  // its INK/PANEL/PHOSPHOR/STEEL/heat/line colours from `useTheme()` (`theme.palette.*`, the SAME
+  // resolved-at-JS-access-time values `levelStrokes.ts`'s `resolveToken` already relies on under
+  // `cssVariables:true` — a Canvas 2D `fillStyle` cannot resolve a `var(--mui-palette-*)` string,
+  // so these are read from the theme OBJECT, never emitted as CSS) in place of its own module-level
+  // `INK`/`PANEL`/`PHOSPHOR`/`STEEL`/`GREEN`/`RED`/`SIGNAL` hex literals — the same coupled removal
+  // as `WallMagnetView.tsx` above. The IV line is `info.main` (signal) always, never a green/red
+  // split; the heat gradient uses `success.main`/`error.main` (the theme's direction pair) only for
+  // the two SIGNED states (contango/backwardation) and a neutral `text.secondary` tint for `flat`.
 
   // GATE Z repair (curvature-v2-desk-and-read, 2026-09-05) — the scan above was extended to catch
   // `rgba()`/`rgb()` literals too (previously invisible; the FAIL named the two v2 token additions,
