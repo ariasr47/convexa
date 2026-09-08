@@ -1,5 +1,33 @@
 # RESUME — spire/curvature-v2-foundations
 
+## ⬆ UPDATE — 2026-09-08, pass 2 of the /ticker lane ("Do all four") landed — GATE Z: none
+
+All three frontend changes landed, four commits (`1d84505a` change 7 hero header collapse at 390 ·
+`ed1671f6` change 8 `IvRank` unmounted from the band · `1f8b606e` change 9 masthead controls join the
+headline row at ≥ laptop · `b91b59ff` a manifest-sync fix change 8's e2e rename needed, found at the
+e2e gate). Full account: `TICKER_FIDELITY_REPAIR_REPORT.md`'s `## Pass 2` section (per-change detail,
+every assertion edit with its reason, before/after composition table, gate exit codes).
+
+**Every gate green cold:** typecheck 0 · dashboard suite 0 @ 239 files / **2,914** tests (was 2,905) ·
+lint 0 (4 pre-existing warnings) · format:check 0 · `apps/api` diff empty · NUL scan 0 · the harness
+(`--grep desk-real`, fresh production build) 11/11 · e2e (`--grep "desk|curvature|overflow"`)
+108/108, 0 flaky. **No GATE Z items this pass** — every decision point was already resolved by the
+task's own text or was an in-lane testing-strategy call (change 8's two page-level test cases moved
+into `IvRank.spec.tsx` rather than dropped, listed in the report).
+
+**Composition, the numbers that mattered:** the ONE page-level threshold the conductor's cold
+verification had missed (390 px page height, was 5,566 vs ≤ 5,520) is now **met** — 5,484 px, 36 px to
+spare — because change 7 fixed the actual defect driving it (the hero header's `S…` truncation and
+one-word-per-line subtitle wrap at 390, now visually correct, confirmed against the crop evidence).
+Two region-level thresholds stay narrowly missed, each with a directly-measured root cause (not
+guessed): `command-deck` 215 px vs ≤ 200 (design 186) — joining the toolbar widens the header's right
+region enough that its own chip row wraps to two lines at 1280/1440, a content-width tension, not a
+join bug; `widget-structure-hero` 968 px vs ≤ 950 (design 905) at 390 — the header itself (the fixed
+defect) is correct, the remaining 18 px reads as ordinary content-length variance in the must-not-touch
+canvas/ladder interior. The band (`ticker-context-grid`) landed at 968 px, within 2 px of the task's
+own predicted "≈ 970" — the ≤ 800 density target stays the owner's own named-open item, untouched by
+design (no field was cut to force a number under a line).
+
 ## ⬆ UPDATE — 2026-09-08, owner ruled "Do all four"; pass 2 of the /ticker lane opened
 
 All four pending decisions taken: (1) fix the hero header collapse at 390 (owner leave for the hero
@@ -26,6 +54,7 @@ wire trail (GATE Z above) — server-side trail on the SSE event (backend backlo
 positions / alerts / settings (F5–F8) first.
 
 ## ⬆ UPDATE — 2026-09-08, ticker fidelity repair lane resumed (rate-limit kill) — GATE Z filed, composition
+
 ## gaps closed further
 
 **What happened.** The build lane on `TICKER_FIDELITY_REPAIR_TASK.md` was killed mid-edit by an API rate
@@ -69,7 +98,7 @@ change (`+1.84`) and a signed percent (`+0.32%`) beside the mid — plus the ins
 close, no session-open reference, no signed change/percent field, and no instrument display name
 (only the ticker symbol). Change 3 (F3) therefore **omits** both fields on the rebuilt masthead —
 never faked, never rendered as the closed not-a-number vocabulary's `—` (canon 24 is for absent
-*figures*, not absent *wire fields* the schema never promised) — `TickerHeader.tsx` shows `SYMBOL ·
+_figures_, not absent _wire fields_ the schema never promised) — `TickerHeader.tsx` shows `SYMBOL ·
 $mid` only, dropping the parenthetical the old layout used to carry (`levels @ / expirations` moved
 to a new second line instead; see the change's own commit).
 
@@ -85,9 +114,9 @@ a client-side one.
 
 ## ⬆ UPDATE — 2026-09-08, the Mac session (read this before the handover block below)
 
-**What happened.** The Mac booted from the handover, then ran the owner's request: *"re-audit all the
+**What happened.** The Mac booted from the handover, then ran the owner's request: _"re-audit all the
 work that has been done so far and make sure that it is faithful to the Convexa Desk Redesign …
-gather evidence with screenshots."* Result: `fidelity-audit-2026-09-08/FIDELITY_AUDIT.md` (this folder)
+gather evidence with screenshots."_ Result: `fidelity-audit-2026-09-08/FIDELITY_AUDIT.md` (this folder)
 — the built app and `design/site/*.html` rendered side by side at 1440 / 1280 / 834 / 390, DOM-census
 measured, 29 composite pairs. Verdict: the v2 vocabulary shipped everywhere and the repaired hero is at
 the design's height (483 vs 488); the rest of `/ticker` and the four site surfaces are still v1 layouts
@@ -131,8 +160,8 @@ Pushed to origin; **no PR**; nothing uncommitted. `main` is untouched by this br
 
 **What just happened (last 24 h):** phase 3 closed at GATE S → owner saw the `/ticker` structure hero
 "looks off" → review found it was the plan's placeholder stack and that every phase built v2 vocabulary on
-v1 layouts (site-wide survey in `STRUCTURE_HERO_REVIEW.md`) → owner ruled *"just fix the ticker screen
-for now"* → one Sonnet repair lane landed it (`57525861..1ac1f339`) → conductor re-verified cold
+v1 layouts (site-wide survey in `STRUCTURE_HERO_REVIEW.md`) → owner ruled _"just fix the ticker screen
+for now"_ → one Sonnet repair lane landed it (`57525861..1ac1f339`) → conductor re-verified cold
 (typecheck 0 · 239 files / 2,861 tests 0 · lint 0 · e2e `desk|curvature|overflow` 108/108 vs production
 build · `apps/api` diff empty) · hero **1,225 → 550 px** at 1280 (design 488).
 
@@ -143,6 +172,7 @@ grid/density — measured table in the review) — recommended, one Sonnet lane,
 Then the five cosmetic hero residuals (review § "Repair result") fold into whichever comes first.
 
 **How to boot on the Mac:**
+
 1. `git fetch && git switch spire/curvature-v2-foundations && git status` — expect a clean tree at or after
    the research commit.
 2. `node .spire/bin/spire.mjs run tech --provider claude` then `/spire-tech` (cold start) — the conductor's
@@ -152,7 +182,7 @@ Then the five cosmetic hero residuals (review § "Repair result") fold into whic
    is cross-platform (`lsof` on macOS). None of the Windows notes in the global CLAUDE.md (`py -3`,
    nvm-windows PATH, MSYS path mangling, CRLF) apply on the Mac; `python3` is fine.
 4. `npm run dev` → `http://localhost:4200/ticker/SPY` needs no account; scanner / positions / alerts do —
-   **never create an account or type a password on the owner's behalf**; to *render* those pages for a
+   **never create an account or type a password on the owner's behalf**; to _render_ those pages for a
    layout check, route `/api/auth/session` to `{ authenticated: true, … }` in Playwright as
    `apps/dashboard-e2e/src/quality/fixtures/scenarios.ts:207-218` does (data endpoints then 403 — fine
    for composition, useless for populated states).
@@ -206,12 +236,12 @@ after the hero lands. **Ask before starting it.**
 **Next: phase 4 of 4 — open it at GATE I.** Branch is **pushed to origin as a backup** (owner's call, 2026-09-07) and there
 is **no PR** — the owner's call. Everything after the backup push is local; push again before relying on it.
 
-| phase | scope | state |
-|---|---|---|
-| 1 `curvature-v2-foundations` | tokens, scales, `FigureCell`, connection chip, nav + ⌘K, container panels | **shipped, GATE Q PASS 79/1/1** |
-| 2 `curvature-v2-desk-and-read` | desk masthead, structure-field hero, level ladder, read strip, verdict-first AI read, retention latch | **shipped, GATE Q PASS 60/0/1** |
-| 3 `curvature-v2-surfaces` | scanner · positions (sim + Broker tab) · settings · alerts **· the eight ticker quiet-band widgets' internals** | **shipped, GATE Q PASS 95/0/0** (pass 4; passes 1–3 FAILed 91/4/0, 93/2/0, 94/1/0). 5 owner rulings D-A…D-E, 2 conductor calls, S2 ×2, 4 GATE Z repair passes |
-| 4 | landing · site pages · responsive sweep · the curve text-equivalent · spacing burn-down remainder · **settings section navigation (deferred from phase 3 by owner ruling D-B)** | not started |
+| phase                          | scope                                                                                                                                                                           | state                                                                                                                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 `curvature-v2-foundations`   | tokens, scales, `FigureCell`, connection chip, nav + ⌘K, container panels                                                                                                       | **shipped, GATE Q PASS 79/1/1**                                                                                                                               |
+| 2 `curvature-v2-desk-and-read` | desk masthead, structure-field hero, level ladder, read strip, verdict-first AI read, retention latch                                                                           | **shipped, GATE Q PASS 60/0/1**                                                                                                                               |
+| 3 `curvature-v2-surfaces`      | scanner · positions (sim + Broker tab) · settings · alerts **· the eight ticker quiet-band widgets' internals**                                                                 | **shipped, GATE Q PASS 95/0/0** (pass 4; passes 1–3 FAILed 91/4/0, 93/2/0, 94/1/0). 5 owner rulings D-A…D-E, 2 conductor calls, S2 ×2, 4 GATE Z repair passes |
+| 4                              | landing · site pages · responsive sweep · the curve text-equivalent · spacing burn-down remainder · **settings section navigation (deferred from phase 3 by owner ruling D-B)** | not started                                                                                                                                                   |
 
 **Read before designing phase 4:** `contracts/curvature-v2-surfaces/_MANIFEST.md` — the **GATE S close-out section** is the
 most useful page in this branch: the conductor's own final measurements, what the gate caught that three green suites did not,
@@ -256,6 +286,7 @@ The `tooltip` z-rung is deliberately **not** amended — `theme.ts:83` already s
 value of **60**, and the gap is in the canon's prose, not the code.
 
 **The traps that cost the most time, so phase 4 does not re-chase them:**
+
 1. A stale `node_modules/.vite` glob transform holding a deleted `_mutation_poison_*` file produces a spurious
    suite failure that **`--skip-nx-cache` does not clear**. It bit again in phase 3, including one of QA's own runs.
    Delete `node_modules/.vite`.
@@ -286,12 +317,12 @@ spire council pipeline (owner chose the pipeline over a direct branch build, 202
 
 **Phase 1 of 4 is DONE and closed at GATE S.** Phases 2–4 are unstarted.
 
-| phase | scope | state |
-|---|---|---|
-| 1 `curvature-v2-foundations` | tokens, scales, `FigureCell`, connection chip, nav + ⌘K, container panels | **shipped, GATE Q PASS** |
-| 2 | desk hero + level ladder + read strip + **verdict-first AI read brief** | not started — *this is the owner's original loudest complaint* |
-| 3 | scanner · positions · settings · alerts | not started |
-| 4 | landing · site pages · responsive sweep (adds 834 to the overflow suite) | not started |
+| phase                        | scope                                                                     | state                                                          |
+| ---------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| 1 `curvature-v2-foundations` | tokens, scales, `FigureCell`, connection chip, nav + ⌘K, container panels | **shipped, GATE Q PASS**                                       |
+| 2                            | desk hero + level ladder + read strip + **verdict-first AI read brief**   | not started — _this is the owner's original loudest complaint_ |
+| 3                            | scanner · positions · settings · alerts                                   | not started                                                    |
+| 4                            | landing · site pages · responsive sweep (adds 834 to the overflow suite)  | not started                                                    |
 
 ## Done (7 commits on this branch, pushed, **no PR**)
 
@@ -319,7 +350,7 @@ of which bind later phases.
 ## Owed to phase 2 (carried, do not rediscover)
 
 1. **The `LiveTape` last-non-null retention latch** and a test that a latched value is **not** re-flashed
-   (owner ruling 2). `useFlashOnChange.ts:44` writes `prev.current` *before* its null guard, so a drop
+   (owner ruling 2). `useFlashOnChange.ts:44` writes `prev.current` _before_ its null guard, so a drop
    destroys the last value — retention is a real mechanism, not wiring. Clear the latch on symbol change
    and on replay arm.
 2. `design/src/verify-tokens.mjs`'s structured checks cover only the **10 v1 tokens**, not the 7 v2
