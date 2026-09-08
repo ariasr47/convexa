@@ -1,5 +1,36 @@
 # RESUME — spire/curvature-v2-foundations
 
+## ⬆ UPDATE — 2026-09-08, ticker fidelity repair lane, change 3 (F3) — API follow-up filed
+
+**What happened.** Direct repair lane on `TICKER_FIDELITY_REPAIR_TASK.md`'s six changes (F1/F2/F3/F4/F9/F10),
+off the council pipeline, per the owner's "proceed with your recommendations" on the 2026-09-08 audit. This
+entry is the ONE thing that lane could not build in-lane (NO_BACKEND_CHANGE): a follow-up for `apps/api`,
+filed here rather than invented client-side. See this folder's `TICKER_FIDELITY_REPAIR_REPORT.md` for the
+full six-change report (composition table, gate exit codes, commits).
+
+**GATE Z — API follow-up (not built this lane, `apps/api` stays untouched here).** The masthead's
+design source (`design/src/screens/desk.mjs:261-262`) shows `SPY 573.12 +1.84 · +0.32%` — a signed
+change (`+1.84`) and a signed percent (`+0.32%`) beside the mid — plus the instrument's full name
+(`SPDR S&P 500 ETF`, `desk.mjs:267`). Checked against the saved real bundle
+(`fidelity-audit-2026-09-08/_tools/spy-bundle-2026-09-08T1059Z.json`) and the wire schema
+(`libs/api/src/generated/schema.ts`): `market_state` carries `price` and `gex_spot` only — no prior
+close, no session-open reference, no signed change/percent field, and no instrument display name
+(only the ticker symbol). Change 3 (F3) therefore **omits** both fields on the rebuilt masthead —
+never faked, never rendered as the closed not-a-number vocabulary's `—` (canon 24 is for absent
+*figures*, not absent *wire fields* the schema never promised) — `TickerHeader.tsx` shows `SYMBOL ·
+$mid` only, dropping the parenthetical the old layout used to carry (`levels @ / expirations` moved
+to a new second line instead; see the change's own commit).
+
+**What the API would need to add, if this is wanted:** (a) a prior-close or session-open reference
+price on `market_state` (or a pre-computed signed change/percent pair, to keep the sign/rounding rule
+in one place) — Convexa's own vendor feed almost certainly carries this upstream since `atm_iv`/`hv_30d`
+already exist; (b) an instrument display name lookup (ticker → "SPDR S&P 500 ETF") — either a small
+static map (index/sector/megacap ETFs the universe already curates,
+`apps/api/src/scanner/config/universe.json`, the same file `scanner/labels.ts` re-mirrors by hand) or a
+real per-symbol metadata field if the vendor feed carries one. Neither is large, but both are
+`apps/api` changes outside this lane's `NO_BACKEND_CHANGE` scope — an owner/backend-lane decision, not
+a client-side one.
+
 ## ⬆ UPDATE — 2026-09-08, the Mac session (read this before the handover block below)
 
 **What happened.** The Mac booted from the handover, then ran the owner's request: *"re-audit all the
