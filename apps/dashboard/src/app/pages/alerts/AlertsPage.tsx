@@ -402,9 +402,10 @@ export function AlertsPage() {
                     {v}
                   </Box>
                 ))}
-                <Typography variant="caption" color="text.secondary">
-                  Prime starts around 80
-                </Typography>
+                {/* No "Prime starts around N" caption (the design mock carries one): the tier band
+                    is a server setting the client never receives — `TIER_PRIME_SCORE` defaults
+                    to 75 and Prime also needs an AI read — so any number here would be a claim
+                    the data does not vouch for. */}
               </Stack>
             </Stack>
           )}
@@ -459,7 +460,8 @@ export function AlertsPage() {
           >
             <NotificationsNoneOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
             <Typography variant="caption" color="text.secondary" sx={{ flex: '1 1 160px' }}>
-              You will see fired alerts here and on the desk.
+              Fired alerts are listed here. Browser notifications, once allowed, also pop while a
+              desk is open.
             </Typography>
             <AlertsRefused when={faulted}>
               <Button
@@ -516,18 +518,6 @@ export function AlertsPage() {
                 Rules ({a.rules.length})
               </Typography>
               <Box sx={{ flex: 1 }} />
-              {a.unread > 0 && (
-                <AlertsRefused when={faulted}>
-                  <Button
-                    variant="text"
-                    size="small"
-                    onClick={() => a.markAllEventsRead()}
-                    sx={{ minHeight: 44 }}
-                  >
-                    Mark {a.unread} read
-                  </Button>
-                </AlertsRefused>
-              )}
               {/* Rules filter (design/src/screens/alerts.mjs:30) — a read-side view over the SAME
                   `a.rules`, default `all`, never a store write. */}
               <Stack
@@ -642,9 +632,30 @@ export function AlertsPage() {
               bgcolor: (t) => extrasFor(t).well,
             }}
           >
-            <Typography component="h2" variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-              Recent ({a.events.length})
-            </Typography>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ alignItems: 'center', flexWrap: 'wrap', mb: 1 }}
+            >
+              <Typography component="h2" variant="h6" sx={{ fontWeight: 700, m: 0 }}>
+                Recent ({a.events.length})
+              </Typography>
+              <Box sx={{ flex: 1 }} />
+              {/* "Mark N read" acts on THIS list (`markAllEventsRead`), so it lives on this
+                  header — same element, text and handler as before, only its home moved. */}
+              {a.unread > 0 && (
+                <AlertsRefused when={faulted}>
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={() => a.markAllEventsRead()}
+                    sx={{ minHeight: 44 }}
+                  >
+                    Mark {a.unread} read
+                  </Button>
+                </AlertsRefused>
+              )}
+            </Stack>
             {/* U-24: the back-fill honesty line + the "stored in this browser" durable disclosure. */}
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
               Stored in this browser only — not synced to your account or across devices. Firings
