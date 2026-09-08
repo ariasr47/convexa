@@ -1,5 +1,56 @@
 # RESUME — spire/curvature-v2-foundations
 
+## ➡ HANDOVER — to a fresh session on the owner's Mac (written 2026-09-08 on the Windows box)
+
+**Read this first, then the recovery block under it.** Claude's per-machine memory does **not** travel —
+this file and its two siblings (`STRUCTURE_HERO_REVIEW.md`, `STRUCTURE_HERO_REPAIR_TASK.md`) are the only
+memory the Mac session has. Treat every claim here as a claim: re-verify against `git` before acting.
+
+**Branch state at handover:** `spire/curvature-v2-foundations` at **`aebf7cc7`** plus one `docs(research):`
+commit made at handover for the owner's business-review folder (27 files, read-only research, no code).
+Pushed to origin; **no PR**; nothing uncommitted. `main` is untouched by this branch's work.
+
+**What just happened (last 24 h):** phase 3 closed at GATE S → owner saw the `/ticker` structure hero
+"looks off" → review found it was the plan's placeholder stack and that every phase built v2 vocabulary on
+v1 layouts (site-wide survey in `STRUCTURE_HERO_REVIEW.md`) → owner ruled *"just fix the ticker screen
+for now"* → one Sonnet repair lane landed it (`57525861..1ac1f339`) → conductor re-verified cold
+(typecheck 0 · 239 files / 2,861 tests 0 · lint 0 · e2e `desk|curvature|overflow` 108/108 vs production
+build · `apps/api` diff empty) · hero **1,225 → 550 px** at 1280 (design 488).
+
+**The decision waiting for the owner:** extend the same fidelity pass to the **rest of `/ticker`**
+(masthead frame · read-strip chrome + an 8th-cell **clip at 1280** · tape-&-plan grid · context-band
+grid/density — measured table in the review) — recommended, one Sonnet lane, same rules as
+`STRUCTURE_HERO_REPAIR_TASK.md` — or stop at the hero and open phase 4 proper. **Ask; do not start it.**
+Then the five cosmetic hero residuals (review § "Repair result") fold into whichever comes first.
+
+**How to boot on the Mac:**
+1. `git fetch && git switch spire/curvature-v2-foundations && git status` — expect a clean tree at or after
+   the research commit.
+2. `node .spire/bin/spire.mjs run tech --provider claude` then `/spire-tech` (cold start) — the conductor's
+   boot sequence reads this file as the overlay.
+3. Toolchain: Node via nvm (`.nvmrc` / `package.json engines`), `npm ci`, Rust stable for `apps/api`
+   (`cargo run -p api-rust -- serve`), `npx playwright install chromium` for e2e. `npm run ports:free`
+   is cross-platform (`lsof` on macOS). None of the Windows notes in the global CLAUDE.md (`py -3`,
+   nvm-windows PATH, MSYS path mangling, CRLF) apply on the Mac; `python3` is fine.
+4. `npm run dev` → `http://localhost:4200/ticker/SPY` needs no account; scanner / positions / alerts do —
+   **never create an account or type a password on the owner's behalf**; to *render* those pages for a
+   layout check, route `/api/auth/session` to `{ authenticated: true, … }` in Playwright as
+   `apps/dashboard-e2e/src/quality/fixtures/scenarios.ts:207-218` does (data endpoints then 403 — fine
+   for composition, useless for populated states).
+5. Design oracle: serve `design/site/` statically (`python3 -m http.server 4310 --directory design/site`)
+   and compare `desk.html` etc. at 1280 / 1000 / 393. Regenerate with `node design/src/build.mjs`; never
+   hand-edit `design/canvas` or `design/site`.
+6. Gates before any "done": `npx nx typecheck @convexa/dashboard --skip-nx-cache`, the dashboard suite
+   (delete `node_modules/.vite` if a `_mutation_poison_*` phantom appears), `npm run lint`, and e2e as
+   `BROWSER_QUALITY_PREBUILD_STATUS=pass npx nx e2e dashboard-e2e` against the production build after
+   `npm run ports:free`. Exit codes, not printed summaries.
+
+**Standing rules that bit this week:** never `git stash`; never a bare `nx format:write` (scope with
+`--files`); `apps/api` diff must stay 0 on this branch; `OrderRow.tsx:172` is off-limits (Z-1); no literal
+NUL bytes; verify every cited `file:line` with `grep -n` before acting — anchors drifted in every phase;
+ask before push / merge / release / deploy / migrations; build lanes on Sonnet, Opus/Fable for
+council / skeptic / architecture.
+
 ## ⚠ RECOVERY BLOCK — written 2026-09-08 because the owner's session could end abruptly
 
 **Where we are.** Phases 1–3 shipped. After phase 3 the owner looked at `/ticker/SPY` locally and said the
