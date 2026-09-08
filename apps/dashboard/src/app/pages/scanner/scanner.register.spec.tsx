@@ -348,8 +348,13 @@ describe('criterion 19 — filter-matches-nothing is its own message, distinct f
       </ThemeProvider>,
     );
     await screen.findByTestId('scan-table');
-    // Neither seeded row is `dormant` — a single-click filter that matches zero rows.
-    await user.click(screen.getByTestId('scan-filter-tier-dormant'));
+    // Neither seeded row is `actionable` (AAA is `prime`, BBB is `watch`) — a single-click filter
+    // that matches zero rows. (Surfaces fidelity repair, change 4/F8: the `dormant` preset this
+    // test used before is pruned from the toolbar's seven-chip design set — `format.ts`'s
+    // `ScanFilters.tier` stays a bare `string | null`, so `dormant` is still valid FILTER STATE,
+    // it simply has no dedicated button any more. `actionable` is an equally guaranteed zero-match
+    // value against this test's own fixture and stays a rendered preset.)
+    await user.click(screen.getByTestId('scan-filter-tier-actionable'));
     const empty = await screen.findByTestId('scan-empty-filter');
     expect(empty).toHaveTextContent('No names match these filters.');
     expect(screen.getByTestId('scan-empty-filter-clear')).toBeInTheDocument();

@@ -84,31 +84,32 @@ export const SESSION_LABEL: Record<MarketSessionPhase, string> = {
   closed: 'Closed',
 };
 
-/** Filter chip options — wire enums for tier/vol; numeric thresholds for score/flip. */
+/**
+ * Filter chip PRESETS — wire enums for tier/vol; numeric thresholds for score/flip.
+ *
+ * Pruned to the design's seven (`design/src/screens/scanner.mjs:77`, `Prime · Actionable · Watch ·
+ * Score ≥ 70 · |Flip| ≤ 1% · IV cheap · IV rich`) from the shipped thirteen (surfaces fidelity
+ * repair, change 4 / F8). This is a PRESET-LIST change only, never a capability change: `tier` /
+ * `minScore` stay bare `string | null` / `number | null` on `ScanFilters` (`format.ts`), so
+ * `dormant` / `neutral` / `50` / `30` / `2` / `5` remain perfectly valid filter STATE — they simply
+ * have no dedicated preset button any more, exactly as the design draws. Not part of `SCAN_COPY`,
+ * so untouched by CF-1's frozen-copy scan (`scanner.register.spec.tsx`'s `cf1Offenders`) — that
+ * scan enumerates `SCAN_COPY`'s own keys only, and these four arrays are separate exports.
+ */
 export const TIER_FILTER_OPTIONS = [
   { value: 'prime', label: 'Prime' },
   { value: 'actionable', label: 'Actionable' },
   { value: 'watch', label: 'Watch' },
-  { value: 'dormant', label: 'Dormant' },
 ] as const;
 
 export const VOL_FILTER_OPTIONS = [
-  { value: 'iv_rich', label: 'IV rich' },
   { value: 'iv_cheap', label: 'IV cheap' },
-  { value: 'neutral', label: 'Neutral' },
+  { value: 'iv_rich', label: 'IV rich' },
 ] as const;
 
-export const SCORE_FILTER_OPTIONS = [
-  { value: 70, label: 'Score ≥70' },
-  { value: 50, label: 'Score ≥50' },
-  { value: 30, label: 'Score ≥30' },
-] as const;
+export const SCORE_FILTER_OPTIONS = [{ value: 70, label: 'Score ≥70' }] as const;
 
-export const FLIP_FILTER_OPTIONS = [
-  { value: 1, label: '|Flip| ≤1%' },
-  { value: 2, label: '|Flip| ≤2%' },
-  { value: 5, label: '|Flip| ≤5%' },
-] as const;
+export const FLIP_FILTER_OPTIONS = [{ value: 1, label: '|Flip| ≤1%' }] as const;
 
 /**
  * index-first-defaults AC-3 — the CLOSED lead-group membership for the scanner's zero-state (no
@@ -182,7 +183,11 @@ export const COLUMN_LABELS: Record<ScanColumn, string> = {
   vol_regime: 'Vol',
   flip: 'Flip',
   walls: 'Walls',
-  updated: 'Updated',
+  // design/src/screens/scanner.mjs:23 — the "As-of" / per-row age column (surfaces fidelity repair,
+  // change 4/F8). The KEY, testids (`scan-th-updated`/`cell-updated`) and `updatedText()`'s own
+  // copy are unchanged — only this display label moves; STATUS stays its own column (folding it
+  // into this one is a bigger structural change than this label rename and is not built here).
+  updated: 'As-of',
   status: 'Status',
 };
 

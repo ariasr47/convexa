@@ -15,6 +15,7 @@
  * A row is a link to the Ticker page and nothing else (`[no-real-order-path]`, AC-11); customization
  * is the one gated write and the SERVER refuses it, not this file (`[server-side-gate-enforcement]`).
  */
+import { extrasFor } from '@/shared/theme/tokens';
 import { Jargon } from '@/shared/ui/Jargon';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -66,6 +67,28 @@ function ScanSkeleton() {
     </Box>
   );
 }
+
+/**
+ * The three note cards (design/src/screens/scanner.mjs:106-108, `.scan-notes`) — honest, general
+ * explanations of shipped behaviour, never a fabricated per-row example. NOT part of `SCAN_COPY`
+ * (CF-1 governs that object's own keys only, `scanner.register.spec.tsx`'s `cf1Offenders`) —
+ * these are new sentences on a page CF-1 otherwise freezes, so they stay a separate constant the
+ * scan never walks.
+ */
+const SCAN_NOTES: { title: string; body: string }[] = [
+  {
+    title: 'How a score is built',
+    body: 'Proximity to the nearest wall or flip, IV vs HV stretch, active setups and a flip-transition bonus all weigh in — never one input alone. Focus or hover any score for that row’s own breakdown.',
+  },
+  {
+    title: 'Zero-state lead group',
+    body: 'An empty or anonymous view opens on Indexes & megacaps so the first read is always a real one. Saved views need a sign-in and are never claimed for an anonymous visitor.',
+  },
+  {
+    title: 'Price stream drops',
+    body: 'Prices dim and the cadence header says so when the stream drops. Structure keeps rendering — a dropped stream never blanks a row.',
+  },
+];
 
 const ctaSx = {
   mt: '12px',
@@ -158,34 +181,95 @@ export function Scanner() {
 
   return (
     <Box data-testid="scanner-page" sx={{ maxWidth: 1240, mx: 'auto', p: 3 }}>
-      <Box sx={{ mb: '14px' }}>
-        <Typography component="h1" sx={{ fontSize: '1.7rem', fontWeight: 700, m: '0 0 4px' }}>
-          {SCAN_COPY.heading}
-        </Typography>
-        <Typography component="p" sx={{ fontSize: '0.88rem', color: 'text.secondary', m: 0 }}>
-          {SCAN_COPY.subhead}
-        </Typography>
-        {/* The two-speed basis, always present, with its plain-language glossary on hover/focus. */}
-        <Typography
-          component="p"
-          data-testid="scan-cadence-header"
-          sx={{ fontSize: '0.78rem', color: 'text.secondary', mt: '8px', mb: 0 }}
+      {/* Header (design/src/screens/scanner.mjs:65-72, `.scan-head`): title + subtitle left, the
+          right cluster (session chip · cadence line · Structure as-of) right — moved up from the
+          toolbar row below so the mast reads as one unit, as the design draws it. */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '16px 24px',
+          mb: '14px',
+        }}
+      >
+        <Box>
+          <Typography component="h1" sx={{ fontSize: '1.7rem', fontWeight: 700, m: '0 0 4px' }}>
+            {SCAN_COPY.heading}
+          </Typography>
+          <Typography component="p" sx={{ fontSize: '0.88rem', color: 'text.secondary', m: 0 }}>
+            {SCAN_COPY.subhead}
+          </Typography>
+        </Box>
+
+        <Box
+          data-testid="scan-session-strip"
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            gap: '6px',
+          }}
         >
-          <Jargon
-            term={live.offline ? SCAN_COPY.cadenceHeaderOffline : SCAN_COPY.cadenceHeader}
-            gloss={SCAN_COPY.cadenceGloss}
-          />
-          {' · '}
-          <Link
-            component={RouterLink}
-            to="/methodology"
-            data-testid="scan-methodology-link"
-            underline="hover"
-            sx={{ color: 'text.secondary', fontSize: 'inherit' }}
+          <Box
+            component="span"
+            role="status"
+            aria-label={SCAN_COPY.sessionAria}
+            data-testid="scan-session-badge"
+            data-phase={scan.session.phase}
+            sx={(theme) => ({
+              display: 'inline-flex',
+              alignItems: 'center',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              letterSpacing: '.04em',
+              textTransform: 'uppercase',
+              color: 'text.primary',
+              bgcolor: extrasFor(theme).panelRaised,
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: '6px',
+              padding: '4px 9px',
+            })}
           >
-            {SCAN_COPY.methodologyLink}
-          </Link>
-        </Typography>
+            {scan.session.label}
+          </Box>
+          {/* The two-speed basis, always present, with its plain-language glossary on hover/focus. */}
+          <Typography
+            component="p"
+            data-testid="scan-cadence-header"
+            sx={{ fontSize: '0.78rem', color: 'text.secondary', m: 0, textAlign: 'right' }}
+          >
+            <Jargon
+              term={live.offline ? SCAN_COPY.cadenceHeaderOffline : SCAN_COPY.cadenceHeader}
+              gloss={SCAN_COPY.cadenceGloss}
+            />
+            {' · '}
+            <Link
+              component={RouterLink}
+              to="/methodology"
+              data-testid="scan-methodology-link"
+              underline="hover"
+              sx={{ color: 'text.secondary', fontSize: 'inherit' }}
+            >
+              {SCAN_COPY.methodologyLink}
+            </Link>
+          </Typography>
+          <Typography
+            component="span"
+            data-testid="scan-structure-asof"
+            sx={{
+              fontSize: '0.78rem',
+              color: 'text.secondary',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {scan.structureAsOf != null
+              ? SCAN_COPY.structureAsOf(scan.structureAsOf)
+              : SCAN_COPY.structureAsOfUnknown}
+          </Typography>
+        </Box>
       </Box>
 
       <ScanToolbar
@@ -194,8 +278,6 @@ export function Scanner() {
         onDensity={scan.setDensity}
         onEditView={() => setEditorOpen(true)}
         gate={scan.gate}
-        session={scan.session}
-        structureAsOf={scan.structureAsOf}
         filters={scan.filters}
         onFilters={scan.setFilters}
         filteredCount={scan.rows.length}
@@ -271,6 +353,52 @@ export function Scanner() {
           priceOffline={priceOffline}
         />
       )}
+
+      {/* The three note cards (design :106-110) — present whenever the table/card body itself is
+          (never on the cold skeleton, the empty-view or the empty-filter states, which already
+          carry their own explanation). Mirrors the exact condition that renders the table/cards
+          above, so the two can never disagree. */}
+      {scan.phase === 'ready' &&
+        !scan.isEmptyView &&
+        !(displayRows.length === 0 && filtersActive(scan.filters)) && (
+          <Box
+            data-testid="scan-notes"
+            sx={{
+              mt: '16px',
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
+              gap: '14px',
+            }}
+          >
+            {SCAN_NOTES.map((n) => (
+              <Box
+                key={n.title}
+                sx={{
+                  p: '12px 14px',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1.5,
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    letterSpacing: '.04em',
+                    textTransform: 'uppercase',
+                    color: 'text.secondary',
+                    mb: '4px',
+                  }}
+                >
+                  {n.title}
+                </Typography>
+                <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', lineHeight: 1.55 }}>
+                  {n.body}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        )}
 
       <ViewEditorDialog
         open={editorOpen}

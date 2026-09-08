@@ -337,8 +337,6 @@ describe('sort + density controls speak only the closed wire vocabulary', () => 
             onDensity={onDensity}
             onEditView={() => undefined}
             gate={fakeGate({ allowed: true })}
-            session={{ phase: 'rth', label: 'RTH' }}
-            structureAsOf="42s"
             filters={{ tier: null, volRegime: null, minScore: null, maxAbsDistFlip: null }}
             onFilters={() => undefined}
             filteredCount={1}
@@ -384,8 +382,6 @@ describe('the toolbar never overclaims persistence', () => {
             onDensity={() => undefined}
             onEditView={() => undefined}
             gate={fakeGate({ allowed: false })}
-            session={{ phase: 'closed', label: 'Closed' }}
-            structureAsOf="3m"
             filters={{ tier: null, volRegime: null, minScore: null, maxAbsDistFlip: null }}
             onFilters={() => undefined}
             filteredCount={1}

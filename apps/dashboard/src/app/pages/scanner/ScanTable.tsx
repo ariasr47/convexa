@@ -296,10 +296,11 @@ export function ScanTable({
         borderColor: 'divider',
         // U-35 (scanner half): the panel role is 12 (`shape.borderRadius`), not a raw '10px' string.
         borderRadius: 1,
-        // The WIDE content scrolls inside its own container — the page body never scrolls sideways.
+        // The WIDE content scrolls inside its own container — the page body never scrolls sideways
+        // (criterion 21, the only scroll behaviour that criterion pins). No vertical cap: the
+        // design/src/screens/scanner.mjs table scrolls with the PAGE, not in a second internal
+        // scroller (F8) — `maxHeight: '70vh'` / `overflowY: 'auto'` are gone.
         overflowX: 'auto',
-        maxHeight: '70vh',
-        overflowY: 'auto',
       }}
     >
       <Box

@@ -28,6 +28,7 @@
  */
 import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
 import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
+import { extrasFor } from '@/shared/theme/tokens';
 import { TintChip } from '@/shared/ui/TintChip';
 import type { ScanRow } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -167,6 +168,12 @@ export function ScoreCell({
       : '';
   const value = dash(row.score, fmtScore);
   const { figureState, mono } = figureStateOf({ value, register: 'traced' });
+  // The bar (design/src/screens/scanner.mjs:35, `score bar + number`) — present on every row that
+  // has a real numeric score. NEUTRAL fill (`text.secondary`), never conditionally amber like the
+  // design's own mock: the shipped invariant is "the scan surface's ONE amber spend is the per-row
+  // tier chip" (`stage3-amber.spec.ts:328`) — a second amber-bearing element here would break it.
+  const hasScore = typeof row.score === 'number' && Number.isFinite(row.score);
+  const pct = hasScore ? Math.max(0, Math.min(100, row.score as number)) : 0;
   const score = (
     <Typography
       component="span"
@@ -190,13 +197,31 @@ export function ScoreCell({
     </Typography>
   );
   return (
-    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'baseline', gap: '4px' }}>
+    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
       {focusableHelp ? (
         <Tooltip arrow title={why}>
           {score}
         </Tooltip>
       ) : (
         score
+      )}
+      {hasScore && (
+        <Box
+          data-testid="cell-score-bar"
+          aria-hidden
+          sx={{
+            width: 36,
+            height: 5,
+            borderRadius: '3px',
+            bgcolor: (t) => extrasFor(t).panelRaised2,
+            overflow: 'hidden',
+            flexShrink: 0,
+          }}
+        >
+          <Box
+            sx={{ display: 'block', height: '100%', width: `${pct}%`, bgcolor: 'text.secondary' }}
+          />
+        </Box>
       )}
       {d ? (
         <Typography
@@ -211,12 +236,15 @@ export function ScoreCell({
   );
 }
 
-/** Tier — the row's single amber spend, via the closed lookup. A MISS renders `unavailable`, a
- *  genuine absence renders `—` (U-6) — never the raw enum, never conflated. */
+/** Tier — the row's single amber spend, via the closed lookup, reserved for `Prime`
+ *  (design/src/screens/scanner.mjs's `tierChip`, "amber Prime" — surfaces fidelity repair, change
+ *  4/F8). Every other resolved tier renders the SAME chip shape in the neutral tone — still a real
+ *  chip, still closed-lookup text, just not a second amber spend on the row. A MISS renders
+ *  `unavailable`, a genuine absence renders `—` (U-6) — never the raw enum, never conflated. */
 export function TierCell({ row }: { row: ScanRow }) {
   const result = tierLookup(row.tier);
   return result.kind === 'value' ? (
-    <TintChip tone="emphasis" label={result.text} />
+    <TintChip tone={row.tier === 'prime' ? 'emphasis' : 'neutral'} label={result.text} />
   ) : (
     <Dash testid="cell-tier" value={result.kind === 'miss' ? 'unavailable' : EM_DASH} />
   );
