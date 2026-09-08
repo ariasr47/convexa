@@ -28,6 +28,7 @@ import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
+import type { ReactNode } from 'react';
 import { ConnectionChip } from '../../connection/ConnectionChip';
 import { connectionStateFor } from '../../connection/connectionState';
 import { useLiveTape } from '../../liveTapeStore';
@@ -250,6 +251,13 @@ interface TickerHeaderProps {
   singleNameCaveat?: boolean;
   /** Last vouched session_tape.phase — survives payload-gap for drop standing. */
   lastSessionPhase?: SessionTapeOccupancy['phase'] | null;
+  /**
+   * PASS 2 change 9 — at ≥ laptop (1100, `CommandDeck.tsx`'s `controlsJoinHeadline`) the toolbar's
+   * fields join this headline row's right region, ahead of the CTA (design: `desk.mjs:255-274`'s
+   * `.mast-controls`, fields then the one amber button). `null`/unset below 1100 — the caller
+   * (`CommandDeck`) decides placement; this component only reserves the slot, beside its own CTA.
+   */
+  inlineControls?: ReactNode;
 }
 
 export function TickerHeader({
@@ -267,6 +275,7 @@ export function TickerHeader({
   freshness,
   singleNameCaveat = false,
   lastSessionPhase = null,
+  inlineControls = null,
 }: TickerHeaderProps) {
   const reduced = useReducedMotion();
   const connState = connectionStateFor({
@@ -392,45 +401,66 @@ export function TickerHeader({
           )}
         </Stack>
 
-        {/* Persistent trade CTA (right-aligned) — primary action kept in the header, out of the
-            analysis flow. Opens the shipped simulated-trade entry dialog. */}
-        {onOpenTrade && (
+        {/* Right region — PASS 2 change 9: at ≥ laptop (1100) `inlineControls` (the toolbar's
+            Expirations/Persona fields, `CommandDeck.tsx`'s `controlsJoinHeadline`) joins this row
+            ahead of the CTA, matching the design's `.mast-controls` (`desk.mjs:274-278`: fields
+            then the one amber button, `align-items: center`). `null` below 1100 (or when the caller
+            passes nothing) — this wrapper then renders exactly as it always did, one child. */}
+        {(inlineControls || onOpenTrade) && (
           <Stack
+            direction="row"
+            spacing={1.5}
             sx={{
+              alignItems: 'center',
               flexShrink: 0,
-              // `flex-end` (not `stretch`): without it the notice's width would drag the CTA out
-              // into a full-width bar across the header — amber is spent exactly once on this page
-              // and a 800px slab of it is not that one spend.
-              alignItems: { xs: 'flex-start', sm: 'flex-end' },
-              alignSelf: { xs: 'flex-start', sm: 'auto' },
-              maxWidth: 460,
+              flexWrap: 'wrap',
+              justifyContent: 'flex-end',
+              rowGap: 1,
             }}
           >
-            {storeFaulted && <TickerFaultedNotice />}
-            {!tradeAllowed ? (
-              <Box sx={{ mt: 0.5, maxWidth: 360 }}>
-                <Refused
-                  actionLabel="+ Open simulated trade"
-                  reason="Sign in to open a paper position. No real order is ever sent."
-                  onSignIn={onSignIn}
-                  testId="open-sim-trade-refused"
-                />
-              </Box>
-            ) : (
-              <FaultedRefused when={storeFaulted}>
-                <Button
-                  variant="contained"
-                  size="small"
-                  onClick={onOpenTrade}
-                  data-testid="open-sim-trade"
-                  // At xs the CTA sits under the anchor on its own row (left-aligned, intrinsic width)
-                  // so its nowrap label can never force the viewport wider. Still THE one entry point
-                  // to the shared TradeEntryDialog (`[single-shared-sim-entry-dialog]`).
-                  sx={{ flexShrink: 0, whiteSpace: 'nowrap', mt: 0.5 }}
-                >
-                  + Open simulated trade
-                </Button>
-              </FaultedRefused>
+            {inlineControls}
+
+            {/* Persistent trade CTA (right-aligned) — primary action kept in the header, out of the
+                analysis flow. Opens the shipped simulated-trade entry dialog. */}
+            {onOpenTrade && (
+              <Stack
+                sx={{
+                  flexShrink: 0,
+                  // `flex-end` (not `stretch`): without it the notice's width would drag the CTA out
+                  // into a full-width bar across the header — amber is spent exactly once on this page
+                  // and a 800px slab of it is not that one spend.
+                  alignItems: { xs: 'flex-start', sm: 'flex-end' },
+                  alignSelf: { xs: 'flex-start', sm: 'auto' },
+                  maxWidth: 460,
+                }}
+              >
+                {storeFaulted && <TickerFaultedNotice />}
+                {!tradeAllowed ? (
+                  <Box sx={{ mt: 0.5, maxWidth: 360 }}>
+                    <Refused
+                      actionLabel="+ Open simulated trade"
+                      reason="Sign in to open a paper position. No real order is ever sent."
+                      onSignIn={onSignIn}
+                      testId="open-sim-trade-refused"
+                    />
+                  </Box>
+                ) : (
+                  <FaultedRefused when={storeFaulted}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={onOpenTrade}
+                      data-testid="open-sim-trade"
+                      // At xs the CTA sits under the anchor on its own row (left-aligned, intrinsic width)
+                      // so its nowrap label can never force the viewport wider. Still THE one entry point
+                      // to the shared TradeEntryDialog (`[single-shared-sim-entry-dialog]`).
+                      sx={{ flexShrink: 0, whiteSpace: 'nowrap', mt: 0.5 }}
+                    >
+                      + Open simulated trade
+                    </Button>
+                  </FaultedRefused>
+                )}
+              </Stack>
             )}
           </Stack>
         )}

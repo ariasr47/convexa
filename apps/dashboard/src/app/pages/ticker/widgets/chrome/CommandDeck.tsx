@@ -20,7 +20,9 @@ import { elevationFor } from '@/shared/theme/tokens';
 import type { Expiration, LiveUpdate, MarketState, Signals } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
+import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { useEffect, useRef, useState } from 'react';
 import { ConnectionChip } from '../../connection/ConnectionChip';
 import { connectionStateFor } from '../../connection/connectionState';
@@ -192,6 +194,17 @@ export function CommandDeck(props: CommandDeckProps) {
   } = props;
 
   const reduced = useReducedMotion();
+  const theme = useTheme();
+  // PASS 2 change 9 — the masthead's controls join the headline row at ≥ laptop (1100), the SAME
+  // breakpoint authority `TickerHeader.tsx`'s own `xs: column / sm: row` hero-row switch already
+  // uses (`theme.breakpoints`), generalized to the next named token up (`theme.ts`'s `laptop: 1100`
+  // — the same token `TickerDashboard.tsx`'s context-band grid already keys off). Below 1100, keep
+  // today's stacked order (tier 1 → tier 2 → tier 3) unchanged. `useMediaQuery` degrades to `false`
+  // when `window.matchMedia` is absent (jsdom, most unit tests — `ai-rec/ReadSheet.tsx`'s own
+  // established idiom for this exact kind of width-driven placement switch) — every pre-existing
+  // CommandDeck/TickerHeader test keeps exercising the below-1100 (today's) arrangement unless it
+  // explicitly stubs `matchMedia`.
+  const controlsJoinHeadline = useMediaQuery(theme.breakpoints.up('laptop'));
   // Reveal the condensed bar only once the full deck has scrolled out of view. IntersectionObserver is
   // the progressive toggle; when unavailable (older/jsdom) OR reduced-motion, the bar simply never
   // fades — it just pins when present. We keep it MOUNTED-but-hidden vs unmounted to avoid layout jump.
@@ -213,6 +226,27 @@ export function CommandDeck(props: CommandDeckProps) {
     routeSymbol: m.ticker,
     lastSessionPhase,
   });
+
+  // PASS 2 change 9 — ONE `TickerToolbar` element; its `inline` prop and its MOUNT POINT below are
+  // both keyed off `controlsJoinHeadline`, so it is never mounted twice (no duplicate ids/testids)
+  // — exactly one of the two slots (inside `TickerHeader`, or tier 2 on its own) ever renders it.
+  const toolbar = (
+    <TickerToolbar
+      symbol={symbol}
+      onSymbolChange={onSymbolChange}
+      onSubmitSymbol={onSubmitSymbol}
+      expirations={expirations}
+      allDates={allDates}
+      selected={selected}
+      checked={checked}
+      onSelectExpirations={onSelectExpirations}
+      persona={persona}
+      onOpenCustomize={onOpenCustomize}
+      loading={loading}
+      embedded
+      inline={controlsJoinHeadline}
+    />
+  );
 
   return (
     <>
@@ -289,7 +323,8 @@ export function CommandDeck(props: CommandDeckProps) {
             only ONE such gap, before `.quick`). Tightened, not removed — the tiers stay three
             visually distinct groups. */}
         <Stack spacing={1.5}>
-          {/* Tier 1 — hero identity row (regime + connection chips, anchor, meta line, CTA). */}
+          {/* Tier 1 — hero identity row (regime + connection chips, anchor, meta line, controls +
+              CTA at ≥ laptop — PASS 2 change 9 — CTA alone below it). */}
           <TickerHeader
             m={m}
             sig={sig}
@@ -305,23 +340,13 @@ export function CommandDeck(props: CommandDeckProps) {
             onSignIn={onSignIn}
             freshness={freshness}
             singleNameCaveat={singleNameCaveat}
+            inlineControls={controlsJoinHeadline ? toolbar : null}
           />
 
-          {/* Tier 2 — the segmented control strip (one instrument panel). */}
-          <TickerToolbar
-            symbol={symbol}
-            onSymbolChange={onSymbolChange}
-            onSubmitSymbol={onSubmitSymbol}
-            expirations={expirations}
-            allDates={allDates}
-            selected={selected}
-            checked={checked}
-            onSelectExpirations={onSelectExpirations}
-            persona={persona}
-            onOpenCustomize={onOpenCustomize}
-            loading={loading}
-            embedded
-          />
+          {/* Tier 2 — the segmented control strip (one instrument panel), below 1100 only; at
+              ≥ laptop the SAME `toolbar` element (see above `const`) renders inside `TickerHeader`
+              instead — never both, `controlsJoinHeadline` gates each slot exclusively. */}
+          {!controlsJoinHeadline && toolbar}
 
           {/* Tier 3 — Quick symbols row (pins + durable recents). Not on sticky bar. */}
           <QuickSymbols

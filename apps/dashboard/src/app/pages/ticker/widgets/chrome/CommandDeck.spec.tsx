@@ -561,3 +561,78 @@ describe('CommandDeck — masthead composition (ticker fidelity repair F3)', () 
     expect(within(toolbar).getByLabelText('Expirations')).toBeInTheDocument();
   });
 });
+
+// ==================================================================================================
+// PASS 2 change 9 — the masthead's controls join the headline row at ≥ laptop (1100)
+// ==================================================================================================
+//
+// Width is driven by mocking `window.matchMedia` for the EXACT query `theme.breakpoints.up('laptop')`
+// produces (1100px) — the SAME `vi.stubGlobal('matchMedia', …)` idiom `ai-rec/ReadSheet.spec.tsx`
+// already established for a width-driven layout switch.
+const JOIN_QUERY = theme.breakpoints.up('laptop').replace(/^@media( ?)/, '');
+
+function stubJoinHeadline(join: boolean) {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches: join && query === JOIN_QUERY,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      onchange: null,
+      dispatchEvent: () => false,
+    })),
+  );
+}
+
+describe('CommandDeck — masthead controls join the headline row at ≥ laptop (PASS 2 change 9)', () => {
+  it('below laptop (default — unmocked matchMedia degrades to false): exactly one toolbar mounts, tier 2, AFTER the CTA', () => {
+    renderDeck();
+    const deck = screen.getByTestId('command-deck');
+    expect(within(deck).getAllByTestId('ticker-toolbar')).toHaveLength(1);
+    const toolbar = within(deck).getByTestId('ticker-toolbar');
+    const cta = within(deck).getByTestId('open-sim-trade');
+    // Today's stacked order: the CTA (tier 1, inside TickerHeader) precedes the toolbar (tier 2).
+    expect(cta.compareDocumentPosition(toolbar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('at ≥ laptop: exactly one toolbar mounts, INSIDE the headline row, BEFORE the CTA (design order: fields then the button)', () => {
+    stubJoinHeadline(true);
+    renderDeck();
+    const deck = screen.getByTestId('command-deck');
+    expect(within(deck).getAllByTestId('ticker-toolbar')).toHaveLength(1);
+    const toolbar = within(deck).getByTestId('ticker-toolbar');
+    const cta = within(deck).getByTestId('open-sim-trade');
+    // Placement flips: the toolbar now precedes the CTA (both inside TickerHeader's own row) —
+    // the mechanical proof this join actually happened, not just that nothing crashed.
+    expect(toolbar.compareDocumentPosition(cta) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('at ≥ laptop: the SAME ids/testids/aria-labels — Expirations and Persona stay reachable by their labels', () => {
+    stubJoinHeadline(true);
+    renderDeck();
+    const toolbar = screen.getByTestId('ticker-toolbar');
+    expect(within(toolbar).getByLabelText('Expirations')).toBeInTheDocument();
+    expect(within(toolbar).queryByLabelText('Ticker')).toBeNull();
+    expect(document.getElementById('ticker-input')).toBeNull();
+  });
+
+  it('at ≥ laptop: the toolbar still WRITES through the same wiring (Expirations tri-state unaffected by placement)', async () => {
+    stubJoinHeadline(true);
+    const user = userEvent.setup();
+    // Same reference case the below-laptop suite above already proves ("Unticking the only
+    // remaining date → [] (none), NOT null") — this test's only job is confirming the SAME wiring
+    // still fires once the toolbar moved into the headline row, not re-proving the tri-state rules.
+    const onNone = vi.fn();
+    renderDeck({
+      selected: ['2026-06-26'],
+      checked: ['2026-06-26'],
+      onSelectExpirations: onNone,
+    });
+    await user.click(screen.getByLabelText('Expirations'));
+    await user.click(screen.getByText('2026-06-26'));
+    expect(onNone).toHaveBeenLastCalledWith([]);
+  });
+});

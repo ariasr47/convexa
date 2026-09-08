@@ -95,6 +95,15 @@ interface Props {
    * (no second border box) so it doesn't read as panel-in-panel.
    */
   embedded?: boolean;
+  /**
+   * PASS 2 change 9 — at ≥ laptop (1100) the toolbar joins `TickerHeader`'s own headline row
+   * (`CommandDeck.tsx`'s `controlsJoinHeadline`) instead of sitting in its own full-width tier-2
+   * strip below it (`design/src/screens/desk.mjs:255-274`'s `.mast-controls`: fields + the CTA
+   * side by side, pinned to the headline row's right edge). Only meaningful when `embedded` — drops
+   * the full-width + top-divider chrome that strip placement needs (nothing to divide FROM when
+   * sitting beside the CTA instead of below the header). Content/ids/testids unchanged either way.
+   */
+  inline?: boolean;
 }
 
 export function TickerToolbar({
@@ -110,6 +119,7 @@ export function TickerToolbar({
   onOpenCustomize,
   loading,
   embedded = false,
+  inline = false,
 }: Props) {
   return (
     <Box
@@ -119,16 +129,17 @@ export function TickerToolbar({
         alignItems: 'stretch',
         flexWrap: { xs: 'wrap', sm: 'nowrap' },
         rowGap: 1.5,
-        width: embedded ? '100%' : undefined,
-        // Standalone: recessed instrument panel. Embedded: hairline top + seams only (deck is the frame).
+        width: embedded && !inline ? '100%' : undefined,
+        // Standalone: recessed instrument panel. Embedded row: hairline top + seams (deck is the
+        // frame). Embedded inline (PASS 2 change 9): same seams, no top divider/full-width — there
+        // is no header content above it to divide from, it sits beside the CTA instead.
         ...(embedded
           ? {
               border: 'none',
-              borderTop: `1px solid ${t.palette.divider}`,
+              ...(inline ? {} : { borderTop: `1px solid ${t.palette.divider}`, pt: 1.5 }),
               borderRadius: 0,
               bgcolor: 'transparent',
               boxShadow: 'none',
-              pt: 1.5,
               px: 0,
               pb: 0,
             }
