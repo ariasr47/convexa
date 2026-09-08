@@ -1719,3 +1719,53 @@ dev server, per this task's own instruction).
   `docs/research/…` directory confirmed untouched, both before and after this session's work.
 
 ---
+
+## GATE Z repair — three FE-13 findings, the conductor's overturn on finding 1
+
+**Landed:** 2026-09-07/08, on top of FE-13 (`3d31a082`, unchanged HEAD at start). **Scope: exactly the
+three findings the launch dispatch named** — no other file touched, `FE-14`/`BE-1` not started. Each
+finding lands as its own commit below; this section grows with each one.
+
+### Finding 1 — `/positions` overflows at 900px: a REAL FE-5 regression, not pre-existing
+
+**Diagnosis (measured, not guessed).** A standalone reproduction (production build, `http-server`
+with the shipped SPA fallback, real Chromium, the exact `book+condor` seed) walked every element on
+the page comparing `getBoundingClientRect()` against the 900px viewport. `document.body.scrollWidth`
+read a correct `900`; `document.documentElement.scrollWidth` read `978`. The 78px gap traced to **four**
+`position: absolute; width: 1px; height: 1px` visually-hidden description spans (`PositionRow.tsx`'s
+`literal()`, the `VISUALLY_HIDDEN` sibling behind the three keyboard-reachable member tips
+`cell-unavailable`/`cell-not-recorded`/`cell-no-basis`) — one per condor-row literal cell that carried
+both a `testid` and a `helpId`. Their immediate wrapper (`PositionRow.tsx:168-173`, the
+`tabIndex={-1}` `Box component="span"`) declared `display: 'inline-block'` but **no `position`**, so
+it never became a containing block for its absolutely-positioned child. With no positioned ancestor
+between it and `<html>`, the hidden span's containing block escalated all the way to the initial
+containing block — **outside** `positions-table-frame`'s `overflow-x: auto` scroll boundary — so its
+static-position layout (computed as if it were `position: static`, landing wherever it fell inside the
+horizontally-scrolled row, here `left: 977`) was **never clipped** by that scroll container, silently
+widening the page's own layout overflow independent of the frame's own (correctly-clipped) `852px`
+box. **This is FE-5's own code** (`bdc992d8`, U-15a's keyboard-reachable literal tips): `git diff
+f8957d3f..HEAD -- PositionRow.tsx` shows the `VISUALLY_HIDDEN`/wrapper/`aria-describedby` block did
+not exist at the phase-3 baseline — the pre-U-15a `literal()` had no absolutely-positioned children at
+all, so the hazard could not have pre-existed. FE-13's "pre-existing" verdict measured the same
+symptom correctly but did not walk far enough up the containing-block chain to find the missing
+`position: relative`; the conductor's overturn is confirmed.
+
+**Fix (`PositionRow.tsx:168-173`):** added `position: 'relative'` to the wrapper `Box`'s `sx`, making
+it the containing block for its own hidden description child. Zero visual change (the wrapper's own
+box is unaffected by an offset-less `position: relative`); the hidden span is now clipped by
+`positions-table-frame` exactly like every other row cell.
+
+**Measured before/after** (standalone script, 900px, dark, `book+condor`, identical fixture both
+times): `documentElement.scrollWidth` **978 → 900** (== `innerWidth`); `body.scrollWidth` unchanged at
+`900` both times (confirming the fix closed the `<html>`/`<body>` discrepancy, not a coincidence).
+
+**Re-run of the criterion this touches:** `md 900 no-overflow · dark scheme › /positions fits 900px` —
+**red before the fix** (reproduced independently, matching the launch dispatch's own report), **green
+after**, part of the 100/100 full-suite pass at the end of this section. `npx vitest run
+src/app/features/trading/positions src/app/pages/positions` (the two trees `PositionRow.tsx` sits in /
+is imported by) — **exit 0, 527/527 tests**, no regression from the one-line containing-block fix.
+
+**Commit:** `fix(dashboard): GATE Z — /positions 900px overflow, FE-5's untethered absolute
+description span (curvature-v2-surfaces)`.
+
+---

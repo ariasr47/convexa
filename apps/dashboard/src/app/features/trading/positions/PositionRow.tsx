@@ -169,7 +169,16 @@ function literal(text: string, tip: string, testid?: string, helpId?: string) {
         component="span"
         tabIndex={-1}
         aria-describedby={descriptionId}
-        sx={{ display: 'inline-block' }}
+        // `position: 'relative'` makes THIS span the containing block for the visually-hidden
+        // description sibling below. Without it, that sibling's `position: 'absolute'` escapes
+        // every ancestor up to the initial containing block (nothing between here and `<html>`
+        // is positioned), so its layout ends up computed against the PAGE, not against this
+        // horizontally-scrolling row — invisible to the eye but NOT clipped by
+        // `positions-table-frame`'s `overflow-x: auto`, so it silently widens
+        // `document.documentElement.scrollWidth` by its own static-position offset. Confirmed
+        // measured: at 900px with the seeded book+condor, this was the exact 978px-wide,
+        // 1px-tall offender (GATE Z finding 1, curvature-v2-surfaces phase 3).
+        sx={{ display: 'inline-block', position: 'relative' }}
       >
         <Typography
           component="span"
