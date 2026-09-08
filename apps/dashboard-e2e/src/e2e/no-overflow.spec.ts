@@ -1510,3 +1510,113 @@ test.describe('GATE Z criterion 66, pass 3 — /positions track-record summary a
     ).toBeLessThan(44);
   });
 });
+
+// =====================================================================================================
+// GATE Z, criterion 66, pass 4 — QA pass 3 found that the pass-3 fix (`display: flex`) restored the
+// 44px floor but silently removed the native disclosure triangle: a `<summary>`'s `::marker` only
+// renders when the element computes `display: list-item` (the UA default for `<summary>` as the
+// first child of `<details>`), and `display: flex` overrides that away. The pass-4 fix drops
+// `display`/`alignItems` entirely and reaches 44px with `line-height` instead, so `list-item` (and
+// therefore the marker) is never touched.
+//
+// A `::marker` pseudo-element has no box Playwright can measure directly, and `getComputedStyle(el,
+// '::marker')` returns cascade values even when the pseudo-element isn't actually generated (verified
+// in isolation: it still reports `list-style-type: disclosure-open` under `display: flex`, where the
+// triangle demonstrably does not render) — so asserting on `::marker`'s own computed style would be a
+// gate that cannot go red for the real defect. What DOES flip with the actual defect, verified the
+// same way: `getComputedStyle(summary).display` — `'list-item'` when the marker renders, `'flex'`
+// (pass-3's bug) when it does not. That is the assertion below: a mechanism-level check tied to the
+// exact CSS property this fix touches, poisoned and confirmed red for the pass-3 shape.
+// =====================================================================================================
+async function openTrBreakdown(page: import('@playwright/test').Page) {
+  await stubNetwork(page);
+  await seed(page, { scheme: 'dark', positions: 'book' });
+  await page.goto('/positions');
+  await expect(page.getByTestId('portfolio-panel')).toBeAttached();
+  const summary = page.getByTestId('tr-breakdown').locator('summary');
+  await expect(summary).toBeAttached();
+  return summary;
+}
+
+async function assertOpensClosesAndRespondsToEnter(
+  page: import('@playwright/test').Page,
+  summary: import('@playwright/test').Locator,
+) {
+  const details = page.getByTestId('tr-breakdown');
+  await expect(details).not.toHaveJSProperty('open', true);
+  await summary.click();
+  await expect(details).toHaveJSProperty('open', true);
+  await summary.focus();
+  await expect(summary).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(details).not.toHaveJSProperty('open', true);
+}
+
+test.describe('GATE Z criterion 66, pass 4 — /positions track-record summary at 393px, coarse pointer (marker restored)', () => {
+  test.use({ viewport: { width: 393, height: 852 }, hasTouch: true });
+
+  test('the disclosure keeps its marker mechanism and stays fully operable at the 44px floor', async ({
+    page,
+  }) => {
+    const summary = await openTrBreakdown(page);
+    const display = await summary.evaluate((el) => getComputedStyle(el).display);
+    console.log(
+      `[criterion 66 evidence, GATE Z pass 4] tr-breakdown summary computed display, ` +
+        `393px coarse = ${display}`,
+    );
+    // A `::marker` pseudo-element has no box Playwright can measure directly, and
+    // `getComputedStyle(el, '::marker')` keeps reporting cascade values (e.g.
+    // `list-style-type: disclosure-open`) even when the pseudo-element isn't actually generated —
+    // verified in isolation against the pass-3 shape, where the triangle demonstrably did not
+    // render. What DOES flip with the real defect: `display` itself — `'list-item'` is the ONLY
+    // value under which Chromium generates the marker for a `<summary>`; pass-3's `flex` broke it.
+    // This assertion is therefore tied to the exact mechanism the fix touches, not to a value that
+    // stays truthy either way.
+    expect(display, 'tr-breakdown summary keeps display: list-item (coarse pointer)').toBe(
+      'list-item',
+    );
+    await expectFloor(summary, 'tr-breakdown summary (coarse pointer, pass 4)');
+    await assertOpensClosesAndRespondsToEnter(page, summary);
+  });
+});
+
+test.describe('GATE Z criterion 66, pass 4 — /positions track-record summary at 393px, fine pointer (QA comparison point)', () => {
+  test.use({ viewport: { width: 393, height: 852 } });
+
+  test('the disclosure keeps its marker mechanism, stays under the coarse floor, and stays operable', async ({
+    page,
+  }) => {
+    const summary = await openTrBreakdown(page);
+    const { display, height } = await summary.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { display: cs.display, height: el.getBoundingClientRect().height };
+    });
+    console.log(
+      `[criterion 66 evidence, GATE Z pass 4] tr-breakdown summary computed display, ` +
+        `393px fine = ${display}, height = ${height}`,
+    );
+    expect(display, 'tr-breakdown summary display (fine pointer)').toBe('list-item');
+    // Same width as the coarse test above, no `hasTouch` — the exact QA comparison that proved
+    // the pass-3 regression was caused by the fix, not by width. The coarse-only `line-height`
+    // rule must stay inert here.
+    expect(height, 'tr-breakdown summary height stays pre-floor (fine pointer)').toBeLessThan(44);
+    await assertOpensClosesAndRespondsToEnter(page, summary);
+  });
+});
+
+test.describe('GATE Z criterion 66, pass 4 — /positions track-record summary at 1280px, fine pointer (desktop unmoved)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('the disclosure keeps its marker mechanism and stays operable on desktop', async ({
+    page,
+  }) => {
+    const summary = await openTrBreakdown(page);
+    const display = await summary.evaluate((el) => getComputedStyle(el).display);
+    console.log(
+      `[criterion 66 evidence, GATE Z pass 4] tr-breakdown summary computed display, ` +
+        `1280px fine = ${display}`,
+    );
+    expect(display, 'tr-breakdown summary display (1280px, fine pointer)').toBe('list-item');
+    await assertOpensClosesAndRespondsToEnter(page, summary);
+  });
+});

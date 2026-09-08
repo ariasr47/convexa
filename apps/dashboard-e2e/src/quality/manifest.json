@@ -2,7 +2,7 @@
   "schema_version": 1,
   "support_policy_id": "playwright-engines-1.62.1",
   "full_chromium": {
-    "inventory_id": "curvature-v2-surfaces-105-v1",
+    "inventory_id": "curvature-v2-surfaces-108-v1",
     "tests": [
       {
         "test_id": "d38f0e9816f51aa1922817ddad296f9fcfffdcb98335c43716eb971b1cf4f276",
@@ -936,6 +936,33 @@
         "title_path": [
           "GATE Z criterion 66, pass 3 — /positions track-record summary at 1280px, fine pointer (desktop unmoved)",
           "the same summary keeps its shipped desktop geometry (no `hasTouch`, fine pointer)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "821afe9a24708881532bb6d1cb754cca42c05c085d6e87aba08d0a95bf7ba1de",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "GATE Z criterion 66, pass 4 — /positions track-record summary at 393px, coarse pointer (marker restored)",
+          "the disclosure keeps its marker mechanism and stays fully operable at the 44px floor"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "acb0750c7b83f29984a416217dfdec913f5fcd2ff2c6b236ed05d3d99641862f",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "GATE Z criterion 66, pass 4 — /positions track-record summary at 393px, fine pointer (QA comparison point)",
+          "the disclosure keeps its marker mechanism, stays under the coarse floor, and stays operable"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "385934fec5ba3999d248287cc843f8432a46e986766eb7d105fee6b36a2c1b7e",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "GATE Z criterion 66, pass 4 — /positions track-record summary at 1280px, fine pointer (desktop unmoved)",
+          "the disclosure keeps its marker mechanism and stays operable on desktop"
         ],
         "project": "chromium"
       }

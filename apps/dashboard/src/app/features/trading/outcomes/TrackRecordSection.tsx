@@ -234,10 +234,19 @@ function ExclusionBreakdown({ read }: { read: LedgerRead }) {
           // mechanism as MUI `Select`'s self-duplicated `.MuiSelect-select` class, just via a
           // different element instead of a specificity fight. Floored LOCALLY, coarse-pointer only,
           // so the desktop/fine-pointer row height (measured unchanged at 1280) never moves.
+          //
+          // GATE Z (criterion 66, pass 4 — QA pass 3 finding): the pass-3 fix used
+          // `display: flex`, which computes the UA default `summary { display: list-item }` away —
+          // Chromium then generates no `::marker`, so the native disclosure triangle disappeared on
+          // a coarse pointer (confirmed: at 393/fine, `display` stays `list-item` and the triangle
+          // renders; at 393/coarse it was `flex` and the triangle was gone — same width, so the
+          // fix, not the pointer, was the cause). `line-height` reaches the 44px floor without
+          // touching `display` at all, so `list-item` (and its `::marker`) is never overridden —
+          // verified in isolation with a real Chromium instance: coarse renders the box at
+          // 393x44 with the triangle visible; fine (393 and 1280) is untouched, still list-item.
           '@media (pointer: coarse)': {
             minHeight: 44,
-            display: 'flex',
-            alignItems: 'center',
+            lineHeight: '44px',
           },
         }}
       >

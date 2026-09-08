@@ -66,11 +66,18 @@ export function validateManifest(value) {
     // which stay itemized as carried debt, untouched this phase) — 2 new `no-overflow.spec.ts`
     // tests: the 393px/coarse floor assertion, and a 1280px/fine-pointer assertion proving the
     // local coarse-only `sx` never leaks into the desktop row height.
-    value.full_chromium?.inventory_id !== 'curvature-v2-surfaces-105-v1' ||
+    // (curvature-v2-surfaces GATE Z repair pass 4, QA pass 3 Medium finding) bumped 105 → 108:
+    // the pass-3 fix's `display: flex` silently removed the `<summary>`'s native `::marker`
+    // (Chromium only generates it under `display: list-item`); pass 4 reaches the same 44px floor
+    // with `line-height` instead, leaving `display` untouched. 3 new `no-overflow.spec.ts` tests —
+    // 393px/coarse, 393px/fine (the direct QA comparison point) and 1280px/fine — each asserting
+    // `getComputedStyle(summary).display === 'list-item'` (the mechanism the marker depends on,
+    // verified to actually flip with the pass-3 defect) plus open/close/focus/Enter operability.
+    value.full_chromium?.inventory_id !== 'curvature-v2-surfaces-108-v1' ||
     !Array.isArray(tests) ||
-    tests.length !== 105
+    tests.length !== 108
   )
-    fail('full Chromium inventory must contain 105 tests');
+    fail('full Chromium inventory must contain 108 tests');
   unique(
     tests.map((x) => x.test_id),
     'full Chromium tests',

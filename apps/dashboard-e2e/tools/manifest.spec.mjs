@@ -21,7 +21,12 @@ test('browser quality manifest is closed and has the required inventories', () =
   // `TrackRecordSection.tsx`'s `<summary>` on `/positions` (touched this phase, `bdc992d8`) now
   // meets the 44px coarse-pointer floor; 2 new `no-overflow.spec.ts` tests (393 coarse + 1280 fine,
   // the latter proving the fix is inert on a fine pointer).
-  assert.equal(manifest.full_chromium.tests.length, 105);
+  // (curvature-v2-surfaces GATE Z repair pass 4) 105 → 108 — QA pass 3's Medium finding: the
+  // pass-3 fix's `display: flex` removed the `<summary>`'s native disclosure `::marker`; pass 4
+  // reaches 44px with `line-height` instead, leaving `display: list-item` intact. 3 new
+  // `no-overflow.spec.ts` tests (393 coarse, 393 fine, 1280 fine) each asserting the marker
+  // mechanism (`display: list-item`) and full open/close/focus/Enter operability.
+  assert.equal(manifest.full_chromium.tests.length, 108);
   assert.equal(manifest.compatibility.journeys.length, 5);
   assert.deepEqual(manifest.compatibility.projects, ['chromium', 'firefox', 'webkit']);
   assert.equal(manifest.accessibility.scans.length, 9);

@@ -88,7 +88,12 @@ const gateCounts: Record<string, number> = {
   // to meet the coarse-pointer floor, 2 new `no-overflow.spec.ts` tests (393 coarse + 1280 fine,
   // desktop-unmoved); bump to `curvature-v2-surfaces-105-v1` (`tools/lib/manifest.mjs` enforces the
   // same number).
-  chromium: 105,
+  // (curvature-v2-surfaces GATE Z repair pass 4, QA pass 3 Medium finding) 105 → 108: the pass-3
+  // fix's `display: flex` removed the `<summary>`'s native disclosure `::marker`; pass 4 reaches
+  // 44px with `line-height` instead, leaving `display: list-item` intact. 3 new
+  // `no-overflow.spec.ts` tests (393 coarse, 393 fine, 1280 fine); bump to
+  // `curvature-v2-surfaces-108-v1` (`tools/lib/manifest.mjs` enforces the same number).
+  chromium: 108,
   compatibility: 15,
   accessibility: 16,
   visual: 6,

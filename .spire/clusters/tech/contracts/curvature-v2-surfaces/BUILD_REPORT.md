@@ -2630,3 +2630,131 @@ has no mandate over, re-opening a specificity fight this phase's own scope fence
 - `docs/research/convexa-business-review-2026-09-05/` — confirmed present, untouched throughout.
 - Criterion 7a — untouched, not re-derived, not re-argued; still the owner's open decision.
 - `PositionsPage.tsx` — confirmed byte-unchanged (`git diff cc6e3ae2..HEAD` = 0 lines for this file).
+
+## GATE Z repair, pass 4 — GATE Q pass 3 (94 PASS / 1 FAIL / 0 UNVERIFIABLE): the Medium, non-blocking finding — the disclosure marker the pass-3 fix removed
+
+QA pass 3 confirmed criterion 66's own two clauses both PASS (the `tr-breakdown` `<summary>` measures
+345×44 at 393/coarse, 1192×21.4375 at 1280/fine, and no untouched-file itemization is wrong) but flagged
+one Medium, non-blocking finding alongside the single owner-decision FAIL (criterion 7a, untouched by
+this pass): the pass-3 fix's `'@media (pointer: coarse)': { minHeight: 44, display: 'flex', alignItems:
+'center' }` reaches the 44px floor but `display: flex` also overrides the UA default `summary { display:
+list-item }` for a `<summary>`, and Chromium only generates the `::marker` disclosure triangle when that
+computes to `list-item`. QA measured the effect directly: at 393px **fine** the control renders the
+triangle; at 393px **coarse**, same width, it does not — proving the fix, not the pointer, caused it. No
+SPEC §3 criterion binds the marker (the control stays fully tap- and keyboard-operable, announced as a
+native `summary`), so this did not fail GATE Q, but it is a real regression this phase introduced.
+
+### Fixed — `TrackRecordSection.tsx:226-231`, `display`/`alignItems` replaced with `line-height`
+
+The coarse-pointer block now reads:
+
+```
+'@media (pointer: coarse)': {
+  minHeight: 44,
+  lineHeight: '44px',
+},
+```
+
+`display` is no longer touched at all, so the element keeps the UA default `list-item` in every case —
+`minHeight`/`lineHeight` alone grow the box to the 44px floor. Considered and rejected: QA's own named
+"cheapest fix," `display: block` plus `padding-block`. Verified in an isolated Chromium instance
+(real browser, not assumed) before touching the shipped file: `display: block` computes away from
+`list-item` in exactly the same way `flex` does — `getComputedStyle` still reports a `list-style-type`
+for `::marker` even when the pseudo-element isn't generated (confirmed: `disclosure-open` was reported
+under `display: flex`, where the triangle demonstrably did not render), so a naive read of that
+property would have shipped a second, still-broken "fix" behind an assertion that always passes. The
+only property that actually predicts whether the marker renders, verified against real screenshots at
+both the flex-broken shape and the line-height shape, is `display` itself staying `list-item`.
+
+**Measured, in the actual application, on the production build (`page.evaluate`/`boundingBox`, not
+assumed):**
+
+- **393px, coarse pointer (`hasTouch: true`):** `tr-breakdown summary` = **345 × 44**
+  (`{"x":24,"y":2488.92,"width":345,"height":44}`) — both dimensions clear the floor, byte-identical to
+  the pass-3 measurement (this fix does not move the box size, only the mechanism that produces it).
+  Computed `display: list-item`.
+- **393px, fine pointer (no `hasTouch`) — the direct QA comparison point:** computed `display:
+  list-item`, height **21.4375** (identical to the pre-fix, pre-pass-3 shipped height) — the coarse-only
+  rule stays inert here, same width as the coarse case, pointer only.
+- **1280px, fine pointer (desktop unmoved):** computed `display: list-item`, height stays under the
+  coarse floor (unchanged, confirmed by the existing pass-3 e2e assertion, still green at this HEAD).
+
+**How the marker's presence was verified in all three cases:** NOT by a screenshot in the committed
+test (a pixel-level check would be brittle and isn't reachable inside the standing harness's fixture
+scaffolding), and NOT by `getComputedStyle(el, '::marker')` (proved unreliable above — it reports
+cascade values regardless of whether the pseudo-element is actually generated). The reliable, hard
+assertion is `getComputedStyle(summary).display === 'list-item'` — the exact CSS property Chromium
+gates `::marker` generation on for a `<summary>`, verified end-to-end against real rendered output in
+an isolated Chromium instance before it was written into the suite: `display: flex` (pass-3's shape) →
+no triangle in a real screenshot; `display: list-item` (this fix, and the untouched fine-pointer cases)
+→ triangle renders in a real screenshot. The three new e2e tests below assert this property directly, so
+a future regression that reintroduces `display: flex`/`block` on this element goes red immediately
+rather than surviving behind a value that stays truthy either way. I additionally captured screenshots
+during this investigation confirming the triangle visually at all three checkpoints (flex broken it at
+393/coarse only; the fix restores it there and it was never broken at 393/fine or 1280/fine).
+
+**The disclosure still discloses, re-verified at all three checkpoints, this pass:** clicking the
+summary sets `<details>`'s `open` to `true`; focusing it (`tabIndex` default from the native element)
+and pressing **Enter** closes it again; content does not shift beyond the box's own height change
+(unchanged from pass 3's own finding, not re-litigated here since this fix touches no layout property
+other than the same `minHeight`/box-height pass 3 already proved inert on desktop).
+
+**Regression coverage — e2e, hard-asserted.** Three new tests in `no-overflow.spec.ts` (393px/coarse,
+393px/fine, 1280px/fine), each asserting `getComputedStyle(summary).display === 'list-item'` plus the
+full open → close → focus → Enter-closes sequence; the 393/coarse test also re-asserts the 44px floor
+(`expectFloor`) so this test would itself catch a future regression that restored the floor by
+reintroducing `display: flex`. Browser-quality manifest bumped `105 → 108` in the required four-file
+lockstep (`manifest.json`, `tools/lib/manifest.mjs`, `tools/manifest.spec.mjs`,
+`quality-reporter.ts`'s `gateCounts.chromium`) — `node --test manifest.spec.mjs mutations.spec.mjs`
+**exit 0, 7/7**; `summary.json` reported `selected/executed/passed = 108/108/108`, `failed 0`,
+`not_run 0`, `status: "pass"`, no test anywhere reporting `"incomplete"`.
+
+**Poison, criterion 69 (a gate this phase lands must be proven red before it's trusted):** reverted
+`TrackRecordSection.tsx`'s coarse block to the exact pass-3 shape (`display: 'flex', alignItems:
+'center'`), rebuilt production, ran `playwright test -g "GATE Z criterion 66, pass 4"` — **1 failed / 2
+passed**: `Error: tr-breakdown summary keeps display: list-item (coarse pointer) / Expected: "list-item"
+/ Received: "flex"` at the 393/coarse test; the 393/fine and 1280/fine tests correctly stayed green
+under the same poison (the regression is coarse-only, so a gate that also failed on the fine-pointer
+cases would have been mis-scoped). File restored via direct edit back to the fix and proved
+byte-identical to the pre-poison blob by `git hash-object`
+(`b42d8992280053eceb16554770eb04ae89d6e664`, before and after); tree rebuilt and the full e2e suite
+re-run green at the restored HEAD (108/108, 0 flaky).
+
+**Files:** `apps/dashboard/src/app/features/trading/outcomes/TrackRecordSection.tsx`,
+`apps/dashboard-e2e/src/e2e/no-overflow.spec.ts`, `apps/dashboard-e2e/src/quality/manifest.json`,
+`apps/dashboard-e2e/src/quality/reporters/quality-reporter.ts`,
+`apps/dashboard-e2e/tools/lib/manifest.mjs`, `apps/dashboard-e2e/tools/manifest.spec.mjs`.
+
+**Untouched, per the launch instruction, confirmed by diff:** `pages/positions/PositionsPage.tsx`
+(criterion 7a, open owner decision), `features/trading/orders/OrderRow.tsx:172` (Z-1), `SPEC.md`,
+`PLAN.md`, `INTERFACE_CONTRACT.md`, `decisions.md`, `QA_REPORT.md`, `design/`, `apps/api`. The three
+sub-44px `Select`s on `/ticker`, the 15 `ScanToolbar` chips, and `ScanCard.tsx:58,110`'s latent absolute
+are left exactly as QA carried them — not re-touched, not re-argued.
+
+### Whole-phase verification, this pass (HEAD `64f5c1ed` unchanged start-to-end, confirmed before and after)
+
+- `git branch --show-current` / `git rev-parse HEAD` — `spire/curvature-v2-foundations` / `64f5c1ed`,
+  confirmed unchanged before the first edit and again immediately before this commit.
+- `npm run typecheck` — **exit 0**, cold (`apps/dashboard/dist`, `apps/dashboard-e2e/dist`, `out-tsc`,
+  every `*.tsbuildinfo` deleted first), across `@convexa/dashboard`, `@convexa/api`, `dashboard-e2e`.
+- `npx nx test @convexa/dashboard --skip-nx-cache -- src/app/features/trading/outcomes` — **exit 0,
+  133/133** (targeted tree).
+- `npx nx test @convexa/dashboard --skip-nx-cache` (full suite, once) — **exit 0, 239/239 files,
+  2857/2857 tests** — the exact standing baseline, unmoved (this pass added no vitest tests, only e2e).
+- `npm run lint` — **exit 0**, 5 pre-existing warnings, 0 new.
+- `npx nx format:check --files=<every file this pass touched>` — **exit 0** (after one
+  `format:write`, scoped to the single file it flagged, `no-overflow.spec.ts`, confirmed by
+  `git diff --stat` to be a pure 110-line addition with zero deletions/modifications elsewhere in the
+  file).
+- `node --test apps/dashboard-e2e/tools/manifest.spec.mjs apps/dashboard-e2e/tools/mutations.spec.mjs`
+  — **exit 0, 7/7**.
+- `npm run ports:free` — exit 0, clean, first and last.
+- `npm run build` — **exit 0** (production, `node_modules/.vite` cleared first per gotcha 15/16).
+- `BROWSER_QUALITY_PREBUILD_STATUS=pass npx nx e2e dashboard-e2e --skip-nx-cache` (production build) —
+  **exit 0, 108/108 passed, 0 flaky**, `summary.json` `selected/executed/passed = 108/108/108`,
+  `status: "pass"`, no `"incomplete"` anywhere.
+- `git diff origin/main...HEAD -- apps/api` — **0 lines** (three-dot).
+- `docs/research/convexa-business-review-2026-09-05/` — confirmed present, untouched throughout; no
+  `git stash` used at any point.
+- Criterion 7a — untouched, not re-derived, not re-argued; still the owner's open decision, waiting on
+  GATE S.
