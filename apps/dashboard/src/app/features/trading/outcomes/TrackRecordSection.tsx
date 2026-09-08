@@ -518,6 +518,10 @@ export function TrackRecordSection({ personaLabel }: TrackRecordSectionProps) {
             xs: '1fr',
             sm: 'repeat(2, minmax(0, 1fr))',
             md: 'repeat(4, minmax(0, 1fr))',
+            // Five families (the design's mock shows four) — one row at ≥ lg so the fifth never
+            // wraps alone under a 4-column grid (conductor fixup after the surfaces repair; the
+            // 1192 px content column gives ~229 px cards, the design's own card width).
+            lg: 'repeat(5, minmax(0, 1fr))',
           },
           gap: '12px',
         }}
