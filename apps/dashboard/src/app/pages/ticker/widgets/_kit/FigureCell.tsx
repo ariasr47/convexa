@@ -58,6 +58,7 @@ import {
 import { flashColorSx, type FlashState } from '@/shared/hooks/useFlashOnChange';
 import type { LiveClaim } from '@/shared/liveness/liveClaim';
 import { AccessibleHelp } from '@/shared/ui';
+import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Skeleton from '@mui/material/Skeleton';
@@ -284,6 +285,220 @@ export function FigureCell({
         ) : null}
       </CardContent>
     </CellCard>
+  );
+}
+
+/**
+ * `FigureRow` — the compact, chrome-less figure layout the structure-hero repair task adds
+ * (`STRUCTURE_HERO_REPAIR_TASK.md` items 2/9; `design/src/components/ladder.mjs`). A SIBLING of
+ * `FigureCell`, not a fork of its state machinery: both call the SAME `figureStateOf` (the one F1–F9
+ * decision) and paint with the SAME `faceFor`/`LiveDot`/`PauseMark`/`MONO_FACE`/`UNTRACED_RULE` marks
+ * — only the chrome differs (no `CellCard`, no `CapsLabel` eyebrow, no container-stepped size ladder;
+ * this layout's sizes are fixed literals per the design source, never `@container`-stepped).
+ *
+ * Two shapes, one component:
+ *   - `direction="row"` (the level ladder): one line — an optional `leading` node (the level's own
+ *     stroke tick) · a plain 12px label · the value · the caption in a fixed-width right column. The
+ *     row itself carries the top hairline; `FigureRow` is a `Stack`, never a bare fragment, so a
+ *     border/padding can land on it without a wrapper the ladder would otherwise need to add back.
+ *   - `direction="column"` (the ladder foot): caps label above, value + caption below — the same
+ *     content, stacked, no `leading` node.
+ *
+ * The wrapping element still carries `data-figure-state` (SPEC's exclusive-in-the-DOM contract,
+ * criterion 17b/50b) even though it is a plain `Box`, not a `Card` — the marker is the state
+ * contract, not the chrome.
+ */
+export interface FigureRowProps {
+  label: string;
+  register: FigureCellProps['register'];
+  value: FigureCellProps['value'];
+  live?: LiveClaim;
+  offline?: FigureCellProps['offline'];
+  replay?: boolean;
+  caption?: string | null;
+  assertedBy?: string;
+  /** ⓘ copy, opened via the shipped `AccessibleHelp` pattern — same as `FigureCell` (the ladder
+   *  foot's tooltips, criterion 6). */
+  info?: string;
+  /** The ladder's own stroke tick (row layout only) — omitted for the foot. */
+  leading?: React.ReactNode;
+  /** 'row' — the level ladder (tick + label + value + caption, one line, top hairline). 'column' —
+   *  the ladder foot (label above, value + caption below, no hairline, no tick). */
+  direction?: 'row' | 'column';
+  /** Fixed literal px size for the value glyph (14 default; 18 for the ladder's mid row / the foot
+   *  cells) — this compact layout does not step with its container (canon 13's 20/17/15 ladder
+   *  stays `FigureCell`-card-only). */
+  valueSize?: number;
+  /** A short badge text (`tape`) shown beside the label instead of a bare dot, ladder mid-row only —
+   *  still the SAME label-row dot underneath (canon 13: one dot, this figure's own claim), just
+   *  labelled. Ignored when the figure state does not show a dot. */
+  liveBadge?: string;
+}
+
+export function FigureRow({
+  label,
+  register,
+  value,
+  live,
+  offline,
+  replay,
+  caption,
+  assertedBy,
+  info,
+  leading,
+  direction = 'row',
+  valueSize = 14,
+  liveBadge,
+}: FigureRowProps) {
+  const {
+    figureState,
+    mono,
+    dim,
+    untraced,
+    showDot,
+    showPause,
+    caption: effectiveCaption,
+  } = figureStateOf({ value, register, live, offline, replay, caption, assertedBy });
+
+  const valueGlyph = (
+    <Typography
+      component="span"
+      data-figure-register={mono ? 'mono' : 'sans'}
+      sx={[
+        {
+          fontSize: valueSize,
+          fontWeight: valueSize >= 18 ? 600 : 500,
+          lineHeight: 1.2,
+          ...faceFor(mono),
+          color: 'text.primary',
+          ...(dim ? { opacity: 0.5 } : {}),
+          ...(untraced ? UNTRACED_RULE : {}),
+        },
+      ]}
+    >
+      {value}
+    </Typography>
+  );
+
+  const dotNode = showDot ? (
+    liveBadge ? (
+      <Box
+        component="span"
+        data-testid="ladder-live-badge"
+        sx={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 0.5,
+          ml: 0.5,
+          px: 0.75,
+          height: 16,
+          borderRadius: 999,
+          bgcolor: 'action.selected',
+          flexShrink: 0,
+        }}
+      >
+        <LiveDot />
+        <Typography
+          component="span"
+          sx={{ fontSize: 11, fontWeight: 600, color: 'info.main', lineHeight: 1 }}
+        >
+          {liveBadge}
+        </Typography>
+      </Box>
+    ) : (
+      <LiveDot />
+    )
+  ) : null;
+
+  const captionNode = effectiveCaption ? (
+    <Typography
+      component="span"
+      sx={{ ...MONO_FACE, color: 'text.secondary', fontSize: 11, lineHeight: 1.3 }}
+    >
+      {effectiveCaption}
+    </Typography>
+  ) : null;
+
+  const content =
+    direction === 'column' ? (
+      <Stack spacing={0.375} data-figure-state={figureState} sx={{ minWidth: 0 }}>
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+          <Typography
+            component="span"
+            sx={{
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: 'text.secondary',
+            }}
+          >
+            {label}
+          </Typography>
+          {info && <AccessibleHelp label={`About ${label}`} text={info} />}
+        </Stack>
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'baseline' }}>
+          {showPause && <PauseMark />}
+          {valueGlyph}
+          {dotNode}
+        </Stack>
+        {captionNode}
+      </Stack>
+    ) : (
+      <Stack
+        direction="row"
+        spacing={1.25}
+        useFlexGap
+        data-figure-state={figureState}
+        sx={{ flex: 1, minWidth: 0, alignItems: 'center', flexWrap: 'wrap', rowGap: 0.25 }}
+      >
+        <Typography
+          component="span"
+          sx={{
+            flex: '1 1 60px',
+            minWidth: 0,
+            fontSize: 12,
+            fontWeight: showDot ? 600 : 500,
+            color: showDot ? 'info.main' : 'text.secondary',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {label}
+          {info && <AccessibleHelp label={`About ${label}`} text={info} />}
+          {dotNode}
+        </Typography>
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'baseline', flexShrink: 0 }}>
+          {showPause && <PauseMark />}
+          {valueGlyph}
+        </Stack>
+        {/* The distance/caption is the ONE cell allowed to wrap onto its own line when the tick +
+            label + value + a real (often long: "+$10 · 4.0% above") distance string cannot all fit
+            a 300px ladder column — a CSS overflow fix, not a copy change: the distance's own text
+            (`_kit/distanceToLevel.ts`) is untouched, and this never truncates the label instead. */}
+        <Box sx={{ ml: 'auto', minWidth: 52, textAlign: 'right', flexShrink: 0 }}>
+          {captionNode}
+        </Box>
+      </Stack>
+    );
+
+  if (direction === 'column') return content;
+
+  return (
+    <Stack
+      direction="row"
+      spacing={1.25}
+      sx={{
+        alignItems: 'center',
+        py: '7px',
+        borderTop: '1px solid',
+        borderColor: 'divider',
+      }}
+    >
+      {leading}
+      {content}
+    </Stack>
   );
 }
 

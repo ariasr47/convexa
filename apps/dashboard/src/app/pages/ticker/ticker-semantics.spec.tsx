@@ -139,8 +139,12 @@ describe('Ticker · heading semantics (h1 → h2, data values are never headings
 
     // And the fix actually landed where the failure lived: stat figures exist on the page as
     // NON-heading elements (e.g. the Call wall tile's $ figure).
-    const callWallTile = screen.getByText('Call wall').closest('.MuiCard-root');
-    expect(callWallTile?.querySelector('p')?.textContent).toMatch(/\$/);
+    // EDITED (structure-hero repair task item 2): the ladder row is no longer a `.MuiCard-root`
+    // (`FigureCell`) — it is `FigureRow`'s chrome-less `[data-figure-state]` line — so the ancestor
+    // selector is re-pointed to that state-contract marker (still the correct "the fix landed"
+    // check: a real `$` figure renders inside it, never as a heading).
+    const callWallTile = screen.getByText('Call wall').closest('[data-figure-state]');
+    expect(callWallTile?.textContent).toMatch(/\$/);
     expect(callWallTile?.querySelector('h6')).toBeNull();
   });
 });

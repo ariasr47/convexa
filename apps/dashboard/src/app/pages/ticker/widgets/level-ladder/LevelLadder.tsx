@@ -7,10 +7,14 @@
  * "derives the branded claim once and passes it … DOWN AS PROPS"). This component does not import
  * `LadderInput` or call `buildLadder`/`formatAnchorText` itself.
  *
- * Five rows through `FigureCell` (`register="traced"`), each with a tick beside it drawn from the
- * SAME `LevelPalette` object `StructureFieldCanvas` receives (criterion 7) — never a second colour
- * table, never a theme read of its own. The anchor is named once in the header (criterion 4), never
- * per row.
+ * REPAIR TASK item 2 (`STRUCTURE_HERO_REPAIR_TASK.md`) — the five rows are now ONE LINE each
+ * (`FigureRow`, `direction="row"`), not a `FigureCell` card: tick · label 12px steel · value Mono
+ * 14px 500 (18px 600 on the mid row, with a `tape` badge when the claim is live) · distance Mono
+ * 11px steel, right-aligned. `FigureRow` reuses the SAME `figureStateOf`/`FigureMarks` state
+ * machinery `FigureCell` does — this is a chrome change, not a hand-rolled state branch. The tick
+ * is drawn from the SAME `LevelPalette` object `StructureFieldCanvas` receives (criterion 7) — never
+ * a second colour table, never a theme read of its own. The anchor is named once in the header
+ * (criterion 4), never per row.
  *
  * A sixth row is a compile error at TWO places: `buildLadder`'s `LadderRows` return type
  * (`ladderModel.ts`) and the exhaustive `tickColor` switch below (`never` default arm), so adding a
@@ -22,7 +26,7 @@ import { typographyTokens } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { FigureCell } from '../_kit/FigureCell';
+import { FigureRow } from '../_kit/FigureCell';
 import type { LadderRow, LadderRows } from './ladderModel';
 
 export interface LevelLadderProps {
@@ -54,61 +58,98 @@ function tickColor(id: LadderRowId, palette: LevelPalette): string {
   }
 }
 
+/**
+ * The ladder's own stroke tick — a 14px horizontal line, the level's stroke, dashed for max pain
+ * (repair task item 2; `design/src/components/ladder.mjs:13`). Dashed ticks paint via `borderTop`
+ * (a solid `backgroundColor` bar cannot dash); `LevelLadder.spec.tsx`'s colour-identity assertions
+ * are edited accordingly for the one dashed row — see that file's own note.
+ */
 function LadderTick({ id, palette }: { id: LadderRowId; palette: LevelPalette }) {
+  const color = tickColor(id, palette);
+  const dashed = id === 'maxPain';
   return (
     <Box
       aria-hidden
       data-testid={`ladder-tick-${id}`}
       sx={{
-        width: 3,
-        alignSelf: 'stretch',
-        borderRadius: 999,
-        backgroundColor: tickColor(id, palette),
-        flex: '0 0 auto',
+        width: 14,
+        height: dashed ? 0 : 2,
+        flexShrink: 0,
+        alignSelf: 'center',
+        borderRadius: dashed ? 0 : 1,
+        ...(dashed ? { borderTop: `1px dashed ${color}` } : { backgroundColor: color }),
       }}
     />
   );
 }
 
 function LadderLine({ row, palette }: { row: LadderRow; palette: LevelPalette }) {
+  const big = row.id === 'mid';
   return (
-    <Stack direction="row" spacing={1} sx={{ alignItems: 'stretch' }}>
-      <LadderTick id={row.id} palette={palette} />
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <FigureCell
-          register="traced"
-          label={row.label}
-          value={row.price}
-          live={row.live}
-          offline={row.offline}
-          replay={row.replay}
-          caption={row.distance}
-        />
-      </Box>
-    </Stack>
+    <FigureRow
+      register="traced"
+      label={row.label}
+      value={row.price}
+      live={row.live}
+      offline={row.offline}
+      replay={row.replay}
+      caption={row.distance}
+      direction="row"
+      valueSize={big ? 18 : 14}
+      liveBadge={big ? 'tape' : undefined}
+      leading={<LadderTick id={row.id} palette={palette} />}
+    />
   );
 }
 
 export function LevelLadder({ rows, anchorText, palette }: LevelLadderProps) {
   return (
     <Box data-testid="level-ladder">
-      <Typography
-        component="p"
-        data-testid="level-ladder-anchor"
-        sx={{
-          fontFamily: typographyTokens.monoFontFamily,
-          fontSize: 11,
-          color: 'text.secondary',
-          mb: 1,
-        }}
+      <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+        <Typography
+          component="span"
+          sx={{
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em',
+            color: 'text.secondary',
+          }}
+        >
+          Levels
+        </Typography>
+        <Typography
+          component="p"
+          data-testid="level-ladder-anchor"
+          sx={{
+            fontFamily: typographyTokens.monoFontFamily,
+            fontSize: 11,
+            color: 'text.secondary',
+            m: 0,
+          }}
+        >
+          {`distance from levels @ ${anchorText}`}
+        </Typography>
+      </Stack>
+      <Box
+        sx={(theme) => ({
+          mt: '6px',
+          display: 'flex',
+          flexDirection: 'column',
+          [theme.containerQueries('panel').down(1000)]: {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+            gap: '8px',
+          },
+          [theme.containerQueries('panel').down(768)]: {
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          },
+        })}
       >
-        {`distance from levels @ ${anchorText}`}
-      </Typography>
-      <Stack spacing={1}>
         {rows.map((row) => (
           <LadderLine key={row.id} row={row} palette={palette} />
         ))}
-      </Stack>
+      </Box>
     </Box>
   );
 }

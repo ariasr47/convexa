@@ -134,6 +134,10 @@ describe('LevelLadder — D-14, the absent-level literal (criterion 5)', () => {
 });
 
 describe('LevelLadder — tick colour identity (criterion 7)', () => {
+  // Repair task item 2: the max-pain tick is now DASHED (`design/src/components/ladder.mjs:13`), so
+  // it paints via `borderTopColor` (a solid `backgroundColor` bar cannot dash) — the other four
+  // solid ticks are unchanged (`backgroundColor`). This is the one assertion shape this task's tick
+  // redesign changes; every value still traces to the SAME `LevelPalette` object.
   it("each row's tick reads from the SAME palette object, by identity", () => {
     wrap(FULL_INPUT, PALETTE);
     expect(screen.getByTestId('ladder-tick-callWall')).toHaveStyle({
@@ -143,7 +147,7 @@ describe('LevelLadder — tick colour identity (criterion 7)', () => {
       backgroundColor: PALETTE.putWall,
     });
     expect(screen.getByTestId('ladder-tick-maxPain')).toHaveStyle({
-      backgroundColor: PALETTE.maxPain,
+      borderTopColor: PALETTE.maxPain,
     });
     expect(screen.getByTestId('ladder-tick-gammaFlip')).toHaveStyle({
       backgroundColor: PALETTE.gammaFlip,
@@ -154,11 +158,15 @@ describe('LevelLadder — tick colour identity (criterion 7)', () => {
   it('no ladder tick uses a colour the palette does not carry', () => {
     wrap(FULL_INPUT);
     const values = Object.values(PALETTE).map((v) => v.replace(/\s+/g, ''));
-    for (const id of ['callWall', 'putWall', 'maxPain', 'gammaFlip', 'mid']) {
+    for (const id of ['callWall', 'putWall', 'gammaFlip', 'mid']) {
       const tick = screen.getByTestId(`ladder-tick-${id}`);
       const painted = getComputedStyle(tick).backgroundColor.replace(/\s+/g, '');
       expect(values).toContain(painted);
     }
+    // Max pain is the dashed tick — its colour lives on `borderTopColor`, not `backgroundColor`.
+    const maxPainTick = screen.getByTestId('ladder-tick-maxPain');
+    const maxPainColor = getComputedStyle(maxPainTick).borderTopColor.replace(/\s+/g, '');
+    expect(values).toContain(maxPainColor);
   });
 });
 
