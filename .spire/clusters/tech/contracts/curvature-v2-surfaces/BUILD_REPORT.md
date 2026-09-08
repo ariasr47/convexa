@@ -2266,3 +2266,76 @@ orphan left on :8000, :4200, :4300, IPv4 or IPv6.
    `docs/research/...` sibling noise present; the sibling directory was left alone).
 
 ---
+
+## GATE Z repair, pass 2 — GATE Q FAIL (91/4/0), findings 1–3, one latent duplicate, one observation
+
+GATE Q returned **91 PASS / 4 FAIL / 0 UNVERIFIABLE** at HEAD `0304132d` (unchanged before and after
+this pass). Criterion 7a stays an open owner decision, untouched. The three findings below are this
+lane's; the two follow-ups (a latent FE-5 duplicate, the `/positions` offline observation) were
+raised by QA but not classified as failures.
+
+### 1. Findings 1 + 2 (criteria 9, 12 — SB) — the scanner table discarded the live-price overlay
+
+**Diagnosis, confirmed at source before touching anything.** `Scanner.tsx:93-107`'s `groups` was
+built from `scan.rows` — the raw, UN-overlaid polled rows — while `displayRows` (`:119-128`) applied
+the live-price overlay on top. `ScanTable.tsx:290`'s `sections = groups ?? [{ rows }]` prefers
+`groups` whenever it is defined, which is every non-account view (index-first-defaults AC-3's
+zero-state lead-group partition) — the default. So the table rendered `groups[].rows` (no overlay)
+while `ScanCardList` rendered `displayRows` (overlaid) — the exact QA reproduction: table `SPY —`
+(`data-figure-state="empty"`), card `111.11` (`default`), same frame. Finding 2 was downstream of
+finding 1: `priceOffline(sym)` (`Scanner.tsx:136-140`) keys on `live.prices[sym]` — real provenance —
+but because the table never rendered the overlaid row, a stream drop could show the `offline-retained`
+arm (dim + stroke pause + `offline · last known`) over the STALE, un-overlaid value, which on some
+rows is the closed-nine `—` — a "last known" claim over nothing known.
+
+**Fix, one mechanism, no second overlay implementation** (`Scanner.tsx`): `groups` is unchanged
+(the structural partition), but a new `displayGroups` is derived by RE-SLICING `displayRows` — which
+is exactly `polledRows` (= `groups.flatMap(g => g.rows)`) overlaid, in the same order — by each
+group's original length. `ScanTable`'s `groups` prop now receives `displayGroups`, never the raw
+`groups`. This was the option the task text preferred ("derive `groups` from `displayRows`") over
+patching `ScanTable` to prefer one prop: `ScanTable`'s own doc comment already declares the invariant
+"`rows` must equal the concatenation [of `groups`]", and slicing the ALREADY-overlaid `displayRows`
+by the original partition lengths is the only change that keeps that invariant true while introducing
+no second copy of the overlay logic (the risk `Scanner.tsx`'s own `[best-effort-isolated-or-null]`
+comment already names). Finding 2 required no separate code change: once the table renders the
+overlaid row, `priceOffline`'s existing predicate (`live.offline && live.prices[sym] != null`) is
+already the correct provenance test against the value actually on screen — verified, not assumed (see
+below).
+
+**Regression test — reaches the defect the old one could not.** `scanner.register.spec.tsx`'s
+existing `renderBoth` helper renders `ScanTable` directly with **no** `groups` prop at all, and its
+`installLiveBackend` fixture deliberately used `view.source: 'account'` specifically to SKIP the
+lead-group partition ("exercises `displayRows` directly rather than the zero-state lead-group path" —
+its own comment) — so neither existing test could structurally reach `groups` being defined. The new
+describe block ("GATE Z findings 1 + 2 (criteria 9, 12 — SB) — the table and card must agree on a
+GROUPED view") mounts the REAL `<Scanner/>` component with `view.source: 'default'` and a megacap
+symbol (`SPY`, in the closed `isIndexMegacap` set) so `groups` IS defined, plus a non-megacap symbol
+(`AAA`) landing in `rest` — exercising both partition slices. `@mui/material/useMediaQuery` is
+mocked so the SAME test can force `isNarrow` false (table) then true (card) against the SAME
+fetch stub and the SAME `EventSource` event sequence, reading both layouts back for direct
+comparison — jsdom has no `matchMedia`, so without this mock `<Scanner/>` can only ever render the
+table, which is exactly why the OLD tests never rendered `<Scanner/>` at all.
+
+**Poison run, confirmed red.** Temporarily reverted `groups={displayGroups}` → `groups={groups}` in
+`Scanner.tsx` and re-ran the new test: `AssertionError: expected { text: '500.00', state: 'default'
+} to deeply equal { text: '511.00', state: 'default' }` — the table showed the raw swept price
+(500.00) instead of the overlaid live tick (511.00), reproducing QA's exact defect shape. Reverted;
+green again.
+
+**Measured, before/after, in the new test's own assertions (browser-equivalent — a real `<Scanner/>`
+mount, real `EventSource` events, real DOM read):**
+- Live tick, same frame: table `cell-price` = `511.00` / `default`; card `cell-price` = `511.00` /
+  `default` — **identical**.
+- Never-ticked symbol (`AAA`), same frame: table = `50.00` / `default`; card = `50.00` / `default` —
+  **identical**, never `offline-bare` (criterion 13 unaffected).
+- Stream drop: table `cell-price` (`SPY`) = `511.00` / `offline-retained`, caption `offline · last
+  known`; card = **identical**. `AAA` stays `50.00` / `default` on both — no false retained claim on
+  a symbol with nothing streamed.
+- No `offline-retained` member ever carries the closed-nine `—` — every retained value observed was a
+  real formatted number.
+
+**Verification, exit codes:** `npx nx test @convexa/dashboard --skip-nx-cache -- src/app/pages/scanner/scanner.register.spec.tsx` **exit 0, 52/52** (was 51 before this task's one new test). Full suite
+below (§4).
+
+**Files:** `apps/dashboard/src/app/pages/scanner/Scanner.tsx`,
+`apps/dashboard/src/app/pages/scanner/scanner.register.spec.tsx`.

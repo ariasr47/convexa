@@ -127,6 +127,23 @@ export function Scanner() {
     [polledRows, live.prices],
   );
 
+  // GATE Z, finding 1 (criterion 9, SB) — `groups` MUST carry the overlaid rows, never the raw
+  // `scan.rows` partition, or the table (which prefers `groups` over `rows` whenever `groups` is
+  // defined — every non-account view, `ScanTable.tsx:290`) renders a different price than the card
+  // for the same symbol in the same frame. `polledRows` is exactly `groups.flatMap(g => g.rows)`
+  // (see above) and `displayRows` is `polledRows` overlaid IN THE SAME ORDER, so re-slicing
+  // `displayRows` by each group's original length reconstructs the identical partition with the
+  // live overlay applied — one overlay implementation, not two, so the two layouts cannot drift.
+  const displayGroups = useMemo<ScanGroup[] | undefined>(() => {
+    if (!groups) return undefined;
+    let offset = 0;
+    return groups.map((g) => {
+      const rows = displayRows.slice(offset, offset + g.rows.length);
+      offset += g.rows.length;
+      return { ...g, rows };
+    });
+  }, [groups, displayRows]);
+
   // SPEC §2.2 — the ONE predicate, computed once, in shipped constants: the outer null/non-null is
   // the STREAM's own state, the inner boolean is the DATUM's provenance. `retained: true` only when
   // the displayed price came from the now-dead stream; a symbol that never ticked keeps the polled
@@ -249,7 +266,7 @@ export function Scanner() {
           nowS={scan.nowS}
           flashActive={flashActive}
           onSort={scan.setSort}
-          groups={groups}
+          groups={displayGroups}
           deltas={scan.deltas}
           priceOffline={priceOffline}
         />

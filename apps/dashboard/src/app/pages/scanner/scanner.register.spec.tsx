@@ -13,6 +13,17 @@
  *   FE-4 — 12 (the F4 retained arm, driven by a real EventSource event, never the clock), 13
  *   (offline-bare is unreachable on scanner prices, by construction), 14 (no price flash while the
  *   stream is down), 16 (worker-down keeps every figure's register, blanks no row).
+ *
+ *   GATE Z repair (QA_REPORT.md findings 1 + 2) — the old criterion-9 coverage above rendered
+ *   `ScanTable` directly with NO `groups` prop (`renderBoth`, below) and `installLiveBackend` used
+ *   `view.source: 'account'` specifically to skip the zero-state lead-group partition — so neither
+ *   test could ever reach `Scanner.tsx`'s real `groups` computation, which is exactly where the
+ *   defect lived (`groups` built from the un-overlaid `scan.rows`, discarding the live-price
+ *   overlay whenever `groups` is defined — every non-account view). The new describe block below
+ *   mounts the REAL `<Scanner/>` page with a `source: 'default'` view (so `groups` IS defined, via
+ *   the closed `isIndexMegacap` lead-group set) and forces `isNarrow` via a mocked `useMediaQuery`
+ *   so the SAME page, the SAME fetch stub and the SAME `EventSource` event sequence can be read
+ *   back from both the table and the card — reaching the defect the old test structurally could not.
  */
 import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
@@ -21,15 +32,21 @@ import { figureStateOf } from '@/shared/figure';
 import { theme } from '@/shared/theme/theme';
 import type { ScanRow } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { SCAN_COPY } from './labels';
 import { ScanCardList } from './ScanCard';
 import { Scanner } from './Scanner';
 import { makeRow } from './scanner.risk.spec';
 import { ScanTable } from './ScanTable';
+
+// Mocked so a single test can force the SAME `<Scanner/>` tree through both layouts (jsdom has no
+// `matchMedia`, so the real hook always resolves narrow=false — the gap `renderBoth` below works
+// around by never mounting `<Scanner/>` at all, which is exactly why it cannot see this defect).
+vi.mock('@mui/material/useMediaQuery', () => ({ default: vi.fn(() => false) }));
 
 afterEach(() => {
   cleanup();
@@ -516,6 +533,153 @@ describe('criteria 12 + 13 (SB) — the price stream drop, driven by the EVENT n
     const row = screen.getByTestId('scan-row');
     expect(row.querySelector('svg[data-testid="PauseIcon"]')).toBeNull();
     expect(within(row).getByTestId('cell-price')).toHaveAttribute('data-figure-state', 'default');
+  });
+});
+
+describe('GATE Z findings 1 + 2 (criteria 9, 12 — SB) — the table and card must agree on a GROUPED view', () => {
+  beforeEach(() => {
+    CapturingEventSource.instances = [];
+    vi.stubGlobal('EventSource', CapturingEventSource as unknown as typeof EventSource);
+  });
+
+  // The mock is module-scoped (persists across tests in this FILE, not just this describe block) —
+  // reset it to the jsdom-accurate default (no `matchMedia` ⇒ desktop) so a later, unrelated test
+  // never inherits this block's `isNarrow: true` pass.
+  afterEach(() => {
+    (useMediaQuery as unknown as Mock).mockReturnValue(false);
+  });
+
+  /** `source: 'default'` (NOT `'account'`) so `Scanner.tsx`'s own zero-state lead-group partition
+   *  runs and `groups` is DEFINED — QA_REPORT.md finding 1's exact reproduction condition
+   *  ("whenever `groups` is defined — the default non-account view, i.e. the default"). SPY is in
+   *  the closed `isIndexMegacap` set (`labels.ts`), so it lands in the lead group; `AAA` is not, so
+   *  it lands in `rest` — exercising BOTH groups' slice of the overlay. */
+  function installGroupedLiveBackend(rows: ScanRow[]) {
+    const nowS = Date.now() / 1000;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        const json = (b: unknown) =>
+          new Response(JSON.stringify(b), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        if (url.includes('/api/auth/session'))
+          return json({
+            authenticated: true,
+            user: { id: 'u1', email: 'a@x.com', display_name: null, auth_methods: ['password'] },
+            google_available: false,
+            settings: { active_persona_id: null, default_ticker: null, theme: 'dark' },
+          });
+        if (url.includes('/api/scan/universe'))
+          return json({ symbols: rows.map((r) => r.symbol), universe_size: rows.length });
+        if (url.includes('/api/scan'))
+          return json({
+            view: {
+              source: 'default',
+              authenticated: true,
+              name: null,
+              symbols: rows.map((r) => r.symbol),
+              sort: { key: 'score', dir: 'desc' },
+              density: 'compact',
+            },
+            rows,
+            sweep: { updated_at: nowS, sweep_last_completed: nowS, universe_size: rows.length },
+          });
+        throw new Error(`Unexpected fetch in test: ${url}`);
+      }),
+    );
+  }
+
+  function readPriceCell(root: HTMLElement) {
+    const el = within(root).getByTestId('cell-price');
+    return { text: el.textContent, state: el.getAttribute('data-figure-state') };
+  }
+
+  it('the table (desktop) and the card (mobile) render the identical price + state for the SAME symbol in the SAME frame — live, then on a stream drop', async () => {
+    const rows = [
+      makeRow({ symbol: 'SPY', price: 500, score: 82 }), // lead (megacap)
+      makeRow({ symbol: 'AAA', price: 50, score: 40 }), // rest
+    ];
+
+    // ---- Desktop pass: the table ----
+    (useMediaQuery as unknown as Mock).mockReturnValue(false);
+    installGroupedLiveBackend(rows);
+    const tablePage = render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <AuthProvider>
+            <AuthDialogProvider>
+              <Scanner />
+            </AuthDialogProvider>
+          </AuthProvider>
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    await screen.findByTestId('scan-table');
+    const tableEs = CapturingEventSource.instances[0];
+    act(() => {
+      tableEs.onmessage?.({
+        data: JSON.stringify({ prices: { SPY: { price: 511, ts: 1 } } }),
+      } as MessageEvent);
+    });
+    const tableRows = screen.getAllByTestId('scan-row');
+    const tableSpy = tableRows.find((r) => r.getAttribute('data-symbol') === 'SPY') as HTMLElement;
+    const tableAaa = tableRows.find((r) => r.getAttribute('data-symbol') === 'AAA') as HTMLElement;
+    const tableSpyLive = readPriceCell(tableSpy);
+    const tableAaaLive = readPriceCell(tableAaa);
+    // Sanity: the live tick actually landed on the TABLE (pre-fix this was the broken arm: the
+    // table discarded `displayRows` whenever `groups` was defined, so this would have stayed the
+    // raw swept `500.00`/`default` instead of the overlaid `511.00`).
+    expect(tableSpyLive).toEqual({ text: '511.00', state: 'default' });
+
+    act(() => tableEs.onerror?.(new Event('error')));
+    const tableSpyOffline = readPriceCell(tableSpy);
+    const tableAaaOffline = readPriceCell(tableAaa);
+    tablePage.unmount();
+
+    // ---- Mobile pass: the SAME data, the SAME live sequence, the card ----
+    CapturingEventSource.instances = [];
+    (useMediaQuery as unknown as Mock).mockReturnValue(true);
+    installGroupedLiveBackend(rows);
+    const cardPage = render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <AuthProvider>
+            <AuthDialogProvider>
+              <Scanner />
+            </AuthDialogProvider>
+          </AuthProvider>
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    await screen.findByTestId('scan-cards');
+    const cardEs = CapturingEventSource.instances[0];
+    act(() => {
+      cardEs.onmessage?.({
+        data: JSON.stringify({ prices: { SPY: { price: 511, ts: 1 } } }),
+      } as MessageEvent);
+    });
+    const cards = screen.getAllByTestId('scan-card');
+    const cardSpy = cards.find((c) => c.getAttribute('data-symbol') === 'SPY') as HTMLElement;
+    const cardAaa = cards.find((c) => c.getAttribute('data-symbol') === 'AAA') as HTMLElement;
+
+    // GATE Z finding 1 — one datum, one render, in BOTH layouts.
+    expect(readPriceCell(cardSpy), 'SPY live: table vs card').toEqual(tableSpyLive);
+    expect(readPriceCell(cardAaa), 'AAA (never ticked) live: table vs card').toEqual(tableAaaLive);
+
+    act(() => cardEs.onerror?.(new Event('error')));
+    // GATE Z finding 2 — the retained arm never claims "last known" over nothing: it agrees with
+    // the table's own offline read, which (finding 1 fixed) is now the overlaid value.
+    expect(readPriceCell(cardSpy), 'SPY offline: table vs card').toEqual(tableSpyOffline);
+    expect(readPriceCell(cardAaa), 'AAA offline: table vs card').toEqual(tableAaaOffline);
+    expect(tableSpyOffline.state).toBe('offline-retained');
+    expect(tableSpyOffline.text).not.toBe('—'); // never an "offline · last known" claim over nothing
+    expect(within(cardSpy).getByTestId('cell-price-caption')).toHaveTextContent(
+      'offline · last known',
+    );
+    cardPage.unmount();
   });
 });
 
