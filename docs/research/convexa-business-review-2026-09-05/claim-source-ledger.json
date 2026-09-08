@@ -1,0 +1,329 @@
+[
+  {
+    "claim_context": "The units are the approximate change in dollar delta exposure for that move, not option premium, market capitalization or a directly observed future order. An option bought long has positive gamma whether it is a call or a put. The sign of a dealer's exposure depends on the dealer's position, not the option type. [OIC: Gamma](https://www.optionseducation.org/advancedconcepts/gamma), undated, accessed September 2026.",
+    "sources": [
+      {
+        "title": "OIC: Gamma",
+        "url": "https://www.optionseducation.org/advancedconcepts/gamma",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "Cboe's transaction-level SPX analysis explains why gross activity can coexist with small net market-maker exposure: customer purchases and sales can offset. Its findings apply to the studied SPX 0DTE sample and should not be generalized into “gamma never matters.” [Cboe, Mandy Xu: Much Ado About 0DTEs](https://www.cboe.com/insights/posts/volatility-insights-evaluating-the-market-impact-of-spx-0-dte-options), September 8, 2023.",
+    "sources": [
+      {
+        "title": "Cboe, Mandy Xu: Much Ado About 0DTEs",
+        "url": "https://www.cboe.com/insights/posts/volatility-insights-evaluating-the-market-impact-of-spx-0-dte-options",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "Research on gamma fragility supports conditional relationships involving inventory proxies and liquidity; it does not validate Convexa's implementation, thresholds or executable returns. [Barbon and Buraschi: Gamma Fragility](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3725454), March 2021 revision; the abstract was available in research, but a direct full-paper retrieval failed. Treat its conclusions at that level of access.",
+    "sources": [
+      {
+        "title": "Barbon and Buraschi: Gamma Fragility",
+        "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3725454",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "Use contract-specific last-trading and settlement timestamps, exchange timezones, holidays and half-days. Define 0DTE by the exchange session's expiration date, independently of a numerical floor. SPX and SPXW also have different expiration/settlement conventions; do not apply one equity-close rule everywhere. [Cboe: SPX product specifications](https://www.cboe.com/tradable-products/sp-500/spx-options/spx-specifications), current official specifications.",
+    "sources": [
+      {
+        "title": "Cboe: SPX product specifications",
+        "url": "https://www.cboe.com/tradable-products/sp-500/spx-options/spx-specifications",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "This is aggregate intrinsic payout at expiration under the included OI, not traders' total realized pain: it excludes premiums paid, hedges, closing trades and later OI changes. Research documents strike-price clustering around option expiration, but that does not prove that this exact minimum predicts settlement or ordinary intraday targets. [Ni, Pearson and Poteshman: Stock price clustering on option expiration dates](https://experts.illinois.edu/en/publications/stock-price-clustering-on-option-expiration-dates/), Journal of Financial Economics, October 2005.",
+    "sources": [
+      {
+        "title": "Ni, Pearson and Poteshman: Stock price clustering on option expiration dates",
+        "url": "https://experts.illinois.edu/en/publications/stock-price-clustering-on-option-expiration-dates/",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "Adjusted contracts can contain cash or nonstandard deliverables; simply replacing 100 with a shares field is not sufficient in every case. [OIC: Splits, mergers, spinoffs and bankruptcies](https://www.optionseducation.org/referencelibrary/faq/splits-mergers-spinoffs-bankruptcies), current reference. Massive's historical methodology describes a binomial model with rates and dividends, which illustrates why its Greeks need not reconcile with Convexa's simpler analytic curve; confirm current model conventions with the provider. [Massive: Greeks and Implied Volatility](https://massive.com/blog/greeks-and-implied-volatility), March 22, 2022.",
+    "sources": [
+      {
+        "title": "OIC: Splits, mergers, spinoffs and bankruptcies",
+        "url": "https://www.optionseducation.org/referencelibrary/faq/splits-mergers-spinoffs-bankruptcies",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      },
+      {
+        "title": "Massive: Greeks and Implied Volatility",
+        "url": "https://massive.com/blog/greeks-and-implied-volatility",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "Rolling-origin methods ensure forecasts use earlier observations; repeated strategy searches can overfit even a reused holdout. [Hyndman/forecast: tsCV documentation](https://pkg.robjhyndman.com/forecast/reference/tsCV.html), current documentation; [Bailey, Borwein, Lopez de Prado and Zhu: The Probability of Backtest Overfitting](https://www.davidhbailey.com/dhbpapers/backtest-prob.pdf), revised February 27, 2015. These sources support the method, not Convexa's performance.",
+    "sources": [
+      {
+        "title": "Hyndman/forecast: tsCV documentation",
+        "url": "https://pkg.robjhyndman.com/forecast/reference/tsCV.html",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      },
+      {
+        "title": "Bailey, Borwein, Lopez de Prado and Zhu: The Probability of Backtest Overfitting",
+        "url": "https://www.davidhbailey.com/dhbpapers/backtest-prob.pdf",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "A disclaimer alone does not determine whether a paid service is investment advice. Personalized recommendations based on a subscriber's portfolio, risk budget or needs deserve a focused US securities-law review before public release. The SEC's publisher-exclusion guidance is fact-specific, including impersonality, bona fide analysis and general/regular circulation; a website or “educational” label does not settle it. [SEC: Jonathon Hendricks staff response](https://www.sec.gov/divisions/investment/noaction/2015/jonathon-hendricks-012615-202a.htm), January 26, 2015. Automated advice can still be advisory activity. [SEC: Robo-adviser guidance announcement](https://www.sec.gov/newsroom/press-releases/2017-52), February 23, 2017.",
+    "sources": [
+      {
+        "title": "SEC: Jonathon Hendricks staff response",
+        "url": "https://www.sec.gov/divisions/investment/noaction/2015/jonathon-hendricks-012615-202a.htm",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      },
+      {
+        "title": "SEC: Robo-adviser guidance announcement",
+        "url": "https://www.sec.gov/newsroom/press-releases/2017-52",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "This is a scoping issue for the public product, not a conclusion that Convexa must register. Start with general analytics and factual explanations while obtaining advice on the actual offer, jurisdictions and communications. If regulated-adviser marketing rules apply, hypothetical performance has specific requirements; in every case keep performance descriptions complete and substantiated. [SEC: Investment Adviser Marketing compliance guide](https://www.sec.gov/resources-small-businesses/small-business-compliance-guides/investment-adviser-marketing), April 28, 2021, current official guide.",
+    "sources": [
+      {
+        "title": "SEC: Investment Adviser Marketing compliance guide",
+        "url": "https://www.sec.gov/resources-small-businesses/small-business-compliance-guides/investment-adviser-marketing",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "Official current pricing: [Massive personal options](https://massive.com/pricing?product=options), [Massive Business](https://massive.com/business-options), [ThetaData](https://www.thetadata.net/pricing), [Theta commercial](https://www.thetadata.net/commercial-use), [Databento](https://databento.com/pricing), [ORATS Data API](https://orats.com/data-api), [Intrinio](https://intrinio.com/pricing). These are list anchors, not a purchase recommendation or a negotiated all-in cost sheet. Commercial Theta billing commitment should be confirmed because page-toggle extraction was ambiguous.",
+    "sources": [
+      {
+        "title": "Massive personal options",
+        "url": "https://massive.com/pricing?product=options",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      },
+      {
+        "title": "Massive Business",
+        "url": "https://massive.com/business-options",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      },
+      {
+        "title": "ThetaData",
+        "url": "https://www.thetadata.net/pricing",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      },
+      {
+        "title": "Theta commercial",
+        "url": "https://www.thetadata.net/commercial-use",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      },
+      {
+        "title": "Databento",
+        "url": "https://databento.com/pricing",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      },
+      {
+        "title": "ORATS Data API",
+        "url": "https://orats.com/data-api",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      },
+      {
+        "title": "Intrinio",
+        "url": "https://intrinio.com/pricing",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "The app uses the current option-chain snapshot endpoint. Its OI represents positions at the previous trading day's close, and Greeks can be absent; underlying freshness depends on stock-data entitlement. Long trade/quote history does not establish that an old full chain with contemporaneous OI/Greeks can be retrieved. [Massive: Option Chain Snapshot](https://massive.com/docs/rest/options/snapshots/option-chain-snapshot), current documentation.",
+    "sources": [
+      {
+        "title": "Massive: Option Chain Snapshot",
+        "url": "https://massive.com/docs/rest/options/snapshots/option-chain-snapshot",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "Massive's Business offering includes FMV, Greeks/IV, daily OI and files, with raw trade/quote expansions separately priced. It also advertises startup discounts. The order form and upstream agreements control the specific use; confirm your derived charts, alerts, archive retention and LLM inputs explicitly. [Massive Business terms](https://massive.com/legal/businesses-terms-of-service), current terms. The options business price alone does not establish the cost of your stocks/index requirements.",
+    "sources": [
+      {
+        "title": "Massive Business terms",
+        "url": "https://massive.com/legal/businesses-terms-of-service",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "Historical OI is prior-day ending OI; the API documents publication timing. Its current historical all-Greeks model floors remaining time at one hour, while the older version uses a fixed 0DTE convention. Test the last hour instead of assuming third-party Greeks solve Convexa's clock issues. [Theta historical OI](https://docs.thetadata.us/operations/option_history_open_interest.html); [Theta all-Greeks history](https://docs.thetadata.us/operations/option_history_greeks_all.html), current v3 docs. Account concurrency is finite despite “unlimited requests.” Start with a few representative symbol/dates and an appropriate plan; do not subscribe broadly before confirming the required request types.",
+    "sources": [
+      {
+        "title": "Theta historical OI",
+        "url": "https://docs.thetadata.us/operations/option_history_open_interest.html",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      },
+      {
+        "title": "Theta all-Greeks history",
+        "url": "https://docs.thetadata.us/operations/option_history_greeks_all.html",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "Databento advertises OPRA history, instrument definitions and consistent live/historical formats; coverage start varies by schema. It does not provide precomputed Greeks, so rates, dividends, corporate actions, exact expiry and underlying synchronization become your responsibility. [Databento options data](https://databento.com/options), current page. Its pricing FAQ explicitly passes through the original publisher's restrictions. Retire the old roadmap's “$199 commercially clean” assumption; a June 2025 plan announcement is not a verified September 2026 public-display contract.",
+    "sources": [
+      {
+        "title": "Databento options data",
+        "url": "https://databento.com/options",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "ORATS' live-derived feed supplies analytics without raw OPRA bid/ask, sizes or volume; those fields are null, and its immediate underlying price can be parity-derived. This may suit structural analytics but cannot validate executable fills. [ORATS: Live Derived Data API](https://orats.com/docs/live-derived-data-api), current documentation.",
+    "sources": [
+      {
+        "title": "ORATS: Live Derived Data API",
+        "url": "https://orats.com/docs/live-derived-data-api",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "Intrinio's Startup plan advertises commercial display rights, unlike its $150 personal plan. OptionsEdge supplies synthetic midpoint-style prices and Greeks but no historical OptionsEdge series. OI entitlement, SPX/SPXW coverage, historical chain fields and permission for Convexa's specific outputs remain open questions. [Intrinio OptionsEdge](https://intrinio.com/options/optionsedge), current product page. This is the most interesting lower-cost display proposal to qualify, not yet a verified complete replacement.",
+    "sources": [
+      {
+        "title": "Intrinio OptionsEdge",
+        "url": "https://intrinio.com/options/optionsedge",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "Tradier can be useful for a personal brokerage workflow, but its documented Greeks update hourly and production market-data calls are rate-limited; it is not a free public-data workaround or a direct last-hour gamma solution. [Tradier market data](https://docs.tradier.com/docs/market-data); [rate limits](https://docs.tradier.com/docs/rate-limiting), current docs.",
+    "sources": [
+      {
+        "title": "Tradier market data",
+        "url": "https://docs.tradier.com/docs/market-data",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      },
+      {
+        "title": "rate limits",
+        "url": "https://docs.tradier.com/docs/rate-limiting",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "Cboe DataShop offers interval options quotes and optional OI/Greeks for a carefully scoped benchmark purchase. Index underlying data can require separate licensing. Its enhanced trade detail adds participant/open-close information for C1, delivered T+1; that is useful for testing inventory assumptions, not a consolidated real-time dealer book. [Cboe Option Quotes](https://datashop.cboe.com/option-quote-intervals); [enhanced trade detail](https://datashop.cboe.com/enhanced-us-options-trade-by-trade-execution-detail), current product pages.",
+    "sources": [
+      {
+        "title": "Cboe Option Quotes",
+        "url": "https://datashop.cboe.com/option-quote-intervals",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      },
+      {
+        "title": "enhanced trade detail",
+        "url": "https://datashop.cboe.com/enhanced-us-options-trade-by-trade-execution-detail",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "The official OPRA schedule lists $1,500 monthly redistribution, with a $650 query-only category that excludes auto-refresh and has other conditions. Its redistribution line covers current **and delayed** data, with a historical-only exception. Non-display categories and per-user charges have separate definitions. Do not add every fee mechanically to every derived chart; get the precise classification. Equally, do not assume “15-minute delayed” means license-free. [OPRA Fee Schedule](https://cdn.opraplan.com/documents/OPRA_Fee_Schedule.pdf), current linked schedule, pages 1 and 6.",
+    "sources": [
+      {
+        "title": "OPRA Fee Schedule",
+        "url": "https://cdn.opraplan.com/documents/OPRA_Fee_Schedule.pdf",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "FlashAlpha currently advertises GEX, other Greek exposures, 0DTE analytics, scanners, AI narratives and historical replay. Monthly API tiers are Basic $79, Growth $299 and Alpha $1,499; annual equivalents are lower. It explicitly excludes redistribution, embedding, white-label and publisher licensing across its plans. Use it as a reference or permitted personal research input, not the planned public Convexa backend. Its performance and historical-completeness claims were not independently benchmarked. [FlashAlpha pricing and licensing](https://flashalpha.com/pricing), current page.",
+    "sources": [
+      {
+        "title": "FlashAlpha pricing and licensing",
+        "url": "https://flashalpha.com/pricing",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  },
+  {
+    "claim_context": "Sources: [SpotGamma Support](https://support.spotgamma.com/hc/en-us/articles/1500002666102-What-is-the-cost-of-a-SpotGamma-Subscription), [MenthorQ pricing](https://menthorq.com/pricing/), [Tradytics pricing](https://tradytics.com/), [Unusual Whales plans](https://unusualwhales.com/pricing), [GammaEdge](https://www.gammaedge.com/), all current pages accessed September 2026. First-month offers, Labor Day promotions and annual equivalents are excluded from the table. Feature placement should be confirmed at checkout; marketing-page comparisons sometimes lose included/excluded styling when extracted.",
+    "sources": [
+      {
+        "title": "SpotGamma Support",
+        "url": "https://support.spotgamma.com/hc/en-us/articles/1500002666102-What-is-the-cost-of-a-SpotGamma-Subscription",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      },
+      {
+        "title": "MenthorQ pricing",
+        "url": "https://menthorq.com/pricing/",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      },
+      {
+        "title": "Tradytics pricing",
+        "url": "https://tradytics.com/",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      },
+      {
+        "title": "Unusual Whales plans",
+        "url": "https://unusualwhales.com/pricing",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      },
+      {
+        "title": "GammaEdge",
+        "url": "https://www.gammaedge.com/",
+        "accessed": "2026-09-05 Pacific / 2026-09-06 UTC",
+        "date_note": "See date in claim context; otherwise undated current page"
+      }
+    ]
+  }
+]
