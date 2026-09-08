@@ -320,9 +320,15 @@ export function StructureHeroPanel({
       info={HERO_INFO}
       span={2}
       bodyPad="none"
+      // PASS 2 change 7: the design's `● mid · tape` chip (`widgetHead(..., { live })`) sits BESIDE
+      // the title, not inside `actions` — moved here from the `actions` Stack below so it keeps that
+      // adjacency once the header wraps at narrow widths (`Widget.tsx`'s new `titleBadge` slot).
+      // Gating (`claim &&`) and the chip itself are unchanged — same testid, same live-gate, same
+      // tests (`StructureHeroPanel.spec.tsx`'s "the header's ● mid · tape chip" block asserts
+      // presence/text/gating only, not its container, so it stays green unmodified).
+      titleBadge={claim && <MidTapeChip />}
       actions={
         <Stack direction="row" spacing={1.75} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-          {claim && <MidTapeChip />}
           <FieldLegend />
           <ToggleButtonGroup
             exclusive

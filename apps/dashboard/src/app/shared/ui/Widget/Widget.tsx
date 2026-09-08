@@ -55,6 +55,14 @@ export interface WidgetProps {
   icon?: ReactNode;
   subtitle?: ReactNode;
   info?: string;
+  /**
+   * PASS 2 change 7 — an opt-in marker rendered BESIDE the title, in the title's own header row
+   * (the design's `widgetHead(title, { live })` chip, `design/src/lib.mjs:439`) — distinct from
+   * `actions`, which is a separate flex region that wraps to its own row below `sm`. Unset by
+   * default: every existing widget's header is byte-identical. Not the `live` boolean below (that
+   * stays a border pulse only, "not header content" — see its own doc comment).
+   */
+  titleBadge?: ReactNode;
   /** Live accent pulses ONLY when this is true (`isLive && !streamOffline`); frozen otherwise.
    *  Branded (FE-1, SPEC §2.1 invariant 1): only `isDeliveringLive(...)`/`andPresent(...)`/
    *  `NOT_LIVE` can produce this value — a raw boolean does not type-check here. */
@@ -129,6 +137,7 @@ export function Widget({
   icon,
   subtitle,
   info,
+  titleBadge,
   live: liveClaim = NOT_LIVE,
   watch = false,
   actions,
@@ -237,7 +246,20 @@ export function Widget({
         </Tooltip>
       )}
 
-      <Box sx={{ minWidth: 0, flex: 1 }}>
+      <Box
+        sx={{
+          minWidth: 0,
+          flex: 1,
+          // PASS 2 change 7 (hero header collapse at 390): `flex: 1` alone is a 0% flex-basis, so
+          // this region's "hypothetical main size" for the wrap check is ~0 — the browser always
+          // finds room for it beside `actions` (`flexShrink: 0`, never 0-basis) by shrinking the
+          // title to nothing (`S…`) instead of ever wrapping the header row. Below `sm` the title
+          // region keeps the FULL row so wrap is deterministic — `actions` moves to row two instead
+          // (`design/src/lib.mjs`'s `widgetHead`: title [+ its own `live` chip] occupies one row,
+          // `actions` the next). At `sm`+, unchanged (`auto` restores the original shared-row fit).
+          flexBasis: { xs: '100%', sm: 'auto' },
+        }}
+      >
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
           {icon && <Box sx={{ display: 'inline-flex', color: 'text.secondary' }}>{icon}</Box>}
           {/* h2 ELEMENT (heading order: page h1 → widget h2), h6 STYLING unchanged (Stage 0 item 3). */}
@@ -254,6 +276,11 @@ export function Widget({
           >
             {title}
           </Typography>
+          {/* PASS 2 change 7: the design's `widgetHead(title, { live })` chip sits BESIDE the title,
+              in this SAME row — never inside `actions` (a different flex region that wraps
+              separately below `sm`). Opt-in; unset by default (byte-identical for every other
+              widget). `StructureHeroPanel`'s `● mid · tape` chip is the first (only) consumer. */}
+          {titleBadge}
           {info && <AccessibleHelp label={`About ${title}`} text={info} />}
         </Stack>
         {subtitle && (
