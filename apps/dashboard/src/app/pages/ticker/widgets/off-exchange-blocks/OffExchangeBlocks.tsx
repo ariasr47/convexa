@@ -115,7 +115,18 @@ export function OffExchangeBlocks({ offExchange, structureAgeSeconds = null }: P
                         component="span"
                         tabIndex={0}
                         aria-describedby={proximityDescId}
-                        sx={{ display: 'inline-block' }}
+                        // GATE Z (criterion 66, curvature-v2-surfaces phase 3): this focusable
+                        // `<span>` is neither a `button`, `[role="button"]` nor an `a`, so
+                        // `theme.ts`'s coarse-pointer floor selector never matches it — measured
+                        // 86.6×24.75 at 393px/coarse (width already clears 44px; only height
+                        // failed). Same mechanism, same fix idiom as the alerts Remove
+                        // button/Switch this pass: a nested `@media` rule in the same `sx` object,
+                        // so desktop/fine-pointer sizing (the plain `inline-block` pill) is
+                        // unchanged.
+                        sx={{
+                          display: 'inline-block',
+                          '@media (pointer: coarse)': { minHeight: 44, minWidth: 44 },
+                        }}
                       >
                         <TintChip tone="neutral" label={prox} />
                         <Box component="span" id={proximityDescId} sx={VISUALLY_HIDDEN}>

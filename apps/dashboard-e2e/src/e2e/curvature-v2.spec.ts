@@ -632,22 +632,21 @@ const FRAME_INFO_SITES = [
 ] as const;
 
 // =====================================================================================================
-// criterion 66 (FE-13) — the 44px effective hit area at 393px, coarse pointer, for the alerts write
-// affordances this phase's SPEC §3 names alongside the eight frame ⓘs (U-32, above) and the
-// off-exchange proximity chip (FE-11, criterion 59) — both already covered by their own dedicated
-// describe blocks, so not repeated here.
+// criterion 66 (FE-13, GATE Z repair below) — the 44px effective hit area at 393px, coarse pointer,
+// for the alerts write affordances this phase's SPEC §3 names alongside the eight frame ⓘs (U-32,
+// above) and the off-exchange proximity chip (its own dedicated describe block further down).
 //
-// `expectFloor` HARD-ASSERTS ≥44px on both dimensions — used only for controls this measurement
-// confirms comply. Two controls this task's own investigation measured DO NOT comply
-// (`AlertsPage.tsx:429`'s per-rule "Remove" button, an explicit `minHeight: 40` override that beats
-// the shipped global coarse-pointer floor's lower CSS specificity — `sx` compiles to a class,
-// `theme.ts:132-137`'s floor is a plain element selector, and a class always wins a specificity tie
-// regardless of `@media` nesting; and `AlertsPage.tsx:399-402`'s per-rule enable/disable `Switch`,
-// whose own `FormControlLabel` wrapper — the actual clickable region, not just the visible switch
-// graphic — measured ~163×25px, well under the floor on the height axis). Per this lane's own rule
-// ("measure `boundingBox()`, never restyle" — `AlertsPage.tsx` is product source, not this file's to
-// edit), these two are MEASURED AND LOGGED here, not force-asserted, and are named as GATE Z items
-// with `file:line` in `BUILD_REPORT.md` rather than silently patched or silently dropped.
+// `expectFloor` HARD-ASSERTS ≥44px on both dimensions. FE-13's own investigation measured two
+// controls that did NOT comply (`AlertsPage.tsx:429`'s per-rule "Remove" button, an explicit
+// `minHeight: 40` override that beat the shipped global coarse-pointer floor's lower CSS specificity
+// — `sx` compiles to a class, `theme.ts:132-137`'s floor is a plain element selector, and a class
+// always wins a specificity tie regardless of `@media` nesting; and `AlertsPage.tsx:399-402`'s
+// per-rule enable/disable `Switch`, whose own `FormControlLabel` wrapper — the actual clickable
+// region, not just the visible switch graphic — measured ~163×25px, well under the floor on the
+// height axis). **GATE Z REPAIR (this pass):** both now carry a `'@media (pointer: coarse)'` rule
+// nested in the SAME `sx` object (same specificity as the override, later in source order, so it
+// wins only when the media condition matches — desktop/fine-pointer sizing is untouched). Both are
+// now HARD-ASSERTED below, not merely measured.
 test.describe('criterion 66 (FE-13) — the alerts write affordances at 393px, coarse pointer', () => {
   test.use({ viewport: { width: 393, height: 852 }, hasTouch: true });
 
@@ -685,20 +684,76 @@ test.describe('criterion 66 (FE-13) — the alerts write affordances at 393px, c
     await expectFloor(page.getByTestId('alerts-notify'), 'alerts-notify');
   });
 
-  test('MEASURED, not asserted (GATE Z) — the per-rule Remove button and enable/disable switch', async ({
+  test('GATE Z REPAIR — the per-rule Remove button and enable/disable switch now meet the floor', async ({
     page,
   }) => {
-    const removeBox = await page.getByRole('button', { name: 'Remove' }).first().boundingBox();
-    const switchLabelBox = await page.locator('.MuiFormControlLabel-root').first().boundingBox();
+    const removeButton = page.getByRole('button', { name: 'Remove' }).first();
+    const switchLabel = page.locator('.MuiFormControlLabel-root').first();
+    const removeBox = await removeButton.boundingBox();
+    const switchLabelBox = await switchLabel.boundingBox();
     console.log(
-      `[criterion 66 evidence] Remove button (AlertsPage.tsx:429) = ${JSON.stringify(removeBox)} · ` +
+      `[criterion 66 evidence, post-fix] Remove button (AlertsPage.tsx:429) = ${JSON.stringify(removeBox)} · ` +
         `rule Switch's FormControlLabel (AlertsPage.tsx:399-402) = ${JSON.stringify(switchLabelBox)}`,
     );
-    // VACUITY GUARD only — both controls really are attached and rendered; the floor pass/fail
-    // itself is recorded in BUILD_REPORT.md as a named GATE Z item, not asserted here (see the
-    // block comment above: this task's lane may not edit `AlertsPage.tsx`).
-    expect(removeBox).toBeTruthy();
-    expect(switchLabelBox).toBeTruthy();
+    await expectFloor(removeButton, 'per-rule Remove button (coarse pointer)');
+    await expectFloor(switchLabel, "per-rule enable/disable Switch's FormControlLabel (coarse pointer)");
+  });
+});
+
+// =====================================================================================================
+// criterion 66 (GATE Z repair) — the off-exchange proximity chip's effective hit area at 393px,
+// coarse pointer. FE-13 flagged this as the SAME under-floor mechanism (a focusable `<span>`, never a
+// `button`/`role="button"`/`a`, so `theme.ts`'s coarse-pointer floor selector never matches) but could
+// not reach a rendered instance in its own session (no off_exchange data in either file's shared
+// `bundle` fixture — "Off-exchange data unavailable this cycle." renders instead, with no chip in the
+// DOM at all). This block supplies a local `/api/ticker/**` override (own fixture, not the shared
+// `bundle`, so no other test in this file is affected) carrying one real block print, making the chip
+// reachable for the first time this phase.
+test.describe('criterion 66 (GATE Z repair) — the off-exchange proximity chip at 393px, coarse pointer', () => {
+  test.use({ viewport: { width: 393, height: 852 }, hasTouch: true });
+
+  test('the proximity chip meets the 44px floor', async ({ page }) => {
+    await stubNetwork(page);
+    await page.route('**/api/ticker/**', (route) =>
+      route.fulfill({
+        json: {
+          ...bundle,
+          off_exchange: {
+            block_min_shares: 10000,
+            blocks: [
+              {
+                shares: 25000,
+                price: 251.4,
+                proximity_pct: 0.004,
+                age_seconds: 120,
+                notional: 6_285_000,
+              },
+            ],
+            levels: [],
+            note: 'e2e fixture',
+            offex_shares: 25000,
+            ratio_pct: 4.2,
+            total_shares: 500000,
+          },
+        },
+      }),
+    );
+    await seed(page);
+    await page.goto('/ticker/TSLA');
+    await expect(page.getByText('Call wall').first()).toBeAttached();
+
+    const frame = page.getByTestId('widget-off-exchange-blocks');
+    await expect(frame, 'off-exchange-blocks frame is on the page').toBeAttached();
+    // VACUITY GUARD — the block print itself (not just the frame) actually rendered, so the chip
+    // beside it is real, not measuring an empty/unavailable state.
+    await expect(frame.getByText('25,000 sh @ $251.40')).toBeAttached();
+
+    const chip = frame.locator('span[tabindex="0"]').first();
+    const box = await chip.boundingBox();
+    console.log(
+      `[criterion 66 evidence] off-exchange proximity chip (OffExchangeBlocks.tsx:113-123) = ${JSON.stringify(box)}`,
+    );
+    await expectFloor(chip, 'off-exchange proximity chip (coarse pointer)');
   });
 });
 

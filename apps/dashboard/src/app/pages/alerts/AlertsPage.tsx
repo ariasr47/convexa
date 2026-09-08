@@ -410,6 +410,13 @@ export function AlertsPage() {
                 </AlertsRefused>
               }
               label={`${r.symbol} · ${KIND_LABEL[r.kind]}`}
+              // GATE Z (criterion 66, curvature-v2-surfaces phase 3): a `Switch`/`FormControlLabel`
+              // renders a `<label>`/`<span>` pair, neither of which matches `theme.ts`'s coarse-pointer
+              // floor selector (`button, [role="button"], a`), so the floor never applied here — the
+              // label's own effective hit area measured 163.3×24.75 at 393px/coarse, under the 44px
+              // floor in height. Width already clears 44px; only height needed a coarse-pointer floor,
+              // scoped so desktop density is unchanged.
+              sx={{ '@media (pointer: coarse)': { minHeight: 44 } }}
             />
             <Typography
               variant="caption"
@@ -426,7 +433,16 @@ export function AlertsPage() {
                   if (faulted) return;
                   a.removeRule(r.id);
                 }}
-                sx={{ minHeight: 40 }}
+                // GATE Z (criterion 66): the inline `minHeight: 40` compiles to a class
+                // (specificity 0,1,0) which beats `theme.ts`'s plain-element coarse-pointer floor
+                // selector (0,0,1) regardless of the media query, so the global 44px floor never
+                // reached this button — measured 64×40 at 393px/coarse. The nested `@media` rule
+                // below is emitted into the SAME class, so it wins the cascade only when the
+                // condition matches; desktop/fine-pointer stays 40 exactly as shipped.
+                sx={{
+                  minHeight: 40,
+                  '@media (pointer: coarse)': { minHeight: 44, minWidth: 44 },
+                }}
               >
                 Remove
               </Button>

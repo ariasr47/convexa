@@ -75,7 +75,10 @@ const gateCounts: Record<string, number> = {
   // surfaces (criterion 64, 6 tests), the criterion 7a rendered-container-step review-evidence
   // test (1), and the criterion 66 alerts write-affordance describe block (2); bump to
   // `curvature-v2-surfaces-99-v1` (`tools/lib/manifest.mjs` enforces the same number).
-  chromium: 99,
+  // (curvature-v2-surfaces GATE Z repair, finding 2) 99 → 100: the off-exchange proximity chip's
+  // 44px floor, newly reachable via a local fixture override (1 new test); bump to
+  // `curvature-v2-surfaces-100-v1` (`tools/lib/manifest.mjs` enforces the same number).
+  chromium: 100,
   compatibility: 15,
   accessibility: 16,
   visual: 6,

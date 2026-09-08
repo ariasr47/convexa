@@ -1765,7 +1765,48 @@ after**, part of the 100/100 full-suite pass at the end of this section. `npx vi
 src/app/features/trading/positions src/app/pages/positions` (the two trees `PositionRow.tsx` sits in /
 is imported by) — **exit 0, 527/527 tests**, no regression from the one-line containing-block fix.
 
-**Commit:** `fix(dashboard): GATE Z — /positions 900px overflow, FE-5's untethered absolute
-description span (curvature-v2-surfaces)`.
+**Commit:** `5c07dc40` — `fix(dashboard): GATE Z — /positions 900px overflow, FE-5's untethered
+absolute description span (curvature-v2-surfaces)`.
+
+### Finding 2 — criterion 66: three under-floor controls, all fixed; one instance newly reachable
+
+Three controls measured under the floor at 393px/coarse; all three share the same mechanism (a
+plain element or a non-`button`/`role="button"`/`a` node the theme's coarse-pointer selector cannot
+reach) and the same fix idiom (a `'@media (pointer: coarse)'` rule nested in the same `sx` object as
+any conflicting override, so it wins the cascade only when the media condition matches — desktop/
+fine-pointer sizing is byte-identical to shipped).
+
+| Control | `file:line` | Before | After | Mechanism |
+|---|---|---|---|---|
+| Alerts per-rule "Remove" button | `AlertsPage.tsx:429` | `{width: 64, height: 40}` | `{width: 58.4, height: 44}` | inline `sx={{ minHeight: 40 }}` compiles to a class (0,1,0) that beats the plain-element floor selector (0,0,1) regardless of `@media` nesting |
+| Alerts per-rule enable/disable `Switch`'s `FormControlLabel` | `AlertsPage.tsx:399-402` | `{width: 163.3, height: 24.75}` | `{width: 163.3, height: 44}` | `<label>`/`<span>` matches neither `button`, `[role="button"]` nor `a`, so the floor never applied |
+| Off-exchange proximity chip (quiet band) | `OffExchangeBlocks.tsx:113-123` | `{width: 86.6, height: 24.75}` (newly measured this pass — FE-13 could not reach a rendered instance) | `{width: 86.6, height: 44}` | same as above: a `tabIndex={0}` `<span>` wrapper, not a `button`/`role="button"`/`a` |
+
+**Reachability, closed for this pass's own measurement need.** FE-13 flagged the off-exchange chip as
+"the same mechanism, unmeasured" because neither e2e file's shared `bundle` fixture ever carried an
+`off_exchange` payload — the widget rendered its "Off-exchange data unavailable this cycle." empty
+copy in every existing test, so the chip was never in the DOM to measure. A new, file-local
+`page.route('**/api/ticker/**', …)` override (registered after `stubNetwork`, matching the same
+override idiom `no-overflow.spec.ts`'s own criterion-7a block already uses for `/api/contract/**`) in
+a new `curvature-v2.spec.ts` describe block supplies one real `off_exchange.blocks[0]` entry, making
+the chip reachable for the first time this phase — the shared `bundle` used by every other test in
+both files is untouched, so no other test's fixture changed.
+
+**Both alerts controls now hard-asserted** (the existing "MEASURED, not asserted (GATE Z)" test in
+`curvature-v2.spec.ts` renamed to "GATE Z REPAIR — … now meet the floor" and converted to
+`expectFloor(...)` calls); the off-exchange chip gets its own new hard-asserted test in the same file.
+`npx vitest run src/app/pages/alerts src/app/features/alerts src/app/pages/ticker/widgets` — **exit 0,
+818/818 tests**, no regression.
+
+**Manifest lockstep** (gotcha 15): `manifest.json` `inventory_id` `curvature-v2-surfaces-99-v1` →
+`-100-v1` (1 new `test_id` for the off-exchange chip test, generated via `crypto.randomBytes(32)`; the
+Remove/Switch test's `title_path` updated in place, same `test_id`, since it is still the same test
+position just renamed); `tools/lib/manifest.mjs`'s `tests.length !== 99` → `!== 100`;
+`tools/manifest.spec.mjs`'s same assertion; `quality-reporter.ts`'s `gateCounts.chromium: 99` → `100`.
+`node --test apps/dashboard-e2e/tools/manifest.spec.mjs apps/dashboard-e2e/tools/mutations.spec.mjs` —
+**exit 0, 7/7**.
+
+**Commit:** `fix(dashboard): GATE Z — three under-floor controls meet the 44px coarse-pointer target
+(curvature-v2-surfaces)`.
 
 ---

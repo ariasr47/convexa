@@ -46,11 +46,19 @@ export function validateManifest(value) {
     // over the four seeded surfaces (criterion 64, 6 tests, one per `ROUTES` entry), the
     // criterion 7a rendered-container-step review-evidence test (1), and the criterion 66 alerts
     // write-affordance describe block in `curvature-v2.spec.ts` (2).
-    value.full_chromium?.inventory_id !== 'curvature-v2-surfaces-99-v1' ||
+    // (curvature-v2-surfaces GATE Z repair, findings 1-3) bumped 99 → 100: 1 new test — the
+    // off-exchange proximity chip's 44px floor (`OffExchangeBlocks.tsx:113-123`), now reachable via
+    // a local `/api/ticker/**` fixture override carrying real `off_exchange` block data (the shared
+    // `bundle` fixtures in both e2e files had never carried this field, so the chip was previously
+    // unrendered and untestable — FE-13's own "no reachable off-exchange bundle this session" note).
+    // The two existing per-rule Remove/Switch tests were renamed (title_path updated, same test_id)
+    // from "MEASURED, not asserted" to "GATE Z REPAIR" now that both controls are hard-asserted —
+    // no new tests, no count change from that rename.
+    value.full_chromium?.inventory_id !== 'curvature-v2-surfaces-100-v1' ||
     !Array.isArray(tests) ||
-    tests.length !== 99
+    tests.length !== 100
   )
-    fail('full Chromium inventory must contain 99 tests');
+    fail('full Chromium inventory must contain 100 tests');
   unique(
     tests.map((x) => x.test_id),
     'full Chromium tests',
