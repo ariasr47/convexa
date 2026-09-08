@@ -61,8 +61,12 @@ const EXEMPT: Record<string, string> = {
     "Shared Structure Field brand token literals for the WebGL lab instrument only (pages/lab/** — out of this phase's scope)",
   'pages/lab/demos/labTokens.ts':
     'Lab Canvas demos — brand token literals shared by ticker-candidate instruments',
-  'pages/ticker/widgets/structure-hero/WallMagnetView.tsx':
-    'Wall Magnet Canvas2D — brand token literals AND their rgba() alpha-blends (gradient stops/shadow glow derived from the same module-level constants; cannot use MUI sx); moved from dealer-positioning/ (FE-6 step 5, file unchanged)',
+  // REMOVED (structure-hero repair task item 10, 2026-09-08): `WallMagnetView.tsx` now takes
+  // `palette`/`surfaces` as RESOLVED props (the SAME objects `StructureFieldCanvas`/`LevelLadder`/
+  // `TapePulseStrip` already receive from `StructureHeroPanel`, criterion 7) in place of its own
+  // module-level `INK`/`PANEL`/`PHOSPHOR`/`STEEL`/`AMBER`/`SIGNAL`/`GREEN`/`RED` hex literals — the
+  // coupled removal `hex-discipline.spec.ts`'s "the exemption list is live" check requires (a
+  // stale entry with no remaining hex/rgb(a) would fail that check on its own).
   'pages/ticker/widgets/term-structure/TermHeatChart.tsx':
     'Term Heat Canvas2D — brand token literals (cannot use MUI sx)',
 
@@ -162,10 +166,9 @@ const EXEMPT_VALUES: Record<string, { values: string[]; why: string }> = {
     values: ['rgba(255,255,255,0.04)', 'rgba(16,24,40,0.06)'],
     why: 'Card bevel/inset-highlight micro-shadow — decorative, already branches on `theme.palette.mode` at every call site, single-consumer cosmetic values',
   },
-  'pages/ticker/widgets/structure-history/StructurePathStrip.tsx': {
-    values: ['rgba(0,0,0,0.18)', 'rgba(0,0,0,0.03)'],
-    why: 'Static container `bgcolor` on the whole strip (`data-testid="structure-history"`) — corrected from "row hover/zebra tint" (QA F2, the values were right, the description was not) — decorative, mode-branched (dark 0.18 / light 0.03 black alpha), single-consumer cosmetic value',
-  },
+  // REMOVED (structure-hero repair task item 8, 2026-09-08): `StructurePathStrip.tsx` lost its own
+  // `bgcolor` — it is a flat row with a top hairline now, matching the tape row above it — so the
+  // two mode-branched black-alpha literals this entry exempted are gone, not merely un-exempted.
   'shared/ui/Widget/Widget.tsx': {
     values: ['rgba(0,0,0,0.55)', 'rgba(16,24,40,0.25)'],
     why: 'Body-well inset shadow (the recessed-panel affordance) — decorative, mode-branched at its one call site, single-consumer cosmetic value',
@@ -180,7 +183,7 @@ const EXEMPT_VALUES: Record<string, { values: string[]; why: string }> = {
   // existed or after removing it (same literal both times).
   'shared/charts/structure-field/StructureFieldCanvas.tsx': {
     values: ['rgba(0,0,0,0.65)'],
-    why: "The field canvas's ambient outer shadow, /lab/structure-field only (`embedded === false` ⇔ `variant=\"lab\"`; the desk hero passes `variant=\"ticker\"` so this branch never paints there) — deliberately MODE-INVARIANT, matching the elevation ladder's own convention of keying outer shadow layers off pure black at varying alpha, never a background/text colour (criterion 53 does not scope it)",
+    why: 'The field canvas\'s ambient outer shadow, /lab/structure-field only (`embedded === false` ⇔ `variant="lab"`; the desk hero passes `variant="ticker"` so this branch never paints there) — deliberately MODE-INVARIANT, matching the elevation ladder\'s own convention of keying outer shadow layers off pure black at varying alpha, never a background/text colour (criterion 53 does not scope it)',
   },
 };
 
@@ -206,8 +209,7 @@ const HEX = /#[0-9a-fA-F]{3,8}\b/g;
  * its RGB channels, so flagging it would be pure noise (`[theme-token-discipline]` cares about
  * colour actually rendered, not the inert numbers a `0` alpha carries along for CSS syntax).
  */
-const RGB_LITERAL =
-  /\brgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(?:,\s*([\d.]+)\s*)?\)/g;
+const RGB_LITERAL = /\brgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(?:,\s*([\d.]+)\s*)?\)/g;
 function rgbMatches(line: string): string[] {
   const out: string[] = [];
   for (const m of line.matchAll(RGB_LITERAL)) {

@@ -31,6 +31,12 @@
  * `surfaces.ink`/`surfaces.panel` and `palette.mid` (the SAME resolved objects the field and the
  * ladder receive) replace them, so this canvas can never drift onto a scheme-invariant fill
  * (criteria 52/53). Its `hex-discipline.spec.ts` exemption entry is removed in the same commit.
+ *
+ * REPAIR TASK item 7 (`STRUCTURE_HERO_REPAIR_TASK.md`; `design/src/screens/desk.mjs:302-306`): this
+ * strip loses its own card chrome (no border, no radius, no `background.paper` fill) — it is a flat
+ * row with a top hairline, inline with the caption ("Tape · 5m mid trail"), the fluid sparkline (30px
+ * tall, was a boxed 60px canvas) and the `Mid`/`Structure` readouts, all in `tape-pulse-header`. Every
+ * testid is unchanged.
  */
 import { withAlpha, type LevelPalette } from '@/shared/charts/structure-field/levelStrokes';
 import type { StructureFieldSurfaces } from '@/shared/charts/structure-field/StructureFieldCanvas';
@@ -74,7 +80,7 @@ export function TapePulseStrip({
   paused = false,
   palette,
   surfaces,
-  height = 88,
+  height = 30,
 }: TapePulseStripProps) {
   const reduced = useReducedMotion();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -86,7 +92,9 @@ export function TapePulseStrip({
   // ONLY place this file answers "is this live", and it answers it through the shared composer.
   const activeClaim = andPresent(claim, mid);
   const displayMid = mid;
-  const chartHeight = Math.max(44, height - 28);
+  // Repair task item 7 — the canvas IS the 30px sparkline now (no header height to subtract; the
+  // caption/readouts sit beside it in the same flex row, not stacked above it).
+  const chartHeight = height;
 
   midRef.current = mid;
   activeRef.current = Boolean(activeClaim);
@@ -216,28 +224,19 @@ export function TapePulseStrip({
 
   return (
     <Box
-      ref={wrapRef}
       data-testid="tape-pulse-strip"
       sx={{
         width: '100%',
-        mb: 1,
-        borderRadius: '12px',
-        overflow: 'hidden',
-        border: '1px solid',
+        pt: 1,
+        mt: 1,
+        borderTop: '1px solid',
         borderColor: 'divider',
-        bgcolor: 'background.paper',
       }}
     >
       <Box
         data-testid="tape-pulse-header"
         sx={{
           minHeight: '28px',
-          // GATE Z (FE-11) spacing burn-down: `1.25` was the last off-ladder value in this file
-          // (`spacing-ladder.spec.ts`'s EXEMPT list) — moved onto the 4-pt rhythm (`1.5` = 12px, the
-          // nearest ladder step) now that this file is rewritten this phase; the EXEMPT entry is
-          // removed in the same commit.
-          px: 1.5,
-          py: 0.5,
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
@@ -245,15 +244,27 @@ export function TapePulseStrip({
           rowGap: 0.25,
         }}
       >
+        <Typography
+          variant="caption"
+          sx={{ color: 'text.primary', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap' }}
+        >
+          Tape · 5m mid trail
+        </Typography>
+        {/* The fluid 30px sparkline — inline with the caption and the readouts (repair task item 7),
+            no longer a boxed canvas stacked below its own header. */}
+        <Box ref={wrapRef} sx={{ flex: '1 1 96px', minWidth: 0 }}>
+          <canvas
+            ref={canvasRef}
+            aria-hidden="true"
+            style={{ display: 'block', width: '100%', height: chartHeight }}
+          />
+        </Box>
         <Stack
           direction="row"
-          spacing={0.75}
+          spacing={1.5}
           useFlexGap
-          sx={{ alignItems: 'center', flex: '1 1 220px', minWidth: 0, flexWrap: 'wrap' }}
+          sx={{ alignItems: 'center', ml: 'auto', flexShrink: 0, flexWrap: 'wrap' }}
         >
-          <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 700 }}>
-            Tape
-          </Typography>
           {/* `Mid` — unconditional (SPEC §4.2). The word never carries a liveness claim; the
               ladder's mid row dot is the one place liveness renders on the desk (criterion 8/9).
               GATE Z (FE-11): `paused` (genuine drop only, never replay) adds the pause mark + dims
@@ -294,24 +305,19 @@ export function TapePulseStrip({
               beside the header connection chip, exactly what canon rule 18 exists to stop. Its
               text folds into the ONE chip; `compatibility.spec.ts:48` (and the other pins named in
               PLAN FE-5 step 5) are re-pointed in the same change. */}
+          <Typography
+            component="span"
+            variant="caption"
+            data-testid="tape-structure-readout"
+            sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}
+          >
+            Structure{' '}
+            <Box component="span" sx={{ fontFamily: typographyTokens.monoFontFamily }}>
+              ${structureMid.toFixed(2)}
+            </Box>
+          </Typography>
         </Stack>
-        <Typography
-          component="span"
-          variant="caption"
-          data-testid="tape-structure-readout"
-          sx={{ ml: 'auto', color: 'text.secondary', whiteSpace: 'nowrap' }}
-        >
-          Structure{' '}
-          <Box component="span" sx={{ fontFamily: typographyTokens.monoFontFamily }}>
-            ${structureMid.toFixed(2)}
-          </Box>
-        </Typography>
       </Box>
-      <canvas
-        ref={canvasRef}
-        aria-hidden="true"
-        style={{ display: 'block', width: '100%', height: chartHeight }}
-      />
     </Box>
   );
 }

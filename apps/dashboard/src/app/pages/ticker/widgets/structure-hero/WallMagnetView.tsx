@@ -1,37 +1,52 @@
 /**
- * Wall Magnet — optional Dealer positioning view (Levels | Magnet toggle).
+ * Wall Magnet — optional Dealer positioning view (Field | Magnet toggle).
  * Soft force metaphor only; structure-clock levels from REST.
+ *
+ * REPAIR TASK item 10 (`STRUCTURE_HERO_REPAIR_TASK.md`; `design/src/lib.mjs:320-340`): takes
+ * `palette` + `surfaces` — the SAME resolved objects `StructureFieldCanvas`/`LevelLadder`/
+ * `TapePulseStrip` already receive from `StructureHeroPanel` (criterion 7) — in place of the module-
+ * level hex literals this file used to carry. `hex-discipline.spec.ts`'s exemption entry for this
+ * file is removed in the same commit. Height now matches the field (300, was 200) so the Field/
+ * Magnet toggle no longer changes the panel's height; the band is 68px tall (was an ad-hoc 44), and
+ * the reading line states the exact distance-from-flip percentage + the honesty footnote the design
+ * source carries.
  */
+import type { LevelPalette } from '@/shared/charts/structure-field/levelStrokes';
+import { withAlpha } from '@/shared/charts/structure-field/levelStrokes';
+import type { StructureFieldSurfaces } from '@/shared/charts/structure-field/StructureFieldCanvas';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { useEffect, useRef } from 'react';
 
-const INK = '#0B0F17';
-const PANEL = '#131A24';
-const PHOSPHOR = '#E9E4D6';
-const STEEL = '#8A9BB4';
-const AMBER = '#F2A93B';
-const SIGNAL = '#5E8BC4';
-const GREEN = '#2ecc71';
-const RED = '#ff5c5c';
+export interface WallMagnetViewProps {
+  putWall: number;
+  callWall: number;
+  gammaFlip: number;
+  spot: number;
+  height?: number;
+  /** The SAME resolved objects the field canvas and the ladder receive (criterion 7) — never a
+   *  second colour table, never a module-level hex literal. */
+  palette: LevelPalette;
+  surfaces: StructureFieldSurfaces;
+}
 
 export function WallMagnetView({
   putWall,
   callWall,
   gammaFlip,
   spot,
-  height = 200,
-}: {
-  putWall: number;
-  callWall: number;
-  gammaFlip: number;
-  spot: number;
-  height?: number;
-}) {
+  height = 300,
+  palette,
+  surfaces,
+}: WallMagnetViewProps) {
   const reduced = useReducedMotion();
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const spotRef = useRef(spot);
   spotRef.current = spot;
+  const paletteRef = useRef(palette);
+  paletteRef.current = palette;
+  const surfacesRef = useRef(surfaces);
+  surfacesRef.current = surfaces;
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -45,6 +60,7 @@ export function WallMagnetView({
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     let anim = spot;
     let vel = 0;
+    const BAND = 68;
 
     const layout = () => {
       const w = Math.max(280, wrap.clientWidth);
@@ -59,6 +75,8 @@ export function WallMagnetView({
 
     const paint = () => {
       if (!running) return;
+      const pal = paletteRef.current;
+      const sur = surfacesRef.current;
       const target = spotRef.current;
       // Soft settle toward structure spot; walls as visual magnets
       if (!reduced) {
@@ -73,7 +91,7 @@ export function WallMagnetView({
         anim = target;
       }
 
-      const pad = { l: 40, r: 16, t: 28, b: 28 };
+      const pad = { l: 40, r: 16, t: 28, b: 44 };
       const plotW = w - pad.l - pad.r;
       const plotH = height - pad.t - pad.b;
       const minK = Math.min(putWall, callWall, gammaFlip, anim) - 8;
@@ -81,17 +99,17 @@ export function WallMagnetView({
       const xOf = (k: number) => pad.l + ((k - minK) / (maxK - minK || 1)) * plotW;
       const midY = pad.t + plotH / 2;
 
-      ctx.fillStyle = INK;
+      ctx.fillStyle = sur.ink;
       ctx.fillRect(0, 0, w, height);
-      ctx.fillStyle = PANEL;
-      ctx.fillRect(pad.l, midY - 22, plotW, 44);
+      ctx.fillStyle = sur.panel;
+      ctx.fillRect(pad.l, midY - BAND / 2, plotW, BAND);
 
       const g = ctx.createLinearGradient(xOf(putWall), 0, xOf(callWall), 0);
-      g.addColorStop(0, 'rgba(255,92,92,0.18)');
-      g.addColorStop(0.5, 'rgba(242,169,59,0.06)');
-      g.addColorStop(1, 'rgba(46,204,113,0.18)');
+      g.addColorStop(0, withAlpha(pal.putWall, 0.18));
+      g.addColorStop(0.5, withAlpha(pal.gammaFlip, 0.06));
+      g.addColorStop(1, withAlpha(pal.callWall, 0.18));
       ctx.fillStyle = g;
-      ctx.fillRect(xOf(putWall), midY - 22, Math.max(4, xOf(callWall) - xOf(putWall)), 44);
+      ctx.fillRect(xOf(putWall), midY - BAND / 2, Math.max(4, xOf(callWall) - xOf(putWall)), BAND);
 
       const level = (k: number, color: string, label: string, thick = 1.5) => {
         const x = xOf(k);
@@ -105,26 +123,43 @@ export function WallMagnetView({
         ctx.font = '600 10px "IBM Plex Sans", system-ui, sans-serif';
         ctx.fillText(label, Math.min(x + 4, pad.l + plotW - 56), pad.t + 12);
       };
-      level(putWall, RED, `put $${putWall.toFixed(0)}`);
-      level(callWall, GREEN, `call $${callWall.toFixed(0)}`);
+      level(putWall, pal.putWall, `put $${putWall.toFixed(0)}`);
+      level(callWall, pal.callWall, `call $${callWall.toFixed(0)}`);
       ctx.save();
-      ctx.shadowColor = 'rgba(242,169,59,0.6)';
+      ctx.shadowColor = withAlpha(pal.gammaFlip, 0.6);
       ctx.shadowBlur = reduced ? 0 : 10;
-      level(gammaFlip, AMBER, 'flip', 2);
+      level(gammaFlip, pal.gammaFlip, 'flip', 2);
       ctx.restore();
 
       const sx = xOf(anim);
-      ctx.fillStyle = SIGNAL;
+      ctx.fillStyle = pal.mid;
       ctx.beginPath();
       ctx.arc(sx, midY, 7, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = PHOSPHOR;
+      ctx.fillStyle = sur.phosphor;
       ctx.font = '600 11px "IBM Plex Mono", ui-monospace, monospace';
       ctx.fillText(`$${anim.toFixed(2)}`, Math.min(sx + 10, pad.l + plotW - 64), midY - 10);
 
-      ctx.fillStyle = STEEL;
+      // The reading line (repair task item 10): exact distance from the flip + the dealer-dampening
+      // metaphor, in Sans 11 steel — `design/src/lib.mjs:338`.
+      const distPct = gammaFlip !== 0 ? ((anim - gammaFlip) / Math.abs(gammaFlip)) * 100 : 0;
+      const side = distPct >= 0 ? 'above' : 'below';
+      ctx.fillStyle = sur.steel;
+      ctx.font = '500 11px "IBM Plex Sans", system-ui, sans-serif';
+      ctx.fillText(
+        `${Math.abs(distPct).toFixed(2)}% ${side} the flip · dealers dampen moves here`,
+        pad.l,
+        midY + BAND / 2 + 18,
+      );
+
+      // Footnote — the display-metaphor honesty clause, verbatim (`design/src/lib.mjs:339`).
+      ctx.fillStyle = sur.steel;
       ctx.font = '500 10px "IBM Plex Sans", system-ui, sans-serif';
-      ctx.fillText('Magnet view · structure levels · display metaphor', pad.l, 16);
+      ctx.fillText(
+        'Magnet view · structure levels · a display metaphor, not a forecast',
+        pad.l,
+        height - 12,
+      );
 
       raf = requestAnimationFrame(paint);
     };
@@ -139,13 +174,14 @@ export function WallMagnetView({
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', onResize);
     };
-    // `spot` is read from spotRef so this rAF loop is not torn down every live tick.
+    // `spot`/`palette`/`surfaces` are read from refs so this rAF loop is not torn down every live
+    // tick or every theme-identical re-render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [putWall, callWall, gammaFlip, height, reduced]);
 
   return (
     <div ref={wrapRef} data-testid="wall-magnet-view" style={{ width: '100%' }}>
-      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', borderRadius: '8px' }} />
+      <canvas ref={canvasRef} style={{ display: 'block', width: '100%' }} />
     </div>
   );
 }
