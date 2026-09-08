@@ -205,3 +205,33 @@ describe('AC-7b — once latched, the chip never returns to the placeholder', ()
     expect(connectionStateFor({ live: null, streamOffline: false, routeSymbol: 'SPY' })).toBeNull();
   });
 });
+
+describe('L1 (fidelity audit 2026-09-08) — a stream event without a session word never prints a raw field', () => {
+  // `market_session` is schema-required, but the strict e2e fixture's SSE event omits it and the
+  // chip rendered `live · undefined` on every fixture-driven desk capture. Minimum claim: the live
+  // chip is signal dot + mid (canon 18); the session word is an addition rendered only when the feed
+  // sent one. An unmapped-but-present word still passes through, as it always has.
+  const withoutSession = liveUpdate({ market_session: undefined as unknown as string });
+
+  it('the chip drops the session segment, not the mid, when the event carries no session', () => {
+    const label = chipLabel('live', withoutSession);
+    expect(label).not.toContain('undefined');
+    expect(label).toBe('live · mid $573.12');
+  });
+
+  it('an empty session string is treated as absent', () => {
+    expect(chipLabel('live', liveUpdate({ market_session: '  ' }))).toBe('live · mid $573.12');
+  });
+
+  it('a present but unmapped session word still passes through verbatim', () => {
+    expect(chipLabel('live', liveUpdate({ market_session: 'halted' }))).toBe(
+      'live · halted · mid $573.12',
+    );
+  });
+
+  it('the announcer drops the session sentence, not the mid, when the event carries no session', () => {
+    const sentence = announceSentence({ kind: 'live' }, withoutSession);
+    expect(sentence).not.toContain('undefined');
+    expect(sentence).toBe('Live stream connected. Mid 573.12 dollars.');
+  });
+});

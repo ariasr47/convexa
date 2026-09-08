@@ -27,6 +27,19 @@ const ANNOUNCE_SESSION_WORD: Record<string, string> = {
 export const fmtMid = (mid: number | null | undefined): string | null =>
   mid != null ? mid.toFixed(2) : null;
 
+/**
+ * The session word for the chip / announcer, or null when the event did not carry one. L1 in the
+ * 2026-09-08 fidelity audit: an event without `market_session` (schema-required, but the strict e2e
+ * fixture omits it) rendered `live · undefined`. Minimum claim (canon 18): the live chip is signal dot
+ * + mid; the session word is rendered only when the feed sent one. A present but unmapped word still
+ * passes through verbatim.
+ */
+function sessionWord(map: Record<string, string>, live: LiveUpdate | null): string | null {
+  const raw = live?.market_session;
+  if (typeof raw !== 'string' || raw.trim() === '') return null;
+  return map[raw] ?? raw;
+}
+
 const TIP_BY_KIND: Record<
   Exclude<ConnectionState['kind'], 'replay'>,
   (live: LiveUpdate | null) => string | undefined
@@ -109,8 +122,8 @@ export function chipLabel(
   const midSuffix = mid != null ? ` · mid $${mid}` : '';
   switch (kind) {
     case 'live': {
-      const word = live ? (CHIP_SESSION_WORD[live.market_session] ?? live.market_session) : '';
-      return `live · ${word}${midSuffix}`;
+      const word = sessionWord(CHIP_SESSION_WORD, live);
+      return word ? `live · ${word}${midSuffix}` : `live${midSuffix}`;
     }
     case 'closed':
       return `market closed${midSuffix}`;
@@ -138,8 +151,8 @@ export function announceSentence(
   const midSentence = mid != null ? ` Mid ${mid} dollars.` : '';
   switch (state.kind) {
     case 'live': {
-      const word = live ? (ANNOUNCE_SESSION_WORD[live.market_session] ?? live.market_session) : '';
-      return `Live stream connected. ${word}.${midSentence}`;
+      const word = sessionWord(ANNOUNCE_SESSION_WORD, live);
+      return `Live stream connected.${word ? ` ${word}.` : ''}${midSentence}`;
     }
     case 'closed':
       return `Market closed. Showing the last completed session.${midSentence}`;
