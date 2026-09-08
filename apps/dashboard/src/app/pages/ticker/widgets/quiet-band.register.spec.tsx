@@ -6,8 +6,9 @@
  * value-slot copy site and `Setups`'s two-arm split are the phase's only other quiet-band code
  * changes. `IvRank`, `StraddleMove`, `DealerFlowProjection` (register-correct by construction,
  * NOT register-enforced — `lookalikes.spec.ts`'s own live-checked exemption) and `TermStructure`
- * (figure-free in the DOM, `TermHeatChart.tsx:105-106` an explicit non-goal) are untouched by this
- * file on purpose — converting them would edit `lookalikes.spec.ts`, which this phase does not do.
+ * (figure-free in the DOM — plain `Typography`, no `FigureCell`/register, both before and after the
+ * ticker fidelity repair's F2 ribbon recompose) are untouched by this file on purpose — converting
+ * them would edit `lookalikes.spec.ts`, which this phase does not do.
  */
 import { NOT_A_NUMBER } from '@/shared/copy/notANumber';
 import { theme } from '@/shared/theme/theme';
@@ -218,7 +219,10 @@ describe('MarketContext · 56a — the value-slot split (value `unavailable`, ca
         }}
       />,
     );
-    const cell = screen.getByTestId('mc-atr-5d-empty');
+    // Ticker fidelity repair, change 2 (F2): the compact card keeps only the 14-day ATR row (5d/30d
+    // drop from the card entirely — `MarketContext.tsx`'s own module doc), so the probe moves to the
+    // row that still exists; the fixture already sets `atr_14d: null` too.
+    const cell = screen.getByTestId('mc-atr-14d-empty');
     const value = within(cell).getByText(MC_CELL_EMPTY);
     expect(value).toHaveAttribute('data-figure-register', 'sans');
     expect(value).toHaveAttribute('data-figure-state', 'unavailable');

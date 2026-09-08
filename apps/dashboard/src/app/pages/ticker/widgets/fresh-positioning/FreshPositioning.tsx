@@ -46,7 +46,12 @@ export function FreshPositioning({
           </Typography>
         ) : (
           <Stack spacing={0.5}>
-            {unusualStrikes.map((s) => {
+            {/* Ticker fidelity repair, change 2 (F2) — the design's compact quiet card renders
+                exactly three rows (`design/src/screens/desk.mjs:43`'s `contextCard('Fresh
+                positioning · Vol/OI', ...)`, three literal rows, no "+N more" affordance of its
+                own). The count in the ⓘ tooltip above (`volOiTip`) still reads the FULL
+                `unusualStrikes.length` — only the rendered rows are capped here. */}
+            {unusualStrikes.slice(0, 3).map((s) => {
               // The strike + Vol/OI ratio — always a real Convexa-computed figure on a row the
               // backend returned (SPEC §2.4): traced register through the shared module.
               const headState = figureStateOf({

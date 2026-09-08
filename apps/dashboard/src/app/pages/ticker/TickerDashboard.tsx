@@ -51,6 +51,8 @@ import Container from '@mui/material/Container';
 import Fade from '@mui/material/Fade';
 import Skeleton from '@mui/material/Skeleton';
 import Snackbar from '@mui/material/Snackbar';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
@@ -666,67 +668,152 @@ export function TickerDashboard() {
                 {/* ── 3. SUPPORTING CONTEXT (tertiary — quieter Widget chrome) ──────── */}
                 <BoardZoneLabel zone="context">Supporting context</BoardZoneLabel>
 
-                <WidgetChromeProvider value="quiet">
-                  {/* STATIC dealer-flow projection — bound to `m.dealer_flow_projection` only
-                    (`[live-vs-static-isolation]`). */}
-                  <DealerFlowProjection dfp={m.dealer_flow_projection} />
-
-                  {/* STATIC market context pack — `m.market_context ?? null` only. */}
-                  <MarketContext pack={m.market_context ?? null} />
-
-                  {/* Compact pair: IV rank ‖ term structure (both advisory, span 1). Straddle-implied
-                      move (tradeable-rec-inputs) lands immediately after IV rank — no twelfth bento
-                      widget for one scalar; it is a compact widget in the existing quiet zone. */}
-                  <IvRank read={m.iv_rank ?? null} />
-                  <StraddleMove move={m.straddle_move} />
-                  <TermStructureCard
-                    termStructure={m.term_structure}
-                    structureAgeSeconds={structureAgeSeconds}
-                  />
-
-                  {/* Fresh positioning ‖ Off-exchange blocks. Off-exchange is REST-only; with
-                    Dark pool off, Fresh takes the full remaining row. */}
-                  <FreshPositioning
-                    chainVolOiRatio={m.chain_vol_oi_ratio}
-                    volOiThreshold={volOiThreshold}
-                    unusualStrikes={unusualStrikes}
-                    structureAgeSeconds={structureAgeSeconds}
-                  />
-                  {darkPool && (
-                    <OffExchangeBlocks
-                      offExchange={data?.off_exchange}
-                      structureAgeSeconds={structureAgeSeconds}
+                {/* Ticker fidelity repair, change 2 (F2) — the design's `ctx-head` + `ctx-grid`
+                    (`design/src/screens/desk.mjs:43`): a `Context` header carrying a presentational
+                    `All · Flow · Vol · Positioning` filter (only `All` is wired — the band carries no
+                    categories yet, so Flow/Vol/Positioning are disabled + "coming soon", never a
+                    fake-functional filter — `Widget.tsx`'s own affordance-only convention), then a
+                    `repeat(3, minmax(0,1fr))` quiet grid at the design's density. This wrapper spans
+                    the full bento row, same pattern as the `ticker-work` grid change 1 added above. */}
+                <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 2' } }}>
+                  <Box
+                    data-testid="context-band-head"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      flexWrap: 'wrap',
+                      mb: 1.5,
+                    }}
+                  >
+                    <Typography
+                      component="p"
+                      sx={{
+                        m: 0,
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        color: 'text.primary',
+                      }}
+                    >
+                      Context
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'text.secondary', fontSize: '0.75rem' }}
+                    >
+                      Advisory reads that never feed the score · snapshot, never live · refreshes
+                      with the data load
+                    </Typography>
+                    <Box
+                      aria-hidden
+                      sx={{ flex: '1 1 40px', minWidth: 40, height: '1px', bgcolor: 'divider' }}
                     />
-                  )}
+                    <ToggleButtonGroup
+                      value="all"
+                      exclusive
+                      size="small"
+                      aria-label="Filter the context band"
+                      data-testid="context-band-filter"
+                    >
+                      <ToggleButton value="all" sx={{ textTransform: 'none' }}>
+                        All
+                      </ToggleButton>
+                      {(['Flow', 'Vol', 'Positioning'] as const).map((label) => (
+                        <Tooltip key={label} arrow title="Filter by category — coming soon">
+                          <span>
+                            <ToggleButton
+                              value={label.toLowerCase()}
+                              disabled
+                              sx={{ textTransform: 'none' }}
+                            >
+                              {label}
+                            </ToggleButton>
+                          </span>
+                        </Tooltip>
+                      ))}
+                    </ToggleButtonGroup>
+                  </Box>
 
-                  <Setups setups={sig?.setups} structureAgeSeconds={structureAgeSeconds} />
+                  <WidgetChromeProvider value="quiet">
+                    <Box
+                      data-testid="ticker-context-grid"
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                        gap: 2,
+                      }}
+                    >
+                      {/* STATIC dealer-flow projection — bound to `m.dealer_flow_projection` only
+                        (`[live-vs-static-isolation]`). */}
+                      <DealerFlowProjection dfp={m.dealer_flow_projection} />
 
-                  {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). */}
-                  <Tooltip arrow title="Add widget — coming soon">
-                    <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 2' } }}>
-                      <ComingSoonBox
-                        data-testid="add-widget-slot"
-                        aria-disabled
-                        sx={{
-                          cursor: 'not-allowed',
-                          minHeight: 64,
-                          borderRadius: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          opacity: 0.85,
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{ color: 'text.disabled', fontWeight: 500 }}
-                        >
-                          + Add widget
-                        </Typography>
-                      </ComingSoonBox>
+                      {/* STATIC market context pack — `m.market_context ?? null` only. */}
+                      <MarketContext pack={m.market_context ?? null} />
+
+                      <TermStructureCard
+                        termStructure={m.term_structure}
+                        structureAgeSeconds={structureAgeSeconds}
+                      />
+
+                      {/* `IvRank` is not in the design's enumerated ctx-grid card list
+                          (`desk.mjs:43`) — its own figure already surfaces in the read strip's
+                          `IV rank` cell (`readStripModel.ts`). Kept here rather than silently
+                          removed (deletion wasn't instructed and the widget is referenced by
+                          `curvature-v2.spec.ts`/`quiet-band.register.spec.tsx`) — flagged as a
+                          residual in the repair report — beside Straddle-implied move, its existing
+                          pairing. */}
+                      <IvRank read={m.iv_rank ?? null} />
+                      <StraddleMove move={m.straddle_move} />
+
+                      {/* Fresh positioning ‖ Off-exchange blocks. Off-exchange is REST-only; with
+                        Dark pool off, Fresh takes its own single column. */}
+                      <FreshPositioning
+                        chainVolOiRatio={m.chain_vol_oi_ratio}
+                        volOiThreshold={volOiThreshold}
+                        unusualStrikes={unusualStrikes}
+                        structureAgeSeconds={structureAgeSeconds}
+                      />
+                      {darkPool && (
+                        <OffExchangeBlocks
+                          offExchange={data?.off_exchange}
+                          structureAgeSeconds={structureAgeSeconds}
+                        />
+                      )}
+
+                      <Setups setups={sig?.setups} structureAgeSeconds={structureAgeSeconds} />
+
+                      {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). Single
+                          column (design: `desk.mjs:419` carries no `ctx-span2`) — it sits beside
+                          Setups' 2-col span in the same row, exactly filling the 3-col grid. */}
+                      <Tooltip arrow title="Add widget — coming soon">
+                        <Box>
+                          <ComingSoonBox
+                            data-testid="add-widget-slot"
+                            aria-disabled
+                            sx={{
+                              cursor: 'not-allowed',
+                              minHeight: 64,
+                              borderRadius: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              opacity: 0.85,
+                            }}
+                          >
+                            <Typography
+                              variant="body2"
+                              sx={{ color: 'text.disabled', fontWeight: 500 }}
+                            >
+                              + Add widget
+                            </Typography>
+                          </ComingSoonBox>
+                        </Box>
+                      </Tooltip>
                     </Box>
-                  </Tooltip>
-                </WidgetChromeProvider>
+                  </WidgetChromeProvider>
+                </Box>
               </Box>
             </WidgetSelectionProvider>
           </Box>

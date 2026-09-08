@@ -157,7 +157,10 @@ export function DealerFlowProjection({ dfp }: Props) {
       title={DFP_TITLE}
       subtitle={DFP_SUBTITLE}
       info={DFP_INFO}
-      span={2}
+      // Ticker fidelity repair, change 2 (F2) — the context band's `repeat(3, minmax(0,1fr))` quiet
+      // grid (`design/src/screens/desk.mjs:43`) puts Projected dealer flow, Market context and Term
+      // structure in ONE row of three 1-col cards; `span={2}` (full-width, for the old 2-col bento)
+      // would break that row. Dropped, not resized to `span={1}` (the `Widget` default already is).
       bodyVariant="inset"
     >
       <Box data-testid="dealer-flow-projection">

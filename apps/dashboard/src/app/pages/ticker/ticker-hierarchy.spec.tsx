@@ -9,7 +9,7 @@
  */
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -245,5 +245,61 @@ describe('Ticker · tape & plan work grid (ticker fidelity repair F1)', () => {
       .replace(/\s+/g, '');
 
     expect(rules).not.toContain('grid-column:1/-1');
+  });
+});
+
+// =====================================================================================================
+// Ticker fidelity repair, change 2 (F2) — the context band's `ctx-head` + `ctx-grid`
+// (`design/src/screens/desk.mjs:43`): a `Context` header with a presentational `All · Flow · Vol ·
+// Positioning` filter (only `All` wired, no invented state) over a `repeat(3, minmax(0,1fr))` quiet
+// grid, DOM order matching the design's own card enumeration. Before this repair `ticker-context-
+// grid`/`context-band-filter` did not exist (the band was a flat 2-col bento run) — fresh pins, not
+// copies of pre-existing behaviour.
+// =====================================================================================================
+describe('Ticker · context band grid (ticker fidelity repair F2)', () => {
+  it('the context band is a 3-column quiet grid with a presentational All/Flow/Vol/Positioning filter — only All is enabled', async () => {
+    renderTicker();
+    await screen.findByText('Call wall');
+
+    const grid = screen.getByTestId('ticker-context-grid');
+    const cls = emotionClassOf(grid);
+    expect(cls, 'the context grid should carry an emotion (sx) class').toBeTruthy();
+    const rules = allRulesForClass(joinedStyleText(), cls as string)
+      .join(';')
+      .replace(/\s+/g, '');
+    expect(rules).toContain('grid-template-columns:repeat(3,minmax(0,1fr))');
+
+    const filter = screen.getByTestId('context-band-filter');
+    const all = within(filter).getByRole('button', { name: 'All' });
+    const flow = within(filter).getByRole('button', { name: 'Flow' });
+    const vol = within(filter).getByRole('button', { name: 'Vol' });
+    const positioning = within(filter).getByRole('button', { name: 'Positioning' });
+    expect(all).toHaveAttribute('aria-pressed', 'true');
+    expect(all).not.toBeDisabled();
+    // Presentational-until-wired (the task's own words) — no invented filtering state.
+    for (const seg of [flow, vol, positioning]) expect(seg).toBeDisabled();
+  });
+
+  it('DOM order matches the design’s ctx-grid enumeration: dealer flow → market context → term structure → (IV rank, kept) → straddle move → fresh positioning → off-exchange → setups → add widget', async () => {
+    renderTicker();
+    await screen.findByText('Call wall');
+
+    const order = [
+      'widget-dealer-flow-projection',
+      'widget-market-context',
+      'widget-term-structure',
+      'widget-iv-rank',
+      'widget-straddle-move',
+      'widget-fresh-positioning',
+      'widget-setups',
+      'add-widget-slot',
+    ].map((id) => screen.getByTestId(id));
+
+    for (let i = 0; i < order.length - 1; i += 1) {
+      expect(
+        docIndex(order[i]),
+        `${order[i].dataset.testid} should come before ${order[i + 1].dataset.testid}`,
+      ).toBeLessThan(docIndex(order[i + 1]));
+    }
   });
 });

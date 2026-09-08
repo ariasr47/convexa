@@ -68,8 +68,13 @@ export function OffExchangeBlocks({ offExchange, structureAgeSeconds = null }: P
           </Typography>
         ) : (
           <Stack spacing={0.5}>
-            {/* Already largest-notional-first, top-5 from the backend — render in order, no re-sort/re-cap. */}
-            {offExchange.blocks.map((b, i) => {
+            {/* Already largest-notional-first, top-5 from the backend — render in the backend's own
+                order, never re-sorted. Ticker fidelity repair, change 2 (F2) — the design's compact
+                quiet card shows exactly three bars (`design/src/screens/desk.mjs:43`'s
+                `contextCard('Off-exchange blocks', ...)`, three literal rows, no "+N more"
+                affordance), so the DISPLAY is capped to the first three of the backend's five —
+                still its order, just fewer of them. */}
+            {offExchange.blocks.slice(0, 3).map((b, i) => {
               const pct = b.proximity_pct * 100; // payload is a signed ratio vs spot
               const prox = `${pct >= 0 ? '+' : '−'}${Math.abs(pct).toFixed(1)}% vs spot`;
               // The print — a real Convexa-computed figure, always present on a delivered block

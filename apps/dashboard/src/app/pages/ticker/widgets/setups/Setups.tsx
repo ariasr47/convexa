@@ -2,11 +2,17 @@
  * Setups — the rule-based setup cards with conviction tags (Figma `Ticker · Setups`, node 149:687),
  * or the calm "no clean setup" info. Each card: setup name + a tinted conviction chip (HIGH amber /
  * MEDIUM blue / LOW grey) over the plain-language rationale. Static bundle read off `signals.setups`.
+ *
+ * Ticker fidelity repair, change 2 (F2) — the widget already spans 2 of the context band's 3
+ * columns (`span={2}` below); `design/src/screens/desk.mjs:43`'s `contextCard('Setups', ..., 2)`
+ * lays its own cards out as a 2-column `ctx-2` grid inside that span, not a vertical stack (the
+ * pre-repair app rendered "three full-width rows" — `FIDELITY_AUDIT.md` F2).
  */
 import { TintChip } from '@/shared/ui/TintChip';
 import { Widget } from '@/shared/ui/Widget';
 import type { Setup } from '@convexa/api';
 import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Stack from '@mui/material/Stack';
@@ -36,7 +42,10 @@ export function Setups({ setups, structureAgeSeconds = null }: Props) {
       {setups === undefined ? (
         <Alert severity="info">Setups unavailable this cycle.</Alert>
       ) : setups.length ? (
-        <Stack spacing={1.5}>
+        <Box
+          data-testid="setups-grid"
+          sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1.5 }}
+        >
           {setups.map((s, i) => (
             <Card key={i} variant="outlined" sx={{ borderRadius: 3 }}>
               <CardContent>
@@ -53,7 +62,7 @@ export function Setups({ setups, structureAgeSeconds = null }: Props) {
               </CardContent>
             </Card>
           ))}
-        </Stack>
+        </Box>
       ) : (
         <Alert severity="info">No clean setup right now.</Alert>
       )}

@@ -31,12 +31,9 @@ import { describe, expect, it } from 'vitest';
 import {
   MC_ATR_EMPTY,
   MC_CELL_EMPTY,
-  MC_COMPOSITION_ROW_EMPTY,
   MC_FLOW_EMPTY,
   MC_LOCATION_ROW_EMPTY,
-  MC_MOMENTUM_ROW_EMPTY,
   MC_SHAPE_EMPTY,
-  MC_STRENGTH_ROW_EMPTY,
   MC_TI_EMPTY,
   MC_TREND_ROW_EMPTY,
   MC_WHOLE_EMPTY,
@@ -111,6 +108,14 @@ function renderMc(value: MarketContextPack | null) {
 
 // =================================================================================================
 // 1. The five-level null matrix — each level degrades ONLY its own slot, fabricating nothing
+//
+// Ticker fidelity repair (F2, `design/src/screens/desk.mjs:43`): the compact card keeps exactly ONE
+// headline row per family (Trend/direction, Shape/concentration, Flow/location, ATR/14-day) — the
+// L1/L3 cases for the DROPPED rows (Strength, Momentum, Balance, Center-of-mass, Composition, ATR
+// 5d/30d) are removed below (their testids no longer exist — there is nothing left to null); the
+// KEPT rows' cases are unchanged in shape (same slot testid, same pinned copy), only their `intact`
+// sibling probes are updated to values that still render post-repair (5d/30d ATR and the dropped
+// enum labels are gone from the DOM regardless of what this fixture sets them to).
 // =================================================================================================
 interface NullCase {
   name: string;
@@ -125,50 +130,29 @@ interface NullCase {
 }
 
 const MATRIX: NullCase[] = [
-  // L1 — one TI label null (per-label).
+  // L1 — the TI family's one kept label, null (per-label).
   {
     name: 'L1 direction=null',
     value: pack({ trend_momentum: tiRead({ direction: null }) }),
     slot: 'mc-trend',
     copy: MC_TREND_ROW_EMPTY,
-    intact: ['Strong', 'Neutral', 'Concentrated', '$4.12 · 2.3%'],
+    intact: ['Concentrated', 'Rotating', '$3.87 · 2.2%'],
   },
-  {
-    name: 'L1 strength=null',
-    value: pack({ trend_momentum: tiRead({ strength: null }) }),
-    slot: 'mc-strength',
-    copy: MC_STRENGTH_ROW_EMPTY,
-    intact: ['Uptrend', 'Neutral'],
-  },
-  {
-    name: 'L1 momentum=null',
-    value: pack({ trend_momentum: tiRead({ momentum: null }) }),
-    slot: 'mc-momentum',
-    copy: MC_MOMENTUM_ROW_EMPTY,
-    intact: ['Uptrend', 'Strong'],
-  },
-  // L2 — one ATR horizon null (per-horizon).
+  // L2 — the ATR family's one kept horizon, null (per-horizon).
   {
     name: 'L2 atr_14d=null',
     value: pack({ atr: atrRead({ atr_14d: null }) }),
     slot: 'mc-atr-14d',
     copy: MC_CELL_EMPTY,
-    intact: ['$4.12 · 2.3%', '$3.51 · 2.0%'],
+    intact: ['Uptrend', 'Concentrated', 'Rotating'],
   },
-  // L3 — one flow sub-component null (per-sub-component).
+  // L3 — the Flow family's one kept sub-component, null (per-sub-component).
   {
     name: 'L3 location=null',
     value: pack({ flow_vs_positioning: flowRead({ location: null }) }),
     slot: 'mc-location',
     copy: MC_LOCATION_ROW_EMPTY,
-    intact: ['Consistent', 'Uptrend'],
-  },
-  {
-    name: 'L3 composition=null',
-    value: pack({ flow_vs_positioning: flowRead({ composition: null }) }),
-    slot: 'mc-composition',
-    copy: MC_COMPOSITION_ROW_EMPTY,
-    intact: ['Rotating', 'Uptrend'],
+    intact: ['Uptrend', 'Concentrated', '$3.87 · 2.2%'],
   },
   // L4 — one whole read null (per-read).
   {
@@ -176,21 +160,21 @@ const MATRIX: NullCase[] = [
     value: pack({ trend_momentum: null }),
     slot: 'mc-ti',
     copy: MC_TI_EMPTY,
-    intact: ['Concentrated', 'Rotating', '$4.12 · 2.3%'],
+    intact: ['Concentrated', 'Rotating', '$3.87 · 2.2%'],
   },
   {
     name: 'L4 gex_profile_shape=null',
     value: pack({ gex_profile_shape: null }),
     slot: 'mc-shape',
     copy: MC_SHAPE_EMPTY,
-    intact: ['Uptrend', 'Rotating', '$4.12 · 2.3%'],
+    intact: ['Uptrend', 'Rotating', '$3.87 · 2.2%'],
   },
   {
     name: 'L4 flow_vs_positioning=null',
     value: pack({ flow_vs_positioning: null }),
     slot: 'mc-flow',
     copy: MC_FLOW_EMPTY,
-    intact: ['Uptrend', 'Concentrated', '$4.12 · 2.3%'],
+    intact: ['Uptrend', 'Concentrated', '$3.87 · 2.2%'],
   },
   {
     name: 'L4 atr=null',
@@ -252,7 +236,9 @@ describe('MarketContext · unknown wire enum (closed-lookup wiring)', () => {
       within(screen.getByTestId('mc-trend')).getByText(MC_TREND_ROW_EMPTY),
     ).toBeInTheDocument();
     expect(screen.queryByText(/sideways/i)).toBeNull();
-    expect(within(screen.getByTestId('mc-strength')).getByText('Strong')).toBeInTheDocument();
+    // Sibling isolation (F2 — the compact card keeps only ONE row per family, so the sibling probe
+    // is another family's kept headline, not the dropped Strength row).
+    expect(within(screen.getByTestId('mc-shape')).getByText('Concentrated')).toBeInTheDocument();
     r1.unmount();
 
     // A label family WITHOUT one (row label kept, muted value cell).
