@@ -1,0 +1,158 @@
+{
+  "id": "settings-signed-in-1280-dark",
+  "side": "design",
+  "surface": "settings",
+  "state": "signed-in",
+  "width": 1280,
+  "scheme": "dark",
+  "url": "/settings.html",
+  "pageHeight": 1873,
+  "contentBottom": 1873,
+  "overflowX": false,
+  "scrollWidth": 1280,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "nav-bar",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 56,
+      "text": "CONVEA ScannerTickerPositionsAlerts Jump to a ticker…⌘K Open 10:42:07 ET R"
+    },
+    {
+      "key": "wrap:0:wrap.nav-in",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 56,
+      "text": "CONVEA ScannerTickerPositionsAlerts Jump to a ticker…⌘K Open 10:42:07 ET R"
+    },
+    {
+      "key": "wrap:1:wrap",
+      "x": 0,
+      "y": 56,
+      "w": 1280,
+      "h": 1548,
+      "text": "Settings AccountPreferencesRisk inputsAI providersBrokerage Saved to your accoun"
+    },
+    {
+      "key": "wrap:2:wrap.foot-grid",
+      "x": 0,
+      "y": 1692,
+      "w": 1280,
+      "h": 181,
+      "text": "CONVEA How Convexa worksBlog — how we read structureLab Convexa is an analysis t"
+    },
+    {
+      "key": "panel:0:panel:Account",
+      "x": 298,
+      "y": 141,
+      "w": 760,
+      "h": 146,
+      "text": "AccountSaved to your account. RRodrigorodrigo@example.com · signed in with Googl"
+    },
+    {
+      "key": "panel:1:panel:Preferences",
+      "x": 298,
+      "y": 302,
+      "w": 760,
+      "h": 274,
+      "text": "PreferencesAppearance and defaults. Presentation only — nothing here touches the"
+    },
+    {
+      "key": "panel:2:panel:Risk inputs",
+      "x": 298,
+      "y": 592,
+      "w": 760,
+      "h": 383,
+      "text": "Risk inputsA trader input, not a credential. Sent with every AI read so the mode"
+    },
+    {
+      "key": "panel:3:panel:AI providers",
+      "x": 298,
+      "y": 991,
+      "w": 760,
+      "h": 335,
+      "text": "AI providersBring your own key. Your key, your cost; reads run on it and it is n"
+    },
+    {
+      "key": "panel:4:panel:Brokerage",
+      "x": 298,
+      "y": 1342,
+      "w": 760,
+      "h": 225,
+      "text": "BrokerageRead-only positions from your real account. Convexa never places, chang"
+    },
+    {
+      "key": "block:rail",
+      "x": 38,
+      "y": 141,
+      "w": 220,
+      "h": 266,
+      "text": "AccountPreferencesRisk inputsAI providersBrokerage Saved to your account. Creden"
+    }
+  ],
+  "probes": {
+    "connectionState": null,
+    "skeletons": 0,
+    "monoElements": 14,
+    "sansElements": 77,
+    "archivoElements": 5,
+    "otherFontElements": 0,
+    "htmlBackground": "rgb(11, 15, 23)",
+    "bodyBackground": "rgb(11, 15, 23)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", sans-serif",
+    "bodyFontSize": "13px",
+    "panelSelector": "panel",
+    "panelRadius": "12px",
+    "panelBackground": "rgb(19, 26, 36)",
+    "panelBorder": "1px solid rgba(138, 155, 180, 0.16)",
+    "monoFont": "\"IBM Plex Mono\", ui-monospace, SFMono-Regular, Menlo, monospace",
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": true,
+    "plexSansLoaded": true,
+    "scrollHeight": 1873,
+    "scrollWidth": 1280,
+    "clientWidth": 1280
+  },
+  "panels": [
+    {
+      "key": "section.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "section.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "section.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "section.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "section.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    }
+  ],
+  "png": "design/settings-signed-in-1280-dark.png"
+}

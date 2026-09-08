@@ -1,0 +1,366 @@
+{
+  "id": "settings-signed-in-1280-dark",
+  "side": "app",
+  "surface": "settings",
+  "state": "signed-in",
+  "width": 1280,
+  "scheme": "dark",
+  "url": "/settings",
+  "pageHeight": 2169,
+  "contentBottom": 2169,
+  "overflowX": false,
+  "scrollWidth": 1280,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "app-shell",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 2169,
+      "text": "Skip to main contentCONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality"
+    },
+    {
+      "key": "skip-to-main",
+      "x": 0,
+      "y": -53,
+      "w": 158,
+      "h": 44,
+      "text": "Skip to main content"
+    },
+    {
+      "key": "top-nav",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 65,
+      "text": "CONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality-user@fixture.invali"
+    },
+    {
+      "key": "nav-search-trigger",
+      "x": 809,
+      "y": 14,
+      "w": 200,
+      "h": 36,
+      "text": "Jump to a ticker…⌘K"
+    },
+    {
+      "key": "settings-page",
+      "x": 340,
+      "y": 65,
+      "w": 600,
+      "h": 2104,
+      "text": "SettingsSaved to your account.AccountQQuality Fixturequality-user@fixture.invali"
+    },
+    {
+      "key": "settings-account-panel",
+      "x": 364,
+      "y": 179,
+      "w": 552,
+      "h": 137,
+      "text": "AccountQQuality Fixturequality-user@fixture.invalidSign out"
+    },
+    {
+      "key": "settings-account-signed-in",
+      "x": 389,
+      "y": 248,
+      "w": 502,
+      "h": 43,
+      "text": "QQuality Fixturequality-user@fixture.invalidSign out"
+    },
+    {
+      "key": "settings-preferences-panel",
+      "x": 364,
+      "y": 340,
+      "w": 552,
+      "h": 320,
+      "text": "PreferencesAffects appearance only.Active personaActive personaDefault (no perso"
+    },
+    {
+      "key": "settings-ticker",
+      "x": 648,
+      "y": 468,
+      "w": 243,
+      "h": 39,
+      "text": ""
+    },
+    {
+      "key": "settings-theme",
+      "x": 389,
+      "y": 595,
+      "w": 502,
+      "h": 41,
+      "text": "DarkLightSystem"
+    },
+    {
+      "key": "settings-theme-dark",
+      "x": 389,
+      "y": 595,
+      "w": 162,
+      "h": 41,
+      "text": "Dark"
+    },
+    {
+      "key": "settings-theme-light",
+      "x": 559,
+      "y": 595,
+      "w": 162,
+      "h": 41,
+      "text": "Light"
+    },
+    {
+      "key": "settings-theme-system",
+      "x": 729,
+      "y": 595,
+      "w": 162,
+      "h": 41,
+      "text": "System"
+    },
+    {
+      "key": "settings-risk-inputs-panel",
+      "x": 364,
+      "y": 684,
+      "w": 552,
+      "h": 389,
+      "text": "Risk inputsThese figures are sent to your AI provider with each recommendation r"
+    },
+    {
+      "key": "settings-risk-inputs-section",
+      "x": 389,
+      "y": 754,
+      "w": 502,
+      "h": 295,
+      "text": "These figures are sent to your AI provider with each recommendation request. Con"
+    },
+    {
+      "key": "risk-inputs-helper",
+      "x": 389,
+      "y": 754,
+      "w": 502,
+      "h": 60,
+      "text": "These figures are sent to your AI provider with each recommendation request. Con"
+    },
+    {
+      "key": "risk-inputs-form",
+      "x": 389,
+      "y": 853,
+      "w": 502,
+      "h": 196,
+      "text": "Account sizeThe account value you want sizing based on. You type it; Convexa nev"
+    },
+    {
+      "key": "risk-inputs-account-size",
+      "x": 389,
+      "y": 877,
+      "w": 160,
+      "h": 37,
+      "text": ""
+    },
+    {
+      "key": "risk-inputs-cap-value",
+      "x": 587,
+      "y": 878,
+      "w": 120,
+      "h": 37,
+      "text": ""
+    },
+    {
+      "key": "risk-inputs-cap-unit",
+      "x": 715,
+      "y": 877,
+      "w": 176,
+      "h": 39,
+      "text": "% of account$ per trade"
+    },
+    {
+      "key": "settings-ai-key-panel",
+      "x": 364,
+      "y": 1098,
+      "w": 552,
+      "h": 633,
+      "text": "AI providersConnect Grok (while signed into Convexa) to run Ask-AI on your Grok "
+    },
+    {
+      "key": "settings-ai-key-section",
+      "x": 389,
+      "y": 1167,
+      "w": 502,
+      "h": 539,
+      "text": "Connect Grok (while signed into Convexa) to run Ask-AI on your Grok subscription"
+    },
+    {
+      "key": "settings-grok-card",
+      "x": 389,
+      "y": 1257,
+      "w": 502,
+      "h": 124,
+      "text": "Your Grok subscriptionYour Grok subscription isn't available to connect on this "
+    },
+    {
+      "key": "settings-grok-unavailable",
+      "x": 402,
+      "y": 1303,
+      "w": 476,
+      "h": 65,
+      "text": "Your Grok subscription isn't available to connect on this deployment yet. You ca"
+    },
+    {
+      "key": "settings-ai-key-tabs",
+      "x": 389,
+      "y": 1427,
+      "w": 284,
+      "h": 40,
+      "text": "AnthropicOpenAIGrokGemini"
+    },
+    {
+      "key": "settings-ai-key-matrix",
+      "x": 389,
+      "y": 1479,
+      "w": 502,
+      "h": 144,
+      "text": "AnthropicActiveKey set ···· 1234Stored encrypted. Used only for your recommendat"
+    },
+    {
+      "key": "settings-ai-key-row-anthropic",
+      "x": 389,
+      "y": 1479,
+      "w": 502,
+      "h": 144,
+      "text": "AnthropicActiveKey set ···· 1234Stored encrypted. Used only for your recommendat"
+    },
+    {
+      "key": "settings-ai-key-set",
+      "x": 402,
+      "y": 1525,
+      "w": 476,
+      "h": 85,
+      "text": "Key set ···· 1234Stored encrypted. Used only for your recommendations. Never sho"
+    },
+    {
+      "key": "settings-ai-key-masked",
+      "x": 402,
+      "y": 1525,
+      "w": 476,
+      "h": 25,
+      "text": "Key set ···· 1234"
+    },
+    {
+      "key": "settings-ai-model",
+      "x": 389,
+      "y": 1643,
+      "w": 502,
+      "h": 63,
+      "text": "Model for recommendationsclaude-opus-4-8 · Catalog recommended default​"
+    },
+    {
+      "key": "settings-brokerage-panel",
+      "x": 364,
+      "y": 1755,
+      "w": 552,
+      "h": 318,
+      "text": "BrokerageConnect Webull with your own Individual OpenAPI keys. Convexa reads pos"
+    },
+    {
+      "key": "settings-brokerage-section",
+      "x": 389,
+      "y": 1824,
+      "w": 502,
+      "h": 224,
+      "text": "Connect Webull with your own Individual OpenAPI keys. Convexa reads positions on"
+    },
+    {
+      "key": "settings-brokerage-empty",
+      "x": 389,
+      "y": 1869,
+      "w": 502,
+      "h": 179,
+      "text": "App KeyApp KeyApp SecretApp SecretBoth halves are saved together, encrypted. Nei"
+    },
+    {
+      "key": "settings-brokerage-app-key",
+      "x": 389,
+      "y": 1869,
+      "w": 502,
+      "h": 55,
+      "text": ""
+    },
+    {
+      "key": "settings-brokerage-app-secret",
+      "x": 389,
+      "y": 1932,
+      "w": 502,
+      "h": 55,
+      "text": ""
+    },
+    {
+      "key": "settings-disclaimer",
+      "x": 364,
+      "y": 2097,
+      "w": 552,
+      "h": 40,
+      "text": "Convexa is an analysis tool. Positions in the sim book are simulated (paper); a "
+    }
+  ],
+  "probes": {
+    "connectionState": null,
+    "skeletons": 0,
+    "monoElements": 3,
+    "sansElements": 64,
+    "archivoElements": 3,
+    "otherFontElements": 1,
+    "htmlBackground": "rgb(11, 15, 23)",
+    "bodyBackground": "rgb(11, 15, 23)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", Roboto, sans-serif",
+    "bodyFontSize": "15px",
+    "panelSelector": "top-nav",
+    "panelRadius": "0px",
+    "panelBackground": "rgba(19, 26, 36, 0.82)",
+    "panelBorder": "0px none rgba(0, 0, 0, 0)",
+    "monoFont": null,
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": false,
+    "plexSansLoaded": true,
+    "scrollHeight": 2169,
+    "scrollWidth": 1280,
+    "clientWidth": 1280
+  },
+  "panels": [
+    {
+      "key": "settings-account-panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    },
+    {
+      "key": "settings-preferences-panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    },
+    {
+      "key": "settings-risk-inputs-panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    },
+    {
+      "key": "settings-ai-key-panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    },
+    {
+      "key": "settings-brokerage-panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    }
+  ],
+  "png": "app/settings-signed-in-1280-dark.png"
+}

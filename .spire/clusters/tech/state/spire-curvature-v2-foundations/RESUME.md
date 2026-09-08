@@ -1,5 +1,38 @@
 # RESUME — spire/curvature-v2-foundations
 
+## ⬆ UPDATE — 2026-09-08, conductor: the surfaces fidelity lane is VERIFIED and accepted — F5–F8 closed
+
+The lane landed eight commits (`debbd55f`…`cf4727b9`: positions · alerts · settings · scanner, three
+fixups the gates themselves caught, the report). Cold re-verification (fresh uncached production build,
+the harness `--grep "positions|alerts|settings|scanner"` into `surfaces-repair-verify/`) matched the
+lane's census **to the pixel**; report: `SURFACES_FIDELITY_REPAIR_REPORT.md`, last section. The review
+found two copy claims the data does not vouch for — "Prime starts around 80" (the tier band is a server
+env, default 75, never on the wire) and "fired alerts … on the desk" (the desk evaluates and notifies,
+displays nothing) — plus the events' "Mark read" button on the Rules card and the fifth track-record card
+wrapping alone; three conductor commits fix them, and a fourth makes the harness's `contentBottom` a
+census field (the instrument's blind spot the lane found: `pageHeight` reads the grown 1,800 px viewport
+on short pages).
+
+**Numbers, final tree (content height vs the design measured in the same run):** positions at 1280
+**1,298 vs 1,120 = 1.159×** (audit 1.69×; threshold ≤ 1.20 now met; 1440 still 1.258× — the app's
+1,240 px max column does not reflow while the design's does; 390 1.103×); alerts **0.903×** at 1280/1440
+in the design's two columns (composer 39.2%), 0.763× at 390; settings **1.158×** (audit 1.51×), 0.891× at
+390; scanner: no `overflowX` on any of five captures, score bar on every row, notes row present.
+Sub-thresholds still open: `settings-ai-key-panel` 633 vs ≤ 420 (from 1,142); `tr-families` met (176 ≤ 320).
+
+**Every gate green cold, standalone:** e2e **108/108, 0 flaky** (uncached) · unit suite alone 240 files /
+**2,921** · typecheck 0 (+ the e2e project's tsc 0) · lint 0 (5 pre-existing warnings) · format 0 ·
+`apps/api` diff empty · NUL/CRLF 0 across 59 files.
+
+**Now the owner's call, in order of leverage:** (1) the visual gate's `positions-dense` and `scanner-dense`
+baselines changed by design — authorization → candidates → acceptance receipt flow, never `visual-update`
+unilaterally; (2) phase 4 (landing + responsive) with a composition row per surface and the harness as
+the instrument; (3) the residuals named in the report (positions at 1440 / `OrdersPanel`; the AI-providers
+panel; Brokerage progressive disclosure; the alerts "universe member" chip and desk-open chip; scanner
+STATUS-into-age and the hover preview; the scanner fixture's `sweep_last_completed: 1` sentinel — L2);
+(4) the backend backlog items on `main` ("Harvest — 2026-09-08"). Lesson recorded: the mock's captions
+are design intent for layout, never for numbers — every figure the app prints needs a wire source.
+
 ## ⬆ UPDATE — 2026-09-08, pass 2 of the /ticker lane ("Do all four") landed — GATE Z: none
 
 All three frontend changes landed, four commits (`1d84505a` change 7 hero header collapse at 390 ·

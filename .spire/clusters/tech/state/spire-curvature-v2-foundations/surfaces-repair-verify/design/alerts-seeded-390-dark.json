@@ -1,0 +1,120 @@
+{
+  "id": "alerts-seeded-390-dark",
+  "side": "design",
+  "surface": "alerts",
+  "state": "seeded",
+  "width": 390,
+  "scheme": "dark",
+  "url": "/alerts.html",
+  "pageHeight": 1946,
+  "contentBottom": 1945,
+  "overflowX": false,
+  "scrollWidth": 390,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "nav-bar",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 56,
+      "text": "CONVEA ScannerTickerPositionsAlerts Jump to a ticker…⌘K Open 10:42:07 ET R"
+    },
+    {
+      "key": "wrap:0:wrap.nav-in",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 56,
+      "text": "CONVEA ScannerTickerPositionsAlerts Jump to a ticker…⌘K Open 10:42:07 ET R"
+    },
+    {
+      "key": "wrap:1:wrap",
+      "x": 0,
+      "y": 56,
+      "w": 390,
+      "h": 1548,
+      "text": "Alerts Level-touch, tier-change and score-gate rules on structure snapshots — no"
+    },
+    {
+      "key": "wrap:2:wrap.foot-grid",
+      "x": 0,
+      "y": 1692,
+      "w": 390,
+      "h": 253,
+      "text": "CONVEA How Convexa worksBlog — how we read structureLab Convexa is an analysis t"
+    },
+    {
+      "key": "panel:0:panel:New rule",
+      "x": 16,
+      "y": 216,
+      "w": 358,
+      "h": 488,
+      "text": "New ruleRules evaluate against structure snapshots while a ticker desk is open —"
+    },
+    {
+      "key": "panel:1:panel:Rules",
+      "x": 16,
+      "y": 719,
+      "w": 358,
+      "h": 631,
+      "text": "Rules4AllArmedPaused SPY Score gate · score ≥ 70desk open armed · evaluated 42s "
+    },
+    {
+      "key": "panel:2:panel.quiet:Fired",
+      "x": 16,
+      "y": 1366,
+      "w": 358,
+      "h": 238,
+      "text": "Firedtoday · 2 10:12 ETSPYScore gate ≥ 70 fired at 72 · ActionableOpen SPY desk "
+    }
+  ],
+  "probes": {
+    "connectionState": null,
+    "skeletons": 0,
+    "monoElements": 17,
+    "sansElements": 60,
+    "archivoElements": 5,
+    "otherFontElements": 0,
+    "htmlBackground": "rgb(11, 15, 23)",
+    "bodyBackground": "rgb(11, 15, 23)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", sans-serif",
+    "bodyFontSize": "13px",
+    "panelSelector": "panel",
+    "panelRadius": "12px",
+    "panelBackground": "rgb(19, 26, 36)",
+    "panelBorder": "1px solid rgba(138, 155, 180, 0.16)",
+    "monoFont": "\"IBM Plex Mono\", ui-monospace, SFMono-Regular, Menlo, monospace",
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": true,
+    "plexSansLoaded": true,
+    "scrollHeight": 1946,
+    "scrollWidth": 390,
+    "clientWidth": 390
+  },
+  "panels": [
+    {
+      "key": "section.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "section.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "section.panel.quiet",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    }
+  ],
+  "png": "design/alerts-seeded-390-dark.png"
+}

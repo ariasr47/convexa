@@ -1,0 +1,38 @@
+{
+ "view": {
+  "source": "default",
+  "authenticated": false,
+  "name": null,
+  "symbols": [
+   "TSLA"
+  ],
+  "sort": {
+   "key": "score",
+   "dir": "desc"
+  },
+  "density": "compact"
+ },
+ "rows": [
+  {
+   "symbol": "TSLA",
+   "price": 250,
+   "chg_pct": 1.2,
+   "score": 82,
+   "tier": "prime",
+   "regime": "positive_gamma",
+   "vol_regime": "iv_rich",
+   "flip": 248,
+   "dist_to_flip_pct": 0.8,
+   "call_wall": 260,
+   "put_wall": 240,
+   "dist_to_wall_pct": 1.9,
+   "as_of": 1788866152,
+   "status": "ok"
+  }
+ ],
+ "sweep": {
+  "updated_at": 1788866182,
+  "sweep_last_completed": 1788866162,
+  "universe_size": 1
+ }
+}

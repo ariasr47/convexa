@@ -345,3 +345,84 @@ authorization → candidates → acceptance flow before the visual gate can be r
 14 plans × 2 sides = 28 captures, `_tools/` (copied from the audit folder), `.gitignore` (raw PNGs
 excluded, JSON/tools committed). Never written to `fidelity-audit-2026-09-08/`, `ticker-repair-
 after/` or `ticker-repair-verify/` (the pre-existing baseline folders).
+
+---
+
+## Conductor's cold re-verification (2026-09-08, the Mac session — not the lane's numbers)
+
+**Procedure.** Fresh production build (`npx nx build @convexa/dashboard --configuration=production
+--skip-nx-cache`, Vite 8, 1,572 modules), the harness `--grep "positions|alerts|settings|scanner"`
+into `surfaces-repair-verify/` (28/28 captures, exit 0), the census compared against the lane's own
+`surfaces-repair-after/` JSON, composites viewed, then every gate on the final tree.
+
+**Run 1 — the lane's tree (`cf4727b9`), before any conductor change.** Every capture matched the
+lane's JSON to the pixel: content bottom, `overflowX`, and every named region's y/h/w/x
+(positions 1,446 vs 1,120 = 1.291× at 1280, 1.401× at 1440, 1.103× at 390; alerts 848 vs 947 =
+0.895×; settings 2,169 vs 1,873 = 1.158×; scanner 771 px content, `overflowX` false on all five
+captures, both sides). The lane's methodology note is confirmed, not just repeated: `pageHeight`
+read **1,800** (the viewport `settle()` grew) on alerts and scanner at 1280/1440 while their
+regions end at 848 and 771. The lane's numbers stand.
+
+**Review findings → four conductor fixups (three commits, on top of the lane's eight).**
+
+| commit    | what                                                                                                                                                       | why (evidence)                                                                                                                                                                                                                                                                                               |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| alerts    | drop the **"Prime starts around 80"** caption                                                                                                              | a number with no vouched source: the tier band is a server env the client never receives (`TIER_PRIME_SCORE`, default **75**, Prime also requires `ai_eval.ready` — `PROJECT_CONTEXT.md` env table); the ledger's byte-identity rows record 78 and 79 as `prime`. The design mock's caption; not the data's. |
+| alerts    | "You will see fired alerts here **and on the desk**" → "Fired alerts are listed here. Browser notifications, once allowed, also pop while a desk is open." | the desk evaluates rules on each REST poll (`TickerDashboard.tsx:270-293` → `evaluateSnap`) and fires a browser Notification if allowed; nothing on the desk displays a fired alert. The design's nav bell does not exist in the app.                                                                        |
+| alerts    | **"Mark N read"** moves from the Rules header to the Recent header                                                                                         | it calls `markAllEventsRead` — it acts on the events list, not the rules. Same element, text, handler and `AlertsRefused` guard.                                                                                                                                                                             |
+| positions | `tr-families`: **five** cards on one row at ≥ lg                                                                                                           | the design draws four cards on one row; the app's fifth family (Persona) wrapped alone under `md: repeat(4, …)`, 327 px vs the ≤ 320 target. At 1,192 px content width five cards are ~229 px — the design's own card width.                                                                                 |
+| harness   | `contentBottom` field in the census (additive); `pairs.py`/`regions.py` print it                                                                           | the blind spot the lane found, made a field instead of a post-hoc derivation; existing fields byte-comparable with earlier runs.                                                                                                                                                                             |
+
+Also checked and **accepted as written**: the three scanner note cards against `methodology/copy.ts:63-66`
+("How a score is built" names the same components — proximity, |IV/HV − 1| stretch, setups, flip-transition
+bonus — and omits only the optional dark-pool confluence, acceptable for a summary; the zero-state and
+stream-drop notes describe shipped behaviour); "Rules evaluate against structure snapshots while a ticker
+desk is open" (true of `useAlerts.ts:55-70`); "Stored in this browser · N rules" (the store is local);
+"Capital at risk" = the open book's max-loss sum with an honest coverage caption. The lane's judgment calls
+— `OrdersPanel` mounted (test dependency), the Kind select kept (`no-overflow.spec.ts` pins the combobox),
+AI providers as `aria-pressed` buttons rather than a half-built ARIA tablist, amber reserved for `Prime`
+(the `stage3-amber` invariant), the preset prune leaving filter state valid — are each backed by a named
+test or invariant and stand.
+
+**Run 2 — the final tree, after the fixups** (same procedure, fresh build; content bottom from the new
+field; design measured in the same run):
+
+| capture                                           | app content                     | design content                        | ratio     | threshold                                      | verdict                                                                                                                    |
+| ------------------------------------------------- | ------------------------------- | ------------------------------------- | --------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| positions 1280                                    | **1,298**                       | 1,120                                 | **1.159** | ≤ 1.20                                         | **met** (lane: 1.291)                                                                                                      |
+| positions 1440                                    | 1,298                           | 1,032                                 | 1.258     | ≤ 1.20                                         | missed (lane: 1.401) — the app's 1,240 px max column does not reflow between 1280 and 1440; the design's fluid column does |
+| positions 390                                     | 3,075                           | 2,787                                 | 1.103     | ≤ 1.25                                         | met                                                                                                                        |
+| `tr-families` 1280                                | **176**                         | —                                     | —         | ≤ 320                                          | **met** (lane: 327)                                                                                                        |
+| alerts 1280 / 1440                                | 855                             | 947 / 948                             | 0.903     | ≤ 1.20, two columns, composer ≤ 45%            | met — composer 455 px of 1,160 = 39.2%                                                                                     |
+| alerts 390                                        | 1,484                           | 1,945                                 | 0.763     | ≤ 1.25                                         | met                                                                                                                        |
+| settings 1280 / 1440                              | 2,169                           | 1,873 / 1,874                         | 1.158     | ≤ 1.20                                         | met                                                                                                                        |
+| settings 390                                      | 2,532                           | 2,841                                 | 0.891     | ≤ 1.25                                         | met                                                                                                                        |
+| `settings-ai-key-panel`                           | 633                             | —                                     | —         | ≤ 420                                          | missed (was 1,142 in the audit) — Grok subscription card 124 px kept whole                                                 |
+| scanner 1440 / 1280 dark / 1280 light / 834 / 390 | 771 / 771 / 771 / 1,011 / 1,891 | 1,275 / 1,296 / 1,296 / 2,161 / 3,639 | —         | no `overflowX`; score bar every row; notes row | met — `overflowX` false on all five, both sides; `cell-score-bar` on every scored row; `scan-notes` 106 px at 1280         |
+
+Composites for every capture: `surfaces-repair-verify/pairs/*.jpg` (app left, design right, same scale).
+
+**Gates — final tree, each run standalone, exit codes:**
+
+| gate                                           | result                                                                                             |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| production build, uncached                     | **0**                                                                                              |
+| composition harness (28 captures)              | **0** — 28/28                                                                                      |
+| whole chromium e2e, production build           | **0** — **108/108, 0 flaky**, Nx cache 0/1 hit (a real run, 30.6 s on 5 workers)                   |
+| dashboard unit suite, **alone**                | **0** — 240 files / **2,921** tests                                                                |
+| `npm run typecheck`                            | **0**                                                                                              |
+| `tsc -p apps/dashboard-e2e --noEmit` (harness) | **0**                                                                                              |
+| `npm run lint`                                 | **0** — 5 pre-existing warnings (4 `no-explicit-any`, 1 `exhaustive-deps`), none in a touched file |
+| `npm run format:check`                         | **0**                                                                                              |
+| `git diff origin/main...HEAD -- apps/api`      | **0 lines**                                                                                        |
+| NUL / CRLF byte scan                           | **0 / 0** across the 59 files the lane and the conductor touched                                   |
+
+**Verdict.** The lane's work is accepted. Composition on all four surfaces now follows the design's
+layout (two-column alerts, the 760 px settings column with side-by-side fields and provider tabs, the
+positions mast/control row/card grid, the scanner header/controls/score bar/notes), the v2 vocabulary
+is intact, and two copy claims that overreached the data are gone. Open, carried forward (owner's call):
+positions at 1440 (1.258×, structural: `OrdersPanel` 158 px + the max-width column); the AI-providers
+panel 633 vs 420; the lane's residual list above; the two visual baselines (`positions-dense`,
+`scanner-dense`) changed by design and need the authorization → candidates → acceptance receipt flow
+before the visual gate is re-run; and the pre-existing scanner fixture sentinel that renders
+"Structure as-of 496527h" / "Sweep last ran 20688 d ago" (audit L2), visible in every scanner capture.

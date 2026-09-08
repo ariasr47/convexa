@@ -1,0 +1,334 @@
+{
+  "id": "settings-signed-in-390-dark",
+  "side": "app",
+  "surface": "settings",
+  "state": "signed-in",
+  "width": 390,
+  "scheme": "dark",
+  "url": "/settings",
+  "pageHeight": 2532,
+  "contentBottom": 2532,
+  "overflowX": false,
+  "scrollWidth": 390,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "app-shell",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 2532,
+      "text": "Skip to main contentCONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality"
+    },
+    {
+      "key": "skip-to-main",
+      "x": 0,
+      "y": -53,
+      "w": 158,
+      "h": 44,
+      "text": "Skip to main content"
+    },
+    {
+      "key": "top-nav",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 57,
+      "text": "CONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality-user@fixture.invali"
+    },
+    {
+      "key": "settings-page",
+      "x": 0,
+      "y": 57,
+      "w": 390,
+      "h": 2475,
+      "text": "SettingsSaved to your account.AccountQQuality Fixturequality-user@fixture.invali"
+    },
+    {
+      "key": "settings-account-panel",
+      "x": 16,
+      "y": 171,
+      "w": 358,
+      "h": 137,
+      "text": "AccountQQuality Fixturequality-user@fixture.invalidSign out"
+    },
+    {
+      "key": "settings-account-signed-in",
+      "x": 41,
+      "y": 240,
+      "w": 308,
+      "h": 43,
+      "text": "QQuality Fixturequality-user@fixture.invalidSign out"
+    },
+    {
+      "key": "settings-preferences-panel",
+      "x": 16,
+      "y": 332,
+      "w": 358,
+      "h": 379,
+      "text": "PreferencesAffects appearance only.Active personaActive personaDefault (no perso"
+    },
+    {
+      "key": "settings-ticker",
+      "x": 41,
+      "y": 539,
+      "w": 308,
+      "h": 39,
+      "text": ""
+    },
+    {
+      "key": "settings-theme",
+      "x": 41,
+      "y": 646,
+      "w": 308,
+      "h": 41,
+      "text": "DarkLightSystem"
+    },
+    {
+      "key": "settings-risk-inputs-panel",
+      "x": 16,
+      "y": 735,
+      "w": 358,
+      "h": 549,
+      "text": "Risk inputsThese figures are sent to your AI provider with each recommendation r"
+    },
+    {
+      "key": "settings-risk-inputs-section",
+      "x": 41,
+      "y": 804,
+      "w": 308,
+      "h": 455,
+      "text": "These figures are sent to your AI provider with each recommendation request. Con"
+    },
+    {
+      "key": "risk-inputs-helper",
+      "x": 41,
+      "y": 804,
+      "w": 308,
+      "h": 97,
+      "text": "These figures are sent to your AI provider with each recommendation request. Con"
+    },
+    {
+      "key": "risk-inputs-form",
+      "x": 41,
+      "y": 961,
+      "w": 308,
+      "h": 298,
+      "text": "Account sizeThe account value you want sizing based on. You type it; Convexa nev"
+    },
+    {
+      "key": "risk-inputs-account-size",
+      "x": 41,
+      "y": 985,
+      "w": 160,
+      "h": 37,
+      "text": ""
+    },
+    {
+      "key": "risk-inputs-cap-value",
+      "x": 41,
+      "y": 1107,
+      "w": 120,
+      "h": 37,
+      "text": ""
+    },
+    {
+      "key": "risk-inputs-cap-unit",
+      "x": 169,
+      "y": 1106,
+      "w": 176,
+      "h": 39,
+      "text": "% of account$ per trade"
+    },
+    {
+      "key": "settings-ai-key-panel",
+      "x": 16,
+      "y": 1308,
+      "w": 358,
+      "h": 727,
+      "text": "AI providersConnect Grok (while signed into Convexa) to run Ask-AI on your Grok "
+    },
+    {
+      "key": "settings-ai-key-section",
+      "x": 41,
+      "y": 1378,
+      "w": 308,
+      "h": 633,
+      "text": "Connect Grok (while signed into Convexa) to run Ask-AI on your Grok subscription"
+    },
+    {
+      "key": "settings-grok-card",
+      "x": 41,
+      "y": 1505,
+      "w": 308,
+      "h": 161,
+      "text": "Your Grok subscriptionYour Grok subscription isn't available to connect on this "
+    },
+    {
+      "key": "settings-grok-unavailable",
+      "x": 54,
+      "y": 1551,
+      "w": 282,
+      "h": 102,
+      "text": "Your Grok subscription isn't available to connect on this deployment yet. You ca"
+    },
+    {
+      "key": "settings-ai-key-tabs",
+      "x": 41,
+      "y": 1712,
+      "w": 284,
+      "h": 40,
+      "text": "AnthropicOpenAIGrokGemini"
+    },
+    {
+      "key": "settings-ai-key-matrix",
+      "x": 41,
+      "y": 1764,
+      "w": 308,
+      "h": 164,
+      "text": "AnthropicActiveKey set ···· 1234Stored encrypted. Used only for your recommendat"
+    },
+    {
+      "key": "settings-ai-key-row-anthropic",
+      "x": 41,
+      "y": 1764,
+      "w": 308,
+      "h": 164,
+      "text": "AnthropicActiveKey set ···· 1234Stored encrypted. Used only for your recommendat"
+    },
+    {
+      "key": "settings-ai-key-set",
+      "x": 54,
+      "y": 1810,
+      "w": 282,
+      "h": 105,
+      "text": "Key set ···· 1234Stored encrypted. Used only for your recommendations. Never sho"
+    },
+    {
+      "key": "settings-ai-key-masked",
+      "x": 54,
+      "y": 1810,
+      "w": 282,
+      "h": 25,
+      "text": "Key set ···· 1234"
+    },
+    {
+      "key": "settings-ai-model",
+      "x": 41,
+      "y": 1948,
+      "w": 308,
+      "h": 63,
+      "text": "Model for recommendationsclaude-opus-4-8 · Catalog recommended default​"
+    },
+    {
+      "key": "settings-brokerage-panel",
+      "x": 16,
+      "y": 2060,
+      "w": 358,
+      "h": 356,
+      "text": "BrokerageConnect Webull with your own Individual OpenAPI keys. Convexa reads pos"
+    },
+    {
+      "key": "settings-brokerage-section",
+      "x": 41,
+      "y": 2129,
+      "w": 308,
+      "h": 262,
+      "text": "Connect Webull with your own Individual OpenAPI keys. Convexa reads positions on"
+    },
+    {
+      "key": "settings-brokerage-empty",
+      "x": 41,
+      "y": 2192,
+      "w": 308,
+      "h": 199,
+      "text": "App KeyApp KeyApp SecretApp SecretBoth halves are saved together, encrypted. Nei"
+    },
+    {
+      "key": "settings-brokerage-app-key",
+      "x": 41,
+      "y": 2192,
+      "w": 308,
+      "h": 55,
+      "text": ""
+    },
+    {
+      "key": "settings-brokerage-app-secret",
+      "x": 41,
+      "y": 2255,
+      "w": 308,
+      "h": 55,
+      "text": ""
+    },
+    {
+      "key": "settings-disclaimer",
+      "x": 16,
+      "y": 2440,
+      "w": 358,
+      "h": 60,
+      "text": "Convexa is an analysis tool. Positions in the sim book are simulated (paper); a "
+    }
+  ],
+  "probes": {
+    "connectionState": null,
+    "skeletons": 0,
+    "monoElements": 3,
+    "sansElements": 64,
+    "archivoElements": 3,
+    "otherFontElements": 1,
+    "htmlBackground": "rgb(11, 15, 23)",
+    "bodyBackground": "rgb(11, 15, 23)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", Roboto, sans-serif",
+    "bodyFontSize": "15px",
+    "panelSelector": "top-nav",
+    "panelRadius": "0px",
+    "panelBackground": "rgba(19, 26, 36, 0.82)",
+    "panelBorder": "0px none rgba(0, 0, 0, 0)",
+    "monoFont": null,
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": false,
+    "plexSansLoaded": true,
+    "scrollHeight": 2532,
+    "scrollWidth": 390,
+    "clientWidth": 390
+  },
+  "panels": [
+    {
+      "key": "settings-account-panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    },
+    {
+      "key": "settings-preferences-panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    },
+    {
+      "key": "settings-risk-inputs-panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    },
+    {
+      "key": "settings-ai-key-panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    },
+    {
+      "key": "settings-brokerage-panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    }
+  ],
+  "png": "app/settings-signed-in-390-dark.png"
+}
