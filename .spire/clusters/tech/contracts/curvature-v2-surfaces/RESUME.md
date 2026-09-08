@@ -1,9 +1,11 @@
-# RESUME — curvature-v2-surfaces frontend lane (FE-11 → FE-14, then BE-1)
+# RESUME — curvature-v2-surfaces frontend lane (FE-13 → FE-14, then BE-1)
 
-**Resume status:** ACTIVE — FE-8, FE-9, FE-10 landed clean, one commit each, in that order, on
+**Resume status:** ACTIVE — FE-11 and FE-12 landed clean, one commit each, in that order, on
 `spire/curvature-v2-foundations`. Nothing is half-done: the working tree was clean at the stop
 (aside from the untouched sibling-process directory noted below). This file is written by the lane
-that just landed FE-8/9/10, not a conductor overlay.
+that just landed FE-11/12, ending the session at the 250k-token checkpoint guideline rather than
+starting FE-13 on a degraded budget — FE-13 is a substantial new task (seeding, four new SB
+criteria) that deserves a fresh context.
 
 ## Done (all committed on `spire/curvature-v2-foundations`; re-run before trusting)
 
@@ -16,153 +18,180 @@ that just landed FE-8/9/10, not a conductor overlay.
 | FE-5 | `bdc992d8` | positions rows on the module; every `⏸` → stroke icon; keyboard-reachable tips; `EXEMPT` 12 → 6 |
 | FE-6 | `ede3ddd4` | positions header readout → `FigureCell`; `netPl.ts` five Net P/L states; `EXEMPT` 6 → 5 |
 | FE-7 | `b2a8cf15` | Broker tab register conversion; `not provided` non-synonymy; pause icon; `EXEMPT` 5 → 0 |
-| FE-7 follow-up | (see FE-7 log) | conductor: emptied `pauseGlyph.spec.ts`'s own `EXEMPT` map |
-| FE-8 | `83af0059` | Settings: risk-input register (Mono/traced, `not set`), neutral save confirmation (`severity="info"`, all FOUR settings-page confirmations — see gotcha 11), U-19 session-resolving line, U-35 panel radius. Two real defects fixed: `useSettings.ts`'s `writeServer` never re-threw (so a failed write STILL showed "Saved"); the ticker draft never reverted on a failed write. New `settings.register.spec.tsx` (15 tests). |
-| FE-9 | `589bbc51` | Alerts store read-fault latch (`alertsReadFaulted()`, `store.ts`) — closes the loss-free durable-migration breach where a corrupt blob's next write overwrote it. New `store.spec.ts` (9 tests, all 4 required cases a–d). |
-| FE-10 | `81f77222` | Alerts page: closed lookups (`features/alerts/labels.ts`, new), thresholds by rule type (Mono/traced, `not set` never a fabricated default), unread off the coloured-edge-alone, three distinct empties, notify-permission honesty (a real defect: the stored flag could read stale-`true` after a revoked permission), N-5 faulted posture (local `AlertsRefused`/`AlertsFaultedBanner` mirroring `FaultedBanner.tsx`'s attribute set), U-23a/24/27. New `alerts.risk.spec.tsx` (23 tests); `evaluate.ts`/`evaluate.spec.ts` edited. |
+| FE-8 | `83af0059` | Settings: risk-input register, neutral save confirmation, U-19/U-35. Two real defects fixed (`useSettings.ts` write-failure swallow; ticker draft revert). |
+| FE-9 | `589bbc51` | Alerts store read-fault latch closing the loss-free durable-migration breach. |
+| FE-10 | `81f77222` | Alerts page closed lookups, thresholds by type, unread off the colour edge, notify-permission honesty (a real defect fixed). |
+| FE-11 | `1714f533` | Quiet band: `OffExchangeBlocks`/`FreshPositioning` MONO deleted, register through `@/shared/figure`; the absent contract-count token lifted into its own Sans span at the row's 12px; `MC_CELL_EMPTY` split into value `unavailable` + caption `this cycle`; `Setups.tsx` two-arm split (`undefined` vs `[]`); off-exchange proximity chip made keyboard-reachable. New `quiet-band.register.spec.tsx` (12 tests). Both mutation proofs (Q, R) run red, reverted green. |
+| FE-12 | `727ce10b` | D-C: `AccessibleHelp` promoted `pages/ticker/widgets/ai-rec/` → `shared/ui/` (byte-for-byte), nine importers re-pointed; `Widget.tsx`'s bare info icon → the one shipped focusable-help pattern, fixing all eight `<Widget info=…>` sites; `curvature-v2.spec.ts` extended with a frame-scoped `U-32` site list (all eight `widget-{id}` roots incl. hero + tape); browser-quality manifest bumped `86 → 90` in lockstep (4 files). Mutation proof S run red against the **production build**, reverted green. |
 
-**This session's own measurements (FE-8/9/10):** `npm run typecheck` **exit 0** (run cold after every
-task, `dist`/`out-tsc`/`*.tsbuildinfo` deleted first) · `npm run lint` **exit 0**, 5 warnings, all
-pre-existing, 0 new, every task · targeted `nx test` **exit 0** every task · full dashboard suite run
-**twice** after FE-10 (mandated): run 1 **exit 1** (`stage3-amber.spec.ts` — one **environmental**
-`ENOENT` on `_mutation_poison_replay_outcome_join.ts`, an UNRELATED file's own mutation-test poison
-racing a glob-import under parallel workers; confirmed by isolation re-run, exit 0, 32/32), run 2
-**exit 0, 238/238 files, 2844/2844 tests** — Nx itself flagged the pairing a **detected flaky task**,
-independently corroborating the diagnosis. Full detail, itemized copy diffs, and both mutation proofs
-per task (M/N/O/P — all run red, quoted, then reverted green) are in `BUILD_REPORT.md` §FE-8/§FE-9/§FE-10.
+**This session's own measurements (FE-11/12):** `npm run typecheck` **exit 0** (cold, every task) ·
+`npm run lint` **exit 0**, 5 pre-existing warnings, 0 new, both tasks · targeted `nx test`/`vitest`
+runs **exit 0** every task (FE-11: 57 files/795 tests then 61 files/829 tests after FE-12's
+re-pointing; FE-12: 36 files/607 tests on the nine importers + 5 files/56 tests on the named desk
+specs) · e2e `curvature-v2.spec.ts` against the **production build**: **exit 0, 11/11** (twice — once
+before, once after FE-12's own mutation-proof rebuild) · `desk-and-read.spec.ts` (a different
+feature's own file, run defensively): **exit 0, 6/6** · full `--list`: **90 tests in 7 files**,
+matching the corrected manifest. Full detail, itemized copy diffs, and both tasks' mutation proofs
+(Q, R, S — all run red, quoted, then reverted green) are in `BUILD_REPORT.md` §FE-11/§FE-12.
 
-## Next concrete step: **FE-11 — the quiet band**, then **FE-12 — the `Widget` frame ⓘ (D-C)**, then **FE-13 — browser/e2e**, then **FE-14 — frontend closer**, then **BE-1 — backend verification**
+## Next concrete step: **FE-13 — the browser layer**, then **FE-14 — frontend closer**, then **BE-1 — backend verification**
 
-Dispatch **one fresh Sonnet lane** for FE-11 (its own commit), then a fresh lane (or continuation) for
-FE-12, FE-13, FE-14 — PLAN.md's own task boundaries govern; do not batch tasks into one commit. Inputs
-each lane must read: this file; `PLAN.md` header + its own task in full (**verify every cited line
-number with `grep -n` first — they drift**, confirmed twice this session — RESUME.md's own line
-citations for FE-9/10 all held, but do not assume the next task's will); `SPEC.md` §2.4 (quiet band),
-§2.8 (Widget frame ⓘ, D-C), §3 F, §4.6, §1 Out; `council/decisions.md` §3 #2/#21, §4 D-C; the relevant
-`INTERFACE_CONTRACT.md` sections (none touch the backend — `NO_BACKEND_CHANGE` stands); `BUILD_REPORT.md`
-for the format and the FE-1/FE-8/FE-9/FE-10 sections (the helpers/idioms below).
+Dispatch **one fresh Sonnet lane** for FE-13 (its own commit), then a fresh lane (or continuation)
+for FE-14. Inputs the FE-13 lane must read: this file; `PLAN.md` header (traps table, baseline) +
+**FE-13 in full, verify every cited line number with `grep -n` first — they drift** (confirmed
+several times across this phase; the header/body split of PLAN's own "Owns" line for FE-12 omitted
+the browser-quality manifest files it actually needed — read the whole task, not just its own
+"Owns" line, and grep the actual tree state before trusting any PLAN line number); `SPEC.md` §7
+(testing strategy, the two execution traps + the third phase-specific one), §3 rows 21/37A/62/63/64/
+65/66/7a, §8 guardrails; `council/decisions.md` as PLAN's own FE-13 section cites; `BUILD_REPORT.md`
+for the format and the FE-1/FE-8/FE-11/FE-12 sections (idioms below); `INTERFACE_CONTRACT.md`
+(`NO_BACKEND_CHANGE` stands, nothing touches the backend).
 
-What binds FE-11 (restated from PLAN, not a substitute for reading it in full):
-- **Quiet band, split by figure, not widget.** Only `off-exchange-blocks` (`:24,79-81`) and
-  `fresh-positioning` (`:15,56-58`) carry mono runs from widget-local constants; `term-structure` and
-  `setups` are figure-free in the DOM (no count-shaped criterion — the deliverable is the property).
-  Delete the local `MONO`, resolve register through `@/shared/figure`, lift the absent-value token into
-  its own Sans span **at the row's own 12px** (never `FigureCell`'s 15px literal — that inverts the
-  hierarchy in a 12px list). `lookalikes.spec.ts:22-27,47-55` exempts four OTHER widgets — converting
-  these two edits no spec.
-- **Container-step hazard.** `Widget.tsx:180`'s `containerName: 'panel'` never fires today because the
-  nearest named ancestor is the WHOLE widget body, not each figure. Every converted multi-figure widget
-  wraps EACH figure in its own nested `PanelContainer` (same name, nearest-ancestor wins —
-  `ReadStrip.tsx:54` is the shipped precedent). Never a second container name, never `containerName` on
-  the widget's own grid. Criterion 7a needs a RENDERED assertion at a narrowed container width, never
-  rule-presence (`type-floor.spec.tsx` already passes while nothing steps — that is the vacuous-gate
-  trap criterion 69 exists to catch).
-- **Copy — exactly two sites, closed (56a).** (i) `_kit/copy.ts:355` `MC_CELL_EMPTY = 'unavailable this
-  cycle'` sits in a figure VALUE slot → split into value `unavailable` + caption `this cycle`. (ii)
-  `Setups.tsx:52` renders one sentence for both `undefined` and `[]` → `[]` keeps
-  `No clean setup right now.` byte-for-byte; `undefined` renders `Setups unavailable this cycle.`
-  **Nothing else** — `*_WHOLE_EMPTY` prose (`copy.ts:297,352-354`) is untouched; a third change is a
-  conflict, not a detail (U-30 on `Setups.tsx:41`'s `.toUpperCase()` is WITHDRAWN, carried debt).
-- **Criteria 53/54/58/59** (SB): stated register on every figure; no untraced figure ever renders Mono
-  in any state; no live mark in any connection state; every hover-revealed help control (incl. the
-  off-exchange proximity chip, outside ruling 6's four widgets) reachable by tap AND keyboard focus.
+What binds FE-13 (restated from PLAN, not a substitute for reading it in full):
+- **Extend `seed()` in `no-overflow.spec.ts` (T4 — required, not optional).** It takes
+  `{ scheme, positions }` only today, so `/alerts` is walked with no rules/events and `/scanner`'s
+  wide-band walk asserts only page-attachment. Add `alerts?: 'seeded'` writing a non-empty
+  `convexa.alerts.v1` (two rules of different kinds incl. a price threshold, three events, one
+  unread) via the same `addInitScript`, plus pre-measure count assertions on `/scanner`
+  (`scan-row` > 0) and `/alerts` (`alerts-rule` > 0) — the idiom the positions cases already use.
+  **Without this, criterion 62 is green on empty pages.**
+- **62 — 393 in BOTH schemes, 834/900/1280 in the one scheme the standing suite runs, over the four
+  surfaces, seeded.** 21: no column clipped, table scrolls in its own container, page never scrolls
+  sideways.
+- **63 — the executed case list.** `npx playwright test -c apps/dashboard-e2e/playwright.config.ts
+  --list` from the repo root, captured into the build report, naming every width×scheme
+  combination row 62 claims. **The allowlist trap**: a spec not in `playwright.config.ts:30-38`'s
+  `testMatch` array never runs and reports green — if you add a new file, add it there in the same
+  commit and prove it with `--list`.
+- **37A (D-B).** All five Settings sections reachable at every checked width in the shipped single
+  640px column, no page-body overflow. No rail, no tabs — that is phase 4.
+- **7a — the rendered container step.** At 1280 vs 393 on `/positions`, read
+  `getComputedStyle(...).fontSize` of `[data-testid="positions-net-pl"]`'s value inside its
+  `PanelContainer`: wide = `20px`, narrow steps to `17px`. This is Playwright's job — jsdom cannot
+  evaluate a container query, and no criterion claims it can.
+- **66 — the 44px effective hit area, both dimensions, coarse pointer, 393px**, for every control
+  this phase created or touched: the eight frame ⓘs (FE-12), the off-exchange proximity chip
+  (FE-11), the three positions literal tips, the alerts write affordances, the settings controls.
+  `test.use({ hasTouch: true })` + `theme.ts:132-137`'s floor — measure `boundingBox()`, never
+  restyle. Anything failing outside that set: itemize `file:line` as carried debt with a phase
+  attached.
+- **64/65.** Light mode at 393/1280, no scheme-invariant colour on any surface this phase touches
+  (the extended `hex-discipline.spec.ts` plus a token-pair assertion); no figure/chip/label below
+  the 11px floor at any checked width.
+- **Run:** `npm run ports:free && npx playwright install chromium && npm run build` (production,
+  never dev — confirmed again this session: `BROWSER_QUALITY_PREBUILD_STATUS=pass` is the local
+  invocation that actually serves `apps/dashboard/dist` via `http-server`; the bare
+  `npx nx e2e dashboard-e2e` without that env var falls through to the **dev server** locally, since
+  `process.env.CI` is unset outside CI — see gotcha 13 below), then
+  `BROWSER_QUALITY_PREBUILD_STATUS=pass npx nx e2e dashboard-e2e --skip-nx-cache` from the repo root.
+  Target: **at or above phase 2's close-out of 86/86** — now baselined at **90/90** after FE-12's
+  own addition (verify the actual number the moment you start; FE-13 adds more).
 
-**Carried mechanism notes (from FE-1/8/9/10, apply as needed):**
-- Consume `figureStateOf`/`faceFor` from `@/shared/figure`, never the card. `faceFor(true)` = Mono
-  (`fontFamily` + `tabular-nums` + `letterSpacing:0`); spread it, don't hand-roll a local `MONO`.
-- `data-figure-register` sits on the VALUE's own node when there's no `FigureCell` card; never assume
-  co-location with `data-figure-state`.
-- The ladder (20/17/15) is `FigureCell`'s own panel-scale constant and does NOT travel — a 12px list
-  row keeps 12px.
-- MUI `sx` compiles to a class; never assert `getAttribute('style')` — use `className` identity/regex
-  (`toMatch(/colorInfo|MuiAlert-standardInfo/)` is the established idiom, see `settings.register.spec.tsx`)
-  or structural DOM assertions.
-
-## What binds FE-12 (D-C, the `Widget` frame ⓘ) — read SPEC §2.8 in full before starting
-
-- Promote `AccessibleHelp` (today `pages/ticker/widgets/ai-rec/AccessibleHelp.tsx:37`) into `shared/ui/`
-  — the SAME `pages/` → `shared/` inversion §2.1 already refused for the figure module. Nine existing
-  importers re-point with ZERO behaviour change (same props, same `aria-label`, same `stopPropagation`,
-  same `enterTouchDelay={0}`).
-- `Widget.tsx:245-249`'s bare hover-tooltip `info` icon becomes the ONE shipped focusable-help pattern,
-  at all **eight** live `info=` sites (count corrected after S2 — `LiveTape.tsx:179` was missed at the
-  original count of seven).
-- The promoted call's accessible name is **`About {title}`** (the widget's OWN `title` prop) — not a
-  style choice, it's how AC-35's `.first()` resolution reaches the right control (§2.8's own worked
-  example of why a differently-named button reads green while testing nothing).
-- **The ticker desk is reopened for this ONE shared-frame change and NOTHING else** — no desk layout,
-  copy, state or spec content changes. Five shipped desk specs re-run inside this criterion (not merely
-  after it) and must stay green for BOTH the hero and the live tape — SPEC §2.8 names all five with
-  exact line ranges.
-- **Poison, required:** rename the promoted header button or drop the `About ` prefix — AC-35 must go
-  red at ALL EIGHT sites, or the enforcement is the vacuous gate criterion 69 exists to catch.
-
-## Gotchas (carried from lanes 2–10; do not rediscover)
+## Gotchas (carried from lanes 1–12; do not rediscover)
 
 1. **A price-merge bug in `Scanner.tsx`'s zero-state lead grouping was found and NOT fixed** (carried
    debt, `BUILD_REPORT.md` FE-4 §3) — still unfixed, still not this lane's job.
 2. **jsdom has no global `EventSource`** — stub a controllable class per the repo's own idiom.
 3. **Live-checked `EXEMPT` maps fail on BOTH arms** (file must exist AND still violate).
 4. **The `MONO_BOUND` needle-1 regex windows ±6/+12 lines around ANY line naming `MONO`/`MONO_FACE`/
-   `monoSx`/`monoFontFamily` — including inside a comment.** Reword the comment or name the string as a
-   constant; never restyle a render to dodge a heuristic.
-5. **Scripted `sed`/heredoc edits risk silently no-op'ing on CRLF files.** Use the Edit tool; grep-verify
-   after any scripted replace. (`git add` prints a harmless `LF will be replaced by CRLF` warning on this
-   Windows box every commit — that is expected, not a defect; the committed blob stays LF per
-   `.gitattributes`.)
-6. **`npm run ports:free`** at the start and the end of any app-verification pass (both IPv4 and `[::1]`).
-7. **Seeding a populated `/positions` in a fresh `npm run dev` is a two-step trap** (sign up a throwaway
-   account; `localStorage.removeItem('convexa.positions.v3')` in the SAME `page.evaluate` that seeds
-   `convexa.positions.v2`, before the reload).
-8. **Forcing a live SSE drop against the real dev backend is unreliable in lane time** — the
-   `EventSource`-stub tests are the reliable coverage; the browser pass is for reachable states only.
-9. **Scratch files: never at the repo root as a PERMANENT artifact** — the sandbox write-guard blocks
-   the OS temp dir directly, so a throwaway browser-driver script has to land at the repo root
-   temporarily; delete it and its screenshots before the commit (confirmed via `git status --porcelain`
-   showing no `_tmp_*` file each time this session).
-10. **A task's targeted run must include every spec file whose `EXEMPT` map names that task.** Before
-    committing: `grep -rln "FE-<n>" apps/dashboard/src --include=*.spec.*` and run every file it names —
-    but **read each citation before acting on it**: this session's own FE-9/FE-10 greps each returned
-    4–5 files, and all but the lane's own new file were a DIFFERENT feature's unrelated task numbering
-    (`curvature-v2-desk-and-read FE-8/FE-9`) — confirmed by opening each citation, not by the grep count
-    alone. Don't let a coincidental task-ID collision across features cost a wasted detour, and don't
-    skip the check because most hits turn out to be noise.
-11. **NEW (FE-8): a criterion phrased "on settings"/"on the page" can be broader than the file list
-    PLAN's own task illustration names.** FE-8's PLAN item 3 illustrated criterion 41 with exactly two
-    files (`SettingsPage.tsx`, `RiskInputsSection.tsx`), but the criterion's own text ("no confirmation
-    **on settings** renders in the direction-reserved colours") reached two MORE files rendered on the
-    same page (`AiKeySection.tsx`, `BrokerageSection.tsx`) that PLAN's illustration simply didn't
-    enumerate. Before writing an SB test scoped to only the files a task's "Owns" line names, grep the
-    WHOLE feature directory for the pattern the criterion actually describes — a narrowly-scoped SB test
-    that passes while an un-enumerated sibling file still violates the same plain-English criterion is
-    the vacuous-gate failure criterion 69 exists to catch, even if PLAN itself didn't spot the gap.
-12. **NEW (FE-9/10): `writeServer`-shaped catch blocks that swallow an error without re-throwing hide
-    a caller-observable defect that only a write-then-assert test catches — grep for `catch {` blocks
-    that set an error flag but don't propagate, near any handler that also fires an unconditional
-    "success" side-effect on the next line.** This exact shape caused FE-8's fixed defect
-    (`useSettings.ts`) and is worth a glance in any task touching a save/write flow.
+   `monoSx`/`monoFontFamily` — including inside a comment.** Reword the comment or name the string as
+   a constant; never restyle a render to dodge a heuristic. (N-1's scan is scoped to
+   `features/trading/`, `pages/positions/`, `pages/scanner/` ONLY — `pages/ticker/widgets/**` is
+   OUTSIDE this scan; a claim that a ticker-widget task "touches N-1's scanned trees" does not hold
+   against the shipped glob — confirmed at source this session, see gotcha 12.)
+5. **Scripted `sed`/heredoc edits risk silently no-op'ing on CRLF files.** Use the Edit tool;
+   grep-verify after any scripted replace. (`git add` prints a harmless `LF will be replaced by CRLF`
+   warning on this Windows box every commit — expected, not a defect.)
+6. **`npm run ports:free`** at the start and the end of any app-verification pass (both IPv4 and
+   `[::1]`).
+7. **Seeding a populated `/positions` in a fresh `npm run dev` is a two-step trap** (sign up a
+   throwaway account; `localStorage.removeItem('convexa.positions.v3')` in the SAME `page.evaluate`
+   that seeds `convexa.positions.v2`, before the reload).
+8. **Forcing a live SSE drop — or any specific data shape — against the real dev backend is
+   unreliable in lane time.** This session hit it twice more: no currently-tracked symbol (`SPY`,
+   `IWM`, `TSLA`, `AAPL`, `NVDA`, `MSFT`, `DIA`, `AMZN`, `META`) carried a non-empty
+   `off_exchange.blocks` array or a null ATR sub-read during FE-11's browser pass; a cold
+   `/api/ticker/SPY` options-chain fetch simply times out (>180s) against the real vendor while
+   already-warm symbols (`IWM`) answer in ~2s (or ~0.01s once cached). **Use an already-warm symbol
+   for ad hoc browser checks, and never assume a specific market-data shape is reachable live** — the
+   `EventSource`-stub / fixture-driven jsdom tests are the reliable coverage; the browser pass is for
+   reachable states only, and "not reachable this session" is a legitimate, honestly-reported
+   outcome, not a gap to fake.
+9. **Scratch files: never at the repo root as a PERMANENT artifact.** The sandbox write-guard blocks
+   the OS temp dir directly for some tools, and even where a script CAN write to the OS temp dir
+   (`node`/`playwright` scripts ran fine writing to it this session, just not always where you'd
+   expect — see gotcha 14), a throwaway browser-driver script may still need to land at the repo
+   root temporarily; delete it and its screenshots before the commit (confirmed via
+   `git status --porcelain` showing no `_tmp_*` file each time this session).
+10. **A task's targeted run must include every spec file whose `EXEMPT` map — or a coincidental
+    `grep -rln "FE-<n>"` hit — names that task**, but **read each citation before acting on it**:
+    this session's own FE-11 and FE-12 greps each returned files that were a **different feature's**
+    own task numbering (`curvature-v2-desk-and-read`'s FE-11/FE-12), confirmed by opening each
+    citation, not by the grep count alone. The whole `pages/ticker` suite (and, for FE-12, the other
+    feature's own `desk-and-read.spec.ts` e2e file) was run anyway as a defensive superset.
+11. **NEW (FE-8, still true): a criterion phrased "on settings"/"on the page" can be broader than the
+    file list PLAN's own task illustration names.** Grep the WHOLE feature directory for the pattern
+    the criterion actually describes, not just the files a task's "Owns" line enumerates.
+12. **NEW (FE-9/10, still true): `writeServer`-shaped catch blocks that swallow an error without
+    re-throwing hide a caller-observable defect that only a write-then-assert test catches.**
+13. **NEW (FE-11/12): PLAN's own line numbers, importer counts and even a launch-dispatch's "verified
+    anchors" can drift or be flatly wrong — grep-verify EVERYTHING before acting, not just line
+    numbers.** Concretely this session: (a) the launch dispatch claimed FE-11 "touches N-1's scanned
+    trees" — false, per gotcha 4 above, confirmed against the shipped `fonts.spec.ts` glob AND
+    PLAN's own Independence table; (b) the launch dispatch claimed AccessibleHelp had "ten consumer
+    files" including `PositionsPage.tsx` — false, that file only *mentions* `AccessibleHelp` in a
+    comment, never imports it; the real count is nine, matching PLAN's own "Owns" line; (c) PLAN's
+    own mutation-proof-Q text expected `fonts.spec.ts` needle 1 to go red alongside the new register
+    test — it does not (see gotcha 4), because the quiet band is outside N-1's scan scope; the new
+    `quiet-band.register.spec.tsx` IS the enforcement for criterion 54 there, not N-1. None of these
+    were reasons to skip the underlying work — each was verified, recorded, and worked around
+    correctly, but a lane that trusted any of the three at face value would have shipped either a
+    missing conversion or a false "both went red" claim.
+14. **NEW (FE-12): local e2e runs against the production build need
+    `BROWSER_QUALITY_PREBUILD_STATUS=pass` explicitly exported** — `playwright.shared.config.ts`'s
+    own `webServer.command` falls through to `npx nx run @convexa/dashboard:serve` (the **dev
+    server**) whenever `prebuildStatus !== 'pass'` AND `process.env.CI` is unset, which is always
+    true on a local box unless you set it. `npm run build` alone (without the env var on the
+    Playwright invocation) does NOT make the e2e run serve that build locally. Confirmed by grepping
+    prior QA_REPORT.md files in `curvature-v2-desk-and-read`, which record the exact same
+    `BROWSER_QUALITY_PREBUILD_STATUS=pass nx run dashboard-e2e:e2e` invocation.
+15. **NEW (FE-12): the browser-quality `manifest.json` is a FROZEN, closed inventory — adding a
+    Chromium test to any e2e file the manifest already tracks (`curvature-v2.spec.ts`,
+    `no-overflow.spec.ts`, `broker-grouping.spec.ts`, `desk-and-read.spec.ts`) requires updating FOUR
+    files in lockstep, or the run reports green on Playwright's own summary while the custom
+    `QualityReporter` throws per new test and the run's own `summary.json` records
+    `"status": "incomplete"` with a nonzero `not_run`:**
+    - `apps/dashboard-e2e/src/quality/manifest.json` — add one `{test_id, file, title_path, project}`
+      entry per new test (`test_id` = any 64-hex-char string, e.g.
+      `crypto.randomBytes(32).toString('hex')`); bump `full_chromium.inventory_id`.
+    - `apps/dashboard-e2e/tools/lib/manifest.mjs` — the `validateManifest` frozen-count check
+      (`inventory_id` string literal + `tests.length` literal).
+    - `apps/dashboard-e2e/tools/manifest.spec.mjs` — a second, independent assertion of the same
+      count (`node --test` this file + `mutations.spec.mjs` to confirm — this session found the
+      manifest.json fix alone left this second file's own hardcoded count stale and failing).
+    - `apps/dashboard-e2e/src/quality/reporters/quality-reporter.ts` — `gateCounts.chromium`, a third
+      hardcoded count, plus its own itemized-delta comment (follow the `52→75→86→90` convention).
+    FE-13 is very likely to add MORE tests to `no-overflow.spec.ts` (criterion 62's seeded-page rows)
+    — budget for this four-file update as part of that work, not as a surprise at verification time.
 
 ## `EXEMPT` maps (both live-checked on both arms, both empty)
 
-- `shared/theme/fonts.spec.ts` (N-1, two needles): **0 entries**. FE-14 asserts it empty.
+- `shared/theme/fonts.spec.ts` (N-1, two needles): **0 entries**. Neither FE-11 nor FE-12 touched
+  this file (out of N-1's scan scope for both — see gotcha 4/13a). FE-14 asserts it empty.
 - `features/trading/positions/pauseGlyph.spec.ts` (criterion 29): **0 entries**.
-
-Neither map moved this session — FE-8/9/10 touch `features/auth/`, `features/alerts/`,
-`pages/alerts/`, all outside N-1's three scanned trees (`features/trading/`, `pages/positions/`,
-`pages/scanner/`).
 
 ## ⚠️ Still true — another process shares this working tree
 
 `docs/research/convexa-business-review-2026-09-05/` remains untracked and was left alone all session
 (confirmed present, unchanged, at both the start and the end of this lane's work). Verify HEAD is on
 `spire/curvature-v2-foundations` before and after any work; stop and report if it moves. HEAD at the
-end of this session: `81f77222` (`fix(dashboard): FE-10 …`).
+end of this session: `727ce10b` (`feat(dashboard): FE-12 …`).
 
 ## Remaining arc (unchanged from PLAN, for orientation)
 
-FE-11 (quiet band) → FE-12 (D-C: `Widget` frame ⓘ via `AccessibleHelp` promoted to `shared/`, AC-35
-extended to all eight `widget-{id}` frame roots, desk specs re-run) → FE-13 (browser/e2e layer;
-Playwright `testMatch` allowlist extension — a spec not listed there never runs) → FE-14 (frontend
+FE-13 (browser/e2e layer; seed extension, criteria 21/37A/62/63/64/65/66/7a; Playwright `testMatch`
+allowlist extension if a new file is added — a spec not listed there never runs) → FE-14 (frontend
 closer: whole-phase verification, both `EXEMPT` maps asserted empty, full suite + e2e against the
-production build) → BE-1 (backend verification only: three-dot `apps/api` diff 0, score/tier/
-fingerprint byte-identical) → GATE Q.
+production build, the reviewer-only rows 7b/15/43/47c/56/60/63/69/U-15/U-19/U-24/U-27/U-37) → BE-1
+(backend verification only: three-dot `apps/api` diff 0, score/tier/fingerprint byte-identical) →
+GATE Q.
