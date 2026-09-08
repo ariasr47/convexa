@@ -28,6 +28,19 @@ canvas/ladder interior. The band (`ticker-context-grid`) landed at 968 px, withi
 own predicted "≈ 970" — the ≤ 800 density target stays the owner's own named-open item, untouched by
 design (no field was cut to force a number under a line).
 
+## ⬆ UPDATE — 2026-09-08, conductor: Pass 2 VERIFIED and accepted; the /ticker fidelity lane is CLOSED
+
+Cold re-verification matches the lane's Pass 2 numbers to the pixel (report, last section). Desk at
+1280: **2,705 px vs the design's 2,532 (1.07×)** — from 4,046 (1.57×) before the audit. All four owner
+decisions are executed: hero header fixed at 390 (`1d84505a`), IvRank out of the band (`ed1671f6`),
+masthead controls on the headline row (`1f8b606e`), and the two backend items filed in `BACKLOG.md`.
+Every gate green cold; e2e 108/108. **Small residuals, not blocking, next touch of `/ticker` owns them:**
+masthead 215 vs ≤ 200 (second line wraps `All expirations` at ≥ 1100), hero 968 vs ≤ 950 at 390,
+band 968 vs the ≤ 800 density item. **Next:** the four site surfaces (positions · alerts · settings ·
+scanner — audit F5–F8) as a second direct fidelity lane, then phase 4 (landing + responsive) with a
+composition row per surface; or phase 4 first if the owner prefers. Harness lesson recorded in the
+report: never run the unit suite concurrently with a production build — 6 phantom failures.
+
 ## ⬆ UPDATE — 2026-09-08, owner ruled "Do all four"; pass 2 of the /ticker lane opened
 
 All four pending decisions taken: (1) fix the hero header collapse at 390 (owner leave for the hero

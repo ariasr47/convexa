@@ -611,3 +611,48 @@ predicted value). Two region-level thresholds (`command-deck`, `widget-structure
 already-open owner item (`ticker-context-grid`) remain narrowly missed, each named with a
 directly-measured root cause, not a guess — no field was cut and no content was invented to force a
 number under a line. Every gate is green cold; `apps/api` stayed untouched throughout.
+
+## Conductor's cold re-verification of Pass 2 (2026-09-08, the Mac session)
+
+Re-run from a clean tree at `66c2cbf4` without reusing anything the lane produced: fresh production build
+→ the harness into `ticker-repair-verify/` → the desk e2e; then the unit suite, root typecheck (app +
+spec references), lint and format from cold.
+
+| gate | result |
+|---|---|
+| `npm run typecheck` (root `tsc --build`, app + spec refs) | exit 0 — the IDE's stale `titleBadge` diagnostic was not real |
+| `npx nx test @convexa/dashboard --skipNxCache`, run ALONE | exit 0 — 239 files / **2,914** tests |
+| `npm run lint` · `npm run format:check` | exit 0 · exit 0 |
+| `git diff --stat origin/main...HEAD -- apps/api` | empty |
+| NUL scan, the 22 text files this pass touched | 0 |
+| build → harness `--grep desk-real` | exit 0, 11/11 |
+| e2e `desk\|curvature\|overflow` against the fresh build | **108/108, 0 flaky, exit 0** |
+
+**Every number matches the lane's Pass 2 table to the pixel** (`ticker-repair-verify/app/*.json`):
+page **2,705** at 1440 / 1280 (dark and light), 3,628 at 834, **5,484** at 390 (≤ 5,520 — met);
+`command-deck` 215 at 1280 and 1440; `widget-structure-hero` 968 at 390; band span 968; `widget-iv-rank`
+absent; `overflowX` false everywhere; the connection chip `live` on every capture. Against the audit
+baseline at 1280 the desk is now **2,705 vs the design's 2,532 = 1.07×** (was 4,046, 1.57×).
+
+**Visually confirmed on the fresh captures:** at 390 the hero header reads `Structure field ● mid · tape ⓘ`
+on one row, the subtitle spans the width, `FIELD | MAGNET` sits on its own row and the field paints below
+(`ticker-repair-verify/crops/app-hero-real-390-dark-top.png`); at 1280 `EXPIRATIONS` / `PERSONA` / the CTA
+share the headline row (`crops/app-masthead-real-1280-dark.png`). The 15 px the masthead is still over is
+visible there: the second line wraps `All expirations` onto its own line at 1280 because the joined
+right-hand cluster narrows the left column — the lane's diagnosis is correct.
+
+**One harness lesson, paid for here:** the first cold run of the unit suite reported 6 failures (all in
+`ai-rec/*.spec.tsx`) — while `nx build --configuration=production` and the harness were running in the
+background. Re-run alone, the same suite passed 2,914/2,914. Vitest and the production build share the
+tree (`dist`, `node_modules/.vite`); never run them concurrently when the result is going to be quoted.
+
+**The manifest edit (`b91b59ff`) is benign:** it renames four `title_path[0]` strings in
+`quality/manifest.json`'s `full_chromium.tests[]` ("eight" → "seven" frame roots) to follow change 8's
+describe rename; every `test_id` is untouched, the inventory stays 108, and the six visual scenarios and
+their receipts are not involved.
+
+**Verdict on Pass 2:** accepted. Three residuals remain, all small and named: masthead 215 vs ≤ 200 (a
+second-line wrap at ≥ 1100, or the design's symbol-first row order); hero 968 vs ≤ 950 at 390 (inside the
+fenced canvas/ladder); band 968 vs the ≤ 800 density item (open: dealer flow's four detail lines and
+market context's per-cell basis lines are content the design's cards do not carry).
+

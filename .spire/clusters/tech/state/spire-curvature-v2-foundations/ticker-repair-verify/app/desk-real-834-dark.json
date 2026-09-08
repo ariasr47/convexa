@@ -6,7 +6,7 @@
   "width": 834,
   "scheme": "dark",
   "url": "/ticker/SPY",
-  "pageHeight": 3848,
+  "pageHeight": 3628,
   "overflowX": false,
   "scrollWidth": 834,
   "consoleErrors": [],
@@ -16,7 +16,7 @@
       "x": 0,
       "y": 0,
       "w": 834,
-      "h": 3848,
+      "h": 3628,
       "text": "Skip to main contentCONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality"
     },
     {
@@ -80,16 +80,16 @@
       "x": 24,
       "y": 344,
       "w": 786,
-      "h": 3479,
-      "text": "StructureStructure fieldNet dealer gamma by strike · all expirations · levels ar"
+      "h": 3260,
+      "text": "StructureStructure fieldlivemid · tapeNet dealer gamma by strike · all expiratio"
     },
     {
       "key": "widget-structure-hero",
       "x": 24,
       "y": 381,
       "w": 786,
-      "h": 735,
-      "text": "Structure fieldNet dealer gamma by strike · all expirations · levels are REST st"
+      "h": 717,
+      "text": "Structure fieldlivemid · tapeNet dealer gamma by strike · all expirations · leve"
     },
     {
       "key": "dealer-view-toggle",
@@ -102,7 +102,7 @@
     {
       "key": "structure-hero",
       "x": 25,
-      "y": 487,
+      "y": 468,
       "w": 784,
       "h": 629,
       "text": "Net dealer gamma by strike for SPY, marking the call wall, put wall, gamma flip "
@@ -110,7 +110,7 @@
     {
       "key": "structure-field-canvas",
       "x": 31,
-      "y": 497,
+      "y": 478,
       "w": 772,
       "h": 300,
       "text": ""
@@ -118,7 +118,7 @@
     {
       "key": "tape-trail-row",
       "x": 31,
-      "y": 805,
+      "y": 786,
       "w": 772,
       "h": 39,
       "text": "Tape · 5m mid trailMid $767.82Structure $770.19"
@@ -126,7 +126,7 @@
     {
       "key": "tape-pulse-strip",
       "x": 31,
-      "y": 805,
+      "y": 786,
       "w": 772,
       "h": 39,
       "text": "Tape · 5m mid trailMid $767.82Structure $770.19"
@@ -134,7 +134,7 @@
     {
       "key": "tape-pulse-header",
       "x": 31,
-      "y": 814,
+      "y": 795,
       "w": 772,
       "h": 30,
       "text": "Tape · 5m mid trailMid $767.82Structure $770.19"
@@ -142,7 +142,7 @@
     {
       "key": "structure-history",
       "x": 31,
-      "y": 850,
+      "y": 831,
       "w": 772,
       "h": 51,
       "text": "Structure path · slow laneCold start — path empty until the scanner slow lane re"
@@ -150,7 +150,7 @@
     {
       "key": "level-ladder",
       "x": 39,
-      "y": 913,
+      "y": 895,
       "w": 756,
       "h": 109,
       "text": "Levelsdistance from levels @ $770.19Call wall$780+1.3%Gamma flip$771.3+0.1%Midli"
@@ -158,7 +158,7 @@
     {
       "key": "ladder-foot",
       "x": 39,
-      "y": 1022,
+      "y": 1004,
       "w": 756,
       "h": 81,
       "text": "Vol-norm GEX−$66.4Bprimary magnitudeRaw GEX (1% shock)−$7.1Bsecondary"
@@ -166,7 +166,7 @@
     {
       "key": "widget-read-strip",
       "x": 24,
-      "y": 1132,
+      "y": 1114,
       "w": 786,
       "h": 131,
       "text": "Opportunity78 · Actionable3 setupsNet DEX$45.4Bdelta hedging pressureIV / HV0.92"
@@ -174,7 +174,7 @@
     {
       "key": "read-strip-rail",
       "x": 25,
-      "y": 1134,
+      "y": 1116,
       "w": 784,
       "h": 128,
       "text": "Opportunity78 · Actionable3 setupsNet DEX$45.4Bdelta hedging pressureIV / HV0.92"
@@ -182,7 +182,7 @@
     {
       "key": "read-strip-cell-opportunity",
       "x": 25,
-      "y": 1134,
+      "y": 1116,
       "w": 220,
       "h": 128,
       "text": "Opportunity78 · Actionable3 setups"
@@ -190,7 +190,7 @@
     {
       "key": "read-strip-cell-netDex",
       "x": 245,
-      "y": 1134,
+      "y": 1116,
       "w": 170,
       "h": 128,
       "text": "Net DEX$45.4Bdelta hedging pressure"
@@ -198,7 +198,7 @@
     {
       "key": "read-strip-cell-ivHv",
       "x": 415,
-      "y": 1134,
+      "y": 1116,
       "w": 170,
       "h": 128,
       "text": "IV / HV0.92options look cheap"
@@ -206,7 +206,7 @@
     {
       "key": "read-strip-cell-ivRank",
       "x": 585,
-      "y": 1134,
+      "y": 1116,
       "w": 170,
       "h": 128,
       "text": "IV rankunavailable—"
@@ -214,7 +214,7 @@
     {
       "key": "read-strip-cell-volOi",
       "x": 755,
-      "y": 1134,
+      "y": 1116,
       "w": 170,
       "h": 128,
       "text": "Vol/OI0.15×8 unusual strikes"
@@ -222,7 +222,7 @@
     {
       "key": "read-strip-cell-ivSkew",
       "x": 925,
-      "y": 1134,
+      "y": 1116,
       "w": 170,
       "h": 128,
       "text": "IV skew−0.6 pts · greedupside is bid (greed/complacency)"
@@ -230,7 +230,7 @@
     {
       "key": "read-strip-cell-termStructure",
       "x": 1095,
-      "y": 1134,
+      "y": 1116,
       "w": 170,
       "h": 128,
       "text": "Term structurecontango1d 11.6 → 829d 19.9"
@@ -238,7 +238,7 @@
     {
       "key": "read-strip-cell-offExchange",
       "x": 1265,
-      "y": 1134,
+      "y": 1116,
       "w": 170,
       "h": 128,
       "text": "Off-exchange %18.9%context only, no side"
@@ -246,7 +246,7 @@
     {
       "key": "board-zone-plan",
       "x": 24,
-      "y": 1287,
+      "y": 1269,
       "w": 786,
       "h": 25,
       "text": "Tape & plan"
@@ -254,7 +254,7 @@
     {
       "key": "ticker-work-container",
       "x": 24,
-      "y": 1329,
+      "y": 1310,
       "w": 786,
       "h": 873,
       "text": "AI recommendation · SPYView what's sent→Risk-first read on the current snapshot,"
@@ -262,7 +262,7 @@
     {
       "key": "ticker-work",
       "x": 24,
-      "y": 1329,
+      "y": 1310,
       "w": 786,
       "h": 873,
       "text": "AI recommendation · SPYView what's sent→Risk-first read on the current snapshot,"
@@ -270,7 +270,7 @@
     {
       "key": "ai-rec-panel",
       "x": 24,
-      "y": 1329,
+      "y": 1310,
       "w": 786,
       "h": 326,
       "text": "AI recommendation · SPYView what's sent→Risk-first read on the current snapshot,"
@@ -278,7 +278,7 @@
     {
       "key": "widget-ai-rec",
       "x": 24,
-      "y": 1329,
+      "y": 1310,
       "w": 786,
       "h": 326,
       "text": "AI recommendation · SPYView what's sent→Risk-first read on the current snapshot,"
@@ -286,7 +286,7 @@
     {
       "key": "ai-rec-model-select",
       "x": 41,
-      "y": 1524,
+      "y": 1505,
       "w": 752,
       "h": 39,
       "text": "claude-opus-4-8 · catalog recommended default​"
@@ -294,7 +294,7 @@
     {
       "key": "ticker-work-side",
       "x": 24,
-      "y": 1668,
+      "y": 1650,
       "w": 786,
       "h": 533,
       "text": "Live tapeLive stream · not the structure snapshot belowNet flow (5m)live+1,250Sp"
@@ -302,7 +302,7 @@
     {
       "key": "widget-live-tape",
       "x": 24,
-      "y": 1668,
+      "y": 1650,
       "w": 786,
       "h": 319,
       "text": "Live tapeLive stream · not the structure snapshot belowNet flow (5m)live+1,250Sp"
@@ -310,7 +310,7 @@
     {
       "key": "live-tape",
       "x": 41,
-      "y": 1749,
+      "y": 1730,
       "w": 752,
       "h": 222,
       "text": "Net flow (5m)live+1,250Spread—Gamma flip · livelive$771.3+$1.1 · 0.1% aboveVWAP$"
@@ -318,7 +318,7 @@
     {
       "key": "position-brief",
       "x": 24,
-      "y": 2001,
+      "y": 1983,
       "w": 786,
       "h": 90,
       "text": "Your book · simulated3 open sim positions on SPY — open the book for the full re"
@@ -326,7 +326,7 @@
     {
       "key": "position-brief-multi",
       "x": 41,
-      "y": 2037,
+      "y": 2018,
       "w": 752,
       "h": 44,
       "text": "3 open sim positions on SPY — open the book for the full read.Open book →"
@@ -334,7 +334,7 @@
     {
       "key": "widget-orders",
       "x": 24,
-      "y": 2106,
+      "y": 2087,
       "w": 786,
       "h": 96,
       "text": "Simulated orders · SPYSIMULATEDAll orders →No simulated orders for SPY. Act on a"
@@ -342,7 +342,7 @@
     {
       "key": "board-zone-context",
       "x": 24,
-      "y": 2222,
+      "y": 2203,
       "w": 786,
       "h": 25,
       "text": "Supporting context"
@@ -350,7 +350,7 @@
     {
       "key": "context-band-head",
       "x": 24,
-      "y": 2263,
+      "y": 2244,
       "w": 786,
       "h": 69,
       "text": "ContextAdvisory reads that never feed the score · snapshot, never live · refresh"
@@ -358,7 +358,7 @@
     {
       "key": "context-band-filter",
       "x": 24,
-      "y": 2294,
+      "y": 2275,
       "w": 193,
       "h": 39,
       "text": "AllFlowVolPositioning"
@@ -366,15 +366,15 @@
     {
       "key": "ticker-context-grid",
       "x": 24,
-      "y": 2344,
+      "y": 2326,
       "w": 786,
-      "h": 1479,
+      "h": 1278,
       "text": "Projected dealer flowSnapshot, never live — refreshes with the data load, not th"
     },
     {
       "key": "widget-dealer-flow-projection",
       "x": 24,
-      "y": 2344,
+      "y": 2326,
       "w": 385,
       "h": 387,
       "text": "Projected dealer flowSnapshot, never live — refreshes with the data load, not th"
@@ -382,7 +382,7 @@
     {
       "key": "dealer-flow-projection",
       "x": 41,
-      "y": 2443,
+      "y": 2425,
       "w": 351,
       "h": 271,
       "text": "Charm · drift into OPEX−$49.0B delta driftto Fri Sep 18 (10 days)base −$4.9B / d"
@@ -390,7 +390,7 @@
     {
       "key": "dfp-charm",
       "x": 41,
-      "y": 2443,
+      "y": 2425,
       "w": 351,
       "h": 87,
       "text": "Charm · drift into OPEX−$49.0B delta driftto Fri Sep 18 (10 days)base −$4.9B / d"
@@ -398,7 +398,7 @@
     {
       "key": "dfp-vanna",
       "x": 41,
-      "y": 2539,
+      "y": 2520,
       "w": 351,
       "h": 87,
       "text": "Vanna · per vol move+$6.8B on +1 IV pt+$33.8B on +5 IV pt (illus.)+ = vol up · a"
@@ -406,7 +406,7 @@
     {
       "key": "dfp-footer",
       "x": 41,
-      "y": 2640,
+      "y": 2621,
       "w": 351,
       "h": 74,
       "text": "Linear first-order projection at spot $770.19, holding spot & vol.Dealer-flow co"
@@ -414,7 +414,7 @@
     {
       "key": "widget-market-context",
       "x": 425,
-      "y": 2344,
+      "y": 2326,
       "w": 385,
       "h": 345,
       "text": "Market contextContext the AI also reads · snapshot, never live — refreshes with "
@@ -422,7 +422,7 @@
     {
       "key": "market-context",
       "x": 442,
-      "y": 2443,
+      "y": 2425,
       "w": 351,
       "h": 228,
       "text": "TrendUptrendAs of session Fri Sep 4 · daily bars · EMA 20/50 · ADX(14) · RSI(14)"
@@ -430,7 +430,7 @@
     {
       "key": "mc-ti",
       "x": 442,
-      "y": 2443,
+      "y": 2425,
       "w": 168,
       "h": 81,
       "text": "TrendUptrendAs of session Fri Sep 4 · daily bars · EMA 20/50 · ADX(14) · RSI(14)"
@@ -438,7 +438,7 @@
     {
       "key": "mc-trend",
       "x": 442,
-      "y": 2475,
+      "y": 2457,
       "w": 168,
       "h": 25,
       "text": "Uptrend"
@@ -446,7 +446,7 @@
     {
       "key": "mc-trend-label",
       "x": 442,
-      "y": 2475,
+      "y": 2457,
       "w": 168,
       "h": 25,
       "text": "Uptrend"
@@ -454,7 +454,7 @@
     {
       "key": "mc-shape",
       "x": 626,
-      "y": 2443,
+      "y": 2425,
       "w": 168,
       "h": 81,
       "text": "Profile shapeDispersedAt spot $770.19 · 482 strikes in the selected window"
@@ -462,7 +462,7 @@
     {
       "key": "mc-concentration",
       "x": 626,
-      "y": 2475,
+      "y": 2457,
       "w": 168,
       "h": 25,
       "text": "Dispersed"
@@ -470,7 +470,7 @@
     {
       "key": "mc-concentration-label",
       "x": 626,
-      "y": 2475,
+      "y": 2457,
       "w": 168,
       "h": 25,
       "text": "Dispersed"
@@ -478,7 +478,7 @@
     {
       "key": "mc-flow",
       "x": 442,
-      "y": 2540,
+      "y": 2521,
       "w": 168,
       "h": 81,
       "text": "Flow vs positioningRotatingToday's session cumulative option volume, unsigned (n"
@@ -486,7 +486,7 @@
     {
       "key": "mc-location",
       "x": 442,
-      "y": 2572,
+      "y": 2553,
       "w": 168,
       "h": 25,
       "text": "Rotating"
@@ -494,7 +494,7 @@
     {
       "key": "mc-location-label",
       "x": 442,
-      "y": 2572,
+      "y": 2553,
       "w": 168,
       "h": 25,
       "text": "Rotating"
@@ -502,7 +502,7 @@
     {
       "key": "mc-atr",
       "x": 626,
-      "y": 2540,
+      "y": 2521,
       "w": 168,
       "h": 81,
       "text": "ATR 14d$5.50 · 0.7%As of session Fri Sep 4 · vs close $770.19 · 5/14/30 trading "
@@ -510,7 +510,7 @@
     {
       "key": "mc-atr-14d",
       "x": 626,
-      "y": 2572,
+      "y": 2553,
       "w": 168,
       "h": 25,
       "text": "$5.50 · 0.7%"
@@ -518,7 +518,7 @@
     {
       "key": "mc-atr-14d-label",
       "x": 626,
-      "y": 2572,
+      "y": 2553,
       "w": 168,
       "h": 25,
       "text": "$5.50 · 0.7%"
@@ -526,7 +526,7 @@
     {
       "key": "mc-footer",
       "x": 442,
-      "y": 2635,
+      "y": 2616,
       "w": 351,
       "h": 37,
       "text": "Advisory context for you and the AI — not a scored signal, not a forecast, not a"
@@ -534,7 +534,7 @@
     {
       "key": "widget-term-structure",
       "x": 24,
-      "y": 2747,
+      "y": 2728,
       "w": 385,
       "h": 172,
       "text": "Term structureATM IV by tenor · contango · Structure as-of 0s10.87d12.017d12.631"
@@ -542,7 +542,7 @@
     {
       "key": "term-structure",
       "x": 41,
-      "y": 2828,
+      "y": 2809,
       "w": 351,
       "h": 74,
       "text": "10.87d12.017d12.631d13.452d14.083dContango · slope +8.3"
@@ -550,103 +550,63 @@
     {
       "key": "term-ribbon",
       "x": 41,
-      "y": 2828,
+      "y": 2809,
       "w": 351,
       "h": 46,
       "text": "10.87d12.017d12.631d13.452d14.083d"
     },
     {
-      "key": "widget-iv-rank",
-      "x": 425,
-      "y": 2747,
-      "w": 385,
-      "h": 260,
-      "text": "IV rankWhere today's IV sits in this ticker's own recent history — is option pre"
-    },
-    {
-      "key": "iv-rank",
-      "x": 442,
-      "y": 2865,
-      "w": 351,
-      "h": 125,
-      "text": "Building history — 5 of 20 sessions. IV rank appears once enough daily samples a"
-    },
-    {
-      "key": "ivr-building",
-      "x": 442,
-      "y": 2865,
-      "w": 351,
-      "h": 125,
-      "text": "Building history — 5 of 20 sessions. IV rank appears once enough daily samples a"
-    },
-    {
-      "key": "ivr-building-message",
-      "x": 442,
-      "y": 2865,
-      "w": 321,
-      "h": 74,
-      "text": "Building history — 5 of 20 sessions. IV rank appears once enough daily samples a"
-    },
-    {
-      "key": "ivr-footer",
-      "x": 442,
-      "y": 2953,
-      "w": 351,
-      "h": 37,
-      "text": "Advisory context for you and the AI — not a forecast, not a scored signal, not a"
-    },
-    {
       "key": "widget-straddle-move",
-      "x": 24,
-      "y": 3023,
+      "x": 425,
+      "y": 2728,
       "w": 385,
       "h": 210,
       "text": "Straddle-implied move± $9.71 (± 1.3%)From the 2026-09-15 ATM straddle · 7 DTE · "
     },
     {
       "key": "straddle-move",
-      "x": 41,
-      "y": 3083,
+      "x": 442,
+      "y": 2788,
       "w": 351,
       "h": 133,
       "text": "± $9.71 (± 1.3%)From the 2026-09-15 ATM straddle · 7 DTE · mid quotes · % of the"
     },
     {
       "key": "straddle-move-headline",
-      "x": 41,
-      "y": 3083,
+      "x": 442,
+      "y": 2788,
       "w": 351,
       "h": 42,
       "text": "± $9.71 (± 1.3%)"
     },
     {
       "key": "straddle-move-basis",
-      "x": 41,
-      "y": 3131,
+      "x": 442,
+      "y": 2836,
       "w": 321,
       "h": 40,
       "text": "From the 2026-09-15 ATM straddle · 7 DTE · mid quotes · % of the levels-anchor s"
     },
     {
       "key": "straddle-move-advisory",
-      "x": 41,
-      "y": 3179,
+      "x": 442,
+      "y": 2884,
       "w": 351,
       "h": 37,
       "text": "What options are priced for — not a forecast, not a probability, not a scored si"
     },
     {
       "key": "widget-fresh-positioning",
-      "x": 425,
-      "y": 3023,
+      "x": 24,
+      "y": 2954,
       "w": 385,
       "h": 265,
       "text": "Fresh positioning (Vol/OI)Strikes trading heavily versus standing open interest "
     },
     {
       "key": "widget-off-exchange-blocks",
-      "x": 24,
-      "y": 3304,
+      "x": 425,
+      "y": 2954,
       "w": 385,
       "h": 135,
       "text": "Off-exchange blocksLargest recent off-exchange prints near spot. Context, not a "
@@ -654,7 +614,7 @@
     {
       "key": "widget-setups",
       "x": 24,
-      "y": 3455,
+      "y": 3235,
       "w": 786,
       "h": 284,
       "text": "SetupsRule-based · same structure snapshot · Structure as-of 0sGamma-flip transi"
@@ -662,7 +622,7 @@
     {
       "key": "setups-grid",
       "x": 41,
-      "y": 3529,
+      "y": 3310,
       "w": 752,
       "h": 193,
       "text": "Gamma-flip transitionMEDIUMPrice within 1% of zero-gamma $771.30; a cross flips "
@@ -670,7 +630,7 @@
     {
       "key": "add-widget-slot",
       "x": 24,
-      "y": 3755,
+      "y": 3535,
       "w": 385,
       "h": 69,
       "text": "+ Add widget"
@@ -680,7 +640,7 @@
     "connectionState": "live",
     "skeletons": 0,
     "monoElements": 61,
-    "sansElements": 152,
+    "sansElements": 148,
     "archivoElements": 3,
     "otherFontElements": 1,
     "htmlBackground": "rgb(11, 15, 23)",
@@ -696,7 +656,7 @@
     "archivoLoaded": true,
     "plexMonoLoaded": true,
     "plexSansLoaded": true,
-    "scrollHeight": 3848,
+    "scrollHeight": 3628,
     "scrollWidth": 834,
     "clientWidth": 834
   },
