@@ -15,7 +15,9 @@ test('browser quality manifest is closed and has the required inventories', () =
   // check for the itemized 9-test delta.
   // (curvature-v2-surfaces GATE Z repair) 99 → 100 — the off-exchange proximity chip's 44px floor,
   // newly reachable — see `lib/manifest.mjs`'s own comment at this same check.
-  assert.equal(manifest.full_chromium.tests.length, 100);
+  // (curvature-v2-surfaces GATE Z repair pass 2) 100 → 103 — the input/select 44px floor's 3 new
+  // `no-overflow.spec.ts` tests — see `lib/manifest.mjs`'s own comment at this same check.
+  assert.equal(manifest.full_chromium.tests.length, 103);
   assert.equal(manifest.compatibility.journeys.length, 5);
   assert.deepEqual(manifest.compatibility.projects, ['chromium', 'firefox', 'webkit']);
   assert.equal(manifest.accessibility.scans.length, 9);

@@ -78,7 +78,12 @@ const gateCounts: Record<string, number> = {
   // (curvature-v2-surfaces GATE Z repair, finding 2) 99 → 100: the off-exchange proximity chip's
   // 44px floor, newly reachable via a local fixture override (1 new test); bump to
   // `curvature-v2-surfaces-100-v1` (`tools/lib/manifest.mjs` enforces the same number).
-  chromium: 100,
+  // (curvature-v2-surfaces GATE Z repair pass 2, finding 3) 100 → 103: the coarse-pointer floor
+  // widened to `input`/`[role="combobox"]` (`theme.ts`), hard-asserted on 3 new
+  // `no-overflow.spec.ts` tests (Settings risk-inputs account-size/cap-value, Settings
+  // ticker/persona, the alerts composer Symbol/Kind controls); bump to
+  // `curvature-v2-surfaces-103-v1` (`tools/lib/manifest.mjs` enforces the same number).
+  chromium: 103,
   compatibility: 15,
   accessibility: 16,
   visual: 6,

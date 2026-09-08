@@ -129,8 +129,25 @@ const COMMON = {
         // density is unchanged. Inline (`display: inline`) prose links are structurally unaffected
         // (min-height/min-width don't apply to non-replaced inline boxes); buttons, icon buttons,
         // and block/inline-block CTAs grow to the floor.
+        //
+        // GATE Z, finding 3 (criterion 66): `input` was added here — the ORIGINAL three-selector
+        // list (`button, [role="button"], a`) matches no `<input>`, so every MUI text field and
+        // number field escaped the floor entirely, not just the two controls this phase happened
+        // to measure. This reaches `RiskInputsSection.tsx`'s two fields, `SettingsPage.tsx`'s
+        // ticker field and the alerts composer's `TextField`s.
+        //
+        // MUI `Select`'s visible tap target (`role="combobox"`, `Select/SelectInput.js`) is
+        // DELIBERATELY excluded: it cannot be reached from here at all. MUI's own `SelectSelect`
+        // styled component self-duplicates its class — `&.${selectClasses.select}` — specifically
+        // (its own comment) to "win specificity over the input base": `.MuiSelect-select.MuiSelect-
+        // select` sits at specificity (0,2,0), which beats a bare `[role="combobox"]` (0,1,0) and
+        // even a scoped `sx` descendant selector at (0,2,0) tied against it (confirmed by measuring
+        // computed `min-height` in a real browser — both lost). No global, tag/attribute-scoped
+        // rule can win that fight; a `Select` that needs the floor gets it via the SAME
+        // doubled-class idiom, LOCALLY, at its own call site (`AlertsPage.tsx`'s Kind/Level
+        // selects, `SettingsPage.tsx`'s persona select) — see those files for the pattern.
         '@media (pointer: coarse)': {
-          'button, [role="button"], a': {
+          'button, [role="button"], a, input': {
             minHeight: 44,
             minWidth: 44,
           },

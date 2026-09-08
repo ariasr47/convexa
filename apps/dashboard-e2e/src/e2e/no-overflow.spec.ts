@@ -1374,3 +1374,81 @@ test.describe('criterion 7a — rendered container step on /positions', () => {
     // above. This is `PositionsPage.tsx`'s file, owned by FE-6/positions, not this lane's to edit.
   });
 });
+
+// =====================================================================================================
+// GATE Z, finding 3 (criterion 66, curvature-v2-surfaces GATE Z repair pass 2) — the 44px
+// coarse-pointer floor now reaches raw `<input>`s and MUI `Select`'s visible `[role="combobox"]` box
+// (`theme.ts`'s `'@media (pointer: coarse)'` rule), not just `button`/`[role="button"]`/`a`. QA
+// measured `risk-inputs-account-size` and `risk-inputs-cap-value` at 160×37 / 120×37 — both edited
+// this phase (`RiskInputsSection.tsx`) — plus `settings-ticker`/`settings-persona` (311×38.6) and the
+// alerts composer's `TextField`/`Select` controls (361×38.6), all under the 44px floor and, before
+// this fix, unreachable by the theme's own selector list.
+// =====================================================================================================
+async function expectFloor(locator: import('@playwright/test').Locator, label: string) {
+  const box = await locator.boundingBox();
+  expect(box, `${label} has a bounding box (is attached and rendered)`).toBeTruthy();
+  expect(box!.width, `${label} effective width`).toBeGreaterThanOrEqual(44);
+  expect(box!.height, `${label} effective height`).toBeGreaterThanOrEqual(44);
+}
+
+test.describe('GATE Z finding 3 (criterion 66) — inputs and selects at 393px, coarse pointer', () => {
+  test.use({ viewport: { width: 393, height: 852 }, hasTouch: true });
+
+  test('the Settings Risk-inputs account-size and cap-value fields meet the 44px floor', async ({
+    page,
+  }) => {
+    await stubNetwork(page);
+    await seed(page, { scheme: 'dark' });
+    await page.goto('/settings');
+    await expect(page.getByTestId('settings-page')).toBeAttached();
+    const accountSize = page.getByTestId('risk-inputs-account-size');
+    const capValue = page.getByTestId('risk-inputs-cap-value');
+    const accountBox = await accountSize.boundingBox();
+    const capBox = await capValue.boundingBox();
+    console.log(
+      `[criterion 66 evidence, GATE Z pass 2] risk-inputs-account-size (RiskInputsSection.tsx:150) = ` +
+        `${JSON.stringify(accountBox)} · risk-inputs-cap-value (:195) = ${JSON.stringify(capBox)}`,
+    );
+    await expectFloor(accountSize, 'risk-inputs-account-size (coarse pointer)');
+    await expectFloor(capValue, 'risk-inputs-cap-value (coarse pointer)');
+  });
+
+  test('the Settings default-ticker field and active-persona select meet the 44px floor', async ({
+    page,
+  }) => {
+    await stubNetwork(page);
+    await seed(page, { scheme: 'dark' });
+    await page.goto('/settings');
+    await expect(page.getByTestId('settings-page')).toBeAttached();
+    const ticker = page.getByTestId('settings-ticker');
+    // The visible tap target for a MUI `Select` is its `[role="combobox"]` display box, not the
+    // `aria-hidden`/`pointer-events: none` native `<input>` `inputProps` lands on (SPEC §2.2's
+    // theme-floor mechanism note) — assert the element a coarse pointer actually reaches.
+    const persona = page.locator('#settings-persona-label').locator('..').getByRole('combobox');
+    const tickerBox = await ticker.boundingBox();
+    const personaBox = await persona.boundingBox();
+    console.log(
+      `[criterion 66 evidence, GATE Z pass 2] settings-ticker (SettingsPage.tsx:307) = ` +
+        `${JSON.stringify(tickerBox)} · settings-persona combobox (:272-279) = ${JSON.stringify(personaBox)}`,
+    );
+    await expectFloor(ticker, 'settings-ticker (coarse pointer)');
+    await expectFloor(persona, 'settings-persona combobox (coarse pointer)');
+  });
+
+  test('the alerts composer Symbol field and Kind select meet the 44px floor', async ({ page }) => {
+    await stubNetwork(page);
+    await seed(page, { scheme: 'dark' });
+    await page.goto('/alerts');
+    await expect(page.getByTestId('alerts-composer')).toBeAttached();
+    const symbol = page.getByRole('textbox', { name: 'Alert symbol' });
+    const kind = page.getByRole('combobox', { name: 'Kind' });
+    const symbolBox = await symbol.boundingBox();
+    const kindBox = await kind.boundingBox();
+    console.log(
+      `[criterion 66 evidence, GATE Z pass 2] alerts composer Symbol field = ${JSON.stringify(symbolBox)} · ` +
+        `Kind select = ${JSON.stringify(kindBox)}`,
+    );
+    await expectFloor(symbol, 'alerts composer Symbol field (coarse pointer)');
+    await expectFloor(kind, 'alerts composer Kind select (coarse pointer)');
+  });
+});

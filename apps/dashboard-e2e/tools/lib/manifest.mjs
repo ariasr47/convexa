@@ -54,11 +54,17 @@ export function validateManifest(value) {
     // The two existing per-rule Remove/Switch tests were renamed (title_path updated, same test_id)
     // from "MEASURED, not asserted" to "GATE Z REPAIR" now that both controls are hard-asserted —
     // no new tests, no count change from that rename.
-    value.full_chromium?.inventory_id !== 'curvature-v2-surfaces-100-v1' ||
+    // (curvature-v2-surfaces GATE Z repair pass 2, finding 3) bumped 100 → 103: 3 new tests in a new
+    // `no-overflow.spec.ts` describe block (`GATE Z finding 3 (criterion 66)`), hard-asserting the
+    // 44px coarse-pointer floor on `risk-inputs-account-size`/`risk-inputs-cap-value`,
+    // `settings-ticker`/`settings-persona`, and the alerts composer's Symbol field + Kind select —
+    // all newly reachable once `theme.ts`'s coarse-pointer selector was widened to `input` and
+    // `[role="combobox"]`.
+    value.full_chromium?.inventory_id !== 'curvature-v2-surfaces-103-v1' ||
     !Array.isArray(tests) ||
-    tests.length !== 100
+    tests.length !== 103
   )
-    fail('full Chromium inventory must contain 100 tests');
+    fail('full Chromium inventory must contain 103 tests');
   unique(
     tests.map((x) => x.test_id),
     'full Chromium tests',

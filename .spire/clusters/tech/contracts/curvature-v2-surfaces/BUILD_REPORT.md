@@ -2339,3 +2339,74 @@ below (§4).
 
 **Files:** `apps/dashboard/src/app/pages/scanner/Scanner.tsx`,
 `apps/dashboard/src/app/pages/scanner/scanner.register.spec.tsx`.
+
+### 2. Finding 3 (criterion 66) — the 44px coarse-pointer floor never reached inputs or selects
+
+**Diagnosis, confirmed at source.** `theme.ts:132-137`'s coarse-pointer floor selector was
+`button, [role="button"], a` — an `<input>` matches none of those, so every MUI text field and
+number field escaped the floor entirely, not just the two controls QA measured. QA's census, all
+under 44px at 393px/coarse: `RiskInputsSection.tsx:150` `risk-inputs-account-size` 160×37,
+`:195` `risk-inputs-cap-value` 120×37 (both edited by this phase), `settings-ticker`/
+`settings-persona` 311×38.6, the alerts composer's Symbol/Kind controls 361×38.6, plus
+`ScanToolbar.tsx:74,104` chips at 40px.
+
+**Fix, mechanism widened, one control class at a time, proven in a real browser.**
+`theme.ts`'s selector gained `input` — confirmed sufficient for every raw `<input>` (`getComputedStyle`
+read back `min-height: 44px` on the Symbol field's real DOM node). MUI `Select`'s own visible tap
+target (`role="combobox"`) turned out to be UNREACHABLE from the global theme layer at all: MUI's
+`SelectInput.js` self-duplicates its own class — `&.${selectClasses.select}` — with its own comment
+"win specificity over the input base", landing at CSS specificity (0,2,0). A bare `[role="combobox"]`
+(0,1,0) loses that fight outright; a SCOPED `sx` descendant selector (`'& .MuiSelect-select'`) ties at
+(0,2,0) and STILL loses (specificity ties resolve by source order, and MUI's own component style wins
+that race) — both confirmed by measuring `getComputedStyle(el).minHeight` on the real combobox node in
+a running browser (21.5625px / 38.5625px effective height, unmoved, on both attempts). The fix that
+actually wins: doubling the SAME class ourselves, locally, at each `<Select>` call site —
+`'& .MuiSelect-select.MuiSelect-select': { minHeight: 44 }` inside a `'@media (pointer: coarse)'`
+block — reaching specificity (0,3,0), unconditional. Applied to `SettingsPage.tsx`'s persona select
+and `AlertsPage.tsx`'s Kind and Level selects (a shared `selectCoarseFloorSx` constant in
+`AlertsPage.tsx`, inlined in `SettingsPage.tsx` for its one use). `theme.ts`'s own comment at the
+floor rule now documents this precisely, including the negative result, so a future lane does not
+re-attempt the same two dead ends.
+
+**Measured, before → after, real browser (Playwright, `hasTouch: true`, 393×852):**
+- `risk-inputs-account-size`: 160×37 → **160×44**.
+- `risk-inputs-cap-value`: 120×37 → **120×44**.
+- `settings-ticker` (a raw `<input>`): 311×38.6 → **311×61**.
+- `settings-persona` combobox: 311×38.6 → **311×61**.
+- alerts composer Symbol field: 361×38.6 → **361×61**.
+- alerts composer Kind select: 361×38.6 → **361×61**.
+- The three GATE-Z-pass-1 fixes stay confirmed repaired in the SAME run: Remove button 58.4×44,
+  Switch `FormControlLabel` 163.3×44, off-exchange proximity chip 86.6×44.
+
+**Desktop, proven unmoved — a real browser, no `hasTouch`, 1280px** (throwaway probe, deleted before
+commit per the repo's own scratch-file rule): `settings-ticker` = 502×**38.5625**, `settings-persona`
+combobox = 502×**38.5625**, alerts Kind select = 672×**38.5625** — byte-identical to the pre-fix
+shipped height, because `@media (pointer: coarse)` never matches a fine-pointer context. The floor is
+inert on desktop by construction, not by assumption.
+
+**Carried debt, not fixed (outside this phase's own touch — `ScanToolbar.tsx` has zero commits this
+phase per `git log f8957d3f..HEAD`):** `ScanToolbar.tsx:74,104`'s filter/segment chips render as
+real `<button>` elements — they DO match the widened selector — but their own local `sx` sets
+`minHeight: 40` via a generated class (specificity (0,1,0)), which TIES the bare `button` element
+selector (0,0,1) at a HIGHER specificity and wins regardless of source order — the exact same
+specificity-tie mechanism as the `Select` case above, one tier lower. Itemized here with `file:line`
+for whichever phase next touches `ScanToolbar.tsx`; not fixed, per this task's own scope fence (only
+controls this phase creates or touches are mandatory; QA's own census named these as "also under the
+floor and unitemized" without attributing them to this phase's edits).
+
+**Regression coverage — e2e, hard-asserted, not merely measured.** Three new tests in
+`no-overflow.spec.ts`'s new describe block (`GATE Z finding 3 (criterion 66) — inputs and selects at
+393px, coarse pointer`), each calling the existing `expectFloor` helper (width AND height ≥44,
+`boundingBox()`-based). Browser-quality manifest bumped `100 → 103` in the required four-file
+lockstep (`manifest.json`, `tools/lib/manifest.mjs`, `tools/manifest.spec.mjs`,
+`quality-reporter.ts`'s `gateCounts.chromium`) — `node --test manifest.spec.mjs mutations.spec.mjs`
+**exit 0, 7/7**; `npx playwright test --list` **103 tests in 7 files**.
+
+**Verification, exit codes:** `npm run build` **0**; the three new tests plus the two GATE-Z-pass-1
+tests plus the proximity chip test, run together, **exit 0, 4/4** then **exit 0, 1/1** (isolated
+re-run); full e2e gate **exit 0, 103/103 passed, 0 flaky** (§4).
+
+**Files:** `apps/dashboard/src/app/shared/theme/theme.ts`, `apps/dashboard/src/app/pages/alerts/AlertsPage.tsx`, `apps/dashboard/src/app/features/auth/SettingsPage.tsx`,
+`apps/dashboard-e2e/src/e2e/no-overflow.spec.ts`, `apps/dashboard-e2e/src/quality/manifest.json`,
+`apps/dashboard-e2e/src/quality/reporters/quality-reporter.ts`,
+`apps/dashboard-e2e/tools/lib/manifest.mjs`, `apps/dashboard-e2e/tools/manifest.spec.mjs`.

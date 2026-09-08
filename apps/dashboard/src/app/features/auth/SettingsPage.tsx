@@ -276,6 +276,18 @@ export function SettingsPage() {
                   onChange={(e) => onPersona(String(e.target.value))}
                   disabled={!auth.ready}
                   inputProps={{ 'data-testid': 'settings-persona' }}
+                  // GATE Z, finding 3 (criterion 66): MUI `Select` self-duplicates its own class
+                  // (`&.${selectClasses.select}`, `Select/SelectInput.js`) to "win specificity
+                  // over the input base" at (0,2,0) — `theme.ts`'s coarse-pointer floor (a bare
+                  // `[role="combobox"]`, (0,1,0)) cannot reach it; a scoped `sx` descendant
+                  // selector tied at (0,2,0) loses too (confirmed by measuring computed
+                  // `min-height` in a real browser). Doubling the same class here reaches
+                  // (0,3,0), which wins unconditionally.
+                  sx={{
+                    '@media (pointer: coarse)': {
+                      '& .MuiSelect-select.MuiSelect-select': { minHeight: 44 },
+                    },
+                  }}
                 >
                   {personaOptions.map((p) => (
                     <MenuItem key={p.id} value={p.id}>
