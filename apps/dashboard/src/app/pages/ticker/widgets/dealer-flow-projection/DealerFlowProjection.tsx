@@ -23,8 +23,6 @@ import { AccessibleHelp } from '@/shared/ui';
 import { Widget } from '@/shared/ui/Widget';
 import type { DealerFlowProjection as Dfp } from '@convexa/api';
 import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import {
@@ -70,7 +68,7 @@ function EmptyLine({ text, testid }: { text: string; testid: string }) {
  */
 function LimbLabel({ label, info }: { label: string; info: string }) {
   return (
-    <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 0.75 }}>
+    <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 0.5 }}>
       <Typography
         variant="caption"
         sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: 0.3 }}
@@ -82,21 +80,19 @@ function LimbLabel({ label, info }: { label: string; info: string }) {
   );
 }
 
-/** The recessed limb card — a StatTile-family surface so the reads sit on the widget's inset well. */
+/**
+ * The limb block. Ticker fidelity repair, change 2 (F2) close-out: a plain `Box`, not a bordered
+ * `Card`/`CardContent` — the outlined-card chrome (MUI's default 16px + the `&:last-child` 14px
+ * override ≈ 30px of vertical padding per limb, on top of the widget's own inset well already
+ * distinguishing this STATIC read visually) was the single largest reason a two-limb card ran
+ * ≈464px against the design's ≈267px (`design/src/screens/desk.mjs:43`'s `contextCard('Projected
+ * dealer flow', ...)`, "two limbs + one note"). Every figure/line/testid this widget renders is
+ * unchanged — `DealerFlowProjection.spec.tsx`'s text-content assertions don't reference `Card`. */
 function LimbCard({ children, testid }: { children: React.ReactNode; testid: string }) {
   return (
-    <Card
-      variant="outlined"
-      data-testid={testid}
-      sx={{
-        borderRadius: '12px',
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
-        height: '100%',
-      }}
-    >
-      <CardContent sx={{ '&:last-child': { pb: 1.75 } }}>{children}</CardContent>
-    </Card>
+    <Box data-testid={testid} sx={{ minWidth: 0 }}>
+      {children}
+    </Box>
   );
 }
 
@@ -174,19 +170,28 @@ export function DealerFlowProjection({ dfp }: Props) {
                 display: 'grid',
                 // Intrinsically responsive (matches ReadStrip's idiom): the two limbs pair
                 // side-by-side once the widget is wide enough (~440px) and stack below it, via
-                // `auto-fit`/`minmax`. CORRECTED (curvature-v2-foundations SPEC §2.5): the prior
-                // claim here — that this Emotion version doesn't pass `@container` through and
-                // warns on the kebab-case condition — is FALSE for the dependency state in this
-                // tree (verified three levels down: Emotion emits an object key with an object
-                // value verbatim, its kebab-case warning fires only in the scalar-value branch for
-                // CSS property names; stylis 4.2.0 special-cases `@c…n` into the nested-at-rule
-                // branch; MUI attaches `theme.containerQueries` and sorts container queries on every
-                // `sx` result). Container-query support is NOT the risk. This widget stays on
-                // `auto-fit`/`minmax` anyway — it is one of the four hand-rolled StatTile-family
-                // widgets ruling 6 keeps unconverted; adding `@container` here is a later phase's
-                // rebuild, not this comment fix.
+                // `auto-fit`/`minmax`. Ticker fidelity repair, change 2 (F2) close-out: since F2
+                // dropped this widget to `span={1}` of the context band's 3-col grid
+                // (`design/src/screens/desk.mjs:43`), its rendered column is ≈340–390px — always
+                // BELOW the 420px (2×210) the pairing needs, so in this card the two limbs always
+                // stack (matching the design's own stacked `flowLimb` rows). The `auto-fit`/`minmax`
+                // mechanism stays rather than a hand-rolled `flexDirection: 'column'` — it is still
+                // correct, general responsive behaviour (the same markup would re-pair if this
+                // widget's `span` ever grows again) — only `gap` tightens, closing most of the
+                // remaining stacked-limb height gap after `LimbCard` dropped its `Card`/`CardContent`
+                // padding, above. CORRECTED (curvature-v2-foundations SPEC §2.5): the prior claim
+                // here — that this Emotion version doesn't pass `@container` through and warns on the
+                // kebab-case condition — is FALSE for the dependency state in this tree (verified
+                // three levels down: Emotion emits an object key with an object value verbatim, its
+                // kebab-case warning fires only in the scalar-value branch for CSS property names;
+                // stylis 4.2.0 special-cases `@c…n` into the nested-at-rule branch; MUI attaches
+                // `theme.containerQueries` and sorts container queries on every `sx` result).
+                // Container-query support is NOT the risk. This widget stays on `auto-fit`/`minmax`
+                // anyway — it is one of the four hand-rolled StatTile-family widgets ruling 6 keeps
+                // unconverted; adding `@container` here is a later phase's rebuild, not this comment
+                // fix.
                 gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-                gap: 2,
+                gap: 1,
               }}
             >
               {dfp.charm != null ? (

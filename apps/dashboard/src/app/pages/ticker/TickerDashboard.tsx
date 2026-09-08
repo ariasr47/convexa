@@ -751,8 +751,32 @@ export function TickerDashboard() {
                       data-testid="ticker-context-grid"
                       sx={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                        // Ticker fidelity repair residual close-out: the design's own `.ctx-grid`
+                        // responsive table (`design/src/screens/responsive-spec.mjs`'s "Context
+                        // band" row) — 1 col below `tablet`(768), 2 from `tablet` (768–1099,
+                        // covering the design's separate tablet/small-laptop rows, both 2-col), 3
+                        // from `laptop` (1100–1599, covering laptop/desktop, both 3-col), 4 from
+                        // `wide`(1600+). The bare `repeat(3, minmax(0,1fr))` this replaces never
+                        // reflowed below laptop width — at 390 it squeezed all nine ctx-grid cards
+                        // into three ~110px columns, the dominant driver of the phone page-height
+                        // overflow. `Widget`'s own `span={2}` (`gridColumn: { xs: '1 / -1', md:
+                        // 'span 2' }`, `Widget.tsx:353`) already degrades correctly against every
+                        // column count here — `1 / -1` is column-count-agnostic — so Setups needs
+                        // no matching change.
+                        gridTemplateColumns: {
+                          xs: '1fr',
+                          tablet: 'repeat(2, minmax(0, 1fr))',
+                          laptop: 'repeat(3, minmax(0, 1fr))',
+                          wide: 'repeat(4, minmax(0, 1fr))',
+                        },
                         gap: 2,
+                        // Quiet cards vary a lot in natural height (a compact tenor ribbon beside a
+                        // 2×2 stat card); CSS grid's default `stretch` was inflating the shorter
+                        // siblings to match the tallest one in the row instead of sitting at their
+                        // own content height, matching neither this band's own density goal nor the
+                        // design's rendered result (`desk.mjs`'s `.ctx-grid` has no `align-items`
+                        // override either — its cards simply don't vary enough for stretch to show).
+                        alignItems: 'start',
                       }}
                     >
                       {/* STATIC dealer-flow projection — bound to `m.dealer_flow_projection` only

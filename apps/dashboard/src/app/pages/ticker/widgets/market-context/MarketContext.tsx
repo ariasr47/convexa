@@ -147,11 +147,23 @@ function CaptionLabel({ label, info }: { label: string; info?: string }) {
   );
 }
 
-/** The always-visible per-cell basis line (the AC-4 surface — no interaction). */
+/**
+ * The always-visible per-cell basis line (the AC-4 surface — no interaction). Ticker fidelity
+ * repair, change 2 (F2) close-out: single line, ellipsis-truncated, `title` carrying the full
+ * sentence — matching the design's own one-line `ctx-2` sub-caption (`desk.mjs:413`, the `s` field:
+ * "momentum positive", "5d 5.4 · 30d 6.8") without dropping the basis/as-of text the canon requires
+ * every card keep (`mcTiBasis`/`mcShapeBasis`/`MC_FLOW_BASIS`/`mcAtrBasis` are real sentences, one of
+ * them ~150 characters, that wrapped to 3–5 lines at the card's ~162px cell width and were the
+ * single largest driver of Market context's 552px-then-464px stretch of its context-band row). The
+ * FULL text stays in `textContent` (a `title` attribute doesn't remove anything from the a11y tree
+ * or `getByText`) — only the paint is truncated.
+ */
 function BasisLine({ text, testid }: { text: string; testid: string }) {
   return (
     <Typography
       variant="caption"
+      noWrap
+      title={text}
       sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
       data-testid={testid}
     >
