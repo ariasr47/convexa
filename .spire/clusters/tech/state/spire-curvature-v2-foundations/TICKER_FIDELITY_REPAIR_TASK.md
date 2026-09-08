@@ -119,3 +119,51 @@ conventional commits with scope on this branch (`fix(dashboard): …`), one comm
 **no push**. Verify every anchor above with `grep -n` before acting — anchors drift. If a change would
 require touching a must-not-change item, stop and write the question into this folder's `RESUME.md`
 under a `GATE Z` heading instead of working around it.
+
+## Pass 2 — owner: "Do all four" (2026-09-08, after the conductor's cold verification)
+
+The owner took all four recommendations in the conductor's re-verification (`TICKER_FIDELITY_REPAIR_REPORT.md`,
+last section). Three are this lane's; the fourth (the Live tape flow sparkline) is a **backend** item and is
+filed in `context/BACKLOG.md` ("Harvest — 2026-09-08") — do not build it here, `apps/api` stays untouched.
+Everything in "Must not change" above still binds, with ONE owner-granted exception: change 7 may edit the
+structure hero's **header** (and the shared `Widget` header) for the phone wrap — nothing else in the hero.
+
+7. **Hero header collapses at 390 (owner leave granted for the header only).** Evidence:
+   `ticker-repair-verify/crops/app-hero-real-390-dark-top.png` vs `design-hero-real-390-dark-top.png` — the
+   title truncates to `S…` and the subtitle wraps one word per line into a ~70 px column. Cause: in
+   `shared/ui/Widget/Widget.tsx:205-285` the header row is `flexWrap: { xs: 'wrap', sm: 'nowrap' }`, but the
+   title region (`Box sx={{ minWidth: 0, flex: 1 }}`, `:240`) shrinks to nothing before the actions region
+   (`flexShrink: 0`, `:266-275`) ever wraps. Below `sm` the title region must keep the row (e.g.
+   `flexBasis: { xs: '100%', sm: 'auto' }` — the design's phone `widgetHead` is title + `● mid · tape` chip on
+   one row, actions on the next, `design/src/screens/desk.mjs:289-296` + `lib.mjs` `widgetHead`). The
+   `● mid · tape` chip stays beside the title; the `FIELD | MAGNET` toggle takes the second row; the legend
+   is already hidden below the 1000 container (`StructureHeroPanel.tsx:362`). This is a shared-header change:
+   check every desk widget's header at 390 in the harness capture, not just the hero. **Threshold:**
+   `widget-structure-hero` ≤ 950 px at 390 (design 905); page at 390 ≤ 5,520 (design 4,416 + 25 %).
+8. **Remove the `IvRank` card from the context band (owner ruling, recorded in
+   `context/DECISION_LEDGER.md`).** It is not in the design's `ctx-grid` list (`desk.mjs:395-421`) and it
+   repeats the read strip's IV-rank cell. Unmount it at `TickerDashboard.tsx:794-801`; keep the component
+   and its unit spec (the quiet-band register spec scans source files, `quiet-band.register.spec.tsx:42` —
+   unchanged). Two e2e lists name it and must drop it with the ruling as the reason:
+   `apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts:521` (`HOVER_INFO_WIDGETS`) and `:629`
+   (`FRAME_INFO_SITES`) — check whether AC-35's "eight frame roots" count is asserted anywhere else
+   (`grep -rn "eight\|FRAME_INFO_SITES.length" apps/dashboard-e2e/src`). Check `TickerDashboard.tsx`'s
+   own comment at `:794` and any widget-order spec (`ticker-hierarchy.spec.tsx`). **Threshold:** report
+   the band span at 1280 (expected ≈ 970 after the removal; the ≤ 800 density target stays an open owner
+   item — do not cut fields to reach it).
+9. **Masthead: the controls join the headline row at laptop width and up.** `CommandDeck.tsx:291` stacks
+   `TickerHeader` (tier 1) above `TickerToolbar` (tier 2) above `QuickSymbols`; the design's `.mast`
+   (`desk.mjs:255-288`) puts `EXPIRATIONS` / `PERSONA` / the amber CTA on the **headline's right** (one
+   row), then the chip row, then the second line, then the quick row. At ≥ 1100 viewport
+   (`theme.breakpoints`, the same authority `TickerHeader.tsx:289-290` already uses for its
+   `xs: column / sm: row`), render the toolbar's two fields and the CTA in the headline row's right region;
+   below 1100 keep today's stacked order. Same ids, testids and `aria-label`s (`grep -rn` the e2e dir for
+   `ticker-toolbar`, `command-deck`, `quick-`). **Threshold:** `command-deck` ≤ 200 px at 1280 and 1440
+   (design 186); no overflow at 834 / 390.
+
+Verification, gates and rules as in the sections above; the harness run goes into `ticker-repair-after/`
+(`--grep desk-real`) after a fresh production build; append a `## Pass 2` section to
+`TICKER_FIDELITY_REPAIR_REPORT.md` with the same tables (before = the conductor's verified numbers:
+page 2,818 / 2,818 / 3,848 / 5,566; `command-deck` 243; hero at 390 1,137; band 1,052). One commit per
+change, no push.
+

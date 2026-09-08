@@ -1,5 +1,15 @@
 # RESUME — spire/curvature-v2-foundations
 
+## ⬆ UPDATE — 2026-09-08, owner ruled "Do all four"; pass 2 of the /ticker lane opened
+
+All four pending decisions taken: (1) fix the hero header collapse at 390 (owner leave for the hero
+**header** only); (2) remove the `IvRank` card from the context band (ruling recorded in
+`context/DECISION_LEDGER.md`, `context-band-is-the-designs-card-list`); (3) the masthead's controls join
+the headline row at ≥ 1100; (4) the flow sparkline and the masthead's change/name are **backend** backlog
+items (`context/BACKLOG.md`, "Harvest — 2026-09-08"), not built on this branch. Pass 2's contract is
+appended to `TICKER_FIDELITY_REPAIR_TASK.md` (changes 7–9); the lane reports into
+`TICKER_FIDELITY_REPAIR_REPORT.md` under `## Pass 2`.
+
 ## ⬆ UPDATE — 2026-09-08, conductor: the /ticker fidelity lane is VERIFIED and accepted; four owner decisions pending
 
 Cold re-verification (every gate re-run, a fresh build, the harness into `ticker-repair-verify/`, the

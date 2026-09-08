@@ -30,6 +30,28 @@
 
 ---
 
+## Harvest — 2026-09-08 (ticker fidelity repair: two wire fields the design draws and the API does not send)
+<!-- atlas: theme=desk-fidelity horizon=next -->
+Not a BRIEF. Filed by the conductor from the `/ticker` fidelity repair lane's GATE Z items (owner 2026-09-08:
+"Do all four" — the fourth is this). Both are **`apps/api`** changes; that crate is frozen on
+`spire/curvature-v2-foundations` (`apps/api` diff must stay 0), so they wait for the next backend lane on
+`main`. Neither is faked in the meantime: the tape card ships without its spark, the masthead without a
+change line or a name.
+
+- **A short `net_flow` trail on the live SSE event.** `design/src/screens/desk.mjs:363-364` draws the Live
+  tape's `FLOW` sparkline as a 30-point trail sampled every 10 s (`SPY · 30 × 10s`). `LiveUpdateBody`
+  (`libs/api/src/generated/schema.ts:1550`) carries only the current scalar `net_flow`. Proposed shape:
+  `net_flow_trail: number[]` (oldest → newest, ≤ 30 points) + `trail_window_s: number`, accumulated
+  server-side per symbol and reset on the session boundary — keeps the eviction / reset rules in one place
+  and off the client's stream-isolation seam (the lane's GATE Z reasoning, `RESUME.md`). Consumer:
+  `pages/ticker/widgets/live-tape/LiveTape.tsx` adds the spark row under the 2×2.
+- **Prior close, signed change and the instrument name on the ticker bundle.** The design's masthead reads
+  `SPY 573.12 +1.84 · +0.32%` and `SPDR S&P 500 ETF`; `market_state` has `price` / `gex_spot` only (checked
+  against the saved real bundle, `fidelity-audit-2026-09-08/_tools/spy-bundle-2026-09-08T1059Z.json`).
+  Proposed: `market_state.prev_close`, `change`, `change_pct`, `name` — all nullable, vendor-sourced,
+  never derived on the client. Consumer: `pages/ticker/widgets/chrome/TickerHeader.tsx` renders them
+  only when present (the fidelity repair's F3 already omits rather than fakes them).
+
 ## Harvest — 2026-09-06 (owner direction: AI-powered Convexa)
 <!-- atlas: theme=trust-the-signal horizon=next -->
 Not a GATE I cull and **not** a BRIEF. Owner direction: *"I want Convexa to be an AI-powered artifact, for
