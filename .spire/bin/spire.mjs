@@ -88,7 +88,7 @@ const PROVIDERS = Object.freeze({
         }),
         Object.freeze({
           id: 'P8',
-          reason: 'per-agent tool fencing is unavailable; role restrictions remain instruction-held',
+          reason: 'this adapter does not install verified per-agent tool fencing; role restrictions remain instruction-held',
         }),
       ]),
     }),
@@ -137,18 +137,6 @@ const PROVIDERS = Object.freeze({
   }),
 });
 
-// Ascent-specific launch surfaces are platform-owned projections. Delivery retains the provider
-// adapters above; evolution points only at files that its composition installs.
-const EVOLUTION_ADAPTERS = Object.freeze({
-  claude: Object.freeze({ kind: 'command', installed: 'commands/spire-tech-evolution.md', invoke: '/spire-tech-evolution' }),
-  codex: Object.freeze({ kind: 'skill', installed: 'skills/spire-tech-evo-context-economy/SKILL.md', invoke: '$spire-tech-evo-context-economy' }),
-  grok: Object.freeze({ kind: 'skill', installed: 'skills/spire-tech-evo-context-economy/SKILL.md', invoke: '$spire-tech-evo-context-economy' }),
-});
-
-function launchAdapterFor(provider, ascent = 'delivery') {
-  return ascent === 'evolution' ? EVOLUTION_ADAPTERS[provider] : PROVIDERS[provider]?.adapter;
-}
-
 // Receipt schema 1 is a single installed provider. Schema 2 (written by every multi-provider
 // install, which is the default) keeps the same default-provider triple and adds the full
 // per-provider inventory. A reader that understands only one of them bricks cluster entry on the
@@ -160,9 +148,6 @@ const RECEIPT_FIELDS_V1 = Object.freeze([
 const RECEIPT_FIELDS_V2 = Object.freeze([...RECEIPT_FIELDS_V1, 'providers', 'installations']);
 // Both ascent fields or neither. Absent is the pre-ascent receipt shape; exactly one is corruption.
 const RECEIPT_FIELDS_ASCENT = Object.freeze(['ascents', 'default_ascent']);
-const RECEIPT_FIELDS_R4 = Object.freeze([
-  'canonical_role_ids', 'installed_adapters', 'active_targets', 'source_version', 'migration_state',
-]);
 const INSTALLATION_FIELDS = Object.freeze([
   'provider_root', 'launch_adapter', 'provider_capabilities', 'provider_config',
 ]);
@@ -382,7 +367,14 @@ function artifactFile(root, receipt, artifact) {
 }
 
 function validateProviderCapabilities(installation, provider) {
-  if (!sameCanonicalValue(installation.provider_capabilities, provider.capabilities)) {
+  // The September 5 correction changes an overbroad vendor claim, not P8 support. Preserve the
+  // exact prior receipt spelling without accepting any new capability or arbitrary description.
+  const snapshot = installation.provider_capabilities;
+  const normalized = provider.root === '.codex' && Array.isArray(snapshot?.degraded)
+    ? { ...snapshot, degraded: snapshot.degraded.map((entry) => entry?.id === 'P8' && entry.reason === 'per-agent tool fencing is unavailable; role restrictions remain instruction-held'
+      ? { ...entry, reason: 'this adapter does not install verified per-agent tool fencing; role restrictions remain instruction-held' } : entry) }
+    : snapshot;
+  if (!sameCanonicalValue(normalized, provider.capabilities)) {
     throw new Error('provider capability snapshot does not match the selected provider');
   }
 }
@@ -455,7 +447,7 @@ function artifactKey(artifact) {
   return `${artifact.placement}:${artifact.provider_root ?? ''}:${artifact.path}`;
 }
 
-function validateArtifacts(root, receipt, provider, selected, selectedAscent) {
+function validateArtifacts(root, receipt, provider, selected) {
   if (!Array.isArray(receipt.artifacts) || receipt.artifacts.length === 0) {
     throw new Error('installation artifact inventory is empty');
   }
@@ -505,24 +497,19 @@ function validateArtifacts(root, receipt, provider, selected, selectedAscent) {
     'spire-root::bin/spire.mjs',
     'spire-root::bin/spire',
     'spire-root::bin/spire.cmd',
-    `provider-root:${selectedRoot}:${selected.launch_adapter.installed}`,
+    `provider-root:${selectedRoot}:ORCHESTRATOR.md`,
+    `provider-root:${selectedRoot}:${provider.adapter.installed}`,
   ];
-  mandatory.push(`provider-root:${selectedRoot}:${selectedAscent === 'evolution' ? 'evolution/ORCHESTRATOR_EVOLUTION.md' : 'ORCHESTRATOR.md'}`);
-  if (selectedAscent === 'delivery' && (selected.name === 'codex' || selected.name === 'grok')) {
-    const bootKey = `provider-root:${selectedRoot}:AGENTS.md`;
-    // Legacy receipts inventoried this boot document at repo root. New installs keep immutable
-    // authority under the provider root and leave any root router project-owned and unreceipted.
-    if (!folded.has(bootKey.toLowerCase()) && !folded.has('repo-root::agents.md')) {
-      throw new Error(`mandatory artifact is absent: ${bootKey}`);
-    }
-  }
+  // Multi installs always ship the repo-root router; single installs ship it only for the
+  // providers whose boot doc relocates there.
+  if (multi || selected.name === 'codex' || selected.name === 'grok') mandatory.push('repo-root::AGENTS.md');
   for (const key of mandatory) if (!folded.has(key.toLowerCase())) throw new Error(`mandatory artifact is absent: ${key}`);
   if (!multi && selected.name === 'claude' && folded.has('repo-root::agents.md')) {
     throw new Error('Claude installation must not inventory repo-root AGENTS.md');
   }
 }
 
-function validateInstallation(root, requestedProvider = null, requestedAscent = null) {
+function validateInstallation(root, requestedProvider = null) {
   let invariant = INSTALLATION_INVARIANTS.UNKNOWN;
   try {
   rootAuthority(root);
@@ -539,14 +526,10 @@ function validateInstallation(root, requestedProvider = null, requestedAscent = 
   const multi = receipt.schema_version === 2;
   const ascent = receiptAscents(receipt);
   if (!ascent) throw new Error('installation receipt has invalid ascent fields');
-  const requestedKnownAndInstalled = requestedAscent !== null &&
-    (ASCENTS[DESCRIPTOR.id] ?? []).includes(requestedAscent) && ascent.ascents.includes(requestedAscent);
-  const selectedAscent = requestedKnownAndInstalled ? requestedAscent : ascent.default_ascent;
   const baseFields = multi ? RECEIPT_FIELDS_V2 : RECEIPT_FIELDS_V1;
-  const hasR4Inventory = RECEIPT_FIELDS_R4.some((field) => Object.hasOwn(receipt, field));
   const expectedFields = Object.hasOwn(receipt, 'ascents')
-    ? [...baseFields, ...(hasR4Inventory ? RECEIPT_FIELDS_R4 : []), ...RECEIPT_FIELDS_ASCENT]
-    : [...baseFields, ...(hasR4Inventory ? RECEIPT_FIELDS_R4 : [])];
+    ? [...baseFields, ...RECEIPT_FIELDS_ASCENT]
+    : baseFields;
   if (!exactKeys(receipt, expectedFields) ||
       ![1, 2].includes(receipt.schema_version) || receipt.product !== 'spire-os' ||
       receipt.cluster !== DESCRIPTOR.id || !Object.hasOwn(PROVIDERS, receipt.provider) ||
@@ -555,20 +538,6 @@ function validateInstallation(root, requestedProvider = null, requestedAscent = 
       new Date(receipt.installed_at).toISOString() !== receipt.installed_at ||
       !/^[a-f0-9]{64}$/u.test(receipt.descriptor_sha256)) {
     throw new Error('installation receipt has invalid schema');
-  }
-  const expectedReceiptAdapter = launchAdapterFor(receipt.provider, ascent.default_ascent);
-  if (!exactKeys(receipt.launch_adapter, ['kind', 'installed', 'invoke']) ||
-      !sameCanonicalValue(receipt.launch_adapter, expectedReceiptAdapter)) {
-    throw new Error('installation receipt launch adapter does not match its default ascent');
-  }
-  if (hasR4Inventory && (receipt.source_version !== receipt.version ||
-      !['none', 'stop-c23-gate-l-1'].includes(receipt.migration_state) ||
-      !Array.isArray(receipt.canonical_role_ids) ||
-      JSON.stringify(receipt.canonical_role_ids) !== JSON.stringify(['spire:tech/synthesizer']) ||
-      !Array.isArray(receipt.installed_adapters) || !Array.isArray(receipt.active_targets) ||
-      receipt.active_targets.length === 0 || receipt.active_targets.length !== new Set(receipt.active_targets).size ||
-      receipt.installed_adapters.some((adapter) => adapter?.canonical_id !== 'spire:tech/synthesizer'))) {
-    throw new Error('installation receipt has invalid R4 canonical adapter inventory');
   }
 
   // Resolve which installed provider this invocation selects, then validate THAT one end to end.
@@ -606,12 +575,12 @@ function validateInstallation(root, requestedProvider = null, requestedAscent = 
     throw new ProviderMismatchError(selectedName, installedProviders);
   }
   const selected = multi
-    ? { name: selectedName, ...receipt.installations[selectedName], launch_adapter: launchAdapterFor(selectedName, selectedAscent) }
-    : { ...defaultView, launch_adapter: launchAdapterFor(selectedName, selectedAscent) };
+    ? { name: selectedName, ...receipt.installations[selectedName] }
+    : defaultView;
 
   invariant = INSTALLATION_INVARIANTS.PROVIDER;
   const provider = PROVIDERS[selectedName];
-  if (selected.provider_root !== provider.root || !sameCanonicalValue(selected.launch_adapter, launchAdapterFor(selectedName, selectedAscent))) {
+  if (selected.provider_root !== provider.root || !sameCanonicalValue(selected.launch_adapter, provider.adapter)) {
     throw new Error('installation provider or adapter does not match the selected provider');
   }
   invariant = INSTALLATION_INVARIANTS.METADATA;
@@ -622,12 +591,12 @@ function validateInstallation(root, requestedProvider = null, requestedAscent = 
   invariant = INSTALLATION_INVARIANTS.PROVIDER;
   validateProviderCapabilities(selected, provider);
   invariant = INSTALLATION_INVARIANTS.ARTIFACT;
-  validateArtifacts(root, receipt, provider, selected, selectedAscent);
+  validateArtifacts(root, receipt, provider, selected);
   invariant = INSTALLATION_INVARIANTS.PROVIDER;
   validateProviderConfig(root, selected, provider);
   invariant = INSTALLATION_INVARIANTS.UNKNOWN;
   inspectContained(root, path.join(root, ...DESCRIPTOR.state_root.split('/')), { leaf: 'directory' });
-  return { receipt, catalog: catalog.value, state: descriptor.value, provider, selected, ascent: { ...ascent, selected_ascent: selectedAscent } };
+  return { receipt, catalog: catalog.value, state: descriptor.value, provider, selected, ascent };
   } catch (error) {
     if (error instanceof ProviderMismatchError) throw error;
     throw new InstallationInvariantError(invariant);
@@ -665,7 +634,7 @@ function syncDirectory(directory) {
 // CHANGE_SPEC.md (doctor-selectability) §2.2 for why the boundary is not a skip-the-call design.
 function prepareSelection(root, validated, ascent) {
   const provider = validated.selected.name;
-  const expectedAdapter = launchAdapterFor(provider, ascent);
+  const expectedAdapter = PROVIDERS[provider].adapter;
   if (!ASCENTS[DESCRIPTOR.id].includes(ascent)) throw new Error('selection ascent is not canonical');
   const selection = {
     schema_version: 1,
@@ -673,7 +642,9 @@ function prepareSelection(root, validated, ascent) {
     cluster: DESCRIPTOR.id,
     ascent,
     provider,
-    adapter: expectedAdapter,
+    adapter: provider === 'claude'
+      ? { kind: 'command', installed: 'commands/spire-tech.md', invoke: '/spire-tech' }
+      : { kind: 'skill', installed: 'skills/spire-tech/SKILL.md', invoke: '$spire-tech' },
   };
   if (!sameCanonicalValue(selection.adapter, expectedAdapter)) throw new Error('selection adapter is not canonical');
   const destination = path.join(root, ...DESCRIPTOR.state_root.split('/'), 'receipts', 'selection.json');
@@ -719,7 +690,7 @@ function select(parsed) {
   }
   let validated;
   try {
-    validated = validateInstallation(root, parsed.provider, parsed.ascent);
+    validated = validateInstallation(root, parsed.provider);
   } catch (error) {
     if (error instanceof ProviderMismatchError) {
       return refusal(
