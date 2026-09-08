@@ -41,6 +41,10 @@ type Capture = {
   scheme: Scheme;
   url: string;
   pageHeight: number;
+  /** Real content bottom: max(region.y + region.h). `pageHeight` is `scrollHeight`, which reads
+   *  the grown 1800 px viewport (not the content) when `settle()` enlarged it for a page that fit —
+   *  Alerts and Scanner do after the surfaces repair. Compare THIS across app|design. */
+  contentBottom: number;
   overflowX: boolean;
   scrollWidth: number;
   consoleErrors: string[];
@@ -692,6 +696,7 @@ async function record(
   capture: Omit<
     Capture,
     | 'pageHeight'
+    | 'contentBottom'
     | 'overflowX'
     | 'scrollWidth'
     | 'consoleErrors'
@@ -715,6 +720,7 @@ async function record(
   const full: Capture = {
     ...capture,
     pageHeight: pr.scrollHeight,
+    contentBottom: regions.reduce((m, r) => Math.max(m, r.y + r.h), 0),
     overflowX: pr.scrollWidth > pr.clientWidth,
     scrollWidth: pr.scrollWidth,
     consoleErrors: errors,

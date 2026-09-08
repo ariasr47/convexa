@@ -12,7 +12,8 @@ def rows(c, keep):
     return sorted(out, key=lambda r: (r['y'], -r['w']))
 app_keep = lambda k: not k.startswith(('figure-', 'palette-', 'nav-', 'kbd', 'chip')) and k not in ('app-shell',)
 des_keep = lambda k: k.startswith(('nav-bar', 'wrap:', 'panel:', 'block:'))
-print(f"== {i}   app page {a['pageHeight']}px · design page {d['pageHeight']}px · app conn={a['probes'].get('connectionState')} skeletons={a['probes'].get('skeletons')}")
+cb = lambda c: f" (content {c['contentBottom']}px)" if 'contentBottom' in c else ''
+print(f"== {i}   app page {a['pageHeight']}px{cb(a)} · design page {d['pageHeight']}px{cb(d)} · app conn={a['probes'].get('connectionState')} skeletons={a['probes'].get('skeletons')}")
 print(f"{'APP (data-testid)':44} {'y':>5} {'h':>5} {'w':>5} | {'DESIGN (panel/wrap)':52} {'y':>5} {'h':>5} {'w':>5}")
 A, D = rows(a, app_keep), rows(d, des_keep)
 for k in range(max(len(A), len(D))):

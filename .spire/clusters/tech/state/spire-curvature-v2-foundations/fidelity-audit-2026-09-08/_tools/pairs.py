@@ -29,8 +29,10 @@ for i in ids:
     canvas = Image.new('RGB', (COL_W * 2 + GUTTER, H), (24, 24, 28))
     draw = ImageDraw.Draw(canvas)
     aj = json.load(open(a_p[:-4] + '.json')); dj = json.load(open(d_p[:-4] + '.json'))
-    draw.text((8, 9), f"APP  {i}  page {aj['pageHeight']}px  conn={aj['probes'].get('connectionState')}", fill=(233, 228, 214), font=font)
-    draw.text((COL_W + GUTTER + 8, 9), f"DESIGN  {os.path.basename(dj['url'])}  page {dj['pageHeight']}px", fill=(233, 228, 214), font=font)
+    def h(c):  # real content bottom when the census carries it (see fidelity.spec.ts `contentBottom`)
+        return f"content {c['contentBottom']}px" if 'contentBottom' in c else f"page {c['pageHeight']}px"
+    draw.text((8, 9), f"APP  {i}  {h(aj)}  conn={aj['probes'].get('connectionState')}", fill=(233, 228, 214), font=font)
+    draw.text((COL_W + GUTTER + 8, 9), f"DESIGN  {os.path.basename(dj['url'])}  {h(dj)}", fill=(233, 228, 214), font=font)
     canvas.paste(a2, (0, CAP_H)); canvas.paste(d2, (COL_W + GUTTER, CAP_H))
     canvas.save(f'{HERE}/pairs/{i}.png', optimize=True)
     canvas.save(f'{HERE}/pairs/{i}.jpg', quality=80, optimize=True)
