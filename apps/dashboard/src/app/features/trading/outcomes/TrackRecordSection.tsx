@@ -450,9 +450,6 @@ export function TrackRecordSection({ personaLabel }: TrackRecordSectionProps) {
                 </Typography>
                 <InfoTip title={TR_TIP_COVERAGE} testid="tr-coverage-info" />
               </Stack>
-              <Box sx={{ mt: 1 }}>
-                <ExclusionBreakdown read={read} />
-              </Box>
             </>
           )}
 
@@ -492,6 +489,19 @@ export function TrackRecordSection({ personaLabel }: TrackRecordSectionProps) {
           <Line testid="tr-multiplicity">{TR_MULTIPLICITY}</Line>
         </Box>
       </Box>
+
+      {/* `tr-breakdown` stays a TOP-LEVEL, always-directly-clickable disclosure — it shipped before
+          this repair and its own `<summary>` must stay reachable without first expanding "How this
+          is counted" above (nesting one native <details> inside a closed one collapses the inner
+          summary to zero size, which is exactly what GATE Z criterion 66's coarse/fine-pointer
+          passes on this element caught). `tr-coverage` (above, inside the new disclosure) still
+          never sits INSIDE `tr-breakdown` — the two are independent, matching the shipped
+          non-containment assertion. */}
+      {body !== 'unreadable' && body !== 'empty' && (
+        <Box sx={{ mb: 1 }}>
+          <ExclusionBreakdown read={read} />
+        </Box>
+      )}
 
       {/* ---- The families: four-plus quiet cards (design/src/screens/positions.mjs:87-90,
               `repeat(4, minmax(0,1fr))`), ALWAYS rendered — including the empty/unreadable states,
