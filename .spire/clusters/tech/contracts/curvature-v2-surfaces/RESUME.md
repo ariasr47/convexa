@@ -1,12 +1,68 @@
-# RESUME — curvature-v2-surfaces frontend lane (FE-14, then BE-1)
+# RESUME — curvature-v2-surfaces frontend lane (BE-1 next, then GATE Q)
 
-**Resume status:** ACTIVE — FE-13 landed clean, then a narrow GATE Z repair pass landed THREE more
-commits on top (`5c07dc40`, `b431d7da`, `4124322a`) fixing two of FE-13's three findings and filing
-the third for the owner. Nothing is half-done: the working tree is clean (aside from the untouched
-sibling-process directory noted below). **The full e2e suite is now 100/100 (not 98/99 or 99/99) —
-re-run it yourself before trusting any of these numbers, per this file's own standing advice.** FE-14
-is still the whole-phase closer and still deserves a fresh context; this GATE Z pass did NOT start
-FE-14 or BE-1.
+**Resume status:** ACTIVE — **FE-14 (frontend closer) is DONE.** One docs-only commit
+(`docs(spire): FE-14 frontend closer — whole-phase verification (curvature-v2-surfaces)`) appended a
+closer section to `BUILD_REPORT.md`; no `apps/dashboard/src`, `apps/dashboard-e2e/src`, `apps/api`,
+`SPEC.md`, `PLAN.md`, `INTERFACE_CONTRACT.md`, `decisions.md` or `design/` file was touched. **Next
+concrete step: BE-1 — backend verification only** (three-dot `apps/api` diff must stay 0,
+`opportunity_score`/`opportunity_tier`/`state_fingerprint` byte-identical), **then GATE Q.**
+
+## FE-14's own measurements (re-run yourself before trusting, per this file's own standing advice)
+
+All from the repo root, this session, HEAD `6cf64041` unchanged start-to-end:
+
+- `npm run ports:free` — exit 0, both times (first and last).
+- `npx nx run-many -t typecheck -p @convexa/dashboard,@convexa/api --skip-nx-cache` — **exit 0**.
+- `npx nx typecheck dashboard-e2e --skip-nx-cache` — **exit 0** (recorded separately, criterion 68).
+- `npx nx test @convexa/dashboard --skip-nx-cache` — **exit 0, 239/239 files, 2856/2856 tests**
+  (clean — none of the three baseline-flaky specs timed out this run; at-or-better than the stated
+  "exit 1 at ≥2691/2694" baseline). **Gotcha 19, NEW:** the first attempt hit the documented
+  `_mutation_poison_replay_outcome_join.ts?raw` ENOENT — the stale-glob-transform cache was at the
+  REPO-ROOT `node_modules/.vite` (NOT `apps/dashboard/node_modules/.vite`, which does not exist in
+  this hoisted layout). `rm -rf node_modules/.vite` before the run fixed it.
+- `npm run lint` — exit 0, 5 warnings (0 new) — same set every prior lane recorded.
+- `npm run build` — exit 0 (production).
+- `npx playwright install chromium` — exit 0.
+- `npx playwright test -c apps/dashboard-e2e/playwright.config.ts --list` — **`100 tests in 7 files`**.
+- `BROWSER_QUALITY_PREBUILD_STATUS=pass npx nx e2e dashboard-e2e --skip-nx-cache` — **exit 0, 100/100
+  passed, 0 flaky**. Live console line reproduced criterion 7a's own measurement independently:
+  `wide(1280): container=200px font=15px · narrow(393): container=200px font=15px`.
+- `git diff --name-only origin/main...HEAD -- apps/api | wc -l` — **0**.
+- `node design/src/verify-tokens.mjs` — **exit 0, 34/34**, including the 17 v2-addition checks.
+  **Gotcha 20, NEW:** the earlier claim that this script "only structurally checks the 10 v1 tokens"
+  is STALE — commit `2695e09f` (inside FE-13's own range) added independent v2-addition assertions;
+  re-read the script before repeating that caveat in a future report.
+- `node --test apps/dashboard-e2e/tools/manifest.spec.mjs apps/dashboard-e2e/tools/mutations.spec.mjs`
+  — exit 0, 7/7.
+- `fonts.spec.ts`'s `EXEMPT` — confirmed `{}` (empty). `liveClaim.spec.ts`'s `EXEMPT` — confirmed
+  exactly one entry (`LiveTape.tsx`).
+- V20 (interface conformance) — **NOT RUN**, no backend server started this session; the
+  `NO_BACKEND_CHANGE` exemption path, not a false pass. **BE-1 owns this next.**
+
+**Full detail — every mutation proof A–S's recorded red output, the itemized closed-set copy diffs,
+the named-debt table, the canon-amendment/Amendments-question carry-forward, and the three
+planning-decision notes — is in `BUILD_REPORT.md`'s new "FE-14 — Frontend closer" section (appended
+after the "GATE Z repair" section).**
+
+## Three things BE-1 and GATE Q must not smooth over (carried from FE-14's own report)
+
+1. **Criterion 7a is OPEN, bounced to the owner** (`PositionsPage.tsx:203-209`'s `PanelContainer`
+   measures 200px/15px at both 1280px and 393px — the 20px/17px states are structurally unreachable
+   for this one consumer as shipped). Re-confirmed a third time this session via the e2e suite's own
+   console output. Do not fix it, do not adjust an assertion to match it, do not record it as a PASS.
+2. **The `/positions` 900px overflow was a REAL regression FE-5 introduced this phase, fixed within
+   the phase** (`PositionRow.tsx:168-173`, missing `position: relative` on a wrapper — FE-5's own
+   `literal()` keyboard-reachable tips, U-15a). The conductor overturned FE-13's original
+   "pre-existing" verdict with direct `git diff f8957d3f..HEAD` evidence. Record as "introduced and
+   closed," not "carried debt" or "inherited."
+3. **FE-13's session broke the no-`git stash` rule once**, scoped to one file, immediately popped,
+   verified safe (gotcha 17). **Correction found this session:** `git stash list` is NOT empty — it
+   carries one unrelated, pre-existing entry (`stash@{0}: On main: redesign-wip (abandoned
+   2026-06-29)`, `.claude/BACKLOG.md`/`AuthDialog.tsx`/`Landing.tsx`/`theme.ts` — an old redesign
+   effort, nothing to do with this phase). Left untouched; do not assume "stash list empty" without
+   actually running it.
+
+## Superseded — prior sections below (kept for history only; do not act on as current state)
 
 ## GATE Z repair pass (after FE-13, before FE-14) — what changed
 
@@ -95,7 +151,7 @@ correctly YOURS to just report (not fix) is criterion 7a (§ above, filed for th
    section above for the full either/or). **FE-14: name this in your own report; it needs an owner
    ruling, not a re-fix attempt.**
 
-## Next concrete step: **FE-14 — Frontend closer**, then **BE-1 — backend verification**
+## Superseded — FE-14's original task briefing (kept for history; FE-14 is now DONE, see top of file)
 
 FE-14 is described in `PLAN.md` right after FE-13's own section — read it in full there, plus SPEC's
 `review` rows (7b/15/43/47c/56/60/63/69/U-15/U-19/U-24/U-27/U-37), `INTERFACE_CONTRACT.md`
@@ -219,16 +275,16 @@ HEAD:<path>` to inspect an original version instead of `git stash`, even for a s
 
 ## ⚠️ Still true — another process shares this working tree
 
-`docs/research/convexa-business-review-2026-09-05/` remains untracked and was left alone across both
-FE-13 and the GATE Z repair pass that followed it (confirmed present, unchanged, at the start and end
-of each). Verify HEAD is on `spire/curvature-v2-foundations` before and after any work; stop and
-report if it moves. HEAD at the end of FE-13's own session: `caa9d0fb`. **HEAD at the end of the GATE Z
-repair pass (three more commits on top): `4124322a`** — `5c07dc40` (finding 1 fix), `b431d7da`
-(finding 2 fix), `4124322a` (finding 3 write-up + full-pass verification, docs-only).
+`docs/research/convexa-business-review-2026-09-05/` remains untracked and was left alone across
+FE-13, the GATE Z repair pass, and now FE-14 (confirmed present, unchanged, at the start and end of
+each). Verify HEAD is on `spire/curvature-v2-foundations` before and after any work; stop and report
+if it moves. HEAD at the end of FE-13's own session: `caa9d0fb`. HEAD at the end of the GATE Z repair
+pass: `4124322a`. **HEAD at the end of FE-14's own session (unchanged by FE-14's own docs-only
+commit's parent, confirm the new commit lands on top): starts at `6cf64041`, one commit added.**
 
-## Remaining arc (unchanged from PLAN, for orientation)
+## Remaining arc
 
-FE-14 (frontend closer: whole-phase verification, both `EXEMPT` maps asserted empty, full suite + e2e
-against the production build, the reviewer-only rows, and the ONE remaining GATE Z item — criterion
-7a, filed for the owner, not FE-13's other two findings which are now fixed) → BE-1 (backend
-verification only: three-dot `apps/api` diff 0, score/tier/fingerprint byte-identical) → GATE Q.
+~~FE-14 (frontend closer...)~~ **DONE, this session.** → **BE-1 (backend verification only: three-dot
+`apps/api` diff 0, score/tier/fingerprint byte-identical) → GATE Q.** Criterion 7a stays filed for the
+owner (not FE-13's other two findings, which are fixed) — GATE Q should not treat it as blocking BE-1
+or as a build defect; it needs a product/design ruling, not more engineering.

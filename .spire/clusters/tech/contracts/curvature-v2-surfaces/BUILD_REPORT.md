@@ -1879,3 +1879,284 @@ Playwright/Node script for finding 1's DOM walk and an `http-server` log, both u
 `apps/dashboard-e2e/_tmp_*`, deleted before any commit; confirmed via `git status --porcelain`).
 
 ---
+
+## FE-14 — Frontend closer: whole-phase verification, both `EXEMPT` maps, the review captures, criterion 7a's owner decision
+
+**Landed:** 2026-09-08, one commit, docs-only. **Owns:** this section and the verification run below.
+**Implements no worker paths** — no `apps/dashboard/src`, `apps/dashboard-e2e/src`, `apps/api`,
+`SPEC.md`, `PLAN.md`, `INTERFACE_CONTRACT.md`, `decisions.md` or `design/` file was touched by this
+task. HEAD at start and end: `6cf64041` (unchanged — verified before and after); the sibling
+`docs/research/convexa-business-review-2026-09-05/` directory confirmed present, untracked and
+untouched at both checkpoints. No `git stash` used.
+
+### 1. Every mutation proof A–S — recorded red output, and which are non-vacuous (criterion 69, SB)
+
+All nineteen letters A–S carry a recorded red result in an existing §FE-n section; **none is a
+narrated `expect(true).toBe(true)`** — collated here, not re-run (re-running a poison is FE-1…FE-13's
+job, not the closer's; the closer's own job is to confirm every letter's red output was actually
+captured, per PLAN item 1).
+
+| Proof | Owning task | Red output recorded? | Anti-vacuity evidence |
+|---|---|---|---|
+| A | FE-1 §4 | **yes** — `npm run typecheck` non-zero, `ReadStrip.tsx(59,14): error TS2741…`; `nx test` stayed green on the same tree (the point of the proof) | the same table's revert line: `git diff` = 0 lines, typecheck exit 0 after |
+| B | FE-1 §4 | **yes** — `fonts.spec.ts` exit 1, `AssertionError: N-1 violation: … ScanTable.tsx → … needle 1): 165:not recorded` | B′/C′ row: both needles disabled → 4 separate failures (needle 1, needle 2, EXEMPT live check, enforcement test) — proves the enforcement test would pass vacuously without the needles, which is why §2.3 refused the shipped `RETIRED_FACES` guard |
+| C | FE-1 §4 | **yes** — `fonts.spec.ts` exit 1, `AssertionError: N-1 violation: … ScanTable.tsx → binds a font face locally (needle 2)`, same run showing needle 1 unaffected | same B′/C′ row |
+| D | FE-2 §4 | **yes** — `MUTATION PROOF D`, planted `genuineIsLive(...)` in `Scanner.tsx`, the widened fence goes red naming that file | FE-2 §4 states the guard is a NEW glob (a source the fence did not previously scan), the direct test of the widening itself |
+| E | FE-3 §4 | **yes** — `MUTATION PROOF E`, `ScanCard.tsx`'s `regimeLookup` replaced with the raw enum, both-layouts test red | FE-3 §4 |
+| F | FE-4 §5 | **yes** — `MUTATION PROOF F`, criterion 12, red on the never-ticked symbol getting the retained treatment | FE-4 §5 — the dedicated poison test named alongside |
+| G | FE-4 §5 | **yes** — `MUTATION PROOF G`, CF-1's `cf1Offenders` poison-and-check idiom, red naming the changed key | FE-4 §5 |
+| H | FE-5 §5 | **yes** — `PositionRow.tsx`'s `session_delta` no-value arm poisoned to `'⏸_MUTATION_POISON_H'`; `pauseGlyph.spec.ts` red naming file + line | FE-5 §5 — revert shows the real diff only, zero `POISON` markers (`grep -c POISON` → 0) |
+| I | FE-5 §5 | **yes** — `AssertionError: expected 'offline · last known' to be 'offline'` on the 27b test | FE-5 §5 |
+| J | FE-6 §4 | **yes** — `netPl.spec.ts` exit 1, `AssertionError: expected '+$0' to be 'unavailable'` — the shape of the shipped `+$0` defect the criterion closes | FE-6 §4 |
+| K | FE-6 §4 | **yes** — `netPl.spec.ts` exit 1, 3 failed, load-bearing one: `expected '1 of 2 open marked' to be null` — proves the coverage caption leaks through once the offline early-return is bypassed | FE-6 §4 |
+| L | FE-7 §4 | **yes** — `MUTATION PROOF L`, `brokerView.ts`'s `brokerFactText` poisoned to return `NOT_RECORDED`, the broker no-`not recorded` census goes red | FE-7 §4 — poisoned a non-owned pure function per PLAN, mirroring FE-2's own precedent |
+| M | FE-8 §4 | **yes** — `MUTATION PROOF M`, restored `severity="success"`, the neutral-chrome test red | FE-8 §4 — the icon/colorError assertions independently unaffected, isolating exactly what the poison broke |
+| N | FE-9 §3 | **yes** — `MUTATION PROOF N`, removed the `readFaulted` guard, red on the raw stored string being overwritten | FE-9 §3 — `grep -n MUTATION_POISON store.ts` → 0 hits on revert |
+| O | FE-10 §4 | **yes** — `MUTATION PROOF O`, restored `?? 60` on the score-gate line, the fabricated-threshold test red | FE-10 §4 |
+| P | FE-10 §4 | **yes** — `MUTATION PROOF P`, disabled the "Unread" label, the black-and-white test red | FE-10 §4 |
+| Q | FE-11 §6 | **yes** — `quiet-band.register.spec.tsx` 2 failed: `data-figure-register` mono on an absent value, AND the DOM scan finding `'—'` inside a mono node | FE-11 §6 — `fonts.spec.ts` run in the SAME pass, exit 0/14-14, confirming Q is isolated to the register scan and not a needle hit |
+| R | FE-11 §6 | **yes** — `Setups.tsx` collapsed back to one ternary; 1 failed: `Unable to find … "Setups unavailable this cycle."` — the `[]` arm's own test stayed passing (both arms coincidentally render the same sentence), exactly the collapse 56a exists to catch | FE-11 §6 |
+| S | FE-12 §5 | **yes** — dropped the `About ` prefix in `Widget.tsx`; rebuilt production; 4 failed (one per width), first failure quoted verbatim (`getByRole('button', {name: /^About /i})` timeout) | FE-12 §5 — the single shared render site is confirmed via `grep` (exactly one `<AccessibleHelp>` call site) and a static-bundle scan confirming the poison string landed in the single compiled chunk all eight widgets' import resolves to — the mechanism-level proof, since the per-test loop stops at the first widget it reaches |
+
+**Conclusion: 19/19 letters (A–S) carry recorded red output; zero are narrated
+`expect(true).toBe(true)` bodies.** This closer did not re-run any of the nineteen poisons itself
+(that is FE-1…FE-13's own verification, already committed); its own contribution to criterion 69 is
+confirming every letter's red text actually exists in the record, per PLAN's own instruction that "a
+proof without its red output is not a proof."
+
+### 2. `EXEMPT` maps — both re-confirmed this session
+
+- **`fonts.spec.ts`'s `EXEMPT` is `{}`** (`apps/dashboard/src/app/shared/theme/fonts.spec.ts:265`) —
+  **empty**, criterion N-1 satisfied in its final state. (FE-1 shipped it at 14 entries; each owning
+  task deleted its own entry per the carried-notes discipline in FE-1 §8 item 2; the map reached zero
+  sometime at or before FE-7, per RESUME's own note, and is still zero at this HEAD.)
+- **`liveClaim.spec.ts`'s `EXEMPT` carries exactly its one live-checked desk entry**
+  (`apps/dashboard/src/app/shared/liveness/liveClaim.spec.ts:119-124`,
+  `'pages/ticker/widgets/live-tape/LiveTape.tsx'`, reasoned: `numbersActive`'s derivation genuinely
+  differs from `isDeliveringLive`). Both maps are live-checked on both arms (file must exist AND still
+  violate/still be a fenced source) by their own `it` blocks, confirmed present and unchanged by
+  reading the source directly this session.
+
+### 3. Itemized visible copy diffs — the closed set (PLAN item 3, nothing beyond it)
+
+| # | Site | Diff | Owning §FE-n |
+|---|---|---|---|
+| 1 | `labels.ts:29` `cadenceHeader` | `Prices live · structure ~3 min · hot names sooner` → `Prices per tick · structure ~3 min · hot names sooner` | FE-4 §2 |
+| 2 | `labels.ts:34-36` `cadenceGloss` | opens `Prices stream live.` → opens `Prices change tick by tick.` (rest byte-identical) | FE-4 §2 |
+| 3 | `_kit/copy.ts:361` `MC_CELL_EMPTY` | `'unavailable this cycle'` (value slot) → `'unavailable'` (value) + new `MC_CELL_EMPTY_CAPTION = 'this cycle'` (caption slot) | FE-11 §3 |
+| 4 | `Setups.tsx:31-56` (`undefined` arm) | new sentence `Setups unavailable this cycle.`; the `[]` arm keeps `No clean setup right now.` byte-for-byte | FE-11 §3 |
+| 5 | `PositionRow.tsx:68` | `const OFFLINE = '⏸ offline'` deleted; `PauseMark` + `offlineDecoration` caption | FE-5 §4 |
+| 6 | `PositionRow.tsx:378` | `{streamOffline ? ' ⏸' : ''}` → `PauseMark` + caption, same placement | FE-5 §4 |
+| 7 | `PositionRow.tsx:388` | bare `⏸` value → retained value (dimmed) or `—`, + `PauseMark` + caption, never a naked glyph | FE-5 §4 |
+| 8 | `PositionRow.tsx:549` | `Paused — resumes pricing when the live feed returns. ⏸` → same sentence minus the trailing glyph, + `PauseMark` | FE-5 §4 |
+| 9 | `PositionsView.tsx:367` | bare `⏸` (group header, offline) → `PauseMark` | FE-5 §4 |
+| 10 | `labels.ts:57` `SESSION_DELTA_TIP` | `…freezes (⏸) while the feed is offline…` → `…freezes while the feed is offline…` (Z-2 — no glyph host inside a tooltip string) | FE-5 §4 |
+| 11 | Positions `{n} of {m} open marked` coverage caption | **addition only** — the one new sentence §2.7/CF-2 authorize, used by 35b (`0 of {m}`)/35c (mandatory) | FE-6 §3, §5 |
+| 12 | `BrokerPositionRow.tsx` (`ModeledPl`, was `:128`) | `{streamOffline ? '⏸ ' : ''}` prepended → `PauseMark` beside the figure | FE-7 §3 |
+| 13 | `BrokerGroupHeader.tsx` (`GroupPl`, was `:215`) | `{streamOffline ? '⏸ ' : ''}` prepended → `PauseMark`, same shape | FE-7 §3 |
+| 14–20 | Alerts: rule label, score-gate summary, level-touch (price/structure) summary, unread marker, firing timestamp zone, Recent-list disclosure, both events-empty sentences, notify-explain (denied/unavailable), N-5 faulted banner, level-touch firing label | full itemized table, §3 D/E per PLAN | FE-10 §3 (verbatim table) |
+| 21–25 | Settings: `sessionResolving` honesty line (new), `Saved` confirmations → `severity="info"` (word unchanged), risk-input `placeholder="0"` → `placeholder="not set"` | full itemized table | FE-8 §6 (verbatim table) |
+
+**No R2-class conflict found.** Every §FE-n copy-diff section this closer read explicitly states "no
+other string changed" (FE-4 §2, FE-5 §4, FE-7 §3, FE-11 §3) or is closed by review rather than by scan
+(FE-8 §6, FE-10 §3) — this closer's own re-read of those sections found nothing beyond PLAN item 3's
+own enumeration.
+
+### 4. The executed e2e case list (criterion 63, SB)
+
+`npx playwright test -c apps/dashboard-e2e/playwright.config.ts --list` (repo root) this session:
+**`Total: 100 tests in 7 files`**. Width × scheme rows named, all present:
+
+- **393px, dark** — `/`, `/ticker/TSLA`, `/positions` (+ seeded-book), `/scanner` (+ seeded-cards),
+  `/settings` (+ five-section guard), `/alerts` (seeded), the three AC-40 degraded surfaces, the 4-leg
+  expanded case, the nav-collapse case, criterion 50's read strip.
+- **393px, light** — the identical set, genuinely rendering light (FE-13's own theme-precedence fix).
+- **834px (tablet), dark** — all six `ROUTES` + criterion 50.
+- **900px (md), dark** — all six `ROUTES` (including `/positions`, now passing post-GATE-Z-fix) +
+  criterion 50.
+- **1280px (lg), dark** — all six `ROUTES` + criterion 50.
+- **1280px (lg), light (criterion 64)** — all six `ROUTES`, seeded identically to the dark 1280 band.
+- Plus the AI-recommendation-card block (393/1440 × dark/light), U-32's eight-frame walk at all four
+  widths, AC-34/AC-35's coarse-pointer sweeps, criterion 66's alerts floor + the GATE-Z off-exchange
+  chip, and the standalone criterion 7a test.
+
+No claimed-but-not-executed combination — `--list`'s own count matches the 100-entry manifest with
+zero `"not_run"` (confirmed independently below, §6).
+
+### 5. Verification track — exit codes, this session's own run, from the repo root
+
+| Command | Result |
+|---|---|
+| `npm run ports:free` (first) | exit **0** — "Nothing listening on :8000 :4200 :4300 — all clear" |
+| `git rev-parse HEAD` / `git branch --show-current` (before) | `6cf64041` / `spire/curvature-v2-foundations` |
+| `npx nx run-many -t typecheck -p @convexa/dashboard,@convexa/api --skip-nx-cache` | exit **0** |
+| `npx nx typecheck dashboard-e2e --skip-nx-cache` | exit **0** (recorded SEPARATELY from `nx test`, criterion 68) |
+| `rm -rf node_modules/.vite` (root — NOT `apps/dashboard/node_modules/.vite`, which does not exist in this hoisted layout) | cleared the stale glob-transform cache before the full suite (the exact ENOENT trap the launch dispatch named) |
+| `npx nx test @convexa/dashboard --skip-nx-cache` | exit **0** — **239/239 files, 2856/2856 tests**. First attempt (before the `.vite` clear) hit the documented `_mutation_poison_replay_outcome_join.ts?raw` ENOENT on one file; after clearing `node_modules/.vite`, the identical command ran clean with no failures — **at or better than the stated baseline** (V12 accepts exit 0 outright; the "exit 1 at ≥2691/2694 with the three named load timeouts" branch did not fire this run, i.e. none of the three baseline-flaky specs timed out this time) |
+| `npm run lint` | exit **0** — **5 warnings, 0 new** (`useSessionArchive.ts:110` `react-hooks/exhaustive-deps`, four `no-explicit-any` in `apps/dashboard-e2e/playwright.{a11y,compat,config,visual}.ts`) — matches the pre-existing count recorded by every prior lane this phase |
+| `npm run build` | exit **0** — production build (dashboard `vite build --mode production`, api `cargo build --release`) |
+| `npx playwright install chromium` | exit **0** |
+| `npx playwright test -c apps/dashboard-e2e/playwright.config.ts --list` | **`Total: 100 tests in 7 files`** — full case list §4 above |
+| `BROWSER_QUALITY_PREBUILD_STATUS=pass npx nx e2e dashboard-e2e --skip-nx-cache` | exit **0** — **100 passed (16.3s)**, `[PASS] chromium — 100/100 passed — 0 flaky`. Live console output during this run: `[criterion 7a evidence] wide(1280): container=200px font=15px · narrow(393): container=200px font=15px` — this closer's own direct reproduction of the FE-13/GATE-Z measurement, not a re-quote |
+| `git diff --name-only origin/main...HEAD -- apps/api \| wc -l` | **0** |
+| `node design/src/verify-tokens.mjs` | exit **0** — **34 checks, all passed**, including the 17 "v2 additions (now structurally checked, not merely printed)" (`ink2`, `raised2`, `line`, `line2`, `steel2`, `scrim`, `glass` × dark/light) |
+| `node --test apps/dashboard-e2e/tools/manifest.spec.mjs apps/dashboard-e2e/tools/mutations.spec.mjs` | exit **0**, 7/7 |
+| `node .claude/tools/interface_conformance.mjs …` (V20) | **NOT RUN** — no backend server started this session (`curl localhost:8000/api/scan` unreachable); recorded honestly as the `NO_BACKEND_CHANGE` exemption path V20 itself allows, not attempted as a false pass |
+| `npm run ports:free` (last) | exit **0** — "Nothing listening…", both times |
+| `git rev-parse HEAD` / `git status --porcelain` (after) | `6cf64041` unchanged; only the untracked sibling `docs/research/…` directory shown |
+
+**One correction to the launch dispatch's own assumption, found by running the command rather than
+trusting the brief:** the dispatch states `verify-tokens.mjs`'s "structured checks cover only the 10
+v1 tokens, not the v2 additions." That was true when the dispatch was written but is **no longer true
+at this HEAD** — commit `2695e09f` ("`feat(design): structurally check the seven v2 token additions
+(FE-13)`", landed inside FE-13's own commit range, before this closer started) added a second,
+independently-asserting block that fails (`process.exit(1)`) on any v1-vs-tokens.ts **or**
+v2-addition mismatch — confirmed by reading `design/src/verify-tokens.mjs:2,36,64-91` directly, not by
+re-trusting either claim. Exit 0 on this HEAD **is** evidence the mirror matches for `steel2` et al.,
+contrary to what the dispatch said to expect.
+
+### 6. The `review` rows, each with its capture
+
+| Row | Capture |
+|---|---|
+| 7a | **OPEN, bounced to the owner** — see §7 below. Not a PASS. |
+| 7b | The two named off-ladder shapes both exist and are both accounted for: the **12px list row** is `FreshPositioning.tsx:71,79,83` and `OffExchangeBlocks.tsx:104` (FE-11's own quiet-band figures, kept at the row's shipped 12px per the task's "no size/layout/order change" instruction, FE-11 §4); the **table cell at `fontSize: 'inherit'`** is `ScanCells.tsx:63,105,143,180,235,270` and `Scanner.tsx:167` (FE-3/FE-4's scanner table cells, which inherit the row's font-size rather than stepping their own ladder). `figureFace.ts:14`'s own doc comment names this exact pattern (mono/sans face constants; "a 12px list row keeps 12px and a table cell keeps `fontSize: 'inherit'`"). No third off-ladder shape found by this closer's own grep. |
+| 15 | Verbatim per FE-4 §2: `cadenceHeader` → `Prices per tick · structure ~3 min · hot names sooner` (no `live`); `cadenceGloss` opens `Prices change tick by tick.` (cadence + basis only, no live claim); `cadenceHeaderOffline` (`labels.ts:39`) confirmed byte-identical: `'Prices offline · showing last known · structure ~3 min'`, read directly from source this session. |
+| 43 | `AiKeySection.tsx`'s masked-hint behaviour is covered by three of this session's own passing full-suite tests, seen live in the `nx test` run: `"add: the raw key rides ONLY the PUT body; the DOM shows the masked hint and never the key"`, `"replace then remove: the hint swaps to the NEW last-4, then clears — no raw key ever echoes"`, `"a save transport fault surfaces an error WITHOUT echoing the key"` — all three green in this session's 2856/2856 run. |
+| 47c | `RiskInputsSection.tsx`'s risk inputs (dollar figures) and the alerts `Price threshold: $${priceThreshold}` control (FE-10 §3, row 47a) both state their unit as part of the rendered control text, not merely the label; `47b`'s bare-index case (`≥ 72`, no invented unit) is the contrasting negative case FE-10 already asserts. No numeric control found in either surface's source with an implied-only unit. |
+| 56 | FE-11 §3's own statement stands: "No third site touched — verified by re-reading every string literal changed in the diff… no other JSX text content differs" — this closer re-confirms via the itemized copy-diff table in §3 above, which is the closed set. |
+| 60 | Each of the eight quiet-band widgets renders its own basis/as-of line unchanged from the pre-phase shipped copy (FE-11 touched exactly two sentences, §3 above); none of the eight is a scoring input per SPEC §1's own framing (none of `market_session`/`live` reaches these widgets, and FE-2's liveness fence — re-confirmed in §2 above — has zero exemption for any of them beside the one named `LiveTape.tsx` reason). |
+| 63 | §4 above — `--list` captured before this write-up, 100 tests / 7 files, all five width×scheme cells named. |
+| 69 | §1 above — 19/19 letters A–S carry recorded red output. |
+| U-15 | FE-5's three literal tips (`cell-unavailable`/`cell-not-recorded`/`cell-no-basis`, `PositionRow.tsx:145-190`) each kept their own distinct wording per FE-5 §1/§4; the U-15a wording+focus test is part of `positions.risk.spec.tsx`'s 32-test file, confirmed green in this session's full run. |
+| U-19 | `AUTH_COPY.settings.sessionResolving` (FE-8 §6): `'Checking your session — these controls unlock in a moment.'` — one line, removed the moment `auth.authenticated`/`settings` resolve (FE-8's own §4 confirms via the dedicated test, unchanged this session). |
+| U-24 | Alerts Recent-list disclosure (FE-10 §3, row "Recent-list disclosure"): `'Stored in this browser only — not synced to your account or across devices. Firings recorded before this update keep their original wording; new firings use the labels above.'` — both the back-fill honesty clause and the durable-storage clause are in the one sentence. |
+| U-27 | FE-10 §3: firing timestamp `toLocaleString()` → `toLocaleString(undefined, { timeZoneName: 'short' })` — every firing now names its zone. |
+| U-37 | Every degraded-copy surface names its own degrade: scanner's `offline · last known`/`offline` (FE-1/FE-5), positions' same two captions plus the coverage caption naming the marked count (FE-6), alerts' four N-5 faulted-banner blocks (FE-10), settings' non-blocking write-failure/session-resolving lines (FE-8), the quiet band's `unavailable`/`this cycle` split and `Setups unavailable this cycle.` (FE-11) — no surface found by this closer that dims without an accompanying named reason. |
+
+### 7. Criterion 7a — OPEN, an owner decision, not a PASS (reported honestly, not smoothed)
+
+**Not fixed by this lane; not re-measured differently; not marked as a PASS.** This closer independently
+reproduced FE-13's and the GATE Z pass's own measurement inside this session's own e2e run (§5 above,
+live console line): `positions-net-pl`'s `PanelContainer` (`PositionsPage.tsx:203-209`,
+`maxWidth: 320, minWidth: 200, flexShrink: 0`) measures **`200px` wide / `15px` font-size at BOTH
+1280px and 393px**. The declared 20px/17px container-step states are **structurally unreachable** for
+this one consumer as shipped — not merely hard to reach, not a flaky measurement. This is the SAME
+number FE-13 and the GATE Z pass both recorded; this closer did not adjust the assertion to match the
+measurement (the test still only asserts a valid resolved size, never `20`/`17`, per FE-13's own
+explicit instruction) and did not touch `PositionsPage.tsx`.
+
+**Carried forward for the owner, unresolved:** either (a) the owner rules the readout should be
+widened past 320px on desktop (a design tradeoff against the "Capital at risk" sibling cell and the
+header row's `space-between` layout, with no design-canvas citation currently specifying a width for
+this box — `design/src/screens/positions.mjs`'s `.pos-stats` row is content-sized with no explicit px
+width), or (b) the owner rules a 200–320px content-sized stat cell legitimately sits at the 15px
+literal-size step always, and 7a's specific 20/17 expectation for *this one consumer* is retired (the
+criterion's general "every figure that renders at 20px base steps against its own panel" requirement
+is otherwise satisfied structurally elsewhere in the phase — the `PanelContainer` ancestor exists,
+named correctly, single instance). This closer makes neither ruling.
+
+### 8. The `/positions` 900px overflow — a regression this phase introduced, found and fixed IN this phase (not carried debt)
+
+**Recorded here as what it is, not smoothed into "pre-existing."** FE-13's original diagnosis called
+this "pre-existing, GATE Z, not this phase's introduction" (BUILD_REPORT §FE-13 §3). The conductor's
+review overturned that verdict with direct evidence (`git diff f8957d3f..HEAD -- PositionRow.tsx`
+showing the offending `VISUALLY_HIDDEN`/wrapper/`aria-describedby` block did not exist at the phase-3
+baseline `f8957d3f`, where the full suite passed 86/86 twice), and the GATE Z repair pass confirmed the
+mechanism: FE-5's own `literal()` keyboard-reachable tips (U-15a) wrapped a visually-hidden
+`aria-describedby` sibling in `position: absolute` with **no positioned ancestor**
+(`PositionRow.tsx:168-173`, `display: 'inline-block'`, no `position`), so its containing block escaped
+`positions-table-frame`'s `overflow-x: auto` scroll clip entirely, widening
+`document.documentElement.scrollWidth` (`978` vs the `900px` viewport) independent of the frame's own
+correctly-clipped `852px` box. **Fixed** (`5c07dc40`, `position: 'relative'` added to the wrapper) —
+`documentElement.scrollWidth` measured `978 → 900` before/after, and this closer's own e2e run this
+session (§5 above) shows `md 900 no-overflow · dark scheme › /positions fits 900px` **passing** as
+test #82 of 100, part of the clean 100/100 run. **This is a real FE-5 regression, fixed within this
+phase — not carried debt, not pre-existing.** A reviewer weighing phase 3's own defect count should
+count this as "introduced and closed," not "inherited."
+
+### 9. Named debt — `file:line` and phase, verbatim from SPEC §1 Out/Future plus PLAN's own three plus everything later lanes filed
+
+| Item | `file:line` | Phase | Source |
+|---|---|---|---|
+| Per-symbol live marks on `/scanner` | (the phase that adds `market_session`/`live` to `/api/stream/prices`) | dated, next backend-fields phase | SPEC §1 Out/Future |
+| The quiet-tape false-offline watchdog | `useLivePrices.ts:66,84-86`; `stream.rs:444-449` | **same** phase as above (a one-line backend fix criterion 67 forbids here) | SPEC §1 Out/Future |
+| Alert-history re-labelling | `types.ts:32`; `AlertsPage.tsx:225` | additive, read-new-else-old, `message` retained, fixture from a pre-phase blob — not dated to a specific phase number | SPEC §1 Out/Future |
+| Settings section navigation | `design/src/screens/settings.mjs:1,5,15,28-31` (canvas citation); rail ≥900 vs horizontal control <900 | **phase 4** — three behaviours (active-on-click-vs-scroll-spy, deep-link landing below 900, focus order) plus the 44px floor on the horizontal strip must be answered at phase 4's GATE I | SPEC §1 Out/Future, OWNER D-B |
+| `TermHeatChart.tsx:105-106` | canvas-painted `atm_iv` text, no `data-figure-register`, unreachable by DOM assertion | explicit non-goal, no phase | SPEC §1 Out/Future |
+| U-30 | `Setups.tsx:41` | withdrawn (SPEC §2.7) | SPEC §1 Out/Future |
+| U-8's foot line | (settings-navigation-adjacent) | **phase 4** | SPEC §1 Out/Future |
+| Scanner's five-band responsive column set + positions' laptop column drop | — | **phase 4** | SPEC §1 Out/Future |
+| Server-owned alerts (multi-device sync) | — | post-go-live track, not a Curvature phase | SPEC §1 Out/Future |
+| Broker tab real data | — | the `broker-connect` track | SPEC §1 Out/Future |
+| `ScanTable`/`groups` zero-state lead-grouping price-merge bug | `Scanner.tsx` (`groups` computed pre-live-merge, passed to `ScanTable`); found in FE-4's own criterion-12 test-writing | unassigned, carried since FE-4 | BUILD_REPORT §FE-4 §3 (PLAN's own item 7) |
+| `OrderRow.tsx:172`'s `⏸` | `features/trading/orders/OrderRow.tsx:172` | Z-1 (scope reading, orders excluded from FE-5's conversion tree) | PLAN item 7, `pauseGlyph.spec.ts`'s own live-checked EXEMPT for the two Broker sites also names this file class |
+| Alerts-local refusal helper duplicating `FaultedBanner.tsx:92-117`'s treatment | `apps/dashboard/src/app/pages/alerts/AlertsPage.tsx` (the N-5 banner blocks, FE-10 §3) vs `shared`'s own `FaultedBanner.tsx:92-117` | unassigned — a shared-component consolidation opportunity, not a correctness defect | PLAN item 7 |
+| **`positions-net-pl` `PanelContainer`'s unreachable 20/17 container steps** | `PositionsPage.tsx:203-209` | **filed for the owner ruling, not yet on SPEC's own Out/Future list** — this closer folds it in per PLAN's own instruction ("this closer pass is the first chance to fold it in or flag it for the owner") | §7 above, GATE Z (`4124322a`) |
+| `PositionsView.tsx:280-289` (`positions-table-frame`) / `view.ts` condor structure-line width discussion | `apps/dashboard/src/app/features/trading/positions/PositionsView.tsx:280-289`; `view.ts` | phase unassigned; likely belongs beside phase 4's "positions laptop column drop" line — **NOTE: this specific `<body>`/`<html>` overflow instance was FIXED by the GATE Z pass (§8 above); FE-13's original write-up flagged the FRAME/condor width-tuning class of issue as a broader concern beyond the one instance that got fixed** — the frame's own general min-content-width tuning against a DIFFERENT width/host pair remains unaudited at 900px beyond the one fixed defect | BUILD_REPORT §FE-13 §3 |
+
+### 10. Canon amendment queued for GATE S (not applied) + the Amendments question filed, not answered
+
+- **Queued, not applied.** Rule 13 becomes *"traced to Convexa's computation **or to a record the
+  trader entered**"* (**OWNER — D-D**). No canon file was edited by this build; the ruling is recorded
+  here for GATE S to apply.
+- **Filed, not answered.** Does the Icons row's colour-emoji clause reach `U+26A0` in a chip label
+  (`labels.ts:196,205,211` — `'⚠ Stale'`, `'⚠ Error'`)? The chips ship **byte-identical either way**
+  this phase (SPEC §1 Out/Future confirms `⚠` stays; ux's U-7 was withdrawn at source). This closer
+  read `labels.ts:196,205,211` directly this session and confirms both strings are still present,
+  unedited.
+
+### 11. Three planning decisions a reviewer should see rather than re-derive
+
+1. **Criterion 7a is proven in Playwright, not jsdom, by design.** SPEC §7 assigns container-query
+   stepping to the browser tier; no criterion in the phase claims a jsdom proof of a rendered
+   `@container` breakpoint (jsdom does not evaluate container queries at all — FE-6 §2 states this
+   directly: "a real browser... jsdom cannot see this"). §7 above additionally now carries FE-13's
+   and the GATE Z pass's own finding, reproduced a third time by this closer: the 20px/17px states are
+   **structurally unreachable** on the one shipped consumer, not merely hard to reach.
+2. **N-1's scan scope is the spec's three trees** (`features/trading/`, `pages/positions/`,
+   `pages/scanner/`), not the whole app — `features/auth/`'s face de-binding is proven instead by
+   FE-8's own component-level assertion (criterion 36), confirmed still green in this session's full
+   run. RESUME's own gotcha 4 states the same boundary for future readers.
+3. **The two GATE Z scope readings, Z-1 and Z-2, both with their reversals.** **Z-1**: `OrderRow.tsx`
+   is outside FE-5's `⏸`-removal scope (`orders/` excluded from `pauseGlyph.spec.ts`'s scan per FE-5
+   §1), carried as debt rather than silently swept in — named again in §9 above. **Z-2**: the
+   `SESSION_DELTA_TIP` tooltip string drops its parenthetical `(⏸)` rather than finding a glyph host
+   inside a plain tooltip string (copy-diff #10, §3 above) — a scope reading resolved in-lane by
+   FE-5, not bounced.
+
+### 12. Process note for the next phase — the FE-13 `git stash` deviation (gotcha 17)
+
+**Recorded here per this closer's own instruction, not re-investigated.** FE-13's own session used
+`git stash push -- <one file>` once, scoped to a single file, to compare a `format:write` mistake's
+before/after on `BUILD_REPORT.md`, then immediately popped it back — against this lane's own binding
+"never `git stash`" rule even when scoped to one file. The conductor verified no work was lost: all 27
+untracked sibling files under `docs/research/convexa-business-review-2026-09-05/` were present and
+unmodified before and after, and no stash entry from FE-13 was left behind. This closer's own `git
+status` checks (start and end of this session, §5 above) reconfirm the same 27-file sibling directory
+present and untouched. **Correction to this closer's own first draft:** `git stash list` is **not**
+empty — it shows exactly one entry, `stash@{0}: On main: redesign-wip (abandoned 2026-06-29)`, whose
+diff (`AuthDialog.tsx`, `Landing.tsx`, `theme.ts`, `.claude/BACKLOG.md`, etc.) is unrelated to
+`curvature-v2-surfaces` and pre-dates this phase by over two months — a stale, abandoned artifact
+from an unrelated earlier redesign effort, not FE-13's scoped stash/pop (which by RESUME's own account
+popped cleanly within the same session, leaving nothing of its own behind). This closer did not touch
+it (never `git stash`/`stash drop` on a tree another process may depend on) and flags it here rather
+than silently asserting "empty" without having actually run the command. **The warning stands for
+phase 4: use `git diff`/
+`git show HEAD:<path>` to inspect an original version instead, even for one file, even briefly** — a
+scoped stash is still a stash, and this repo's own tree is shared with at least one other process every
+session.
+
+### 13. Reviewer's open-item checklist (nothing here is a claimed PASS)
+
+1. **Criterion 7a** — owner ruling needed, §7 above. Not fixable mechanically without a product/design
+   call on `PanelContainer`'s intended width.
+2. **The Amendments `U+26A0` question** — §10 above, filed, unanswered, zero build-visible consequence
+   either way.
+3. **The canon amendment (rule 13, D-D)** — queued for GATE S, not yet applied to any canon file.
+4. **Named debt** (§9) — eleven items, none blocking, all dated or explicitly phase-unassigned as SPEC
+   itself leaves them.
+5. **V20 (interface conformance)** — NOT RUN this session (no reachable backend); BE-1 owns the
+   backend-side verification next.
+
+---
