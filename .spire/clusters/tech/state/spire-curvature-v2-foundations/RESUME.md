@@ -1,5 +1,41 @@
 # RESUME — spire/curvature-v2-foundations
 
+## ⬆ UPDATE — 2026-09-08, the Mac session (read this before the handover block below)
+
+**What happened.** The Mac booted from the handover, then ran the owner's request: *"re-audit all the
+work that has been done so far and make sure that it is faithful to the Convexa Desk Redesign …
+gather evidence with screenshots."* Result: `fidelity-audit-2026-09-08/FIDELITY_AUDIT.md` (this folder)
+— the built app and `design/site/*.html` rendered side by side at 1440 / 1280 / 834 / 390, DOM-census
+measured, 29 composite pairs. Verdict: the v2 vocabulary shipped everywhere and the repaired hero is at
+the design's height (483 vs 488); the rest of `/ticker` and the four site surfaces are still v1 layouts
+(desk 1.57× the design's height at 1280 with the hero fixed · positions 1.69× · settings 1.51× · alerts
+one column vs two). New: the term-structure chart hard-codes dark ink and off-palette green/red and
+renders as a black block in the light scheme (F9); the live chip printed `live · undefined` when a stream
+event lacked `market_session` (L1 — **fixed** `6ab92e97`); two template leaks in the design oracle
+(**fixed** in the generator, `ad1e7696`). Web report:
+https://claude.ai/code/artifact/d00842fe-a02d-4b21-9885-df8ecd206193.
+
+**Owner decisions (2026-09-08, verbatim "proceed with your recommendations"):** (1) push — done,
+`c0f05063..ad1e7696`, six commits: spire 3.19.3 upgrade (`76f18d12`), the CI format gate (`d9987f18`),
+CLAUDE.md's Nx rules restored (`978ad012`), the audit + harness (`2fca12ce`), the two fixes; (2) **extend
+the fidelity pass to the rest of `/ticker`** — masthead · read strip · tape-and-plan grid · context band ·
+F9 — as a direct repair lane on the hero repair's rules, **before phase 4**; the composition gate is the
+audit harness's `desk-real` measurements (task file: `TICKER_FIDELITY_REPAIR_TASK.md`, this folder);
+(3) every later contract carries one composition row per surface, measured the same way; (4) positions /
+alerts / settings (F5–F8) follow as a second direct lane or a phase-4 item, then phase 4.
+
+**Also landed on the Mac:** spire-os **3.19.3** (the 3.19.1 receipt was off-spec for every release — five
+fields no spire-os ever wrote; 3.19.3 validates without `--force` and adopts `.claude/launch.json`
+across the wipe) · `AGENTS.md` is a repo-root immutable the installer rewrites, so it is Prettier-exempt
+now and the Nx rules live in `CLAUDE.md` · `npm run ci` never ran `format:check` while CI did — 20
+files were red on GitHub across all three phases; fixed, and worth adding `format:check` to `ci:targets`.
+
+**Machine notes.** The vendor websocket flapped through this session (backoff to 60 s) and
+`/api/ticker/SPY` stopped answering; the audit's desk captures render a saved real bundle
+(`fidelity-audit-2026-09-08/_tools/spy-bundle-2026-09-08T1059Z.json`) through the strict fixture
+instead. The audit harness has a `AUDIT_LIVE=1` mode for a healthy API. Raw PNG captures are gitignored
+in the evidence folder; the JSON census, JPEG pairs and tools are committed.
+
 ## ➡ HANDOVER — to a fresh session on the owner's Mac (written 2026-09-08 on the Windows box)
 
 **Read this first, then the recovery block under it.** Claude's per-machine memory does **not** travel —
