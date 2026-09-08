@@ -28,7 +28,6 @@
  */
 import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
 import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
-import { extrasFor } from '@/shared/theme/tokens';
 import { TintChip } from '@/shared/ui/TintChip';
 import type { ScanRow } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -213,7 +212,11 @@ export function ScoreCell({
             width: 36,
             height: 5,
             borderRadius: '3px',
-            bgcolor: (t) => extrasFor(t).panelRaised2,
+            // `action.disabledBackground` — the shipped "quiet track" token (already spent on
+            // AlertsPage.tsx's refused-control chrome); the OTHER raised-panel-adjacent token one
+            // reach away is reserved unconsumed by a live contrast guard in `shared/theme`, so it
+            // is not a candidate here.
+            bgcolor: 'action.disabledBackground',
             overflow: 'hidden',
             flexShrink: 0,
           }}
