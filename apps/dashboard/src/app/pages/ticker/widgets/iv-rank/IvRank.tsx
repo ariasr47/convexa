@@ -33,6 +33,7 @@
  *   - No auth gate — renders for anonymous visitors; no session/gate call anywhere in it.
  */
 import { typographyTokens } from '@/shared/theme/tokens';
+import { AccessibleHelp } from '@/shared/ui';
 import { Widget } from '@/shared/ui/Widget';
 import type { IvRankRead } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -59,7 +60,6 @@ import {
   ivrRankDescriptor,
   ivrTipBuilding,
 } from '../_kit/copy';
-import { AccessibleHelp } from '../ai-rec/AccessibleHelp';
 
 const MONO = typographyTokens.monoFontFamily;
 

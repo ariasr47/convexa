@@ -9,13 +9,13 @@
  * CLOSED LOOKUP on the wire `state` — never by inspecting a null (AC-46).
  */
 import { typographyTokens } from '@/shared/theme/tokens';
+import { AccessibleHelp } from '@/shared/ui';
 import { Widget } from '@/shared/ui/Widget';
 import type { StraddleMove as StraddleMoveRead } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { AccessibleHelp } from '../ai-rec/AccessibleHelp';
 import {
   ADVISORY_LINE,
   basisLine,

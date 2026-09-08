@@ -1401,3 +1401,107 @@ route the way `no-overflow.spec.ts` seeds `/positions`/`/alerts`).
   before and after.
 
 ---
+
+## FE-12 — D-C: the `Widget` frame's ⓘ, the `AccessibleHelp` promotion, and AC-35 extended to eight frame roots
+
+**Landed:** 2026-09-07, one commit. **Criteria:** U-32 (SB), 59 (frame half), 66 (this control).
+**GATE Z items: none.**
+
+### 1. A launch-anchor correction, checked before writing any code
+
+The dispatch's own anchors claimed "ten consumer files" for `AccessibleHelp`, naming `PositionsPage.tsx`
+first. Measured at source (`grep -rn "from '.*AccessibleHelp'" apps/dashboard/src/app`): **nine**
+real importers — `ai-rec/{DecisionCard,GroundingNote,ProvenanceChip,reasoning}.tsx`,
+`dealer-flow-projection/DealerFlowProjection.tsx`, `iv-rank/IvRank.tsx`,
+`market-context/MarketContext.tsx`, `straddle-move/StraddleMove.tsx`, `_kit/FigureCell.tsx` —
+matching PLAN.md's own "Owns" line exactly. `PositionsPage.tsx:197` mentions `AccessibleHelp` only
+inside a **comment** ("a promotion `AccessibleHelp`'s own import…"), never an actual `import`
+statement — confirmed by a second grep restricted to real `import`/`from` lines, which returns
+nothing for that file. Proceeded with the nine PLAN itself names; recorded here rather than silently
+re-pointing a file that never imported the component.
+
+### 2. What shipped
+
+| File | Change |
+|---|---|
+| `shared/ui/AccessibleHelp.tsx` | **new** — the component moved byte-for-byte from `pages/ticker/widgets/ai-rec/AccessibleHelp.tsx`: same props (`label`, `text`), same `aria-label`, same `stopPropagation` on click and focus, same `enterTouchDelay={0}`. Only the file's own doc-comment gained one paragraph documenting the promotion (§2.8). |
+| `pages/ticker/widgets/ai-rec/AccessibleHelp.tsx` | **deleted**. |
+| `shared/ui/index.ts` | `export { AccessibleHelp } from './AccessibleHelp';` added to the barrel. |
+| The nine importers (`ai-rec/{DecisionCard,GroundingNote,ProvenanceChip,reasoning}.tsx`, `dealer-flow-projection/DealerFlowProjection.tsx`, `iv-rank/IvRank.tsx`, `market-context/MarketContext.tsx`, `straddle-move/StraddleMove.tsx`, `_kit/FigureCell.tsx`) | Re-pointed to `@/shared/ui` (the four same-directory `./AccessibleHelp` imports and the five `../ai-rec/AccessibleHelp` imports both become the barrel import) — **zero prop/behaviour change** at any call site. |
+| `shared/ui/Widget/Widget.tsx` | `:245-249`'s bare `Tooltip` + `InfoOutlinedIcon` render replaced with `{info && <AccessibleHelp label={`About ${title}`} text={info} />}`; `InfoOutlinedIcon` import removed (no longer used); `AccessibleHelp` imported from `@/shared/ui/AccessibleHelp` (a same-package relative-style import, not the barrel, since `Widget.tsx` lives inside `shared/ui/` itself). This one change fixes all **eight** live `<Widget info=…>` sites by construction. |
+| `apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts` | **extended**: a second, frame-scoped `FRAME_INFO_SITES` list (all eight `widget-{id}` frame roots — `off-exchange-blocks`, `fresh-positioning`, `market-context`, `dealer-flow-projection`, `term-structure`, `iv-rank`, `structure-hero`, `live-tape`) and a new `U-32 (SB)` describe block asserting the frame's own header ⓘ (tap, keyboard focus, Escape) at 393/834/900/1280 — reusing the shipped `assertTapAndKeyboardReveal`/`realisticTap` helpers verbatim. The shipped `HOVER_INFO_WIDGETS` list (the four look-alikes) and the `ladder-foot` assertion are **unchanged** and stay exactly as they were — they prove a different control (ruling 6's body affordances), not this one. The bundle fixture's `term_structure: null` became a populated fixture (§3) because `TermStructure.tsx`'s `info` prop is conditional on it. |
+| `apps/dashboard-e2e/src/quality/manifest.json`, `tools/lib/manifest.mjs`, `tools/manifest.spec.mjs`, `src/quality/reporters/quality-reporter.ts` | Frozen browser-quality inventory bumped `86 → 90` (four new `test_id` entries for the U-32 describe block, `inventory_id` → `curvature-v2-surfaces-90-v1`) — required plumbing found only by actually running the extended spec (§4); not itemized in PLAN's own "Owns" line but mechanically necessary to extend `curvature-v2.spec.ts` without leaving the quality gate's own frozen self-check red. |
+
+### 3. A second discrepancy found by running the extension, not by reading PLAN
+
+`TermStructure.tsx`'s `info` prop is `info={termStructure ? termTip(termStructure) : undefined}` —
+**conditional**, unlike the other seven sites' constants. The shipped e2e bundle fixture
+(`curvature-v2.spec.ts:68`) carried `term_structure: null`, which would have made the
+`widget-term-structure` frame ⓘ never render against that fixture — silently reducing "all eight
+frame roots" to seven and passing anyway (the exact `[structural-over-prose-enforcement]` shape this
+task's own poison exists to catch, one level up). Fixed by populating `term_structure` with the same
+shape `ticker.risk.spec.tsx`'s own `TERM_FIX` fixture uses (`points`/`state`/`near_iv`/`far_iv`/
+`slope`) — no other bundle field changed.
+
+### 4. A third discrepancy: the quality-reporter's own frozen manifest (found only by running the e2e suite, not by reading PLAN)
+
+Running the extended `curvature-v2.spec.ts` against the production build (first pass, before the
+manifest fix) produced **4 reporter-thrown errors** — `Chromium manifest identity did not uniquely
+match … U-32 … at 393px` (and 834/900/1280) — even though Playwright itself reported all 11 tests in
+the file **passed**. `apps/dashboard-e2e/src/quality/manifest.json` pins a **frozen, closed**
+inventory of every Chromium test's `(file, title_path, project)` triple; a new test not in that list
+throws inside `QualityReporter.onTestEnd`, and the run's own `summary.json` recorded
+`"status": "incomplete", "not_run": 4` — a real accounting gap for criterion 63's executed-case-list,
+even though the tests themselves were green. Traced to three enforcement points that all pin the
+count `86` and must move together: `manifest.json`'s `full_chromium.inventory_id` +
+`tests` array, `tools/lib/manifest.mjs`'s `validateManifest` (a frozen-count check, the same shape as
+FE-1's live-checked `EXEMPT` maps), and `tools/manifest.spec.mjs`'s own assertion — confirmed by
+running `node --test apps/dashboard-e2e/tools/manifest.spec.mjs apps/dashboard-e2e/tools/mutations.spec.mjs`
+**before** the fix (**1 failed** — `90 !== 86`) and **after** (**7/7 passed**). All four moved to
+`86 → 90` / `curvature-v2-surfaces-90-v1` together, with the itemized-delta comment convention the
+prior two bumps (`52 → 75`, `75 → 86`) already established.
+
+### 5. Mutation proof S (U-32, SB — required by name) — run red, then reverted to green
+
+| Poison | Where | Red result (verbatim) | Restore |
+|---|---|---|---|
+| Dropped the `About ` prefix: `label={`About ${title}`}` → `label={`Help: ${title}`}` in `Widget.tsx` | The single shared render site | Rebuilt production (`npx nx build @convexa/dashboard --configuration=production --skip-nx-cache`, exit 0) and re-ran `BROWSER_QUALITY_PREBUILD_STATUS=pass npx playwright test -c apps/dashboard-e2e/playwright.config.ts -g "U-32"` → **4 failed** (one per checked width). First failure, verbatim: `Error: widget-off-exchange-blocks frame ⓘ @ 393px is present` / `expect(locator).toBeVisible() failed … getByTestId('widget-off-exchange-blocks').getByRole('button', { name: /^About /i }).first() … Timeout 5000ms … element(s) not found`. Each of the four width tests fails at the FIRST site its own `for` loop reaches (`off-exchange-blocks`), so a single test run does not individually re-report all eight failures past that point — the **mechanism**-level proof closes that gap: `grep` confirms exactly ONE `<AccessibleHelp label={.../About/} />` render site in the whole tree (`Widget.tsx:245`), shared by construction across all eight `<Widget info=…>` call sites, and a static-bundle scan of the rebuilt `apps/dashboard/dist/assets/*.js` confirmed the poison string `'Help: '` landed in the single compiled chunk (`index-*.js`) that all eight widgets' `Widget` import resolves to — the SAME shared artifact, not eight independent ones. | Reverted (`git diff` on `Widget.tsx` after restore = exactly the two committed lines, confirmed); rebuilt production; re-ran `-g "U-32"` → **exit 0, 4/4 passed**; full `curvature-v2.spec.ts` re-run → **exit 0, 11/11**. |
+
+No proof above is a narrated `expect(true).toBe(true)`; the red text is copied from this session's
+own terminal.
+
+### 6. Verification — exit codes, read directly
+
+| Command | Result |
+|---|---|
+| `npm run typecheck` (cold: `dist`/`out-tsc`/every `*.tsbuildinfo` deleted first, including `apps/dashboard-e2e/out-tsc`) | **exit 0** |
+| `npx nx typecheck dashboard-e2e --skip-nx-cache` | **exit 0** |
+| `cd apps/dashboard && npx vitest run src/app/shared/ui/Widget/Widget.spec.tsx src/app/pages/ticker/widgets/{ai-rec,dealer-flow-projection,iv-rank,market-context,straddle-move,_kit}` (the nine importers' own trees) | **exit 0** — 36 files / 607 tests, zero behaviour change |
+| The five desk specs U-32 names (`ticker-hierarchy.spec.tsx`, `single-motion-moment.spec.ts`, `live-dot-census.spec.tsx`, `LiveTape.spec.tsx`, `ticker-desk-composition.spec.tsx`) | **exit 0** — 5 files / 56 tests |
+| `StructureHeroPanel.spec.tsx` (a coincidental `FE-12` grep hit, confirmed at source to be the PRIOR feature's own task numbering, gotcha 10) | **exit 0** — 12/12 |
+| `npm run lint` | **exit 0** — 5 warnings, all pre-existing, **0 new** |
+| `npx nx format:write --files <the 17 changed/added paths>` | **exit 0**, scoped |
+| `node --test apps/dashboard-e2e/tools/manifest.spec.mjs apps/dashboard-e2e/tools/mutations.spec.mjs` | **exit 0** — 7/7 (1 failed before the manifest fix, §4) |
+| `grep -rn "ai-rec/AccessibleHelp" apps/dashboard/src` (reviewer probe) | **zero lines** — including comments, reworded rather than left dangling |
+| `grep -n "^import" shared/ui/Widget/Widget.tsx` (reviewer probe) | every import resolves under `@/shared/`, `@mui/`, or `react` — no `pages/`/`features/` import |
+| `npx playwright test -c apps/dashboard-e2e/playwright.config.ts --list` | **90 tests in 7 files** — matches the corrected manifest count exactly |
+| `BROWSER_QUALITY_PREBUILD_STATUS=pass npx playwright test -c apps/dashboard-e2e/playwright.config.ts curvature-v2` (production build, twice — once before, once after the mutation-proof rebuild) | **exit 0, 11/11**, both times |
+| `BROWSER_QUALITY_PREBUILD_STATUS=pass npx playwright test -c apps/dashboard-e2e/playwright.config.ts desk-and-read` (a coincidental `FE-12` grep hit — the PRIOR feature's own spec, run anyway since it also exercises the shared `Widget` frame) | **exit 0, 6/6** |
+
+### 7. Copy diffs — none
+
+FE-12 changes zero user-visible copy. The accessible name `About {title}` is new only in the sense
+that it now reaches all eight sites uniformly; it already matched every shipped `AccessibleHelp`
+call (`FigureCell.tsx:307`, ruling 6's five body sites).
+
+### 8. What was run in the app
+
+`npm run ports:free` → `npm run dev` → real Chromium (Playwright, headless) against the live dev
+backend, `/ticker/IWM` (warm cache, confirmed fast — 0.01s for the ticker bundle).
+
+- **Confirmed live, all eight frame roots, both 1280px and 393px:** `document.querySelector(`[data-testid="widget-${id}"] button[aria-label^="About "]`)` resolved for every one of `off-exchange-blocks`, `fresh-positioning`, `market-context`, `dealer-flow-projection`, `term-structure`, `iv-rank`, `structure-hero`, `live-tape`, with the exact accessible names (`About Off-exchange blocks`, `About Fresh positioning (Vol/OI)`, `About Market context`, `About Projected dealer flow`, `About Term structure`, `About IV rank`, `About IWM` — the hero's own `title` prop is the ticker symbol — and `About Live tape`). `straddle-move` also present, but with its own body-level `About the straddle-implied move` control (ruling 6's, not a frame ⓘ — it passes no `info` prop, exactly as SPEC records). Screenshots at both widths show the ⓘ rendering as a normal small circular info icon beside each widget's title, visually unchanged from the shipped bare-icon look (no size regression, no header overflow).
+- No horizontal overflow observed at either width during this pass.
+- Screenshots captured; below-the-fold quiet-band widgets again showed the pre-existing `content-visibility: auto` placeholder behaviour noted in FE-11's own report — unrelated to this task, not re-litigated here.
+- `npm run ports:free` run again at the end; HEAD confirmed unchanged (`1714f533`, FE-11's commit) and the sibling `docs/research/…` directory confirmed untouched, both before and after.
+
+---

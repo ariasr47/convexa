@@ -2,7 +2,7 @@
   "schema_version": 1,
   "support_policy_id": "playwright-engines-1.62.1",
   "full_chromium": {
-    "inventory_id": "curvature-v2-desk-and-read-86-v1",
+    "inventory_id": "curvature-v2-surfaces-90-v1",
     "tests": [
       {
         "test_id": "d38f0e9816f51aa1922817ddad296f9fcfffdcb98335c43716eb971b1cf4f276",
@@ -496,6 +496,42 @@
         "title_path": [
           "AC-35 — the six converted hover-only info sites",
           "have a tap AND a keyboard path at 1280px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "a2fce082ec3acccd065080deb35d28d35eabf7b936cae9dd28a984420ed30abd",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "U-32 (SB) — the Widget frame header ⓘ at all eight frame roots (hero + tape included)",
+          "every frame's header ⓘ has a tap AND a keyboard path at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "4eec6697c0504d19edc43723e1d095522766ef5c04ad044423202b61463af28f",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "U-32 (SB) — the Widget frame header ⓘ at all eight frame roots (hero + tape included)",
+          "every frame's header ⓘ has a tap AND a keyboard path at 834px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "e3ac36cdf6146c31b006c026a463166e86142e13d9495f547841ad934f5b9fab",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "U-32 (SB) — the Widget frame header ⓘ at all eight frame roots (hero + tape included)",
+          "every frame's header ⓘ has a tap AND a keyboard path at 900px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "54b568ffb1ff09d03fc2dd028d260f49ca20940d1429696fcbeab5144194f719",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "U-32 (SB) — the Widget frame header ⓘ at all eight frame roots (hero + tape included)",
+          "every frame's header ⓘ has a tap AND a keyboard path at 1280px"
         ],
         "project": "chromium"
       },

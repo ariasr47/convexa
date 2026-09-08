@@ -1,5 +1,6 @@
 import { GROK_SUBSCRIPTION_LABEL, ownKeyChip } from '@/features/auth/aiProviderLabels';
 import { typographyTokens } from '@/shared/theme/tokens';
+import { AccessibleHelp } from '@/shared/ui';
 import type { RecResponse, TickerBundle } from '@convexa/api';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Alert from '@mui/material/Alert';
@@ -9,7 +10,6 @@ import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { AccessibleHelp } from './AccessibleHelp';
 import { CapAnnotation } from './CapAnnotation';
 import {
   COPY,

@@ -10,6 +10,11 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
  *     ruling 5 names this phase created or touched.
  *   - AC-35 — the six converted hover-only info sites (ruling 6) have BOTH a tap and a keyboard-focus
  *     path, at 393/834/900/1280.
+ *   - U-32 (curvature-v2-surfaces, OWNER D-C, added by FE-12) — a SECOND, frame-scoped site list:
+ *     all EIGHT live `<Widget info=…>` sites, asserted at the frame root `widget-{id}` (hero and live
+ *     tape included), on the frame's own HEADER ⓘ specifically — the shipped AC-35 list above and
+ *     `ladder-foot` scope to widget/hero BODY testids one level inside the frame and cannot reach a
+ *     frame header at all (`Widget.tsx` renders the header box before the body box).
  *   - AC-20b — the rendered container-query step. See the block comment above that test for why it
  *     is recorded as `review` evidence rather than asserted pass/fail (PLAN's own sanctioned
  *     "honest fallback": `LiveTape.tsx`/`StructureHeroPanel.tsx` (curvature-v2-desk-and-read FE-8:
@@ -65,7 +70,20 @@ const bundle = {
     total_volume: 100000,
     vol_oi_unusual_threshold: 1,
     iv_skew: null,
-    term_structure: null,
+    // Non-null (curvature-v2-surfaces FE-12): `TermStructure.tsx`'s `info` prop is CONDITIONAL on
+    // this being present (`info={termStructure ? termTip(termStructure) : undefined}`) — the frame
+    // ⓘ AC-35 now checks at `widget-term-structure` would never render against the prior `null`
+    // fixture, which would make that one site's check vacuously skip rather than pass.
+    term_structure: {
+      points: [
+        { dte: 7, expiration: '2026-06-26', atm_iv: 40 },
+        { dte: 30, expiration: '2026-07-17', atm_iv: 45 },
+      ],
+      state: 'contango',
+      near_iv: 40,
+      far_iv: 45,
+      slope: 5,
+    },
     dealer_flow_projection: {
       spot_basis: 250,
       charm: {
@@ -587,6 +605,56 @@ test.describe('AC-35 — the six converted hover-only info sites', () => {
         .getByRole('button', { name: /^About /i })
         .first();
       await assertTapAndKeyboardReveal(page, figureHelp, `FigureCell ℹ @ ${vp.label}px`);
+    });
+  }
+});
+
+// =====================================================================================================
+// U-32 (curvature-v2-surfaces, OWNER D-C) — the `Widget` frame's ⓘ, at all EIGHT live `info=` sites,
+// scoped to the FRAME ROOT (`widget-{id}`), never a widget's own body testid
+// =====================================================================================================
+//
+// This is a SECOND, frame-scoped site list — NOT interchangeable with `HOVER_INFO_WIDGETS` above.
+// That list (and `ladder-foot`) proves ruling 6's BODY controls and the `FigureCell` primitive; not
+// one of those five assertions can reach a `Widget` frame HEADER, because `Widget.tsx` renders the
+// header box before the body box (`:452-453` in source) and every one of those five containers
+// scopes to a widget's own BODY testid, one level inside the frame. `straddle-move` passes no `info`
+// prop at all, so it has no frame ⓘ and is correctly absent from this list.
+const FRAME_INFO_SITES = [
+  'off-exchange-blocks',
+  'fresh-positioning',
+  'market-context',
+  'dealer-flow-projection',
+  'term-structure',
+  'iv-rank',
+  'structure-hero',
+  'live-tape',
+] as const;
+
+test.describe('U-32 (SB) — the Widget frame header ⓘ at all eight frame roots (hero + tape included)', () => {
+  test.use({ hasTouch: true });
+
+  for (const vp of [
+    { label: '393', width: 393, height: 852 },
+    { label: '834', width: 834, height: 1112 },
+    { label: '900', width: 900, height: 900 },
+    { label: '1280', width: 1280, height: 900 },
+  ] as const) {
+    test(`every frame's header ⓘ has a tap AND a keyboard path at ${vp.label}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height });
+      await gotoReadyTicker(page);
+
+      for (const id of FRAME_INFO_SITES) {
+        const frame = page.getByTestId(`widget-${id}`);
+        await expect(frame, `widget-${id} is on the page at ${vp.label}px`).toBeAttached();
+        // `.first()` resolves to the frame's OWN header control (not a body control one level
+        // down) only because the header renders before the body AND carries the `About {title}`
+        // prefix (SPEC §2.8) — the mechanical reason a rename or a dropped prefix must fail this.
+        const help = frame.getByRole('button', { name: /^About /i }).first();
+        await assertTapAndKeyboardReveal(page, help, `widget-${id} frame ⓘ @ ${vp.label}px`);
+      }
     });
   }
 });

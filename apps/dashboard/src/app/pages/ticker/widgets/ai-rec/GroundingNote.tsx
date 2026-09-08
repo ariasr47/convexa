@@ -7,11 +7,11 @@
  * captions, because four warning icons per card become wallpaper inside a week, which makes the honest
  * marker LESS honest.
  */
+import { AccessibleHelp } from '@/shared/ui';
 import type { Grounding } from '@convexa/api';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { AccessibleHelp } from './AccessibleHelp';
 import { cardGroundingLine } from './literals';
 
 export function GroundingNote({ grounding }: { grounding: Grounding | null | undefined }) {

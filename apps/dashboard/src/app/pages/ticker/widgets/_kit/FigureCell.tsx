@@ -32,7 +32,7 @@
  * gets. It stays required when `value` is a `NotANumber` member but has NO EFFECT on that render:
  * the literal branch is always Sans (AC-19) whatever `register` says.
  *
- * The ⓘ reuses the SHIPPED `ai-rec/AccessibleHelp` pattern verbatim (SPEC §4.1: "do not invent a
+ * The ⓘ reuses the SHIPPED `shared/ui` `AccessibleHelp` pattern verbatim (SPEC §4.1: "do not invent a
  * second focusable-help pattern") — a real focusable `button` with an accessible name of the form
  * `About {label}`, opening on tap/Enter/Space, closing on Escape (Tooltip `describeChild`).
  *
@@ -57,13 +57,13 @@ import {
 } from '@/shared/figure';
 import { flashColorSx, type FlashState } from '@/shared/hooks/useFlashOnChange';
 import type { LiveClaim } from '@/shared/liveness/liveClaim';
+import { AccessibleHelp } from '@/shared/ui';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { styled, type Theme } from '@mui/material/styles';
-import { AccessibleHelp } from '../ai-rec/AccessibleHelp';
 
 // The card chrome: paper surface, divider border, radius-clipped. NO accent bar of any kind — the
 // `&::before` colour edge from `StatTile` is gone, not merely unused (AC-13a).

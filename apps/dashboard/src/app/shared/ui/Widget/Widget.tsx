@@ -28,10 +28,10 @@
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { NOT_LIVE, type LiveClaim } from '@/shared/liveness/liveClaim';
 import { elevationFor, extrasFor } from '@/shared/theme/tokens';
+import { AccessibleHelp } from '@/shared/ui/AccessibleHelp';
 import { useWidgetChrome } from '@/shared/ui/Widget/WidgetChromeContext';
 import { useWidgetSelection } from '@/shared/ui/Widget/WidgetSelectionContext';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import Box from '@mui/material/Box';
@@ -242,11 +242,7 @@ export function Widget({
           >
             {title}
           </Typography>
-          {info && (
-            <Tooltip arrow title={info}>
-              <InfoOutlinedIcon sx={{ fontSize: 15, color: 'text.disabled', flexShrink: 0 }} />
-            </Tooltip>
-          )}
+          {info && <AccessibleHelp label={`About ${title}`} text={info} />}
         </Stack>
         {subtitle && (
           <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.25 }}>

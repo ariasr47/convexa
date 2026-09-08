@@ -29,6 +29,7 @@
  */
 import { faceFor, figureStateOf } from '@/shared/figure';
 import { typographyTokens } from '@/shared/theme/tokens';
+import { AccessibleHelp } from '@/shared/ui';
 import { Widget } from '@/shared/ui/Widget';
 import type {
   AtrHorizon,
@@ -109,7 +110,6 @@ import {
   mcTiBasis,
   mcTrendLine,
 } from '../_kit/copy';
-import { AccessibleHelp } from '../ai-rec/AccessibleHelp';
 
 const MONO = typographyTokens.monoFontFamily;
 

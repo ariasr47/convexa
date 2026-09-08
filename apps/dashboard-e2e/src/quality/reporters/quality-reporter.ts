@@ -67,7 +67,11 @@ const gateCounts: Record<string, number> = {
   // 900, 1280) — the first net-new e2e tests this phase's own lanes have added to the registered six
   // (FE-1 through FE-11 only edited/re-pointed existing ones); bump to
   // `curvature-v2-desk-and-read-86-v1` (`tools/lib/manifest.mjs` enforces the same number).
-  chromium: 86,
+  // (curvature-v2-surfaces FE-12) 86 → 90: U-32's frame-scoped extension to `curvature-v2.spec.ts`
+  // (all eight `widget-{id}` frame roots, hero and live tape included) added 4 tests, one per
+  // checked width; bump to `curvature-v2-surfaces-90-v1` (`tools/lib/manifest.mjs` enforces the
+  // same number).
+  chromium: 90,
   compatibility: 15,
   accessibility: 16,
   visual: 6,

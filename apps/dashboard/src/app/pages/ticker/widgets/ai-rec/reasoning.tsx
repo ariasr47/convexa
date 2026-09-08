@@ -2,6 +2,7 @@
  * Structured reasoning presentation for AI-rec (pure helpers + UI sections).
  */
 import { typographyTokens } from '@/shared/theme/tokens';
+import { AccessibleHelp } from '@/shared/ui';
 import type { RecStrategy, TickerBundle } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -10,7 +11,6 @@ import Stack from '@mui/material/Stack';
 import type { SxProps, Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
-import { AccessibleHelp } from './AccessibleHelp';
 import { COPY, REASONING_PROSE_NOT_CHECKED } from './copy';
 
 const MONO = typographyTokens.monoFontFamily;

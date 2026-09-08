@@ -19,6 +19,7 @@
  *     mono via tokens), zero hardcoded hex; dark/light parity comes from the shared `Widget`/tile chrome.
  */
 import { typographyTokens } from '@/shared/theme/tokens';
+import { AccessibleHelp } from '@/shared/ui';
 import { Widget } from '@/shared/ui/Widget';
 import type { DealerFlowProjection as Dfp } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -44,7 +45,6 @@ import {
   VANNA_LABEL,
   VANNA_NEGATION,
 } from '../_kit/copy';
-import { AccessibleHelp } from '../ai-rec/AccessibleHelp';
 
 const MONO = typographyTokens.monoFontFamily;
 

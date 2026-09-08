@@ -33,18 +33,19 @@ import Tooltip from '@mui/material/Tooltip';
  * immediately followed by `touchend`, exactly what a real finger tap or Playwright's `.tap()` does)
  * never opens it, while holding for >700ms does. "Reachable by tap" (ruling 6; AC-35) means an
  * ordinary tap, not a 700ms hold nobody would discover — this override applies to all six sites.
+ *
+ * PROMOTED into `shared/ui/` (curvature-v2-surfaces SPEC §2.8, OWNER ruling D-C): the single
+ * `Widget.tsx` frame's `info` render site needs this component, and `shared/` may never import from
+ * `pages/` (the same inversion §2.1 refuses for the figure module — `notANumber.ts:18-23`,
+ * `liveClaim.ts:9-14`). Moved byte-for-byte from its prior home under the ticker widget kit —
+ * same props, same `aria-label`, same `stopPropagation`, same `enterTouchDelay={0}` — zero behaviour
+ * change for its nine existing importers, all re-pointed in the same change.
  */
 export function AccessibleHelp({ label, text }: { label: string; text: string }) {
   const stop = (event: { stopPropagation: () => void }) => event.stopPropagation();
   return (
     <Tooltip arrow title={text} describeChild enterTouchDelay={0}>
-      <IconButton
-        size="small"
-        aria-label={label}
-        onClick={stop}
-        onFocus={stop}
-        sx={{ p: 0.5 }}
-      >
+      <IconButton size="small" aria-label={label} onClick={stop} onFocus={stop} sx={{ p: 0.5 }}>
         <InfoOutlinedIcon fontSize="inherit" />
       </IconButton>
     </Tooltip>

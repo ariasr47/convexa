@@ -38,11 +38,15 @@ export function validateManifest(value) {
     // new criterion-50 read-strip-rail tests to `no-overflow.spec.ts` (393 dark/light, 834, 900,
     // 1280) — the first net-new Chromium tests this phase's own lanes have added (FE-1 through FE-11
     // only edited/re-pointed existing ones).
-    value.full_chromium?.inventory_id !== 'curvature-v2-desk-and-read-86-v1' ||
+    // (curvature-v2-surfaces FE-12) bumped 86 → 90: U-32's frame-scoped `curvature-v2.spec.ts`
+    // extension (SPEC §2.8, D-C) added a SECOND site list (all eight `widget-{id}` frame roots,
+    // hero and live tape included) alongside the shipped `HOVER_INFO_WIDGETS` five — 4 new tests,
+    // one per checked width (393/834/900/1280).
+    value.full_chromium?.inventory_id !== 'curvature-v2-surfaces-90-v1' ||
     !Array.isArray(tests) ||
-    tests.length !== 86
+    tests.length !== 90
   )
-    fail('full Chromium inventory must contain 86 tests');
+    fail('full Chromium inventory must contain 90 tests');
   unique(
     tests.map((x) => x.test_id),
     'full Chromium tests',
