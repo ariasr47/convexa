@@ -1,14 +1,62 @@
-# RESUME — curvature-v2-surfaces (GATE Z repair pass 3 DONE; GATE Q pass 3 next)
+# RESUME — curvature-v2-surfaces (build and repair track COMPLETE; owner already ruled on 7a — a re-verification GATE Q pass is the only thing left before GATE S)
 
-**Resume status:** ACTIVE — **GATE Q pass 2 returned FAIL (93 PASS / 2 FAIL / 0 UNVERIFIABLE): criterion
-7a (owner decision, untouched, unchanged) and criterion 66's second clause (four sub-floor controls the
-build report itemized nowhere). GATE Z repair pass 3 is now DONE, one commit, HEAD moved from `cc6e3ae2`
-(unchanged start) to `2e3329f8`.** Criterion 7a stays the owner's open decision, untouched by this pass.
-**Next concrete step: GATE Q pass 3** — re-verify criterion 66 only (the fix + the three itemizations);
-7a needs no further QA cycles until the owner rules on it. QA does not need to re-derive evidence this
-pass already re-measured, but should verify independently per its own standing practice.
+**Resume status:** ACTIVE — **GATE Q pass 3 (recorded in `QA_REPORT.md`) returned 94 PASS / 1 FAIL / 0
+UNVERIFIABLE, sole FAIL criterion 7a. IMPORTANT — that record is now STALE in one respect: an owner
+ruling on 7a (`decisions.md` D-E, commit `64f5c1ed`) landed on this branch DURING this pass's own
+session, as an ancestor of this pass's own start point, before this lane made any edits.** Ruling A:
+7a's wording is amended — it now scopes to figures whose panel **can reach** the 20px base; a panel
+deliberately bounded below the 360px threshold (`PositionsPage.tsx:203-209`'s `positions-net-pl`,
+pinned `maxWidth 320 / minWidth 200 / flexShrink 0` — load-bearing, not incidental) falls under 7b,
+which already requires the size and reason be named in the build report (it already is). Nothing
+rendered changes; only `SPEC.md` row 7a and its §7 invariant paragraph were amended, both by the owner
+process, not this lane — `PositionsPage.tsx` itself is confirmed still byte-unchanged since `cc6e3ae2`.
+**This lane did not touch SPEC.md, decisions.md, or PositionsPage.tsx — verified by diff before and
+after.** Net effect: **criterion 7a is very likely no longer a FAIL under the amended wording** (the
+one PositionsPage panel that couldn't reach the base now correctly falls under 7b, which it already
+satisfies), but **this lane did not re-run GATE Q against the amended criterion — that re-verification
+is QA's next step, not a claim this lane is making.**
 
-**This pass's one commit** (`fix(dashboard): GATE Z — criterion 66, the /positions summary control
+**GATE Z repair pass 4 is DONE, one commit, HEAD moved from `64f5c1ed` (unchanged start of THIS pass —
+already carrying the D-E ruling) to `16addcdb`.** Pass 4 fixed the one Medium, non-blocking finding QA
+pass 3 raised alongside the 7a FAIL: the pass-3 repair's `<summary>` fix (`display: flex`) reached the
+44px coarse-pointer floor but silently removed the native disclosure triangle (a `<summary>` only
+generates `::marker` when it computes `display: list-item`, which `flex` overrides away). Fixed with
+`line-height: 44px` instead of `display`/`alignItems` — `list-item` (and the marker) is never touched.
+Verified the marker renders at 393/coarse, 393/fine and 1280/fine via
+`getComputedStyle(summary).display === 'list-item'` (the actual mechanism; `::marker`'s own computed
+style was proved unreliable — it reports cascade values even when the pseudo-element isn't generated)
+plus real-browser screenshots taken during the investigation. Poison run: reverted to the pass-3 shape,
+1 failed / 2 passed, `Expected: "list-item" / Received: "flex"` at the coarse case only; file restored
+and confirmed byte-identical by `git hash-object`. **There is nothing further identified for a
+frontend lane to do on this feature. Next concrete step: QA re-runs GATE Q once against the amended
+criterion 7a wording (D-E) plus this pass's marker fix; if that comes back clean, the phase is ready
+for GATE S.**
+
+**This pass's one commit** (`fix(dashboard): GATE Z — restore the disclosure marker the coarse-pointer
+fix removed (curvature-v2-surfaces)`, `16addcdb`), with its own `BUILD_REPORT.md` "GATE Z repair, pass
+4" section — 7 files: the fix (`TrackRecordSection.tsx`), 3 new e2e tests (`no-overflow.spec.ts`), the
+four-file manifest lockstep (105 → 108), and the `BUILD_REPORT.md` section itself.
+
+**This pass's own verification, exit codes (HEAD `64f5c1ed` unchanged start, confirmed again at
+`16addcdb` after commit):** `npm run typecheck` **0** (cold — dist/out-tsc/tsbuildinfo deleted first,
+`@convexa/dashboard` + `@convexa/api` + `dashboard-e2e`) · targeted
+`npx nx test @convexa/dashboard --skip-nx-cache -- src/app/features/trading/outcomes` **0, 133/133** ·
+full suite once **0, 239/239 files, 2857/2857 tests** (standing baseline, unmoved) · `npm run lint` **0**,
+5 pre-existing warnings, 0 new · `node --test manifest.spec.mjs mutations.spec.mjs` **0, 7/7** ·
+`npm run build` **0** (production) · `BROWSER_QUALITY_PREBUILD_STATUS=pass npx nx e2e dashboard-e2e
+--skip-nx-cache` **0, 108/108 passed, 0 flaky**, `summary.json` `108/108/108`, `status: "pass"`, no
+`"incomplete"` · `git diff origin/main...HEAD -- apps/api` **0 lines** (three-dot) · `npm run
+ports:free` clean, first and last · `docs/research/convexa-business-review-2026-09-05/` confirmed
+present, untouched throughout; no `git stash` used.
+
+## Superseded — pass 3's own top section, kept for history (do not act on as current state)
+
+**Resume status was:** ACTIVE — GATE Q pass 2 returned FAIL (93 PASS / 2 FAIL / 0 UNVERIFIABLE):
+criterion 7a (owner decision, untouched, unchanged) and criterion 66's second clause (four sub-floor
+controls the build report itemized nowhere). GATE Z repair pass 3 fixed one (`TrackRecordSection.tsx`'s
+`<summary>`) and itemized three as carried debt untouched this phase.
+
+**Pass 3's one commit** (`fix(dashboard): GATE Z — criterion 66, the /positions summary control
 meets the coarse-pointer floor (curvature-v2-surfaces)`, `2e3329f8`), with its own `BUILD_REPORT.md`
 "GATE Z repair, pass 3" section:
 
@@ -369,21 +417,53 @@ HEAD:<path>` to inspect an original version instead of `git stash`, even for a s
     adds its own session mock, thread the intended scheme through it explicitly; do not assume
     `convexa.uiprefs.v1` alone controls the rendered theme once a test signs in.
 
+19. **NEW (GATE Z pass 4): `getComputedStyle(el, '::marker')` is NOT a reliable signal for whether a
+    `<summary>`'s disclosure triangle actually renders.** It keeps reporting cascade values (e.g.
+    `list-style-type: disclosure-open`) even when the pseudo-element isn't generated at all — verified
+    in an isolated Chromium instance: under `display: flex` (where a real screenshot shows NO
+    triangle), `getComputedStyle(summary, '::marker').listStyleType` still returned
+    `'disclosure-open'`. The property that actually predicts marker generation is `display` on the
+    element ITSELF: `'list-item'` (Chromium's UA default for `<summary>` as `<details>`'s first
+    child) renders the marker; anything else (`flex`, `block`, etc.) does not. **When a fix needs to
+    grow a `<summary>`'s hit area without losing its marker, reach the target height with a property
+    that doesn't touch `display` at all** (`line-height`, `padding-block`, `min-height` alone) — do
+    NOT reach for `display: block` as a "safer than flex" swap; it breaks the marker exactly as much
+    as `flex` does. Verify empirically (a real Chromium screenshot, or the `display` assertion) before
+    trusting a diff that "looks like it should restore the marker."
+20. **A throwaway Playwright investigation script run OUTSIDE the repo tree needs `NODE_PATH` set
+    explicitly for CJS `require` resolution** (ESM `import` cannot be steered by `NODE_PATH` at all —
+    it errors even with the env var set; CJS `require` respects it). Running from inside the repo root
+    with a relative path resolves node_modules automatically and needs no env var, but per gotcha 9 a
+    script must not be a PERMANENT artifact at the repo root — this session used the scratchpad
+    directory with `NODE_PATH="C:\Dev\convexa\node_modules"` set on each invocation (bash does not
+    persist env vars between tool calls) rather than writing a throwaway file inside the repo tree.
+
 ## ⚠️ Still true — another process shares this working tree
 
 `docs/research/convexa-business-review-2026-09-05/` remains untracked and was left alone across
-FE-13, the GATE Z repair pass, and now FE-14 (confirmed present, unchanged, at the start and end of
-each). Verify HEAD is on `spire/curvature-v2-foundations` before and after any work; stop and report
-if it moves. HEAD at the end of FE-13's own session: `caa9d0fb`. HEAD at the end of the GATE Z repair
-pass: `4124322a`. **HEAD at the end of FE-14's own session (unchanged by FE-14's own docs-only
-commit's parent, confirm the new commit lands on top): starts at `6cf64041`, one commit added.**
+FE-13, the GATE Z repair pass, FE-14, BE-1, and GATE Z repair passes 2–4 (confirmed present, unchanged,
+at the start and end of each). Verify HEAD is on `spire/curvature-v2-foundations` before and after any
+work; stop and report if it moves. HEAD at the end of FE-13's own session: `caa9d0fb`. HEAD at the end
+of the first GATE Z repair pass: `4124322a`. HEAD at the end of GATE Z repair pass 2: `607abea4` (plus
+a docs commit). HEAD at the end of GATE Z repair pass 3: `2e3329f8` (plus a docs commit, `64f5c1ed`,
+which also recorded the owner ruling D-E on criterion 7a's step scoping — read `council/decisions.md`
+if resuming and that ruling's status is unclear). **HEAD at the end of GATE Z repair pass 4 (this
+pass): `16addcdb`, one commit, docs commit for this file on top.**
 
 ## Remaining arc
 
-~~FE-14 (frontend closer...)~~ **DONE.** ~~BE-1 (backend verification only)~~ **DONE, this session —
-HEAD `d64ab692` unchanged, one docs/receipt-only commit added on top.** **The build track is now
-complete. Next: GATE Q.** Criterion 7a stays filed for the owner (not FE-13's other two findings,
-which are fixed) — GATE Q should not treat it as blocking or as a build defect; it needs a
-product/design ruling, not more engineering. The score-identity before/after gap (§ above) is also a
-GATE Q reviewer item, not a build defect: the baseline was never captured in any prior session, and
-this closer's own evidence (empty three-dot diff + a stable live read) is the available substitute.
+~~FE-14 (frontend closer...)~~ **DONE.** ~~BE-1 (backend verification only)~~ **DONE.** ~~GATE Z repair
+passes 1–4 (scanner overlay, input/select floor, positions duplicate/offline, the `<summary>` floor,
+the disclosure marker)~~ **ALL DONE.** ~~GATE Q passes 1–3~~ **DONE — 94 PASS / 1 FAIL / 0
+UNVERIFIABLE, sole FAIL criterion 7a.** ~~Criterion 7a owner ruling~~ **DONE — `decisions.md` D-E,
+`64f5c1ed`, ruling A: 7a's wording amended to scope to panels that CAN reach the 20px base;
+`positions-net-pl` (load-bearingly bounded below 360px) now correctly falls under 7b, which it already
+satisfies. Nothing rendered changed; only `SPEC.md`/`decisions.md` were amended, by the owner process,
+not by any build lane.**
+
+**The build and repair track is COMPLETE. There is no further frontend or backend work identified for
+this feature.** **Next concrete step: one QA re-verification pass** — re-run GATE Q against the amended
+criterion 7a wording (very likely converts FAIL → PASS, since the one affected panel already satisfies
+7b) plus this pass's marker fix (criterion 66, already re-verified by this lane — 108/108 e2e green).
+If that QA pass returns clean, the phase is ready for **GATE S**. No further engineering or owner
+decision is anticipated; this lane found no other open item.
