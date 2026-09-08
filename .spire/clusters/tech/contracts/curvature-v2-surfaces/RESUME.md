@@ -1,11 +1,43 @@
-# RESUME — curvature-v2-surfaces (GATE Z repair pass 2 DONE; GATE Q pass 2 next)
+# RESUME — curvature-v2-surfaces (GATE Z repair pass 3 DONE; GATE Q pass 3 next)
 
-**Resume status:** ACTIVE — **GATE Q pass 1 returned FAIL (91 PASS / 4 FAIL / 0 UNVERIFIABLE). GATE Z
-repair pass 2 is now DONE, three commits, HEAD moved from `0304132d` (unchanged start) forward through
-the fix commits below.** Criterion 7a stays the owner's open decision, untouched by this pass. **Next
-concrete step: GATE Q pass 2** — re-run the four failed criteria (9, 12, 66) plus a normal spot-check
-of the rest; QA does not need to re-derive evidence this pass already re-measured, but should verify
-independently per its own standing practice.
+**Resume status:** ACTIVE — **GATE Q pass 2 returned FAIL (93 PASS / 2 FAIL / 0 UNVERIFIABLE): criterion
+7a (owner decision, untouched, unchanged) and criterion 66's second clause (four sub-floor controls the
+build report itemized nowhere). GATE Z repair pass 3 is now DONE, one commit, HEAD moved from `cc6e3ae2`
+(unchanged start) to `2e3329f8`.** Criterion 7a stays the owner's open decision, untouched by this pass.
+**Next concrete step: GATE Q pass 3** — re-verify criterion 66 only (the fix + the three itemizations);
+7a needs no further QA cycles until the owner rules on it. QA does not need to re-derive evidence this
+pass already re-measured, but should verify independently per its own standing practice.
+
+**This pass's one commit** (`fix(dashboard): GATE Z — criterion 66, the /positions summary control
+meets the coarse-pointer floor (curvature-v2-surfaces)`, `2e3329f8`), with its own `BUILD_REPORT.md`
+"GATE Z repair, pass 3" section:
+
+- **The rule applied, stated once:** criterion 66 binds a control iff
+  `git log f8957d3f..HEAD -- <file>` is non-empty for the file rendering it. Touched ⇒ fixed.
+  Untouched ⇒ itemized as carried debt with `file:line`, the measurement, and a phase attached.
+- **Fixed** — `TrackRecordSection.tsx:226-231`'s `<summary>` ("What wasn't counted — and why",
+  `/positions`; touched this phase at `bdc992d8`, FE-5). A native `<summary>` matches none of
+  `theme.ts`'s coarse-pointer selector list (`button, [role="button"], a, input`) — same escape
+  mechanism as MUI `Select`'s self-duplicated class, a different element instead of a specificity
+  fight. Fixed LOCALLY with a `'@media (pointer: coarse)'` block (`minHeight: 44`,
+  `display: 'flex'`, `alignItems: 'center'`) — no specificity workaround needed, unlike `Select`.
+  Measured 345×21.4375 → **345×44** at 393/coarse; **1192×21.4375** at 1280/fine — height
+  byte-identical to the pre-fix shipped value, proving the coarse-only mechanism is inert on desktop.
+  Two new e2e tests (`no-overflow.spec.ts`) hard-assert both directions. Manifest bumped `103 → 105`
+  in the four-file lockstep.
+- **Itemized, NOT fixed** — three controls with zero commits this phase (`git log f8957d3f..HEAD`
+  empty for each): `AiRecPanel.tsx:288-300` (`Next read persona` select, 327×38.5625),
+  `TickerToolbar.tsx:155-182` (`Expirations` select, 190×38.5625), `features/personas/components.tsx:55`
+  (toolbar `Persona` select, 190×38.5625) — all three the same `.MuiSelect-select.MuiSelect-select`
+  specificity shape the pass-2 repair already diagnosed and fixed at its own three call sites; the
+  pattern is ready to reuse for whichever phase next substantively touches those files.
+- `PositionsPage.tsx` — confirmed byte-unchanged (`git diff cc6e3ae2..HEAD` = 0 lines). Criterion 7a
+  not touched, not re-derived, not re-argued.
+
+## Superseded — pass 2's own section, kept for history (do not act on as current state)
+
+The section immediately below is pass 2's original RESUME text — GATE Q pass 1's three fixes. Read it
+for history only; pass 2's own findings are now resolved or itemized per the section above.
 
 **This pass's three commits, each with its own `BUILD_REPORT.md` "GATE Z repair, pass 2" subsection:**
 
