@@ -1,5 +1,40 @@
 # RESUME — spire/curvature-v2-foundations
 
+## ⚠ RECOVERY BLOCK — written 2026-09-08 because the owner's session could end abruptly
+
+**Where we are.** Phases 1–3 shipped. After phase 3 the owner looked at `/ticker/SPY` locally and said the
+structure widget looked off. Investigation (`STRUCTURE_HERO_REVIEW.md`, this folder) found the hero is the
+plan's placeholder stack, 1,225 px vs the design's 488 px, and that the divergence is **systemic**: every
+phase installed v2's vocabulary on v1's layouts because no BRIEF/SPEC/QA row ever compared composition to
+`design/site/*.html`. Owner ruling (2026-09-07): **"Just fix the ticker screen for now."**
+
+**What was in flight when this was written.** One Sonnet `spire-tech-frontend` repair lane executing
+`STRUCTURE_HERO_REPAIR_TASK.md` (ten numbered changes, S1 first) directly on this branch, committing as it
+goes as `fix(dashboard): …`, no push. **Its state is only knowable from git:**
+1. `git log --oneline 71e8ceb1..HEAD` — every `fix(dashboard)` commit is the lane's; map them to the task
+   file's items 1–10.
+2. `git status` — uncommitted changes under `apps/dashboard/` are the lane's half-finished step. **Do not
+   `git stash`** (a sibling process keeps 27 untracked files under `docs/research/convexa-business-review-2026-09-05/`).
+   Read the diff, decide whether it is coherent, then either finish that step or `git checkout -- <those files only>`.
+3. Re-verify whatever the lane claimed: `npx nx typecheck @convexa/dashboard --skip-nx-cache`, the dashboard
+   suite, lint, `git diff --stat origin/main...HEAD -- apps/api` (must be empty).
+4. Finish the remaining items of the task file (a fresh Sonnet lane with the same prompt is fine), then the
+   conductor's own verification: hero height at 1280 (target 490–560 px), screenshots at 1280/1000/393
+   against `design/site/desk.html`.
+
+**Open owner question, unanswered when written:** the rest of `/ticker` also diverges (masthead framing,
+read strip chrome + an 8th-cell clip at 1280, the tape-&-plan grid, the context-band grid/density — table in
+`STRUCTURE_HERO_REVIEW.md` § "The rest of `/ticker`"). Recommended: a second lane for the full ticker page
+after the hero lands. **Ask before starting it.**
+
+**Not started, still pending the owner:** phase 4 proper; the `docs/research/…` folder (offered twice for
+`docs(research):`, never answered); the canon's Icons-row `U+26A0` question.
+
+**Servers** (kill with `npm run ports:free`, plus `4310` for the static design site): `npm run dev` on
+`:4200`/`:8000`; `py -3 -m http.server 4310` from `design/site/`.
+
+---
+
 **Phase 3 of 4 (`curvature-v2-surfaces`) is DONE and closed at GATE S on 2026-09-07 — GATE Q PASS 95/0/0.**
 **Phase 2 of 4 (`curvature-v2-desk-and-read`) is DONE and closed at GATE S on 2026-09-05.**
 **Phase 1 of 4 is DONE and closed at GATE S on 2026-09-03.**
@@ -25,6 +60,16 @@ verified provider rules and the resume shape — do not re-derive it.
 spacing burn-down remainder · **settings section navigation** (owner ruling **D-B** deferred it out of phase 3 — it is a real
 scope item with three named behaviours, not leftovers) · the three sub-44px `Select`s on `/ticker` and the 15 `ScanToolbar`
 chips (itemized, untouched this phase so out of criterion 66's reach) · the `/positions` condor width tuning at 900px.
+**Owner-flagged 2026-09-07, after phase 3 closed — the structure hero does not match the design source:**
+`STRUCTURE_HERO_REVIEW.md` (this folder) measures it — 1,225 px tall vs the design's 488 px at 1280, the field
+window at spot ±10 % (`chart.tsx:26-27`) leaving the wall span 13 % of the plot, the ladder as five figure
+cards instead of `ladder.mjs`'s one-line rows, no axis, no max-pain line, `Levels|Magnet` toggle. Root cause
+is `PLAN.md:1205`'s illustrative stack becoming the layout with no composition criterion. **It is systemic, not the hero alone** — the same
+file's site-wide survey rates `/positions` and `/alerts` **far** from their design pages and `/scanner` and
+`/settings` **partial**; only nav, masthead and the read strip are close. Cause: no BRIEF after phase 1 named a
+design screen, no criterion in any phase reads "matches `<screen>.html` at a width", and the canon (`:256` item 7)
+calls composition "design intent, not a line-by-line rule". **Phase 4 must carry one composition row per
+surface, with the generated design page as the oracle.** Awaiting the owner's call on route.
 **Open owner question filed in the canon's Icons row:** does the colour-emoji clause reach `U+26A0` (⚠) in a scanner chip
 label (`pages/scanner/labels.ts:196,205,211`), or is it a deliberate third truth mark? Answer it before touching those chips.
 
