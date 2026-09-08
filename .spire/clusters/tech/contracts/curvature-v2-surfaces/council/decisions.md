@@ -262,8 +262,18 @@ and requiring a fresh design and QA pass; (C) ship with the criterion failing, r
 named in the build report. Amended in `SPEC.md` row 7a and in §7's invariant paragraph, both carrying this ruling's date.
 **Nothing rendered changes.**
 
-**Reversal:** if a later phase gives `positions-net-pl` room to cross 360px, restore 7a's original unconditional wording.
+**Reversal:** restore 7a's original unconditional wording if a later phase lets `positions-net-pl` **grow** past 360px.
 This is an OWNER ruling, not a CONDUCTOR call — it does not lapse at the phase boundary.
+
+**Correction to this ruling's first draft, from GATE Q pass 4 (2026-09-07).** The conductor's original write-up named
+`maxWidth: 320` as the binding constraint. QA disproved that by runtime experiment on a discarded page: removing `maxWidth`
+leaves the container at **200px**, because the panel carries no `flexGrow` and so never grows past its floor. What is
+load-bearing is `minWidth: 200` + `flexShrink: 0` — removing those collapses the container to **0px**, the exact defect FE-6
+added them to fix. The reversal above is re-aimed accordingly: the unlock is **letting the panel grow**, not lifting the cap.
+Pass 4 also established a fact passes 1–3 did not have: **the ladder works.** Forced to 400px the figure renders **20px**, at
+300px **17px**, at 200px **15px**. The implementation was never broken — the panel never gets the room — which strengthens
+option A rather than merely permitting it. Recorded here rather than silently corrected, because a mis-aimed reversal clause
+is how a later phase restores the wrong thing.
 
 ## 5. Asks routed
 - Alerts history repair (pm ask) → decided by #4's exchange; default forward-only with carried debt.
