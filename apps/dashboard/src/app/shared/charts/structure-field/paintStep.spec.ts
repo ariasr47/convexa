@@ -16,6 +16,7 @@
 import { describe, expect, it } from 'vitest';
 import type { LevelPalette } from './levelStrokes';
 import {
+  chooseStrikeStep,
   computeGeometry,
   driftAmplitude,
   emptyFrameState,
@@ -153,6 +154,20 @@ describe('paintStep — criterion 20 (S8, SB via the recording context)', () => 
     expect(rec.strokes.filter((s) => s === PALETTE.putWall).length).toBeGreaterThan(0);
     expect(rec.strokes.filter((s) => s === PALETTE.callWall).length).toBeGreaterThan(0);
     expect(rec.strokes.filter((s) => s === PALETTE.gammaFlip).length).toBeGreaterThan(0);
+  });
+});
+
+describe('chooseStrikeStep — repair task item 4 (axis ticks that fit the window)', () => {
+  it('picks the smallest round step (1/2.5/5/10/25) that keeps 8 or fewer ticks', () => {
+    expect(chooseStrikeStep(6)).toBe(1); // 7 ticks at step 1
+    expect(chooseStrikeStep(15)).toBe(2.5); // 7 ticks at step 2.5 (step 1 would be 16)
+    expect(chooseStrikeStep(35)).toBe(5); // 8 ticks at step 5 (step 2.5 would be 15)
+    expect(chooseStrikeStep(70)).toBe(10); // 8 ticks at step 10
+    expect(chooseStrikeStep(180)).toBe(25); // 8 ticks at step 25
+  });
+
+  it('never returns a step coarser than the largest rung even for a huge window', () => {
+    expect(chooseStrikeStep(10_000)).toBe(25);
   });
 });
 
