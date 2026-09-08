@@ -6,9 +6,10 @@
 **What happened.** The build lane on `TICKER_FIDELITY_REPAIR_TASK.md` was killed mid-edit by an API rate
 limit (two half-finished, uncommitted files). A fresh lane resumed: finished the interrupted Market
 context edit, then closed composition gaps in the context band, Live tape, the masthead and Setups
-(phone). Five commits: `d5362a82` (finish the Market context wiring) · `a3d53244` (context band density +
+(phone). Four fix commits: `d5362a82` (finish the Market context wiring) · `a3d53244` (context band density +
 responsive column count) · `bea3aed2` (Live tape's 2×2 grid + masthead control row) · `119bf485` (Setups
-density). Full account, numbers and gate exit codes: this folder's `TICKER_FIDELITY_REPAIR_REPORT.md`.
+density) — plus `88d887eb` (this report + the harness evidence). Full account, numbers and gate exit
+codes: this folder's `TICKER_FIDELITY_REPAIR_REPORT.md`.
 
 **GATE Z — the design's Live tape "Flow" sparkline has no wire equivalent (not built, not faked).**
 `design/src/screens/desk.mjs:363-364`'s Live tape card ends with a flow-spark row — a 30-point trail
