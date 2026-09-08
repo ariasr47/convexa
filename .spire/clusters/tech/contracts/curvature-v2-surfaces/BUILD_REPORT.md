@@ -1806,7 +1806,76 @@ position just renamed); `tools/lib/manifest.mjs`'s `tests.length !== 99` → `!=
 `node --test apps/dashboard-e2e/tools/manifest.spec.mjs apps/dashboard-e2e/tools/mutations.spec.mjs` —
 **exit 0, 7/7**.
 
-**Commit:** `fix(dashboard): GATE Z — three under-floor controls meet the 44px coarse-pointer target
-(curvature-v2-surfaces)`.
+**Commit:** `b431d7da` — `fix(dashboard): GATE Z — three under-floor controls meet the 44px
+coarse-pointer target (curvature-v2-surfaces)`.
+
+### Finding 3 — criterion 7a: NOT fixed, bounced to the owner (GATE Z, per this task's own explicit fork)
+
+**Decision: the honest-conclusion branch, not the mechanical-fix branch.** `PositionsPage.tsx` is
+**untouched** by this pass; `data-figure-state`/`data-figure-register` behaviour is therefore trivially
+unchanged (nothing was edited).
+
+**Why not the mechanical fix.** The only way to make this specific readout's container cross the
+360px (or even 280px) `@container` threshold is to raise `PanelContainer`'s `maxWidth: 320` past 360
+and give it room to grow (e.g. `flexGrow`) — i.e. make the box **physically wider** than its own
+content wants to be. That is a visual/product decision, not a mechanical one, and this lane is bound
+not to invent product UX policy the contracts omit. Checked before deciding, not assumed:
+
+- **The design canvas itself never specifies a width for this box.** `design/src/screens/
+  positions.mjs`'s `.pos-stats` row (the mock this readout implements) lays its stat cells out with
+  `display: flex; gap: 28px; align-items: flex-end` and `margin-left: auto` — every cell is
+  **content-sized**, no explicit px width anywhere in the mock, for this or the sibling "Capital at
+  risk" cell. There is no design source depicting this readout at 360px+.
+- **The shipped 200–320px range is FE-6's own ad hoc compromise for an unrelated bug**, not a
+  design-derived figure: FE-6's own `BUILD_REPORT.md §2` records `minWidth`/`flexShrink: 0` were added
+  to stop `container-type: inline-size` collapsing the box to **zero** width as a flex item with no
+  floor — a collapse-prevention floor, not a target width.
+- **The content itself (a short label + one currency figure, e.g. `+$97`) does not naturally reach
+  360px** — confirmed by FE-13's own investigation, which found the box measures identically at
+  `200px`/`15px` even with an artificially inflated `+$52,000` figure.
+
+**Measured, unchanged from FE-13 (re-verified this pass, same fixture, same idiom — own isolated
+`/api/contract/**` override, real resolved mark):** container width `200px` at **both** 1280px and
+393px; font-size `15px` at both. The 20px/17px states remain structurally unreachable for this
+specific consumer as shipped.
+
+**GATE Z item filed for the owner:** either (a) the owner rules this readout should in fact be wider
+than 320px on desktop — a design decision, with its own visual tradeoff against the "Capital at risk"
+sibling cell and the header row's `space-between` layout — and a future phase implements that width
+and re-proves the step renders at two viewports, or (b) the owner rules a 200–320px content-sized stat
+cell legitimately sits at the 15px literal-size step always, and criterion 7a's specific 20/17
+expectation for *this one consumer* is retired (the criterion's general "every figure that renders at
+20px base steps against its own panel" requirement is otherwise satisfied structurally — the
+`PanelContainer` ancestor exists, named correctly, single instance — it is only THIS panel's
+un-design-specified width that keeps the upper two rungs of the ladder out of reach). This lane makes
+neither ruling; `SPEC.md`/`decisions.md` are unedited. **No commit for this finding beyond this
+write-up** (no source or test file changed).
+
+### Verification — exit codes, read directly (whole GATE Z pass, after all three findings)
+
+| Command | Result |
+|---|---|
+| `npm run typecheck` (cold: `apps/dashboard/dist`, `out-tsc`, `*.tsbuildinfo` deleted first) | **exit 0** |
+| `npx nx typecheck dashboard-e2e --skip-nx-cache` (cold: `out-tsc` deleted first) | **exit 0** |
+| `npm run lint` | **exit 0** — 4 pre-existing warnings (Playwright config `no-explicit-any`), 1 pre-existing dashboard warning (`useSessionArchive.ts`), **0 new** |
+| `npx vitest run src/app/features/trading/positions src/app/pages/positions` | **exit 0, 527/527** |
+| `npx vitest run src/app/pages/alerts src/app/features/alerts src/app/pages/ticker/widgets` | **exit 0, 818/818** |
+| `node --test apps/dashboard-e2e/tools/manifest.spec.mjs apps/dashboard-e2e/tools/mutations.spec.mjs` | **exit 0, 7/7** |
+| `npx playwright test -c apps/dashboard-e2e/playwright.config.ts --list` | **100 tests in 7 files** (99 → 100: the new off-exchange chip test) |
+| `npm run ports:free && npm run build && BROWSER_QUALITY_PREBUILD_STATUS=pass npx nx e2e dashboard-e2e --skip-nx-cache` | **first run: exit 1, 99/100** — one `Page crashed` (`page.goto` navigation crash under this run's 16-worker parallel load) on `lg 1280 no-overflow · dark scheme › / fits 1280px` — re-run of that exact test in isolation (2 workers, no other load) passed cleanly, confirming infra flakiness under this pass's own parallelism, not a regression from either fix. **Second full run, same build, same command: exit 0, 100/100 passed, 0 flaky** (quoted below) |
+| `npm run ports:free` (first and last) | **exit 0**, "Nothing listening" both times |
+
+**Full second run tail (verbatim):**
+```
+100 passed (10.9s)
+[PASS] chromium — 100/100 passed — 0 flaky
+NX   Successfully ran target e2e for project dashboard-e2e
+```
+
+HEAD confirmed unchanged at `3d31a082` before this pass began; the sibling
+`docs/research/convexa-business-review-2026-09-05/` directory confirmed untouched (present, unmodified,
+still untracked) throughout. No `git stash` used. No scratch files left in the repo (a diagnostic
+Playwright/Node script for finding 1's DOM walk and an `http-server` log, both under
+`apps/dashboard-e2e/_tmp_*`, deleted before any commit; confirmed via `git status --porcelain`).
 
 ---
