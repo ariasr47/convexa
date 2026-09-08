@@ -1,0 +1,558 @@
+{
+  "id": "desk-trade-834-dark",
+  "side": "app",
+  "surface": "desk",
+  "state": "trade",
+  "width": 834,
+  "scheme": "dark",
+  "url": "/ticker/SPY",
+  "pageHeight": 3760,
+  "overflowX": false,
+  "scrollWidth": 834,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "app-shell",
+      "x": 0,
+      "y": 0,
+      "w": 834,
+      "h": 3760,
+      "text": "Skip to main contentCONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality"
+    },
+    {
+      "key": "skip-to-main",
+      "x": 0,
+      "y": -53,
+      "w": 158,
+      "h": 44,
+      "text": "Skip to main content"
+    },
+    {
+      "key": "top-nav",
+      "x": 0,
+      "y": 0,
+      "w": 834,
+      "h": 65,
+      "text": "CONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality-user@fixture.invali"
+    },
+    {
+      "key": "command-deck",
+      "x": 24,
+      "y": 89,
+      "w": 786,
+      "h": 273,
+      "text": "positive gammalive · undefined · mid $500.00SPY · $500.00(levels @ $500.00 · all"
+    },
+    {
+      "key": "open-sim-trade",
+      "x": 628,
+      "y": 114,
+      "w": 161,
+      "h": 31,
+      "text": "+ Open simulated trade"
+    },
+    {
+      "key": "ticker-toolbar",
+      "x": 45,
+      "y": 217,
+      "w": 744,
+      "h": 73,
+      "text": "Ticker​ExpirationsAll expirations​PersonaDefault (no persona)​"
+    },
+    {
+      "key": "quick-symbols",
+      "x": 45,
+      "y": 306,
+      "w": 744,
+      "h": 35,
+      "text": "QUICKSPYQQQNVDA"
+    },
+    {
+      "key": "widget-bento",
+      "x": 24,
+      "y": 374,
+      "w": 786,
+      "h": 3362,
+      "text": "StructureStructure fieldNet dealer gamma by strike · all expirations · levels ar"
+    },
+    {
+      "key": "widget-structure-hero",
+      "x": 24,
+      "y": 411,
+      "w": 786,
+      "h": 395,
+      "text": "Structure fieldNet dealer gamma by strike · all expirations · levels are REST st"
+    },
+    {
+      "key": "dealer-view-toggle",
+      "x": 643,
+      "y": 424,
+      "w": 121,
+      "h": 39,
+      "text": "FieldMagnet"
+    },
+    {
+      "key": "structure-hero",
+      "x": 25,
+      "y": 498,
+      "w": 784,
+      "h": 307,
+      "text": "Tape · 5m mid trailMid $500.00Structure $500.00Structure path · slow laneCold st"
+    },
+    {
+      "key": "tape-trail-row",
+      "x": 31,
+      "y": 516,
+      "w": 772,
+      "h": 39,
+      "text": "Tape · 5m mid trailMid $500.00Structure $500.00"
+    },
+    {
+      "key": "tape-pulse-strip",
+      "x": 31,
+      "y": 516,
+      "w": 772,
+      "h": 39,
+      "text": "Tape · 5m mid trailMid $500.00Structure $500.00"
+    },
+    {
+      "key": "tape-pulse-header",
+      "x": 31,
+      "y": 525,
+      "w": 772,
+      "h": 30,
+      "text": "Tape · 5m mid trailMid $500.00Structure $500.00"
+    },
+    {
+      "key": "structure-history",
+      "x": 31,
+      "y": 561,
+      "w": 772,
+      "h": 51,
+      "text": "Structure path · slow laneCold start — path empty until the scanner slow lane re"
+    },
+    {
+      "key": "level-ladder",
+      "x": 39,
+      "y": 624,
+      "w": 756,
+      "h": 87,
+      "text": "Levelsdistance from levels @ $500Call wall$510+$10 · 2.0% aboveMax pain$500at sp"
+    },
+    {
+      "key": "ladder-foot",
+      "x": 39,
+      "y": 712,
+      "w": 756,
+      "h": 81,
+      "text": "Vol-norm GEXunavailableprimary magnitudeRaw GEX (1% shock)$1secondary"
+    },
+    {
+      "key": "widget-read-strip",
+      "x": 24,
+      "y": 822,
+      "w": 786,
+      "h": 201,
+      "text": "Read stripSnapshot reads off the last bundle — none of these move with the tapeO"
+    },
+    {
+      "key": "read-strip-rail",
+      "x": 41,
+      "y": 896,
+      "w": 752,
+      "h": 110,
+      "text": "Opportunity42 · WatchNet DEX$1IV / HV1.10IV rankunavailableVol/OI0.50×IV skewuna"
+    },
+    {
+      "key": "read-strip-cell-opportunity",
+      "x": 41,
+      "y": 896,
+      "w": 140,
+      "h": 110,
+      "text": "Opportunity42 · Watch"
+    },
+    {
+      "key": "read-strip-cell-netDex",
+      "x": 193,
+      "y": 896,
+      "w": 140,
+      "h": 110,
+      "text": "Net DEX$1"
+    },
+    {
+      "key": "read-strip-cell-ivHv",
+      "x": 345,
+      "y": 896,
+      "w": 140,
+      "h": 110,
+      "text": "IV / HV1.10"
+    },
+    {
+      "key": "read-strip-cell-ivRank",
+      "x": 497,
+      "y": 896,
+      "w": 140,
+      "h": 110,
+      "text": "IV rankunavailable"
+    },
+    {
+      "key": "read-strip-cell-volOi",
+      "x": 649,
+      "y": 896,
+      "w": 140,
+      "h": 110,
+      "text": "Vol/OI0.50×"
+    },
+    {
+      "key": "read-strip-cell-ivSkew",
+      "x": 801,
+      "y": 896,
+      "w": 140,
+      "h": 110,
+      "text": "IV skewunavailable"
+    },
+    {
+      "key": "read-strip-cell-termStructure",
+      "x": 953,
+      "y": 896,
+      "w": 140,
+      "h": 110,
+      "text": "Term structureunavailable"
+    },
+    {
+      "key": "read-strip-cell-offExchange",
+      "x": 1105,
+      "y": 896,
+      "w": 140,
+      "h": 110,
+      "text": "Off-exchange %not provided"
+    },
+    {
+      "key": "board-zone-plan",
+      "x": 24,
+      "y": 1047,
+      "w": 786,
+      "h": 25,
+      "text": "Tape & plan"
+    },
+    {
+      "key": "widget-live-tape",
+      "x": 24,
+      "y": 1088,
+      "w": 786,
+      "h": 301,
+      "text": "Live tapeLive stream · not the structure snapshot belowNet flow (NaNm)live+1Spre"
+    },
+    {
+      "key": "live-tape",
+      "x": 41,
+      "y": 1169,
+      "w": 752,
+      "h": 204,
+      "text": "Net flow (NaNm)live+1Spread—Gamma flip · live—VWAP—"
+    },
+    {
+      "key": "position-brief",
+      "x": 24,
+      "y": 1405,
+      "w": 786,
+      "h": 90,
+      "text": "Your book · simulated3 open sim positions on SPY — open the book for the full re"
+    },
+    {
+      "key": "position-brief-multi",
+      "x": 41,
+      "y": 1441,
+      "w": 752,
+      "h": 44,
+      "text": "3 open sim positions on SPY — open the book for the full read.Open book →"
+    },
+    {
+      "key": "ai-rec-panel",
+      "x": 24,
+      "y": 1512,
+      "w": 786,
+      "h": 750,
+      "text": "AI recommendation · SPYRisk-first read on the current snapshot, framed by your p"
+    },
+    {
+      "key": "widget-ai-rec",
+      "x": 24,
+      "y": 1512,
+      "w": 786,
+      "h": 750,
+      "text": "AI recommendation · SPYRisk-first read on the current snapshot, framed by your p"
+    },
+    {
+      "key": "ai-rec-model-select",
+      "x": 41,
+      "y": 1707,
+      "w": 752,
+      "h": 39,
+      "text": "claude-opus-4-8 · catalog recommended default​"
+    },
+    {
+      "key": "ai-rec-decision-card",
+      "x": 41,
+      "y": 1754,
+      "w": 752,
+      "h": 491,
+      "text": "Persona · Default (no persona)As of 2026-08-23T16:00:00.000ZSIMULATED / advisory"
+    },
+    {
+      "key": "decision-provenance",
+      "x": 41,
+      "y": 1762,
+      "w": 752,
+      "h": 52,
+      "text": "Persona · Default (no persona)As of 2026-08-23T16:00:00.000ZSIMULATED / advisory"
+    },
+    {
+      "key": "ai-rec-provenance-chip",
+      "x": 47,
+      "y": 1789,
+      "w": 366,
+      "h": 24,
+      "text": "Sized against your inputs · Account $50,000 · Max 1%/trade"
+    },
+    {
+      "key": "decision-verdict",
+      "x": 41,
+      "y": 1822,
+      "w": 752,
+      "h": 67,
+      "text": "Trade · long"
+    },
+    {
+      "key": "decision-verdict-word",
+      "x": 53,
+      "y": 1834,
+      "w": 728,
+      "h": 43,
+      "text": "Trade · long"
+    },
+    {
+      "key": "decision-metadata",
+      "x": 41,
+      "y": 1889,
+      "w": 752,
+      "h": 51,
+      "text": "Structurecall debit spreadStrike(s)$500 / $505Expiration2026-09-18 · your DTE wi"
+    },
+    {
+      "key": "decision-grid",
+      "x": 41,
+      "y": 1972,
+      "w": 752,
+      "h": 131,
+      "text": "Max risk$300Invalidation498traces to Convexa's levels spot (498)Entrybreak above"
+    },
+    {
+      "key": "decision-evidence",
+      "x": 41,
+      "y": 2137,
+      "w": 752,
+      "h": 46,
+      "text": "Every checked figure traces to a Convexa number.$300 is within your cap of $500."
+    },
+    {
+      "key": "grounding-card-line",
+      "x": 41,
+      "y": 2137,
+      "w": 752,
+      "h": 26,
+      "text": "Every checked figure traces to a Convexa number."
+    },
+    {
+      "key": "decision-actions",
+      "x": 41,
+      "y": 2208,
+      "w": 752,
+      "h": 37,
+      "text": "Review simulated tradeCreate sim orderFull analysis & dataDismiss"
+    },
+    {
+      "key": "ai-rec-act",
+      "x": 234,
+      "y": 2208,
+      "w": 140,
+      "h": 37,
+      "text": "Create sim order"
+    },
+    {
+      "key": "widget-orders",
+      "x": 24,
+      "y": 2278,
+      "w": 786,
+      "h": 96,
+      "text": "Simulated orders · SPYSIMULATEDAll orders →No simulated orders for SPY. Act on a"
+    },
+    {
+      "key": "board-zone-context",
+      "x": 24,
+      "y": 2393,
+      "w": 786,
+      "h": 25,
+      "text": "Supporting context"
+    },
+    {
+      "key": "widget-dealer-flow-projection",
+      "x": 24,
+      "y": 2435,
+      "w": 786,
+      "h": 116,
+      "text": "Projected dealer flowSnapshot, never live — refreshes with the data load, not th"
+    },
+    {
+      "key": "widget-market-context",
+      "x": 24,
+      "y": 2567,
+      "w": 786,
+      "h": 116,
+      "text": "Market contextContext the AI also reads · snapshot, never live — refreshes with "
+    },
+    {
+      "key": "widget-iv-rank",
+      "x": 24,
+      "y": 2699,
+      "w": 786,
+      "h": 135,
+      "text": "IV rankWhere today's IV sits in this ticker's own recent history — is option pre"
+    },
+    {
+      "key": "widget-straddle-move",
+      "x": 24,
+      "y": 2850,
+      "w": 786,
+      "h": 96,
+      "text": "Straddle-implied moveStraddle-implied move unavailable this cycle."
+    },
+    {
+      "key": "widget-term-structure",
+      "x": 24,
+      "y": 2961,
+      "w": 786,
+      "h": 252,
+      "text": "Term structureATM IV by tenor · — · Structure as-of 10sTerm structure unavailabl"
+    },
+    {
+      "key": "term-structure",
+      "x": 41,
+      "y": 3036,
+      "w": 752,
+      "h": 160,
+      "text": "Term structure unavailable this cycle."
+    },
+    {
+      "key": "widget-fresh-positioning",
+      "x": 24,
+      "y": 3229,
+      "w": 786,
+      "h": 135,
+      "text": "Fresh positioning (Vol/OI)Strikes trading heavily versus standing open interest "
+    },
+    {
+      "key": "widget-off-exchange-blocks",
+      "x": 24,
+      "y": 3380,
+      "w": 786,
+      "h": 116,
+      "text": "Off-exchange blocksLargest recent off-exchange prints near spot. Context, not a "
+    },
+    {
+      "key": "widget-setups",
+      "x": 24,
+      "y": 3512,
+      "w": 786,
+      "h": 140,
+      "text": "SetupsRule-based · same structure snapshot · Structure as-of 10sNo clean setup r"
+    },
+    {
+      "key": "add-widget-slot",
+      "x": 24,
+      "y": 3667,
+      "w": 786,
+      "h": 69,
+      "text": "+ Add widget"
+    }
+  ],
+  "probes": {
+    "connectionState": "live",
+    "skeletons": 0,
+    "htmlBackground": "rgb(11, 15, 23)",
+    "bodyBackground": "rgb(11, 15, 23)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", Roboto, sans-serif",
+    "bodyFontSize": "15px",
+    "panelSelector": "top-nav",
+    "panelRadius": "0px",
+    "panelBackground": "rgba(19, 26, 36, 0.82)",
+    "panelBorder": "0px none rgba(0, 0, 0, 0)",
+    "monoFont": null,
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": true,
+    "plexSansLoaded": true,
+    "scrollHeight": 3760,
+    "scrollWidth": 834,
+    "clientWidth": 834
+  },
+  "panels": [
+    {
+      "key": "command-deck",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "widget-bento",
+      "radius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "0px none rgb(233, 228, 214)",
+      "shadow": "none"
+    },
+    {
+      "key": "widget-structure-hero",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.5)",
+      "shadow": "rgba(0, 0, 0, 0.32) 0px 6px 16px 0px, rgba(0, 0, 0, 0.2) 0px 2px 4px 0px"
+    },
+    {
+      "key": "widget-read-strip",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "widget-live-tape",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "ai-rec-panel",
+      "radius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "0px none rgb(233, 228, 214)",
+      "shadow": "none"
+    },
+    {
+      "key": "widget-ai-rec",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "widget-orders",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    }
+  ],
+  "png": "app/desk-trade-834-dark.png"
+}

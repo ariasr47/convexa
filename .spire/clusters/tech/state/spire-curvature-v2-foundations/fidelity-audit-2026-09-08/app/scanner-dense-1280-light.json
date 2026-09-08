@@ -1,0 +1,189 @@
+{
+  "id": "scanner-dense-1280-light",
+  "side": "app",
+  "surface": "scanner",
+  "state": "dense",
+  "width": 1280,
+  "scheme": "light",
+  "url": "/scanner",
+  "pageHeight": 1800,
+  "overflowX": false,
+  "scrollWidth": 1280,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "app-shell",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 668,
+      "text": "Skip to main contentCONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality"
+    },
+    {
+      "key": "skip-to-main",
+      "x": 0,
+      "y": -53,
+      "w": 158,
+      "h": 44,
+      "text": "Skip to main content"
+    },
+    {
+      "key": "top-nav",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 65,
+      "text": "CONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality-user@fixture.invali"
+    },
+    {
+      "key": "nav-search-trigger",
+      "x": 809,
+      "y": 14,
+      "w": 200,
+      "h": 36,
+      "text": "Jump to a ticker…⌘K"
+    },
+    {
+      "key": "scanner-page",
+      "x": 20,
+      "y": 65,
+      "w": 1240,
+      "h": 603,
+      "text": "ScannerOne dense read of the tracked universe — which ticker deserves the deep-d"
+    },
+    {
+      "key": "scan-toolbar",
+      "x": 44,
+      "y": 204,
+      "w": 1192,
+      "h": 137,
+      "text": "ClosedStructure as-of 496527hDefault viewCompactComfortableEdit viewPrimeActiona"
+    },
+    {
+      "key": "scan-session-strip",
+      "x": 44,
+      "y": 204,
+      "w": 1192,
+      "h": 29,
+      "text": "ClosedStructure as-of 496527h"
+    },
+    {
+      "key": "scan-density",
+      "x": 130,
+      "y": 243,
+      "w": 187,
+      "h": 48,
+      "text": "CompactComfortable"
+    },
+    {
+      "key": "scan-filters",
+      "x": 44,
+      "y": 301,
+      "w": 1192,
+      "h": 40,
+      "text": "PrimeActionableWatchDormantIV richIV cheapNeutralScore ≥70Score ≥50Score ≥30|Fli"
+    },
+    {
+      "key": "scan-worker-down",
+      "x": 44,
+      "y": 353,
+      "w": 1192,
+      "h": 48,
+      "text": "Sweep last ran 20688 d ago — showing the last known rows."
+    },
+    {
+      "key": "scan-table",
+      "x": 45,
+      "y": 414,
+      "w": 1190,
+      "h": 229,
+      "text": "SymbolPriceChg %Score ↓TierRegimeVolFlipWallsUpdatedStatusIndexes & megacapsSPY5"
+    },
+    {
+      "key": "scan-th-price",
+      "x": 120,
+      "y": 414,
+      "w": 253,
+      "h": 51,
+      "text": "Price"
+    },
+    {
+      "key": "scan-th-flip",
+      "x": 745,
+      "y": 414,
+      "w": 129,
+      "h": 51,
+      "text": "Flip"
+    },
+    {
+      "key": "scan-th-walls",
+      "x": 873,
+      "y": 414,
+      "w": 129,
+      "h": 51,
+      "text": "Walls"
+    },
+    {
+      "key": "scan-th-updated",
+      "x": 1002,
+      "y": 414,
+      "w": 162,
+      "h": 51,
+      "text": "Updated"
+    },
+    {
+      "key": "scan-group-header",
+      "x": 45,
+      "y": 465,
+      "w": 1190,
+      "h": 37,
+      "text": "Indexes & megacaps"
+    },
+    {
+      "key": "scan-row",
+      "x": 45,
+      "y": 502,
+      "w": 1190,
+      "h": 47,
+      "text": "SPY500.00offline · last known+1.20%90PrimePos γIV rich498.00+1.00%510.00+2.00%St"
+    },
+    {
+      "key": "scan-row",
+      "x": 45,
+      "y": 549,
+      "w": 1190,
+      "h": 47,
+      "text": "QQQ490.00offline · last known−0.40%78WatchPos γIV rich497.00+2.00%490.00−1.00%St"
+    },
+    {
+      "key": "scan-row",
+      "x": 45,
+      "y": 596,
+      "w": 1190,
+      "h": 47,
+      "text": "NVDA480.00offline · last known+1.20%66WatchPos γIV rich496.00+3.00%490.00−1.00%S"
+    }
+  ],
+  "probes": {
+    "connectionState": null,
+    "skeletons": 0,
+    "htmlBackground": "rgb(246, 246, 243)",
+    "bodyBackground": "rgb(246, 246, 243)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", Roboto, sans-serif",
+    "bodyFontSize": "15px",
+    "panelSelector": "top-nav",
+    "panelRadius": "0px",
+    "panelBackground": "rgba(255, 255, 255, 0.86)",
+    "panelBorder": "0px none rgba(0, 0, 0, 0)",
+    "monoFont": null,
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": false,
+    "plexSansLoaded": true,
+    "scrollHeight": 1800,
+    "scrollWidth": 1280,
+    "clientWidth": 1280
+  },
+  "panels": [],
+  "png": "app/scanner-dense-1280-light.png"
+}

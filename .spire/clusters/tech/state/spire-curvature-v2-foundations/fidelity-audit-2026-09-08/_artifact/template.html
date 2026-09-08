@@ -1,0 +1,270 @@
+<title>Curvature v2 Fidelity Audit</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Curvature Terminal v2 tokens — the audited system's own palette, dark-first as the product is. */
+  :root {
+    --ink: #0B0F17; --panel: #131A24; --well: #0E131C; --raised: #1A2230;
+    --phosphor: #E9E4D6; --steel: #8A9BB4; --steel-2: rgba(138,155,180,0.85);
+    --line: rgba(138,155,180,0.16); --line-2: rgba(138,155,180,0.32);
+    --amber: #F2A93B; --amber-text: #F2A93B; --signal: #5E8BC4; --warn: #E07A3F;
+    --shadow: rgba(0,0,0,0.24) 0 1px 2px;
+    --sans: 'IBM Plex Sans', system-ui, 'Segoe UI', sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --display: 'Archivo', 'IBM Plex Sans', system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --ink: #F6F6F3; --panel: #FFFFFF; --well: #EEEEEA; --raised: #F3F3EF;
+      --phosphor: #17202B; --steel: #5D6B84; --steel-2: #5D6B84;
+      --line: rgba(23,32,43,0.12); --line-2: rgba(23,32,43,0.24);
+      --amber: #C57F19; --amber-text: #8F5C0F; --signal: #3D6AA6; --warn: #B85A25;
+      --shadow: rgba(23,32,43,0.08) 0 1px 2px;
+    }
+  }
+  :root[data-theme="light"] {
+    --ink: #F6F6F3; --panel: #FFFFFF; --well: #EEEEEA; --raised: #F3F3EF;
+    --phosphor: #17202B; --steel: #5D6B84; --steel-2: #5D6B84;
+    --line: rgba(23,32,43,0.12); --line-2: rgba(23,32,43,0.24);
+    --amber: #C57F19; --amber-text: #8F5C0F; --signal: #3D6AA6; --warn: #B85A25;
+    --shadow: rgba(23,32,43,0.08) 0 1px 2px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ink); color: var(--phosphor);
+    font-family: var(--sans); font-size: 15px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums;
+  }
+  a { color: var(--signal); text-decoration: none; }
+  a:hover, a:focus-visible { text-decoration: underline; }
+  :focus-visible { outline: 2px solid var(--amber-text); outline-offset: 2px; }
+  .page { max-width: 1120px; margin: 0 auto; padding: 40px 28px 72px; display: grid; gap: 40px; }
+  .prose { max-width: 72ch; }
+  .caps { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--steel); }
+  h1 { font-family: var(--display); font-stretch: 112.5%; font-weight: 700; font-size: 40px; line-height: 1.1; letter-spacing: -0.01em; margin: 10px 0 12px; text-wrap: balance; }
+  h2 { font-family: var(--display); font-stretch: 105%; font-weight: 700; font-size: 22px; line-height: 1.2; margin: 0 0 14px; text-wrap: balance; }
+  h3 { font-size: 15px; font-weight: 600; margin: 0 0 6px; }
+  p { margin: 0 0 12px; }
+  .dek { font-size: 17px; color: var(--steel); max-width: 72ch; }
+  .mono { font-family: var(--mono); }
+  code { font-family: var(--mono); font-size: 0.9em; color: var(--phosphor); background: var(--well); padding: 1px 5px; border-radius: 4px; }
+  header { border-bottom: 1px solid var(--line); padding-bottom: 28px; }
+  .verdict-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 20px 0 8px; }
+  .cell { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow); display: grid; gap: 4px; }
+  .cell .v { font-family: var(--mono); font-size: 26px; font-weight: 500; line-height: 1.15; }
+  .cell .v em { font-style: normal; color: var(--amber-text); }
+  .cell .s { font-family: var(--mono); font-size: 11px; color: var(--steel); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); box-shadow: var(--shadow); }
+  th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); padding: 10px 12px; border-bottom: 1px solid var(--line-2); white-space: nowrap; }
+  td { padding: 8px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+  td.num, th.num { text-align: right; font-family: var(--mono); white-space: nowrap; }
+  td.k { white-space: nowrap; }
+  tr.group td { color: var(--steel); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 12px; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 11px; line-height: 1; padding: 4px 7px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--steel); white-space: nowrap; }
+  .chip.far { color: var(--phosphor); border-color: var(--line-2); background: var(--well); }
+  .chip.partial { color: var(--phosphor); }
+  .chip.close { color: var(--steel); border-style: dashed; }
+  .chip.s1 { color: var(--warn); border-color: var(--warn); }
+  .chip.s2 { color: var(--amber-text); border-color: var(--amber-text); }
+  .chip.s3 { color: var(--steel); }
+  .chip svg { width: 12px; height: 12px; }
+  figure { margin: 0; display: grid; gap: 8px; }
+  figure img { width: 100%; height: auto; display: block; border: 1px solid var(--line); border-radius: 8px; background: var(--well); }
+  figcaption { font-family: var(--mono); font-size: 11.5px; color: var(--steel); line-height: 1.5; }
+  figcaption b { color: var(--phosphor); font-weight: 500; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  @media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
+  .tall { max-height: 820px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--well); }
+  .tall img { border: 0; border-radius: 0; }
+  .findings { display: grid; gap: 22px; counter-reset: f; }
+  .finding { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 14px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .finding .id { font-family: var(--mono); font-size: 13px; color: var(--steel); display: grid; gap: 6px; align-content: start; }
+  .finding p:last-child { margin-bottom: 0; }
+  .anchors { font-family: var(--mono); font-size: 12px; color: var(--steel-2); margin-top: 6px; line-height: 1.6; }
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; }
+  @media (max-width: 860px) { .two { grid-template-columns: 1fr; } }
+  ul.tight { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+  details { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 14px 18px; }
+  summary { cursor: pointer; font-weight: 600; }
+  pre { font-family: var(--mono); font-size: 12.5px; line-height: 1.55; background: var(--well); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; overflow-x: auto; margin: 0; color: var(--phosphor); }
+  .note { border-left: 2px solid var(--line-2); padding-left: 14px; color: var(--steel); font-size: 14px; }
+  .section { display: grid; gap: 18px; }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 0; }
+</style>
+
+<div class="page">
+  <header>
+    <div class="caps">Convexa · spire/curvature-v2-foundations · re-audit · 2026-09-08</div>
+    <h1>Curvature v2 Fidelity Audit</h1>
+    <p class="dek">Phases 1–3 and the hero repair, measured against <code>design/site/*.html</code> at the design's own widths. The vocabulary shipped everywhere; outside the repaired hero, the layouts are still v1's.</p>
+    <div class="verdict-figs">
+      <div class="cell"><span class="caps">Desk · 1280 · populated</span><span class="v"><em>1.57×</em> taller</span><span class="s">4,046 px vs 2,570 · hero already fixed</span></div>
+      <div class="cell"><span class="caps">Positions · 1280</span><span class="v">1.69×</span><span class="s">1,889 px vs 1,120 · track record 1,047 vs 248</span></div>
+      <div class="cell"><span class="caps">Settings · 1280</span><span class="v">1.51×</span><span class="s">2,827 px vs 1,873 · AI providers 1,142 vs 335</span></div>
+      <div class="cell"><span class="caps">Structure hero · 1280</span><span class="v">483 / 488</span><span class="s">app / design height · closed</span></div>
+      <div class="cell"><span class="caps">Panel chrome</span><span class="v">identical</span><span class="s">r 12 · #131A24 · hairline 0.16 · e1</span></div>
+    </div>
+  </header>
+
+  <section class="section prose">
+    <h2>Verdict</h2>
+    <p>The redesign's <strong>vocabulary</strong> shipped and holds everywhere it was touched — tokens, panel chrome, the three type faces, the closed not-a-number words, the liveness gate, the six-state chip, the nav — and the <strong>structure hero is now faithful</strong>: 483 px against the design's 488 at 1280, field-grid, one-line ladder, a populated field. Everything else is still <strong>v2's vocabulary on v1's layouts</strong>. Alerts and settings are single centred columns where the design is a two-column grid; the desk's tape-and-plan grid is inverted and its context band is three times the design's height. Nothing here contradicts the 2026-09-07 review — this pass confirms it with populated data at four widths, and adds one new defect (a dark chart inside the light scheme) and two latent copy fall-throughs.</p>
+    <p class="note">Every number on this page is read from a DOM census written beside each capture (<code>app/&lt;id&gt;.json</code>, <code>design/&lt;id&gt;.json</code>), not estimated from the pictures. The full report and 132 PNGs live in <code>.spire/clusters/tech/state/spire-curvature-v2-foundations/fidelity-audit-2026-09-08/</code>.</p>
+  </section>
+
+  <section class="section">
+    <h2>Scoreboard</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Surface · state</th><th class="num">Width</th><th class="num">App px</th><th class="num">Design px</th><th class="num">×</th><th>Fidelity</th><th>Composite</th></tr></thead>
+      <tbody>
+        <tr class="group"><td colspan="7">Desk · real SPY bundle · AI read idle · live stream</td></tr>
+        <tr><td class="k">desk</td><td class="num">1440</td><td class="num">4046</td><td class="num">2502</td><td class="num">1.62</td><td><span class="chip partial">partial</span> hero close, rest far</td><td class="mono">pairs/desk-real-1440-dark</td></tr>
+        <tr><td class="k">desk</td><td class="num">1280</td><td class="num">4046</td><td class="num">2570</td><td class="num">1.57</td><td><span class="chip partial">partial</span></td><td class="mono">pairs/desk-real-1280-dark</td></tr>
+        <tr><td class="k">desk · light</td><td class="num">1280</td><td class="num">4046</td><td class="num">2570</td><td class="num">1.57</td><td><span class="chip partial">partial</span> + F9</td><td class="mono">pairs/desk-real-1280-light</td></tr>
+        <tr><td class="k">desk</td><td class="num">834</td><td class="num">5166</td><td class="num">3336</td><td class="num">1.55</td><td><span class="chip partial">partial</span></td><td class="mono">pairs/desk-real-834-dark</td></tr>
+        <tr><td class="k">desk</td><td class="num">390</td><td class="num">6999</td><td class="num">4379</td><td class="num">1.60</td><td><span class="chip partial">partial</span></td><td class="mono">pairs/desk-real-390-dark</td></tr>
+        <tr class="group"><td colspan="7">Desk · strict fixture (empty field, empty band) · AI read produced</td></tr>
+        <tr><td class="k">desk · trade</td><td class="num">1280</td><td class="num">3471</td><td class="num">2601</td><td class="num">1.33*</td><td>AI brief partial · tape &amp; plan far</td><td class="mono">pairs/desk-trade-1280-dark</td></tr>
+        <tr class="group"><td colspan="7">Site surfaces · authenticated fixtures</td></tr>
+        <tr><td class="k">scanner · dense</td><td class="num">1280</td><td class="num">603†</td><td class="num">1296</td><td class="num">—</td><td><span class="chip partial">partial</span></td><td class="mono">pairs/scanner-dense-1280-dark</td></tr>
+        <tr><td class="k">scanner · dense</td><td class="num">390</td><td class="num">1551</td><td class="num">3639</td><td class="num">—</td><td><span class="chip close">close</span> cards</td><td class="mono">pairs/scanner-dense-390-dark</td></tr>
+        <tr><td class="k">positions · dense</td><td class="num">1440</td><td class="num">1889</td><td class="num">1032</td><td class="num">1.83</td><td><span class="chip far">far</span></td><td class="mono">pairs/positions-dense-1440-dark</td></tr>
+        <tr><td class="k">positions · dense</td><td class="num">1280</td><td class="num">1889</td><td class="num">1120</td><td class="num">1.69</td><td><span class="chip far">far</span></td><td class="mono">pairs/positions-dense-1280-dark</td></tr>
+        <tr><td class="k">positions · dense</td><td class="num">390</td><td class="num">3599</td><td class="num">2788</td><td class="num">1.29</td><td><span class="chip far">far</span> cards close, the rest not</td><td class="mono">pairs/positions-dense-390-dark</td></tr>
+        <tr><td class="k">alerts · seeded</td><td class="num">1280</td><td class="num">1059</td><td class="num">947</td><td class="num">1.12</td><td><span class="chip far">far</span> one column vs two</td><td class="mono">pairs/alerts-seeded-1280-dark</td></tr>
+        <tr><td class="k">alerts · seeded</td><td class="num">390</td><td class="num">1150</td><td class="num">1946</td><td class="num">0.59</td><td><span class="chip partial">partial</span></td><td class="mono">pairs/alerts-seeded-390-dark</td></tr>
+        <tr><td class="k">settings · signed in</td><td class="num">1280</td><td class="num">2827</td><td class="num">1873</td><td class="num">1.51</td><td><span class="chip far">far</span></td><td class="mono">pairs/settings-signed-in-1280-dark</td></tr>
+        <tr><td class="k">settings · signed in</td><td class="num">390</td><td class="num">3109</td><td class="num">2841</td><td class="num">1.09</td><td><span class="chip partial">partial</span> no tabs (deferred)</td><td class="mono">pairs/settings-signed-in-390-dark</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">* the fixture ships <code>strike_profile.strikes: []</code> and no context payloads, so that ratio understates the desk; use the real-bundle rows. † the scanner's only scroller is internal (<code>ScanTable.tsx:302</code>), so the page is exactly one viewport tall; 603 px is the content.</p>
+  </section>
+
+  <section class="section">
+    <h2>The desk at 1280, region by region</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Region</th><th class="num">App</th><th class="num">Design</th><th>What differs</th></tr></thead>
+      <tbody>
+        <tr><td>nav</td><td class="num">65</td><td class="num">56</td><td>glass bar both; design carries the session clock + bell, app the account email</td></tr>
+        <tr><td>masthead</td><td class="num">273</td><td class="num">186</td><td>raised panel with a labelled form row vs bare on the ink — F3</td></tr>
+        <tr><td>structure hero</td><td class="num">483</td><td class="num">488</td><td>repaired: field-grid, 300 px ladder column, populated field — F10 lists residuals</td></tr>
+        <tr><td>read strip</td><td class="num">209</td><td class="num">112</td><td>Widget + eight 140 px cards, eighth clipped vs one strip of eight cells — F4</td></tr>
+        <tr><td>live tape</td><td class="num">209 · full width</td><td class="num">295 · side column</td><td>F1</td></tr>
+        <tr><td>AI read (idle)</td><td class="num">344 × 568</td><td class="num">669 × 793</td><td>half-width card vs the wide two-thirds panel — F1</td></tr>
+        <tr><td>context band</td><td class="num">≈2,125</td><td class="num">673</td><td>2-column bento vs 3-column quiet grid — F2</td></tr>
+      </tbody>
+    </table></div>
+    <figure>
+      <img src="{{img:desk-real-1280-dark}}" alt="Full-page composite: the app desk on the left, the design desk on the right, both at 1280 wide, dark scheme">
+      <figcaption><b>Desk · 1280 · dark · real SPY bundle.</b> App (left) 4,046 px · design (right) 2,570 px. Same fonts on both sides. The hero now sits at the design's height; below it, the read strip, the tape-and-plan grid and the context band do not.</figcaption>
+    </figure>
+    <div class="pair">
+      <figure><img src="{{img:app-masthead-real-1280-dark}}" alt="App masthead: a raised panel with SPY · $767.82, a form row and a quick row"><figcaption><b>App masthead</b> · 273 px · <code>CommandDeck.tsx:267</code></figcaption></figure>
+      <figure><img src="{{img:design-masthead-real-1280-dark}}" alt="Design masthead: SPY 573.12 in display type, chips, second line, eight quick names, inline fields"><figcaption><b>Design masthead</b> · 186 px · <code>desk.mjs:255</code></figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="{{img:app-hero-real-1280-dark}}" alt="App structure hero after the repair: field with real strikes, ladder column, tape and path rows"><figcaption><b>App hero</b> · 483 px · field-grid, ladder, foot · the Gamma-flip row still wraps</figcaption></figure>
+      <figure><img src="{{img:design-hero-real-1280-dark}}" alt="Design structure field with per-strike bars, ladder column, tape trail and structure path"><figcaption><b>Design hero</b> · 488 px · <code>desk.mjs:289</code> · per-strike bars are the design's form; the app's curve is the owner-locked deviation (rule 11)</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="{{img:app-read-strip-real-1280-dark}}" alt="App read strip: a titled widget with eight cards, the eighth clipped"><figcaption><b>App read strip</b> · 209 px · <code>ReadStrip.tsx:39-40, 57</code> · eighth cell clipped at 1280</figcaption></figure>
+      <figure><img src="{{img:design-read-strip-real-1280-dark}}" alt="Design read strip: one strip of eight cells split by hairlines, with the opportunity ring and captions"><figcaption><b>Design read strip</b> · 112 px · <code>desk.mjs:29</code> · ring, captions, fits 1280</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="{{img:app-ai-read-real-1280-dark}}" alt="App AI recommendation card in its idle state: persona and model selects, Analyze button"><figcaption><b>App AI read · idle</b> · 344 × 568 px · half of a two-column bento (<code>TickerDashboard.tsx:535</code>)</figcaption></figure>
+      <figure><img src="{{img:design-ai-read-real-1280-dark}}" alt="Design AI read panel in its ready state: wide panel with the analyze action"><figcaption><b>Design AI read · idle</b> · 669 × 793 px · the wide left column of <code>desk.mjs:32</code></figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="{{img:app-market-context-real-1280-dark}}" alt="App market context widget: four sub-cards, each with three figures and basis lines"><figcaption><b>App market context</b> · 485 px · four sub-cards (<code>MarketContext.tsx:477</code>)</figcaption></figure>
+      <figure><img src="{{img:design-market-context-real-1280-dark}}" alt="Design market context card: a two-by-two of values"><figcaption><b>Design market context</b> · 267 px · one quiet card, 2×2</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Findings, most severe first</h2>
+    <p class="prose" style="color: var(--steel);">Ratings use the 2026-09-07 review's words — close / partial / far — so the two documents line up. "Known" means the review already named it; "unchanged" means this pass measured the same thing.</p>
+    <div class="findings">
+      <div class="finding"><div class="id"><span>F1</span><span class="chip s1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3zm0 7v5m0 3v.5"/></svg>S1</span></div><div class="prose"><h3>Tape &amp; plan is inverted</h3><p>Design: a <code>minmax(0,8fr) minmax(0,4fr)</code> work grid — the AI read wide on the left; Live tape (2×2 figures + flow spark), Your position and Sim orders stacked in a 396 px column on the right. App: Live tape full width first (four cards and empty space), then a full-width "Your book" bar, then AI recommendation ‖ Simulated orders as two half-width columns. Known, unchanged.</p><div class="anchors">design/src/screens/desk.mjs:32 · apps/dashboard/src/app/pages/ticker/TickerDashboard.tsx:535, :660</div></div></div>
+      <div class="finding"><div class="id"><span>F2</span><span class="chip s1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3zm0 7v5m0 3v.5"/></svg>S1</span></div><div class="prose"><h3>The context band is three times the design's height</h3><p>Design: one <em>Context</em> header with a filter, then <code>repeat(3, minmax(0,1fr))</code> quiet cards of 212–267 px — 673 px in all. App, populated with real data: dealer flow full width 270 · Market context full width <strong>485</strong> (four sub-cards, where the design is one 267 px card with a 2×2) · IV rank ‖ straddle 198 · Term structure <strong>470</strong> (a ~230 px chart over ~240 px of empty panel, stretched to the eight-row list beside it) · Off-exchange alone · Setups as three full-width rows · Add widget. About 2,125 px. Known as a description; now measured with data.</p><div class="anchors">desk.mjs:43 · TickerDashboard.tsx:535 · widgets/market-context/MarketContext.tsx:477</div></div></div>
+      <div class="finding"><div class="id"><span>F3</span><span class="chip s1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3zm0 7v5m0 3v.5"/></svg>S1</span></div><div class="prose"><h3>Masthead framing</h3><p>Design: bare on the ink — Archivo <code>SPY 573.12 +1.84 · +0.32%</code>, a chip row, a second line, a quick row of eight plus the universe count, compact inline Expirations / Persona fields, one amber action. App: a raised 273 px panel with <code>SPY · $767.82 (levels @ … · all expirations)</code> and no change/%, a Ticker / Expirations / Persona form row with labels above, the action top-right. Known (partial), unchanged.</p><div class="anchors">desk.mjs:255-288 · widgets/chrome/CommandDeck.tsx:267</div></div></div>
+      <div class="finding"><div class="id"><span>F4</span><span class="chip s2">S2</span></div><div class="prose"><h3>Read strip chrome; the eighth cell is still clipped at 1280</h3><p>Design: a title-less strip, cells split by hairlines on <code>1.35fr repeat(7, minmax(0,1fr))</code>, the opportunity cell carrying the score ring, every value with a sub-caption. App: a Widget titled <em>Read strip</em> with a subtitle, eight cards at a fixed <code>minWidth: 140</code> in a 1,118 px rail, so the eighth reads <code>OFF-EXCHA… 18.9</code> behind the clip; no ring, no captions, ⓘ on every cell. Known, unchanged.</p><div class="anchors">desk.mjs:29 · widgets/read-strip/ReadStrip.tsx:39-40, :57</div></div></div>
+      <div class="finding"><div class="id"><span>F5</span><span class="chip s1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3zm0 7v5m0 3v.5"/></svg>S1</span></div><div class="prose"><h3>Positions</h3><p>Design: two figure cells (capital at risk · net P/L) and the one action in the mast; <code>Simulated | Live · read-only</code>; <code>Open · Pending · History</code>; one table; the track record as four compact cards in a row (198 px). App: a small Net P/L box and no capital-at-risk cell; a nested <em>Simulated orders</em> card above the book; a second controls row plus a filter-chip row; then the track record as prose — <strong>1,047 px</strong> where the design spends 248. At 390 the position cards themselves are close; everything around them is not. Known (far), unchanged.</p><div class="anchors">positions.mjs:9-16, :51 · pages/positions/PositionsPage.tsx:208 · features/trading/positions/CustomizationToolbar.tsx:341 · features/trading/outcomes/TrackRecordSection.tsx</div></div></div>
+      <div class="finding"><div class="id"><span>F6</span><span class="chip s1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3zm0 7v5m0 3v.5"/></svg>S1</span></div><div class="prose"><h3>Alerts</h3><p>Design: <code>minmax(0,5fr) minmax(0,7fr)</code> — the New rule composer (symbol with a universe-member chip, a segmented Kind, score presets, the notification row) beside Rules with Fired below. App: one centred column at <code>maxWidth: 720</code>, MUI outlined fields with floating labels, <code>Rules (2)</code> / <code>Recent (3)</code> as headings. Heights are similar; the composition is not. Known, unchanged. <em>Watch:</em> the unread event carries a 3 px primary left edge — the idiom v2 retired for figure cells; it is paired with an Unread label, so not hue-alone, but it is the retired pattern on a new surface.</p><div class="anchors">alerts.mjs:6 · pages/alerts/AlertsPage.tsx:259-261, :497, :515</div></div></div>
+      <div class="finding"><div class="id"><span>F7</span><span class="chip s1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3zm0 7v5m0 3v.5"/></svg>S1</span></div><div class="prose"><h3>Settings</h3><p>Design: <code>220px minmax(0, 760px)</code> — a section rail beside 760 px cards; Risk inputs with the two fields side by side and an effective-cap block; AI providers as provider tabs with the verified-key state and one model select (335 px). App: one centred column (<code>Container maxWidth="sm"</code>, 640 px); Risk inputs stacked with no effective-cap block; AI providers as a Grok card plus four stacked provider cards, each with its own input — <strong>1,142 px</strong> for 335. The rail's deferral is recorded (owner ruling D-B); the column width, the provider composition and the effective-cap block are not recorded anywhere.</p><div class="anchors">settings.mjs:5 · features/auth/SettingsPage.tsx:174</div></div></div>
+      <div class="finding"><div class="id"><span>F8</span><span class="chip s2">S2</span></div><div class="prose"><h3>Scanner</h3><p>Design: <em>Your view · 24 names · Edit view</em> with presets, a table with a score bar, tier-coloured chips, a per-row age and sparkline, a hover preview card and three note cards. App: a flat 13-chip filter row, the score as a number, no age or spark, no preview, no notes, and a Status column the design does not have. At 390 the app's cards are close to the design's cards. Known (partial), unchanged.</p><div class="anchors">scanner.mjs:99, :107 · pages/scanner/ScanTable.tsx:302</div></div></div>
+      <div class="finding"><div class="id"><span>F9</span><span class="chip s2">S2</span><span class="chip">new</span></div><div class="prose"><h3>The Term structure chart is dark inside the light scheme, with off-palette greens and reds</h3><p><code>TermHeatChart.tsx</code> hard-codes ink, panel, <code>#2ecc71</code> and <code>#ff5c5c</code> and fills its canvas with them; the file is exempted from the hex-discipline test as "brand token literals". In light mode the widget is a black block on a cream page; in both schemes the IV line is a green that is neither <code>success</code> nor <code>signal</code>, on a rate that is not a direction. The design's term card is a row of amber-graded tenor chips and a slope. Not in the review.</p><figure style="max-width: 568px; margin-top: 10px;"><img src="{{img:app-term-structure-real-1280-light}}" alt="The app's Term structure widget in the light scheme: a black chart panel inside a white card, with a green line"><figcaption><b>Light scheme, 1280</b> · the widget is 470 px; the chart ~230 of them</figcaption></figure><div class="anchors">widgets/term-structure/TermHeatChart.tsx:7-13, :62, :64, :74-77 · shared/theme/hex-discipline.spec.ts:70-71</div></div></div>
+      <div class="finding"><div class="id"><span>F10</span><span class="chip s3">S3</span></div><div class="prose"><h3>Hero residuals after the repair</h3><p>The Gamma-flip ladder row still wraps to two lines (<code>$771.3</code> / <code>+$1.1 · 0.1% above</code>) — the column content is 263 px against the design's bare <code>−0.81%</code>; the header shows ⓘ where the design shows a <code>● mid · tape</code> chip; the tape row is a flat line at cold start (data, not layout). The field's form — a smooth diverging curve with a glow instead of per-strike bars — is the owner-locked deviation (canon rule 11, amended 2026-09-05), not a defect. Hero height 483 vs 488: closed.</p></div></div>
+      <div class="finding"><div class="id"><span>F11</span><span class="chip s3">S3</span></div><div class="prose"><h3>Nav</h3><p>65 px vs 56; the design's session clock and bell are not in the app's bar (account email and avatar instead). Four links, ⌘K and the session chip match. Note only.</p></div></div>
+    </div>
+  </section>
+
+  <section class="section two">
+    <div class="prose">
+      <h2>Latent — copy that lets a raw value through</h2>
+      <p><strong>L1.</strong> <code>connection/copy.ts:112</code> builds the live chip as <code>live · ${CHIP_SESSION_WORD[s] ?? s}</code>. A stream event without <code>market_session</code> — schema-required, but absent from the strict fixture's SSE body — renders <strong><code>live · undefined</code></strong>, observed on every fixture-driven desk capture. The fixture is wrong; the chip should still never print a raw field.</p>
+      <p><strong>L2.</strong> <code>CommandPalette/format.ts:39</code> guards <code>epochS &lt;= 0</code> but not implausible epochs: the fixture's <code>sweep_last_completed: 1</code> renders <code>Structure as-of 496527h</code> and <code>Sweep last ran 20688 d ago</code>. Cosmetic in tests; a plausibility floor would cost one line.</p>
+      <h2 style="margin-top: 10px;">Oracle defects (the design site)</h2>
+      <p>Two template leaks in <code>desk.html</code>: <code>{{fieldSegClass}}</code> inside a class attribute renders the segmented control as <code>on " data-on="showField"&gt;Field</code>, and <code>onClick="{{ask}}"</code> renders the refresh button as raw markup text. Visible in every design capture here. Fix in <code>desk.mjs:296</code> and <code>:158</code>, then <code>node design/src/build.mjs</code>.</p>
+    </div>
+    <div class="prose">
+      <h2>What is faithful — measured</h2>
+      <ul class="tight">
+        <li><strong>Panel chrome is identical.</strong> App <code>command-deck</code> / <code>widget-*</code> and design <code>.panel</code>: radius 12, fill <code>rgb(19,26,36)</code>, hairline <code>rgba(138,155,180,0.16)</code>, e1 shadow. Quiet panels have none on both sides.</li>
+        <li><strong>Grounds.</strong> Ink <code>rgb(11,15,23)</code> dark, paper <code>rgb(246,246,243)</code> light — both sides.</li>
+        <li><strong>Type faces</strong> load on every capture, both sides. Register census on the desk: app mono 73 · sans 152 · archivo 3; design mono 173 · sans 233 · archivo 15 — the design spends Mono on about twice as many elements; density, not a breach.</li>
+        <li><strong>Vocabulary.</strong> <code>unavailable</code>, <code>—</code>, <code>not p…</code> render where data is absent; no invented words on any populated surface (L1 is fixture-triggered).</li>
+        <li><strong>Liveness.</strong> With a complete stream event the chip reads <code>live · open · mid $767.82</code>, live dots sit only on tape-fed figures, the ladder mid carries the <code>tape</code> chip and no distance, the read strip carries no live chip. With the gate's +30 s clock jump the same page degraded correctly to <code>Live offline — reconnecting…</code> with the pause marks.</li>
+        <li><strong>Hero composition</strong> after the repair; <strong>scanner and positions cards at 390</strong>; the <strong>nav</strong>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>The four site surfaces at 1280</h2>
+    <div class="pair">
+      <figure><img src="{{img:positions-dense-1280-dark}}" alt="Composite: app positions page beside the design positions page"><figcaption><b>Positions</b> · app 1,889 px · design 1,120 px · F5</figcaption></figure>
+      <figure><img src="{{img:alerts-seeded-1280-dark}}" alt="Composite: app alerts page beside the design alerts page"><figcaption><b>Alerts</b> · app 1,059 px · design 947 px · one column vs two · F6</figcaption></figure>
+    </div>
+    <div class="pair">
+      <figure><img src="{{img:settings-signed-in-1280-dark}}" alt="Composite: app settings page beside the design settings page"><figcaption><b>Settings</b> · app 2,827 px · design 1,873 px · F7</figcaption></figure>
+      <figure><img src="{{img:scanner-dense-1280-dark}}" alt="Composite: app scanner page beside the design scanner page"><figcaption><b>Scanner</b> · app content 603 px (3 fixture rows) · design 1,296 px · F8</figcaption></figure>
+    </div>
+    <figure>
+      <img src="{{img:desk-real-1280-light}}" alt="Composite: the app desk in the light scheme beside the design desk in the light scheme">
+      <figcaption><b>Desk · 1280 · light.</b> The scheme swap holds across the page — except the Term structure chart (F9), the black block in the left column's lower half.</figcaption>
+    </figure>
+    <figure>
+      <div class="tall"><img src="{{img:desk-real-390-dark}}" alt="Composite: the app desk at phone width beside the design desk at phone width; both very tall"></div>
+      <figcaption><b>Desk · 390 · dark.</b> App 6,999 px · design 4,379 px (1.60×). Scrolls inside its frame. No horizontal overflow on either side; the AI read docks as a sheet on both.</figcaption>
+    </figure>
+  </section>
+
+  <section class="section prose">
+    <h2>Why it is still like this</h2>
+    <p>The three phase SPECs cite <code>design/site/*.html</code> <strong>0 / 0 / 0</strong> times and <code>design/src/screens/*.mjs</code> <strong>0 / 2 / 1</strong> times; the three QA reports cite neither. Every acceptance criterion is a behaviour; none reads "matches <code>&lt;screen&gt;.html</code> at 1280 / 834 / 390, measured". The canon files layout as "design intent recorded for the build, not a rule this file enforces line by line". So the pipeline verified what it was asked to verify — and composition was never on the list. The review said this on 2026-09-07; the counts are the receipts.</p>
+    <h3>Recommendation</h3>
+    <p>Every remaining contract that touches a surface carries one composition row per surface — <em>matches <code>design/site/&lt;screen&gt;.html</code> at 1440 / 1280 / 834 / 390, measured</em> — with this audit's harness as the instrument. It writes the same PNG and JSON census used here, so a QA row can quote a height instead of an impression.</p>
+    <h3>On the open decision</h3>
+    <p>At 1280 the desk is 1,476 px taller than the design <em>after</em> the hero repair, and that remainder is F1 + F2 + F3 + F4 — the masthead, the read strip, the tape-and-plan grid and the context band. The hero closed about 740 px of a ~2,000 px gap; the rest of <code>/ticker</code> is the larger half. The evidence supports the handover's recommendation: one more lane on the same rules as the hero repair, scoped to those four regions, before phase 4 — with F9 folded in.</p>
+  </section>
+
+  <section class="section">
+    <details>
+      <summary>Method, limits and how to re-run</summary>
+      <div class="prose" style="margin-top: 12px;">
+        <p><strong>App side:</strong> the production bundle (<code>apps/dashboard/dist</code>, rebuilt from <code>c0f05063</code>+3) served by <code>http-server</code>, driven by the quality gates' own strict fixtures. <strong>Design side:</strong> <code>design/site/*.html</code>, generated 2026-09-04 from a <code>design/src</code> that has not changed since except <code>verify-tokens.mjs</code>. <strong>Fonts:</strong> the app's self-hosted Archivo / Plex files were served to the design page in place of its Google Fonts link, so both sides shape text with the same bytes. <strong>Widths:</strong> 1440 · 1280 · 834 · 390 — the design's artboard registry. <strong>Capture:</strong> scroll through to mount everything, wait for the connection chip to read live, freeze rAF, full-page PNG at DPR 1, a census of every region, computed-style probes of panel chrome, a font-family census.</p>
+        <p><strong>Desk data:</strong> <code>desk-real-*</code> render the real SPY bundle the local API served at 10:59 UTC (483 strikes; <code>market_state</code> carries term structure, IV rank, straddle, dealer flow, market context) plus a contract-complete stream event. <code>desk-trade/idle-*</code> use the strict fixture (empty field, empty band) with the AI read driven to the produced-trade state.</p>
+        <p><strong>Limits:</strong> the vendor feed was reconnecting with growing backoff during the run and <code>/api/ticker/SPY</code> stopped answering, so nothing here is against the live backend; the real bundle is a pre-market snapshot. The fixture scan's sweep sentinel makes the scanner say <code>Structure as-of 496527h</code>. No account was created and no password typed; auth-gated pages use the fixtures' signed-in session.</p>
+        <pre># fixture pass (all surfaces) — build the bundle first: nx build @convexa/dashboard --configuration=production
+AUDIT_OUT=&lt;dir&gt; npx playwright test --config apps/dashboard-e2e/playwright.audit.config.ts
+# the populated desk from the saved bundle
+AUDIT_OUT=&lt;dir&gt; npx playwright test --config apps/dashboard-e2e/playwright.audit.config.ts --grep desk-real
+# against the dev server + a running API
+AUDIT_LIVE=1 AUDIT_OUT=&lt;dir&gt; npx playwright test --config apps/dashboard-e2e/playwright.audit.config.ts --grep live-anon
+# composites and region tables
+uv run --with pillow python &lt;dir&gt;/_tools/pairs.py · python3 &lt;dir&gt;/_tools/regions.py &lt;id&gt;</pre>
+        <p style="margin-top: 12px;"><strong>Harness lessons</strong> so the next run does not repeat them: the quality gate's freeze jumps the clock +30 s and trips the stream watchdog (captures read offline); <code>Widget.tsx:362</code> uses <code>content-visibility: auto</code>, so force paint before a full-page shot; the scanner's only scroller is internal, so give it a tall viewport; the strict fixture ships an empty strike profile and no context payloads, so the desk needs a real or populated bundle before it can say anything about the field or the band; the design page's site bar must be hidden and its font request answered locally.</p>
+      </div>
+    </details>
+  </section>
+</div>

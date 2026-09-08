@@ -1,0 +1,45 @@
+{
+  "app:hero": {
+    "w": 1152,
+    "h": 410
+  },
+  "app:read-strip": {
+    "w": 1152,
+    "h": 201
+  },
+  "app:ai-read": {
+    "w": 568,
+    "h": 910
+  },
+  "app:live-tape": {
+    "w": 1152,
+    "h": 192
+  },
+  "app:masthead": {
+    "w": 1152,
+    "h": 273
+  },
+  "app:dealer-flow": {
+    "w": 1152,
+    "h": 116
+  },
+  "app:market-context": {
+    "w": 1152,
+    "h": 116
+  },
+  "app:nav": {
+    "w": 1280,
+    "h": 65
+  },
+  "design:nav": {
+    "w": 1280,
+    "h": 56
+  },
+  "design:masthead": null,
+  "design:hero": null,
+  "design:read-strip": null,
+  "design:ai-read": null,
+  "design:live-tape": null,
+  "design:dealer-flow": null,
+  "design:market-context": null
+}

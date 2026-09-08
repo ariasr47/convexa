@@ -1,0 +1,149 @@
+{
+  "id": "alerts-seeded-1280-dark",
+  "side": "app",
+  "surface": "alerts",
+  "state": "seeded",
+  "width": 1280,
+  "scheme": "dark",
+  "url": "/alerts",
+  "pageHeight": 1059,
+  "overflowX": false,
+  "scrollWidth": 1280,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "app-shell",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 1059,
+      "text": "Skip to main contentCONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality"
+    },
+    {
+      "key": "skip-to-main",
+      "x": 0,
+      "y": -53,
+      "w": 158,
+      "h": 44,
+      "text": "Skip to main content"
+    },
+    {
+      "key": "top-nav",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 65,
+      "text": "CONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality-user@fixture.invali"
+    },
+    {
+      "key": "nav-search-trigger",
+      "x": 809,
+      "y": 14,
+      "w": 200,
+      "h": 36,
+      "text": "Jump to a ticker…⌘K"
+    },
+    {
+      "key": "alerts-page",
+      "x": 280,
+      "y": 65,
+      "w": 720,
+      "h": 994,
+      "text": "AlertsLevel-touch, tier-change, and score-gate on structure snapshots — not a li"
+    },
+    {
+      "key": "alerts-composer",
+      "x": 304,
+      "y": 236,
+      "w": 672,
+      "h": 244,
+      "text": "SymbolSymbolKindScore gateKindScore ≥Score ≥Add ruleEnable browser notifyMark 1 "
+    },
+    {
+      "key": "alerts-notify",
+      "x": 399,
+      "y": 400,
+      "w": 174,
+      "h": 44,
+      "text": "Enable browser notify"
+    },
+    {
+      "key": "alerts-rules",
+      "x": 304,
+      "y": 540,
+      "w": 672,
+      "h": 140,
+      "text": "TSLA · Level touchPrice threshold: $260RemoveSPY · Score gateScore gate: ≥ 70Rem"
+    },
+    {
+      "key": "alerts-rule",
+      "x": 304,
+      "y": 540,
+      "w": 672,
+      "h": 66,
+      "text": "TSLA · Level touchPrice threshold: $260Remove"
+    },
+    {
+      "key": "alerts-rule",
+      "x": 304,
+      "y": 614,
+      "w": 672,
+      "h": 66,
+      "text": "SPY · Score gateScore gate: ≥ 70Remove"
+    },
+    {
+      "key": "alerts-events",
+      "x": 304,
+      "y": 779,
+      "w": 672,
+      "h": 247,
+      "text": "TSLA touched $260 (price threshold)Snapshot at $260.12, call wall $26011/14/2023"
+    },
+    {
+      "key": "alerts-event",
+      "x": 304,
+      "y": 779,
+      "w": 672,
+      "h": 83,
+      "text": "TSLA touched $260 (price threshold)Snapshot at $260.12, call wall $26011/14/2023"
+    },
+    {
+      "key": "alerts-event",
+      "x": 304,
+      "y": 871,
+      "w": 672,
+      "h": 63,
+      "text": "SPY score crossed 7011/14/2023, 2:18:20 PM PST"
+    },
+    {
+      "key": "alerts-event",
+      "x": 304,
+      "y": 942,
+      "w": 672,
+      "h": 85,
+      "text": "UnreadTSLA touched $260 (price threshold)Snapshot at $260.40, call wall $26011/1"
+    }
+  ],
+  "probes": {
+    "connectionState": null,
+    "skeletons": 0,
+    "htmlBackground": "rgb(11, 15, 23)",
+    "bodyBackground": "rgb(11, 15, 23)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", Roboto, sans-serif",
+    "bodyFontSize": "15px",
+    "panelSelector": "top-nav",
+    "panelRadius": "0px",
+    "panelBackground": "rgba(19, 26, 36, 0.82)",
+    "panelBorder": "0px none rgba(0, 0, 0, 0)",
+    "monoFont": null,
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": false,
+    "plexSansLoaded": true,
+    "scrollHeight": 1059,
+    "scrollWidth": 1280,
+    "clientWidth": 1280
+  },
+  "panels": [],
+  "png": "app/alerts-seeded-1280-dark.png"
+}

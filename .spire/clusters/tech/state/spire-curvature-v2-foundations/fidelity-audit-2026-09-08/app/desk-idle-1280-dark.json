@@ -1,0 +1,486 @@
+{
+  "id": "desk-idle-1280-dark",
+  "side": "app",
+  "surface": "desk",
+  "state": "idle",
+  "width": 1280,
+  "scheme": "dark",
+  "url": "/ticker/SPY",
+  "pageHeight": 2905,
+  "overflowX": false,
+  "scrollWidth": 1280,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "app-shell",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 2905,
+      "text": "Skip to main contentCONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality"
+    },
+    {
+      "key": "skip-to-main",
+      "x": 0,
+      "y": -53,
+      "w": 158,
+      "h": 44,
+      "text": "Skip to main content"
+    },
+    {
+      "key": "top-nav",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 65,
+      "text": "CONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality-user@fixture.invali"
+    },
+    {
+      "key": "nav-search-trigger",
+      "x": 809,
+      "y": 14,
+      "w": 200,
+      "h": 36,
+      "text": "Jump to a ticker…⌘K"
+    },
+    {
+      "key": "command-deck",
+      "x": 64,
+      "y": 89,
+      "w": 1152,
+      "h": 273,
+      "text": "positive gammalive · undefined · mid $500.00SPY · $500.00(levels @ $500.00 · all"
+    },
+    {
+      "key": "open-sim-trade",
+      "x": 1034,
+      "y": 114,
+      "w": 161,
+      "h": 31,
+      "text": "+ Open simulated trade"
+    },
+    {
+      "key": "ticker-toolbar",
+      "x": 85,
+      "y": 217,
+      "w": 1110,
+      "h": 73,
+      "text": "Ticker​ExpirationsAll expirations​PersonaDefault (no persona)​"
+    },
+    {
+      "key": "quick-symbols",
+      "x": 85,
+      "y": 306,
+      "w": 1110,
+      "h": 35,
+      "text": "QUICKSPYQQQNVDA"
+    },
+    {
+      "key": "widget-bento",
+      "x": 64,
+      "y": 374,
+      "w": 1152,
+      "h": 2507,
+      "text": "StructureStructure fieldNet dealer gamma by strike · all expirations · levels ar"
+    },
+    {
+      "key": "widget-structure-hero",
+      "x": 64,
+      "y": 411,
+      "w": 1152,
+      "h": 410,
+      "text": "Structure fieldNet dealer gamma by strike · all expirations · levels are REST st"
+    },
+    {
+      "key": "dealer-view-toggle",
+      "x": 1049,
+      "y": 424,
+      "w": 121,
+      "h": 39,
+      "text": "FieldMagnet"
+    },
+    {
+      "key": "structure-hero",
+      "x": 65,
+      "y": 479,
+      "w": 1150,
+      "h": 340,
+      "text": "Tape · 5m mid trailMid $500.00Structure $500.00Structure path · slow laneCold st"
+    },
+    {
+      "key": "tape-trail-row",
+      "x": 71,
+      "y": 497,
+      "w": 838,
+      "h": 39,
+      "text": "Tape · 5m mid trailMid $500.00Structure $500.00"
+    },
+    {
+      "key": "tape-pulse-strip",
+      "x": 71,
+      "y": 497,
+      "w": 838,
+      "h": 39,
+      "text": "Tape · 5m mid trailMid $500.00Structure $500.00"
+    },
+    {
+      "key": "tape-pulse-header",
+      "x": 71,
+      "y": 506,
+      "w": 838,
+      "h": 30,
+      "text": "Tape · 5m mid trailMid $500.00Structure $500.00"
+    },
+    {
+      "key": "structure-history",
+      "x": 71,
+      "y": 542,
+      "w": 838,
+      "h": 51,
+      "text": "Structure path · slow laneCold start — path empty until the scanner slow lane re"
+    },
+    {
+      "key": "level-ladder",
+      "x": 934,
+      "y": 491,
+      "w": 263,
+      "h": 223,
+      "text": "Levelsdistance from levels @ $500Call wall$510+$10 · 2.0% aboveMax pain$500at sp"
+    },
+    {
+      "key": "ladder-foot",
+      "x": 934,
+      "y": 714,
+      "w": 263,
+      "h": 91,
+      "text": "Vol-norm GEXunavailableprimary magnitudeRaw GEX (1% shock)$1secondary"
+    },
+    {
+      "key": "widget-read-strip",
+      "x": 64,
+      "y": 836,
+      "w": 1152,
+      "h": 201,
+      "text": "Read stripSnapshot reads off the last bundle — none of these move with the tapeO"
+    },
+    {
+      "key": "read-strip-rail",
+      "x": 81,
+      "y": 911,
+      "w": 1118,
+      "h": 110,
+      "text": "Opportunity42 · WatchNet DEX$1IV / HV1.10IV rankunavailableVol/OI0.50×IV skewuna"
+    },
+    {
+      "key": "read-strip-cell-opportunity",
+      "x": 81,
+      "y": 911,
+      "w": 140,
+      "h": 110,
+      "text": "Opportunity42 · Watch"
+    },
+    {
+      "key": "read-strip-cell-netDex",
+      "x": 233,
+      "y": 911,
+      "w": 140,
+      "h": 110,
+      "text": "Net DEX$1"
+    },
+    {
+      "key": "read-strip-cell-ivHv",
+      "x": 385,
+      "y": 911,
+      "w": 140,
+      "h": 110,
+      "text": "IV / HV1.10"
+    },
+    {
+      "key": "read-strip-cell-ivRank",
+      "x": 537,
+      "y": 911,
+      "w": 140,
+      "h": 110,
+      "text": "IV rankunavailable"
+    },
+    {
+      "key": "read-strip-cell-volOi",
+      "x": 689,
+      "y": 911,
+      "w": 140,
+      "h": 110,
+      "text": "Vol/OI0.50×"
+    },
+    {
+      "key": "read-strip-cell-ivSkew",
+      "x": 841,
+      "y": 911,
+      "w": 140,
+      "h": 110,
+      "text": "IV skewunavailable"
+    },
+    {
+      "key": "read-strip-cell-termStructure",
+      "x": 993,
+      "y": 911,
+      "w": 140,
+      "h": 110,
+      "text": "Term structureunavailable"
+    },
+    {
+      "key": "read-strip-cell-offExchange",
+      "x": 1145,
+      "y": 911,
+      "w": 140,
+      "h": 110,
+      "text": "Off-exchange %not provided"
+    },
+    {
+      "key": "board-zone-plan",
+      "x": 64,
+      "y": 1061,
+      "w": 1152,
+      "h": 25,
+      "text": "Tape & plan"
+    },
+    {
+      "key": "widget-live-tape",
+      "x": 64,
+      "y": 1103,
+      "w": 1152,
+      "h": 192,
+      "text": "Live tapeLive stream · not the structure snapshot belowNet flow (NaNm)live+1Spre"
+    },
+    {
+      "key": "live-tape",
+      "x": 81,
+      "y": 1183,
+      "w": 1118,
+      "h": 95,
+      "text": "Net flow (NaNm)live+1Spread—Gamma flip · live—VWAP—"
+    },
+    {
+      "key": "position-brief",
+      "x": 64,
+      "y": 1311,
+      "w": 1152,
+      "h": 90,
+      "text": "Your book · simulated3 open sim positions on SPY — open the book for the full re"
+    },
+    {
+      "key": "position-brief-multi",
+      "x": 81,
+      "y": 1347,
+      "w": 1118,
+      "h": 44,
+      "text": "3 open sim positions on SPY — open the book for the full read.Open book →"
+    },
+    {
+      "key": "ai-rec-panel",
+      "x": 64,
+      "y": 1418,
+      "w": 568,
+      "h": 344,
+      "text": "AI recommendation · SPYView what's sent→Risk-first read on the current snapshot,"
+    },
+    {
+      "key": "widget-ai-rec",
+      "x": 64,
+      "y": 1418,
+      "w": 568,
+      "h": 344,
+      "text": "AI recommendation · SPYView what's sent→Risk-first read on the current snapshot,"
+    },
+    {
+      "key": "ai-rec-model-select",
+      "x": 81,
+      "y": 1632,
+      "w": 534,
+      "h": 39,
+      "text": "claude-opus-4-8 · catalog recommended default​"
+    },
+    {
+      "key": "widget-orders",
+      "x": 648,
+      "y": 1418,
+      "w": 568,
+      "h": 344,
+      "text": "Simulated orders · SPYSIMULATEDAll orders →No simulated orders for SPY. Act on a"
+    },
+    {
+      "key": "orders-widget-empty",
+      "x": 665,
+      "y": 1478,
+      "w": 534,
+      "h": 37,
+      "text": "No simulated orders for SPY. Act on an AI read to create one — it watches the li"
+    },
+    {
+      "key": "board-zone-context",
+      "x": 64,
+      "y": 1782,
+      "w": 1152,
+      "h": 25,
+      "text": "Supporting context"
+    },
+    {
+      "key": "widget-dealer-flow-projection",
+      "x": 64,
+      "y": 1823,
+      "w": 1152,
+      "h": 116,
+      "text": "Projected dealer flowSnapshot, never live — refreshes with the data load, not th"
+    },
+    {
+      "key": "widget-market-context",
+      "x": 64,
+      "y": 1955,
+      "w": 1152,
+      "h": 116,
+      "text": "Market contextContext the AI also reads · snapshot, never live — refreshes with "
+    },
+    {
+      "key": "widget-iv-rank",
+      "x": 64,
+      "y": 2088,
+      "w": 568,
+      "h": 135,
+      "text": "IV rankWhere today's IV sits in this ticker's own recent history — is option pre"
+    },
+    {
+      "key": "widget-straddle-move",
+      "x": 648,
+      "y": 2088,
+      "w": 568,
+      "h": 135,
+      "text": "Straddle-implied moveStraddle-implied move unavailable this cycle."
+    },
+    {
+      "key": "widget-term-structure",
+      "x": 64,
+      "y": 2238,
+      "w": 568,
+      "h": 252,
+      "text": "Term structureATM IV by tenor · — · Structure as-of 10sTerm structure unavailabl"
+    },
+    {
+      "key": "term-structure",
+      "x": 81,
+      "y": 2313,
+      "w": 534,
+      "h": 160,
+      "text": "Term structure unavailable this cycle."
+    },
+    {
+      "key": "widget-fresh-positioning",
+      "x": 648,
+      "y": 2238,
+      "w": 568,
+      "h": 252,
+      "text": "Fresh positioning (Vol/OI)Strikes trading heavily versus standing open interest "
+    },
+    {
+      "key": "widget-off-exchange-blocks",
+      "x": 64,
+      "y": 2506,
+      "w": 568,
+      "h": 135,
+      "text": "Off-exchange blocksLargest recent off-exchange prints near spot. Context, not a "
+    },
+    {
+      "key": "widget-setups",
+      "x": 64,
+      "y": 2657,
+      "w": 1152,
+      "h": 140,
+      "text": "SetupsRule-based · same structure snapshot · Structure as-of 10sNo clean setup r"
+    },
+    {
+      "key": "add-widget-slot",
+      "x": 64,
+      "y": 2812,
+      "w": 1152,
+      "h": 69,
+      "text": "+ Add widget"
+    }
+  ],
+  "probes": {
+    "connectionState": "live",
+    "skeletons": 0,
+    "htmlBackground": "rgb(11, 15, 23)",
+    "bodyBackground": "rgb(11, 15, 23)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", Roboto, sans-serif",
+    "bodyFontSize": "15px",
+    "panelSelector": "top-nav",
+    "panelRadius": "0px",
+    "panelBackground": "rgba(19, 26, 36, 0.82)",
+    "panelBorder": "0px none rgba(0, 0, 0, 0)",
+    "monoFont": null,
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": true,
+    "plexSansLoaded": true,
+    "scrollHeight": 2905,
+    "scrollWidth": 1280,
+    "clientWidth": 1280
+  },
+  "panels": [
+    {
+      "key": "command-deck",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "widget-bento",
+      "radius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "0px none rgb(233, 228, 214)",
+      "shadow": "none"
+    },
+    {
+      "key": "widget-structure-hero",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "widget-read-strip",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "widget-live-tape",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "ai-rec-panel",
+      "radius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "0px none rgb(233, 228, 214)",
+      "shadow": "none"
+    },
+    {
+      "key": "widget-ai-rec",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "widget-orders",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    }
+  ],
+  "png": "app/desk-idle-1280-dark.png"
+}
