@@ -35,6 +35,7 @@ import { getTicker, LiveUpdate, streamTicker, TickerBundle } from '@convexa/api'
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useEffect, useMemo, useState } from 'react';
+import { capitalAtRiskStateOf } from './capitalAtRisk';
 import { netPlStateOf, type NetPlTint } from './netPl';
 
 /**
@@ -169,15 +170,20 @@ export function PositionsPage() {
     return netPlStateOf({ views: pf.views, streamOffline, retainedTotal });
   }, [pf.views, streamOffline]);
 
+  // Capital at risk (design/src/screens/positions.mjs:63) — the OPEN book's max-loss sum, STATIC
+  // (never live-derived, so no offline arm; `capitalAtRisk.ts`'s own header). Reuses the SAME
+  // `view.max_loss` every row/card cell already reads — not a second compute path.
+  const capitalAtRisk = useMemo(() => capitalAtRiskStateOf({ views: pf.views }), [pf.views]);
+
   return (
     <Box sx={{ maxWidth: 1240, mx: 'auto', p: 3 }}>
       <Box
         sx={{
           display: 'flex',
-          alignItems: 'flex-start',
+          alignItems: 'flex-end',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '12px',
+          gap: '16px 24px',
           mb: '6px',
         }}
       >
@@ -190,32 +196,48 @@ export function PositionsPage() {
             gracefully; records never drop.
           </Typography>
         </Box>
-        {/* The ONE positions surface that renders through `FigureCell` itself, per the panel-shaped
-            exception SPEC §2.1/§2.3 carve out for this readout (council `decisions.md` §3 #0+#16;
-            `council/R3-architect.md` #0 and #3 name it explicitly, having weighed the cross-page
-            import against the app's own "pages never import sibling pages" rule at R1 and kept it
-            narrow rather than promoting the whole card — a promotion `AccessibleHelp`'s own import
-            would force, which FE-12 already owns for the frame's ⓘ). Wrapped in `PanelContainer`
-            (`shared/ui/PanelContainer.tsx`) so the declared 20→17→15 step has a named ancestor to
-            step against at all (§2.4's hazard) — without one, the step never fires at any viewport,
-            with a green build. `minWidth`/`flexShrink: 0` counter a real rendered defect this task
-            found and fixed: `container-type: inline-size` size-contains the box, so as a flex item
-            with no floor it collapsed to a ZERO-width, effectively invisible column (caught by a
-            real headless-browser pass, not by jsdom, which cannot evaluate container queries) —
-            the SAME shape `ReadStrip.tsx:57`'s `minWidth: 140` already carries for its own nested
+        {/* The mast's stat cluster (design/src/screens/positions.mjs:62-65, `.pos-stats`): capital
+            at risk beside the live Net P/L readout, right-aligned. Both render through `FigureCell`
+            itself, per the panel-shaped exception SPEC §2.1/§2.3 carve out for this readout (council
+            `decisions.md` §3 #0+#16; `council/R3-architect.md` #0 and #3 name it explicitly, having
+            weighed the cross-page import against the app's own "pages never import sibling pages"
+            rule at R1 and kept it narrow rather than promoting the whole card — a promotion
+            `AccessibleHelp`'s own import would force, which FE-12 already owns for the frame's ⓘ).
+            Each is wrapped in its own `PanelContainer` (`shared/ui/PanelContainer.tsx`) so the
+            declared 20→17→15 step has a named ancestor to step against at all (§2.4's hazard) —
+            without one, the step never fires at any viewport, with a green build. `minWidth`/
+            `flexShrink: 0` counter a real rendered defect this task found and fixed:
+            `container-type: inline-size` size-contains the box, so as a flex item with no floor it
+            collapsed to a ZERO-width, effectively invisible column (caught by a real
+            headless-browser pass, not by jsdom, which cannot evaluate container queries) — the SAME
+            shape `ReadStrip.tsx:57`'s `minWidth: 140` already carries for its own nested
             `PanelContainer`s. */}
-        <PanelContainer
-          data-testid="positions-net-pl"
-          sx={{ maxWidth: 320, minWidth: 200, flexShrink: 0, ...netPlTintSx(netPl.tint) }}
-        >
-          <FigureCell
-            label="Net P/L (open)"
-            register={netPl.register}
-            value={netPl.value}
-            caption={netPl.caption}
-            offline={netPl.offline}
-          />
-        </PanelContainer>
+        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: '20px', flexWrap: 'wrap' }}>
+          <PanelContainer
+            data-testid="positions-capital-at-risk"
+            sx={{ maxWidth: 260, minWidth: 160, flexShrink: 0 }}
+          >
+            <FigureCell
+              label="Capital at risk"
+              register={capitalAtRisk.register}
+              value={capitalAtRisk.value}
+              caption={capitalAtRisk.caption}
+              offline={null}
+            />
+          </PanelContainer>
+          <PanelContainer
+            data-testid="positions-net-pl"
+            sx={{ maxWidth: 320, minWidth: 200, flexShrink: 0, ...netPlTintSx(netPl.tint) }}
+          >
+            <FigureCell
+              label="Net P/L (open)"
+              register={netPl.register}
+              value={netPl.value}
+              caption={netPl.caption}
+              offline={netPl.offline}
+            />
+          </PanelContainer>
+        </Box>
       </Box>
       <PortfolioPanel
         pf={pf}
