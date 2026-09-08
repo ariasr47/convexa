@@ -82,7 +82,14 @@ function staticize(inner, vals) {
   let html = inner;
   html = html.replace(/<sc-if value="\{\{\s*(\w+)\s*\}\}"[^>]*>/g, (_, k) => `<div data-if="${k}" style="display: contents;">`).replace(/<\/sc-if>/g, '</div>');
   html = html.replace(/onClick="\{\{\s*(\w+)\s*\}\}"/g, (_, k) => `data-on="${k}"`);
-  html = html.replace(/\s([a-zA-Z-]+)="([^"]*\{\{[^"]*)"/g, (_, attr, val) => ` ${attr}="${val.replace(/\{\{\s*(\w+)\s*\}\}/g, (__, k) => String(vals[k] ?? ''))}" data-tpl-${attr}="${val}"`);
+  // The `data-tpl-*` copy keeps the raw template for the runtime, but it must not keep literal
+  // `{{…}}` — the hole pass below would rewrite those into `<span data-hole>` INSIDE the attribute
+  // value, the inner quotes would end the attribute early, and the tail leaked as page text
+  // (`" data-on="showField">Field` in the desk's seg control; 7 sites in desk.html, found by the
+  // 2026-09-08 fidelity audit). Entity-encode the braces: the browser decodes them back to `{{…}}`
+  // in `a.value`, which is exactly what the runtime's re-substitution regex expects.
+  const tplSafe = (v) => v.replace(/\{\{/g, '&#123;&#123;').replace(/\}\}/g, '&#125;&#125;');
+  html = html.replace(/\s([a-zA-Z-]+)="([^"]*\{\{[^"]*)"/g, (_, attr, val) => ` ${attr}="${val.replace(/\{\{\s*(\w+)\s*\}\}/g, (__, k) => String(vals[k] ?? ''))}" data-tpl-${attr}="${tplSafe(val)}"`);
   html = html.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => `<span data-hole="${k}">${String(vals[k] ?? '')}</span>`);
   return html;
 }
