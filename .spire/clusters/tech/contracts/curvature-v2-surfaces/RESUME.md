@@ -1,11 +1,38 @@
 # RESUME — curvature-v2-surfaces frontend lane (FE-14, then BE-1)
 
-**Resume status:** ACTIVE — FE-13 landed clean, one commit, on `spire/curvature-v2-foundations`.
-Nothing is half-done: the working tree was clean at the stop (aside from the untouched sibling-process
-directory noted below). This file is written by the lane that just landed FE-13, ending the session
-rather than starting FE-14 on a degraded budget after an unusually deep FE-13 investigation (two real
-discoveries below took real time to isolate correctly) — FE-14 is the whole-phase closer and deserves a
-fresh context.
+**Resume status:** ACTIVE — FE-13 landed clean, then a narrow GATE Z repair pass landed THREE more
+commits on top (`5c07dc40`, `b431d7da`, `4124322a`) fixing two of FE-13's three findings and filing
+the third for the owner. Nothing is half-done: the working tree is clean (aside from the untouched
+sibling-process directory noted below). **The full e2e suite is now 100/100 (not 98/99 or 99/99) —
+re-run it yourself before trusting any of these numbers, per this file's own standing advice.** FE-14
+is still the whole-phase closer and still deserves a fresh context; this GATE Z pass did NOT start
+FE-14 or BE-1.
+
+## GATE Z repair pass (after FE-13, before FE-14) — what changed
+
+A conductor review overturned FE-13's "pre-existing" verdict on the `/positions` 900px overflow (real
+evidence: the failing test and its seed existed unchanged at the phase-3 baseline `f8957d3f`, where
+the full suite passed 86/86 — so something IN this phase's own product changes caused it). Three
+findings, three outcomes:
+
+1. **`/positions` 900px overflow — FIXED** (`5c07dc40`). Root cause: `PositionRow.tsx`'s `literal()`
+   keyboard-reachable tips (FE-5, U-15a) wrap a visually-hidden `aria-describedby` sibling in
+   `position: absolute` with no positioned ancestor, so its containing block escapes
+   `positions-table-frame`'s scroll clip entirely — a real FE-5 regression, not carried debt. Fix:
+   `position: 'relative'` on the wrapper span (`PositionRow.tsx:168-173`). Confirmed
+   `documentElement.scrollWidth` 978 → 900.
+2. **Criterion 66, three under-floor controls — ALL FIXED** (`b431d7da`). `AlertsPage.tsx`'s per-rule
+   Remove button and Switch/`FormControlLabel`, plus `OffExchangeBlocks.tsx`'s proximity chip (newly
+   made reachable via a local e2e fixture — no prior test ever rendered `off_exchange` data). All three
+   now hard-asserted ≥44px in both dimensions on coarse pointer; manifest bumped 99 → 100.
+3. **Criterion 7a, the unreachable container step — NOT FIXED, filed for the owner** (`4124322a`,
+   docs-only). The only mechanical fix widens `PanelContainer` past its own content's and the design
+   mock's intended size — a product/design call this lane won't make unilaterally. `PositionsPage.tsx`
+   is untouched. See `BUILD_REPORT.md`'s new "GATE Z repair" section (finding 3) for the full either/or
+   write-up the owner needs to rule on.
+
+Full diagnosis, measured before/after numbers, and verification exit codes for all three:
+`BUILD_REPORT.md`'s "GATE Z repair — three FE-13 findings" section (appended after §FE-13).
 
 ## Done (all committed on `spire/curvature-v2-foundations`; re-run before trusting)
 
@@ -38,45 +65,42 @@ not flaky, not caused by this task. Full detail, both mutation proofs (run red, 
 green), the full width×scheme executed case list, and both real findings are in `BUILD_REPORT.md`
 §FE-13.
 
-## Two things FE-14 needs to know about before trusting a "98/99" or a "99/99" from any future run
+## Superseded — FE-13's own "two things" list (kept for history; both resolved by the GATE Z pass above)
 
-1. **A pre-existing product overflow, GATE Z, NOT this phase's introduction, NOT fixed by FE-13.**
-   `/positions` at 900px with the shipped `book+condor` seed measures
-   `document.documentElement.scrollWidth = 978` vs `innerWidth = 900`. Diagnosed (not just observed):
-   `document.body.scrollWidth` measures a CORRECT `900` at the same instant — the discrepancy is
-   `<body>` vs `<html>`, not a real user-visible scrollbar. `positions-table-frame`
-   (`features/trading/positions/PositionsView.tsx:280-289`) itself measures a properly-clipped `852px`
-   box; a full-page scan for any element with `right > viewport` OUTSIDE that frame's subtree returns
-   zero matches; `display: none` on the frame restores `900`; removing the condor (book-only) also
-   measures a correct `900`. The condor's own 4-leg row is the trigger — likely the SAME class of
-   issue `view.ts`'s own file-header comment already documents for a DIFFERENT width/host pair (a
-   min-content-width mitigation tuned against 1280/1190, never swept against 900). **This is
-   confirmed pre-existing**, not introduced by FE-13: a standalone reproduction script bypassing the
-   spec file entirely reproduces the identical `978` against the current tree, and FE-13 touches zero
-   files under `features/trading/positions/`. **No prior lane (FE-6 through FE-12) appears to have run
-   the FULL `no-overflow.spec.ts` suite end-to-end against a production build** — each ran only its
-   own targeted subset — so this is likely a latent regression FE-13 is simply the first lane to
-   surface. **FE-14: name this in your own report rather than re-discovering it from scratch; it is
-   not yours to fix either** (`PositionsView.tsx`/`view.ts` file ownership sits with FE-6/positions,
-   not the closer). Itemized with `file:line` in `BUILD_REPORT.md` §FE-13 §3.
-2. **Two real controls fail the 44px touch floor, GATE Z, itemized, not fixed.** `AlertsPage.tsx:429`'s
-   per-rule "Remove" button (`minHeight: 40`, explicit inline `sx` override — a class beats the
-   global coarse-pointer floor's plain-element selector regardless of the media query) measures
-   `{width: 64, height: 40}`; `AlertsPage.tsx:399-402`'s per-rule enable/disable `Switch` (its
-   `FormControlLabel` — the real clickable region) measures `{width: 163.3, height: 24.75}`. Both
-   measured live with `hasTouch: true`, logged verbatim by a dedicated non-asserting test
-   (`curvature-v2.spec.ts`'s `criterion 66 (FE-13) … MEASURED, not asserted (GATE Z)`), not
-   hard-failed (the lane may not edit `apps/dashboard/src`). Full detail incl. the off-exchange
-   proximity chip (inspected at source, not live-measured — no reachable off-exchange bundle this
-   session) and the positions literal tips (structurally unreachable at 393px — that DOM pattern is
-   `PositionRow.tsx`-only, `PositionCard.tsx` never reuses it below `sm`) in `BUILD_REPORT.md` §FE-13
-   §5.
+**Do not act on the text below as current state — it is FE-13's original write-up, preserved so you
+can see what changed.** Item 1's "pre-existing" verdict was WRONG (the conductor's overturn, confirmed
+by evidence — see the GATE Z section above): it was a real FE-5 regression and is now FIXED
+(`5c07dc40`). Item 2's two controls are now FIXED (`b431d7da`), and the off-exchange chip mentioned
+inside item 2 is ALSO now fixed and hard-asserted (same commit) — FE-13 could not reach it live; this
+pass made it reachable via a local fixture. The one item that is still genuinely open, unresolved, and
+correctly YOURS to just report (not fix) is criterion 7a (§ above, filed for the owner, commit
+`4124322a`) — FE-13's original text for it is unchanged below and still accurate.
+
+1. ~~A pre-existing product overflow, GATE Z, NOT this phase's introduction, NOT fixed by FE-13.~~
+   **RESOLVED, see the GATE Z section above.** (Original text, for the historical record:
+   `/positions` at 900px with the shipped `book+condor` seed measured
+   `document.documentElement.scrollWidth = 978` vs `innerWidth = 900`; FE-13 diagnosed it as a
+   `<body>`/`<html>` discrepancy triggered by the condor's 4-leg row and called it pre-existing. The
+   conductor overturned that verdict: `git diff f8957d3f..HEAD` showed the actual offending element —
+   an untethered `position: absolute` visually-hidden span inside FE-5's own `literal()` — did not
+   exist at the phase-3 baseline. Fixed, see above.)
+2. ~~Two real controls fail the 44px touch floor, GATE Z, itemized, not fixed.~~ **RESOLVED, see the
+   GATE Z section above** — all three (the two `AlertsPage.tsx` controls FE-13 measured, plus the
+   off-exchange proximity chip FE-13 could not reach) are now fixed and hard-asserted.
+3. **Still open, still not this lane's to fix — criterion 7a's unreachable container step.** The
+   `positions-net-pl` `PanelContainer` (`PositionsPage.tsx:203-209`, `maxWidth: 320, minWidth: 200,
+   flexShrink: 0`) never crosses the 360px/280px `@container` thresholds, so the declared 20px/17px
+   states are structurally unreachable — confirmed again this pass (200px/15px at both 1280 and 393).
+   This pass filed it as a GATE Z item for the owner rather than guessing a new width (see the GATE Z
+   section above for the full either/or). **FE-14: name this in your own report; it needs an owner
+   ruling, not a re-fix attempt.**
 
 ## Next concrete step: **FE-14 — Frontend closer**, then **BE-1 — backend verification**
 
 FE-14 is described in `PLAN.md` right after FE-13's own section — read it in full there, plus SPEC's
 `review` rows (7b/15/43/47c/56/60/63/69/U-15/U-19/U-24/U-27/U-37), `INTERFACE_CONTRACT.md`
-(`NO_BACKEND_CHANGE` stands), and this file's "two things" section above before starting. FE-14 owns
+(`NO_BACKEND_CHANGE` stands), and the GATE Z section (and the superseded list right above it) before
+starting. FE-14 owns
 `BUILD_REPORT.md` and the review captures it references; it implements no worker paths — if a suite
 is red, it reports it, it does not re-implement FE-1…FE-13's files. Concretely, per PLAN's own FE-14
 task text:
@@ -86,17 +110,21 @@ task text:
 - **`fonts.spec.ts`'s `EXEMPT` map is EMPTY** (criterion N-1) — already true since FE-7, re-assert it.
 - **The itemized visible copy diffs — the closed set, nothing else** (PLAN's own FE-14 §3 names the
   full list verbatim).
-- **The executed e2e case list** (`--list` + exit code) — **now 99, not 90**; FE-13's own `--list`
-  output is in `BUILD_REPORT.md` §FE-13 §8, naming every width×scheme cell.
+- **The executed e2e case list** (`--list` + exit code) — **now 100, not 99** (the GATE Z pass added
+  one test for the newly-reachable off-exchange proximity chip); FE-13's own `--list` output (99, at
+  the time) is in `BUILD_REPORT.md` §FE-13 §8, naming every width×scheme cell — re-run `--list`
+  yourself for the current 100.
 - **`npm run typecheck` exit code, recorded SEPARATELY from `nx test`'s`** (criterion 68, SB), and
 `nx test`'s own exit code against the STATED BASELINE (exit 1 at ≥2691/2694 with exactly the three
 named load timeouts is at baseline; anything else is a regression) — **FE-13 did not run the full
 `nx test @convexa/dashboard`suite** (out of its own scope: it touched zero`apps/dashboard/src`
   files), so FE-14 is the first lane this session to need this number.
 - **The `review` rows**, each with its capture.
-- **Named debt, each with `file:line` and a phase** — SPEC §1 Out/Future's own list, PLUS the two NEW
-  items FE-13 found this session (both above, both with exact `file:line`) — these are NOT yet on
-  SPEC's list and this closer pass is the first chance to fold them in or flag them for the owner.
+- **Named debt, each with `file:line` and a phase** — SPEC §1 Out/Future's own list, PLUS the ONE item
+  still open after the GATE Z repair pass (criterion 7a's unreachable container step, `file:line`
+  above, filed for the owner) — this is NOT yet on SPEC's list and this closer pass is the first
+  chance to fold it in or flag it for the owner. (FE-13's other finding, the `/positions` 900px
+  overflow, and both under-floor controls FE-13 found, are FIXED — do not re-list them as debt.)
 - **The canon amendment queued for GATE S** (rule 13, D-D) and the filed-not-answered Amendments
   question (the Icons row's colour-emoji clause) — unchanged from PLAN's own FE-14 text.
 - **The three planning decisions a reviewer should see rather than re-derive** — criterion 7a's
@@ -191,14 +219,16 @@ HEAD:<path>` to inspect an original version instead of `git stash`, even for a s
 
 ## ⚠️ Still true — another process shares this working tree
 
-`docs/research/convexa-business-review-2026-09-05/` remains untracked and was left alone all session
-(confirmed present, unchanged, at both the start and the end of this lane's work). Verify HEAD is on
-`spire/curvature-v2-foundations` before and after any work; stop and report if it moves. HEAD at the
-end of this session: `caa9d0fb` (FE-13's own commit).
+`docs/research/convexa-business-review-2026-09-05/` remains untracked and was left alone across both
+FE-13 and the GATE Z repair pass that followed it (confirmed present, unchanged, at the start and end
+of each). Verify HEAD is on `spire/curvature-v2-foundations` before and after any work; stop and
+report if it moves. HEAD at the end of FE-13's own session: `caa9d0fb`. **HEAD at the end of the GATE Z
+repair pass (three more commits on top): `4124322a`** — `5c07dc40` (finding 1 fix), `b431d7da`
+(finding 2 fix), `4124322a` (finding 3 write-up + full-pass verification, docs-only).
 
 ## Remaining arc (unchanged from PLAN, for orientation)
 
 FE-14 (frontend closer: whole-phase verification, both `EXEMPT` maps asserted empty, full suite + e2e
-against the production build, the reviewer-only rows, the two NEW GATE Z items this session found) →
-BE-1 (backend verification only: three-dot `apps/api` diff 0, score/tier/fingerprint byte-identical) →
-GATE Q.
+against the production build, the reviewer-only rows, and the ONE remaining GATE Z item — criterion
+7a, filed for the owner, not FE-13's other two findings which are now fixed) → BE-1 (backend
+verification only: three-dot `apps/api` diff 0, score/tier/fingerprint byte-identical) → GATE Q.
