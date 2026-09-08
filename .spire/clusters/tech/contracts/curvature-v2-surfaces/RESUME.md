@@ -1,11 +1,31 @@
-# RESUME — curvature-v2-surfaces frontend lane (BE-1 next, then GATE Q)
+# RESUME — curvature-v2-surfaces (build track COMPLETE; GATE Q next)
 
-**Resume status:** ACTIVE — **FE-14 (frontend closer) is DONE.** One docs-only commit
-(`docs(spire): FE-14 frontend closer — whole-phase verification (curvature-v2-surfaces)`) appended a
-closer section to `BUILD_REPORT.md`; no `apps/dashboard/src`, `apps/dashboard-e2e/src`, `apps/api`,
-`SPEC.md`, `PLAN.md`, `INTERFACE_CONTRACT.md`, `decisions.md` or `design/` file was touched. **Next
-concrete step: BE-1 — backend verification only** (three-dot `apps/api` diff must stay 0,
-`opportunity_score`/`opportunity_tier`/`state_fingerprint` byte-identical), **then GATE Q.**
+**Resume status:** ACTIVE — **BE-1 (backend closer) is DONE. The entire build track for this phase is
+now complete.** One docs/receipt-only commit
+(`docs(spire): BE-1 backend closer — NO_BACKEND_CHANGE verification (curvature-v2-surfaces)`) appended
+a closer section to `BUILD_REPORT.md` and added `conformance-receipt.json`; no `apps/api`,
+`libs/quant-engine`, `Cargo.lock`/`Cargo.toml`, `apps/dashboard`, `SPEC.md`, `PLAN.md`,
+`INTERFACE_CONTRACT.md`, `decisions.md` or `design/` file was touched. **Next concrete step: GATE Q.**
+
+**BE-1's own measurements this session (HEAD `d64ab692` unchanged start-to-end):**
+
+- Three-dot diff `origin/main...HEAD`, all **0**: `apps/api`, `libs/quant-engine`,
+  `Cargo.lock`/`Cargo.toml`.
+- Score identity: **the "before FE-1" baseline read was never captured** in any prior session
+  (re-confirmed absent across the whole contract directory this session) — the before/after byte
+  comparison PLAN asked for could not be performed. The "after" read (`SPY`, live vendor data,
+  `market_phase: closed_pre`): `signals.opportunity_score = 68`, `signals.opportunity_tier =
+  actionable`, `ai_eval.state_fingerprint = e19a46563be7`, byte-identical across two reads in the same
+  cache window. Score identity rests on the empty three-dot diff, not a byte comparison — see
+  `BUILD_REPORT.md` §BE-1 for the full reasoning.
+- Conformance receipt: **exit 0, 2 endpoints, `/api/scan` first** (order matches the contract
+  exactly), `required_checked` 22 and 5 matching the contract's own field counts. All eleven nullable
+  `rows[].*` columns confirmed still `|null` in the contract text. **Supersedes FE-14's V20 "NOT
+  RUN"** — a real backend was reachable this session.
+- `npm run ports:free` — exit 0 both times (clean before, one orphan-free kill after).
+
+Full detail is in `BUILD_REPORT.md`'s new "BE-1 — Backend closer" section (appended after FE-14's own
+closer section).
 
 ## FE-14's own measurements (re-run yourself before trusting, per this file's own standing advice)
 
@@ -284,7 +304,10 @@ commit's parent, confirm the new commit lands on top): starts at `6cf64041`, one
 
 ## Remaining arc
 
-~~FE-14 (frontend closer...)~~ **DONE, this session.** → **BE-1 (backend verification only: three-dot
-`apps/api` diff 0, score/tier/fingerprint byte-identical) → GATE Q.** Criterion 7a stays filed for the
-owner (not FE-13's other two findings, which are fixed) — GATE Q should not treat it as blocking BE-1
-or as a build defect; it needs a product/design ruling, not more engineering.
+~~FE-14 (frontend closer...)~~ **DONE.** ~~BE-1 (backend verification only)~~ **DONE, this session —
+HEAD `d64ab692` unchanged, one docs/receipt-only commit added on top.** **The build track is now
+complete. Next: GATE Q.** Criterion 7a stays filed for the owner (not FE-13's other two findings,
+which are fixed) — GATE Q should not treat it as blocking or as a build defect; it needs a
+product/design ruling, not more engineering. The score-identity before/after gap (§ above) is also a
+GATE Q reviewer item, not a build defect: the baseline was never captured in any prior session, and
+this closer's own evidence (empty three-dot diff + a stable live read) is the available substitute.

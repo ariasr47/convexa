@@ -2160,3 +2160,109 @@ session.
    backend-side verification next.
 
 ---
+
+## BE-1 — Backend closer (`NO_BACKEND_CHANGE` verification, criterion 67)
+
+**This task writes no product code.** Verification only, per PLAN's own BE-1 §. Repo root
+`C:\Dev\convexa`, branch `spire/curvature-v2-foundations`. HEAD at start: `d64ab692`. HEAD unchanged
+throughout this session (confirmed by `git rev-parse HEAD` before and after every step). Sibling
+untracked directory `docs/research/convexa-business-review-2026-09-05/` — confirmed present (6
+top-level entries) and untouched, start and end. `git stash list` reconfirmed: still exactly the one
+pre-existing, unrelated `redesign-wip` entry from FE-13's session; not touched.
+
+### 1. Empty three-dot diff, three scopes, all zero
+
+```
+git fetch origin main --quiet
+git rev-parse origin/main   # a19d8d16b77f567e26fe6ca2b8edb130314f3c01
+git diff --name-only origin/main...HEAD -- apps/api            | wc -l   # 0
+git diff --name-only origin/main...HEAD -- libs/quant-engine   | wc -l   # 0
+git diff --name-only origin/main...HEAD -- Cargo.lock Cargo.toml | wc -l # 0
+```
+
+All three counts **0**. Three-dot form used throughout (not two-dot), per PLAN's own caution. This is
+the load-bearing evidence for `NO_BACKEND_CHANGE` (criterion 67).
+
+### 2. Score identity — "before" baseline was never captured
+
+Per this task's own launch briefing and confirmed independently this session: `grep -rl
+"opportunity_score\|state_fingerprint"` across the whole `curvature-v2-surfaces/` contract directory
+returns only `BRIEF.md`, `council/R1-architect.md`, `INTERFACE_CONTRACT.md`, `PLAN.md`, `RESUME.md`,
+`SPEC.md`, `_context-pack.md` — none of which contains an actual captured bundle read from before
+FE-1. **No pre-FE-1 baseline read exists anywhere in this contract's history.** This closer did not
+fabricate one. The score-identity claim therefore rests on the empty three-dot `apps/api` diff (§1
+above) — a byte-frozen backend cannot have produced a different score — not on a byte comparison of
+two captured reads.
+
+**The "after FE-13" read, taken this session**, `npm run ports:free` (exit 0, clean) → `npx nx serve
+api` (background; Rust binary, already built, ~2s to bind `127.0.0.1:8000`) → two reads of
+`curl -s localhost:8000/api/ticker/SPY`, both inside the same minute:
+
+| Field | Read 1 (02:21:44 UTC) | Read 2 (same window) |
+|---|---|---|
+| `signals.opportunity_score` | `68` | `68` |
+| `signals.opportunity_tier` | `actionable` | `actionable` |
+| `ai_eval.state_fingerprint` | `e19a46563be7` | `e19a46563be7` |
+
+Byte-identical across both reads within the cache window (the only diff between the two raw JSON
+bodies is a handful of timestamp/vendor-refresh fields, not `signals.*` or `ai_eval.state_fingerprint`).
+Vendor snapshot: `market_state.price = 770.19`, `market_phase = "closed_pre"` — a live vendor read, not
+a stale/cold placeholder. **Conclusion, stated at the strength the evidence supports:** the before/after
+byte comparison PLAN asked for **could not be performed** because the baseline was never taken in any
+earlier session; what this session can and does certify is that the backend is provably untouched
+(§1) and that a live read today is internally stable, which is the available substitute evidence for
+score identity under `NO_BACKEND_CHANGE`.
+
+### 3. Conformance receipt
+
+```
+node .claude/tools/interface_conformance.mjs --contract .spire/clusters/tech/contracts/curvature-v2-surfaces/INTERFACE_CONTRACT.md --url http://localhost:8000 --report .spire/clusters/tech/contracts/curvature-v2-surfaces/conformance-receipt.json
+```
+
+Exit **0**:
+
+```
+interface_conformance — 2 endpoint(s)
+  PASS  GET /api/scan (HTTP 200) — 22 required field(s) present + well-typed
+  PASS  GET /api/ticker/{ticker} (HTTP 200) — 5 required field(s) present + well-typed
+
+  0 endpoint failure(s).
+```
+
+Receipt's `endpoints[]` order: `GET /api/scan` **first**, `GET /api/ticker/{ticker}` second — matches
+the contract's own `## Conformance spec` block order exactly (load-bearing per the contract's own
+text: `/api/scan` runs first because it is answerable without any prior fetch). `required_checked`
+counts (22 and 5) match the contract block's own field counts field-for-field.
+
+**Reviewer probe answered directly:** the contract's `## Conformance spec` JSON pins all eleven
+nullable `rows[].*` columns (`price`, `chg_pct`, `score`, `tier`, `regime`, `vol_regime`, `flip`,
+`call_wall`, `put_wall`, `dist_to_flip_pct`, `dist_to_wall_pct`) as `"number|null"` or `"string|null"`
+— re-read directly from `INTERFACE_CONTRACT.md` this session, none unmarked. The live sweep this
+receipt ran against was non-empty (real symbols, real nulls on cold fields), so this was a real
+per-row type check, not a vacuous pass over an empty `rows[]`.
+
+Supersedes FE-14's V20 "NOT RUN" — a reachable backend was available this session and the real check
+ran.
+
+### 4. `npm run ports:free`
+
+Before starting the server: `Nothing listening on :8000 :4200 :4300 — all clear.` exit **0**.
+After stopping verification: `:8000  pid 75620  killed` / `Freed 1 listener(s).` exit **0**. No
+orphan left on :8000, :4200, :4300, IPv4 or IPv6.
+
+### 5. What a GATE Q reviewer must judge
+
+1. **The score-identity evidence is diff-based, not byte-comparison-based**, because the "before"
+   capture was never taken in any prior session on this phase (not this closer's omission — verified
+   absent across the whole contract directory). If GATE Q requires an actual before/after byte match
+   rather than an empty-diff argument, that capture cannot be retroactively produced and would need a
+   policy call, not a re-run.
+2. **Criterion 7a** (the unreachable `PositionsPage.tsx` container step) remains open, filed for the
+   owner by FE-14/GATE Z — unchanged by this backend-only task, not this lane's to rule on.
+3. This closer's own commit is docs/receipt-only: `conformance-receipt.json` (new file) plus this
+   `BUILD_REPORT.md` section and `RESUME.md`'s status update. `apps/api`, `libs/quant-engine`,
+   `apps/dashboard`, `SPEC.md`, `PLAN.md`, `INTERFACE_CONTRACT.md`, `decisions.md`, `design/` all
+   untouched — confirmed via `git status --porcelain` before staging (only the receipt and
+   `docs/research/...` sibling noise present; the sibling directory was left alone).
+
+---
