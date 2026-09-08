@@ -2410,3 +2410,101 @@ re-run); full e2e gate **exit 0, 103/103 passed, 0 flaky** (§4).
 `apps/dashboard-e2e/src/e2e/no-overflow.spec.ts`, `apps/dashboard-e2e/src/quality/manifest.json`,
 `apps/dashboard-e2e/src/quality/reporters/quality-reporter.ts`,
 `apps/dashboard-e2e/tools/lib/manifest.mjs`, `apps/dashboard-e2e/tools/manifest.spec.mjs`.
+
+### 3. Latent duplicate of the FE-5 regression, and the `/positions` offline observation
+
+**Latent duplicate — fixed.** `PositionRow.tsx:645-655`'s `trend-help` wrapper (`data-testid=
+"trend-help"`, shared by the table row AND `PositionCard` via the common `cellContent` function)
+was `display: 'inline-flex'` with **no `position`**, exactly the FE-5 regression shape fixed at
+`5c07dc40` for the `literal()` helper's own tips (`:154-197`, `position: 'relative'` present): its
+`VISUALLY_HIDDEN` `aria-describedby` sibling (`position: 'absolute'`) had no positioned ancestor, so
+it escapes to the initial containing block instead of staying local to the row. QA measured it
+currently benign (x=840, within the 900px viewport at the seeded book+condor width), but latent —
+exactly the shape that widened `document.documentElement.scrollWidth` to 978px before the original
+fix, if a wider table or a longer trend column ever pushed this element further right. Fixed the
+same way: `position: 'relative'` added to the wrapper (`PositionRow.tsx:653`).
+
+**Whole-tree check for a third instance** — grepped for `VISUALLY_HIDDEN`/the clip-rect
+visually-hidden pattern across the whole `apps/dashboard/src` tree (8 files matched). Two are the
+PositionRow instances above (one already fixed, one now fixed here). The rest do NOT reproduce the
+same risk: `OffExchangeBlocks.tsx`'s identical-shaped proximity-chip tip sits inside `Widget.tsx:341`'s
+`position: 'relative'` root — a genuine positioned ancestor, confirmed safe. `FigureMarks.tsx`'s
+`LiveDot`, `LivenessAnnouncer.tsx`, `OrdersWidget.tsx` and `OrdersPanel.tsx` all use the visually-hidden
+technique WITHOUT an `aria-describedby`-paired sibling (a standalone SR-only label or live region, not
+a "described element + hidden description" pair) — a different, lower-risk shape not in this
+finding's class. One more genuine match was found and NOT fixed, out of this task's own scope
+fence: `ScanCard.tsx:58,110`'s `scoreDescriptionId` span is the SAME "describedby + absolute
+sibling, no positioned ancestor" shape (no `position` anywhere from the card root up through
+`ScanCardList`/`Scanner.tsx`'s page root) — but scanner cards render in a single, full-width,
+un-scrolled mobile column with no horizontal-scroll container to escape into, so it does not
+reproduce the observable defect (confirmed by re-deriving the mechanism, not merely by inspection).
+Itemized here (`file:line` above) as carried debt for whichever phase next touches `ScanCard.tsx`,
+not fixed — it is outside this task's named scope (`PositionRow.tsx:645-655` only).
+
+**Regression coverage.** `PositionRow.a11y.spec.tsx`'s existing `trend-help` test gained one
+assertion: `expect(getComputedStyle(help).position).toBe('relative')`. Poison-confirmed red
+(removed `position: 'relative'` from the wrapper, re-ran: `AssertionError: expected 'static' to be
+'relative'`), reverted green.
+
+**`/positions` offline observation — driven into `streamOffline` in a REAL browser, gotcha 8's
+predicted route confirmed reliable.** QA could not drive `/positions` into `streamOffline` in a
+browser (`page.route(abort)` + reload did not flip the banner within 60s, twice), leaving criteria
+27a/27b/28/35e/U-9 resting on the unit suite alone. A throwaway Playwright script (deleted before
+this commit, per the repo's own scratch-file rule) stubbed `window.EventSource` via
+`page.addInitScript` before navigation — `streamTicker`'s watchdog (`PositionsPage.tsx:122-140`)
+only arms its 15s gap timer (`STREAM_OFFLINE_MS`) inside the `onUpdate` callback, so the stub
+delivered ONE real `LiveUpdate` (arming the watchdog, resolving a live mark via a stubbed
+`/api/contract/**` route matching `no-overflow.spec.ts`'s own `stubResolvableContract` fixture),
+then went silent. After the real 15s elapsed, `streamOffline` flipped true on its own, no fake
+timers, no clock mocking.
+
+**What was actually observed, real DOM, screenshotted:**
+- `NET P/L (OPEN)` header readout (criterion 35e's retained arm): `⏸ +$520` with the caption
+  `offline · last known`, plus a page-level banner "⚠ Live marks paused — P/L shown is from the
+  last update. Records persist." — the offline caption, present, taking precedence, exactly as
+  specified.
+- The row's six live-derived cells, ALL showing the retained arm (criterion 27a: value + stroke
+  pause icon + `offline · last known`, never a bare pause with nothing beside it — criterion 28):
+  Mark `$3000` (dim, pause, caption), P/L `+$520` (pause, caption), P/L% `+21.0%` (pause, caption),
+  Δ Entry `+$520` (pause, caption) — its own `aria-label` explicitly promises exactly this fallback
+  ("falls back to the last-known mark if the feed drops"). Trend kept rendering its sparkline
+  (a different, its-own-spec degrade — a gap/broken line per its own tooltip text, not the pause+
+  caption pair the other five use).
+- Record fields (U-9): `cell-contract` (TSLA $400 Call), `cell-structure` (Long call), `cell-qty`
+  (2×), `cell-entry` ($2480 debit), `cell-max-loss` ($2480), `cell-expiry` (Aug 21) — **none** dimmed,
+  **none** carrying a pause mark, exactly as U-9 promises. The Close action stayed present and
+  clickable.
+- This run did not exercise 27b/28's "no retained value" arm (the fixture's one leg had a
+  resolvable mark throughout) — that arm's nearest evidence remains the unit suite QA already
+  accepted (`positions.risk.spec.tsx`/`faulted.spec.tsx`), unchanged by this observation.
+
+No product code was touched by this observation; it is evidence only, reported per this task's own
+instruction ("report what you actually see").
+
+**Verification, exit codes:** `npx nx test @convexa/dashboard --skip-nx-cache -- src/app/features/trading/positions/PositionRow.a11y.spec.tsx` **exit 0, 1/1**. Full suite below (§4).
+
+**Files:** `apps/dashboard/src/app/features/trading/positions/PositionRow.tsx`,
+`apps/dashboard/src/app/features/trading/positions/PositionRow.a11y.spec.tsx`.
+
+### 4. Whole-phase verification, this pass (HEAD `0304132d` unchanged start-to-end, confirmed before and after)
+
+- `npm run typecheck` — **exit 0**, cold (`apps/dashboard/dist`, all `*.tsbuildinfo` deleted first).
+- `npx nx test @convexa/dashboard --skip-nx-cache` — **exit 0, 239/239 files, 2857/2857 tests**
+  (standing baseline 2856 + this pass's one new test).
+- `npm run lint` — **exit 0**, 5 pre-existing warnings, 0 new (byte-identical to QA's own count).
+- `npx nx format:check --files=<every file this pass touched>` — **exit 0** (one file,
+  `scanner.register.spec.tsx`, needed a scoped `format:write` before the check passed; nothing else
+  did).
+- `node --test apps/dashboard-e2e/tools/manifest.spec.mjs apps/dashboard-e2e/tools/mutations.spec.mjs`
+  — **exit 0, 7/7**.
+- `npm run ports:free` — exit 0, clean, both first and last.
+- `npm run build` — **exit 0** (production).
+- `npx playwright test --list` — **103 tests in 7 files**.
+- `BROWSER_QUALITY_PREBUILD_STATUS=pass npx nx e2e dashboard-e2e --skip-nx-cache` (against the
+  production build) — **exit 0, 103/103 passed, 0 flaky**, manifest-complete (`[PASS] chromium —
+  103/103 passed — 0 flaky`).
+- `git rev-parse HEAD` / `git branch --show-current` — `0304132d` / `spire/curvature-v2-foundations`,
+  confirmed unchanged before this pass's first commit and matching the launch prompt's stated start.
+- `docs/research/convexa-business-review-2026-09-05/` — confirmed present, untouched, `git status`
+  checked before and after every step; never staged.
+- Criterion 7a — untouched, not re-derived, not re-argued; still the owner's open decision.

@@ -645,7 +645,12 @@ export function cellContent(
             data-testid="trend-help"
             aria-describedby={`trend-help-description-${p.id}`}
             tabIndex={-1}
-            sx={{ display: 'inline-flex' }}
+            // GATE Z, latent duplicate of the FE-5 regression (`5c07dc40`): without `position:
+            // 'relative'` this is not a positioned ancestor, so the `VISUALLY_HIDDEN` sibling
+            // below (`position: 'absolute'`) escapes to the initial containing block — invisible
+            // to the eye but not clipped by `positions-table-frame`'s `overflow-x: auto`. Same
+            // fix idiom as `:181` above.
+            sx={{ display: 'inline-flex', position: 'relative' }}
           >
             <PlSparkline samples={ctx.trend} offline={streamOffline} />
             <Box component="span" id={`trend-help-description-${p.id}`} sx={VISUALLY_HIDDEN}>
