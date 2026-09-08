@@ -71,7 +71,11 @@ const gateCounts: Record<string, number> = {
   // (all eight `widget-{id}` frame roots, hero and live tape included) added 4 tests, one per
   // checked width; bump to `curvature-v2-surfaces-90-v1` (`tools/lib/manifest.mjs` enforces the
   // same number).
-  chromium: 90,
+  // (curvature-v2-surfaces FE-13) 90 → 99: the 1280px light-scheme walk over the four seeded
+  // surfaces (criterion 64, 6 tests), the criterion 7a rendered-container-step review-evidence
+  // test (1), and the criterion 66 alerts write-affordance describe block (2); bump to
+  // `curvature-v2-surfaces-99-v1` (`tools/lib/manifest.mjs` enforces the same number).
+  chromium: 99,
   compatibility: 15,
   accessibility: 16,
   visual: 6,

@@ -631,6 +631,77 @@ const FRAME_INFO_SITES = [
   'live-tape',
 ] as const;
 
+// =====================================================================================================
+// criterion 66 (FE-13) — the 44px effective hit area at 393px, coarse pointer, for the alerts write
+// affordances this phase's SPEC §3 names alongside the eight frame ⓘs (U-32, above) and the
+// off-exchange proximity chip (FE-11, criterion 59) — both already covered by their own dedicated
+// describe blocks, so not repeated here.
+//
+// `expectFloor` HARD-ASSERTS ≥44px on both dimensions — used only for controls this measurement
+// confirms comply. Two controls this task's own investigation measured DO NOT comply
+// (`AlertsPage.tsx:429`'s per-rule "Remove" button, an explicit `minHeight: 40` override that beats
+// the shipped global coarse-pointer floor's lower CSS specificity — `sx` compiles to a class,
+// `theme.ts:132-137`'s floor is a plain element selector, and a class always wins a specificity tie
+// regardless of `@media` nesting; and `AlertsPage.tsx:399-402`'s per-rule enable/disable `Switch`,
+// whose own `FormControlLabel` wrapper — the actual clickable region, not just the visible switch
+// graphic — measured ~163×25px, well under the floor on the height axis). Per this lane's own rule
+// ("measure `boundingBox()`, never restyle" — `AlertsPage.tsx` is product source, not this file's to
+// edit), these two are MEASURED AND LOGGED here, not force-asserted, and are named as GATE Z items
+// with `file:line` in `BUILD_REPORT.md` rather than silently patched or silently dropped.
+test.describe('criterion 66 (FE-13) — the alerts write affordances at 393px, coarse pointer', () => {
+  test.use({ viewport: { width: 393, height: 852 }, hasTouch: true });
+
+  const SEEDED_ALERTS_RULE = {
+    schema_version: 1,
+    rules: [
+      {
+        id: 'e2e-rule-price',
+        kind: 'level_touch',
+        symbol: 'TSLA',
+        enabled: true,
+        createdAt: 1_700_000_000_000,
+        level: 'price',
+        priceThreshold: 260,
+      },
+    ],
+    events: [],
+    notifyBrowser: false,
+  };
+
+  test.beforeEach(async ({ page }) => {
+    await stubNetwork(page);
+    await seed(page);
+    await page.addInitScript((alerts) => {
+      window.localStorage.setItem('convexa.alerts.v1', JSON.stringify(alerts));
+    }, SEEDED_ALERTS_RULE);
+    await page.goto('/alerts');
+    await expect(page.getByTestId('alerts-rule')).toHaveCount(1);
+  });
+
+  test('the composer\'s "Add rule" and "Enable browser notify" buttons meet the floor', async ({
+    page,
+  }) => {
+    await expectFloor(page.getByTestId('alerts-add'), 'alerts-add');
+    await expectFloor(page.getByTestId('alerts-notify'), 'alerts-notify');
+  });
+
+  test('MEASURED, not asserted (GATE Z) — the per-rule Remove button and enable/disable switch', async ({
+    page,
+  }) => {
+    const removeBox = await page.getByRole('button', { name: 'Remove' }).first().boundingBox();
+    const switchLabelBox = await page.locator('.MuiFormControlLabel-root').first().boundingBox();
+    console.log(
+      `[criterion 66 evidence] Remove button (AlertsPage.tsx:429) = ${JSON.stringify(removeBox)} · ` +
+        `rule Switch's FormControlLabel (AlertsPage.tsx:399-402) = ${JSON.stringify(switchLabelBox)}`,
+    );
+    // VACUITY GUARD only — both controls really are attached and rendered; the floor pass/fail
+    // itself is recorded in BUILD_REPORT.md as a named GATE Z item, not asserted here (see the
+    // block comment above: this task's lane may not edit `AlertsPage.tsx`).
+    expect(removeBox).toBeTruthy();
+    expect(switchLabelBox).toBeTruthy();
+  });
+});
+
 test.describe('U-32 (SB) — the Widget frame header ⓘ at all eight frame roots (hero + tape included)', () => {
   test.use({ hasTouch: true });
 

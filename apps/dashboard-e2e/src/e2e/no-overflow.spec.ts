@@ -414,7 +414,21 @@ const ROUTES: Array<{ path: string; ready: (page: Page) => Promise<void> }> = [
   },
   {
     path: '/settings',
-    ready: async (p) => void (await expect(p.getByTestId('settings-page')).toBeAttached()),
+    ready: async (p) => {
+      await expect(p.getByTestId('settings-page')).toBeAttached();
+      // (FE-13, criterion 37A — OWNER D-B) — all five sections reachable in the shipped single
+      // 640px column at every checked width this ROUTES entry runs under (393 dark, 393 light,
+      // and the wide bands below); no rail, no tabs (`council/decisions.md` D-B: OUT → phase 4).
+      for (const testId of [
+        'settings-account-panel',
+        'settings-preferences-panel',
+        'settings-risk-inputs-panel',
+        'settings-ai-key-panel',
+        'settings-brokerage-panel',
+      ] as const) {
+        await expect(p.getByTestId(testId)).toBeAttached();
+      }
+    },
   },
   {
     // (v2) `/alerts` joins the top-four nav this phase (SPEC §1) — AC-38 covers it at every width.
@@ -513,13 +527,85 @@ const CONDOR = {
   ],
 };
 
+// ---- A SEEDED alerts book (FE-13, criterion 62/T4) -----------------------------------------------
+//
+// Without this, `/alerts` renders its EMPTY state (`No rules yet…`, `No firings yet…`) and the
+// overflow assertion measures a page with nothing on it. Matches `convexa.alerts.v1`'s exact shape
+// (`features/alerts/types.ts` — `AlertsState`/`AlertRule`/`AlertEvent`), read at source before
+// authoring this blob rather than guessed, per the launch dispatch's own warning: a malformed seed
+// latches the store's read-fault guard (`features/alerts/store.ts`'s `readFaulted`) and silently
+// renders an empty page that LOOKS seeded-and-empty rather than unseeded.
+//
+// Two rules of DIFFERENT kinds, one a raw price threshold (`level: 'price'`, the widest rule-summary
+// text — a level name plus a dollar figure) and one a score gate; three events, one UNREAD (the
+// `Unread` label + the primary-tinted left edge, the widest single event row).
+const SEEDED_ALERTS = {
+  schema_version: 1,
+  rules: [
+    {
+      id: 'e2e-rule-price',
+      kind: 'level_touch',
+      symbol: 'TSLA',
+      enabled: true,
+      createdAt: 1_700_000_000_000,
+      level: 'price',
+      priceThreshold: 260,
+    },
+    {
+      id: 'e2e-rule-score',
+      kind: 'score_gate',
+      symbol: 'SPY',
+      enabled: true,
+      createdAt: 1_700_000_100_000,
+      scoreMin: 70,
+    },
+  ],
+  events: [
+    {
+      id: 'e2e-event-1',
+      ruleId: 'e2e-rule-price',
+      kind: 'level_touch',
+      symbol: 'TSLA',
+      message: 'TSLA touched $260 (price threshold)',
+      at: 1_700_000_200_000,
+      detail: 'Snapshot at $260.12, call wall $260',
+      read: true,
+    },
+    {
+      id: 'e2e-event-2',
+      ruleId: 'e2e-rule-score',
+      kind: 'score_gate',
+      symbol: 'SPY',
+      message: 'SPY score crossed 70',
+      at: 1_700_000_300_000,
+      read: true,
+    },
+    {
+      id: 'e2e-event-3',
+      ruleId: 'e2e-rule-price',
+      kind: 'level_touch',
+      symbol: 'TSLA',
+      message: 'TSLA touched $260 (price threshold)',
+      at: 1_700_000_400_000,
+      detail: 'Snapshot at $260.40, call wall $260',
+      read: false,
+    },
+  ],
+  notifyBrowser: false,
+};
+
 /**
  * Seed localStorage BEFORE any page script runs — the `onBeforeLoad` equivalent. `addInitScript`
  * re-applies on every navigation in the page's lifetime, which is what the seeded routes need.
  */
 async function seed(
   page: Page,
-  opts: { scheme: 'dark' | 'light'; positions?: 'none' | 'book' | 'book+condor' },
+  opts: {
+    scheme: 'dark' | 'light';
+    positions?: 'none' | 'book' | 'book+condor';
+    /** (T4) A non-empty `convexa.alerts.v1` blob — see `SEEDED_ALERTS` above. */
+    alerts?: 'seeded';
+  },
 ) {
   const positions =
     opts.positions === 'book'
@@ -527,9 +613,10 @@ async function seed(
       : opts.positions === 'book+condor'
         ? { ...SEEDED_POSITIONS, 'e2e-condor': CONDOR }
         : null;
+  const alerts = opts.alerts === 'seeded' ? SEEDED_ALERTS : null;
 
   await page.addInitScript(
-    ({ scheme, positions }) => {
+    ({ scheme, positions, alerts }) => {
       window.localStorage.setItem(
         'convexa.uiprefs.v1',
         JSON.stringify({ schema_version: 1, theme: scheme, default_ticker: null }),
@@ -541,8 +628,11 @@ async function seed(
           JSON.stringify({ schema_version: 2, positions, decisions: [] }),
         );
       }
+      if (alerts) {
+        window.localStorage.setItem('convexa.alerts.v1', JSON.stringify(alerts));
+      }
     },
-    { scheme: opts.scheme, positions },
+    { scheme: opts.scheme, positions, alerts },
   );
 }
 
@@ -552,8 +642,22 @@ async function seed(
  * every layout/nav walk that is not SPECIFICALLY testing the wall must be signed in). AC-40's
  * degraded-surface arm passes `signedIn: false` to reach the wall itself at 393px.
  */
-async function stubNetwork(page: Page, opts: { signedIn?: boolean } = {}) {
+async function stubNetwork(
+  page: Page,
+  opts: { signedIn?: boolean; theme?: 'dark' | 'light' } = {},
+) {
   const signedIn = opts.signedIn ?? true;
+  // (FE-13) A REAL discrepancy this task found, not merely described: `useSettings.ts:63-69`
+  // (`serverBacked = auth.authenticated && auth.settings != null`) makes an AUTHENTICATED session's
+  // `settings.theme` win over `convexa.uiprefs.v1` entirely — `loadLocalTheme()` is read ONLY on
+  // the anonymous branch. Every `signedIn: true` call here (the file's own default) used to hand
+  // back a HARDCODED `theme: 'dark'` regardless of the caller's own `scheme`, so every "light
+  // scheme" walk in this file was silently rendering DARK — passing only because dark/light share
+  // identical box geometry, exactly the vacuity shape criterion 62 exists to close, one level
+  // deeper. Caught by a real screenshot during this task's own visual-inspection pass (a
+  // `/alerts` capture in "light" mode rendering pixel-identical to "dark"), confirmed at source,
+  // fixed here — `theme` now threads through so a caller's `scheme` actually reaches the render.
+  const theme = opts.theme ?? 'dark';
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
@@ -574,7 +678,7 @@ async function stubNetwork(page: Page, opts: { signedIn?: boolean } = {}) {
             auth_methods: ['password'],
           },
           google_available: false,
-          settings: { active_persona_id: null, default_ticker: null, theme: 'dark' },
+          settings: { active_persona_id: null, default_ticker: null, theme },
         },
       });
     }
@@ -630,6 +734,50 @@ async function assertNoHorizontalOverflow(page: Page) {
 }
 
 /**
+ * Criterion 65 — no figure, chip or label on the four surfaces (or the eight widgets, reached via
+ * `/ticker/TSLA` in `ROUTES`) renders below the 11px floor at any checked width. A REAL DOM walk
+ * (every element carrying its own direct text) rather than a fixed list of testids — a fixed list
+ * would go silently stale the moment a new label ships; this does not. Elements that are `display:
+ * none`/`visibility: hidden` are excluded (never rendered, nothing to measure); the shipped
+ * visually-hidden a11y idiom (`position:absolute; width:1px; height:1px; clip:rect(0 0 0 0)`,
+ * `OffExchangeBlocks.tsx:27-35`) is NOT excluded on purpose — it clips its BOX, never its
+ * `font-size`, so a real violation there would still be a real violation.
+ */
+async function assertNoTypeBelowFloor(page: Page, floorPx = 11) {
+  const violations = await page.evaluate((floor) => {
+    const out: string[] = [];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT);
+    let node = walker.nextNode() as Element | null;
+    while (node) {
+      const el = node as HTMLElement;
+      const ownText = Array.from(el.childNodes).some(
+        (n) => n.nodeType === Node.TEXT_NODE && (n.textContent ?? '').trim().length > 0,
+      );
+      if (ownText) {
+        const style = getComputedStyle(el);
+        const size = parseFloat(style.fontSize);
+        if (
+          style.display !== 'none' &&
+          style.visibility !== 'hidden' &&
+          Number.isFinite(size) &&
+          size < floor
+        ) {
+          out.push(
+            `${el.tagName.toLowerCase()}[data-testid=${el.dataset.testid ?? ''}] "${(el.textContent ?? '').trim().slice(0, 40)}" = ${style.fontSize}`,
+          );
+        }
+      }
+      node = walker.nextNode() as Element | null;
+    }
+    return out;
+  }, floorPx);
+  expect(
+    violations,
+    `element(s) rendering below the ${floorPx}px floor:\n${violations.join('\n')}`,
+  ).toEqual([]);
+}
+
+/**
  * Criterion 50 (SB) — the read strip scrolls sideways when its cells do not fit, and the PAGE itself
  * never scrolls sideways. `requireRailOverflow` is `true` only at 393px (PLAN's own Step 4 wording:
  * "Assert `scrollWidth > clientWidth` AT 393 … both halves, or the row is satisfied by a strip that
@@ -678,7 +826,7 @@ test.describe('AI recommendation decision card', () => {
     }) => {
       test.setTimeout(30_000);
       await page.setViewportSize({ width: 393, height: 852 });
-      await stubNetwork(page);
+      await stubNetwork(page, { theme: scheme });
       await seed(page, { scheme });
       await openProducedRecommendation(page);
       const opener = page.getByRole('button', { name: 'Full analysis & data' });
@@ -743,7 +891,7 @@ test.describe('AI recommendation decision card', () => {
     }) => {
       test.setTimeout(30_000);
       await page.setViewportSize({ width: 1440, height: 900 });
-      await stubNetwork(page);
+      await stubNetwork(page, { theme: scheme });
       await seed(page, { scheme });
       await openProducedRecommendation(page);
       await expect(page.getByTestId('decision-verdict')).toBeVisible();
@@ -835,15 +983,25 @@ for (const scheme of ['dark', 'light'] as const) {
     test.use({ viewport: VIEWPORT });
 
     test.beforeEach(async ({ page }) => {
-      await stubNetwork(page);
+      await stubNetwork(page, { theme: scheme });
     });
 
     for (const r of ROUTES) {
       test(`${r.path} fits the viewport (scrollWidth <= innerWidth)`, async ({ page }) => {
-        await seed(page, { scheme });
+        // (FE-13, T4/criterion 62) `/alerts` is walked SEEDED, never empty — a zero-rule page would
+        // make this walk vacuous for that surface. `/positions` and `/scanner` are seeded (book,
+        // the shipped 3-row scan fixture) by their own DEDICATED tests below, which already carry
+        // their own pre-measure count guards; duplicating that seeding here would just re-run the
+        // same case twice under a different name.
+        await seed(page, { scheme, alerts: r.path === '/alerts' ? 'seeded' : undefined });
         await page.goto(r.path);
         await r.ready(page);
+        // VACUITY GUARD — the seeded rules actually rendered before we measure (criterion 62).
+        if (r.path === '/alerts') {
+          await expect(page.getByTestId('alerts-rule')).toHaveCount(2);
+        }
         await assertNoHorizontalOverflow(page);
+        await assertNoTypeBelowFloor(page); // criterion 65
       });
     }
 
@@ -864,7 +1022,7 @@ for (const scheme of ['dark', 'light'] as const) {
     test('AC-40 — the cold-start failure banner fits at 393px', async ({ page }) => {
       // A MORE SPECIFIC, LATER-registered route wins (Playwright: last-registered runs first) —
       // this overrides `stubNetwork`'s /api/ticker/ 200 with a transport fault for THIS test only.
-      await stubNetwork(page);
+      await stubNetwork(page, { theme: scheme });
       await page.route('**/api/ticker/**', (route) => route.fulfill({ status: 500, body: '' }));
       await seed(page, { scheme });
       await page.goto('/ticker/TSLA');
@@ -873,7 +1031,7 @@ for (const scheme of ['dark', 'light'] as const) {
     });
 
     test('AC-40 — the open ⌘K palette fits at 393px', async ({ page }) => {
-      await stubNetwork(page);
+      await stubNetwork(page, { theme: scheme });
       await seed(page, { scheme });
       await page.goto('/ticker/TSLA');
       await expect(page.getByText('Call wall').first()).toBeAttached();
@@ -1027,6 +1185,9 @@ for (const vp of WIDE_VIEWPORTS) {
         await seed(page, {
           scheme: 'dark',
           positions: r.path === '/positions' ? 'book+condor' : 'none',
+          // (FE-13, T4/criterion 62) seeded here too — at this band `/alerts` renders the SAME
+          // single-column list the 393px walk does (no responsive collapse on this surface).
+          alerts: r.path === '/alerts' ? 'seeded' : undefined,
         });
         await page.goto(r.path);
         await r.ready(page);
@@ -1034,7 +1195,21 @@ for (const vp of WIDE_VIEWPORTS) {
         if (r.path === '/positions') {
           await expect(page.getByTestId('portfolio-panel')).toBeAttached();
         }
+        // VACUITY GUARD (FE-13, T4/criterion 62/21) — at this band `/scanner` renders the DENSE
+        // TABLE (`breakpoints.down('sm')`, i.e. <600px, is the card cutoff), so `scan-row` is the
+        // right anchor here, not `scan-card` (393's own dedicated test already guards that one).
+        // The shipped fixture (`stubNetwork`'s `scan` payload above) always returns 3 rows, but this
+        // is exactly the "a wide-band walk over a zero-row table passes and proves nothing"
+        // vacuity criterion 62 exists to close — asserted explicitly rather than assumed.
+        if (r.path === '/scanner') {
+          await expect(page.getByTestId('scan-row')).toHaveCount(3);
+        }
+        // VACUITY GUARD (FE-13, T4/criterion 62) — the seeded rules actually rendered.
+        if (r.path === '/alerts') {
+          await expect(page.getByTestId('alerts-rule')).toHaveCount(2);
+        }
         await assertNoHorizontalOverflow(page);
+        await assertNoTypeBelowFloor(page); // criterion 65
       });
     }
 
@@ -1050,3 +1225,152 @@ for (const vp of WIDE_VIEWPORTS) {
     });
   });
 }
+
+// ---- CRITERION 64 — light mode at 1280 (T4/FE-13) ------------------------------------------------
+//
+// The wide-band loop above is deliberately dark-only (overflow is box geometry, unaffected by
+// scheme). Criterion 64 is about COLOUR, not geometry, and SPEC names 1280 explicitly alongside 393
+// (which the `393px no-overflow` describe blocks above already run in BOTH schemes for all four
+// surfaces). This block closes the one width×scheme cell no other test in this file reaches: the
+// four surfaces, seeded, actually RENDER in light mode at 1280 — the "light walk" PLAN's own FE-13
+// text names, alongside the vitest-level `hex-discipline.spec.ts`/token-parity checks (out of this
+// file's ownership; `apps/dashboard/src/app/shared/theme/`, not `apps/dashboard-e2e/`).
+test.describe('lg 1280 no-overflow · light scheme (criterion 64)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test.beforeEach(async ({ page }) => {
+    await stubNetwork(page, { theme: 'light' });
+  });
+
+  for (const r of ROUTES) {
+    test(`${r.path} fits 1280px in light mode (scrollWidth <= innerWidth)`, async ({ page }) => {
+      await seed(page, {
+        scheme: 'light',
+        positions: r.path === '/positions' ? 'book+condor' : 'none',
+        alerts: r.path === '/alerts' ? 'seeded' : undefined,
+      });
+      await page.goto(r.path);
+      await r.ready(page);
+      if (r.path === '/positions') {
+        await expect(page.getByTestId('portfolio-panel')).toBeAttached();
+      }
+      if (r.path === '/scanner') {
+        await expect(page.getByTestId('scan-row')).toHaveCount(3);
+      }
+      if (r.path === '/alerts') {
+        await expect(page.getByTestId('alerts-rule')).toHaveCount(2);
+      }
+      await assertNoHorizontalOverflow(page);
+      await assertNoTypeBelowFloor(page);
+    });
+  }
+});
+
+// ---- CRITERION 7a — the rendered container step (T4/FE-13) ---------------------------------------
+//
+// `PositionsPage.tsx:203-209`'s `positions-net-pl` `PanelContainer` is the ONE shipped stepped
+// figure host on this surface (`FigureCell.tsx:184-189`: 20px base, steps to 17px under a 360px
+// NAMED-container width, to 15px under 280px — SPEC §7 invariant 5, `@container` cannot be seen by
+// jsdom). A REAL resolved mark is required to reach a stepping ("traced") figure at all — the
+// shipped `stubNetwork`'s `/api/contract/` 404 (used by every other test in this file, deliberately,
+// so the malformed/unresolved arms those tests cover stay reachable) would leave `netPlStateOf`
+// at its F8 `unavailable` LITERAL arm here, which the closed-nine vocabulary fixes at the 15px
+// "literal size" and never steps (`FigureCell.tsx:170-172`) — that would make this test vacuous for
+// what it exists to prove. This test therefore registers its OWN, LATER, more specific
+// `/api/contract/**` route on top of `stubNetwork`'s (last-registered wins, the same idiom AC-40's
+// cold-start-banner test already uses), self-contained and scoped to this test only.
+test.describe('criterion 7a — rendered container step on /positions', () => {
+  const RESOLVABLE_POSITION = {
+    'e2e-7a': {
+      id: 'e2e-7a',
+      ticker: 'TSLA',
+      expiration: '2026-08-21',
+      strike: 400,
+      right: 'call',
+      side: 'long',
+      qty: 2,
+      entry_mark: 12.4,
+      entry_basis: 'user_entered',
+      entry_mode: 'manual',
+      entry_time: '2026-06-12T15:32:00Z',
+      status: 'open',
+      schema_version: 2,
+    },
+  };
+
+  async function stubResolvableContract(page: Page) {
+    await stubNetwork(page);
+    await page.route('**/api/contract/**', (route) =>
+      route.fulfill({
+        json: {
+          ticker: 'TSLA',
+          expiration: '2026-08-21',
+          strike: 400,
+          right: 'call',
+          option_quote: { bid: 14.9, ask: 15.1, mid: 15 },
+          greeks: { delta: 0.5, gamma: 0.01, theta: -0.05, vega: 0.1 },
+          iv: 0.45,
+          dte: 24,
+        },
+      }),
+    );
+  }
+
+  async function measureNetPl(page: Page, width: number) {
+    await page.setViewportSize({ width, height: 900 });
+    await stubResolvableContract(page);
+    await page.addInitScript((positions) => {
+      window.localStorage.setItem(
+        'convexa.uiprefs.v1',
+        JSON.stringify({ schema_version: 1, theme: 'dark', default_ticker: null }),
+      );
+      window.localStorage.setItem(
+        'convexa.positions.v2',
+        JSON.stringify({ schema_version: 2, positions, decisions: [] }),
+      );
+    }, RESOLVABLE_POSITION);
+    await page.goto('/positions');
+    await expect(page.getByTestId('portfolio-panel')).toBeAttached();
+    const panel = page.getByTestId('positions-net-pl');
+    const glyph = panel.locator('[data-figure-register]').first();
+    // VACUITY GUARD — a real resolved, TRACED figure (never the closed-nine `unavailable` literal),
+    // so this measurement actually reaches a stepping figure rather than the fixed-15px F8 arm.
+    await expect(glyph).not.toHaveText('unavailable');
+    const [containerBox, fontSize] = await Promise.all([
+      panel.boundingBox(),
+      glyph.evaluate((el) => getComputedStyle(el).fontSize),
+    ]);
+    return { containerWidth: containerBox?.width ?? null, fontSize };
+  }
+
+  test('AC-7a (review-only evidence) — 1280 vs 393, real resolved mark', async ({ page }) => {
+    const wide = await measureNetPl(page, 1280);
+    const narrow = await measureNetPl(page, 393);
+
+    console.log(
+      `[criterion 7a evidence] wide(1280): container=${wide.containerWidth}px font=${wide.fontSize} · ` +
+        `narrow(393): container=${narrow.containerWidth}px font=${narrow.fontSize}`,
+    );
+
+    // The only PASS/FAIL assertion: both are real, valid computed sizes (the traced figure really
+    // did render at both widths, so these are not a measurement of a blank/faulted page).
+    expect(wide.fontSize).toMatch(/^\d+(\.\d+)?px$/);
+    expect(narrow.fontSize).toMatch(/^\d+(\.\d+)?px$/);
+
+    // NOT asserted as pass/fail (recorded as a GATE Z finding in BUILD_REPORT.md instead, per this
+    // task's own explicit instruction: "if the measured values differ from 20/17, that is a
+    // finding, not a number to adjust the assertion to"): `PositionsPage.tsx:203`'s
+    // `minWidth: 200, flexShrink: 0` (added by FE-6 to fix a real zero-width collapse) floors this
+    // PARTICULAR container's rendered width at 200px regardless of viewport — the flex item never
+    // grows past its own content size because it carries no `flexGrow`, and its content (a short
+    // label plus one currency figure) never reaches the 200px floor on its own. 200px sits UNDER
+    // BOTH `@container` breakpoints (360 and 280), so this readout renders at the smallest, 15px
+    // "literal size" step at every viewport this session measured — the 20px/17px states SPEC §7
+    // invariant 5 describes are structurally unreachable for THIS panel as shipped, not merely
+    // untested. Measured, not assumed: `narrow.containerWidth === wide.containerWidth === 200` and
+    // `narrow.fontSize === wide.fontSize === '15px'` this run (both printed above, verbatim, for
+    // the build report) even with a position sized to produce a much larger P/L figure — confirmed
+    // by a throwaway measurement during this task's own investigation, not merely the two widths
+    // above. This is `PositionsPage.tsx`'s file, owned by FE-6/positions, not this lane's to edit.
+  });
+});

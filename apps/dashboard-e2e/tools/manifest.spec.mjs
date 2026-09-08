@@ -11,7 +11,9 @@ test('browser quality manifest is closed and has the required inventories', () =
   // check for the itemized 11-test delta (`desk-and-read.spec.ts` + criterion 50).
   // (curvature-v2-surfaces FE-12) 86 → 90 — U-32's frame-scoped extension to `curvature-v2.spec.ts`
   // (4 new tests, one per checked width).
-  assert.equal(manifest.full_chromium.tests.length, 90);
+  // (curvature-v2-surfaces FE-13) 90 → 99 — see `lib/manifest.mjs`'s own comment at this same
+  // check for the itemized 9-test delta.
+  assert.equal(manifest.full_chromium.tests.length, 99);
   assert.equal(manifest.compatibility.journeys.length, 5);
   assert.deepEqual(manifest.compatibility.projects, ['chromium', 'firefox', 'webkit']);
   assert.equal(manifest.accessibility.scans.length, 9);

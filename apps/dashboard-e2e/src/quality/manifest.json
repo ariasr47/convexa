@@ -2,7 +2,7 @@
   "schema_version": 1,
   "support_policy_id": "playwright-engines-1.62.1",
   "full_chromium": {
-    "inventory_id": "curvature-v2-surfaces-90-v1",
+    "inventory_id": "curvature-v2-surfaces-99-v1",
     "tests": [
       {
         "test_id": "d38f0e9816f51aa1922817ddad296f9fcfffdcb98335c43716eb971b1cf4f276",
@@ -801,6 +801,87 @@
         "title_path": [
           "lg 1280 no-overflow · dark scheme",
           "criterion 50 (SB) — the read strip never pushes the page wider at 1280px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "6a52b6348cbc2e525b68b7312faad50f6743b4ac9ac4617a2387a22feed6cd02",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · light scheme (criterion 64)",
+          "/ fits 1280px in light mode (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "cfde6c2e65f4657f4729d77259686feac8ff7dcc8f3d18920614f921526fd9a7",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · light scheme (criterion 64)",
+          "/ticker/TSLA fits 1280px in light mode (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "be3566dcec0004929056e5262c3c375e84ed0c96f6acf27c113d6751fe592e63",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · light scheme (criterion 64)",
+          "/positions fits 1280px in light mode (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "592a85c836b877350310868aa6ca8550b804c59bddfee4bc7fc9492959450369",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · light scheme (criterion 64)",
+          "/scanner fits 1280px in light mode (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "68361d2ae459faf7e8c78ad75c51c5c0921674962a7c9ea9f8b053e1e7694db0",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · light scheme (criterion 64)",
+          "/settings fits 1280px in light mode (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "ec73d2cd911c4d017705d562525d9a9dd89fc75b7dbedddc7adeeec4f0287242",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · light scheme (criterion 64)",
+          "/alerts fits 1280px in light mode (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "7b7152c140dd702b90c98beb852bc58fce736ba357b99efab08c1a06ca035950",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "criterion 7a — rendered container step on /positions",
+          "AC-7a (review-only evidence) — 1280 vs 393, real resolved mark"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "4caad7012a7847083082746f4e07b64b4419fa864050dd779626c304cd9bc321",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "criterion 66 (FE-13) — the alerts write affordances at 393px, coarse pointer",
+          "the composer's \"Add rule\" and \"Enable browser notify\" buttons meet the floor"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "1145b5f7b10e1c246f6e6eb96f869ca343c3efffc1e60792358b063e0d66ee62",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "criterion 66 (FE-13) — the alerts write affordances at 393px, coarse pointer",
+          "MEASURED, not asserted (GATE Z) — the per-rule Remove button and enable/disable switch"
         ],
         "project": "chromium"
       }

@@ -42,11 +42,15 @@ export function validateManifest(value) {
     // extension (SPEC §2.8, D-C) added a SECOND site list (all eight `widget-{id}` frame roots,
     // hero and live tape included) alongside the shipped `HOVER_INFO_WIDGETS` five — 4 new tests,
     // one per checked width (393/834/900/1280).
-    value.full_chromium?.inventory_id !== 'curvature-v2-surfaces-90-v1' ||
+    // (curvature-v2-surfaces FE-13) bumped 90 → 99: 9 new tests — the 1280px light-scheme walk
+    // over the four seeded surfaces (criterion 64, 6 tests, one per `ROUTES` entry), the
+    // criterion 7a rendered-container-step review-evidence test (1), and the criterion 66 alerts
+    // write-affordance describe block in `curvature-v2.spec.ts` (2).
+    value.full_chromium?.inventory_id !== 'curvature-v2-surfaces-99-v1' ||
     !Array.isArray(tests) ||
-    tests.length !== 90
+    tests.length !== 99
   )
-    fail('full Chromium inventory must contain 90 tests');
+    fail('full Chromium inventory must contain 99 tests');
   unique(
     tests.map((x) => x.test_id),
     'full Chromium tests',

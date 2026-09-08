@@ -1505,3 +1505,217 @@ backend, `/ticker/IWM` (warm cache, confirmed fast — 0.01s for the ticker bund
 - `npm run ports:free` run again at the end; HEAD confirmed unchanged (`1714f533`, FE-11's commit) and the sibling `docs/research/…` directory confirmed untouched, both before and after.
 
 ---
+
+## FE-13 — The browser layer: seeded pages, the executed case list, the rendered step, the touch floor
+
+**Landed:** 2026-09-07, one commit. **Criteria:** 21 (SB), 37A, 62 (SB), 63 (SB), 64, 65, 66, 7a.
+**GATE Z items: two** — the pre-existing `/positions` overflow at 900px (§3) and the two under-floor
+alerts controls (§5), both product source, neither this lane's to fix.
+
+### 1. What shipped
+
+| File | Change |
+|---|---|
+| `apps/dashboard-e2e/src/e2e/no-overflow.spec.ts` | `seed()`'s options type gains `alerts?: 'seeded'`, writing a new `SEEDED_ALERTS` blob (two rules of different kinds — a `level_touch`/`price` threshold and a `score_gate` — three events, one unread) to `convexa.alerts.v1` via the same `addInitScript`. Both `ROUTES` loops (393px and the wide bands) now seed `/alerts` and pre-measure `alerts-rule` count === 2 before measuring overflow; the wide-band loop also pre-measures `scan-row` count === 3 for `/scanner` (T4). `/settings`'s `ROUTES` entry now asserts all five section testids (`settings-{account,preferences,risk-inputs,ai-key,brokerage}-panel`) attached before measuring, at every width that entry runs under (37A). A new `lg 1280 no-overflow · light scheme (criterion 64)` describe block walks the four seeded surfaces in light mode at 1280 (the one width×scheme cell no other block reached). A new `assertNoTypeBelowFloor` helper (a real DOM walk, not a fixed testid list) is called after every overflow assertion in both `ROUTES` loops (criterion 65). A new `criterion 7a` describe block measures the rendered container step on `/positions` at 1280 vs 393 with a real resolved mark (own isolated `/api/contract/**` override, not the shared `stubNetwork`'s 404). |
+| `apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts` | A new `criterion 66 (FE-13)` describe block: hard-asserts (`expectFloor`) the alerts composer's `alerts-add`/`alerts-notify` buttons meet the 44px floor at 393px/coarse pointer; a second test MEASURES (does not assert) the per-rule Remove button and enable/disable Switch, logging the evidence verbatim (§5). |
+| `apps/dashboard-e2e/src/quality/manifest.json`, `tools/lib/manifest.mjs`, `tools/manifest.spec.mjs`, `src/quality/reporters/quality-reporter.ts` | Frozen browser-quality inventory bumped `90 → 99` in lockstep (9 new `test_id` entries; `inventory_id` → `curvature-v2-surfaces-99-v1`), following the FE-12-established four-file convention. |
+
+### 2. A real test-infrastructure defect found and fixed (not product source — `no-overflow.spec.ts` is this lane's own file)
+
+**Every "light scheme" test in this file was silently rendering dark.** `useSettings.ts:63-69`
+(`serverBacked = auth.authenticated && auth.settings != null`) makes an authenticated session's
+`settings.theme` win over `convexa.uiprefs.v1` entirely — `loadLocalTheme()` is read only on the
+anonymous branch. `stubNetwork`'s `/api/auth/session` mock hard-coded `theme: 'dark'` regardless of
+the caller's own `scheme`, and every call site in this file defaults `signedIn: true`. So the shipped
+`393px no-overflow · light scheme` block, the AI-recommendation card's `light` arm, and (before this
+fix) my own new `lg 1280 … light scheme (criterion 64)` block were all measuring **dark-mode
+geometry** under a "light" label — passing only because box geometry does not depend on colour
+scheme, exactly the vacuity shape criterion 62 exists to close, one level deeper, and it would have
+made criterion 64 (this task's own light-mode requirement) provably vacuous.
+
+**Found by the mandated visual pass, not by reading code.** A screenshot of `/alerts` seeded, 393px,
+`scheme: 'light'` rendered pixel-identical to the `dark` capture (dark navy background, light text)
+before this fix; identical seed/route, only `theme` changed, confirmed at source
+(`useSettings.ts:63-69`) before touching anything.
+
+**Fixed** by adding `theme?: 'dark' | 'light'` to `stubNetwork`'s options (default `'dark'`, so every
+untouched call site is behaviourally unchanged) and threading the caller's own `scheme` through at
+every site where a `scheme` variable is actually in scope: both `AI recommendation decision card`
+loops, the `393px no-overflow` block's `beforeEach` and its `AC-40` cold-start-banner test, the
+already-fixed `AC-40 palette` test, and the new `lg 1280 … light scheme` block (now `theme: 'light'`
+explicitly). Left untouched, correctly: the `keyboard focus …` test (fixed `scheme: 'dark'`), the wide
+dark-only band (`dark scheme` fixed, matches the default), the `AC-40` sign-in-wall test
+(`signedIn: false` → `settings: null` → the ANONYMOUS branch, which already reads `loadLocalTheme()`
+correctly — confirmed by re-reading `useSettings.ts` rather than assumed), and the criterion-7a test
+(dark only by design, testing container geometry, not colour). **Re-screenshotted after the fix**:
+`/alerts` at 393px light now renders a light cream background with dark text, matching the shipped
+light palette (§9). This is squarely test-fixture code inside this lane's own owned file — no product
+source touched.
+
+### 3. A pre-existing product defect found, NOT fixed (GATE Z — out of lane)
+
+**`/positions` overflows `document.documentElement.scrollWidth` at 900px with the shipped
+`book+condor` seed — `978px` vs the `900px` viewport — independent of this task's own changes.**
+Confirmed BEFORE touching anything relevant: a standalone reproduction script (bypassing this spec
+file entirely, replicating only the shipped `SEEDED_POSITIONS`/`CONDOR` fixtures and `stubNetwork`
+idiom) reproduces the identical `978` figure against the current `apps/dashboard/src` tree, and this
+task's own e2e edits do not touch `PositionsPage.tsx`/`PositionsView.tsx`/`view.ts` at all — the
+`/positions` wide-band test's own seeding (`positions: 'book+condor'`) and assertion were byte-for-
+byte unchanged by this task except for line-number drift. No prior lane (FE-6 through FE-12) appears
+to have run the FULL `no-overflow.spec.ts` suite end-to-end against a production build with this exact
+seed — each ran only its own targeted `curvature-v2.spec.ts`/`desk-and-read.spec.ts` subsets — so this
+looks like a **latent regression that predates FE-13**, first surfaced by this task's own mandated full
+run.
+
+**Diagnosed, not just observed** (measure `boundingBox()`, never restyle — this lane may not edit
+`apps/dashboard/src`): `document.body.scrollWidth` measures a CORRECT `900` at the same moment
+`document.documentElement.scrollWidth` measures `978` — the discrepancy is between `<body>` and
+`<html>`, not a real page-level scrollbar. `positions-table-frame`
+(`features/trading/positions/PositionsView.tsx:280-289`, `overflowX: 'auto'`/`overflowY: 'hidden'`)
+itself measures a properly-contained `852px` box (`right: 876` inside the `900px` viewport) — its own
+clip is correct. A full-page `getBoundingClientRect()` scan for any element with `right > viewport`
+OUTSIDE that frame's subtree returns **zero** matches. Setting the frame to `display: none` restores
+`documentElement.scrollWidth` to `900`; without the condor (`book` only, no `book+condor`) the SAME
+900px viewport measures a correct `900` throughout (`positions-table-frame` right=`876`,
+`docScrollWidth=900`). The condor's own four-leg row is therefore the trigger — plausibly the SAME
+class of "the widest row's min-content width" issue `view.ts`'s own file-header comment already
+documents for a DIFFERENT width/host pair ("with a real 4-leg condor row the `contract` cell grew
++123px and min-content at 1280 went 17px over the 1190 host") — a mitigation that was tuned against
+one width and not swept against 900px. **Itemized, not fixed**:
+`apps/dashboard/src/app/features/trading/positions/PositionsView.tsx:280-289` (the frame) and
+`apps/dashboard/src/app/features/trading/positions/view.ts` (the condor structure-line width
+discussion) — carried debt, phase unassigned (found in phase 3, likely belongs with phase 4's own
+"positions laptop column drop" debt line already on SPEC's Out/Future list).
+
+**This is the suite's one failure.** `98/99` pass; `md 900 no-overflow · dark scheme › /positions fits
+900px` is the sole red, reproduced identically across three separate runs (before my theme fix, after
+the two mutation-proof poison/revert cycles, and after the theme fix) — stable, not flaky.
+
+### 4. Mutation proof (criterion 21/62, SB) — both poisons run red, then reverted to green
+
+| Poison | Where | Red result (verbatim) | Restore |
+|---|---|---|---|
+| `SEEDED_ALERTS.rules` sliced to `[]` | `no-overflow.spec.ts` (temporary) | `md 900 … /alerts`, `lg 1280 light … /alerts`: `Error: expect(locator).toHaveCount(expected) failed — Locator: getByTestId('alerts-rule') — Expected: 2 — Received: 0` | reverted; `git diff` on the file after restore shows no `MUTATION POISON`/`slice(0, 0)` text; re-run green (below) |
+| `scan.rows` sliced to `[]` before `.map(...)` | `no-overflow.spec.ts` (temporary, the shared fixture) | `md 900 … /scanner`, `lg 1280 light … /scanner`: `Error: expect(locator).toHaveCount(expected) failed — Locator: getByTestId('scan-row') — Expected: 3 — Received: 0` | reverted; same confirmation |
+
+Both poisons run TOGETHER in one targeted pass (`-g "fits 900px (scrollWidth|criterion 66|fits
+1280px in light mode"`): **5 failed** (the two guards above, ×2 widths, plus the pre-existing
+`/positions` 900px overflow from §3 — unaffected by either poison, confirmed present in the SAME red
+run), **7 passed** (unaffected tests, including the criterion-66 `curvature-v2.spec.ts` block, which
+uses its own local fixture and was correctly untouched by either poison). Restored: same targeted
+pass → **11 passed, 1 failed** (only §3's pre-existing defect remains). No proof above is a narrated
+`expect(true).toBe(true)`; both reds are copied from this session's own terminal.
+
+### 5. Criterion 66 — measured, itemized where it fails (never restyled)
+
+At 393px, coarse pointer (`hasTouch: true`), on the alerts write affordances SPEC §3 names:
+
+| Control | `file:line` | Measured | Floor met? |
+|---|---|---|---|
+| `alerts-add` ("Add rule") | `AlertsPage.tsx:341-347` | 44×44+ (hard-asserted, `expectFloor`) | **yes** |
+| `alerts-notify` ("Enable browser notify") | `AlertsPage.tsx:349-357` | 44×174 (hard-asserted) | **yes** |
+| per-rule "Remove" button | `AlertsPage.tsx:429` | `{width: 64, height: 40}` | **no — GATE Z.** `minHeight: 40` is an explicit inline `sx` override; an MUI `sx` compiles to a class (specificity 0,1,0), which beats `theme.ts:132-137`'s plain-element `@media (pointer: coarse) { button, … }` floor rule (specificity 0,0,1) regardless of the media query — confirmed by this exact measurement, not inferred. |
+| per-rule enable/disable `Switch` | `AlertsPage.tsx:399-402` | its `FormControlLabel` (the actual clickable region, not just the switch graphic) = `{width: 163.3, height: 24.75}` | **no — GATE Z**, same mechanism (a `Switch`/`FormControlLabel` render as `<span>`/`<label>`, neither matches `button, [role="button"], a`, so the global floor never applies, and MUI ships no size floor of its own here). |
+
+Both failing controls are measured and logged verbatim by a dedicated, non-asserting test (`criterion
+66 (FE-13) … MEASURED, not asserted (GATE Z)`) rather than hard-failing the suite over a defect this
+lane may not fix (`AlertsPage.tsx` is product source). Settings' own controls (`settings-signout`,
+`settings-theme-{dark,light,system}`) were separately measured during this task's own investigation
+and all meet 44×44 (they render as real `<button>`/MUI `ToggleButton` elements, which the global floor
+already covers) — not itemized as debt. **The three positions "literal" tips** (`cell-unavailable`/
+`cell-not-recorded`/`cell-no-basis`, `PositionRow.tsx:145-190`) are **structurally unreachable at
+393px**: that DOM pattern exists only in `PositionRow.tsx` (the desktop TABLE row), and `PositionCard.tsx`
+(the sole renderer below the `sm` breakpoint, confirmed by `grep` finding zero occurrences of
+`literal(`/the three testids in that file) never reuses it — a 393px coarse-pointer measurement of a
+control that does not exist in the DOM at that width is not a pass or a fail, it is inapplicable by
+construction; recorded here rather than silently skipped. The off-exchange proximity chip
+(`OffExchangeBlocks.tsx:113-123`) was inspected at source rather than live-measured (no reachable
+off-exchange bundle this session, gotcha 8) — `TintChip.tsx:24`'s `py: '2px'` and the wrapping `<span
+tabIndex={0}>` carry no floor of their own and are not a `button`/`role="button"`/`a`, the SAME
+mechanism as the two confirmed failures above; flagged as a likely third instance of the same class,
+not claimed as independently measured.
+
+### 6. Criterion 7a — the rendered container step (review-only evidence, per this task's own instruction)
+
+`getComputedStyle(...).fontSize` of the value glyph inside `[data-testid="positions-net-pl"]`
+(`PositionsPage.tsx:203-209`), with a REAL resolved mark (own `/api/contract/**` override so the
+figure is `traced`, never the fixed-15px `unavailable` literal — vacuity-guarded by asserting the
+glyph's own text is not `unavailable` before measuring):
+
+- **1280px:** container `boundingBox().width = 200px`, font-size = **`15px`**.
+- **393px:** container `boundingBox().width = 200px`, font-size = **`15px`**.
+
+**Both widths measure identically — the 20px/17px states SPEC §7 invariant 5 describes are
+structurally unreachable for this readout as shipped, not merely untested.** Per this task's own
+explicit instruction ("if the measured values differ from 20/17, that is a finding, not a number to
+adjust the assertion to"), the assertion is NOT hardcoded to `20`/`17`; the test asserts only that
+both are real, valid computed sizes (the traced figure genuinely rendered, not a blank/faulted page —
+the same `review-only evidence` idiom `curvature-v2.spec.ts`'s own pre-existing `AC-20b` test already
+established for the identical shape of finding). **Cause, measured not assumed:**
+`PositionsPage.tsx:203`'s `PanelContainer` carries `minWidth: 200, flexShrink: 0` (added by FE-6 to
+fix a real zero-width collapse, per FE-6's own `BUILD_REPORT.md` §2) with no `flexGrow` — the flex
+item is sized by CONTENT, floored at 200, and never grows to fill available space regardless of
+viewport. 200px sits under both `@container` breakpoints (360 and 280), so the readout renders at the
+smallest, 15px "literal size" step at every viewport, confirmed even with an artificially large P/L
+figure (`+$52,000`, still 200px/15px) during this task's own investigation. **GATE Z, carried debt**:
+`PositionsPage.tsx:203` (this lane's file-ownership boundary; FE-6/positions' file, not FE-13's to
+edit) — the fix, if pursued, is a product/design decision (does this readout WANT to step, or was 7a's
+premise written against a different panel's geometry?), not a mechanical one.
+
+### 7. Verification — exit codes, read directly
+
+| Command | Result |
+|---|---|
+| `npm run ports:free && npx playwright install chromium && npm run build` | exit **0** each; production build |
+| `BROWSER_QUALITY_PREBUILD_STATUS=pass npx nx e2e dashboard-e2e --skip-nx-cache` (three runs: before the theme fix, immediately after both poison/revert cycles, and the final canonical run after the theme fix) | **exit 1 all three times** — `98/99` passed, the SAME single pre-existing `/positions` 900px failure (§3) every time, stable across runs; `summary.json`: `"selected": 99, "executed": 99, "not_run": 0, "status": "fail"` — the manifest lockstep is exact (no `"incomplete"`), the failure is a real, reproduced test result |
+| `npx playwright test -c apps/dashboard-e2e/playwright.config.ts --list` (repo root) | **`99 tests in 7 files`** — see §8 for the full width×scheme case list |
+| `node --test apps/dashboard-e2e/tools/manifest.spec.mjs apps/dashboard-e2e/tools/mutations.spec.mjs` | **exit 0, 7/7** |
+| `npx nx run-many -t typecheck -p @convexa/dashboard,@convexa/api --skip-nx-cache` (cold: `dist`/`out-tsc`/`*.tsbuildinfo` deleted first) | **exit 0** |
+| `npx nx typecheck dashboard-e2e --skip-nx-cache` (cold: `out-tsc` deleted first) | **exit 0** |
+| `npx nx lint dashboard-e2e --skip-nx-cache` | **exit 0** — 4 warnings, all pre-existing (`no-explicit-any` in four Playwright config files), **0 new** — two `no-console` unused-eslint-disable warnings from this task's own first draft were found and fixed (the repo's `no-console` rule doesn't apply to this glob, so the disables were dead comments) |
+| `npx nx format:check --files=<the 6 changed e2e paths>` | **exit 0** — `BUILD_REPORT.md` itself is NOT prettier-clean at HEAD (pre-existing, confirmed by checking it in isolation before this task touched it) and is intentionally left as-is here — this task appends one section without reformatting content it did not author, rather than folding an unrelated repo-wide-document reformat into an FE-13-scoped commit |
+| `grep -rln "FE-13" apps/dashboard/src apps/dashboard-e2e/src --include=*.spec.*` (gotcha 10) | **exactly the two files this task owns** — no coincidental other-feature hit this session |
+
+### 8. The executed case list (criterion 63, SB) — `--list`, 99 tests in 7 files
+
+Width × scheme combinations criterion 62 claims, all present and executed (none claimed-but-not-run):
+
+- **393px, dark scheme** — `/`, `/ticker/TSLA`, `/positions` (+ seeded-book dedicated test), `/scanner`
+  (+ seeded-cards dedicated test), `/settings` (+ five-section guard), `/alerts` (seeded, **new**), plus
+  AC-40's three degraded surfaces, the 4-leg-expanded case, the nav-collapse case, criterion 50's rail.
+- **393px, light scheme** — the identical set (now genuinely rendering light, §2).
+- **834px (tablet), dark scheme** — all six `ROUTES` + criterion 50.
+- **900px (md), dark scheme** — all six `ROUTES` (**one pre-existing failure, §3**) + criterion 50.
+- **1280px (lg), dark scheme** — all six `ROUTES` + criterion 50.
+- **1280px (lg), light scheme (criterion 64, NEW)** — all six `ROUTES`, seeded identically to the dark
+  1280 band.
+- Plus the AI-recommendation-card block (393/1440 × dark/light, unaffected in count by this task) and
+  the standalone criterion 66 / criterion 7a tests.
+
+`playwright.config.ts:30-38`'s allowlist is unchanged (no new spec file was needed — both new
+describe blocks live inside the two files this task already owns) — verified by the exact `99` count
+above matching the four-file manifest bump with no `"not_run"`.
+
+### 9. What was run in the app
+
+`npm run ports:free` → served the production build directly with `http-server` (the SAME command
+`playwright.shared.config.ts`'s own `BROWSER_QUALITY_PREBUILD_STATUS=pass` branch uses) → real
+headless Chromium driving the UI with the SAME network-stub/seed idiom as the e2e suite (never the
+dev server, per this task's own instruction).
+
+- **Confirmed live: the seeded `/alerts` page renders correctly**, both schemes, 393px — two rules
+  (`TSLA · Level touch`, `Price threshold: $260`; `SPY · Score gate`, `Score gate: ≥ 70`), two events
+  (one read, one `UNREAD`-labelled), no horizontal overflow, screenshots captured before AND after the
+  theme-precedence fix (§2) — the before/after pair is the direct evidence for that discovery, not an
+  inference.
+- **Confirmed live: `/settings` renders all five section panels** in a single scrollable column at
+  393px, both schemes, no page-body overflow.
+- **Confirmed live, via a dedicated investigation script (not the shipped suite): the `/positions`
+  900px overflow (§3)** — reproduced independently of the spec file, isolated to the condor row,
+  diagnosed to the `<body>` vs `<html>` `scrollWidth` discrepancy described there.
+- **Confirmed live: the alerts Remove button and rule Switch's small effective tap areas (§5)** —
+  screenshotted and measured directly, not inferred from source alone.
+- `npm run ports:free` run again at the end; HEAD confirmed unchanged (`2110f2b8`) and the sibling
+  `docs/research/…` directory confirmed untouched, both before and after this session's work.
+
+---
