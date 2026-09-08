@@ -28,6 +28,10 @@
 .claude/**          text eol=lf
 .codex/**           text eol=lf
 .grok/**            text eol=lf
+# The receipt also pins the repo-root `AGENTS.md`. It was the one pinned artifact no rule above
+# covered, so `core.autocrlf=true` checked it out CRLF and cluster entry died on "artifact
+# integrity" (exit 4) on a fresh Windows checkout, found 2026-09-08.
+AGENTS.md           text eol=lf
 
 # Source scanned by structural guards that match on "\n" (see F-2 above).
 *.rs                text eol=lf

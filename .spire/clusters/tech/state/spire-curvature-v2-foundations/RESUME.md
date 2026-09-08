@@ -1,6 +1,51 @@
 # RESUME — spire/curvature-v2-foundations
 
-## ➡ HANDOVER — to a fresh session on the owner's Windows box (written 2026-09-08 on the Mac)
+## ⬆ UPDATE — 2026-09-08 (Windows box): win32 visual baselines ACCEPTED, committed `f5cb325a`, pushed · linux leg BLOCKED on an owner decision
+
+**Read this first.** The HANDOVER block below is **consumed for win32** and **still live for linux** (its
+step 3). Boot found two obstacles, both resolved: `spire run tech` exited 4 (`artifact integrity`) because the
+receipt-pinned repo-root `AGENTS.md` was checked out CRLF (no `.gitattributes` rule; pinned `eol=lf` in the
+docs commit after `f5cb325a`), and the entry rewrote the tracked `receipts/selection.json` timestamp, reverted
+before the flow so the update command's source-scope check stayed clean. `npm run ports:free` killed an
+orphan listener on `:4300` (pid 10092). Toolchain as the handover said: Node 26.7.0, `npm ci` (two
+postinstalls blocked by npm's allow-scripts — `@swc/core`, `nx` — harmless: the native swc binding and nx
+native both load), Playwright 1.62.1 / Chromium 1234, fresh production build served via `http-server`.
+
+**win32 flow, every step as the runbook prescribes, all six scenarios on strict fixtures, retries 0:**
+
+| step | id / result |
+| --- | --- |
+| compare_failed | run `local-1788908546804-9d816d0a` — 5 pixel failures + `ai-recommendation` PASSED (byte-identical to the 2026-08-24 baseline) |
+| authorized | `win32-curvature-v2-bdb93b9-20260908` (`workspace-owner` / owner) — after viewing all 5 actuals, 5 diffs and the passing baseline against the darwin preview + `DESIGN_SYSTEM.md` |
+| candidates_written | `e2a1eea5690ec3f68ac293c384ec5f39` — 6 PNGs; 5 changed, `ai-recommendation` unchanged |
+| accepted | `accept-e2a1eea5690ec3f68ac293c384ec5f39-20260908` (`workspace-code-reviewer`) — after viewing all 6 candidates, the 5-file binary patch (847,225 bytes) and the sha match to the compare actuals |
+| stability_clean | `local-1788908987370-76c0c9cb` + `local-1788908997180-b74e99e6`, both 6/6 pass |
+| commit | `f5cb325a test(quality): accept win32 visual baselines for Curvature Terminal v2 (bdb93b9)` — 29 files, pushed |
+
+Six SHA-256 (win32 · `snapshots/win32/chromium/`): landing `dcd5af69caaab82f2d9e06165cf268aec82b43a52cd7578d92c6380558f6c2e8` ·
+ticker-desktop `a7542ea13521aaf545ad5dd7c33321834b4f65b84b272d8c28286d22f4334def` ·
+ticker-offline-mobile `04517b4c6e21b3ded6ea71327d8165ba692791085c0d4e6d19c5f54bbb986ac5` ·
+positions-dense `59ba1436fb3d7d5c38e7f671c3290137ac13ce8722bd2f556e58d2ac42f8c750` ·
+scanner-dense `dcd1ca53541dadfb34dca632252eb00d020a518fd74f2e3c241fb356de9074c8` ·
+ai-recommendation `abe4f38480153d8189e8c7ebe286c9874b81921dd2e8bfb0b7305a1c43040a48`.
+
+**What the inspection saw:** every win32 actual matches its darwin preview composition — v2 nav, the masthead
+headline row with the sign-in card, the structure-field hero with FIELD/MAGNET and the level ladder, positions
+cards + Simulated/Broker tabs, the scanner table with score bars and the three notes, the unchanged AI-read
+dialog. Diffs are total on the four redesigned surfaces and anti-aliasing-only on `landing`. Known residuals
+present as recorded (headline wrap at 1280, scanner header cluster, the `496528h`/`20688 d` sentinel ages,
+both tickers "Live offline — reconnecting…"). One new finding, **F-D**: the `ticker-desktop` tape-trail
+sparkline is a run-to-run race — the first compare drew it, the update run and five later compares did not;
+the accepted baseline is the blank slot (6 of 7 runs). Mechanism and fix candidates: `context/BACKLOG.md`,
+Harvest addendum 2026-09-08. Not fixed here (a source change would restart the flow).
+
+**linux leg — NOT run, blocked on a decision.** WSL2 is present but the only distro is Docker Desktop's
+internal `docker-desktop` (no Ubuntu; `wsl -l -v`), and Docker Desktop is installed but stopped. Options,
+owner's call: (a) `wsl --install -d Ubuntu-24.04` (a system install this session did not make) then the
+runbook's linux flow from a separate clone inside WSL — the CI-parity path; (b) start Docker Desktop and run
+the flow in `mcr.microsoft.com/playwright:v1.62.1-noble` (Ubuntu 24.04, same Chromium 1234) from a separate
+clone — equal parity, but not the runbook's wording. Until one runs, CI's visual child stays red on any PR.
+**No PR opened.**
 
 **Read this first.** Claude's per-machine memory does not travel; this file and
 `visual-baseline-receipts/RUNBOOK.md` are the memory the Windows session has. Treat every claim here as a
@@ -446,7 +491,7 @@ value of **60**, and the gap is in the canon's prose, not the code.
 
 # RESUME — spire/curvature-v2-foundations (2026-09-03)
 
-**Resume status:** ACTIVE — **phase 2 closed at GATE S 2026-09-05; the next step is phase 3.**  
+**Resume status:** ACTIVE — **phases 1–3 closed at GATE S; win32 visual baselines accepted 2026-09-08 (`f5cb325a`); next: the linux flow (owner decision, top block), then phase 4 at GATE I.**  
 **Written:** 2026-09-03 (GATE R, phase 1 closed at GATE S — a clean phase boundary, not a mid-build checkpoint)
 
 Written at GATE R for a **fresh session on another machine**. Self-contained against `PROJECT_CONTEXT.md`.

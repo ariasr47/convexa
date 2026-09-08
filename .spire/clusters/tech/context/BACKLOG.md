@@ -69,6 +69,26 @@ change line or a name.
 - **`validateStability`'s image-hash comparison is vacuous on pass runs** (`sha256 ?? actual_sha256` are both null when a
   compare passes); the check reduces to run id / status / revision / platform / retries. Worth a stronger field
   (the expected baseline hashes) when the SPEC is amended.
+- **F-D — `ticker-desktop`'s tape-trail sparkline is a run-to-run race at the visual gate** (found 2026-09-08 on the
+  Windows box while running the win32 receipt flow). The first compare run (`local-1788908546804-9d816d0a`) drew the
+  trail — the panel-filled 30 px canvas with the dashed structure baseline, bbox x 188–688 · y 549–578, 7,816 px — while
+  the authorized update run and the five compare runs after it left that slot blank; the accepted win32 baseline
+  (`a7542ea1…`) is the blank rendering, 6 of 7 runs. Mechanism the code supports (inferred from source, not
+  instrumented): `pages/ticker/widgets/chrome/TapePulseStrip.tsx` paints only inside its rAF loop, and `layout()` — run
+  on every ResizeObserver notification — resets `canvas.width`, which clears the bitmap synchronously and leaves the
+  repaint to the next frame. `freezeVisualFrame`'s `clock.pauseAt` (+30 s) trips the stream watchdog; its `paused`
+  render adds the pause mark and the "tape paused · trail frozen" caption in the same flex row, the sparkline wrap
+  resizes, and when that lands after the pause no frame ever repaints. The slow first run (7.4 s vs ~5 s, cold
+  http-server) tripped the watchdog in real time before the freeze, so the repaint still ran. `ticker-offline-mobile`
+  is immune — its 15 s fast-forward trips the watchdog before the freeze every run. Fix candidates for a follow-up
+  lane: paint synchronously inside `layout()` (call `paint(performance.now())` after resizing) or give the sparkline
+  wrap a fixed width so the caption cannot resize it. Either is a source change, so both platform flows re-run at the
+  new revision — do it before the next `/ticker` composition change rather than as its own flow.
+- **Cluster entry on a fresh Windows checkout died on `AGENTS.md`** (2026-09-08): the installation receipt pins the
+  repo-root `AGENTS.md` bytes, `.gitattributes` never covered that path, and `core.autocrlf=true` checked it out CRLF
+  → `spire run tech` exit 4 "artifact integrity". Fixed by pinning `AGENTS.md text eol=lf` (same commit as this note).
+  Trap kept: `spire run` rewrites the tracked `receipts/selection.json` timestamp — revert it before any tool that
+  refuses tracked changes (the visual update command does).
 
 ## Harvest — 2026-09-06 (owner direction: AI-powered Convexa)
 <!-- atlas: theme=trust-the-signal horizon=next -->
