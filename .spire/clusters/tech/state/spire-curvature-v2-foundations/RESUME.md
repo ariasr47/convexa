@@ -1,5 +1,31 @@
 # RESUME — spire/curvature-v2-foundations
 
+## ⬆ UPDATE — 2026-09-08, owner: "proceed with the visual baseline receipt flow" — prepared; BLOCKED on platform, by design
+
+The flow (`apps/dashboard-e2e/visual-review/README.md`, ledger `visual-baseline-requires-human-authority`) is
+scoped to **win32 and linux** by schema and validator; this Mac is darwin and has no Linux runtime, and no
+session reaches the Windows box. Nothing in the flow can run here. What was done instead, all committed under
+`visual-baseline-receipts/`: (1) a compare-only run on this Mac at `ecbb73e5` proving the six visual fixtures
+still reach the screenshot step on the redesigned app (all six fail only on the missing darwin baseline) and
+previewing the six compositions the owner authorizes (`preview-darwin-ecbb73e5/`); (2) `visual_receipts.mjs`,
+a drafting helper that writes the authorization and acceptance receipts from evidence on disk and validates
+them with the repository's own validators — proven against the three shipped win32 receipts and on dry runs
+(artifacts deleted); (3) `RUNBOOK.md`, the exact sequence for the Windows box (win32) and a Linux host (WSL2
+x86-64 for CI parity), with the untracked-until-stable rule the 2026-08-24 flow relied on.
+
+**Findings, filed:** all six baselines are stale on both platforms since phase 1 (not only the two the
+surfaces task named); CI's linux visual child will be red on any PR from this branch until the linux flow runs;
+the hosted `browser-visual-linux-candidates.yml` path cannot complete as wired (depth-1 checkout vs.
+`assertSourceScope`; receipt/evidence commit ordering; stability's revision binding) — `context/BACKLOG.md`
+Harvest 2026-09-08 addendum; `validateStability`'s image-hash check is vacuous on pass runs. Preview
+residuals: the anonymous `/ticker` headline wraps at 1280 beside the sign-in card (pass-2 change 9 side effect);
+the scanner header cluster centres under the title at 900.
+
+**Next, on the Windows box** (a Claude session there can drive it from the runbook): win32 flow end to end,
+one commit; then the linux flow in WSL2, one commit; then the PR. Owner's call whether the conductor acts as
+both authorizer and code reviewer (PLAN.md:86 says the conductor supplies both after review) or a second pair
+of eyes signs the acceptance.
+
 ## ⬆ UPDATE — 2026-09-08, conductor: the surfaces fidelity lane is VERIFIED and accepted — F5–F8 closed
 
 The lane landed eight commits (`debbd55f`…`cf4727b9`: positions · alerts · settings · scanner, three

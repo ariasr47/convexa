@@ -52,6 +52,24 @@ change line or a name.
   never derived on the client. Consumer: `pages/ticker/widgets/chrome/TickerHeader.tsx` renders them
   only when present (the fidelity repair's F3 already omits rather than fakes them).
 
+### Harvest addendum — 2026-09-08, visual-baseline receipt flow (filed by the conductor while preparing the flow the owner asked for)
+
+- **The hosted Linux candidates workflow cannot complete as wired** (`.github/workflows/browser-visual-linux-candidates.yml`,
+  never executed): `fetch-depth: 1` leaves `visual-update.mjs`'s `assertSourceScope` unable to resolve an ancestor
+  `source_revision`; a receipt cannot live inside the commit it names; with a deeper fetch the retained evidence makes
+  the receipt "stale" (only the receipt may differ since `source_revision`); and `validateStability` requires the two
+  clean compare summaries to carry the acceptance's `source_revision`, which CI stamps as HEAD after the baselines are
+  committed. The flow is a dirty-working-tree local procedure by construction (that is how the 2026-08-24 win32 flow ran).
+  Options when this is picked up: (a) let the workflow accept a _branch_ whose HEAD holds evidence + receipt and diff against
+  the receipt's `source_revision` with `fetch-depth: 0`, treating `visual-review/evidence/**` as receipt-scope; (b) define
+  stability as two clean runs at the _baseline commit_ (the acceptance's revision is the candidate revision; stability's is
+  its child) — a SPEC amendment either way, not a quiet tool fix. Until then Linux baselines come from a local Linux host
+  (WSL2 x86-64 for CI parity). Runbook and drafting helper:
+  `state/spire-curvature-v2-foundations/visual-baseline-receipts/`.
+- **`validateStability`'s image-hash comparison is vacuous on pass runs** (`sha256 ?? actual_sha256` are both null when a
+  compare passes); the check reduces to run id / status / revision / platform / retries. Worth a stronger field
+  (the expected baseline hashes) when the SPEC is amended.
+
 ## Harvest — 2026-09-06 (owner direction: AI-powered Convexa)
 <!-- atlas: theme=trust-the-signal horizon=next -->
 Not a GATE I cull and **not** a BRIEF. Owner direction: *"I want Convexa to be an AI-powered artifact, for
