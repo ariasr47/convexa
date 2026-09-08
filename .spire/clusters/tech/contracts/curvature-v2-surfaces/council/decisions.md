@@ -237,6 +237,34 @@ Residual is an instruction to R4: enumerate the closed set of sentences this pha
 (1) `labels.ts:25` only under D-A (A); (2) nothing else on scanner; (3) positions: additions only (Net P/L coverage caption,
 per #23) plus the three permitted classes in #15. Everything else byte-identical, proven by a scan.
 
+### D-E — criterion 7a's container step is unreachable on the one panel that carries it (OWNER, 2026-09-07, at GATE Z after GATE Q pass 3)
+
+**Raised by:** GATE Q, not the council — passes 1, 2 and 3 each measured it independently. Not a council conflict; recorded
+here because it amends an owner-approved SPEC row and the ledger of rulings belongs in one file.
+
+**The finding.** `FigureCell.tsx:184-188` steps a figure `fontSize: 20` → `17` below a 360px `panel` container → `15` below
+280px. The only shipped stepped consumer on this phase's surfaces is `pages/positions/PositionsPage.tsx:203-209`'s
+`positions-net-pl` `PanelContainer`, pinned `maxWidth: 320, minWidth: 200, flexShrink: 0`. QA measured a **200px container →
+15px at both 1280 and 393**, so the 20px and 17px rungs are **structurally unreachable** and criterion 7a as written could
+never pass. The `minWidth`/`flexShrink: 0` are load-bearing, not incidental: `container-type: inline-size` size-contains the
+box, so as a flex item with no floor it collapsed to zero width — FE-6 added them to fix that, caught in a real browser
+(jsdom cannot evaluate a container query). QA judged it a **spec defect, not an implementation defect, low severity**, and
+**refused to convert the row to a PASS or to adjust any assertion to match the measurement** — the conductor verified no
+assertion was bent and that `PositionsPage.tsx` was byte-unchanged across all three repair passes.
+
+**Options put to the owner:** (A) amend the row and ship as is — the 20/17/15 ladder was written for the ticker desk's wide
+widget panels, where it does step, and a 200–320px header readout correctly sits at 15px; (B) widen the panel past 360px so
+the ladder becomes real on this surface, moving the positions header away from what `design/src/screens/positions.mjs` draws
+and requiring a fresh design and QA pass; (C) ship with the criterion failing, recorded as phase-4 debt.
+
+**Ruling: A.** Criterion 7a now scopes to figures whose panel **can reach** the 20px base; a panel deliberately bounded below
+360px renders at the rung its measured width selects and falls under **7b**, which already requires its size and reason be
+named in the build report. Amended in `SPEC.md` row 7a and in §7's invariant paragraph, both carrying this ruling's date.
+**Nothing rendered changes.**
+
+**Reversal:** if a later phase gives `positions-net-pl` room to cross 360px, restore 7a's original unconditional wording.
+This is an OWNER ruling, not a CONDUCTOR call — it does not lapse at the phase boundary.
+
 ## 5. Asks routed
 - Alerts history repair (pm ask) → decided by #4's exchange; default forward-only with carried debt.
 - `not recorded` on alerts as a fourth surface (ux ask) → R4 states it as the per-surface subset canon rule 24 anticipates;
