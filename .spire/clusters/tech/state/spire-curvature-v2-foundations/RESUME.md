@@ -1,5 +1,31 @@
 # RESUME — spire/curvature-v2-foundations
 
+## ⬆ UPDATE — 2026-09-08, ticker fidelity repair lane resumed (rate-limit kill) — GATE Z filed, composition
+## gaps closed further
+
+**What happened.** The build lane on `TICKER_FIDELITY_REPAIR_TASK.md` was killed mid-edit by an API rate
+limit (two half-finished, uncommitted files). A fresh lane resumed: finished the interrupted Market
+context edit, then closed composition gaps in the context band, Live tape, the masthead and Setups
+(phone). Five commits: `d5362a82` (finish the Market context wiring) · `a3d53244` (context band density +
+responsive column count) · `bea3aed2` (Live tape's 2×2 grid + masthead control row) · `119bf485` (Setups
+density). Full account, numbers and gate exit codes: this folder's `TICKER_FIDELITY_REPAIR_REPORT.md`.
+
+**GATE Z — the design's Live tape "Flow" sparkline has no wire equivalent (not built, not faked).**
+`design/src/screens/desk.mjs:363-364`'s Live tape card ends with a flow-spark row — a 30-point trail
+sampled every 10 seconds (`SPY · 30 × 10s`), rendered as a `sparkline()`. The live stream
+(`LiveUpdateBody`, `libs/api/src/generated/schema.ts:1550`) carries only the CURRENT scalar `net_flow`
+per tick — no trail/history array. Rendering the design's spark would require either (a) fabricating
+data (forbidden — canon, and this task's own rules), or (b) a new client-side ring-buffer that
+accumulates stream ticks into a rolling 30-point window — a real, undecided product behavior (reset
+rules on symbol change / stream drop / tab backgrounding, eviction policy) that reaches into the
+liveness/stream-isolation area this task's must-not-change list protects, not a pure layout change. Not
+built this lane. If wanted: either (a) the API starts including a short server-side trail on the SSE
+event (cheapest, keeps the accumulation logic and its edge cases server-side, matches how `atm_iv`/
+`hv_30d` already exist upstream per the F3 API follow-up below), or (b) a follow-on FE lane scoped
+explicitly to design the client-side accumulation's behavior (owner/product call, not a layout lane's
+to invent). `LiveTape.tsx`'s 2×2 figure grid itself is fixed and verified (533px → 318px against the
+design's 295px) — only the spark row is the open item.
+
 ## ⬆ UPDATE — 2026-09-08, ticker fidelity repair lane, change 3 (F3) — API follow-up filed
 
 **What happened.** Direct repair lane on `TICKER_FIDELITY_REPAIR_TASK.md`'s six changes (F1/F2/F3/F4/F9/F10),
