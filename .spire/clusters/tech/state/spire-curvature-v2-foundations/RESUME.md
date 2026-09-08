@@ -28,6 +28,15 @@ canvas/ladder interior. The band (`ticker-context-grid`) landed at 968 px, withi
 own predicted "≈ 970" — the ≤ 800 density target stays the owner's own named-open item, untouched by
 design (no field was cut to force a number under a line).
 
+## ⬆ UPDATE — 2026-09-08, owner: "proceed with the surfaces lane" — the four site surfaces open as a direct lane
+
+Contract: `SURFACES_FIDELITY_REPAIR_TASK.md` (this folder) — positions (F5) · alerts (F6) · settings (F7,
+rail still deferred per D-B) · scanner (F8), on the ticker lane's rules; the composition gate is the audit
+harness `--grep "positions|alerts|settings|scanner"` into `surfaces-repair-after/`, thresholds as ratios of
+the design's height measured in the same run. The visual gate's `positions-dense` and `scanner-dense`
+baselines will change by design and need the receipt flow afterwards. Report:
+`SURFACES_FIDELITY_REPAIR_REPORT.md`.
+
 ## ⬆ UPDATE — 2026-09-08, conductor: Pass 2 VERIFIED and accepted; the /ticker fidelity lane is CLOSED
 
 Cold re-verification matches the lane's Pass 2 numbers to the pixel (report, last section). Desk at
