@@ -19,8 +19,9 @@ import {
   prefetchScannerRoute,
   prefetchTickerRoute,
 } from '@/shared/lib/prefetchRoutes';
-import { elevationFor, extrasFor } from '@/shared/theme/tokens';
+import { elevationFor, extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import CloseIcon from '@mui/icons-material/Close';
+import KeyboardCommandKeyOutlined from '@mui/icons-material/KeyboardCommandKeyOutlined';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 import AppBar from '@mui/material/AppBar';
@@ -235,18 +236,38 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
               aria-hidden
               sx={{
                 fontSize: 11,
-                fontFamily: 'monospace',
+                // PR #46 CI repair, §B — was the bare CSS keyword `monospace` (never a declared
+                // face): resolved to whatever the HOST calls its default monospace font, which is
+                // exactly why the "⌘" glyph rendered differently per platform. Bound to the design
+                // token instead, matching every other data/figure face in the app.
+                fontFamily: typographyTokens.monoFontFamily,
                 lineHeight: 1,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '1px',
                 // On the declared 4-pt ladder from birth (SPEC §2.2): 1 × 8px, not the off-ladder 6px.
                 px: 1,
                 py: 0.5,
                 borderRadius: 1,
                 border: '1px solid',
                 borderColor: 'divider',
-                color: 'text.disabled',
+                // PR #46 CI repair, §A — `text.disabled` measured 2.56:1 (dark) / 2.65:1 (light),
+                // under WCAG AA 4.5:1: `text.disabled` means a disabled CONTROL, and this is
+                // informative text (a live keyboard hint), not a disabled affordance. Bound to
+                // `text.secondary` instead (steel ≈5.7–6.8:1 on every real dark surface it sits on)
+                // — the bordered kbd chrome, not colour, is what marks it "quiet".
+                color: 'text.secondary',
               }}
             >
-              ⌘K
+              {/* PR #46 CI repair, §B — U+2318 (⌘) is not in IBM Plex Sans/Mono at all (verified: no
+                  fontsource subset, no full upstream Plex source, carries this glyph), so no bundled
+                  font can render it; it fell back to the HOST's symbol font, a second host-dependent
+                  surface beside the `fontFamily: 'monospace'` fix above. Replaced with the app's
+                  existing icon system (`@mui/icons-material`, bundled in the JS bundle — the same
+                  host-independence a stroke SVG would give, and the pattern this file already uses
+                  for Search/Menu/Close) rather than a literal character. "K" stays real bundled text
+                  (plain ASCII, covered by every Plex Mono subset already shipped). */}
+              <KeyboardCommandKeyOutlined sx={{ fontSize: 12 }} />K
             </Box>
           </Box>
           <IconButton

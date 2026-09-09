@@ -28,6 +28,7 @@
  */
 import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
 import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
+import { extrasFor } from '@/shared/theme/tokens';
 import { TintChip } from '@/shared/ui/TintChip';
 import type { ScanRow } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -100,12 +101,14 @@ export function PriceCell({
       data-figure-state={figureState}
       data-figure-register={mono ? 'mono' : 'sans'}
       sx={[
-        {
+        (t) => ({
           ...faceFor(mono),
           fontSize: 'inherit',
-          color: 'text.primary',
-          ...(dim ? { opacity: 0.5 } : {}),
-        },
+          // PR #46 CI repair, §A — solid `textDim`, never `opacity` (the shipped `cell-price`
+          // offline-retained offender measured 4.34:1, under WCAG AA 4.5:1 — opacity composites
+          // with whatever sits behind it and carries no contrast guarantee).
+          color: dim ? extrasFor(t).textDim : t.palette.text.primary,
+        }),
         flashColorSx(flash),
       ]}
     >

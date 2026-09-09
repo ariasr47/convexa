@@ -14,6 +14,13 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TapePulseStrip } from './TapePulseStrip';
 
+/** `#rrggbb` -> the `rgb(r, g, b)` string jsdom's `getComputedStyle().color` reports for a literal
+ *  (non-CSS-variable) hex colour — `extras.textDim` is a plain hex, never a `--mui-*` var. */
+function hexToRgb(hex: string): string {
+  const n = parseInt(hex.replace('#', ''), 16);
+  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+}
+
 const darkTheme = themeForPref('dark');
 const palette = resolveLevelPalette(darkTheme);
 const surfaces: StructureFieldSurfaces = {
@@ -183,7 +190,11 @@ describe('TapePulseStrip — the Mid readout offline pause mark (GATE Z, SPEC §
     const readout = screen.getByTestId('tape-mid-readout');
     expect(readout).toHaveTextContent('Mid $147.50');
     const valueSpan = screen.getByText('$147.50');
-    expect(getComputedStyle(valueSpan).opacity).toBe('0.5');
+    // PR #46 CI repair, §A — dimming is a SOLID colour (`extras.textDim`) now, never `opacity`
+    // (opacity composited with whatever sits behind it and measured a WCAG-failing 2.54:1). The
+    // pause mark above stays the non-colour cue.
+    expect(getComputedStyle(valueSpan).opacity).not.toBe('0.5');
+    expect(getComputedStyle(valueSpan).color).toBe(hexToRgb(extrasFor(darkTheme).textDim));
   });
 
   it('paused + an empty latch (bare): pause mark present, value dimmed, shows `—`', () => {

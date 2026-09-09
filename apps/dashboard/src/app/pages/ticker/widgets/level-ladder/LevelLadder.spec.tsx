@@ -7,6 +7,7 @@
 import type { LevelPalette } from '@/shared/charts/structure-field/levelStrokes';
 import { isDeliveringLive, NOT_LIVE, type LiveClaim } from '@/shared/liveness/liveClaim';
 import { theme } from '@/shared/theme/theme';
+import { extrasFor } from '@/shared/theme/tokens';
 import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -14,6 +15,13 @@ import { buildLadder, formatAnchorText, type LadderInput } from './ladderModel';
 import { LevelLadder } from './LevelLadder';
 
 afterEach(() => cleanup());
+
+/** `#rrggbb` -> the `rgb(r, g, b)` string jsdom's `getComputedStyle().color` reports for a literal
+ *  (non-CSS-variable) hex colour — `extras.textDim` is a plain hex, never a `--mui-*` var. */
+function hexToRgb(hex: string): string {
+  const n = parseInt(hex.replace('#', ''), 16);
+  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+}
 
 // Distinctive, non-real-palette strings (the same discipline `StructureFieldCanvas.spec.tsx` and
 // `paintStep.spec.ts` already use) — a test proves the RIGHT bucket painted, not merely that
@@ -208,13 +216,19 @@ describe('LevelLadder — the mid row offline/stale + F6 replay treatment (GATE 
     expect(midCard).toHaveTextContent('offline · last known');
     // The CARD is never dimmed (`FigureCell` always mounts it `dim={false}`) — the retained VALUE
     // glyph itself carries the dim (same discipline the F4/F5 unit tests already establish).
-    expect(getComputedStyle(screen.getByText('$252')).opacity).toBe('0.5');
+    // PR #46 CI repair, §A — dimming is a SOLID colour (`extras.textDim`) now, never `opacity`
+    // (opacity composited with whatever sits behind it and measured a WCAG-failing 2.21–4.34:1
+    // across shipped offenders). The pause mark above stays the non-colour cue.
+    const midValueSpan = screen.getByText('$252');
+    expect(getComputedStyle(midValueSpan).opacity).not.toBe('0.5');
+    expect(getComputedStyle(midValueSpan).color).toBe(hexToRgb(extrasFor(theme).textDim));
 
     for (const id of ['callWall', 'putWall', 'maxPain', 'gammaFlip']) {
       const tick = screen.getByTestId(`ladder-tick-${id}`);
       const cell = tick.parentElement?.querySelector('[data-figure-state]') as HTMLElement;
       expect(cell.dataset.figureState).toBe('default');
-      expect(getComputedStyle(cell).opacity).not.toBe('0.5');
+      const valueSpan = within(cell).getByText(/^\$/);
+      expect(getComputedStyle(valueSpan).color).not.toBe(hexToRgb(extrasFor(theme).textDim));
     }
   });
 

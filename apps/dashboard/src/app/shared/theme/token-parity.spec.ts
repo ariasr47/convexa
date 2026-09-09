@@ -13,7 +13,16 @@ import { describe, expect, it } from 'vitest';
 import { extras, extrasLight, palette } from './tokens';
 
 /** The v2 additions that live on `extras`. `line` lives on the palette and is checked in (b). */
-const V2_EXTRAS = ['well', 'panelRaised2', 'lineStrong', 'textTertiary', 'scrim', 'glass'] as const;
+const V2_EXTRAS = [
+  'well',
+  'panelRaised2',
+  'lineStrong',
+  'textTertiary',
+  'scrim',
+  'glass',
+  'textDim',
+  'textInfo',
+] as const;
 
 /**
  * SAME-IN-BOTH-SCHEMES exemptions (the `hex-discipline` EXEMPT idiom). Each entry carries a

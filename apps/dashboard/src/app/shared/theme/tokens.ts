@@ -162,6 +162,41 @@ export const extras = {
    *  resting TopNav arm renders byte-identical. NAMED GAP: no token exists for the SCROLLED 0.9
    *  state; that one arm keeps its computed alpha until a token does. */
   glass: 'rgba(19,26,36,0.82)',
+  /**
+   * `textDim` — the REDUCED-EMPHASIS text state (PR #46 CI repair, 2026-09-09 Amendments row):
+   * offline-retained figures, a paused tape readout, a session-tape-dropped last-trade caption —
+   * anywhere copy needs to read "quieter" than its normal register (`text.primary` or
+   * `text.secondary`) because the value behind it went stale. Replaces `opacity: 0.5` on text,
+   * which computed a FAILING contrast at every real call site (`color-contrast`, serious,
+   * measured 2.21–4.34:1 across `TickerHeader.tsx`'s last-trade readout, `TapePulseStrip.tsx`'s
+   * paused Mid value, `FigureCell.tsx`'s dimmed value glyph and `ScanCells.tsx`'s offline-retained
+   * `cell-price`) — opacity composites the foreground WITH the background, so it can never carry a
+   * contrast guarantee independent of what it sits on. `textDim` is a SOLID colour instead: measured
+   * (`text-dim-contrast.spec.ts`) at `#7B8CA6` on `panel` 5.12:1 (the hardest real dark surface —
+   * `well`/`ink` clear with more headroom, 5.49/5.61), all four clearing the WCAG AA 4.5:1 normal-
+   * text floor with real margin, one step quieter than `steel`/`text.secondary` (6.19:1 on panel) so
+   * the reduced-emphasis intent still reads. NOT `extras.textTertiary` (steel2): that token names a
+   * PERMANENT third-level label; this one names a STATE (temporarily degraded, temporarily true)
+   * — collapsing the two would give a transient offline value the same meaning as a standing caption,
+   * the exact two-names-one-meaning trap `textTertiary`'s own doc warns against for `textDisabled`.
+   * The pause mark (`PauseMark`, F4/F5) stays the non-colour cue alongside it, unchanged.
+   */
+  textDim: '#7B8CA6',
+  /**
+   * `textInfo` — the TEXT-GRADE info blue (PR #46 CI repair, 2026-09-09 Amendments row), mirroring
+   * `textAmber`'s fill-vs-text split for the `info` hue (`signal`): `info.main` is deliberately the
+   * QUIETEST fill in the palette ("links / live status — deliberately quieter than amber" — see the
+   * top-of-file note), which is exactly why it fails as small TEXT sat on its own tint. Three real
+   * small-text `info.main` sites measured under WCAG AA's 4.5:1 (`color-contrast`, serious): the
+   * connection chip's "live · mid …" label (4.43:1, `alpha(info.main,0.16)` tint over `ink`), the
+   * `mid · tape` header badge (3.7:1, composited `action.selected` fill) and the ladder mid row's
+   * live badge word (same). `success`/`error`/`warning` do NOT share this failure at the SAME
+   * `alpha(tone,0.16)` formula (measured 4.7–7.0:1 — real headroom), so this is `info` alone.
+   * Measured (`text-info-contrast.spec.ts`): dark `#8CB0DE` clears every real composited surface
+   * these three sites paint on (`alpha(info.main,0.16)` over ink/panel/well 6.3–7.1:1;
+   * `action.selected` over panel 4.77:1 — the tighter floor, still clearing with margin).
+   */
+  textInfo: '#8CB0DE',
 } as const;
 
 /** Light-scheme counterparts, same keys. Raised panels sit a soft warm-grey above white paper;
@@ -201,6 +236,24 @@ export const extrasLight: Record<keyof typeof extras, string> = {
   textTertiary: '#5D6B84',
   scrim: 'rgba(23,32,43,0.45)',
   glass: 'rgba(255,255,255,0.86)',
+  /**
+   * Light `textDim` — measured (`text-dim-contrast.spec.ts`) at `#576578` on `panelRaised` 5.01:1
+   * (the hardest real light surface, same floor `steel2`'s light value clears), `well` 5.24:1,
+   * `paper` 5.48:1, white 5.94:1 — all clearing WCAG AA 4.5:1 with real margin. Never exercised by
+   * the shipped scans (the offline/paused states this token dims are dark-scheme-only fixtures
+   * today), computed anyway to the same rigor as every other v2 pair rather than left unverified.
+   */
+  textDim: '#576578',
+  /**
+   * Light `textInfo` — measured (`text-info-contrast.spec.ts`) at `#2F547D` on `alpha(lightInfo,
+   * 0.16)` composited over `white`/`paper`/`panelRaised`/`well` (6.31–5.40:1) and on
+   * `action.selected` composited over the same surfaces (7.82–6.54:1) — every real light surface
+   * these three sites could paint on, all clearing WCAG AA 4.5:1 with real margin. Never exercised
+   * by the shipped scans (the connection-chip `live` state and the two badge labels this token
+   * corrects are dark-scheme fixtures today), computed anyway to the same rigor as every other v2
+   * pair rather than left unverified.
+   */
+  textInfo: '#2F547D',
 } as const;
 
 /** Resolve the mode-correct extras inside an `sx`/styled `theme` callback. */

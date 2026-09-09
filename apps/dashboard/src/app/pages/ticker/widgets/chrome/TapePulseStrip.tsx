@@ -42,7 +42,7 @@ import { withAlpha, type LevelPalette } from '@/shared/charts/structure-field/le
 import type { StructureFieldSurfaces } from '@/shared/charts/structure-field/StructureFieldCanvas';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { andPresent, type LiveClaim } from '@/shared/liveness/liveClaim';
-import { typographyTokens } from '@/shared/theme/tokens';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import PauseIcon from '@mui/icons-material/Pause';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -305,11 +305,13 @@ export function TapePulseStrip({
             )}
             <Box
               component="span"
-              sx={{
-                color: 'text.primary',
+              // PR #46 CI repair, §A — solid `textDim`, never `opacity` (opacity composites with
+              // whatever sits behind it and carries no contrast guarantee; the shipped paused Mid
+              // value measured 2.54:1, under WCAG AA 4.5:1).
+              sx={(t) => ({
+                color: paused ? extrasFor(t).textDim : t.palette.text.primary,
                 fontFamily: typographyTokens.monoFontFamily,
-                ...(paused ? { opacity: 0.5 } : {}),
-              }}
+              })}
             >
               {displayMid != null ? `$${displayMid.toFixed(2)}` : '—'}
             </Box>

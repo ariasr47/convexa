@@ -27,9 +27,18 @@ const squash = (s: string) => s.replace(/\s+/g, '');
 const BANNED = [
   palette.dark.divider,
   palette.light.divider,
-  ...(['well', 'panelRaised2', 'lineStrong', 'textTertiary', 'scrim', 'glass'] as const).flatMap(
-    (k) => [extras[k], extrasLight[k]],
-  ),
+  ...(
+    [
+      'well',
+      'panelRaised2',
+      'lineStrong',
+      'textTertiary',
+      'scrim',
+      'glass',
+      'textDim',
+      'textInfo',
+    ] as const
+  ).flatMap((k) => [extras[k], extrasLight[k]]),
 ].map(squash);
 
 /**
@@ -64,7 +73,7 @@ function bannedHits(
 
 describe('banned-literals — no component carries a v2 token value verbatim', () => {
   it('the ban list and the glob are both non-empty (anti-vacuity)', () => {
-    expect(BANNED.length).toBe(14);
+    expect(BANNED.length).toBe(18);
     expect(Object.keys(SOURCES).length).toBeGreaterThan(40);
     expect(
       Object.keys(SOURCES)

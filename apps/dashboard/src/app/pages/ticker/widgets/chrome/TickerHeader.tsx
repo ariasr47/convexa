@@ -19,6 +19,7 @@ import {
 } from '@/features/trading/positions/FaultedBanner';
 import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import { extrasFor } from '@/shared/theme/tokens';
 import { Refused } from '@/shared/ui/Refused';
 import type { LiveUpdate, MarketState, Signals } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -151,7 +152,9 @@ export function LastTradeReadout({
           <Typography
             component="span"
             variant="body2"
-            sx={{ color: 'text.secondary', opacity: dim ? 0.5 : 1 }}
+            // PR #46 CI repair, §A — a SOLID dim token replaces `opacity` on text (never opacity: it
+            // composites with whatever sits behind it and cannot carry a contrast guarantee).
+            sx={(t) => ({ color: dim ? extrasFor(t).textDim : t.palette.text.secondary })}
             data-testid="last-trade"
           >
             {LAST_TRADE_NO_TAPE_PRINT}
@@ -164,7 +167,10 @@ export function LastTradeReadout({
         <Typography
           component="span"
           variant="body2"
-          sx={[{ color: 'text.secondary', opacity: dim ? 0.5 : 1 }, flashColorSx(ltFlash)]}
+          sx={[
+            (t) => ({ color: dim ? extrasFor(t).textDim : t.palette.text.secondary }),
+            flashColorSx(ltFlash),
+          ]}
           data-testid="last-trade"
         >
           <Box component="span" sx={{ color: 'text.secondary' }}>
@@ -183,7 +189,8 @@ export function LastTradeReadout({
           component="span"
           variant="body2"
           data-testid="last-trade"
-          sx={{ color: 'text.secondary', opacity: 0.5 }}
+          // PR #46 CI repair, §A — solid `textDim`, never opacity (see the `st` branch above).
+          sx={(t) => ({ color: extrasFor(t).textDim })}
         >
           {lt != null ? `⏸ Last trade $${lt.toFixed(2)}` : 'Last trade — no recent print'}
         </Typography>

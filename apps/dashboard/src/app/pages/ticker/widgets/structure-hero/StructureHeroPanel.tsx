@@ -96,7 +96,7 @@ function MidTapeChip() {
     <Box
       component="span"
       data-testid="structure-hero-mid-tape-chip"
-      sx={{
+      sx={(t) => ({
         display: 'inline-flex',
         alignItems: 'center',
         gap: 1,
@@ -106,10 +106,15 @@ function MidTapeChip() {
         bgcolor: 'action.selected',
         fontSize: 11,
         fontWeight: 600,
-        color: 'info.main',
+        // PR #46 CI repair, §A — `info.main` is the fill/dot grade (≥3:1 UI class); 11px TEXT needs
+        // the ≥4.5:1 text class (measured 3.79:1 composited on this chip's own translucent fill —
+        // and plain `text.secondary` ALSO falls short here, 3.7:1 on the same real composite, so the
+        // text-grade `textInfo` companion is the one fix that actually clears both). `LiveDot` keeps
+        // the blue (its own explicit `bgcolor`, unaffected — it does not inherit `currentColor`).
+        color: extrasFor(t).textInfo,
         whiteSpace: 'nowrap',
         flexShrink: 0,
-      }}
+      })}
     >
       <LiveDot />
       mid · tape

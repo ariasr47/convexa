@@ -57,6 +57,7 @@ import {
 } from '@/shared/figure';
 import { flashColorSx, type FlashState } from '@/shared/hooks/useFlashOnChange';
 import type { LiveClaim } from '@/shared/liveness/liveClaim';
+import { extrasFor } from '@/shared/theme/tokens';
 import { AccessibleHelp } from '@/shared/ui';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -188,16 +189,18 @@ function ValueGlyph({
                 [theme.containerQueries('panel').down(280)]: { fontSize: 15 },
               }
             : { fontSize: 15 },
-        {
+        (theme: Theme) => ({
           fontWeight: 500,
           lineHeight: 1.15,
           // The face comes from `shared/figure/figureFace.ts` — the one binding outside
           // `shared/theme/tokens.ts` (criterion N-1). The SIZE above does not travel with it.
           ...faceFor(mono),
-          color: 'text.primary',
-          ...(dim ? { opacity: 0.5 } : {}),
+          // PR #46 CI repair, §A — solid `textDim`, never `opacity` (opacity composites with
+          // whatever sits behind it and carries no contrast guarantee; the shipped
+          // `offline-retained` cell-price measured 4.34:1, under WCAG AA 4.5:1).
+          color: dim ? extrasFor(theme).textDim : theme.palette.text.primary,
           ...(untraced ? UNTRACED_RULE : {}),
-        },
+        }),
         flashColorSx(flash ?? null),
       ]}
     >
@@ -374,15 +377,15 @@ export function FigureRow({
       component="span"
       data-figure-register={mono ? 'mono' : 'sans'}
       sx={[
-        {
+        (theme: Theme) => ({
           fontSize: valueSize,
           fontWeight: valueSize >= 18 ? 600 : 500,
           lineHeight: 1.2,
           ...faceFor(mono),
-          color: 'text.primary',
-          ...(dim ? { opacity: 0.5 } : {}),
+          // PR #46 CI repair, §A — solid `textDim`, never `opacity` (see `ValueGlyph` above).
+          color: dim ? extrasFor(theme).textDim : theme.palette.text.primary,
           ...(untraced ? UNTRACED_RULE : {}),
-        },
+        }),
       ]}
     >
       {value}
@@ -409,7 +412,17 @@ export function FigureRow({
         <LiveDot />
         <Typography
           component="span"
-          sx={{ fontSize: 11, fontWeight: 600, color: 'info.main', lineHeight: 1 }}
+          // PR #46 CI repair, §A — `info.main` is the fill/dot grade (≥3:1); 11px text needs the
+          // ≥4.5:1 text class (measured 3.79:1 composited on this badge's own translucent fill —
+          // and plain `text.secondary` ALSO falls short here, 3.7:1 on the same real composite, so
+          // the text-grade `textInfo` companion is the one fix that actually clears both). `LiveDot`
+          // keeps the blue (its own explicit `bgcolor`, unaffected by this text colour).
+          sx={(theme: Theme) => ({
+            fontSize: 11,
+            fontWeight: 600,
+            color: extrasFor(theme).textInfo,
+            lineHeight: 1,
+          })}
         >
           {liveBadge}
         </Typography>

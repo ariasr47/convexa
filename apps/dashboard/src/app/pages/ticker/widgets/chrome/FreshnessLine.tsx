@@ -54,11 +54,15 @@ export function FreshnessLine({ snapshotIso, dataAgeSeconds, refreshing, inline 
       variant="caption"
       component={inline ? 'span' : 'p'}
       data-testid="freshness-line"
-      sx={{ color: 'text.disabled', display: inline ? 'inline' : 'block', mb: inline ? 0 : 1 }}
+      // PR #46 CI repair, §A — `text.disabled` measured 2.5–2.54:1 (dark), under WCAG AA 4.5:1:
+      // `text.disabled` means a disabled CONTROL, and this is a standing informational caption (the
+      // REST bundle's age), never a disabled affordance. Bound to `text.secondary` instead (steel
+      // ≈5.7–6.8:1 on every real dark surface it sits on).
+      sx={{ color: 'text.secondary', display: inline ? 'inline' : 'block', mb: inline ? 0 : 1 }}
     >
       {structureAsOfPhrase(ageSeconds)}
       {refreshing && (
-        <Typography component="span" variant="caption" sx={{ color: 'text.disabled' }}>
+        <Typography component="span" variant="caption" sx={{ color: 'text.secondary' }}>
           {' · refreshing…'}
         </Typography>
       )}
