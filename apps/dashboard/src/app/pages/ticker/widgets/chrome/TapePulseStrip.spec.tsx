@@ -224,3 +224,104 @@ describe('TapePulseStrip — the Mid readout offline pause mark (GATE Z, SPEC §
     expect(getComputedStyle(valueSpan).opacity).not.toBe('0.5');
   });
 });
+
+/**
+ * F-D (BACKLOG Harvest addendum 2026-09-08): the visual gate freezes the frame — the clock is paused
+ * and every pending animation frame is cancelled — and a ResizeObserver notification that lands after
+ * that freeze used to reset `canvas.width` (which clears the bitmap) while leaving the repaint to a
+ * frame that never comes. The `ticker-desktop` baseline captured a blank sparkline slot in 6 of 7
+ * runs and the drawn trail in the seventh. These cases run with `requestAnimationFrame` stubbed to
+ * NEVER fire, so a paint that only happens inside the frame loop is invisible to them.
+ */
+describe('TapePulseStrip — the sparkline never waits for an animation frame after a layout (F-D)', () => {
+  let ctxCalls: { name: string; args: unknown[] }[];
+  let resizeCallbacks: ResizeObserverCallback[];
+
+  // The full-canvas ink fill is the first stroke of every paint — count it to count paints.
+  const paints = () =>
+    ctxCalls.filter((c) => c.name === 'fillRect' && c.args[0] === 0 && c.args[1] === 0).length;
+  // The dashed structure baseline is what the gate's diff showed missing (bbox y 549–578).
+  const dashedBaselines = () =>
+    ctxCalls.filter(
+      (c) => c.name === 'setLineDash' && Array.isArray(c.args[0]) && c.args[0].length === 2,
+    ).length;
+
+  beforeEach(() => {
+    ctxCalls = [];
+    const recording = new Proxy(
+      {},
+      {
+        get:
+          (_target, name) =>
+          (...args: unknown[]) => {
+            ctxCalls.push({ name: String(name), args });
+          },
+      },
+    );
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      recording as unknown as CanvasRenderingContext2D,
+    );
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(() => 1),
+    );
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    resizeCallbacks = [];
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          resizeCallbacks.push(callback);
+        }
+        observe() {
+          // The test fires the captured callback itself; nothing to observe in jsdom.
+        }
+        unobserve() {
+          // See observe().
+        }
+        disconnect() {
+          // See observe().
+        }
+      },
+    );
+  });
+
+  afterEach(() => {
+    cleanup();
+    act(() => undefined);
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  const mount = () =>
+    render(
+      <ThemeProvider theme={darkTheme}>
+        <TapePulseStrip
+          structureMid={146.15}
+          claim={NOT_LIVE}
+          mid={147.5}
+          paused
+          palette={palette}
+          surfaces={surfaces}
+          height={30}
+        />
+      </ThemeProvider>,
+    );
+
+  it('paints once on mount, before any animation frame has run', () => {
+    mount();
+    expect(paints()).toBe(1);
+    expect(dashedBaselines()).toBe(1);
+  });
+
+  it('a ResizeObserver notification repaints in the same turn — a resize can never leave the canvas cleared until the next frame', () => {
+    mount();
+    const before = paints();
+    expect(resizeCallbacks.length).toBeGreaterThan(0);
+    act(() => {
+      for (const callback of resizeCallbacks) callback([], {} as ResizeObserver);
+    });
+    expect(paints()).toBe(before + 1);
+    expect(dashedBaselines()).toBe(before + 1);
+  });
+});

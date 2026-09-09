@@ -125,29 +125,12 @@ export function TapePulseStrip({
     };
     let w = layout();
 
-    const paint = (now: number) => {
-      if (!running) return;
+    // Draw from the current trail/prints state. Runs inside the frame loop AND synchronously after
+    // every layout: `layout()` resets `canvas.width`, which clears the bitmap, and deferring the
+    // repaint to the next frame left the slot blank whenever no frame followed — F-D, the visual
+    // gate's frozen frame, where `ticker-desktop` captured an empty sparkline in 6 of 7 runs.
+    const draw = (now: number) => {
       const active = activeRef.current;
-      const currentMid = midRef.current;
-      const lt = lastTradeRef.current;
-
-      // Push a trail point ONLY while the claim holds and the latched mid is present (SPEC §2.1) —
-      // never a structure-mid fallback. On a drop the trail FREEZES at its last live point instead
-      // of blanking, zeroing, or drifting onto a REST number.
-      if (active && currentMid != null) {
-        trail.push({ t: now, mid: currentMid });
-      }
-      while (trail.length > 100) trail.shift();
-      while (trail.length && now - trail[0].t > 5000) trail.shift();
-
-      if (active && lt != null && lt !== lastLt) {
-        if (lastLt != null && !reduced) {
-          prints.push({ t: now, mid: lt, dir: lt >= lastLt ? 1 : -1 });
-        }
-        lastLt = lt;
-      }
-      while (prints.length && now - prints[0].t > 800) prints.shift();
-
       const pad = { l: 10, r: 10, t: 6, b: 8 };
       const plotW = w - pad.l - pad.r;
       const plotH = chartHeight - pad.t - pad.b;
@@ -202,18 +185,46 @@ export function TapePulseStrip({
           p.dir > 0 ? withAlpha(palette.callWall, 0.2 * a) : withAlpha(palette.putWall, 0.2 * a);
         ctx.fillRect(pad.l, yOf(p.mid) - 1, plotW, 2);
       }
+    };
 
+    // The frame loop: sample, draw, reschedule.
+    const paint = (now: number) => {
+      if (!running) return;
+      const active = activeRef.current;
+      const currentMid = midRef.current;
+      const lt = lastTradeRef.current;
+
+      // Push a trail point ONLY while the claim holds and the latched mid is present (SPEC §2.1) —
+      // never a structure-mid fallback. On a drop the trail FREEZES at its last live point instead
+      // of blanking, zeroing, or drifting onto a REST number.
+      if (active && currentMid != null) {
+        trail.push({ t: now, mid: currentMid });
+      }
+      while (trail.length > 100) trail.shift();
+      while (trail.length && now - trail[0].t > 5000) trail.shift();
+
+      if (active && lt != null && lt !== lastLt) {
+        if (lastLt != null && !reduced) {
+          prints.push({ t: now, mid: lt, dir: lt >= lastLt ? 1 : -1 });
+        }
+        lastLt = lt;
+      }
+      while (prints.length && now - prints[0].t > 800) prints.shift();
+
+      draw(now);
       raf = requestAnimationFrame(paint);
     };
 
     const onResize = () => {
       w = layout();
+      draw(performance.now());
     };
     window.addEventListener('resize', onResize);
     const resizeObserver =
       typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => onResize());
     resizeObserver?.observe(wrap);
-    raf = requestAnimationFrame(paint);
+    // The first paint is synchronous: the slot is never blank between mount and the first frame.
+    paint(performance.now());
     return () => {
       running = false;
       cancelAnimationFrame(raf);
