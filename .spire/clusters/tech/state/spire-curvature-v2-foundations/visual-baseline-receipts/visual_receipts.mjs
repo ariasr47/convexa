@@ -169,7 +169,8 @@ function accept(a) {
     .split(/\r?\n/)
     .filter(Boolean);
   if (untracked.length) git(['add', '--intent-to-add', '--', ...untracked]);
-  const patch = execFileSync('git', ['diff', '--binary', '--', ...paths], { cwd: ROOT });
+  // Six changed PNG baselines exceed execFileSync's default 1 MB maxBuffer (ENOBUFS, 2026-09-09); allow 64 MB.
+  const patch = execFileSync('git', ['diff', '--binary', '--', ...paths], { cwd: ROOT, maxBuffer: 64 * 1024 * 1024 });
   if (!patch.length) console.warn('  WARNING: the candidates are byte-identical to HEAD — nothing to accept?');
   const patchFile = path.join(ROOT, REVIEW, 'diffs', `${cs.candidate_set_id}.patch`);
   fs.mkdirSync(path.dirname(patchFile), { recursive: true });

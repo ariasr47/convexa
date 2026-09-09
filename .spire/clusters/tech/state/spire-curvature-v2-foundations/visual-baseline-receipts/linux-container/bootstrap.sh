@@ -58,5 +58,5 @@ const s=require("/work/convexa/apps/dashboard-e2e/test-output/playwright/visual/
 console.log("run",s.run_id,"status",s.status,"platform",s.host_platform,"rev",s.source_revision.slice(0,10));
 for(const r of s.scenarios)console.log(" ",r.scenario_id.padEnd(22),r.status,(r.actual_sha256||"").slice(0,16),r.actual_path||"");
 '
-mkdir -p /work/out/compare-1 && cp -r apps/dashboard-e2e/test-output/playwright/visual/. /work/out/compare-1/
+rm -rf /work/out/compare-1 && mkdir -p /work/out/compare-1 && cp -r apps/dashboard-e2e/test-output/playwright/visual/. /work/out/compare-1/
 echo "== bootstrap done; step-1 evidence copied to /work/out/compare-1 (docker cp it out to look)"
