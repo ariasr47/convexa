@@ -13,7 +13,14 @@ override · `097d37a7` chore(spire) helper maxBuffer, bootstrap cleanup · `b1c8
 `be00d739` test(quality) `--disable-lcd-text` · `6f9807b7` win32 baselines at be00d73 · `27eb19e2` linux baselines
 at be00d73. **Second CI run `34323995666` on `27eb19e2` was in flight when this was written — read its verdict
 from `gh run view 34323995666` before believing anything here about CI.** Expected: accessibility and visual green;
-policy job still red on the two unfixable `js-yaml` highs (F-J, owner decision).
+policy job red. Its policy report (artifact `supply-chain-policy-34323995666`, read mid-run) already says:
+`repository_secrets` pass (0) · `npm_advisories` fail (2, the js-yaml highs, F-J) · **`npm_licenses` fail (1062,
+`license-continuity`)** — the lock change fanned out to every baseline row (precedent `331d030d`). Fixed in
+`50243496` (baseline regenerated and reviewed: 11 out / 12 in, all MIT; the generator now hashes `Cargo.lock`
+CRLF-normalised so a Windows checkout no longer churns the 286 cargo rows). `ccbda16a` + `50243496` + the docs
+commit after it were **held locally until run 2 finished** (ci.yml has `cancel-in-progress: true`; a push would
+have killed the run) — if `git status -sb` shows the branch ahead of origin, push them; the third run should then
+leave the policy job red on exactly the two advisories.
 
 | platform | authorization | candidate set | acceptance | stability runs |
 | --- | --- | --- | --- | --- |

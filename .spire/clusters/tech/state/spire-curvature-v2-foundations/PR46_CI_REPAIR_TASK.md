@@ -78,3 +78,18 @@ flows, then the PR's visual child green twice.
 The gate prints only `A11Y-n has blocking axe findings`. A throwaway spec (deleted, never committed) mirrored
 `accessibility.spec.ts`'s scan step for every scenario and printed `results.violations` filtered to serious/critical
 with rule, impact, help and the first three targets — the table in §A. Reproduce the same way, or fix F-H first.
+
+## Outcome (2026-09-09, the conductor, same session)
+
+| section | state | where |
+| --- | --- | --- |
+| A contrast | **done** — solid `extras.textDim`/`extras.textInfo`, opacity dims removed, `a11y-waivers.json` still `[]`, local `browser:a11y` 9/9 | `b7425507` |
+| B fonts | **done** — greek/latin-ext/symbol subsets bundled, `⌘`/`▾` → MUI icons, cmap-coverage spec; plus `--disable-lcd-text` after five linux runs disagreed on five subpixel-AA pixels | `ad858c83`, `be00d739` |
+| C advisories | **5 of 7 closed**; the two `js-yaml` highs under `@redocly/openapi-core` cannot close (openapi-core needs `types.merge`, gone in js-yaml 5) → scoped nested override; policy job stays red on exactly these two — owner decision (BACKLOG F-J) | `bec49028`, `1d6f6b42` |
+| C gitleaks | **done** — `.gitleaks.toml` path allowlist for the binary evidence patches, regex allowlist for localStorage-key prose; CI's `repository_secrets` green on run 2 (policy report `finding_count: 0`) | `bec49028` |
+| C licenses (new on run 2) | **done** — `npm_licenses` failed with 1062 findings because every baseline row carries the npm lock's hash, so the advisory fixes' lock change fanned out to all rows (precedent: `331d030d`). Regenerated: 11 rows out (vitest 4.1.10 set, svgo 3.3.4), 12 in (their fixes + js-yaml 5.4.1), all MIT, 0 new expressions, 0 obligations; local `checkLicenseBaseline` → `license-continuity-pass`. The generator hashed `Cargo.lock` raw, so a CRLF checkout churned all 286 cargo rows — now CRLF-normalised like the npm lock | see RESUME |
+| C historical key | **owner's action** — rotate `MASSIVE_API_KEY` if not rotated on 2026-06-18 | — |
+| D evidence gaps | **filed** as BACKLOG F-G (gates never ran) and F-H (`findings: []`); not fixed | BACKLOG |
+| baselines | **re-taken twice** on both platforms (A+B changed pixels; then grayscale AA changed them again); final at `be00d739` | `b1c898df`, `6f9807b7`, `27eb19e2` |
+
+Second CI run: `34323995666` on `27eb19e2` — its verdict is in RESUME's top block, not here.

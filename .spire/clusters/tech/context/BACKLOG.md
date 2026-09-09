@@ -165,7 +165,10 @@ change line or a name.
   the PR's commit range and flagged eight false positives (base85 in a binary evidence patch, localStorage key names
   in council prose) — `.gitleaks.toml` allowlists exactly those shapes. **A full-history scan finds `apps/api/.env`
   with `MASSIVE_API_KEY` in the initial commit `1aac13ec` (2026-06-18), removed in `fc9c8d28` — rotate if not rotated
-  then; history stays (worktrees on three machines).**
+  then; history stays (worktrees on three machines).** Trap paid for on the PR's second run: **every
+  `package-lock.json` change fails `npm_licenses` on all ~1050 rows** (each baseline row carries the lock hash) until
+  `generate-license-baseline.mjs` is re-run and its diff reviewed; the generator also hashed `Cargo.lock` raw, so a
+  Windows (CRLF) checkout churned every cargo row — fixed to the same CRLF-normalised hash as npm.
 - **F-K — `execFileSync`'s default buffer in the receipt helper.** Six changed PNG baselines produce a 1.06 MB binary
   patch, over the 1 MB default; fixed with a 64 MB `maxBuffer` (`097d37a7`). The container bootstrap also copied a
   second run's evidence over the first's; it now clears the folder.
