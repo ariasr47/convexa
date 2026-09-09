@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "authorization_id": "linux-curvature-v2-40ec63f-20260908",
+  "decision": "authorize_candidate_generation",
+  "state": "authorized",
+  "actor": {
+    "id": "workspace-owner",
+    "role": "owner"
+  },
+  "source_revision": "40ec63fc4e9ed6fc62790b1718b95d0064c5740e",
+  "platform": "linux",
+  "created_at": "2026-09-09T00:38:47.805Z",
+  "failed_compare": {
+    "run_id": "local-1788914036966-2a3b0bc2",
+    "summary_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/summary.json",
+    "summary_sha256": "0bb33523149026b6ccb536094943c633c9c425185baf92b02bd0ded7616e695a"
+  },
+  "scenarios": [
+    {
+      "scenario_id": "landing",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/landing-expected.png",
+      "expected_sha256": "a42cff4314e78a806e9ac076224c8942db5cc09525cd0fc31cbc0d4d995761cc",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/landing.png",
+      "actual_sha256": "9ebe1f8ea05c2b2bced65abd5f145248e60c773af8b3d75d43e081debb13417b",
+      "diff_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/landing-diff.png",
+      "diff_sha256": "7cb55b65b0020282e66f849346a276fc231ecd588e9847d885f69a3de9a779ed"
+    },
+    {
+      "scenario_id": "ticker-desktop",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/ticker-desktop-expected.png",
+      "expected_sha256": "44aacba35a13cdcb7f3ce8305bfe3532996922d1a0e5db026511879df9c2d31e",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/ticker-desktop.png",
+      "actual_sha256": "38b1203e29f170d3b85cdfbff6df473f1b80f156bf9a19ee1ef49c4b869df843",
+      "diff_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/ticker-desktop-diff.png",
+      "diff_sha256": "984edfd6872f0a46e112318c63b871bc369737cdf0e3702a1e1d67e8cd043067"
+    },
+    {
+      "scenario_id": "ticker-offline-mobile",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/ticker-offline-mobile-expected.png",
+      "expected_sha256": "d5ce495fe9c55cfc50051649541014a4da62c76ad4615a71faf97680619a795d",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/ticker-offline-mobile.png",
+      "actual_sha256": "24320682cfbb31d8f33dd836c74267d23953e30ea5ecdf00986294baf7cb9413",
+      "diff_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/ticker-offline-mobile-diff.png",
+      "diff_sha256": "19889d107c9e9fda71c99780c28a48f5b8e7b7b2c80867b76cea6edd017f3520"
+    },
+    {
+      "scenario_id": "positions-dense",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/positions-dense-expected.png",
+      "expected_sha256": "fdd557af43aa8e439fdbeca73a960773e6f01057b0ee38963987c4eed2111411",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/positions-dense.png",
+      "actual_sha256": "3bb35b3addd8e36f426fc9c6bd069efe744b8431b90cb1def1a262bf2afd9bd3",
+      "diff_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/positions-dense-diff.png",
+      "diff_sha256": "3512a5566ab0a597d05882d14afa8571b532e66af64553e613d72911c95e8bd1"
+    },
+    {
+      "scenario_id": "scanner-dense",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/scanner-dense-expected.png",
+      "expected_sha256": "f317b27ab88332bc2d034fed6dba9606713df4ded88996b25b8c0801d2422c55",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/scanner-dense.png",
+      "actual_sha256": "e588b7273237946277e98382d2b422d4af767e1220ce180d742dfd2774f1c8de",
+      "diff_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/scanner-dense-diff.png",
+      "diff_sha256": "0ec19ad8f4259ec4354d801a3fdd7bd06ec76a0ba8aaca7c4601cac3385f509a"
+    },
+    {
+      "scenario_id": "ai-recommendation",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/ai-recommendation-expected.png",
+      "expected_sha256": "cf50b7f14bfe3bec9c40e3d040baeb8efc07b1e5cde78f00dcf4b4ace315d03b",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-40ec63f-20260908/ai-recommendation.png",
+      "actual_sha256": "cf50b7f14bfe3bec9c40e3d040baeb8efc07b1e5cde78f00dcf4b4ace315d03b",
+      "diff_path": null,
+      "diff_sha256": null
+    }
+  ]
+}
