@@ -14,6 +14,7 @@
  * the controls are gone. The Open-CTA handler (`onOpenEntry`, gated upstream) lands here.
  */
 import { extrasFor } from '@/shared/theme/tokens';
+import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -389,9 +390,12 @@ export function CustomizationToolbar({
             {activeView.name}
             {hasUnsavedChanges ? ' ●' : ''}
           </Typography>
-          <Typography component="span" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
-            ▾
-          </Typography>
+          {/* PR #46 CI repair, §B — U+25BE (▾) is not in IBM Plex Sans at all (verified: no
+              fontsource subset, no full upstream Plex source, carries this glyph), so it fell back
+              to the host's symbol font, a platform-dependent render (the linux-baseline diff). This
+              is an icon shape (a dropdown indicator), not typographic punctuation — replaced with
+              the app's existing icon system rather than a bundled symbol subset. */}
+          <ArrowDropDown aria-hidden sx={{ fontSize: '1rem', color: 'text.secondary' }} />
         </Box>
         <Menu anchorEl={viewAnchor} open={!!viewAnchor} onClose={() => setViewAnchor(null)}>
           {custom.views.map((v) => (
