@@ -1,5 +1,3 @@
-# R2 — pm cross-critique: curvature-v2-landing-and-site
-
 ```json
 {
   "role": "pm",

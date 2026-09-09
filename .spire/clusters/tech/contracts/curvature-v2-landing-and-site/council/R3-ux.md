@@ -10,7 +10,7 @@
 
 ---
 
-## 321b7062 — with architect — role: source
+## 60b85e24 — with architect — role: source
 
 **Verdict: CONVERGE**
 
@@ -24,7 +24,7 @@ can compose from, and one of those I now withdraw for a second, product reason.
   `gammaSurface()` as inline SVG: prop-free, geometry computed once at module load, no `arc.ts` import,
   no runtime import from `design/`.
 - **`Refused` — withdrawn too, on my own grounds.** It wraps a refused *write affordance* with a sign-in
-  recovery. Once the waitlist control is deleted (`41ecd1dc`) and "Create an account" becomes `Sign in`,
+  recovery. Once the waitlist control is deleted (`96c5f81b`) and "Create an account" becomes `Sign in`,
   the landing has no refused affordance left. `Widget`, chips, the route `ErrorBoundary`, `Footer` and
   `ArcDivider` stand as genuinely shared.
 
@@ -35,7 +35,7 @@ own artefact paints claims into the SVG that the landing may not make:
 | --- | --- | --- |
 | `<text … font-family="IBM Plex Mono" …>mid 573.12</text>` (`:430`) | **cut** | Mono is the traced register (canon rule 23: "Mono means *this figure is Convexa's*"). A specific mid painted into a marketing hero is an untraceable figure wearing the traced register — the exact inversion the register exists to prevent. |
 | `<text … font-family="IBM Plex Mono" …>gamma flip 568.50</text>` (`:431`) | **cut** | same |
-| `<circle … class="beam">` (`:429`) | **cut** | `beam` is a data-signal keyframe. Canon's Motion predicate (a) requires a genuinely live stream; there is none. It would also breach AC-U13 as re-cut by self-revision `0f428043`. |
+| `<circle … class="beam">` (`:429`) | **cut** | `beam` is a data-signal keyframe. Canon's Motion predicate (a) requires a genuinely live stream; there is none. It would also breach AC-U13 as re-cut by self-revision `09f56616`. |
 
 **The hero SVG paints no text at all.** The legend, the eyebrow and the sample disclosure are DOM text
 beside the picture — in the accessibility tree, in my lane, and readable in a screenshot.
@@ -62,7 +62,7 @@ compute).
 | --- | --- | --- | --- | --- |
 | default | first paint | the SVG, static, identical on every device | eyebrow · legend · caption | `review` (presence, ordering, wording) |
 | reduced motion | `prefers-reduced-motion` | byte-identical — the module contains no animation and no `beam` | unchanged | `test` (negative space: zero `@keyframes`/`animation` and zero `class="beam"` under `pages/landing/**`) |
-| error | a throw during render | the route-variant `ErrorBoundary` (self-revision `8819edcb`) | boundary copy, not the hero's | `test` |
+| error | a throw during render | the route-variant `ErrorBoundary` (self-revision `e1837901`) | boundary copy, not the hero's | `test` |
 | loading / stale / offline / empty | — | **n/a by construction**: the module has no props, no data edge, no async work | — | — |
 
 **Refinement to the set-equality cap (accepted with one condition).** `{HeroCurve.tsx,
@@ -89,7 +89,7 @@ under `apps/dashboard/src/app/shared/` (grep for `strokeDasharray|Gauge` returns
 
 ---
 
-## c3819332 — with pm — role: source
+## 206a60b3 — with pm — role: source
 
 **Verdict: CONVERGE**
 
@@ -123,7 +123,7 @@ bare subject "the mid" can be read as *this* mid. The SPEC carries it with its s
 
 Four added words, no new claim, and the ambiguity that would have made AC-U5b arguable is gone.
 
-**The landing's field panel carries, verbatim** (settled by `5dcc5705` + `0dcc199e` — `variant='ticker'`
+**The landing's field panel carries, verbatim** (settled by `80f4f7b0` + `5cb7604c` — `variant='ticker'`
 suppresses the canvas's own title strip and tape pill, so the panel header is mine):
 
 | slot | literal |
@@ -134,15 +134,15 @@ suppresses the canvas's own title strip and tape pill, so the panel header is mi
 No `as-of`, no `demo as-of`, no `synthetic demo`, no `TAPE OFF` pill anywhere on `/`.
 
 **Evidence.** `DESIGN_SYSTEM.md:73` (Banned: a "live" chip or pulse on a snapshot surface), `:177`
-(rule 22, liveness is gated), `:228` · `council/decisions.md` §1 `0f428043` (AC-U13 re-cut to the
-negative-space keyframe rule), §2 `5dcc5705` (`variant='ticker'` sets `embedded`; the panel header and
+(rule 22, liveness is gated), `:228` · `council/decisions.md` §1 `09f56616` (AC-U13 re-cut to the
+negative-space keyframe rule), §2 `80f4f7b0` (`variant='ticker'` sets `embedded`; the panel header and
 the sample literal are the landing's) · `design/src/screens/landing.mjs:126` · `design/src/screens/
 methodology.mjs:53` ("last known is frozen when the stream is offline and never framed as live" — the
 page already teaches the distinction it needs the word for).
 
 ---
 
-## 4f9e9f96 — with pm — role: raised_by
+## 78ecd37d — with pm — role: raised_by
 
 **Verdict: CONVERGE** (I confirm the conflict; PM withdrew the ruling independently in their own R2, so
 this closes on agreement rather than on my objection.)
@@ -155,7 +155,7 @@ disclaimer's old ending "No brokerage connection." **became false the instant a 
 stored**, and was rewritten to the narrower true claim.
 
 **Nothing is lost by the deletion.** The footer — mounted once in `AppShell` on every in-shell route
-(settled, `ff77d387`) — already renders the true present-tense sentence on `/`:
+(settled, `0b1ff840`) — already renders the true present-tense sentence on `/`:
 
 > `Convexa is an analysis tool. Positions in the sim book are simulated (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.`
 > (`shared/copy/disclaimer.tsx:18-21`, `DISCLAIMER_TEXT`; the rendered fragment at `:30-32` bolds
@@ -185,7 +185,7 @@ notified.`) · `council/decisions.md` §0 row 3.
 
 ---
 
-## 41ecd1dc — with architect — role: raised_by
+## 96c5f81b — with architect — role: raised_by
 
 **Verdict: CONVERGE** (I confirm. Both the PM's R2 and the record now agree; the exchange is about the
 replacement, not the deletion.)
@@ -203,7 +203,7 @@ P-7 requires):
 | band heading | `Open any ticker. No account, no card.` | `landing.mjs:117` | verbatim |
 | band body | `The full structure desk is free. Sign up when you want the Scanner, a simulated book that persists, and AI reads on your own key.` | `landing.mjs:117` minus `across 69 tracked names` | PM ruled the count dropped; the landing never reads `universe.json`, so it can rot into a lie |
 | primary | `Open the Ticker →` → `/ticker` | `landing.mjs:118` | P-1: the biggest button stops refusing the person who clicks it |
-| secondary | `Sign in` | **imported** `AUTH_COPY.account.signIn` (`features/auth/copy.ts:12`) | replaces `Create an account`; the deny-list allows `features/auth/copy` (`6aa5bea4`) |
+| secondary | `Sign in` | **imported** `AUTH_COPY.account.signIn` (`features/auth/copy.ts:12`) | replaces `Create an account`; the deny-list allows `features/auth/copy` (`7c81de20`) |
 | under the secondary | `New sign-ups are closed while Convexa is in private testing.` | **imported** `AUTH_COPY.signup.signupsClosed` (`features/auth/copy.ts:28`) | AC-U9 / P-7 — one sentence, one source, so reopening sign-ups is one edit |
 
 Hero band (unchanged from the design): primary `Open the Ticker →` → `/ticker`; secondary
@@ -231,11 +231,11 @@ is separately `review`.
 `apps/dashboard-e2e/src/quality/accessibility.spec.ts:115-125` (asserts `cta-primary` → `/scanner`,
 presses `waitlist-button`, expects `"Thanks — we'll let you know when brokerage connect is live."`) ·
 `apps/dashboard/src/app/features/auth/copy.ts:12,28` · `design/src/screens/landing.mjs:47,117,118` ·
-`council/decisions.md` §1 `6aa5bea4` (the deny-list allows `features/auth/copy`).
+`council/decisions.md` §1 `7c81de20` (the deny-list allows `features/auth/copy`).
 
 ---
 
-## 146bcb67 — with architect — role: raised_by
+## 4bff0a56 — with architect — role: raised_by
 
 **Verdict: CONVERGE** (I confirm the substance and **narrow my own claim by one sentence** — see below.)
 
@@ -254,7 +254,7 @@ asserts identity. Withdrawn, and the wall keeps one more true sentence than my R
 
 | state | condition | what renders | verbatim copy | Verify by |
 | --- | --- | --- | --- | --- |
-| holding | `!ready` | `<RouteFallback />` — never the wall, never `null` | shipped `aria-label="Loading page"` | `test` (see `c636b861`) |
+| holding | `!ready` | `<RouteFallback />` — never the wall, never `null` | shipped `aria-label="Loading page"` | `test` (see `4a4bb05c`) |
 | pass-through | `ready && authenticated` | `children` | — | `test` |
 | wall (normal) | `ready && !authenticated && !subsystemDegraded` | the shipped wall, unchanged | `Sign in to open {surface}` · `wallCopy(surface).unlocks` · `wallCopy(surface).freePath` · the policy caption · `Sign in` · `Open free Ticker →` | `review` (visible copy) |
 | **wall (degraded)** | `ready && !authenticated && subsystemDegraded` | the same wall frame; heading swapped; one line added above the unlock sentence; a `Try again` action added beside `Sign in`; everything else identical | see below | **`test`** |
@@ -285,7 +285,7 @@ not a deviation).
 
 ---
 
-## c636b861 — with architect — role: raised_by
+## 4a4bb05c — with architect — role: raised_by
 
 **Verdict: CONVERGE** (I confirm. The app already does this on the identical fact, two routes away.)
 
@@ -327,7 +327,7 @@ table as a literal, never from parsing `location.pathname`.
 
 ---
 
-## e45add35 — with architect — role: raised_by
+## 656c4d95 — with architect — role: raised_by
 
 **Verdict: CONVERGE** (I confirm my condition, and I add one row the exchange has not covered — a lazy
 boundary needs an **error** state, not only a loading one.)
@@ -348,7 +348,7 @@ skeleton shimmer** (a data-signal keyframe that fails canon's Motion predicate (
 gate it). **No zero-height box** (layout shift directly under the H1 on first paint).
 
 **The row the exchange has not covered.** A `React.lazy` chunk-load **rejection throws during render**. With
-no section-scoped boundary it propagates to the route `ErrorBoundary` (self-revision `8819edcb`) and
+no section-scoped boundary it propagates to the route `ErrorBoundary` (self-revision `e1837901`) and
 replaces the **entire acquisition page** with an error surface — a strictly worse outcome than the bytes
 the boundary saves, and it fires on exactly the connections the boundary exists to help. So the boundary
 is a pair, not a single: `<ErrorBoundary variant="section"><Suspense fallback={…}>…` — or it does not
@@ -360,14 +360,14 @@ unacceptable, import the field eagerly and pay the bytes.
 
 **Evidence.** `DESIGN_SYSTEM.md:106` (Motion — a keyframe qualifies for the data-signal class only if it
 "is driven by a **genuinely live stream** and stops when the stream drops") · `council/decisions.md` §1
-`0f428043` (the `HeroCurve` draw is the one orchestrated moment), §1 `8819edcb` (every route element is
-wrapped; the eager index gets a bare route-variant `ErrorBoundary`), §2 `5dcc5705` (the panel header and
+`09f56616` (the `HeroCurve` draw is the one orchestrated moment), §1 `e1837901` (every route element is
+wrapped; the eager index gets a bare route-variant `ErrorBoundary`), §2 `80f4f7b0` (the panel header and
 the sample literal are the landing's) · `apps/dashboard/src/app/app.tsx:112-116` (`lazyRoute` = route
 `ErrorBoundary` + `Suspense`, the shipped pairing pattern).
 
 ---
 
-## 5d9899c9 — with pm — role: raised_by
+## d1a94c99 — with pm — role: raised_by
 
 **Verdict: CONVERGE** (I confirm the substance, **correct my own wording** against the canon, and replace
 my proposed mechanism with a stronger one I found at source.)
@@ -392,7 +392,7 @@ sentence would have written the count I was told not to write. The AC reads:
 set-equality between the table's literal column and that array. A tenth member added to the union without
 a definition red-builds the page that documents it — which is exactly what my R2 asked for, achieved with
 a type-checked import instead of a source scan. `pages/methodology` → `shared/` is the sanctioned
-dependency direction and is untouched by the deny-list (`6aa5bea4` bans `@convexa/api`, `@/pages/*`,
+dependency direction and is untouched by the deny-list (`7c81de20` bans `@convexa/api`, `@/pages/*`,
 `@/features/trading/*`, `features/auth/AuthContext`).
 
 **The definitions I sign** (literals byte-exact from `notANumber.ts:26-36`; the first six keep the design's
@@ -426,7 +426,7 @@ register is ignored on a literal)"*. The page follows the app, not the artboard.
 
 ---
 
-## 8c4d1c48 — with pm — role: raised_by
+## 22f6ae74 — with pm — role: raised_by
 
 **Verdict: CONVERGE** (I confirm. The general rule is right and I adopt it in full; only the named
 particular was false, and it is cheap to fix.)
@@ -462,7 +462,7 @@ not as a link — the design agrees) · `design/src/screens/dialogs.mjs:89-97` (
 
 ---
 
-## 4cf2416a — with pm — role: raised_by
+## bc0fe3d9 — with pm — role: raised_by
 
 **Verdict: CONVERGE** (I confirm. The defect is real, the fix is wanted, and the mark is the part I am
 holding: `test`, not `review`.)
@@ -500,7 +500,7 @@ script; there is no `<noscript>` anywhere in the file) · `apps/dashboard/public
 
 ---
 
-## 026307a7 — with pm — role: raised_by
+## 5b3ba168 — with pm — role: raised_by
 
 **Verdict: CONVERGE** (I confirm, and the mechanism objection is answered by evidence: **all five
 constants are traceable at source, and none of them is in `apps/api`.**)
@@ -561,11 +561,11 @@ of plain components") · `BRIEF.md:15` ("Frontend only; `apps/api` diff stays 0 
 
 Four claims of mine leave the council, so no build lane inherits them:
 
-1. **"the figure cell" and "`Refused`" as landing primitives** (`321b7062`) — one for the dependency
+1. **"the figure cell" and "`Refused`" as landing primitives** (`60b85e24`) — one for the dependency
    direction, one because the affordance it would wrap is deleted.
-2. **"Nine rows"** as AC-U20's wording (`5d9899c9`) — the canon forbids asserting a count; set-equality
+2. **"Nine rows"** as AC-U20's wording (`d1a94c99`) — the canon forbids asserting a count; set-equality
    to the shipped union replaces it.
-3. **The claim that `RequireAuth.tsx:84` is an identity assertion** (`146bcb67`) — it is a policy
+3. **The claim that `RequireAuth.tsx:84` is an identity assertion** (`4bff0a56`) — it is a policy
    statement and it stays in every branch.
-4. **`AC-U5`'s "or the word 'live' applied to itself"** (`c3819332`) — a distinction a scan cannot make;
+4. **`AC-U5`'s "or the word 'live' applied to itself"** (`206a60b3`) — a distinction a scan cannot make;
    split into a structural half and a review half.

@@ -1,5 +1,3 @@
-# R2 — ux critique: curvature-v2-landing-and-site
-
 ```json
 {
   "role": "ux",

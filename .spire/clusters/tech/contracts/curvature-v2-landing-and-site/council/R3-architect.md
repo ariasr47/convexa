@@ -1,12 +1,12 @@
 # R3 — architect resolution exchange: curvature-v2-landing-and-site
 
 Eight conflicts, in inbox order. Every mechanism below was re-read at source this round; two claims from
-my own R2 are withdrawn where the source did not support them (§49e51405, §321b7062). Settled items from
+my own R2 are withdrawn where the source did not support them (§7ccd6b6f, §60b85e24). Settled items from
 `council/decisions.md` §0–§2 are cited as given and not re-argued.
 
 ---
 
-## 321b7062 — with ux — role: raised_by
+## 60b85e24 — with ux — role: raised_by
 
 **Verdict: CONVERGE** (my own proposal refined — the `FigureCell` half is withdrawn and replaced with a
 cheaper mechanism I found at source this round).
@@ -43,7 +43,7 @@ Signable text:
 >    **non-focusable presentational nodes** (`<span>`/`<div>`, no `tabIndex`, no `href`, no `onClick`),
 >    never `<button>` or `<a>` — a picture of a control never enters the tab order.
 > 4. `pages/landing/StructureFieldSample.tsx` — the mount wrapper that supplies `variant='ticker'` and the
->    `{live:false, liveMid:null, source:'demo', asOfSec:null}` model settled by `0dcc199e`, plus the
+>    `{live:false, liveMid:null, source:'demo', asOfSec:null}` model settled by `5cb7604c`, plus the
 >    theme-resolved `palette`/`surfaces` the canvas requires as props.
 > 5. `pages/not-found/NotFound.tsx` — the 404 page, mounted as a new `path="*"` **inside** the shell
 >    group so it inherits the nav and the footer. `app.tsx` has no `*` route today: an unmatched path
@@ -52,7 +52,7 @@ Signable text:
 > **Not new components, and the SPEC should not describe them as such:**
 > - The route `ErrorBoundary` variant **already exists** — `shared/ui/ErrorBoundary.tsx` takes
 >   `variant?: ErrorBoundaryVariant` and defaults to `'route'`. What is new is the *mount*: wrapping the
->   bare eager index (self-revision `8819edcb`) plus the `?raw` scan of `app.tsx` that makes every route
+>   bare eager index (self-revision `e1837901`) plus the `?raw` scan of `app.tsx` that makes every route
 >   element either `lazyRoute(...)` or `ErrorBoundary`-wrapped.
 > - The footer is **one new mount site**, not a new component: `<Footer/>` immediately after the `<main>`
 >   Box in `AppShell.tsx`, with the render deleted from `Landing.tsx`. `Footer.tsx` is unchanged.
@@ -60,7 +60,7 @@ Signable text:
 > **Three things in the design source must NOT travel into the port**, and this is a build constraint,
 > not a review note:
 > - `class="beam"` on the spot marker. `.is-live .beam` is a keyframe animation in the design CSS.
->   Dropping the class is what makes the settled negative-space keyframe rule (`0f428043`) *structural*
+>   Dropping the class is what makes the settled negative-space keyframe rule (`09f56616`) *structural*
 >   rather than accidentally-satisfied-because-the-ancestor-lacks-`is-live`.
 > - The `panel is-live` wrapper and the `chip live` + `<span class="dot">` in the design's hero panel.
 > - The design's `<radialGradient id="gs-glow">` is an SVG element in **camelCase** and is therefore
@@ -98,7 +98,7 @@ Signable text:
 
 ---
 
-## 49e51405 — with pm — role: raised_by
+## 7ccd6b6f — with pm — role: raised_by
 
 **Verdict: CONVERGE** — PM already ruled it in R2 ("'Unchanged' means no shipped journey is deleted,
 weakened, or waived … rewriting the accessibility check whose subject this feature removes is required,
@@ -132,9 +132,9 @@ Signable text for AC-G3:
    runtime arm.
 3. `apps/dashboard/src/app/pages/landing/landing-structure.spec.tsx` — rewrite `:56-69`, `:84`,
    `:87-100`. Note `:61` calls `screen.getByTestId('site-footer')` on a **standalone** `<Landing/>`
-   render: once the footer moves to `AppShell` (`ff77d387`) that query throws, so this is a hard red
+   render: once the footer moves to `AppShell` (`0b1ff840`) that query throws, so this is a hard red
    build, not a soft drift. **Keep `:103-131` unchanged** — the `radial-gradient` and `ConvexityMotif`
-   scans are earned negative space and the port is designed to stay inside them (see §321b7062).
+   scans are earned negative space and the port is designed to stay inside them (see §60b85e24).
 4. `apps/dashboard/src/app/shared/theme/radius-scale.spec.ts:25-30` — `PILL_SITES` lists
    `pages/landing/Landing.tsx`, and the file's **only** `borderRadius: 999` is the "Dealer-gamma
    analytics" chip at `Landing.tsx:74`. If the v2 hero drops that chip, `:62-70` fails with "no longer
@@ -156,7 +156,7 @@ Signable text for AC-G3:
 **Two named costs, priced now rather than discovered at the gate:**
 - `scenarios.ts:525-527` is the committed **`landing` visual baseline** (393×852, dark). The landing is
   fully recomposed, so this is a landing visual-baseline **re-acceptance through the receipt flow** — a
-  second such cost beside the desk-footer re-acceptance already recorded under `ff77d387`.
+  second such cost beside the desk-footer re-acceptance already recorded under `0b1ff840`.
 - The chromium journey count rises by item 6. That is added coverage, not a breach of AC-G3.
 
 **Evidence:** `accessibility.spec.ts:119-124`; `landing.spec.tsx:57-63,110-130,137-141,148-164,194-200`;
@@ -168,7 +168,7 @@ Signable text for AC-G3:
 
 ---
 
-## 5f45fffb — with pm — role: raised_by
+## 01d33a0b — with pm — role: raised_by
 
 **Verdict: CONVERGE** — PM's R2 accepted the SVG ruling explicitly ("this closes my R1 assumptions A2 and
 A3 … no new runtime dependency, no hardware-acceleration dependency"). AC-L12's device-conditional row is
@@ -182,7 +182,7 @@ Signable text:
 > computed once at module load from closed-form arithmetic. No WebGL, no Canvas2D, no `requestAnimationFrame`,
 > no new runtime dependency. Enforced by three mechanisms, each of which must be proven non-vacuous with a
 > fixture before it counts:
-> 1. the `?raw` `viewBox` set-equality scan of `pages/landing/**` (§321b7062);
+> 1. the `?raw` `viewBox` set-equality scan of `pages/landing/**` (§60b85e24);
 > 2. an ESLint `no-restricted-imports` rule scoped to `pages/landing/**` banning `three`,
 >    `@react-three/*`, `regl` and `pixi.js`, probed with a fixture import so the rule is proven to bite;
 > 3. a `?raw` assertion that `GammaSurfaceHero.tsx` contains no `getContext(`, no `requestAnimationFrame`
@@ -201,12 +201,12 @@ council has now rejected three times.
 
 **Evidence:** `design/src/lib.mjs:383-425` (closed-form projection, no animation, no dependency);
 `apps/dashboard/src/app/app.tsx:112-116,148` (`lazyRoute` wraps everything *except* the index);
-`apps/dashboard/src/app/main.tsx` adds no boundary above `<App/>` (self-revision `8819edcb`);
+`apps/dashboard/src/app/main.tsx` adds no boundary above `<App/>` (self-revision `e1837901`);
 `apps/dashboard/src/app/shared/ui/ErrorBoundary.tsx:15,51,66`; PM R2 `agree[5]`.
 
 ---
 
-## 959752cf — with pm — role: source
+## 0dd564b1 — with pm — role: source
 
 **Verdict: CONVERGE** — I accept PM's proposal in full and **withdraw my R1 option (b)** without a
 counter-offer. PM is right that keeping the mechanism to spare a test a new subject inverts the order.
@@ -244,9 +244,9 @@ owner-verified against a real book); `apps/dashboard/src/app/features/trading/po
 
 ---
 
-## 41ecd1dc — with ux — role: source
+## 96c5f81b — with ux — role: source
 
-**Verdict: CONVERGE** — same fold as `959752cf`, from the other side. UX is right that the mechanism is
+**Verdict: CONVERGE** — same fold as `0dd564b1`, from the other side. UX is right that the mechanism is
 the defect and its size is irrelevant. My option (b) is withdrawn.
 
 **Resolution:**
@@ -266,9 +266,9 @@ Consequences named so the build does not meet them by surprise:
 - `Landing.tsx` loses its `useState` and `Snackbar` imports; if no other state survives the rewrite, the
   landing becomes a pure render function, which is the correct shape for a zero-data-edge route.
 - `landing.spec.tsx:110-130` loses its subject; its `no-real-order-path` arm is re-pointed as described
-  in §959752cf, not deleted.
+  in §0dd564b1, not deleted.
 - The `ui-primitives.spec.tsx:61-82` fixture keeps proving the primitive's caller-supplied action fires
-  in place and never links — renamed off the retired copy (§49e51405 item 5).
+  in place and never links — renamed off the retired copy (§7ccd6b6f item 5).
 
 **Evidence:** `apps/dashboard/src/app/pages/landing/Landing.tsx:46,49-51,224-233,240-247`;
 `apps/dashboard-e2e/src/quality/accessibility.spec.ts:115-125`;
@@ -277,7 +277,7 @@ Consequences named so the build does not meet them by surprise:
 
 ---
 
-## 146bcb67 — with ux — role: source
+## 4bff0a56 — with ux — role: source
 
 **Verdict: CONVERGE** — UX's distinction holds and I did not make it. Degrading the *route decision* to
 anonymous is correct; degrading the *sentence* is not. My R1 sentence conflated the two.
@@ -289,7 +289,7 @@ Signable text:
 > The wall stays the resolution for a degraded auth subsystem: no new route state, no error page, no
 > peer surface. `RequireAuth` gains a **third branch of the same component**, not a fourth state:
 >
-> - `!ready` → the shared quiet fill (see `c636b861`);
+> - `!ready` → the shared quiet fill (see `4a4bb05c`);
 > - `authenticated` → the children;
 > - `!authenticated && subsystemDegraded` → the wall **with the identity assertion suppressed**: the
 >   "Sign in to open {surface}" heading and the "Private testing — invited accounts only." caption do not
@@ -323,7 +323,7 @@ grep for `subsystemDegraded` across `apps/dashboard/src` returns only `AuthConte
 
 ---
 
-## c636b861 — with ux — role: source
+## 4a4bb05c — with ux — role: source
 
 **Verdict: CONVERGE** — I withdraw my R1 sentence. UX is right that the codebase already answered this
 two routes away, and `null` is not a hold a person can perceive.
@@ -357,7 +357,7 @@ from taste.
 effect, so `!ready` is normally one fetch round-trip and often imperceptible. The fill therefore appears
 only on a genuinely slow read — which is exactly why a shimmer or a skeleton would be wrong (it would
 imply structure arriving) and a neutral indeterminate fill is right. Its `CircularProgress` is chrome, not
-a data signal, under the settled AC-U13 (`0f428043`).
+a data signal, under the settled AC-U13 (`09f56616`).
 
 **Evidence:** `apps/dashboard/src/app/app.tsx:97-108` (`RouteFallback`, module-private, not exported),
 `:112-116` (`lazyRoute`), `:122-131` (`DefaultTickerRedirect` — "Waits for the ONE non-blocking who-am-I
@@ -368,7 +368,7 @@ eleven lazy call sites), `:156-165` (`RequireAuth` imported by the route table �
 
 ---
 
-## e45add35 — with ux — role: source
+## 656c4d95 — with ux — role: source
 
 **Verdict: CONVERGE** on UX's second arm — **the lazy boundary is dropped; the field is imported
 eagerly.** UX asked me to answer the unstated state before the boundary lands. The honest answer is that
@@ -390,7 +390,7 @@ whole module are `react`, `@mui/material/styles` and one app hook — both alrea
 the split would buy a chunk of first-party arithmetic and canvas painting, not a library.
 
 Against that, every candidate fallback is already forbidden by something this council settled: a spinner
-is a second moving element on a page whose motion budget is the `HeroCurve` draw (`0f428043`: "no second
+is a second moving element on a page whose motion budget is the `HeroCurve` draw (`09f56616`: "no second
 orchestrated moment"); a shimmer is a data-signal keyframe with no stream to gate it; a zero-height box is
 layout shift directly under the H1 on first paint. And UX's own acceptable option — a reserved-height
 quiet panel carrying the section title and the sample footnote — costs approximately the bytes it saves
@@ -413,19 +413,19 @@ claiming to have made.
 files, 1,570 lines); the module's complete set of non-relative imports —
 `StructureFieldCanvas.tsx:22-23` (`@/shared/hooks/useReducedMotion`, `react`) and `levelStrokes.ts:19`
 (`@mui/material/styles`); `paintStep.ts` has none; `apps/dashboard/src/app/app.tsx:145-148` ("EAGER (the
-entry experience — no chunk wait on first paint)"); `council/decisions.md` §1 (`0f428043`).
+entry experience — no chunk wait on first paint)"); `council/decisions.md` §1 (`09f56616`).
 
 ---
 
 ## Withdrawals this round (recorded, not buried)
 
-1. **"The landing needs a `shared/` promotion of the figure cell"** (R2, `321b7062`) — withdrawn. The
+1. **"The landing needs a `shared/` promotion of the figure cell"** (R2, `60b85e24`) — withdrawn. The
    register/state authority is already in `shared/figure/`; no ticker file is touched.
-2. **"`scenarios.ts:427-460` clicks `cta-primary` in the compat journey"** (R2, `49e51405`) — withdrawn.
+2. **"`scenarios.ts:427-460` clicks `cta-primary` in the compat journey"** (R2, `7ccd6b6f`) — withdrawn.
    The compat journey clicks `nav-ticker`; `cta-primary` at `:455,460` is a ready selector.
-3. **Option (b) "shrink to a line, keep the mechanism"** (R1, `959752cf`/`41ecd1dc`) — withdrawn entirely
+3. **Option (b) "shrink to a line, keep the mechanism"** (R1, `0dd564b1`/`96c5f81b`) — withdrawn entirely
    in favour of deletion.
-4. **"a redesign that adds a skeleton to 'improve' the wall would break it"** (R1, `c636b861`) —
+4. **"a redesign that adds a skeleton to 'improve' the wall would break it"** (R1, `4a4bb05c`) —
    withdrawn as to the `!ready` hold; the ban survives only for a signed-out-*looking* placeholder.
-5. **The component-level `React.lazy` boundary for the field section** (R1, `e45add35`) — withdrawn as
+5. **The component-level `React.lazy` boundary for the field section** (R1, `656c4d95`) — withdrawn as
    the default; retained only behind a measured threshold.

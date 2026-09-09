@@ -2,8 +2,8 @@
 
 Nine conflicts, in inbox order. Verdicts written without sight of the counterpart's R3. Every
 `file:line` below was read this round, not carried from R1/R2 — three claims in the inbox did not
-survive that re-read and are corrected in place (`49e51405`, `026307a7`, and one of my own R1
-sentences under `c3819332`).
+survive that re-read and are corrected in place (`7ccd6b6f`, `5b3ba168`, and one of my own R1
+sentences under `206a60b3`).
 
 Settled facts I treat as given and do not re-open: `/` is the landing for everyone (`app.tsx:148`);
 the hero instrument is the dealer gamma surface and `HeroCurve` is background geometry; methodology
@@ -14,7 +14,7 @@ dropped; the deny-list allows `features/auth/copy` and `AuthDialogProvider`; D-A
 
 ---
 
-## 49e51405 — with architect — role: source
+## 7ccd6b6f — with architect — role: source
 
 **Verdict: CONVERGE** (accepted, with one file removed from the list on evidence)
 
@@ -67,7 +67,7 @@ P-4, which this feature does not change.
 
 ---
 
-## 5f45fffb — with architect — role: source
+## 01d33a0b — with architect — role: source
 
 **Verdict: CONVERGE** (AC-L12's premise withdrawn; the degraded duty re-homed, not deleted)
 
@@ -117,7 +117,7 @@ per settled fact) · my R1 A2/A3.
 
 ---
 
-## 959752cf — with architect — role: raised_by
+## 0dd564b1 — with architect — role: raised_by
 
 **Verdict: CONVERGE** (I confirm my own conflict, and refine it once so it cannot be over-executed)
 
@@ -161,7 +161,7 @@ reversible spec text, and the owner already has one decision in flight.
 **Resolution:** P-6 is withdrawn and replaced by **P-6′ — the landing carries no brokerage-connect
 claim in its body; the shipped read-only disclaimer in the footer stands.** The accessibility check's
 new subject comes from the primary CTA's changed destination, which A11Y-B2 needs regardless
-(`49e51405`).
+(`7ccd6b6f`).
 
 **Evidence:** `.spire/clusters/tech/context/OPEN_THREADS.md:1044-1049` ·
 `apps/dashboard/src/app/features/trading/positions/PortfolioPanel.tsx:182-195` ·
@@ -171,7 +171,7 @@ new subject comes from the primary CTA's changed destination, which A11Y-B2 need
 
 ---
 
-## c3819332 — with ux — role: raised_by
+## 206a60b3 — with ux — role: raised_by
 
 **Verdict: CONVERGE** (I confirm the split, and I withdraw a sentence of my own that fails the same
 test)
@@ -216,7 +216,7 @@ unaffected and stays ship-blocking.
 
 ---
 
-## 4f9e9f96 — with ux — role: source
+## 78ecd37d — with ux — role: source
 
 **Verdict: CONVERGE** (P-6 withdrawn in full; UX is right and my R1 ruling was half-wrong)
 
@@ -229,9 +229,9 @@ brokerage is read-only"*. A false tense on the page carrying "Snapshot, never li
 of failure as a false live dot.
 
 **Resolution:** the sentence is deleted together with the affordance. **P-6 is withdrawn and replaced
-by P-6′** (written out under `959752cf`): the landing body carries no brokerage-connect claim; the
+by P-6′** (written out under `0dd564b1`): the landing body carries no brokerage-connect claim; the
 footer's present-tense read-only disclaimer stays because it is true and is a limit, not a promise.
-The rows are AC-L3 / AC-L3a / AC-L3b as written under `959752cf` — one set of rows for one subject,
+The rows are AC-L3 / AC-L3a / AC-L3b as written under `0dd564b1` — one set of rows for one subject,
 not two. "Is coming" is not available as a wording anywhere in this feature; if the owner overrules
 the silence, the only honest form is the present tense.
 
@@ -249,7 +249,7 @@ connect is live."`) · `design/src/screens/landing.mjs:118`.
 
 ---
 
-## 5d9899c9 — with ux — role: source
+## d1a94c99 — with ux — role: source
 
 **Verdict: CONVERGE** (the "selection" escape hatch is deleted; P-11 re-ruled)
 
@@ -289,7 +289,7 @@ all `class="mono"`) · my R1 P-11, half withdrawn.
 
 ---
 
-## 8c4d1c48 — with ux — role: source
+## 22f6ae74 — with ux — role: source
 
 **Verdict: CONVERGE** (the general rule stands; the particular was false and I withdraw it)
 
@@ -326,7 +326,7 @@ three and withdrawn for `whats-sent`.
 
 ---
 
-## 4cf2416a — with ux — role: source
+## bc0fe3d9 — with ux — role: source
 
 **Verdict: CONVERGE** (the mark was wrong; `review` withdrawn, `test` accepted)
 
@@ -368,7 +368,7 @@ independently in his R2 agree list.
 
 ---
 
-## 026307a7 — with ux — role: source
+## 5b3ba168 — with ux — role: source
 
 **Verdict: CONVERGE** (my `review` rationale is false against this repo; I withdraw it — and the
 table has a second defect neither of us caught)
@@ -438,22 +438,22 @@ gains AC-M2a, which is a correctness fix to the design source, not a stylistic o
 
 Recorded here so R4 does not carry a claim I no longer defend:
 
-1. **AC-G3 "still pass unchanged"** → rewritten (`49e51405`).
+1. **AC-G3 "still pass unchanged"** → rewritten (`7ccd6b6f`).
 2. **AC-L12's device-failure premise** → replaced by the route-boundary row + the hero's text
-   independence (`5f45fffb`).
+   independence (`01d33a0b`).
 3. **P-6 "the landing may state that brokerage connect is coming"** → withdrawn in full; P-6′
-   (`959752cf`, `4f9e9f96`).
+   (`0dd564b1`, `78ecd37d`).
 4. **P-3's clause "the words 'live' … do not appear on `/`"** → withdrawn; it is unsatisfiable
-   against my own ship-blocking AC-L7 (`c3819332`).
+   against my own ship-blocking AC-L7 (`206a60b3`).
 5. **P-11's "or it says in one clause that it is a selection"** → withdrawn; the table is complete
-   (`5d9899c9`).
+   (`d1a94c99`).
 6. **P-9's "in particular it contains no pointer to a 'what's sent' screen"** → withdrawn; the
-   surface ships (`8c4d1c48`).
-7. **AC-L11 and AC-L10 marked `review`** → both move to `test` (`4cf2416a`).
+   surface ships (`22f6ae74`).
+7. **AC-L11 and AC-L10 marked `review`** → both move to `test` (`bc0fe3d9`).
 8. **AC-M2's `review` rationale ("an automated cross-check proves nothing")** → withdrawn; the
-   source-reading mechanism already ships in this suite (`026307a7`).
-9. **R1 P-10's "the dark-pool cap of 6 I could not verify"** → verified, it is 6 (`026307a7`).
+   source-reading mechanism already ships in this suite (`5b3ba168`).
+9. **R1 P-10's "the dark-pool cap of 6 I could not verify"** → verified, it is 6 (`5b3ba168`).
 
 One correction I am adding rather than withdrawing: the architect's amendment set names
 `scenarios.ts` as a file this feature must rewrite; at source it does not click `cta-primary` and the
-compat journey navigates by `nav-ticker`, so it stays untouched (`49e51405`).
+compat journey navigates by `nav-ticker`, so it stays untouched (`7ccd6b6f`).
