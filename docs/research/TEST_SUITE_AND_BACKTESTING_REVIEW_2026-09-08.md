@@ -23,6 +23,39 @@
 
 ---
 
+## 0. Recommendations in plain English
+
+**The tests are in good shape. Do not go on a deleting spree.** Almost everything checks real behavior; the
+problems are waste, not wrong tests.
+
+**Eight things to do now, none needs a decision:**
+
+1. Delete the one fake test. It prints "PASS" no matter what and its numbers are already stale.
+2. Turn on the two test batteries that exist but never run in CI. They are written; they just need calling.
+3. Write one small test for the code that merges positions across devices. It has none, and a bug there
+   silently loses data.
+4. Fix the test that writes a temporary file into the source tree. It races other tests and causes random red
+   runs.
+5. Stop building the dashboard twice in CI. Pass the first build through.
+6. Stop running the API contract check twice in CI. It costs three minutes each time.
+7. Write tests for the statistics file in the research code. Every back-test number flows through it.
+8. Move the one test that fails whenever there are uncommitted frontend changes out of the Rust test run.
+
+**Then tidy without changing coverage:** the same 404 check is pasted into eight files and the same test
+harness into five. Merge them.
+
+**Four things only the owner can decide:** whether to drop the old file-scope fence that guards nothing
+anymore; whether Firefox and WebKit run on every PR or nightly; whether all 125 tests for the load-testing
+tool earn their keep; whether to fix the suite's flakiness under load instead of running CI at two workers.
+
+**Back-testing: keep every test, change how you count.** Three fixes make the numbers mean something: count
+trading days instead of calendar days (today a Saturday counts as a session), put a real train/test split on
+the outcome numbers, and report an uncertainty range instead of a single figure. Then it needs data: check how
+many sessions production has actually archived, because from a dev box nobody can tell, and every missing
+day pushes back the date a result can be trusted.
+
+---
+
 ## 1. Method
 
 Four read-only reviews ran in parallel (Rust; dashboard Vitest; browser gates + tooling; back-testing), each
