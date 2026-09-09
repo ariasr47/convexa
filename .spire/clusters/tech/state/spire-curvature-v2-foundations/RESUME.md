@@ -59,7 +59,14 @@ cross-worker race (`replay-outcome-join.structural.spec.ts` writes a poison file
 gate's +30 s jump (SPEC §4.6 semantics, owner's call).
 
 **Next:** the PR for `spire/curvature-v2-foundations` → `main`, on the owner's go, then watch two CI runs of
-the visual child. Then phase 4 at GATE I.
+the visual child. **Phase 4 opened at GATE I on 2026-09-08 (owner: "continue with the re-design work"):**
+re-cut into `curvature-v2-landing-and-site` (BRIEF drafted at
+`contracts/curvature-v2-landing-and-site/BRIEF.md`, manifest at GATE I, BACKLOG entry written) with
+`curvature-v2-responsive-sweep` pre-registered as its successor. **GATE C (the council) waits for the owner's
+go — it is the expensive step (three decide-tier voices, a synthesizer and a skeptic).** Recommended
+sequencing: PR first, phase 4 on a branch off it. Also this session: the test-suite and back-testing review,
+`docs/research/TEST_SUITE_AND_BACKTESTING_REVIEW_2026-09-08.md` (tier-A cleanups are a hygiene batch, not
+a pipeline feature).
 
 ## ⬆ UPDATE — 2026-09-08 (Windows box): win32 visual baselines ACCEPTED, committed `f5cb325a`, pushed · linux leg BLOCKED on an owner decision — SUPERSEDED by the block above
 

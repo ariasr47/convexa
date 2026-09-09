@@ -271,6 +271,31 @@
   caught by the authoring voice; rec-plan-scope-caption — PLAN locked the caption as a sibling
   after the live `DecisionMetadata` row Stack after reading `DecisionCard.tsx`, refusing
   Python-era `AiRecPanel` line numbers. 2 binding.)*
+- **`[local-evidence-is-not-hosted-evidence]`** (promoted 2026-08-29, 2 binding) — a local or
+  quality-gate result is never labeled hosted/CI/verified-on-runners unless that run actually
+  happened there; a CI load is never soak evidence; ambient `CI=true` is not merge-job evidence.
+  Closed vocabularies (`NOT RUN`, `Evidence: local|ci`, Command `load|soak`) carry the distinction.
+  *(browser-quality-gates — hosted browser `NOT RUN`; capacity-baseline — load vs soak vs local vs
+  ci axes, D4 release CI load. 2 binding.)*
+- **`[present-is-live-paid-only]`** (promoted 2026-08-30, 2 binding; 6th instance 2026-08-31) — a session-archive identity
+  counted as `present` / a live paid book is a **loadable `LiveMassive` body**; fixture,
+  reconstructed, flat-file, tape, seed, and **replay occupancy** are never `present` and are never inserted
+  as `LiveMassive`. Occupancy that is not live-paid is a distinct class (`blocked occupancy` on
+  coverage; research-tape provenance on the day tape; session-tape standing on replay; **`kept`
+  extracts** on the flat-files corpus; **holiday weekday** never `present`).
+  *(archive-coverage-guardrails — fixture occupant is `blocked occupancy`; session-day-tape-capture
+  — Path-B persist drops `MarketDataSourceKind`, operator print never `live_massive`;
+  day-replay-mock-adapter — armed walk never inserts as LiveMassive, `live: false`;
+  massive-flat-file-keep — extract occupant is `kept`, never `present` / `LiveMassive`;
+  research-lab-surface — coverage card `present` only; books `source` never minted as `present`;
+  exchange-holiday-calendar — holiday weekday never `present` / never LiveMassive.
+  2 binding at graduation; 6th instance this ship.)*
+- **`[single-ticker-on-demand]`** (promoted 2026-08-30, 2 binding — long-standing §5 narrowing;
+  formal key at this GATE S) — the trading/serve **request path** computes exactly the one ticker
+  asked for; multi-ticker work happens only in a bounded **off-request-path** worker. Tape capture
+  and liquid-name ensure are off-path. An in-request market sweep is a GATE-Z reversal.
+  *(liquid-names-session-capture; session-day-tape-capture.)* Prose single-sourced in the
+  Single-ticker paragraph above.
 
 # BACKLOG — idea pool + roadmap discovery (standing reference)
 
@@ -304,6 +329,187 @@
 
 ---
 
+## Harvest — 2026-09-08 (ticker fidelity repair: two wire fields the design draws and the API does not send)
+<!-- atlas: theme=desk-fidelity horizon=next -->
+Not a BRIEF. Filed by the conductor from the `/ticker` fidelity repair lane's GATE Z items (owner 2026-09-08:
+"Do all four" — the fourth is this). Both are **`apps/api`** changes; that crate is frozen on
+`spire/curvature-v2-foundations` (`apps/api` diff must stay 0), so they wait for the next backend lane on
+`main`. Neither is faked in the meantime: the tape card ships without its spark, the masthead without a
+change line or a name.
+
+- **A short `net_flow` trail on the live SSE event.** `design/src/screens/desk.mjs:363-364` draws the Live
+  tape's `FLOW` sparkline as a 30-point trail sampled every 10 s (`SPY · 30 × 10s`). `LiveUpdateBody`
+  (`libs/api/src/generated/schema.ts:1550`) carries only the current scalar `net_flow`. Proposed shape:
+  `net_flow_trail: number[]` (oldest → newest, ≤ 30 points) + `trail_window_s: number`, accumulated
+  server-side per symbol and reset on the session boundary — keeps the eviction / reset rules in one place
+  and off the client's stream-isolation seam (the lane's GATE Z reasoning, `RESUME.md`). Consumer:
+  `pages/ticker/widgets/live-tape/LiveTape.tsx` adds the spark row under the 2×2.
+- **Prior close, signed change and the instrument name on the ticker bundle.** The design's masthead reads
+  `SPY 573.12 +1.84 · +0.32%` and `SPDR S&P 500 ETF`; `market_state` has `price` / `gex_spot` only (checked
+  against the saved real bundle, `fidelity-audit-2026-09-08/_tools/spy-bundle-2026-09-08T1059Z.json`).
+  Proposed: `market_state.prev_close`, `change`, `change_pct`, `name` — all nullable, vendor-sourced,
+  never derived on the client. Consumer: `pages/ticker/widgets/chrome/TickerHeader.tsx` renders them
+  only when present (the fidelity repair's F3 already omits rather than fakes them).
+
+### Harvest addendum — 2026-09-08, visual-baseline receipt flow (filed by the conductor while preparing the flow the owner asked for)
+
+- **The hosted Linux candidates workflow cannot complete as wired** (`.github/workflows/browser-visual-linux-candidates.yml`,
+  never executed): `fetch-depth: 1` leaves `visual-update.mjs`'s `assertSourceScope` unable to resolve an ancestor
+  `source_revision`; a receipt cannot live inside the commit it names; with a deeper fetch the retained evidence makes
+  the receipt "stale" (only the receipt may differ since `source_revision`); and `validateStability` requires the two
+  clean compare summaries to carry the acceptance's `source_revision`, which CI stamps as HEAD after the baselines are
+  committed. The flow is a dirty-working-tree local procedure by construction (that is how the 2026-08-24 win32 flow ran).
+  Options when this is picked up: (a) let the workflow accept a _branch_ whose HEAD holds evidence + receipt and diff against
+  the receipt's `source_revision` with `fetch-depth: 0`, treating `visual-review/evidence/**` as receipt-scope; (b) define
+  stability as two clean runs at the _baseline commit_ (the acceptance's revision is the candidate revision; stability's is
+  its child) — a SPEC amendment either way, not a quiet tool fix. Until then Linux baselines come from a local Linux host
+  (WSL2 x86-64 for CI parity). Runbook and drafting helper:
+  `state/spire-curvature-v2-foundations/visual-baseline-receipts/`.
+- **`validateStability`'s image-hash comparison is vacuous on pass runs** (`sha256 ?? actual_sha256` are both null when a
+  compare passes); the check reduces to run id / status / revision / platform / retries. Worth a stronger field
+  (the expected baseline hashes) when the SPEC is amended.
+- **F-D — `ticker-desktop`'s tape-trail sparkline is a run-to-run race at the visual gate** (found 2026-09-08 on the
+  Windows box while running the win32 receipt flow). The first compare run (`local-1788908546804-9d816d0a`) drew the
+  trail — the panel-filled 30 px canvas with the dashed structure baseline, bbox x 188–688 · y 549–578, 7,816 px — while
+  the authorized update run and the five compare runs after it left that slot blank; the accepted win32 baseline
+  (`a7542ea1…`) is the blank rendering, 6 of 7 runs. Mechanism the code supports (inferred from source, not
+  instrumented): `pages/ticker/widgets/chrome/TapePulseStrip.tsx` paints only inside its rAF loop, and `layout()` — run
+  on every ResizeObserver notification — resets `canvas.width`, which clears the bitmap synchronously and leaves the
+  repaint to the next frame. `freezeVisualFrame`'s `clock.pauseAt` (+30 s) trips the stream watchdog; its `paused`
+  render adds the pause mark and the "tape paused · trail frozen" caption in the same flex row, the sparkline wrap
+  resizes, and when that lands after the pause no frame ever repaints. The slow first run (7.4 s vs ~5 s, cold
+  http-server) tripped the watchdog in real time before the freeze, so the repaint still ran. `ticker-offline-mobile`
+  is immune — its 15 s fast-forward trips the watchdog before the freeze every run. Fix candidates for a follow-up
+  lane: paint synchronously inside `layout()` (call `paint(performance.now())` after resizing) or give the sparkline
+  wrap a fixed width so the caption cannot resize it. Either is a source change, so both platform flows re-run at the
+  new revision — do it before the next `/ticker` composition change rather than as its own flow.
+  **CLOSED 2026-09-08**, two commits: `6fa9419b` (draw synchronously after every layout and once on mount) and
+  `40ec63fc` — a **second cause** a canvas call-timeline probe against the real scenario exposed: the trail polyline
+  set `lineWidth = 1.75` and nothing reset it, so the dashed baseline was stroked at 1.75 on every frame except the
+  one right after a resize (context reset → 1); which frame was last was a race between the ResizeObserver callback
+  and the clock pause's due-timer flush (red 42 vs 60, 3/6 each). `draw` now sets `lineWidth` itself. Probe after:
+  6/6 identical under load. Both platforms' baselines re-taken at `40ec63fc` (`e2929865`, `2eaa7136`).
+- **F-E — the dashboard unit suite has a cross-worker race and is load-sensitive** (2026-09-08, seen while gating
+  F-D): `src/app/replay-outcome-join.structural.spec.ts` writes `src/app/_mutation_poison_replay_outcome_join.ts`
+  as a mutation proof and deletes it, while `src/app/shared/theme/stage3-amber.spec.ts` globs
+  `/src/app/**/*.{ts,tsx}` with `?raw` in another worker — when the glob lands mid-window the amber spec fails
+  "Failed to resolve import … _mutation_poison_…" and the run exits 1 with zero failed TESTS (one failed FILE).
+  Under CPU load (a build, six browsers, an image pull) the suite also lost a file to "Worker exited unexpectedly"
+  and failed eleven page-level specs on 5 s / 15 s timeouts; every one passed alone and the full suite exited 0
+  only when nothing else ran. Fix candidates: write the poison file outside `src/app` (or under a name the glob
+  excludes), and treat the suite's exit code, never its printed totals, as the verdict (the CLAUDE.md trap, again).
+- **F-F — "tape paused · trail frozen" while the trail is empty** (2026-09-08, observation from the F-D probe): the
+  strip prunes trail points older than 5 s on every frame, and the visual gate's `pauseAt` jumps the clock +30 s,
+  so by the frozen frame the "frozen" trail has been pruned to nothing while `TapeTrailRow` still renders the
+  `trail frozen` arm (it keys on the latched mid, not on trail samples). Real users see the same after 5 s offline.
+  SPEC §4.6's two-arm discipline ("never assert a frozen trail that was never drawn") arguably wants the caption to
+  follow the trail's own emptiness, or the prune to stop while paused. Owner's call; not a gate concern.
+- **Cluster entry on a fresh Windows checkout died on `AGENTS.md`** (2026-09-08): the installation receipt pins the
+  repo-root `AGENTS.md` bytes, `.gitattributes` never covered that path, and `core.autocrlf=true` checked it out CRLF
+  → `spire run tech` exit 4 "artifact integrity". Fixed by pinning `AGENTS.md text eol=lf` (same commit as this note).
+  Trap kept: `spire run` rewrites the tracked `receipts/selection.json` timestamp — revert it before any tool that
+  refuses tracked changes (the visual update command does).
+
+## Harvest — 2026-09-06 (owner direction: AI-powered Convexa)
+<!-- atlas: theme=trust-the-signal horizon=next -->
+Not a GATE I cull and **not** a BRIEF. Owner direction: *"I want Convexa to be an AI-powered artifact, for
+example the AI rec panel for recommendations."* **Authorizes: nothing** on live score. Recorded so the
+direction is dated and queued rather than re-derived.
+
+**The template is the AI rec panel, and what makes it work is not that it calls an LLM.** It is that the
+LLM is an **advisory consumer of already-computed state** — the shape `ai-external-no-llm` was *narrowed*
+to permit (never a scoring / gate / fingerprint input, no recompute, off the SSE path, server-side key, no
+auto-act, no real order), plus the **type register** carrying authorship (Mono = traced to a computed
+bundle field, Plex Sans + dotted rule = the model's own number). Any new AI surface inherits both or it
+stops being Convexa.
+
+**Sequencing ruled by the conductor 2026-09-06 — phase 3 first, and it is a precondition, not a rival.**
+Scanner, positions, settings and alerts have **zero `FigureCell`** between them (measured at GATE I of
+`curvature-v2-surfaces`), so they cannot yet distinguish "Convexa's number" from "the model's number".
+Adding AI there first would multiply untraceable assertions on the densest surfaces in the app — the exact
+risk `ai-asserted-numbers-are-traceable` was promoted on, after **44.4% of asserted numbers measured
+untraceable**.
+
+**The AI surface to back next is already in this backlog:** `grounded-morning-snapshot` (line ~108) — an
+AI briefing over already-computed scanner + event calendar + GEX, **every number cited**, no new vendor.
+It reuses the grounding machinery `curvature-v2-desk-and-read` hardened (traced/untraced register,
+grounding counts and the cited contract in the drawer) and touches no score. Timing fits: the
+`keep-paid-books` corpus supports a real time-split ~**2026-09-23 → 10-07**.
+
+**Culled from this direction (recorded so they are not re-proposed as new):**
+- *An AI read per scanner row* — culled: multiplies untraceable assertions across the densest surface, and
+  the failure mode is silent (a plausible number with no provenance looks identical to a computed one).
+- *AI everywhere as a phase* — culled: **cost is metered per user** (see below), so every added surface
+  raises the user's own bill and consumes their daily cap faster.
+- *Ship it as an AI-powered Claude Artifact* — culled **as a product path**, viable as an internal
+  prototype only. See the cost note.
+
+**Cost / multi-user note (verified at source 2026-09-06, not assumed).** Two different models, and they
+must not be conflated in any future brief:
+| path | who pays | multi-user | where it runs |
+|---|---|---|---|
+| **Convexa product** (`features/auth/aiProviderLabels.ts`) | the **user's own provider API key** — `own_key` for Anthropic `sk-ant-…` / OpenAI `sk-…` / Grok `xai-…` / Gemini `AIza…`, or the one subscription path `grok_subscription` ("your Grok subscription") | yes — key stored **per user**, encrypted at rest (`secret-encrypted-at-rest`), with a **per-user daily cap + cooldown** enforced server-side | anywhere the app is served |
+| **Claude Artifact `sample`** capability | **the viewer pays**, from their own Claude pool, consent-prompted on first call | yes — each viewer's own pool | only inside claude.ai, for people who can open the artifact |
+**There is no Convexa-funded pool in either model**, and the codebase actively guards the copy against
+implying one: `aiProviderLabels.ts:4` — *"never the BYO 'Grok' label, **never 'Convexa Grok pool'**"*.
+The artifact path is therefore fine for an internal prototype and wrong for product delivery: it cannot
+reach a trader who is not a claude.ai viewer, and an `mcp` grant additionally bars public sharing.
+
+**PARKED 2026-09-06 (owner): revisit after the v2 redesign (phases 3–4).** Findings from the same day,
+recorded so they are not re-derived — verified against primary sources, not assumed:
+- **Provider rules, in writing.** Anthropic: *"does not permit third-party developers to offer Claude.ai
+  login into their own applications, or to route requests through Free, Pro, or Max plan credentials on
+  behalf of their users"* — API key required, no exception (Claude Code legal page; enforcement reported
+  2026-04-04). OpenAI: "Sign in with ChatGPT" is identity only; the request to run the Codex SDK on a
+  subscription was closed *not planned* (openai/codex#8494, 2025-12-23); general "subscription sharing"
+  (ChatPass) is **unreleased** as of 2026-08-27 — **watch item**, dated.
+- **The one sanctioned in-app path: the Codex app server** (`codex app-server`, JSON-RPC over stdio /
+  experimental WebSocket; official doc: *"Embed Codex into your product with the app-server protocol"*).
+  Runs on the **user's own machine**, signed in with their own ChatGPT account, so turns bill to **their**
+  plan. Not hostable — *"Don't try to serve multi-tenant workloads with a single shared app-server
+  instance"*. `turn/start` takes an `outputSchema`, so the read returns typed JSON and the panel keeps the
+  type register. Candidate power path **`codex_local`** beside `own_key` / `grok_subscription`
+  (`libs/api/src/lib/convexa.ts:1480`): ChatGPT subscribers only; user installs Codex; browser→loopback
+  `ws://` works in Chrome/Firefox, **not Safari**; stdio via a small local companion is the supported shape.
+  No Claude twin: Anthropic's carve-out is the *unmodified Claude Code binary* under Commercial ToS with
+  "contact sales" — ask before building, do not build on it.
+- **Correction to the table above:** a Claude Artifact cannot `fetch` Convexa's API, but the `mcp`
+  capability is the sanctioned bridge to a Convexa **connector** — so the artifact becomes viable as an
+  advisory **reach channel** (viewer's pool via `sample`) once an MCP server exists. Same for a ChatGPT App
+  (Apps SDK: UI in an iframe inside chatgpt.com, `sendFollowUpMessage` → a ChatGPT turn on the user's
+  plan). In both hosts the prose is the model's, so neither can enforce the register — advisory, read-only,
+  `no-real-order-path` intact.
+- **Shape if resumed:** phase 3 (register everywhere) → **`convexa-mcp-server`** (precondition for all
+  three) → `codex_local` → the two hosts. `own_key` stays for Claude users, mobile, and anyone without Codex.
+- Sources: learn.chatgpt.com/docs/app-server · learn.chatgpt.com/docs/auth · learn.chatgpt.com/docs/codex-sdk
+  · code.claude.com/docs/en/legal-and-compliance · github.com/openai/codex/issues/8494 ·
+  runtimewire.com/article/openai-is-building-subscription-sharing-for-ai-apps ·
+  developers.openai.com/plugins/build/chatgpt-ui · issues.chromium.org/issues/40386732 ·
+  developer.apple.com/forums/thread/120869.
+
+---
+
+## Harvest — 2026-09-03 (design re-baseline → Curvature Terminal v2)
+<!-- atlas: theme=trust-the-signal horizon=next -->
+Not a GATE I cull and **not** a BRIEF. Owner approved a site-wide redesign on a design canvas and ruled
+that it supersedes the 2026-08-10 canon; `DESIGN_SYSTEM.md` is now **SET — Curvature Terminal v2**
+(skeptic PASS WITH FINDINGS, no Critical; session `context/design-session/rebaseline-2026-09-03.md`).
+Design source: `design/` (canvas + static site + `site/library.html` + `tokens/tokens.json` mirror).
+**Authorizes: nothing** on live score — FE-only.
+
+- **`curvature-terminal-v2-build`** — implement the v2 desk, AI read brief, nav + ⌘K palette, figure
+  cells, responsive bands, and the site surfaces per the canon and `design/site/library.html` (React
+  mapping table). *Decision-impact:* the trader finds the flip/walls and the AI verdict without scanning
+  13 equal cards, and never mistakes a snapshot for live (one connection chip; gated liveness); observe via
+  the AI-read state coverage, the no-overflow suite at 393/834/900/1280, and the desk task time.
+  *Feasibility:* no backend change; canon amendments already ruled (StatTile → FigureCell, motion class,
+  declared spacing/radius/breakpoints, nav shape); enforced specs to amend are listed in the canon's
+  enforcement table. *Score:* Value **H** × Effort **L** (phased: primitives → desk + AI read → scanner /
+  positions / settings / alerts → landing → responsive pass). *Invariants touched:*
+  `live-vs-static-isolation` (strengthened), `theme-token-discipline` (seven additions land in
+  `tokens.ts`), `single-shared-sim-entry-dialog` (unchanged). **Open owner question:** direct
+  branch build vs the council pipeline (retire-or-stub for `docs/design/DESIGN_SYSTEM.md` ruled **A — stubbed**, 2026-09-03).
+
 ## Program — keep-paid-books (owner-directed 2026-08-19)
 <!-- atlas: theme=prove-the-edge horizon=now -->
 Grouping only — **not** a pipeline feature. Owner said put all seven briefing
@@ -318,12 +524,284 @@ corpus, then we measure it; do **not** buy hist-chain to paper over prune.
 | 2 | `liquid-names-session-capture` — SPY/QQQ/IWM session book even if gex-cache is warm | pipeline feature | **SHIPPED 2026-08-20** |
 | 3 | `paid-book-join-smoke` — run `batch-backtest` then `replay-outcome-join` on a real corpus | chore (no BRIEF) | **DONE 2026-08-20** |
 | 4 | `weekly-digest-lab-ritual` — `join-outcomes` → `score-lab --horizon 1d` on SPY/QQQ/IWM | habit (runbook exists) | **RAN 2026-08-20** (keep weekly) |
-| 5 | `session-corpus-wait` — 4–6 ET weeks of archived session books before a real time-split | wait / gate, not a build | **clock started 2026-08-20** |
+| 5 | `session-corpus-wait` — 4–6 ET weeks of archived session books before a real time-split | wait / gate, not a build | **clock started 2026-08-20; first *reliable* production day is 2026-08-26** (see harvest 2026-08-28) |
 | 6 | `ai-rec-lab-p4` — frozen AI export packs / multi-model lab | pipeline feature (later) | blocked-on boring P2–P3 + #5 |
 | 7 | `chain-archive-object-store` — session bodies off app-Postgres BYTEA | pipeline feature (later) | **SHIPPED 2026-08-20** |
+| 8 | `archive-coverage-guardrails` — detect missing/unreadable daily books without paid monitoring | backend/ops feature | **SHIPPED + ARCHIVED 2026-08-26** |
 
 Do **not** bundle remaining items into one BRIEF. Do **not** start P7 vendor hist-chain.
 
+> **Integrated 2026-09-01** (`mainline-integration-2026-09`): the entries from here down to the
+> 2026-08-22 `api-contract-generation` ship were written on the `codex/browser-quality-gates` line and
+> did not see main's 2026-08-25/26 merges (PR #31 capacity-baseline v1, PR #34 archive-coverage-guardrails).
+
+## Harvest — 2026-08-28 (deep-research: next-focus, paid-data keep, replay)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Not a GATE I cull and **not** a BRIEF. Owner asked for independent research on what to
+focus on next (personal tool *or* public trader product). Evidence pack:
+`docs/briefings/product-roadmap-2026-08-28.html`. **Authorizes: nothing** on live score.
+
+**Clock honesty (keep-paid-books #5).** The wait started 2026-08-20 in canon, but production
+did not store session bodies until 2026-08-22, the first eligible ET session was **2026-08-24**,
+and the ownership repair that stopped thousands of `Permission denied` writes landed
+**2026-08-26**. Audit that day: **7 / 9** expected SPY/QQQ/IWM books; SPY 24–25 **gone for
+good** (48-slot prune + Massive chain snapshot has **Plan History: not applicable**). Treat
+the 4–6 week bar as starting **2026-08-26**, so a real time-split is ~**2026-09-23 … 2026-10-07**,
+not mid-September off the 08-20 label.
+
+**What the $199+$199 already buys that we still do not keep.**
+Live Path-B snapshots (greeks/IV/OI) are unrecoverable after prune — that is why session
+archive exists. Stocks **and** options Advanced plans already include **S3 flat files**
+(trades/quotes/aggregates, next-day ~11:00 ET). We do not download them. SSE ticks are not
+taped. Warmer refreshes are excluded from capture by design. Midnight-ET first-wins books
+are **start-of-day**, not a full open-to-close stream.
+
+**New pool items (one BRIEF each if promoted — do not bundle):**
+| Item | Shape | Why it is here |
+|---|---|---|
+| `archive-coverage-guardrails` | backend/ops, no trader UI | **SHIPPED + ARCHIVED 2026-08-29.** Named by the 2026-08-26 audit. Missing books are silent $398 loss. |
+| `massive-flat-file-keep` | backend/research | **SHIPPED + ARCHIVED 2026-08-31.** Download entitled daily S3 files for SPY/QQQ/IWM. Reconstructs **tape**, not greeks. Provenance-label; never fake a `live_massive` book. |
+| `session-day-tape-capture` | backend | **SHIPPED + ARCHIVED 2026-08-30.** Append-only Path-A SSE + timed Path-B snapshots for a closed watchlist so a day is replayable after Massive is cancelled. |
+| `day-replay-mock-adapter` | both lanes | **SHIPPED + ARCHIVED 2026-08-30.** Existing ticker SSE occupancy; clap `session-day-replay`; never `LiveMassive`. Distinct from `batch-backtest` (snapshot → score, no UI clock). |
+| `research-lab-surface` | frontend first | **SHIPPED + ARCHIVED 2026-08-31.** Operator URL-only corpus browser of existing `_research` list/load + coverage. Not `/lab` demos. Pages still 404s `_research`. |
+| `grounded-morning-snapshot` | both, later | AI briefing from **already computed** scanner + event calendar + GEX, every number cited. No Benzinga. No new vendor. |
+
+**Parked by this harvest (do not re-derive as emergencies):**
+squeeze/short-interest scanner (SI% not in-tier; OptionWalls squeeze median **+0.15% / 5d**);
+Benzinga earnings add-on; news terminal; RL on the score; indices (`I:VIX`/`I:SPX`) product line;
+P7 hist-chain; public SaaS before ledger N.
+
+**Stale standing queue.** Pool §A still headlines the 2026-08-01 order
+`index-first-defaults → SnapTrade → vol-normalized-gex → alerts`. Those four are
+**shipped in code** (Webull, not SnapTrade, for broker v1). The live programs are
+keep-paid-books wait + production-maturity #6 `remote-archive-body-store` + this harvest.
+SnapTrade stays the later multi-broker arm, not the next personal-edge build.
+
+**If the owner says `go` without naming:** the cull still applies.
+`archive-coverage-guardrails` **SHIPPED 2026-08-29**. `session-day-tape-capture`
+**SHIPPED 2026-08-30**. `day-replay-mock-adapter` **SHIPPED 2026-08-30**.
+`massive-flat-file-keep` **SHIPPED 2026-08-31**. `research-lab-surface`
+**SHIPPED 2026-08-31**. Strongest remaining **08-28** harvest survivor is
+`grounded-morning-snapshot` (sequence “after the corpus is visible” is now true).
+See **Harvest — 2026-08-31** below for the post-lab wave. Production-maturity #6
+remains next **in that program's order**. Do not silently skip the wait on #5 to
+reweight `opportunity_score`. Do not reopen blocked `supply-chain-automation`
+as pick-next.
+
+## Harvest — 2026-08-31 (post-lab: use the day, don't clone a terminal)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Not a GATE I cull and **not** a BRIEF. Owner asked for a fresh harvest after
+`research-lab-surface` GATE S. Evidence pack:
+`docs/briefings/harvest-2026-08-31.html`. **Authorizes: nothing** on live score.
+
+**What changed since 28 Aug.** The 08-28 wave is executed: coverage, tape, replay,
+S3 keep, and the operator corpus browser **all SHIPPED**. From this 08-31 pool,
+`exchange-holiday-calendar` **SHIPPED 2026-08-31**. The leak is no longer
+“CLI-only books.” Remaining 08-28 survivor: `grounded-morning-snapshot`, whose
+own sequence note was “after the corpus is visible” — that gate is now open.
+
+**Thesis.** You are not missing a news terminal. You are missing a *cited morning
+read of numbers you already compute*, a *second partitioned card* for the research
+HTTP you already serve, and *insurance for bodies*. Do not retune
+`opportunity_score`. Do not lift the Pages `_research` 404. Do not occupy `/lab`.
+Do not reopen `supply-chain-automation`. Do not skip keep-paid-books #5
+(reliable clock **2026-08-26** → time-split ~**2026-09-23 … 2026-10-07**).
+
+**If the owner says `go` without naming:** still **`grounded-morning-snapshot`**
+(personal-edge, sequence unblocked). Production-maturity #6
+`remote-archive-body-store` is next **in that program**. New 08-31 rows below
+are pool, not a silent default change.
+
+**New pool items (one BRIEF each if promoted — do not bundle):**
+| Item | Shape | Why it is here |
+|---|---|---|
+| `grounded-morning-snapshot` | both, **now** | **Already named 08-28.** Cited briefing from scanner + calendar + GEX. No Benzinga. No new vendor. Corpus-visible sequence **holds**. Unnamed-`go` default. |
+| `research-lab-sibling-reads` | frontend / ops | `/_ops/research` consumes books+coverage only. Live HTTP also has tape, snapshots, flat-files. Council admits **partitioned** sibling cards (same closed-deck discipline). Not a unified status column. Not `/lab`. Pages 404 stands. |
+| `ops-metrics-sitting-origin` | frontend / ops | Metrics is still same-origin `GET /api/_metrics`. Research already has sitting API origin + token. Pages 404s `_metrics` too — a weekly operator on `convexa.pages.dev` cannot unlock metrics the way they unlock research. 2nd consumer of sitting-base; do not bake hosts. |
+| ~~`exchange-holiday-calendar`~~ **SHIPPED 2026-08-31** | backend / ops | Repeat seam on tape, keep, coverage, scanner: weekends handled; **NYSE holidays are not**. Coverage “not yet due” vs empty extract vs missing is a fabricated claim on a closed weekday. |
+| `tape-store-start-watermark` | backend | GATE Z residual on `session-day-tape-capture` AC-32: named past weekday with no container is `no session day tape`; no store-start watermark. Honesty of “we never taped that day.” |
+| `score-lab-digest-surface` | frontend / ops, later | Read-only last score-lab / join artifact on `/_ops/*`. Weekly ritual without clap. **Not** score-lab HTTP compute. **Not** a retune. Sequence after #5 has more calendar, or beside the morning note. |
+
+**Hygiene / system-of-building (not GATE I product; do not bundle into a BRIEF):**
+`project-context-shard-sizes` (still unpaid) · `session-tape-structural-allowlist` (full
+`nx test` 1 red in `session-day-tape-capture.structural.spec.ts`) ·
+`deploy-cors-docs-alignment` (`ALLOWED_ORIGINS` docs vs live `ALLOWED_BROWSER_ORIGINS`) ·
+`nx-worktrees-isolation` (`.worktrees/` collides with the main Nx graph) ·
+`n1-push-deploys` (owner call) · `owner-device-signoff` (habit).
+
+**Already-named, not new:** keep-paid-books #5 wait · #6 `ai-rec-lab-p4` (blocked-on #5) ·
+production-maturity #6 `remote-archive-body-store` · `x1-snaptrade-readonly` (owner-named,
+system-6) · `weekly-digest-lab-ritual` (habit, runbook exists) ·
+`score-lab-b0b-outcomes` (never synthesize).
+
+**Parked (do not re-derive as emergencies — evidence unchanged since 08-28):**
+squeeze/SI scanner · Benzinga/news · RL on the score · indices `I:VIX`/`I:SPX` ·
+P7 hist-chain · public SaaS before ledger N · Pages `_research`/`_metrics` proxy ·
+`/lab` occupancy · `/_ops/replay` player chrome (shipped structural ban) ·
+score-lab **compute** HTTP · `opportunity_score` reweight.
+
+## Last GATE S — 2026-08-31 (`exchange-holiday-calendar` — NYSE full-day occupancy)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+NYSE full-day weekday closures (2020..=2032) are ineligible like weekends, with a distinct
+reason. Coverage empty-expected `not_due`. Tape/keep `ineligible holiday`. Ticker closed
+all hours that ET date. Scanner badge Closed. GATE Q PASS **30/0/0**. Independent
+conformance **5/5**. Archived to `_archive/exchange-holiday-calendar/`. Re-pin JSON
+promoted to `state/conformance/exchange-holiday-calendar.json`. Unnamed next `go`
+harvest default: `grounded-morning-snapshot`. Do not reopen blocked
+`supply-chain-automation`. Production-maturity #6 stays next **in that program**.
+
+## Last GATE I — 2026-08-31 (owner named → `exchange-holiday-calendar`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Owner said **do NYSE holiday** after Harvest 2026-08-31 (not unnamed `go`).
+**Chosen → `exchange-holiday-calendar`.** Brief at
+`.spire/clusters/tech/contracts/_archive/exchange-holiday-calendar/BRIEF.md`.
+**Backend-primary; weekend gates already exist; holidays do not.**
+**Why it won:** owner named it. Repeat seam: coverage `not_due` / tape ineligible /
+keep ineligible / `MarketPhase::classify` / ensure / scanner hours are **Sat/Sun only**.
+Keep already tests that a holiday weekday with zero rows is empty extract, not weekend.
+Unnamed-`go` default `grounded-morning-snapshot` was culled for this ask. Do not reopen
+`supply-chain-automation`. Do not skip keep-paid-books #5. Do not retune the score.
+
+## Last GATE S — 2026-08-31 (`research-lab-surface` — operator corpus browser)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Operators type `/_ops/research` (off-shell, unlinked, not `/lab`) with a sitting API origin +
+metrics token and list/open SPY/QQQ/IWM session books plus today’s coverage card. Empty
+`apps/api` product diff. Pages `_research` 404 stands. GATE Q PASS **53/0/0**. Independent
+conformance **7/7**. Archived to `_archive/research-lab-surface/`. Re-pin JSON promoted to
+`state/conformance/research-lab-surface.json`. Unnamed next `go` harvest default:
+`grounded-morning-snapshot`. Do not reopen blocked `supply-chain-automation`. Production-maturity
+#6 stays next **in that program**.
+
+## Last GATE I — 2026-08-31 (harvest default → `research-lab-surface`)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Owner said `go` after `massive-flat-file-keep` GATE S (unnamed ⇒ harvest
+default). **Chosen → `research-lab-surface`.** Brief at
+`.spire/clusters/tech/contracts/_archive/research-lab-surface/BRIEF.md`.
+**Frontend-primary operator surface; `/lab` instrument demos must not be
+occupied; Pages `_research` 404 stands.**
+**Why it won:** coverage + tape + replay + S3 keep are CLI/`_research` only;
+the operator still cannot *see* the $398 corpus weekly. First slice is a
+URL-only off-shell browser of **existing** list/load (session books spine).
+Do not bundle score-lab HTTP, ticker replay chrome, morning-note, remote
+object-store, or lifting the Pages 404. Cite live `app.tsx` `/_ops/metrics`,
+`LabIndex.tsx`, `functions/api/[[path]].ts`. `supply-chain-automation`
+remains live and blocked — this `go` is pick-next, not reopen #4.
+Production-maturity #6 stays next **in that program**.
+
+## Last GATE S — 2026-08-31 (`massive-flat-file-keep` — entitled S3 trades/quotes extracts)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Operators keep next-day Massive stocks SIP **trades** and **quotes** extracts for SPY/QQQ/IWM
+(`flat-files keep`; dedicated root; gzip discarded). Sibling `_research/flat-files`. Never
+`LiveMassive` / coverage `present`. `NO_UI_CHANGE`. GATE Q PASS **61/0/0**. Independent
+conformance **6/6**. Archived to `_archive/massive-flat-file-keep/`. Conformance JSON promoted
+to `state/conformance/massive-flat-file-keep.json`. Unnamed next `go` harvest default:
+`research-lab-surface`.
+
+## Last GATE I — 2026-08-30 (harvest default → `massive-flat-file-keep`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Owner said `go` after `day-replay-mock-adapter` GATE S (unnamed ⇒ harvest
+default). **Chosen → `massive-flat-file-keep`.** Brief at
+`.spire/clusters/tech/contracts/_archive/massive-flat-file-keep/BRIEF.md`.
+**Backend/research; trader UI NO_UI_CHANGE expected.**
+**Why it won:** $199+$199 already includes unlimited S3 file downloads we do
+not keep; they reconstruct **price/quote history**, not greeks; live tape +
+replay now exist, so this is the remaining entitled tape, not a clock.
+Files are next-day universe CSVs (`files.massive.com`), not REST
+`/v3/trades`. Do not bundle OPRA, indices, hist-chain, lab UI, or Path-A
+conversion. Cite live REST/WS + tape root + source kind — not briefing HTML.
+`supply-chain-automation` remains live and blocked — this `go` is pick-next,
+not reopen #4.
+
+## Last GATE I — 2026-08-30 (harvest default → `day-replay-mock-adapter`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Owner said `go` after `session-day-tape-capture` GATE S (unnamed ⇒ harvest
+default). **Chosen → `day-replay-mock-adapter`.** Brief at
+`.spire/clusters/tech/contracts/_archive/day-replay-mock-adapter/BRIEF.md`.
+**Both lanes; existing ticker SSE, no second live path.**
+**Why it won:** the tape now exists; Fixture is a frozen snapshot, not a clock;
+`batch-backtest` replays scores, not a day on the ticker. Insurance the owner
+named: if Massive is cancelled, walk Tuesday as if live. S3 files are next-day
+price history, not same-day greeks — sequenced after a clock exists. Do not
+bundle object-store, hist-chain, or lab UI. Cite live tape + Fixture + hub.
+`supply-chain-automation` remains live and blocked — this `go` is pick-next,
+not reopen #4.
+
+## Last GATE S — 2026-08-30 (`day-replay-mock-adapter` — walk a captured day on the ticker)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Operators walk a stored SPY/QQQ/IWM research day through the **existing ticker live path**
+(`session-day-replay`; pace {1,4,10}). Occupancy `session_tape` / `live: false`. Production
+unset still Massive; production-profile + replay arm refuses before bind. Never `LiveMassive`.
+No `/_ops/replay`. GATE Q PASS **47/0/0**. Independent conformance **5/5**. Archived to
+`_archive/day-replay-mock-adapter/`. Conformance JSON promoted to
+`state/conformance/day-replay-mock-adapter.json`. Unnamed next `go` harvest default:
+`massive-flat-file-keep`.
+
+## Last GATE I — 2026-08-29 (harvest default → `session-day-tape-capture`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Owner said `go` after `archive-coverage-guardrails` GATE S (unnamed ⇒ harvest
+default). **Chosen → `session-day-tape-capture`.** Brief at
+`.spire/clusters/tech/contracts/_archive/session-day-tape-capture/BRIEF.md`.
+**Backend / research; trader UI out of scope (`NO_UI_CHANGE` expected).**
+**Why it won:** coverage now tells you a paid day is missing; it does not keep
+the open-to-close stream. Path-A ticks still latest-wins in `PriceCache`;
+warmer Path-B drops `_vendor` every 25s by design; session books are first-wins
+start-of-day (QQQ/IWM 24–26 Aug had 0 trades). Replay is blocked-on this tape.
+S3 flat files are next-day price history, not same-day greeks. Do not bundle
+replay, object-store, or hist-chain. Cite live Rust. `supply-chain-automation`
+remains live and blocked — this `go` is pick-next, not reopen #4.
+
+## Last GATE S — 2026-08-29 (`archive-coverage-guardrails` — expected SPY/QQQ/IWM books as operator truth)
+> [discovery: 9 lines elided — closed history; read context/BACKLOG.md for the full section, or memory_query]
+## Last GATE I — 2026-08-29 (harvest default → `archive-coverage-guardrails`)
+> [discovery: 13 lines elided — closed history; read context/BACKLOG.md for the full section, or memory_query]
+## Last GATE S — 2026-08-29 (`capacity-baseline` — mocked-vendor load/soak harness)
+<!-- atlas: theme=the-machine horizon=now -->
+Maintainers have named `capacity load` / `capacity soak` against mocked vendors with locked harness
+p95 fail-lines. Merge CI runs release load with `APP_ENV=dev`; soak is local + GATE Q only. GATE Q
+PASS **49/0/0**. Archived to `_archive/capacity-baseline/`. `NO_BACKEND_CHANGE` of production HTTP —
+no conformance JSON promoted. `supply-chain-automation` remains live and blocked. Program #6
+`remote-archive-body-store` is next in the production-maturity sequence.
+
+## Last GATE I — 2026-08-28 (production-maturity #5 → `capacity-baseline`; supply-chain still blocked)
+<!-- atlas: theme=the-machine horizon=now -->
+**Chosen → `capacity-baseline`.** `browser-quality-gates` shipped. `supply-chain-automation` remains
+live and blocked (historical secret, RUSTSEC-2024-0436, hosted acceptance). Owner `go` after that
+ship is treated as pick-next, not reopen #4. Production-maturity #5 is the next unblocked program
+slice: a mocked-vendor API/SSE load/soak harness with checked thresholds. SnapTrade stayed parked
+(explicit product go, not this drain). Brief:
+`.spire/clusters/tech/contracts/_archive/capacity-baseline/BRIEF.md`.
+
+## Last GATE S — 2026-08-28 (`browser-quality-gates` — named browser quality gates)
+<!-- atlas: theme=the-machine horizon=now -->
+Maintainers now have honest Chromium, Firefox/WebKit-journey, accessibility, and visual gates with
+actionable artifacts. Product runtime/API/scoring stay unchanged except the closed D7/D8
+accessibility repairs. GATE Q PASS **45/0/0**. Archived to `_archive/browser-quality-gates/`.
+`NO_BACKEND_CHANGE` — no conformance JSON promoted. Three new watch-list keys
+(`engine-claim-matches-executable-engines` · `visual-baseline-requires-human-authority` ·
+`local-evidence-is-not-hosted-evidence`). `supply-chain-automation` remains live and blocked.
+
+## Last GATE I — 2026-08-23 (owner redirect → `browser-quality-gates`)
+<!-- atlas: theme=the-machine horizon=now -->
+**Chosen → `browser-quality-gates`.** The owner explicitly selected the next recommended frontend
+quality slice while GitHub-hosted supply-chain evidence is unavailable. The shipped Playwright suite
+already provides 52 fast Chromium tests and explicitly records Firefox/WebKit as a separate follow-on;
+this feature adds an explicit supported-browser policy, a bounded cross-engine journey matrix,
+automated accessibility gates, and small deterministic visual baselines without changing product UI
+or backend behavior. `capacity-baseline` remains queued as production-maturity item #5 — displaced,
+not dropped. Brief: `.spire/clusters/tech/contracts/_archive/browser-quality-gates/BRIEF.md`.
+
+## Last GATE S — 2026-08-22 (`api-contract-generation` — one executable Rust→TypeScript contract)
+<!-- atlas: theme=the-machine horizon=now -->
+The Rust/Axum route graph now deterministically produces OpenAPI 3.1 and the checked shared TypeScript
+schema/client boundary. Immutable pre-cutover and generated-artifact manifests catch co-omission and
+drift; schema-v2 evidence proves **52 operations, 181 response conversions, and 87 direct HTTP outcomes**
+without changing endpoint, auth, SSE, scoring, or trader-visible behavior. Final fresh QA passed
+**42/0/0**, independent live conformance passed **4/4**, and credential-bearing vendor diagnostics are
+redacted at the request-failure boundary. Archived to `_archive/api-contract-generation/`; standalone
+conformance promoted. Program advances to #4 `supply-chain-automation`.
+
+## Last GATE I — 2026-08-26 (`archive-coverage-guardrails`)
+> [discovery: 8 lines elided — closed history; read context/BACKLOG.md for the full section, or memory_query]
 ## Program — production-maturity (owner-directed 2026-08-21)
 <!-- atlas: theme=the-machine horizon=now -->
 Grouping only — **not** a pipeline feature. Owner approved the production-maturity
@@ -340,6 +818,10 @@ or microservices without a measured bottleneck and a separate owner decision.
 | 4 | `supply-chain-automation` — dependency updates, review, Rust audit/deny, CodeQL-supported surfaces, image scan, SBOM | CI/security feature | queued after #3 |
 | 5 | `capacity-baseline` — API/SSE load and soak harness with checked thresholds and mocked vendors | backend/test feature | queued after #4 |
 | 6 | `remote-archive-body-store` — S3-compatible immutable body store behind the shipped body-store port | backend/infra feature | queued after #5; existing filesystem store remains fallback |
+| 3 | `api-contract-generation` — generated OpenAPI plus checked TypeScript client/types | both-lane tooling feature | **SHIPPED + ARCHIVED 2026-08-22** |
+| 4 | `supply-chain-automation` — dependency updates, review, Rust audit/deny, CodeQL-supported surfaces, image scan, SBOM | CI/security feature | **PROMOTED — GATE I 2026-08-22**; still live, GATE Q FAIL (external/security blockers) |
+| 5 | `capacity-baseline` — API/SSE load and soak harness with checked thresholds and mocked vendors | backend/test feature | **SHIPPED + ARCHIVED 2026-08-29** |
+| 6 | `remote-archive-body-store` — S3-compatible immutable body store behind the shipped body-store port | backend/infra feature | queued after #5 (now unblocked in program order); existing filesystem store remains fallback |
 | 7 | `telemetry-slos` — trace correlation/export, service-level objectives, dashboards and alert runbook | backend/infra feature | queued after #6 |
 | 8 | `replica-safe-workers` — API/worker process split, singleton/job coordination, distributed rate limiting | backend/infra feature | queued after #7 |
 | 9 | `recovery-deployment-maturity` — backup/restore drill, staging/migration/smoke/rollback gates, declarative host config | ops feature | queued after #8; migrate `railway.json` watch paths to Railway IaC before 2026-12-01 once the translator preserves them |
@@ -1291,7 +1773,7 @@ tooling — judged on operational value). The export/alerting/persistence rest o
 ## Last GATE I — 2026-06-22 (pipeline had drained; 4 features archived)
 > [discovery: 12 lines elided — closed history; read context/BACKLOG.md for the full section, or memory_query]
 ## Pool
-> [discovery: 1355 lines elided — over the discovery byte budget; read context/BACKLOG.md for the full section, or memory_query]
+> [discovery: 1444 lines elided — over the discovery byte budget; read context/BACKLOG.md for the full section, or memory_query]
 # Open Threads (session snapshot)
 
 > Unresolved decisions / deferred work carried out of a long working session. Pairs with
@@ -1410,6 +1892,24 @@ decision (Databento Blue Ocean, or Webull supplement).
 > [discovery: 16 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 7aq. Browser quality gates (SHIPPED + ARCHIVED 2026-08-24 — frontend/repository tooling)
 > [discovery: 22 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7ar. archive-coverage-guardrails — honest live session-book coverage (SHIPPED + ARCHIVED 2026-08-26)
+> [discovery: 20 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7ay. browser-quality-gates (branch-line thread for the same feature as 7aq; renumbered from 7aq at mainline-integration-2026-09) — Chromium + bounded compat/a11y/visual gates (SHIPPED + ARCHIVED 2026-08-28 on the branch line)
+> [discovery: 17 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7az. capacity-baseline v2 (load/soak; renumbered from 7ar at mainline-integration-2026-09) — mocked-vendor load/soak harness (SHIPPED + ARCHIVED 2026-08-29 on the branch line; main's v1 harness record is `contracts/capacity-baseline/`)
+> [discovery: 16 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7ba. archive-coverage-guardrails research-read build (parallel to 7ar; renumbered from 7as at mainline-integration-2026-09) — expected SPY/QQQ/IWM books as operator truth (SHIPPED + ARCHIVED 2026-08-29 on the branch line)
+> [discovery: 25 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7at. session-day-tape-capture — open-to-close research tape for SPY/QQQ/IWM (SHIPPED + ARCHIVED 2026-08-30)
+> [discovery: 25 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7au. day-replay-mock-adapter — walk a captured day on the existing ticker (SHIPPED + ARCHIVED 2026-08-30)
+> [discovery: 22 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7av. massive-flat-file-keep — entitled S3 trades/quotes extracts for SPY/QQQ/IWM (SHIPPED + ARCHIVED 2026-08-31)
+> [discovery: 24 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7aw. research-lab-surface — operator corpus browser (SHIPPED + ARCHIVED 2026-08-31)
+> [discovery: 19 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7ax. exchange-holiday-calendar — NYSE full-day occupancy (SHIPPED + ARCHIVED 2026-08-31)
+> [discovery: 20 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).
@@ -1463,9 +1963,11 @@ decision (Databento Blue Ocean, or Webull supplement).
   Ported assertion-for-assertion at **equal coverage** (chromium only, same 29 tests) and proved
   equivalent three ways: same count, same `--list` inventory, and a **mutation check** that failed
   exactly one test with the real overflow number. **29/29 in ~4s vs ~16s.** CI gained
-  `npx playwright install --with-deps chromium`. **WebKit/Firefox were deliberately NOT added** —
-  widening coverage is a separate decision, and mixing it into a port makes a translation bug
-  indistinguishable from a real one. That remains the open follow-on if Safari coverage matters.
+  `npx playwright install --with-deps chromium`. **WebKit/Firefox were deliberately NOT added in the
+  2026-07-28 port** — widening coverage is a separate decision. **Update 2026-08-28:**
+  `browser-quality-gates` shipped the bounded follow-on: Firefox/WebKit run the five compatibility
+  journeys only; the full 52-test inventory stays Chromium. Branded-browser / all-version / OS /
+  assistive-technology certification is still declined.
 - **⚠ TOOLING HAZARD — `nx format:write` is REPO-WIDE and destructive** (found `positions-legs` phase 5,
   2026-07-28): a bare `nx format:write` ran an organize-imports pass over **92 unrelated files** — blog
   HTML, READMEs, auth modules. The lane caught it and reverted everything outside its change set.
@@ -1503,7 +2005,7 @@ decision (Databento Blue Ocean, or Webull supplement).
   true multi-session block history needs a heavier batched pull. Future.
 
 ## 9. Resolved decisions (do NOT revisit)
-> [discovery: 134 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+> [discovery: 151 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 # DECISION LEDGER — compounding memory (standing reference)
 
 > How the system gets wiser per feature. The conveyor between a one-off decision and the shared
@@ -1571,6 +2073,10 @@ decision (Databento Blue Ocean, or Webull supplement).
 | `ai-asserted-numbers-are-traceable` | every number or field the in-app AI **asserts** is traceable to a computed bundle field, and every field it **omits** says so in a **closed vocabulary** rather than a mark meaning something else; an untraceable figure is never rendered as fact, an absent one never as a **reserved literal of another state** and never **pre-typed into a tradeable input** by default, inference or chain-derived fallback | CONTEXT §5 · THREADS §9 | **2026-08-14** | ai-rec-grounding (per-figure grounding; **44.4% of asserted numbers measured untraceable**), rec-absence-literals-hole (the absence half — six fields, one new vocabulary member, the Accept seam) — **2 binding**. Logged at **0 instances** 2026-07-16 as explicitly aspirational ("an aspirational rule is not canon"); the queued severity-path question dissolved when the 2nd instance arrived, so it graduated on **ordinary recurrence** exactly as the rule intends |
 | `cited-code-is-verified-not-assumed` | a design or plan artifact must not assert a fact about **existing code** it will reuse unless that fact was **read at source**; unverifiable claims carry a `[lane-check]` mark instead of being asserted | CONTEXT §5 · THREADS §9 | **2026-08-17** | rec-absence-literals-hole (1st instance — 3 false citations inside one council), rec-plan-scope-caption (2nd — PLAN locked attachment against live `DecisionCard.tsx`, not Python-era `AiRecPanel`) — **2 binding**. Graduated by `ledger_tally` at this GATE S |
 
+| `local-evidence-is-not-hosted-evidence` | a local or quality-gate result is never labeled hosted/CI unless that run happened there; a CI load is never soak evidence; ambient `CI=true` is not merge-job evidence | CONTEXT §5 · THREADS §9 | **2026-08-29** | browser-quality-gates (hosted browser `NOT RUN`), capacity-baseline (load vs soak vs local vs ci; D4 release CI) — **2 binding**. Graduated by `ledger_tally` at `capacity-baseline` GATE S |
+| `present-is-live-paid-only` | a session-archive `present` / live paid book is a loadable `LiveMassive` body; fixture, reconstructed, flat-file, tape, seed, and replay occupancy never insert as `LiveMassive` | CONTEXT §5 · THREADS §9 | **2026-08-30** | archive-coverage-guardrails (blocked occupancy), session-day-tape-capture (Path-B drops source kind; operator never `live_massive`) — **2 binding**. Graduated by `ledger_tally` at `session-day-tape-capture` GATE S. 3rd instance: `day-replay-mock-adapter` (armed walk never LiveMassive). 4th: `massive-flat-file-keep` (extracts never LiveMassive / `kept` ≠ `present`). 5th: `research-lab-surface`. 6th: `exchange-holiday-calendar` (holiday weekday never `present`) |
+| `single-ticker-on-demand` | the trading/serve REQUEST PATH computes exactly the one ticker asked for; multi-ticker work is a bounded off-request-path worker | CONTEXT §5 · THREADS §9 | **2026-08-30** | liquid-names-session-capture (ensure off-path), session-day-tape-capture (tape sidecar off request path) — **2 binding**. Long-standing narrowed prose in §5; formal key graduation via `ledger_tally` at this GATE S |
+
 > Pre-existing canon (recorded by the ledger, already a rule before it existed — not re-promoted):
 > `gamma-sourcing-split` (CONTEXT §3 / THREADS §9).
 > (`ai-external-no-llm` was here until **2026-06-23** — now **DEMOTED / narrowed** by `ai-recommendations`;
@@ -1634,98 +2140,6 @@ feature (3 instances within it). **Re-assess at the next vendor-SDK integration*
 be exactly it.
 
 ## Watch list (keys logged, not yet at threshold)
-- _(`single-shared-sim-entry-dialog` GRADUATED 2026-07-02 — 2 binding (sim-entry-unification created
-  the single dialog + deleted the forks; ai-rec-backtest-orders honored it via the additive order
-  variant, contract-mandated "do not fork"). Now in Promoted canon above.)_
-- _(`theme-token-discipline` GRADUATED 2026-07-02 — held across convexa-redesign (logged), the
-  ticker-ux-polish program ("held again"), light-mode-parity/sim-entry-unification (the `extrasFor`
-  mechanism itself), and ai-rec-backtest-orders (token-only orders module). ≥3 shipped features →
-  Promoted canon above.)_
-- _(`model-read-carries-its-assumptions` GRADUATED 2026-07-06 — 2 binding (dealer-flow-projection — the
-  assumption-explicit charm/vanna projection; ai-context-pack — every trend/shape/flow/ATR read carries its
-  window+threshold+basis + the "not a forecast, not a scored signal" framing). Crossed the "≥2 if binding"
-  threshold → Promoted canon above (CONTEXT §5 + THREADS §9); removed from the watch list.)_
-- _(`digested-labels-not-raw-dump` GRADUATED 2026-07-07 — 2 binding (ai-context-pack — the TI regime labels
-  off ADX/RSI/EMA, no raw indicator series; iv-rank — the rich/cheap `band` [premium_rich|neutral|premium_cheap]
-  cut server-side from the rank, no raw IV history on the wire or in the UI). Crossed the "≥2 if binding"
-  threshold → Promoted canon above (CONTEXT §5 + THREADS §9); removed from the watch list. Future indicator
-  bundles — volume-profile/CVD, the news/sentiment classifier — will reaffirm it.)_
-- _(**`loss-free-durable-migration`** GRADUATED **2026-07-16** via the new **SEVERITY path** at 1 instance
-  (rebrand-convexa) — owner canon review. Violation = silent, total, irreversible loss of the user's entire
-  trading history (~5 durable localStorage stores, **no server backup**). Recurrence would have kept it
-  waiting behind a dialog; severity does not wait. Now in Promoted canon above.)_
-- **`structural-over-prose-enforcement`** (**3 instances — outcome-ledger 2026-07-16 + scanner 2026-07-26 +
-  positions-legs 2026-07-28; STILL NOT promoted**) — the 3rd instance is the strongest evidence yet
-  (max-loss eligibility as **membership in a closed set** rather than a detection heuristic, so an
-  under-detected unbounded shape is ineligible *by construction*; the recogniser's no-confidence-measure
-  rule; a branded `NetLimitDollars` no numeric literal can inhabit, pinned by a `@ts-expect-error` that
-  fails typecheck if the brand weakens) — **and the judgement is still unchanged.** Three instances now say
-  the same thing two did: volume is not the missing piece, a **statable violation test** is. Compare
-  `absent-is-not-none`, which graduated the same day on *fewer* instances because its third one proved
-  **generality** rather than repeating the evidence. Original entry: (2 instances) — see the scanner ledger row for that ship's evidence (leaf boundary · empty
-  `apps/api` diff · pure-logic-with-injected-clock · mutation-guarded scans · pins re-pointed not deleted).
-  **The judgment is unchanged by the second instance:** volume of evidence is not the missing piece — a
-  *statable violation test* is. It stays a design heuristic until someone can write the bar that makes
-  "enforced by prose" mechanically detectable. Recorded here so a later canon review can weigh it with the
-  full provenance rather than re-deriving it. Original entry: — an
-  invariant a feature must hold is enforced by **construction** (a type, a module boundary, an empty diff, a
-  mutation-tested source-scan) rather than by **prose an implementer must remember**. Where the two are
-  available, prefer the shape that makes the violation **impossible or build-breaking**. *Evidence in this
-  one ship:* no-auto-tuning = a literally **empty `apps/api` diff** (a statistic that never leaves the
-  browser cannot reach `signals.py`) · the coverage roll-up is **integers-only**, so the demo seed's
-  fabricated `realized_pl_dollar: 196` is **unreachable by construction** · the counted read is **ONE string
-  in ONE `<Typography>`**, so "no hero number" is unbreakable **in the DOM** rather than in the type spec ·
-  the decline class-A map is `Record<Exclude<DeclineReason,'store_unreadable'>,…>`, so re-composing class B
-  through class A's inverted template is a **TYPE ERROR** · the `?raw` source-scan **provably bites**
-  (mutation-tested: renaming a `via` literal FAILED with a message naming §2/Q3.5). *Kin already in the
-  project:* `contract_lint.py`, `path_guard.js`, `kit_lint.mjs`, `interface_conformance.py` — all the same
-  move ("mechanize the trusted invariant"). **Deliberately NOT promoted at 1 instance:** it is closer to a
-  *design heuristic* than a rule with a crisp violation test, and the severity path does not apply (relying
-  on prose is not catastrophic-and-irreversible). Log recurrence; promote only if it earns a statable bar.
-  *binding:yes (weakly — a future feature could violate it by shipping a rule enforced only by a comment).*
-- _(**`absent-is-not-none`** **GRADUATED 2026-07-28** at `positions-legs` — 3 binding, and the 3rd instance
-  is the one this entry was explicitly waiting for: an **unrelated feature family**, carrying the rule out
-  of backend wire-config and into the **client render** (four independently-assertable not-a-number
-  literals: `—` / `unavailable` / `not recorded` / `no basis`; `undefined`/`null`/`NaN` banned outright).
-  The "specialisation of `model-read-carries-its-assumptions`?" doubt below is answered by that instance —
-  a self-describing *model read* has nothing to say about a **saved record that never held a fact**, which
-  is a different failure with a different fix. Now in Promoted canon above.)_ Original entry, kept for
-  provenance: (**2 instances — bundle-events + expiration-events, both 2026-07-27; NOT promoted at the
-  time**) — the 2nd instance carried the rule **down a level** (an empty `expirations` array under
-  `state: unknown` must not read as "no expiry is affected"), which is genuine reinforcement but from the
-  *same feature family on the same day* — weak evidence of generality, not the ≥2-distinct-features the
-  binding threshold intends. Re-assess when an unrelated feature needs it. Original entry: — a store or config
-  that can be *uncurated* must distinguish **"we do not know"** from **"we checked and there is nothing"**,
-  and must carry that distinction to the wire rather than collapsing it at a boundary. *Evidence:* the
-  events loader returns `None` (unknown) vs `[]` (verified none) so the **type signature** stops a caller
-  from conflating them, and the wire's closed `state` enum is the sole disambiguator because both states
-  carry an empty list. *Kin already shipped:* the scanner's `building` vs `error`, iv-rank's "building
-  history — N of 20", the outcome-ledger's `building` cells that render **nothing numeric**. **Not promoted
-  at 1 instance:** the severity path does not obviously apply (it produces a wrong *claim*, not
-  irreversible data loss), and the kin above suggest this may be a **specialisation of
-  `model-read-carries-its-assumptions`** rather than a separate rule — the honest read is that a
-  self-describing read already implies "say when you don't know." Log recurrence; promote only if it earns
-  a bar distinct from its parent. *binding:yes.*
-- _(**`ai-asserted-numbers-are-traceable`** **GRADUATED 2026-08-14** — 2 binding (ai-rec-grounding, rec-absence-literals-hole);
-  now in Promoted canon above. It reached the bar on **ordinary recurrence**, which is why the queued
-  severity-path question was never put to the owner. Original entry retained below for provenance.)_
-  (**0 instances at proposal — 2026-07-16, owner canon review; NOT promoted then**) — every number the in-app AI **asserts** (strike, stop, target, level, price) must be
-  **traceable to a computed bundle field**; an untraceable number is not rendered as fact. Rationale:
-  `best-effort-isolated-or-null` covers the AI **failing**, nothing covers it **fabricating** —
-  `model-read-carries-its-assumptions` disciplines *our* model reads, not the LLM's output. The
-  ai-rec-backtest-orders "levels in play" being **bundle-sourced** is the partial precedent that shows the
-  instinct was already there. Given the BACKLOG §C securities-counsel item, an ungrounded number is a
-  **liability** question, not only a bug. **Logged at 0 instances deliberately** — an aspirational rule is
-  not canon; it applies to the next AI-touching feature and promotes on its first real instance (or on the
-  severity path if a fabrication is ever observed live). *binding:yes.* Build item → BACKLOG §B.
-- _(`no-secrets-in-image` GRADUATED 2026-06-29 at `deploy` — 3 binding (containerize-apps, persistent-db,
-  deploy); the held-until-published rule fired when the image is pushed to Railway for real. Now in Promoted
-  canon above.)_
-- _(`server-side-gate-enforcement` GRADUATED 2026-06-29 — 2 binding (user-accounts AC-E7, byo-ai-key).)_
-- _(`secret-encrypted-at-rest` GRADUATED 2026-06-29 — reached 2 binding instances (byo-ai-key, persistent-db);
-  now in Promoted canon above.)_
-- _(`no-real-order-path` graduated 2026-06-24; reaffirmed again by user-accounts → 3 binding instances,
-  already in Promoted canon.)_
-
+> [discovery: 119 lines elided — over the discovery byte budget; read context/DECISION_LEDGER.md for the full section, or memory_query]
 ## Ledger (append-only — one row per binding decision instance)
-> [discovery: 763 lines elided — over the discovery byte budget; read context/DECISION_LEDGER.md for the full section, or memory_query]
+> [discovery: 977 lines elided — over the discovery byte budget; read context/DECISION_LEDGER.md for the full section, or memory_query]

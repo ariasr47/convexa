@@ -30,6 +30,32 @@
 
 ---
 
+## Last GATE I — 2026-09-08 (phase 4 re-cut → `curvature-v2-landing-and-site`; `curvature-v2-responsive-sweep` pre-registered as its successor)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Owner 2026-09-08: "continue with the re-design work", after phases 1–3 closed at GATE S and both
+platforms' visual baselines were re-taken at `40ec63fc` (F-D fixed). Pipeline drained.
+**Chosen → `curvature-v2-landing-and-site`.** Brief at
+`.spire/clusters/tech/contracts/curvature-v2-landing-and-site/BRIEF.md`. **Frontend only; `apps/api` diff stays 0.**
+**Why it won, and the re-cut:** phase 1 named phase 4 `curvature-v2-landing-and-responsive` — a marketing
+page, three site pages, a sweep over every screen at six bands, an a11y debt and a 48-occurrence spacing
+burn-down in one BRIEF. That has no reviewable acceptance surface, the same failure shape the phase-1 cull
+recorded against a one-shot rebuild and the phase-3 cull against "finish v2 in one phase". The program's own
+order (Harvest 2026-09-03: "… → landing → responsive pass") puts the landing first, and the sweep's landing
+rules need a v2 landing to exist. So phase 4 is **two features**: this one (landing · blog · methodology ·
+404/route fallback · auth wall · footer with Lab and Blog), then **`curvature-v2-responsive-sweep`** (the six
+bands per `design/site/responsive-spec.html` incl. the phone's docked AI-read sheet · settings section
+navigation per owner ruling D-B with its three behaviours and the 44 px floor · the spacing-exemption
+remainder, 48 occurrences / 25 files · the curve text-equivalent, desk-and-read P1). **Conductor call,
+reversible until GATE C opens — the owner can re-merge them.**
+**Open at GATE C:** the hero instrument — canon `DESIGN_SYSTEM.md:52,113` says "the 3D dealer-gamma surface
+(strike × tenor)", the canvas landing leads with the structure field, the app ships a 2-D `HeroCurve`.
+**Culled / blocked (full set in the BRIEF's `Considered:`):** the two `apps/api` wire fields (blocked-on the
+next backend lane on `main`) · spacing burn-down alone · curve text-equivalent alone · the hosted Linux
+visual-candidates workflow (F-A, tooling) · the test-suite review's tier-A cleanups (hygiene batch, outside
+the ascent — `docs/research/TEST_SUITE_AND_BACKTESTING_REVIEW_2026-09-08.md`).
+**Sequencing recommendation, not a feature:** open the phases 1–3 PR first and build phase 4 on a branch off
+it, so the PR stays reviewable and the visual child's verdict is not muddied by new pixels.
+
 ## Harvest — 2026-09-08 (ticker fidelity repair: two wire fields the design draws and the API does not send)
 <!-- atlas: theme=desk-fidelity horizon=next -->
 Not a BRIEF. Filed by the conductor from the `/ticker` fidelity repair lane's GATE Z items (owner 2026-09-08:
