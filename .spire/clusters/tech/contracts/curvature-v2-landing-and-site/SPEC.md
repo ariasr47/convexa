@@ -8,11 +8,12 @@
 > reader re-derives them (`council/decisions.md` §0): (1) `/` is the landing for **everyone** —
 > `app.tsx:148` is `<Route index element={<Landing />} />`; the redirect at `:127-131` belongs to
 > `/ticker` (`:150`). Nothing to "keep". (2) The canvas leads with the **dealer gamma surface**
-> (`landing.html:73`, `landing.mjs:53`), not the structure field; canon, canvas and code agree, and the
-> "three.js" caption is an overclaim that does not ship. (3) "The design does not contain a waitlist"
-> is false — `landing.mjs:118` keeps a "get notified" line; it is cut anyway, for a better reason
-> (§1). (4) Methodology has **ten** `<h2>` sections, not eleven; all three lanes counted ten
-> independently. (5) The cream blog palette is already dead
+> (`landing.html:73`, `landing.mjs:53`), not the structure field; canon, canvas and code agree on
+> *which* instrument and *which* section leads, and the technology question the BRIEF's open item (1)
+> raised is settled in §2.3 — the "three.js" caption is an overclaim that does not ship. (3) "The
+> design does not contain a waitlist" is false — `landing.mjs:118` keeps a "get notified" line; it is
+> cut anyway, for a better reason (§1). (4) Methodology has **ten** `<h2>` sections, not eleven; all
+> three lanes counted ten independently. (5) The cream blog palette is already dead
 > (`public/blog/how-we-read-dealer-structure.html:33-39` is ink/Plex) — spend nothing there.
 
 ## 1. Goal + scope
@@ -51,8 +52,13 @@ invited trader who mistypes a path or loses a session. Frontend only; `apps/api`
   ticker. A `<noscript>` statement. Re-cut document title, description and share text.
 - **Blog index (`/blog`)** — the v2 index composition over the one published read.
 - **Methodology (`/methodology`)** — the artboard's **ten** sections in its order, beginning with the
-  two data speeds; four of them are new copy (advisory reads · AI read and grounding · simulation ·
-  vocabulary); the score-component table and the nine-member vocabulary table.
+  two data speeds. **All ten sections' headings and paragraphs come from the design source
+  (`design/src/screens/methodology.mjs:29-57`), verbatim, with the four council-ruled deltas §4 names
+  and quotes.** Four of the ten are sections the app does not have at all today (advisory reads · AI
+  read and grounding · simulation · vocabulary); the other six exist in `pages/methodology/copy.ts`
+  in **v1 wording that this feature replaces** — §4 tables the retired fragments so the replacement
+  is checkable rather than discovered. Plus the score-component table and the nine-member vocabulary
+  table.
   <!-- spire:council-resolution:v1 d0bc5fe85b7ac5038d5da16db225c218c7096870ad5d097adfee9d96b2350a56 folded -->
 - **Route fallback + 404** — a catch-all inside the shell group rendering the 404 composition with the
   nav and the footer still mounted. Today an unmatched address renders a blank document.
@@ -129,10 +135,14 @@ invited trader who mistypes a path or loses a session. Frontend only; `apps/api`
 owns: the six responsive bands per `design/site/responsive-spec.html` (including the phone's docked
 AI-read sheet), the settings section navigation (owner ruling D-B), the spacing-exemption remainder
 (48 occurrences across 25 files), and the hero-curve text-equivalent. Also future-dated: the desk
-strip, when and only when an anonymous visitor can read real scanner rows; a genuinely
-three-dimensional hero, when it can render on a low-end phone at first paint with no additional
-runtime download; `persona`, `flows`, `operator` and `whats-sent` as shipped *routes* (they are
-documentation artboards this phase — `whats-sent` documents a drawer that already ships in-page).
+strip, when and only when an anonymous visitor can read real scanner rows; a **runtime-rendered 3-D
+hero** (WebGL/three.js, a moving camera, depth resolved per frame rather than projected once), when it
+can render on a low-end phone at first paint with no additional runtime download — the capability
+already exists in the app as a lab instrument (`pages/lab/StructureFieldWebGL.tsx`, WebGL2), and it is
+barred from the landing by two settled rules rather than by absence: the page deny-list bans
+sibling-page imports (§2.1) and the hero is a static-SVG build constraint (§2.3); `persona`, `flows`,
+`operator` and `whats-sent` as shipped *routes* (they are documentation artboards this phase —
+`whats-sent` documents a drawer that already ships in-page).
 
 ## 2. Architecture
 
@@ -208,6 +218,33 @@ runtime dependency.** That is why the "hero cannot render on this device" accept
 rather than weakened: an `<svg>` computed once at module load has no device-conditional render path,
 so the row commissions a state the build cannot produce and a test can only assert vacuously. The one
 real failure is a JavaScript throw, and it is covered by the route boundary (§5).
+
+**The canon's "3D" and this SVG are the same instrument — the reconciliation, stated once.** The canon
+outranks every document cited here and it says: "The landing has exactly **one hero instrument** — the
+3D dealer-gamma surface (strike × tenor), the product's own model drawn in depth, not a decorative
+illustration" (`DESIGN_SYSTEM.md:52-53`, repeated `:113`). Read against the artefact that sentence was
+written from, it is satisfied exactly:
+
+- **The instrument.** `design/src/lib.mjs:382-383` names its own function *"3D gamma surface
+  (isometric wireframe: strike × tenor × net GEX)"*. Three axes are drawn in depth in one projection —
+  strike across `j`, tenor across `i`, net dealer gamma as height `z(i,j)` lifted through `proj(i,j)`
+  (`:387-399`) — plus the flip, call-wall and put-wall ridges (`:411-427`). "Drawn in depth" is the
+  projection; **it is not a claim about a renderer.**
+- **The canon was written from this artefact.** The 2026-09-03 re-baseline row cites `design/` (the
+  canvas + `design/site/library.html` + `tokens.json`), owner-approved on the canvas, as the source of
+  the v2 direction (`DESIGN_SYSTEM.md:243`). `gammaSurface()` is the *only* dealer-gamma-surface
+  artefact in that source, and `design/` contains **no WebGL and no three.js implementation anywhere**
+  — the only three.js bytes in the whole design source are two prose lines (§9). So no reading of "3D"
+  as a runtime renderer is available from the canon's own source.
+- **What the BRIEF actually asked, and both halves of the answer.** Open item (1) said the council
+  reconciles canon, canvas and code and "the owner rules **if they disagree**". They do not.
+  `council/decisions.md` §0 row 2 settled *which* section leads (the gamma surface, not the structure
+  field). This clause settles the other half the BRIEF raised — the shipped 2-D `HeroCurve` is **not**
+  the canon's instrument and never was: it is an `aria-hidden` payoff silhouette (`HeroCurve.tsx:7-10`,
+  "decorative geometry only"). The gap the BRIEF spotted closes by the app **gaining the surface**
+  (§2.2 item 1), not by the curve being re-labelled as one.
+- **What the canon's Amendments log still owes.** One clarification line, so a later reader cannot read
+  "3D" as WebGL: it is worded in §8, and this spec does not amend the canon itself.
 
 Three things in the design source must **not** travel into the port, and this is a build constraint:
 `class="beam"` on the spot marker (`lib.mjs:429`) — an ungated data-signal keyframe; the `panel
@@ -302,6 +339,8 @@ own feature.
   from one list and cannot diverge. Each entry is a discriminated union — `{ kind: 'prose', body:
   string[] }` or `{ kind: 'table', head, rows }` — so a table section cannot render as prose. The
   vocabulary table **imports** `NOT_A_NUMBER` from `shared/copy/notANumber.ts` rather than retyping it.
+  Every prose string in the rebuilt module comes from the design source (§1, §4), so the module is a
+  transcription with four named deltas, not a second draft of the page.
 - **Landing samples.** Every displayed figure is **derived at module load** from `samples.ts` through
   the same pure projection the desk uses, never hand-typed: the design's own artboard prints the sample
   flip distance as `−0.81%` in one place and `−0.8%` in another, and neither is what the shipped
@@ -331,6 +370,10 @@ own feature.
   and it lands on the desk first, never on the landing as a one-off.
 - **Icon geometry authored in the landing folder** — every icon is imported from `shared/`. Both this
   and the ring ruling exist so the one-hero-instrument cap stays *decidable* by set-equality (§7).
+- **A WebGL or three.js hero**, including reusing the lab's shipped WebGL2 twin
+  (`pages/lab/StructureFieldWebGL.tsx`) — it is a sibling page the deny-list bans (§2.1), it is a
+  different instrument (the field, not the strike × tenor surface), and its rAF loop plus GPU context
+  is the opposite of "static from first paint" (§2.3). Deferred with its restoring condition in §1.
 - **A second hero composition or a raster fallback** for a device that cannot draw the SVG — rejected
   three times in this council as the swap-after-first-paint shape; the answer is the ErrorBoundary.
 - **A route allow-list for the footer** — it re-introduces the list someone forgets and makes canon
@@ -344,8 +387,8 @@ silently regressing); `review` = verified by inspection (copy, presence, orderin
 risk-based, **not** one-test-per-row: AC-L1/L2/L3/L4/L5 are together carried by one structural
 inventory check plus one end-to-end journey (§7).
 
-**Ship-blocking:** AC-L1, AC-L3, AC-L4, AC-L5, AC-L6, AC-L7, AC-L12, AC-M2, AC-M4, AC-N1, AC-A1,
-AC-A2a, AC-A4, AC-A9, AC-F1, AC-G1, AC-G3.
+**Ship-blocking:** AC-L1, AC-L3, AC-L4, AC-L4a, AC-L5, AC-L6, AC-L7, AC-L12, AC-M2, AC-M4, AC-N1,
+AC-A1, AC-A2a, AC-A4, AC-A9, AC-F1, AC-G1, AC-G3.
 
 **Rows the council dropped, recorded so QA does not hunt for them:** AC-L14 (a signed-in resume
 affordance — §1); the device-failure premise of the old AC-L12 (§2.3); AC-N4 / AC-U26's route-name and
@@ -361,6 +404,7 @@ AC-A2a/AC-A9; UX's AC-U5a/U5b are AC-L5/AC-L5a).
 | **AC-L3a** | S4 never-does | Nothing on `/` describes any Convexa capability as coming, coming soon, on the way, or in the works. | test |
 | **AC-L3b** | S4 never-does | The footer's disclaimer on `/` still states that a connected brokerage is read-only and that Convexa never places, changes, or cancels an order. | review |
 | **AC-L4** | S2 real instrument | `/` renders exactly one hero instrument and no second illustration; every other visual on the page is a labelled sample of a surface that exists in the product, and nothing on the page is spot art. | test |
+| **AC-L4a** | S2 real instrument | That one hero instrument is the **dealer-gamma surface over strike × tenor drawn in depth** — the same instrument the design source's landing artboard draws (`design/site/landing.html`): one projection carrying three axes (strike, tenor, and net dealer gamma as height) with the gamma-flip, call-wall and put-wall ridges named in the legend beside it. The payoff-curve silhouette is not it: `HeroCurve` stays decorative background geometry with no legend, no axis, no figure and no accessible name. | review |
 | **AC-L5** | S4 never-does | No live chip, live dot, pulse, beam, particle, drift, trail or shimmer renders on any of the six surfaces. | test |
 | **AC-L5a** | S4 never-does | No surface describes its own displayed figures as live, current, or as-of. Each sample panel is marked once as an illustrative sample, and that mark governs every number inside it. | review |
 | **AC-L5b** | S11 sizing | The methodology page defines what "live" means and states the two data clocks — a stream for prices, a stated cadence for structure — and states that a dropped stream leaves structure readable at its last snapshot. | review |
@@ -368,7 +412,7 @@ AC-A2a/AC-A9; UX's AC-U5a/U5b are AC-L5/AC-L5a).
 | **AC-L7** | S4 never-does | The trust band names all three promises in the product's words, in order: `Snapshot, never live` · `Simulated, always` · `Advisory, never an order`, each with the design's body verbatim. | review |
 | **AC-L8** | S1 first screen | The hero states the horizon and the disclaimer — built for 7–45 DTE swing trades with optional intraday timing, an analysis tool, every trade simulated. | review |
 | **AC-L9** | S5 proof | From `/`, a visitor reaches the methodology page in one click from the honesty section, without using the footer. | review |
-| **AC-L10** | S1 first screen | The document title, the meta description and the share-preview text served for `/` describe the v2 promise; none of them still reads "See the AI read on your real positioning". | test |
+| **AC-L10** | S1 first screen | The document title, the meta description and the share-preview text served for `/` all read the v2 promise: `<title>`, `og:title` and `twitter:title` are the hero sentence `Convexa — See the dealer positioning behind the price.`, and the description, `og:description` and `twitter:description` are the hero's own summary sentence. None of the three v1 strings survives anywhere in the served head — not the v1 title `Convexa — AI dealer-gamma analytics for options traders` (`index.html:9` today), not the v1 share hook `See the AI read on your real positioning` (`:52,65` today), and not the phrase `live order flow` (`:12,55,68` today — a live claim in share text on surfaces that make none). | test |
 | **AC-L11** | S7 degraded client | With JavaScript disabled, loading `/` shows a readable line naming Convexa and saying what it is, plus a link the visitor can follow. Today it shows a blank page. | test |
 | **AC-L11a** | S7 degraded client | The document that link opens renders its full text with JavaScript disabled. | test |
 | **AC-L12** | S2 real instrument | A runtime error thrown while rendering `/` leaves the visitor inside the product: the navigation and the footer are still on screen, a named error state says the page could not be shown, and it offers a way forward. Today a throw on `/` blanks the entire document. | test |
@@ -423,7 +467,8 @@ AC-A2a/AC-A9; UX's AC-U5a/U5b are AC-L5/AC-L5a).
 | **AC-G3c** | S8 returning trader | After the change, no test in the repo asserts that the landing's primary action leads to the Scanner, and none presses a brokerage-notify control. | test |
 | **AC-G4** | S4 never-does | No surface in this feature describes a shipped capability as future, or a future capability as shipped. Every capability sentence is in the tense the codebase supports. | review |
 | **AC-G5** | S7 degraded client | Every colour and type value on the six surfaces comes from the theme; there is no hardcoded hex; `<meta name="theme-color">` follows the active colour scheme. | test |
-| **AC-C1** | S1 first screen | Every string this spec quotes in §4 renders byte-for-byte on the surface it names, including the apostrophe glyphs and the dash forms. | review |
+| **AC-C1** | S1 first screen | Every string this spec **quotes** in §4 renders byte-for-byte on the surface it names, including the apostrophe glyphs and the dash forms. | review |
+| **AC-C1a** | S1 first screen | Every heading and paragraph §4 marks "verbatim from `<file>:<line>`" **without** quoting renders byte-for-byte the bytes at that line of the design source: the methodology page's ten headings and their paragraphs (`design/src/screens/methodology.mjs:29-57`), the landing's three feature bodies and nine bullets (`landing.mjs:126-128`), its three trust-card bodies (`:107-109`), and the blog index's eyebrow, heading, intro and card dek (`blog.mjs:15-17,22-23`) — except the deltas §4 names and quotes, which render as quoted. No shipped surface still carries the retired v1 wording §4 tables. | test |
 
 **Two `Verify by` marks were argued and moved; both are recorded here so they are not silently
 reverted.** (a) The `<noscript>` rows are `test`, not `review`: nobody reviews the acquisition page
@@ -441,6 +486,11 @@ AC-M2a is the correction that fell out of tracing them: the design's table impli
 **dropped** and each component is stated without a number — the spec will not carry five engine
 constants that nothing checks.
 <!-- spire:council-resolution:v1 5b3ba16881db0cb753a07114a50ad6f82a5d3bcd5c70c105af7d8add94e5de03 folded -->
+**AC-C1a rides argument (b), one surface over.** Copy is normally `review`, and its *wording* still is
+— but "these bytes came from that file" is a pin, and a pin nothing checks is how six already-reviewed
+sentences get rewritten, or left unrewritten, with nobody able to say which happened. The mechanism is
+the same disk read as AC-M2's (§7 item 16), and it is what lets §4 say "verbatim from" instead of
+quoting a thousand words of body copy.
 
 **"The 108 chromium e2e journeys are unchanged" means PASS, not COUNT.** The count is expected to
 **rise**: AC-G3b adds three paths to a loop over routes × schemes × widths. A count constraint would
@@ -486,7 +536,7 @@ live", and methodology cannot teach the two clocks without the word.
 | `GammaSurfaceHero` | the SVG, static, identical on every device; eyebrow · legend · caption | **n/a by construction** — no props, no data edge, no async work | n/a | the route boundary above; the hero has no error state of its own | n/a — no source |
 | Structure-field sample | the shipped canvas at `variant='ticker'`, calm and embedded; the landing's own panel header + caption | n/a (eager import; if and only if the 20 kB trigger fires, a reserved-height quiet panel carrying the header and caption — no spinner, no shimmer, no height collapse) | n/a | if and only if the boundary lands: same panel frame, one line — `The structure field sample didn't load.` | n/a — a frozen sample never degrades |
 | Blog index | eyebrow · heading · intro · one published card | route-chunk fill (the shared `RouteFallback`, unchanged) | n/a — a zero-article index is not a shippable state | route boundary | fully readable |
-| Methodology | ten sections + on-this-page index | route-chunk fill | n/a | route boundary | fully readable |
+| Methodology | ten sections + on-this-page index; prose and two tables, **no instrument panel** | route-chunk fill | n/a | route boundary | fully readable |
 | 404 | `404` · headline · sentence · two actions, inside the shell | n/a — must render instantly | n/a | route boundary | fully readable |
 | Auth wall (`RequireAuth`) | wall: heading · unlock line · free-path line · policy caption · `Sign in` · `Open free Ticker →` | **holding:** `<RouteFallback />` while `!ready` — never the wall, never `null` | n/a | **degraded** (`subsystemDegraded`): identity assertion suppressed, degraded line + `Try again` (§5) | n/a |
 | Footer | wordmark · three links · disclaimer · © — once per in-shell page, below the instrument | n/a | n/a | n/a | fully readable |
@@ -512,9 +562,15 @@ the state this feature exists to fix.
 
 ### Copy — exact strings
 
-Where a row says "verbatim from `<file>:<line>`" without quoting, the build copies those bytes; a
-retyped approximation is a defect. Closed-vocabulary literals and shipped labels are quoted
-**byte-exact, including the apostrophe glyph**.
+**Two pins, and which one governs is never ambiguous.** A string **quoted** here is pinned to these
+bytes (AC-C1). A string this section marks "verbatim from `<file>:<line>`" **without** quoting is
+pinned to those bytes in the design source (AC-C1a); the build copies them, and a retyped
+approximation is a defect. Where §4 both quotes a string *and* names its source line, the two pins
+assert the **same** bytes and the citation is evidence, not a second authority. Where a quoted string
+**deviates** from the source line named beside it — the CTA band's dropped count, the four methodology
+deltas — the quote governs and the deviation *is* the pin, which is why the source pin can never be
+read as failing on them. Closed-vocabulary literals and shipped labels are quoted **byte-exact,
+including the apostrophe glyph**.
 
 **Landing — hero.** Chip `Dealer-gamma analytics · free ticker, no account` · H1 `See the dealer
 positioning behind the price.` · sub `Convexa turns an option chain into dealer gamma structure — the
@@ -529,10 +585,11 @@ items: `gamma flip` · `call wall` · `put wall` · caption `Illustrative sample
 not a recorded session.` · SVG accessible name `Dealer gamma surface across strike and tenor`, with
 `aria-describedby` pointing at the caption so the disclosure reaches a screen reader.
 **Cut from the design source, with cause:** `three.js surface · the desk's own model, drawn in depth`
-(the artefact contains no three.js — a false claim about our own work) · the `structure as-of 42s`
-chip and `<span class="chip live"><span class="dot"></span>mid</span>` (a live chip and a dot on a
-snapshot surface) · `rendered from the desk's own bundle` (nothing on `/` is) · `7d → 90d tenors` (an
-axis range the projection does not compute).
+(the artefact contains no three.js — a false claim about our own work; the *instrument* that caption
+describes is the one that ships, §2.3) · the `structure as-of 42s` chip and `<span class="chip
+live"><span class="dot"></span>mid</span>` (a live chip and a dot on a snapshot surface) · `rendered
+from the desk's own bundle` (nothing on `/` is) · `7d → 90d tenors` (an axis range the projection does
+not compute).
 
 **Landing — the field section.** Panel header `Structure field` · panel caption `Illustrative sample —
 not a live read and not a recorded session.` — the same literal the hero carries, so `/` has **one**
@@ -555,10 +612,13 @@ model output.` — deliberately **not** the shared literal, because the claim it
 now?` · `What would I risk?` · `Honest by design`. H2s `Walls, the flip, the magnet — drawn as a
 field, not a table.` · `A triage score that is honest about what it is.` · `A risk-first read, on your
 own key, grounded in the structure.` · `Numbers say where they came from.` · `Open any ticker. No
-account, no card.` Register body `Every surface carries its basis. If you can't tell whether a figure
-is live, a snapshot, or the model's own guess, we have failed — so the type itself tells you.` All
-three feature bodies and all nine bullets verbatim from `landing.mjs:126-128` (with the one field
-bullet amended above). Trust cards, in order, with their bodies verbatim: `Snapshot, never live` ·
+account, no card.` Register body `Every surface carries its basis. If you can’t tell whether a figure
+is live, a snapshot, or the model’s own guess, we have failed — so the type itself tells you.`
+(`landing.mjs:104`; both apostrophes curly, U+2019). The honesty section's action is `Read the
+methodology →` (`landing.mjs:104`, its arrow icon rendered as the shipped forward-action convention) →
+`/methodology`; that is the one-click proof path AC-L9 checks. All three feature bodies and all nine
+bullets verbatim from `landing.mjs:126-128` (with the one field bullet amended above). Trust cards, in
+order, titles quoted and bodies verbatim from `landing.mjs:107-109`: `Snapshot, never live` ·
 `Simulated, always` · `Advisory, never an order`.
 
 **Landing — CTA band.**
@@ -601,24 +661,68 @@ marketing flourish nobody can see is worse than none). The document title, meta 
 authored** — no new marketing sentence exists in this council, so they are cut from the hero's own
 settled literals: title/share title `Convexa — See the dealer positioning behind the price.`;
 description/share description `Convexa turns an option chain into dealer gamma structure — the call
-and put walls, the gamma flip, the magnet — then gives you a risk-first AI read on the setup.` The
-share **image** is out of scope and unchanged.
+and put walls, the gamma flip, the magnet — then gives you a risk-first AI read on the setup.` **Three
+v1 strings leave the head with them**, and AC-L10 names each so no half of the guard can pass on a file
+that kept one: the v1 `<title>` (`index.html:9`), the v1 share hook (`:52,65`), and `live order flow`
+in all three descriptions (`:12,55,68`) — a live claim in share text for a product whose whole point
+here is not making one. The share **image** is out of scope and unchanged.
 
-**Blog index.** Eyebrow, heading `How we read structure` and the intro sentence verbatim from
-`design/src/screens/blog.mjs:16-17`; one published card — `How We Read Dealer Structure`, its
-`Methodology` tag, its dek, and the shipped action `Read the post →` (`BlogPage.tsx:74`) — linking to
-`/blog/how-we-read-dealer-structure.html` as a full-document anchor. No draft slot (§1, D-A option A).
+**Blog index.** Eyebrow `Blog`, heading `How we read structure` and the intro sentence verbatim from
+`design/src/screens/blog.mjs:15-17`; one published card — `How We Read Dealer Structure`, its
+`Methodology` tag, its dek verbatim from `blog.mjs:22-23`, and the shipped action `Read the post →`
+(`BlogPage.tsx:74`) — linking to `/blog/how-we-read-dealer-structure.html` as a full-document anchor.
+No draft slot (§1, D-A option A); no `structureField` thumbnail (§1).
 
-**Methodology.** Ten sections in this order: Two data speeds → Dealer structure → Flip vs walls →
-Score and tier → Advisory reads → AI read and grounding → Simulation → Where the read is weak → What
-Convexa never does → Vocabulary. Headings and paragraphs verbatim from `methodology.mjs:29-57`; the
-closing actions and disclaimer keep the shipped `METHOD_COPY` strings. Three additions and one
-correction:
+**Methodology — one copy source, four deltas.** Ten sections in this order: Two data speeds → Dealer
+structure → Flip vs walls → Score and tier → Advisory reads → AI read and grounding → Simulation →
+Where the read is weak → What Convexa never does → Vocabulary. **Every heading and every paragraph is
+verbatim from `design/src/screens/methodology.mjs:29-57`** — that file is the single source for this
+page, and `pages/methodology/copy.ts`'s shipped section strings are **replaced**, deliberately, so a
+lane cannot merge two wordings. No shipped section sentence survives as an exception, and the page's
+non-section strings need none either: the title `How Convexa works`, the subhead, the three closing
+actions (`Open Scanner` · `Open free Ticker` · `Back to home`) and the closing disclaimer are
+**byte-identical** in the design source (`:24-25`, `:62-63`) and in shipped `METHOD_COPY`
+(`copy.ts:7-13,97-99`) — verified at synthesis, so "one source" costs nothing there.
 
-- **The score table gains a clause**, because the five maxima sum to 106 and a reader who adds them up
-  is owed the reason: `The components can total more than 100; the score is capped at 100.`
+*Why the design source wins on the six sections the app already has, rather than the shipped strings
+winning as the reviewed incumbent:* the shipped wording is **v1 vocabulary the canon has since
+re-baselined**, and on two claims it is vaguer than the truth. The retired fragments, so the
+replacement is checkable rather than discovered (AC-C1a; `pages/methodology/copy.ts` line → what
+ships):
+
+| retired v1 fragment | what ships (`methodology.mjs`) | why the design source is right |
+| --- | --- | --- |
+| `live tiles dim and say offline` (`:53`) · `the tile says unavailable` (`:43-44`) | `live cells dim and say offline` (`:31`) · `the cell says unavailable` (`:40`) | v2 replaced the stat **tile** with the **figure cell** (canon re-baseline contradiction (1), `DESIGN_SYSTEM.md:256`). "Tile" names nothing in the v2 app. |
+| `The ticker always labels that basis` (`:24`) · `The frontend maps them through closed labels` (`:60`) · `the ticker shows a single-name caveat` (`:77`) | `The desk always labels that basis` (`:35`) · `The desk maps them through closed labels` (`:42`) · `the desk shows a single-name caveat` (`:55`) | v2's noun for that surface is **the desk** (`DESIGN_SYSTEM.md:40,46-53`). "The frontend" also names an implementation layer to a trader, which is not a product noun at all. |
+| `about every few minutes` (`:51`) | `about a minute on a ticker desk, about every three minutes across the scanner, sooner for names that just moved` (`:30`) | The vaguer string is the less honest one, and the specific one is traceable: `TICKER_BUNDLE_POLL_MS = 60_000` (`useTickerBundle.ts:15`) and `SCAN_STALE_AFTER_SECS` default `180` (`apps/api/src/config.rs:237`, read for evidence only — no diff). It also has to agree with the trust card this same feature ships, which states those two cadences on `/` (`landing.mjs:107`). |
+| `not from inventing direction on the FE` (`:21`) | `not from inventing direction on the front end` (`:34`) | `FE` is internal jargon on a public trust page. |
+| `Independent evidence favors` (`:27`) | `Independent evidence favours` (`:36`) | No house spelling is recorded in this repo (both forms occur widely), so the source pin decides rather than a house-style pass this feature is not authorised to run. Named here so it is a visible choice, not a drift. |
+
+One relocation a reviewer will look for: the sim-P/L mark-ladder sentence moves out of "Where the read
+is weak" (shipped `copy.ts:82-83`) into the new **Simulation** section (`methodology.mjs:53`) — the
+design source's own placement. Nothing is dropped.
+
+The design's illustrative panel inside "Two data speeds" (`methodology.mjs:32`) does **not** ship: it
+carries a `chip live` + `<span class="dot">` and a `levels as-of 42s` chip, both banned on a page with
+no stream (AC-L5, canon Banned row), and the state matrix above commissions no instrument on this page.
+*Restoring condition:* if the owner wants the field beside that section, it mounts exactly as the
+landing's does (`variant='ticker'`, frozen model, §2.4) and carries the same one-line sample mark; it
+may never carry the chip, the dot or the as-of.
+
+**The four deltas**, each council-ruled, each quoted so AC-C1 pins it:
+
+- **The score section's introducing clause is corrected.** `methodology.mjs:42` ships verbatim up to
+  `never re-derives the score from scan rows alone.`; its final clause `The score is a capped sum of
+  plain components:` is replaced by: `The score is a sum of plain components, capped twice. The four
+  base components below are summed and capped at 100; the dark-pool confluence bonus is added after
+  that cap and capped again, so it can only lift a score that is still under 100 and no score ever
+  exceeds 100:` Reason: the five maxima sum to 106 and a reader who adds them up is owed the reason
+  (`signals.rs:490`, then `:458`). This is the wording **AC-M2a** requires, and it supersedes the
+  shorter clause signed at R3 (`The components can total more than 100; the score is capped at 100.`)
+  — same fix, but it states the two-stage clamp the acceptance row asks a reviewer to find. One
+  sentence, not two competing ones.
 - **The AI section gains** `A "no trade" read is a complete, correct answer — not an error and not a
-  failed request.` (canon rule 16 — and the blog post that would have carried it is not written).
+  failed request.` (canon rule 16 — and the blog post that would have carried it is not written.)
 - **The "what leaves the machine" sentence**, replacing the trailing clause of `methodology.mjs:51`:
   `What leaves the machine, on demand, is the computed snapshot, the candidate contracts, your two
   risk numbers, the open-positions digest for the ticker, the persona prompt and the field glossary.
@@ -631,14 +735,15 @@ correction:
   never as a route link** — there is no `/whats-sent` route and a link would 404, which is the hazard
   AC-M5 actually reaches for. The cut stands only for `persona`, `flows` and `operator`.
   <!-- spire:council-resolution:v1 22f6ae74e81233b9f0d086228449f97231b82d0f6846b16f37a3c8383a98952a folded -->
-- **The vocabulary table is corrected on both halves.** The design lists six literals and renders every
-  one of them `class="mono"` — the figure register, on the page that teaches the vocabulary. The page
-  follows the app, not the artboard (`shared/figure/figureState.spec.ts:108` already proves a literal
-  stays Sans whatever its register). The table imports the shipped union and carries **every** member,
-  each rendered **Plex Sans**, never mono and never as a figure. There is no "this is a selection"
-  clause: on the one page that defines a closed vocabulary, that clause teaches the trader the set is
-  open — the exact inversion the rule exists to prevent, and the reason the canon was widened from six
-  to nine on 2026-09-03. The definitions:
+- **The vocabulary table is corrected on both halves**, and it is the one section the source pin does
+  **not** cover: the design lists six literals and renders every one of them `class="mono"` — the
+  figure register, on the page that teaches the vocabulary. The page follows the app, not the artboard
+  (`shared/figure/figureState.spec.ts:108` already proves a literal stays Sans whatever its register).
+  The table imports the shipped union and carries **every** member, each rendered **Plex Sans**, never
+  mono and never as a figure. There is no "this is a selection" clause: on the one page that defines a
+  closed vocabulary, that clause teaches the trader the set is open — the exact inversion the rule
+  exists to prevent, and the reason the canon was widened from six to nine on 2026-09-03. The
+  definitions:
 
   | literal | means |
   | --- | --- |
@@ -685,7 +790,11 @@ restates no token table.
   instrument is drawn by a component the product ships; an illustration exists only for marketing.*
   The landing carries exactly one of the latter — the gamma surface — and the cap is enforced by
   set-equality (§7), not by a taste argument. The three feature visuals are labelled samples of
-  shipped surfaces, not illustrations; `HeroCurve` stays `aria-hidden` background geometry.
+  shipped surfaces, not illustrations; `HeroCurve` stays `aria-hidden` background geometry. **The
+  rule's word "3D" is read against the artefact the canon was written from** — an isometric projection
+  of strike × tenor × net gamma, drawn in depth, static SVG, no WebGL (§2.3, AC-L4a). That reading is
+  the same instrument, not a weakening; the one-line clarification it owes the canon's Amendments log
+  is worded in §8.
 - **Motion** (canon Motion row + `[single-motion-moment]`): the `HeroCurve` draw is the one
   orchestrated moment and renders **drawn** under `prefers-reduced-motion`. Every data-signal keyframe
   fails predicate (a) on these surfaces by construction — there is no stream — so `beam`, `particle`
@@ -701,9 +810,16 @@ restates no token table.
   `:focus-visible` ring; ≥44 px coarse-pointer targets; `theme-color` follows the scheme; no
   horizontal overflow at the checked widths; no hover-only affordance (the sample panels are static
   and non-interactive, so a hover lift would promise an interaction that does not exist).
-- **Arc budget (rule 2):** the landing spends the arc twice — the hero draw and the footer
-  `ArcDivider` — plus the wordmark X. `GammaSurfaceHero` must not import `arc.ts`; that would be a
-  fourth spend.
+- **Arc budget (rule 2) — two different numbers, kept apart so the build poison-tests the right one.**
+  (i) *Visual arc spends on `/`*: three, unchanged — the `HeroCurve` draw, the footer's `ArcDivider`
+  (now reaching `/` through the shell mount rather than through `Landing.tsx`), and the nav wordmark X.
+  (ii) *Import-site pins in `arc.spec.ts`, both untouched by this feature*: `arc.ts`'s importers are
+  exactly `{pages/landing/HeroCurve.tsx, shared/ui/ArcDivider.tsx, shell/ConvexaMark.tsx}`
+  (`arc.spec.ts:89-95`), and `ArcDivider`'s importers are exactly
+  `{features/trading/outcomes/TrackRecordSection.tsx, shell/Footer.tsx}` (`:106-110`).
+  `GammaSurfaceHero` must not import `arc.ts` — that is the fourth importer that red-builds pin (ii).
+  Mounting `Footer` in `AppShell` adds no `ArcDivider` importer, because `AppShell` imports `Footer`,
+  not the divider.
 - **Amber budget (rule 16's cardinality):** at most one primary-action fill per state; the eyebrow
   caps use text-grade amber, never fill amber as small text.
 
@@ -713,7 +829,8 @@ system): (1) the **sample-provenance label** as a marketing-surface honesty patt
 *panel*, not a *value*, so rule 24 is untouched; (2) the **`RequireAuth` degraded-branch copy**, which
 adds `AUTH_COPY.gate.sessionUnknown` and `AUTH_COPY.gate.retry` beside the shipped
 `AUTH_COPY.gate.unavailable`; (3) a one-line clarification that rule 24's "Sans, never a figure" also
-governs a **glossary quoting** the literal.
+governs a **glossary quoting** the literal; (4) the **one-line clarification of "3D"** in the
+one-hero-instrument rule — worded in §8, evidenced in §2.3.
 
 ## 5. Error handling
 
@@ -799,10 +916,21 @@ poison the thing it forbids and the build must go red — or it is prose wearing
 7. **Every route element is bounded** — a `?raw` scan of `app.tsx` asserting every route element in the
    shell group is either `lazyRoute(...)` or `ErrorBoundary`-wrapped, so a future route added without a
    boundary red-builds instead of being noticed.
-8. **`index.html`** — the shipped `?raw` glob pattern (already used by four specs) asserts: a
-   `<noscript>` exists; its text names Convexa; it anchors to `/blog/how-we-read-dealer-structure.html`;
-   that file exists on disk and contains no `<script type="module">`; and neither the title nor the
-   OG/Twitter titles still carry the v1 hook.
+8. **`index.html` head + `<noscript>`** — the shipped `?raw` glob pattern (already used by four specs)
+   asserts, positively and negatively, so neither half of AC-L10 can pass vacuously:
+   - a `<noscript>` exists; its text contains `Convexa`; it anchors to
+     `/blog/how-we-read-dealer-structure.html`; that file exists on disk and contains no
+     `<script type="module">`;
+   - `<title>`, `og:title` and `twitter:title` each **equal** `Convexa — See the dealer positioning
+     behind the price.`, and the file no longer contains the v1 title `Convexa — AI dealer-gamma
+     analytics for options traders` (`index.html:9` today) **or** the v1 share hook `See the AI read on
+     your real positioning` (`:52,65` today). These are two *different* stale strings: an absence check
+     written against the share hook alone was always green on `<title>`, which never contained it, so
+     `<title>` could have shipped unchanged.
+   - `description`, `og:description` and `twitter:description` each equal the hero summary sentence,
+     and the file no longer contains `live order flow` (`:12,55,68` today).
+   Mutation-proved three ways: restore any one of the three v1 strings in a fixture and the check goes
+   red.
 9. **Vocabulary set-equality** — the methodology page imports `NOT_A_NUMBER`
    (`shared/copy/notANumber.ts`) and the spec asserts set-equality **in both directions** between the
    table's literal column and that array, plus the Sans register. A tenth member added to the union
@@ -829,6 +957,20 @@ poison the thing it forbids and the build must go red — or it is prose wearing
 15. **e2e** — `no-overflow.spec.ts`'s `ROUTES` table gains `/blog`, `/methodology` and one unmatched
     path, each with a ready marker (this is where the chromium count rises, by design); the
     accessibility suite runs axe over the six surfaces at zero waivers.
+16. **Copy fidelity to the design source (AC-C1a)** — one node-environment Vitest case, same mechanism
+    and precedent as item 10, reading `design/src/screens/{methodology,landing,blog}.mjs` from disk (a
+    read, not a runtime import — the canon's "nothing in the app imports from `design/` at runtime"
+    stands) and asserting that every rebuilt copy string is present in its source file byte-for-byte:
+    the methodology module's ten headings and all their paragraphs, the landing's three feature bodies,
+    nine bullets and three trust-card bodies, the blog index's eyebrow, heading, intro and card dek.
+    The named exclusions are exactly the quoted deltas (§4) and the vocabulary table, which item 9
+    pins instead. **Negative half, and it is the half that bites:** none of the retired v1 fragments
+    §4 tables appears anywhere under `pages/methodology/**` — grep-safe forms, each contiguous in
+    `copy.ts` today: `live tiles`, `the tile says`, `on the FE`, `The ticker always labels`,
+    `The frontend maps them`, `the ticker shows a single-name caveat`, `about every few minutes`,
+    `evidence favors`, `capped sum of plain components`. Mutation-proved both ways: change one word of
+    a paragraph and the positive half goes red; restore one retired fragment and the negative half
+    goes red.
 
 **Journeys rewritten in the same change (named up front, three files plus one extension).**
 `accessibility.spec.ts:115-125` — **A11Y-B2 keeps its id** (`manifest.ts:23` / `manifest.json:1078`
@@ -847,16 +989,20 @@ account:** `scenarios.ts` (`:427-429` is a readiness anchor and `:455,460` list 
 a11y-scan ready selector, not a click), `compatibility.spec.ts` (`:23-29` clicks `nav-ticker`),
 `manifest.ts`.
 
-**Reviewed, not automated:** all copy rows (visible, intentional, and a human on a normal pass would
-notice a regression), the stacking rows, and the two visual baselines — the committed `landing`
-scenario (`scenarios.ts:525-527`) and the desk baseline that the footer mount moves — which are
-re-accepted through the **two-stage human receipt** flow on both platforms, never overwritten by a
+**Reviewed, not automated:** all copy *wording* rows (visible, intentional, and a human on a normal
+pass would notice a regression — the *provenance* of that copy is item 16's business, not a
+reviewer's), the stacking rows, the hero-instrument identity row (AC-L4a, checked against
+`design/site/landing.html` beside the running page), and the two visual baselines — the committed
+`landing` scenario (`scenarios.ts:525-527`) and the desk baseline that the footer mount moves — which
+are re-accepted through the **two-stage human receipt** flow on both platforms, never overwritten by a
 lane.
 
 ## 8. Guardrails this feature must not break
 
 - **`apps/api` diff 0** on `spire/curvature-v2-foundations` — asserted as an empty diff. Reading
-  `libs/quant-engine/src/signals.rs` from disk changes no byte in either crate.
+  `libs/quant-engine/src/signals.rs` from disk changes no byte in either crate, and the one `apps/api`
+  citation in this spec (`config.rs:237`, the scanner's 180-second staleness default that vouches a
+  cadence sentence) is a read for evidence, not an edit.
 - **`[theme-token-discipline]`** — every colour and type from `tokens.ts` through palette slots /
   `extrasFor(theme)`; zero hardcoded hex, including inside the `<noscript>` block.
 - **`[single-motion-moment]`** — one orchestrated moment (the `HeroCurve` draw) and **zero**
@@ -877,13 +1023,27 @@ lane.
 - **`[server-side-gate-enforcement]`** — the wall is UX only; `/api/scan*` and the positions write gate
   refuse signed-out callers server-side regardless. Nothing here adds a client path to a gated surface.
 - **`[cited-code-is-verified-not-assumed]`** — every `file:line` in this spec was read at source during
-  the council and re-checked at synthesis.
+  the council and re-checked at synthesis, including the lines this repair pass adds
+  (`apps/dashboard/index.html:9,12,52,55,65,68`; `design/src/lib.mjs:382-383`;
+  `design/src/screens/landing.mjs:104,107-109`; `design/src/screens/blog.mjs:15-17,22-23`;
+  `design/src/screens/methodology.mjs:29-63` against `pages/methodology/copy.ts:7-13,21-99`;
+  `shared/ui/arc.spec.ts:89-95,106-110`; `libs/quant-engine/src/signals.rs:458,490`;
+  `pages/ticker/useTickerBundle.ts:15`; `apps/api/src/config.rs:237`;
+  `pages/lab/StructureFieldWebGL.tsx:1-16`).
 - **Canon rules 2, 3, 5, 6, 7, 9, 13, 16, 17, 18, 19, 20, 21, 22, 23, 24** (§4 Design direction).
 - **The closed-signups declaration is client-side, and that coupling is the guardrail.** The session
   payload carries no signup-policy flag (see `INTERFACE_CONTRACT.md`), so the closure is declared from
   one literal, `AUTH_COPY.signup.signupsClosed`. **Reopening sign-ups is therefore a server change plus
   exactly one frontend edit at that one string's site** — the day the server reopens and that literal
   stays, three surfaces lie in unison. Named here so the next session finds it before a user does.
+
+**The one canon clarification this feature owes, worded here so the ruling that lands it can paste it.**
+It clarifies existing language; it is not a new rule and not a second system — the canon's own cited
+source already implements it (evidence in §2.3), and this spec does not write it into the canon:
+
+| Date | Change | Cause |
+| --- | --- | --- |
+| (on approval) | **"3D" in the one-hero-instrument rule means an isometric projection drawn in depth, not a runtime 3-D renderer.** The landing's one hero instrument is the dealer-gamma surface over strike × tenor with net gamma as height, drawn as a **static inline SVG** isometric wireframe — no WebGL, no Canvas2D, no three.js, no new runtime dependency. | `curvature-v2-landing-and-site`: `DESIGN_SYSTEM.md:52-53,113` says "3D … drawn in depth" while the owner-approved source it was written from implements exactly that instrument in SVG (`design/src/lib.mjs:382-425`, whose own header calls it "3D gamma surface (isometric wireframe: strike × tenor × net GEX)"), and `design/` carries no WebGL implementation at all. Council conflict `01d33a0b` then made the static-SVG rendering a build constraint, with three non-vacuous mechanisms. Without this line a later reader can read "3D" as WebGL and treat the shipped hero as a deviation. A runtime-rendered 3-D hero stays deferred with its restoring condition (SPEC §1). |
 
 **Costs priced now rather than discovered at the gate (these belong in the PLAN, not in §9):**
 
@@ -900,23 +1060,44 @@ lane.
 3. The committed `landing` visual baseline (`scenarios.ts:525-527`, 393×852 dark) and the **desk**
    baseline (the footer mount) are re-accepted through the receipt flow on both platforms.
 4. `Landing.tsx:61` nests a second `<main>` inside `AppShell.tsx:97`'s — fixed by the rewrite (AC-F4).
-5. `index.html:52,65` still carry the v1 OG/Twitter hook (AC-L10).
+5. `apps/dashboard/index.html` carries **three** distinct v1 strings, not one, and AC-L10 / §7 item 8
+   name each because a guard written against one passes on the others: the v1 `<title>`
+   `Convexa — AI dealer-gamma analytics for options traders` (`:9`); the v1 share hook `See the AI read
+   on your real positioning` (`:52,65`); and `live order flow` in all three descriptions (`:12,55,68`).
 6. The build lane records **both** production entry-chunk numbers (before/after `nx build
    @convexa/dashboard --configuration=production`) in the PLAN. The 20 kB gzipped figure in §2.4 is a
    decision rule, not a measurement anyone has made.
 7. The chromium journey count rises (§7 item 15). That is added coverage, not a breach of AC-G3.
+8. **§7 item 16 couples the dashboard suite to `design/src/screens/*.mjs`.** That is the point — it is
+   what makes "verbatim from the design source" a pin rather than an intention — but it means a later
+   edit to those authored files red-builds the app until the page is updated with them. Resolve as a
+   **deliberate edit in the same change**, the same rule as cost 1: never a waiver, never a narrowed
+   scan.
 
 ## 9. Open questions
 
 Three, and only three. Everything else the council raised is settled above with its reasoning; the
 build-cost items are in §8 because they have answers, not questions.
 
-1. **Does `design/src/screens/responsive-spec.mjs:28`'s Landing row get amended in this change?** It
-   still says "desk strip scrolls" for a section all three lanes cut. The design source is generated
-   (`node design/src/build.mjs`) and outranks nothing — but it is what the successor
-   `curvature-v2-responsive-sweep` will read. Left stale, the strip returns in the next phase with
-   nobody realising it was ruled out; amended here, this feature edits a design artefact outside its
-   own six surfaces. **Owner's call.** No acceptance row depends on it either way.
+**Not here, and why:** the hero's dimensionality. The BRIEF made the owner the tie-breaker only "if
+[canon, canvas and code] disagree"; they agree, once the canon's "3D … drawn in depth" is read against
+the artefact the canon was written from (§2.3; evidence at `design/src/lib.mjs:382-383`). It is folded
+rather than deferred — §2.3 reconciles it, AC-L4a makes it observable, and §8 words the one
+clarification line the canon's Amendments log owes. If the owner instead reads "3D" as requiring a
+runtime renderer, that reverses a converged council conflict (`01d33a0b`) and reopens §1's deferred
+item: say so before the build lane starts, not after.
+
+1. **Do the design-source lines this change makes stale get amended here?** Three of them now: (a)
+   `design/src/screens/responsive-spec.mjs:28`'s Landing row still says "desk strip scrolls" for a
+   section all three lanes cut; (b) `landing.mjs:56`'s caption `three.js surface · the desk's own
+   model, drawn in depth`, which the council cut as a false claim about our own artefact; (c)
+   `components-sheet.mjs:173`'s note "Three.js earns its place only on the landing surface (below), not
+   on the desk", which reads as a commitment the settled build constraint (§2.3) declines. The design
+   source is generated (`node design/src/build.mjs`) and outranks nothing — but it is what the successor
+   `curvature-v2-responsive-sweep` will read. Left stale, the strip and the three.js hero both come
+   back in the next phase with nobody realising they were ruled out; amended here, this feature edits
+   design artefacts outside its own six surfaces. **Owner's call, one decision for all three.** No
+   acceptance row depends on it either way.
 2. **What is the on-this-page index on a phone?** At 393 px the design turns the ten-item index into a
    horizontal scroller with no visible affordance. AC-M6 says a reader reaches "Where the read is weak"
    without scrolling through nine sections, and on a phone that scroller is the only route; AC-G1
