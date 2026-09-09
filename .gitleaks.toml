@@ -1,0 +1,28 @@
+# gitleaks configuration — loaded automatically from the --source root (the supply-chain policy job
+# runs `gitleaks git --no-banner --redact --report-format json --log-opts <base>..<head>`, see
+# tools/supply-chain/policy/gitleaks.mjs).
+#
+# Why this file exists (2026-09-09, PR #46): the first PR run reported eight "secrets", all false
+# positives in files the branch introduced — five `sourcegraph-access-token` matches inside a base85
+# BINARY git patch retained as visual-review evidence (random base85 happens to spell `sgp_…`), and
+# three `generic-api-key` matches in council documents quoting a localStorage KEY NAME. Allowlists are
+# scoped as narrowly as the false positive: by path for the binary patches (never text a human writes),
+# and by regex for the localStorage-key prose. There is deliberately NO blanket allowlist on `.spire/**`
+# or `docs/**` — a real key pasted into a document must still fire.
+
+title = "convexa"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Retained visual-review evidence patches are `git diff --binary` base85 blobs, not text."
+paths = [
+  '''apps/dashboard-e2e/visual-review/diffs/[0-9a-f]{32}\.patch$''',
+]
+regexes = [
+  # Prose naming a browser localStorage / IndexedDB key, e.g. "localStorage key `convexa.positions.v3`"
+  # or "the key is `convexa:recent-tickers`" — a storage key name, never a credential.
+  '''(?i)(localStorage|sessionStorage|IndexedDB|storage)\s+key\b''',
+  '''(?i)\bconvexa[.:][a-z0-9._:-]+''',
+]

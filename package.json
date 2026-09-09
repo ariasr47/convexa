@@ -100,8 +100,8 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.0.5",
-    "@vitest/coverage-v8": "~4.1.10",
-    "@vitest/ui": "~4.1.10",
+    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/ui": "^4.1.11",
     "eslint": "^9.39.5",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
@@ -118,7 +118,7 @@
     "typescript": "5.9.3",
     "typescript-eslint": "^8.65.0",
     "vite": "^8.2.0",
-    "vitest": "~4.1.10"
+    "vitest": "^4.1.11"
   },
   "overrides": {
     "nx": {
@@ -128,6 +128,7 @@
       "nanoid": "3.3.18"
     },
     "qs": "^6.16.0",
-    "fast-uri": "^4.1.4"
+    "fast-uri": "^4.1.4",
+    "js-yaml": "5.4.1"
   }
 }
