@@ -1,6 +1,63 @@
 # RESUME — spire/curvature-v2-foundations
 
-## ⬆ UPDATE — 2026-09-08 late (Windows box): F-D FIXED (two causes) · win32 AND linux baselines ACCEPTED at `40ec63fc` · pushed to `2eaa7136` · next: the PR, on the owner's go
+## ⬆ UPDATE — 2026-09-09 (Windows box): PR #46 OPEN · first CI run red on four repaired causes · baselines RE-ACCEPTED at `be00d739` on both platforms · branch at `27eb19e2` · phase 4 council at the S2 cap, ONE owner ruling open
+
+**Read this first; every block below is history.** Owner: "pr first, then council". PR #46
+(https://github.com/ariasr47/convexa/pull/46, `spire/curvature-v2-foundations` → `main`) opened at `11307915`.
+Its first CI run (`34304816896`) was red in the accessibility and visual children and in the supply-chain policy
+job; all four causes are in `PR46_CI_REPAIR_TASK.md` (§A–§E) and in BACKLOG F-G…F-K. Commits since, oldest first,
+all pushed: `f13dcbfb` docs (the task) · `bec49028` chore(ci) advisories + `.gitleaks.toml` · `b7425507`
+fix(dashboard) contrast tokens (`extras.textDim`/`textInfo`, Amendments row) · `ad858c83` fix(dashboard) bundled
+greek/latin-ext/symbol subsets, `⌘`/`▾` → icons, glyph-coverage spec · `1d6f6b42` chore(deps) scoped js-yaml
+override · `097d37a7` chore(spire) helper maxBuffer, bootstrap cleanup · `b1c898df` win32 baselines at 1d6f6b4 ·
+`be00d739` test(quality) `--disable-lcd-text` · `6f9807b7` win32 baselines at be00d73 · `27eb19e2` linux baselines
+at be00d73. **Second CI run `34323995666` on `27eb19e2` was in flight when this was written — read its verdict
+from `gh run view 34323995666` before believing anything here about CI.** Expected: accessibility and visual green;
+policy job still red on the two unfixable `js-yaml` highs (F-J, owner decision).
+
+| platform | authorization | candidate set | acceptance | stability runs |
+| --- | --- | --- | --- | --- |
+| win32 | `win32-curvature-v2-be00d73-20260909` | `b185b79d60efafa1935d6801512bb38d` | `accept-b185b79d60efafa1935d6801512bb38d-20260909` | `local-1788938275643-b4e88155` · `local-1788938286153-11c43fb7` |
+| linux | `linux-curvature-v2-be00d73-20260909` | `bedb336775fcf3b0d850301f1a33e5f4` | `accept-bedb336775fcf3b0d850301f1a33e5f4-20260909` | `local-1788938340728-93e20c6d` · `local-1788938345682-6c3ad028` |
+
+**Six SHA-256, win32:** landing `ffd2603e95de642e80554059756d743fe388720c8a6787eb9734b58dcd8ce8dd` · ticker-desktop
+`42e7b8203007a469fa847656098253838ed4a50eba5057a24eb208648a9ff175` · ticker-offline-mobile
+`6aef0610c00c8314c8aec1b5ca014f75bbec9bcbcc2373e64eaa4de8f4cf9291` · positions-dense
+`d39d97f4e7976496650177a7e997857f9c6bc08906d6f9af2733996544054211` · scanner-dense
+`ec1ba3e283517a0824d2c406fd7cff6c0ed614b018b79b69c2de54d73851c516` · ai-recommendation
+`0eecfb0cfb36fb054740dfb9a005d1847ebbdbc12f2ebc93455e83ed749855db`.
+**Six SHA-256, linux:** landing `d22a0387d6edf26416fc9a8b4b055f1244f9a810726650401684053c08fd288a` · ticker-desktop
+`5b10208026b62fc8fa86230dc443bf674184fc73dec99bec0f0565b7fb5d914c` · ticker-offline-mobile
+`05ec3e4c98ec2216fa958dd4e6e1ef34179e136ff109b069d080f9ff3aba8806` · positions-dense
+`d7609f61da0624ed79c9c4e3b580ea291af6e355c406a16e31d7773c9675f687` · scanner-dense
+`acbd7057aaee6ee3631b17e8f846c318e7740176e63db4481b6451ae725e0ee4` · ai-recommendation
+`cddcd5525ed190e718bc99c8683a7bb2a9f71f4b94a9f3ef1418cf5ae3b3d8e1`.
+All six changed on both platforms (contrast tokens and bundled glyphs touch every page; grayscale AA touches every
+pixel of text). Linux ran as before in the Playwright image (`linux-container/` scripts); container and volume
+removed again.
+
+**Open, owner's call (one per line):**
+- **F-J:** the policy job cannot go green — `js-yaml` 4 under `@redocly/openapi-core` is unfixable upstream and
+  security exceptions are prohibited. Move the policy (a narrowly scoped, dated exception for this one path) or wait
+  for `openapi-typescript` to move. Recommendation: the scoped exception, expiring 2026-12-31.
+- **Key rotation:** `MASSIVE_API_KEY` sat in `apps/api/.env` in the initial commit `1aac13ec`; rotate if not rotated
+  then. Not asked to rewrite history.
+- **D-B (phase 4 council):** the landing hero instrument — A static SVG isometric projection (recommended) · B
+  three.js · C ship A and pre-register three.js. D-A (blog draft slots) proceeds on A unless vetoed.
+
+**Phase 4 (`curvature-v2-landing-and-site`) council state, on branch `spire/curvature-v2-landing-and-site`:**
+R1 ×3, R2 ×3 (31 conflicts validated by `council_conflicts`), R3 reconciled with inboxes, R4 wrote SPEC (71 rows,
+receipt 31/31) + INTERFACE_CONTRACT (NO_BACKEND_CHANGE), S2 ran twice (cap): pass 2 left 2 Important + 1 Minor.
+**Next there:** the D-B ruling → one final R4 pass folding D-B and S2 pass 2 → `contract_lint` → spec approval →
+GATE PLAN. Council trap paid for: R2 files must carry the conflicts JSON fence with no heading above it, and every
+conflict id is a hash of (source, index, whole-file body) — regenerate ids after any edit, never hand-patch them.
+
+**Next on this branch:** read run `34323995666`. If accessibility and visual are green: merge is the owner's call
+(the policy job needs F-J resolved or an explicit override). If the visual child is red: the diff images in the
+`browser-quality-visual` artifact say whether it is fonts again (F-I fixed the app-bundled ones; a system-font
+fallback elsewhere would show as glyph-only diffs) — do NOT re-take baselines until the cause is named.
+
+## ⬆ UPDATE — 2026-09-08 late (Windows box): F-D FIXED (two causes) · win32 AND linux baselines ACCEPTED at `40ec63fc` · pushed to `2eaa7136` · next: the PR, on the owner's go — SUPERSEDED by the block above
 
 **Read this first; the two blocks below it are history.** Owner ruling this session: `keep` the CI visual gate,
 `go` on the order fix-F-D → linux via docker → PR. Commits, oldest first, all pushed: `6fa9419b`
@@ -559,7 +616,7 @@ value of **60**, and the gap is in the canon's prose, not the code.
 
 # RESUME — spire/curvature-v2-foundations (2026-09-03)
 
-**Resume status:** ACTIVE — **phases 1–3 closed at GATE S; F-D fixed and win32 + linux visual baselines accepted 2026-09-08 at `40ec63fc` (branch at `2eaa7136`); next: the PR on the owner's go, then phase 4 at GATE I.**  
+**Resume status:** ACTIVE — **phases 1–3 closed at GATE S; PR #46 open; win32 + linux visual baselines re-accepted 2026-09-09 at `be00d739` (branch at `27eb19e2`); phase 4 council at the S2 cap with the D-B ruling open — see the 2026-09-09 block at the top.**  
 **Written:** 2026-09-03 (GATE R, phase 1 closed at GATE S — a clean phase boundary, not a mid-build checkpoint)
 
 Written at GATE R for a **fresh session on another machine**. Self-contained against `PROJECT_CONTEXT.md`.

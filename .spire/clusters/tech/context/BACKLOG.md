@@ -136,6 +136,39 @@ change line or a name.
   → `spire run tech` exit 4 "artifact integrity". Fixed by pinning `AGENTS.md text eol=lf` (same commit as this note).
   Trap kept: `spire run` rewrites the tracked `receipts/selection.json` timestamp — revert it before any tool that
   refuses tracked changes (the visual update command does).
+- **F-G — the browser-quality gates never ran on `spire/curvature-v2-foundations` until PR #46** (2026-09-09). The
+  aggregate (`npm run browser:quality`: chromium e2e, compatibility, accessibility, visual) runs only in CI on `main`
+  pushes and pull requests; `npm run ci` is lint → typecheck → test → build. Three redesign phases closed at GATE S
+  with "QA PASS" while the accessibility gate was red on 7 of 9 scans (colour contrast: an 11 px `⌘K` hint in
+  `text.disabled`, offline captions dimmed by `opacity: 0.5`, small `info.main` text, a scanner offline price at
+  4.34:1). Fixed in `b7425507` (solid `extras.textDim` / `extras.textInfo` tokens, Amendments row; rule "text is never
+  dimmed by opacity"). **Process fix owed:** GATE Q's checklist must name the four browser gates, or `npm run ci`
+  must run the aggregate against the prebuilt `dist`.
+- **F-H — the accessibility gate's summary carries `findings: []` even when scans fail.** `accessibility.spec.ts:41`
+  attaches `axe-findings.json` as a body attachment; the quality reporter copies only path attachments and its
+  `findings` aggregation never reads them, so a red gate's evidence names no rule ("gates that do not gate" class,
+  Harvest 2026-09-05). Fix: attach with a `path`, or parse the body attachment into `summary.findings`. Until then a
+  throwaway spec printing `results.violations` is how the offenders were found (PR46_CI_REPAIR_TASK §E).
+- **F-I — the visual gate depended on host fonts and on LCD text anti-aliasing.** The app bundled Latin-only Plex
+  subsets, so `→ γ ≥ ≤ ⌘ ▾` came from each host's fallback font (the linux runner disagreed with the Playwright image
+  on exactly those glyphs). Fixed in `ad858c83` (greek, latin-ext and a symbol subset bundled; `⌘`/`▾` replaced by
+  icons; a WOFF2 cmap-coverage spec). Separately, subpixel (LCD) text AA varied between runs on linux — five pixels
+  on scanner-dense symbol cells across five runs; `be00d739` adds `--disable-lcd-text` to the visual gate's launch
+  args, after which three container runs agreed byte for byte. Both platforms' baselines were re-taken twice
+  (`b1c898df` at `1d6f6b42`; `6f9807b7` + `27eb19e2` at `be00d739`).
+- **F-J — supply-chain policy: two `high` advisories cannot be closed today.** `js-yaml` 4.x is vulnerable in every
+  version and only 5.x is fixed; `@redocly/openapi-core` 1.34 (under `openapi-typescript`, the contract generator)
+  reads `js_yaml.types.merge`, removed in 5. A nested override keeps 4.3.1 under openapi-core (`1d6f6b42`); the other
+  five advisories are closed (`bec49028`: vitest 4.1.11, svgo 3.3.5, js-yaml 5.4.1 elsewhere). The exception registry
+  forbids security exceptions, so the policy job stays red on these two until `openapi-typescript` ships on a
+  js-yaml-5 openapi-core — an owner decision on whether the policy or the tooling moves. Also: the policy job scans
+  the PR's commit range and flagged eight false positives (base85 in a binary evidence patch, localStorage key names
+  in council prose) — `.gitleaks.toml` allowlists exactly those shapes. **A full-history scan finds `apps/api/.env`
+  with `MASSIVE_API_KEY` in the initial commit `1aac13ec` (2026-06-18), removed in `fc9c8d28` — rotate if not rotated
+  then; history stays (worktrees on three machines).**
+- **F-K — `execFileSync`'s default buffer in the receipt helper.** Six changed PNG baselines produce a 1.06 MB binary
+  patch, over the 1 MB default; fixed with a 64 MB `maxBuffer` (`097d37a7`). The container bootstrap also copied a
+  second run's evidence over the first's; it now clears the folder.
 
 ## Harvest — 2026-09-06 (owner direction: AI-powered Convexa)
 <!-- atlas: theme=trust-the-signal horizon=next -->
