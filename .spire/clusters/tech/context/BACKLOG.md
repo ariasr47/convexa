@@ -172,6 +172,24 @@ change line or a name.
 - **F-K — `execFileSync`'s default buffer in the receipt helper.** Six changed PNG baselines produce a 1.06 MB binary
   patch, over the 1 MB default; fixed with a 64 MB `maxBuffer` (`097d37a7`). The container bootstrap also copied a
   second run's evidence over the first's; it now clears the folder.
+- **F-L — the `AccessibleHelp` tap path is a timer race, and the chromium gate (rightly) refuses retry passes**
+  (PR #46 run 2, `34323995666`, 2026-09-09). Two tests passed only on retry — `curvature-v2.spec.ts` AC-35 and U-32,
+  both the 393 px variant, "tap reveals content" / "keyboard focus reveals content" → `[role="tooltip"]` never
+  appeared within 5 s — and `lib/summary.mjs:87` marks any `flaky > 0` evidence invalid, so the child is FAIL with
+  `106 passed · 2 flaky`. Same runner was slow (unit tests 10 min vs 5 on run 1). **Mechanism (read from
+  `@mui/material@9.2.0` `Tooltip.js:414-435`, not reproduced locally yet):** `AccessibleHelp` sets
+  `enterTouchDelay={0}`, so `touchstart` arms a **0 ms** `touchTimer` whose callback starts the real open
+  (`enterDelay` 100 ms); `touchend` calls `stopTouchInteraction()` which **clears `touchTimer`**. The test's
+  `realisticTap` holds 40 ms; a real finger holds ~50–120 ms. Whenever the main thread is busy for longer than the
+  hold — the /ticker desk at 393 px with two canvases, plus the gate's parallel workers — the 0 ms task runs after
+  `touchend`, is cleared, and the tooltip never opens. **This is a product race, not only a test race:** a quick tap
+  on a loaded phone has the same window. Candidate fix (a lane's, with a RED test first): open on `touchstart`
+  itself — a controlled `open` in `AccessibleHelp` set from `onTouchStart` (MUI's `ignoreNonTouchEvents` already
+  suppresses the synthesized mouseover), or `onClick` toggle for coarse pointers — and keep `realisticTap` at 40 ms
+  so the test stays a real tap. The keyboard-path failure (AC-35, `market-context`) has no mechanism named yet;
+  `handleFocus` gates on `isFocusVisible(event.target)`, so check whether a programmatic `.focus()` after `Escape`
+  + `.blur()` is focus-visible under load. Reproduce: `CI=1 npm run browser:chromium` with `--repeat-each` on
+  `-g "393px"` while `npm run test` runs alongside. Do **not** loosen the gate's flaky rule or lengthen the hold.
 
 ## Harvest — 2026-09-06 (owner direction: AI-powered Convexa)
 <!-- atlas: theme=trust-the-signal horizon=next -->

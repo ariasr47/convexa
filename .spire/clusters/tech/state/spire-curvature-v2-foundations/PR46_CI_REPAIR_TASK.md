@@ -90,6 +90,7 @@ with rule, impact, help and the first three targets — the table in §A. Reprod
 | C licenses (new on run 2) | **done** — `npm_licenses` failed with 1062 findings because every baseline row carries the npm lock's hash, so the advisory fixes' lock change fanned out to all rows (precedent: `331d030d`). Regenerated: 11 rows out (vitest 4.1.10 set, svgo 3.3.4), 12 in (their fixes + js-yaml 5.4.1), all MIT, 0 new expressions, 0 obligations; local `checkLicenseBaseline` → `license-continuity-pass`. The generator hashed `Cargo.lock` raw, so a CRLF checkout churned all 286 cargo rows — now CRLF-normalised like the npm lock | see RESUME |
 | C historical key | **owner's action** — rotate `MASSIVE_API_KEY` if not rotated on 2026-06-18 | — |
 | D evidence gaps | **filed** as BACKLOG F-G (gates never ran) and F-H (`findings: []`); not fixed | BACKLOG |
+| chromium e2e (new on run 2) | **open — F-L.** 106 passed, 2 flaky (AC-35, U-32 at 393 px; tooltip never opened; passed on retry); `lib/summary.mjs:87` refuses flaky evidence by design. `AccessibleHelp`'s `enterTouchDelay={0}` arms a 0 ms timer on `touchstart` that `touchend` clears — a loaded main thread loses the tap. Product fix + RED test first, in a lane; not a gate loosening | BACKLOG F-L |
 | baselines | **re-taken twice** on both platforms (A+B changed pixels; then grayscale AA changed them again); final at `be00d739` | `b1c898df`, `6f9807b7`, `27eb19e2` |
 
 Second CI run: `34323995666` on `27eb19e2` — its verdict is in RESUME's top block, not here.

@@ -11,9 +11,14 @@ fix(dashboard) contrast tokens (`extras.textDim`/`textInfo`, Amendments row) · 
 greek/latin-ext/symbol subsets, `⌘`/`▾` → icons, glyph-coverage spec · `1d6f6b42` chore(deps) scoped js-yaml
 override · `097d37a7` chore(spire) helper maxBuffer, bootstrap cleanup · `b1c898df` win32 baselines at 1d6f6b4 ·
 `be00d739` test(quality) `--disable-lcd-text` · `6f9807b7` win32 baselines at be00d73 · `27eb19e2` linux baselines
-at be00d73. **Second CI run `34323995666` on `27eb19e2` was in flight when this was written — read its verdict
-from `gh run view 34323995666` before believing anything here about CI.** Expected: accessibility and visual green;
-policy job red. Its policy report (artifact `supply-chain-policy-34323995666`, read mid-run) already says:
+at be00d73. **Second CI run `34323995666` on `27eb19e2` — verdict, read from the evidence artifacts, not the
+job colour:** backend ✓ · capacity ✓ · frontend **✗ in the browser-quality gate only** — **visual PASS 6/6 on the
+linux runner** (the parity proof the runbook wanted; one of the two green runs) · **accessibility PASS 16/16**
+(9 scans + 7 sequences, `a11y-waivers.json` still `[]`) · **compatibility PASS 15/15** · **chromium e2e FAIL: 106
+passed, 2 flaky** — AC-35 and U-32 at 393 px passed only on retry and the gate refuses retry passes (BACKLOG
+**F-L**: a real `touchstart`/`touchend` timer race in `AccessibleHelp`, mechanism named, not yet reproduced
+locally, fix belongs to a lane with a RED test first). Policy job red. Its policy report
+(artifact `supply-chain-policy-34323995666`) says:
 `repository_secrets` pass (0) · `npm_advisories` fail (2, the js-yaml highs, F-J) · **`npm_licenses` fail (1062,
 `license-continuity`)** — the lock change fanned out to every baseline row (precedent `331d030d`). Fixed in
 `50243496` (baseline regenerated and reviewed: 11 out / 12 in, all MIT; the generator now hashes `Cargo.lock`
@@ -59,10 +64,12 @@ receipt 31/31) + INTERFACE_CONTRACT (NO_BACKEND_CHANGE), S2 ran twice (cap): pas
 GATE PLAN. Council trap paid for: R2 files must carry the conflicts JSON fence with no heading above it, and every
 conflict id is a hash of (source, index, whole-file body) — regenerate ids after any edit, never hand-patch them.
 
-**Next on this branch:** read run `34323995666`. If accessibility and visual are green: merge is the owner's call
-(the policy job needs F-J resolved or an explicit override). If the visual child is red: the diff images in the
-`browser-quality-visual` artifact say whether it is fonts again (F-I fixed the app-bundled ones; a system-font
-fallback elsewhere would show as glyph-only diffs) — do NOT re-take baselines until the cause is named.
+**Next on this branch:** the push after run 2 (docs + the license baseline) triggers run 3 — it is the second
+visual sample the runbook wants and a second sample for F-L (if chromium is stability-clean there, the race is
+load-dependent; if it flakes again on the same two tests, it is close to deterministic on the runner). Then three
+things block the merge, none of them a baseline: **F-L** (a lane: RED test → `AccessibleHelp` opens on
+`touchstart`), **F-J** (owner: scoped exception or wait for upstream), and the owner's own merge call. Do NOT
+re-take baselines for anything on this list, and do NOT loosen the chromium gate's flaky rule.
 
 ## ⬆ UPDATE — 2026-09-08 late (Windows box): F-D FIXED (two causes) · win32 AND linux baselines ACCEPTED at `40ec63fc` · pushed to `2eaa7136` · next: the PR, on the owner's go — SUPERSEDED by the block above
 
