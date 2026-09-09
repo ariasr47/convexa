@@ -1,6 +1,67 @@
 # RESUME — spire/curvature-v2-foundations
 
-## ⬆ UPDATE — 2026-09-08 (Windows box): win32 visual baselines ACCEPTED, committed `f5cb325a`, pushed · linux leg BLOCKED on an owner decision
+## ⬆ UPDATE — 2026-09-08 late (Windows box): F-D FIXED (two causes) · win32 AND linux baselines ACCEPTED at `40ec63fc` · pushed to `2eaa7136` · next: the PR, on the owner's go
+
+**Read this first; the two blocks below it are history.** Owner ruling this session: `keep` the CI visual gate,
+`go` on the order fix-F-D → linux via docker → PR. Commits, oldest first, all pushed: `6fa9419b`
+fix(dashboard) synchronous paint after every layout · `40ec63fc` fix(dashboard) explicit lineWidth ·
+`e2929865` test(quality) win32 baselines at 40ec63f · `2eaa7136` test(quality) linux baselines at 40ec63f.
+(`f5cb325a` win32 baselines at bdb93b9 and `019f17f8` docs stand underneath.) **No PR opened.**
+
+**F-D had two causes**, both in `pages/ticker/widgets/chrome/TapePulseStrip.tsx`, found with a temporary canvas
+call-timeline probe against the real `ticker-desktop` scenario (six runs, real-clock stamps on every context
+call; deleted after use): (1) `layout()` reset `canvas.width` — clearing the bitmap — and left the repaint to a
+frame the gate's frozen clock never ran → blank slot; fixed by drawing synchronously after every layout and
+once on mount. (2) The trail polyline set `lineWidth = 1.75` and nothing reset it, so the dashed baseline was
+stroked at 1.75 on every frame except the one right after a resize (context reset → 1); which frame was last
+was a race between the ResizeObserver callback and the clock pause's due-timer flush → red 42 vs 60, 3/6 each;
+fixed by setting `lineWidth = 1` before the baseline stroke. Probe after both fixes: 6/6 identical under load.
+Three regression cases in `TapePulseStrip.spec.tsx`, each RED before its fix. Gates cold on each commit:
+typecheck 0 · dashboard suite 240 files / 2924, exit 0 (alone — see "flakes" below) · e2e desk subset 108/108.
+
+| platform | compare run | authorization | candidate set | acceptance | stability runs |
+| --- | --- | --- | --- | --- | --- |
+| win32 | `local-1788913954573-e9274620` (2 changed: both tickers) | `win32-curvature-v2-40ec63f-20260908` | `6ee078b9e37d1c2f758749d76fea9931` | `accept-6ee078b9e37d1c2f758749d76fea9931-20260909` | `local-1788914073868-b12eda33` · `local-1788914089502-e90beaa7` |
+| linux | `local-1788914036966-2a3b0bc2` (5 changed; ai-recommendation passed) | `linux-curvature-v2-40ec63f-20260908` | `fe3e8ea657c1851e9a3c3aa11bd0ad01` | `accept-fe3e8ea657c1851e9a3c3aa11bd0ad01-20260909` | `local-1788914379457-fb938714` · `local-1788914386915-63922f49` |
+
+**Six SHA-256, win32:** landing `dcd5af69caaab82f2d9e06165cf268aec82b43a52cd7578d92c6380558f6c2e8` · ticker-desktop
+`1c67d05182e52b711acf49f9aae97fc7f089efb6b922e680ddef2a54bfd34a30` · ticker-offline-mobile
+`9bcb7e46ebb6056b4310972045f60a2766956fcc9298e560138879b6ded5af75` · positions-dense
+`59ba1436fb3d7d5c38e7f671c3290137ac13ce8722bd2f556e58d2ac42f8c750` · scanner-dense
+`dcd1ca53541dadfb34dca632252eb00d020a518fd74f2e3c241fb356de9074c8` · ai-recommendation
+`abe4f38480153d8189e8c7ebe286c9874b81921dd2e8bfb0b7305a1c43040a48`.
+**Six SHA-256, linux:** landing `9ebe1f8ea05c2b2bced65abd5f145248e60c773af8b3d75d43e081debb13417b` · ticker-desktop
+`38b1203e29f170d3b85cdfbff6df473f1b80f156bf9a19ee1ef49c4b869df843` · ticker-offline-mobile
+`24320682cfbb31d8f33dd836c74267d23953e30ea5ecdf00986294baf7cb9413` · positions-dense
+`3bb35b3addd8e36f426fc9c6bd069efe744b8431b90cb1def1a262bf2afd9bd3` · scanner-dense
+`e588b7273237946277e98382d2b422d4af767e1220ce180d742dfd2774f1c8de` · ai-recommendation
+`cf50b7f14bfe3bec9c40e3d040baeb8efc07b1e5cde78f00dcf4b4ace315d03b` (unchanged since 2026-08-25).
+
+**How linux ran** (no Ubuntu WSL distro on this box): a separate clone inside `mcr.microsoft.com/playwright:
+v1.62.1-noble` (Ubuntu 24.04.4, Chromium 1234, Node 24.18 — CI runs Node 26 from `.nvmrc`; the bundler is
+native rolldown, the pixels are Chromium's) on Docker Desktop's WSL2 backend, the Windows tree mounted read-only
+as the clone source; scripts + why `--dns-result-order=ipv4first` is required in that image under
+`visual-baseline-receipts/linux-container/` and the runbook's new section. Artifacts copied out with `docker cp`,
+re-validated on Windows with the repository validators (`check` ×3, `stability`; Windows `git diff --binary`
+of the six PNGs byte-equal to the container's patch), committed once, pushed. Container and volume removed.
+
+**What was looked at:** win32 — the two changed actuals/diffs (dashed baseline only), candidates byte-equal
+to them. linux — all five actuals and diffs plus the passing ai-recommendation baseline; compositions equal
+win32/darwin, differences are font metrics (landing body wraps a word earlier, scanner columns a few px).
+**CI-parity caveat stands:** the runner's fonts may differ from the image's; two green CI runs of the visual
+child on the PR are the proof, and the fallback is the hosted-runner redesign (BACKLOG F-A).
+
+**Filed (BACKLOG Harvest addendum):** F-D closed with the second cause · **F-E** the dashboard suite has a
+cross-worker race (`replay-outcome-join.structural.spec.ts` writes a poison file that
+`stage3-amber.spec.ts`'s `import.meta.glob` catches mid-run) and under load loses files to worker crashes /
+15 s timeouts — it exited 0 only when run alone; check the exit code, never the printed totals · **F-F** the
+"tape paused · trail frozen" caption shows while the frozen trail has been age-pruned to nothing after the
+gate's +30 s jump (SPEC §4.6 semantics, owner's call).
+
+**Next:** the PR for `spire/curvature-v2-foundations` → `main`, on the owner's go, then watch two CI runs of
+the visual child. Then phase 4 at GATE I.
+
+## ⬆ UPDATE — 2026-09-08 (Windows box): win32 visual baselines ACCEPTED, committed `f5cb325a`, pushed · linux leg BLOCKED on an owner decision — SUPERSEDED by the block above
 
 **Read this first.** The HANDOVER block below is **consumed for win32** and **still live for linux** (its
 step 3). Boot found two obstacles, both resolved: `spire run tech` exited 4 (`artifact integrity`) because the
@@ -491,7 +552,7 @@ value of **60**, and the gap is in the canon's prose, not the code.
 
 # RESUME — spire/curvature-v2-foundations (2026-09-03)
 
-**Resume status:** ACTIVE — **phases 1–3 closed at GATE S; win32 visual baselines accepted 2026-09-08 (`f5cb325a`); next: the linux flow (owner decision, top block), then phase 4 at GATE I.**  
+**Resume status:** ACTIVE — **phases 1–3 closed at GATE S; F-D fixed and win32 + linux visual baselines accepted 2026-09-08 at `40ec63fc` (branch at `2eaa7136`); next: the PR on the owner's go, then phase 4 at GATE I.**  
 **Written:** 2026-09-03 (GATE R, phase 1 closed at GATE S — a clean phase boundary, not a mid-build checkpoint)
 
 Written at GATE R for a **fresh session on another machine**. Self-contained against `PROJECT_CONTEXT.md`.

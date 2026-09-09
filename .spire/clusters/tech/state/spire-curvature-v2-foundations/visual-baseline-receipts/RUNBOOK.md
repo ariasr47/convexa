@@ -129,3 +129,36 @@ aside whenever you need it later.
   under the title and centres — cosmetic; both ticker scenarios read "Live offline — reconnecting…"
   by design of the visual frame (`freezeVisualFrame`'s +30 s clock jump trips the stream watchdog; the
   audit harness header records the same).
+
+## Linux via the Playwright container (how the linux flow actually ran, 2026-09-08)
+
+The Windows box has WSL2 but no Ubuntu distro (only Docker Desktop's internal one), so the linux flow ran in
+**`mcr.microsoft.com/playwright:v1.62.1-noble`** — Ubuntu 24.04.4, the runner's Chromium 1234, Node 24.18
+(`engines.node >= 24`; CI runs 26 from `.nvmrc` — the bundler is native rolldown and the pixels are Chromium's)
+— on Docker Desktop's WSL2 backend. The Windows tree is mounted **read-only** as the clone source only; the flow
+runs in a separate clone on a named volume, exactly as the "separate clone" rule above demands. Scripts in
+`linux-container/`, one per human decision point:
+
+1. `docker run -d --name convexa-linux --ipc=host -v C:/Dev/convexa:/src:ro -v convexa-linux-work:/work mcr.microsoft.com/playwright:v1.62.1-noble sleep infinity`
+2. `docker exec convexa-linux bash /src/.spire/…/linux-container/bootstrap.sh <revision>` — clone, `npm ci`,
+   build, **step 1** compare; evidence lands in `/work/out/compare-1`. `docker cp` it out and LOOK.
+3. `docker exec convexa-linux bash /src/.spire/…/linux-container/authorize-and-update.sh linux-curvature-v2-<rev7>-<yyyymmdd>`
+   — **steps 2 + 3**; prints every candidate's hash against the compare actual (they must be equal).
+4. `docker exec convexa-linux bash /src/.spire/…/linux-container/accept-and-stabilize.sh <csid> <authorization_id>`
+   — **steps 4 + 5**; prints the patch stat, drafts the acceptance, runs both stability gates, validates.
+5. `docker cp` the six PNGs, the evidence folder, the authorization, the candidate set, the patch and the
+   acceptance into the Windows tree at the same paths; re-run `visual_receipts.mjs check` on all three receipts and
+   `stability` there; the Windows `git diff --binary` of the six PNGs must equal the container's patch byte for
+   byte (it did). **Commit once**, push. `docker rm -f convexa-linux && docker volume rm convexa-linux-work`.
+
+**`NODE_OPTIONS=--dns-result-order=ipv4first` is mandatory in that image** (the scripts set it): `localhost`
+resolves to `::1` first there, so the gate's `http-server -a localhost` binds `::1` while its own SPA-fallback
+proxy (`-P http://localhost:4200?`) dials `127.0.0.1` → `ECONNREFUSED` → every deep route 404s to a blank page
+and readiness times out at 30 s (found 2026-09-08; `/` still served, which is why only five scenarios failed
+that way). GitHub's ubuntu-24.04 runner lists `127.0.0.1 localhost` first in `/etc/hosts`, so this is the
+ordering CI already has — it is an environment fix, not a source change.
+
+**Parity caveat, unchanged:** the runner's fonts are not the image's. The linux actuals differ from win32 only
+in font metrics (landing's body wraps a word earlier; scanner columns sit a few px apart), and the same class of
+difference could exist runner-vs-image. Two green CI runs of the visual child on the PR are the proof; if CI
+disagrees, the baselines have to come from the runner itself (F-A above).

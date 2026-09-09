@@ -84,6 +84,27 @@ change line or a name.
   lane: paint synchronously inside `layout()` (call `paint(performance.now())` after resizing) or give the sparkline
   wrap a fixed width so the caption cannot resize it. Either is a source change, so both platform flows re-run at the
   new revision — do it before the next `/ticker` composition change rather than as its own flow.
+  **CLOSED 2026-09-08**, two commits: `6fa9419b` (draw synchronously after every layout and once on mount) and
+  `40ec63fc` — a **second cause** a canvas call-timeline probe against the real scenario exposed: the trail polyline
+  set `lineWidth = 1.75` and nothing reset it, so the dashed baseline was stroked at 1.75 on every frame except the
+  one right after a resize (context reset → 1); which frame was last was a race between the ResizeObserver callback
+  and the clock pause's due-timer flush (red 42 vs 60, 3/6 each). `draw` now sets `lineWidth` itself. Probe after:
+  6/6 identical under load. Both platforms' baselines re-taken at `40ec63fc` (`e2929865`, `2eaa7136`).
+- **F-E — the dashboard unit suite has a cross-worker race and is load-sensitive** (2026-09-08, seen while gating
+  F-D): `src/app/replay-outcome-join.structural.spec.ts` writes `src/app/_mutation_poison_replay_outcome_join.ts`
+  as a mutation proof and deletes it, while `src/app/shared/theme/stage3-amber.spec.ts` globs
+  `/src/app/**/*.{ts,tsx}` with `?raw` in another worker — when the glob lands mid-window the amber spec fails
+  "Failed to resolve import … _mutation_poison_…" and the run exits 1 with zero failed TESTS (one failed FILE).
+  Under CPU load (a build, six browsers, an image pull) the suite also lost a file to "Worker exited unexpectedly"
+  and failed eleven page-level specs on 5 s / 15 s timeouts; every one passed alone and the full suite exited 0
+  only when nothing else ran. Fix candidates: write the poison file outside `src/app` (or under a name the glob
+  excludes), and treat the suite's exit code, never its printed totals, as the verdict (the CLAUDE.md trap, again).
+- **F-F — "tape paused · trail frozen" while the trail is empty** (2026-09-08, observation from the F-D probe): the
+  strip prunes trail points older than 5 s on every frame, and the visual gate's `pauseAt` jumps the clock +30 s,
+  so by the frozen frame the "frozen" trail has been pruned to nothing while `TapeTrailRow` still renders the
+  `trail frozen` arm (it keys on the latched mid, not on trail samples). Real users see the same after 5 s offline.
+  SPEC §4.6's two-arm discipline ("never assert a frozen trail that was never drawn") arguably wants the caption to
+  follow the trail's own emptiness, or the prune to stop while paused. Owner's call; not a gate concern.
 - **Cluster entry on a fresh Windows checkout died on `AGENTS.md`** (2026-09-08): the installation receipt pins the
   repo-root `AGENTS.md` bytes, `.gitattributes` never covered that path, and `core.autocrlf=true` checked it out CRLF
   → `spire run tech` exit 4 "artifact integrity". Fixed by pinning `AGENTS.md text eol=lf` (same commit as this note).
