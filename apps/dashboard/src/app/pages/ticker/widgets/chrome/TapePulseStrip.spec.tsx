@@ -325,3 +325,108 @@ describe('TapePulseStrip — the sparkline never waits for an animation frame af
     expect(dashedBaselines()).toBe(before + 1);
   });
 });
+
+/**
+ * F-D, second cause (found with the canvas timeline probe, 2026-09-08): the trail polyline set
+ * `ctx.lineWidth = 1.75` and nothing reset it, so the dashed structure baseline was stroked at 1.75 on
+ * every frame EXCEPT the one right after a canvas resize, where resetting `canvas.width` restores the
+ * context default of 1. Which frame was last depended on a race inside the gate's clock pause, and the
+ * two widths rasterise to two intensities (red 42 vs 60 at 0.4 alpha). A draw must set every context
+ * state it depends on.
+ */
+describe('TapePulseStrip — every draw sets the context state it depends on (F-D, second cause)', () => {
+  type Call = { name: string; lineWidth: unknown; dash: number[] };
+  let calls: Call[];
+  let frames: FrameRequestCallback[];
+  const METHODS = new Set([
+    'fillRect',
+    'clearRect',
+    'stroke',
+    'fill',
+    'setLineDash',
+    'setTransform',
+    'beginPath',
+    'moveTo',
+    'lineTo',
+    'arc',
+  ]);
+
+  beforeEach(() => {
+    calls = [];
+    frames = [];
+    let dash: number[] = [];
+    // A context whose STATE persists between draws (as a real context's does between frames) and
+    // whose method calls record the state they were issued under.
+    const state: Record<string | symbol, unknown> = { lineWidth: 1 };
+    const ctx = new Proxy(state, {
+      get: (target, name) => {
+        if (typeof name === 'string' && METHODS.has(name)) {
+          return (...args: unknown[]) => {
+            if (name === 'setLineDash') dash = [...(args[0] as number[])];
+            calls.push({ name, lineWidth: target.lineWidth, dash: [...dash] });
+          };
+        }
+        return target[name];
+      },
+      set: (target, name, value) => {
+        target[name] = value;
+        return true;
+      },
+    });
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      ctx as unknown as CanvasRenderingContext2D,
+    );
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn((callback: FrameRequestCallback) => {
+        frames.push(callback);
+        return frames.length;
+      }),
+    );
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+  });
+
+  afterEach(() => {
+    cleanup();
+    act(() => undefined);
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('the dashed baseline is stroked at lineWidth 1 even after the trail polyline stroked at 1.75 on an earlier frame', () => {
+    // Genuinely delivering with a mid present, so every frame pushes a trail point and, from the
+    // second point on, strokes the trail polyline at 1.75.
+    const claim = isDeliveringLive(
+      { ticker: 'SPY', live: true, market_session: 'open' } as Parameters<
+        typeof isDeliveringLive
+      >[0],
+      false,
+    );
+    render(
+      <ThemeProvider theme={darkTheme}>
+        <TapePulseStrip
+          structureMid={146.15}
+          claim={claim}
+          mid={147.02}
+          palette={palette}
+          surfaces={surfaces}
+          height={30}
+        />
+      </ThemeProvider>,
+    );
+    // Run three frames by hand: the trail reaches two points on the first, so the second and third
+    // frames stroke the trail (1.75) and then the baseline again.
+    const base = performance.now();
+    for (let i = 1; i <= 3; i += 1) {
+      const frame = frames.shift();
+      expect(frame).toBeDefined();
+      act(() => frame?.(base + 16 * i));
+    }
+    const trailStrokes = calls.filter((c) => c.name === 'stroke' && c.dash.length === 0);
+    expect(trailStrokes.length).toBeGreaterThan(0);
+    expect(trailStrokes.every((c) => c.lineWidth === 1.75)).toBe(true);
+    const baselineStrokes = calls.filter((c) => c.name === 'stroke' && c.dash.length === 2);
+    expect(baselineStrokes.length).toBeGreaterThanOrEqual(3);
+    expect(baselineStrokes.map((c) => c.lineWidth)).toEqual(baselineStrokes.map(() => 1));
+  });
+});

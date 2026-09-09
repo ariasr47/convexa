@@ -147,6 +147,9 @@ export function TapePulseStrip({
 
       const yBase = yOf(structureMid);
       ctx.strokeStyle = withAlpha(surfaces.steel, 0.4);
+      // Set, never inherited: the trail stroke below leaves 1.75 on the context, and a resize resets it
+      // to 1 — a baseline stroked at whichever was last rasterises to two intensities (F-D, 2nd cause).
+      ctx.lineWidth = 1;
       ctx.setLineDash([3, 3]);
       ctx.beginPath();
       ctx.moveTo(pad.l, yBase);
