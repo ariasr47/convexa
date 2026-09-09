@@ -190,6 +190,10 @@ change line or a name.
   `handleFocus` gates on `isFocusVisible(event.target)`, so check whether a programmatic `.focus()` after `Escape`
   + `.blur()` is focus-visible under load. Reproduce: `CI=1 npm run browser:chromium` with `--repeat-each` on
   `-g "393px"` while `npm run test` runs alongside. Do **not** loosen the gate's flaky rule or lengthen the hold.
+  Samples so far: CI run 2 flaked (2/108), CI run 3 clean (108/108, 0 flaky) → load-dependent; locally on the
+  Windows box 40 runs of the two tests under the unit suite as load, 0 failures (a much faster machine than the
+  2-vCPU runner — not a refutation). A CPU-throttled probe (`Emulation.setCPUThrottlingRate` via CDP before the
+  tap) is the next faithful reproduction.
 
 ## Harvest — 2026-09-06 (owner direction: AI-powered Convexa)
 <!-- atlas: theme=trust-the-signal horizon=next -->

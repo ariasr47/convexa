@@ -64,12 +64,16 @@ receipt 31/31) + INTERFACE_CONTRACT (NO_BACKEND_CHANGE), S2 ran twice (cap): pas
 GATE PLAN. Council trap paid for: R2 files must carry the conflicts JSON fence with no heading above it, and every
 conflict id is a hash of (source, index, whole-file body) — regenerate ids after any edit, never hand-patch them.
 
-**Next on this branch:** the push after run 2 (docs + the license baseline) triggers run 3 — it is the second
-visual sample the runbook wants and a second sample for F-L (if chromium is stability-clean there, the race is
-load-dependent; if it flakes again on the same two tests, it is close to deterministic on the runner). Then three
-things block the merge, none of them a baseline: **F-L** (a lane: RED test → `AccessibleHelp` opens on
-`touchstart`), **F-J** (owner: scoped exception or wait for upstream), and the owner's own merge call. Do NOT
-re-take baselines for anything on this list, and do NOT loosen the chromium gate's flaky rule.
+**Run 3 `34327029939` on `4f4f3786` (docs + license baseline) — the clean sample:** frontend job **green** —
+visual **6/6 pass on linux for the second time** (the runbook's two-green-runs parity proof is met) · chromium
+**108/108, 0 flaky** (F-L is load-dependent: 1 of 2 runs flaked; the race is real but not deterministic on the
+runner) · accessibility 16/16 · compatibility 15/15 · backend and capacity green. Policy job red on **exactly**
+`npm_advisories` (2, the js-yaml highs); `npm_licenses`, `repository_secrets`, cargo, lock and trivy all pass.
+
+**What blocks the merge now:** only **F-J** (owner: scoped dated exception vs wait for upstream) and the owner's
+own merge call. F-L stays a BACKLOG item for a lane (RED test → `AccessibleHelp` opens on `touchstart`); it does
+not need to gate the merge. Do NOT re-take baselines for anything on this list, and do NOT loosen the chromium
+gate's flaky rule.
 
 ## ⬆ UPDATE — 2026-09-08 late (Windows box): F-D FIXED (two causes) · win32 AND linux baselines ACCEPTED at `40ec63fc` · pushed to `2eaa7136` · next: the PR, on the owner's go — SUPERSEDED by the block above
 
