@@ -68,7 +68,12 @@ export function AiReadSample() {
           <Box component="span" sx={{ fontSize: 13.5, fontWeight: 600 }}>
             AI read · SPY
           </Box>
-          <Chip label="SIMULATED" size="small" variant="outlined" sx={{ fontSize: 11, height: 20 }} />
+          <Chip
+            label="SIMULATED"
+            size="small"
+            variant="outlined"
+            sx={{ fontSize: 11, height: 20 }}
+          />
         </Stack>
         <Box component="p" sx={{ m: 0, mt: 1, fontSize: 12, color: 'text.secondary' }}>
           {AI_SAMPLE_MARK}
@@ -102,7 +107,16 @@ export function AiReadSample() {
             575 / 580
           </Box>
           <Box component="span">Sep 18</Box>
-          <Chip label="high" size="small" sx={(theme) => ({ height: 20, fontSize: 11, bgcolor: alpha(theme.palette.primary.main, 0.16), color: extrasFor(theme).textAmber })} />
+          <Chip
+            label="high"
+            size="small"
+            sx={(theme) => ({
+              height: 20,
+              fontSize: 11,
+              bgcolor: alpha(theme.palette.primary.main, 0.16),
+              color: extrasFor(theme).textAmber,
+            })}
+          />
         </Stack>
 
         <Box

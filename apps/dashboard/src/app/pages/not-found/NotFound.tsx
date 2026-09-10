@@ -36,7 +36,11 @@ export function NotFound() {
         >
           {NOT_FOUND_COPY.code}
         </Typography>
-        <Typography component="h1" variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.01em', m: 0 }}>
+        <Typography
+          component="h1"
+          variant="h4"
+          sx={{ fontWeight: 700, letterSpacing: '-0.01em', m: 0 }}
+        >
           {NOT_FOUND_COPY.headline}
         </Typography>
         <Typography component="p" variant="body1" sx={{ color: 'text.secondary', m: 0 }}>

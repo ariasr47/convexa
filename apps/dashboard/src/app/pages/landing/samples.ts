@@ -72,7 +72,8 @@ export const LANDING_FIELD_MODEL: StructureFieldModel = {
 
 /** The ONE shared sample literal on `/` — the hero panel and the field panel carry the same words,
  *  so the page has one vocabulary for one claim, not two. */
-export const SAMPLE_MARK = 'Illustrative sample — not a live read and not a recorded session.' as const;
+export const SAMPLE_MARK =
+  'Illustrative sample — not a live read and not a recorded session.' as const;
 /** The AI-read panel's own mark: a DIFFERENT withdrawal (no model run happened, as against no live
  *  read). Two sample literals on `/`, and only two. */
 export const AI_SAMPLE_MARK = 'Illustrative sample — not a real model output.' as const;

@@ -234,7 +234,7 @@ export default [
             {
               group: ['@/features/auth/AuthContext', '../../features/auth/AuthContext'],
               message:
-                "SPEC §2.1: AuthContext owns the TRANSPORT. `@/features/auth/copy` (strings) and `@/features/auth/AuthDialogProvider` (an opener) are allowed — this ban is the capability, not the folder.",
+                'SPEC §2.1: AuthContext owns the TRANSPORT. `@/features/auth/copy` (strings) and `@/features/auth/AuthDialogProvider` (an opener) are allowed — this ban is the capability, not the folder.',
             },
           ],
         },

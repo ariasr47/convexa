@@ -44,7 +44,9 @@ describe('§7 item 7 — every route element is bounded', () => {
   it('MUTATION GUARD: the checker flags an unbounded fixture and passes a bounded one', () => {
     expect(elementIsBounded('<Landing />')).toBe(false);
     expect(elementIsBounded('lazyRoute(<BlogPage />)')).toBe(true);
-    expect(elementIsBounded('<ErrorBoundary variant="route"><Landing /></ErrorBoundary>')).toBe(true);
+    expect(elementIsBounded('<ErrorBoundary variant="route"><Landing /></ErrorBoundary>')).toBe(
+      true,
+    );
   });
 
   it('MUTATION GUARD: routeElements ignores a layout route and catches an unbounded page route', () => {

@@ -4,8 +4,8 @@ import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { AiReadSample } from './AiReadSample';
-import { FLIP_DISTANCE_LABEL, ScoreStripSample } from './ScoreStripSample';
 import { LANDING_FIELD_MODEL } from './samples';
+import { FLIP_DISTANCE_LABEL, ScoreStripSample } from './ScoreStripSample';
 import { StructureFieldSample } from './StructureFieldSample';
 
 afterEach(() => cleanup());

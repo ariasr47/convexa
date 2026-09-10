@@ -15,8 +15,8 @@
  * no `<svg>` at all in this file, so §7 item 2's set-equality scan stays decidable.
  */
 import { MONO_FACE, SANS_FACE } from '@/shared/figure';
-import { TintChip } from '@/shared/ui';
 import { extrasFor } from '@/shared/theme/tokens';
+import { TintChip } from '@/shared/ui';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import { LANDING_SAMPLE } from './samples';
@@ -108,7 +108,9 @@ export function ScoreStripSample() {
               sx={[
                 MONO_FACE,
                 { fontSize: 20, fontWeight: 500, mt: 0.5 },
-                (theme) => ({ color: cell.emphasize ? extrasFor(theme).textAmber : theme.palette.text.primary }),
+                (theme) => ({
+                  color: cell.emphasize ? extrasFor(theme).textAmber : theme.palette.text.primary,
+                }),
               ]}
             >
               {cell.value}
