@@ -37,8 +37,8 @@ import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
+import Typography from '@mui/material/Typography';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { AiReadSample } from './AiReadSample';
@@ -292,7 +292,12 @@ export function Landing() {
                 }}
               >
                 {HERO_LEGEND.map((item) => (
-                  <Stack key={item.key} direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+                  <Stack
+                    key={item.key}
+                    direction="row"
+                    spacing={0.75}
+                    sx={{ alignItems: 'center' }}
+                  >
                     <Box
                       component="span"
                       sx={{

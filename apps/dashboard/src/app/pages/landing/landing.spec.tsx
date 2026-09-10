@@ -209,9 +209,6 @@ describe('AC-L6/AC-L15/AC-L16 — the one big action works without an account', 
   it('AC-L9 — the honesty section reaches methodology in ONE click, not via the footer', () => {
     renderLanding();
     const register = screen.getAllByTestId('landing-section')[4];
-    expect(within(register).getByTestId('cta-methodology')).toHaveAttribute(
-      'href',
-      '/methodology',
-    );
+    expect(within(register).getByTestId('cta-methodology')).toHaveAttribute('href', '/methodology');
   });
 });
