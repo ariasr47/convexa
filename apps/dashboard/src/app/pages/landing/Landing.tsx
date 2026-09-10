@@ -1,250 +1,493 @@
 /**
- * Convexa landing page (`/`, full-bleed under the shell).
- * STATIC — no fetch, no SSE, no store, no compute (rendering `/` issues no network request).
+ * Convexa landing (`/`, the shell index route — `app.tsx:140-147`).
  *
- * Product spine (where → why → plan → track):
- *   primary CTA → Scanner · secondary → Ticker · value cards mirror that order ·
- *   Positions as practice · AI as the read on a ticker · brokerage stays honest coming-soon.
+ * Six sections, in the design's order (SPEC §1/§3 AC-L1), and no seventh: hero · structure field ·
+ * triage score · AI read · "Numbers say where they came from" (the honesty section — the three trust
+ * promises are content INSIDE it, not a section of their own) · CTA band. One hero instrument —
+ * `GammaSurfaceHero`, the dealer-gamma surface over strike × tenor (AC-L4a) — plus three labelled
+ * samples of shipped surfaces (`StructureFieldSample`, `ScoreStripSample`, `AiReadSample`, all §2.2/F6).
+ * `HeroCurve` stays `aria-hidden` decorative background geometry — it is NOT the hero instrument.
  *
- * Honesty floor (`[no-real-order-path]`): no affordance presents an un-built capability as working.
- * Tokens only — no hex.
+ * ZERO DATA EDGE (SPEC §2.1): no `fetch`, no `EventSource`, no durable store, no `@convexa/api`
+ * import, no `features/trading` import — enforced by the ESLint deny-list (`eslint.config.mjs`) AND
+ * `landing.spec.tsx`'s strict-fetch harness (throws on any non-auth call). `/` reads no session fact
+ * at all, so there is no `ready` branch and no first-paint swap (AC-L17). The one intentional
+ * non-data edge is `scheduleLandingPrefetch()` — it warms route chunks and touches no API.
+ *
+ * NO `<main>` and NO `<Footer/>` here (AC-F4): `AppShell.tsx:97` owns the app's one `<main>`
+ * landmark, and `AppShell.tsx:116` mounts the footer once for every in-shell page (F3) — mounting
+ * either here would nest a second landmark / render a second footer, which is the exact defect this
+ * rewrite fixes (`Landing.tsx:61` used to nest a second `<main>` inside `AppShell`'s).
+ *
+ * Retired with this rewrite (SPEC §1 "Out of scope"): the "desk right now" strip (a live claim with
+ * no stream), the `ValueCard` "What works today" grid, the brokerage-connect waitlist block/toast,
+ * and the primary action's old destination (`/scanner`, which sat behind a sign-in wall — AC-L6 now
+ * requires the primary action to work signed OUT).
+ *
+ * `[theme-token-discipline]`: every colour is a palette slot / `extrasFor(theme)` value resolved in
+ * `sx`; zero hardcoded hex. `[no-real-order-path]`: no affordance in this file opens an entry flow —
+ * the two "Sign in" style actions either route to `/ticker` or open the shared `AuthDialog`.
  */
-import {
-  prefetchScannerRoute,
-  prefetchTickerRoute,
-  scheduleLandingPrefetch,
-} from '@/shared/lib/prefetchRoutes';
-import { displayScale } from '@/shared/theme/tokens';
-import { ComingSoonCard, Jargon, ValueCard } from '@/shared/ui';
-import { Footer } from '@/shell/Footer';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import LockIcon from '@mui/icons-material/Lock';
-import RadarIcon from '@mui/icons-material/Radar';
+import { useAuthDialog } from '@/features/auth/AuthDialogProvider';
+import { prefetchTickerRoute, scheduleLandingPrefetch } from '@/shared/lib/prefetchRoutes';
+import { displayScale, extrasFor } from '@/shared/theme/tokens';
+import CheckIcon from '@mui/icons-material/Check';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Container from '@mui/material/Container';
-import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import { AiReadSample } from './AiReadSample';
+import { LANDING_COPY } from './copy';
+import { GammaSurfaceHero } from './GammaSurfaceHero';
 import { HeroCurve } from './HeroCurve';
+import { SAMPLE_MARK } from './samples';
+import { ScoreStripSample } from './ScoreStripSample';
+import { StructureFieldSample } from './StructureFieldSample';
 
-// Jargon tooltip copy — plain-language (honesty floor).
-const DEALER_GAMMA_GLOSS =
-  'How options dealers are positioned — it tells you where price tends to get pulled toward or pushed ' +
-  'away from, and whether the market is likely to calm down or speed up.';
-const SIMULATED_GLOSS =
-  'Practice mode — positions and P/L are tracked for you, but nothing is sent to a broker and no real ' +
-  'money moves.';
+/** A caps eyebrow label. Text-grade amber, never fill (canon Amber budget, SPEC §4 Design
+ *  direction) — the `sx` callback stays INLINE here so `extrasFor(theme)`'s `theme` parameter is
+ *  contextually typed by MUI's `SxProps<Theme>`, matching every other file in this folder. */
+function Eyebrow({ children }: { children: ReactNode }) {
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: 'block',
+        fontSize: 11.5,
+        fontWeight: 600,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        color: (theme) => extrasFor(theme).textAmber,
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
 
-// The waitlist acknowledgement toast — non-navigating, never implies a broker connection.
-const WAITLIST_TOAST = "Thanks — we'll let you know when brokerage connect is live.";
+/** Shared H2 treatment for the four feature-shaped sections + the CTA band. No theme-dependent
+ *  colour here (inherits `text.primary`), so a plain object is safe to hoist. */
+const sectionHeadingSx = {
+  m: 0,
+  fontWeight: 700,
+  letterSpacing: '-0.02em',
+  fontSize: 'clamp(26px, 2.6vw, 34px)',
+  lineHeight: 1.15,
+} as const;
+
+const HERO_LEGEND = [
+  { key: 'flip', label: LANDING_COPY.hero.legend[0] },
+  { key: 'call', label: LANDING_COPY.hero.legend[1] },
+  { key: 'put', label: LANDING_COPY.hero.legend[2] },
+] as const;
+
+interface FeatureSectionProps {
+  section: 'field' | 'score' | 'ai-read';
+  eyebrow: string;
+  heading: string;
+  body: string;
+  bullets: readonly string[];
+  visual: ReactNode;
+  /** Visual column leads on wide screens (CSS `order` only — DOM/reading order never changes,
+   *  so the heading walk stays h1 → h2 → … regardless of which section flips). */
+  flip?: boolean;
+}
+
+/** One of the three "eyebrow / H2 / body / 3 bullets / a labelled sample" sections (field, score,
+ *  ai-read — SPEC §4). Each bullet carries the shipped check glyph, imported from
+ *  `@mui/icons-material` (never hand-authored SVG geometry — SPEC §2.6's icon rule; precedent
+ *  `AiReadSample.tsx`'s `AutoAwesomeIcon`), so the one-hero-instrument `viewBox` scan (§7 item 2)
+ *  stays decidable: no icon here paints its `viewBox` into this folder's own source text. */
+function FeatureSection({
+  section,
+  eyebrow,
+  heading,
+  body,
+  bullets,
+  visual,
+  flip = false,
+}: FeatureSectionProps) {
+  return (
+    <Box
+      component="section"
+      data-testid="landing-section"
+      data-section={section}
+      sx={{ py: { xs: 7, md: 10 } }}
+    >
+      <Container maxWidth="lg">
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', lg: '1fr 1.15fr' },
+            gap: { xs: 4, lg: 7 },
+            alignItems: 'center',
+          }}
+        >
+          <Stack spacing={1.75} sx={{ maxWidth: 480, minWidth: 0 }}>
+            <Eyebrow>{eyebrow}</Eyebrow>
+            <Typography component="h2" sx={sectionHeadingSx}>
+              {heading}
+            </Typography>
+            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+              {body}
+            </Typography>
+            <Stack component="ul" spacing={1} sx={{ listStyle: 'none', p: 0, m: 0 }}>
+              {bullets.map((bullet) => (
+                <Stack
+                  component="li"
+                  direction="row"
+                  spacing={1.25}
+                  key={bullet}
+                  sx={{ alignItems: 'flex-start' }}
+                >
+                  <CheckIcon
+                    sx={{
+                      fontSize: 15,
+                      mt: '3px',
+                      flexShrink: 0,
+                      color: (theme) => extrasFor(theme).textAmber,
+                    }}
+                  />
+                  <Typography variant="body2">{bullet}</Typography>
+                </Stack>
+              ))}
+            </Stack>
+          </Stack>
+          <Box sx={{ minWidth: 0, order: { xs: 0, lg: flip ? -1 : 0 } }}>{visual}</Box>
+        </Box>
+      </Container>
+    </Box>
+  );
+}
 
 export function Landing() {
-  // The brokerage-connect waitlist affordance is non-navigating: a click acknowledges in place
-  // (toast) and never enters a broker flow.
-  const [toastOpen, setToastOpen] = useState(false);
+  const { openAuth } = useAuthDialog();
+  const signInRef = useRef<HTMLButtonElement>(null);
 
-  // §3.8 Phase B — warm ticker/scanner chunks after first paint (idle), no network to API.
+  // The one intentional non-data edge (SPEC §2.1): warms route chunks after first paint, touches
+  // no API. `/` otherwise reads no session fact and issues zero requests (AC-L17).
   useEffect(() => scheduleLandingPrefetch(), []);
 
   return (
-    <Box
-      data-testid="landing"
-      sx={{ minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}
-    >
-      <Box component="main">
-        {/* ===== 1. Hero ===== */}
-        <Box sx={{ position: 'relative', overflow: 'hidden' }}>
-          <HeroCurve />
-          <Container maxWidth="md" sx={{ position: 'relative', py: { xs: 8, md: 12 } }}>
-            <Stack spacing={3} sx={{ alignItems: 'flex-start', maxWidth: 660 }}>
+    <Box data-testid="landing" sx={{ bgcolor: 'background.default', color: 'text.primary' }}>
+      {/* ===== 1. Hero — the one hero instrument (AC-L4/AC-L4a) ===== */}
+      <Box
+        component="section"
+        data-testid="landing-section"
+        data-section="hero"
+        sx={{ position: 'relative', overflow: 'hidden' }}
+      >
+        <HeroCurve />
+        <Container maxWidth="lg" sx={{ position: 'relative', py: { xs: 7, md: 10 } }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', lg: '1.05fr 1fr' },
+              gap: { xs: 5, lg: 6 },
+              alignItems: 'center',
+            }}
+          >
+            <Stack spacing={2.5} sx={{ alignItems: 'flex-start', maxWidth: 600, minWidth: 0 }}>
               <Chip
-                label="Dealer-gamma analytics"
+                label={LANDING_COPY.hero.chip}
                 size="small"
                 sx={{
+                  alignSelf: 'flex-start',
+                  height: 'auto',
+                  minHeight: 26,
                   bgcolor: (theme) => alpha(theme.palette.primary.main, 0.12),
                   color: 'primary.main',
                   fontWeight: 600,
                   borderRadius: 999,
+                  '& .MuiChip-label': { whiteSpace: 'normal', px: 1.5, py: 0.5, lineHeight: 1.3 },
                 }}
               />
               <Typography
-                variant="h1"
+                component="h1"
                 sx={{
+                  m: 0,
                   fontSize: `clamp(${displayScale.minPx}px, 38px + 1.5vw, ${displayScale.maxPx}px)`,
                   fontWeight: displayScale.fontWeight,
                   letterSpacing: '-0.02em',
                   lineHeight: 1.08,
                 }}
               >
-                See the dealer positioning behind the price.
+                {LANDING_COPY.hero.h1}
               </Typography>
-              <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 620 }}>
-                Scan for structure, open a ticker for walls and the flip, then practice the plan on
-                a <Jargon term="simulated" gloss={SIMULATED_GLOSS} /> book. Grounded in live{' '}
-                <Jargon term="dealer gamma" gloss={DEALER_GAMMA_GLOSS} />, not vibes.
+              <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 560 }}>
+                {LANDING_COPY.hero.sub}
               </Typography>
               <Typography
                 variant="caption"
+                data-testid="product-spine"
                 sx={{
                   color: 'text.secondary',
                   letterSpacing: '0.04em',
                   textTransform: 'uppercase',
                   fontWeight: 600,
                 }}
-                data-testid="product-spine"
               >
-                Scan → Ticker → Plan → Track
+                {LANDING_COPY.hero.spine}
               </Typography>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 1 }}>
                 <Button
                   component={RouterLink}
-                  to="/scanner"
+                  to="/ticker"
                   variant="contained"
                   size="large"
                   data-testid="cta-primary"
-                  onMouseEnter={() => void prefetchScannerRoute()}
-                  onFocus={() => void prefetchScannerRoute()}
-                >
-                  Open Scanner →
-                </Button>
-                <Button
-                  component={RouterLink}
-                  to="/ticker"
-                  variant="outlined"
-                  size="large"
-                  data-testid="cta-secondary"
+                  // AC-L15: this and `cta-band-primary` share ONE accessible name. The visible
+                  // label keeps its pinned arrow (AC-C1); the name drops it.
+                  aria-label={LANDING_COPY.openTickerName}
                   onMouseEnter={() => void prefetchTickerRoute()}
                   onFocus={() => void prefetchTickerRoute()}
                 >
-                  Open free Ticker →
+                  {LANDING_COPY.hero.primary}
+                </Button>
+                <Button
+                  component={RouterLink}
+                  to="/methodology"
+                  variant="outlined"
+                  size="large"
+                  data-testid="cta-secondary"
+                >
+                  {LANDING_COPY.hero.secondary}
                 </Button>
               </Stack>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                {LANDING_COPY.hero.footnote}
+              </Typography>
             </Stack>
-          </Container>
-        </Box>
 
-        {/* ===== 2. What works today — spine order ===== */}
-        <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-          <Typography
-            variant="overline"
-            component="h2"
-            sx={{ color: 'text.secondary', display: 'block', mb: 2, letterSpacing: '0.08em' }}
-          >
-            What works today
-          </Typography>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-              gap: 3,
-            }}
-          >
-            <ValueCard
-              icon={<RadarIcon />}
-              title="Scanner"
-              testId="vp-scanner"
-              ctaTestId="vp-scanner-cta"
-              to="/scanner"
-              ctaLabel="Open Scanner →"
-              body={
-                <>
-                  Ranked multi-ticker setups from live{' '}
-                  <Jargon term="dealer gamma" gloss={DEALER_GAMMA_GLOSS} /> structure — score, tier,
-                  walls, and distance to flip. Private testing: sign-in required.
-                </>
-              }
-            />
-            <ValueCard
-              icon={<BarChartIcon />}
-              title="Ticker / GEX analysis"
-              testId="vp-ticker"
-              ctaTestId="vp-ticker-cta"
-              to="/ticker"
-              ctaLabel="Analyze a ticker →"
-              body={
-                <>
-                  Walls, the gamma flip, live order flow, and volatility context for any ticker —
-                  free without an account. The structure that says where price is pulled.
-                </>
-              }
-            />
-            <ValueCard
-              icon={<AccountBalanceWalletIcon />}
-              title="Simulated positions"
-              testId="vp-positions"
-              ctaTestId="vp-positions-cta"
-              to="/positions"
-              ctaLabel="Open Positions →"
-              body={
-                <>
-                  Track simulated positions with live P/L and saved views after you read the setup.
-                  Paper-only — every trade is <Jargon term="SIMULATED" gloss={SIMULATED_GLOSS} />.
-                </>
-              }
-            />
-          </Box>
-          <Box sx={{ mt: 3, maxWidth: 720 }}>
-            <ValueCard
-              icon={<AutoAwesomeIcon />}
-              title="AI recommendations"
-              testId="vp-airec"
-              ctaTestId="vp-airec-cta"
-              to="/ticker"
-              ctaLabel="See it on a ticker →"
-              body={
-                <>
-                  An AI read on the current setup — risk-first, framed by your trader persona,
-                  grounded in the positioning the engine already computed. Advisory only; you
-                  confirm every paper trade.
-                </>
-              }
-            />
-          </Box>
-        </Container>
-
-        {/* ===== 3. Honest coming-soon (broker only) ===== */}
-        <Container maxWidth="lg" sx={{ pb: { xs: 4, md: 6 } }}>
-          <ComingSoonCard
-            testId="brokerage-block"
-            icon={<LockIcon />}
-            title="Connect a real brokerage"
-            body={
-              <>
-                Connect your real brokerage positions — get the same AI reads on the risk
-                you&apos;re actually carrying. <strong>Coming soon.</strong>
-              </>
-            }
-            action={
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => setToastOpen(true)}
-                data-testid="waitlist-button"
+            <Box
+              data-testid="landing-hero-panel"
+              sx={{
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1,
+                p: 2,
+                minWidth: 0,
+              }}
+            >
+              <Eyebrow>{LANDING_COPY.hero.panelEyebrow}</Eyebrow>
+              <Box sx={{ mt: 1 }}>
+                <GammaSurfaceHero />
+              </Box>
+              <Stack
+                direction="row"
+                spacing={2.5}
+                sx={{
+                  mt: 1.5,
+                  pt: 1.5,
+                  borderTop: '1px solid',
+                  borderColor: 'divider',
+                  flexWrap: 'wrap',
+                  rowGap: 1,
+                }}
               >
-                Notify me
-              </Button>
-            }
-          />
+                {HERO_LEGEND.map((item) => (
+                  <Stack key={item.key} direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+                    <Box
+                      component="span"
+                      sx={{
+                        width: 10,
+                        height: 2,
+                        borderRadius: 1,
+                        bgcolor: (theme) =>
+                          item.key === 'flip'
+                            ? theme.palette.primary.main
+                            : item.key === 'call'
+                              ? theme.palette.success.main
+                              : theme.palette.error.main,
+                      }}
+                    />
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      {item.label}
+                    </Typography>
+                  </Stack>
+                ))}
+              </Stack>
+              {/* `GammaSurfaceHero`'s `aria-describedby="gs-sample-caption"` points HERE — the
+                  sample disclosure reaches a screen reader even though the SVG paints no text. */}
+              <Typography
+                id="gs-sample-caption"
+                variant="caption"
+                sx={{ display: 'block', mt: 1, color: 'text.secondary' }}
+              >
+                {SAMPLE_MARK}
+              </Typography>
+            </Box>
+          </Box>
         </Container>
       </Box>
 
-      <Footer />
-
-      <Snackbar
-        open={toastOpen}
-        autoHideDuration={4000}
-        onClose={() => setToastOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        message={<span data-testid="waitlist-ack">{WAITLIST_TOAST}</span>}
-        slotProps={{ content: { 'aria-live': 'polite' } }}
+      {/* ===== 2. Structure field ===== */}
+      <FeatureSection
+        section="field"
+        eyebrow={LANDING_COPY.field.eyebrow}
+        heading={LANDING_COPY.field.h2}
+        body={LANDING_COPY.field.body}
+        bullets={LANDING_COPY.field.bullets}
+        visual={<StructureFieldSample />}
       />
+
+      {/* ===== 3. Triage score ===== */}
+      <FeatureSection
+        section="score"
+        eyebrow={LANDING_COPY.score.eyebrow}
+        heading={LANDING_COPY.score.h2}
+        body={LANDING_COPY.score.body}
+        bullets={LANDING_COPY.score.bullets}
+        visual={<ScoreStripSample />}
+        flip
+      />
+
+      {/* ===== 4. AI read ===== */}
+      <FeatureSection
+        section="ai-read"
+        eyebrow={LANDING_COPY.aiRead.eyebrow}
+        heading={LANDING_COPY.aiRead.h2}
+        body={LANDING_COPY.aiRead.body}
+        bullets={LANDING_COPY.aiRead.bullets}
+        visual={<AiReadSample />}
+      />
+
+      {/* ===== 5. "Numbers say where they came from" — the three trust promises live INSIDE
+                  this section, not as a section of their own (AC-L1). ===== */}
+      <Box
+        component="section"
+        data-testid="landing-section"
+        data-section="register"
+        sx={{ py: { xs: 7, md: 10 } }}
+      >
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', lg: '1fr 2fr' },
+              gap: { xs: 4, lg: 6 },
+              alignItems: 'start',
+            }}
+          >
+            <Box sx={{ minWidth: 0 }}>
+              <Eyebrow>{LANDING_COPY.register.eyebrow}</Eyebrow>
+              <Typography component="h2" sx={{ ...sectionHeadingSx, mt: 1.5 }}>
+                {LANDING_COPY.register.h2}
+              </Typography>
+              <Typography variant="body1" sx={{ color: 'text.secondary', mt: 1.5 }}>
+                {LANDING_COPY.register.body}
+              </Typography>
+              {/* AC-L9 — one click from the landing to methodology, not via the footer. */}
+              <Button
+                component={RouterLink}
+                to="/methodology"
+                variant="text"
+                data-testid="cta-methodology"
+                sx={{ mt: 2, px: 0, minWidth: 0 }}
+              >
+                {LANDING_COPY.register.action}
+              </Button>
+            </Box>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
+                gap: 2,
+              }}
+            >
+              {LANDING_COPY.register.trustCards.map((card) => (
+                <Box
+                  key={card.title}
+                  sx={{
+                    bgcolor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    p: 2.5,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1,
+                  }}
+                >
+                  <Typography component="h3" sx={{ m: 0, fontSize: 15, fontWeight: 600 }}>
+                    {card.title}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    {card.body}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        </Container>
+      </Box>
+
+      {/* ===== 6. CTA band — the closure sentence sits directly under the secondary action,
+                  before any form exists (AC-L16/AC-A4). ===== */}
+      <Box
+        component="section"
+        data-testid="landing-section"
+        data-section="cta"
+        sx={{ py: { xs: 7, md: 10 } }}
+      >
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 1,
+              p: { xs: 3, md: 5 },
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: '1.4fr 1fr' },
+              gap: { xs: 3, md: 5 },
+              alignItems: 'center',
+            }}
+          >
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                component="h2"
+                sx={{ ...sectionHeadingSx, fontSize: 'clamp(24px, 2.4vw, 32px)' }}
+              >
+                {LANDING_COPY.cta.heading}
+              </Typography>
+              <Typography variant="body1" sx={{ color: 'text.secondary', mt: 1.5, maxWidth: 560 }}>
+                {LANDING_COPY.cta.body}
+              </Typography>
+            </Box>
+            <Stack spacing={1.25} sx={{ alignItems: 'stretch' }}>
+              <Button
+                component={RouterLink}
+                to="/ticker"
+                variant="contained"
+                size="large"
+                data-testid="cta-band-primary"
+                aria-label={LANDING_COPY.openTickerName}
+              >
+                {LANDING_COPY.cta.primary}
+              </Button>
+              <Button
+                variant="outlined"
+                size="large"
+                ref={signInRef}
+                onClick={() => openAuth({ returnFocus: signInRef.current })}
+                data-testid="cta-band-secondary"
+              >
+                {LANDING_COPY.cta.secondary}
+              </Button>
+              <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center' }}>
+                {LANDING_COPY.cta.signupsClosed}
+              </Typography>
+            </Stack>
+          </Box>
+        </Container>
+      </Box>
     </Box>
   );
 }

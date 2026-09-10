@@ -1,29 +1,35 @@
 /**
- * Landing (`/`) — RISK-BASED test suite (per the amended QA rule, `.claude/agents/qa-verify.md` §4,
- * 2026-07-13). We test ONLY the invariants where a silent regression is plausible AND invisible to a
- * human reviewer:
- *   1. `no-real-order-path` — the coming-soon brokerage surface is STRUCTURALLY inert (no link; "Notify
- *      me" shows a toast but never navigates or touches a trader/broker endpoint).
- *   2. Static — the landing issues ZERO trader/bundle fetch and opens no SSE on mount.
- *   3. The funnel — every CTA routes to its correct in-shell destination (href contract + one real-router
- *      proof that the route actually resolves).
+ * Landing (`/`) — RISK-BASED test suite (SPEC §7 items 1 and 4; PLAN F7 step 3). We test ONLY the
+ * invariants where a silent regression is plausible AND invisible to a human reviewer:
+ *   1. AC-L1/L2/L3/L3a — the six-section inventory: no seventh section, the three trust promises
+ *      live INSIDE the fifth section (not their own), and the retired v1 surface (value cards,
+ *      the brokerage waitlist) never reappears.
+ *   2. Static — the landing issues ZERO trader/bundle fetch and opens no SSE on mount (AC-L17).
+ *   3. AC-L6/AC-L15/AC-L16 — the funnel: both `Open the Ticker` actions share a name AND a
+ *      destination, the CTA band declares the sign-ups closure BEFORE any form exists, the
+ *      primary action resolves into the public Ticker (never a wall), and the honesty section
+ *      reaches methodology in one click (AC-L9).
  *
- * NOT asserted here (visible + intentional → verified by review/QA; brittle to automate): exact copy /
- * H1, disclaimer wording, tooltip/element presence, per-widget styling.
+ * NOT asserted here (visible + intentional → verified by review; brittle to automate): exact body
+ * copy beyond the strings a test already needs, disclaimer wording, per-widget styling. Copy
+ * PROVENANCE (byte-fidelity to the design source, the cut phrases) is F13's own structural spec —
+ * not duplicated here.
  *
- * The strict `fetch` mock below THROWS on any non-auth call, so "static" is enforced by construction —
- * an accidental trader fetch added to the landing fails every test in this file.
+ * The strict `fetch` mock below THROWS on any non-auth call, so "static" is enforced by
+ * construction — an accidental trader fetch added to the landing fails every test in this file.
+ * VERBATIM (SPEC §7 item 4 — do not rewrite): the `fetchMock` assignment in `beforeEach` and the
+ * "Landing · static (zero network)" describe block are the mechanism behind AC-L17.
  */
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import App from '@/app';
+import { AUTH_COPY } from '@/features/auth/copy';
 import { makeBundle } from '@/features/auth/testBackend';
-import { __resetMemory } from '@/features/trading/positions/store';
 import { theme } from '@/shared/theme/theme';
 import { Landing } from './Landing';
 
@@ -38,7 +44,6 @@ const json = (body: unknown) =>
 
 beforeEach(() => {
   localStorage.clear();
-  __resetMemory();
   openedEventSources = 0;
   class SilentEventSource {
     onmessage: ((e: MessageEvent) => void) | null = null;
@@ -75,19 +80,12 @@ function calledNonAuth(): boolean {
   return fetchMock.mock.calls.some((c) => !String(c[0]).includes('/api/auth/'));
 }
 
-/** Surfaces the router path so (non-)navigation can be asserted by URL. */
-function LocationProbe() {
-  const loc = useLocation();
-  return <div data-testid="location" data-pathname={loc.pathname} />;
-}
-
 function renderLanding() {
   return render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <MemoryRouter initialEntries={['/']}>
         <Landing />
-        <LocationProbe />
       </MemoryRouter>
     </ThemeProvider>,
   );
@@ -105,33 +103,51 @@ function renderApp(path = '/') {
 }
 
 // =================================================================================================
-// 1. no-real-order-path — the coming-soon brokerage surface is structurally inert (HARD invariant)
+// AC-L1/L2/L3/L3a — the landing inventory
 // =================================================================================================
-describe('Landing · no-real-order-path (inert coming-soon)', () => {
-  it('brokerage block has no link, and "Notify me" toasts WITHOUT navigating or hitting the network', async () => {
-    const user = userEvent.setup();
+describe('AC-L1/L2/L3/L3a — the landing inventory', () => {
+  it('exactly six sections, in the design order, and no seventh', () => {
     renderLanding();
+    expect(screen.getAllByTestId('landing-section').map((s) => s.dataset.section)).toEqual([
+      'hero',
+      'field',
+      'score',
+      'ai-read',
+      'register',
+      'cta',
+    ]);
+  });
 
-    // Structurally inert: the brokerage block carries no anchor — it can never link into a broker flow.
-    expect(screen.getByTestId('brokerage-block').querySelector('a')).toBeNull();
-    expect(screen.getByTestId('location')).toHaveAttribute('data-pathname', '/');
+  it('the three trust promises are content INSIDE the fifth section, not a section of their own', () => {
+    renderLanding();
+    const register = screen.getAllByTestId('landing-section')[4];
+    for (const t of ['Snapshot, never live', 'Simulated, always', 'Advisory, never an order']) {
+      expect(within(register).getByText(t)).toBeInTheDocument();
+    }
+  });
 
-    await user.click(screen.getByTestId('waitlist-button'));
-
-    // A toast acknowledges in place — and NOTHING else happens: no route change, no trader/broker call.
-    expect(await screen.findByTestId('waitlist-ack')).toBeInTheDocument();
-    expect(screen.getByTestId('location')).toHaveAttribute('data-pathname', '/');
-    expect(calledNonAuth()).toBe(false);
-
-    // The control is a button, not a link/broker affordance.
-    const btn = screen.getByTestId('waitlist-button');
-    expect(btn.tagName.toLowerCase()).toBe('button');
-    expect(btn).not.toHaveAttribute('href');
+  it('the retired v1 surface is gone: no "What works today", no value-card grid, no waitlist', () => {
+    const { container } = renderLanding();
+    expect(screen.queryByText('What works today')).toBeNull();
+    for (const id of [
+      'vp-scanner',
+      'vp-ticker',
+      'vp-positions',
+      'vp-airec',
+      'brokerage-block',
+      'waitlist-button',
+      'waitlist-ack',
+    ]) {
+      expect(screen.queryByTestId(id)).toBeNull();
+    }
+    for (const tense of ['is coming', 'coming soon', 'on the way', 'in the works']) {
+      expect(container.textContent!.toLowerCase()).not.toContain(tense);
+    }
   });
 });
 
 // =================================================================================================
-// 2. Static — zero trader network (HARD invariant)
+// 2. Static — zero trader network (HARD invariant) — VERBATIM (SPEC §7 item 4)
 // =================================================================================================
 describe('Landing · static (zero network)', () => {
   it('issues no trader/bundle fetch and opens no SSE on mount', () => {
@@ -142,31 +158,29 @@ describe('Landing · static (zero network)', () => {
 });
 
 // =================================================================================================
-// 3. The funnel — CTAs route to the correct in-shell destinations
+// AC-L6/AC-L15/AC-L16 — the one big action works without an account
 // =================================================================================================
-describe('Landing · CTA routing', () => {
-  it('every CTA points at its destination route (spine: scanner primary, ticker free path)', () => {
+describe('AC-L6/AC-L15/AC-L16 — the one big action works without an account', () => {
+  it('both `Open the Ticker` actions share a name AND a destination', () => {
     renderLanding();
-    const routes: Array<[testId: string, href: string]> = [
-      ['cta-primary', '/scanner'],
-      ['cta-secondary', '/ticker'],
-      ['vp-scanner-cta', '/scanner'],
-      ['vp-ticker-cta', '/ticker'],
-      ['vp-positions-cta', '/positions'],
-      ['vp-airec-cta', '/ticker'],
-    ];
-    for (const [testId, href] of routes) {
-      expect(screen.getByTestId(testId)).toHaveAttribute('href', href);
+    for (const id of ['cta-primary', 'cta-band-primary']) {
+      expect(screen.getByTestId(id)).toHaveAttribute('href', '/ticker');
+      expect(screen.getByTestId(id)).toHaveAccessibleName('Open the Ticker');
     }
-    // Scanner is live (value card), not a hatched coming-soon block.
-    expect(screen.queryByTestId('scanner-block')).toBeNull();
-    expect(screen.getByTestId('brokerage-block')).toBeInTheDocument();
   });
 
-  it('the free-path secondary CTA resolves into the Ticker viewer (real router)', async () => {
-    const user = userEvent.setup();
-    // Entering the ticker route legitimately fetches the bundle — widen the mock (shared makeBundle
-    // fixture) for the destination page so the real router can render it.
+  it('the CTA band declares the closure BEFORE the visitor types anything', () => {
+    renderLanding();
+    const band = screen.getAllByTestId('landing-section')[5];
+    expect(within(band).getByText(AUTH_COPY.signup.signupsClosed)).toBeInTheDocument();
+    expect(within(band).getByTestId('cta-band-secondary')).toHaveTextContent(
+      AUTH_COPY.account.signIn,
+    );
+    expect(within(band).queryByRole('textbox')).toBeNull();
+  });
+
+  it('the primary CTA resolves into the public Ticker viewer, not a wall (real router)', async () => {
+    /* widen the fetch mock exactly as the CTA-routing suite used to, then: */
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('/api/auth/session')) {
@@ -186,16 +200,18 @@ describe('Landing · CTA routing', () => {
     });
 
     renderApp('/');
-    await user.click(screen.getByTestId('cta-secondary'));
+    await userEvent.setup().click(screen.getByTestId('cta-primary'));
     // Free path: Ticker VIEWER loads its bundle-driven "Call wall" tile without sign-in.
     expect(await screen.findByText('Call wall')).toBeInTheDocument();
+    expect(screen.queryByTestId('require-auth-wall')).toBeNull();
   });
 
-  it('the primary Scanner CTA hits the sign-in wall when signed out (honest lockdown)', async () => {
-    const user = userEvent.setup();
-    renderApp('/');
-    await user.click(screen.getByTestId('cta-primary'));
-    expect(await screen.findByTestId('require-auth-wall')).toBeInTheDocument();
-    expect(screen.getByTestId('require-auth-ticker')).toHaveAttribute('href', '/ticker');
+  it('AC-L9 — the honesty section reaches methodology in ONE click, not via the footer', () => {
+    renderLanding();
+    const register = screen.getAllByTestId('landing-section')[4];
+    expect(within(register).getByTestId('cta-methodology')).toHaveAttribute(
+      'href',
+      '/methodology',
+    );
   });
 });
