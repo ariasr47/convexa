@@ -44,7 +44,9 @@ import { StateExportDrawer } from '@/pages/ticker/widgets/ai-rec/StateExportDraw
 import { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommendation';
 import { PrimeBanner, tierMeta } from '@/pages/ticker/widgets/opportunity-tier';
 import { OptionRight } from '@convexa/api';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Alert from '@mui/material/Alert';
+import AlertTitle from '@mui/material/AlertTitle';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
@@ -61,7 +63,7 @@ import type { BoxProps } from '@mui/material/Box';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { elevationFor } from '@/shared/theme/tokens';
+import { elevationFor, typographyTokens } from '@/shared/theme/tokens';
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
 import { WidgetChromeProvider, WidgetSelectionProvider } from '@/shared/ui/Widget';
@@ -394,6 +396,19 @@ function BoardZoneLabel({
   );
 }
 
+/**
+ * Fidelity repair 2, N7 — a DISPLAY-ONLY parse of the client's own error message, never a second
+ * status authority. `libs/api/src/lib/convexa.ts:1338` builds the message from the response status
+ * alone (`API error ${status}`, `Rate limited (${status})`, or a 404's status-less prose) — this
+ * reads the SAME text back out for the Mono detail line ("nothing is hidden") without touching that
+ * builder (other consumers assert on it; the "must not change" list keeps `libs/api` at a zero
+ * diff). `null` when the message carries no status-shaped number (the 404 case has none at all) —
+ * the detail line is simply omitted then, never a fabricated status.
+ */
+function httpStatusFromMessage(message: string | null): string | null {
+  return message?.match(/\b(\d{3})\b/)?.[1] ?? null;
+}
+
 export function TickerDashboard() {
   // The route always supplies `:ticker`; the fallback is defensive only and tracks the app default
   // (index-first-defaults AC-1: TSLA → SPY everywhere an unset fallback existed).
@@ -674,18 +689,39 @@ export function TickerDashboard() {
         testid="orders-signin-prompt"
       />
 
-      {/* Cold-start failure (no bundle ever loaded) is the ONLY blank/error screen: red error + Retry.
-          A poll failure AFTER a prior success keeps the whole bundle on screen behind a soft warning. */}
+      {/* Cold-start failure (no bundle ever loaded) is the ONLY blank/error screen — the design's
+          own sentence (fidelity repair 2, N7), never the raw client status string; the status
+          itself stays, as a Mono detail line, so nothing is hidden. A poll failure AFTER a prior
+          success keeps the whole bundle on screen behind a soft warning (the other branch, below —
+          untouched; same code path ONLY when `error && !data`, never `error && data`). */}
       {error && !data && (
         <Alert
-          severity="error"
+          severity="warning"
+          icon={<WarningAmberIcon />}
           action={
             <Button color="inherit" size="small" onClick={() => load({ force: true })}>
               Retry
             </Button>
           }
         >
-          {error}
+          <AlertTitle>{`Couldn't load ${ticker.toUpperCase()}.`}</AlertTitle>
+          <Typography variant="body2">
+            The structure request failed before any snapshot arrived. Nothing is cached for this
+            desk yet.
+          </Typography>
+          {httpStatusFromMessage(error) && (
+            <Typography
+              component="div"
+              sx={{
+                mt: 0.5,
+                fontFamily: typographyTokens.monoFontFamily,
+                fontSize: 11,
+                color: 'text.secondary',
+              }}
+            >
+              {`HTTP ${httpStatusFromMessage(error)}`}
+            </Typography>
+          )}
         </Alert>
       )}
       {error && data && (

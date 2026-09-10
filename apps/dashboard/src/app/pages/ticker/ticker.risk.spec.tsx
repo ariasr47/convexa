@@ -540,6 +540,33 @@ describe('Ticker · cold-load skeleton takes the desk’s final shape (AC-46, fi
 // `market_state.iv_rank` no longer has an "IvRank empty copy" to observe on this page. The read
 // strip's own IV-rank cell is a separate, still-mounted consumer, untouched by this pass, and isn't
 // part of this best-effort-isolated-or-null matrix (it was never in this list before either).
+// =================================================================================================
+// 2c. Cold-start failure reads like the design, not a raw client status (fidelity repair 2, N7)
+// =================================================================================================
+describe('Ticker · cold-start failure reads like the design (fidelity repair 2, N7)', () => {
+  it('a bundle that never arrives shows the design’s headline + body + Retry + an HTTP status detail line — never the raw client error string', async () => {
+    tickerOk = false;
+    renderAt('/ticker/TSLA');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent("Couldn't load TSLA.");
+    expect(alert).toHaveTextContent(
+      'The structure request failed before any snapshot arrived. Nothing is cached for this desk yet.',
+    );
+    expect(alert.textContent ?? '').not.toContain('API error 500');
+    expect(screen.getByText('Retry')).toBeInTheDocument();
+    // The status is kept, not hidden — as a Mono detail line (design note), just never the bare
+    // client string.
+    expect(alert).toHaveTextContent('HTTP 500');
+  });
+
+  it('the toolbar stays usable during the failure', async () => {
+    tickerOk = false;
+    renderAt('/ticker/TSLA');
+    await screen.findByRole('alert');
+    expect(screen.getByTestId('ticker-toolbar')).toBeInTheDocument();
+  });
+});
+
 const NULLABLE_SECTIONS: Array<[field: string, emptyCopy: string]> = [
   ['market_context', 'Market context unavailable this cycle.'],
   ['dealer_flow_projection', 'Projected dealer flow unavailable this cycle.'],
