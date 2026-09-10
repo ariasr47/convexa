@@ -3,7 +3,7 @@
  * STATIC: no fetch, no SSE, no store. Honest methodology for structure/score/two-speed data.
  * Renders inside AppShell's `<main>`; this page does not nest a second main.
  */
-import { METHOD_COPY } from '@/pages/methodology/copy';
+import { METHOD_COPY } from './copy';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
