@@ -25,6 +25,7 @@ wrapping at all) — named in their own sections below, not folded silently into
 | `6c1e7e3c` | N1 follow-up — the hero/strip container queries actually fire (real-browser bug)           |
 | `92d57695` | N2 follow-up — the shorter orders title still ellipsised by 5px, now wraps (real-browser)   |
 | `6ae48690` | evidence — `fidelity-repair-2-after` (harness after-capture: JSON census, JPEG pairs, tools) |
+| `a0e8cb97` | N5 follow-up (conductor-requested) — `FigureClause`'s `insideRangeLine` and `NumbersSaidStrip`'s own expiration line now use `fmtExpiry` |
 
 ## Change-by-change
 
@@ -236,6 +237,59 @@ site is in the task's enumerated "Raw sites:" bullet list, which is a specific, 
 citations, not "every raw date in the codebase." Left as an explicit scope boundary rather than
 silently widened into; a judgment call, not a GATE Z (the task's own list is unambiguous about which
 sites are in scope).
+
+#### N5 follow-up (conductor-requested)
+
+The conductor read the "Not touched" note above as a defect to close, not a standing scope boundary —
+one bounded lane, one change: apply `fmtExpiry` at exactly those two named sites so no raw
+`YYYY-MM-DD` reaches the DOM from them either. Commit `a0e8cb97`.
+
+**What changed.** `FigureClause.tsx`'s `inside_range` case now reformats `c.expiration`'s TEXT via
+`fmtExpiry` before it reaches `insideRangeLine` — `figureClause()` (`literals.ts`) has already decided
+`inside_range` from the RAW wire token (`state`/`basis`/`range_low`/`range_high`/`expiration`) before
+this component ever sees a value, so the selector itself is untouched; only the resolved value's text
+is reformatted, the same discipline this file's `DecisionCard.tsx`/`AnalysisSurface.tsx` sites already
+apply. `FigureClause` is the SAME shared component both `DecisionCard.tsx` (`clause-target`, under
+Target/`exit_target`) and `AnalysisSurface.tsx`'s grounding-fields list render, so one edit closes both
+call sites. `NumbersSaidStrip.tsx`'s `targetExpiration` (`citedExpiration ?? move?.primary_expiration ??
+null`) is likewise already decided present-or-absent from the raw wire tokens by the time the two copy
+branches run (matched-tenor "…implied move for {expiration}" and no-match "No straddle-implied move for
+{expiration}…"); both branches now wrap it in `fmtExpiry`.
+
+**Files:** `ai-rec/FigureClause.tsx`, `ai-rec/FigureClause.spec.tsx` (new), `ai-rec/NumbersSaidStrip.tsx`,
+`ai-rec/NumbersSaidStrip.spec.tsx`.
+
+**RED → GREEN** (new `FigureClause.spec.tsx` + `NumbersSaidStrip.spec.tsx`'s three pre-existing pinned
+raw-ISO assertions updated to the formatted shape in the same commit, plus two new fixed-clock tests):
+
+```
+RED:   Test Files  2 failed (2)  |  Tests  6 failed | 4 passed (10)
+GREEN: Test Files  2 passed (2)  |  Tests  10 passed (10)
+```
+
+Full `ai-rec` directory (502 → 505 tests, +3 from this follow-up: +1 `FigureClause.spec.tsx`, +2 new
+`NumbersSaidStrip.spec.tsx` cases): **26 files, 505/505, exit 0** (the one incidental failure on a raw
+`npx vitest --config apps/dashboard/vite.config.mts run …` invocation from the repo root —
+`decisionCard.structural.spec.ts`'s `ENOENT` — was this invocation's `process.cwd()` landing at the repo
+root instead of `apps/dashboard`, not a regression; confirmed passing both under a correct cwd and under
+the full `nx test` run below).
+
+**Verification (exit codes).**
+
+| check | command | result |
+| --- | --- | --- |
+| typecheck (cold) | `npx nx typecheck @convexa/dashboard --skip-nx-cache` (`dist`/`out-tsc`/`*.tsbuildinfo` cleared first) | **0** |
+| unit + component (full) | `npx nx test @convexa/dashboard --skipNxCache` | **0** — 246 files / **2,977 tests** (245/2,974 before this follow-up; +1 file, +3 tests, exactly this follow-up's new coverage) |
+| lint | `npm run lint` | **0** — 4 pre-existing warnings in `apps/dashboard-e2e/playwright.*.config.ts` (`no-explicit-any`), unrelated to this diff, 0 errors |
+| format | `npm run format:check` | **0** (one file — the new `FigureClause.spec.tsx` — needed a scoped `npx nx format:write --files apps/dashboard/src/app/pages/ticker/widgets/ai-rec/FigureClause.spec.tsx`; re-checked green, and the two edited spec files re-run green after) |
+| NUL scan | byte scan on all 4 changed/new files | **0** on every file |
+| LF-only | `grep -c $'\r'` on all 4 files | **0** on every file |
+| lanes | `git diff --stat main -- apps/api libs/api` | empty |
+
+**What I could not verify.** No real-browser / visual-gate re-check for this follow-up — the task scoped
+verification to typecheck/test/lint/format/NUL only, and this change touches text content, not layout,
+so the existing real-browser discipline from N1/N2 above doesn't apply here. Not run: e2e, a11y gate,
+visual gate, the harness — outside this follow-up's owed verification table.
 
 ### N6 — the analysis drawer lists "Time horizon" once
 
