@@ -496,3 +496,49 @@ caught (jsdom's `@container`/layout blind spot) — named and fixed in this lane
 pass. Every gate the task names ran to completion with the exit code it names, except the visual gate,
 which failed exactly as instructed, for a platform reason recorded with real diagnostic evidence
 standing in for the missing baseline. `apps/api` / `libs/api` stayed at a zero diff throughout.
+
+## Conductor's cold re-verification (2026-09-10, the Mac session — not the lane's numbers)
+
+**Procedure.** From the lane's final tree (`4431c6f3`, then `140fd16c` after the N5 follow-up): build outputs deleted,
+cold typecheck, the unit suite, lint, `format:check`, a fresh production build, the desk e2e, the accessibility gate, the audit
+harness into a **separate** folder (`fidelity-repair-2-verify/`, `--grep "desk-real|desk-trade"`), and the two state
+captures (cold load with the route held; failure with a 502) against the fresh bundle served the way the gates serve it.
+Every command standalone, ports 4200/4310 freed first; port 8000 never touched.
+
+| check | `4431c6f3` (lane tree) | `140fd16c` (+ N5 follow-up) |
+|---|---|---|
+| `npx nx typecheck @convexa/dashboard --skip-nx-cache` (cold) | exit 0 | exit 0 |
+| `npx nx test @convexa/dashboard --skipNxCache` | exit 0 — 245 files / 2,974 tests | exit 0 — 246 files / **2,977** tests |
+| `npm run lint` · `npm run format:check` | 0 · 0 | — (lane: 0 · 0) |
+| `npx nx build @convexa/dashboard --configuration=production --skip-nx-cache` | exit 0 | exit 0 |
+| desk e2e (`BROWSER_QUALITY_PREBUILD_STATUS=pass`) | **108/108, 0 flaky**, exit 0 | **108/108, 0 flaky**, exit 0 |
+| accessibility gate | **16/16, 0 flaky**, exit 0 (A11Y-8 on the new copy) | — |
+| harness `desk-real|desk-trade` | 22/22, exit 0 | — |
+| `git diff --stat main -- apps/api libs/api` | empty | empty |
+
+**Every composition number matches the lane's to the pixel** (`fidelity-repair-2-verify/app/*.json`): 2,719 at 1440 and
+1280 (dark and light), 3,628 at 834, 5,464 at 390; `command-deck` 215, `widget-structure-hero` 483, `widget-read-strip` 131,
+`widget-ai-rec` 759 w beside 379 w, `widget-live-tape` 318, `widget-orders` **128** (+14 for the wrapped title), band 968;
+`overflowX` false everywhere, console errors 0. One number the lane's table did not list: `desk-trade` at 834 is **3,140**
+(review: 3,083; +57 px — the wrapped title in the three-up side column), still far under the design's 3,915.
+
+**Looked at, not just measured** (`fidelity-repair-2-verify/pairs/*.jpg`, `crops/*.jpg`): the cold-load subtree now has the
+desk's shape — masthead shimmer, the field beside a five-row ladder, the eight-cell strip, the work grid — against the
+review's twelve-tile grid; the failure state reads the design's sentence with `HTTP 502` as a Mono detail and `Retry`;
+`Sim orders · SPY` wraps instead of clipping at 1280 and 1440; `Gamma flip` wraps at 834; the produced read shows
+`As of 12:00:00 ET · 1s`, `Sep 18 (26 DTE)`, one `Time horizon`, and after the follow-up no `2026-09-18` anywhere in the panel.
+
+**Residuals I add to the lane's list (named, not blocking):**
+- **R1 — the pre-load toolbar is still v1's raised panel.** Above the new skeleton, `TickerToolbar` (`TICKER · EXPIRATIONS ·
+  PERSONA` + spinner) renders in its raised card during load, while the loaded desk joins those controls to the headline row
+  (change 9 of the first repair). The page no longer jumps in the body, but it still jumps in that one row. The lane fenced the
+  toolbar deliberately; a follow-up can render the loading toolbar in the joined form. Owner/UX note, not a defect in the six.
+- **R2 — the side-column title wraps `· SPY` onto its own line** at 379 px (the design fits `Sim orders · SPY` on one line at
+  396 px because its chip and link are narrower). Polish: shrink the `SIMULATED` chip or drop the ticker suffix in the side
+  column.
+- **The visual gate cannot pass on this machine** (no `darwin` baseline by schema). The scenarios this branch changes —
+  `ticker-desktop`, `ai-recommendation`, and `ticker-offline-mobile` if the phone stack's title moved — need the owner's
+  win32 + linux re-acceptance through `visual-baseline-receipts/RUNBOOK.md` before CI's visual child can go green on the PR.
+
+**Verdict on the lane:** accepted as landed — six defects fixed with RED tests, two real-browser bugs caught and fixed by the
+lane itself, every gate green cold, nothing faked, residuals named.
