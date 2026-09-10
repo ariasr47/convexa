@@ -20,5 +20,4 @@ export { Jargon, type JargonProps } from './Jargon';
 export { PanelContainer, panelContainerSx, type PanelContainerProps } from './PanelContainer';
 export { Refused, type RefusedProps } from './Refused';
 export { TintChip } from './TintChip';
-export { ValueCard, type ValueCardProps } from './ValueCard';
 export * from './Widget';

@@ -7,8 +7,7 @@
  * at once, invisibly to per-page review).
  *
  * NOT asserted here (visible + intentional → review/QA; or covered at the page level): icon/title/
- * body/badge presence, dashed-border styling, ValueCard prop plumbing (the landing funnel spec pins
- * every real CTA's href), Jargon gloss copy, the ConvexityMotif SVG geometry.
+ * body/badge presence, dashed-border styling, Jargon gloss copy, the ConvexityMotif SVG geometry.
  */
 import { theme } from '@/shared/theme/theme';
 import LockIcon from '@mui/icons-material/Lock';
@@ -63,18 +62,18 @@ describe('coming-soon primitives — no-real-order-path structural inertness', (
     const onClick = vi.fn();
     renderUi(
       <ComingSoonCard
-        testId="brokerage-block"
+        testId="parked-block"
         icon={<LockIcon />}
-        title="Connect a real brokerage"
+        title="A parked capability"
         body="x"
         action={
-          <Button data-testid="waitlist-button" onClick={onClick}>
-            Notify me
+          <Button data-testid="parked-action" onClick={onClick}>
+            Tell me more
           </Button>
         }
       />,
     );
-    const btn = screen.getByTestId('waitlist-button');
+    const btn = screen.getByTestId('parked-action');
     expect(btn.tagName.toLowerCase()).toBe('button');
     expect(btn).not.toHaveAttribute('href');
     await user.click(btn);
