@@ -1,5 +1,45 @@
 # RESUME — spire/curvature-v2-foundations
 
+## 🌅 MORNING — 2026-09-11 (written at the end of the night shift; read this first — the NIGHT SHIFT and CLOSE-OUT blocks below are history)
+
+**Phase 4's frontend build ran to the end of what the plan allows without you.** On `spire/curvature-v2-landing-and-site`
+(pushed; 30+ commits over `main`): F1 → F13 all landed through k=2 workers, plus three conductor-routed follow-ups the
+plan had not seen (F7b: the shell's live-lifecycle flow test now enters `/ticker` through the primary CTA; F7c: the
+landing's outlined buttons and hero chip label with the text-grade amber — light-scheme contrast 3.0 → 5.2, A11Y-2
+passes; a scoped Prettier pass on seven lane files). **Conductor's cold pass on the final tree `591e2654`:** typecheck 0 ·
+**254 files / 3,061 tests** (F1 baseline 243 / 2,941) · lint 0 · format 0 · production build 0 · bundle budget 0 ·
+e2e **108/108, 0 flaky** · accessibility **15/16** (only `A11Y-B2`, which asserts the OLD landing's CTA hrefs and waitlist
+button and lives in `dashboard-e2e/**` — F15's file) · `apps/api` / `libs/quant-engine` / `libs/api` diff **0**. The landing
+measures 1.06× the design's height at 1440/1280 and 1.01–1.02× at 834/390 with no overflow
+(`state/spire-curvature-v2-foundations/phase4-build-verify/pairs/landing-*.jpg`). Full record: the feature's
+`_MANIFEST.md` (Workers line + "Conductor's cold verification").
+
+**What is deliberately NOT done, and why (in order for you):**
+1. **PR #49 (`fix/fidelity-repair-2`) is still open** — the Windows receipt flow (win32 + linux) for `ticker-desktop`,
+   `ai-recommendation` and possibly `ticker-offline-mobile`, per `visual-baseline-receipts/RUNBOOK.md`, then two green CI
+   visual runs, then merge (merge commit). Nothing else in this list can start before that merge.
+2. **F14, F15 and the closer F16** on the landing branch wait for that merge (F15 writes `scenarios.ts`, which #49 edits;
+   F14 pins against `distanceToLevel.ts`). After merging #49: rebase the landing branch onto main, then run F14 and F15 as
+   a pair, then F16. F16's live decision: the entry chunk is **20.88 kB gzip**, above SPEC §2.4's 20 kB line, so the
+   `Suspense` split is licensed — the closer measures and decides; `check:bundle` (22 KB brotli) currently passes.
+3. **GATE Q** (`spire-tech-qa`, fresh, on Opus) after F16 — it will also audit the `Workers:` line against the Independence
+   table. Then GATE S needs the **landing baseline** re-accepted on Windows (the same runbook; `landing` is red by design).
+4. **Compatibility gate** could not run here (no Firefox/WebKit on this Mac; chromium journeys 5/5). CI runs all three.
+
+**Polish the closer should pick up (seen, not fixed):** the phone landing's two CTAs are narrower than the design's
+full-width pair; the pre-load toolbar on `/ticker` still renders as v1's raised panel above the new skeleton (R1 in the
+repair report); the side-column title wraps "· SPY" (R2). Owner calls stay in BACKLOG F-M…F-S.
+
+**Records landed on `main` overnight:** #47 (blocker records), #48 (the fidelity review), #50 (the interim night handover),
+and this one. Nothing else touched `main`; nothing deployed by this session; no baseline written; no history rewritten.
+
+**Machines and ports:** the Mac's dev servers are stopped; `npx nx serve @convexa/dashboard` (:4200) and a static
+`design/site` server (:4310) bring the pair back; the API on :8000 is free again (the pdf-translator harness released it).
+The Write tool is path-guarded to the repo root — agents cannot write into sibling worktrees (the planner fell back to
+`~/.claude/plans`); the conductor's Bash edits in a worktree work. Traps learned tonight: `--skip-nx-cache` whenever a
+pin's input lives in another project (`libs/quant-engine`, `design/*.mjs`); MUI's `sx` does not resolve theme paths for
+`fill`/`stroke` (use the callback form); outlined/text buttons label with the FILL amber unless told otherwise.
+
 ## 🌙 NIGHT SHIFT — 2026-09-10 (Mac, unattended; owner asleep, judgement delegated) — supersedes the CLOSE-OUT block below
 
 **Read this first.** Written at GATE PLAN, refreshed at the end of the night if the session lasts. Everything is on branches
@@ -778,7 +818,7 @@ value of **60**, and the gap is in the canon's prose, not the code.
 
 # RESUME — spire/curvature-v2-foundations (2026-09-03)
 
-**Resume status:** NIGHT SHIFT 2026-09-10 — **phases 1–3 on main; repair PR #49 open (baselines pending on Windows); phase 4 GATE PLAN complete, frontend build in flight on `spire/curvature-v2-landing-and-site` — see the NIGHT SHIFT block at the top.**  
+**Resume status:** MORNING 2026-09-11 — **phases 1–3 on main; repair PR #49 open (Windows baselines first); phase 4 built through F13 + follow-ups on `spire/curvature-v2-landing-and-site` (`591e2654`, cold-verified); F14/F15/F16 → GATE Q → landing baseline are the owner's next steps — see the MORNING block at the top.**  
 **Written:** 2026-09-03 (GATE R, phase 1 closed at GATE S — a clean phase boundary, not a mid-build checkpoint)
 
 Written at GATE R for a **fresh session on another machine**. Self-contained against `PROJECT_CONTEXT.md`.
