@@ -43,6 +43,11 @@ import App from '@/app';
 import { makeBundle } from '@/features/auth/testBackend';
 import { __resetMemory } from '@/features/trading/positions/store';
 import { theme } from '@/shared/theme/theme';
+import {
+  allRulesForClass,
+  emotionClassOf,
+  joinedStyleText,
+} from './widgets/_kit/emotionCssReader';
 
 // ---- Rich static-read fixtures (every independently-nullable section POPULATED) ---------------
 const IVR_FIX: IvRankRead = {
@@ -432,6 +437,98 @@ describe('Ticker · skeleton-first load', () => {
     await screen.findByText('Call wall');
     expect(screen.getByTestId('last-trade')).toHaveTextContent('Last trade $251.13');
     expect(screen.queryByTestId('cold-skeleton')).toBeNull();
+  });
+});
+
+// =================================================================================================
+// 2b. Cold-load skeleton takes the v2 desk's FINAL SHAPE (AC-46 · fidelity repair 2, N1)
+//
+// The retired v1 skeleton (twelve identical tiles in a fluid grid, under a 280px title bar) is
+// replaced by shimmer shaped like the real, already-built v2 desk: masthead → structure hero (field
+// beside a five-row ladder column) → read strip (eight cells) → work grid (AI-brief + three side
+// cards) → the band header. jsdom cannot lay out `@container`/media-query wrap (`Widget.spec.tsx`'s
+// own note) — RESPONSIVE shape is verified by reading the emitted CSS rule text (the SAME
+// `emotionClassOf`/`allRulesForClass`/`joinedStyleText` idiom `ReadStrip.spec.tsx` and
+// `FigureCell.spec.tsx` already established for this exact class of assertion), never by resizing a
+// real viewport.
+// =================================================================================================
+describe('Ticker · cold-load skeleton takes the desk’s final shape (AC-46, fidelity repair 2 N1)', () => {
+  it('RED (a) — the hero-shaped skeleton is ≥400px tall at the base/wide rule, and pins a taller under-1000px-container height for the ladder-below-field shape', async () => {
+    tickerDeferred = true;
+    renderAt('/ticker/TSLA');
+    const cold = await screen.findByTestId('cold-load');
+
+    const hero = within(cold).getByTestId('cold-load-hero');
+    const cls = emotionClassOf(hero);
+    expect(cls).toBeTruthy();
+    const rules = allRulesForClass(joinedStyleText(), cls as string)
+      .join(';')
+      .replace(/\s+/g, '');
+
+    const base = rules.match(/min-height:(\d+)px/);
+    expect(base).not.toBeNull();
+    expect(Number(base?.[1])).toBeGreaterThanOrEqual(400);
+
+    // MUTATION GUARD — the narrow-container height is GATED behind `@container panel`, never a bare
+    // `@media` (the container-query hazard `ReadStrip.tsx`'s own doc comment names).
+    const squashed = joinedStyleText().replace(/\s+/g, '');
+    expect(squashed).toContain('@containerpanel(max-width:999.95px)');
+    expect(rules).toContain('min-height:968px');
+  });
+
+  it('RED (a) — at 1280 the cold-load subtree contains exactly eight read-strip skeleton cells', async () => {
+    tickerDeferred = true;
+    renderAt('/ticker/TSLA');
+    const cold = await screen.findByTestId('cold-load');
+    const strip = within(cold).getByTestId('cold-load-strip');
+    expect(within(strip).getAllByTestId('cold-load-strip-cell')).toHaveLength(8);
+  });
+
+  it('RED (b) — the ladder skeleton sits below the field skeleton in document order (the single-column, under-1000px shape)', async () => {
+    tickerDeferred = true;
+    renderAt('/ticker/TSLA');
+    const cold = await screen.findByTestId('cold-load');
+    const hero = within(cold).getByTestId('cold-load-hero');
+    const field = within(hero).getByTestId('cold-load-hero-field');
+    const ladder = within(hero).getByTestId('cold-load-hero-ladder');
+    // Field precedes ladder in the DOM; combined with the previous test's proof that the grid
+    // collapses to a single `1fr` column under a 1000px container, single-column flow places the
+    // ladder BELOW the field, never beside it, at narrow widths.
+    expect(field.compareDocumentPosition(ladder) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('RED (c) — the existing absence-after-load assertion still passes: cold-skeleton and cold-load are both gone once the bundle resolves', async () => {
+    tickerDeferred = true;
+    renderAt('/ticker/TSLA');
+    await screen.findByTestId('cold-load');
+    await act(async () => {
+      resolveTicker?.(richBundle());
+    });
+    await screen.findByText('Call wall');
+    expect(screen.queryByTestId('cold-skeleton')).toBeNull();
+    expect(screen.queryByTestId('cold-load')).toBeNull();
+  });
+
+  it('RED (d) — no text node inside cold-load before any data or live tick arrives (shimmer only, foundations F2)', async () => {
+    tickerDeferred = true;
+    renderAt('/ticker/TSLA');
+    const cold = await screen.findByTestId('cold-load');
+    // `textContent` concatenates every descendant text node; MUI `Skeleton` renders none (no
+    // `children`) — a non-empty, non-whitespace string here means a stray label, `—`, or
+    // "Loading…" crept in, which the design's shimmer-only frame forbids.
+    expect((cold.textContent ?? '').trim()).toBe('');
+  });
+
+  it('the masthead skeleton is bare on the ink — no raised toolbar panel — behind the four v2 bands (chip row, headline, meta line, quick row)', async () => {
+    tickerDeferred = true;
+    renderAt('/ticker/TSLA');
+    const cold = await screen.findByTestId('cold-load');
+    const masthead = within(cold).getByTestId('cold-load-masthead');
+    const cls = emotionClassOf(masthead);
+    expect(cls).toBeTruthy();
+    const rules = allRulesForClass(joinedStyleText(), cls as string).join(';');
+    expect(rules).not.toContain('border');
+    expect(rules).not.toContain('box-shadow');
   });
 });
 

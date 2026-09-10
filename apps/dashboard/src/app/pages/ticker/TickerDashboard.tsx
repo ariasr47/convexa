@@ -51,14 +51,17 @@ import Container from '@mui/material/Container';
 import Fade from '@mui/material/Fade';
 import Skeleton from '@mui/material/Skeleton';
 import Snackbar from '@mui/material/Snackbar';
+import Stack from '@mui/material/Stack';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
+import { useTheme, type Theme } from '@mui/material/styles';
+import type { BoxProps } from '@mui/material/Box';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { elevationFor } from '@/shared/theme/tokens';
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
 import { WidgetChromeProvider, WidgetSelectionProvider } from '@/shared/ui/Widget';
@@ -83,15 +86,268 @@ import { CommandDeck, LastTradeReadout, TickerToolbar } from './widgets/chrome';
 import { buildReadStrip, ReadStrip } from './widgets/read-strip';
 import { StructureHeroPanel } from './widgets/structure-hero';
 
-// The cold-load stat grid: the full tile structure as shimmer (AC-Skel-1).
-function StatGridSkeleton() {
+// ---- Cold-load skeleton (AC-46 · fidelity repair 2, N1) ---------------------------------------
+// The retired v1 skeleton (`StatGridSkeleton`, twelve identical tiles in a five-column fluid grid,
+// under a 280px title shimmer) never matched the v2 desk it preceded — the page visibly reshaped
+// itself the moment the bundle arrived (`FIDELITY_REPAIR_2_TASK.md` N1). AC-46 (SB) requires the
+// "final shape": masthead (chip row · headline · meta line · quick row) → structure hero (field
+// beside a five-row ladder, ladder BELOW the field under a 1000px `panel` container — exactly
+// `StructureHeroPanel`'s own `theme.containerQueries('panel')` switch, mirrored one-for-one below,
+// never a viewport media query) → read strip (eight cells, a rail below 1000, `1.35fr repeat(7,
+// minmax(0,1fr))` at/above — `ReadStrip`'s own switch, mirrored the same way) → the work grid
+// (AI-brief wide beside three side cards, `ticker-work`'s own 8fr/4fr switch at 1000) → the context
+// band's own header. Shimmer only: every leaf here is an MUI `Skeleton` (no `children`, so no text
+// node — foundations F2, "no text, no —, no Loading…"). `StatSkeleton` (below, unchanged) keeps
+// carrying `cold-skeleton` byte-for-byte — the absence-after-load assertions
+// (`ticker.risk.spec.tsx`) key on that testid and must keep passing unmodified.
+//
+// The design's own "Cold load" frame (`design/src/screens/desk-states.mjs`) is a narrower,
+// illustrative mini-frame (a states CATALOG page, not the desk at a real width) — its note is the
+// binding instruction ("skeletons take the exact final shape … so the first bundle lands without a
+// jump"), not its own condensed markup. This shape instead mirrors the REAL, already-built v2 desk's
+// own regions and their own container-query breakpoints, which is what makes the shimmer occupy
+// (near enough) the same space the real widgets fill in once they mount.
+const panelChromeSx = (t: Theme) => ({
+  bgcolor: 'background.paper',
+  border: '1px solid',
+  borderColor: 'divider',
+  borderRadius: 1,
+  boxShadow: elevationFor(t).e1,
+});
+
+/** `.panel` chrome (`Widget.tsx`'s own frame — radius/fill/hairline/e1) with no header: cold-load
+ *  has no title text to show yet. */
+function SkeletonPanel({ children, sx, ...rest }: BoxProps) {
+  return (
+    <Box {...rest} sx={[panelChromeSx, ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]}>
+      {children}
+    </Box>
+  );
+}
+
+/** One shimmer pill — no text, matches the design's rounded `.skel` chip shape. */
+function ChipSkeleton({ width }: { width: number }) {
+  return (
+    <Skeleton
+      data-testid="cold-skeleton"
+      variant="rounded"
+      width={width}
+      height={22}
+      sx={{ borderRadius: 999 }}
+    />
+  );
+}
+
+/** A zone-label-shaped shimmer bar — stands in for `BoardZoneLabel`'s text, which cold-load never
+ *  shows (shimmer only). */
+function ZoneLabelSkeleton() {
+  return (
+    <Skeleton
+      data-testid="cold-skeleton"
+      variant="text"
+      width={120}
+      sx={{ fontSize: '0.7rem', mt: 1 }}
+    />
+  );
+}
+
+// Masthead — bare on the ink (no raised toolbar panel): chip row, headline, meta line, quick row —
+// `CommandDeck`'s own tier-1/tier-3 shape, which today has no stand-in at all before `m` resolves.
+// The functional `TickerToolbar` (TICKER/EXPIRATIONS/PERSONA) renders separately, ABOVE this block
+// (unchanged by this task — it already stays usable during load), so tier 2 is deliberately absent
+// here. `LastTradeReadout` is the SAME live-derived component the loaded masthead's chip row uses —
+// its own `live == null` branch already renders a `Skeleton` (no text) — kept here so the last-trade
+// line keeps filling from the first SSE payload during cold load, exactly as before this change.
+function MastheadSkeleton() {
+  return (
+    <Box data-testid="cold-load-masthead" sx={{ pt: 2.5, pb: 1.5, mb: 1.5 }}>
+      <Stack spacing={1.5}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+          <ChipSkeleton width={96} />
+          <ChipSkeleton width={72} />
+          <LastTradeReadout />
+        </Stack>
+        <Skeleton
+          data-testid="cold-skeleton"
+          variant="text"
+          width={220}
+          sx={{ fontSize: '2rem' }}
+        />
+        <Skeleton
+          data-testid="cold-skeleton"
+          variant="text"
+          width={300}
+          sx={{ fontSize: '0.875rem' }}
+        />
+        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <ChipSkeleton key={i} width={60} />
+          ))}
+        </Stack>
+      </Stack>
+    </Box>
+  );
+}
+
+// Structure hero — field region beside a five-row ladder column, `StructureHeroPanel`'s own
+// `theme.containerQueries('panel')` switch (`minmax(0,1fr) 300px` at/above a 1000px container, one
+// column — ladder BELOW the field in DOM order — under it). `minHeight` is pinned to the widget's
+// own measured final heights (review: 483px at 1280, 968px at 390) so the page does not grow once
+// the real hero mounts — the concrete point of AC-46's "final shape, so the first bundle lands
+// without a jump".
+function HeroSkeleton() {
+  const theme = useTheme();
+  return (
+    <SkeletonPanel
+      data-testid="cold-load-hero"
+      sx={{
+        minHeight: 483,
+        [theme.containerQueries('panel').down(1000)]: { minHeight: 968 },
+      }}
+    >
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 300px',
+          [theme.containerQueries('panel').down(1000)]: { gridTemplateColumns: '1fr' },
+        }}
+      >
+        <Box data-testid="cold-load-hero-field" sx={{ minWidth: 0, padding: '10px 6px 0' }}>
+          <Skeleton
+            data-testid="cold-skeleton"
+            variant="rounded"
+            height={300}
+            sx={{ borderRadius: '8px' }}
+          />
+          <Skeleton data-testid="cold-skeleton" variant="text" width="55%" sx={{ mt: 1.5 }} />
+          <Skeleton data-testid="cold-skeleton" variant="text" width="35%" />
+        </Box>
+        <Box
+          data-testid="cold-load-hero-ladder"
+          sx={{
+            borderLeft: '1px solid',
+            borderColor: 'divider',
+            padding: '12px 18px 14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1.25,
+            [theme.containerQueries('panel').down(1000)]: {
+              borderLeft: 0,
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              padding: '12px 14px',
+            },
+          }}
+        >
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} data-testid="cold-skeleton" variant="text" sx={{ fontSize: 14 }} />
+          ))}
+        </Box>
+      </Box>
+    </SkeletonPanel>
+  );
+}
+
+// Read strip — eight cells, a rail below a 1000px `panel` container, `1.35fr repeat(7,
+// minmax(0,1fr))` at/above it: `ReadStrip`'s own switch, mirrored one-for-one.
+function StripSkeleton() {
+  const theme = useTheme();
+  return (
+    <SkeletonPanel
+      data-testid="cold-load-strip"
+      sx={{
+        minHeight: 131,
+        display: 'flex',
+        overflow: 'hidden',
+        [theme.containerQueries('panel').up(1000)]: {
+          display: 'grid',
+          gridTemplateColumns: '1.35fr repeat(7, minmax(0, 1fr))',
+        },
+      }}
+    >
+      {Array.from({ length: 8 }).map((_, i) => (
+        <Box
+          key={i}
+          data-testid="cold-load-strip-cell"
+          sx={{
+            flex: i === 0 ? '0 0 220px' : '0 0 170px',
+            minWidth: 0,
+            py: 1.5,
+            px: 1.5,
+            borderRight: '1px solid',
+            borderColor: 'divider',
+            [theme.containerQueries('panel').up(1000)]: { flex: 'unset' },
+          }}
+        >
+          <Skeleton data-testid="cold-skeleton" variant="text" width="60%" sx={{ fontSize: 11 }} />
+          <Skeleton data-testid="cold-skeleton" variant="text" width="70%" sx={{ fontSize: 18 }} />
+        </Box>
+      ))}
+    </SkeletonPanel>
+  );
+}
+
+// Work grid — an AI-brief block wide beside three side cards (Live tape / Position brief / Sim
+// orders), `ticker-work`'s own 8fr/4fr switch at a 1000px container, mirrored one-for-one. The three
+// side cards reuse `StatSkeleton` unchanged (same `cold-skeleton` testid, same card shape).
+function WorkGridSkeleton() {
+  const theme = useTheme();
   return (
     <Box
-      sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 2 }}
+      data-testid="cold-load-work"
+      sx={{ containerType: 'inline-size', containerName: 'ticker-work', minWidth: 0 }}
     >
-      {Array.from({ length: 12 }).map((_, i) => (
-        <StatSkeleton key={i} />
-      ))}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: '1fr',
+          gap: '14px',
+          [theme.containerQueries('ticker-work').up(1000)]: {
+            gridTemplateColumns: 'minmax(0, 8fr) minmax(0, 4fr)',
+          },
+        }}
+      >
+        <SkeletonPanel sx={{ minHeight: 320, p: 2 }}>
+          <Skeleton data-testid="cold-skeleton" variant="text" width="40%" sx={{ fontSize: 14 }} />
+          <Skeleton
+            data-testid="cold-skeleton"
+            variant="text"
+            width="90%"
+            sx={{ fontSize: 20, mt: 1 }}
+          />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton
+              key={i}
+              data-testid="cold-skeleton"
+              variant="text"
+              sx={{ fontSize: 14, mt: 1 }}
+            />
+          ))}
+        </SkeletonPanel>
+        <Stack spacing={1.75}>
+          <StatSkeleton />
+          <StatSkeleton />
+          <StatSkeleton />
+        </Stack>
+      </Box>
+    </Box>
+  );
+}
+
+/** The whole `cold-load` subtree — masthead, hero, strip, work grid, band header — every band the
+ *  loaded desk itself renders, as shimmer, at (near enough) its final height. */
+function ColdLoadSkeleton() {
+  return (
+    <Box>
+      <MastheadSkeleton />
+      <Stack spacing={2}>
+        <ZoneLabelSkeleton />
+        <HeroSkeleton />
+        <StripSkeleton />
+        <ZoneLabelSkeleton />
+        <WorkGridSkeleton />
+        <ZoneLabelSkeleton />
+      </Stack>
     </Box>
   );
 }
@@ -439,15 +695,14 @@ export function TickerDashboard() {
         </Alert>
       )}
 
-      {/* COLD-LOAD skeleton (AC-Skel-1): structure paints as shimmer; the last-trade line fills on the
-          first SSE payload, the rest on the REST bundle. Skeleton class never appears post-load. */}
+      {/* COLD-LOAD skeleton (AC-46, "final shape"): every band the loaded desk itself renders paints
+          as shimmer, at (near enough) its final height — masthead, hero, strip, work grid, band
+          header (`ColdLoadSkeleton`, fidelity repair 2 N1). The last-trade line fills on the first
+          SSE payload (`LastTradeReadout`, inside `MastheadSkeleton`'s chip row), the rest on the REST
+          bundle. The skeleton class (`cold-skeleton`) never appears post-load. */}
       {!data && !error && !noneSelected && (
         <Box data-testid="cold-load">
-          <Box sx={{ mb: 1 }}>
-            <Skeleton variant="text" width={280} sx={{ fontSize: '3rem' }} />
-            <LastTradeReadout />
-          </Box>
-          <StatGridSkeleton />
+          <ColdLoadSkeleton />
         </Box>
       )}
 
