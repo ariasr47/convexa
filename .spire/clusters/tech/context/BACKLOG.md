@@ -202,6 +202,28 @@ change line or a name.
   Windows box 40 runs of the two tests under the unit suite as load, 0 failures (a much faster machine than the
   2-vCPU runner — not a refutation). A CPU-throttled probe (`Emulation.setCPUThrottlingRate` via CDP before the
   tap) is the next faithful reproduction.
+- **F-M — Market-context captions are ellipsised by decision (review N3).** All four captions clip at 1280 (`MarketContext.tsx:152,165`,
+  the 2026-09-08 repair's change-2 close-out); a `title` tooltip has no tap path (canon 20). The design's captions are three-word bases
+  (`momentum positive`, `balance tilts calls`, `flow with the wall`, `5d 5.4 · 30d 6.8`). Owner/UX call: author four short captions with a
+  vouched source each, then drop the ellipsis rule. Not a lane item until the copy is ratified.
+- **F-N — Live tape cells are boxed cards; flow spark and captions absent (review N8).** `LiveTape.tsx` renders four bordered, filled
+  `FigureCell`s where the design and the app's own read strip divide cells with hairlines; the `FLOW` spark row is the standing
+  "flow-spark data" owner item; the captions (`buyers lifting the ask`, `tight · liquid`) need a canon-24 source before they exist. Owner call.
+- **F-O — The opportunity cell's ring is empty and the tier word is not amber (review N9).** Design: the score inside the ring, `Actionable`
+  in amber, a caption. App: an empty arc, `78 ·` + `Actionable` wrapping, `3 setups`. Composition only; owner call because amber text
+  outside the AI panel is a canon-16 question.
+- **F-P — Masthead: no day change / percent and no instrument name; chips above the title (review N10).** The design leads with
+  `SPY 573.12 +1.84 · +0.32%` then chips and `SPDR S&P 500 ETF`. Neither datum is cut with cause in the desk-and-read SPEC. Owner call:
+  record the cut, or add them if the bundle carries them (check `/api/ticker` for a change and a name field first).
+- **F-Q — The cap line uses the warning idiom for the within-cap case (review N12).** `CapAnnotation.tsx` renders `⚠ $300 is within your
+  cap of $500.` with the warning icon and colour on purpose (AC-60: same chrome for `within` and `above`). Canon reserves burnt orange +
+  icon for warnings; the design shows the within case as a calm info box. Owner re-ruling: keep the icon for `above` only.
+- **F-R — The produced-read AI panel carries an amber outline (review N13).** `desk-trade-1280-dark` shows a 1-px amber border around the
+  whole panel with no interaction performed; not located in `DecisionCard` / `AiRecPanel` / `Widget`. Rule 16's closed list of non-text
+  amber has no panel border. Needs a source check; if it is a "fresh read" highlight it is a fourth amber and needs a ruling.
+- **F-S — Page panels have no elevation where the design's are e1 (review N14).** Desk widgets carry e1 (matching `.panel`); settings,
+  positions and alerts panels render `shadow: none`. One decision, one token. Also open from the review: the band's ≤ 800 px density target
+  (968 today) and the masthead's last 15 px (215 vs ≤ 200) — both already owner items from the 2026-09-08 repair.
 
 ## Harvest — 2026-09-06 (owner direction: AI-powered Convexa)
 <!-- atlas: theme=trust-the-signal horizon=next -->
