@@ -8,12 +8,13 @@
 > reader re-derives them (`council/decisions.md` §0): (1) `/` is the landing for **everyone** —
 > `app.tsx:148` is `<Route index element={<Landing />} />`; the redirect at `:127-131` belongs to
 > `/ticker` (`:150`). Nothing to "keep". (2) The canvas leads with the **dealer gamma surface**
-> (`landing.html:73`, `landing.mjs:53`), not the structure field; canon, canvas and code agree on
-> *which* instrument and *which* section leads, and the technology question the BRIEF's open item (1)
-> raised is settled in §2.3 — the "three.js" caption is an overclaim that does not ship. (3) "The
-> design does not contain a waitlist" is false — `landing.mjs:118` keeps a "get notified" line; it is
-> cut anyway, for a better reason (§1). (4) Methodology has **ten** `<h2>` sections, not eleven; all
-> three lanes counted ten independently. (5) The cream blog palette is already dead
+> (`landing.html:73`, `landing.mjs:53`), not the structure field. Canon, canvas and code agree on
+> *which* instrument leads; they did **not** agree on the rendering technology, so the BRIEF's own
+> tie-break applied and the owner ruled **D-B = (A), 2026-09-10** — static inline SVG isometric
+> projection, no WebGL (§2.3), which is why the artboard's "three.js" caption does not ship.
+> (3) "The design does not contain a waitlist" is false — `landing.mjs:118` keeps a "get notified"
+> line; it is cut anyway, for a better reason (§1). (4) Methodology has **ten** `<h2>` sections, not
+> eleven; all three lanes counted ten independently. (5) The cream blog palette is already dead
 > (`public/blog/how-we-read-dealer-structure.html:33-39` is ink/Plex) — spend nothing there.
 
 ## 1. Goal + scope
@@ -87,19 +88,20 @@ invited trader who mistypes a path or loses a session. Frontend only; `apps/api`
   visitor's own broker credentials, so on an acquisition surface it is a second dead-end funnel next to
   the one this feature exists to remove. *Restoring condition:* the landing may name read-only
   brokerage connect when a visitor who reads the sentence can act on it — i.e. when sign-ups reopen —
-  and then only in the **present tense**; "is coming" is not available as a wording anywhere in this
-  feature. The footer's shipped present-tense disclaimer stays (it is a limit, not a promise).
+  and then only in the **present tense**; "is coming" is not available anywhere in this feature. The
+  footer's shipped present-tense disclaimer stays (it is a limit, not a promise).
   <!-- spire:council-resolution:v1 0dd564b192f5aec3aee08f36024d997c2d31519f917f8ace279dd2985cb80c0f folded -->
-- **Two `Draft · not yet published` slots on the blog index.** Product call **D-A**, proceeding on
-  option **(A)** under default-with-veto: ship the index with the one published read and **no** draft
-  slots. Reason: the two named slots are exactly the two explanations this feature is supposed to
-  deliver, and neither is written this phase; two permanently visible "not yet published" cards are a
-  public content commitment nobody is assigned to keep, honest on the day it ships and an abandoned
-  product four months later, with no test that will ever notice. Methodology's **Two data speeds** and
-  **Advisory reads** sections carry the two explanations meanwhile. This is one deliberate deviation
-  from the design source. *Restoring condition:* if the owner vetoes and wants the slots, they ship as
-  the council's mechanism — no destination, not focusable as links, nothing anywhere in the app
-  pointing at a draft — plus a ledger-recorded expiry date after which they are removed.
+- **Two `Draft · not yet published` slots on the blog index.** Product call **D-A** — **RULED (A) on
+  2026-09-10**: ship the index with the one published read and **no** draft slots. The owner declined
+  the veto; this is settled fact, not a default proceeding. Reason on the record: the two named slots
+  are exactly the two explanations this feature is supposed to deliver, and neither is written this
+  phase; two permanently visible "not yet published" cards are a public content commitment nobody is
+  assigned to keep, honest on the day it ships and an abandoned product four months later, with no test
+  that will ever notice. Methodology's **Two data speeds** and **Advisory reads** sections carry the two
+  explanations meanwhile. This is one deliberate deviation from the design source. *Restoring
+  condition:* only a later ruling can put the slots back, and then they ship as the council's mechanism
+  — no destination, not focusable as links, nothing anywhere in the app pointing at a draft — plus a
+  ledger-recorded expiry date after which they are removed.
   <!-- spire:council-resolution:v1 9c991a7b0b97b93f03d0476696d79a9d8e6bbd7f4860a620ae4efd1724a9a03d folded -->
 - **Any session-dependent behaviour on `/`.** P-8 resolves to option **(a)**: `/` is the landing for
   everyone and **reads no session fact**. The "resume to your desk" affordance is dropped, and with it
@@ -133,16 +135,25 @@ invited trader who mistypes a path or loses a session. Frontend only; `apps/api`
 
 **Future (deliberately deferred)** — the pre-registered successor `curvature-v2-responsive-sweep`
 owns: the six responsive bands per `design/site/responsive-spec.html` (including the phone's docked
-AI-read sheet), the settings section navigation (owner ruling D-B), the spacing-exemption remainder
-(48 occurrences across 25 files), and the hero-curve text-equivalent. Also future-dated: the desk
-strip, when and only when an anonymous visitor can read real scanner rows; a **runtime-rendered 3-D
-hero** (WebGL/three.js, a moving camera, depth resolved per frame rather than projected once), when it
-can render on a low-end phone at first paint with no additional runtime download — the capability
-already exists in the app as a lab instrument (`pages/lab/StructureFieldWebGL.tsx`, WebGL2), and it is
-barred from the landing by two settled rules rather than by absence: the page deny-list bans
-sibling-page imports (§2.1) and the hero is a static-SVG build constraint (§2.3); `persona`, `flows`,
-`operator` and `whats-sent` as shipped *routes* (they are documentation artboards this phase —
-`whats-sent` documents a drawer that already ships in-page).
+AI-read sheet), the settings section navigation (owner ruling **D-B of `curvature-v2-surfaces`** — a
+different ruling from this council's D-B, which is the hero's dimensionality), the spacing-exemption
+remainder (48 occurrences across 25 files), and the hero-curve text-equivalent. Also future-dated: the
+desk strip, when and only when an anonymous visitor can read real scanner rows; `persona`, `flows`,
+`operator` and `whats-sent` as shipped *routes* (documentation artboards this phase — `whats-sent`
+documents a drawer that already ships in-page); and a **runtime-rendered 3-D hero** (WebGL/three.js, a
+moving camera, depth resolved per frame rather than projected once), which would be **new work, not a
+reuse**:
+
+- It means a WebGL treatment of `gammaSurface()` — the strike × tenor dealer-gamma surface (§2.2 item
+  1) — and **that instrument has no WebGL twin anywhere in this codebase**.
+- `pages/lab/StructureFieldWebGL.tsx` is **not** it and must not be cited as proof the capability
+  already exists: its own docblock reads *"Structure Field — WebGL2 dual-clock instrument (lab
+  comparison twin of Canvas2D)"* (`:1-2`) — it renders the **structure field**, a different instrument
+  (§2.6; AC-L4a's set-equality logic says the field is not the hero). It is also a sibling page the
+  deny-list bans (§2.1), but that is the second reason, not the first.
+- **Lifting the deferral takes a fresh owner ruling reversing D-B plus a canon amendment superseding
+  the 2026-09-10 Amendments row** (§2.3, §8) — not a lane's judgement call — and the entry condition
+  still stands on top: first paint on a low-end phone with no additional runtime download.
 
 ## 2. Architecture
 
@@ -202,12 +213,12 @@ exists (`shared/ui/ErrorBoundary.tsx:15,51`, `variant` defaults to `'route'`) �
 **Not promoted, deliberately.** `FigureCell` is `pages/ticker/widgets/_kit/FigureCell.tsx` and its own
 header says it is one *caller* of `shared/figure/`, not its home. The landing composes from
 `@/shared/figure` directly — `figureStateOf`, `faceFor`, `MONO_FACE`, `UNTRACED_RULE`, `LiveDot`,
-`PauseMark` — and supplies its own chrome. The card chrome, the label row and the 20/17/15 container
+`PauseMark` — and supplies its own chrome; the card chrome, the label row and the 20/17/15 container
 ladder stay ticker-local. **No ticker file is edited by this feature**, so no desk visual baseline
-moves on this account. Every sample figure passes `NOT_LIVE` (`@/shared/liveness/liveClaim`); the
-`LiveClaim` brand admits no other value on a page with no stream, so a frozen sample cannot render a
-live dot even by accident. `Refused` is likewise not used: it wraps a refused *write* affordance, and
-once the waitlist control is deleted the landing has no refused affordance left.
+moves on this account. Every sample figure passes `NOT_LIVE` (`@/shared/liveness/liveClaim`), whose
+brand admits no other value on a page with no stream, so a frozen sample cannot render a live dot even
+by accident. `Refused` is likewise not used: it wraps a refused *write* affordance, and once the
+waitlist control is deleted the landing has no refused affordance left.
 <!-- spire:council-resolution:v1 60b85e24c604e9803700479b846b15d4a9f4c7e4ed41c037b2c81cfcd71144c8 folded -->
 
 ### 2.3 The hero instrument — a build constraint, not a device-conditional state
@@ -219,32 +230,45 @@ rather than weakened: an `<svg>` computed once at module load has no device-cond
 so the row commissions a state the build cannot produce and a test can only assert vacuously. The one
 real failure is a JavaScript throw, and it is covered by the route boundary (§5).
 
-**The canon's "3D" and this SVG are the same instrument — the reconciliation, stated once.** The canon
-outranks every document cited here and it says: "The landing has exactly **one hero instrument** — the
-3D dealer-gamma surface (strike × tenor), the product's own model drawn in depth, not a decorative
-illustration" (`DESIGN_SYSTEM.md:52-53`, repeated `:113`). Read against the artefact that sentence was
-written from, it is satisfied exactly:
+**The canon's "3D" and this SVG are the same instrument because the owner ruled they are — D-B = (A),
+2026-09-10. Stated once, with the counter-evidence it had to beat.**
 
-- **The instrument.** `design/src/lib.mjs:382-383` names its own function *"3D gamma surface
-  (isometric wireframe: strike × tenor × net GEX)"*. Three axes are drawn in depth in one projection —
-  strike across `j`, tenor across `i`, net dealer gamma as height `z(i,j)` lifted through `proj(i,j)`
-  (`:387-399`) — plus the flip, call-wall and put-wall ridges (`:411-427`). "Drawn in depth" is the
-  projection; **it is not a claim about a renderer.**
-- **The canon was written from this artefact.** The 2026-09-03 re-baseline row cites `design/` (the
-  canvas + `design/site/library.html` + `tokens.json`), owner-approved on the canvas, as the source of
-  the v2 direction (`DESIGN_SYSTEM.md:243`). `gammaSurface()` is the *only* dealer-gamma-surface
-  artefact in that source, and `design/` contains **no WebGL and no three.js implementation anywhere**
-  — the only three.js bytes in the whole design source are two prose lines (§9). So no reading of "3D"
-  as a runtime renderer is available from the canon's own source.
-- **What the BRIEF actually asked, and both halves of the answer.** Open item (1) said the council
-  reconciles canon, canvas and code and "the owner rules **if they disagree**". They do not.
-  `council/decisions.md` §0 row 2 settled *which* section leads (the gamma surface, not the structure
-  field). This clause settles the other half the BRIEF raised — the shipped 2-D `HeroCurve` is **not**
-  the canon's instrument and never was: it is an `aria-hidden` payoff silhouette (`HeroCurve.tsx:7-10`,
+- **Canon and artboard.** The canon (which outranks every document cited here) says: "The landing has
+  exactly **one hero instrument** — the 3D dealer-gamma surface (strike × tenor), the product's own
+  model drawn in depth" (`DESIGN_SYSTEM.md:52-53`, repeated `:113`). The artboard implements exactly
+  that in SVG: `design/src/lib.mjs:382-383` names its own function *"3D gamma surface (isometric
+  wireframe: strike × tenor × net GEX)"* and draws three axes in depth in one projection — strike
+  across `j`, tenor across `i`, net dealer gamma as height `z(i,j)` through `proj(i,j)` (`:387-399`) —
+  plus the flip, call-wall and put-wall ridges (`:411-427`). `design/` contains **no** WebGL and no
+  three.js implementation anywhere.
+- **What disagreed, and why this was not the council's to settle.** Two prose lines in that same source
+  reserve Three.js for this exact surface: the hero-panel caption `three.js surface · the desk’s own
+  model, drawn in depth` (`landing.mjs:56`) and — not a caption but a **GPU-path entry in the formal
+  component/motion catalogue**, the document whose `motionRows` supply the canon's Motion rule —
+  *"Three.js earns its place only on the landing surface (below), not on the desk"*
+  (`components-sheet.mjs:173`, mirrored at `design/canvas/Components.dc.html:281` and
+  `design/site/components-sheet.html:191`). The 2026-09-03 re-baseline the canon cites as its authority
+  (`DESIGN_SYSTEM.md:243`) never touched the question:
+  `context/design-session/rebaseline-2026-09-03.md` has **zero** matches for `three.js`, `WebGL` or
+  `3D`. So the BRIEF's condition for arbitration — "the owner rules **if** they disagree" — was
+  genuinely met, and an earlier draft of this spec was wrong to claim agreement.
+- **The ruling and its reasons.** Option **(A)**, 2026-09-10: the hero renders as the **static inline
+  SVG isometric projection the approved artboard draws** — prop-free, static from first paint, no
+  WebGL, no three.js, no new runtime dependency. On the record: a runtime three.js hero puts a heavy
+  new dependency on the one **eager** acquisition route, reinstates the device-fallback state this
+  council removed, adds a second motion source to govern against `[single-motion-moment]`, and makes
+  the landing's pixels non-deterministic for the visual gate — while the projection already carries the
+  three axes the rule asks for. **Option (C) — pre-registering a three.js hero on the lab track — was
+  NOT taken;** §1's deferral, with its fresh-ruling-plus-amendment bar, is the only future path.
+- **The canon already records it; this spec does not amend the canon.** An **Amendments** row dated
+  2026-09-10 ("3D = an isometric projection drawn in depth; static SVG; no WebGL") and ledger row
+  `hero-3d-is-a-static-isometric-projection` carry it; §8 quotes it as landed. The two design-source
+  lines above are now stale against a **ruling**, not merely against a council reading — whether this
+  feature edits them is §9 item 1, and no acceptance row depends on it.
+- **The other half of the BRIEF's open item (1).** The shipped 2-D `HeroCurve` is **not** the canon's
+  instrument and never was: it is an `aria-hidden` payoff silhouette (`HeroCurve.tsx:7-10`,
   "decorative geometry only"). The gap the BRIEF spotted closes by the app **gaining the surface**
   (§2.2 item 1), not by the curve being re-labelled as one.
-- **What the canon's Amendments log still owes.** One clarification line, so a later reader cannot read
-  "3D" as WebGL: it is worded in §8, and this spec does not amend the canon itself.
 
 Three things in the design source must **not** travel into the port, and this is a build constraint:
 `class="beam"` on the spot marker (`lib.mjs:429`) — an ungated data-signal keyframe; the `panel
@@ -288,23 +312,20 @@ are `react`, `@mui/material/styles` and one app hook — all already in the entr
 buys a chunk of first-party arithmetic, not a library. Against that, every candidate fallback is
 already forbidden: a spinner is a second moving element on a page whose motion budget is the hero
 draw; a shimmer is a data-signal keyframe with no stream to gate it; a zero-height box is layout shift
-directly under the H1. Splitting a chunk out of the one route the owner made **eager** inverts that
-decision for a rounding error. **Measured trigger, recorded not assumed:** if the production entry
-chunk grows by more than **20 kB gzipped** attributable to `shared/charts/structure-field` (both
-`nx build @convexa/dashboard --configuration=production` numbers go in the PLAN), the split may land
-**only** as the pair `<ErrorBoundary variant="section"><Suspense fallback={quiet panel}>` — a
-reserved-height panel carrying the section title and the sample footnote, no spinner, no shimmer, no
-height collapse — because a chunk rejection throws during render and would otherwise replace the whole
-acquisition page. Below the threshold, no boundary and no `loading` row.
+directly under the H1. **Measured trigger, recorded not assumed:** if the production entry chunk grows
+by more than **20 kB gzipped** attributable to `shared/charts/structure-field` (both `nx build
+@convexa/dashboard --configuration=production` numbers go in the PLAN), the split may land **only** as
+the pair `<ErrorBoundary variant="section"><Suspense fallback={quiet panel}>` — a reserved-height
+panel carrying the section title and the sample footnote, no spinner, no shimmer, no height collapse —
+because a chunk rejection throws during render and would otherwise replace the whole acquisition page.
+Below the threshold, no boundary and no `loading` row.
 <!-- spire:council-resolution:v1 656c4d95fd5bc1622db235ecef6457f5f133ba04a4db83be12081ca75dc5e41d folded -->
 
-**No `IntersectionObserver` / `InView` wrapper** around the canvas. The R1 mitigation for its
-unconditional rAF loop (`StructureFieldCanvas.tsx:199`) is dropped in the same spirit as the lazy
-boundary: with `variant='ticker'` the loop repaints an identical calm frame, and an observer that
-unmounts and remounts the canvas on scroll creates exactly the mount/re-entry state the landing's
-matrix declares n/a. *Restoring condition:* if the repaint measurably costs battery or CPU on the
-acquisition page, the fix is a visibility pause **inside the shared canvas** — a desk change, and its
-own feature.
+**No `IntersectionObserver` / `InView` wrapper** around the canvas. With `variant='ticker'` the rAF
+loop (`StructureFieldCanvas.tsx:199`) repaints an identical calm frame, and an observer that unmounts
+and remounts the canvas on scroll creates exactly the mount/re-entry state the landing's matrix
+declares n/a. *Restoring condition:* if the repaint measurably costs battery or CPU on the acquisition
+page, the fix is a visibility pause **inside the shared canvas** — a desk change, and its own feature.
 
 ### 2.5 Route table, boundaries, and the footer mount
 
@@ -330,10 +351,10 @@ own feature.
 
 ### 2.6 Content shapes
 
-- **Blog.** The index stays a flat array of published articles (`BlogPage.tsx:27-36`). Because D-A
-  ships **no** draft slots, the `published | draft` discriminated union has no member to discriminate
-  this phase and is **not** built; it is the mechanism the restoring condition names if the owner
-  vetoes.
+- **Blog.** The index stays a flat array of published articles (`BlogPage.tsx:27-36`). Because D-A was
+  ruled (A) on 2026-09-10 and ships **no** draft slots, the `published | draft` discriminated union has
+  no member to discriminate this phase and is **not** built; it is the mechanism §1's restoring
+  condition names if a later ruling puts the slots back.
 - **Methodology.** `METHOD_COPY.sections` becomes an **ordered array**, not an object plus a
   hand-maintained order list in the component, so the on-this-page index and the body are generated
   from one list and cannot diverge. Each entry is a discriminated union — `{ kind: 'prose', body:
@@ -370,10 +391,12 @@ own feature.
   and it lands on the desk first, never on the landing as a one-off.
 - **Icon geometry authored in the landing folder** — every icon is imported from `shared/`. Both this
   and the ring ruling exist so the one-hero-instrument cap stays *decidable* by set-equality (§7).
-- **A WebGL or three.js hero**, including reusing the lab's shipped WebGL2 twin
-  (`pages/lab/StructureFieldWebGL.tsx`) — it is a sibling page the deny-list bans (§2.1), it is a
-  different instrument (the field, not the strike × tenor surface), and its rAF loop plus GPU context
-  is the opposite of "static from first paint" (§2.3). Deferred with its restoring condition in §1.
+- **A WebGL or three.js hero** — closed by **owner ruling D-B = (A), 2026-09-10** (§2.3), not by council
+  preference, and its rAF loop plus GPU context is the opposite of "static from first paint". Reusing
+  the lab's shipped WebGL2 twin (`pages/lab/StructureFieldWebGL.tsx`) is not an alternative route to it:
+  **it is a different instrument** (the structure field, not the strike × tenor surface — its own
+  docblock, `:1-2`), and it is a sibling page the deny-list bans (§2.1). Deferred with its restoring
+  condition, and the bar for lifting it, in §1.
 - **A second hero composition or a raster fallback** for a device that cannot draw the SVG — rejected
   three times in this council as the swap-after-first-paint shape; the answer is the ErrorBoundary.
 - **A route allow-list for the footer** — it re-introduces the list someone forgets and makes canon
@@ -388,7 +411,14 @@ risk-based, **not** one-test-per-row: AC-L1/L2/L3/L4/L5 are together carried by 
 inventory check plus one end-to-end journey (§7).
 
 **Ship-blocking:** AC-L1, AC-L3, AC-L4, AC-L4a, AC-L5, AC-L6, AC-L7, AC-L12, AC-M2, AC-M4, AC-N1,
-AC-A1, AC-A2a, AC-A4, AC-A9, AC-F1, AC-G1, AC-G3.
+AC-A1, AC-A2a, AC-A4, AC-A9, AC-C1a, AC-F1, AC-G1, AC-G3.
+
+**AC-C1a is on that list and AC-C1 is deliberately not.** AC-C1a is the automated provenance pin
+invented to catch the exact drift a review pass missed, and an automated row a lane can skip in silence
+is what the tag exists to prevent. AC-C1 is the umbrella *wording* rule over every string §4 quotes;
+each of its load-bearing instances is already unwaivable through the row that carries it (AC-L7,
+AC-L10, AC-A4, AC-M2a, AC-M4), so tagging the umbrella too would turn any glyph-level reviewer
+disagreement anywhere in §4 into a ship/no-ship event while adding no mechanism.
 
 **Rows the council dropped, recorded so QA does not hunt for them:** AC-L14 (a signed-in resume
 affordance — §1); the device-failure premise of the old AC-L12 (§2.3); AC-N4 / AC-U26's route-name and
@@ -476,21 +506,19 @@ with JavaScript off, so its silent removal by a future template change is unobse
 `test` side of the risk rule. AC-L10 rides the same argument and the same shipped `?raw` pattern that
 already globs `index.html` in four specs.
 <!-- spire:council-resolution:v1 bc0fe3d9d902fbe12cb45dd047309480aca2ecaab520b66118f4b16203e9b98c folded -->
-(b) AC-M2 is `test`, not `review`. The objection that an automated cross-check "would either import
-the backend or assert a hard-coded number against another hard-coded number" is false against this
-repo: `chain-archive-object-store.structural.spec.ts:51-62` already walks to the workspace root and
-reads files outside `apps/dashboard`. Reading a frozen crate's source from disk is not importing it
-and changes no byte, and the five caps live in `libs/quant-engine`, **not** in the frozen `apps/api`.
-AC-M2a is the correction that fell out of tracing them: the design's table implies a maximum of 106.
-*Fallback, so the lane is never stuck:* if that mechanism is refused at build, the Max column is
-**dropped** and each component is stated without a number — the spec will not carry five engine
-constants that nothing checks.
+(b) AC-M2 is `test`, not `review`. The objection that an automated cross-check must import the backend
+or compare two hard-coded numbers is false against this repo:
+`chain-archive-object-store.structural.spec.ts:51-62` already walks to the workspace root and reads
+files outside `apps/dashboard`; reading a frozen crate's source from disk is not importing it, and the
+five caps live in `libs/quant-engine`, **not** in the frozen `apps/api`. AC-M2a is the correction that
+fell out of tracing them: the design's table implies a maximum of 106. *Fallback, so the lane is never
+stuck:* if that mechanism is refused at build, the Max column is **dropped** and each component is
+stated without a number — the spec will not carry five engine constants that nothing checks.
 <!-- spire:council-resolution:v1 5b3ba16881db0cb753a07114a50ad6f82a5d3bcd5c70c105af7d8add94e5de03 folded -->
-**AC-C1a rides argument (b), one surface over.** Copy is normally `review`, and its *wording* still is
-— but "these bytes came from that file" is a pin, and a pin nothing checks is how six already-reviewed
-sentences get rewritten, or left unrewritten, with nobody able to say which happened. The mechanism is
-the same disk read as AC-M2's (§7 item 16), and it is what lets §4 say "verbatim from" instead of
-quoting a thousand words of body copy.
+**AC-C1a rides argument (b), one surface over.** Copy *wording* stays `review` — but "these bytes came
+from that file" is a pin, and a pin nothing checks is how already-reviewed sentences get rewritten, or
+left unrewritten, with nobody able to say which happened. Same disk read as AC-M2's (§7 item 16), and
+it is what lets §4 say "verbatim from" instead of quoting a thousand words of body copy.
 
 **"The 108 chromium e2e journeys are unchanged" means PASS, not COUNT.** The count is expected to
 **rise**: AC-G3b adds three paths to a loop over routes × schemes × widths. A count constraint would
@@ -498,19 +526,18 @@ mean shipping three new public surfaces with no overflow coverage, which is the 
 rewrite set is named in §7 rather than discovered at the gate.
 <!-- spire:council-resolution:v1 7ccd6b6f052d5c6ff70da973ccc445631451d4430b7a2a9afec0dd915da0fad4 folded -->
 
-**One count, stated once.** The landing inventory is **six** sections. The seven-section readings on
-both sides were wrong in opposite directions — one split the register section, which the design does
-not split (`landing.html:183-188` puts the three trust cards *inside* it), and the other counted the
-footer, which this feature moves out of the page entirely. A check written to seven passes only if the
-footer stays page-owned, which would undo the one mechanism that makes "footer on every full page"
-structural.
+**One count, stated once.** The landing inventory is **six** sections. Both seven-section readings were
+wrong in opposite directions — one split the register section, which the design does not split
+(`landing.html:183-188` puts the three trust cards *inside* it), and the other counted the footer,
+which this feature moves out of the page entirely; a check written to seven passes only if the footer
+stays page-owned, undoing the one mechanism that makes "footer on every full page" structural.
 <!-- spire:council-resolution:v1 ff779bdd4941867a8dcca8c559085f2c49c95cc36ee91b4ad978ff608251e522 folded -->
 
 **The word "live" is not banned; the claim is.** AC-L5 is structural negative space over elements and
-classes and must be shown to bite by poisoning it; AC-L5a is about what a sentence means rather than
-which words it contains, and is reviewed. A word-scan would red-build the education this feature
-exists to deliver — the landing's own ship-blocking trust card is literally named "Snapshot, never
-live", and methodology cannot teach the two clocks without the word.
+classes, proven to bite by poisoning it; AC-L5a is about what a sentence means rather than which words
+it contains, and is reviewed. A word-scan would red-build the education this feature exists to deliver
+— the ship-blocking trust card is literally "Snapshot, never live", and methodology cannot teach the
+two clocks without the word.
 <!-- spire:council-resolution:v1 206a60b3cddbb9a0240cf6d320f4664e281bc5ab4e859b2fd0e75353fb8376f5 folded -->
 
 ## 4. UI + interaction
@@ -542,13 +569,11 @@ live", and methodology cannot teach the two clocks without the word.
 | Footer | wordmark · three links · disclaimer · © — once per in-shell page, below the instrument | n/a | n/a | n/a | fully readable |
 
 **The holding state is the codebase's own answer, not an invention.** `DefaultTickerRedirect` already
-renders `RouteFallback` on the identical fact two routes away (`app.tsx:122-131`), with its rationale
-in the comment above it. `null` is not a hold a person can perceive: on a hard load of `/scanner` a
-signed-in trader gets an empty region under a mounted nav with nothing saying anything is happening.
-What must not ship is a **signed-out-looking** placeholder — a wall skeleton, a greyed `Sign in`, a
-"you are not signed in" shimmer. A neutral fill that makes no auth claim is not one: the shipped
-fallback's only string is `aria-label="Loading page"`, which asserts nothing about the session — the
-same principle the product already approved in copy (`AUTH_COPY.settings.sessionResolving`,
+renders `RouteFallback` on the identical fact two routes away (`app.tsx:122-131`). `null` is not a hold
+a person can perceive. What must not ship is a **signed-out-looking** placeholder — a wall skeleton, a
+greyed `Sign in`, a "you are not signed in" shimmer. A neutral fill that makes no auth claim is not
+one: the shipped fallback's only string is `aria-label="Loading page"`, which asserts nothing about the
+session — the principle the product already approved in copy (`AUTH_COPY.settings.sessionResolving`,
 `copy.ts:96-98`, "Never claims signed-out or signed-in").
 <!-- spire:council-resolution:v1 4a4bb05c964832fcfa3b76364c575dd45b199807f0b22fe7ec951218353e0e96 folded -->
 
@@ -563,13 +588,12 @@ the state this feature exists to fix.
 ### Copy — exact strings
 
 **Two pins, and which one governs is never ambiguous.** A string **quoted** here is pinned to these
-bytes (AC-C1). A string this section marks "verbatim from `<file>:<line>`" **without** quoting is
-pinned to those bytes in the design source (AC-C1a); the build copies them, and a retyped
-approximation is a defect. Where §4 both quotes a string *and* names its source line, the two pins
-assert the **same** bytes and the citation is evidence, not a second authority. Where a quoted string
-**deviates** from the source line named beside it — the CTA band's dropped count, the four methodology
-deltas — the quote governs and the deviation *is* the pin, which is why the source pin can never be
-read as failing on them. Closed-vocabulary literals and shipped labels are quoted **byte-exact,
+bytes (AC-C1). A string marked "verbatim from `<file>:<line>`" **without** quoting is pinned to those
+bytes in the design source (AC-C1a); the build copies them, and a retyped approximation is a defect.
+Where §4 both quotes a string *and* names its source line, the two pins assert the **same** bytes and
+the citation is evidence, not a second authority. Where a quoted string **deviates** from the source
+line named beside it — the CTA band's dropped count, the four methodology deltas — the quote governs
+and the deviation *is* the pin. Closed-vocabulary literals and shipped labels are quoted **byte-exact,
 including the apostrophe glyph**.
 
 **Landing — hero.** Chip `Dealer-gamma analytics · free ticker, no account` · H1 `See the dealer
@@ -584,12 +608,15 @@ every trade is simulated.` · primary `Open the Ticker →` → `/ticker` · sec
 items: `gamma flip` · `call wall` · `put wall` · caption `Illustrative sample — not a live read and
 not a recorded session.` · SVG accessible name `Dealer gamma surface across strike and tenor`, with
 `aria-describedby` pointing at the caption so the disclosure reaches a screen reader.
-**Cut from the design source, with cause:** `three.js surface · the desk's own model, drawn in depth`
-(the artefact contains no three.js — a false claim about our own work; the *instrument* that caption
-describes is the one that ships, §2.3) · the `structure as-of 42s` chip and `<span class="chip
-live"><span class="dot"></span>mid</span>` (a live chip and a dot on a snapshot surface) · `rendered
-from the desk's own bundle` (nothing on `/` is) · `7d → 90d tenors` (an axis range the projection does
-not compute).
+**Cut from the design source, with cause — each paired with the mechanism that keeps it cut**, because
+a "must not" that only review enforces is prose (§8 `[structural-over-prose-enforcement]`):
+
+| cut | source | cause | mechanism |
+| --- | --- | --- | --- |
+| `three.js surface · the desk’s own model, drawn in depth` | `landing.mjs:56` | the shipped hero is the static SVG isometric projection by owner ruling D-B = (A) (§2.3), so the caption would name a renderer the page does not have; the *instrument* it describes is the one that ships | **§7 item 17** |
+| the `structure as-of 42s` chip and `<span class="chip live"><span class="dot"></span>mid</span>` | `landing.mjs:52` | a live chip and a dot on a snapshot surface | AC-L5 · **§7 items 1 and 6** |
+| `rendered from the desk’s own bundle` | `landing.mjs:54` | nothing on `/` is | **§7 item 17** |
+| `7d → 90d tenors` | `landing.mjs:54` | an axis range the projection does not compute | **§7 item 17** |
 
 **Landing — the field section.** Panel header `Structure field` · panel caption `Illustrative sample —
 not a live read and not a recorded session.` — the same literal the hero carries, so `/` has **one**
@@ -639,15 +666,13 @@ identical** (AC-L15).
 <!-- spire:council-resolution:v1 96c5f81b7d9b9b4a23e3f9731e65b190d13ec218f87e4e283e40a0faa53de46c folded -->
 The design's CTA-band footnote `Brokerage connect (read-only) is coming — get notified.` is
 **withdrawn**: it shipped 2026-08-05, so the sentence is false, and a false tense on the page carrying
-"Snapshot, never live" is the same class of failure as a false live dot — the product has already made
-this exact correction once, when the disclaimer's old ending "No brokerage connection." became false
-the instant a broker credential was stored. Nothing is lost: the footer already renders the true
-present-tense sentence on `/` — `Convexa is an analysis tool. Positions in the sim book are simulated
-(paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not
-investment advice.` (`shared/copy/disclaimer.tsx:18-21`, `simulated` bolded in the rendered fragment).
-*If the owner overrules and wants brokerage named in the landing body*, the only available wording is
-`Connect a brokerage in Settings and Convexa reads your positions — read-only. It never places,
-changes, or cancels an order.` — rendered as a sentence, never as a CTA.
+"Snapshot, never live" is the same class of failure as a false live dot. Nothing is lost: the footer
+already renders the true present-tense sentence on `/` — `Convexa is an analysis tool. Positions in
+the sim book are simulated (paper); a connected brokerage is read-only — Convexa never places,
+changes, or cancels an order. Not investment advice.` (`shared/copy/disclaimer.tsx:18-21`, `simulated`
+bolded in the rendered fragment). *If the owner overrules and wants brokerage named in the landing
+body*, the only available wording is `Connect a brokerage in Settings and Convexa reads your positions
+— read-only. It never places, changes, or cancels an order.` — a sentence, never a CTA.
 <!-- spire:council-resolution:v1 78ecd37df9b527c41b74870dfbf28fee30d1b3733ba5e4d668b702678f0e5235 folded -->
 
 **Landing — head and `<noscript>` (in `apps/dashboard/index.html`).** The `<noscript>` block:
@@ -671,7 +696,7 @@ here is not making one. The share **image** is out of scope and unchanged.
 `design/src/screens/blog.mjs:15-17`; one published card — `How We Read Dealer Structure`, its
 `Methodology` tag, its dek verbatim from `blog.mjs:22-23`, and the shipped action `Read the post →`
 (`BlogPage.tsx:74`) — linking to `/blog/how-we-read-dealer-structure.html` as a full-document anchor.
-No draft slot (§1, D-A option A); no `structureField` thumbnail (§1).
+No draft slot (§1 — D-A **ruled (A)**, 2026-09-10); no `structureField` thumbnail (§1).
 
 **Methodology — one copy source, four deltas.** Ten sections in this order: Two data speeds → Dealer
 structure → Flip vs walls → Score and tier → Advisory reads → AI read and grounding → Simulation →
@@ -686,9 +711,8 @@ actions (`Open Scanner` · `Open free Ticker` · `Back to home`) and the closing
 
 *Why the design source wins on the six sections the app already has, rather than the shipped strings
 winning as the reviewed incumbent:* the shipped wording is **v1 vocabulary the canon has since
-re-baselined**, and on two claims it is vaguer than the truth. The retired fragments, so the
-replacement is checkable rather than discovered (AC-C1a; `pages/methodology/copy.ts` line → what
-ships):
+re-baselined**, and on two claims it is vaguer than the truth. The retired fragments (AC-C1a;
+`pages/methodology/copy.ts` line → what ships):
 
 | retired v1 fragment | what ships (`methodology.mjs`) | why the design source is right |
 | --- | --- | --- |
@@ -727,7 +751,7 @@ may never carry the chip, the dot or the as-of.
   `What leaves the machine, on demand, is the computed snapshot, the candidate contracts, your two
   risk numbers, the open-positions digest for the ticker, the persona prompt and the field glossary.
   You can read the exact payload before it is sent: open “What’s sent to the AI” from the
-  full-analysis drawer on any ticker, or “View what’s sent” in Settings → Risk inputs. No other
+  full-analysis drawer on any ticker, or “View what's sent” in Settings → Risk inputs. No other
   ticker, no identity, no broker data and no key ever leave.` **The two quoted labels differ by
   apostrophe and both are reproduced exactly as they ship** — `What’s sent to the AI` (U+2019,
   `ai-rec/copy.ts:21`) and `View what's sent` (U+0027, `features/auth/copy.ts:210`). Quoting a shipped
@@ -791,10 +815,10 @@ restates no token table.
   The landing carries exactly one of the latter — the gamma surface — and the cap is enforced by
   set-equality (§7), not by a taste argument. The three feature visuals are labelled samples of
   shipped surfaces, not illustrations; `HeroCurve` stays `aria-hidden` background geometry. **The
-  rule's word "3D" is read against the artefact the canon was written from** — an isometric projection
-  of strike × tenor × net gamma, drawn in depth, static SVG, no WebGL (§2.3, AC-L4a). That reading is
-  the same instrument, not a weakening; the one-line clarification it owes the canon's Amendments log
-  is worded in §8.
+  rule's word "3D" is settled by owner ruling D-B = (A), 2026-09-10** — an isometric projection of
+  strike × tenor × net gamma, drawn in depth, static SVG, no WebGL (§2.3, AC-L4a). The canon's
+  Amendments log already carries the clarification line, dated the same day; §8 cites it as landed,
+  not owed.
 - **Motion** (canon Motion row + `[single-motion-moment]`): the `HeroCurve` draw is the one
   orchestrated moment and renders **drawn** under `prefers-reduced-motion`. Every data-signal keyframe
   fails predicate (a) on these surfaces by construction — there is no stream — so `beam`, `particle`
@@ -823,14 +847,16 @@ restates no token table.
 - **Amber budget (rule 16's cardinality):** at most one primary-action fill per state; the eyebrow
   caps use text-grade amber, never fill amber as small text.
 
-**Design-canon amendments this feature owes** (recorded here, written into the canon's **Amendments**
-log by the ruling that lands them — this spec does not amend the canon and does not invent a second
-system): (1) the **sample-provenance label** as a marketing-surface honesty pattern — it labels a
-*panel*, not a *value*, so rule 24 is untouched; (2) the **`RequireAuth` degraded-branch copy**, which
-adds `AUTH_COPY.gate.sessionUnknown` and `AUTH_COPY.gate.retry` beside the shipped
+**Design-canon amendments** (this spec does not amend the canon and does not invent a second system).
+Still owed, to be written into the canon's **Amendments** log by the ruling that lands them: (1) the
+**sample-provenance label** as a marketing-surface honesty pattern — it labels a *panel*, not a
+*value*, so rule 24 is untouched; (2) the **`RequireAuth` degraded-branch copy**, which adds
+`AUTH_COPY.gate.sessionUnknown` and `AUTH_COPY.gate.retry` beside the shipped
 `AUTH_COPY.gate.unavailable`; (3) a one-line clarification that rule 24's "Sans, never a figure" also
-governs a **glossary quoting** the literal; (4) the **one-line clarification of "3D"** in the
-one-hero-instrument rule — worded in §8, evidenced in §2.3.
+governs a **glossary quoting** the literal. **Already landed, and therefore not owed:** (4) the
+one-line clarification of **"3D"** in the one-hero-instrument rule — recorded in the canon's Amendments
+log dated 2026-09-10 with ledger row `hero-3d-is-a-static-isometric-projection` by owner ruling D-B;
+§8 quotes it, §2.3 carries the evidence.
 
 ## 5. Error handling
 
@@ -869,9 +895,9 @@ The policy caption stays in **every** branch: `Private testing — invited accou
 statement about the product's access policy, true whoever the visitor is — only the heading asserts
 identity. The `Sign in` button also stays: it is an **offer**, not a claim about who the visitor is.
 **Retry is user-initiated only** — no effect, no timer, no automatic retry. `refresh()` is the same
-idempotent call the provider already fires once on mount; making it a button and nothing else is what
-keeps a degraded auth subsystem from being polled by every visitor parked on `/scanner`. No new route
-state, no error page, no peer surface to the wall.
+idempotent call the provider already fires once on mount; making it a button and nothing else keeps a
+degraded auth subsystem from being polled by every visitor parked on `/scanner`. No new route state,
+no error page, no peer surface to the wall.
 <!-- spire:council-resolution:v1 4bff0a56af82983b2d999efca68c4f58684e7d350b08b9672acdc49fb3073d56 folded -->
 
 ## 6. Interface — pointer
@@ -971,6 +997,20 @@ poison the thing it forbids and the build must go red — or it is prose wearing
     `evidence favors`, `capped sum of plain components`. Mutation-proved both ways: change one word of
     a paragraph and the positive half goes red; restore one retired fragment and the negative half
     goes red.
+17. **The hero panel's cut phrases stay cut (§4's cut table).** The chip-and-dot pair is carried by
+    items 1 and 6 with AC-L5, and the hero component's own runtime surface by item 3 — but the three
+    *text* phrases had no mechanism, which is the prose-only "must not"
+    `[structural-over-prose-enforcement]` forbids, and on `three.js surface` it would be the weakest
+    possible enforcement of the one question this council had to send to the owner (D-B, §2.3).
+    **Source half:** a `?raw` scan homed **outside** `pages/**` (item 14's precedent) globbing
+    `pages/landing/**` **excluding `*.spec.*`**, asserting none of `three.js` · `7d → 90d` ·
+    `own bundle` appears — the last two are the apostrophe-free fragments of `7d → 90d tenors` and
+    `rendered from the desk’s own bundle`, so swapping U+2019 for U+0027 cannot defeat the check.
+    **Rendered half:** in `landing-structure.spec.tsx` (already rewritten in this change), render the
+    landing and assert the page's `textContent`, hero caption and legend included, contains none of the
+    three, so a phrase arriving through an imported copy module is caught too; the spec-file exclusion
+    above is what keeps this assertion's own literals from red-building the source half.
+    Mutation-proved three ways: paste each phrase back into the hero panel in a fixture, build red.
 
 **Journeys rewritten in the same change (named up front, three files plus one extension).**
 `accessibility.spec.ts:115-125` — **A11Y-B2 keeps its id** (`manifest.ts:23` / `manifest.json:1078`
@@ -982,11 +1022,11 @@ to `/ticker` named `Open the Ticker`; `cta-band-primary` is an `<a>` with the sa
 is asserted, because none is mounted.** `landing.spec.tsx` — rewrite `:110-130`, `:148-164`,
 `:194-200`; keep `:57-63` and `:137-141` verbatim. `landing-structure.spec.tsx` — rewrite `:56-69`,
 `:84`, `:87-100` (note `:61` queries `site-footer` on a **standalone** `<Landing/>` render, so the
-footer move is a hard red build, not a soft drift); **keep `:103-131` unchanged** — the
-`radial-gradient` and `ConvexityMotif` scans are earned negative space and the port is designed to
-stay inside them. `no-overflow.spec.ts:394` — extended, not rewritten. **Not touched on this
-account:** `scenarios.ts` (`:427-429` is a readiness anchor and `:455,460` list `cta-primary` as an
-a11y-scan ready selector, not a click), `compatibility.spec.ts` (`:23-29` clicks `nav-ticker`),
+footer move is a hard red build, not a soft drift), and add item 17's rendered half; **keep `:103-131`
+unchanged** — the `radial-gradient` and `ConvexityMotif` scans are earned negative space and the port
+is designed to stay inside them. `no-overflow.spec.ts:394` — extended, not rewritten. **Not touched on
+this account:** `scenarios.ts` (`:427-429` is a readiness anchor and `:455,460` list `cta-primary` as
+an a11y-scan ready selector, not a click), `compatibility.spec.ts` (`:23-29` clicks `nav-ticker`),
 `manifest.ts`.
 
 **Reviewed, not automated:** all copy *wording* rows (visible, intentional, and a human on a normal
@@ -1009,7 +1049,9 @@ lane.
   data-signal motion on these six surfaces, because the class requires a genuinely live stream and a
   marketing sample has none.
 - **`[structural-over-prose-enforcement]`** — every "must not" in this spec is paired with a named
-  build-breaking mechanism in §7, and each must be proven to bite.
+  build-breaking mechanism in §7, and each must be proven to bite. The hero panel's three cut text
+  phrases were the outstanding breach; §7 item 17 closes it and §4's cut table names the mechanism per
+  phrase.
 - **`[live-vs-static-isolation]` + `[present-is-live-paid-only]`** — these surfaces have no
   live-derived datum, so they carry no offline/pause/degrade treatment and must not: those literals
   mean "we tried and failed". A frozen sample is never presented as live, present, or current.
@@ -1023,13 +1065,15 @@ lane.
 - **`[server-side-gate-enforcement]`** — the wall is UX only; `/api/scan*` and the positions write gate
   refuse signed-out callers server-side regardless. Nothing here adds a client path to a gated surface.
 - **`[cited-code-is-verified-not-assumed]`** — every `file:line` in this spec was read at source during
-  the council and re-checked at synthesis, including the lines this repair pass adds
-  (`apps/dashboard/index.html:9,12,52,55,65,68`; `design/src/lib.mjs:382-383`;
-  `design/src/screens/landing.mjs:104,107-109`; `design/src/screens/blog.mjs:15-17,22-23`;
-  `design/src/screens/methodology.mjs:29-63` against `pages/methodology/copy.ts:7-13,21-99`;
-  `shared/ui/arc.spec.ts:89-95,106-110`; `libs/quant-engine/src/signals.rs:458,490`;
-  `pages/ticker/useTickerBundle.ts:15`; `apps/api/src/config.rs:237`;
-  `pages/lab/StructureFieldWebGL.tsx:1-16`).
+  the council and re-checked at synthesis, including the lines this final pass adds
+  (`design/src/screens/components-sheet.mjs:165-173`; `design/src/screens/landing.mjs:52,54,56`;
+  `context/design-session/rebaseline-2026-09-03.md`, grepped — zero matches for `three.js`, `WebGL`,
+  `3D`) and the pass before it (`apps/dashboard/index.html:9,12,52,55,65,68`;
+  `design/src/lib.mjs:382-383`; `design/src/screens/landing.mjs:104,107-109`;
+  `design/src/screens/blog.mjs:15-17,22-23`; `design/src/screens/methodology.mjs:29-63` against
+  `pages/methodology/copy.ts:7-13,21-99`; `shared/ui/arc.spec.ts:89-95,106-110`;
+  `libs/quant-engine/src/signals.rs:458,490`; `pages/ticker/useTickerBundle.ts:15`;
+  `apps/api/src/config.rs:237`; `pages/lab/StructureFieldWebGL.tsx:1-16`).
 - **Canon rules 2, 3, 5, 6, 7, 9, 13, 16, 17, 18, 19, 20, 21, 22, 23, 24** (§4 Design direction).
 - **The closed-signups declaration is client-side, and that coupling is the guardrail.** The session
   payload carries no signup-policy flag (see `INTERFACE_CONTRACT.md`), so the closure is declared from
@@ -1037,13 +1081,14 @@ lane.
   exactly one frontend edit at that one string's site** — the day the server reopens and that literal
   stays, three surfaces lie in unison. Named here so the next session finds it before a user does.
 
-**The one canon clarification this feature owes, worded here so the ruling that lands it can paste it.**
-It clarifies existing language; it is not a new rule and not a second system — the canon's own cited
-source already implements it (evidence in §2.3), and this spec does not write it into the canon:
+**The canon clarification owner ruling D-B landed, quoted here so the build lane need not open the
+canon.** It clarifies existing language; it is not a new rule and not a second system, and this spec
+did not write it — the ruling did, on `docs/owner-blockers-2026-09-10`, with ledger row
+`hero-3d-is-a-static-isometric-projection`:
 
 | Date | Change | Cause |
 | --- | --- | --- |
-| (on approval) | **"3D" in the one-hero-instrument rule means an isometric projection drawn in depth, not a runtime 3-D renderer.** The landing's one hero instrument is the dealer-gamma surface over strike × tenor with net gamma as height, drawn as a **static inline SVG** isometric wireframe — no WebGL, no Canvas2D, no three.js, no new runtime dependency. | `curvature-v2-landing-and-site`: `DESIGN_SYSTEM.md:52-53,113` says "3D … drawn in depth" while the owner-approved source it was written from implements exactly that instrument in SVG (`design/src/lib.mjs:382-425`, whose own header calls it "3D gamma surface (isometric wireframe: strike × tenor × net GEX)"), and `design/` carries no WebGL implementation at all. Council conflict `01d33a0b` then made the static-SVG rendering a build constraint, with three non-vacuous mechanisms. Without this line a later reader can read "3D" as WebGL and treat the shipped hero as a deviation. A runtime-rendered 3-D hero stays deferred with its restoring condition (SPEC §1). |
+| 2026-09-10 (landed) | **"3D" in the one-hero-instrument rule means an isometric projection drawn in depth, not a runtime 3-D renderer.** The landing's one hero instrument is the dealer-gamma surface over strike × tenor with net gamma as height, drawn as a **static inline SVG** isometric wireframe — no WebGL, no Canvas2D, no three.js, no new runtime dependency. | `curvature-v2-landing-and-site`: `DESIGN_SYSTEM.md:52-53,113` says "3D … drawn in depth"; the owner-approved artboard implements exactly that instrument in SVG (`design/src/lib.mjs:382-425`, whose own header calls it "3D gamma surface (isometric wireframe: strike × tenor × net GEX)") while two prose lines in the same source (`landing.mjs:56`, `components-sheet.mjs:173`) reserve Three.js for the landing, and the 2026-09-03 re-baseline never adjudicated it. The owner broke the tie on the artboard's side (§2.3). Without this line a later reader can read "3D" as WebGL and treat the shipped hero as a deviation. A runtime-rendered 3-D hero stays deferred; lifting it needs a fresh ruling plus an amendment superseding this row (SPEC §1). |
 
 **Costs priced now rather than discovered at the gate (these belong in the PLAN, not in §9):**
 
@@ -1068,36 +1113,41 @@ source already implements it (evidence in §2.3), and this spec does not write i
    @convexa/dashboard --configuration=production`) in the PLAN. The 20 kB gzipped figure in §2.4 is a
    decision rule, not a measurement anyone has made.
 7. The chromium journey count rises (§7 item 15). That is added coverage, not a breach of AC-G3.
-8. **§7 item 16 couples the dashboard suite to `design/src/screens/*.mjs`.** That is the point — it is
-   what makes "verbatim from the design source" a pin rather than an intention — but it means a later
-   edit to those authored files red-builds the app until the page is updated with them. Resolve as a
-   **deliberate edit in the same change**, the same rule as cost 1: never a waiver, never a narrowed
-   scan.
+8. **§7 items 16 and 17 couple the dashboard suite to `design/src/screens/*.mjs`** — item 16 positively
+   (strings must match) and item 17 negatively (three phrases from `landing.mjs:54,56` must not
+   appear). That is the point — it is what makes "verbatim from the design source" and "cut, with
+   cause" pins rather than intentions — but a later edit to those authored files red-builds the app
+   until the pages are updated with them. Resolve as a **deliberate edit in the same change**, the same
+   rule as cost 1: never a waiver, never a narrowed scan.
 
 ## 9. Open questions
 
-Three, and only three. Everything else the council raised is settled above with its reasoning; the
+Two, and only two. Everything else the council raised is settled above with its reasoning; the
 build-cost items are in §8 because they have answers, not questions.
 
-**Not here, and why:** the hero's dimensionality. The BRIEF made the owner the tie-breaker only "if
-[canon, canvas and code] disagree"; they agree, once the canon's "3D … drawn in depth" is read against
-the artefact the canon was written from (§2.3; evidence at `design/src/lib.mjs:382-383`). It is folded
-rather than deferred — §2.3 reconciles it, AC-L4a makes it observable, and §8 words the one
-clarification line the canon's Amendments log owes. If the owner instead reads "3D" as requiring a
-runtime renderer, that reverses a converged council conflict (`01d33a0b`) and reopens §1's deferred
-item: say so before the build lane starts, not after.
+**Settled since the last pass, and therefore not listed below.** (1) **The hero's dimensionality** was
+*not* settled by agreement — two lines inside the canon's own cited source (`landing.mjs:56` and the
+components sheet's GPU-path entry, `components-sheet.mjs:173`) reserve Three.js for this surface, and
+the 2026-09-03 re-baseline never touched the question — so it went to the owner under the BRIEF's own
+tie-break rule. **Ruled 2026-09-10, option (A):** the static inline SVG isometric projection the
+approved artboard draws, no WebGL, no three.js, no new dependency; (C)'s lab-track pre-registration was
+not taken. Reasons and evidence in §2.3; the canon's Amendments row of the same date and ledger row
+`hero-3d-is-a-static-isometric-projection` record it; AC-L4a makes it observable and §7 items 3 and 17
+make it build-breaking; §1 holds the deferral and the bar for lifting it. (2) **D-A** — ruled (A) the
+same day: the blog index ships the one published read and no draft slots (§1). Neither is open, and
+neither needs a sign-off line before the build lane starts.
 
-1. **Do the design-source lines this change makes stale get amended here?** Three of them now: (a)
+1. **Do the design-source lines this change makes stale get amended here?** Three of them: (a)
    `design/src/screens/responsive-spec.mjs:28`'s Landing row still says "desk strip scrolls" for a
-   section all three lanes cut; (b) `landing.mjs:56`'s caption `three.js surface · the desk's own
-   model, drawn in depth`, which the council cut as a false claim about our own artefact; (c)
-   `components-sheet.mjs:173`'s note "Three.js earns its place only on the landing surface (below), not
-   on the desk", which reads as a commitment the settled build constraint (§2.3) declines. The design
-   source is generated (`node design/src/build.mjs`) and outranks nothing — but it is what the successor
-   `curvature-v2-responsive-sweep` will read. Left stale, the strip and the three.js hero both come
-   back in the next phase with nobody realising they were ruled out; amended here, this feature edits
-   design artefacts outside its own six surfaces. **Owner's call, one decision for all three.** No
-   acceptance row depends on it either way.
+   section all three lanes cut; (b) `landing.mjs:56`'s caption `three.js surface · the desk’s own
+   model, drawn in depth`; (c) `components-sheet.mjs:173`'s GPU-path note "Three.js earns its place
+   only on the landing surface (below), not on the desk" — both of which owner ruling D-B (A) now
+   contradicts on the record. The design source is generated (`node design/src/build.mjs`) and outranks
+   nothing — but it is what the successor `curvature-v2-responsive-sweep` will read. Left stale, the
+   strip and the three.js hero both come back in the next phase with nobody realising they were ruled
+   out; amended here, this feature edits design artefacts outside its own six surfaces. **Owner's call,
+   one decision for all three.** No acceptance row depends on it either way, and the shipped page is
+   protected by §7 item 17 whichever way it goes.
 2. **What is the on-this-page index on a phone?** At 393 px the design turns the ten-item index into a
    horizontal scroller with no visible affordance. AC-M6 says a reader reaches "Where the read is weak"
    without scrolling through nine sections, and on a phone that scroller is the only route; AC-G1
@@ -1106,10 +1156,6 @@ item: say so before the build lane starts, not after.
    treatment, or does the phone band need a different pattern (a disclosure, a jump menu)? **Binding
    whichever way it goes:** whatever ships must pass AC-G1 and AC-M6 at 393 with a tap path and a focus
    path; the six-band treatment above and below that width belongs to the successor.
-3. **Does the owner veto D-A?** The blog index ships with no draft slots under default-with-veto
-   (§1). It is *proceeding*, not waiting — but the veto window is open until the owner rules, and the
-   restoring condition in §1 is the exact shape it takes if they do. Listed here only so the veto is
-   visible; no build step is blocked on it.
 
 <!-- spire:council-folding:v1
 {"schema_version":1,"resolutions":[{"source":"R2-architect.md","index":0,"conflict_id":"804a6fc066f9fe528570f346b194ce4e67027375021cb8cf992d84dce9b030b7","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":1,"conflict_id":"60b85e24c604e9803700479b846b15d4a9f4c7e4ed41c037b2c81cfcd71144c8","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":2,"conflict_id":"939f095fb4cbd115627baecfc008161c6ca7cf32fa0f2be228041e6e4bc94f57","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":3,"conflict_id":"7ccd6b6f052d5c6ff70da973ccc445631451d4430b7a2a9afec0dd915da0fad4","disposition":"folded","section":"§3"},{"source":"R2-architect.md","index":4,"conflict_id":"01d33a0bebb8cf79d6ca6354adac5d8a909d6eaf80e4b66876a149eb5f205dbc","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":5,"conflict_id":"9651943b3e8d63e35082c6b03b389417e73760014eed057bfc49ac1b59b10d82","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":6,"conflict_id":"e1837901790eeef6c262f5a3fec89843ac432a544218aa327a37560a3fda6946","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":7,"conflict_id":"7c81de201e715ac58993a2afb302277efda365723d8196d04536c47969e7830c","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":8,"conflict_id":"5cb7604cabe7fa8d3767f30f9acd767be77bcdcc6d58f226344063a023caef1e","disposition":"folded","section":"§2"},{"source":"R2-pm.md","index":0,"conflict_id":"0dd564b192f5aec3aee08f36024d997c2d31519f917f8ace279dd2985cb80c0f","disposition":"folded","section":"§1"},{"source":"R2-pm.md","index":1,"conflict_id":"7f26ee4c134a12db3a04650959ee008c9f1f060b1246c65267244f8423b9e318","disposition":"folded","section":"§4"},{"source":"R2-pm.md","index":2,"conflict_id":"ff779bdd4941867a8dcca8c559085f2c49c95cc36ee91b4ad978ff608251e522","disposition":"folded","section":"§3"},{"source":"R2-pm.md","index":3,"conflict_id":"9e2d7b7b011cc5abe225eb5890c10f611cd92c6d334421958a46ee2a6f7202c2","disposition":"folded","section":"§1"},{"source":"R2-pm.md","index":4,"conflict_id":"0d322f719982ba89fe78b523bb4eaf6b9182fd746e851ad4050694fcbcedf747","disposition":"folded","section":"§4"},{"source":"R2-pm.md","index":5,"conflict_id":"0c05cac4d407e5749f9900d0b27c9d676a7506792baa471bbb579dbae4d0f71b","disposition":"folded","section":"§2"},{"source":"R2-pm.md","index":6,"conflict_id":"9c991a7b0b97b93f03d0476696d79a9d8e6bbd7f4860a620ae4efd1724a9a03d","disposition":"folded","section":"§1"},{"source":"R2-pm.md","index":7,"conflict_id":"206a60b3cddbb9a0240cf6d320f4664e281bc5ab4e859b2fd0e75353fb8376f5","disposition":"folded","section":"§3"},{"source":"R2-pm.md","index":8,"conflict_id":"d0bc5fe85b7ac5038d5da16db225c218c7096870ad5d097adfee9d96b2350a56","disposition":"folded","section":"§1"},{"source":"R2-ux.md","index":0,"conflict_id":"78ecd37df9b527c41b74870dfbf28fee30d1b3733ba5e4d668b702678f0e5235","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":1,"conflict_id":"96c5f81b7d9b9b4a23e3f9731e65b190d13ec218f87e4e283e40a0faa53de46c","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":2,"conflict_id":"4bff0a56af82983b2d999efca68c4f58684e7d350b08b9672acdc49fb3073d56","disposition":"folded","section":"§5"},{"source":"R2-ux.md","index":3,"conflict_id":"4a4bb05c964832fcfa3b76364c575dd45b199807f0b22fe7ec951218353e0e96","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":4,"conflict_id":"80f4f7b03ca17041f3cdf91cad732a6d8dd254ba246f0f446c03e9fc983b9515","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":5,"conflict_id":"656c4d95fd5bc1622db235ecef6457f5f133ba04a4db83be12081ca75dc5e41d","disposition":"folded","section":"§2"},{"source":"R2-ux.md","index":6,"conflict_id":"d1a94c997e0b4b76a1574cc0e40947efde72676491a34a4295c100a2b51d7894","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":7,"conflict_id":"22f6ae74e81233b9f0d086228449f97231b82d0f6846b16f37a3c8383a98952a","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":8,"conflict_id":"bc0fe3d9d902fbe12cb45dd047309480aca2ecaab520b66118f4b16203e9b98c","disposition":"folded","section":"§3"},{"source":"R2-ux.md","index":9,"conflict_id":"5b3ba16881db0cb753a07114a50ad6f82a5d3bcd5c70c105af7d8add94e5de03","disposition":"folded","section":"§3"},{"source":"R2-ux.md","index":10,"conflict_id":"e0e1900519dbbf6cc051ab5cf921307b7e7480860220dfc90126a347c8d85593","disposition":"folded","section":"§1"},{"source":"R2-ux.md","index":11,"conflict_id":"09f566164a626d2540022de5019137d2cf411a0317035cd4c1069e405c5295f0","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":12,"conflict_id":"0b1ff840f52a4c0383c25ecd9393e13c14168f2987551797b1f0deac2b5fd0ad","disposition":"folded","section":"§2"}]}

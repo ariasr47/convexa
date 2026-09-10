@@ -1,11 +1,11 @@
 # curvature-v2-landing-and-site — pipeline manifest
-Stage:        GATE C — council complete (R1–R4 + S2 ×2); SPEC synthesized; **one owner ruling open (D-B, the hero instrument's dimensionality) and the spec awaiting owner approval**
+Stage:        GATE C — council complete (R1–R4 + S2 ×2 at the cap); owner rulings D-B = (A) and D-A = (A) landed 2026-09-10 and folded at R4 pass 3; **SPEC awaiting owner approval → GATE PLAN (rebase this branch onto `main`, now carrying PR #46 as `3f9d941e`, first)**
 Repos:        frontend
 Brief:        BRIEF.md present (five defects recorded in council/decisions.md §0 — the decisions win where they differ)
 Contracts:
-  - SPEC.md                    draft — 9 sections, 71 acceptance rows, folding receipt 31/31; contract_lint 0 errors (12 advisory budget warnings; the SPEC is 111 KB against a 40 KB budget)
+  - SPEC.md                    draft, R4 pass 3 (final) — 9 sections, 71 acceptance rows (ship-blocking list 19, AC-C1a added), folding receipt 31/31, new §7 item 17 (cut-phrase scan, mutation-proved); contract_lint 0 errors (12 advisory budget warnings; the SPEC is 114 KB against a 40 KB budget — the fold trimmed deliberation and still grew 5 KB)
   - INTERFACE_CONTRACT.md      NO_BACKEND_CHANGE — conformance block for the who-am-I read the auth wall already consumes
-Open amendments: council/S2-findings.md (pass 2) — 1 Critical reopened as owner ruling D-B (hero: static SVG isometric projection vs a runtime three.js/WebGL surface — `design/src/screens/components-sheet.mjs:165-173` says three.js belongs on the landing; the canon says "3D … drawn in depth"); 2 Important + 1 Minor to fold at the next R4 pass after the ruling. S2 loop cap (2) reached.
+Open amendments: none — S2 pass 2's 1 Critical closed by owner ruling D-B (A); its 2 Important + 1 Minor folded at R4 pass 3 (SPEC §1/§2.6, §4 + §7 item 17, §3 ship-blocking). No third S2 (cap). Canon Amendments row + ledger `hero-3d-is-a-static-isometric-projection` live on `docs/owner-blockers-2026-09-10` → main
 QA (GATE Q):  n/a
 Workers:      n/a
-Last gateway:  GATE C @ 2026-09-09 (council rounds 2026-09-08/09)
+Last gateway:  GATE C @ 2026-09-10 (rulings + final fold on the Mac; council rounds 2026-09-08/09)

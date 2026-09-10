@@ -23,6 +23,10 @@ code:
   flag the provider **already sets** (`subsystemDegraded`) and a `Try again` control that calls the
   provider's existing `refresh()`. No new field is requested, and no new call site is created.
 
+The owner rulings of 2026-09-10 (D-B — the hero is a static inline SVG isometric projection, no WebGL
+and no new dependency; D-A — the blog index ships one published read and no draft slots) change
+nothing here: both are render-side, and neither adds a data edge to any of the six surfaces.
+
 ## Endpoints this feature consumes (existing, unchanged)
 
 | Method | Path | Purpose here | Auth | Error semantics |
