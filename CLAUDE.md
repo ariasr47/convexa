@@ -4,9 +4,32 @@ This is a single **Nx 23 polyglot monorepo** (the Convexa backend + web frontend
 
 ## Nx guidance
 
-General Nx working rules (prefer `nx run`/`run-many`/`affected`, the `nx-workspace` /
-`nx-generate` skills, `nx_docs`, the Nx MCP) live in [AGENTS.md](AGENTS.md) — that file is
-Nx-auto-maintained; read it and follow it. This file is not duplicated into it on purpose.
+These rules used to live in `AGENTS.md` and this file just pointed at them. **That pointer was
+dead.** `AGENTS.md` is a repo-root _immutable_ in the Spire installer (`plan.mjs:262-270`) —
+rewritten verbatim on every install — so the first Spire install (`de81a499`, 2026-08-10) replaced
+Nx's 23-line block with a 12-line host router, and every session since was sent to a file with zero
+Nx content. Recovered from `8e7d994a:AGENTS.md` and kept **here**, where nothing overwrites it.
+
+- For navigating/exploring the workspace, invoke the `nx-workspace` skill first — it has patterns
+  for querying projects, targets, and dependencies.
+- When running tasks (build, lint, test, e2e, …), always prefer running the task through `nx`
+  (`nx run`, `nx run-many`, `nx affected`) instead of the underlying tooling directly.
+- Prefix nx commands with the workspace's package manager (`npm exec nx test`, `npx nx build`) —
+  avoids using a globally installed CLI. **This repo is npm; `pnpm` is not installed.**
+- The Nx MCP server and its tools are available — use them.
+- For Nx plugin best practices, check `node_modules/@nx/<plugin>/PLUGIN.md`. Not all plugins have
+  this file — proceed without it if unavailable.
+- NEVER guess CLI flags — check `nx_docs` or `--help` first when unsure.
+- For scaffolding (creating apps, libs, project structure, setup), ALWAYS invoke the `nx-generate`
+  skill FIRST, before exploring or calling MCP tools.
+- Use `nx_docs` for advanced config, unfamiliar flags, migration guides, plugin configuration and
+  edge cases. Don't use it for basic generator syntax (`nx g @nx/react:app`) or standard commands —
+  `nx-generate` handles generator discovery internally.
+
+**Do not run `nx configure-ai-agents`,** however loudly Nx suggests it after a task. It rewrites
+`AGENTS.md` between its `<!-- nx configuration start/end -->` markers, and the next `spire` install
+wipes it again — two generators fighting over one file. `AGENTS.md` is Spire-owned and disposable;
+it is exempt from Prettier in `.prettierignore` for the same reason.
 
 ## Layout
 
@@ -20,6 +43,7 @@ Nx-auto-maintained; read it and follow it. This file is not duplicated into it o
 - `libs/api` (`@convexa/api`) — shared TS API client (consumed as source).
 - `.spire/clusters/tech/` — **shared product memory** (PROJECT_CONTEXT, BACKLOG,
   contracts, DESIGN_SYSTEM, decision ledger, conformance suite). **Committed.**
+- `design/` — **the design source the canon points to** (Curvature Terminal v2, 2026-09-03): the Claude Design canvas + artboards, a static site with the interactive desk and `site/library.html` (tokens, component states, React mapping), `tokens/tokens.json` (design mirror, verified against `tokens.ts` by `src/verify-tokens.mjs`), and the generator. Regenerate with `node design/src/build.mjs`; never hand-edit `design/canvas` or `design/site`. Binding rules stay in `.spire/clusters/tech/context/DESIGN_SYSTEM.md`.
 - `.claude/` — Claude host adapter (orchestrator, agents, skills, tools). **Committed.**
   Not product memory — do not put context/contracts here.
 - `.codex/` — Codex host adapter. **Committed.**

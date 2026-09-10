@@ -26,11 +26,12 @@
  * visible), reduced-motion-gated, firing only while genuinely live.
  */
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
-import { elevationFor } from '@/shared/theme/tokens';
+import { NOT_LIVE, type LiveClaim } from '@/shared/liveness/liveClaim';
+import { elevationFor, extrasFor } from '@/shared/theme/tokens';
+import { AccessibleHelp } from '@/shared/ui/AccessibleHelp';
 import { useWidgetChrome } from '@/shared/ui/Widget/WidgetChromeContext';
 import { useWidgetSelection } from '@/shared/ui/Widget/WidgetSelectionContext';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import Box from '@mui/material/Box';
@@ -54,8 +55,26 @@ export interface WidgetProps {
   icon?: ReactNode;
   subtitle?: ReactNode;
   info?: string;
-  /** Live accent pulses ONLY when this is true (`isLive && !streamOffline`); frozen otherwise. */
-  live?: boolean;
+  /**
+   * PASS 2 change 7 — an opt-in marker rendered BESIDE the title, in the title's own header row
+   * (the design's `widgetHead(title, { live })` chip, `design/src/lib.mjs:439`) — distinct from
+   * `actions`, which is a separate flex region that wraps to its own row below `sm`. Unset by
+   * default: every existing widget's header is byte-identical. Not the `live` boolean below (that
+   * stays a border pulse only, "not header content" — see its own doc comment).
+   */
+  titleBadge?: ReactNode;
+  /** Live accent pulses ONLY when this is true (`isLive && !streamOffline`); frozen otherwise.
+   *  Branded (FE-1, SPEC §2.1 invariant 1): only `isDeliveringLive(...)`/`andPresent(...)`/
+   *  `NOT_LIVE` can produce this value — a raw boolean does not type-check here. */
+  live?: LiveClaim;
+  /**
+   * A WATCH pulse — orders watching for a live cross (`OrdersWidget.tsx:144`). Deliberately NOT
+   * `live`: it is not a delivering-stream claim, and branding it would launder a different fact
+   * through the one predicate (SPEC §2.1). Drives the same `widgetLivePulse` declaration, so this
+   * split changes no pixel. Pre-existing rule-22 question (does a watch pulse need a live stream?)
+   * is UNCHANGED by this phase and is recorded in the build report, not fixed here.
+   */
+  watch?: boolean;
   /** The section's own always-visible controls (legend, "View what's sent", persona select, …). */
   actions?: ReactNode;
   children: ReactNode;
@@ -72,6 +91,17 @@ export interface WidgetProps {
    * Do not add `noBodyPad` — pick a named variant. Independent of `bodyVariant`.
    */
   bodyPad?: 'default' | 'none';
+  /**
+   * Ticker fidelity repair, change 4 (F4) — "no Widget title/subtitle (the strip is the frame)"
+   * (`ReadStrip.tsx`'s own doc comment; `design/src/screens/desk.mjs:334`'s title-less `.panel.strip`).
+   * `title` stays REQUIRED — it becomes the group's accessible name via `aria-label` instead of
+   * `aria-labelledby` — but the whole header ROW is skipped: no visible h2/subtitle, and (for THIS
+   * widget only) no `actions`/`info` affordance, no drag-grip/`⋮`/expand button either — none of
+   * which `ReadStrip.tsx` passes anyway. Opt-in, default `false`; every other widget's header is
+   * byte-unchanged. `live`'s accent edge (a border pseudo-element on the frame, not header content)
+   * is unaffected either way.
+   */
+  hideHeader?: boolean;
 }
 
 /**
@@ -107,15 +137,23 @@ export function Widget({
   icon,
   subtitle,
   info,
-  live = false,
+  titleBadge,
+  live: liveClaim = NOT_LIVE,
+  watch = false,
   actions,
   children,
   span = 1,
   bodySx,
   bodyVariant = 'flush',
   bodyPad = 'default',
+  hideHeader = false,
 }: WidgetProps) {
   const reduced = useReducedMotion();
+  // `live` (the branded delivering-stream claim) OR `watch` (OrdersWidget's open-orders fact) both
+  // drive the SAME `widgetLivePulse` declaration below — kept as the plain local `live` so the
+  // pulse's shipped gate expression, spelled out where it is actually used a few lines down,
+  // stays byte-identical for `single-motion-moment.spec.ts`'s structural mutation proof.
+  const live = Boolean(liveClaim) || watch;
   const chrome = useWidgetChrome();
   const quiet = chrome === 'quiet';
   // Body-wrapper chrome. 'inset' recesses the well (darker + inner shadow) so raised paper tiles pop.
@@ -131,7 +169,9 @@ export function Widget({
     flexDirection: 'column',
     ...(bodyVariant === 'inset'
       ? {
-          backgroundColor: theme.palette.background.default,
+          // v2 `ink2` — the WELL (SPEC §2.1). This faked the well with `background.default` (=
+          // `ink`, not `ink2`) before the token existed; now theme-derived via `extrasFor`.
+          backgroundColor: extrasFor(theme).well,
           boxShadow:
             theme.palette.mode === 'dark'
               ? 'inset 0 2px 10px -5px rgba(0,0,0,0.55)'
@@ -154,7 +194,11 @@ export function Widget({
       sx={[
         bodyPad === 'default' && { p: 2, pt: 1.5 },
         // Container-query context for the body: each widget styles its internals by its OWN width.
-        { containerType: 'inline-size' },
+        // NAMED (SPEC §2.5): an unnamed `@container` resolves against the NEAREST container
+        // ancestor, so a future nested rail would answer the panel's question instead of the panel
+        // itself. `FigureCell` queries `theme.containerQueries('panel')` and must NEVER query an
+        // unnamed container.
+        { containerType: 'inline-size', containerName: 'panel' },
         ...(Array.isArray(bodySx) ? bodySx : [bodySx]),
       ]}
     >
@@ -202,7 +246,20 @@ export function Widget({
         </Tooltip>
       )}
 
-      <Box sx={{ minWidth: 0, flex: 1 }}>
+      <Box
+        sx={{
+          minWidth: 0,
+          flex: 1,
+          // PASS 2 change 7 (hero header collapse at 390): `flex: 1` alone is a 0% flex-basis, so
+          // this region's "hypothetical main size" for the wrap check is ~0 — the browser always
+          // finds room for it beside `actions` (`flexShrink: 0`, never 0-basis) by shrinking the
+          // title to nothing (`S…`) instead of ever wrapping the header row. Below `sm` the title
+          // region keeps the FULL row so wrap is deterministic — `actions` moves to row two instead
+          // (`design/src/lib.mjs`'s `widgetHead`: title [+ its own `live` chip] occupies one row,
+          // `actions` the next). At `sm`+, unchanged (`auto` restores the original shared-row fit).
+          flexBasis: { xs: '100%', sm: 'auto' },
+        }}
+      >
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
           {icon && <Box sx={{ display: 'inline-flex', color: 'text.secondary' }}>{icon}</Box>}
           {/* h2 ELEMENT (heading order: page h1 → widget h2), h6 STYLING unchanged (Stage 0 item 3). */}
@@ -219,11 +276,12 @@ export function Widget({
           >
             {title}
           </Typography>
-          {info && (
-            <Tooltip arrow title={info}>
-              <InfoOutlinedIcon sx={{ fontSize: 15, color: 'text.disabled', flexShrink: 0 }} />
-            </Tooltip>
-          )}
+          {/* PASS 2 change 7: the design's `widgetHead(title, { live })` chip sits BESIDE the title,
+              in this SAME row — never inside `actions` (a different flex region that wraps
+              separately below `sm`). Opt-in; unset by default (byte-identical for every other
+              widget). `StructureHeroPanel`'s `● mid · tape` chip is the first (only) consumer. */}
+          {titleBadge}
+          {info && <AccessibleHelp label={`About ${title}`} text={info} />}
         </Stack>
         {subtitle && (
           <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.25 }}>
@@ -312,7 +370,8 @@ export function Widget({
         data-testid={`widget-${id}`}
         data-widget-id={id}
         role="group"
-        aria-labelledby={headerId}
+        aria-labelledby={hideHeader ? undefined : headerId}
+        aria-label={hideHeader ? title : undefined}
         aria-current={selected ? 'true' : undefined}
         tabIndex={0}
         onClick={onSelect}
@@ -325,7 +384,11 @@ export function Widget({
           bgcolor: 'background.paper',
           border: '1px solid',
           borderColor: 'divider',
-          borderRadius: '12px',
+          // PANEL role (SPEC §2.2, ruling 4) — `1` is a THEME-DERIVED multiplier (1 × shape.borderRadius
+          // = 12px today), not a literal: inside `sx`, MUI resolves a numeric `borderRadius` through
+          // `createUnaryUnit(theme, 'shape.borderRadius', …)`, so `theme.shape.borderRadius` itself
+          // must never be passed as the raw value here (that would resolve to 12 × 12 = 144px).
+          borderRadius: 1,
           // Resting depth matches Command Deck (`elevationFor.e1`) — one material language.
           // Quiet (context band): same e1, no hover lift — tertiary claim.
           boxShadow: elevationFor(theme).e1,
@@ -374,7 +437,7 @@ export function Widget({
               content: '""',
               position: 'absolute',
               inset: 0,
-              borderRadius: '12px',
+              borderRadius: 1, // PANEL role — theme-derived multiplier, see the note above
               padding: '1.5px',
               // The gradient sweeps from primary through the live accent.
               background:
@@ -390,7 +453,8 @@ export function Widget({
             },
           }),
           // Live accent — thin info edge (deck owns connection chip; strip is secondary signal).
-          // Quieter pulse so it doesn't compete with the hero connection chip.
+          // Quieter pulse so it doesn't compete with the hero connection chip. `live` here is the
+          // LOCAL combined boolean (liveClaim || watch) computed above.
           ...(live &&
             !quiet && {
               '&::before': {
@@ -400,7 +464,11 @@ export function Widget({
                 left: 0,
                 width: 2,
                 height: '32%',
-                borderTopLeftRadius: '12px',
+                // `borderTopLeftRadius` is NOT one of MUI's recognized `sx` shorthand props (only
+                // the bare `borderRadius` key is routed through `createUnaryUnit`), so a raw theme
+                // number here passes straight through to emotion as CSS and is safely theme-derived
+                // (unlike the plain `borderRadius` sites above, which need the `1 ×` multiplier idiom).
+                borderTopLeftRadius: theme.shape.borderRadius,
                 background: 'linear-gradient(180deg, var(--mui-palette-info-main), transparent)',
                 pointerEvents: 'none',
                 opacity: 0.75,
@@ -417,50 +485,65 @@ export function Widget({
           ...(supportsVT && !expanded && { viewTransitionName: vtNameRef.current }),
         })}
       >
-        <Box id={headerId}>{header(false)}</Box>
+        {/* Ticker fidelity repair, change 4 (F4) — `hideHeader` skips the whole row: no visible
+            h2/subtitle (the accessible name moves to `aria-label` above), no actions/info,
+            no drag-grip/`⋮`/expand. `ReadStrip.tsx` is the one caller today. */}
+        {!hideHeader && <Box id={headerId}>{header(false)}</Box>}
         <Box sx={bodyWrapperSx}>{body}</Box>
       </Box>
 
       {/* Expand/peek — the same widget in a larger focus overlay. View Transitions morph it when
-          supported; otherwise MUI `Fade` (inside `Dialog`) provides the graceful fallback. */}
-      <Dialog
-        open={expanded}
-        onClose={collapse}
-        maxWidth="lg"
-        fullWidth
-        // Skip MUI's own transition when View Transitions is driving the morph (avoid double-animating);
-        // keep Fade as the fallback path (and under reduced motion Fade is effectively instant).
-        transitionDuration={supportsVT && !reduced ? 0 : undefined}
-        slots={{ transition: Fade }}
-        slotProps={{
-          // Dim + blur the page behind for a premium "focus" feel.
-          backdrop: { sx: { backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' } },
-          paper: {
-            sx: {
-              // Crisp dark surface: kill MUI's dark-mode elevation overlay (the washed-grey look) and
-              // pin the widget surface, matching the inline widget exactly.
-              bgcolor: 'background.paper',
-              backgroundImage: 'none',
-              borderRadius: '16px',
-              border: '1px solid',
-              borderColor: 'divider',
-              boxShadow: 24,
-              // A definite-height flex column so the body fills — this is what lets a `height="100%"`
-              // chart (Term structure) resolve inside the Dialog, and gives a consistent focus view.
-              display: 'flex',
-              flexDirection: 'column',
-              height: 'min(86vh, 720px)',
-              overflow: 'hidden',
-              ...(supportsVT && expanded && { viewTransitionName: vtNameRef.current }),
+          supported; otherwise MUI `Fade` (inside `Dialog`) provides the graceful fallback.
+          Skipped entirely with `hideHeader`: its only trigger (the header's `⤢` button) is also
+          skipped, so an always-closed Dialog would just be unreachable DOM. */}
+      {!hideHeader && (
+        <Dialog
+          open={expanded}
+          onClose={collapse}
+          maxWidth="lg"
+          fullWidth
+          // Skip MUI's own transition when View Transitions is driving the morph (avoid double-animating);
+          // keep Fade as the fallback path (and under reduced motion Fade is effectively instant).
+          transitionDuration={supportsVT && !reduced ? 0 : undefined}
+          slots={{ transition: Fade }}
+          slotProps={{
+            // Dim + blur the page behind for a premium "focus" feel.
+            // v2 `scrim` (SPEC §2.1) — the hardcoded `rgba(0,0,0,0.6)` is GONE, not overridden: the
+            // `MuiBackdrop` theme default now supplies `scrim` to every overlay, including this one.
+            backdrop: { sx: { backdropFilter: 'blur(4px)' } },
+            paper: {
+              sx: {
+                // Crisp dark surface: kill MUI's dark-mode elevation overlay (the washed-grey look) and
+                // pin the widget surface, matching the inline widget exactly.
+                bgcolor: 'background.paper',
+                backgroundImage: 'none',
+                // DIALOG role = 16px, declared ONCE via `theme.components.MuiDialog.styleOverrides
+                // .paper` (SPEC §2.2, ruling 4) — no local literal here, so this paper inherits the
+                // single declared dialog radius instead of duplicating (and drifting from) it.
+                border: '1px solid',
+                borderColor: 'divider',
+                boxShadow: 24,
+                // A definite-height flex column so the body fills — this is what lets a `height="100%"`
+                // chart (Term structure) resolve inside the Dialog, and gives a consistent focus view.
+                display: 'flex',
+                flexDirection: 'column',
+                height: 'min(86vh, 720px)',
+                overflow: 'hidden',
+                ...(supportsVT && expanded && { viewTransitionName: vtNameRef.current }),
+              },
             },
-          },
-        }}
-      >
-        <Box id={`${headerId}-overlay`} data-testid={`widget-overlay-${id}`} sx={{ flexShrink: 0 }}>
-          {header(true)}
-        </Box>
-        <Box sx={[bodyWrapperSx, { flex: 1, minHeight: 0, overflow: 'auto' }]}>{body}</Box>
-      </Dialog>
+          }}
+        >
+          <Box
+            id={`${headerId}-overlay`}
+            data-testid={`widget-overlay-${id}`}
+            sx={{ flexShrink: 0 }}
+          >
+            {header(true)}
+          </Box>
+          <Box sx={[bodyWrapperSx, { flex: 1, minHeight: 0, overflow: 'auto' }]}>{body}</Box>
+        </Dialog>
+      )}
 
       {/* Click-outside-to-clear-selection is owned by the provider region in TickerDashboard; here we
           only stop propagation on the actions/toolbar so interacting with them doesn't re-select. */}

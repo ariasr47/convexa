@@ -1,0 +1,423 @@
+{
+  "conflicts": [
+    {
+      "quote": "Verified at source: that primitive is consumed by seven files (`LiveTape`, `TickerDashboard`, `StraddleMove`, `MarketContext`, `IvRank`, `DealerPositioning`, `DealerFlowProjection`) and is re-exported from the shared UI barrel.",
+      "source": "pm",
+      "why": "Both halves are falsified by the tree. There are exactly TWO `import { StatTile }` statements in `apps/dashboard/src`: `pages/ticker/widgets/live-tape/LiveTape.tsx:35` and `pages/ticker/widgets/dealer-positioning/DealerPositioning.tsx:25`. Every other match is prose: `TickerDashboard.tsx:5` is a header comment listing widget names; `StraddleMove.tsx:69`, `IvRank.tsx:81`, `MarketContext.tsx:4,152` and `DealerFlowProjection.tsx:67,84` say \"the StatTile-family idiom\" in comments about a shared *look*, and import nothing. And it is NOT re-exported from the shared UI barrel \u2014 `shared/ui/index.ts:15-22` exports ComingSoonBox, ComingSoonBadge/Card, ErrorBoundary, Jargon, Refused, TintChip, ValueCard and `./Widget`, and its own header at `:7-8` says in terms \"`StatTile` and the ticker `copy` map stay ticker-local (still one consumer each)\". The only barrel that re-exports it is the ticker-local `pages/ticker/widgets/_kit/index.ts:11`. This is not a pedantic count: pm's \u00a72 seam ruling, DS-2's carve-out and AC-22's six-screen scope all price the swap as touching landing, positions, scanner, settings and alerts. It touches none of them \u2014 the primitive does not render outside two ticker widgets, so no figure on any of those five screens has a coloured accent edge to delete.",
+      "proposal": "Re-price the sweep as 16 render sites in 2 files (`DealerPositioning` 12, `LiveTape` 4) \u2014 a hand-edit, not a codemod \u2014 and keep pm's screen-by-screen review list intact but re-attribute what changes on each screen: on landing/positions/scanner/settings/alerts the only visible delta is the radius move (10 \u2192 12) and the token rebind, NOT the figure anatomy. Then AC-22 (\"same label and same value after\") is trivially true off the ticker page and is a real assertion only on ticker, which is where the review effort should go. If the council wants the accent-bar anatomy provably gone rather than merely unimported, the mechanism is my \u00a78 row: an arc.spec-style source scan asserting `StatTile.tsx` no longer exists and no `accentColor` prop survives anywhere.",
+      "kind": "technical",
+      "conflict_id": "5fad9c5a72e561db6a8757d4c4733698ea25d5c00b2f3b3ece0a01c3295ddde6",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The desk, scanner, positions, settings, alerts and landing keep their composition; `FigureCell` lands **in place** at every existing `StatTile` call site (`LiveTape` 4 cells, `DealerPositioning` 11\u201312, `IvRank`, `MarketContext`, `StraddleMove`, `DealerFlowProjection`).",
+      "source": "ux",
+      "why": "Same falsification as the pm conflict above, reached independently: `IvRank`, `MarketContext`, `StraddleMove` and `DealerFlowProjection` contain no `StatTile` import. Their references are comments describing a family resemblance \u2014 `MarketContext.tsx:152` \"the LimbCard-style StatTile-family surface\", `DealerFlowProjection.tsx:84` \"a StatTile-family surface\", `IvRank.tsx:81` \"the tooltip carrier \u2014 the StatTile-family idiom\", `StraddleMove.tsx:69` \"matching the StatTile / IvRank idiom\". Those four widgets hand-roll their own label/value markup. This matters for ux more than for pm, because it means the F1\u2013F9 state matrix does NOT automatically reach them: a `StatTile \u2192 FigureCell` swap leaves four ticker widgets rendering figures that carry no register, no live slot and none of the F5/F7/F8 exclusivity. The register rule would be true of the two swapped widgets and silently false of the four look-alikes on the same page \u2014 which is exactly the per-widget convention the brief's Decision impact says this phase exists to close.",
+      "proposal": "Split the surface explicitly and let R4 bind both halves: (a) the 2-file / 16-site swap, where F1\u2013F9 land as component states; and (b) a named, countable list of the four look-alike widgets that will still render un-registered figures after phase 1. Either they are adopted into `FigureCell` in this phase \u2014 which is a larger change than 16 sites and should be priced, not assumed \u2014 or the SPEC states the gap and the enforcement scan is scoped to the swapped widgets so it is not vacuously green. My preference is (b) plus a stale-entry-checked exemption list naming the four, the `hex-discipline` EXEMPT idiom, so the debt is visible and countable for phase 2 instead of invisible.",
+      "kind": "technical",
+      "conflict_id": "cf2fcc72f0f00cf5cd07181059f3fcc48c86240bd8f4b616fdf9064fb03f4bdd",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "With a genuinely delivering stream, the page carries **exactly one** liveness claim \u2014 counting the chip, any live dot, any pulse and any \"live\" wording \u2014 and that claim reads live and names the mid it is showing.",
+      "source": "pm",
+      "why": "As written and marked ship-blocking, AC-1 cannot coexist with the design the other two positions share. ux F3 gives every live-derived figure a live dot in its label row, and ux \u00a74 rules \"The dot is per-figure, not per-widget\"; my own \u00a73 prop contract has `live?: boolean` driving that dot. On the ticker page with a delivering stream that produces, at minimum: the header chip, the `Widget` livebar (`LiveTape.tsx:130` passes `live={widgetLive}`), and dots on Net flow, Spread and Gamma flip (live). A test \"asserting a count of one across the rendered page\" fails against the correct implementation. There is a second, independent reason the count is unreliable: `CommandDeck.tsx:196-214` keeps the sticky condensed bar MOUNTED-but-hidden (`aria-hidden={!condensed}`, with the code comment \"We keep it MOUNTED-but-hidden vs unmounted to avoid layout jump\") and `CommandDeck.tsx:96` calls the shared `connectionChip` resolver, so two chip nodes are attached to the DOM at all times. Any node-counting assertion is wrong in both directions at once.",
+      "proposal": "Scope the count to the claim's own scope, which is what canon rule 18 actually constrains: exactly one PAGE-scoped liveness claim (the chip), at most one WIDGET-scoped bar per widget frame, and a FIGURE-scoped dot only on a figure whose value arrived from a delivering stream. Enforce it as three separate assertions rather than one count: (a) importer set-equality on the connection-chip resolver module, so no surface can mint a second page claim; (b) at most one *visible* chip node \u2014 visibility, not attachment, or `CommandDeck`'s hidden bar fails a correct build; (c) the subordinate signals (widget bar, figure dot, tick flash) are all gated on the same `genuineIsLive` predicate the resolver uses, so they cannot outlive the stream. (c) is what AC-11 already wants and it is the assertion that carries the honesty content AC-1 was reaching for.",
+      "kind": "technical",
+      "conflict_id": "452fab6ba560ca7ed0e5541f565a8387ff460f4aa8401be28f2ad8216cd1a811",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Ruling: **before the first payload the chip shows its loading form; after the first payload some state is always shown.**",
+      "source": "pm",
+      "why": "This is refused head-on by ux \u00a73, which writes \"A \"connecting\" chip is the seventh state, and it is banned.\" and grounds the refusal in the shipped resolver returning `null` at `TickerHeader.tsx:329`. Both are honesty arguments pointing opposite ways and neither is a feasibility question \u2014 a loading form is trivially buildable, so the roles cannot settle it between themselves on facts. It also lands on the BRIEF's invariant watch verbatim: `[live-vs-static-isolation]` says \"a cold skeleton is not an offline state\", and pm's own R-E lists closed and offline as distinct looks \u2014 a \"connecting\" chip sits in the gap between them and is, by construction, a claim about the connection made before any connection fact exists. Architecturally it is not free either: it adds a seventh `kind` to the union my \u00a74 makes exhaustive with a `never` default arm, so the six-state enumeration test and \"no seventh reachable\" both have to be re-specified around it.",
+      "proposal": "The owner rules. If the answer is pm's, the union becomes seven `kind`s with `loading` reachable only while no stream fact has been observed, the chip must be structurally unable to re-enter `loading` after the first payload (a monotonic latch, not a re-derivation), and the six-state language in the BRIEF and canon rule 18 needs an Amendments line. If the answer is ux's, pm's AC-9 must be rewritten to assert the ABSENCE of a chip before the first fact \u2014 which is still a testable claim and still closes pm's risk 1, because the page-level three-degraded-states walk keys on `cold-skeleton` (`StatTile.spec.tsx:32-38`), so the trader is not looking at a silent page, they are looking at a skeleton. My reading is that ux's is the smaller lie, but I hold it weakly and it is not mine to rule.",
+      "kind": "product",
+      "conflict_id": "b857b263c8e99a746e269ad78493fbb221fa6c399c01ef5f8367aebd21385bd7",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "On a stream drop, a live-derived figure keeps its **last known value** at reduced opacity with the pause marker and says it is the last known value \u2014 never blanked, never replaced by a zero or a dash.",
+      "source": "pm",
+      "why": "This is ship-blocking and it describes behaviour the app does not have. Verified: `LiveTape.tsx:73` sets `numbersActive = isLive && !streamOffline`; `:78` sets `netFlow = numbersActive && live ? live.net_flow : null`; `:140` renders `'\u2014'` when null; `:148` computes spread identically. On a drop the live-derived figures are replaced by a dash today, and `:142`/`:150` still pass `offline={tileOffline}`, so the caption asserts offline beside a dash. ux \u00a78.2 found the same thing and refused to write the caption. Satisfying AC-17 therefore requires a data-flow change in `LiveTape` \u2014 a per-field latch holding the last non-null value across the drop \u2014 not a primitive swap. That is a behaviour change to a widget on a screen this phase's non-goal 1 says keeps its current composition, and it changes what a trader sees on a drop from \"we stopped knowing\" to \"here is a stale number\", which is a claim, not a restyle.",
+      "proposal": "The owner rules on whether phase 1 adds retention. If yes: the mechanism is a `useRef` last-non-null latch per live field in `LiveTape`, cleared on symbol change and on replay arm, and it needs its own AC plus a test that the latched value is not re-flashed by `useFlashOnChange` (it did not change \u2014 it stopped arriving). If no: AC-17 must be split along ux's F4/F5 boundary \u2014 F4 (\"offline \u00b7 last known\") only where a value actually arrived before the drop, F5 (bare `\u2014`, caption `offline`) where none did \u2014 and `FigureCell` must derive the caption from whether it holds a retained value rather than from the `offline` flag alone. Either way the `\u00b7 last known` clause must be data-driven; the one outcome I will argue against in R3 is a caption asserting a retained value beside a dash, which is what a literal AC-17 read of today's data produces.",
+      "kind": "product",
+      "conflict_id": "db7e425e308bdb8a83ba07abc618789010f2e67d014f096ffd3840b440856f7c",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "At an unchanged viewport width, a figure in a panel narrower than the compact threshold renders at the compact size, and below the tiny threshold at the tiny size \u2014 so the step is driven by the **panel**, not the window. | test | Container-step test holding viewport constant across two panel widths |",
+      "source": "pm",
+      "why": "The requirement is right and I want it; the evidence attached to it cannot be produced in the harness pm's own note routes it to. AC-20 is a component/state row, and the harness note assigns those to \"the existing jsdom + Testing Library harness\". jsdom performs no layout and evaluates no container query, so a jsdom test can neither hold a panel width nor observe a rendered figure size \u2014 it would pass with the container rule deleted, which is hollow automation of exactly the kind pm's own risk 3 names. ux reached the same conclusion in \u00a79 and marked that row **review** with \"do not fake it with a unit test\". This is settleable on facts, which is why it is technical rather than product.",
+      "proposal": "Split AC-20 into two rows with two harnesses, both of which are real. (a) Declaration, jsdom-able and non-vacuous: assert the emitted CSS carries the `@container` at-rule with the 360/280 conditions and the 20/17/15 values, using the shipped idiom at `type-floor.spec.tsx:32-39` that reads the injected emotion rule text. One caveat I will not paper over: that helper does `css.split('.'+cls+'{')[1].split('}')[0]`, which reads the FIRST rule bearing the class, so it needs hardening before it can be trusted to see a hoisted at-rule \u2014 I have not run it to confirm which rule stylis emits first. (b) Rendered size, Playwright: set a panel to 340px and 260px at a fixed viewport and read the computed font size. The mechanism underneath both is `theme.containerQueries.down(360)` / `.down(280)` against a NAMED container (`containerName: 'panel'` on the `Widget` body, which already sets `containerType: 'inline-size'` at `Widget.tsx:157`), so a rail nested inside a panel cannot answer the panel's query.",
+      "kind": "technical",
+      "conflict_id": "503c14efbf5a2800a96a4343be6691903fa65f455f2b99c4b8d3529fe5433b83",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "On a coarse pointer at 393px, every interactive control on the four product surfaces has an effective hit area of at least 44px in both dimensions.",
+      "source": "pm",
+      "why": "This is ship-blocking and it is an app-wide audit wearing a foundations AC. The shipped mechanism is narrower than the claim: `shared/theme/theme.ts:80-102` applies the `@media (pointer: coarse)` 44px `minHeight`/`minWidth` floor to the selector list `button, [role=\"button\"], a` (ux \u00a77 verified this). Controls outside that list \u2014 text inputs, `[role=\"option\"]`, `[role=\"tab\"]`, checkbox/switch roots, and anything 44px tall but narrower than 44px wide \u2014 are not covered, and \"effective hit area in both dimensions\" is a stricter test than a min-height floor. I have not measured how many controls on Scanner, Ticker, Positions and Alerts fail it, and I could not this session; that uncertainty is the point. The structural problem is the remedy: when a control on positions or scanner fails, the fix is a layout change to a screen this phase's non-goal 1 and pm's own Out-of-scope list both forbid. So a ship-blocking AC and a declared non-goal can be simultaneously binding and simultaneously unsatisfiable, and the phase discovers it at GATE Q.",
+      "proposal": "The owner rules on which one yields. My recommendation: narrow AC-34 to the controls this phase creates or touches \u2014 the palette dialog and its rows, the burger drawer, the nav links, the connection chip if it becomes interactive, and `FigureCell`'s \u24d8 button (which ux \u00a77 is correctly making a real focusable control, closing the `StatTile.tsx:180-183` whole-tile hover tooltip) \u2014 and land the app-wide sweep as a MEASURED, non-blocking inventory: run the coarse-pointer probe over all four surfaces, record every failing selector in the build report, and fence today's failures in a stale-entry-checked exemption list so new violations red-build and the existing debt is countable for phase 3. That gives the owner a number to rule on instead of a phase that fails at the last gate.",
+      "kind": "product",
+      "conflict_id": "90015cd5e81cd7c6ee92287cd7fba21b7ff764b59c8429d47ef3dcd03c4c876a",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "This phase adds **exactly one** visually-hidden `aria-live=\"polite\"` region per page, owned by the connection chip \u2014 mirroring \"one chip per page\" so a second region cannot appear.",
+      "source": "ux",
+      "why": "The intent is right and the guarantee does not follow from the mechanism, because \"owned by the connection chip\" does not yield one region per page in this tree. `CommandDeck.tsx:96` calls the shared `connectionChip` resolver for the sticky condensed bar, and `CommandDeck.tsx:196-214` keeps that bar MOUNTED-but-hidden with `aria-hidden={!condensed}` rather than unmounting it, by deliberate design (\"to avoid layout jump\"). So the ticker page has two chip renderers attached at all times, and a region owned by the chip component is instantiated twice. `aria-hidden` suppresses one of them only while `condensed` is false; once the deck scrolls out, `aria-hidden` goes false on the sticky bar while the hero deck is still mounted and not hidden, and both regions announce the same transition. ux anticipated double-announce from `role=\"status\"` plus a region, but not from double-mounting \u2014 this is the same defect arriving by a route the chip component cannot see.",
+      "proposal": "Hoist the region out of the chip: one page-scoped announcer mounted once above both chip renderers (the ticker page shell), fed by the single resolver's output, with the chip renderers carrying no `role=\"status\"` and no region of their own. That keeps ux's \"one region per page\" true by construction rather than by convention, and it survives `CommandDeck`'s mounted-but-hidden bar and any future condensed/expanded pair. The enforceable form is an assertion that exactly one `aria-live` node exists in the chip path plus the importer set-equality on the resolver module from my \u00a74 \u2014 together they make a second announcer a red build rather than a screen-reader-only defect.",
+      "kind": "technical",
+      "conflict_id": "ec706307dee7e23e4219a428bc7d8d1d82b2f6366214df7dc7bba396853d13cf",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "| **replay** | `replay \u00b7 {SYMBOL} {Wed Sep 2}` | **outline** | hollow ring | no | The only outlined chip; it names a *stored session*, which is what makes it not a liveness claim. |",
+      "source": "ux",
+      "why": "This binds replay to a single label with no standing detail, and pm's AC-8 requires the opposite: \"A replay that has **ended**, **faulted**, **dropped**, or is running for a **different symbol** is distinguishable from a currently-playing replay in the chip's own words.\" One label cannot satisfy that. It also deletes shipped honesty content rather than restyling it: `sessionTapeStanding.ts` produces seven standings (starting, playing, gap, ended, drop, fault, not-this-ticker), the resolver already renders distinct text per standing (`day-replay-mock-adapter.spec.tsx:173` pins `'session tape \u00b7 starting\u2026'`, `:177` pins `tape 09:35:00 ET`), and `:187,191` assert that `drop` and `ended` do NOT say \"Live offline\". `[present-is-live-paid-only]` names session-tape standing on replay as a class that is not `present`. Collapsing seven standings into one sentence makes the app say less than it truthfully knows, by way of an honesty rule \u2014 pm's risk 2 names this exact failure. This is technical rather than product because the standing IS available at render time (the resolver already has it; nothing new is needed), so the roles can settle it.",
+      "proposal": "Keep six chip STATES and let `replay` carry a closed `standing` that varies only the sentence, never the tone and never the liveness claim: `{ kind: 'replay'; standing: ReplayStanding }` where `ReplayStanding` is the seven-member union already produced by `sessionTapeStanding.ts`. The chip stays outlined, keeps the hollow ring, never pulses and never wears the live dot in any standing \u2014 that invariant is what makes the detail free. ux writes the seven sentences (they are copy and they are ux's); I guarantee the union is exhaustively switched with a `never` default arm so an eighth standing is a compile error, and the state-enumeration test walks every `kind` \u00d7 `standing` fixture and asserts the produced set of `kind`s is exactly six. If ux declines and replay keeps one sentence, pm's AC-8 has to be withdrawn and the four distinctions it protects are deleted \u2014 which the owner should see happen rather than have it fall out of a copy table.",
+      "kind": "technical",
+      "conflict_id": "525f1a43adcfdb1c0cc66ae9084b504631c929e1e74a8854bec267be2e9707ad",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "My rule: at most one *visible* liveness claim per page, enforced in the e2e layer where visibility is real, plus a unit-level assertion that the resolver has exactly one importer set.",
+      "source": "architect",
+      "why": "WITHDRAWN. My own R1 \u00a73 gives `FigureCell` a `live?: boolean` prop that \"drives the label-row dot only\", and ux \u00a74 rules the dot is per-figure. A ticker page with a delivering stream then renders one chip, one `Widget` livebar (`LiveTape.tsx:130`) and up to three figure dots \u2014 five visible liveness claims, all of them correct. My rule and my own prop contract contradict each other inside one document, and the rule is the half that is wrong. I stated it while arguing against `TapePulseStrip`'s second PAGE-level claim and over-generalised from that case to every visible signal. Leaving it standing would make pm's AC-1 look supported by two positions when it is supported by none, and would red-build a correct implementation.",
+      "proposal": "Replace it with a scoped rule, which is what canon rule 18 constrains and what ux's three-scopes model already states: exactly one PAGE-scoped liveness claim per page \u2014 the chip \u2014 enforced by importer set-equality on the resolver module plus a visible-node count of one (visibility, not attachment, because `CommandDeck.tsx:196-214` keeps a second chip mounted-but-hidden by design). Widget bars and figure dots are subordinate scopes, unlimited in number, and every one of them is gated on the same `genuineIsLive` predicate the resolver uses, so none can outlive the stream. `TapePulseStrip.tsx:211-214` is still in scope to remove \u2014 not because it is a second visible signal, but because it is a second PAGE-scoped claim.",
+      "kind": "technical",
+      "conflict_id": "3918eecaf1aae62c3a49188054ba7d839d41d58bf83a16aa84ea4cb9a548ba0f",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "`value: string | NotANumber` where `NotANumber` is the **closed six-member union** from canon rule 24, exported as a type. The cell branches on membership, not on a string match, so a seventh literal is a type error rather than a render bug.",
+      "source": "architect",
+      "why": "WITHDRAWN as to the cardinality, and with it the enforcement claim. ux \u00a78.5 is right and I verified it independently: `features/trading/positions/labels.ts:126` exports `NO_BASIS_LABEL = 'no basis'`, and `not provided` / `not recorded` are shipped, spec-asserted literals (`genericOptionRow.spec.tsx:146,171-181,226,247-248,260,277-278`; `fixtures.ts:712-742`), with `PROJECT_CONTEXT.md` \u00a75 `[absent-is-not-none]` citing them as canonical. A six-member union does not make a seventh literal a type error \u2014 it makes it a plain `string`, which falls through my own `string` branch straight into the mono figure register. So the mechanism I offered as the enforcement of `[ai-asserted-numbers-are-traceable]` would, on the phase-3 positions surface, render a not-a-number word in the \"Convexa computed this\" face: the exact inversion it was designed to prevent. That is a worse failure than the one I was guarding against, and it is invisible in a green suite.",
+      "proposal": "Keep the union closed \u2014 do not take ux's alternative of letting the caller classify, because caller-declared classification returns `[absent-is-not-none]` to prose and defeats `[structural-over-prose-enforcement]`. Instead make it ONE exported type, seeded from the shipped literals rather than from a number: a single `NotANumber` union living beside `[absent-is-not-none]`'s other consumers, whose members are the canon's six plus `not recorded`, `no basis`, `not provided`, with `NO_BASIS_LABEL` and the broker labels re-pointed at it so there is one source of truth instead of four. `FigureCell` branches on that union; adding a member is one edit in one place; a stray string is still not a member. Whether the canon's rule 24 list becomes nine or the three shipped members are retired is an Amendments call for the owner, not a build decision \u2014 and pm's AC-19 (\"the member count is six\") should be re-marked to bind `FigureCell`'s own set until that ruling lands, or it asserts something false about the app.",
+      "kind": "technical",
+      "conflict_id": "f71300e9f2ae8c5600901c0bed38407cd0675682bb4b72e3de92b63a61c243ca",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "If the palette wants recent tickers, that is a new `convexa.*` key and therefore a `[loss-free-durable-migration]` surface \u2014 my position is **defer it**: ship the palette without recents in phase 1.",
+      "source": "architect",
+      "why": "WITHDRAWN \u2014 the premise is false and I did not check it before asserting it. The durable store already ships: `pages/ticker/recentTickers/store.ts:9` holds `convexa.recent-tickers.v1`, `:78` exports `listRecents()` (MRU, \u22648, de-duped against the closed pins `SPY \u00b7 QQQ \u00b7 NVDA`), `:86` exports `recordVisit()`, `:97` exports a test seam, and `PROJECT_CONTEXT.md` records it as shipped 2026-08-11 with the Command Deck QUICK row as its consumer. It also already fails safe: corrupt or unreadable input yields an empty in-memory shape and deliberately does NOT `removeItem`, so the original blob survives (`:61-64`). Reading it from the palette introduces no new key, no new shape, and no schema change \u2014 `[loss-free-durable-migration]` never fires. The real cost is a module promotion out of `pages/ticker/` under the repo's \"populate `shared/` on the 2nd consumer\" rule, because the palette lives in the shell and `pages/` is not the shell's to import. That is a file move plus two import edits.",
+      "proposal": "Drop my deferral. My non-goal 6 stands in its first half \u2014 no NEW durable client store and no change to any existing durable key or shape \u2014 and I withdraw the recents clause. If the council wants recents in the palette (ux P2 does), the mechanism is: promote `recentTickers/store.ts` to `shared/` (or `features/`) unchanged, call `listRecents()` on open, and add nothing durable. Whether phase 1 SPENDS that is still a scope call and not mine \u2014 pm future-dated \"recent history\" and is entitled to; I am only removing the cost argument I supplied for it, which was wrong.",
+      "kind": "technical",
+      "conflict_id": "5a16f0ad6880a7763602a08a6355d800ffe20d882155e3245bcb7f008a486611",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "**A \"connecting\" chip is the seventh state, and it is banned.**",
+      "source": "ux",
+      "why": "This makes 'the page carries no liveness claim at all' a shipped and TESTED outcome before the first stream fact, and my R-B/AC-9 rule the opposite. A trader returning to a desk cannot distinguish 'we have not been told yet' from 'everything is fine' \u2014 absence reads as fine, which is the single failure US-2 exists to prevent. It is also the one acceptance criterion in this phase that cannot be verified as written: an AC whose observable is 'nothing is on the page' passes identically when the resolver is correct, when it throws, and when the stream never opened. The invariant cited forbids showing OFFLINE during a cold start; it does not forbid stating that we are still connecting.",
+      "proposal": "Owner rules between (a) the chip renders a neutral connecting/loading form until the first stream fact, or (b) the page carries no chip until then. If (b) wins, the criterion must be restated as a positive observable \u2014 every surface that will carry a chip shows a placeholder in the chip's place until the first fact \u2014 so absence is distinguishable from breakage by a human and by a test. AC-9 stands or falls on that ruling; I will not certify a criterion whose evidence is an empty region.",
+      "kind": "product",
+      "conflict_id": "450285a7ae8203799b39710dfe7aa5bda0e654a9f282615b2f92c00863f05471",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "On a stream drop, a live-derived figure keeps its **last known value** at reduced opacity with the pause marker and says it is the last known value \u2014 never blanked, never replaced by a zero or a dash.",
+      "source": "pm",
+      "why": "WITHDRAWN. UX read at source that on a drop Net flow and Spread render the bare absence literal, not a retained figure, because they are recomputed as null whenever the stream is not delivering. AC-17 as written therefore demands a behaviour change \u2014 value retention across a drop \u2014 that neither the BRIEF nor my own scope ruling bought, and that my own framing of this phase ('this phase ships no new capability') excludes. I cannot defend an AC that requires the app to start doing something new while calling the phase foundations.",
+      "proposal": "Split into two criteria so the degraded arms stand on their own: (i) a figure that DID receive a value before the drop shows that value dimmed with the pause marker and says it is the last known value; (ii) a figure that had no value at the drop shows the bare absence literal with the pause marker and says only that it is offline \u2014 never 'last known'. Then the owner rules separately whether phase 1 pays to move Net flow and Spread from (ii) into (i). Until that ruling, (ii) is the binding state for those two figures and no criterion may assert retention for them.",
+      "kind": "product",
+      "conflict_id": "a0c40ded79e91c1229875564d4aa825c7c1e917489e4773a153e4e8bb49dbbb7",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Each of the six not-a-number literals renders as small Sans text, never as a figure, and never substitutes for another member; the member count is six.",
+      "source": "pm",
+      "why": "WITHDRAWN in part. UX reports, and I confirmed at source, that the shipped app already renders at least three absence literals beyond the canon's six \u2014 `not recorded`, `no basis`, `not provided` \u2014 asserted by existing specs on the positions and broker surfaces, two of them cited as canonical in the project context. An AC that fixes the member count at six is either unsatisfiable against shipped code or satisfiable only by deleting shipped literals from screens this phase promised not to touch. My R-H ('no new absence word') survives; 'the member count is six' does not.",
+      "proposal": "Keep the observable half \u2014 every absence literal renders as small Sans text, never in the figure register, never substituting for another member \u2014 and drop the count from the criterion. Reconciling the canon's list against the shipped set is an owner Amendment, not a build decision; until it lands, the figure primitive must classify the literal from what the caller declares rather than from a fixed six-member list, or phase 3 renders `not recorded` in the face that means 'Convexa computed this'.",
+      "kind": "product",
+      "conflict_id": "5954bcc2c763536003ab18175a7d3ec37c298f1c87624d2abc246b6625bbfd93",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "**No burn-down of the pre-existing spacing/radius debt** beyond making it visible and fenced (\u00a72).",
+      "source": "architect",
+      "why": "This is presented as build containment but it is a scope decision, and it contradicts the same position's own radius mechanism. \u00a72 requires a per-site read of roughly two dozen bare-number radius sites because the numeric form re-scales by 1.2x, and risk 3 says the result 'will visibly change surfaces this phase claims not to touch'. So radius debt IS being burned down in part while spacing debt (86 sites across 35 files) is grandfathered with no expiry \u2014 and as one sentence it would let a build lane skip the radius sites and still claim the non-goal was honoured. Whether 'foundations' means the app is ON the declared scales or only that new code is fenced from leaving them is a value call the owner is entitled to make, especially since the architect states the M estimate depends on the answer.",
+      "proposal": "Route as two separate owner calls, not one. (1) Spacing: accept a seeded 35-file exemption list as the phase-1 deliverable, with the occurrence count recorded in the build report and a named later phase that burns it down \u2014 or reject it and re-price the phase. (2) Radius: the migration is IN, and every site whose radius changes must be enumerated in the change so the per-screen and per-overlay sign-off has a list to check against rather than a reviewer's memory.",
+      "kind": "product",
+      "conflict_id": "eb31c384d9299c449a616d93424601254d734499b9bc7eaa1c9d1e6e31bcce2a",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The migration surface is far smaller than it looks.",
+      "source": "architect",
+      "why": "True for the component swap \u2014 I verified only two files import the primitive, which falsifies my own R1's count of seven \u2014 but not for what the phase must DELIVER. Four widgets on the same ticker page (IvRank, DealerFlowProjection, MarketContext, StraddleMove) are 'StatTile-family' lookalikes that are not importers, and at least two of them wrap a non-focusable info icon in a hover-only tooltip (`IvRank.tsx:91`, `DealerFlowProjection.tsx:77`). If the sweep stops at the two importers, phase 1 ships a page where half the figure cards answer the info affordance to a keyboard or touch user and half do not \u2014 and my AC-35, which names the info affordance explicitly, would have to be certified as passing on a page where it demonstrably fails.",
+      "proposal": "Owner rules whether phase 1 pays to give every figure-card info affordance on the ticker page a tap and focus path, or whether AC-35 narrows explicitly to the new primitive's own affordance with the remaining hover-only cards named in the build report as accepted, carried debt with a phase attached. Either is defensible. Shipping the split silently is not, because the reviewer sees a page where the tooltips work under a mouse.",
+      "kind": "product",
+      "conflict_id": "faafda397d27a3a2b46236e89f7e46863c6922cc52177c9cdbfc03d92fc9bbef",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**UX will specify the label row as: caps label, info affordance, live dot \u2014 and nothing else.**",
+      "source": "architect",
+      "why": "UX did not, and on the evidence could not. It found that Call wall and Put wall are distinguished today only by the directional colour this phase deletes, that the caption's sign is distance from spot rather than the wall's side, and ruled a replacement mark is required in phase 1. A label row closed to 'nothing else', combined with the deliberate refusal of any accent prop, leaves nowhere for a non-colour side mark \u2014 so the proposed shape cannot carry an outcome my scope explicitly forbids losing ('Any narrowing of what the trader can currently tell'). I am raising it rather than quietly narrowing scope.",
+      "proposal": "Owner picks one and it gets its own acceptance criterion, because nothing in the current suite would notice the loss: (a) phase 1 adds a non-colour side mark so the two walls stay distinguishable in a greyscale screenshot; (b) phase 1 carries the side in the label words instead; (c) the distinction is accepted as lost and recorded as a knowing cost. My preference is (b) if (a) does not fit the effort box \u2014 it is honest and it needs no new anatomy.",
+      "kind": "product",
+      "conflict_id": "aa432be6d12ad36fee5aea86d4479818406ebd4479e3e568e804e43d185222ce",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "\u2191\u2193 move, \u21b5 opens, \u21e7\u21b5 adds to the scan view, Esc closes.",
+      "source": "ux",
+      "why": "'Adds to the scan view' is a write, not a jump. My scope future-dated exactly this ('commands, recent history, actions, add-to-scan. Not now.'), the BRIEF's palette job is reaching the four surfaces and jumping to a symbol, and the architect's palette 'consumes existing reads only'. It also arrives with no degraded arm: saving a scan view is session-gated, so a signed-out trader who presses it meets a refusal neither position describes, while the helper row still advertises the shortcut. As written I cannot produce a checkable criterion for it \u2014 there is no stated success confirmation and no stated refusal.",
+      "proposal": "Drop the write from phase 1 and keep the helper row to move / open / close. If the owner wants it in phase 1 it needs its own criteria \u2014 what the trader sees on success, what a signed-out trader sees instead, and whether the shortcut hint is suppressed when the action is unavailable \u2014 and the palette stops being read-only, which changes the isolation story the architect priced.",
+      "kind": "technical",
+      "conflict_id": "e4de8e35ec86d68be1e867833f07dfe3b94e8a04e1478930150e336e5664d517",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "With a genuinely delivering stream, the page carries **exactly one** liveness claim \u2014 counting the chip, any live dot, any pulse and any \"live\" wording \u2014 and that claim reads live and names the mid it is showing.",
+      "source": "pm",
+      "why": "The criterion stands; its EVIDENCE does not, and I withdraw that half. The architect verified that a correct implementation keeps a second condensed bar mounted-but-hidden, so two chip nodes are attached to the page at once, and that the check must therefore count VISIBLE claims rather than attached nodes or 'the correct implementation fails'. My completion evidence says 'a count of one across the rendered page', which in the component harness counts attached nodes and would red-build correct code \u2014 the precise hollow-automation failure I said I was guarding against.",
+      "proposal": "Keep the criterion wording and move its evidence to the browser layer where visibility is real: one visible liveness claim per page, measured at the four widths in both schemes, plus a unit-level check that only one module can produce the claim at all. The unit harness may assert the resolver's output, not a node count.",
+      "kind": "technical",
+      "conflict_id": "4a559879193fef82d458c3280342982beea72bf13c640f71c2c8713145437281",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "On cold load, before any payload, the chip renders in its loading form; it is never live and never absent.",
+      "source": "pm",
+      "why": "Canon rule 18 fixes the chip at \"exactly six states and no invented seventh\", and my R1 \u00a73 ruled the pre-first-fact absence is not a state but the absence of a claim we cannot yet make \u2014 verified at TickerHeader.tsx:329, which returns null when there is no label to resolve, so no chip renders. A worded loading chip is a seventh rendered shape in the chip's slot and it asserts a connection attempt the page cannot yet vouch for. PM's R-B is a real user-value argument that I am not dismissing \u2014 a page with no liveness claim can read as a page that is fine \u2014 but choosing between \"no claim yet\" and \"a seventh chip shape\" changes a canon rule, and that is an Amendments-shaped call, not one PM, the architect and I can settle between us.",
+      "proposal": "Owner rules one of two, and the AC then names which, because \"loading form\" as written is ambiguous between them: (a) keep the null arm and assert it in the enumeration test as *absence of a chip*, not as a state \u2014 my R1 \u00a73; or (b) the chip slot renders the existing wordless cold-skeleton placeholder \u2014 no tone, no dot, no connection vocabulary, no \"connecting\u2026\" \u2014 declared as the LOADING class under canon rule 3 (cold skeleton \u2260 offline degrade) rather than as a seventh connection state, leaving the six-state enumeration intact. What cannot stand is a loading chip that carries connection words.",
+      "kind": "product",
+      "conflict_id": "dd0cb65b00e140ef0f52850ea8c49e5c78c908be885618d369c9159d0a52425f",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "On a stream drop, a live-derived figure keeps its **last known value** at reduced opacity with the pause marker and says it is the last known value \u2014 never blanked, never replaced by a zero or a dash.",
+      "source": "pm",
+      "why": "Verified at source: not one of the four live-derived cells does this today. LiveTape.tsx:78 computes `const netFlow = numbersActive && live ? live.net_flow : null` and :140 renders the `\u2014` literal; :148 does the same for Spread; :87 makes Gamma flip fall back to the *bundle's* static `m.gamma_flip`, which is a different number, not a retained stream value; :163-168 VWAP takes no `offline` prop at all. StatTile.tsx:139-146 renders the bare caption `\u23f8 offline` with no \"last known\" clause. So AC-17 certifies a retention the code does not perform, and its \"says it is the last known value\" clause would print `\u2014 \u00b7 \u23f8 offline \u00b7 last known` \u2014 a caption asserting a value the data does not support. That is precisely the failure my lane exists to prevent, and I will not write that string. Making AC-17 true is a behaviour change to LiveTape's data flow, which is scope, not copy.",
+      "proposal": "Split it and let the owner rule the behaviour half. (a) Retention IN: it gets its own AC naming LiveTape's net flow and spread as the changed behaviour, and my F4 becomes the binding offline state for them. (b) Retention OUT: AC-17 is rewritten data-driven \u2014 the `\u00b7 last known` clause renders only when a value actually arrived before the drop (F4); a cell with no retained value renders the bare `\u2014` with `offline` and no `last known` clause (F5); and \"never replaced by ... a dash\" is dropped, because a dash is the shipped truth. Either way F4 and F5 must be distinguishable in the DOM, not only to the eye.",
+      "kind": "product",
+      "conflict_id": "995f0a853e8d38360ef659a54d54c0f92abbad510fff3ba191480961635c6343",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Each of the six not-a-number literals renders as small Sans text, never as a figure, and never substitutes for another member; the member count is six.",
+      "source": "pm",
+      "why": "The app already ships at least nine, verified: positions/labels.ts:126 `export const NO_BASIS_LABEL = 'no basis'`, positions/PositionRow.tsx:166 `not recorded`, broker/brokerView.ts:55 `export const NOT_PROVIDED = 'not provided'` \u2014 each with a spec asserting it is *not* a synonym of an existing member (broker/grouping.spec.ts:131 and :259 both pin `not provided` against `unavailable`), and PROJECT_CONTEXT.md \u00a75 `[absent-is-not-none]` treats them as canonical. Canon rule 24 lists six. An AC whose evidence column reads \"a seventh member red-builds\" therefore makes phase 3's positions and broker surfaces either uncompilable or \u2014 more likely \u2014 forces `not recorded` through a string arm into the mono figure register, rendering \"our own saved record never held this\" in the face that means \"this figure is Convexa's\". I am not inventing a seventh; I am reporting that the canon is smaller than what the app already renders, which is an Amendments event for the owner.",
+      "proposal": "Owner rules whether rule 24 is amended to the shipped set (nine, naming the positions/broker three and their non-synonymy) or explicitly scoped (\"six on ticker and AI-read surfaces; positions and broker carry their own closed set\"). Until that ruling, AC-19 should assert *closure and non-synonymy over the vocabulary the caller declares* \u2014 never a figure, never a unit, never a substitution \u2014 rather than a hardcoded count of six.",
+      "kind": "product",
+      "conflict_id": "318d520712341d609e8049077737f980018280731669aa46feb0d36126662e87",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "With a genuinely delivering stream, the page carries **exactly one** liveness claim \u2014 counting the chip, any live dot, any pulse and any \"live\" wording \u2014 and that claim reads live and names the mid it is showing.",
+      "source": "pm",
+      "why": "Canon rule 13 puts a live dot in the figure cell's label row \"only when the value comes from the stream\", so a correctly built live ticker page carries one chip *plus* a dot on every streaming figure cell. A test that counts \"the chip, any live dot, any pulse\" fails the correct implementation by construction, which makes canon rule 13's dot unimplementable under AC-1. Rule 18's \"second liveness claim\" is about a second *page-scope* authority \u2014 the architect's verified TapePulseStrip.tsx:211-214 stream-state text \u2014 not about per-figure dots. My R1 \u00a74 keeps three scopes that must never merge: page (the chip), widget (the Widget livebar), figure (the dot).",
+      "proposal": "Two assertions instead of one count. (1) Exactly one *page-scope* liveness claim: the chip, with TapePulseStrip's `tape-stream-state` text folded into it, counted as visible nodes rather than attached ones since CommandDeck keeps the condensed bar mounted-but-hidden. (2) Each *figure-scope* dot is gated on that figure's own delivering value, and no dot renders in any of the five non-live states \u2014 which is where VWAP's missing dot is actually caught.",
+      "kind": "technical",
+      "conflict_id": "b3faafb19c0e908b01f7fe49263d4e3fb846f4e96078c17fd78e60eae290c828",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "At an unchanged viewport width, a figure in a panel narrower than the compact threshold renders at the compact size, and below the tiny threshold at the tiny size \u2014 so the step is driven by the **panel**, not the window.",
+      "source": "pm",
+      "why": "AC-20 sits in the figure-cell block, which PM's own harness note assigns to \"the existing jsdom + Testing Library harness\", and jsdom does not do container-query layout \u2014 the architect verified the same limit independently (\"jsdom does not do container-query layout, so the 20/17/15 steps cannot be *rendered* in Vitest\"). A jsdom test can observe the *declaration* in the emitted CSS but never the *rendered* size, so a `test` mark on \"renders at the compact size\" either becomes an assertion that cannot fail honestly or silently degrades into asserting CSS text while the AC's words promise a rendered result. My R1 \u00a79 split this on purpose and marked the rendered step `review`, not `test`.",
+      "proposal": "Two rows. (a) The container-query rules are *declared* at 360/280 with the 20 \u2192 17 \u2192 15 ladder and the 11px caption floor that does not step below it \u2014 `test`, on the emitted CSS using the type-floor.spec.tsx `?raw`/injected-rule idiom (and harden its `css.split` helper, which reads the first rule bearing the class). (b) The *rendered* figure size at 360px and 280px panel width with the viewport held constant \u2014 `review`, or `test` in Playwright if the e2e suite gains container-width cases. Do not fake (b) with a unit test.",
+      "kind": "technical",
+      "conflict_id": "d2fec026316bb33192e8206cb83fa8b0573499f5ceb99075725c818d3349170f",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The old primitive carried a non-directional emphasis colour for the opportunity tier.",
+      "source": "pm",
+      "why": "That describes the `accentColor` prop (StatTile.tsx:106-107, documented verbatim as \"Override the accent-bar color (non-directional tier emphasis)\") but not `accent`, the other prop, which is directional. Verified: DealerPositioning.tsx:105 `accent=\"up\"` on Call wall, :112 `accent=\"down\"` on Put wall, :123-129 gamma-sign on Vol-norm GEX, :139 `m.net_gex >= 0 ? 'up' : 'down'` on Raw GEX, and LiveTape.tsx:141 signed net flow. On a gamma/GEX surface that green/red is the call-vs-put and gamma-sign encoding ruling #18 explicitly *keeps*. R-I therefore rules on one of the two things the edge carries, and PM's own out-of-scope line \u2014 \"Any narrowing of what the trader can currently tell\" \u2014 is triggered by the half it does not name. Left as written, the build deletes the wall and GEX encoding silently and nothing fails.",
+      "proposal": "Extend R-I to two cases with separate rulings. Tier emphasis: as PM ruled \u2014 type plus the single amber word, no replacement colour. Directional encoding on the gamma/GEX tiles: it must survive a black-and-white screenshot; my R1 \u00a78.1 proposes the canon's own ladder tick stroke (rule 14, \"Each row's tick uses the same stroke as its line in the structure field\") as a small leading tick, with the honest fallback of relabelling `Call wall (resistance)` / `Put wall (support)`. For the already-signed figures (net GEX, raw GEX, net flow) the sign is in the glyphs and needs no replacement. Silent deletion is the one option that is out.",
+      "kind": "technical",
+      "conflict_id": "6220020c9519f37ab2f2f29785a070d9b1f51132feda21f4a4f860861a59808c",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Verified at source: that primitive is consumed by seven files (`LiveTape`, `TickerDashboard`, `StraddleMove`, `MarketContext`, `IvRank`, `DealerPositioning`, `DealerFlowProjection`) and is re-exported from the shared UI barrel.",
+      "source": "pm",
+      "why": "The import graph shows two consumers: LiveTape.tsx:35 and DealerPositioning.tsx:25. TickerDashboard.tsx:76 imports only `StatSkeleton` from the _kit barrel. StraddleMove.tsx:69, MarketContext.tsx:4 and :152, IvRank.tsx:81 and DealerFlowProjection.tsx:67 and :84 mention StatTile only in prose comments describing a hand-rolled \"StatTile-family\" surface. And it is re-exported from _kit/index.ts:11 \u2014 the ticker-local barrel \u2014 not from shared/ui/index.ts, which carries only a prose note that it stays ticker-local. I made the same error in my own R1 and withdraw it below, so this is a correction of the shared record rather than a point scored. It matters because PM's assumption 2 to the architect is stated as falsifiable on \"all seven of its current consumers\", and the graph falsifies it: the accent-edge sweep is sixteen render sites in two files on one page, not a seven-file change across six screens.",
+      "proposal": "Restate the seam ruling with the verified numbers: the accent-edge deletion is confined to the ticker page (two files, sixteen render sites); the app-wide visible change this phase is the radius migration, which does touch every card. Keep the fixed six-screen two-scheme GATE Q review list unchanged \u2014 it is earned by the radius, not by the tile count \u2014 and drop \"consumed by seven files\" and \"re-exported from the shared UI barrel\" from the record so a later phase does not re-derive scope from them.",
+      "kind": "technical",
+      "conflict_id": "41e15b9946205a268b77882f33b7532fc8eafbae53b54e7e322c2257284cd664",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "If the palette wants recent tickers, that is a new `convexa.*` key and therefore a `[loss-free-durable-migration]` surface \u2014 my position is **defer it**: ship the palette without recents in phase 1.",
+      "source": "architect",
+      "why": "The key already ships. pages/ticker/recentTickers/store.ts:9 is `const KEY = 'convexa.recent-tickers.v1'`, \u22648 MRU, pinned by store.spec.ts, and it is read today by the Command Deck QUICK row (PROJECT_CONTEXT.md, `recent-ticker-chips`, shipped 2026-08-11). Reading it adds no durable key, no shape change and no migration surface. There *is* a real cost, and it is a different one: the store lives under `pages/ticker/`, so a shell-level palette importing it crosses the architect's own \"`pages/` never imports a sibling page\" rule and would need promotion to `shared/` or `features/`. I am withdrawing recents from my palette spec on PM's scope ruling, not on this one \u2014 but the reason recorded matters, because a later phase that re-prices recents as a durable migration will over-price them.",
+      "proposal": "Keep recents out of phase 1 on PM's future-dating (\"commands, recent history, actions, add-to-scan. Not now.\"), and correct the stated cost in the record: restoring recents later is a **module-placement** question (promote recentTickers/store.ts out of pages/ticker/), not a `[loss-free-durable-migration]` one. Non-goal 6's first clause \u2014 no *new* durable store, no change to an existing key or shape \u2014 stands untouched either way.",
+      "kind": "technical",
+      "conflict_id": "df1fb1c9f3754ad714f51f331c4f17de5181b3d94f6cc7798f079c55804362dd",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`value: string | NotANumber` where `NotANumber` is the **closed six-member union** from canon rule 24, exported as a type.",
+      "source": "architect",
+      "why": "Transcribing rule 24's six into a compile-time union hardcodes a count that shipped code already exceeds \u2014 `not recorded`, `no basis`, `not provided` (see my conflict on PM's AC-19, same underlying fact). Under this type, phase 3's positions and broker surfaces either fail to compile or, far more likely, pass their literal through the `string` arm and land in the **mono figure register** \u2014 rendering a not-a-number string in the face that means \"this figure is Convexa's\". That is the register inversion the whole phase exists to prevent, and it is invisible in a green suite because both arms are strings. The enforcement idea is right; the *source* of the member list is wrong.",
+      "proposal": "Derive the union from the shipped declaration sites rather than from canon prose \u2014 one exported literal type assembled from positions/labels.ts NO_BASIS_LABEL, broker/brokerView.ts NOT_PROVIDED, positions/view.ts NOT_RECORDED and the ticker six \u2014 or give FigureCell a discriminated `{ kind: 'literal', text }` input so the caller declares it. Either keeps \"never rendered as a figure, never carrying a unit\" structural without pinning a count the owner has not yet amended, and both survive whichever way the rule-24 ruling lands.",
+      "kind": "technical",
+      "conflict_id": "9511b567ca3c9d2c9049414b38098eb6590ba821b4a7e073ca4f6996826942f6",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "| **replay** | `replay \u00b7 {SYMBOL} {Wed Sep 2}` | **outline** | hollow ring | no | The only outlined chip; it names a *stored session*, which is what makes it not a liveness claim. |",
+      "source": "ux",
+      "why": "WITHDRAWN. One replay label cannot carry seven shipped standings. sessionTapeStanding.ts:48-54 declares `starting | playing | gap | ended | drop | fault | not-this-ticker`, TickerHeader.tsx:307-324 branches session-tape standing before liveStatus and renders sessionTapeChip's own text and tip, and day-replay-mock-adapter.spec.tsx:187,191 pins that `drop` and `ended` do not read \"Live offline\". My own \u00a71 rule \u2014 the shipped string wins over the preview \u2014 should have caught this and did not: my single label would have deleted exactly the honesty distinctions I claim to guard, in the name of a rule against inventing states. The architect's reading (six `kind`s, `replay` carrying a closed `standing`) and PM's R-A and AC-8 are both right and I adopt them.",
+      "proposal": "`replay` remains one of the six *states* \u2014 one tone, outline, hollow ring, never a dot, never a pulse, no `standing` may alter its liveness claim. Its **sentence** varies by standing, and those sentences are mine to author at R4 with the shipped sessionTapeChip text as the baseline, not a rewrite of it. Verification splits accordingly: the enumeration test asserts the produced `kind` set is exactly six (`test`); a second test asserts the seven standings' sentences are pairwise distinct and that none contains \"Live offline\" (`test`); the sentences themselves are `review`.",
+      "kind": "technical",
+      "conflict_id": "ec06153aae34152f80c21317c4eae78b149ce492fbaa23bd65ea94e8b280161d",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "`FigureCell` lands **in place** at every existing `StatTile` call site (`LiveTape` 4 cells, `DealerPositioning` 11\u201312, `IvRank`, `MarketContext`, `StraddleMove`, `DealerFlowProjection`).",
+      "source": "ux",
+      "why": "WITHDRAWN. Wrong at the import level: only LiveTape.tsx:35 and DealerPositioning.tsx:25 import StatTile. IvRank, MarketContext, StraddleMove and DealerFlowProjection reference it only in comments describing a \"StatTile-family\" surface each hand-rolls. I named files I had checked by grep for the word, not by reading the import graph \u2014 the same failure I raise against PM's seven-file count, and `[cited-code-is-verified-not-assumed]` applies to me first. The consequence for my own lane is concrete: my nine-state matrix binds at sixteen render sites on one page, and those four widgets' figures carry no register and no liveness read at the end of phase 1.",
+      "proposal": "The FigureCell state matrix binds to LiveTape (4 cells) and DealerPositioning (12 cells). My \u00a70 sentence \"every figure on every screen answers register and liveness\" is therefore false as phase-1 scope and must be narrowed in the SPEC to the two converted widgets \u2014 unless PM rules the four hand-rolled surfaces in (see my ask). Either answer is defensible; leaving it implicit is not, because the brief's decision-impact line promises the register on \"every figure on the ticker page\".",
+      "kind": "technical",
+      "conflict_id": "7bd2d4f7cb3613ba9b6f280e89abc826b65088fa717d6c4faa3ad04c577b428f",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Body shows **recent tickers** (client-local) then the tracked-universe default view.",
+      "source": "ux",
+      "why": "WITHDRAWN, on PM's scope ruling: \"Palette scope beyond 'jump to a symbol' + 'reach the four surfaces': commands, recent history, actions, add-to-scan. Not now.\" Recents and my P5 binding `\u21e7\u21b5 adds to the scan view` both sit inside what PM future-dated, and that is PM's call to make, not mine. I withdraw both. I withdraw them on PM's grounds only \u2014 the architect's stated reason for the same cut is factually wrong and I contest it separately.",
+      "proposal": "P2's empty-query body shows the tracked-universe default view only, still never an empty white box, still with the footer helper row. P5's bindings reduce to \u2191\u2193 move, \u21b5 open, Esc close. Everything else in P1-P6 stands unchanged and is not negotiable: focus trapped while open, focus returned to the element that opened it, aria-activedescendant on the pre-selected first row, symbols only with no company name (universe.json is a bare 69-symbol array), and score rendered only for an `ok` ScanStatus.",
+      "kind": "technical",
+      "conflict_id": "d69d370093d698c1a6f9b829ebe7f0126e8eef3334a9a9b36a413448470bab1c",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: ux P2 lists recent tickers in the palette's empty-query body; your Future-dated list puts \"recent history\" out of phase 1. My R1 supported your cut with a reason that turns out to be false \u2014 `convexa.recent-tickers.v1` already ships with an exported `listRecents()` (`pages/ticker/recentTickers/store.ts:9,78`), so the cost is a module promotion, not a new durable key or a migration. With the cost basis removed, does the deferral stand? I have no position; I only owe you the corrected number."
+    },
+    {
+      "from": "architect",
+      "ask": "PM: which of my \u00a75 options binds for the palette's tier and score? (a) one-shot read on open, cached for the dialog's lifetime \u2014 no ambient traffic, `useScan` untouched, honest because a palette result is a snapshot; (b) promote the scan read out of `pages/scanner/` to a shared domain owner \u2014 architecturally right, but it re-opens a shipped isolation boundary in a phase whose non-goal is that no screen is re-laid-out; (c) no tier/score, which contradicts canon rule 19. Your AC-29/30/31 need one of these to be true, and ux's risk 11 adds a constraint either way: the score must carry the sweep's as-of, or a tier over a side-store is a liveness claim by omission. My recommendation is (a)."
+    },
+    {
+      "from": "architect",
+      "ask": "UX: \u00a78.1 offers two ways to keep the call-vs-put encoding on Call wall / Put wall once the accent bar is gone (`DealerPositioning.tsx:105,112` pass `accent=\"up\"` / `accent=\"down\"` today) \u2014 a leading ladder tick stroke, or renaming the labels to `Call wall (resistance)` / `Put wall (support)`. Which binds? It decides `FigureCell`'s prop surface: the tick needs a non-colour `side` prop I would add, the rename needs no prop at all. I will not add a colour prop for it under any reading \u2014 that is the deletion canon rule 13 exists to make structural \u2014 but I need to know which of your two before R4 writes the interface."
+    },
+    {
+      "from": "architect",
+      "ask": "PM: your assumption 7 asks me to price 4 widths \u00d7 2 schemes \u00d7 6 routes against the existing e2e budget. I could not measure it this session \u2014 I have no ability to run the suite \u2014 so I am recording it as unpriced rather than guessing. Does R4 need a measured runtime before AC-38 is bound, or is your stated cut rule (fewer routes at the added width, never fewer schemes at the narrow width) sufficient to bind it now and cut later? I would add one mechanism either way: every added width needs a vacuity guard, a marker asserted attached before measuring, which is that suite's own established idiom."
+    },
+    {
+      "from": "architect",
+      "ask": "PM: AC-19 asserts \"the member count is six\", and ux \u00a78.5 plus my own verification show `not recorded`, `no basis` and `not provided` shipping today with spec assertions behind them and `[absent-is-not-none]` in `PROJECT_CONTEXT.md` \u00a75 citing two of them as canonical. Do you want AC-19 bound to `FigureCell`'s own accepted set (checkable in phase 1, no Amendments needed), or raised now as the Amendments event that reconciles canon rule 24 with the nine literals the app already renders? The second is the owner's call and the more honest one; the first is the one that lets phase 1 close."
+    },
+    {
+      "from": "pm",
+      "ask": "architect \u2014 is a per-figure fact equivalent to 'this value arrived from a delivering stream before the drop' available at render time? Without it the retained/not-retained split replacing AC-17 is not observable and the offline caption cannot be data-driven, which is exactly the caption UX refuses to write."
+    },
+    {
+      "from": "pm",
+      "ask": "architect \u2014 under the one-shot-read-on-open palette, is a freshness fact for the ranked results available to render? UX flags a tier and score with no as-of as a liveness claim by omission; without an answer I cannot write a checkable staleness criterion for the palette, and I will not leave that gap open."
+    },
+    {
+      "from": "pm",
+      "ask": "ux \u2014 is the nav 'jump to a ticker' affordance a field that accepts typing in place, or purely a trigger that opens the palette? It decides whether there are one or two entry paths to the palette's results, and a second path needs its own empty and unavailable criteria."
+    },
+    {
+      "from": "pm",
+      "ask": "ux \u2014 if the owner rules against an absent chip, which of the six states may render before the first stream fact, or does a loading form have to be minted outside the six? I need the answer in words a criterion can quote, not a tone."
+    },
+    {
+      "from": "pm",
+      "ask": "architect \u2014 after the two-file sweep, do the four StatTile-family lookalike cards visibly differ from the new figure primitive on the same page, and is that difference something a reviewer can name at GATE Q without reading source? If it is not nameable, my per-screen sign-off cannot catch it."
+    },
+    {
+      "from": "ux",
+      "ask": "architect: does the phase-1 data flow give FigureCell a per-*figure* liveness fact \u2014 \"this value arrived from a delivering stream\" for this cell \u2014 or only the widget-level `numbersActive` / `widgetLive` that LiveTape.tsx:73-74 computes today? If only the widget level, VWAP (LiveTape.tsx:163-168, a bundle read that takes no `offline` prop) gets a dot it has no right to, and the per-figure liveness read collapses into a per-widget one. This is the single assumption of mine most likely to be wrong."
+    },
+    {
+      "from": "ux",
+      "ask": "architect: is \"a value was received before the drop\" distinguishable from \"no value was ever received\", without changing LiveTape's data flow? F4 versus F5 \u2014 and therefore whether the `\u00b7 last known` clause may render at all \u2014 depends entirely on that answer, and so does the resolution of the AC-17 conflict above."
+    },
+    {
+      "from": "ux",
+      "ask": "pm: do the four hand-rolled \"StatTile-family\" surfaces (IvRank, MarketContext, StraddleMove, DealerFlowProjection) convert to FigureCell in phase 1, or keep their current anatomy until a later phase? I withdrew the claim that they are StatTile call sites; the answer decides whether \"every figure answers register and liveness\" is true at the end of phase 1 or is a phase-3 promise, and it changes the sweep size the architect priced."
+    },
+    {
+      "from": "ux",
+      "ask": "pm: is re-pointing the four spec files that assert the literal \u23f8 character (positions.integration.spec.tsx:497, ticker.risk.spec.tsx:324, day-replay-mock-adapter.spec.tsx:111-116, BrokerTabPanel.spec.tsx:301) in scope this phase, or does the stroke-icon swap stay confined to FigureCell and the connection chip as my \u00a71 ruled \u2014 leaving PositionRow / OrderRow / BrokerPositionRow on the literal glyph until their own phase? A global swap silently rewrites wording on three screens this phase promised not to touch."
+    },
+    {
+      "from": "ux",
+      "ask": "architect: under \u00a75 option (a), a one-shot scan read on palette open \u2014 does that read expose a sweep as-of or age the palette can render beside a tier and a score? Without one the palette shows a ranked figure with no freshness claim, which is a liveness claim by omission on the pre-decision surface. I would rather render the score with its age than render it bare, but I cannot write that copy if the field is not there."
+    }
+  ],
+  "agree_count": {
+    "architect": 7,
+    "pm": 6,
+    "ux": 7
+  }
+}

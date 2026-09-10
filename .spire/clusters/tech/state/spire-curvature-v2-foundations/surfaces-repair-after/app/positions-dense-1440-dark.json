@@ -1,0 +1,437 @@
+{
+  "id": "positions-dense-1440-dark",
+  "side": "app",
+  "surface": "positions",
+  "state": "dense",
+  "width": 1440,
+  "scheme": "dark",
+  "url": "/positions",
+  "pageHeight": 1446,
+  "overflowX": false,
+  "scrollWidth": 1440,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "app-shell",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1446,
+      "text": "Skip to main contentCONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality"
+    },
+    {
+      "key": "skip-to-main",
+      "x": 0,
+      "y": -53,
+      "w": 158,
+      "h": 44,
+      "text": "Skip to main content"
+    },
+    {
+      "key": "top-nav",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 65,
+      "text": "CONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality-user@fixture.invali"
+    },
+    {
+      "key": "nav-search-trigger",
+      "x": 889,
+      "y": 14,
+      "w": 200,
+      "h": 36,
+      "text": "Jump to a ticker…⌘K"
+    },
+    {
+      "key": "positions-capital-at-risk",
+      "x": 936,
+      "y": 89,
+      "w": 160,
+      "h": 112,
+      "text": "Capital at risk$4001 of 3 open have a max-loss figure"
+    },
+    {
+      "key": "stat-secondary",
+      "x": 955,
+      "y": 147,
+      "w": 124,
+      "h": 29,
+      "text": "1 of 3 open have a max-loss figure"
+    },
+    {
+      "key": "positions-net-pl",
+      "x": 1116,
+      "y": 120,
+      "w": 200,
+      "h": 81,
+      "text": "Net P/L (open)−$2,370"
+    },
+    {
+      "key": "portfolio-panel",
+      "x": 124,
+      "y": 207,
+      "w": 1192,
+      "h": 627,
+      "text": "SimulatedPAPERBrokerSimulated ordersSIMULATEDExport JSONRec-driven entries watch"
+    },
+    {
+      "key": "tab-simulated",
+      "x": 128,
+      "y": 231,
+      "w": 144,
+      "h": 38,
+      "text": "SimulatedPAPER"
+    },
+    {
+      "key": "simulated-surface",
+      "x": 124,
+      "y": 273,
+      "w": 1192,
+      "h": 561,
+      "text": "Simulated ordersSIMULATEDExport JSONRec-driven entries watched against live data"
+    },
+    {
+      "key": "orders-panel",
+      "x": 124,
+      "y": 273,
+      "w": 1192,
+      "h": 158,
+      "text": "Simulated ordersSIMULATEDExport JSONRec-driven entries watched against live data"
+    },
+    {
+      "key": "customization-toolbar",
+      "x": 124,
+      "y": 447,
+      "w": 1192,
+      "h": 88,
+      "text": "ViewAll positions▾TableCardsComfortableCompactGroupNoneTickerStructureopen · 3pe"
+    },
+    {
+      "key": "view-picker",
+      "x": 124,
+      "y": 450,
+      "w": 139,
+      "h": 37,
+      "text": "ViewAll positions▾"
+    },
+    {
+      "key": "layout-toggle",
+      "x": 284,
+      "y": 447,
+      "w": 128,
+      "h": 43,
+      "text": "TableCards"
+    },
+    {
+      "key": "density-toggle",
+      "x": 422,
+      "y": 447,
+      "w": 187,
+      "h": 43,
+      "text": "ComfortableCompact"
+    },
+    {
+      "key": "group-select",
+      "x": 618,
+      "y": 447,
+      "w": 252,
+      "h": 43,
+      "text": "GroupNoneTickerStructure"
+    },
+    {
+      "key": "status-chips",
+      "x": 891,
+      "y": 454,
+      "w": 422,
+      "h": 28,
+      "text": "open · 3pending · 0closed · 0cancelled · 0History · 0"
+    },
+    {
+      "key": "open-entry",
+      "x": 1125,
+      "y": 497,
+      "w": 191,
+      "h": 38,
+      "text": "+ Open simulated position"
+    },
+    {
+      "key": "positions-table-frame",
+      "x": 124,
+      "y": 578,
+      "w": 1192,
+      "h": 256,
+      "text": "TickerStructureQtyNet entryMarkP/LP/L %Δ entryTrendMax lossExpirySPY2 legs⌄Custo"
+    },
+    {
+      "key": "positions-table",
+      "x": 125,
+      "y": 579,
+      "w": 1190,
+      "h": 254,
+      "text": "TickerStructureQtyNet entryMarkP/LP/L %Δ entryTrendMax lossExpirySPY2 legs⌄Custo"
+    },
+    {
+      "key": "position-row",
+      "x": 125,
+      "y": 620,
+      "w": 1190,
+      "h": 71,
+      "text": "SPY2 legs⌄Custom3 ×$2800 debit$1020snapshot mid−$1780−63.6%−$1780A small recent-"
+    },
+    {
+      "key": "position-row",
+      "x": 125,
+      "y": 691,
+      "w": 1190,
+      "h": 71,
+      "text": "SPY2 legs⌄Custom2 ×$1500 debit$1010snapshot mid−$490−32.7%−$490A small recent-tr"
+    },
+    {
+      "key": "position-row",
+      "x": 125,
+      "y": 762,
+      "w": 1190,
+      "h": 71,
+      "text": "SPY$500/$505 Call⌄Call debit spread1 ×$400 debit$300snapshot mid−$100−25.0%−$100"
+    },
+    {
+      "key": "track-record",
+      "x": 124,
+      "y": 866,
+      "w": 1192,
+      "h": 557,
+      "text": "Track recordSIMULATEDHow your own recorded simulated decisions actually closed.H"
+    },
+    {
+      "key": "tr-sim-disclosure",
+      "x": 124,
+      "y": 1025,
+      "w": 1192,
+      "h": 37,
+      "text": "Simulated fills. The sim has no slippage, no partial fills, no queue position, n"
+    },
+    {
+      "key": "tr-how-to-read",
+      "x": 124,
+      "y": 1144,
+      "w": 1192,
+      "h": 154,
+      "text": "A hit is a closed sim position that realized more than zero. A zero result is no"
+    },
+    {
+      "key": "tr-hit-def",
+      "x": 124,
+      "y": 1144,
+      "w": 1192,
+      "h": 37,
+      "text": "A hit is a closed sim position that realized more than zero. A zero result is no"
+    },
+    {
+      "key": "tr-basis-def",
+      "x": 124,
+      "y": 1237,
+      "w": 1192,
+      "h": 37,
+      "text": "“Quoted fills only” means both ends of the trade were priced off a real market q"
+    },
+    {
+      "key": "tr-families",
+      "x": 124,
+      "y": 1042,
+      "w": 1192,
+      "h": 327,
+      "text": "TierOf your 0 counted outcomes, 0 carry a tier.Nothing recorded yet for this cut"
+    },
+    {
+      "key": "tr-family-tier",
+      "x": 124,
+      "y": 1042,
+      "w": 289,
+      "h": 158,
+      "text": "TierOf your 0 counted outcomes, 0 carry a tier.Nothing recorded yet for this cut"
+    },
+    {
+      "key": "tr-family-empty-tier",
+      "x": 141,
+      "y": 1109,
+      "w": 255,
+      "h": 37,
+      "text": "Nothing recorded yet for this cut. Cells appear as trades close with a recorded "
+    },
+    {
+      "key": "tr-family-ai_rec",
+      "x": 425,
+      "y": 1042,
+      "w": 289,
+      "h": 158,
+      "text": "AI recOf your 0 counted outcomes, 0 carry a recorded AI rec.Nothing recorded yet"
+    },
+    {
+      "key": "tr-family-coverage-ai_rec",
+      "x": 442,
+      "y": 1081,
+      "w": 255,
+      "h": 40,
+      "text": "Of your 0 counted outcomes, 0 carry a recorded AI rec."
+    },
+    {
+      "key": "tr-family-empty-ai_rec",
+      "x": 442,
+      "y": 1129,
+      "w": 255,
+      "h": 56,
+      "text": "Nothing recorded yet for this cut. Cells appear as trades close with a recorded "
+    },
+    {
+      "key": "tr-family-setup",
+      "x": 726,
+      "y": 1042,
+      "w": 289,
+      "h": 158,
+      "text": "SetupOf your 0 counted outcomes, 0 carry a recorded setup.Nothing recorded yet f"
+    },
+    {
+      "key": "tr-family-coverage-setup",
+      "x": 743,
+      "y": 1081,
+      "w": 255,
+      "h": 40,
+      "text": "Of your 0 counted outcomes, 0 carry a recorded setup."
+    },
+    {
+      "key": "tr-family-empty-setup",
+      "x": 743,
+      "y": 1129,
+      "w": 255,
+      "h": 56,
+      "text": "Nothing recorded yet for this cut. Cells appear as trades close with a recorded "
+    },
+    {
+      "key": "tr-family-iv_band",
+      "x": 1027,
+      "y": 1042,
+      "w": 289,
+      "h": 158,
+      "text": "IV-rank bandOf your 0 counted outcomes, 0 carry a recorded IV-rank band.Nothing "
+    },
+    {
+      "key": "tr-family-coverage-iv_band",
+      "x": 1044,
+      "y": 1081,
+      "w": 255,
+      "h": 40,
+      "text": "Of your 0 counted outcomes, 0 carry a recorded IV-rank band."
+    },
+    {
+      "key": "tr-family-empty-iv_band",
+      "x": 1044,
+      "y": 1129,
+      "w": 255,
+      "h": 56,
+      "text": "Nothing recorded yet for this cut. Cells appear as trades close with a recorded "
+    },
+    {
+      "key": "tr-family-persona",
+      "x": 124,
+      "y": 1212,
+      "w": 289,
+      "h": 158,
+      "text": "PersonaOf your 0 counted outcomes, 0 carry a recorded persona.Nothing recorded y"
+    },
+    {
+      "key": "tr-family-coverage-persona",
+      "x": 141,
+      "y": 1251,
+      "w": 255,
+      "h": 40,
+      "text": "Of your 0 counted outcomes, 0 carry a recorded persona."
+    },
+    {
+      "key": "tr-family-empty-persona",
+      "x": 141,
+      "y": 1299,
+      "w": 255,
+      "h": 56,
+      "text": "Nothing recorded yet for this cut. Cells appear as trades close with a recorded "
+    },
+    {
+      "key": "tr-archive",
+      "x": 124,
+      "y": 1385,
+      "w": 1192,
+      "h": 37,
+      "text": "ArchiveYour trading history lives in this browser only. There’s no server backup"
+    },
+    {
+      "key": "tr-archive-lead",
+      "x": 186,
+      "y": 1385,
+      "w": 889,
+      "h": 37,
+      "text": "Your trading history lives in this browser only. There’s no server backup — if y"
+    }
+  ],
+  "probes": {
+    "connectionState": null,
+    "skeletons": 0,
+    "monoElements": 55,
+    "sansElements": 127,
+    "archivoElements": 2,
+    "otherFontElements": 1,
+    "htmlBackground": "rgb(11, 15, 23)",
+    "bodyBackground": "rgb(11, 15, 23)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", Roboto, sans-serif",
+    "bodyFontSize": "15px",
+    "panelSelector": "top-nav",
+    "panelRadius": "0px",
+    "panelBackground": "rgba(19, 26, 36, 0.82)",
+    "panelBorder": "0px none rgba(0, 0, 0, 0)",
+    "monoFont": null,
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": true,
+    "plexSansLoaded": true,
+    "scrollHeight": 1446,
+    "scrollWidth": 1440,
+    "clientWidth": 1440
+  },
+  "panels": [
+    {
+      "key": "portfolio-panel",
+      "radius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "0px none rgb(233, 228, 214)",
+      "shadow": "none"
+    },
+    {
+      "key": "orders-panel",
+      "radius": "10px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    },
+    {
+      "key": "leg-disclosure-panel",
+      "radius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "0px none rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    },
+    {
+      "key": "leg-disclosure-panel",
+      "radius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "0px none rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    },
+    {
+      "key": "leg-disclosure-panel",
+      "radius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "0px none rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    }
+  ],
+  "png": "app/positions-dense-1440-dark.png"
+}

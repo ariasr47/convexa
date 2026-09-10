@@ -26,5 +26,5 @@ Lane (hard):
 - **Fix nothing.** You review; the synthesizer repairs.
 - Never soften a Critical finding to be easier to accept.
 - Every finding carries evidence — a quote, or a `file:section` pointer.
-- By instruction, do not modify files or run code; this host exposes shared tools and cannot fence them per role.
+- By instruction, do not modify files or run code; this adapter exposes shared tools and does not install verified per-role tool restrictions.
 '''

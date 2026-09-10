@@ -32,8 +32,15 @@ import Typography from '@mui/material/Typography';
 import { type ReactNode } from 'react';
 import { dteLabel } from '../_kit/copy';
 
-/** One segment of the instrument panel — an uppercase micro-label above its control. When `htmlFor`
- *  is given the caption is a real `<label>` so the control keeps an accessible name. */
+/**
+ * One segment of the instrument panel — an uppercase micro-label INLINE beside its control, one
+ * compact row (ticker fidelity repair, change 3 (F3) close-out: was a `Stack` — label stacked ABOVE
+ * the control, two lines tall per segment — against the design's own one-line `.field`
+ * (`design/src/lib.mjs:57`: `height: 36px`, the caps label and value on the same row). Re-skin only:
+ * the SAME `Select`/`PersonaPicker` children, same ids/testids/behaviour, only the wrapping layout
+ * changes — `ticker-toolbar` ran 73px against a segment's own ≈36–40px control height, most of the
+ * remainder the masthead's ≤200px threshold (design 186) was missing by. When `htmlFor` is given the
+ * caption is a real `<label>` so the control keeps an accessible name. */
 function Segment({
   label,
   htmlFor,
@@ -44,7 +51,11 @@ function Segment({
   children: ReactNode;
 }) {
   return (
-    <Stack spacing={0.5} sx={{ px: { xs: 0, sm: 1.75 }, py: 0.25, minWidth: 0, maxWidth: '100%' }}>
+    <Stack
+      direction="row"
+      spacing={1}
+      sx={{ alignItems: 'center', px: { xs: 0, sm: 1.75 }, py: 0.5, minWidth: 0, maxWidth: '100%' }}
+    >
       <Typography
         component={htmlFor ? 'label' : 'span'}
         htmlFor={htmlFor}
@@ -56,6 +67,8 @@ function Segment({
           lineHeight: 1.2,
           letterSpacing: '0.06em',
           textTransform: 'uppercase',
+          whiteSpace: 'nowrap',
+          flexShrink: 0,
         }}
       >
         {label}
@@ -82,6 +95,15 @@ interface Props {
    * (no second border box) so it doesn't read as panel-in-panel.
    */
   embedded?: boolean;
+  /**
+   * PASS 2 change 9 — at ≥ laptop (1100) the toolbar joins `TickerHeader`'s own headline row
+   * (`CommandDeck.tsx`'s `controlsJoinHeadline`) instead of sitting in its own full-width tier-2
+   * strip below it (`design/src/screens/desk.mjs:255-274`'s `.mast-controls`: fields + the CTA
+   * side by side, pinned to the headline row's right edge). Only meaningful when `embedded` — drops
+   * the full-width + top-divider chrome that strip placement needs (nothing to divide FROM when
+   * sitting beside the CTA instead of below the header). Content/ids/testids unchanged either way.
+   */
+  inline?: boolean;
 }
 
 export function TickerToolbar({
@@ -97,6 +119,7 @@ export function TickerToolbar({
   onOpenCustomize,
   loading,
   embedded = false,
+  inline = false,
 }: Props) {
   return (
     <Box
@@ -106,16 +129,17 @@ export function TickerToolbar({
         alignItems: 'stretch',
         flexWrap: { xs: 'wrap', sm: 'nowrap' },
         rowGap: 1.5,
-        width: embedded ? '100%' : undefined,
-        // Standalone: recessed instrument panel. Embedded: hairline top + seams only (deck is the frame).
+        width: embedded && !inline ? '100%' : undefined,
+        // Standalone: recessed instrument panel. Embedded row: hairline top + seams (deck is the
+        // frame). Embedded inline (PASS 2 change 9): same seams, no top divider/full-width — there
+        // is no header content above it to divide from, it sits beside the CTA instead.
         ...(embedded
           ? {
               border: 'none',
-              borderTop: `1px solid ${t.palette.divider}`,
+              ...(inline ? {} : { borderTop: `1px solid ${t.palette.divider}`, pt: 1.5 }),
               borderRadius: 0,
               bgcolor: 'transparent',
               boxShadow: 'none',
-              pt: 1.5,
               px: 0,
               pb: 0,
             }
@@ -133,18 +157,28 @@ export function TickerToolbar({
         },
       })}
     >
-      <Segment label="Ticker" htmlFor="ticker-input">
-        <TextField
-          id="ticker-input"
-          size="small"
-          value={symbol}
-          sx={{ width: 120 }}
-          onChange={(e) => onSymbolChange(e.target.value.toUpperCase())}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && symbol) onSubmitSymbol();
-          }}
-        />
-      </Segment>
+      {/* Ticker fidelity repair, change 3 (F3) — the design's desk carries no bare ticker input
+          (`design/src/screens/desk.mjs:274-278`'s `.mast-controls`: EXPIRATIONS / PERSONA / the one
+          CTA only); the palette (⌘K / Ctrl+K, `shell/AppShell.tsx`) is the ticker-entry job on the
+          populated desk, and it already accepts an arbitrary plausible symbol
+          (`CommandPalette.tsx`'s "open anyway" item), so nothing becomes unreachable. Kept ONLY for
+          the standalone (non-`embedded`) cold-load/error fallback in `TickerDashboard.tsx` — before
+          `m` exists there is no masthead (no "desk") for the palette to stand in for yet, and this
+          is the page's one remaining way to change ticker in that state. */}
+      {!embedded && (
+        <Segment label="Ticker" htmlFor="ticker-input">
+          <TextField
+            id="ticker-input"
+            size="small"
+            value={symbol}
+            sx={{ width: 120 }}
+            onChange={(e) => onSymbolChange(e.target.value.toUpperCase())}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && symbol) onSubmitSymbol();
+            }}
+          />
+        </Segment>
+      )}
 
       <Segment label="Expirations">
         <FormControl

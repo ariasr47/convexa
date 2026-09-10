@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "authorization_id": "win32-curvature-v2-40ec63f-20260908",
+  "decision": "authorize_candidate_generation",
+  "state": "authorized",
+  "actor": {
+    "id": "workspace-owner",
+    "role": "owner"
+  },
+  "source_revision": "40ec63fc4e9ed6fc62790b1718b95d0064c5740e",
+  "platform": "win32",
+  "created_at": "2026-09-09T00:33:52.913Z",
+  "failed_compare": {
+    "run_id": "local-1788913954573-e9274620",
+    "summary_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-40ec63f-20260908/summary.json",
+    "summary_sha256": "9ba6e9b774fde7c46dae7412d4d6eef4cee689bed967fbd3fef5c75924b867cc"
+  },
+  "scenarios": [
+    {
+      "scenario_id": "landing",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-40ec63f-20260908/landing-expected.png",
+      "expected_sha256": "dcd5af69caaab82f2d9e06165cf268aec82b43a52cd7578d92c6380558f6c2e8",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-40ec63f-20260908/landing.png",
+      "actual_sha256": "dcd5af69caaab82f2d9e06165cf268aec82b43a52cd7578d92c6380558f6c2e8",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "ticker-desktop",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-40ec63f-20260908/ticker-desktop-expected.png",
+      "expected_sha256": "a7542ea13521aaf545ad5dd7c33321834b4f65b84b272d8c28286d22f4334def",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-40ec63f-20260908/ticker-desktop.png",
+      "actual_sha256": "1c67d05182e52b711acf49f9aae97fc7f089efb6b922e680ddef2a54bfd34a30",
+      "diff_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-40ec63f-20260908/ticker-desktop-diff.png",
+      "diff_sha256": "bbcb496b6d0889ae5f924c6100570c381818111b3966df62f9868f98c636ce00"
+    },
+    {
+      "scenario_id": "ticker-offline-mobile",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-40ec63f-20260908/ticker-offline-mobile-expected.png",
+      "expected_sha256": "04517b4c6e21b3ded6ea71327d8165ba692791085c0d4e6d19c5f54bbb986ac5",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-40ec63f-20260908/ticker-offline-mobile.png",
+      "actual_sha256": "9bcb7e46ebb6056b4310972045f60a2766956fcc9298e560138879b6ded5af75",
+      "diff_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-40ec63f-20260908/ticker-offline-mobile-diff.png",
+      "diff_sha256": "62380a2fd135f8def8a4753f65480cbb4e7ab6d3e850aae9f211ced942173c95"
+    },
+    {
+      "scenario_id": "positions-dense",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-40ec63f-20260908/positions-dense-expected.png",
+      "expected_sha256": "59ba1436fb3d7d5c38e7f671c3290137ac13ce8722bd2f556e58d2ac42f8c750",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-40ec63f-20260908/positions-dense.png",
+      "actual_sha256": "59ba1436fb3d7d5c38e7f671c3290137ac13ce8722bd2f556e58d2ac42f8c750",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "scanner-dense",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-40ec63f-20260908/scanner-dense-expected.png",
+      "expected_sha256": "dcd1ca53541dadfb34dca632252eb00d020a518fd74f2e3c241fb356de9074c8",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-40ec63f-20260908/scanner-dense.png",
+      "actual_sha256": "dcd1ca53541dadfb34dca632252eb00d020a518fd74f2e3c241fb356de9074c8",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "ai-recommendation",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-40ec63f-20260908/ai-recommendation-expected.png",
+      "expected_sha256": "abe4f38480153d8189e8c7ebe286c9874b81921dd2e8bfb0b7305a1c43040a48",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-curvature-v2-40ec63f-20260908/ai-recommendation.png",
+      "actual_sha256": "abe4f38480153d8189e8c7ebe286c9874b81921dd2e8bfb0b7305a1c43040a48",
+      "diff_path": null,
+      "diff_sha256": null
+    }
+  ]
+}

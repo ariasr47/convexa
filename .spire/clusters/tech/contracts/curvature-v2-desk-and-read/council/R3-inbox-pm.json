@@ -1,0 +1,92 @@
+[
+  {
+    "n": 1,
+    "role_here": "this is against your position",
+    "raised_by": "architect",
+    "source": "pm",
+    "quote": "At 393, 834, 900 and 1280 in both schemes, the desk has no horizontal page overflow.",
+    "why": "The shipped suite does not run three of those eight combinations, and it declines to on purpose. `no-overflow.spec.ts:43-45` records the decision in terms — 'ONE SCHEME for the wider bands, deliberately: horizontal overflow is box geometry and dark/light change no widths' — and 393 keeps both schemes 'because that is where content is tightest'. The e2e manifest confirms the shipped shape: `manifest.json` carries `393px no-overflow · dark scheme` AND `393px no-overflow · light scheme` entries, but `tablet 834 no-overflow · dark scheme` (`:604`) with no light-scheme counterpart at 834, 900 or 1280 (grepped this round: no `light scheme` title after the 393 block). So AC-78 and AC-24 as written are either (a) certified against a suite that never ran half of what they claim — the exact 'green suite that lies' pm's own risk 9 names — or (b) a silent doubling of the wide-band matrix that reverses a documented decision. The BRIEF carries the same error ('the no-overflow suite stays green at 393 / 834 / 900 / 1280 in both schemes'), and ux's UX-20 and UX-50 inherit it.",
+    "proposal": "Write the criterion to the suite's actual shape: both schemes at 393; one scheme at 834, 900 and 1280. If the owner wants light at the wide bands, that is a deliberate reversal of `no-overflow.spec.ts:43-45` and belongs in the build report as a change to the suite's design, with the widened matrix's runtime cost named. Either way the row must be provable with `npx playwright test --list` before GATE Q, not with a passing summary — `playwright.config.ts` is an explicit `testMatch` allowlist and an unregistered spec reports green by never running."
+  },
+  {
+    "n": 2,
+    "role_here": "this is against your position",
+    "raised_by": "architect",
+    "source": "pm",
+    "quote": "834 added to the standing overflow suite — **phase 4**.",
+    "why": "Wrong on a checkable fact, and the same error appears in pm's Scope-Out ('the responsive sweep that adds 834 to the overflow suite — **phase 4**') and in the BRIEF ('the landing, the site pages and the responsive sweep that adds 834 to the overflow suite are phase 4'). 834 is ALREADY in the standing suite: `no-overflow.spec.ts:51` declares `{ label: 'tablet 834', width: 834, height: 1112 }` inside `WIDE_VIEWPORTS`, and `:48-50` records it as a v2 addition made against canon rule 17. `manifest.json:604` pins six shipped `tablet 834 no-overflow · dark scheme` cases (one per route). It shipped in phase 1. The BRIEF is wrong on this and so is the canon's phase assignment.",
+    "proposal": "Delete the future-dated row and the Scope-Out clause; replace both with the true obligation, which is smaller: 834 is already green and this phase must KEEP it green through the desk rebuild. Note the coupling my §6 flagged — `no-overflow.spec.ts:398` uses `page.getByText('Call wall').first()` as the readiness anchor for `/ticker/TSLA` at every width, and this phase deletes `DealerPositioning`, which renders that text today. The ladder keeps the exact label word (decisions §2: 'the side is in the label words'), so the anchor survives — but deliberately, not by luck. A rename reds ~12 e2e cases for a reason nobody will connect to a copy change."
+  },
+  {
+    "n": 3,
+    "role_here": "this is against your position",
+    "raised_by": "architect",
+    "source": "pm",
+    "quote": "Every non-mid row shows its distance from the mid; the mid row shows no distance.",
+    "why": "Unsatisfiable against shipped code without changing every number the trader has read for months, and self-contradictory with canon 14's own liveness clause. The shipped anchor is the levels spot, not the mid: `_kit/distanceToLevel.ts:11-14` (`levelSpot`) prefers `gex_spot` and falls back to `price`, and `DealerPositioning.tsx:61` uses exactly that. `copy.ts:318` labels `gex_spot` as 'levels spot' with the comment 'NOT spot — the levels anchor is not the live display price'. These are different numbers by construction: `gex_spot` is the last session close when the market is closed and live in RTH; `price` is the live/delayed display spot. Anchoring the column on the mid also makes all four structure rows recompute on every tick — five live rows — which canon 14 forbids in the same sentence that AC-16 is drawn from. ux reached the same conclusion independently at CI-9 and routed the canon wording as a product amendment; the AC text itself is a factual correction, not a preference.",
+    "proposal": "AC-16 becomes: every non-mid row shows its distance from the ladder's declared anchor (the levels spot, `gex_spot` else `price`), the ladder names that anchor once (pm's AC-17 already requires this), and the mid row's distance cell renders the not-applicable member rather than a computed zero — zero would assert the mid equals the structure anchor, which it usually does not. The canon rule 14 wording amendment is ux's product conflict and I do not re-raise it here."
+  },
+  {
+    "n": 4,
+    "role_here": "you raised this",
+    "raised_by": "pm",
+    "source": "ux",
+    "quote": "| UX-32 | `no_trade` renders with no warning chrome, no error tone, the same typographic weight as a trade, and a useful primary action | A4 | **test** | It is a correct answer being mistaken for a failure — the exact silent misread |",
+    "why": "Three quarters of this row is exactly right and I adopt it. The last clause is not observable: 'a useful primary action' is an intention, and a reviewer looking at a button labelled `Alert me at 575` will read it as useful whether or not pressing it does anything. It is marked `test`, and no test can assert usefulness — so the row would ship as a green assertion over the three checkable clauses while the unverifiable one carries the honesty. This is the exact failure shape I am supposed to catch in my own rows, and it is worth more caught in a peer's than defended in mine.",
+    "proposal": "Replace the last clause with the observable: '...and the primary action it offers is one this build performs end to end.' That keeps ux's state mapping and its `test` mark intact (the first three clauses are the testable ones and stay), and it makes the fourth checkable by a stranger who presses the button. It is also the same property my AC-45 asserts, so the two rows converge rather than compete."
+  },
+  {
+    "n": 5,
+    "role_here": "you raised this",
+    "raised_by": "pm",
+    "source": "architect",
+    "quote": "The strip renders eight cells at every state; an unavailable metric is an `unavailable` cell, not a missing one.",
+    "why": "This is right in general and wrong for the eighth cell, and my AC-26 makes the same mistake in the same direction — so I am withdrawing my row's coverage of off-exchange in the same breath. ux CI-6 verified against PROJECT_CONTEXT §5 that the off-exchange object is omitted BOTH when `INCLUDE_DARK_POOL=false` and when the best-effort computation fails, and both arrive at the frontend as the same absent object. With the `apps/api` diff required to be empty this phase, the frontend cannot tell 'we did not look' from 'we looked and failed'. `unavailable` asserts a cycle that ran and produced nothing — a claim the app cannot observe. So the architect's rule, applied to that cell, fabricates a cause; ux's answer (cell absent) recreates `[absent-is-not-none]` in the scroll axis, because at 393px a cell that is not there is indistinguishable from a cell that scrolled off the rail — which is ux's own risk 5. Both lanes are right about the other's failure and neither has proposed the render that is true under both causes.",
+    "proposal": "Keep the architect's structural rule — eight fixed slots at every state, no reflow, which is what AC-26 and ux's S4 both need — and let the off-exchange slot render the vocabulary member whose meaning is 'the feed did not send it', which is true whether the flag disabled it or the computation failed and asserts nothing about which. Ruling 3 settles that the caller picks the member and the type enforces only closure, so this needs no tenth member and no new copy branch. The 'attempted vs failed' wire discriminator is booked as named debt with a phase attached, per ux CI-6. My AC-26 is rewritten to require the member the app can honestly claim rather than a specific literal."
+  },
+  {
+    "n": 6,
+    "role_here": "you raised this",
+    "raised_by": "pm",
+    "source": "ux",
+    "quote": "| A1 | idle | body | A2–A4, A6–A8 | \"Ready to read this snapshot.\" + the composer |",
+    "why": "The marker this row keys on cannot tell two shipped states apart. The architect read `presentationPolicy.ts:20-26` and found four result states with no canon home, one of which is `no_edge`; `presentationPolicy.ts:168` already ships an `askAnyway` action for it, and `design/src/screens/ai-read.mjs:62` draws it as a footnote inside the idle panel. A panel showing 'Ready to read this snapshot' plus the composer renders identically for plain idle and for idle-with-a-quiet-gate-note under this marker, so UX-28 ('each renders its own marker') would pass while certifying precisely the collapse it exists to prevent. My own AC-39 has the same hole — it enumerates idle's contents and never mentions the gate note. Answering the question put to me directly: my R1 risk 2 ('there is no failure state among the nine') and the architect's 15 × 6 finding are NOT the same finding. The architect's is strictly larger and strictly better evidenced — it names four homeless shipped states where I named one missing canon slot — and it corrects my framing: `unavailable` is not a state that must be invented, it already ships with its own copy at `ai-rec/copy.ts:51-52`, and ux confirms a rate limit must never wear it. My AC-57 stays as written because it asserts a producible observable, but it covers one of the four, not the class. I raise this as the criterion-shape defect only: the architect has already routed the disposition of `no_edge`, `unavailable`, `superseded_inputs` and `incomplete_trade` to the owner, I agree with that routing, and duplicating it would spend the owner's attention twice on one question.",
+    "proposal": "Idle carries two observable arms in the AC-38(b) non-synonymy set: plain idle, and idle-with-the-gate-note whose marker is the note plus the ask-anyway control. Neither is permitted to render the other's marker. The three remaining homeless states get their AC rows once the owner rules where they land; until then no criterion may key idle, no-trade or add-a-key on a marker that any of them also renders."
+  },
+  {
+    "n": 7,
+    "role_here": "this is against your position",
+    "raised_by": "ux",
+    "source": "pm",
+    "quote": "Every non-mid row shows its distance from the mid; the mid row shows no distance.",
+    "why": "The shipped distance column does not measure from the mid. `_kit/distanceToLevel.ts:11-14` anchors on `levelSpot(m) = m.gex_spot ?? m.price`, `DealerPositioning.tsx:61` passes exactly that, and the shipped label vocabulary is explicit that the two are different objects (`_kit/copy.ts:318`: `gex_spot: 'levels spot', // NOT 'spot' — the levels anchor is not the live display price`). The architect read the same lines independently and reached the same conclusion. An AC that says 'from the mid' does one of two harmful things: it renames the anchor in copy (my defining failure mode — a label asserting a meaning the data does not support), or, implemented literally, it re-derives all four structure rows on every tick, i.e. five live rows, which canon 14 forbids in the same sentence this AC comes from. The second clause is right and I am not contesting it.",
+    "proposal": "AC-16 → 'Every non-mid row shows its distance from the levels anchor (`gex_spot ?? price`); the mid row's distance cell renders `—`, never a computed zero.' Keep it `test`. Pair it with AC-17 unchanged (the ladder states the anchor once, e.g. `distance from levels @ {gex_spot}`), which stays `review` because it is visible, intentional copy."
+  },
+  {
+    "n": 8,
+    "role_here": "this is against your position",
+    "raised_by": "ux",
+    "source": "pm",
+    "quote": "The verdict word is the **only** amber-rendered element inside the AI panel.",
+    "why": "Read as written this is unsatisfiable, and my own UX-30 ('is the panel's only amber spend') carries the identical defect — I am narrowing both, not just pm's. Canon rule 6 mandates an authored `:focus-visible` ring in **text-grade amber**, and my lane requires focusable controls inside this panel: the `AccessibleHelp` ⓘ on each of the four risk fields (ruling 6), the ask control, the drawer trigger and 'Review simulated trade'. So a focused panel always contains a second amber element, by canon. This is the rules 13-vs-18 shape again — two canon rules that contradict read literally — and the phase-1 resolution was a scope clarification, not a build choice.",
+    "proposal": "AC-31 → 'In the panel's **resting** render, the verdict word is the only element spending amber as text or fill; the authored `:focus-visible` ring (rule 6) is outside this criterion.' Record the scoping as an Amendments clarification on rule 16, the same shape rule 18 took. On pm's assumption 11, my lane's answer so it does not need an owner: the design source's amber header-icon tint, provenance dot and loading pulse (`design/src/screens/ai-read.mjs:8`, `:15`, `:67`) do **not** stay. `design/` is a drawing, not authority — my CI-3, CI-7 and CI-8 already catalogue four places where it contradicts a shipped owner ruling — so the canon binds and the drawings are regenerated (`node design/src/build.mjs`)."
+  },
+  {
+    "n": 9,
+    "role_here": "this is against your position",
+    "raised_by": "ux",
+    "source": "pm",
+    "quote": "On a stream drop, a live-derived figure that has already received a value shows **that value** at reduced opacity with the pause marker, and says it is the last known value.",
+    "why": "'has already received a value' does not say received from where, and today's code answers 'from the REST bundle'. Verified at source this round: `LiveTape.tsx:96` computes `flipValue = (numbersActive ? live?.gamma_flip : null) ?? m.gamma_flip`, and `:190` passes `offline={tileOffline ? { retained: flipValue != null } : null}` — the call site's own comment at `:180-184` states it in terms ('its offline arm is RETAINED whenever a fallback exists'). `FigureCell.tsx:259` then prints `offline · last known` over a structure number that never came off the stream. AC-64 as worded certifies that render as passing. It is ruling 2's fabrication in its second form: not a caption without a value, but a caption over the wrong value.",
+    "proposal": "AC-64 → '…a live-derived figure that has already received a value **on the stream** shows that value at reduced opacity with the pause marker and says it is the last known value.' Add two rows, both `test`: (a) my UX-10 — no figure anywhere renders `offline · last known` over a value sourced from the REST bundle; (b) my UX-9 — the `LiveTape` widget subtitle's 'last known ticks' clause (`_kit/copy.ts:532-533`, rendered unconditionally today at `LiveTape.tsx:110`) renders only when at least one cell in that widget actually retained a stream value. The subtitle is the same fabrication one scope up and needs the same two arms as the cell."
+  },
+  {
+    "n": 10,
+    "role_here": "this is against your position",
+    "raised_by": "ux",
+    "source": "pm",
+    "quote": "A level the current bundle does not carry renders the member of the closed not-a-number vocabulary that matches **why** it is absent, keeps its row and its label, and is never rendered as a zero, as another member's literal, or as an empty row.",
+    "why": "'matches **why** it is absent' asserts the frontend knows the reason. For the five levels the bundle delivers a missing or null number with no reason code, so choosing `—` (not applicable) over `unavailable` (the computation failed) invents a reason — the same wire-level discriminator gap I named for off-exchange in CI-6, where I withdrew a caption rather than assert one. My own L4 row carries the identical defect ('`—` when not applicable, `unavailable` when the cycle failed'), so I am narrowing mine in the same breath. As written the criterion also cannot fail honestly: any literal that ships can be argued to 'match why', which makes a ship-adjacent row unfalsifiable.",
+    "proposal": "AC-20 → 'An absent level renders a member of the closed nine in 15px Sans, keeps its row and its label, is never a zero, never another member's literal and never an empty row, and the member is chosen by a rule the SPEC states and the frontend can actually evaluate.' Where no discriminator exists on the wire, the SPEC names **one** member for all level absences and records the missing attempted-vs-failed discriminator as debt with a phase attached — the CI-6 treatment. Architect ask 1 below settles which case we are in."
+  }
+]

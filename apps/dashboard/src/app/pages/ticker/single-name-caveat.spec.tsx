@@ -155,6 +155,42 @@ describe('single-name caveat (index-first-defaults AC-4/AC-5)', () => {
     await waitFor(() => expect(screen.queryByTestId('single-name-caveat')).toBeNull());
   });
 
+  // ---------------------------------------------------------------------------------------------
+  // Ticker fidelity repair, change 3 (F3) — the masthead's `Universe member · N tracked names` note
+  // (`design/src/screens/desk.mjs:285`), the reciprocal of the caption above: the SAME universe
+  // read this file already exercises now ALSO drives the quick row's trailing note. `universe_size`
+  // (2, `UNIVERSE`'s own field) is the wire's own count, not `symbols.length` re-derived FE-side.
+  // ---------------------------------------------------------------------------------------------
+  it('F3: a universe MEMBER carries "Universe member · N tracked names" on the quick row, the wire’s own count', async () => {
+    renderAt('/ticker/SPY');
+    await screen.findByText('Call wall');
+    await universeRead();
+    await waitFor(() =>
+      expect(screen.getByTestId('quick-symbols-note')).toHaveTextContent(
+        'Universe member · 2 tracked names',
+      ),
+    );
+    // Isolation: the nonmember caption stays gone (already asserted above; restated for this note).
+    expect(screen.queryByTestId('single-name-caveat')).toBeNull();
+  });
+
+  it('F3: a confirmed NONMEMBER carries NO "Universe member" note (the caption above is what renders instead)', async () => {
+    renderAt('/ticker/GME');
+    await screen.findByText('Call wall');
+    await universeRead();
+    await waitFor(() => expect(screen.getByTestId('single-name-caveat')).toBeInTheDocument());
+    expect(screen.queryByTestId('quick-symbols-note')).toBeNull();
+  });
+
+  it('F3: a FAILED universe read fabricates no count either — no "Universe member" note, no error surface', async () => {
+    universeMode = { kind: 'http-500' };
+    renderAt('/ticker/GME');
+    await screen.findByText('Call wall');
+    await universeRead();
+    await waitFor(() => expect(screen.queryByTestId('single-name-caveat')).toBeNull());
+    expect(screen.queryByTestId('quick-symbols-note')).toBeNull();
+  });
+
   it('AC-5: a FAILED universe read renders NO caption and NO error surface (silent best-effort)', async () => {
     universeMode = { kind: 'http-500' };
     renderAt('/ticker/GME');

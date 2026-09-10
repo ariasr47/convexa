@@ -9,13 +9,12 @@
  * CLOSED LOOKUP on the wire `state` — never by inspecting a null (AC-46).
  */
 import { typographyTokens } from '@/shared/theme/tokens';
+import { AccessibleHelp } from '@/shared/ui';
 import { Widget } from '@/shared/ui/Widget';
 import type { StraddleMove as StraddleMoveRead } from '@convexa/api';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import {
   ADVISORY_LINE,
@@ -90,12 +89,9 @@ export function StraddleMove({ move }: Props) {
                   move.anchor_spot ?? 0,
                 )}
               </Typography>
-              <Tooltip title={TOOLTIP} arrow placement="top">
-                <InfoOutlinedIcon
-                  sx={{ fontSize: 13, color: 'text.disabled' }}
-                  data-testid="straddle-move-tip"
-                />
-              </Tooltip>
+              {/* Ruling 6 (curvature-v2-foundations): converted to the shipped `AccessibleHelp`
+                  pattern — a real focusable `button`, reachable by tap and keyboard (AC-35). */}
+              <AccessibleHelp label="About the straddle-implied move" text={TOOLTIP} />
             </Stack>
 
             {primary.wide_quotes && (

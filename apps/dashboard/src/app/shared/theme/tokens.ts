@@ -45,7 +45,6 @@ export const amberDeep = '#C57F19';
 export const signal = '#5E8BC4';
 /** TRUE warnings only (stale/offline, error strips, degraded) — ALWAYS paired with an icon. */
 export const warningOrange = '#E07A3F';
-
 /** Light canvas — neutral-warm paper, deliberately clear of the cream tell. */
 export const paper = '#F6F6F3';
 /** Light-scheme ink text (primary text + contrastText on light amber fills). */
@@ -66,6 +65,9 @@ export const palette = {
     info: signal, //          links / live dot / live line / live chip
     text: { primary: phosphor, secondary: steel, disabled: 'rgba(138, 155, 180, 0.5)' },
     background: { default: ink, paper: panel },
+    /** v2 `line` — the hairline divider. A real MUI slot every existing call site already binds,
+     *  so landing it here changes the hairline app-wide with ZERO diff at those sites. */
+    divider: 'rgba(138,155,180,0.16)',
   },
   light: {
     primary: { main: amberDeep, contrastText: inkText },
@@ -76,11 +78,19 @@ export const palette = {
     info: lightInfo,
     text: { primary: inkText, secondary: 'rgba(0, 0, 0, 0.6)', disabled: 'rgba(0, 0, 0, 0.38)' },
     background: { default: paper, paper: '#ffffff' },
+    divider: 'rgba(23,32,43,0.12)',
   },
 } as const;
 
-/** MUI `shape` token (cards 10px; controls/chips override locally per the redesign). */
-export const shape = { borderRadius: 10 } as const;
+/**
+ * MUI `shape` token — the PANEL radius role (SPEC §2.2, ruling 4: "radius In"). Migrated 10 → 12
+ * at the Curvature Terminal v2 foundations build. MUI resolves a numeric `borderRadius: n` inside
+ * `sx` through `createUnaryUnit(theme, 'shape.borderRadius', 4, 'borderRadius')` — i.e. n × this
+ * value, not n pixels — so this flip scales every numeric `sx` radius site by 1.2× whether or not
+ * anyone looks. The other three declared roles (dialog 16 / control 8 / pill 999) are theme
+ * overrides in `theme.ts` because one value cannot serve four roles.
+ */
+export const shape = { borderRadius: 12 } as const;
 
 /**
  * Type trio (proposal §3): IBM Plex Sans (body/UI) · IBM Plex Mono (data/tape, tabular by
@@ -133,6 +143,60 @@ export const extras = {
    * remains the FILL/UI amber (buttons, bars, borders, icons — the ≥3:1 class).
    */
   textAmber: gammaAmber,
+  // ---- Curvature Terminal v2 additions (SPEC §2.1) — six more, `divider` lives on `palette` ----
+  /** v2 `ink2` — the WELL: the recessed body inside a panel. `Widget`'s `bodyVariant: 'inset'`
+   *  fakes this today with `background.default`, which is `ink`, not `ink2`. One call site. */
+  well: '#0D121B',
+  /** v2 `raised2` — one elevation step above `panelRaised`; inherits its parity guarantee. */
+  panelRaised2: '#223041',
+  /** v2 `line2` — strong divider / control border. No second MUI divider slot exists, and a
+   *  `palette.divider2` would emit a `--mui-palette-*` var no MUI component consumes. */
+  lineStrong: 'rgba(138,155,180,0.30)',
+  /** v2 `steel2` — TEXT TERTIARY. Explicitly NOT `palette.text.disabled`
+   *  (`rgba(138,155,180,0.5)`), which MEANS disabled: two names, two meanings. Collapsing them
+   *  would give a legible tertiary label disabled semantics for assistive tech. */
+  textTertiary: 'rgba(138,155,180,0.85)',
+  /** v2 `scrim` — sheet/dialog scrim. Consumed ONCE, via `MuiBackdrop.styleOverrides.root`. */
+  scrim: 'rgba(0,0,0,0.55)',
+  /** v2 `glass` — translucent nav background. Dark is exactly alpha(panel #131A24, 0.82), so the
+   *  resting TopNav arm renders byte-identical. NAMED GAP: no token exists for the SCROLLED 0.9
+   *  state; that one arm keeps its computed alpha until a token does. */
+  glass: 'rgba(19,26,36,0.82)',
+  /**
+   * `textDim` — the REDUCED-EMPHASIS text state (PR #46 CI repair, 2026-09-09 Amendments row):
+   * offline-retained figures, a paused tape readout, a session-tape-dropped last-trade caption —
+   * anywhere copy needs to read "quieter" than its normal register (`text.primary` or
+   * `text.secondary`) because the value behind it went stale. Replaces `opacity: 0.5` on text,
+   * which computed a FAILING contrast at every real call site (`color-contrast`, serious,
+   * measured 2.21–4.34:1 across `TickerHeader.tsx`'s last-trade readout, `TapePulseStrip.tsx`'s
+   * paused Mid value, `FigureCell.tsx`'s dimmed value glyph and `ScanCells.tsx`'s offline-retained
+   * `cell-price`) — opacity composites the foreground WITH the background, so it can never carry a
+   * contrast guarantee independent of what it sits on. `textDim` is a SOLID colour instead: measured
+   * (`text-dim-contrast.spec.ts`) at `#7B8CA6` on `panel` 5.12:1 (the hardest real dark surface —
+   * `well`/`ink` clear with more headroom, 5.49/5.61), all four clearing the WCAG AA 4.5:1 normal-
+   * text floor with real margin, one step quieter than `steel`/`text.secondary` (6.19:1 on panel) so
+   * the reduced-emphasis intent still reads. NOT `extras.textTertiary` (steel2): that token names a
+   * PERMANENT third-level label; this one names a STATE (temporarily degraded, temporarily true)
+   * — collapsing the two would give a transient offline value the same meaning as a standing caption,
+   * the exact two-names-one-meaning trap `textTertiary`'s own doc warns against for `textDisabled`.
+   * The pause mark (`PauseMark`, F4/F5) stays the non-colour cue alongside it, unchanged.
+   */
+  textDim: '#7B8CA6',
+  /**
+   * `textInfo` — the TEXT-GRADE info blue (PR #46 CI repair, 2026-09-09 Amendments row), mirroring
+   * `textAmber`'s fill-vs-text split for the `info` hue (`signal`): `info.main` is deliberately the
+   * QUIETEST fill in the palette ("links / live status — deliberately quieter than amber" — see the
+   * top-of-file note), which is exactly why it fails as small TEXT sat on its own tint. Three real
+   * small-text `info.main` sites measured under WCAG AA's 4.5:1 (`color-contrast`, serious): the
+   * connection chip's "live · mid …" label (4.43:1, `alpha(info.main,0.16)` tint over `ink`), the
+   * `mid · tape` header badge (3.7:1, composited `action.selected` fill) and the ladder mid row's
+   * live badge word (same). `success`/`error`/`warning` do NOT share this failure at the SAME
+   * `alpha(tone,0.16)` formula (measured 4.7–7.0:1 — real headroom), so this is `info` alone.
+   * Measured (`text-info-contrast.spec.ts`): dark `#8CB0DE` clears every real composited surface
+   * these three sites paint on (`alpha(info.main,0.16)` over ink/panel/well 6.3–7.1:1;
+   * `action.selected` over panel 4.77:1 — the tighter floor, still clearing with margin).
+   */
+  textInfo: '#8CB0DE',
 } as const;
 
 /** Light-scheme counterparts, same keys. Raised panels sit a soft warm-grey above white paper;
@@ -150,6 +214,46 @@ export const extrasLight: Record<keyof typeof extras, string> = {
    * UI fills, a WCAG failure as body text; this slot closes that flag.
    */
   textAmber: '#8F5C0F',
+  well: '#F1F1EC',
+  panelRaised2: '#E3E3DD',
+  lineStrong: 'rgba(23,32,43,0.22)',
+  /**
+   * Light `steel2` — darkened from the original `#61708A` (owner ruling 7, 2026-09-03: the
+   * canon stated only "a solid light-mode value", and `#61708A` measured 4.23:1 on
+   * `extras.panelRaised` — below the WCAG AA 4.5:1 normal-text floor for the widget-card surface
+   * a real tertiary label sits on, e.g. `PositionBrief.tsx`'s basis chip). `#5D6B84` clears every
+   * light surface a real consumer paints text on TODAY (grep-verified, `steel2-contrast.spec.ts`):
+   * `panelRaised` 4.54:1 (dialogs/toolbars/table-hover/`PositionBrief`), `well` 4.75:1 (the inset
+   * body of 7 ticker widgets + the nav search trigger), `background.default`/"paper" 4.97:1,
+   * `background.paper`/white 5.38:1 (Widget's own card + `FigureCell`'s `CellCard`).
+   * `panelRaised2` (`raised2`, `#E3E3DD`) is deliberately NOT in that floor: it has ZERO real
+   * consumers anywhere in the app (defined in this file and touched only by token-hygiene specs),
+   * so a darken past what real surfaces need would be un-evidenced — and the further candidate
+   * that does clear it (`#58657D`) measures 5.88:1 on white, which would read as MORE contrast
+   * than `text.secondary`'s 5.74:1 there, inverting the tertiary-quieter-than-secondary hierarchy.
+   * Re-verify against `raised2` the day a component actually paints a background with it.
+   */
+  textTertiary: '#5D6B84',
+  scrim: 'rgba(23,32,43,0.45)',
+  glass: 'rgba(255,255,255,0.86)',
+  /**
+   * Light `textDim` — measured (`text-dim-contrast.spec.ts`) at `#576578` on `panelRaised` 5.01:1
+   * (the hardest real light surface, same floor `steel2`'s light value clears), `well` 5.24:1,
+   * `paper` 5.48:1, white 5.94:1 — all clearing WCAG AA 4.5:1 with real margin. Never exercised by
+   * the shipped scans (the offline/paused states this token dims are dark-scheme-only fixtures
+   * today), computed anyway to the same rigor as every other v2 pair rather than left unverified.
+   */
+  textDim: '#576578',
+  /**
+   * Light `textInfo` — measured (`text-info-contrast.spec.ts`) at `#2F547D` on `alpha(lightInfo,
+   * 0.16)` composited over `white`/`paper`/`panelRaised`/`well` (6.31–5.40:1) and on
+   * `action.selected` composited over the same surfaces (7.82–6.54:1) — every real light surface
+   * these three sites could paint on, all clearing WCAG AA 4.5:1 with real margin. Never exercised
+   * by the shipped scans (the connection-chip `live` state and the two badge labels this token
+   * corrects are dark-scheme fixtures today), computed anyway to the same rigor as every other v2
+   * pair rather than left unverified.
+   */
+  textInfo: '#2F547D',
 } as const;
 
 /** Resolve the mode-correct extras inside an `sx`/styled `theme` callback. */

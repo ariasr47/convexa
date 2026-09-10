@@ -289,11 +289,11 @@ function renderAt(path: string) {
   );
 }
 
-const STATIC_WIDGETS = [
-  'widget-market-context',
-  'widget-iv-rank',
-  'widget-dealer-flow-projection',
-] as const;
+// PASS 2 change 8 (owner ruling `context-band-is-the-designs-card-list`): `widget-iv-rank` dropped —
+// `IvRank` no longer mounts on `/ticker` (its card left the context band; the component/testid still
+// exist for its own consumers, just not this page). The remaining two are still a real static-widget
+// sample for the byte-identity check below.
+const STATIC_WIDGETS = ['widget-market-context', 'widget-dealer-flow-projection'] as const;
 
 // =================================================================================================
 // 1. THE page contract — stream isolation, walked end-to-end once (the centerpiece)
@@ -307,7 +307,12 @@ describe('Ticker · stream isolation (live-vs-static-isolation)', () => {
     expect(screen.queryByTestId('cold-skeleton')).toBeNull();
 
     // A live tick arrives: the anchor flips to the NBBO mid; the last-trade line fills.
-    pushLive({ live: true, mid: 251, gamma_flip: 248, last_trade: 251.13 });
+    // `gamma_flip: 253` is DELIBERATELY DIFFERENT from the bundle's `market_state.gamma_flip`
+    // (248, fixture above) — criterion 14's mutation proof needs the two sources distinguishable
+    // by VALUE, or a reintroduced `?? m.gamma_flip` fallback renders the same number by
+    // coincidence and this test cannot catch it (the exact vacuity trap SPEC §7/criterion 57 exist
+    // to forbid).
+    pushLive({ live: true, mid: 251, gamma_flip: 253, last_trade: 251.13 });
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('TSLA · $251.00');
     expect(screen.getByTestId('last-trade')).toHaveTextContent('Last trade $251.13');
 
@@ -319,12 +324,45 @@ describe('Ticker · stream isolation (live-vs-static-isolation)', () => {
       await vi.advanceTimersByTimeAsync(16_000);
     });
 
-    // Live tiles degrade: dimmed + ⏸, last-known value RETAINED (never blanked).
+    // Live tiles degrade. FigureCell's pause mark is a real SVG icon, not the literal `⏸` glyph
+    // (curvature-v2-foundations SPEC §4.1/§4.2 Icons row) — assert the icon's presence structurally
+    // rather than a composed "⏸ offline" text node. (v2, SPEC §2.2 — owner ruling 2's debt) the
+    // retention latch now owns Net flow / Spread / Gamma flip alike: each retains the last value
+    // that actually arrived ON THE STREAM before the drop, so all three take the RETAINED arm
+    // (F4, dimmed, `offline · last known`) because the live push above carried a value for each
+    // (AC-17a/AC-17b, criterion 12).
+    const liveTape = screen.getByTestId('live-tape');
+    expect(within(liveTape).getAllByTestId('PauseIcon').length).toBeGreaterThan(0);
+    const netFlowCell = screen.getByText('Net flow (5m)').closest('[data-figure-state]');
+    expect(netFlowCell).toHaveAttribute('data-figure-state', 'offline-retained');
+    expect(within(netFlowCell as HTMLElement).getByText('+1,200')).toBeInTheDocument();
     expect(
-      within(screen.getByTestId('live-tape')).getAllByText('⏸ offline').length,
-    ).toBeGreaterThan(0);
+      within(netFlowCell as HTMLElement).getByText('offline · last known'),
+    ).toBeInTheDocument();
+    const spreadCell = screen.getByText('Spread').closest('[data-figure-state]');
+    expect(spreadCell).toHaveAttribute('data-figure-state', 'offline-retained');
+    expect(within(spreadCell as HTMLElement).getByText('$0.05')).toBeInTheDocument();
+    // (v2) The label names the DERIVATION, not the connection state (criterion 18) — it is
+    // `Gamma flip · live` before AND after the drop; the ladder's own `Gamma flip` row (FE-5) is a
+    // separate, dotless figure and this label is deliberately never byte-identical to it.
+    const gammaFlipCell = screen.getByText('Gamma flip · live').closest('[data-figure-state]');
+    expect(gammaFlipCell).toHaveAttribute('data-figure-state', 'offline-retained');
+    expect(
+      within(gammaFlipCell as HTMLElement).getByText('offline · last known'),
+    ).toBeInTheDocument();
+    // The RETAINED value is the STREAM's $253, never the bundle's $248 (criterion 14) — this is
+    // the assertion the mutation proof actually keys on.
+    expect(within(gammaFlipCell as HTMLElement).getByText('$253')).toBeInTheDocument();
+    expect(within(gammaFlipCell as HTMLElement).queryByText('$248')).toBeNull();
     expect(screen.getByTestId('last-trade')).toHaveTextContent('⏸ Last trade $251.13');
-    expect(screen.getByText('⚠ Live offline — reconnecting…')).toBeInTheDocument();
+    // The connection chip's offline label no longer carries the literal `⚠` (curvature-v2-foundations
+    // SPEC §4.2 Icons row — a real stroke warn icon renders instead) and asserts the resolved state
+    // directly rather than a composed text node.
+    expect(screen.getByTestId('connection-chip')).toHaveAttribute(
+      'data-connection-state',
+      'offline',
+    );
+    expect(screen.getByText('Live offline — reconnecting…')).toBeInTheDocument();
 
     // Statics keep rendering the last bundle, byte-identical, with NO offline look of their own.
     STATIC_WIDGETS.forEach((id, i) => {
@@ -332,8 +370,10 @@ describe('Ticker · stream isolation (live-vs-static-isolation)', () => {
       expect(w.textContent).toBe(staticBefore[i]);
       expect(within(w).queryByText(/⏸/)).toBeNull();
     });
-    expect(screen.getByTestId('widget-gex-strike-profile')).toBeInTheDocument();
-    expect(within(screen.getByTestId('dealer-positioning')).getByText('$260')).toBeInTheDocument(); // call wall value intact
+    // (curvature-v2-desk-and-read FE-11) `GexStrikeProfile` is deleted — `StructureHeroPanel` is the
+    // desk's ONE structure instrument now; this checks the successor stays mounted through the drop.
+    expect(screen.getByTestId('widget-structure-hero')).toBeInTheDocument();
+    expect(within(screen.getByTestId('level-ladder')).getByText('$260')).toBeInTheDocument(); // call wall value intact
     // OFFLINE is neither the cold skeleton nor a refresh/error state (3 distinct states).
     expect(screen.queryByTestId('cold-skeleton')).toBeNull();
     expect(screen.queryByText(/Couldn't refresh/)).toBeNull();
@@ -342,7 +382,11 @@ describe('Ticker · stream isolation (live-vs-static-isolation)', () => {
     // RECONNECT: the next payload clears offline; the live look returns; statics unmoved.
     pushLive({ live: true, mid: 251, gamma_flip: 248, last_trade: 251.55 });
     expect(screen.getByTestId('last-trade')).toHaveTextContent('● Last trade $251.55');
-    expect(screen.queryByText('⚠ Live offline — reconnecting…')).toBeNull();
+    expect(screen.queryByText('Live offline — reconnecting…')).toBeNull();
+    expect(screen.getByTestId('connection-chip')).not.toHaveAttribute(
+      'data-connection-state',
+      'offline',
+    );
     STATIC_WIDGETS.forEach((id, i) =>
       expect(screen.getByTestId(id).textContent).toBe(staticBefore[i]),
     );
@@ -394,8 +438,12 @@ describe('Ticker · skeleton-first load', () => {
 // =================================================================================================
 // 3. Independent nullability — the null matrix (best-effort-isolated-or-null)
 // =================================================================================================
+// PASS 2 change 8: `iv_rank` dropped from this matrix — `IvRank` no longer renders on `/ticker` (its
+// card left the context band, owner ruling `context-band-is-the-designs-card-list`), so nulling
+// `market_state.iv_rank` no longer has an "IvRank empty copy" to observe on this page. The read
+// strip's own IV-rank cell is a separate, still-mounted consumer, untouched by this pass, and isn't
+// part of this best-effort-isolated-or-null matrix (it was never in this list before either).
 const NULLABLE_SECTIONS: Array<[field: string, emptyCopy: string]> = [
-  ['iv_rank', 'IV rank unavailable this cycle.'],
   ['market_context', 'Market context unavailable this cycle.'],
   ['dealer_flow_projection', 'Projected dealer flow unavailable this cycle.'],
   ['off_exchange', 'Off-exchange data unavailable this cycle.'],
@@ -420,9 +468,13 @@ describe('Ticker · independent nullability (null matrix)', () => {
       for (const [other, otherCopy] of NULLABLE_SECTIONS)
         if (other !== field) expect(screen.queryByText(otherCopy)).toBeNull();
       // The board around it is intact — walls + score render, no error page.
-      const dealer = screen.getByTestId('dealer-positioning');
-      expect(within(dealer).getByText('$260')).toBeInTheDocument();
-      expect(within(dealer).getByText(/42 ·/)).toBeInTheDocument();
+      // (v2, FE-8) walls live in the ladder now; the score lives in the read strip's opportunity
+      // cell — two separate successors of the old dealer positioning widget's single container
+      // (deleted at FE-8).
+      expect(within(screen.getByTestId('level-ladder')).getByText('$260')).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId('read-strip-cell-opportunity')).getByText(/42 ·/),
+      ).toBeInTheDocument();
       expect(screen.queryByText('Retry')).toBeNull();
     },
   );
@@ -440,7 +492,7 @@ describe('Ticker · independent nullability (null matrix)', () => {
     await screen.findByText('Call wall');
     for (const [, emptyCopy] of NULLABLE_SECTIONS)
       expect(screen.getByText(emptyCopy)).toBeInTheDocument();
-    expect(within(screen.getByTestId('dealer-positioning')).getByText('$260')).toBeInTheDocument();
+    expect(within(screen.getByTestId('level-ladder')).getByText('$260')).toBeInTheDocument();
     expect(screen.queryByText('Retry')).toBeNull();
     expect(errSpy).not.toHaveBeenCalled();
     errSpy.mockRestore();
@@ -451,15 +503,13 @@ describe('Ticker · independent nullability (null matrix)', () => {
 // 4. Wire-label authority — labels come from the wire via closed lookups, NEVER re-derived
 // =================================================================================================
 describe('Ticker · wire-label authority (digested-labels-not-raw-dump)', () => {
-  it('when a label CONTRADICTS its scalar, the LABEL wins (iv-rank band, trend direction, term state, gamma regime)', async () => {
+  it('when a label CONTRADICTS its scalar, the LABEL wins (trend direction, term state, gamma regime)', async () => {
     const tmFix = PACK_FIX.trend_momentum;
     const dirFix = tmFix?.direction;
     if (!tmFix || !dirFix) throw new Error('PACK_FIX fixture must carry trend_momentum.direction');
     bundleProvider = () =>
       richBundle(
         {
-          // Rank 82 (≥70 would re-derive "rich") but the wire band says CHEAP.
-          iv_rank: { ...IVR_FIX, rank: 82, band: 'premium_cheap' },
           // Uptrend scalars (close > EMA20 > EMA50) but the wire label says DOWNTREND.
           market_context: {
             ...PACK_FIX,
@@ -486,10 +536,11 @@ describe('Ticker · wire-label authority (digested-labels-not-raw-dump)', () => 
     renderAt('/ticker/TSLA');
     await screen.findByText('Call wall');
 
-    // IV-rank band: the wire label renders; the scalar-derived alternative does not.
-    const ivr = screen.getByTestId('widget-iv-rank');
-    expect(within(ivr).getByTestId('ivr-band')).toHaveTextContent('premium cheap');
-    expect(within(ivr).queryByText('premium rich')).toBeNull();
+    // PASS 2 change 8: the iv-rank-band example (`widget-iv-rank`'s `ivr-band` testid) dropped —
+    // `IvRank` no longer mounts on `/ticker` (owner ruling `context-band-is-the-designs-card-list`).
+    // The invariant (wire label wins over a scalar-derived alternative) stays covered by the three
+    // remaining examples below; `IvRank.spec.tsx`'s own suite (component stays, unmount only) still
+    // covers this same label-authority behavior for the widget itself, in isolation.
 
     // Trend direction: the wire label renders; nothing re-derives "Uptrend" from the EMAs.
     const mc = screen.getByTestId('widget-market-context');
@@ -509,14 +560,14 @@ describe('Ticker · wire-label authority (digested-labels-not-raw-dump)', () => 
 // 5. Model-read self-description — the basis/assumption line rides WITH its value
 // =================================================================================================
 describe('Ticker · model-read self-description', () => {
-  it('the iv-rank basis line and the projection horizon render alongside their values', async () => {
+  it('the projection horizon renders alongside its value', async () => {
     renderAt('/ticker/TSLA');
     await screen.findByText('Call wall');
 
-    // IV rank: the value element AND its window/N basis element share the widget body.
-    const ivr = screen.getByTestId('widget-iv-rank');
-    expect(within(ivr).getByTestId('ivr-rank-value')).toBeInTheDocument();
-    expect(within(ivr).getByTestId('ivr-basis')).toBeInTheDocument();
+    // PASS 2 change 8: the iv-rank half of this pairing test dropped — `widget-iv-rank` no longer
+    // mounts on `/ticker` (owner ruling `context-band-is-the-designs-card-list`). The invariant
+    // (`model-read-carries-its-assumptions`) is still exercised below via dealer-flow-projection,
+    // AND moved to `iv-rank/IvRank.spec.tsx` (component-level) for the rank-value/basis pairing.
 
     // Dealer-flow projection: the charm figure AND its horizon element share the widget body.
     const dfp = screen.getByTestId('widget-dealer-flow-projection');
@@ -543,7 +594,7 @@ describe('Ticker · last_trade is display-only', () => {
     pushLive({ live: true, mid: 251, gamma_flip: 248, last_trade: 999.99 });
     expect(anchor()).toHaveTextContent('TSLA · $251.00');
     expect(flipTile()).toBeInTheDocument();
-    expect(within(screen.getByTestId('dealer-positioning')).getByText('$260')).toBeInTheDocument();
+    expect(within(screen.getByTestId('level-ladder')).getByText('$260')).toBeInTheDocument();
 
     // No recent print → the honest empty, NEVER the prior value styled current; anchor unmoved.
     pushLive({ live: true, mid: 251, gamma_flip: 248, last_trade: null });

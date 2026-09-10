@@ -40,8 +40,12 @@ export interface PositionBriefProps {
   onSignIn?: () => void;
 }
 
+// Ticker fidelity repair, change 1 (F1) — no longer a full-width bento bar: F1 absorbs this brief
+// into the `.work` side column's flex stack (`design/src/screens/desk.mjs:32`), so `gridColumn: '1 /
+// -1'` — meaningful only inside a CSS grid parent — is dropped; a grid-column property has no effect
+// on a flex child (its new parent, `ticker-work-side` in `TickerDashboard.tsx`), so this was a dead
+// declaration once the move landed.
 const stripSx = {
-  gridColumn: '1 / -1' as const,
   border: '1px solid',
   borderColor: 'divider',
   borderRadius: '10px',

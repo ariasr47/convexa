@@ -10,6 +10,7 @@ const qualityManifest = JSON.parse(
   fs.readFileSync(path.join(ROOT, 'apps/dashboard-e2e/src/quality/manifest.json'), 'utf8'),
 ) as {
   full_chromium: {
+    inventory_id: string;
     tests: Array<{ test_id: string; file: string; title_path: string[]; project: string }>;
   };
   accessibility: { behaviors: Array<{ id: string }> };
@@ -58,7 +59,41 @@ const runtime = () => {
   };
 };
 const gateCounts: Record<string, number> = {
-  chromium: 52,
+  // (curvature-v2-foundations FE-10) 52 → 75: matches `manifest.json`'s `full_chromium.inventory_id`
+  // bump to `curvature-v2-foundations-75-v1` (`tools/lib/manifest.mjs` enforces the same number).
+  // (curvature-v2-desk-and-read FE-12) 75 → 86: FE-12 registered `desk-and-read.spec.ts` (6 new
+  // Chromium tests: criterion 45's two, the criteria 20/22 evidence pair, criterion 52's two) and
+  // added 5 new criterion-50 read-strip-rail tests to `no-overflow.spec.ts` (393 dark/light, 834,
+  // 900, 1280) — the first net-new e2e tests this phase's own lanes have added to the registered six
+  // (FE-1 through FE-11 only edited/re-pointed existing ones); bump to
+  // `curvature-v2-desk-and-read-86-v1` (`tools/lib/manifest.mjs` enforces the same number).
+  // (curvature-v2-surfaces FE-12) 86 → 90: U-32's frame-scoped extension to `curvature-v2.spec.ts`
+  // (all eight `widget-{id}` frame roots, hero and live tape included) added 4 tests, one per
+  // checked width; bump to `curvature-v2-surfaces-90-v1` (`tools/lib/manifest.mjs` enforces the
+  // same number).
+  // (curvature-v2-surfaces FE-13) 90 → 99: the 1280px light-scheme walk over the four seeded
+  // surfaces (criterion 64, 6 tests), the criterion 7a rendered-container-step review-evidence
+  // test (1), and the criterion 66 alerts write-affordance describe block (2); bump to
+  // `curvature-v2-surfaces-99-v1` (`tools/lib/manifest.mjs` enforces the same number).
+  // (curvature-v2-surfaces GATE Z repair, finding 2) 99 → 100: the off-exchange proximity chip's
+  // 44px floor, newly reachable via a local fixture override (1 new test); bump to
+  // `curvature-v2-surfaces-100-v1` (`tools/lib/manifest.mjs` enforces the same number).
+  // (curvature-v2-surfaces GATE Z repair pass 2, finding 3) 100 → 103: the coarse-pointer floor
+  // widened to `input`/`[role="combobox"]` (`theme.ts`), hard-asserted on 3 new
+  // `no-overflow.spec.ts` tests (Settings risk-inputs account-size/cap-value, Settings
+  // ticker/persona, the alerts composer Symbol/Kind controls); bump to
+  // `curvature-v2-surfaces-103-v1` (`tools/lib/manifest.mjs` enforces the same number).
+  // (curvature-v2-surfaces GATE Z repair pass 3, criterion 66 second clause) 103 → 105:
+  // `TrackRecordSection.tsx`'s `<summary>` on `/positions` (touched this phase, `bdc992d8`) FIXED
+  // to meet the coarse-pointer floor, 2 new `no-overflow.spec.ts` tests (393 coarse + 1280 fine,
+  // desktop-unmoved); bump to `curvature-v2-surfaces-105-v1` (`tools/lib/manifest.mjs` enforces the
+  // same number).
+  // (curvature-v2-surfaces GATE Z repair pass 4, QA pass 3 Medium finding) 105 → 108: the pass-3
+  // fix's `display: flex` removed the `<summary>`'s native disclosure `::marker`; pass 4 reaches
+  // 44px with `line-height` instead, leaving `display: list-item` intact. 3 new
+  // `no-overflow.spec.ts` tests (393 coarse, 393 fine, 1280 fine); bump to
+  // `curvature-v2-surfaces-108-v1` (`tools/lib/manifest.mjs` enforces the same number).
+  chromium: 108,
   compatibility: 15,
   accessibility: 16,
   visual: 6,
@@ -241,7 +276,10 @@ export class QualityReporter implements Reporter {
     };
     if (this.gate === 'chromium')
       Object.assign(summary, {
-        inventory_id: 'pre-feature-52-v1',
+        // Read from the manifest itself rather than a second hardcoded literal (curvature-v2-
+        // foundations FE-10 bumped this to `curvature-v2-foundations-75-v1` — a duplicated string
+        // here would have been a second place to forget on the next bump).
+        inventory_id: qualityManifest.full_chromium.inventory_id,
         project: 'chromium',
         tests: this.records,
       });

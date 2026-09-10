@@ -1,5 +1,6 @@
 import { GROK_SUBSCRIPTION_LABEL, ownKeyChip } from '@/features/auth/aiProviderLabels';
 import { typographyTokens } from '@/shared/theme/tokens';
+import { AccessibleHelp } from '@/shared/ui';
 import type { RecResponse, TickerBundle } from '@convexa/api';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Alert from '@mui/material/Alert';
@@ -9,7 +10,6 @@ import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { AccessibleHelp } from './AccessibleHelp';
 import { CapAnnotation } from './CapAnnotation';
 import {
   COPY,
@@ -67,6 +67,17 @@ function RiskField({
 }) {
   const value = literal.kind === 'value' ? literal.text : literalCopy(literal.kind).text;
   const help = literal.kind === 'value' ? tip : literalCopy(literal.kind).tip;
+  // Row 31 (SPEC §4.5): "the model's own number" (untraced) reads Plex Sans WITH A DOTTED RULE —
+  // NEVER in colour. The dotted rule is layered on TOP of `registerSx`'s shared fontFamily switch
+  // here, at the call site, rather than inside `literals.ts` (out of this task's Owns list, and
+  // `literals.spec.ts`'s own "registerSx — D3" suite already pins untraced/not_checkable/
+  // not_applicable as mutually EQUAL font-only objects — a settled prior contract this task does not
+  // reopen). Scoped to an actual rendered number (`literal.kind === 'value'`) so an absence literal
+  // (dash/not given/unavailable) never grows a spurious rule under it.
+  const dottedRule =
+    literal.kind === 'value' && groundingState === 'untraced'
+      ? { borderBottom: '1px dotted', borderColor: 'text.disabled', display: 'inline-block' }
+      : undefined;
   return (
     <Box>
       <Stack direction="row" spacing={0.25} sx={{ alignItems: 'center' }}>
@@ -75,7 +86,10 @@ function RiskField({
         </Typography>
         {help && <AccessibleHelp label={`${label} help`} text={help} />}
       </Stack>
-      <Typography variant="body2" sx={groundingState ? registerSx(groundingState) : undefined}>
+      <Typography
+        variant="body2"
+        sx={groundingState ? { ...registerSx(groundingState), ...dottedRule } : undefined}
+      >
         {literal.kind === 'not_set' ? (
           <>
             {value}{' '}
@@ -83,6 +97,7 @@ function RiskField({
               component="a"
               href="/settings#risk-inputs"
               size="small"
+              color="info"
               sx={{ p: 0, minWidth: 0, textTransform: 'none' }}
             >
               Set your risk inputs
@@ -336,11 +351,40 @@ export function DecisionCard({
               : SUPERSEDED_STRIP}
         </Alert>
       )}
+      {/* Row 29/30 (SPEC §4.5, canon rule 16): the verdict word is the first content node of the
+          read's own body (after the fixed attribution chrome above — provenance and, when present,
+          a composing degraded strip, both of which the design source itself draws ABOVE the verdict
+          too, and criterion 43 requires for the degraded strip specifically) and it is the ONLY
+          element in the panel that ever spends amber AS TEXT. `Trade` alone carries it — the
+          separator and the bias word stay in the default type register (`Archivo display`, canon's
+          own trio; never `subtitle1`, which is Plex Sans). `No trade` spends NO amber at all: amber
+          means "there is a trade," not "here is the verdict slot" (ruling 8 — tier emphasis survives
+          in the word, in type only, never a replacement colour; no_trade is info-toned, not red, and
+          not amber either). */}
       <Box
         data-testid="decision-verdict"
         sx={{ mt: 1, p: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}
       >
-        <Typography variant="subtitle1" component="p">
+        <Typography
+          component="p"
+          data-testid="decision-verdict-word"
+          sx={{
+            m: 0,
+            fontFamily: typographyTokens.displayFontFamily,
+            fontStretch: typographyTokens.displayFontStretch,
+            fontWeight: 700,
+            letterSpacing: '-0.015em',
+            fontSize: { xs: '20px', sm: '26px' },
+            // ONE text node, byte-identical to the pre-existing `Trade · {bias}` / `No trade`
+            // strings every other spec already queries by text — splitting it into separate spans
+            // for the word alone breaks `getByText`'s direct-text-node matching across dozens of
+            // existing call sites for no spec benefit (row 30 only requires that the VERDICT be the
+            // sole amber-as-text spender, not that a sub-string of it be excluded). `No trade` never
+            // spends amber at all (ruling 8 / §4.5: no_trade is info-toned, never a directional
+            // colour) — the whole element only turns amber for a trade verdict.
+            color: isTrade ? 'primary.main' : undefined,
+          }}
+        >
           {isTrade ? `Trade · ${strategy.bias}` : COPY.noTrade.title}
         </Typography>
       </Box>
@@ -354,20 +398,9 @@ export function DecisionCard({
           {PLAN_FIELDS_NOT_CHECKED}
         </Typography>
       )}
-      {reasoning.lead && (
-        <Typography
-          data-testid="decision-thesis"
-          variant="body2"
-          sx={{ mt: 1, color: 'text.secondary' }}
-        >
-          {reasoning.lead}
-        </Typography>
-      )}
-      {!isTrade && strategy.reengage_when?.length ? (
-        <Typography variant="body2" sx={{ mt: 1 }}>
-          {strategy.reengage_when.join(' · ')}
-        </Typography>
-      ) : null}
+      {/* Row 31: the four risk fields render their grounding BEFORE any prose — `AiRecPanel.tsx`'s
+          own header doc already declares "risk + invalidation FIRST"; the DOM order below is what
+          makes that literally true (moved ahead of `decision-thesis`, not merely asserted). */}
       {isTrade && (
         <>
           {missing.length > 0 &&
@@ -389,7 +422,12 @@ export function DecisionCard({
               mt: 1,
             }}
           >
-            <RiskField label="Max risk" literal={maxRiskLiteral} tip={MAX_RISK_TIP} />
+            <RiskField
+              label="Max risk"
+              literal={maxRiskLiteral}
+              tip={MAX_RISK_TIP}
+              groundingState={rec.grounding?.fields.max_risk?.state}
+            />
             <RiskField
               label="Invalidation"
               literal={invalidationLiteral}
@@ -402,6 +440,10 @@ export function DecisionCard({
                 />
               }
             />
+            {/* `Entry` (`entry_trigger`) carries no wire grounding field (the checked set is exactly
+                exit_stop / exit_target / invalidation_level / max_risk / position_size) — it is a
+                plan detail, never traced-or-untraced, so it renders in the plain register rather than
+                a register this build cannot honestly assign. */}
             <RiskField label="Entry" literal={entryTriggerLiteral} />
             <RiskField
               label="Target"
@@ -414,6 +456,20 @@ export function DecisionCard({
           </Box>
         </>
       )}
+      {reasoning.lead && (
+        <Typography
+          data-testid="decision-thesis"
+          variant="body2"
+          sx={{ mt: 1, color: 'text.secondary' }}
+        >
+          {reasoning.lead}
+        </Typography>
+      )}
+      {!isTrade && strategy.reengage_when?.length ? (
+        <Typography variant="body2" sx={{ mt: 1 }}>
+          {strategy.reengage_when.join(' · ')}
+        </Typography>
+      ) : null}
       <Box data-testid="decision-evidence" sx={{ mt: 1 }}>
         {isTrade && <GroundingNote grounding={rec.grounding} />}
         <CapAnnotation capCheck={rec.cap_check} />
@@ -428,20 +484,39 @@ export function DecisionCard({
           '& .MuiButton-root': { '@media (pointer: coarse)': { minHeight: 44 } },
         }}
       >
+        {/* Row 30 (SPEC §4.5): amber on this surface belongs to the verdict word alone. MUI's
+            unthemed default for a `variant="outlined"`/`"text"` Button is `color="primary"`, which
+            resolves to the SAME brand amber the verdict uses — every secondary/link-style control
+            below binds an EXPLICIT non-amber color (mirrors `AiRecPanel.tsx`'s own export-link
+            precedent: "link-class action text binds `info`... never amber"). Only the ONE primary,
+            filled CTA (`reviewTrade`, `variant="contained"`) is exempt: a CONTAINED button's text is
+            `primary.contrastText` (ink on an amber FILL), the fill-grade spend `tokens.ts` already
+            reserves for buttons/bars/borders/icons — never the text-grade spend rule 16 scopes. */}
         {presentation.actions.reviewTrade && (
           <Button variant="contained" onClick={onReview}>
             {COPY.action.reviewTrade}
           </Button>
         )}
         {presentation.actions.createOrder && onCreateOrder && (
-          <Button variant="outlined" onClick={onCreateOrder} data-testid="ai-rec-act">
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={onCreateOrder}
+            data-testid="ai-rec-act"
+          >
             {COPY.action.createOrder}
           </Button>
         )}
         {presentation.actions.analysis && (
-          <Button onClick={onAnalysis}>{COPY.action.analysis}</Button>
+          <Button color="info" onClick={onAnalysis}>
+            {COPY.action.analysis}
+          </Button>
         )}
-        {presentation.actions.refresh && <Button onClick={onRefresh}>{COPY.action.refresh}</Button>}
+        {presentation.actions.refresh && (
+          <Button color="inherit" onClick={onRefresh}>
+            {COPY.action.refresh}
+          </Button>
+        )}
         {presentation.actions.dismiss && (
           <Button color="inherit" onClick={onDismiss}>
             {COPY.action.dismiss}

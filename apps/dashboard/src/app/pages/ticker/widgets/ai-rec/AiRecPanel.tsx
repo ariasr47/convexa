@@ -37,6 +37,7 @@ import {
   AskModelSelect,
   LoadingBlock,
   PoweringCta,
+  QuietGateNote,
   SignedOutGate,
   SnapshotHint,
   UnavailableBlock,
@@ -45,6 +46,8 @@ import { AnalysisSurface } from './AnalysisSurface';
 import { COPY } from './copy';
 import { DecisionCard } from './DecisionCard';
 import { deriveAiRecPresentation } from './presentationPolicy';
+import { readLayoutFor } from './readLayout';
+import { ReadSheet } from './ReadSheet';
 import type { AiRec, RecRequestOpts } from './useAiRecommendation';
 
 export { useReadPersonas } from './useReadPersonas';
@@ -181,6 +184,12 @@ export function AiRecPanel({
           : (powering?.unavailable_reason ?? null),
   });
   const poweringCta = POWERING_STATES.has(presentation.requestState);
+  // The ONE total mapping (SPEC §2.6, readLayout.ts) is what actually GATES the A1c annex below —
+  // not a parallel `requestState === 'no_edge'` re-check. A regression in the mapping (e.g. the
+  // corrected earlier draft's error, collapsing no_edge back to an idle-only body) therefore shows
+  // up here, in the real render, not only in the mapping's own isolated tests.
+  const readLayout = readLayoutFor(presentation.requestState, presentation.resultState);
+  const showQuietGateAnnex = readLayout.annexes.includes('A1c');
 
   // Exactly one body state. A powering CTA preempts the generic `unavailable` block.
   const phase = loading
@@ -203,6 +212,18 @@ export function AiRecPanel({
   // Auth is the outer presentation boundary: a retained result is hidden immediately when the
   // session becomes signed out, including its analysis/persona/quota/simulation controls.
   const producedRec = signedIn && rec?.status === 'produced' && rec.strategy ? rec : null;
+
+  // The bottom sheet's peek row (SPEC §2.5/§4.1, criterion 45): the SAME value from the SAME model
+  // field `DecisionCard`'s own `decision-verdict-word` renders (`producedRec.strategy.decision`/
+  // `.bias`), computed once here rather than re-derived inside `ReadSheet` from a wire scalar. `null`
+  // whenever no verdict is mounted in the wide anatomy either (row 42 — idle's verdict slot is empty).
+  const verdictStrategy = producedRec?.strategy;
+  const isTradeVerdict = verdictStrategy?.decision === 'trade';
+  const verdictText = verdictStrategy
+    ? isTradeVerdict
+      ? `Trade · ${verdictStrategy.bias}`
+      : COPY.noTrade.title
+    : null;
 
   // The always-available export link, lifted into the Widget header `actions` slot (Figma 149:621).
   // Stage-3 §4.1: link-class action text binds `info` (the token rule: links/info = signal),
@@ -233,211 +254,229 @@ export function AiRecPanel({
       data-testid="ai-rec-panel"
       sx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}
     >
-      <Widget
-        id="ai-rec"
-        title={`AI recommendation · ${ticker}`}
-        actions={exportAction}
-        bodySx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}
-      >
-        {/* The advisory intro, then the per-query persona override with a label ABOVE the (recessed)
+      <ReadSheet verdict={verdictText} isTrade={Boolean(isTradeVerdict)}>
+        <Widget
+          id="ai-rec"
+          title={`AI recommendation · ${ticker}`}
+          actions={exportAction}
+          bodySx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}
+        >
+          {/* The advisory intro, then the per-query persona override with a label ABOVE the (recessed)
             select. The title + export link now live in the Widget header. */}
-        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
-          {COPY.intro}
-        </Typography>
-        {/* Persona override — signed-in only (you can't ask a read while logged out, so the Figma
+          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
+            {COPY.intro}
+          </Typography>
+          {/* Persona override — signed-in only (you can't ask a read while logged out, so the Figma
             signed-out state omits it). */}
-        {signedIn && (
-          <Box sx={{ mb: 1.5 }}>
-            <Typography
-              component="label"
-              htmlFor="read-persona-select"
-              variant="caption"
-              sx={{
-                display: 'block',
-                color: 'text.disabled',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                fontSize: 11,
-                fontWeight: 500,
-                mb: 0.5,
-              }}
-            >
-              Next read persona
-            </Typography>
-            <FormControl size="small" fullWidth>
-              <Select
-                id="read-persona-select"
-                value={readPersonaId}
-                inputProps={{ 'aria-label': 'Next read persona' }}
-                onChange={(e) => onChangeReadPersona(String(e.target.value))}
-              >
-                {personas.map((p) => (
-                  <MenuItem key={p.id} value={p.id}>
-                    {p.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Tooltip
-              arrow
-              describeChild
-              title={`Defaults to your active persona (${activeName}). Changes apply only to the next read and never recompute the pinned result.`}
-            >
+          {signedIn && (
+            <Box sx={{ mb: 1.5 }}>
               <Typography
+                component="label"
+                htmlFor="read-persona-select"
                 variant="caption"
-                component="span"
-                sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+                sx={{
+                  display: 'block',
+                  color: 'text.disabled',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  fontSize: 11,
+                  fontWeight: 500,
+                  mb: 0.5,
+                }}
               >
-                Next request only · does not change the active persona
+                Next read persona
               </Typography>
-            </Tooltip>
-          </Box>
-        )}
-        {/* Scenario picker (operator-only, flag-gated OFF — D1/AC-34). Rendered ONLY when the
+              <FormControl size="small" fullWidth>
+                <Select
+                  id="read-persona-select"
+                  value={readPersonaId}
+                  inputProps={{ 'aria-label': 'Next read persona' }}
+                  onChange={(e) => onChangeReadPersona(String(e.target.value))}
+                >
+                  {personas.map((p) => (
+                    <MenuItem key={p.id} value={p.id}>
+                      {p.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Tooltip
+                arrow
+                describeChild
+                title={`Defaults to your active persona (${activeName}). Changes apply only to the next read and never recompute the pinned result.`}
+              >
+                <Typography
+                  variant="caption"
+                  component="span"
+                  sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+                >
+                  Next request only · does not change the active persona
+                </Typography>
+              </Tooltip>
+            </Box>
+          )}
+          {/* Scenario picker (operator-only, flag-gated OFF — D1/AC-34). Rendered ONLY when the
             status read advertises it; ZERO scenario surface otherwise. Signed-out ⇒ the gate
             replaces this whole region (AC-42). */}
-        {signedIn && scenariosEnabled && (
-          <Box sx={{ mb: 1.5 }} data-testid="scenario-picker">
-            <Typography
-              component="label"
-              htmlFor="scenario-select"
-              variant="caption"
-              sx={{
-                display: 'block',
-                color: 'text.disabled',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                fontSize: 11,
-                fontWeight: 500,
-                mb: 0.5,
-              }}
-            >
-              {SCENARIO_LABEL}
-            </Typography>
-            <FormControl size="small" fullWidth>
-              <Select
-                id="scenario-select"
-                value={scenarioId}
-                displayEmpty
-                inputProps={{ 'aria-label': SCENARIO_LABEL }}
-                onChange={(e) => setScenarioId(String(e.target.value))}
+          {signedIn && scenariosEnabled && (
+            <Box sx={{ mb: 1.5 }} data-testid="scenario-picker">
+              <Typography
+                component="label"
+                htmlFor="scenario-select"
+                variant="caption"
+                sx={{
+                  display: 'block',
+                  color: 'text.disabled',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  fontSize: 11,
+                  fontWeight: 500,
+                  mb: 0.5,
+                }}
               >
-                <MenuItem value="">{SCENARIO_NONE}</MenuItem>
-                {(ai.scenarios?.catalog ?? []).map((s: RecScenarioInfo) => (
-                  // Server-provided display name rendered verbatim, registry order (AC-36).
-                  <MenuItem key={s.id} value={s.id}>
-                    {s.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Typography
-              variant="caption"
-              sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
-            >
-              {SCENARIO_CAPTION}
-            </Typography>
-          </Box>
-        )}
+                {SCENARIO_LABEL}
+              </Typography>
+              <FormControl size="small" fullWidth>
+                <Select
+                  id="scenario-select"
+                  value={scenarioId}
+                  displayEmpty
+                  inputProps={{ 'aria-label': SCENARIO_LABEL }}
+                  onChange={(e) => setScenarioId(String(e.target.value))}
+                >
+                  <MenuItem value="">{SCENARIO_NONE}</MenuItem>
+                  {(ai.scenarios?.catalog ?? []).map((s: RecScenarioInfo) => (
+                    // Server-provided display name rendered verbatim, registry order (AC-36).
+                    <MenuItem key={s.id} value={s.id}>
+                      {s.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Typography
+                variant="caption"
+                sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+              >
+                {SCENARIO_CAPTION}
+              </Typography>
+            </Box>
+          )}
 
-        {/* Body */}
-        {signedIn && phase === 'loading' && (
-          <LoadingBlock
-            ticker={ticker}
-            readName={readName}
-            path={
-              pathLabel(powering?.key_source, powering?.provider) ??
-              (powering?.key_source === 'own_key' ? ownKeyChip(powering.provider) : null)
-            }
-            model={powering?.model ?? bootstrap?.preference.model ?? null}
-          />
-        )}
-
-        {signedIn && (
-          <AskModelSelect
-            bootstrap={bootstrap}
-            disabled={loading}
-            onChange={async (id) => {
-              try {
-                await auth.updateSettings({ ai_model: id });
-                const next = await getAiKeyStatus();
-                setBootstrap(next);
-              } catch {
-                /* save-error is surfaced by settings; keep last known catalog */
+          {/* Body */}
+          {signedIn && phase === 'loading' && (
+            <LoadingBlock
+              ticker={ticker}
+              readName={readName}
+              path={
+                pathLabel(powering?.key_source, powering?.provider) ??
+                (powering?.key_source === 'own_key' ? ownKeyChip(powering.provider) : null)
               }
-            }}
-          />
-        )}
+              model={powering?.model ?? bootstrap?.preference.model ?? null}
+            />
+          )}
 
-        {/* Distinct powering CTAs — never collapse reasons; never free-uses. Export stays in header. */}
-        {signedIn && phase === 'powering_cta' && (
-          <PoweringCta reason={presentation.requestState} onSettings={goToSettings} />
-        )}
+          {signedIn && (
+            <AskModelSelect
+              bootstrap={bootstrap}
+              disabled={loading}
+              onChange={async (id) => {
+                try {
+                  await auth.updateSettings({ ai_model: id });
+                  const next = await getAiKeyStatus();
+                  setBootstrap(next);
+                } catch {
+                  /* save-error is surfaced by settings; keep last known catalog */
+                }
+              }}
+            />
+          )}
 
-        {signedIn && phase === 'unavailable' && (
-          <UnavailableBlock
-            cap={cap}
-            cooldownRemaining={cooldownRemaining}
-            retryAllowed={presentation.actions.retry}
-            onRetry={ai.retry}
-            scenario={rec?.scenario ?? null}
-          />
-        )}
+          {/* Distinct powering CTAs — never collapse reasons; never free-uses. Export stays in header. */}
+          {signedIn && phase === 'powering_cta' && (
+            <PoweringCta reason={presentation.requestState} onSettings={goToSettings} />
+          )}
 
-        {signedIn && producedRec && !loading && (
-          <DecisionCard
-            rec={producedRec}
-            bundle={bundle}
-            presentation={presentation}
-            dataAge={dataAge}
-            onReview={() =>
-              authGate.guard(AUTH_COPY.positions.gateAcceptRec, () =>
-                onAccept(producedRec, producedRec.persona.name),
-              )
-            }
-            onCreateOrder={
-              presentation.actions.createOrder && onAct
-                ? () => onAct(producedRec, producedRec.persona.name)
-                : undefined
-            }
-            onAnalysis={() => setAnalysisOpen(true)}
-            onRefresh={() => doRequest({ override: false })}
-            onDismiss={ai.dismiss}
-          />
-        )}
+          {signedIn && phase === 'unavailable' && (
+            <UnavailableBlock
+              cap={cap}
+              cooldownRemaining={cooldownRemaining}
+              retryAllowed={presentation.actions.retry}
+              onRetry={ai.retry}
+              scenario={rec?.scenario ?? null}
+            />
+          )}
 
-        {/* The action region (primary action in idle; the NEXT-query control alongside a rendered
+          {signedIn && producedRec && !loading && (
+            <DecisionCard
+              rec={producedRec}
+              bundle={bundle}
+              presentation={presentation}
+              dataAge={dataAge}
+              onReview={() =>
+                authGate.guard(AUTH_COPY.positions.gateAcceptRec, () =>
+                  onAccept(producedRec, producedRec.persona.name),
+                )
+              }
+              onCreateOrder={
+                presentation.actions.createOrder && onAct
+                  ? () => onAct(producedRec, producedRec.persona.name)
+                  : undefined
+              }
+              onAnalysis={() => setAnalysisOpen(true)}
+              onRefresh={() => doRequest({ override: false })}
+              onDismiss={ai.dismiss}
+            />
+          )}
+
+          {/* A1c — the quiet-gate annex (SPEC §4.5, §2.6): a request-scope condition, not a peer body
+            state. `no_edge` composes over a produced read rather than replacing it — the same note,
+            caption and `Ask anyway` control as A1b (idle · quiet gate), rendered IN BODY beneath the
+            read, and WITHOUT A1b's Mono `no_trade` stance line (a real verdict is mounted here; the
+            machine stance would collide with it, canon rule 23 / row 42). `refresh`/`retry` both
+            resolve false under `no_edge` by construction (presentationPolicy.ts:169,177), so this is
+            the ONLY recovery control the panel would otherwise leave the user without (row 59). */}
+          {signedIn && producedRec && !loading && showQuietGateAnnex && (
+            <QuietGateNote
+              reasons={gate.reasons}
+              onAskAnyway={() => doRequest({ override: true })}
+              includeStanceLine={false}
+              sx={{ mt: 1.5 }}
+            />
+          )}
+
+          {/* The action region (primary action in idle; the NEXT-query control alongside a rendered
             rec). Hidden while loading, the byo CTA, and the unavailable block (each owns its action). */}
-        {!signedIn ? (
-          <SignedOutGate
-            hasRec={false}
-            promptText={authGate.promptText}
-            onSignIn={() => authGate.signIn(AUTH_COPY.askAi.gate)}
-          />
-        ) : (
-          phase !== 'loading' &&
-          phase !== 'unavailable' &&
-          phase !== 'powering_cta' && (
-            <>
-              {!hasRec && <SnapshotHint bundle={bundle} />}
-              {!producedRec && (
-                <ActionRegion
-                  cap={cap}
-                  cooldownRemaining={cooldownRemaining}
-                  reasons={gate.reasons}
-                  compact={hasRec}
-                  ticker={ticker}
-                  scenarioSelected={scenarioSelected}
-                  requestState={presentation.requestState}
-                  actions={presentation.actions}
-                  onGet={() => doRequest({ override: false })}
-                  onAskAnyway={() => doRequest({ override: true })}
-                />
-              )}
-            </>
-          )
-        )}
-      </Widget>
+          {!signedIn ? (
+            <SignedOutGate
+              hasRec={false}
+              promptText={authGate.promptText}
+              onSignIn={() => authGate.signIn(AUTH_COPY.askAi.gate)}
+            />
+          ) : (
+            phase !== 'loading' &&
+            phase !== 'unavailable' &&
+            phase !== 'powering_cta' && (
+              <>
+                {!hasRec && <SnapshotHint bundle={bundle} />}
+                {!producedRec && (
+                  <ActionRegion
+                    cap={cap}
+                    cooldownRemaining={cooldownRemaining}
+                    reasons={gate.reasons}
+                    compact={hasRec}
+                    ticker={ticker}
+                    scenarioSelected={scenarioSelected}
+                    requestState={presentation.requestState}
+                    actions={presentation.actions}
+                    onGet={() => doRequest({ override: false })}
+                    onAskAnyway={() => doRequest({ override: true })}
+                  />
+                )}
+              </>
+            )
+          )}
+        </Widget>
+      </ReadSheet>
       <AnalysisSurface
         open={analysisOpen}
         ticker={ticker}

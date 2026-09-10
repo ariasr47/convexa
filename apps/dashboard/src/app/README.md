@@ -49,12 +49,15 @@ Persistent nav, footer, brand mark; wraps the routed pages.
 ## ticker widgets (`pages/ticker/widgets/`)
 
 One folder per bento widget (`<widget>/Component.tsx` + spec + `index.ts` barrel):
-`gex-profile-chart`, `live-tape`, `dealer-positioning`, `dealer-flow-projection`, `iv-rank`,
-`market-context`, `term-structure`, `fresh-positioning`, `off-exchange-blocks`, `setups`,
-and `ai-rec` (the AI-recommendation panel). Plus:
+`gex-profile-chart`, `live-tape`, `structure-hero`, `level-ladder`, `read-strip`,
+`dealer-flow-projection`, `iv-rank`, `market-context`, `term-structure`, `fresh-positioning`,
+`off-exchange-blocks`, `setups`, and `ai-rec` (the AI-recommendation panel).
+(curvature-v2-desk-and-read FE-8: `dealer-positioning` deleted — its twelve cells decompose into
+`level-ladder` + `read-strip`, its Field/Magnet toggle into `structure-hero`.) Plus:
 
-- `widgets/_kit/` — ticker-local widget infrastructure (`StatTile`, `TintChip`, `copy`,
-  `useFlashOnChange`). Widgets import `_kit`, never each other.
+- `widgets/_kit/` — ticker-local widget infrastructure (`FigureCell` — the v2 figure primitive,
+  replacing `StatTile` at curvature-v2-foundations — `TintChip`, `copy`, `useFlashOnChange`).
+  Widgets import `_kit`, never each other.
 - `widgets/chrome/` — the page frame, not bento widgets (`CommandDeck`, `TickerHeader`,
   `TickerToolbar`, `FreshnessLine`).
 

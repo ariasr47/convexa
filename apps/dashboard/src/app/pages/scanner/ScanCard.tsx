@@ -7,24 +7,22 @@
  * action (`[no-real-order-path]`, AC-11). It reuses the SAME `ScanCells` atoms as the table, so a
  * datum can never be rendered two ways.
  */
+import { MONO_FACE } from '@/shared/figure';
 import type { ScanRow } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { useId } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import type { PollDelta } from './format';
-import { whyThisRow } from './labels';
+import { regimeLookup, volLookup, whyThisRow } from './labels';
 import {
   ChgCell,
   LabelCell,
   LevelDistCell,
-  MONO,
   PriceCell,
-  regimeTextOf,
   ScoreCell,
   StatusCell,
   TierCell,
   UpdatedCell,
-  volTextOf,
 } from './ScanCells';
 
 export interface ScanCardProps {
@@ -32,12 +30,15 @@ export interface ScanCardProps {
   nowS: number;
   flashActive: boolean;
   delta?: PollDelta | null;
+  /** SPEC §2.2 — `{ retained: boolean } | null` per symbol, computed once at `Scanner.tsx`. Price
+   *  ONLY — no structure figure ever takes this prop (criterion 10). */
+  priceOffline: (symbol: string) => { retained: boolean } | null;
 }
 
 const factSx = { display: 'flex', flexDirection: 'column' as const, gap: '2px', minWidth: 0 };
 const factLabelSx = { fontSize: '0.6875rem', color: 'text.secondary' };
 
-export function ScanCard({ row, nowS, flashActive, delta }: ScanCardProps) {
+export function ScanCard({ row, nowS, flashActive, delta, priceOffline }: ScanCardProps) {
   const scoreDescriptionId = useId();
   const visuallyHidden = {
     position: 'absolute',
@@ -67,7 +68,8 @@ export function ScanCard({ row, nowS, flashActive, delta }: ScanCardProps) {
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: '10px',
+        // U-35 (scanner half): the panel role is 12 (`shape.borderRadius`), not a raw '10px' string.
+        borderRadius: 1,
         padding: '13px',
       }}
     >
@@ -81,7 +83,7 @@ export function ScanCard({ row, nowS, flashActive, delta }: ScanCardProps) {
           mb: '10px',
         }}
       >
-        <Box component="span" sx={{ ...MONO, fontWeight: 700, fontSize: '1rem' }}>
+        <Box component="span" sx={{ ...MONO_FACE, fontWeight: 700, fontSize: '1rem' }}>
           {row.symbol}
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
@@ -92,7 +94,7 @@ export function ScanCard({ row, nowS, flashActive, delta }: ScanCardProps) {
 
       {/* Primary line: price (flash) · chg % (the one direction colour). */}
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '10px', fontSize: '1.1rem' }}>
-        <PriceCell row={row} active={flashActive} />
+        <PriceCell row={row} active={flashActive} offline={priceOffline(row.symbol)} />
         <Box component="span" sx={{ fontSize: '0.9rem' }}>
           <ChgCell row={row} />
         </Box>
@@ -125,13 +127,13 @@ export function ScanCard({ row, nowS, flashActive, delta }: ScanCardProps) {
           <Box component="span" sx={factLabelSx}>
             Regime
           </Box>
-          <LabelCell testid="cell-regime" text={regimeTextOf(row)} />
+          <LabelCell testid="cell-regime" result={regimeLookup(row.regime)} />
         </Box>
         <Box sx={factSx}>
           <Box component="span" sx={factLabelSx}>
             Vol
           </Box>
-          <LabelCell testid="cell-vol" text={volTextOf(row)} />
+          <LabelCell testid="cell-vol" result={volLookup(row.vol_regime)} />
         </Box>
         <Box sx={factSx}>
           <Box component="span" sx={factLabelSx}>
@@ -181,6 +183,7 @@ export function ScanCardList({
   nowS,
   flashActive,
   deltas,
+  priceOffline,
 }: { rows: ScanRow[]; deltas?: Map<string, PollDelta> } & Omit<ScanCardProps, 'row' | 'delta'>) {
   return (
     <Box data-testid="scan-cards" sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
@@ -191,6 +194,7 @@ export function ScanCardList({
           nowS={nowS}
           flashActive={flashActive}
           delta={deltas?.get(row.symbol)}
+          priceOffline={priceOffline}
         />
       ))}
     </Box>

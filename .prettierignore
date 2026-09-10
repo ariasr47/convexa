@@ -2,6 +2,9 @@
 # Prettier already ignores node_modules by default; everything else is explicit.
 
 # --- Governance / hand-maintained docs (not code — leave formatting alone) ---
+# AGENTS.md is rewritten verbatim by every spire install (repo-root immutable) — formatting it
+# only makes CI's format:check fail after the next upgrade.
+AGENTS.md
 .claude/
 .agents/
 .codex/

@@ -1,0 +1,194 @@
+{
+  "id": "scanner-dense-1440-dark",
+  "side": "design",
+  "surface": "scanner",
+  "state": "dense",
+  "width": 1440,
+  "scheme": "dark",
+  "url": "/scanner.html",
+  "pageHeight": 1275,
+  "overflowX": false,
+  "scrollWidth": 1440,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "nav-bar",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 56,
+      "text": "CONVEA ScannerTickerPositionsAlerts Jump to a ticker…⌘K Open 10:42:07 ET R"
+    },
+    {
+      "key": "wrap:0:wrap.nav-in",
+      "x": 40,
+      "y": 0,
+      "w": 1360,
+      "h": 56,
+      "text": "CONVEA ScannerTickerPositionsAlerts Jump to a ticker…⌘K Open 10:42:07 ET R"
+    },
+    {
+      "key": "wrap:1:wrap",
+      "x": 40,
+      "y": 56,
+      "w": 1360,
+      "h": 160,
+      "text": "ScannerOne dense read of the tracked universe — which name deserves the deep-div"
+    },
+    {
+      "key": "wrap:2:wrap",
+      "x": 40,
+      "y": 216,
+      "w": 1360,
+      "h": 674,
+      "text": "SymbolPriceChgScoreTierRegimeFlip distCall wallPut wallIV / HVVol / OIAs-of Inde"
+    },
+    {
+      "key": "wrap:3:wrap.scan-notes",
+      "x": 40,
+      "y": 890,
+      "w": 1360,
+      "h": 116,
+      "text": "Why this score · SPY 72near wall / flip +28 · IV vs HV stretch +18 · active setu"
+    },
+    {
+      "key": "wrap:4:wrap.foot-grid",
+      "x": 40,
+      "y": 1094,
+      "w": 1360,
+      "h": 181,
+      "text": "CONVEA How Convexa worksBlog — how we read structureLab Convexa is an analysis t"
+    },
+    {
+      "key": "panel:0:panel.scan-table:SymbolPriceChgScoreTierRegimeFli",
+      "x": 80,
+      "y": 230,
+      "w": 1280,
+      "h": 660,
+      "text": "SymbolPriceChgScoreTierRegimeFlip distCall wallPut wallIV / HVVol / OIAs-of Inde"
+    },
+    {
+      "key": "panel:13:panel.scan-preview:Call wall",
+      "x": 920,
+      "y": 324,
+      "w": 420,
+      "h": 306,
+      "text": "SPYpositive γActionable · 72hover preview · as-of 42s Call wall580Flip568.50Put "
+    },
+    {
+      "key": "panel:14:panel.quiet:Why this score · SPY 72",
+      "x": 80,
+      "y": 906,
+      "w": 417,
+      "h": 100,
+      "text": "Why this score · SPY 72near wall / flip +28 · IV vs HV stretch +18 · active setu"
+    },
+    {
+      "key": "panel:15:panel.quiet:Zero-state lead group",
+      "x": 511,
+      "y": 906,
+      "w": 417,
+      "h": 100,
+      "text": "Zero-state lead groupAnonymous or empty views open on Indexes & megacaps so the "
+    },
+    {
+      "key": "panel:16:panel.quiet:Price stream drops",
+      "x": 943,
+      "y": 906,
+      "w": 417,
+      "h": 100,
+      "text": "Price stream dropsPrices dim and the cadence header says Prices offline · showin"
+    },
+    {
+      "key": "block:panel.scan-table",
+      "x": 80,
+      "y": 230,
+      "w": 1280,
+      "h": 660,
+      "text": "SymbolPriceChgScoreTierRegimeFlip distCall wallPut wallIV / HVVol / OIAs-of Inde"
+    }
+  ],
+  "probes": {
+    "connectionState": null,
+    "skeletons": 0,
+    "monoElements": 246,
+    "sansElements": 201,
+    "archivoElements": 5,
+    "otherFontElements": 0,
+    "htmlBackground": "rgb(11, 15, 23)",
+    "bodyBackground": "rgb(11, 15, 23)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", sans-serif",
+    "bodyFontSize": "13px",
+    "panelSelector": "panel scan-table",
+    "panelRadius": "12px",
+    "panelBackground": "rgb(19, 26, 36)",
+    "panelBorder": "1px solid rgba(138, 155, 180, 0.16)",
+    "monoFont": "\"IBM Plex Mono\", ui-monospace, SFMono-Regular, Menlo, monospace",
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": true,
+    "plexSansLoaded": true,
+    "scrollHeight": 1275,
+    "scrollWidth": 1440,
+    "clientWidth": 1440
+  },
+  "panels": [
+    {
+      "key": "div.panel.scan-table",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "a.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "a.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "a.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "a.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "a.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "a.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "a.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    }
+  ],
+  "png": "design/scanner-dense-1440-dark.png"
+}

@@ -128,7 +128,7 @@ describe('auth · degrade-to-anonymous', () => {
     mountApp('/ticker/TSLA');
 
     // The trader bundle renders exactly as today despite the auth fault — never a blank/blocked path.
-    expect(await screen.findByText('Gamma flip')).toBeInTheDocument();
+    expect(await screen.findByText('Gamma flip · live')).toBeInTheDocument();
     await waitFor(() => expect(backend.calls.ticker).toBeGreaterThanOrEqual(1));
     // The live stream was opened too — the SSE path never waits on auth.
     await waitFor(() => expect(openedEventSources).toBeGreaterThanOrEqual(1));

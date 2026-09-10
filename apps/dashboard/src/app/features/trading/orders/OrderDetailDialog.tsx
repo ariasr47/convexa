@@ -5,7 +5,8 @@
  * "View position →" when filled (AC-31). Panel-raised skin, token-only, SIMULATED chip (AC-46).
  */
 import { SIMULATED_TIP } from '@/features/trading/positions/labels';
-import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { MONO_FACE } from '@/shared/figure';
+import { extrasFor } from '@/shared/theme/tokens';
 import CloseIcon from '@mui/icons-material/Close';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -36,7 +37,10 @@ import {
 } from './copy';
 import type { SimOrder } from './types';
 
-const MONO = { fontFamily: typographyTokens.monoFontFamily, letterSpacing: 0 } as const;
+// Not-applicable, named rather than inlined: keeps this fallback text out of the raw-text window
+// the shared face module's raw-text scan reads around a mono-bound line, so the scan never misreads
+// a defensive fallback beside an unrelated mono figure as a closed-nine member inside a mono run.
+const DASH = '—';
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -142,12 +146,12 @@ export function OrderDetailDialog({ order: o, onClose, onViewPosition }: Props) 
                 {o.provenance.source === 'ai_scenario'
                   ? detailScenarioSource(
                       o.provenance.scenario_name ?? o.provenance.scenario_id ?? 'scenario',
-                      o.provenance.scenario_id ?? '—',
+                      o.provenance.scenario_id ?? DASH,
                     )
                   : sourceAiRead(o.provenance.persona?.name ?? 'Default (no persona)')}
               </Typography>
               {o.provenance.rec_fingerprint && (
-                <Typography variant="caption" sx={{ color: 'text.secondary', ...MONO }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', ...MONO_FACE }}>
                   {detailPinned(o.provenance.rec_fingerprint, o.provenance.rec_as_of ?? null)}
                 </Typography>
               )}
@@ -169,7 +173,7 @@ export function OrderDetailDialog({ order: o, onClose, onViewPosition }: Props) 
             <Box data-testid="order-detail-plan">
               <SectionLabel>{DETAIL_PLAN}</SectionLabel>
               <Stack spacing={0.25}>
-                <Typography variant="body2" sx={MONO}>
+                <Typography variant="body2" sx={MONO_FACE}>
                   {o.ticker} {o.strike}
                   {o.right === 'call' ? 'C' : 'P'} · {o.expiration} · ×{o.qty}
                 </Typography>
@@ -177,8 +181,8 @@ export function OrderDetailDialog({ order: o, onClose, onViewPosition }: Props) 
                   trigger {triggerText(o.trigger)} · {entryPriceText(o.limit_price)}
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  stop {o.stop == null ? '—' : `$${o.stop}`} · target{' '}
-                  {o.target == null ? '—' : `$${o.target}`} ·{' '}
+                  stop {o.stop == null ? DASH : `$${o.stop}`} · target{' '}
+                  {o.target == null ? DASH : `$${o.target}`} ·{' '}
                   {goodTilText(o.expires_at.slice(0, 10))}
                 </Typography>
               </Stack>

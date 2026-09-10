@@ -151,18 +151,24 @@ export function ArchiveBlock({
   }, [dialog, onImported]);
 
   return (
-    <Box data-testid="tr-archive" sx={{ mt: 3 }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-        {TR_ARCHIVE_HEADING}
-      </Typography>
-      <Typography
-        variant="body2"
-        data-testid="tr-archive-lead"
-        sx={{ color: 'text.secondary', mb: 1 }}
+    <Box data-testid="tr-archive" sx={{ mt: 2 }}>
+      {/* One compact row (surfaces fidelity repair, change 1): heading + lead on the left, the two
+          actions on the right — the same content as before, just not three stacked lines. */}
+      <Stack
+        direction="row"
+        spacing={1.5}
+        sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
       >
-        {faulted ? `${TR_ARCHIVE_LEAD} ${TR_ARCHIVE_PARTIAL_NOTE}` : TR_ARCHIVE_LEAD}
-      </Typography>
-      <Stack direction="row" spacing={1}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
+          {TR_ARCHIVE_HEADING}
+        </Typography>
+        <Typography
+          variant="body2"
+          data-testid="tr-archive-lead"
+          sx={{ color: 'text.secondary', flex: '1 1 240px', minWidth: 0 }}
+        >
+          {faulted ? `${TR_ARCHIVE_LEAD} ${TR_ARCHIVE_PARTIAL_NOTE}` : TR_ARCHIVE_LEAD}
+        </Typography>
         {/* Always enabled, never gated, never disabled — an empty archive is a valid archive. */}
         <Button size="small" variant="outlined" onClick={onExport} data-testid="tr-export">
           {TR_EXPORT_LABEL}

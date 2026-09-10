@@ -1,0 +1,364 @@
+{
+  "conflicts": [
+    {
+      "quote": "Every figure on scanner/positions/settings/alerts renders through `FigureCell` with an explicit `register`; no call site relies on a default",
+      "source": "ux",
+      "why": "Verified at source: `FigureCell` is not a value renderer, it is a card. `FigureCell.tsx:72-106` styles `CellCard` with `overflow: 'hidden'` (`:77`) and a hover `transform: translateY(-2px)` (`:94-101`); `:302-329` renders a label row, a body and a caption row; `:307` mounts `AccessibleHelp`, which the file's own header (`:26-28`) records as a real focusable `button`. Two shipped structures on the scanner refuse that shape. (a) `ScanCard.tsx:54-59` makes the ENTIRE card one anchor \u2014 `component={RouterLink} to={`/ticker/${row.symbol}`}` \u2014 and `no-overflow.spec.ts:938` pins it (`toHaveAttribute('href', '/ticker/SPY')`); a focusable `button` inside that anchor is interactive content nested in a link, and the scanner already passes help text today (`ScanCells.tsx:115,132-140`), so `info` is not optional there. (b) In the table, cells sit in `<td>`s with `whiteSpace: 'nowrap'` and a `position: sticky` first column (`ScanTable.tsx:62-63`), and the column header already IS the label row (`ScanTable.tsx:107-145`), so a per-cell card duplicates the label eleven times per row and clips the sticky column. U-1 as written cannot be satisfied on `/scanner` without deleting the single-anchor navigation contract and re-writing a pinned e2e.",
+      "proposal": "Split the primitive from the decision. Extract the register / vocabulary / container-step branch that `FigureCell.tsx:250-300` computes into a pure module; `FigureCell` calls it and so do the `ScanCells.tsx` atoms. Scanner cells then carry the same register, the same closed-nine literal branch and the same step declaration with no card chrome, no second label row and no nested button. Reword U-1 to 'renders through the shared register/vocabulary decision' and keep 'renders through `FigureCell`' for the panel-shaped figures (positions header readout, settings, alerts, quiet band). PM's P3 already accepts this outcome-not-mechanism framing; UX's U-1 is the only sentence that pins the component.",
+      "kind": "technical",
+      "conflict_id": "6c2cf2c5e93575614599ab70258ced726ec21b5b55f570477ba3ecc4d14cded4",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The price figure carries a live mark only for a symbol whose displayed price came from the stream this session; a symbol still showing the swept price carries no mark **in the same column, at the same moment**",
+      "source": "pm",
+      "why": "Row 11 and PM's own row 6 ('The four surfaces consume the one shipped liveness predicate and mint no second one') are mutually unsatisfiable on the scanner, and I verified why. `FigureCell.live` is typed `LiveClaim` (`FigureCell.tsx:171`), a `unique symbol` brand with exactly three mints \u2014 `isDeliveringLive`, `andPresent`, `NOT_LIVE` (`liveClaim.ts:26-62`). `isDeliveringLive(live: LiveUpdate | null, streamOffline: boolean)` reads `live.market_session` and `live.live` (`liveClaim.ts:47-52`). The scanner receives neither: the frame is parsed as `{ prices?: Record<string, LivePrice> }` (`useLivePrices.ts:69`) and `LivePrice` is `{ price: number; ts: number }` (`:24-27`). `andPresent` only narrows an existing claim, so from `NOT_LIVE` it can only produce false. Worse, a hand-rolled per-symbol predicate would reproduce the exact defect the canon predicate exists to replace: `useLivePrices.ts:65-70` calls `setOffline(false)` BEFORE it checks for a `prices` key, so a heartbeat frame carrying no prices marks the stream online, and the only other path to offline is a 45s silence watchdog (`:36-37,84-86`) \u2014 a dot built on that reads live with the venue closed, which is `liveClaim.ts:41-45`'s stated reason for banning `genuineIsLive`.",
+      "proposal": "The council must pick one and name it, because the row cannot be built as written. (A) No dot on `/scanner` this phase: row 11 becomes 'no price figure carries a live mark'; note UX's U-5 SURVIVES this, because the F4 retained treatment is driven by the unbranded `offline?: { retained: boolean }` prop (`FigureCell.tsx:174,257-268`), not by `LiveClaim` \u2014 the scanner can dim, pause-mark and say `offline \u00b7 last known` with zero new mints. (B) Add a second mint in `liveClaim.ts` for the prices stream: no backend change, `apps/api` stays empty, but it re-opens the `[one-liveness-predicate]` ledger key and PM row 6 must be reworded to permit it. (C) Add `market_session` and a `live` flag to `/api/stream/prices`: re-opens NO_BACKEND_CHANGE and PM row 67.",
+      "kind": "technical",
+      "conflict_id": "d09285682d4490f06fc76ed83d39d867b63b029563280f733b7604c84c1b48a6",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`term-structure`, `off-exchange-blocks` and `setups` carry no `monoFontFamily` anywhere.",
+      "source": "ux",
+      "why": "False for `off-exchange-blocks`, read at source: `OffExchangeBlocks.tsx:24` is `const MONO = typographyTokens.monoFontFamily;` and `:79-81` renders `{b.shares.toLocaleString()} sh @ ${b.price.toFixed(2)}` with `sx={{ fontFamily: MONO, fontSize: 12 }}` \u2014 real numerals in the mono figure register, from a widget-local font constant. `fresh-positioning` is the same shape (`:15`, `:56-58`) and additionally interpolates the vocabulary literal `'\u2014'` INTO that mono run at `:58`. So the 'four convert, four do not' split leaves two widgets that (a) set a figure typeface from a widget-local constant, which PM row 53 (SB) forbids by name, (b) never step, because 12px is off the 20/17/15 ladder `FigureCell.tsx:216-221` declares, and (c) render a closed-vocabulary member inside a mono string, the inversion ruling 3 exists to prevent. Only `TermStructure.tsx` and `Setups.tsx` are genuinely figure-free.",
+      "proposal": "Split by figure, not by widget: term-structure and setups have no figure and are out of conversion scope; off-exchange-blocks and fresh-positioning have mono runs whose register must be resolved through the extracted register module (conflict 1's mechanism), which preserves their list layout under ruling 6's freeze while removing the local `MONO` constant and lifting `'\u2014'` out of the mono run. State the deliverable as the property PM row 53/54 already writes \u2014 no widget-local font constant, no untraced mono figure \u2014 not as a count of conversions.",
+      "kind": "technical",
+      "conflict_id": "cbef7514e4f4d78dbe8d130859c845c98f464b1980353a9bff26184e390eab38",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Each of the three positions-side members keeps its own distinct tip",
+      "source": "ux",
+      "why": "U-15 and U-1 cannot both hold at `PositionRow.tsx:145-153`. The shipped `literal()` wraps the VALUE in `<Tooltip arrow title={tip}>` (`:147-151`) \u2014 that tooltip on the value is the only affordance that makes `not recorded` / `unavailable` / `no basis` non-synonymous to a user, and the comment at `:139-144` says it is built once for exactly that reason. `FigureCell` has no value-row help host: `:307` mounts `AccessibleHelp` in the LABEL row with the fixed accessible name `About {label}`, and the literal branch renders a bare `<ValueGlyph>` (`:284-288`) with a caption that is only `caption ?? null` (`:253`). Converting those cells therefore deletes the tips, and U-15's `review` verdict would read green while the distinction went invisible \u2014 the failure shape UX's own risk 7 names for negative-space rows.",
+      "proposal": "Either (a) positions table cells keep `literal()` and the non-synonymy assertion is written against the shipped testids and tips (`cell-not-recorded`, `cell-unavailable` at `:164,166`), with positions' `FigureCell` conversion scoped to its panel-shaped figures \u2014 the page header readout at `PositionsPage.tsx:181-194`, where UX's U-12/U-13 land anyway; or (b) fund a value-row help host on `FigureCell` explicitly, as a change to the primitive sixteen shipped desk call sites depend on, with its own regression proof. It cannot be left implicit in 'renders through `FigureCell`'.",
+      "kind": "technical",
+      "conflict_id": "b0f85405a787d1728f858066f4a117e8c5e9b4ff2f4f9a7f024b7c857e2f0a17",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Alert **event messages** are built from the closed lookups, so stored history renders the same labels as the rule list",
+      "source": "ux",
+      "why": "The first clause is buildable; the second is not, without a durable shape change both of us excluded. `AlertEvent` (`features/alerts/types.ts:27-37`) persists a pre-rendered `message: string` (`:32`) and carries only `kind` and `symbol` \u2014 no `level`, no `scoreMin`. `AlertsPage.tsx:225` renders `{e.message}` verbatim. Fixing `evaluate.ts:73,94,116` repairs only firings written after the fix; every firing already in `convexa.alerts.v1` keeps its string, including `evaluate.ts:83`'s `rule.scoreMin ?? 60` baked into a durable `SPY score \u2265 60` for a rule whose record holds no minimum. Re-labelling history needs new structured fields on `AlertEvent`, which is a shape change on the store the BRIEF calls the sharpest `[loss-free-durable-migration]` risk \u2014 and UX's own assumption to me says no shape change on `convexa.alerts.v1`.",
+      "proposal": "Split U-23 into a forward criterion ('a firing recorded after this phase builds its label from the closed lookups') plus an explicit carried-debt line naming pre-phase event strings as legacy content with `types.ts:32` and `evaluate.ts:83` attached. If the council wants history repaired, say so as a decision: it is an additive shape change to `AlertEvent`, read-new-else-old with the old `message` retained as the fallback, never deleted \u2014 and then it needs PM row 70's fixture written against a blob authored before the phase.",
+      "kind": "technical",
+      "conflict_id": "50ef9a81beb6c8cd5a2d6899d7fec0c385d9267cbe4e672a2eafcfbeb4ef4da5",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**Settings section navigation** \u2014 a persistent section list \u2265900 and the same five section names as a horizontal control below it (V6: this is construction, and I am calling it In deliberately, not smuggling it).",
+      "source": "pm",
+      "why": "This contradicts my non-goal 12 head-on, and it is a scope call only the owner can settle. All three of us verified the same fact \u2014 `SettingsPage.tsx:156` is `<Container maxWidth=\"sm\" sx={{ py: 4, maxWidth: 640 }}>`, a single centred column of stacked panels, so there is no rail. What PM is buying is therefore the phase's only NEW user-facing surface, and it drags obligations no lane has priced: an active-section model that nobody has specified (the canvas draws it as static markup \u2014 `design/src/screens/settings.mjs:29` emits `href=\"#\"` with a hard-coded `.on` class, so scroll-spy vs click-only is undefined, which UX's risk 1 also flags as unanswered), a sticky rail (`settings.mjs:6`) with its own focus order, and a second layout below 900 (`settings.mjs:15`). Every other item in this phase is a conversion of shipped code; this one is not, and it is the item most likely to consume the gate.",
+      "proposal": "Owner ruling, not a lane decision. If In: it gets its own per-surface criteria block, the scroll-spy question answered before the build, and PM row 66's 44px clause tested here first. If Out: my non-goal 12 stands, UX's U-17 and U-18 drop with it, and the gap is recorded in carried debt against `design/src/screens/settings.mjs:5-16` so phase 4 inherits it with the citation. Either way, do not carry the BRIEF's 'brought under the same responsive discipline' wording forward \u2014 it sizes construction as a media query.",
+      "kind": "product",
+      "conflict_id": "fac0c6c7cb9d520bed8cd172d20621a41cbb9dc6c8e403c6fa76d7361bf13303",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Every `Widget` frame \u24d8 is a focusable control reachable by tap, Enter/Space and Escape at every breakpoint",
+      "source": "ux",
+      "why": "UX is right about the defect and right about the mechanism \u2014 `Widget.tsx:245-249` renders `info` as a bare `<InfoOutlinedIcon>` inside a hover `<Tooltip>` with no focusable host, and fixing it at seven call sites would mint the second focusable-help pattern ruling 6 bans. But the single-file fix lands on the frozen surface: `Widget` is `shared/ui/`, and one of the seven live `info=` sites is `StructureHeroPanel.tsx:216` (`info={HERO_INFO}` on the desk's `span={2}` hero). Changing the frame changes the ticker desk's DOM and its a11y tree, which the BRIEF and my non-goal 11 both declare closed ('The ticker desk is not reopened'). This is not a feasibility dispute \u2014 it is a scope decision about whether the desk freeze yields to a shared-component fix, and it will surface as desk spec churn if nobody rules on it now.",
+      "proposal": "Owner ruling. If In: state that the desk is reopened for this one shared-frame change only, and require the desk's own shipped specs to be re-run as part of the criterion rather than discovered at GATE Q. If Out: U-32 narrows to the quiet band's five frame sites via a wrapper at the call sites, which I would argue against because it is exactly the duplicate pattern ruling 6 forbids \u2014 so my recommendation is In, ruled explicitly, with the desk churn named in advance.",
+      "kind": "product",
+      "conflict_id": "db0bcfc326c947b21aaabf909014cb358d08993e3ee249ce6912f7470d0d4849",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**`features/trading/broker/` is untouched.**",
+      "source": "architect",
+      "self_revision": true,
+      "why": "I justified this non-goal by saying the broker view 'is outside the four named surfaces'. That is false, and PM V11 and UX \u00a72.2 are both right against me. `PositionsPage.tsx:28` renders `PortfolioPanel`; `PortfolioPanel.tsx:22` imports `BrokerTabPanel` from `@/features/trading/broker/BrokerTabPanel` and renders it at `:176` as the second tab of the `/positions` route, with the file header at `:8-9` recording that the locked placeholder was replaced by the sanctioned unlock. The Broker tab is a tab of the positions surface, not a separate surface, so PM row 23 ('Every figure in the sim book and in the Broker tab renders with a stated register') and UX U-14 are in scope by the BRIEF's own naming. I withdraw non-goal 7 as written.",
+      "proposal": "Replace it with the narrower non-goal it should have been: no broker DATA work, no `/api/broker/*` change, no change to the `NOT_RECORDED \u2192 NOT_PROVIDED` per-surface substitution that `notANumber.ts:15-16` records as deliberate \u2014 while accepting the broker tab's figures as in scope for register enforcement and for the non-synonymy assertion, phrased as UX's three checkable facts (sim renders `not recorded` and never `not provided`; broker the reverse; `no basis` only on `pl_pct`) rather than as a count.",
+      "kind": "technical",
+      "conflict_id": "8ba032e3b5182d3fa9d37d5366463a8d5c744786ac49def808a374f5b53e9d7b",
+      "raised_by": "architect",
+      "quote_verified": true
+    },
+    {
+      "quote": "**PM will not require a per-figure live dot on `/scanner`'s price column.**",
+      "source": "architect",
+      "self_revision": true,
+      "why": "Falsified: PM row 11 and UX U-4 both require exactly that dot. I withdraw the assumption, and I withdraw the consequence I attached to it. I wrote that requiring the mark means 'choosing option C and reopening NO_BACKEND_CHANGE'. That skipped my own option B and is wrong as an exclusive-or: a second mint added inside `liveClaim.ts` needs no backend change at all and keeps PM row 67's `apps/api` diff empty. The real cost of B is different and I stated it correctly elsewhere \u2014 it produces a second answer to the liveness question, which is the `[one-liveness-predicate]` ledger key and which PM row 6 forbids in the same criteria set. The honest menu is A / B / C as priced in conflict 2, and the owner picks; my R1 presented it as C or nothing.",
+      "proposal": "Carry conflict 2's three-option menu into R3 with the corrected costs \u2014 A costs an under-claim on a demonstrably ticking price (and my R1 risk 5 still stands: it must be written into the criterion as a deliberate state with its cause, or GATE Q bounces it); B costs the ledger key and a reworded PM row 6; C costs the empty-backend-diff feasibility claim. I still recommend A for this phase, but I no longer claim B is unavailable without touching `apps/api`.",
+      "kind": "technical",
+      "conflict_id": "2c93136ce62c937e4d523a88e246921fc732d1d43ae424e232c407fbeac7f54e",
+      "raised_by": "architect",
+      "quote_verified": true
+    },
+    {
+      "quote": "**The settings rail is not built** as stated in BRIEF (e) \u2014 see C2 and Risk 4.",
+      "source": "architect",
+      "why": "All three of us verified there is no rail today (`apps/dashboard/src/app/features/auth/SettingsPage.tsx:156` is a 640px centred column of five stacked panels), so the disagreement is not about the fact \u2014 it is about the scope call that follows from it. Architect's Risk 4 rests on 'a new user-facing surface, which the working agreement says needs a design canvas *before* the build'; that canvas already exists and is committed: `design/src/screens/settings.mjs:1` ('Settings \u2014 section rail + content column; credentials separated from trader inputs. Rail \u2192 tabs under 900px'), `:5` (`grid-template-columns: 220px minmax(0, 760px)`), `:28-31` (the rail naming Account \u00b7 Preferences \u00b7 Risk inputs \u00b7 AI providers \u00b7 Brokerage, the shipped panel headings), `:15` (`@media (max-width: 899px)` turning the rail horizontal). The stated blocker is therefore already cleared. My R1 put this In deliberately (scope In 6, call P2) and UX wrote U-17 against it; dropping it silently is the scope reduction this round exists to prevent. The trader-facing cost of dropping it: on a 1280 desk, reaching Brokerage means scrolling past four unrelated panels including credentials.",
+      "proposal": "Owner ruling, one of two, recorded either way. (a) IN, scoped to navigation over the five existing panels \u2014 zero panel-content change, no reordering (`SettingsPage.tsx:226-228` records that a trader input must not be grouped with credentials), click-only (no scroll-spy) unless UX answers otherwise \u2014 and sized as new construction rather than as a responsive fix. (b) OUT, with a phase-4 home named in the manifest's carried debt and my rows 37/38 plus UX's U-17/U-18 withdrawn in the same breath. What must not happen is the BRIEF's 'brought under the same responsive discipline' wording surviving into SPEC over a rail nobody agreed to build.",
+      "kind": "product",
+      "conflict_id": "faf6bdeea68ca330fb0ec69ddc959c2f2cde9b33d1c27fd1c60ffa42b27d3996",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**A. Price column renders `NOT_LIVE`; no per-figure dot on `/scanner` this phase.**",
+      "source": "architect",
+      "why": "Architect's feasibility fact holds and I accept it: the branded predicate's true arm needs `market_session` and a wire `live` flag the prices frame does not carry (`pages/scanner/useLivePrices.ts:69` parses `{ prices?: Record<string, LivePrice> }` and nothing else). But option A is not merely 'under-claiming'. Two things are knowable today without a backend change: which symbols are stream-fed (`useLivePrices.ts:29-31` \u2014 'Symbol \u2192 latest live price. Absent symbol \u21d2 no live tick yet; use the swept price') and whether the stream is delivering (`:32-33` `offline`, with a 45s silence watchdog at `:37,84-86`). And the page keeps a page-level prose liveness claim regardless: `pages/scanner/labels.ts:25` reads `Prices live \u00b7 structure ~3 min \u00b7 hot names sooner`. Option A therefore ships a page that says prices are live while every price figure on it renders not-live \u2014 a page-level claim contradicting its own figures, which is the exact rule-13/rule-18 separation this phase is carrying onto these surfaces. My row 11 and UX's U-4 both require the per-symbol mark. The feasibility half (can one predicate cover a second stream shape) is architect + UX's to settle; whether the trader is told which prices are live is a user-value call and is the owner's.",
+      "proposal": "Owner ruling among three, and reject the fourth. (a) Per-symbol mark on the price figure, gated on `offline === false` AND this symbol having a key in the `prices` map, with its basis line naming the weaker claim explicitly ('venue session not confirmed') so it never masquerades as the desk's branded claim. (b) Architect's option A, but then the `Prices live` prose at `labels.ts:25` is deleted in the same phase so the page and its figures agree. (c) Defer both to the phase that can carry the wire fields, and delete the prose now. What is not acceptable: option A with `Prices live` left standing \u2014 that keeps the false claim and removes the true one.",
+      "kind": "product",
+      "conflict_id": "f81c19bae589857ec75639d1474a2787f03d93eb8c346901ef30f94d2bfbacc8",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**`features/trading/broker/` is untouched.**",
+      "source": "architect",
+      "why": "The Broker view is not outside the four named surfaces \u2014 it is a tab on the positions surface. Verified: `apps/dashboard/src/app/features/trading/positions/PortfolioPanel.tsx:2` ('the two tabs (Simulated \u00b7 Broker)'), `:171` (the trader-visible label 'Broker'), `:176` mounts `<BrokerTabPanel \u2026/>` in the same panel as the sim book. Leaving it untouched ships a surface where one tab enforces the register and the tab beside it does not \u2014 the inconsistency the phase exists to close, one click away, on the same route. It also undercuts the phase's headline vocabulary criterion: `not provided` is broker-side by design (my R1 V11; UX \u00a72.2's table puts `not provided` at `broker/brokerView.ts` and 'never' on the sim book), so my row 25's middle arm and UX's U-14 would be asserted against a view the phase declines to convert.",
+      "proposal": "Owner ruling: either (a) the Broker tab is IN for register + vocabulary on its figures \u2014 still read-only, no new network calls, no entry/order/cancel control (my row 34 stands) \u2014 or (b) it is OUT and the non-synonymy criteria are rewritten to assert only what the sim book can produce, with the `not provided` arm future-dated to the `broker-connect` track and named in carried debt. Do not claim three-way non-synonymy as a phase deliverable while excluding the view that produces one of the three.",
+      "kind": "technical",
+      "conflict_id": "a3216467da2136193323c885d477a9bffcd78fe6c5f36e06e99ab31835e60339",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Every figure on scanner/positions/settings/alerts renders through `FigureCell` with an explicit `register`; no call site relies on a default",
+      "source": "ux",
+      "why": "Two problems. First, feasibility: `apps/dashboard/src/app/pages/scanner/ScanCard.tsx:53-56` makes the entire card a single block-level anchor (`component={RouterLink}` to `/ticker/{SYMBOL}`), and `FigureCell`'s \u24d8 is 'a real focusable `button`' (`apps/dashboard/src/app/pages/ticker/widgets/_kit/FigureCell.tsx:26-28`), so a `FigureCell` inside a scan card nests interactive content inside a link \u2014 architect reaches the same conclusion structurally in \u00a72.2, and the card's single-anchor contract is pinned by e2e. Second, and this one is mine: 'renders through `FigureCell`' is not observable without reading code. A stranger at GATE Q can open `/scanner` and check that a figure states its register; they cannot see which component produced it. My rows 1 and 9 state the same requirement as an outcome and survive whichever mechanism architect and UX settle on.",
+      "proposal": "Restate U-1 as the observable outcome and let \u00a72.2's extracted register module be the mechanism: every figure on the four surfaces renders with a visible register (Mono = traced, Sans + dotted rule = asserted-but-untraced), no call site can render a figure without supplying one (proven by a poison run), a not-a-number never renders in the mono register, and the table and card layouts never disagree about one datum. Keep the component name out of the criterion; keep it in the architecture contract where it belongs.",
+      "kind": "technical",
+      "conflict_id": "eebd259eca1f92682e5e9d916b09d21c56c93367a9186e2572a906b9a3d30cf9",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**2.3 Positions: the table keeps its atoms, for the same reason plus one more.**",
+      "source": "architect",
+      "why": "The tooltip argument is sound for `literal()` (`apps/dashboard/src/app/features/trading/positions/PositionRow.tsx:145-153` \u2014 one Tooltip-wrapped renderer, differing by text and testid only, exactly as its own comment at `:139-144` says) and I accept it: those cells keep their tips, which is also UX's U-15. But `literal()` renders the not-a-number members \u2014 a different set of cells from the live-derived figures, and it is the live-derived figures that carry this phase's degraded-state defects, all of them in table cells: `PositionRow.tsx:388` renders a bare `'\u23f8'` as the entire session-delta cell on a stream drop (no value, no vocabulary member); `:378` appends `' \u23f8'` as a text character to the \u0394-entry cell; `:68` is `const OFFLINE = '\u23f8 offline'`. If 'the table keeps its atoms' is read as a mechanism, we agree. If it is read as scope, it leaves my rows 27/28/29 and UX's U-10/U-11 with no owner, and the phase ships a positions surface whose header readout is honest while the cells the trader actually reads still render a bare pause glyph.",
+      "proposal": "Split the sentence into two lines so it cannot be read as scope. (1) `literal()` and its per-member tips stay \u2014 non-synonymy is not converted away (my row 24, UX U-15). (2) The live-derived table cells still owe the offline contract: a retained value with the last-known clause, or a vocabulary member without it, at reduced emphasis, with the declared stroke pause icon \u2014 delivered by whatever mechanism the architect prefers (extracted module, local swap, or the primitive), stated as an outcome so GATE Q can check it on the page.",
+      "kind": "technical",
+      "conflict_id": "1f765d5bd84f31321e34e0403952a4cdf369e6cb1f05c30cc74de1f2c0fb219c",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Every figure on the four surfaces and in the eight widgets steps 20 \u2192 17px under 360px of its own panel's width \u2192 15px under 280px, at a fixed viewport width; a closed-vocabulary literal does not step",
+      "source": "pm",
+      "self_revision": true,
+      "why": "I withdraw the universal quantifier over the eight widgets. Verified after reading the other two positions: `apps/dashboard/src/app/pages/ticker/widgets/fresh-positioning/FreshPositioning.tsx:15,56` renders its mono rows at a deliberate `fontSize: 12` inside a recessed list row, so stepping them 20 \u2192 17 \u2192 15 would enlarge them and break ruling 6's layout freeze, which my own scope Out already forbids reopening; `term-structure` and `setups` carry no figures at all to step (architect C3, UX \u00a72.5). Row 7 as written is either unsatisfiable or it forces a re-layout I ruled out. Architect's Risk 2 also lands: a rule-presence assertion would pass while nothing steps ('**No shipped test would catch it.**'), so the verification method in the row was wrong as well as its scope.",
+      "proposal": "Replace row 7 with two rows. (7a) Every figure that renders at the 20px base steps 20 \u2192 17 \u2192 15 against its own **named** `panel` container at a fixed viewport width \u2014 verified by a rendered assertion at a narrowed container width, not by the presence of the declaration. (7b) A widget whose figures are deliberately off the base ladder (`fresh-positioning`'s 12px list rows) keeps its shipped size, and every such widget is named with its reason in the build report. Rows 53 and 54 stand unchanged \u2014 register enforced, no untraced figure in the mono register \u2014 because that is the property this phase actually owes, and it is satisfiable on all eight.",
+      "kind": "product",
+      "conflict_id": "d000b908a8a2d352ef7c18efcbc1b63ea54cb8794b9d1412cd04a88d84957f5b",
+      "raised_by": "pm",
+      "quote_verified": true
+    },
+    {
+      "quote": "The **shipped copy on positions and scanner is not a variable this phase** \u2014 labels, tooltips, column names and status wording stay byte-identical.",
+      "source": "pm",
+      "self_revision": true,
+      "why": "I cannot defend this as written, because my own row 29 contradicts it: row 29 requires the positions pause mark to stop being a text character, and `PositionRow.tsx:68` (`const OFFLINE = '\u23f8 offline'`), `:378` and `:388` are shipped strings. The scanner carries the identical defect class in its status labels \u2014 `apps/dashboard/src/app/pages/scanner/labels.ts:205` is `'\u26a0 Stale'` and `:211` is `'\u26a0 Error'`, a typographic truth mark standing in for the stroke icon. I cannot forbid UX on the scanner what I demand on positions. UX \u00a72.1 proposes exactly that swap and explicitly keeps the tone and the tips unchanged, which is the part my assumption was actually protecting.",
+      "proposal": "Narrow the freeze to what it was protecting, and say so in scope rather than in an assumption. Frozen: the semantic wording and meaning of every shipped label, tooltip, column name and status on positions and scanner, plus their order. Permitted this phase, each itemized in the build report so GATE Q sees a visible diff it was told to expect: replacing a typographic truth mark (`\u26a0`, `\u23f8`) with the declared stroke icon; replacing a raw wire token with its closed-lookup label; adding a new honesty or basis line. Any change beyond those three classes remains an R2-class conflict, not a lane decision.",
+      "kind": "product",
+      "conflict_id": "65bd9b07f217cdbe9cb38ea758360b3d3cf3fd0b53b7102a6365aff22958b24f",
+      "raised_by": "pm",
+      "quote_verified": true
+    },
+    {
+      "quote": "**Therefore: `FigureCell` never enters `/scanner`.**",
+      "source": "architect",
+      "why": "I accept the exclusion of the component (see my U-1 self-revision below) but not the scope of the substitute. \u00a72.2 names the extracted module's outputs as register/vocabulary/container-step only ('mono-vs-sans, figure-vs-literal, and the container-step declaration'), and non-goal 4 says 'The register and the vocabulary do.' Rule 13 puts the REST of the state in the cell: the label-row live dot, the pause marker, and the conditional 'offline \u00b7 last known' clause. Those are computed at `FigureCell.tsx:257-278` from `offline.retained` \u2014 none of them is register or vocabulary. If the extraction ships as scoped, the scanner's degraded arm has no host: today `Scanner.tsx:144` swaps one header string, `ScanTableProps` (`ScanTable.tsx:47-60`) and `ScanCardProps` (`ScanCard.tsx:30-35`) take no offline input, and `labels.ts:30-32` already promises 'the figures stay, dimmed, and say why' \u2014 a promise nothing renders. My U-5 and pm rows 12/13 would then go green against prose, which is the exact vacuity shape the architect's own Risk 2 names.",
+      "proposal": "Extract the whole F1\u2013F9 branch (`FigureCell.tsx:250-300`), not just the register/vocabulary branch: a pure function returning `{ figureState, mono, isFigure, showDot, showPause, caption }`, with `data-figure-state` emitted by every consumer. `FigureCell` becomes one caller; `ScanCells` atoms and `PositionRow` cells are the others, each keeping its own chrome (no card, no label row, no hover lift). Then U-5 / rows 12-13 / 27-28 are assertable on the DOM marker on every surface, and the atoms keep their shipped tooltips and `aria-describedby`.",
+      "kind": "technical",
+      "conflict_id": "7da0330a44483301c998f19632bec0a5c147878ed449e89b297191331a0b090d",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**C4 \u2014 positions already conforms to rule 24; the scanner does not.**",
+      "source": "architect",
+      "why": "Half true, and the false half is load-bearing for non-goal 5. `literal()` (`PositionRow.tsx:145-153`) is Sans and correct, but it is not the only absent-value path on the row. `PositionRow.tsx:374` styles the `delta_entry` cell with `...MONO` and `:377` renders `DASH` \u2014 `'\u2014'`, member one of the closed nine (`:70`) \u2014 inside it whenever `view.pl_dollar == null`. That is a not-a-number member in the mono figure register on POSITIONS, the surface canon rule 24 names by name, and it survives untouched if the table cells are left as they ship. So 'The vocabulary work is scanner-side.' understates the work by one surface, and a criterion set built on C4 would certify positions as conforming while the inversion renders.",
+      "proposal": "Keep `literal()` and its tooltips \u2014 I accept \u00a72.3's a11y reason and withdraw nothing there. Add: every absent-value path in `PositionRow.tsx` routes through `literal()`, with no cell-local `DASH` inside a `MONO` sx. Enforce with the same `?raw` scan \u00a72.2 proposes for font families, extended to `features/trading/positions/`, with the mutation proof. This is one cell, not a re-conversion.",
+      "kind": "technical",
+      "conflict_id": "66cd71c1073343c1d28610a3a99270ffd80a1ebe3926d7f866e6aea77ca92557",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**A. Price column renders `NOT_LIVE`; no per-figure dot on `/scanner` this phase.**",
+      "source": "architect",
+      "why": "Option A is internally honest only if the page's prose goes with it, and the position holds the prose fixed ('The existing two-speed prose basis (`Scanner.tsx:144`) stays as-is'). Verified: `labels.ts:25` ships `Prices live \u00b7 structure ~3 min \u00b7 hot names sooner`. Under option A that sentence becomes the ONLY liveness claim on `/scanner` while every price figure renders NOT_LIVE \u2014 a page sentence asserting liveness that no datum vouches for. Canon rule 13 puts liveness in the label row precisely to end that, and pm row 5 bans it by name: 'no surface asserts liveness for a figure by page convention, by a header sentence, or by a widget-level flag'. Under-claiming on the figure while over-claiming in the header is not under-claiming; it is moving the unvouched claim somewhere no test looks.",
+      "proposal": "The owner picks one, and the copy moves with it: (a) option A AND the cadence header stops asserting liveness \u2014 it states the two cadences and the price basis without the word 'live' (a scanner copy change pm currently freezes, see my next conflict); (b) the architect states whether per-symbol STREAM PROVENANCE ('this displayed price arrived on the stream this session') can be a first-class rule-13 mark that is not a second answer to 'is the venue live?' \u2014 if yes, pm row 11 is buildable with no backend change and the header stands; (c) option C, which reopens NO_BACKEND_CHANGE. I am not choosing; I am refusing the combination of option A with an unchanged header.",
+      "kind": "product",
+      "conflict_id": "918e6655610811bcf259e38e34d95236f39cb8228e0d36f31ff198a739bf4006",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**The settings rail is not built** as stated in BRIEF (e) \u2014 see C2 and Risk 4.",
+      "source": "architect",
+      "why": "This is a direct contradiction of pm In-scope 6 and pm row 37, and of my U-17/U-18. It cannot be settled by two lanes: it is the phase's only net-new user-facing surface. Facts, verified: the approved canvas draws the rail (`design/src/screens/settings.mjs:28-31`, five sections) collapsing at `max-width: 899px` (`:15`); the shipped page has no rail (`SettingsPage.tsx:156`). As new construction it drags states nobody has specified \u2014 active-item behaviour (click vs scroll-spy), focus order, the 44px floor on a horizontal tab strip, and what pm row 38's deep-link lands on below 900. One more copy hazard if it is built from the canvas verbatim: the rail's own footnote reads 'Saved to your account.' (`settings.mjs:30`), while the theme/persona preferences live in `convexa.uiprefs.v1` (`features/auth/localPrefs.ts:15`) \u2014 importing that sentence would ship the account-persistence claim pm row 39 forbids.",
+      "proposal": "Owner rules build-or-defer as one call. If IN: it is net-new, it gets a design pass before the build (the working agreement's flag-a-new-surface rule), and it needs three answers \u2014 active-item behaviour, deep-link landing at <900, focus order \u2014 and my U-17/U-18 stand as written. If OUT: I withdraw U-17 and U-18 and the settings criterion becomes 'every one of the five sections is reachable at every checked width in the shipped single column, with no page-body overflow' \u2014 no rail, no tabs, and BRIEF (e)'s clause is recorded as carried debt with a phase attached.",
+      "kind": "product",
+      "conflict_id": "ae1248895375efba2db214ba22c43a8a3b6fed751d82b839e0ac8e8416d392a9",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The **shipped copy on positions and scanner is not a variable this phase** \u2014 labels, tooltips, column names and status wording stay byte-identical.",
+      "source": "pm",
+      "why": "As an absolute it collides with pm's own row 5 given `labels.ts:25`. If no scanner price figure carries a live mark (the architect's option A), then `Prices live \u00b7 structure ~3 min \u00b7 hot names sooner` IS 'a header sentence' asserting liveness for a figure, which row 5 forbids. Byte-identical scanner copy and row 5 cannot both hold under option A. I am NOT asking for a general licence \u2014 I withdraw my own `\u26a0` rewording below and I accept the freeze everywhere else, including every positions label and tooltip.",
+      "proposal": "Narrow the freeze to 'no rewording for taste', and enumerate the sentences this phase may touch as explicit AC lines so the set is closed: (1) the cadence header at `labels.ts:25`, and only if option A stands; (2) nothing else on scanner; (3) nothing on positions except ADDITIONS that carry no existing wording (the Net P/L coverage caption, see my row-35 conflict). Everything not enumerated stays byte-identical and a scan proves it.",
+      "kind": "product",
+      "conflict_id": "3dba77c9ca6f8fb70f14c9dfb1f37e8b4ff5c8e2a46aff0e85db8767c084d5c8",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Each widget keeps its shipped composition: label wording, ordering, grouping and tooltip text are unchanged by the conversion",
+      "source": "pm",
+      "why": "Row 56 as written forbids two repairs that pm's own rows 3 and 57 require. Verified: (1) `Setups.tsx:32` renders ONE string \u2014 `<Alert severity=\"info\">No clean setup right now.</Alert>` (`:52`) \u2014 for both `undefined` (the bundle never carried setups) and `[]` (computed, none found). 'No clean setup right now.' is a positive claim about the market for a ticker nobody scored, which is exactly the fabrication `[absent-is-not-none]` exists to stop, and pm row 57 requires the unavailable-this-cycle arm to render 'its own message'. `FreshPositioning.tsx:41` vs `:45` already does this correctly in the same band. (2) `_kit/copy.ts:355` `MC_CELL_EMPTY = 'unavailable this cycle'` sits in a figure VALUE slot (`MarketContext.tsx:291,299,375`) and is not a member of the closed nine \u2014 pm row 3 requires a member there, and canon rule 24 closes the set. Row 56 would make both a violation of the criteria set.",
+      "proposal": "Carve row 56 out at two named sites, so it stays a wall and not a licence: composition, ordering and grouping unchanged; wording unchanged EXCEPT where a shipped string (a) occupies a figure value slot and is not a member of the closed nine \u2014 `_kit/copy.ts:355`, split to value `unavailable` + caption `this cycle` as `design/src/components/figure-cell.mjs:40` already draws it \u2014 or (b) renders one sentence for both never-checked and checked-and-empty \u2014 `Setups.tsx:52`, where `[]` keeps the shipped sentence and `undefined` gets the `*_WHOLE_EMPTY` family idiom. The prose `*_WHOLE_EMPTY` sentences are untouched; they are prose, not values.",
+      "kind": "technical",
+      "conflict_id": "154fb2122f510075e58a1dbef185abb14ce4af91eeb519a3f0483a60a2197773",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Every threshold a rule does carry renders in the traced register with its unit visible beside it",
+      "source": "pm",
+      "why": "Unsatisfiable for the commonest rule without inventing a unit \u2014 my defining failure mode. `features/alerts/types.ts:20-22` carries exactly two thresholds: `priceThreshold?: number` (dollars, a real unit) and `scoreMin?: number`, the opportunity score, a unitless 0\u2013100 index. There is no unit to render beside a score gate, and rendering one would be the inferred-unit failure the 2026-08-12 canon amendment names ('A bare number with an inferred unit is forbidden') \u2014 where the fix was a visible unit CONTROL, not a fabricated suffix. Second, smaller: 'traced register' is a provenance word, and a score gate is the user's own typed input \u2014 neither Convexa's computation nor an untraced assertion. The register has two values and this datum is a third thing.",
+      "proposal": "Split row 47 by threshold type: a price threshold renders with its currency prefix; a score gate renders the bare index beside its closed-lookup label `Score gate`, with no unit and no invented suffix (`\u2265 72`, never `\u2265 72 pts`). And rule the register question rather than assuming it: I read a user-entered threshold as `traced` \u2014 it is exactly the record, reproducible from it \u2014 but it should be an owner or architect line, not a lane guess, because it sets the precedent for every user-entered number this app renders.",
+      "kind": "technical",
+      "conflict_id": "77667a5927811e72e01a8f47e963f87b338200d2e1b57748d119aeeb35b1a7be",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Tinting on this surface stays signed-P&L direction only \u2014 never by side, never call-vs-put, never by tier",
+      "source": "pm",
+      "why": "As written, row 35 CERTIFIES the surface's worst shipped defect, because that tint IS signed-P&L direction. Verified: `PositionsPage.tsx:147-154` reduces only rows where `pl_dollar != null`, so when every open mark fails the sum is `0`; `:189` paints it `netPl >= 0 ? 'success.main' : 'error.main'` \u2014 green; `:193` renders `formatNetPl(0)`. 'Net P/L (open) +$0' in green is a total mark failure wearing the costume of a flat book. `:190` then dims the whole readout to `opacity: 0.5` with no pause marker and no basis clause \u2014 F4's costume without F4's disclosure. No pm row covers this figure at all: rows 23\u201335 are row- and cell-scoped, so the largest number on the surface can fabricate a zero and pass the whole set.",
+      "proposal": "Add one positions row and one clause. Row: with no open row marked, Net P/L renders the vocabulary member `unavailable` \u2014 never a number, never a direction colour; with some open rows unmarked, the figure carries a coverage caption naming how many of the open rows it covers, so a partial total can never read as complete. Clause on row 35: '\u2026signed-P&L direction only, and only where the value is a computed P&L \u2014 never a zero standing in for an unmarked book.' The dim also becomes the F4/F5 arm (pause marker + the conditional last-known clause), not a bare opacity.",
+      "kind": "technical",
+      "conflict_id": "338807da910a82d14a08017f624036f616802f14d023d5e8c469341a401cc2f0",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Every figure on scanner/positions/settings/alerts renders through `FigureCell` with an explicit `register`; no call site relies on a default",
+      "source": "ux",
+      "self_revision": true,
+      "why": "I withdraw the mechanism half of my own U-1. I wrote a component mandate where I could only defend a property. Verified this round: `ScanCard.tsx:54-56` makes the WHOLE card a single `RouterLink` `<a>`, and `FigureCell.tsx:307` mounts `AccessibleHelp`, 'a real focusable `button`' (`:26-28`) \u2014 so a help-bearing `FigureCell` inside that card nests interactive content in a link. (The architect's blanket is slightly over-stated \u2014 the button is conditional on `info`, and `ScanCard.tsx:107` already ships `focusableHelp={false}` for exactly this reason \u2014 but the density argument stands on its own: `ScanTable.tsx:107-145`'s column header already IS rule 13's label row, so a per-cell card would repeat every label eleven times a row.) What I actually need is the state, not the chrome.",
+      "proposal": "Restate U-1 as a property, not a component: 'Every figure on scanner/positions/settings/alerts declares an explicit register at its call site and renders its register, its liveness and its absence through the ONE shared decision module \u2014 no surface sets a figure typeface from a local font constant and no call site relies on a default.' That is satisfiable by `FigureCell` on panel-shaped figures and by the extracted module in the scanner table, the scan card and the positions row \u2014 and it is what pm row 1 already asks for. It stands or falls with my first conflict: the module must carry the states, not only the register.",
+      "kind": "technical",
+      "conflict_id": "1eee801a384f28f17b062101b1c2776f350b2955a0ae42d5876f55871d5e1ddf",
+      "raised_by": "ux",
+      "quote_verified": true
+    },
+    {
+      "quote": "Scanner status chip labels carry no `\u26a0` character and the chip renders a stroke warn icon",
+      "source": "ux",
+      "self_revision": true,
+      "why": "I withdraw U-7. I cited 'Canon's Icons row' as requiring this, and it does not. The Icons row enumerates exactly two typographic truth marks \u2014 'the pause mark on an offline figure and the ring on a closed/replay chip' \u2014 and `\u26a0` is neither. Rule 5 requires 'warning + icon always', and `labels.ts:196` records the glyph as the deliberate mechanism for that ('`warning` binds burnt orange AND the label carries a \u26a0 glyph \u2014 hue never carries it alone'). So the shipped chip is compliant on the canon as written, and my AC asserted a rule the canon does not state \u2014 against a surface pm has frozen. The hazard I saw is real (the Icons row's own reasoning, 'Emoji are never icons' plus 'any platform that colour-emoji-renders them must be given the stroke icon instead', applies to U+26A0 exactly as it does to \u23f8) but it is an Amendments question, not an acceptance criterion this phase may assert.",
+      "proposal": "Drop U-7 from the criteria set; the scanner status labels stay byte-identical under pm's freeze. File the question instead: 'does the Icons row's colour-emoji clause reach `U+26A0` in a chip label, or is the glyph a deliberate third truth mark?' \u2014 an Amendments line for the owner, with `labels.ts:196,205,211` attached. My U-11 (no `\u23f8` character in positions) is UNAFFECTED and stands: the pause mark IS one of the two the Icons row names, and `PositionRow.tsx:68,378,388` renders it as a character while `FigureCell.tsx:44,154-156` already ships the stroke icon.",
+      "kind": "technical",
+      "conflict_id": "7374669048f7e8a04a8ce276b1bef3c6ee9589dd0c558862cec0f93d8c0955cd",
+      "raised_by": "ux",
+      "quote_verified": true
+    },
+    {
+      "quote": "The steps are not new plumbing; they arrive with the primitive.",
+      "source": "ux",
+      "self_revision": true,
+      "why": "Withdrawn \u2014 the architect's \u00a72.4 hazard is right and I verified it. `Widget.tsx:180` does declare `containerName: 'panel'`, but the nearest named ancestor for a quiet-band figure is the WHOLE widget body: `MarketContext.tsx:443` lays `repeat(auto-fit, minmax(210px, 1fr))` across one panel, so four ~210px figures inside a ~900px panel never cross the 360px threshold and the declared step never fires at any viewport. `ReadStrip.tsx:7-13` names this hazard in shipped code and `:54` ships the fix \u2014 each cell wrapped in its own nested `PanelContainer`, same name, nearest-ancestor wins. My sentence would have licensed a conversion that declares the steps and never fires them, with a green build and a green `type-floor.spec.tsx`.",
+      "proposal": "Keep U-33 as the criterion but re-point its mechanism: every converted multi-figure quiet-band widget wraps each figure in its own nested `PanelContainer` (never a second container name, never `containerName` on the widget's own grid), and U-33 is verified by a RENDERED assertion at a narrowed container width \u2014 not by asserting the rule declaration exists. That is the architect's Risk 2 mitigation and I adopt it verbatim.",
+      "kind": "technical",
+      "conflict_id": "4f915a4ad0c90fc3bac8a153606c3d2aab488976872efbef3b6f1dd0ca68adb6",
+      "raised_by": "ux",
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: rows 6 and 11 cannot both hold on the scanner (conflict 2). Which yields \u2014 no price dot this phase (row 11 narrows), or a second mint in `liveClaim.ts` (row 6 narrows and the `[one-liveness-predicate]` ledger key is deliberately re-opened)?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: does the settings section navigation ship in this phase, and if so is the active item click-only or scroll-driven? UX explicitly declined to answer it because answering would be inventing behaviour, and no lane can size the arm without it."
+    },
+    {
+      "from": "architect",
+      "ask": "PM: is repairing pre-existing alert firings in scope? Every stored `AlertEvent` holds a rendered `message` and no `level`/`scoreMin` (`types.ts:27-37`), so history can only be re-labelled by adding fields to the durable shape."
+    },
+    {
+      "from": "architect",
+      "ask": "UX: if the scanner keeps its per-datum atoms and gains the register plus the closed nine through the extracted module rather than the `FigureCell` card (conflict 1), is a dimmed value with the stroke pause icon and an `offline \u00b7 last known` caption sufficient for U-5, or does U-5 require the desk's full card anatomy?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: are the 12px mono list rows in `fresh-positioning` (`:56`) and `off-exchange-blocks` (`:79`) figures that must step 20 \u2192 17 \u2192 15, or lists that keep their size? PM row 55 says every widget's figures step; your table calls them lists."
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: does `PositionCard.tsx` (the positions card layout at phone width) have an anchor root like `ScanCard.tsx:53-56`, or not? You flagged it `[lane-check]` in \u00a72.3 and my rows 27/28/29/32/33 all have to hold at 393px. The answer decides whether the card layout can host the primitive directly or needs the same extracted-module route as the table \u2014 and it changes nothing about the outcome I require either way."
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: can the extracted register module (\u00a72.2) carry the full offline contract to a non-`FigureCell` site \u2014 retained value at reduced emphasis, the `offline \u00b7 last known` caption, and the declared stroke pause icon that currently lives at `FigureCell.tsx:154-156` \u2014 or is the icon only reachable inside the primitive? If it is only reachable inside the primitive, rows 12/13/27/28/29 need a different mechanism and I need that now, not at build."
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: with `genuineIsLive` replaced at `PositionsPage.tsx:88` per your \u00a74.2, does a stream drop still resolve every leg to `last_known` so the Net P/L sum keeps its meaning (your own `[lane-check]` on `composeMark.ts:14`)? UX's U-12/U-13 and my row 27's last-known arm both turn on it, and `PositionsPage.tsx:147-154` currently reduces to `0` when every mark is null while `:189` paints `netPl >= 0` as `success.main`."
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: is `PositionsPage.tsx:147-154`'s null-skipping Net P/L sum purely presentational, or does anything downstream consume it? UX's U-12 changes what it renders when no open row is marked; I need to know that lands inside the no-backend / byte-identical-score fence (my row 67) before I price it as In."
+    },
+    {
+      "from": "pm",
+      "ask": "UX: does the settings section list follow scroll (scroll-spy) or respond to click only? You declined to answer in Risk 1 rather than invent behaviour, which was right. If it is scroll-spy, my rows 37/38 need a third assertion (the active item tracks the section in view) and my row 66's 44px floor applies to a second control set \u2014 that is a real size difference and it should be decided before the rail is scoped, not during."
+    },
+    {
+      "from": "ux",
+      "ask": "PM / owner: if the settings section navigation is IN (row 37), does the active item follow scroll (scroll-spy) or only click, and what does row 38's section deep-link land on below 900 where the rail is a horizontal strip? I cannot write U-17/U-18's states, focus order or empty/overflow behaviour without one answer, and inventing it is out of my lane."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: does row 41's ban on direction-reserved colours reach the save-ERROR alert at `SettingsPage.tsx:344` (`error.main` on a non-directional status), or is an error alert outside 'chip, confirmation or readiness mark'? I am confident about the green `Saved` toast (`:387`) and not confident about the red error, and a ruling either way beats my guess."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: if pm's P4 lands the alerts read-fault latch (`alerts/store.ts:41-49,66-68`), what does `/alerts` render while writes are refused? My P10 state was written against the positions posture (`PositionRow.tsx:122-127`: nothing dims, no pause mark, every write affordance refused but still focusable and explained). Same shape on alerts, or a different one? If different, P10 needs a second arm I have not written."
+    },
+    {
+      "from": "ux",
+      "ask": "PM / owner: canon rule 24 says `not recorded` / `not provided` / `no basis` 'ship on the positions and broker surfaces'. Alerts is a third durable client store with the same failure mode \u2014 `AlertsPage.tsx:193` renders the bare word `level` for a missing level today, a tenth literal outside the closed nine. Is `not recorded` on a fourth surface the 'per-surface subset, not a second vocabulary' the rule already anticipates, or an Amendments event?"
+    }
+  ],
+  "agree_count": {
+    "architect": 7,
+    "pm": 8,
+    "ux": 7
+  }
+}

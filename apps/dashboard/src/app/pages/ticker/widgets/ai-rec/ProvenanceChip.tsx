@@ -4,9 +4,9 @@
  * them (AC-61). Renders only when the risk block was actually sent (`sent.risk_inputs.state ===
  * 'set'`) — an unset block has nothing to attribute.
  */
+import { AccessibleHelp } from '@/shared/ui';
 import type { RiskInputs } from '@convexa/api';
 import Chip from '@mui/material/Chip';
-import { AccessibleHelp } from './AccessibleHelp';
 import { PROVENANCE_CHIP_TIP, provenanceChip } from './copy';
 
 export function ProvenanceChip({ riskInputs }: { riskInputs: RiskInputs | undefined | null }) {

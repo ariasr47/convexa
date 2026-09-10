@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en" data-scheme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Settings · Convexa design</title>
+<meta name="description" content="Account, preferences, risk inputs, AI providers, brokerage.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  .set-grid { display: grid; grid-template-columns: 220px minmax(0, 760px); gap: 40px; align-items: start; margin-top: 20px; }
+  .rail { position: sticky; top: 76px; display: flex; flex-direction: column; gap: 2px; }
+  .rail a { display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--steel); text-decoration: none; white-space: nowrap; }
+  .rail a.on { color: var(--phosphor); background: var(--raised); }
+  .rail a.on .dot { margin-left: auto; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); }
+  .set-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .set-2b { grid-template-columns: 1fr 1.3fr; align-items: start; }
+  .set-2c { grid-template-columns: 1.4fr 1fr; align-items: end; }
+  .theme-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .cap-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px; background: var(--raised); flex-wrap: wrap; }
+  @media (max-width: 899px) { .set-grid { grid-template-columns: 1fr; gap: 16px; } .rail { position: static; flex-direction: row; overflow-x: auto; scrollbar-width: none; } .rail::-webkit-scrollbar { display: none; } .rail p { display: none; } .rail a.on .dot { display: none; } }
+  @media (max-width: 639px) { .set-2, .set-2b, .set-2c { grid-template-columns: 1fr; } .theme-3 { grid-template-columns: 1fr; } }
+
+  [hidden] { display: none !important; }
+  .site-bar { position: fixed; right: 16px; bottom: 16px; z-index: 100; display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 999px; background: var(--raised); border: 1px solid var(--line-2); box-shadow: var(--e4); font-size: 12px; color: var(--steel); flex-wrap: wrap; max-width: calc(100vw - 32px); }
+  .site-bar a, .site-bar button, .site-bar select { height: 28px; border-radius: 999px; border: 1px solid transparent; background: transparent; color: var(--phosphor); font: 600 12px/1 'IBM Plex Sans', system-ui, sans-serif; padding: 0 10px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .site-bar a:hover, .site-bar button:hover { background: var(--raised-2); }
+  .site-bar select { background: var(--ink-2); border-color: var(--line-2); padding: 0 8px; }
+  .site-bar .lbl { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); padding-left: 6px; }
+  @media (max-width: 767px) { .site-bar { bottom: auto; top: 64px; right: 8px; left: 8px; max-width: none; } }
+</style>
+</head>
+<body>
+<div style="width: 100%; min-height: 0px; background: var(--ink); color: var(--phosphor);">
+    <header class="nav-bar">
+    <div class="wrap nav-in">
+      <a href="#" class="nav-burger" aria-label="Open navigation menu"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M4 7h16M4 12h16M4 17h16"></path></svg></a>
+      <a href="#" style="display: inline-flex; text-decoration: none;"><span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 17px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 12.6px; height: 12.2px; margin: 0 0.8px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span></a>
+      <nav aria-label="primary" class="nav-links"><a href="#" class="">Scanner</a><a href="#" class="">Ticker</a><a href="#" class="">Positions</a><a href="#" class="">Alerts</a></nav>
+      <div class="nav-right">
+        <div class="field nav-search"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><span class="ph" style="flex: 1;">Jump to a ticker…</span><span class="kbd">⌘K</span></div>
+        <a href="#" class="nav-search-icon" aria-label="Search tickers"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></a>
+        <div class="chip live nav-clock" style="height: 26px;"><span class="dot"></span>Open <span class="mono tick" style="color: var(--steel);">10:42:07 ET</span></div>
+        <a href="#" class="nav-bell" aria-label="Alerts" style="display: inline-flex; color: var(--steel);"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 16V11a6 6 0 0112 0v5l2 2H4l2-2z"></path><path d="M10 20a2 2 0 004 0"></path></svg></a>
+        <a href="#" aria-label="Account settings" style="display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: var(--amber); color: var(--amber-ink); font: 700 12px/1 'IBM Plex Sans', sans-serif; text-decoration: none; flex-shrink: 0;">R</a>
+      </div>
+    </div>
+  </header>
+    <section class="wrap" style="padding-top: 28px;">
+      <h1 class="display" style="margin: 0; font-size: clamp(26px, 2.6vw, 34px); letter-spacing: -0.02em;">Settings</h1>
+      <div class="set-grid">
+        <nav aria-label="Settings sections" class="rail">
+    <a href="#" class=""><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0116 0"></path></svg>Account</a><a href="#" class="on"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>Preferences<span class="dot"></span></a><a href="#" class=""><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"></path></svg>Risk inputs</a><a href="#" class=""><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="8" cy="15" r="4"></circle><path d="M11 12l9-9M17 6l3 3M14 9l2 2"></path></svg>AI providers</a><a href="#" class=""><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"></path></svg>Brokerage</a>
+    <p style="margin: 14px 12px 0; font-size: 11.5px; color: var(--steel-2); line-height: 1.5;">Saved to your account. Credentials are encrypted at rest and never leave with an AI read.</p>
+  </nav>
+        <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0;"><section id="account" class="panel" style="overflow: hidden;">
+    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 18px 22px 12px; flex-wrap: wrap;"><div style="flex: 1 1 240px;"><h2 style="margin: 0; font-size: 16px; font-weight: 700;">Account</h2><p style="margin: 3px 0 0; font-size: 12.5px; color: var(--steel);">Saved to your account.</p></div></div>
+    <div style="padding: 4px 22px 20px; display: flex; flex-direction: column; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;"><span style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: var(--amber); color: var(--amber-ink); font: 700 16px/1 'IBM Plex Sans', sans-serif;">R</span><div style="flex: 1 1 200px; min-width: 0;"><div style="font-size: 14px; font-weight: 700;">Rodrigo</div><div style="font-size: 12.5px; color: var(--steel); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">rodrigo@example.com · signed in with Google</div></div><button class="btn secondary sm">Sign out</button></div></div>
+  </section><section id="preferences" class="panel" style="overflow: hidden;">
+    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 18px 22px 12px; flex-wrap: wrap;"><div style="flex: 1 1 240px;"><h2 style="margin: 0; font-size: 16px; font-weight: 700;">Preferences</h2><p style="margin: 3px 0 0; font-size: 12.5px; color: var(--steel);">Appearance and defaults. Presentation only — nothing here touches the score.</p></div></div>
+    <div style="padding: 4px 22px 20px; display: flex; flex-direction: column; gap: 16px;">
+    <div class="set-2">
+      <div><span class="caps" style="display: block; margin-bottom: 6px;">Active persona</span><div class="field"><span>Balanced Swinger</span><span style="flex: 1;"></span><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 9l6 6 6-6"></path></svg></div><div style="font-size: 11.5px; color: var(--steel); margin-top: 5px;">Frames every AI read and pre-fills the DTE window (14–45).</div></div>
+      <div><span class="caps" style="display: block; margin-bottom: 6px;">Default ticker</span><div class="field mono">SPY</div><div style="font-size: 11.5px; color: var(--steel); margin-top: 5px;">Where <span class="mono">/ticker</span> lands. Universe members get the scanner’s structure cadence.</div></div>
+    </div>
+    <div><span class="caps" style="display: block; margin-bottom: 6px;">Theme</span><div class="theme-3"><div style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 40px; border-radius: 8px; border: 1px solid var(--amber); background: var(--amber-tint); color: var(--amber-text); font-size: 13px; font-weight: 600;"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"></path></svg>Dark</div><div style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 40px; border-radius: 8px; border: 1px solid var(--line-2); background: transparent; color: var(--steel); font-size: 13px; font-weight: 600;"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>Light</div><div style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 40px; border-radius: 8px; border: 1px solid var(--line-2); background: transparent; color: var(--steel); font-size: 13px; font-weight: 600;"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>System</div></div></div></div>
+  </section><section id="risk" class="panel" style="overflow: hidden;">
+    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 18px 22px 12px; flex-wrap: wrap;"><div style="flex: 1 1 240px;"><h2 style="margin: 0; font-size: 16px; font-weight: 700;">Risk inputs</h2><p style="margin: 3px 0 0; font-size: 12.5px; color: var(--steel);">A trader input, not a credential. Sent with every AI read so the model can size to your cap.</p></div></div>
+    <div style="padding: 4px 22px 20px; display: flex; flex-direction: column; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 8px; background: var(--ink-2); border: 1px solid var(--line); font-size: 12.5px; color: var(--steel);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg><span>These two numbers, your open positions on the ticker, and the persona prompt are the only account data that leave. <a href="#">View what’s sent →</a></span></div>
+    <div class="set-2 set-2b">
+      <div><span class="caps" style="display: block; margin-bottom: 6px;">Account size</span><div class="field mono"><span class="steel">$</span>25,000</div></div>
+      <div><span class="caps" style="display: block; margin-bottom: 6px;">Per-trade cap</span><div style="display: flex; gap: 8px; flex-wrap: wrap;"><div class="field mono focus" style="flex: 1 1 100px;">2</div><span class="seg" style="align-self: stretch;"><span class="on">% of account</span><span>$ per trade</span></span></div></div>
+    </div>
+    <div class="cap-row"><div class="cell"><span class="caps">Effective cap</span><span class="v" style="font-size: 20px;">$500</span><span class="s">2% of $25,000 · per trade</span></div><span style="width: 1px; height: 36px; background: var(--line-2);"></span><div style="flex: 1 1 240px; font-size: 12px; color: var(--steel); line-height: 1.5;">The AI read annotates its suggested size against this cap. Not set → the read says <span class="mono">not set</span> and links here; it never infers a unit.</div></div>
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;"><button class="btn primary">Save risk inputs</button><span style="font-size: 12px; color: var(--steel);">Updated 12 Aug 2026 · stored encrypted</span></div></div>
+  </section><section id="ai" class="panel" style="overflow: hidden;">
+    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 18px 22px 12px; flex-wrap: wrap;"><div style="flex: 1 1 240px;"><h2 style="margin: 0; font-size: 16px; font-weight: 700;">AI providers</h2><p style="margin: 3px 0 0; font-size: 12.5px; color: var(--steel);">Bring your own key. Your key, your cost; reads run on it and it is never pooled.</p></div><span class="chip live" style="height: 24px;"><span class="dot"></span>Ready for reads</span></div>
+    <div style="padding: 4px 22px 20px; display: flex; flex-direction: column; gap: 16px;">
+    <div class="seg" style="align-self: flex-start; max-width: 100%; overflow-x: auto;"><span class="on">Anthropic</span><span>OpenAI</span><span>Gemini</span><span>Grok</span></div>
+    <div class="set-2 set-2c">
+      <div style="min-width: 0;"><span class="caps" style="display: block; margin-bottom: 6px;">API key</span><div class="field mono"><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">sk-ant-••••••••••••••••••••••••••••7Qx2</span><span style="flex: 1;"></span><span class="chip outline" style="height: 20px; flex-shrink: 0;"><svg class="ico" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12l5 5L20 7"></path></svg> saved · verified 2h ago</span></div></div>
+      <div style="display: flex; gap: 8px;"><button class="btn secondary" style="flex: 1;">Replace key</button><button class="btn ghost">Test</button></div>
+    </div>
+    <div class="set-2 set-2c">
+      <div><span class="caps" style="display: block; margin-bottom: 6px;">Model for reads</span><div class="field mono"><span>claude-sonnet-5</span><span class="chip outline" style="height: 20px; font-size: 11px;">catalog recommended</span><span style="flex: 1;"></span><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 9l6 6 6-6"></path></svg></div></div>
+      <div style="font-size: 12px; color: var(--steel); line-height: 1.5;">Changing the model never recomputes a pinned read; it applies to the next request.</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 8px; border: 1px dashed var(--line-2); font-size: 12px; color: var(--steel);"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 018 0v4"></path></svg><span>Grok subscription sign-in is present but unavailable until OAuth ships — use a Grok API key meanwhile.</span></div></div>
+  </section><section id="brokerage" class="panel" style="overflow: hidden;">
+    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 18px 22px 12px; flex-wrap: wrap;"><div style="flex: 1 1 240px;"><h2 style="margin: 0; font-size: 16px; font-weight: 700;">Brokerage</h2><p style="margin: 3px 0 0; font-size: 12.5px; color: var(--steel);">Read-only positions from your real account. Convexa never places, changes, or cancels an order.</p></div><span class="chip outline" style="height: 24px;">coming soon</span></div>
+    <div style="padding: 4px 22px 20px; display: flex; flex-direction: column; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 10px; background: var(--ink-2); border: 1px solid var(--line); flex-wrap: wrap;"><span style="display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; background: var(--raised); color: var(--steel);"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"></path></svg></span><div style="flex: 1 1 220px;"><div style="font-size: 13.5px; font-weight: 600;">Webull · not connected</div><div style="font-size: 12px; color: var(--steel);">Read-only. Positions appear beside the sim book under a separate Live tab, marked from the same tape.</div></div><button class="btn secondary">Connect</button></div>
+    <div style="font-size: 12px; color: var(--steel); display: flex; gap: 18px; flex-wrap: wrap;"><span><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"></path></svg> no order path exists in the product</span><span><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 018 0v4"></path></svg> credentials stored as ciphertext only</span></div></div>
+  </section>
+          <p style="margin: 4px 0 0; font-size: 11.5px; color: var(--steel-2); line-height: 1.5;">Convexa is an analysis tool. Positions in the sim book are simulated (paper); a connected brokerage is read-only. Not investment advice.</p>
+        </div>
+      </div>
+    </section>
+    <footer style="margin-top: 48px;">
+    <svg viewBox="0 0 1200 40" preserveAspectRatio="none" style="display: block; width: 100%; height: 40px;" aria-hidden="true"><path d="M 0 36 Q 600 -12 1200 36" fill="none" stroke="var(--steel)" stroke-opacity="0.35" stroke-width="1" vector-effect="non-scaling-stroke"></path></svg>
+    <div class="wrap foot-grid">
+      <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+        <span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 15px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 11.1px; height: 10.8px; margin: 0 0.7px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span>
+        <div style="display: flex; gap: 18px; font-size: 12px; flex-wrap: wrap;"><a href="#" style="color: var(--steel);">How Convexa works</a><a href="#" style="color: var(--steel);">Blog — how we read structure</a><a href="#" style="color: var(--steel);">Lab</a></div>
+        <p style="margin: 0; max-width: 720px; font-size: 12px; color: var(--steel);">Convexa is an analysis tool. Positions in the sim book are <strong>simulated</strong> (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.</p>
+        <p style="margin: 0; font-size: 12px; color: var(--steel-2);">© 2026 Convexa. All rights reserved.</p>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--steel);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"></path></svg><span class="seg" style="padding: 2px;"><span class="on">Dark</span><span>Light</span><span>System</span></span></div>
+    </div>
+  </footer>
+  </div>
+<div class="site-bar" role="toolbar" aria-label="Design site controls"><a href="index.html">← All screens</a><span class="lbl">Settings</span><button id="scheme-btn" type="button" onclick="toggleScheme()">Light scheme</button></div>
+<script>
+(function () {
+  var KEY = 'convexa-design-scheme';
+  function current() { try { return localStorage.getItem(KEY) || 'dark'; } catch (e) { return 'dark'; } }
+  function apply(s) { document.documentElement.setAttribute('data-scheme', s); if (window.deskSetProps) window.deskSetProps({ scheme: s }); var b = document.getElementById('scheme-btn'); if (b) b.textContent = s === 'dark' ? 'Light scheme' : 'Dark scheme'; }
+  window.toggleScheme = function () { var n = current() === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(KEY, n); } catch (e) {} apply(n); };
+  apply(current());
+})();
+</script>
+
+</body>
+</html>

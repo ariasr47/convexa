@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en" data-scheme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>What’s sent drawer · Convexa design</title>
+<meta name="description" content="The egress drawer.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  .dlg-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+  .legs { display: grid; grid-template-columns: 70px 1fr 90px 90px 90px; gap: 8px; align-items: center; font-size: 12.5px; }
+  .op-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .picker { display: flex; flex-direction: column; }
+  @media (max-width: 999px) { .dlg-2, .op-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 599px) { .legs { grid-template-columns: 60px 1fr 70px; } .legs .opt { display: none; } }
+
+  [hidden] { display: none !important; }
+  .site-bar { position: fixed; right: 16px; bottom: 16px; z-index: 100; display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 999px; background: var(--raised); border: 1px solid var(--line-2); box-shadow: var(--e4); font-size: 12px; color: var(--steel); flex-wrap: wrap; max-width: calc(100vw - 32px); }
+  .site-bar a, .site-bar button, .site-bar select { height: 28px; border-radius: 999px; border: 1px solid transparent; background: transparent; color: var(--phosphor); font: 600 12px/1 'IBM Plex Sans', system-ui, sans-serif; padding: 0 10px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .site-bar a:hover, .site-bar button:hover { background: var(--raised-2); }
+  .site-bar select { background: var(--ink-2); border-color: var(--line-2); padding: 0 8px; }
+  .site-bar .lbl { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); padding-left: 6px; }
+  @media (max-width: 767px) { .site-bar { bottom: auto; top: 64px; right: 8px; left: 8px; max-width: none; } }
+</style>
+</head>
+<body>
+<div style="width: 100%; min-height: 0px; background: var(--ink); color: var(--phosphor); padding: 32px clamp(16px, 3vw, 40px) 40px; display: flex; flex-direction: column; gap: 22px;">
+    <div><div class="caps" style="color: var(--amber-text);">Egress honesty</div><h1 class="display" style="margin: 6px 0 0; font-size: clamp(22px, 2.4vw, 28px);">“What’s sent” drawer</h1><p style="margin: 8px 0 0; max-width: 780px; font-size: 13px; color: var(--steel); line-height: 1.55;">Reachable from every AI-read state, signed in or not. Sections that would not be sent in the current state render as “not sent” rather than disappearing.</p></div>
+    <div style="border: 1px solid var(--line-2); border-radius: 14px; overflow: hidden;"><div style="position: relative; width: 100%; min-height: 760px; background: var(--ink); color: var(--phosphor); overflow: hidden;">
+    <div aria-hidden="true" style="position: absolute; inset: 0; opacity: 0.55; filter: blur(2px);">
+      <div class="nav-bar" style="position: static;"><div class="wrap nav-in"><span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 17px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 12.6px; height: 12.2px; margin: 0 0.8px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span><span style="flex: 1;"></span><span class="skel" style="width: 120px; height: 20px;"></span></div></div>
+      <div class="wrap" style="padding-top: 22px; display: flex; flex-direction: column; gap: 14px;"><div class="skel" style="height: 44px; width: 40%;"></div><div class="skel" style="height: 340px; width: 100%;"></div><div class="skel" style="height: 90px; width: 100%;"></div><div class="skel" style="height: 260px; width: 100%;"></div></div>
+    </div>
+    <div style="position: absolute; inset: 0; background: var(--scrim);"></div>
+    <div style="position: relative; min-height: 760px; display: flex; align-items: stretch; justify-content: flex-end; padding: 0;"><aside class="panel" style="width: min(520px, 100%); min-height: 100%; border-radius: 0; border-top: 0; border-bottom: 0; border-right: 0; box-shadow: var(--e4); display: flex; flex-direction: column;">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--line);"><h2 style="margin: 0; font-size: 15px; font-weight: 700;">What’s sent to the AI · SPY</h2><span style="flex: 1;"></span><button class="btn primary sm"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a1 1 0 011-1h10"></path></svg> Copy all</button><span style="display: inline-flex; color: var(--steel);"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 6l12 12M18 6L6 18"></path></svg></span></div>
+    <div style="padding: 14px 20px; overflow: auto; flex: 1;">
+      <p style="margin: 0 0 12px; font-size: 12.5px; line-height: 1.55; color: var(--phosphor);">This is the complete, reviewable list of what leaves the machine for SPY, on demand: the computed snapshot, your persona’s prompt, and the field glossary. No other ticker, no account or identity, no broker/order data, and no API key ever leave.</p>
+      <div style="border-top: 1px solid var(--line); padding: 12px 0;"><div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;"><span style="font-size: 13px; font-weight: 600;">Computed snapshot (context)</span><span style="flex: 1;"></span><button class="btn ghost sm"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a1 1 0 011-1h10"></path></svg> Copy</button></div><pre class="mono" style="margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--ink-2); border: 1px solid var(--line); font-size: 11px; line-height: 1.55; color: var(--steel); white-space: pre-wrap; word-break: break-word;">ticker: SPY · as_of: 2026-09-03T14:41:52Z · gex_spot: 573.05
+call_wall: 580 · put_wall: 560 · gamma_flip: 568.50 · max_pain: 570
+net_gex: 1.94e9 (vol-norm) · raw 1.62e9 · net_dex: -4.12e8
+iv_hv_ratio: 0.82 · iv_rank: 34 · chain_vol_oi: 0.61 · regime: positive_gamma
+setups: [pin_into_call_wall (high), flip_reclaim (medium)]</pre></div>
+      <div style="border-top: 1px solid var(--line); padding: 12px 0;"><div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;"><span style="font-size: 13px; font-weight: 600;">Candidate contracts</span><span style="flex: 1;"></span><button class="btn ghost sm"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a1 1 0 011-1h10"></path></svg> Copy</button></div><pre class="mono" style="margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--ink-2); border: 1px solid var(--line); font-size: 11px; line-height: 1.55; color: var(--steel); white-space: pre-wrap; word-break: break-word;">SPY 250918C00575000 · bid 2.38 / ask 2.42 · OI 41,200 · vol 12,100
+SPY 250918C00580000 · bid 0.34 / ask 0.38 · OI 58,900 · vol 18,400
+set: live-session · as of 14:41 ET · median spread 0.02</pre></div>
+      <div style="border-top: 1px solid var(--line); padding: 12px 0;"><div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;"><span style="font-size: 13px; font-weight: 600;">Risk inputs · as sent</span><span style="flex: 1;"></span><button class="btn ghost sm"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a1 1 0 011-1h10"></path></svg> Copy</button></div><pre class="mono" style="margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--ink-2); border: 1px solid var(--line); font-size: 11px; line-height: 1.55; color: var(--steel); white-space: pre-wrap; word-break: break-word;">state: set · account_size: 25000 · per_trade_cap: 2 percent
+effective_dollar_cap: 500 (derived) · storage_available: true</pre></div>
+      <div style="border-top: 1px solid var(--line); padding: 12px 0;"><div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;"><span style="font-size: 13px; font-weight: 600;">Open positions</span><span style="flex: 1;"></span><button class="btn ghost sm"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a1 1 0 011-1h10"></path></svg> Copy</button></div><pre class="mono" style="margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--ink-2); border: 1px solid var(--line); font-size: 11px; line-height: 1.55; color: var(--steel); white-space: pre-wrap; word-break: break-word;">this_underlying: long · legs 2 · nearest_expiry 15 DTE · max_loss 420
+portfolio: open_count 2 · capital_at_risk 1060</pre></div>
+      <div style="border-top: 1px solid var(--line); padding: 12px 0;"><div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;"><span style="font-size: 13px; font-weight: 600;">Persona prompt</span><span style="flex: 1;"></span><button class="btn ghost sm"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a1 1 0 011-1h10"></path></svg> Copy</button></div><pre class="mono" style="margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--ink-2); border: 1px solid var(--line); font-size: 11px; line-height: 1.55; color: var(--steel); white-space: pre-wrap; word-break: break-word;">Balanced Swinger · directional_swing · moderate risk · DTE 14–45
+Frame balanced directional swings; risk first; pass readily when the edge is thin.</pre></div>
+      <div style="border-top: 1px solid var(--line); padding: 12px 0;"><div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;"><span style="font-size: 13px; font-weight: 600;">Field glossary</span><span style="flex: 1;"></span></div><p style="margin: 0; font-size: 12px; color: var(--steel); line-height: 1.5;">Definitions for every field above, so the model reads gamma_flip as the analytic zero-crossing and never as “the wall’s midpoint”. <a href="#">Show 22 terms</a></p></div>
+    </div>
+    <div style="padding: 10px 20px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--steel);"><span class="chip" style="height: 20px;"><svg class="ico" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12l5 5L20 7"></path></svg> Export copied.</span><span>Manual hand-off works without a key and costs nothing.</span></div>
+  </aside></div>
+  </div></div>
+  </div>
+<div class="site-bar" role="toolbar" aria-label="Design site controls"><a href="index.html">← All screens</a><span class="lbl">What’s sent drawer</span><button id="scheme-btn" type="button" onclick="toggleScheme()">Light scheme</button></div>
+<script>
+(function () {
+  var KEY = 'convexa-design-scheme';
+  function current() { try { return localStorage.getItem(KEY) || 'dark'; } catch (e) { return 'dark'; } }
+  function apply(s) { document.documentElement.setAttribute('data-scheme', s); if (window.deskSetProps) window.deskSetProps({ scheme: s }); var b = document.getElementById('scheme-btn'); if (b) b.textContent = s === 'dark' ? 'Light scheme' : 'Dark scheme'; }
+  window.toggleScheme = function () { var n = current() === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(KEY, n); } catch (e) {} apply(n); };
+  apply(current());
+})();
+</script>
+
+</body>
+</html>

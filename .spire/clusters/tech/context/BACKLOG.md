@@ -30,6 +30,271 @@
 
 ---
 
+## Last GATE I — 2026-09-08 (phase 4 re-cut → `curvature-v2-landing-and-site`; `curvature-v2-responsive-sweep` pre-registered as its successor)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Owner 2026-09-08: "continue with the re-design work", after phases 1–3 closed at GATE S and both
+platforms' visual baselines were re-taken at `40ec63fc` (F-D fixed). Pipeline drained.
+**Chosen → `curvature-v2-landing-and-site`.** Brief at
+`.spire/clusters/tech/contracts/curvature-v2-landing-and-site/BRIEF.md`. **Frontend only; `apps/api` diff stays 0.**
+**Why it won, and the re-cut:** phase 1 named phase 4 `curvature-v2-landing-and-responsive` — a marketing
+page, three site pages, a sweep over every screen at six bands, an a11y debt and a 48-occurrence spacing
+burn-down in one BRIEF. That has no reviewable acceptance surface, the same failure shape the phase-1 cull
+recorded against a one-shot rebuild and the phase-3 cull against "finish v2 in one phase". The program's own
+order (Harvest 2026-09-03: "… → landing → responsive pass") puts the landing first, and the sweep's landing
+rules need a v2 landing to exist. So phase 4 is **two features**: this one (landing · blog · methodology ·
+404/route fallback · auth wall · footer with Lab and Blog), then **`curvature-v2-responsive-sweep`** (the six
+bands per `design/site/responsive-spec.html` incl. the phone's docked AI-read sheet · settings section
+navigation per owner ruling D-B with its three behaviours and the 44 px floor · the spacing-exemption
+remainder, 48 occurrences / 25 files · the curve text-equivalent, desk-and-read P1). **Conductor call,
+reversible until GATE C opens — the owner can re-merge them.**
+**Open at GATE C:** the hero instrument — canon `DESIGN_SYSTEM.md:52,113` says "the 3D dealer-gamma surface
+(strike × tenor)", the canvas landing leads with the structure field, the app ships a 2-D `HeroCurve`.
+**Culled / blocked (full set in the BRIEF's `Considered:`):** the two `apps/api` wire fields (blocked-on the
+next backend lane on `main`) · spacing burn-down alone · curve text-equivalent alone · the hosted Linux
+visual-candidates workflow (F-A, tooling) · the test-suite review's tier-A cleanups (hygiene batch, outside
+the ascent — `docs/research/TEST_SUITE_AND_BACKTESTING_REVIEW_2026-09-08.md`).
+**Sequencing recommendation, not a feature:** open the phases 1–3 PR first and build phase 4 on a branch off
+it, so the PR stays reviewable and the visual child's verdict is not muddied by new pixels.
+
+## Harvest — 2026-09-08 (ticker fidelity repair: two wire fields the design draws and the API does not send)
+<!-- atlas: theme=desk-fidelity horizon=next -->
+Not a BRIEF. Filed by the conductor from the `/ticker` fidelity repair lane's GATE Z items (owner 2026-09-08:
+"Do all four" — the fourth is this). Both are **`apps/api`** changes; that crate is frozen on
+`spire/curvature-v2-foundations` (`apps/api` diff must stay 0), so they wait for the next backend lane on
+`main`. Neither is faked in the meantime: the tape card ships without its spark, the masthead without a
+change line or a name.
+
+- **A short `net_flow` trail on the live SSE event.** `design/src/screens/desk.mjs:363-364` draws the Live
+  tape's `FLOW` sparkline as a 30-point trail sampled every 10 s (`SPY · 30 × 10s`). `LiveUpdateBody`
+  (`libs/api/src/generated/schema.ts:1550`) carries only the current scalar `net_flow`. Proposed shape:
+  `net_flow_trail: number[]` (oldest → newest, ≤ 30 points) + `trail_window_s: number`, accumulated
+  server-side per symbol and reset on the session boundary — keeps the eviction / reset rules in one place
+  and off the client's stream-isolation seam (the lane's GATE Z reasoning, `RESUME.md`). Consumer:
+  `pages/ticker/widgets/live-tape/LiveTape.tsx` adds the spark row under the 2×2.
+- **Prior close, signed change and the instrument name on the ticker bundle.** The design's masthead reads
+  `SPY 573.12 +1.84 · +0.32%` and `SPDR S&P 500 ETF`; `market_state` has `price` / `gex_spot` only (checked
+  against the saved real bundle, `fidelity-audit-2026-09-08/_tools/spy-bundle-2026-09-08T1059Z.json`).
+  Proposed: `market_state.prev_close`, `change`, `change_pct`, `name` — all nullable, vendor-sourced,
+  never derived on the client. Consumer: `pages/ticker/widgets/chrome/TickerHeader.tsx` renders them
+  only when present (the fidelity repair's F3 already omits rather than fakes them).
+
+### Harvest addendum — 2026-09-08, visual-baseline receipt flow (filed by the conductor while preparing the flow the owner asked for)
+
+- **The hosted Linux candidates workflow cannot complete as wired** (`.github/workflows/browser-visual-linux-candidates.yml`,
+  never executed): `fetch-depth: 1` leaves `visual-update.mjs`'s `assertSourceScope` unable to resolve an ancestor
+  `source_revision`; a receipt cannot live inside the commit it names; with a deeper fetch the retained evidence makes
+  the receipt "stale" (only the receipt may differ since `source_revision`); and `validateStability` requires the two
+  clean compare summaries to carry the acceptance's `source_revision`, which CI stamps as HEAD after the baselines are
+  committed. The flow is a dirty-working-tree local procedure by construction (that is how the 2026-08-24 win32 flow ran).
+  Options when this is picked up: (a) let the workflow accept a _branch_ whose HEAD holds evidence + receipt and diff against
+  the receipt's `source_revision` with `fetch-depth: 0`, treating `visual-review/evidence/**` as receipt-scope; (b) define
+  stability as two clean runs at the _baseline commit_ (the acceptance's revision is the candidate revision; stability's is
+  its child) — a SPEC amendment either way, not a quiet tool fix. Until then Linux baselines come from a local Linux host
+  (WSL2 x86-64 for CI parity). Runbook and drafting helper:
+  `state/spire-curvature-v2-foundations/visual-baseline-receipts/`.
+- **`validateStability`'s image-hash comparison is vacuous on pass runs** (`sha256 ?? actual_sha256` are both null when a
+  compare passes); the check reduces to run id / status / revision / platform / retries. Worth a stronger field
+  (the expected baseline hashes) when the SPEC is amended.
+- **F-D — `ticker-desktop`'s tape-trail sparkline is a run-to-run race at the visual gate** (found 2026-09-08 on the
+  Windows box while running the win32 receipt flow). The first compare run (`local-1788908546804-9d816d0a`) drew the
+  trail — the panel-filled 30 px canvas with the dashed structure baseline, bbox x 188–688 · y 549–578, 7,816 px — while
+  the authorized update run and the five compare runs after it left that slot blank; the accepted win32 baseline
+  (`a7542ea1…`) is the blank rendering, 6 of 7 runs. Mechanism the code supports (inferred from source, not
+  instrumented): `pages/ticker/widgets/chrome/TapePulseStrip.tsx` paints only inside its rAF loop, and `layout()` — run
+  on every ResizeObserver notification — resets `canvas.width`, which clears the bitmap synchronously and leaves the
+  repaint to the next frame. `freezeVisualFrame`'s `clock.pauseAt` (+30 s) trips the stream watchdog; its `paused`
+  render adds the pause mark and the "tape paused · trail frozen" caption in the same flex row, the sparkline wrap
+  resizes, and when that lands after the pause no frame ever repaints. The slow first run (7.4 s vs ~5 s, cold
+  http-server) tripped the watchdog in real time before the freeze, so the repaint still ran. `ticker-offline-mobile`
+  is immune — its 15 s fast-forward trips the watchdog before the freeze every run. Fix candidates for a follow-up
+  lane: paint synchronously inside `layout()` (call `paint(performance.now())` after resizing) or give the sparkline
+  wrap a fixed width so the caption cannot resize it. Either is a source change, so both platform flows re-run at the
+  new revision — do it before the next `/ticker` composition change rather than as its own flow.
+  **CLOSED 2026-09-08**, two commits: `6fa9419b` (draw synchronously after every layout and once on mount) and
+  `40ec63fc` — a **second cause** a canvas call-timeline probe against the real scenario exposed: the trail polyline
+  set `lineWidth = 1.75` and nothing reset it, so the dashed baseline was stroked at 1.75 on every frame except the
+  one right after a resize (context reset → 1); which frame was last was a race between the ResizeObserver callback
+  and the clock pause's due-timer flush (red 42 vs 60, 3/6 each). `draw` now sets `lineWidth` itself. Probe after:
+  6/6 identical under load. Both platforms' baselines re-taken at `40ec63fc` (`e2929865`, `2eaa7136`).
+- **F-E — the dashboard unit suite has a cross-worker race and is load-sensitive** (2026-09-08, seen while gating
+  F-D): `src/app/replay-outcome-join.structural.spec.ts` writes `src/app/_mutation_poison_replay_outcome_join.ts`
+  as a mutation proof and deletes it, while `src/app/shared/theme/stage3-amber.spec.ts` globs
+  `/src/app/**/*.{ts,tsx}` with `?raw` in another worker — when the glob lands mid-window the amber spec fails
+  "Failed to resolve import … _mutation_poison_…" and the run exits 1 with zero failed TESTS (one failed FILE).
+  Under CPU load (a build, six browsers, an image pull) the suite also lost a file to "Worker exited unexpectedly"
+  and failed eleven page-level specs on 5 s / 15 s timeouts; every one passed alone and the full suite exited 0
+  only when nothing else ran. Fix candidates: write the poison file outside `src/app` (or under a name the glob
+  excludes), and treat the suite's exit code, never its printed totals, as the verdict (the CLAUDE.md trap, again).
+- **F-F — "tape paused · trail frozen" while the trail is empty** (2026-09-08, observation from the F-D probe): the
+  strip prunes trail points older than 5 s on every frame, and the visual gate's `pauseAt` jumps the clock +30 s,
+  so by the frozen frame the "frozen" trail has been pruned to nothing while `TapeTrailRow` still renders the
+  `trail frozen` arm (it keys on the latched mid, not on trail samples). Real users see the same after 5 s offline.
+  SPEC §4.6's two-arm discipline ("never assert a frozen trail that was never drawn") arguably wants the caption to
+  follow the trail's own emptiness, or the prune to stop while paused. Owner's call; not a gate concern.
+- **Cluster entry on a fresh Windows checkout died on `AGENTS.md`** (2026-09-08): the installation receipt pins the
+  repo-root `AGENTS.md` bytes, `.gitattributes` never covered that path, and `core.autocrlf=true` checked it out CRLF
+  → `spire run tech` exit 4 "artifact integrity". Fixed by pinning `AGENTS.md text eol=lf` (same commit as this note).
+  Trap kept: `spire run` rewrites the tracked `receipts/selection.json` timestamp — revert it before any tool that
+  refuses tracked changes (the visual update command does).
+- **F-G — the browser-quality gates never ran on `spire/curvature-v2-foundations` until PR #46** (2026-09-09). The
+  aggregate (`npm run browser:quality`: chromium e2e, compatibility, accessibility, visual) runs only in CI on `main`
+  pushes and pull requests; `npm run ci` is lint → typecheck → test → build. Three redesign phases closed at GATE S
+  with "QA PASS" while the accessibility gate was red on 7 of 9 scans (colour contrast: an 11 px `⌘K` hint in
+  `text.disabled`, offline captions dimmed by `opacity: 0.5`, small `info.main` text, a scanner offline price at
+  4.34:1). Fixed in `b7425507` (solid `extras.textDim` / `extras.textInfo` tokens, Amendments row; rule "text is never
+  dimmed by opacity"). **Process fix owed:** GATE Q's checklist must name the four browser gates, or `npm run ci`
+  must run the aggregate against the prebuilt `dist`.
+- **F-H — the accessibility gate's summary carries `findings: []` even when scans fail.** `accessibility.spec.ts:41`
+  attaches `axe-findings.json` as a body attachment; the quality reporter copies only path attachments and its
+  `findings` aggregation never reads them, so a red gate's evidence names no rule ("gates that do not gate" class,
+  Harvest 2026-09-05). Fix: attach with a `path`, or parse the body attachment into `summary.findings`. Until then a
+  throwaway spec printing `results.violations` is how the offenders were found (PR46_CI_REPAIR_TASK §E).
+- **F-I — the visual gate depended on host fonts and on LCD text anti-aliasing.** The app bundled Latin-only Plex
+  subsets, so `→ γ ≥ ≤ ⌘ ▾` came from each host's fallback font (the linux runner disagreed with the Playwright image
+  on exactly those glyphs). Fixed in `ad858c83` (greek, latin-ext and a symbol subset bundled; `⌘`/`▾` replaced by
+  icons; a WOFF2 cmap-coverage spec). Separately, subpixel (LCD) text AA varied between runs on linux — five pixels
+  on scanner-dense symbol cells across five runs; `be00d739` adds `--disable-lcd-text` to the visual gate's launch
+  args, after which three container runs agreed byte for byte. Both platforms' baselines were re-taken twice
+  (`b1c898df` at `1d6f6b42`; `6f9807b7` + `27eb19e2` at `be00d739`).
+- **F-J — supply-chain policy: two `high` advisories cannot be closed today.** `js-yaml` 4.x is vulnerable in every
+  version and only 5.x is fixed; `@redocly/openapi-core` 1.34 (under `openapi-typescript`, the contract generator)
+  reads `js_yaml.types.merge`, removed in 5. A nested override keeps 4.3.1 under openapi-core (`1d6f6b42`); the other
+  five advisories are closed (`bec49028`: vitest 4.1.11, svgo 3.3.5, js-yaml 5.4.1 elsewhere). The exception registry
+  forbids security exceptions, so the policy job stays red on these two until `openapi-typescript` ships on a
+  js-yaml-5 openapi-core — an owner decision on whether the policy or the tooling moves. Also: the policy job scans
+  the PR's commit range and flagged eight false positives (base85 in a binary evidence patch, localStorage key names
+  in council prose) — `.gitleaks.toml` allowlists exactly those shapes. **A full-history scan finds `apps/api/.env`
+  with `MASSIVE_API_KEY` in the initial commit `1aac13ec` (2026-06-18), removed in `fc9c8d28` — rotate if not rotated
+  then; history stays (worktrees on three machines).** Trap paid for on the PR's second run: **every
+  `package-lock.json` change fails `npm_licenses` on all ~1050 rows** (each baseline row carries the lock hash) until
+  `generate-license-baseline.mjs` is re-run and its diff reviewed; the generator also hashed `Cargo.lock` raw, so a
+  Windows (CRLF) checkout churned every cargo row — fixed to the same CRLF-normalised hash as npm.
+- **F-K — `execFileSync`'s default buffer in the receipt helper.** Six changed PNG baselines produce a 1.06 MB binary
+  patch, over the 1 MB default; fixed with a 64 MB `maxBuffer` (`097d37a7`). The container bootstrap also copied a
+  second run's evidence over the first's; it now clears the folder.
+- **F-L — the `AccessibleHelp` tap path is a timer race, and the chromium gate (rightly) refuses retry passes**
+  (PR #46 run 2, `34323995666`, 2026-09-09). Two tests passed only on retry — `curvature-v2.spec.ts` AC-35 and U-32,
+  both the 393 px variant, "tap reveals content" / "keyboard focus reveals content" → `[role="tooltip"]` never
+  appeared within 5 s — and `lib/summary.mjs:87` marks any `flaky > 0` evidence invalid, so the child is FAIL with
+  `106 passed · 2 flaky`. Same runner was slow (unit tests 10 min vs 5 on run 1). **Mechanism (read from
+  `@mui/material@9.2.0` `Tooltip.js:414-435`, not reproduced locally yet):** `AccessibleHelp` sets
+  `enterTouchDelay={0}`, so `touchstart` arms a **0 ms** `touchTimer` whose callback starts the real open
+  (`enterDelay` 100 ms); `touchend` calls `stopTouchInteraction()` which **clears `touchTimer`**. The test's
+  `realisticTap` holds 40 ms; a real finger holds ~50–120 ms. Whenever the main thread is busy for longer than the
+  hold — the /ticker desk at 393 px with two canvases, plus the gate's parallel workers — the 0 ms task runs after
+  `touchend`, is cleared, and the tooltip never opens. **This is a product race, not only a test race:** a quick tap
+  on a loaded phone has the same window. Candidate fix (a lane's, with a RED test first): open on `touchstart`
+  itself — a controlled `open` in `AccessibleHelp` set from `onTouchStart` (MUI's `ignoreNonTouchEvents` already
+  suppresses the synthesized mouseover), or `onClick` toggle for coarse pointers — and keep `realisticTap` at 40 ms
+  so the test stays a real tap. The keyboard-path failure (AC-35, `market-context`) has no mechanism named yet;
+  `handleFocus` gates on `isFocusVisible(event.target)`, so check whether a programmatic `.focus()` after `Escape`
+  + `.blur()` is focus-visible under load. Reproduce: `CI=1 npm run browser:chromium` with `--repeat-each` on
+  `-g "393px"` while `npm run test` runs alongside. Do **not** loosen the gate's flaky rule or lengthen the hold.
+  Samples so far: CI run 2 flaked (2/108), CI run 3 clean (108/108, 0 flaky) → load-dependent; locally on the
+  Windows box 40 runs of the two tests under the unit suite as load, 0 failures (a much faster machine than the
+  2-vCPU runner — not a refutation). A CPU-throttled probe (`Emulation.setCPUThrottlingRate` via CDP before the
+  tap) is the next faithful reproduction.
+
+## Harvest — 2026-09-06 (owner direction: AI-powered Convexa)
+<!-- atlas: theme=trust-the-signal horizon=next -->
+Not a GATE I cull and **not** a BRIEF. Owner direction: *"I want Convexa to be an AI-powered artifact, for
+example the AI rec panel for recommendations."* **Authorizes: nothing** on live score. Recorded so the
+direction is dated and queued rather than re-derived.
+
+**The template is the AI rec panel, and what makes it work is not that it calls an LLM.** It is that the
+LLM is an **advisory consumer of already-computed state** — the shape `ai-external-no-llm` was *narrowed*
+to permit (never a scoring / gate / fingerprint input, no recompute, off the SSE path, server-side key, no
+auto-act, no real order), plus the **type register** carrying authorship (Mono = traced to a computed
+bundle field, Plex Sans + dotted rule = the model's own number). Any new AI surface inherits both or it
+stops being Convexa.
+
+**Sequencing ruled by the conductor 2026-09-06 — phase 3 first, and it is a precondition, not a rival.**
+Scanner, positions, settings and alerts have **zero `FigureCell`** between them (measured at GATE I of
+`curvature-v2-surfaces`), so they cannot yet distinguish "Convexa's number" from "the model's number".
+Adding AI there first would multiply untraceable assertions on the densest surfaces in the app — the exact
+risk `ai-asserted-numbers-are-traceable` was promoted on, after **44.4% of asserted numbers measured
+untraceable**.
+
+**The AI surface to back next is already in this backlog:** `grounded-morning-snapshot` (line ~108) — an
+AI briefing over already-computed scanner + event calendar + GEX, **every number cited**, no new vendor.
+It reuses the grounding machinery `curvature-v2-desk-and-read` hardened (traced/untraced register,
+grounding counts and the cited contract in the drawer) and touches no score. Timing fits: the
+`keep-paid-books` corpus supports a real time-split ~**2026-09-23 → 10-07**.
+
+**Culled from this direction (recorded so they are not re-proposed as new):**
+- *An AI read per scanner row* — culled: multiplies untraceable assertions across the densest surface, and
+  the failure mode is silent (a plausible number with no provenance looks identical to a computed one).
+- *AI everywhere as a phase* — culled: **cost is metered per user** (see below), so every added surface
+  raises the user's own bill and consumes their daily cap faster.
+- *Ship it as an AI-powered Claude Artifact* — culled **as a product path**, viable as an internal
+  prototype only. See the cost note.
+
+**Cost / multi-user note (verified at source 2026-09-06, not assumed).** Two different models, and they
+must not be conflated in any future brief:
+| path | who pays | multi-user | where it runs |
+|---|---|---|---|
+| **Convexa product** (`features/auth/aiProviderLabels.ts`) | the **user's own provider API key** — `own_key` for Anthropic `sk-ant-…` / OpenAI `sk-…` / Grok `xai-…` / Gemini `AIza…`, or the one subscription path `grok_subscription` ("your Grok subscription") | yes — key stored **per user**, encrypted at rest (`secret-encrypted-at-rest`), with a **per-user daily cap + cooldown** enforced server-side | anywhere the app is served |
+| **Claude Artifact `sample`** capability | **the viewer pays**, from their own Claude pool, consent-prompted on first call | yes — each viewer's own pool | only inside claude.ai, for people who can open the artifact |
+**There is no Convexa-funded pool in either model**, and the codebase actively guards the copy against
+implying one: `aiProviderLabels.ts:4` — *"never the BYO 'Grok' label, **never 'Convexa Grok pool'**"*.
+The artifact path is therefore fine for an internal prototype and wrong for product delivery: it cannot
+reach a trader who is not a claude.ai viewer, and an `mcp` grant additionally bars public sharing.
+
+**PARKED 2026-09-06 (owner): revisit after the v2 redesign (phases 3–4).** Findings from the same day,
+recorded so they are not re-derived — verified against primary sources, not assumed:
+- **Provider rules, in writing.** Anthropic: *"does not permit third-party developers to offer Claude.ai
+  login into their own applications, or to route requests through Free, Pro, or Max plan credentials on
+  behalf of their users"* — API key required, no exception (Claude Code legal page; enforcement reported
+  2026-04-04). OpenAI: "Sign in with ChatGPT" is identity only; the request to run the Codex SDK on a
+  subscription was closed *not planned* (openai/codex#8494, 2025-12-23); general "subscription sharing"
+  (ChatPass) is **unreleased** as of 2026-08-27 — **watch item**, dated.
+- **The one sanctioned in-app path: the Codex app server** (`codex app-server`, JSON-RPC over stdio /
+  experimental WebSocket; official doc: *"Embed Codex into your product with the app-server protocol"*).
+  Runs on the **user's own machine**, signed in with their own ChatGPT account, so turns bill to **their**
+  plan. Not hostable — *"Don't try to serve multi-tenant workloads with a single shared app-server
+  instance"*. `turn/start` takes an `outputSchema`, so the read returns typed JSON and the panel keeps the
+  type register. Candidate power path **`codex_local`** beside `own_key` / `grok_subscription`
+  (`libs/api/src/lib/convexa.ts:1480`): ChatGPT subscribers only; user installs Codex; browser→loopback
+  `ws://` works in Chrome/Firefox, **not Safari**; stdio via a small local companion is the supported shape.
+  No Claude twin: Anthropic's carve-out is the *unmodified Claude Code binary* under Commercial ToS with
+  "contact sales" — ask before building, do not build on it.
+- **Correction to the table above:** a Claude Artifact cannot `fetch` Convexa's API, but the `mcp`
+  capability is the sanctioned bridge to a Convexa **connector** — so the artifact becomes viable as an
+  advisory **reach channel** (viewer's pool via `sample`) once an MCP server exists. Same for a ChatGPT App
+  (Apps SDK: UI in an iframe inside chatgpt.com, `sendFollowUpMessage` → a ChatGPT turn on the user's
+  plan). In both hosts the prose is the model's, so neither can enforce the register — advisory, read-only,
+  `no-real-order-path` intact.
+- **Shape if resumed:** phase 3 (register everywhere) → **`convexa-mcp-server`** (precondition for all
+  three) → `codex_local` → the two hosts. `own_key` stays for Claude users, mobile, and anyone without Codex.
+- Sources: learn.chatgpt.com/docs/app-server · learn.chatgpt.com/docs/auth · learn.chatgpt.com/docs/codex-sdk
+  · code.claude.com/docs/en/legal-and-compliance · github.com/openai/codex/issues/8494 ·
+  runtimewire.com/article/openai-is-building-subscription-sharing-for-ai-apps ·
+  developers.openai.com/plugins/build/chatgpt-ui · issues.chromium.org/issues/40386732 ·
+  developer.apple.com/forums/thread/120869.
+
+---
+
+## Harvest — 2026-09-03 (design re-baseline → Curvature Terminal v2)
+<!-- atlas: theme=trust-the-signal horizon=next -->
+Not a GATE I cull and **not** a BRIEF. Owner approved a site-wide redesign on a design canvas and ruled
+that it supersedes the 2026-08-10 canon; `DESIGN_SYSTEM.md` is now **SET — Curvature Terminal v2**
+(skeptic PASS WITH FINDINGS, no Critical; session `context/design-session/rebaseline-2026-09-03.md`).
+Design source: `design/` (canvas + static site + `site/library.html` + `tokens/tokens.json` mirror).
+**Authorizes: nothing** on live score — FE-only.
+
+- **`curvature-terminal-v2-build`** — implement the v2 desk, AI read brief, nav + ⌘K palette, figure
+  cells, responsive bands, and the site surfaces per the canon and `design/site/library.html` (React
+  mapping table). *Decision-impact:* the trader finds the flip/walls and the AI verdict without scanning
+  13 equal cards, and never mistakes a snapshot for live (one connection chip; gated liveness); observe via
+  the AI-read state coverage, the no-overflow suite at 393/834/900/1280, and the desk task time.
+  *Feasibility:* no backend change; canon amendments already ruled (StatTile → FigureCell, motion class,
+  declared spacing/radius/breakpoints, nav shape); enforced specs to amend are listed in the canon's
+  enforcement table. *Score:* Value **H** × Effort **L** (phased: primitives → desk + AI read → scanner /
+  positions / settings / alerts → landing → responsive pass). *Invariants touched:*
+  `live-vs-static-isolation` (strengthened), `theme-token-discipline` (seven additions land in
+  `tokens.ts`), `single-shared-sim-entry-dialog` (unchanged). **Open owner question:** direct
+  branch build vs the council pipeline (retire-or-stub for `docs/design/DESIGN_SYSTEM.md` ruled **A — stubbed**, 2026-09-03).
+
 ## Program — keep-paid-books (owner-directed 2026-08-19)
 <!-- atlas: theme=prove-the-edge horizon=now -->
 Grouping only — **not** a pipeline feature. Owner said put all seven briefing

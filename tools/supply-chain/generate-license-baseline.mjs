@@ -1,5 +1,4 @@
 import { spawnSync } from 'node:child_process';
-import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import { canonicalLockSha256, inventoryFromLock } from './policy/npm-license.mjs';
 
@@ -24,8 +23,11 @@ const result = spawnSync(
   { cwd: root, encoding: 'utf8', shell: false, maxBuffer: 32 * 1024 * 1024 },
 );
 if (result.status !== 0) throw new Error('cargo-metadata-unavailable');
+// Same CRLF-normalised hash as the npm lock, so a Windows checkout (core.autocrlf) records the
+// committed bytes' hash, not this working copy's; the policy compares npm rows only, but the cargo
+// rows are still reviewed in the baseline diff and must not churn per host.
 const metadata = JSON.parse(result.stdout),
-  cargoHash = sha(cargoBytes);
+  cargoHash = canonicalLockSha256(cargoBytes);
 const cargoRows = metadata.packages.map((pkg) => ({
   ecosystem: 'cargo',
   name: pkg.name,
@@ -58,9 +60,6 @@ await fs.writeFile(
   `${root}/.supply-chain/license-baseline.json`,
   `${JSON.stringify(document, null, 2)}\n`,
 );
-function sha(bytes) {
-  return crypto.createHash('sha256').update(bytes).digest('hex');
-}
 function normalize(value) {
   if (typeof value !== 'string' || !value.trim()) throw new Error('cargo-license-missing');
   return value

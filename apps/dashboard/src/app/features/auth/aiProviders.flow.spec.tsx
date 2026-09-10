@@ -137,7 +137,12 @@ describe('AI providers · Settings matrix + Ask-AI agreement', () => {
     renderAt('/settings');
     await screen.findByTestId('settings-ai-key-matrix');
 
+    // Surfaces fidelity repair (change 3/F7): the matrix is now provider TABS — one key panel for
+    // the selected provider (design/src/screens/settings.mjs:52-63) — so each provider's fields
+    // only exist in the DOM while its own tab is selected. `anthropic` is the shipped default tab;
+    // selecting it explicitly here is harmless and keeps the loop uniform.
     for (const provider of BYO_PROVIDERS) {
+      await user.click(screen.getByTestId(`settings-ai-key-tab-${provider}`));
       const inputId =
         provider === 'anthropic' ? 'settings-ai-key-input' : `settings-ai-key-input-${provider}`;
       const addId =
@@ -161,13 +166,15 @@ describe('AI providers · Settings matrix + Ask-AI agreement', () => {
     for (const provider of BYO_PROVIDERS) {
       expect(be.aiKeyPutBodies.some((b) => b.includes(`"provider":"${provider}"`))).toBe(true);
     }
-    // Other slots stay set after adding the last one.
+    // Other slots stay set after adding the last one — asserted against the BACKEND STATE, which
+    // holds regardless of which provider's tab happens to be selected.
     expect(be.state.aiKey.slots.anthropic.set).toBe(true);
     expect(be.state.aiKey.slots.openai.set).toBe(true);
     expect(be.state.aiKey.slots.xai.set).toBe(true);
     expect(be.state.aiKey.slots.gemini.set).toBe(true);
 
-    // Replace OpenAI only.
+    // Replace OpenAI only (select its tab first).
+    await user.click(screen.getByTestId('settings-ai-key-tab-openai'));
     await user.click(screen.getByTestId('settings-ai-key-replace-openai'));
     const rotated = 'sk-openai-rotated-9999';
     await user.type(screen.getByTestId('settings-ai-key-input-openai'), rotated);
@@ -177,10 +184,13 @@ describe('AI providers · Settings matrix + Ask-AI agreement', () => {
         maskedKeyLabel('9999'),
       ),
     );
-    expect(screen.getByTestId('settings-ai-key-masked')).toHaveTextContent(maskedKeyLabel('1234'));
     expect(document.body.textContent ?? '').not.toContain(rotated);
+    // Anthropic's own key is untouched by the OpenAI replace — switch to its tab to observe it.
+    await user.click(screen.getByTestId('settings-ai-key-tab-anthropic'));
+    expect(screen.getByTestId('settings-ai-key-masked')).toHaveTextContent(maskedKeyLabel('1234'));
 
-    // Remove Gemini only.
+    // Remove Gemini only (select its tab first).
+    await user.click(screen.getByTestId('settings-ai-key-tab-gemini'));
     await user.click(screen.getByTestId('settings-ai-key-remove-gemini'));
     await user.click(screen.getByTestId('settings-ai-key-remove-confirm-btn-gemini'));
     expect(await screen.findByTestId('settings-ai-key-empty-gemini')).toBeInTheDocument();
@@ -207,7 +217,10 @@ describe('AI providers · Settings matrix + Ask-AI agreement', () => {
     const user = userEvent.setup();
     renderAt('/settings');
     await screen.findByTestId('settings-ai-key-set');
+    // Default tab is `anthropic` (BYO_PROVIDERS[0]), which happens to match this fixture's
+    // standing preference — its own "active" chip is visible without switching tabs.
     expect(screen.getByTestId('settings-ai-key-active-anthropic')).toBeInTheDocument();
+    await user.click(screen.getByTestId('settings-ai-key-tab-openai'));
     await user.click(screen.getByTestId('settings-ai-key-use-openai'));
     await waitFor(() => expect(be.state.aiKey.preference.provider).toBe('openai'));
     expect(be.state.aiKey.preference.power_path).toBe('own_key');

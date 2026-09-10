@@ -57,7 +57,10 @@ describe('offline positions table containment', () => {
     const table = screen.getByTestId('positions-table');
     const frame = screen.getByTestId('positions-table-frame');
     const plCell = screen.getByTestId('cell-pl');
-    const offlineTag = within(plCell).getByText(/⏸ offline/);
+    // The old `⏸ offline` text marker is gone — the pause mark is a real icon, and the caption that
+    // wraps onto its own line is `cell-pl-caption` (SPEC §2.3, criteria 27a/29).
+    expect(within(plCell).getByTestId('PauseIcon')).toBeInTheDocument();
+    const offlineTag = within(plCell).getByTestId('cell-pl-caption');
     const actionCell = screen.getByTestId('position-actions-cell');
 
     expect(getComputedStyle(plCell).flexWrap).toBe('wrap');

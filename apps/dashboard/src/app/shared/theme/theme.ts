@@ -8,6 +8,9 @@ import {
 } from '@/shared/theme/tokens';
 import type { ThemePref } from '@convexa/api';
 import { createTheme, type Theme } from '@mui/material/styles';
+// `mui.d.ts` (this directory) ambiently augments `BreakpointOverrides` with the five v2 keys
+// (tablet/smallLaptop/laptop/desktop/wide) — picked up by the TS program via tsconfig's include
+// glob, so `{ xs: 'none', laptop: 'flex' }` type-checks app-wide with no explicit import here.
 
 // The shared MUI typography variant map (redesign-stage-1 §4.3 — the proposal §3 scale).
 // Display voice = Archivo SemiExpanded via a REAL `font-stretch` (variable wdth axis, never a
@@ -62,6 +65,38 @@ const COMMON = {
   cssVariables: true,
   shape,
   typography: TYPOGRAPHY,
+  // The declared v2 rungs (SPEC §2.2). `sheetScrim` 29 and `popover` 35 are named in the canon
+  // for later phases; MUI has no slot for either, so they are not invented here.
+  // mobileStepper/fab/speedDial have NO consumers but MUST be given values — left at MUI's
+  // 1000–1050 defaults they sit above every rung below.
+  zIndex: {
+    mobileStepper: 10,
+    fab: 15,
+    speedDial: 15,
+    appBar: 20,
+    drawer: 30,
+    modal: 40,
+    snackbar: 50,
+    // The canon declares six rungs; MUI has eight slots. `tooltip` is UNDECLARED (SPEC §9-2, an
+    // Amendments-shaped gap for the owner). This is the working mapping: above toast, and no
+    // longer 1500. `AppShell.tsx:42` reads `theme.zIndex.tooltip + 1` for the skip link.
+    tooltip: 60,
+  },
+  // ADDITIVE ONLY. Redefining xs/sm/md/lg/xl is rejected (SPEC §2.2).
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      tablet: 768,
+      md: 900,
+      smallLaptop: 1000,
+      laptop: 1100,
+      lg: 1200,
+      desktop: 1300,
+      xl: 1536,
+      wide: 1600,
+    },
+  },
   components: {
     // ---- Stage 0 quality floor (redesign-stage-0, FRONTEND_EXECUTION_CONTRACT §3 items 2 + 4) ----
     // THE authored `:focus-visible` ring + the coarse-pointer touch-target floor, both defined ONCE
@@ -94,8 +129,25 @@ const COMMON = {
         // density is unchanged. Inline (`display: inline`) prose links are structurally unaffected
         // (min-height/min-width don't apply to non-replaced inline boxes); buttons, icon buttons,
         // and block/inline-block CTAs grow to the floor.
+        //
+        // GATE Z, finding 3 (criterion 66): `input` was added here — the ORIGINAL three-selector
+        // list (`button, [role="button"], a`) matches no `<input>`, so every MUI text field and
+        // number field escaped the floor entirely, not just the two controls this phase happened
+        // to measure. This reaches `RiskInputsSection.tsx`'s two fields, `SettingsPage.tsx`'s
+        // ticker field and the alerts composer's `TextField`s.
+        //
+        // MUI `Select`'s visible tap target (`role="combobox"`, `Select/SelectInput.js`) is
+        // DELIBERATELY excluded: it cannot be reached from here at all. MUI's own `SelectSelect`
+        // styled component self-duplicates its class — `&.${selectClasses.select}` — specifically
+        // (its own comment) to "win specificity over the input base": `.MuiSelect-select.MuiSelect-
+        // select` sits at specificity (0,2,0), which beats a bare `[role="combobox"]` (0,1,0) and
+        // even a scoped `sx` descendant selector at (0,2,0) tied against it (confirmed by measuring
+        // computed `min-height` in a real browser — both lost). No global, tag/attribute-scoped
+        // rule can win that fight; a `Select` that needs the floor gets it via the SAME
+        // doubled-class idiom, LOCALLY, at its own call site (`AlertsPage.tsx`'s Kind/Level
+        // selects, `SettingsPage.tsx`'s persona select) — see those files for the pattern.
         '@media (pointer: coarse)': {
-          'button, [role="button"], a': {
+          'button, [role="button"], a, input': {
             minHeight: 44,
             minWidth: 44,
           },
@@ -106,11 +158,23 @@ const COMMON = {
     // (The former dark contained-primary override is DELETED with `buttonPrimaryBg`
     // — amber primary + explicit ink contrastText makes MUI's default contained treatment
     // correct in both modes; redesign-stage-1 §3.3-5.)
+    // CONTROL role = 8px (SPEC §2.2, ruling 4). `shape.borderRadius` is the PANEL role (12) and
+    // cannot also be the control role, so each control family binds 8 explicitly. `styleOverrides`
+    // root objects are plain CSS-in-JS (not routed through the `sx` engine's `createUnaryUnit`), so
+    // a bare `8` here is genuinely 8px, not a multiplier.
     MuiButton: {
       styleOverrides: {
-        root: { textTransform: 'none' as const },
+        root: { textTransform: 'none' as const, borderRadius: 8 },
       },
     },
+    MuiOutlinedInput: { styleOverrides: { root: { borderRadius: 8 } } },
+    MuiFilledInput: { styleOverrides: { root: { borderRadius: 8 } } },
+    MuiInputBase: { styleOverrides: { root: { borderRadius: 8 } } },
+    MuiToggleButton: { styleOverrides: { root: { borderRadius: 8 } } },
+    // DIALOG role = 16px (SPEC §2.2, ruling 4) — the single declared dialog radius; component-local
+    // paper `sx` overrides (Widget.tsx, AuthDialog.tsx) were de-duplicated onto this in the same
+    // change so there is one dialog radius, not several drifting values.
+    MuiDialog: { styleOverrides: { paper: { borderRadius: 16 } } },
     // Links rebind to SIGNAL at the slot level (`info`) — amber is spent on brand/active
     // surfaces, not sprinkled across every anchor (redesign-stage-1 §1 self-critique 2).
     // Components that explicitly set a color still win (e.g. brand CTAs).
@@ -140,6 +204,16 @@ const COMMON = {
           border: `1px solid ${theme.palette.divider}`,
           borderRadius: theme.shape.borderRadius,
           boxShadow: elevationFor(theme).e4,
+        }),
+      },
+    },
+    // v2 `scrim` (SPEC §2.1) — a scrim is only correct if EVERY overlay gets it, so it binds ONCE
+    // at the theme layer rather than per-dialog. This is what lets `Widget.tsx`'s hardcoded
+    // `rgba(0,0,0,0.6)` go (FE-6). Mode-aware via `extrasFor`.
+    MuiBackdrop: {
+      styleOverrides: {
+        root: ({ theme }: { theme: Theme }) => ({
+          backgroundColor: extrasFor(theme).scrim,
         }),
       },
     },
@@ -173,6 +247,7 @@ export const theme = createTheme({
       disabled: palette.dark.text.disabled,
     },
     background: { default: palette.dark.background.default, paper: palette.dark.background.paper },
+    divider: palette.dark.divider,
   },
   shadows: darkShadows,
   ...COMMON,
@@ -197,6 +272,7 @@ export const lightTheme = createTheme({
       default: palette.light.background.default,
       paper: palette.light.background.paper,
     },
+    divider: palette.light.divider,
   },
   ...COMMON,
 });

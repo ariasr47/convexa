@@ -1,0 +1,266 @@
+{
+  "id": "scanner-dense-390-dark",
+  "side": "design",
+  "surface": "scanner",
+  "state": "dense",
+  "width": 390,
+  "scheme": "dark",
+  "url": "/scanner.html",
+  "pageHeight": 3639,
+  "overflowX": false,
+  "scrollWidth": 390,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "nav-bar",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 56,
+      "text": "CONVEA ScannerTickerPositionsAlerts Jump to a ticker…⌘K Open 10:42:07 ET R"
+    },
+    {
+      "key": "wrap:0:wrap.nav-in",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 56,
+      "text": "CONVEA ScannerTickerPositionsAlerts Jump to a ticker…⌘K Open 10:42:07 ET R"
+    },
+    {
+      "key": "wrap:1:wrap",
+      "x": 0,
+      "y": 56,
+      "w": 390,
+      "h": 317,
+      "text": "ScannerOne dense read of the tracked universe — which name deserves the deep-div"
+    },
+    {
+      "key": "wrap:2:wrap",
+      "x": 0,
+      "y": 373,
+      "w": 390,
+      "h": 2599,
+      "text": "SymbolPriceChgScoreTierRegimeFlip distCall wallPut wallIV / HVVol / OIAs-of Inde"
+    },
+    {
+      "key": "wrap:3:wrap.scan-notes",
+      "x": 0,
+      "y": 2972,
+      "w": 390,
+      "h": 326,
+      "text": "Why this score · SPY 72near wall / flip +28 · IV vs HV stretch +18 · active setu"
+    },
+    {
+      "key": "wrap:4:wrap.foot-grid",
+      "x": 0,
+      "y": 3386,
+      "w": 390,
+      "h": 253,
+      "text": "CONVEA How Convexa worksBlog — how we read structureLab Convexa is an analysis t"
+    },
+    {
+      "key": "panel:1:panel:Score",
+      "x": 16,
+      "y": 414,
+      "w": 358,
+      "h": 196,
+      "text": "NVDAPrime 138.40+1.9%positive γ Score88 Flip+0.4%Call140Put130IV/HV1.31 Structur"
+    },
+    {
+      "key": "panel:2:panel:Score",
+      "x": 16,
+      "y": 621,
+      "w": 358,
+      "h": 196,
+      "text": "SPYActionable 573.12+0.32%positive γ Score72 Flip−0.8%Call580Put560IV/HV0.82 Str"
+    },
+    {
+      "key": "panel:3:panel:Score",
+      "x": 16,
+      "y": 829,
+      "w": 358,
+      "h": 196,
+      "text": "AAPLActionable 228.90+0.6%positive γ Score66 Flip+1.1%Call230Put220IV/HV0.94 Str"
+    },
+    {
+      "key": "panel:4:panel:Score",
+      "x": 16,
+      "y": 1037,
+      "w": 358,
+      "h": 196,
+      "text": "QQQWatch 486.55+0.41%positive γ Score54 Flip−1.6%Call490Put475IV/HV0.88 Structur"
+    },
+    {
+      "key": "panel:5:panel:Score",
+      "x": 16,
+      "y": 1245,
+      "w": 358,
+      "h": 196,
+      "text": "MSFTWatch 414.20−0.2%positive γ Score41 Flip−2.4%Call420Put400IV/HV1.02 Structur"
+    },
+    {
+      "key": "panel:6:panel:Score",
+      "x": 16,
+      "y": 1453,
+      "w": 358,
+      "h": 196,
+      "text": "IWMDormant 221.06−0.3%negative γ Score22 Flip−3.1%Call225Put215IV/HV1.12 Structu"
+    },
+    {
+      "key": "panel:7:panel:Score",
+      "x": 16,
+      "y": 1687,
+      "w": 358,
+      "h": 196,
+      "text": "TSLAWatch 242.10−1.2%negative γ Score58 Flip+2.3%Call250Put230IV/HV0.76 Structur"
+    },
+    {
+      "key": "panel:8:panel:Score",
+      "x": 16,
+      "y": 1895,
+      "w": 358,
+      "h": 196,
+      "text": "AMDActionable 158.75+2.4%positive γ Score63 Flip+0.9%Call160Put150IV/HV0.91 Stru"
+    },
+    {
+      "key": "panel:9:panel:Score",
+      "x": 16,
+      "y": 2102,
+      "w": 358,
+      "h": 196,
+      "text": "METAWatch Stale 512.30+0.1%positive γ Score37 Flip−1.9%Call520Put500IV/HV1.08 St"
+    },
+    {
+      "key": "panel:10:panel:Score",
+      "x": 16,
+      "y": 2310,
+      "w": 358,
+      "h": 196,
+      "text": "SMHWatch 244.60+1.1%positive γ Score49 Flip−0.6%Call250Put235IV/HV0.97 Structure"
+    },
+    {
+      "key": "panel:11:panel:Score",
+      "x": 16,
+      "y": 2518,
+      "w": 358,
+      "h": 196,
+      "text": "XLFDormant 46.12−0.4%positive γ Score18 Flip−4.2%Call47Put45IV/HV1.15 Structure "
+    },
+    {
+      "key": "panel:12:panel:Score",
+      "x": 16,
+      "y": 2726,
+      "w": 358,
+      "h": 196,
+      "text": "TLTDormant 92.40+0.7%negative γ Score29 Flip+1.4%Call94Put90IV/HV1.20 Structure "
+    },
+    {
+      "key": "panel:14:panel.quiet:Why this score · SPY 72",
+      "x": 16,
+      "y": 2988,
+      "w": 358,
+      "h": 81,
+      "text": "Why this score · SPY 72near wall / flip +28 · IV vs HV stretch +18 · active setu"
+    },
+    {
+      "key": "panel:15:panel.quiet:Zero-state lead group",
+      "x": 16,
+      "y": 3083,
+      "w": 358,
+      "h": 100,
+      "text": "Zero-state lead groupAnonymous or empty views open on Indexes & megacaps so the "
+    },
+    {
+      "key": "panel:16:panel.quiet:Price stream drops",
+      "x": 16,
+      "y": 3198,
+      "w": 358,
+      "h": 100,
+      "text": "Price stream dropsPrices dim and the cadence header says Prices offline · showin"
+    }
+  ],
+  "probes": {
+    "connectionState": null,
+    "skeletons": 0,
+    "monoElements": 246,
+    "sansElements": 201,
+    "archivoElements": 5,
+    "otherFontElements": 0,
+    "htmlBackground": "rgb(11, 15, 23)",
+    "bodyBackground": "rgb(11, 15, 23)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", sans-serif",
+    "bodyFontSize": "13px",
+    "panelSelector": "panel scan-table",
+    "panelRadius": "12px",
+    "panelBackground": "rgb(19, 26, 36)",
+    "panelBorder": "1px solid rgba(138, 155, 180, 0.16)",
+    "monoFont": "\"IBM Plex Mono\", ui-monospace, SFMono-Regular, Menlo, monospace",
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": true,
+    "plexSansLoaded": true,
+    "scrollHeight": 3639,
+    "scrollWidth": 390,
+    "clientWidth": 390
+  },
+  "panels": [
+    {
+      "key": "div.panel.scan-table",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "a.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "a.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "a.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "a.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "a.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "a.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "a.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    }
+  ],
+  "png": "design/scanner-dense-390-dark.png"
+}

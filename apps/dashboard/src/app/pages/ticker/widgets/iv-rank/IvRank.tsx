@@ -33,9 +33,9 @@
  *   - No auth gate — renders for anonymous visitors; no session/gate call anywhere in it.
  */
 import { typographyTokens } from '@/shared/theme/tokens';
+import { AccessibleHelp } from '@/shared/ui';
 import { Widget } from '@/shared/ui/Widget';
 import type { IvRankRead } from '@convexa/api';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
@@ -63,6 +63,25 @@ import {
 
 const MONO = typographyTokens.monoFontFamily;
 
+/**
+ * The read strip's digested figure for this metric (curvature-v2-desk-and-read, FE-7 — SPEC §2.3/
+ * §2.4/§4.1: "IV rank comes from `IvRank.tsx`"). This widget's own FULL body (percentile, band,
+ * basis line, advisory footer, the building/degenerate-flat/unavailable distinction) stays intact,
+ * untouched, mounted separately in the quiet band (FE-11) — this export only feeds the strip's
+ * single compact cell.
+ *
+ * Collapses `building` / degenerate-flat (`rank == null`) / whole-null-or-unknown-state into the
+ * ONE closed `unavailable` member — unlike off-exchange (SPEC §2.4) these three ARE distinguishable
+ * on the wire, but the strip is a quick digest of the number this widget states in full below, not a
+ * second home for that distinction. Never re-derives a description from the scalar (criterion 28):
+ * the band suffix, when present, is the SAME closed `ivrBandDisplay` lookup the full widget uses.
+ */
+export function ivRankStripFigure(read: IvRankRead | null): string {
+  if (read == null || read.state !== 'computed' || read.rank == null) return 'unavailable';
+  const band = read.band != null ? ivrBandDisplay(read.band) : null;
+  return band != null ? `${read.rank} · ${band}` : `${read.rank}`;
+}
+
 interface Props {
   /** The additive static read (`m.iv_rank ?? null`). NO live/offline prop is accepted — this widget is
    *  bound to the last-bundle render path only (`[live-vs-static-isolation]`). */
@@ -78,8 +97,14 @@ function EmptyLine({ text, testid }: { text: string; testid: string }) {
   );
 }
 
-/** A caption label + ⓘ info affordance (the tooltip carrier — the StatTile-family idiom). */
-function CaptionLabel({ label, info, testid }: { label: string; info: string; testid?: string }) {
+/**
+ * A caption label + ⓘ info affordance (the tooltip carrier — the StatTile-family idiom).
+ * Ruling 6 (curvature-v2-foundations): converted to the shipped `AccessibleHelp` pattern — a real
+ * focusable `button`, reachable by tap and keyboard, not just hover (AC-35). The four look-alike
+ * widgets keep their own composition and mono figures exactly as they are; only this affordance
+ * changes.
+ */
+function CaptionLabel({ label, info }: { label: string; info: string }) {
   return (
     <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
       <Typography
@@ -88,9 +113,9 @@ function CaptionLabel({ label, info, testid }: { label: string; info: string; te
       >
         {label}
       </Typography>
-      <Tooltip title={info} arrow placement="top">
-        <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.disabled' }} data-testid={testid} />
-      </Tooltip>
+      {/* The accessible name (`About {label}`) is what queries this control now — a real
+          focusable button, reachable by ROLE + NAME, so the bespoke testid is no longer needed. */}
+      <AccessibleHelp label={`About ${label}`} text={info} />
     </Stack>
   );
 }
@@ -117,9 +142,7 @@ function BasisLine({ read }: { read: IvRankRead }) {
           read.basis_dte,
         )}
       </Typography>
-      <Tooltip title={IVR_TIP_BASIS} arrow placement="top">
-        <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
-      </Tooltip>
+      <AccessibleHelp label="About the IV rank basis" text={IVR_TIP_BASIS} />
     </Stack>
   );
 }
@@ -144,7 +167,7 @@ function ComputedBody({ read }: { read: IvRankRead }) {
     <>
       {/* Rank slot — headline number + descriptor, OR the flat note (never a fabricated midpoint). */}
       <Box sx={{ mb: 1.25 }} data-testid="ivr-rank-slot">
-        <CaptionLabel label={IVR_RANK_LABEL} info={IVR_TIP_RANK} testid="ivr-rank-info" />
+        <CaptionLabel label={IVR_RANK_LABEL} info={IVR_TIP_RANK} />
         {read.rank == null ? (
           <Typography variant="body1" sx={{ color: 'text.secondary' }} data-testid="ivr-flat-note">
             {IVR_FLAT_NOTE}
@@ -189,7 +212,7 @@ function ComputedBody({ read }: { read: IvRankRead }) {
       {/* Secondary — Percentile + descriptor (present in Computed AND degenerate-flat, D8b). */}
       {read.percentile != null && (
         <Box sx={{ mb: 0.5 }} data-testid="ivr-pct-slot">
-          <CaptionLabel label={IVR_PCT_LABEL} info={IVR_TIP_PCT} testid="ivr-pct-info" />
+          <CaptionLabel label={IVR_PCT_LABEL} info={IVR_TIP_PCT} />
           <Typography
             variant="body1"
             sx={{ fontFamily: MONO, fontWeight: 600 }}
@@ -226,9 +249,7 @@ function BuildingBody({ read }: { read: IvRankRead }) {
         >
           {ivrBuildingMessage(read.sample_count, read.min_samples)}
         </Typography>
-        <Tooltip title={ivrTipBuilding(read.min_samples)} arrow placement="top">
-          <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
-        </Tooltip>
+        <AccessibleHelp label="About building history" text={ivrTipBuilding(read.min_samples)} />
       </Stack>
       <AdvisoryFooter />
     </Box>

@@ -982,7 +982,7 @@ export function StructureFieldWebGL({ model, height = 520, className }: Structur
             fontSize: 14,
             padding: 24,
             textAlign: 'center',
-            borderRadius: 12,
+            borderRadius: '12px',
           }}
         >
           {glError}
@@ -995,7 +995,7 @@ export function StructureFieldWebGL({ model, height = 520, className }: Structur
           display: 'block',
           width: '100%',
           height,
-          borderRadius: 12,
+          borderRadius: '12px',
           border: '1px solid rgba(138,155,180,0.28)',
           boxShadow: '0 0 0 1px rgba(11,15,23,0.6), 0 18px 48px -24px rgba(0,0,0,0.65)',
         }}
@@ -1009,7 +1009,7 @@ export function StructureFieldWebGL({ model, height = 520, className }: Structur
           top: 0,
           width: '100%',
           height,
-          borderRadius: 12,
+          borderRadius: '12px',
           cursor: 'crosshair',
           touchAction: 'none',
           pointerEvents: 'auto',
@@ -1026,7 +1026,7 @@ export function StructureFieldWebGL({ model, height = 520, className }: Structur
             color: SF.phosphor,
             background: SF.raised,
             border: '1px solid rgba(138,155,180,0.3)',
-            borderRadius: 8,
+            borderRadius: '8px',
             padding: '6px 10px',
             pointerEvents: 'none',
           }}

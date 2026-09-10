@@ -1,50 +1,68 @@
 /**
- * GEX strike profile chart — Canvas2D Structure Field (dual-clock instrument).
+ * GEX strike profile — pure windowing/mapping helpers shared with the desk's primary structure
+ * instrument (`structure-hero/StructureHeroPanel.tsx`).
  *
- * Replaces the former Recharts vertical bar chart. Structure (curve, walls, flip)
- * is REST-owned; live mid is the tape clock (from liveTapeStore via the wrapper).
- * Instant paint — no mount animation (single-motion-moment pin below).
+ * GATE Z (FE-11, curvature-v2-desk-and-read): the STANDALONE chart component this file used to
+ * export (`GexProfileChart`, plus its `GexLegend` header decoration) is DELETED — its own host
+ * widget, `GexStrikeProfile.tsx`, is fully superseded by `StructureHeroPanel` (same
+ * `StructureFieldCanvas`, same walls/flip/mid, same embedded `StructurePathStrip`) and is deleted
+ * whole in the same commit. Coexisting on one ticker page was a KNOWN, NAMED, TEMPORARY condition
+ * disclosed at FE-8/FE-6; this is where it resolves — the desk becomes ONE structure instrument, not
+ * two overlapping ones. `windowedStrikes`/`rowsToSamples` below are NOT dead — `StructureHeroPanel`
+ * calls both directly to build its own `StructureFieldModel`, which is exactly why this file survives
+ * the widget's deletion instead of going with it.
  */
-import type { FieldSample, StructureFieldModel } from '@/shared/charts/structure-field';
-import { StructureFieldCanvas } from '@/shared/charts/structure-field';
+import type { FieldSample } from '@/shared/charts/structure-field';
 import type { StrikeRow } from '@convexa/api';
-import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
-import { memo, useMemo } from 'react';
 
-interface Props {
-  strikes: StrikeRow[];
-  spot: number;
-  callWall: number;
-  putWall: number;
-  gammaFlip: number;
-  liveSpot?: number | null;
-  /** REST-bundle age (seconds). */
-  structureAgeSeconds?: number | null;
-  /** Ticker symbol for the field label. */
-  symbol?: string;
-  /** True when live mid is coming from a live SSE tape. */
-  tapeLive?: boolean;
-}
-
-/** The readable strike window around spot, always wide enough to include the walls it labels.
- *  Shared with the section wrapper so it can decide whether to render the widget at all. */
+/**
+ * The readable strike window (repair task item 3 — `STRUCTURE_HERO_REPAIR_TASK.md`): the old
+ * `spot ± 10%` window kept every wall inside it but gave the walls no more than ~13% of the plot
+ * (SPY: $694–$847 while every level sat between $751–$780) — the structure the field exists to show
+ * read as a flat tail of noise. The window is now anchored on the WALLS themselves: `lo/hi = walls ±
+ * max(1.5% of spot, 25% of the wall span)`, widened only as far as needed so `gammaFlip`/`maxPain`
+ * sit inside too, then the filter below naturally clamps to whatever strikes actually exist.
+ * Non-positive walls fall back to the old plain `±10%` spot window (unchanged case).
+ */
 export function windowedStrikes(
   strikes: StrikeRow[],
   spot: number,
   callWall: number,
   putWall: number,
+  gammaFlip?: number | null,
+  maxPain?: number | null,
 ): StrikeRow[] {
-  const lo = Math.min(spot * 0.9, putWall > 0 ? putWall : spot * 0.9);
-  const hi = Math.max(spot * 1.1, callWall > 0 ? callWall : spot * 1.1);
+  const wallsValid = callWall > 0 && putWall > 0;
+  let lo: number;
+  let hi: number;
+  if (wallsValid) {
+    const wallLo = Math.min(callWall, putWall);
+    const wallHi = Math.max(callWall, putWall);
+    const span = wallHi - wallLo;
+    const pad = Math.max(spot * 0.015, span * 0.25);
+    lo = wallLo - pad;
+    hi = wallHi + pad;
+  } else {
+    lo = spot * 0.9;
+    hi = spot * 1.1;
+  }
+  // Widen only as far as needed so the flip and max pain — also plotted on the field — sit inside.
+  for (const level of [gammaFlip, maxPain]) {
+    if (level != null && Number.isFinite(level) && level > 0) {
+      lo = Math.min(lo, level);
+      hi = Math.max(hi, level);
+    }
+  }
   return strikes
     .filter((s) => s.strike >= lo && s.strike <= hi)
     .toSorted((a, b) => a.strike - b.strike);
 }
 
-function rowsToSamples(rows: StrikeRow[]): FieldSample[] {
+/** Exported so `structure-hero/StructureHeroPanel.tsx` can build the SAME `StructureFieldModel`
+ *  shape directly (it renders `StructureFieldCanvas` itself, not through this file's own
+ *  `GexProfileChart` — see that file's module doc for why the palette/surfaces IDENTITY the ladder
+ *  shares with the canvas rules out routing through a component that resolves its own theme). */
+export function rowsToSamples(rows: StrikeRow[]): FieldSample[] {
   return rows.map((s) => ({
     strike: s.strike,
     netGex: s.net_gex,
@@ -53,83 +71,3 @@ function rowsToSamples(rows: StrikeRow[]): FieldSample[] {
     volume: s.volume,
   }));
 }
-
-/** The legend dots — lifted into the Widget header `actions` slot by the section wrapper. */
-export function GexLegend() {
-  const theme = useTheme();
-  const Dot = ({ color, label }: { color: string; label: string }) => (
-    <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
-      <Box sx={{ width: 10, height: 10, borderRadius: 0.5, bgcolor: color }} />
-      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-        {label}
-      </Typography>
-    </Stack>
-  );
-  return (
-    <Stack direction="row" spacing={2}>
-      <Dot color={theme.palette.success.main} label="Call-dominated (net +)" />
-      <Dot color={theme.palette.error.main} label="Put-dominated (net −)" />
-    </Stack>
-  );
-}
-
-/**
- * GEX strike profile — Canvas2D Structure Field: smooth net-GEX curve, heat, walls,
- * amber flip, dual-clock live mid, 60Hz probe (GEX · DEX · Vol/OI).
- *
- * Animation contract (single-motion-moment): no Recharts animation — canvas paints
- * immediately. isAnimationActive={false} is preserved below as a documentation pin
- * for the suite that forbids a second mount moment on this widget.
- */
-export const GexProfileChart = memo(function GexProfileChart({
-  strikes,
-  spot,
-  callWall,
-  putWall,
-  gammaFlip,
-  liveSpot,
-  structureAgeSeconds = null,
-  symbol = '',
-  tapeLive = false,
-}: Props) {
-  // Pin for single-motion-moment.spec.ts — Structure Field has no Recharts animation path.
-  // isAnimationActive={false}
-  const data = useMemo(
-    () => windowedStrikes(strikes, spot, callWall, putWall),
-    [strikes, spot, callWall, putWall],
-  );
-
-  const model: StructureFieldModel | null = useMemo(() => {
-    if (data.length < 2) return null;
-    const asOfSec =
-      structureAgeSeconds != null && Number.isFinite(structureAgeSeconds)
-        ? Date.now() / 1000 - structureAgeSeconds
-        : null;
-    const mid = liveSpot != null && liveSpot > 0 && Number.isFinite(liveSpot) ? liveSpot : null;
-    return {
-      symbol: symbol || 'GEX',
-      samples: rowsToSamples(data),
-      spot,
-      callWall,
-      putWall,
-      gammaFlip,
-      asOfSec,
-      liveMid: mid,
-      live: Boolean(tapeLive && mid != null),
-      source: 'rest',
-    };
-  }, [data, spot, callWall, putWall, gammaFlip, liveSpot, structureAgeSeconds, symbol, tapeLive]);
-
-  if (!model) return null;
-
-  return (
-    <Box
-      data-testid="gex-structure-field"
-      sx={{ width: '100%', borderRadius: '0 0 11px 11px', overflow: 'hidden' }}
-    >
-      <StructureFieldCanvas model={model} height={300} variant="ticker" />
-    </Box>
-  );
-});
-
-export default GexProfileChart;

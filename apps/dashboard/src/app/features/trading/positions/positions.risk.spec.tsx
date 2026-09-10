@@ -417,11 +417,12 @@ describe('positions · end-to-end flow (centerpiece)', () => {
     expect(filled.legs[0].entry_price).toBe(4); // filled AT the limit, never better
     expect(decisionsForPosition(filled.id).some((d) => d.event_type === 'limit_filled')).toBe(true);
 
-    // --- SSE DROP: live cells dim + ⏸ offline + last-known; static records persist ---
+    // --- SSE DROP: live cells dim + the stroke PauseMark + last-known; static records persist ---
     cleanup();
     renderHarness({ forceOffline: true });
     await waitFor(() => expect(screen.getAllByTestId('position-row').length).toBeGreaterThan(0));
-    expect(screen.getAllByText(/⏸ offline/).length).toBeGreaterThan(0);
+    expect(document.querySelectorAll('svg[data-testid="PauseIcon"]').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('offline · last known').length).toBeGreaterThan(0);
     // static contract still renders (slim Ticker — symbol + `$250 Call` leg), never blanked
     const contract = screen.getAllByTestId('cell-contract')[0];
     expect(within(contract).getByText('TSLA')).toBeInTheDocument();
@@ -892,6 +893,116 @@ describe('positions · the four not-a-number literals (AC-31)', () => {
     expect(within(row).queryByTestId('cell-not-recorded')).toBeNull();
     expect(within(row).queryByTestId('cell-unavailable')).toBeNull();
     expect(within(row).getByTestId('cell-qty').textContent).toBe('100 sh');
+  });
+
+  it('criterion 25 — the sim book renders `not recorded` and never `not provided`', () => {
+    renderTable([
+      viewOf(FX_SHARES_LONG),
+      viewOf(FX_PROTECTIVE_PUT, { mark: null }),
+      viewOfLegacy(UNRECORDED_FACTS),
+      viewOf(FX_ZERO_COST_COLLAR),
+    ]);
+    expect(screen.getByTestId('cell-not-recorded')).toBeInTheDocument();
+    expect(screen.getByTestId('positions-table').textContent).not.toMatch(/not provided/);
+  });
+});
+
+// =================================================================================================
+// The offline contract on the six live-derived cells (SPEC §2.3, criteria 27a/27b/28/29, SB)
+// =================================================================================================
+describe('positions · the offline contract on the six live-derived cells (27a/27b/28/29, SB)', () => {
+  beforeEach(() => stubViewport(1440));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('27a — a retained value dims, wears the stroke pause icon, and carries "offline · last known"', () => {
+    renderTable([viewOf(FX_SHORT_CALL)], { streamOffline: true });
+    const row = screen.getByTestId('position-row');
+    const markCell = within(row).getByTestId('cell-mark');
+    expect(markCell.querySelector('svg[data-testid="PauseIcon"]')).toBeTruthy();
+    expect(within(markCell).getByTestId('cell-mark-caption').textContent).toBe(
+      'offline · last known',
+    );
+    // the FIGURE itself is retained — never blanked, never replaced by a closed-nine member.
+    expect(markCell.textContent).toMatch(/\$/);
+  });
+
+  it('27b — no retained value renders a closed-nine member + the pause icon, with NO "last known" words', () => {
+    renderTable([viewOf(FX_PROTECTIVE_PUT, { mark: null })], { streamOffline: true });
+    const row = screen.getByTestId('position-row');
+    const markCell = within(row).getByTestId('cell-mark');
+    expect(within(markCell).getByTestId('cell-unavailable')).toBeInTheDocument();
+    expect(markCell.querySelector('svg[data-testid="PauseIcon"]')).toBeTruthy();
+    expect(within(markCell).getByTestId('cell-mark-caption').textContent).toBe('offline');
+    expect(row.textContent).not.toMatch(/last known/);
+  });
+
+  it('28 — no positions cell renders a bare pause marker with neither a value nor a closed-nine member', () => {
+    renderTable([viewOf(FX_SHORT_CALL), viewOf(FX_PROTECTIVE_PUT, { mark: null })], {
+      streamOffline: true,
+    });
+    const icons = screen.getAllByTestId('PauseIcon');
+    expect(icons.length).toBeGreaterThan(0); // vacuity guard
+    for (const icon of icons) {
+      const cell = icon.closest('[data-testid^="cell-"]');
+      expect(cell, 'every pause icon sits inside a named cell').toBeTruthy();
+      expect((cell as HTMLElement).textContent?.trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  it('29 — the pause marker is the declared stroke icon on every live-derived cell, never a text glyph', () => {
+    renderTable([viewOf(FX_SHORT_CALL), viewOf(FX_PROTECTIVE_PUT, { mark: null })], {
+      streamOffline: true,
+    });
+    expect(screen.getByTestId('positions-table').textContent).not.toMatch(/⏸/);
+    expect(screen.getAllByTestId('PauseIcon').length).toBeGreaterThan(0);
+  });
+});
+
+// =================================================================================================
+// U-15a (CONDUCTOR, reversible, SB) — literal()'s three per-member tips are keyboard-reachable
+// =================================================================================================
+describe('positions · U-15a — the three literal tips are keyboard-reachable (SB)', () => {
+  beforeEach(() => stubViewport(1440));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('cell-unavailable / cell-not-recorded / cell-no-basis are focusable and self-describe via aria-describedby, wording unchanged (U-15)', () => {
+    renderTable([
+      viewOf(FX_PROTECTIVE_PUT, { mark: null }),
+      viewOfLegacy(UNRECORDED_FACTS),
+      viewOf(FX_ZERO_COST_COLLAR),
+    ]);
+    const expectedText: Record<string, string> = {
+      'cell-unavailable': 'unavailable',
+      'cell-not-recorded': 'not recorded',
+      'cell-no-basis': 'no basis',
+    };
+    for (const testid of ['cell-unavailable', 'cell-not-recorded', 'cell-no-basis'] as const) {
+      const value = screen.getAllByTestId(testid)[0];
+      expect(value.textContent).toBe(expectedText[testid]); // zero wording change (U-15)
+      const wrapper = value.parentElement as HTMLElement;
+      expect(wrapper.getAttribute('tabindex')).toBe('-1');
+      const descId = wrapper.getAttribute('aria-describedby');
+      expect(descId).toBeTruthy();
+      const description = document.getElementById(descId ?? '');
+      expect(description?.textContent?.length ?? 0).toBeGreaterThan(0);
+      wrapper.focus();
+      expect(wrapper).toHaveFocus();
+    }
+  });
+
+  it("dashCell's untestidded `—` stays hover-only, unchanged — no assertion may assume a DOM hook for it", () => {
+    renderTable([viewOf(FX_SHARES_LONG)]);
+    const row = screen.getByTestId('position-row');
+    // `expiry` renders the shipped `—` (not-applicable, a shares row has none) via `dashCell` — the
+    // sparkline's OWN empty-state `—` (`trend-empty`) is a different, testid'd literal and is
+    // filtered out here rather than asserted against.
+    const dashes = within(row)
+      .getAllByText('—')
+      .filter((d) => !d.hasAttribute('data-testid'));
+    expect(dashes.length).toBeGreaterThan(0); // vacuity guard
+    for (const d of dashes) {
+      expect(d).not.toHaveAttribute('aria-describedby');
+    }
   });
 });
 

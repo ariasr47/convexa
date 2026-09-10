@@ -28,12 +28,33 @@ import { TrackRecordSection } from '@/features/trading/outcomes/TrackRecordSecti
 import { PortfolioPanel } from '@/features/trading/positions/PortfolioPanel';
 import { allPositions } from '@/features/trading/positions/store';
 import { usePortfolio } from '@/features/trading/positions/usePortfolio';
-import { genuineIsLive } from '@/pages/ticker/sessionTapeStanding';
-import { typographyTokens } from '@/shared/theme/tokens';
+import { FigureCell } from '@/pages/ticker/widgets/_kit/FigureCell';
+import { isDeliveringLive } from '@/shared/liveness/liveClaim';
+import { PanelContainer } from '@/shared/ui/PanelContainer';
 import { getTicker, LiveUpdate, streamTicker, TickerBundle } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useEffect, useMemo, useState } from 'react';
+import { capitalAtRiskStateOf } from './capitalAtRisk';
+import { netPlStateOf, type NetPlTint } from './netPl';
+
+/**
+ * Direction is permitted only where the readout carries a REAL computed sum over marked rows
+ * (SPEC §4.3 table — never on `—`/`unavailable`, never mid-drop, both already `tint: null` from
+ * `netPlStateOf`). `FigureCell` itself has no colour prop (its value glyph is always
+ * `text.primary`), so this reaches the SAME rendered value glyph from outside the primitive via the
+ * one stable, documented extension point every register-enforcement assertion in this phase already
+ * keys on — the value glyph's own `data-figure-register` attribute — never by touching `FigureCell`
+ * (out of this task's file ownership; it stays FE-1's).
+ */
+function netPlTintSx(tint: NetPlTint) {
+  if (!tint) return {};
+  return {
+    '& [data-figure-register="mono"]': {
+      color: tint === 'positive' ? 'success.main' : 'error.main',
+    },
+  };
+}
 
 const POLL_MS = 60_000; // matches the backend cache TTL (same cadence as the Ticker viewer)
 const STREAM_OFFLINE_MS = 15_000; // payload-gap watchdog → live-mark degrade (mirrors the Ticker page)
@@ -72,11 +93,6 @@ function personaLabelOf(id: string): string | null {
   return [...PRESETS, ...loadCustoms()].find((p) => p.id === id)?.name ?? null;
 }
 
-/** Net P/L (open): `(+$|−$){abs.toLocaleString()}` with a real minus sign. */
-function formatNetPl(v: number): string {
-  return `${v >= 0 ? '+$' : '−$'}${Math.abs(Math.round(v)).toLocaleString()}`;
-}
-
 export function PositionsPage() {
   // The focused ticker is derived once on mount from the durable book (re-derives on remount, like a
   // reload). It drives the anchor bundle + the single page-scoped SSE.
@@ -85,7 +101,7 @@ export function PositionsPage() {
   const [live, setLive] = useState<LiveUpdate | null>(null);
   const [streamOffline, setStreamOffline] = useState(false);
 
-  const isLive = genuineIsLive(live, streamOffline);
+  const isLive = isDeliveringLive(live, streamOffline);
 
   // Anchor bundle: best-effort. A failure leaves `data` null — `usePortfolio` then degrades marks to
   // `tracking unavailable` / last-known per row, never blanking the records. Polls on the cache cadence.
@@ -141,27 +157,33 @@ export function PositionsPage() {
     };
   }, [pf.refreshPositions]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Net P/L (open): the sum of the OPEN positions' $ P/L — reusing the SAME derived P/L the rows show
-  // (`pf.views[*].pl_dollar`), NOT a new compute path. A row whose live P/L is unavailable this
-  // cycle contributes nothing (null is skipped), exactly as the per-group subtotal does.
-  const netPl = useMemo(
-    () =>
-      pf.views.reduce(
-        (sum, v) => (v.position.status === 'open' && v.pl_dollar != null ? sum + v.pl_dollar : sum),
-        0,
-      ),
-    [pf.views],
-  );
+  // Net P/L (open): five states over the SAME set the sum always walked (`netPl.ts`, SPEC §4.3) —
+  // reusing the SAME derived P/L the rows show (`pf.views[*].pl_dollar`), NOT a new compute path.
+  // `retainedTotal` is the marked-sum computed the SAME way the online arms compute it below; passing
+  // it through rather than re-deriving it inside `netPlStateOf` is what makes the F4/F5 arms testable
+  // without a page (see `netPl.ts`'s file header).
+  const netPl = useMemo(() => {
+    const open = pf.views.filter((v) => v.position.status === 'open');
+    const marked = open.filter((v) => v.pl_dollar != null);
+    const retainedTotal =
+      marked.length > 0 ? marked.reduce((sum, v) => sum + (v.pl_dollar as number), 0) : null;
+    return netPlStateOf({ views: pf.views, streamOffline, retainedTotal });
+  }, [pf.views, streamOffline]);
+
+  // Capital at risk (design/src/screens/positions.mjs:63) — the OPEN book's max-loss sum, STATIC
+  // (never live-derived, so no offline arm; `capitalAtRisk.ts`'s own header). Reuses the SAME
+  // `view.max_loss` every row/card cell already reads — not a second compute path.
+  const capitalAtRisk = useMemo(() => capitalAtRiskStateOf({ views: pf.views }), [pf.views]);
 
   return (
     <Box sx={{ maxWidth: 1240, mx: 'auto', p: 3 }}>
       <Box
         sx={{
           display: 'flex',
-          alignItems: 'flex-start',
+          alignItems: 'flex-end',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '12px',
+          gap: '16px 24px',
           mb: '6px',
         }}
       >
@@ -174,24 +196,47 @@ export function PositionsPage() {
             gracefully; records never drop.
           </Typography>
         </Box>
-        <Box sx={{ textAlign: 'right' }}>
-          <Typography component="div" sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>
-            Net P/L (open)
-          </Typography>
-          <Typography
-            component="div"
-            data-testid="positions-net-pl"
-            sx={{
-              fontFamily: typographyTokens.monoFontFamily,
-              fontVariantNumeric: 'tabular-nums',
-              fontSize: '1.5rem',
-              fontWeight: 700,
-              color: netPl >= 0 ? 'success.main' : 'error.main',
-              opacity: streamOffline ? 0.5 : 1,
-            }}
+        {/* The mast's stat cluster (design/src/screens/positions.mjs:62-65, `.pos-stats`): capital
+            at risk beside the live Net P/L readout, right-aligned. Both render through `FigureCell`
+            itself, per the panel-shaped exception SPEC §2.1/§2.3 carve out for this readout (council
+            `decisions.md` §3 #0+#16; `council/R3-architect.md` #0 and #3 name it explicitly, having
+            weighed the cross-page import against the app's own "pages never import sibling pages"
+            rule at R1 and kept it narrow rather than promoting the whole card — a promotion
+            `AccessibleHelp`'s own import would force, which FE-12 already owns for the frame's ⓘ).
+            Each is wrapped in its own `PanelContainer` (`shared/ui/PanelContainer.tsx`) so the
+            declared 20→17→15 step has a named ancestor to step against at all (§2.4's hazard) —
+            without one, the step never fires at any viewport, with a green build. `minWidth`/
+            `flexShrink: 0` counter a real rendered defect this task found and fixed:
+            `container-type: inline-size` size-contains the box, so as a flex item with no floor it
+            collapsed to a ZERO-width, effectively invisible column (caught by a real
+            headless-browser pass, not by jsdom, which cannot evaluate container queries) — the SAME
+            shape `ReadStrip.tsx:57`'s `minWidth: 140` already carries for its own nested
+            `PanelContainer`s. */}
+        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: '20px', flexWrap: 'wrap' }}>
+          <PanelContainer
+            data-testid="positions-capital-at-risk"
+            sx={{ maxWidth: 260, minWidth: 160, flexShrink: 0 }}
           >
-            {formatNetPl(netPl)}
-          </Typography>
+            <FigureCell
+              label="Capital at risk"
+              register={capitalAtRisk.register}
+              value={capitalAtRisk.value}
+              caption={capitalAtRisk.caption}
+              offline={null}
+            />
+          </PanelContainer>
+          <PanelContainer
+            data-testid="positions-net-pl"
+            sx={{ maxWidth: 320, minWidth: 200, flexShrink: 0, ...netPlTintSx(netPl.tint) }}
+          >
+            <FigureCell
+              label="Net P/L (open)"
+              register={netPl.register}
+              value={netPl.value}
+              caption={netPl.caption}
+              offline={netPl.offline}
+            />
+          </PanelContainer>
         </Box>
       </Box>
       <PortfolioPanel

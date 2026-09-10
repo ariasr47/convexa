@@ -52,6 +52,10 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
   const auth = useAuth();
   const gate = useGate();
   const [status, setStatus] = useState<AiProvidersBootstrap | null>(null);
+  // Provider tabs (design/src/screens/settings.mjs:52-63) — ONE key panel for the selected
+  // provider, not four stacked cards. `BYO_PROVIDERS[0]` ('anthropic') is the design's own first
+  // tab and a stable, deterministic default independent of the async `status` read.
+  const [selectedProvider, setSelectedProvider] = useState<ByoProvider>(BYO_PROVIDERS[0]);
   const [replaceFor, setReplaceFor] = useState<ByoProvider | null>(null);
   const [drafts, setDrafts] = useState<Record<ByoProvider, string>>(EMPTY_DRAFTS);
   const [submitting, setSubmitting] = useState<string | null>(null);
@@ -263,8 +267,58 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
             {C.alternativeHeading}
           </Typography>
 
-          <Stack spacing={1.5} data-testid="settings-ai-key-matrix">
-            {BYO_PROVIDERS.map((provider) => {
+          {/* Provider tabs (design/src/screens/settings.mjs:52-63) — ONE key panel for the
+              selected provider, not four stacked cards (surfaces fidelity repair, change 3/F7:
+              the four-card matrix measured 837px against a 420px design target — a 2-column grid
+              alone could not close that gap). Switching tabs is a pure UI selection, same as
+              `replaceFor`/`removeFor` — it writes nothing and reaches no network. Deliberately
+              plain buttons with `aria-pressed` rather than `role="tab"`/`"tablist"`: a REAL ARIA
+              tab pattern wants `aria-controls` + a `role="tabpanel"` on the other end, and `/settings`
+              is one of the axe-scanned routes (`accessibility.spec.ts` A11Y-4) — an incomplete
+              tablist is a worse a11y story than an honest group of toggle buttons. */}
+          <Box
+            role="group"
+            aria-label={C.alternativeHeading}
+            data-testid="settings-ai-key-tabs"
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '3px',
+              maxWidth: '100%',
+              overflowX: 'auto',
+              mb: 1.5,
+            }}
+          >
+            {BYO_PROVIDERS.map((provider) => (
+              <Box
+                key={provider}
+                component="button"
+                type="button"
+                aria-pressed={selectedProvider === provider}
+                data-testid={`settings-ai-key-tab-${provider}`}
+                onClick={() => setSelectedProvider(provider)}
+                sx={{
+                  cursor: 'pointer',
+                  border: 'none',
+                  borderBottom: '2px solid',
+                  borderColor: selectedProvider === provider ? 'primary.main' : 'transparent',
+                  background: 'none',
+                  font: 'inherit',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  padding: '8px 12px',
+                  whiteSpace: 'nowrap',
+                  color: selectedProvider === provider ? 'text.primary' : 'text.secondary',
+                }}
+              >
+                {BYO_PROVIDER_LABEL[provider]}
+              </Box>
+            ))}
+          </Box>
+
+          <Box data-testid="settings-ai-key-matrix">
+            {(() => {
+              const provider = selectedProvider;
               const row = status.providers.find((p) => p.provider === provider);
               const set = row?.set === true;
               const last4 = row?.last4 ?? null;
@@ -301,8 +355,8 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
                   onUse={() => void preferOwnKey(provider)}
                 />
               );
-            })}
-          </Stack>
+            })()}
+          </Box>
 
           <Box sx={{ mt: 2.5 }} data-testid="settings-ai-model">
             <Typography
@@ -389,7 +443,12 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
         onClose={() => setToast(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity="success" data-testid="settings-ai-key-saved">
+        {/* curvature-v2-surfaces criterion 41 (SB, extended in-lane): this panel renders on the SAME
+            settings page as the readout the criterion names, and the whole page is the one surface
+            criterion 41 covers — "no confirmation on settings renders in the direction-reserved
+            colours" — so this confirmation loses the same success palette. Nothing else here changes;
+            this file is otherwise untouched by FE-8. */}
+        <Alert severity="info" data-testid="settings-ai-key-saved">
           {toast ?? ''}
         </Alert>
       </Snackbar>

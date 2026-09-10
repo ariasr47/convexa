@@ -1,8 +1,10 @@
 /**
  * Ticker section copy + formatters — extracted verbatim from the TickerDashboard monolith so the new
- * section components (LiveTape, DealerPositioning, TermStructure, FreshPositioning, OffExchangeBlocks,
- * TickerHeader) share one source. **Behavior-preserving move only** — every string + numeric format is
- * byte-identical to the pre-refactor inline definitions (the ticker specs assert this copy).
+ * section components (LiveTape, StructureHeroPanel, ReadStrip, TermStructure, FreshPositioning,
+ * OffExchangeBlocks, TickerHeader) share one source. **Behavior-preserving move only** — every string
+ * + numeric format is byte-identical to the pre-refactor inline definitions (the ticker specs assert
+ * this copy). (The old dealer positioning widget is deleted at curvature-v2-desk-and-read FE-8; its
+ * two consumers of this file's copy are its successors above.)
  */
 import type { IvSkew, TermStructure } from '@convexa/api';
 
@@ -31,6 +33,16 @@ export const OFFLINE_CHIP_TOOLTIP =
 export const SINGLE_NAME_CAVEAT =
   'Single-name read — dealer-positioning evidence is strongest on index and high-liquidity ' +
   'tickers. Treat these levels as context, not a forecast.';
+
+/**
+ * Ticker fidelity repair, change 3 (F3) — the masthead's `Universe member · N tracked names` note
+ * (`design/src/screens/desk.mjs:285`, the quick row's `quick-note`) — the reciprocal of
+ * `SINGLE_NAME_CAVEAT`: renders ONLY for a symbol confirmed IN the scanner universe (member), never
+ * fabricating a count (`useUniverseMembership.ts`'s `size` stays `null` on a failed/garbled read, so
+ * this never renders with an invented N).
+ */
+export const universeMemberNote = (size: number): string =>
+  `Universe member · ${size} tracked name${size === 1 ? '' : 's'}`;
 
 export const LAST_TRADE_TOOLTIP =
   'The last actual trade printed for this ticker, live off the trade tape — use it to reconcile ' +
@@ -69,7 +81,10 @@ export function skewState(slope: number): 'fear' | 'greed' | 'balanced' {
   if (slope < -SKEW_BAND) return 'greed';
   return 'balanced';
 }
-const SKEW_PHRASE: Record<'fear' | 'greed' | 'balanced', string> = {
+// Exported (ticker fidelity repair, change 4 / F4) so the read strip's compact sub-caption
+// (`readStripModel.ts`) can reuse the SAME phrasing `skewTip` already spends here, rather than a
+// second, shorter phrase table drifting from this one.
+export const SKEW_PHRASE: Record<'fear' | 'greed' | 'balanced', string> = {
   fear: 'downside hedging is bid (fear)',
   greed: 'upside is bid (greed/complacency)',
   balanced: 'balanced',
@@ -311,6 +326,16 @@ export const MC_ROW_ATR_5D = '5-day';
 export const MC_ROW_ATR_14D = '14-day';
 export const MC_ROW_ATR_30D = '30-day';
 
+// Compact-card captions (ticker fidelity repair F2, `design/src/screens/desk.mjs:413`'s `ctx-2`
+// cells: `['Trend', ...]`, `['Profile shape', ...]`, `['Flow vs positioning', ...]`,
+// `['ATR 14d', ...]`) — the short label the 2×2 context-band card shows per cell, distinct from the
+// longer `MC_*_TITLE` family name (still the ⓘ tooltip's accessible-name root). Copied verbatim from
+// the design source, not authored here. `MC_ROW_TREND` above already matches `'Trend'` exactly and is
+// reused rather than duplicated.
+export const MC_SHAPE_SHORT = 'Profile shape';
+export const MC_FLOW_SHORT = 'Flow vs positioning';
+export const MC_ATR_SHORT = 'ATR 14d';
+
 // Scalar-line builders (mono, text.secondary — §5.3). Display-only; never threshold math.
 export const mcTrendLine = (d: { close: number; ema20: number; ema50: number }): string =>
   `close ${fmt2(d.close)} · EMA20 ${fmt2(d.ema20)} · EMA50 ${fmt2(d.ema50)}`;
@@ -350,7 +375,14 @@ export const MC_STRENGTH_ROW_EMPTY = 'Strength unavailable this cycle.';
 export const MC_MOMENTUM_ROW_EMPTY = 'Momentum unavailable this cycle.';
 export const MC_LOCATION_ROW_EMPTY = 'Location unavailable this cycle.';
 export const MC_COMPOSITION_ROW_EMPTY = 'Composition unavailable this cycle.';
-export const MC_CELL_EMPTY = 'unavailable this cycle';
+// Split (curvature-v2-surfaces SPEC §4.6 criterion 56a): this sentence sat in a figure VALUE slot
+// (`MarketContext.tsx` concentration/balance/ATR-horizon rows), so it becomes the closed-nine member
+// `unavailable` in the value slot, with the this-cycle meaning moved to that figure's own caption —
+// exactly as `design/src/components/figure-cell.mjs:40` draws the "Unavailable" state (value
+// `unavailable`, caption `this cycle`). The `*_WHOLE_EMPTY`/`*_ROW_EMPTY` prose sentences above are
+// widget-body prose, not values, and are untouched.
+export const MC_CELL_EMPTY = 'unavailable';
+export const MC_CELL_EMPTY_CAPTION = 'this cycle';
 
 // Row-level tooltips (§5.5 — each reveals its window + the exact pinned v1 thresholds).
 export const MC_TIP_TREND =
@@ -531,6 +563,13 @@ export function withStructureAge(basis: string, ageSeconds: number | null | unde
 export const LIVE_TAPE_SUBTITLE_LIVE = 'Live stream · not the structure snapshot below';
 export const LIVE_TAPE_SUBTITLE_OFFLINE =
   'Stream offline · last known ticks · structure levels stay current';
+/**
+ * (v2) The NO-TICKS-RETAINED arm. `LiveTape.tsx:110` selects on the stream flag ALONE today, so the
+ * retention claim in LIVE_TAPE_SUBTITLE_OFFLINE is made unconditionally on every drop — including the
+ * drop where nothing was ever retained. Same two-arm discipline owner ruling 2 sets for values.
+ */
+export const LIVE_TAPE_SUBTITLE_OFFLINE_EMPTY =
+  'Stream offline · no ticks retained · structure levels stay current';
 
 /** S1 LiveTape title — from first session_tape payload (including starting). */
 export const SESSION_TAPE_TITLE = 'Session tape';
@@ -555,14 +594,6 @@ export function sessionTapeSubtitle(symbol: string, humanDate: string): string {
 /** Not-the-armed-day LiveTape subtitle — names the armed identity. */
 export function sessionTapeNotThisTickerSubtitle(armedSymbol: string, humanDate: string): string {
   return `Session day tape · ${armedSymbol} · ${humanDate} · not this ticker — not a live feed`;
-}
-
-/** Dealer positioning static grid — snapshot honesty + age. */
-export function dealerPositioningSubtitle(ageSeconds: number | null | undefined): string {
-  return withStructureAge(
-    'Snapshot, never live — stay current on a stream drop; refresh with the data load',
-    ageSeconds,
-  );
 }
 
 /** GEX chart — spot basis + expiration window + age. */

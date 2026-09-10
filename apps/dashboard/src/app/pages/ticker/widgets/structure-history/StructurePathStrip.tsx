@@ -1,6 +1,10 @@
 /**
  * Structure path strip — session slow-lane path embedded under Structure Field chrome.
  * Not a free-standing bento peer: history of structure, not a second GEX field.
+ *
+ * REPAIR TASK item 8 (`STRUCTURE_HERO_REPAIR_TASK.md`; `design/src/screens/desk.mjs:307-312`): loses
+ * its own background and bottom border — a flat row with a top hairline, matching the tape row above
+ * it. Every testid, and the empty/error/loading arms, are unchanged.
  */
 import type { StructureSample } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -94,11 +98,11 @@ export function StructurePathStrip({
       data-testid="structure-history"
       data-symbol={symbol.toUpperCase()}
       sx={{
-        px: 2,
-        py: 1,
-        borderBottom: 1,
+        px: 0.5,
+        pt: 1,
+        mt: 0.75,
+        borderTop: 1,
         borderColor: 'divider',
-        bgcolor: (t) => (t.palette.mode === 'dark' ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.03)'),
       }}
     >
       <Typography
@@ -113,7 +117,7 @@ export function StructurePathStrip({
           color: 'text.secondary',
         }}
       >
-        Structure path · session slow-lane · not live ticks
+        Structure path · slow lane
       </Typography>
 
       {loading && samples == null ? (

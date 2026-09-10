@@ -8,6 +8,10 @@ it contains a valid SPDX expression. A package without metadata is accepted only
 matches the lockfile SRI and an exact license-file SHA-256 resolves through the checked repository matcher;
 unknown, modified, missing, ambiguous, conflicting, or integrity-mismatched evidence fails. Regenerate the
 baseline with `node tools/supply-chain/generate-license-baseline.mjs` and review the resulting lock-bound diff.
+Every row carries its lock's SHA-256 (CRLF-normalised for both locks, so a Windows checkout produces the same
+baseline as CI), which means **any** `package-lock.json` change fails `npm_licenses` on every npm row at once
+until the baseline is regenerated — the finding count is one lock change fanned out, not that many license
+problems. Review the regenerated diff for removed/added packages and new SPDX expressions, not the hashes.
 
 ## Dependency proposals
 

@@ -8,7 +8,7 @@
  * on a stream drop (`⏸ offline` + last-known); the durable row facts never dim, never blank.
  * Token-only styling; the Watching pulse is reduced-motion-guarded via the CSS media query.
  */
-import { typographyTokens } from '@/shared/theme/tokens';
+import { MONO_FACE } from '@/shared/figure';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -41,12 +41,6 @@ import {
   watchingTip,
 } from './copy';
 import type { OrderEvalState, SimOrder } from './types';
-
-const MONO = {
-  fontFamily: typographyTokens.monoFontFamily,
-  fontVariantNumeric: 'tabular-nums',
-  letterSpacing: 0,
-} as const;
 
 function statusTip(o: SimOrder): string {
   switch (o.status) {
@@ -138,7 +132,7 @@ function EvalCell({ order, evalState }: { order: SimOrder; evalState: OrderEvalS
         {evalState.mid != null && order.trigger && (
           <Typography
             variant="caption"
-            sx={{ color: 'text.secondary', ...MONO }}
+            sx={{ color: 'text.secondary', ...MONO_FACE }}
             data-testid="order-eval-distance"
           >
             mid {evalState.mid} · {Math.abs(order.trigger.level - evalState.mid).toFixed(2)} to
@@ -165,7 +159,7 @@ function EvalCell({ order, evalState }: { order: SimOrder; evalState: OrderEvalS
         {evalState.lastMid != null && order.trigger && (
           <Typography
             variant="caption"
-            sx={{ color: 'text.secondary', opacity: 0.5, ...MONO }}
+            sx={{ color: 'text.secondary', opacity: 0.5, ...MONO_FACE }}
             data-testid="order-eval-distance-offline"
           >
             mid {evalState.lastMid} · {Math.abs(order.trigger.level - evalState.lastMid).toFixed(2)}{' '}
@@ -238,13 +232,13 @@ export function OrderRow({ order: o, evalState, onDetails, onCancel, compact }: 
         <Typography
           component="span"
           variant="body2"
-          sx={{ ...MONO, fontWeight: 600 }}
+          sx={{ ...MONO_FACE, fontWeight: 600 }}
           data-testid="order-contract"
         >
           {o.ticker} {o.strike}
           {o.right === 'call' ? 'C' : 'P'} · {o.expiration}
         </Typography>
-        <Typography component="span" variant="body2" sx={{ color: 'text.secondary', ...MONO }}>
+        <Typography component="span" variant="body2" sx={{ color: 'text.secondary', ...MONO_FACE }}>
           ×{o.qty}
         </Typography>
         <StatusChip order={o} />

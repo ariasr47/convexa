@@ -40,12 +40,25 @@ for (const scenario of journeys) {
       await expect(page.getByTestId('widget-bento')).toBeVisible();
       await expect(page.getByTestId('command-deck')).toBeVisible();
       await expect(page.getByTestId('last-trade')).toContainText('● Last trade');
-      await expect(page.getByTestId('tape-stream-state')).toHaveCount(0);
+      // Re-pointed (curvature-v2-foundations, AC-57): `tape-stream-state` was a SECOND page-scope
+      // liveness authority beside the header connection chip (canon rule 18) — folded into the ONE
+      // chip. `data-connection-state` names the resolved kind (SPEC §2.4).
+      await expect(page.getByTestId('connection-chip').first()).not.toHaveAttribute(
+        'data-connection-state',
+        'offline',
+      );
       await page.clock.fastForward(14_000);
-      await expect(page.getByTestId('tape-stream-state')).toHaveCount(0);
+      await expect(page.getByTestId('connection-chip').first()).not.toHaveAttribute(
+        'data-connection-state',
+        'offline',
+      );
       await page.clock.fastForward(1_000);
       await expect(page.getByTestId('widget-bento')).toBeVisible();
-      await expect(page.getByTestId('tape-stream-state')).toContainText('Stream offline');
+      await expect(page.getByTestId('connection-chip').first()).toHaveAttribute(
+        'data-connection-state',
+        'offline',
+      );
+      await expect(page.getByTestId('connection-chip').first()).toContainText('Live offline');
       await expect(page.getByTestId('last-trade')).toContainText('Last trade');
     } else if (scenario.id === 'signed-out-auth-dialog') {
       await expect(page.getByTestId('require-auth-wall')).toBeVisible();

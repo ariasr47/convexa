@@ -1,0 +1,314 @@
+{
+  "id": "desk-real-1280-light",
+  "side": "design",
+  "surface": "desk",
+  "state": "real",
+  "width": 1280,
+  "scheme": "light",
+  "url": "/desk.html",
+  "pageHeight": 2532,
+  "overflowX": false,
+  "scrollWidth": 1280,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "nav-bar",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 56,
+      "text": "CONVEA ScannerTickerPositionsAlerts Jump to a ticker…⌘K Open 10:42:07 ET R"
+    },
+    {
+      "key": "wrap:0:wrap.nav-in",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 56,
+      "text": "CONVEA ScannerTickerPositionsAlerts Jump to a ticker…⌘K Open 10:42:07 ET R"
+    },
+    {
+      "key": "wrap:1:wrap.mast",
+      "x": 0,
+      "y": 56,
+      "w": 1280,
+      "h": 186,
+      "text": "SPY 573.12 +1.84 · +0.32% positive gamma live · open · SPY tape SPDR S&P 500 ETF"
+    },
+    {
+      "key": "wrap:2:wrap",
+      "x": 0,
+      "y": 242,
+      "w": 1280,
+      "h": 470,
+      "text": "Structure fieldmid · tape Net dealer gamma by strike · all expirations · levels "
+    },
+    {
+      "key": "wrap:3:wrap",
+      "x": 0,
+      "y": 713,
+      "w": 1280,
+      "h": 128,
+      "text": "72 OpportunityActionablenear wall · IV cheap · 2 setups Net DEX −$412M▼ delta he"
+    },
+    {
+      "key": "wrap:4:wrap",
+      "x": 0,
+      "y": 841,
+      "w": 1280,
+      "h": 685,
+      "text": "AI read·Ready to readas of 10:41 AI read · SPY SIMULATED / advisory Persona · Ba"
+    },
+    {
+      "key": "wrap:5:wrap",
+      "x": 0,
+      "y": 1526,
+      "w": 1280,
+      "h": 737,
+      "text": "Context Advisory reads that never feed the score · snapshot, never live · refres"
+    },
+    {
+      "key": "wrap:6:wrap.foot-grid",
+      "x": 0,
+      "y": 2351,
+      "w": 1280,
+      "h": 181,
+      "text": "CONVEA How Convexa worksBlog — how we read structureLab Convexa is an analysis t"
+    },
+    {
+      "key": "panel:0:panel:Structure field",
+      "x": 38,
+      "y": 242,
+      "w": 1203,
+      "h": 470,
+      "text": "Structure fieldmid · tape Net dealer gamma by strike · all expirations · levels "
+    },
+    {
+      "key": "panel:1:panel.strip:Opportunity",
+      "x": 38,
+      "y": 729,
+      "w": 1203,
+      "h": 112,
+      "text": "72 OpportunityActionablenear wall · IV cheap · 2 setups Net DEX −$412M▼ delta he"
+    },
+    {
+      "key": "panel:2:panel.ai:Ready to read",
+      "x": 38,
+      "y": 857,
+      "w": 793,
+      "h": 669,
+      "text": "AI read·Ready to readas of 10:41 AI read · SPY SIMULATED / advisory Persona · Ba"
+    },
+    {
+      "key": "panel:3:panel:Live tape",
+      "x": 845,
+      "y": 857,
+      "w": 396,
+      "h": 295,
+      "text": "Live tapelive Trade tape + quote stream · pauses on a drop, levels stay Net flow"
+    },
+    {
+      "key": "panel:4:panel:Your position · SPY",
+      "x": 845,
+      "y": 1166,
+      "w": 396,
+      "h": 138,
+      "text": "Your position · SPY Simulated · marks from the live mid Open book → Bull call sp"
+    },
+    {
+      "key": "panel:5:panel:Sim orders · SPY",
+      "x": 845,
+      "y": 1318,
+      "w": 396,
+      "h": 208,
+      "text": "Sim orders · SPYlive 1 watching · triggers on the live mid SIMULATED watching Bu"
+    },
+    {
+      "key": "panel:6:panel.quiet.:Projected dealer flow",
+      "x": 38,
+      "y": 1590,
+      "w": 392,
+      "h": 267,
+      "text": "Projected dealer flow Charm and vanna · snapshot, never live Charm · drift into "
+    },
+    {
+      "key": "panel:7:panel.quiet.:Market context",
+      "x": 444,
+      "y": 1590,
+      "w": 392,
+      "h": 267,
+      "text": "Market context Trend, shape, flow vs positioning, ATR TrendUp · strongmomentum p"
+    },
+    {
+      "key": "panel:8:panel.quiet.:Term structure",
+      "x": 850,
+      "y": 1590,
+      "w": 392,
+      "h": 267,
+      "text": "Term structure ATM IV by tenor · sampled 7/14/30/60/90 DTE 14.27d15.114d16.430d1"
+    },
+    {
+      "key": "panel:9:panel.quiet.:Straddle-implied move",
+      "x": 38,
+      "y": 1871,
+      "w": 392,
+      "h": 212,
+      "text": "Straddle-implied move From the ATM straddle · the market’s own range ±$8.40±1.5%"
+    },
+    {
+      "key": "panel:10:panel.quiet.:Fresh positioning · Vol/OI",
+      "x": 444,
+      "y": 1871,
+      "w": 392,
+      "h": 212,
+      "text": "Fresh positioning · Vol/OI Strikes trading over 1.0× open interest today 580 C2."
+    },
+    {
+      "key": "panel:11:panel.quiet.:Off-exchange blocks",
+      "x": 850,
+      "y": 1871,
+      "w": 392,
+      "h": 212,
+      "text": "Off-exchange blocks 41% printed off-lit · dark pools + internalized 573.0031%570"
+    },
+    {
+      "key": "panel:12:panel.quiet.ctx-span2:Setups",
+      "x": 38,
+      "y": 2097,
+      "w": 797,
+      "h": 166,
+      "text": "Setups Rule-based reads of the current structure · as-of 42s Pin into the call w"
+    },
+    {
+      "key": "panel:13:panel.quiet",
+      "x": 850,
+      "y": 2097,
+      "w": 392,
+      "h": 166,
+      "text": "Add a widget coming soon"
+    },
+    {
+      "key": "block:well.field-grid",
+      "x": 39,
+      "y": 305,
+      "w": 1201,
+      "h": 406,
+      "text": "+$500M0−$500M550560570580590600 put wall 560 call wall 580 flip 568.50 max pain "
+    },
+    {
+      "key": "block:panel.strip",
+      "x": 38,
+      "y": 729,
+      "w": 1203,
+      "h": 112,
+      "text": "72 OpportunityActionablenear wall · IV cheap · 2 setups Net DEX −$412M▼ delta he"
+    },
+    {
+      "key": "block:work",
+      "x": 38,
+      "y": 857,
+      "w": 1203,
+      "h": 669,
+      "text": "AI read·Ready to readas of 10:41 AI read · SPY SIMULATED / advisory Persona · Ba"
+    },
+    {
+      "key": "block:side",
+      "x": 845,
+      "y": 857,
+      "w": 396,
+      "h": 669,
+      "text": "Live tapelive Trade tape + quote stream · pauses on a drop, levels stay Net flow"
+    },
+    {
+      "key": "block:ctx-grid",
+      "x": 38,
+      "y": 1590,
+      "w": 1203,
+      "h": 673,
+      "text": "Projected dealer flow Charm and vanna · snapshot, never live Charm · drift into "
+    }
+  ],
+  "probes": {
+    "connectionState": null,
+    "skeletons": 0,
+    "monoElements": 173,
+    "sansElements": 230,
+    "archivoElements": 15,
+    "otherFontElements": 0,
+    "htmlBackground": "rgb(246, 246, 243)",
+    "bodyBackground": "rgb(246, 246, 243)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", sans-serif",
+    "bodyFontSize": "13px",
+    "panelSelector": "panel",
+    "panelRadius": "12px",
+    "panelBackground": "rgb(255, 255, 255)",
+    "panelBorder": "1px solid rgba(23, 32, 43, 0.12)",
+    "monoFont": "\"IBM Plex Mono\", ui-monospace, SFMono-Regular, Menlo, monospace",
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": true,
+    "plexSansLoaded": true,
+    "scrollHeight": 2532,
+    "scrollWidth": 1280,
+    "clientWidth": 1280
+  },
+  "panels": [
+    {
+      "key": "div.panel",
+      "radius": "12px",
+      "background": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(23, 32, 43, 0.12)",
+      "shadow": "rgba(0, 0, 0, 0.06) 0px 1px 2px 0px, rgba(0, 0, 0, 0.05) 0px 2px 6px 0px"
+    },
+    {
+      "key": "div.panel.strip",
+      "radius": "12px",
+      "background": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(23, 32, 43, 0.12)",
+      "shadow": "rgba(0, 0, 0, 0.06) 0px 1px 2px 0px, rgba(0, 0, 0, 0.05) 0px 2px 6px 0px"
+    },
+    {
+      "key": "section.panel.ai",
+      "radius": "12px",
+      "background": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(23, 32, 43, 0.12)",
+      "shadow": "rgba(0, 0, 0, 0.06) 0px 1px 2px 0px, rgba(0, 0, 0, 0.05) 0px 2px 6px 0px"
+    },
+    {
+      "key": "section.panel",
+      "radius": "12px",
+      "background": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(23, 32, 43, 0.12)",
+      "shadow": "rgba(0, 0, 0, 0.06) 0px 1px 2px 0px, rgba(0, 0, 0, 0.05) 0px 2px 6px 0px"
+    },
+    {
+      "key": "section.panel",
+      "radius": "12px",
+      "background": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(23, 32, 43, 0.12)",
+      "shadow": "rgba(0, 0, 0, 0.06) 0px 1px 2px 0px, rgba(0, 0, 0, 0.05) 0px 2px 6px 0px"
+    },
+    {
+      "key": "section.panel",
+      "radius": "12px",
+      "background": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(23, 32, 43, 0.12)",
+      "shadow": "rgba(0, 0, 0, 0.06) 0px 1px 2px 0px, rgba(0, 0, 0, 0.05) 0px 2px 6px 0px"
+    },
+    {
+      "key": "section.panel.quiet.",
+      "radius": "12px",
+      "background": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(23, 32, 43, 0.12)",
+      "shadow": "none"
+    },
+    {
+      "key": "section.panel.quiet.",
+      "radius": "12px",
+      "background": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(23, 32, 43, 0.12)",
+      "shadow": "none"
+    }
+  ],
+  "png": "design/desk-real-1280-light.png"
+}

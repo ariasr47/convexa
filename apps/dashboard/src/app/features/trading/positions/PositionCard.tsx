@@ -19,28 +19,36 @@
  * the structure chip, the debit/credit qualifier and the risk slot are untinted (AC-78). Nothing
  * here places a real order (`[no-real-order-path]`). Token discipline: colours via palette tokens,
  * figures via the mono family; zero hardcoded hex.
+ *
+ * REGISTER + OFFLINE (curvature-v2-surfaces SPEC §2.3). The big P/L block and the Mark footer value
+ * resolve their text through the SAME `markFigure`/`plFigure`/`plPctFigure` helpers `PositionRow`
+ * exports, and their register/dim/pause treatment through `shared/figure`'s `figureStateOf` — so the
+ * table and the card can never disagree about a datum (decisions.md §3 #13). The card keeps its own
+ * HERO size (1.5rem) — the ladder does not travel — but the closed-nine text and the offline
+ * treatment are the identical facts the row renders.
  */
-import { typographyTokens } from '@/shared/theme/tokens';
+import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
 import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import { useId, useState } from 'react';
 import { Refused } from './FaultedBanner';
-import { MAX_LOSS_LABEL, MAX_LOSS_WITHHELD_META, money } from './labels';
+import { MAX_LOSS_LABEL, MAX_LOSS_WITHHELD_META } from './labels';
 import { LegDisclosureButton, LegDisclosurePanel } from './LegDisclosure';
 import {
   cellContent,
   ClosedSummary,
   formatExpiry,
+  markFigure,
   PendingAffordance,
+  plFigure,
+  plPctFigure,
   rowActionSx,
   RowContext,
 } from './PositionRow';
 import { STRUCTURE_LABELS } from './structure';
 import type { PositionView } from './view';
 
-const monoSx = typographyTokens.monoFontFamily;
-const pctStr = (n: number) => `${n >= 0 ? '+' : '−'}${Math.abs(n).toFixed(1)}%`;
 const dollars = (n: number) => `$${Math.abs(Math.round(n))}`;
-const netMoney = (n: number) => `${n < 0 ? '−' : ''}$${Math.abs(Math.round(n))}`;
 
 export interface PositionCardProps {
   view: PositionView;
@@ -54,15 +62,33 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
   const [expanded, setExpanded] = useState(false); // EPHEMERAL — never persisted, gone after reload
   const panelId = useId();
   const isTerminal = p.status === 'closed' || p.status === 'cancelled';
-  const liveDim = streamOffline ? 0.5 : 1;
+  const isOpen = p.status === 'open';
   const plColor =
     view.pl_dollar == null ? 'text.primary' : view.pl_dollar >= 0 ? 'success.main' : 'error.main';
-  const markStr =
-    p.status === 'pending'
-      ? `limit $${(p.limit_price ?? 0).toFixed(2)}`
-      : view.mark.unavailable || view.mark.net_mark == null
-        ? 'unavailable'
-        : `${view.mark.basis === 'modeled' ? '≈ ' : ''}${netMoney(view.mark.net_mark)}`;
+
+  // The BIG P/L block and the Mark footer value read the SAME text/state the row's `cell-pl` and
+  // `cell-mark` render, from the shared helpers `PositionRow` exports — the table and this card can
+  // never disagree about a datum (decisions.md §3 #13). Gated on `isOpen`/`pending` exactly as
+  // shipped: the hero block is only meaningful for an open position, and a pending row's Mark is its
+  // resting limit, never a live figure.
+  const plFig = plFigure(view);
+  const plState = figureStateOf({
+    value: plFig.text,
+    register: 'traced',
+    offline: streamOffline ? { retained: plFig.hasValue } : null,
+  });
+  const pctFig = plPctFigure(view);
+  const markFig = p.status === 'pending' ? null : markFigure(view);
+  const markState = markFig
+    ? figureStateOf({
+        value: markFig.text,
+        register: 'traced',
+        offline: streamOffline ? { retained: markFig.hasValue } : null,
+      })
+    : null;
+  const markText =
+    p.status === 'pending' ? `limit $${(p.limit_price ?? 0).toFixed(2)}` : (markFig?.text ?? '');
+
   // Multi-expiry shows the NEAREST expiry with a `+N more` suffix — never two dates in one slot.
   const expiryStr =
     view.nearest_expiration == null
@@ -71,7 +97,7 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
           view.expiration_count > 1 ? ` +${view.expiration_count - 1} more` : ''
         }`;
   // Figma footer value: Roboto Mono Bold 700, primary; the label inherits the footer's secondary 0.76rem.
-  const footValSx = { fontFamily: monoSx, fontWeight: 700, color: 'text.primary' } as const;
+  const footValSx = { ...faceFor(true), fontWeight: 700, color: 'text.primary' } as const;
   return (
     <Box
       data-testid="position-card"
@@ -92,7 +118,7 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
           <Box
             component="span"
-            sx={{ fontFamily: monoSx, fontWeight: 700, fontSize: '1rem', flexShrink: 0 }}
+            sx={{ ...faceFor(true), fontWeight: 700, fontSize: '1rem', flexShrink: 0 }}
           >
             {p.legs[0]?.ticker}
           </Box>
@@ -134,13 +160,17 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
         </Box>
       </Box>
 
-      {/* 2 — the LIVE block: big P/L + % / sparkline. Dims offline; nothing else on the card does. */}
+      {/* 2 — the LIVE block: big P/L + % / sparkline. Dims + pauses offline; nothing else on the
+          card does (SPEC §2.3, criteria 27a/27b/28/29 — the same offline contract the row's
+          `cell-pl` owes, via the SAME `plFigure`/`figureStateOf` facts). */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'flex-end',
           justifyContent: 'space-between',
-          opacity: liveDim,
+          // Blanket streamOffline, exactly as shipped (`liveDim`) — the wrapper does not gate on
+          // `isOpen`; only the VALUE inside it does, unchanged from before this task.
+          opacity: streamOffline ? 0.5 : 1,
         }}
         data-testid="card-pl"
       >
@@ -148,18 +178,39 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
           <Box
             component="div"
             sx={{
-              fontFamily: monoSx,
+              ...faceFor(isOpen ? plState.mono : true),
               fontWeight: 700,
               fontSize: '1.5rem',
-              color: plColor,
-              fontVariantNumeric: 'tabular-nums',
+              color: isOpen && !plState.mono ? 'text.disabled' : plColor,
             }}
           >
-            {p.status === 'open' && view.pl_dollar != null ? money(view.pl_dollar) : '—'}
+            {isOpen ? plFig.text : '—'}
           </Box>
-          <Box component="div" sx={{ fontFamily: monoSx, fontSize: '0.85rem', color: plColor }}>
-            {p.status === 'open' && view.pl_pct.kind === 'value' ? pctStr(view.pl_pct.value) : ''}
+          <Box
+            component="div"
+            sx={{
+              ...faceFor(isOpen ? plState.mono : true),
+              fontSize: '0.85rem',
+              color: isOpen && !plState.mono ? 'text.disabled' : plColor,
+            }}
+          >
+            {isOpen ? pctFig.text : ''}
           </Box>
+          {isOpen && plState.showPause && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px', mt: 0.25 }}>
+              <PauseMark />
+              {plState.caption && (
+                <Typography
+                  component="span"
+                  variant="caption"
+                  data-testid="card-pl-caption"
+                  sx={{ color: 'text.disabled' }}
+                >
+                  {plState.caption}
+                </Typography>
+              )}
+            </Box>
+          )}
         </Box>
         <Box>{cellContent('trend', ctx)}</Box>
       </Box>
@@ -193,12 +244,47 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
           </Box>
         </Box>
         {/* The dim lives on THIS element, which keeps `card-mark`'s shipped identity as the
-            className-identity probe for the offline treatment. */}
-        <Box component="span" sx={{ opacity: liveDim }} data-testid="card-mark">
+            className-identity probe for the offline treatment. Face/state come from `markFigure` +
+            `figureStateOf` — the same facts `cell-mark` renders (decisions.md §3 #13). */}
+        <Box
+          component="span"
+          sx={{
+            // Blanket streamOffline, exactly as shipped (`liveDim`) — unchanged even for a pending
+            // row's resting-limit text, which never sets `markState`.
+            opacity: streamOffline ? 0.5 : 1,
+            display: 'inline-flex',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '4px',
+          }}
+          data-testid="card-mark"
+        >
           Mark{' '}
-          <Box component="span" sx={footValSx} data-testid="card-mark-value">
-            {markStr}
+          <Box
+            component="span"
+            sx={{
+              ...faceFor(markState ? markState.mono : true),
+              fontWeight: 700,
+              color: markState && !markState.mono ? 'text.disabled' : 'text.primary',
+            }}
+            data-testid="card-mark-value"
+          >
+            {markText}
           </Box>
+          {markState?.showPause && (
+            <>
+              <PauseMark />
+              {markState.caption && (
+                <Box
+                  component="span"
+                  data-testid="card-mark-caption"
+                  sx={{ fontSize: '0.7rem', color: 'text.disabled', flexBasis: '100%' }}
+                >
+                  {markState.caption}
+                </Box>
+              )}
+            </>
+          )}
         </Box>
         <Box component="span">{expiryStr}</Box>
         {/* THE RISK SLOT — static, never dims, never tinted. ONE figure or ONE reason, never both.

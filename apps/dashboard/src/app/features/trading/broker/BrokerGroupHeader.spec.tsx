@@ -262,10 +262,12 @@ describe.each(['row', 'card'] as const)('BrokerGroupHeader — variant %s', (var
     );
   });
 
-  it('AC-19 — mark feed down: the P/L dims + marks ⏸ and stays non-empty; the net is NOT dimmed by it', () => {
+  it('AC-19 — mark feed down: the P/L dims + marks with the declared stroke icon and stays non-empty; the net is NOT dimmed by it', () => {
     renderHeader(tslaGroup(), variant, { streamOffline: true });
     const pl = screen.getByTestId('broker-group-pl');
-    expect(pl.textContent).toMatch(/^⏸/);
+    // The declared stroke icon replaces the retired `⏸` glyph (criterion 29) — query the rendered
+    // icon, never the character, so a weakened assertion cannot pass against its `aria-hidden` markup.
+    expect(pl.querySelector('svg[data-testid="PauseIcon"]')).toBeTruthy();
     expect(pl.textContent && pl.textContent.length > 0).toBe(true);
     expect(getComputedStyle(pl).opacity).toBe('0.5');
     const net = screen.getByTestId('broker-group-net');

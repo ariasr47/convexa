@@ -183,7 +183,7 @@ export function TapePulseLab() {
           style={{
             display: 'block',
             width: '100%',
-            borderRadius: 12,
+            borderRadius: '12px',
             border: '1px solid rgba(138,155,180,0.28)',
           }}
         />

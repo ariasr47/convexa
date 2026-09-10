@@ -3,7 +3,7 @@
  * pattern, reused so 393px never overflows). Same projection, same two-axis rules, same absence
  * of every write affordance; only the layout stacks.
  */
-import { typographyTokens } from '@/shared/theme/tokens';
+import { MONO_FACE } from '@/shared/figure';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import {
@@ -71,10 +71,9 @@ export function BrokerPositionCard({
               <Typography
                 component="div"
                 sx={{
+                  ...MONO_FACE,
                   fontSize: '0.8rem',
                   color: 'text.secondary',
-                  fontFamily: typographyTokens.monoFontFamily,
-                  fontVariantNumeric: 'tabular-nums',
                   mt: '2px',
                   overflowWrap: 'anywhere',
                 }}
@@ -131,15 +130,7 @@ function Meta({
       <Typography component="div" sx={{ fontSize: '0.6875rem', color: 'text.secondary' }}>
         {label}
       </Typography>
-      <Typography
-        component="div"
-        data-testid={testid}
-        sx={{
-          fontFamily: typographyTokens.monoFontFamily,
-          fontVariantNumeric: 'tabular-nums',
-          fontSize: '0.85rem',
-        }}
-      >
+      <Typography component="div" data-testid={testid} sx={{ ...MONO_FACE, fontSize: '0.85rem' }}>
         {children}
       </Typography>
     </Box>

@@ -1,1 +1,1 @@
-export * from './GexStrikeProfile';
+export * from './chart';

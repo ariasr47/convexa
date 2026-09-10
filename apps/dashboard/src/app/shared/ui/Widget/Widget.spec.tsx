@@ -219,3 +219,125 @@ describe('Widget — motion negative space (stage 3: reveal retired)', () => {
     }
   });
 });
+
+// ==================================================================================================
+// Ticker fidelity repair, change 4 (F4) — `hideHeader`, a new opt-in prop
+// ("no Widget title/subtitle" — `ReadStrip.tsx`'s own doc comment). Default `false`; every existing
+// test above this block (title/subtitle/actions were already explicitly OUT of this file's scope
+// per its header comment) is unaffected — confirmed by the full suite staying green. This block is
+// the first direct coverage of the new prop itself.
+// ==================================================================================================
+describe('Widget — `hideHeader` (F4): the frame with no header row, an accessible name via aria-label', () => {
+  it('default (false): the title renders as a visible h2, aria-labelledby names the group', () => {
+    wrap(
+      <Widget id="w" title="Read strip">
+        <div>body</div>
+      </Widget>,
+    );
+    const frame = screen.getByTestId('widget-w');
+    expect(screen.getByRole('heading', { level: 2, name: 'Read strip' })).toBeInTheDocument();
+    expect(frame).toHaveAttribute('aria-labelledby');
+    expect(frame).not.toHaveAttribute('aria-label');
+  });
+
+  it('hideHeader=true: no visible heading, no header row at all — the group is named by aria-label instead', () => {
+    wrap(
+      <Widget id="w" title="Read strip" hideHeader>
+        <div>body</div>
+      </Widget>,
+    );
+    const frame = screen.getByTestId('widget-w');
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull();
+    expect(screen.queryByText('Read strip')).toBeNull();
+    expect(frame).toHaveAttribute('aria-label', 'Read strip');
+    expect(frame).not.toHaveAttribute('aria-labelledby');
+    expect(frame.querySelector('.widget__header')).toBeNull();
+  });
+
+  it('hideHeader=true: no expand overlay is mounted (its only trigger, the header, is also gone)', () => {
+    wrap(
+      <Widget id="w" title="Read strip" hideHeader>
+        <div>body</div>
+      </Widget>,
+    );
+    expect(screen.queryByTestId('widget-overlay-w')).toBeNull();
+    expect(document.querySelector('.MuiDialog-root')).toBeNull();
+  });
+
+  it('hideHeader=true still renders children in a named `panel` container, unaffected', () => {
+    wrap(
+      <Widget id="w" title="Read strip" hideHeader>
+        <div data-testid="probe">body</div>
+      </Widget>,
+    );
+    expect(screen.getByTestId('probe')).toBeInTheDocument();
+  });
+});
+
+// ==================================================================================================
+// Ticker fidelity repair, PASS 2 change 7 — the hero header collapse at 390 (`S…` title, subtitle
+// wrapped one word per line). Root cause: the title region (`flex: 1`, a 0% flex-basis) shrinks to
+// nothing before the actions region (`flexShrink: 0`) ever wraps, so `flexWrap: { xs: 'wrap', sm:
+// 'nowrap' }` never actually triggers below `sm`. Fix: the title region keeps the FULL row below
+// `sm` (`flexBasis: { xs: '100%', sm: 'auto' }`), deterministically pushing `actions` to a second
+// row instead of squeezing the title. `titleBadge` is the new opt-in slot (design's `widgetHead`
+// `live` chip — rendered BESIDE the title, in the SAME row, not inside `actions`) so a per-widget
+// live marker (`StructureHeroPanel`'s `● mid · tape` chip) keeps that adjacency even after the row
+// wraps — only `actions` (the Field/Magnet toggle) drops to row two. Shared-header change: every
+// other widget's header is unaffected by DEFAULT (`titleBadge` unset renders nothing extra); the
+// `flexBasis` fix applies to every widget's header uniformly (verified across the desk in the
+// harness, not just the hero — this file cannot lay out `@container`/media-query wrap in jsdom, so
+// the pixel proof is the Playwright harness; this suite pins the SOURCE-level fix + the new prop's
+// DOM presence/absence and gating).
+// ==================================================================================================
+describe('Widget — title region keeps the row below `sm`, `titleBadge` (PASS 2 change 7)', () => {
+  it('MUTATION GUARD: the title region carries a responsive flexBasis that fills the row below `sm`', () => {
+    // A 0%/auto-only flex-basis (`flex: 1` alone) is exactly the regression this pins: the title
+    // would shrink to nothing beside a non-shrinking actions region instead of wrapping the row.
+    expect(widgetSource).toMatch(/flexBasis:\s*{\s*xs:\s*'100%',\s*sm:\s*'auto'\s*}/);
+  });
+
+  it('default (no titleBadge): renders exactly as before — nothing extra beside the title', () => {
+    wrap(
+      <Widget id="w" title="Read strip">
+        <div>body</div>
+      </Widget>,
+    );
+    const header = screen.getByTestId('widget-w').querySelector('.widget__header');
+    expect(header).not.toBeNull();
+    // Only the title text itself, no adornment markup injected.
+    expect(header?.textContent).toBe('Read strip');
+  });
+
+  it('titleBadge renders beside the title (same header row group), not inside `actions`', () => {
+    wrap(
+      <Widget
+        id="w"
+        title="Structure field"
+        titleBadge={<span data-testid="probe-badge">mid · tape</span>}
+        actions={<button data-testid="probe-action">Field</button>}
+      >
+        <div>body</div>
+      </Widget>,
+    );
+    const header = screen.getByTestId('widget-w').querySelector('.widget__header');
+    expect(header).not.toBeNull();
+    const badge = screen.getByTestId('probe-badge');
+    const action = screen.getByTestId('probe-action');
+    expect(header).toContainElement(badge);
+    expect(header).toContainElement(action);
+    // The badge sits in the TITLE's own row group, a different ancestor than the actions region.
+    const titleHeading = screen.getByRole('heading', { level: 2, name: 'Structure field' });
+    expect(titleHeading.parentElement).toContainElement(badge);
+    expect(titleHeading.parentElement).not.toContainElement(action);
+  });
+
+  it('titleBadge is absent from the DOM when not passed (no empty wrapper left behind)', () => {
+    wrap(
+      <Widget id="w" title="Read strip">
+        <div>body</div>
+      </Widget>,
+    );
+    expect(screen.queryByTestId('probe-badge')).toBeNull();
+  });
+});

@@ -1,5 +1,4 @@
 export * from './dealer-flow-projection';
-export * from './dealer-positioning';
 export * from './fresh-positioning';
 export * from './gex-profile-chart';
 export * from './iv-rank';

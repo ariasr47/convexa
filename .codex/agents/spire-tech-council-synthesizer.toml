@@ -22,7 +22,7 @@ Lane (hard):
 - **Every R2 conflict must be visibly resolved** — folded into the text, or listed in §9. Silently
   dropping one is the first thing the skeptic hunts for.
 - Carry the human's rulings from `decisions.md` in as settled fact, with the reasoning.
-- By instruction, do not modify files or run code; this host exposes shared tools and cannot fence them per role.
+- By instruction, do not modify files or run code; this adapter exposes shared tools and does not install verified per-role tool restrictions.
 - You are never one of the three voices. If a dispatch asks you for a position or a critique, refuse
   and say so — that is R1/R2 work, owned by `spire-tech-architect`, `spire-tech-pm` and `spire-tech-ux`.
 

@@ -1,9 +1,21 @@
 /**
  * MarketContext — the "Market context" STATIC-read-family widget (ai-context-pack
- * FRONTEND_EXECUTION_CONTRACT). It surfaces the additive `market_state.market_context` pack as four
- * StatTile-family sub-cards — Trend & momentum · Gamma profile shape · Flow vs positioning · today ·
- * Average true range — with every headline label visible without expanding, a visible basis line per
- * card, per-label threshold tooltips, and ONE widget-level advisory footer.
+ * FRONTEND_EXECUTION_CONTRACT), re-composed by the ticker fidelity repair (F2,
+ * `design/src/screens/desk.mjs:43` `ctx-grid` + `contextCard('Market context', ...)`): ONE quiet
+ * card carrying a 2×2 of headline values — Trend & momentum · Gamma profile shape · Flow vs
+ * positioning · Average true range · 14-day — each a label / value / one-line basis cell, not the
+ * four full StatTile-family sub-cards (Trend/Strength/Momentum, Concentration/Balance/Center-of-mass,
+ * Location/Composition, ATR 5d/14d/30d) the pre-repair widget rendered. Each cell keeps its OWN basis
+ * / as-of line (canon: the context band carries its own basis) — `mcTiBasis` / `mcShapeBasis` /
+ * `MC_FLOW_BASIS` / `mcAtrBasis` are unchanged, byte-identical calls. The widget-level advisory
+ * footer is unchanged too.
+ *
+ * The secondary rows this repair drops from the compact card — Strength, Momentum, Balance, Center
+ * of mass, Composition, ATR 5d/30d — are not recoverable via the widget's `⤢` expand: `Widget`'s
+ * expand renders the SAME `children` larger, never different content (this file's own prior
+ * `digested-labels-not-raw-dump` comment already said as much: "the expanded overlay shows this same
+ * body larger"). A residual, recorded in the repair report rather than solved with new shared
+ * `Widget`/overlay plumbing this task's blast radius does not call for.
  *
  * Binding invariants (restated so the seam stays honest):
  *   - `[live-vs-static-isolation]` — STATIC. It takes NO `offline`/`isLive`/`streamOffline` prop,
@@ -11,10 +23,10 @@
  *     a stream drop it stays byte-identical + un-dimmed (contrast: the LiveTape tiles dim). It
  *     refreshes only on the REST poll (a new `pack` value from a new bundle); a stale bundle shares
  *     the page's existing treatment — no per-widget badge.
- *   - `[best-effort-isolated-or-null]` — FIVE independent null levels: per-label (TI) / per-horizon
- *     (ATR) / per-sub-component (divergence) / per-read / whole-pack, each its own muted
- *     "unavailable this cycle" copy (`text.disabled`) — NEVER a fabricated 0 / $0 / 0% / label /
- *     date; a null never blanks/errors the rest of the board.
+ *   - `[best-effort-isolated-or-null]` — the FOUR remaining cells are each independently nullable at
+ *     two levels (per-read / whole-pack), each its own muted "unavailable this cycle" copy
+ *     (`text.disabled`) — NEVER a fabricated 0 / $0 / 0% / label / date; a null never blanks/errors
+ *     the rest of the board.
  *   - `[additive-keeps-score-byte-identical]` — display-only advisory context. No copy/color/
  *     placement implies it feeds score/gate/tier/setup; no buy/sell / "smart money" / stop/target /
  *     distance / sizing language anywhere.
@@ -22,92 +34,55 @@
  *     `mcDisplay` lookup only; an UNKNOWN enum value renders that label's unavailable state (no
  *     raw-enum pass-through, no threshold math).
  *   - `digested-labels-not-raw-dump` — labels + declared scalars only; no chart/series/OHLC/period
- *     table anywhere (the expanded overlay shows this same body larger).
+ *     table anywhere.
  *   - `theme-token-discipline` — token-only via the MUI theme (`text.disabled`/`text.secondary`/
  *     `divider`, mono via tokens), zero hardcoded hex; dark/light parity from the shared chrome.
  *   - No auth gate — renders for anonymous visitors; no session/gate call anywhere in it.
  */
+import { faceFor, figureStateOf } from '@/shared/figure';
 import { typographyTokens } from '@/shared/theme/tokens';
+import { AccessibleHelp } from '@/shared/ui';
 import { Widget } from '@/shared/ui/Widget';
 import type {
-  AtrHorizon,
   AtrRead,
   FlowVsPositioningRead,
   GexProfileShapeRead,
   MarketContextPack,
   TrendMomentumRead,
 } from '@convexa/api';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Stack from '@mui/material/Stack';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import {
   MC_ADVISORY,
   MC_ATR_EMPTY,
-  MC_ATR_TITLE,
-  MC_BALANCE_DISPLAY,
+  MC_ATR_SHORT,
   MC_CELL_EMPTY,
-  MC_COMPOSITION_DISPLAY,
-  MC_COMPOSITION_ROW_EMPTY,
+  MC_CELL_EMPTY_CAPTION,
   MC_CONCENTRATION_DISPLAY,
   MC_DIRECTION_DISPLAY,
   MC_FLOW_BASIS,
   MC_FLOW_EMPTY,
-  MC_FLOW_TITLE,
+  MC_FLOW_SHORT,
   MC_INFO,
   MC_LOCATION_DISPLAY,
   MC_LOCATION_ROW_EMPTY,
-  MC_MOMENTUM_DISPLAY,
-  MC_MOMENTUM_ROW_EMPTY,
-  MC_ROW_ATR_14D,
-  MC_ROW_ATR_30D,
-  MC_ROW_ATR_5D,
-  MC_ROW_BALANCE,
-  MC_ROW_COM,
-  MC_ROW_COMPOSITION,
-  MC_ROW_CONCENTRATION,
-  MC_ROW_LOCATION,
-  MC_ROW_MOMENTUM,
-  MC_ROW_STRENGTH,
   MC_ROW_TREND,
   MC_SHAPE_EMPTY,
-  MC_SHAPE_TITLE,
-  MC_STRENGTH_DISPLAY,
-  MC_STRENGTH_ROW_EMPTY,
+  MC_SHAPE_SHORT,
   MC_SUBTITLE,
   MC_TI_EMPTY,
-  MC_TI_TITLE,
   MC_TIP_ATR_CARD,
-  MC_TIP_BALANCE,
-  MC_TIP_COM,
-  MC_TIP_COMPOSITION,
-  MC_TIP_CONCENTRATION,
   MC_TIP_FLOW_CARD,
-  MC_TIP_LOCATION,
-  MC_TIP_MOMENTUM,
   MC_TIP_SHAPE_CARD,
-  MC_TIP_STRENGTH,
   MC_TIP_TI_CARD,
-  MC_TIP_TREND,
   MC_TITLE,
   MC_TREND_ROW_EMPTY,
   MC_WHOLE_EMPTY,
   mcAtrBasis,
   mcAtrLine,
-  mcBalanceLine,
-  mcComLine,
-  mcCompositionLine,
-  mcConcentrationLine,
   mcDisplay,
-  mcLocationLine,
-  mcMomentumLine,
   mcShapeBasis,
-  mcStrengthLine,
   mcTiBasis,
-  mcTrendLine,
 } from '../_kit/copy';
 
 const MONO = typographyTokens.monoFontFamily;
@@ -127,105 +102,68 @@ function EmptyLine({ text, testid }: { text: string; testid: string }) {
   );
 }
 
-/** A caption label + optional ⓘ info affordance (the row/card tooltip carrier). */
+/**
+ * A single-row cell degrading to the closed-nine member `unavailable` (SPEC §4.6 criterion 56a) —
+ * the ONE quiet-band site where the empty state occupies a figure's own VALUE slot rather than a
+ * widget-body sentence. Resolved through the shared module (register `traced`: this cell states no
+ * asserted/untraced fact, only "we have nothing this cycle") so the literal renders Sans, never mono
+ * (criterion 54), with the this-cycle meaning carried on its own caption underneath.
+ */
+function EmptyFigureCell({ testid }: { testid: string }) {
+  const { figureState, mono } = figureStateOf({ value: MC_CELL_EMPTY, register: 'traced' });
+  return (
+    <Box data-testid={testid}>
+      <Typography
+        variant="body2"
+        data-figure-state={figureState}
+        data-figure-register={mono ? 'mono' : 'sans'}
+        sx={{ ...faceFor(mono), color: 'text.secondary' }}
+      >
+        {MC_CELL_EMPTY}
+      </Typography>
+      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+        {MC_CELL_EMPTY_CAPTION}
+      </Typography>
+    </Box>
+  );
+}
+
+/**
+ * A caption label + optional ⓘ info affordance (the cell's tooltip carrier). Ruling 6
+ * (curvature-v2-foundations): the shipped `AccessibleHelp` pattern — a real focusable `button`,
+ * reachable by tap and keyboard, not just hover (AC-35).
+ */
 function CaptionLabel({ label, info }: { label: string; info?: string }) {
   return (
-    <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
       <Typography
         variant="caption"
         sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: 0.3 }}
       >
         {label}
       </Typography>
-      {info && (
-        <Tooltip title={info} arrow placement="top">
-          <InfoOutlinedIcon
-            sx={{ fontSize: 13, color: 'text.disabled' }}
-            data-testid={`mc-info-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
-          />
-        </Tooltip>
-      )}
-    </Stack>
-  );
-}
-
-/** The recessed sub-card — the LimbCard-style StatTile-family surface on the widget's inset well. */
-function SubCard({
-  title,
-  info,
-  testid,
-  children,
-}: {
-  title: string;
-  info: string;
-  testid: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card
-      variant="outlined"
-      data-testid={testid}
-      sx={{
-        borderRadius: '12px',
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
-        height: '100%',
-      }}
-    >
-      <CardContent sx={{ '&:last-child': { pb: 1.75 } }}>
-        <Box sx={{ mb: 0.75 }}>
-          <CaptionLabel label={title} info={info} />
-        </Box>
-        {children}
-      </CardContent>
-    </Card>
-  );
-}
-
-/** One label row: caption row-label (+ ⓘ tooltip) → prominent headline display string → small mono
- *  scalar line. `display == null` (a null label OR an unknown wire enum) renders `emptyText` alone —
- *  that label's unavailable state, never a raw enum, never invented text. */
-function LabelRow({
-  rowLabel,
-  info,
-  display,
-  scalar,
-  emptyText,
-  testid,
-}: {
-  rowLabel: string;
-  info: string;
-  display: string | null;
-  scalar?: string;
-  emptyText: string;
-  testid: string;
-}) {
-  return (
-    <Box sx={{ mb: 1 }} data-testid={testid}>
-      <CaptionLabel label={rowLabel} info={info} />
-      {display == null ? (
-        <EmptyLine text={emptyText} testid={`${testid}-empty`} />
-      ) : (
-        <>
-          <Typography variant="body1" sx={{ fontWeight: 600 }} data-testid={`${testid}-label`}>
-            {display}
-          </Typography>
-          {scalar && (
-            <Typography variant="body2" sx={{ color: 'text.secondary', fontFamily: MONO }}>
-              {scalar}
-            </Typography>
-          )}
-        </>
-      )}
+      {info && <AccessibleHelp label={`About ${label}`} text={info} />}
     </Box>
   );
 }
 
-/** The always-visible per-card basis line (the AC-4 surface — no interaction). */
+/**
+ * The always-visible per-cell basis line (the AC-4 surface — no interaction). Ticker fidelity
+ * repair, change 2 (F2) close-out: single line, ellipsis-truncated, `title` carrying the full
+ * sentence — matching the design's own one-line `ctx-2` sub-caption (`desk.mjs:413`, the `s` field:
+ * "momentum positive", "5d 5.4 · 30d 6.8") without dropping the basis/as-of text the canon requires
+ * every card keep (`mcTiBasis`/`mcShapeBasis`/`MC_FLOW_BASIS`/`mcAtrBasis` are real sentences, one of
+ * them ~150 characters, that wrapped to 3–5 lines at the card's ~162px cell width and were the
+ * single largest driver of Market context's 552px-then-464px stretch of its context-band row). The
+ * FULL text stays in `textContent` (a `title` attribute doesn't remove anything from the a11y tree
+ * or `getByText`) — only the paint is truncated.
+ */
 function BasisLine({ text, testid }: { text: string; testid: string }) {
   return (
     <Typography
       variant="caption"
+      noWrap
+      title={text}
       sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
       data-testid={testid}
     >
@@ -234,216 +172,170 @@ function BasisLine({ text, testid }: { text: string; testid: string }) {
   );
 }
 
-/** Trend & momentum — three independently-nullable label rows + the as-of/window basis line. */
-function TrendMomentumCard({ read }: { read: TrendMomentumRead | null }) {
-  return (
-    <SubCard title={MC_TI_TITLE} info={MC_TIP_TI_CARD} testid="mc-ti">
-      {read == null ? (
-        <EmptyLine text={MC_TI_EMPTY} testid="mc-ti-empty" />
-      ) : (
-        <>
-          <LabelRow
-            rowLabel={MC_ROW_TREND}
-            info={MC_TIP_TREND}
-            display={
-              read.direction == null ? null : mcDisplay(MC_DIRECTION_DISPLAY, read.direction.label)
-            }
-            scalar={read.direction == null ? undefined : mcTrendLine(read.direction)}
-            emptyText={MC_TREND_ROW_EMPTY}
-            testid="mc-trend"
-          />
-          <LabelRow
-            rowLabel={MC_ROW_STRENGTH}
-            info={MC_TIP_STRENGTH}
-            display={
-              read.strength == null ? null : mcDisplay(MC_STRENGTH_DISPLAY, read.strength.label)
-            }
-            scalar={read.strength == null ? undefined : mcStrengthLine(read.strength)}
-            emptyText={MC_STRENGTH_ROW_EMPTY}
-            testid="mc-strength"
-          />
-          <LabelRow
-            rowLabel={MC_ROW_MOMENTUM}
-            info={MC_TIP_MOMENTUM}
-            display={
-              read.momentum == null ? null : mcDisplay(MC_MOMENTUM_DISPLAY, read.momentum.label)
-            }
-            scalar={read.momentum == null ? undefined : mcMomentumLine(read.momentum)}
-            emptyText={MC_MOMENTUM_ROW_EMPTY}
-            testid="mc-momentum"
-          />
-          <BasisLine text={mcTiBasis(read.as_of_session)} testid="mc-ti-basis" />
-        </>
-      )}
-    </SubCard>
-  );
-}
-
-/** Gamma profile shape — all-or-null read; an unknown enum degrades ONLY that row's label cell. */
-function ShapeCard({ read }: { read: GexProfileShapeRead | null }) {
-  return (
-    <SubCard title={MC_SHAPE_TITLE} info={MC_TIP_SHAPE_CARD} testid="mc-shape">
-      {read == null ? (
-        <EmptyLine text={MC_SHAPE_EMPTY} testid="mc-shape-empty" />
-      ) : (
-        <>
-          <LabelRow
-            rowLabel={MC_ROW_CONCENTRATION}
-            info={MC_TIP_CONCENTRATION}
-            display={mcDisplay(MC_CONCENTRATION_DISPLAY, read.concentration_label)}
-            scalar={mcConcentrationLine(read.concentration)}
-            emptyText={MC_CELL_EMPTY}
-            testid="mc-concentration"
-          />
-          <LabelRow
-            rowLabel={MC_ROW_BALANCE}
-            info={MC_TIP_BALANCE}
-            display={mcDisplay(MC_BALANCE_DISPLAY, read.balance_label)}
-            scalar={mcBalanceLine(read.balance)}
-            emptyText={MC_CELL_EMPTY}
-            testid="mc-balance"
-          />
-          {/* Center of mass — a scalar-only row by design (no label, no threshold). */}
-          <Box sx={{ mb: 1 }} data-testid="mc-com">
-            <CaptionLabel label={MC_ROW_COM} info={MC_TIP_COM} />
-            <Typography
-              variant="body1"
-              sx={{ fontWeight: 600, fontFamily: MONO }}
-              data-testid="mc-com-value"
-            >
-              {mcComLine(read.center_of_mass_distance)}
-            </Typography>
-          </Box>
-          <BasisLine
-            text={mcShapeBasis(read.spot_basis, read.eligible_strikes)}
-            testid="mc-shape-basis"
-          />
-        </>
-      )}
-    </SubCard>
-  );
-}
-
-/** Flow vs positioning · today — two independently-nullable sub-components + the pinned
- *  unsigned/no-side flow-basis line (always visible with the card). */
-function FlowCard({ read }: { read: FlowVsPositioningRead | null }) {
-  return (
-    <SubCard title={MC_FLOW_TITLE} info={MC_TIP_FLOW_CARD} testid="mc-flow">
-      {read == null ? (
-        <EmptyLine text={MC_FLOW_EMPTY} testid="mc-flow-empty" />
-      ) : (
-        <>
-          <LabelRow
-            rowLabel={MC_ROW_LOCATION}
-            info={MC_TIP_LOCATION}
-            display={
-              read.location == null ? null : mcDisplay(MC_LOCATION_DISPLAY, read.location.label)
-            }
-            scalar={read.location == null ? undefined : mcLocationLine(read.location)}
-            emptyText={MC_LOCATION_ROW_EMPTY}
-            testid="mc-location"
-          />
-          <LabelRow
-            rowLabel={MC_ROW_COMPOSITION}
-            info={MC_TIP_COMPOSITION}
-            display={
-              read.composition == null
-                ? null
-                : mcDisplay(MC_COMPOSITION_DISPLAY, read.composition.label)
-            }
-            scalar={read.composition == null ? undefined : mcCompositionLine(read.composition)}
-            emptyText={MC_COMPOSITION_ROW_EMPTY}
-            testid="mc-composition"
-          />
-          <BasisLine text={MC_FLOW_BASIS} testid="mc-flow-basis" />
-        </>
-      )}
-    </SubCard>
-  );
-}
-
-/** One ATR horizon row: label kept; a null horizon shows the muted cell text — NEVER `$0` / `0%`. */
-function AtrRow({
-  rowLabel,
-  horizon,
+/**
+ * One compact context-band cell: the family's own title (+ its card-level ⓘ) as caption, ONE
+ * headline label/value/scalar row (the null-copy props), then the family's basis line — the design's
+ * `label / value / one-line basis` shape (`desk.mjs:43`'s `ctx-2` cells). `whole == null` degrades the
+ * ENTIRE cell (no basis, no scalar); `rowEmptyText` degrades only the value slot when the family read
+ * exists but this one field does not.
+ */
+function CompactCell({
+  title,
+  info,
   testid,
+  rowTestid,
+  whole,
+  wholeEmptyText,
+  display,
+  scalar,
+  rowEmptyText,
+  basisText,
 }: {
-  rowLabel: string;
-  horizon: AtrHorizon | null;
+  title: string;
+  info: string;
   testid: string;
+  /** The single retained row's own testid — kept identical to the pre-repair per-row `LabelRow`/
+   *  `AtrRow` testid (`mc-trend` / `mc-concentration` / `mc-location` / `mc-atr-14d`) so the
+   *  null-matrix spec's per-row slots need no rename, only a smaller matrix. */
+  rowTestid: string;
+  whole: unknown;
+  wholeEmptyText: string;
+  display: string | null;
+  scalar?: string;
+  rowEmptyText: string;
+  basisText: string;
 }) {
   return (
-    <Box sx={{ mb: 1 }} data-testid={testid}>
-      <CaptionLabel label={rowLabel} />
-      {horizon == null ? (
-        <EmptyLine text={MC_CELL_EMPTY} testid={`${testid}-empty`} />
+    <Box data-testid={testid} sx={{ minWidth: 0 }}>
+      <CaptionLabel label={title} info={info} />
+      {whole == null ? (
+        <Box sx={{ mt: 0.75 }}>
+          <EmptyLine text={wholeEmptyText} testid={`${testid}-empty`} />
+        </Box>
       ) : (
-        <Typography
-          variant="body1"
-          sx={{ fontWeight: 600, fontFamily: MONO }}
-          data-testid={`${testid}-value`}
-        >
-          {mcAtrLine(horizon)}
-        </Typography>
+        <Box sx={{ mt: 0.75 }} data-testid={rowTestid}>
+          {display == null ? (
+            rowEmptyText === MC_CELL_EMPTY ? (
+              <EmptyFigureCell testid={`${rowTestid}-empty`} />
+            ) : (
+              <EmptyLine text={rowEmptyText} testid={`${rowTestid}-empty`} />
+            )
+          ) : (
+            <>
+              <Typography
+                variant="body1"
+                sx={{ fontWeight: 600 }}
+                data-testid={`${rowTestid}-label`}
+              >
+                {display}
+              </Typography>
+              {scalar && (
+                <Typography variant="body2" sx={{ color: 'text.secondary', fontFamily: MONO }}>
+                  {scalar}
+                </Typography>
+              )}
+            </>
+          )}
+        </Box>
       )}
+      {whole != null && <BasisLine text={basisText} testid={`${testid}-basis`} />}
     </Box>
   );
 }
 
-/** Average true range — three independently-nullable horizons + the as-of/close basis line. The
- *  card-level ⓘ carries the ATR tooltip (method + never-a-stop framing). */
-function AtrCard({ read }: { read: AtrRead | null }) {
+/** Trend & momentum — the direction headline (Strength/Momentum drop from the compact cell). */
+function TrendCell({ read }: { read: TrendMomentumRead | null }) {
   return (
-    <SubCard title={MC_ATR_TITLE} info={MC_TIP_ATR_CARD} testid="mc-atr">
-      {read == null ? (
-        <EmptyLine text={MC_ATR_EMPTY} testid="mc-atr-empty" />
-      ) : (
-        <>
-          <AtrRow rowLabel={MC_ROW_ATR_5D} horizon={read.atr_5d} testid="mc-atr-5d" />
-          <AtrRow rowLabel={MC_ROW_ATR_14D} horizon={read.atr_14d} testid="mc-atr-14d" />
-          <AtrRow rowLabel={MC_ROW_ATR_30D} horizon={read.atr_30d} testid="mc-atr-30d" />
-          <BasisLine
-            text={mcAtrBasis(read.as_of_session, read.close_basis)}
-            testid="mc-atr-basis"
-          />
-        </>
-      )}
-    </SubCard>
+    <CompactCell
+      title={MC_ROW_TREND}
+      info={MC_TIP_TI_CARD}
+      testid="mc-ti"
+      rowTestid="mc-trend"
+      whole={read}
+      wholeEmptyText={MC_TI_EMPTY}
+      display={
+        read?.direction == null ? null : mcDisplay(MC_DIRECTION_DISPLAY, read.direction.label)
+      }
+      rowEmptyText={MC_TREND_ROW_EMPTY}
+      basisText={read ? mcTiBasis(read.as_of_session) : ''}
+    />
+  );
+}
+
+/** Gamma profile shape — the concentration headline (Balance/center-of-mass drop from the compact cell). */
+function ShapeCell({ read }: { read: GexProfileShapeRead | null }) {
+  return (
+    <CompactCell
+      title={MC_SHAPE_SHORT}
+      info={MC_TIP_SHAPE_CARD}
+      testid="mc-shape"
+      rowTestid="mc-concentration"
+      whole={read}
+      wholeEmptyText={MC_SHAPE_EMPTY}
+      display={read == null ? null : mcDisplay(MC_CONCENTRATION_DISPLAY, read.concentration_label)}
+      rowEmptyText={MC_CELL_EMPTY}
+      basisText={read ? mcShapeBasis(read.spot_basis, read.eligible_strikes) : ''}
+    />
+  );
+}
+
+/** Flow vs positioning · today — the location headline (Composition drops from the compact cell). */
+function FlowCell({ read }: { read: FlowVsPositioningRead | null }) {
+  return (
+    <CompactCell
+      title={MC_FLOW_SHORT}
+      info={MC_TIP_FLOW_CARD}
+      testid="mc-flow"
+      rowTestid="mc-location"
+      whole={read}
+      wholeEmptyText={MC_FLOW_EMPTY}
+      display={read?.location == null ? null : mcDisplay(MC_LOCATION_DISPLAY, read.location.label)}
+      rowEmptyText={MC_LOCATION_ROW_EMPTY}
+      basisText={MC_FLOW_BASIS}
+    />
+  );
+}
+
+/** Average true range · 14-day — the 14d headline (5d/30d drop from the compact cell). */
+function AtrCell({ read }: { read: AtrRead | null }) {
+  return (
+    <CompactCell
+      title={MC_ATR_SHORT}
+      info={MC_TIP_ATR_CARD}
+      testid="mc-atr"
+      rowTestid="mc-atr-14d"
+      whole={read}
+      wholeEmptyText={MC_ATR_EMPTY}
+      display={read?.atr_14d == null ? null : mcAtrLine(read.atr_14d)}
+      scalar={undefined}
+      rowEmptyText={MC_CELL_EMPTY}
+      basisText={read ? mcAtrBasis(read.as_of_session, read.close_basis) : ''}
+    />
   );
 }
 
 export function MarketContext({ pack }: Props) {
   return (
-    <Widget
-      id="market-context"
-      title={MC_TITLE}
-      subtitle={MC_SUBTITLE}
-      info={MC_INFO}
-      span={2}
-      bodyVariant="inset"
-    >
+    <Widget id="market-context" title={MC_TITLE} subtitle={MC_SUBTITLE} info={MC_INFO}>
       <Box data-testid="market-context">
         {pack == null ? (
-          // Whole-pack null (L5) ≡ missing key: the shell + ONE muted line. No sub-cards, no
+          // Whole-pack null (L5) ≡ missing key: the shell + ONE muted line. No cells, no
           // advisory footer (nothing to frame), NO 0, NO error screen.
           <EmptyLine text={MC_WHOLE_EMPTY} testid="mc-whole-empty" />
         ) : (
           <>
+            {/* F2 — one card, a 2×2 of values (`desk.mjs:43`'s `ctx-2`), not four full sub-cards. */}
             <Box
               sx={{
                 display: 'grid',
-                // Intrinsically responsive (the DealerPositioning/DealerFlowProjection idiom): four
-                // across when wide, 2×2 at medium, single column narrow — NEVER a `@container`
-                // object key in sx (this Emotion version silently drops it; the dealer-flow post-QA
-                // catch pinned the `auto-fit`/`minmax` idiom).
-                gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
                 gap: 2,
               }}
             >
-              <TrendMomentumCard read={pack.trend_momentum} />
-              <ShapeCard read={pack.gex_profile_shape} />
-              <FlowCard read={pack.flow_vs_positioning} />
-              <AtrCard read={pack.atr} />
+              <TrendCell read={pack.trend_momentum} />
+              <ShapeCell read={pack.gex_profile_shape} />
+              <FlowCell read={pack.flow_vs_positioning} />
+              <AtrCell read={pack.atr} />
             </Box>
 
             {/* Widget-level advisory footer — always present with a non-null pack (Default + L1–L4);

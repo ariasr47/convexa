@@ -12,10 +12,12 @@
  * module paths directly; a barrel re-export would blind the scan. (The old hero motif was DELETED
  * at stage 2 — absorbed into the landing's HeroCurve moment.)
  */
+export { AccessibleHelp } from './AccessibleHelp';
 export { ComingSoonBox, type ComingSoonBoxProps } from './ComingSoonBox';
 export { ComingSoonBadge, ComingSoonCard, type ComingSoonCardProps } from './ComingSoonCard';
 export { ErrorBoundary, type ErrorBoundaryProps, type ErrorBoundaryVariant } from './ErrorBoundary';
 export { Jargon, type JargonProps } from './Jargon';
+export { PanelContainer, panelContainerSx, type PanelContainerProps } from './PanelContainer';
 export { Refused, type RefusedProps } from './Refused';
 export { TintChip } from './TintChip';
 export { ValueCard, type ValueCardProps } from './ValueCard';

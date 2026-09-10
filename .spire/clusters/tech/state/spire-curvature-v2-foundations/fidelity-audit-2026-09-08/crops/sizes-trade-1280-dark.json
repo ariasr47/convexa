@@ -1,0 +1,66 @@
+{
+  "app:nav": {
+    "w": 1280,
+    "h": 65
+  },
+  "app:hero": {
+    "w": 1152,
+    "h": 410
+  },
+  "app:read-strip": {
+    "w": 1152,
+    "h": 201
+  },
+  "app:ai-read": {
+    "w": 568,
+    "h": 910
+  },
+  "app:live-tape": {
+    "w": 1152,
+    "h": 192
+  },
+  "app:masthead": {
+    "w": 1152,
+    "h": 273
+  },
+  "app:dealer-flow": {
+    "w": 1152,
+    "h": 116
+  },
+  "app:market-context": {
+    "w": 1152,
+    "h": 116
+  },
+  "design:nav": {
+    "w": 1280,
+    "h": 56
+  },
+  "design:masthead": {
+    "w": 1280,
+    "h": 186
+  },
+  "design:hero": {
+    "w": 1203,
+    "h": 488
+  },
+  "design:read-strip": {
+    "w": 1203,
+    "h": 112
+  },
+  "design:ai-read": {
+    "w": 793,
+    "h": 701
+  },
+  "design:live-tape": {
+    "w": 396,
+    "h": 295
+  },
+  "design:dealer-flow": {
+    "w": 392,
+    "h": 267
+  },
+  "design:market-context": {
+    "w": 392,
+    "h": 267
+  }
+}

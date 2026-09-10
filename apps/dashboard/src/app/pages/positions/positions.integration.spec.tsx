@@ -494,8 +494,9 @@ describe('degraded states (AC-38, AC-39, AC-40, AC-42)', () => {
     // The number is STILL THERE — last-known, dimmed, MARKED. Never blanked, never replaced.
     const plAfter = (within(rows()[0]).getByTestId('cell-pl').textContent ?? '').trim();
     expect(plAfter.startsWith(plBefore)).toBe(true);
-    expect(plAfter).toContain('⏸ offline'); // the marker is APPENDED, the figure is untouched
-    expect(screen.getAllByText(/⏸ offline/).length).toBeGreaterThan(0);
+    // The marker is the declared stroke icon + a caption, APPENDED — the figure is untouched.
+    expect(plAfter).toContain('offline · last known');
+    expect(document.querySelectorAll('svg[data-testid="PauseIcon"]').length).toBeGreaterThan(0);
     // Static cells are byte-identical: no dim, no marker, no class change.
     expect(within(rows()[0]).getByTestId('cell-contract').className).toBe(staticBefore.contract);
     expect(within(rows()[0]).queryByTestId('cell-max-loss')?.className ?? null).toBe(
@@ -520,7 +521,8 @@ describe('degraded states (AC-38, AC-39, AC-40, AC-42)', () => {
 
     pushLive({ mid: 253 }); // auto-reconnect
     await waitFor(() => expect(screen.queryByTestId('offline-banner')).toBeNull());
-    expect(screen.queryAllByText(/⏸ offline/)).toHaveLength(0);
+    expect(screen.queryAllByText('offline · last known')).toHaveLength(0);
+    expect(document.querySelectorAll('svg[data-testid="PauseIcon"]')).toHaveLength(0);
     vi.useRealTimers();
   });
 });

@@ -5,7 +5,9 @@ export default {
   ...config,
   use: {
     ...config.use,
-    launchOptions: { args: ['--disable-gpu'] },
+    // `--disable-lcd-text`: subpixel (LCD) text anti-aliasing varied between runs on the linux runner
+    // (5 px on scanner-dense symbol cells, 2026-09-09); grayscale AA rasterises text deterministically.
+    launchOptions: { args: ['--disable-gpu', '--disable-lcd-text'] },
   },
   testDir: './src/quality',
   testMatch: ['visual.spec.ts'],

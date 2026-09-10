@@ -170,7 +170,12 @@ describe('R8 · the broker book on a multi-ticker page', () => {
     rerender(<Book positions={[AAPL_SHARES, TSLA_SHARES]} streamOffline />);
     await settle();
     // Dimmed but PRESENT (`[live-vs-static-isolation]`), and NOT re-derived from the focused price.
-    expect(plTexts()).toEqual(['⏸ +$1000', '⏸ +$120']);
+    // The declared stroke icon replaces the retired `⏸` glyph (criterion 29) — query the rendered
+    // icon, never the character, so a weakened assertion cannot pass against its `aria-hidden` markup.
+    expect(plTexts()).toEqual(['+$1000', '+$120']);
+    for (const pl of screen.getAllByTestId('broker-pl')) {
+      expect(pl.querySelector('svg[data-testid="PauseIcon"]')).toBeTruthy();
+    }
 
     // …and the reconnect restores the live read without a reload.
     rerender(<Book positions={[AAPL_SHARES, TSLA_SHARES]} />);

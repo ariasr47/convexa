@@ -1,0 +1,92 @@
+[
+  {
+    "n": 1,
+    "role_here": "you raised this",
+    "raised_by": "architect",
+    "source": "ux",
+    "quote": "**Required:** on a drop, that cell shows the structure flip labelled `Gamma flip` with its structure caption (distance line + as-of), or the bare-offline arm — never `last known`.",
+    "why": "The diagnosis is correct and I accept it (see `agree`), but the prescription is written against pre-latch code and, applied literally after the latch lands, deletes ruling 2's arm A for the one `LiveTape` cell that can genuinely retain a value. Ruling 2 makes the latch this phase's debt: once a last-non-null latch exists, the gamma-flip cell on a drop HAS a real retained stream value — the last live-recomputed flip — and the honest render of that is 50% opacity + pause mark + `offline · last known`. A blanket 'never `last known`' on that cell forbids the correct post-latch render. Worse, the substitute ux prescribes introduces a third fabrication shape: `PROJECT_CONTEXT.md` §3 and ux's own CI-4 establish that the structure flip and the live-recomputed flip are legitimately different numbers, so swapping the structure flip in under a cell labelled `Gamma flip · live` shows the trader a different measurement under the live label at the exact moment the stream died.",
+    "proposal": "Split the requirement by latch state, which is the same two arms ruling 2 already names. Pre-latch (today's defect): `:190`'s `retained: flipValue != null` is wrong and must go — no `last known` over a bundle fallback. Post-latch (this phase's ship state): `:96`'s `?? m.gamma_flip` fallback is removed from the RETAINED computation, `retained` is keyed on the latched last-non-null STREAM flip only, and `last known` renders exactly when that latch is non-empty and never otherwise. The cell keeps its `Gamma flip · live` label with ux's CI-4 sub-copy naming the structure flip it differs from. Arm B (latch empty — no stream flip ever arrived this symbol view) renders the bare vocabulary member with the pause mark and no `last known` words, which is the render ux is actually protecting."
+  },
+  {
+    "n": 2,
+    "role_here": "you raised this",
+    "raised_by": "architect",
+    "source": "ux",
+    "quote": "| A6 | cooldown / daily cap | body | A1–A4, A7–A8 | disabled control naming the wait in Mono + the cap footnote; last read still pinned |",
+    "why": "A6 folds two shipped, independently-produced states into one render case with one marker. `presentationPolicy.ts:16-17` declares `cooldown` and `daily_cap` as two distinct members of `AiRecRequestState`, and `ai-rec/copy.ts` already ships non-synonymous copy for each — `cooldownLabel` at `:167` (`Cooling down · {remaining}s`) and `capTitle` at `:169` (`Daily AI limit reached — resets {when}`), plus `retryInCooldown` at `:186` versus `retryWhenReset` at `:187`. Under ux's own UX-28 the test asserts each of the nine RENDER CASES renders its own marker, and UX-34 explicitly delegates the distinctness to UX-28 ('the distinctness itself is UX-28's test'). If cooldown and cap are one case, nothing tests that they differ — a build that renders a capped user a countdown passes the whole ux set. That directly contradicts pm's AC-50, which requires them non-synonymous and ship-adjacent, and it is the ruling-3 collapse shape at a smaller scale: a shipped distinction disappearing into a presentational union.",
+    "proposal": "Keep ux's three-axis composition model — it is right and I adopt it — but split A6 into A6a `cooldown` and A6b `daily_cap`, each with its own marker keyed on the shipped copy constants, and let the canon-16 'nine' be nine NAMES rather than nine cases. The mapping stays total via my §2.5 mechanism: one `(requestState, resultState) -> ReadLayout` function with a `never` default arm, so the split costs one union member and no new test idiom."
+  },
+  {
+    "n": 3,
+    "role_here": "you raised this",
+    "raised_by": "architect",
+    "source": "ux",
+    "quote": "`containerName: 'panel'` (the phase-1 mechanism handed to R4) is applied to the hero, the strip and the AI panel, so `FigureCell`'s existing 20 → 17 → 15 container steps work inside a rail without me specifying a second sizing rule.",
+    "why": "Applying `containerName: 'panel'` AT the strip is the specific way the container ladder dies on the strip, and it fails silently at desktop. `FigureCell.tsx:216-217` queries `theme.containerQueries('panel').down(360)` and `.down(280)`; CSS resolves `@container panel` against the NEAREST ancestor bearing that name. `Widget.tsx:163` and `PanelContainer.tsx:16-17` are the only two declarations of that name in the app (verified this round). If the strip is one `Widget`, the nearest named ancestor of all eight cells is the panel body — roughly 1280px at desktop — so every cell renders at the 20px base and none ever steps to 17 or 15, at any viewport. The strip's own width is never the queried width. This is not a second sizing rule; it is the same rule resolving against the wrong box.",
+    "proposal": "Declare the name at the CELL, not the strip: wrap each strip cell in the shipped `PanelContainer` (same name, nested — the nearest-ancestor rule does the work, no new axis, no edit to `FigureCell`'s query or to `type-floor.spec.tsx`'s AC-20a assertion). The same correction applies to ux's bottom sheet, which MUI portals to `document.body` and which therefore severs container ancestry unless its root re-declares the name. `[lane-check]` stands from my R1: jsdom does not evaluate container queries, so a unit test can assert the DECLARATION only — the stepping behaviour is provable in the browser layer at a real width, never in the unit suite."
+  },
+  {
+    "n": 4,
+    "role_here": "you raised this",
+    "raised_by": "architect",
+    "source": "ux",
+    "quote": "On a drop, every static figure, the field, the ladder's four structure rows and the whole quiet band are byte-identical and un-dimmed",
+    "why": "Two problems, both about the word 'field'. (a) It contradicts ux's own UX-42 and H3: the field's drift must STOP on a drop, so the field is by design not identical across a drop. A build satisfying UX-42 red-builds UX-11 and vice versa. (b) 'byte-identical' is unobservable for the field by any shipped harness. `StructureFieldCanvas.tsx` paints to a Canvas2D context and the directory contains zero `aria-`, `role=` or visually-hidden text (grepped this round, no matches); `live-dot-census.spec.tsx:171` counts DOM nodes and `single-motion-moment.spec.ts:54-55` scans for literal `@keyframes` names, so neither can see a canvas pixel. An AC nobody can run is the phase-1 GATE-Q shape wearing the phase-1 GATE-Q label.",
+    "proposal": "Scope the byte-identical clause to what has DOM text — the strip's static cells, the ladder's four structure rows, and the quiet band — where a text-content assertion is real and cheap. State the field's obligation separately and in its own terms: on a drop the curve, the wall lines and the flip line keep their last computed geometry and are not dimmed, while trail, drift, beam and sweep stop. Prove that with my §1 mechanism (extract the paint step into a pure function of `(model, ctx, now, reduced)` and drive it against a recording fake 2D context: `live: false` -> zero trail points, zero particle `arc()` calls, zero sweep gradient fills, non-zero level strokes), because that is the only mechanism on the table that can observe the canvas at all."
+  },
+  {
+    "n": 5,
+    "role_here": "you raised this",
+    "raised_by": "architect",
+    "source": "ux",
+    "quote": "A null level keeps its row, renders the closed literal in Sans with no distance value, and never renders `$—`",
+    "why": "The first and third clauses are right; the middle one leaves a hole in a column. 'No distance value' means an empty cell in the distance column, and an empty cell in a column is indistinguishable from a render bug — the failure `[absent-is-not-none]` exists to name. ux's own CI-9 already accepts that an absent distance gets a literal, not a blank: it requires the MID row's distance cell to render `—`. The two rows are then treated inconsistently — the mid row's absent distance is typed, the null level's absent distance is blank — with no mechanism distinguishing them.",
+    "proposal": "The null level's distance cell renders the same not-applicable member the mid row uses (`—`), for the same reason: the distance is undefined because the level is, not because the computation failed. `distanceToLevel.ts:24-25` already returns `null` when either input is missing, so this is a caller choice at the ladder, not a change to the helper. No tenth member is requested; rule 24's closure at nine holds."
+  },
+  {
+    "n": 6,
+    "role_here": "you raised this",
+    "raised_by": "architect",
+    "source": "pm",
+    "quote": "At 393, 834, 900 and 1280 in both schemes, the desk has no horizontal page overflow.",
+    "why": "The shipped suite does not run three of those eight combinations, and it declines to on purpose. `no-overflow.spec.ts:43-45` records the decision in terms — 'ONE SCHEME for the wider bands, deliberately: horizontal overflow is box geometry and dark/light change no widths' — and 393 keeps both schemes 'because that is where content is tightest'. The e2e manifest confirms the shipped shape: `manifest.json` carries `393px no-overflow · dark scheme` AND `393px no-overflow · light scheme` entries, but `tablet 834 no-overflow · dark scheme` (`:604`) with no light-scheme counterpart at 834, 900 or 1280 (grepped this round: no `light scheme` title after the 393 block). So AC-78 and AC-24 as written are either (a) certified against a suite that never ran half of what they claim — the exact 'green suite that lies' pm's own risk 9 names — or (b) a silent doubling of the wide-band matrix that reverses a documented decision. The BRIEF carries the same error ('the no-overflow suite stays green at 393 / 834 / 900 / 1280 in both schemes'), and ux's UX-20 and UX-50 inherit it.",
+    "proposal": "Write the criterion to the suite's actual shape: both schemes at 393; one scheme at 834, 900 and 1280. If the owner wants light at the wide bands, that is a deliberate reversal of `no-overflow.spec.ts:43-45` and belongs in the build report as a change to the suite's design, with the widened matrix's runtime cost named. Either way the row must be provable with `npx playwright test --list` before GATE Q, not with a passing summary — `playwright.config.ts` is an explicit `testMatch` allowlist and an unregistered spec reports green by never running."
+  },
+  {
+    "n": 7,
+    "role_here": "you raised this",
+    "raised_by": "architect",
+    "source": "pm",
+    "quote": "834 added to the standing overflow suite — **phase 4**.",
+    "why": "Wrong on a checkable fact, and the same error appears in pm's Scope-Out ('the responsive sweep that adds 834 to the overflow suite — **phase 4**') and in the BRIEF ('the landing, the site pages and the responsive sweep that adds 834 to the overflow suite are phase 4'). 834 is ALREADY in the standing suite: `no-overflow.spec.ts:51` declares `{ label: 'tablet 834', width: 834, height: 1112 }` inside `WIDE_VIEWPORTS`, and `:48-50` records it as a v2 addition made against canon rule 17. `manifest.json:604` pins six shipped `tablet 834 no-overflow · dark scheme` cases (one per route). It shipped in phase 1. The BRIEF is wrong on this and so is the canon's phase assignment.",
+    "proposal": "Delete the future-dated row and the Scope-Out clause; replace both with the true obligation, which is smaller: 834 is already green and this phase must KEEP it green through the desk rebuild. Note the coupling my §6 flagged — `no-overflow.spec.ts:398` uses `page.getByText('Call wall').first()` as the readiness anchor for `/ticker/TSLA` at every width, and this phase deletes `DealerPositioning`, which renders that text today. The ladder keeps the exact label word (decisions §2: 'the side is in the label words'), so the anchor survives — but deliberately, not by luck. A rename reds ~12 e2e cases for a reason nobody will connect to a copy change."
+  },
+  {
+    "n": 8,
+    "role_here": "you raised this",
+    "raised_by": "architect",
+    "source": "pm",
+    "quote": "Every non-mid row shows its distance from the mid; the mid row shows no distance.",
+    "why": "Unsatisfiable against shipped code without changing every number the trader has read for months, and self-contradictory with canon 14's own liveness clause. The shipped anchor is the levels spot, not the mid: `_kit/distanceToLevel.ts:11-14` (`levelSpot`) prefers `gex_spot` and falls back to `price`, and `DealerPositioning.tsx:61` uses exactly that. `copy.ts:318` labels `gex_spot` as 'levels spot' with the comment 'NOT spot — the levels anchor is not the live display price'. These are different numbers by construction: `gex_spot` is the last session close when the market is closed and live in RTH; `price` is the live/delayed display spot. Anchoring the column on the mid also makes all four structure rows recompute on every tick — five live rows — which canon 14 forbids in the same sentence that AC-16 is drawn from. ux reached the same conclusion independently at CI-9 and routed the canon wording as a product amendment; the AC text itself is a factual correction, not a preference.",
+    "proposal": "AC-16 becomes: every non-mid row shows its distance from the ladder's declared anchor (the levels spot, `gex_spot` else `price`), the ladder names that anchor once (pm's AC-17 already requires this), and the mid row's distance cell renders the not-applicable member rather than a computed zero — zero would assert the mid equals the structure anchor, which it usually does not. The canon rule 14 wording amendment is ux's product conflict and I do not re-raise it here."
+  },
+  {
+    "n": 9,
+    "role_here": "this is against your position",
+    "raised_by": "pm",
+    "source": "architect",
+    "quote": "The strip renders eight cells at every state; an unavailable metric is an `unavailable` cell, not a missing one.",
+    "why": "This is right in general and wrong for the eighth cell, and my AC-26 makes the same mistake in the same direction — so I am withdrawing my row's coverage of off-exchange in the same breath. ux CI-6 verified against PROJECT_CONTEXT §5 that the off-exchange object is omitted BOTH when `INCLUDE_DARK_POOL=false` and when the best-effort computation fails, and both arrive at the frontend as the same absent object. With the `apps/api` diff required to be empty this phase, the frontend cannot tell 'we did not look' from 'we looked and failed'. `unavailable` asserts a cycle that ran and produced nothing — a claim the app cannot observe. So the architect's rule, applied to that cell, fabricates a cause; ux's answer (cell absent) recreates `[absent-is-not-none]` in the scroll axis, because at 393px a cell that is not there is indistinguishable from a cell that scrolled off the rail — which is ux's own risk 5. Both lanes are right about the other's failure and neither has proposed the render that is true under both causes.",
+    "proposal": "Keep the architect's structural rule — eight fixed slots at every state, no reflow, which is what AC-26 and ux's S4 both need — and let the off-exchange slot render the vocabulary member whose meaning is 'the feed did not send it', which is true whether the flag disabled it or the computation failed and asserts nothing about which. Ruling 3 settles that the caller picks the member and the type enforces only closure, so this needs no tenth member and no new copy branch. The 'attempted vs failed' wire discriminator is booked as named debt with a phase attached, per ux CI-6. My AC-26 is rewritten to require the member the app can honestly claim rather than a specific literal."
+  },
+  {
+    "n": 10,
+    "role_here": "this is against your position",
+    "raised_by": "ux",
+    "source": "architect",
+    "quote": "Position: it is either **deleted** (the chip already says it) or demoted to a **per-figure provenance mark** driven by the one predicate, exactly as rule 18's chip-scoping clarification permits for the `FigureCell` dot.",
+    "why": "The second option cannot be exercised on this desk. Rule 13's provenance mark is a **dot plus a visually-hidden word** (`FigureCell.tsx:129-148`), not a visible word — so 'demoted to a per-figure provenance mark' means the word disappears either way. Worse, the datum that word describes is the mid, and the mid already gets exactly one provenance mark inside the same panel: the ladder's mid row (canon 14, my CI-7 / UX-14). Demoting `TapePulseStrip.tsx:199` to a mark therefore puts two provenance marks on one value inside one frame, which reads as two claims about one number — and 'Live' is connection vocabulary in the hero, which is exactly what CI-7 keeps off the ladder row.",
+    "proposal": "Delete the word, do not demote it. The mid's label is `Mid` unconditionally (a label, not a claim); its liveness is carried by the ladder mid row's single per-figure dot; its basis is stated once in the hero head ('levels are REST structure (as-of {age}) · the mid is tape'). If the tape-trail row needs its own truth marker on a drop, it uses the pause mark and my H3 caption (the trail froze), never the word 'Live'."
+  }
+]

@@ -20,11 +20,16 @@ import { elevationFor } from '@/shared/theme/tokens';
 import type { Expiration, LiveUpdate, MarketState, Signals } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
+import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { useEffect, useRef, useState } from 'react';
+import { ConnectionChip } from '../../connection/ConnectionChip';
+import { connectionStateFor } from '../../connection/connectionState';
+import { LivenessAnnouncer } from '../../connection/LivenessAnnouncer';
 import type { SessionTapeOccupancy } from '../../sessionTapeStanding';
 import { QuickSymbols } from './QuickSymbols';
-import { TintChip as StatusChip, TickerHeader, connectionChip } from './TickerHeader';
+import { TickerHeader } from './TickerHeader';
 import { TickerToolbar } from './TickerToolbar';
 
 /** Shared with Widget frames — one elevation/radius language for deck ↔ board. */
@@ -70,6 +75,10 @@ interface CommandDeckProps {
   routeSymbol: string;
   /** Chip click — parent navigates + syncs input (same path as submit). */
   onSelectQuickSymbol: (symbol: string) => void;
+  /** Ticker fidelity repair, change 3 (F3) — the quick row's trailing `Universe member · N tracked
+   *  names` note (`useUniverseMembership`'s `size`, pre-formatted by the caller); `null` for a
+   *  nonmember/unknown symbol or before the universe read resolves (no invented count). */
+  universeMemberNote?: string | null;
 }
 
 /** The slim condensed bar shown once the deck has scrolled out of view — restores mark · ticker ·
@@ -93,7 +102,12 @@ function StickyCondensed({
   selected: string[] | null;
   reduced: boolean;
 }) {
-  const conn = connectionChip(live, streamOffline, reduced, m.ticker, lastSessionPhase);
+  const connState = connectionStateFor({
+    live,
+    streamOffline,
+    routeSymbol: m.ticker,
+    lastSessionPhase,
+  });
   const numbersActive = displayActive || isLive;
   const price = (numbersActive && live ? live.mid : m.price)?.toFixed(2);
   const expLabel =
@@ -104,9 +118,7 @@ function StickyCondensed({
     <Box
       data-testid="deck-sticky"
       sx={(t) => ({
-        position: 'sticky',
-        top: 0,
-        zIndex: 5,
+        // `position: sticky` lives on the PARENT (`deck-sticky-reveal`) now — see its comment.
         display: 'flex',
         alignItems: 'center',
         gap: 1.25,
@@ -134,16 +146,7 @@ function StickyCondensed({
       >
         {m.ticker} · ${price}
       </Typography>
-      {conn && (
-        <StatusChip
-          tone={conn.tone}
-          label={conn.text}
-          tip={conn.tip}
-          dot={conn.dot}
-          pulse={conn.pulse}
-          warnIcon={conn.warnIcon}
-        />
-      )}
+      <ConnectionChip state={connState} live={live} routeSymbol={m.ticker} reduced={reduced} />
       <Typography
         variant="caption"
         sx={{
@@ -187,9 +190,21 @@ export function CommandDeck(props: CommandDeckProps) {
     loading,
     routeSymbol,
     onSelectQuickSymbol,
+    universeMemberNote,
   } = props;
 
   const reduced = useReducedMotion();
+  const theme = useTheme();
+  // PASS 2 change 9 — the masthead's controls join the headline row at ≥ laptop (1100), the SAME
+  // breakpoint authority `TickerHeader.tsx`'s own `xs: column / sm: row` hero-row switch already
+  // uses (`theme.breakpoints`), generalized to the next named token up (`theme.ts`'s `laptop: 1100`
+  // — the same token `TickerDashboard.tsx`'s context-band grid already keys off). Below 1100, keep
+  // today's stacked order (tier 1 → tier 2 → tier 3) unchanged. `useMediaQuery` degrades to `false`
+  // when `window.matchMedia` is absent (jsdom, most unit tests — `ai-rec/ReadSheet.tsx`'s own
+  // established idiom for this exact kind of width-driven placement switch) — every pre-existing
+  // CommandDeck/TickerHeader test keeps exercising the below-1100 (today's) arrangement unless it
+  // explicitly stubs `matchMedia`.
+  const controlsJoinHeadline = useMediaQuery(theme.breakpoints.up('laptop'));
   // Reveal the condensed bar only once the full deck has scrolled out of view. IntersectionObserver is
   // the progressive toggle; when unavailable (older/jsdom) OR reduced-motion, the bar simply never
   // fades — it just pins when present. We keep it MOUNTED-but-hidden vs unmounted to avoid layout jump.
@@ -205,15 +220,64 @@ export function CommandDeck(props: CommandDeckProps) {
     return () => io.disconnect();
   }, []);
 
+  const connState = connectionStateFor({
+    live,
+    streamOffline,
+    routeSymbol: m.ticker,
+    lastSessionPhase,
+  });
+
+  // PASS 2 change 9 — ONE `TickerToolbar` element; its `inline` prop and its MOUNT POINT below are
+  // both keyed off `controlsJoinHeadline`, so it is never mounted twice (no duplicate ids/testids)
+  // — exactly one of the two slots (inside `TickerHeader`, or tier 2 on its own) ever renders it.
+  const toolbar = (
+    <TickerToolbar
+      symbol={symbol}
+      onSymbolChange={onSymbolChange}
+      onSubmitSymbol={onSubmitSymbol}
+      expirations={expirations}
+      allDates={allDates}
+      selected={selected}
+      checked={checked}
+      onSelectExpirations={onSelectExpirations}
+      persona={persona}
+      onOpenCustomize={onOpenCustomize}
+      loading={loading}
+      embedded
+      inline={controlsJoinHeadline}
+    />
+  );
+
   return (
     <>
+      {/* The ONE page-scoped `aria-live` region (SPEC §2.4) — mounted ONCE and ALWAYS, above BOTH
+          chip renderers below, so it never announces twice while `condensed` keeps both mounted,
+          and its EMPTY initial mount (text arrives via a later state update) is what makes the
+          announcement fire reliably. Neither chip renderer owns its own region. */}
+      <LivenessAnnouncer state={connState} live={live} />
+
       {/* The condensed bar lives above the deck so it pins to the top of the scroll container. It is
-          revealed (opacity/height) only after the deck scrolls past; reduced-motion → instant. */}
+          revealed (opacity/height) only after the deck scrolls past; reduced-motion → instant.
+          `position: sticky` lives HERE, not on `StickyCondensed`'s own root, on purpose: a sticky
+          element can never render outside its CONTAINING BLOCK's own box (MDN "position: sticky" —
+          "confined to its containing block"). This wrapper's containing block is the tall,
+          page-length `<Box>` `TickerDashboard.tsx` renders it inside (deck + the full widget bento
+          board) — plenty of room for the sticky range to span the whole scroll. Its OLD home (the
+          inner `deck-sticky` Box, still just below) sits inside a wrapper whose OWN unstuck box is
+          at most ~64px tall once condensed, positioned right above the (much taller) deck — by the
+          time a real scroll had gone far enough for the hand-off sentinel to fire, that ~64px box
+          had already scrolled fully out of view, so the "sticky" child had no containing block left
+          to render within and silently rendered off-screen at its stale in-flow position — a real,
+          measured defect (curvature-v2-foundations AC-1a; confirmed via a live-browser geometry probe,
+          not asserted). */}
       <Box
         aria-hidden={!condensed}
         data-testid="deck-sticky-reveal"
         data-reduced={reduced ? 'true' : 'false'}
         sx={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 5,
           overflow: 'hidden',
           maxHeight: condensed ? 64 : 0,
           opacity: condensed ? 1 : 0,
@@ -237,27 +301,30 @@ export function CommandDeck(props: CommandDeckProps) {
         )}
       </Box>
 
-      {/* Deck surface — same elevation ladder + radius as Widget frames (NOT a third shadow dialect). */}
+      {/* Deck surface — ticker fidelity repair, change 3 (F3): the masthead is BARE ON THE INK
+          (`design/src/screens/desk.mjs:255-288`'s `.mast`), not a raised panel — no border, no
+          paper fill, no elevation, no radius (that chrome used to make it 273px tall on its own,
+          `FIDELITY_AUDIT.md` F3). Vertical padding only (matches `.mast`'s own 20px/12px); the
+          outer page `Container` already supplies the horizontal gutter every other section on this
+          page shares, so this deck adds no horizontal padding of its own. `StickyCondensed` above
+          keeps its OWN raised-panel treatment on purpose — it is a pinned overlay, not the masthead. */}
       <Box
         data-testid="command-deck"
-        sx={(t) => ({
+        sx={{
           position: 'relative',
-          borderRadius: DECK_RADIUS,
-          border: `1px solid ${t.palette.divider}`,
-          // Stage-3 §4.1: neutral top sheen only (no amber wash). Light mode needs no sheen.
-          backgroundColor: t.palette.background.paper,
-          backgroundImage:
-            t.palette.mode === 'dark'
-              ? 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 42%)'
-              : 'none',
-          boxShadow: elevationFor(t).e1,
-          // Tight hand-off into the board: elevation + this margin only (no divider-fog gradient).
           mb: 1.5,
-          p: { xs: 2, sm: 2.5 },
-        })}
+          pt: 2.5,
+          pb: 1.5,
+        }}
       >
-        <Stack spacing={2}>
-          {/* Tier 1 — hero identity row (regime + connection chips, anchor, meta line, CTA). */}
+        {/* Ticker fidelity repair, change 3 (F3) close-out: `spacing={2}` (16px) between all three
+            tiers — 32px of pure gap — was sized for THIS masthead's own visual grouping, not the
+            design's (`.mast-row` merges tier 1+2 into one row, `desk.mjs:256-274`, so the design has
+            only ONE such gap, before `.quick`). Tightened, not removed — the tiers stay three
+            visually distinct groups. */}
+        <Stack spacing={1.5}>
+          {/* Tier 1 — hero identity row (regime + connection chips, anchor, meta line, controls +
+              CTA at ≥ laptop — PASS 2 change 9 — CTA alone below it). */}
           <TickerHeader
             m={m}
             sig={sig}
@@ -273,26 +340,20 @@ export function CommandDeck(props: CommandDeckProps) {
             onSignIn={onSignIn}
             freshness={freshness}
             singleNameCaveat={singleNameCaveat}
+            inlineControls={controlsJoinHeadline ? toolbar : null}
           />
 
-          {/* Tier 2 — the segmented control strip (one instrument panel). */}
-          <TickerToolbar
-            symbol={symbol}
-            onSymbolChange={onSymbolChange}
-            onSubmitSymbol={onSubmitSymbol}
-            expirations={expirations}
-            allDates={allDates}
-            selected={selected}
-            checked={checked}
-            onSelectExpirations={onSelectExpirations}
-            persona={persona}
-            onOpenCustomize={onOpenCustomize}
-            loading={loading}
-            embedded
-          />
+          {/* Tier 2 — the segmented control strip (one instrument panel), below 1100 only; at
+              ≥ laptop the SAME `toolbar` element (see above `const`) renders inside `TickerHeader`
+              instead — never both, `controlsJoinHeadline` gates each slot exclusively. */}
+          {!controlsJoinHeadline && toolbar}
 
           {/* Tier 3 — Quick symbols row (pins + durable recents). Not on sticky bar. */}
-          <QuickSymbols currentSymbol={routeSymbol} onSelect={onSelectQuickSymbol} />
+          <QuickSymbols
+            currentSymbol={routeSymbol}
+            onSelect={onSelectQuickSymbol}
+            note={universeMemberNote}
+          />
         </Stack>
       </Box>
 

@@ -24,7 +24,7 @@ cover the Council plus the two executioners + QA.
 > pack's contents — relaying it by value routes the whole pack through the caller's own context. Opt-in;
 > the whole file stays valid + single-source. Decouples per-session token cost from canon size.
 
-> **Per-role sessions (system-4):** Codex emits all nine canonical role definitions under `.codex/agents/`. Each role runs in a fresh, role-scoped session. This host has no per-agent tool allowlists, so role restrictions remain instruction-held. The installed `.codex/hooks.json` fence blocks structured write-tool targets outside the workspace root; it does not parse shell command strings.
+> **Per-role sessions (system-4):** Codex emits all nine canonical role definitions under `.codex/agents/`. Each role runs in a fresh, role-scoped session. This adapter does not install verified per-agent tool restrictions, so role restrictions remain instruction-held. The installed `.codex/hooks.json` fence blocks structured write-tool targets outside the workspace root; it does not parse shell command strings.
 
 Placeholders to fill before pasting:
 - `{FEATURE}` = kebab folder name under `.spire/clusters/tech/contracts/` (e.g. `user-auth-flow`).

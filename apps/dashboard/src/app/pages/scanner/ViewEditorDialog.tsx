@@ -8,6 +8,7 @@
  * whose SERVER answer is the boundary of record. Nothing is written locally here — the dialog holds
  * only draft state and closes only when the server echoed a save.
  */
+import { MONO_FACE } from '@/shared/figure';
 import {
   getScanUniverse,
   type ScanDensity,
@@ -24,7 +25,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useEffect, useMemo, useState } from 'react';
-import { MONO } from './ScanCells';
 import { SCAN_COPY } from './labels';
 
 export interface ViewEditorDialogProps {
@@ -44,7 +44,7 @@ const symbolButtonSx = (selected: boolean) => ({
   borderColor: selected ? 'primary.main' : 'divider',
   background: 'transparent',
   color: selected ? 'text.primary' : 'text.secondary',
-  fontFamily: MONO.fontFamily,
+  ...MONO_FACE,
   fontSize: '0.78rem',
   fontWeight: 600,
   borderRadius: '7px',
@@ -177,7 +177,7 @@ export function ViewEditorDialog({
               data-symbol={symbol}
               sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}
             >
-              <Box component="span" sx={{ ...MONO, fontSize: '0.82rem', minWidth: 64 }}>
+              <Box component="span" sx={{ ...MONO_FACE, fontSize: '0.82rem', minWidth: 64 }}>
                 {symbol}
               </Box>
               <Box

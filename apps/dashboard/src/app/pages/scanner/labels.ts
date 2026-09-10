@@ -21,12 +21,19 @@ export const SCAN_COPY = {
     'One dense read of the tracked universe — which ticker deserves the deep-dive right now. ' +
     'Structure is a snapshot; see methodology for how it is built.',
   methodologyLink: 'How structure is computed',
-  /** The two-speed basis, always above the table (UX §2.1). */
-  cadenceHeader: 'Prices live · structure ~3 min · hot names sooner',
+  /** The two-speed basis, always above the table (UX §2.1). Reworded under curvature-v2-surfaces
+   *  OWNER ruling D-A (`council/decisions.md` §4): neither this header nor its gloss below may
+   *  assert liveness in any connection state — "per tick" names the price CADENCE without claiming
+   *  a tick is arriving now, parallel to the structure cadence; separator, order and third clause
+   *  are byte-identical to the shipped string (SPEC §4.2, CF-1). */
+  cadenceHeader: 'Prices per tick · structure ~3 min · hot names sooner',
+  /** D-A, CONDUCTOR-widened (SPEC §4.2): the opening liveness sentence is gone; the rest — cadence
+   *  and basis only — stands. The word "live" may stand inside the closing DENIAL ("rather than a
+   *  live read") — the criterion bans the assertion, not the token. */
   cadenceGloss:
-    'Prices stream live. The options structure — score, tier, flip and walls — re-computes about ' +
-    'every 3 minutes, and names that just moved re-compute sooner, so those numbers are a recent ' +
-    'snapshot rather than a live read.',
+    'Prices change tick by tick. The options structure — score, tier, flip and walls — re-computes ' +
+    'about every 3 minutes, and names that just moved re-compute sooner, so those numbers are a ' +
+    'recent snapshot rather than a live read.',
   /** Shown in place of the header when the price stream drops: the figures stay, dimmed, and say
    *  why. Never blanks a row — the structure below is unaffected. */
   cadenceHeaderOffline: 'Prices offline · showing last known · structure ~3 min',
@@ -77,31 +84,32 @@ export const SESSION_LABEL: Record<MarketSessionPhase, string> = {
   closed: 'Closed',
 };
 
-/** Filter chip options — wire enums for tier/vol; numeric thresholds for score/flip. */
+/**
+ * Filter chip PRESETS — wire enums for tier/vol; numeric thresholds for score/flip.
+ *
+ * Pruned to the design's seven (`design/src/screens/scanner.mjs:77`, `Prime · Actionable · Watch ·
+ * Score ≥ 70 · |Flip| ≤ 1% · IV cheap · IV rich`) from the shipped thirteen (surfaces fidelity
+ * repair, change 4 / F8). This is a PRESET-LIST change only, never a capability change: `tier` /
+ * `minScore` stay bare `string | null` / `number | null` on `ScanFilters` (`format.ts`), so
+ * `dormant` / `neutral` / `50` / `30` / `2` / `5` remain perfectly valid filter STATE — they simply
+ * have no dedicated preset button any more, exactly as the design draws. Not part of `SCAN_COPY`,
+ * so untouched by CF-1's frozen-copy scan (`scanner.register.spec.tsx`'s `cf1Offenders`) — that
+ * scan enumerates `SCAN_COPY`'s own keys only, and these four arrays are separate exports.
+ */
 export const TIER_FILTER_OPTIONS = [
   { value: 'prime', label: 'Prime' },
   { value: 'actionable', label: 'Actionable' },
   { value: 'watch', label: 'Watch' },
-  { value: 'dormant', label: 'Dormant' },
 ] as const;
 
 export const VOL_FILTER_OPTIONS = [
-  { value: 'iv_rich', label: 'IV rich' },
   { value: 'iv_cheap', label: 'IV cheap' },
-  { value: 'neutral', label: 'Neutral' },
+  { value: 'iv_rich', label: 'IV rich' },
 ] as const;
 
-export const SCORE_FILTER_OPTIONS = [
-  { value: 70, label: 'Score ≥70' },
-  { value: 50, label: 'Score ≥50' },
-  { value: 30, label: 'Score ≥30' },
-] as const;
+export const SCORE_FILTER_OPTIONS = [{ value: 70, label: 'Score ≥70' }] as const;
 
-export const FLIP_FILTER_OPTIONS = [
-  { value: 1, label: '|Flip| ≤1%' },
-  { value: 2, label: '|Flip| ≤2%' },
-  { value: 5, label: '|Flip| ≤5%' },
-] as const;
+export const FLIP_FILTER_OPTIONS = [{ value: 1, label: '|Flip| ≤1%' }] as const;
 
 /**
  * index-first-defaults AC-3 — the CLOSED lead-group membership for the scanner's zero-state (no
@@ -175,7 +183,11 @@ export const COLUMN_LABELS: Record<ScanColumn, string> = {
   vol_regime: 'Vol',
   flip: 'Flip',
   walls: 'Walls',
-  updated: 'Updated',
+  // design/src/screens/scanner.mjs:23 — the "As-of" / per-row age column (surfaces fidelity repair,
+  // change 4/F8). The KEY, testids (`scan-th-updated`/`cell-updated`) and `updatedText()`'s own
+  // copy are unchanged — only this display label moves; STATUS stays its own column (folding it
+  // into this one is a bigger structural change than this label rename and is not built here).
+  updated: 'As-of',
   status: 'Status',
 };
 
@@ -259,6 +271,33 @@ function closed(map: Record<string, string>, value: string | null | undefined): 
 export const tierLabel = (v: string | null | undefined) => closed(TIER_LABEL, v);
 export const regimeLabel = (v: string | null | undefined) => closed(REGIME_LABEL, v);
 export const volRegimeLabel = (v: string | null | undefined) => closed(VOL_REGIME_LABEL, v);
+
+/**
+ * U-6 (SPEC §2.7 (i)) — a closed-lookup MISS ("the wire sent an enum this build does not know") is
+ * a fact this build can observe, and it is NOT the same fact as a genuine absence (`null`). The
+ * `closed()` helper above collapses both into `null` for `whyThisRow`'s driver text, where the
+ * distinction doesn't matter; the atoms that render tier/regime/vol on the row need to tell them
+ * apart, so this is an ADDITION beside `closed()`, not a replacement of it.
+ */
+export type ClosedLookupResult =
+  { kind: 'value'; text: string } | { kind: 'absent' } | { kind: 'miss' };
+
+function closedLookup(
+  map: Record<string, string>,
+  value: string | null | undefined,
+): ClosedLookupResult {
+  if (value == null) return { kind: 'absent' };
+  return Object.prototype.hasOwnProperty.call(map, value)
+    ? { kind: 'value', text: map[value] }
+    : { kind: 'miss' };
+}
+
+export const tierLookup = (v: string | null | undefined): ClosedLookupResult =>
+  closedLookup(TIER_LABEL, v);
+export const regimeLookup = (v: string | null | undefined): ClosedLookupResult =>
+  closedLookup(REGIME_LABEL, v);
+export const volLookup = (v: string | null | undefined): ClosedLookupResult =>
+  closedLookup(VOL_REGIME_LABEL, v);
 
 /**
  * "Why this row" — 1–2 plain-language score drivers.

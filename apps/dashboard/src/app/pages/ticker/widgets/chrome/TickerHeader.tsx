@@ -19,9 +19,9 @@ import {
 } from '@/features/trading/positions/FaultedBanner';
 import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import { extrasFor } from '@/shared/theme/tokens';
 import { Refused } from '@/shared/ui/Refused';
 import type { LiveUpdate, MarketState, Signals } from '@convexa/api';
-import WarningAmber from '@mui/icons-material/WarningAmber';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Skeleton from '@mui/material/Skeleton';
@@ -29,18 +29,16 @@ import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
+import type { ReactNode } from 'react';
+import { ConnectionChip } from '../../connection/ConnectionChip';
+import { connectionStateFor } from '../../connection/connectionState';
 import { useLiveTape } from '../../liveTapeStore';
-import {
-  consumeStanding,
-  sessionTapeChip,
-  sessionTapeOf,
-  type SessionTapeOccupancy,
-} from '../../sessionTapeStanding';
+import { sessionTapeOf, type SessionTapeOccupancy } from '../../sessionTapeStanding';
+import { TICKER_BUNDLE_POLL_MS } from '../../useTickerBundle';
 import {
   LAST_TRADE_NO_TAPE_PRINT,
   LAST_TRADE_REPLAY_TOOLTIP,
   LAST_TRADE_TOOLTIP,
-  OFFLINE_CHIP_TOOLTIP,
   SINGLE_NAME_CAVEAT,
 } from '../_kit/copy';
 import { FreshnessLine } from './FreshnessLine';
@@ -49,24 +47,29 @@ const REGIME_TIP =
   'Positive gamma: dealers dampen moves → range-bound, fade extremes. Negative gamma: dealers ' +
   "amplify moves → trending, don't fade.";
 
-/** Tinted status chip (Figma: colored text on a subtle same-color tint). `neutral` = muted grey.
- *  Optional leading `dot` (the ●/○ split out of the label) that **pulses** when `pulse` — the live
- *  breathing indicator (only in the genuine live state; static otherwise + under reduced motion). */
+/** A dim `·` divider between second-line meta items (design: `desk.mjs`'s `<span class="dim">·`). */
+function MetaDot() {
+  return (
+    <Typography component="span" variant="body2" aria-hidden sx={{ color: 'text.disabled' }}>
+      ·
+    </Typography>
+  );
+}
+
+/**
+ * Tinted status chip (Figma: colored text on a subtle same-color tint). `neutral` = muted grey.
+ * Used for the REGIME chip only — the connection chip moved to its own `ConnectionChip` renderer
+ * (curvature-v2-foundations, SPEC §2.4), taking the `liveDotPulse` keyframe with it (this is no
+ * longer that declaration's home; nothing here ever needs a dot or a warn icon).
+ */
 export function TintChip({
   tone,
   label,
   tip,
-  dot,
-  pulse,
-  warnIcon,
 }: {
   tone: 'success' | 'error' | 'info' | 'warning' | 'neutral';
   label: string;
   tip?: string;
-  dot?: string;
-  pulse?: boolean;
-  /** DESIGN_SYSTEM: warning.* + icon always when label has no leading ⚠. */
-  warnIcon?: boolean;
 }) {
   const chip = (
     <Box
@@ -74,7 +77,6 @@ export function TintChip({
       sx={(t) => ({
         display: 'inline-flex',
         alignItems: 'center',
-        gap: dot || warnIcon ? 0.5 : 0,
         px: 1,
         py: '3px',
         borderRadius: '999px',
@@ -89,27 +91,6 @@ export function TintChip({
             : alpha(t.palette[tone].main, 0.16),
       })}
     >
-      {warnIcon && <WarningAmber aria-hidden sx={{ fontSize: 12, color: 'warning.main' }} />}
-      {dot && (
-        <Box
-          component="span"
-          aria-hidden
-          sx={
-            pulse
-              ? {
-                  display: 'inline-block',
-                  animation: 'liveDotPulse 1.6s ease-in-out infinite',
-                  '@keyframes liveDotPulse': {
-                    '0%, 100%': { opacity: 1, transform: 'scale(1)' },
-                    '50%': { opacity: 0.45, transform: 'scale(1.3)' },
-                  },
-                }
-              : { display: 'inline-block' }
-          }
-        >
-          {dot}
-        </Box>
-      )}
       {label}
     </Box>
   );
@@ -171,7 +152,9 @@ export function LastTradeReadout({
           <Typography
             component="span"
             variant="body2"
-            sx={{ color: 'text.secondary', opacity: dim ? 0.5 : 1 }}
+            // PR #46 CI repair, §A — a SOLID dim token replaces `opacity` on text (never opacity: it
+            // composites with whatever sits behind it and cannot carry a contrast guarantee).
+            sx={(t) => ({ color: dim ? extrasFor(t).textDim : t.palette.text.secondary })}
             data-testid="last-trade"
           >
             {LAST_TRADE_NO_TAPE_PRINT}
@@ -184,7 +167,10 @@ export function LastTradeReadout({
         <Typography
           component="span"
           variant="body2"
-          sx={[{ color: 'text.secondary', opacity: dim ? 0.5 : 1 }, flashColorSx(ltFlash)]}
+          sx={[
+            (t) => ({ color: dim ? extrasFor(t).textDim : t.palette.text.secondary }),
+            flashColorSx(ltFlash),
+          ]}
           data-testid="last-trade"
         >
           <Box component="span" sx={{ color: 'text.secondary' }}>
@@ -203,7 +189,8 @@ export function LastTradeReadout({
           component="span"
           variant="body2"
           data-testid="last-trade"
-          sx={{ color: 'text.secondary', opacity: 0.5 }}
+          // PR #46 CI repair, §A — solid `textDim`, never opacity (see the `st` branch above).
+          sx={(t) => ({ color: extrasFor(t).textDim })}
         >
           {lt != null ? `⏸ Last trade $${lt.toFixed(2)}` : 'Last trade — no recent print'}
         </Typography>
@@ -241,106 +228,6 @@ export function LastTradeReadout({
   );
 }
 
-// Session-aware live status: explains WHY there are (or aren't) live ticks. Stream-DRIVEN — drives
-// the header's connection-status chip (NOT a user toggle).
-export function liveStatus(
-  live: LiveUpdate | null,
-): { color: 'info' | 'warning' | 'default'; label: string; tip: string } | null {
-  if (!live) return null;
-  const last = live.mid != null ? ` · mid $${live.mid.toFixed(2)}` : '';
-  // Closed wins over live.live — never ● live · closed (calendar does not write live:false).
-  if (live.market_session === 'closed') {
-    return {
-      color: 'default',
-      label: `○ market closed${last}`,
-      tip: 'Market is closed (weekend/holiday). Showing the last completed session.',
-    };
-  }
-  if (live.live) {
-    const s: Record<string, string> = {
-      premarket: 'pre-market',
-      regular: 'open',
-      afterhours: 'after-hours',
-      overnight: 'overnight',
-    };
-    return {
-      color: 'info',
-      label: `● live · ${s[live.market_session] ?? live.market_session} · $${live.mid?.toFixed(2)}`,
-      tip: `Streaming live ${live.feed} ticks.`,
-    };
-  }
-  if (live.market_session === 'overnight') {
-    return {
-      color: 'warning',
-      label: `○ overnight — no live data${last}`,
-      tip: 'Massive covers 4 AM–8 PM ET only; the 8 PM–4 AM overnight session is not provided, so this is the last close. Overnight-capable platforms (e.g. Webull) will show a different, live price.',
-    };
-  }
-  return {
-    color: 'warning',
-    label: `○ no live ticks${last}`,
-    tip: 'In a covered session but no ticks are arriving — the feed may be lagging.',
-  };
-}
-
-/**
- * connectionChip — resolves the SINGLE stream-driven connection chip from `live`/`streamOffline`.
- * Session-tape basis branches BEFORE liveStatus / live-offline. Unset-arm offline supersedes a
- * would-be live session (`[live-vs-static-isolation]`). Shared by the deck hero AND the sticky
- * condensed bar. `reduced` gates the live-dot pulse (genuine live only).
- */
-export function connectionChip(
-  live: LiveUpdate | null,
-  streamOffline: boolean,
-  reduced: boolean,
-  routeSymbol?: string,
-  lastPhase?: SessionTapeOccupancy['phase'] | null,
-): {
-  tone: 'info' | 'warning' | 'neutral';
-  text: string;
-  tip?: string;
-  dot?: string;
-  pulse: boolean;
-  warnIcon?: boolean;
-} | null {
-  const route = routeSymbol ?? live?.ticker ?? '';
-  const standing = consumeStanding({ live, streamOffline, routeSymbol: route, lastPhase });
-  if (standing.kind !== 's0') {
-    const st = sessionTapeOf(live);
-    if (!st) return null;
-    const chip = sessionTapeChip({
-      standing,
-      occupancy: st,
-      routeSymbol: route,
-      maxPx: 393,
-    });
-    return {
-      tone: chip.tone,
-      text: chip.text,
-      tip: chip.tip,
-      dot: chip.dot,
-      pulse: false,
-      warnIcon: chip.warnIcon,
-    };
-  }
-
-  const ls = liveStatus(live);
-  const label = streamOffline ? '⚠ Live offline — reconnecting…' : (ls?.label ?? null);
-  if (!label) return null;
-  const tone: 'info' | 'warning' | 'neutral' = streamOffline
-    ? 'warning'
-    : ls?.color === 'info'
-      ? 'info'
-      : ls?.color === 'warning'
-        ? 'warning'
-        : 'neutral';
-  const dot = label.startsWith('● ') || label.startsWith('○ ') ? label[0] : undefined;
-  const text = dot ? label.slice(2) : label;
-  const pulse = dot === '●' && tone === 'info' && !streamOffline && !reduced; // live only
-  // S0 path stays byte-identical — no new warning icon on unset-arm chips.
-  return { tone, text, tip: streamOffline ? OFFLINE_CHIP_TOOLTIP : ls?.tip, dot, pulse };
-}
-
 interface TickerHeaderProps {
   m: MarketState;
   sig: Signals | undefined;
@@ -371,6 +258,13 @@ interface TickerHeaderProps {
   singleNameCaveat?: boolean;
   /** Last vouched session_tape.phase — survives payload-gap for drop standing. */
   lastSessionPhase?: SessionTapeOccupancy['phase'] | null;
+  /**
+   * PASS 2 change 9 — at ≥ laptop (1100, `CommandDeck.tsx`'s `controlsJoinHeadline`) the toolbar's
+   * fields join this headline row's right region, ahead of the CTA (design: `desk.mjs:255-274`'s
+   * `.mast-controls`, fields then the one amber button). `null`/unset below 1100 — the caller
+   * (`CommandDeck`) decides placement; this component only reserves the slot, beside its own CTA.
+   */
+  inlineControls?: ReactNode;
 }
 
 export function TickerHeader({
@@ -388,9 +282,15 @@ export function TickerHeader({
   freshness,
   singleNameCaveat = false,
   lastSessionPhase = null,
+  inlineControls = null,
 }: TickerHeaderProps) {
   const reduced = useReducedMotion();
-  const conn = connectionChip(live, streamOffline, reduced, m.ticker, lastSessionPhase);
+  const connState = connectionStateFor({
+    live,
+    streamOffline,
+    routeSymbol: m.ticker,
+    lastSessionPhase,
+  });
   // Numbers follow tape mid when display-active OR genuine live (S0).
   const numbersActive = displayActive || isLive;
   const priceFlash = useFlashOnChange(numbersActive && live ? live.mid : null, {
@@ -408,35 +308,45 @@ export function TickerHeader({
         sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'flex-start' } }}
       >
         <Stack spacing={1} sx={{ minWidth: 0 }}>
-          {/* Status row — regime + the stream-driven connection chip (Figma 149:96). */}
-          {(sig?.regime || conn) && (
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
-            >
-              {sig?.regime && (
-                <TintChip
-                  tone={sig.regime === 'positive_gamma' ? 'success' : 'error'}
-                  label={sig.regime.replace('_', ' ')}
-                  tip={REGIME_TIP}
-                />
-              )}
-              {conn && (
-                <TintChip
-                  tone={conn.tone}
-                  label={conn.text}
-                  tip={conn.tip}
-                  dot={conn.dot}
-                  pulse={conn.pulse}
-                  warnIcon={conn.warnIcon}
-                />
-              )}
-            </Stack>
-          )}
+          {/* Ticker fidelity repair, change 3 (F3) — the design's chip row
+              (`design/src/screens/desk.mjs:264-272`'s `.mast-meta`): regime + the ONE stream-driven
+              connection chip + the last-trade readout, all on one row (last-trade MOVES here from
+              the old separate meta line — still the SAME `LastTradeReadout`, byte-identical states
+              and testid). The chip slot is UNCONDITIONAL (ruling 1 / AC-9): before the first stream
+              fact it renders the wordless placeholder, never nothing — so the row itself always
+              renders once mounted. */}
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
+          >
+            {sig?.regime && (
+              <TintChip
+                tone={sig.regime === 'positive_gamma' ? 'success' : 'error'}
+                label={sig.regime.replace('_', ' ')}
+                tip={REGIME_TIP}
+              />
+            )}
+            <ConnectionChip
+              state={connState}
+              live={live}
+              routeSymbol={m.ticker}
+              reduced={reduced}
+            />
+            <LastTradeReadout
+              live={live}
+              streamOffline={streamOffline}
+              displayActive={numbersActive}
+            />
+          </Stack>
 
-          {/* Headline ANCHOR (NBBO mid when live or display-active, else the static price). The last-trade
-            readout below is DISPLAY-ONLY and NEVER feeds this anchor (`live-spot=NBBO-mid`). Mono figure. */}
+          {/* Headline ANCHOR — SYMBOL + mid only (design: `SPY 573.12 +1.84 · +0.32%`). The bundle
+              carries no prior close, signed change or instrument name (`market_state` has
+              `price`/`gex_spot` only, checked against the saved real bundle) — the design's
+              `+1.84 · +0.32%` and `SPDR S&P 500 ETF` are OMITTED here, not faked and not rendered as
+              `—` (F3 — filed as an API follow-up in this folder's `RESUME.md`). The "levels @ ·
+              expirations" parenthetical moves to the second line below, matching the design. Mono
+              figure; last-trade is DISPLAY-ONLY and NEVER feeds this anchor (`live-spot=NBBO-mid`). */}
           <Typography variant="h1" sx={{ fontSize: 32, fontWeight: 700, lineHeight: 1.12 }}>
             <Box
               component="span"
@@ -444,51 +354,43 @@ export function TickerHeader({
             >
               {m.ticker} · ${(numbersActive && live ? live.mid : m.price)?.toFixed(2)}
             </Box>
-            <Typography
-              component="span"
-              variant="body2"
-              sx={{ color: 'text.secondary', ml: 1.25, fontWeight: 400 }}
-            >
-              (levels @ ${m.gex_spot?.toFixed(2)} ·{' '}
-              {selected === null
-                ? 'all expirations'
-                : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`}
-              )
-            </Typography>
           </Typography>
 
-          {/* META line — folds the SECONDARY last-trade readout (AC-LastTrade-4) with the relocated
-            REST-bundle freshness ("● Last trade $X · Structure as-of Ns"). Both stay subordinate to
-            the h1; last-trade degrades WITH the live tiles on a drop, freshness names STRUCTURE
-            (spine #4) and never the live stream. */}
+          {/* Second line (design: `Levels @ · Structure as-of · refreshes · All expirations`,
+              `desk.mjs:269-271`) — levels anchor, the relocated REST-bundle freshness (STRUCTURE,
+              spine #4, never the live stream), the documented ~60s bundle poll
+              (`useTickerBundle.ts`'s `TICKER_BUNDLE_POLL_MS`, not invented), then the expirations
+              count that used to live in the headline's parenthetical. */}
           <Stack
             direction="row"
             data-testid="deck-meta"
             sx={{ alignItems: 'center', flexWrap: 'wrap', columnGap: 1, rowGap: 0.25 }}
           >
-            <LastTradeReadout
-              live={live}
-              streamOffline={streamOffline}
-              displayActive={numbersActive}
-            />
+            {m.gex_spot != null && (
+              <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}>
+                Levels @ ${m.gex_spot.toFixed(2)}
+              </Typography>
+            )}
             {freshness && (
               <>
-                <Typography
-                  component="span"
-                  variant="body2"
-                  aria-hidden
-                  sx={{ color: 'text.disabled' }}
-                >
-                  ·
-                </Typography>
+                {m.gex_spot != null && <MetaDot />}
                 <FreshnessLine
                   snapshotIso={freshness.snapshotIso}
                   dataAgeSeconds={freshness.dataAgeSeconds}
                   refreshing={freshness.refreshing}
                   inline
                 />
+                <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}>
+                  · refreshes ~{Math.round(TICKER_BUNDLE_POLL_MS / 1000)}s
+                </Typography>
               </>
             )}
+            <MetaDot />
+            <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}>
+              {selected === null
+                ? 'All expirations'
+                : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`}
+            </Typography>
           </Stack>
 
           {/* index-first-defaults AC-4 — the single-name honesty caption, on the freshness/context
@@ -506,45 +408,66 @@ export function TickerHeader({
           )}
         </Stack>
 
-        {/* Persistent trade CTA (right-aligned) — primary action kept in the header, out of the
-            analysis flow. Opens the shipped simulated-trade entry dialog. */}
-        {onOpenTrade && (
+        {/* Right region — PASS 2 change 9: at ≥ laptop (1100) `inlineControls` (the toolbar's
+            Expirations/Persona fields, `CommandDeck.tsx`'s `controlsJoinHeadline`) joins this row
+            ahead of the CTA, matching the design's `.mast-controls` (`desk.mjs:274-278`: fields
+            then the one amber button, `align-items: center`). `null` below 1100 (or when the caller
+            passes nothing) — this wrapper then renders exactly as it always did, one child. */}
+        {(inlineControls || onOpenTrade) && (
           <Stack
+            direction="row"
+            spacing={1.5}
             sx={{
+              alignItems: 'center',
               flexShrink: 0,
-              // `flex-end` (not `stretch`): without it the notice's width would drag the CTA out
-              // into a full-width bar across the header — amber is spent exactly once on this page
-              // and a 800px slab of it is not that one spend.
-              alignItems: { xs: 'flex-start', sm: 'flex-end' },
-              alignSelf: { xs: 'flex-start', sm: 'auto' },
-              maxWidth: 460,
+              flexWrap: 'wrap',
+              justifyContent: 'flex-end',
+              rowGap: 1,
             }}
           >
-            {storeFaulted && <TickerFaultedNotice />}
-            {!tradeAllowed ? (
-              <Box sx={{ mt: 0.5, maxWidth: 360 }}>
-                <Refused
-                  actionLabel="+ Open simulated trade"
-                  reason="Sign in to open a paper position. No real order is ever sent."
-                  onSignIn={onSignIn}
-                  testId="open-sim-trade-refused"
-                />
-              </Box>
-            ) : (
-              <FaultedRefused when={storeFaulted}>
-                <Button
-                  variant="contained"
-                  size="small"
-                  onClick={onOpenTrade}
-                  data-testid="open-sim-trade"
-                  // At xs the CTA sits under the anchor on its own row (left-aligned, intrinsic width)
-                  // so its nowrap label can never force the viewport wider. Still THE one entry point
-                  // to the shared TradeEntryDialog (`[single-shared-sim-entry-dialog]`).
-                  sx={{ flexShrink: 0, whiteSpace: 'nowrap', mt: 0.5 }}
-                >
-                  + Open simulated trade
-                </Button>
-              </FaultedRefused>
+            {inlineControls}
+
+            {/* Persistent trade CTA (right-aligned) — primary action kept in the header, out of the
+                analysis flow. Opens the shipped simulated-trade entry dialog. */}
+            {onOpenTrade && (
+              <Stack
+                sx={{
+                  flexShrink: 0,
+                  // `flex-end` (not `stretch`): without it the notice's width would drag the CTA out
+                  // into a full-width bar across the header — amber is spent exactly once on this page
+                  // and a 800px slab of it is not that one spend.
+                  alignItems: { xs: 'flex-start', sm: 'flex-end' },
+                  alignSelf: { xs: 'flex-start', sm: 'auto' },
+                  maxWidth: 460,
+                }}
+              >
+                {storeFaulted && <TickerFaultedNotice />}
+                {!tradeAllowed ? (
+                  <Box sx={{ mt: 0.5, maxWidth: 360 }}>
+                    <Refused
+                      actionLabel="+ Open simulated trade"
+                      reason="Sign in to open a paper position. No real order is ever sent."
+                      onSignIn={onSignIn}
+                      testId="open-sim-trade-refused"
+                    />
+                  </Box>
+                ) : (
+                  <FaultedRefused when={storeFaulted}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={onOpenTrade}
+                      data-testid="open-sim-trade"
+                      // At xs the CTA sits under the anchor on its own row (left-aligned, intrinsic width)
+                      // so its nowrap label can never force the viewport wider. Still THE one entry point
+                      // to the shared TradeEntryDialog (`[single-shared-sim-entry-dialog]`).
+                      sx={{ flexShrink: 0, whiteSpace: 'nowrap', mt: 0.5 }}
+                    >
+                      + Open simulated trade
+                    </Button>
+                  </FaultedRefused>
+                )}
+              </Stack>
             )}
           </Stack>
         )}

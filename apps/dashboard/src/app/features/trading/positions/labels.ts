@@ -2,6 +2,7 @@
  * Display labels, microcopy, and formatters for the positions portfolio — verbatim from
  * UX_BLUEPRINT §2/§3/§4/§6. Pure strings + formatters; no side effects.
  */
+import { NO_BASIS_LABEL } from '@/shared/copy/notANumber';
 import type { MaxLossWithheldReason } from './maxLoss';
 import type { EntryBasis, EntryMode, PositionStatus } from './types';
 
@@ -53,7 +54,7 @@ export const PL_TIP =
 export const DELTA_ENTRY_TIP =
   'How far this position’s P/L has moved from your entry. Anchored to the entry price; it persists across reload and falls back to the last-known mark if the feed drops.';
 export const SESSION_DELTA_TIP =
-  'Change in this position’s P/L just over this browser session. It re-anchors fresh each reload and freezes (⏸) while the feed is offline — a short-term read, not a durable one.';
+  'Change in this position’s P/L just over this browser session. It re-anchors fresh each reload and freezes while the feed is offline — a short-term read, not a durable one.';
 export const TREND_TIP =
   'A small recent-trend line of this position’s P/L this session. In-browser only — it clears on reload and shows a gap (broken line), never a zero, while the feed is offline.';
 export const LIMIT_TIP =
@@ -122,8 +123,12 @@ export const NOT_RECORDED_TIP =
   "Convexa won't guess it. Nothing was deleted — the record is intact and still counted in your " +
   'history.';
 
-/** The `pl_pct` cell literal for `pl_pct_state.no_basis` — testid `cell-no-basis`. */
-export const NO_BASIS_LABEL = 'no basis';
+/**
+ * The `pl_pct` cell literal for `pl_pct_state.no_basis` — testid `cell-no-basis`. Re-pointed at the
+ * shared `NotANumber` closed union (`shared/copy/notANumber.ts`, PLAN U-3); re-exported under its
+ * existing name so no call site churns.
+ */
+export { NO_BASIS_LABEL };
 
 export const NO_BASIS_TIP =
   'This position opened at about no net debit or credit, so a percentage has nothing to measure ' +

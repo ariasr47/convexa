@@ -1,0 +1,202 @@
+{
+  "id": "scanner-dense-1440-dark",
+  "side": "app",
+  "surface": "scanner",
+  "state": "dense",
+  "width": 1440,
+  "scheme": "dark",
+  "url": "/scanner",
+  "pageHeight": 1800,
+  "contentBottom": 771,
+  "overflowX": false,
+  "scrollWidth": 1440,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "app-shell",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 771,
+      "text": "Skip to main contentCONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality"
+    },
+    {
+      "key": "skip-to-main",
+      "x": 0,
+      "y": -53,
+      "w": 158,
+      "h": 44,
+      "text": "Skip to main content"
+    },
+    {
+      "key": "top-nav",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 65,
+      "text": "CONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality-user@fixture.invali"
+    },
+    {
+      "key": "nav-search-trigger",
+      "x": 889,
+      "y": 14,
+      "w": 200,
+      "h": 36,
+      "text": "Jump to a ticker…⌘K"
+    },
+    {
+      "key": "scanner-page",
+      "x": 100,
+      "y": 65,
+      "w": 1240,
+      "h": 706,
+      "text": "ScannerOne dense read of the tracked universe — which ticker deserves the deep-d"
+    },
+    {
+      "key": "scan-session-strip",
+      "x": 124,
+      "y": 177,
+      "w": 457,
+      "h": 82,
+      "text": "ClosedPrices offline · showing last known · structure ~3 min · How structure is "
+    },
+    {
+      "key": "scan-toolbar",
+      "x": 124,
+      "y": 273,
+      "w": 1192,
+      "h": 48,
+      "text": "Default view3 namesEdit viewPrimeActionableWatchIV cheapIV richScore ≥70|Flip| ≤"
+    },
+    {
+      "key": "scan-filters",
+      "x": 372,
+      "y": 277,
+      "w": 535,
+      "h": 40,
+      "text": "PrimeActionableWatchIV cheapIV richScore ≥70|Flip| ≤1%"
+    },
+    {
+      "key": "scan-density",
+      "x": 917,
+      "y": 273,
+      "w": 187,
+      "h": 48,
+      "text": "CompactComfortable"
+    },
+    {
+      "key": "scan-worker-down",
+      "x": 124,
+      "y": 333,
+      "w": 1192,
+      "h": 48,
+      "text": "Sweep last ran 20688 d ago — showing the last known rows."
+    },
+    {
+      "key": "scan-table",
+      "x": 125,
+      "y": 394,
+      "w": 1190,
+      "h": 229,
+      "text": "SymbolPriceChg %Score ↓TierRegimeVolFlipWallsAs-ofStatusIndexes & megacapsSPY500"
+    },
+    {
+      "key": "scan-th-price",
+      "x": 199,
+      "y": 394,
+      "w": 252,
+      "h": 51,
+      "text": "Price"
+    },
+    {
+      "key": "scan-th-flip",
+      "x": 828,
+      "y": 394,
+      "w": 128,
+      "h": 51,
+      "text": "Flip"
+    },
+    {
+      "key": "scan-th-walls",
+      "x": 956,
+      "y": 394,
+      "w": 128,
+      "h": 51,
+      "text": "Walls"
+    },
+    {
+      "key": "scan-th-updated",
+      "x": 1084,
+      "y": 394,
+      "w": 161,
+      "h": 51,
+      "text": "As-of"
+    },
+    {
+      "key": "scan-group-header",
+      "x": 125,
+      "y": 445,
+      "w": 1190,
+      "h": 37,
+      "text": "Indexes & megacaps"
+    },
+    {
+      "key": "scan-row",
+      "x": 125,
+      "y": 482,
+      "w": 1190,
+      "h": 47,
+      "text": "SPY500.00offline · last known+1.20%90PrimePos γIV rich498.00+1.00%510.00+2.00%St"
+    },
+    {
+      "key": "scan-row",
+      "x": 125,
+      "y": 529,
+      "w": 1190,
+      "h": 47,
+      "text": "QQQ490.00offline · last known−0.40%78WatchPos γIV rich497.00+2.00%490.00−1.00%St"
+    },
+    {
+      "key": "scan-row",
+      "x": 125,
+      "y": 576,
+      "w": 1190,
+      "h": 47,
+      "text": "NVDA480.00offline · last known+1.20%66WatchPos γIV rich496.00+3.00%490.00−1.00%S"
+    },
+    {
+      "key": "scan-notes",
+      "x": 124,
+      "y": 640,
+      "w": 1192,
+      "h": 106,
+      "text": "How a score is builtProximity to the nearest wall or flip, IV vs HV stretch, act"
+    }
+  ],
+  "probes": {
+    "connectionState": null,
+    "skeletons": 0,
+    "monoElements": 30,
+    "sansElements": 55,
+    "archivoElements": 2,
+    "otherFontElements": 1,
+    "htmlBackground": "rgb(11, 15, 23)",
+    "bodyBackground": "rgb(11, 15, 23)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", Roboto, sans-serif",
+    "bodyFontSize": "15px",
+    "panelSelector": "top-nav",
+    "panelRadius": "0px",
+    "panelBackground": "rgba(19, 26, 36, 0.82)",
+    "panelBorder": "0px none rgba(0, 0, 0, 0)",
+    "monoFont": null,
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": false,
+    "plexSansLoaded": true,
+    "scrollHeight": 1800,
+    "scrollWidth": 1440,
+    "clientWidth": 1440
+  },
+  "panels": [],
+  "png": "app/scanner-dense-1440-dark.png"
+}

@@ -16,6 +16,7 @@
 - [ ] `OPEN_THREADS.md` — open items; **§9** promoted invariant pointers (boot-load §9 only)
 - [ ] `BACKLOG.md` — idea pool / GATE I discovery surface
 - [ ] `DESIGN_SYSTEM.md` — visual canon when Status: SET (UI work)
+- [ ] `design/` (repo root) — design source the canon points to: canvas, static site + `site/library.html`, `tokens/tokens.json` mirror; regenerate with `node design/src/build.mjs`
 
 ## Topics (on demand — not auto-loaded)
 > Add one bullet per file under `topics/`. Example:

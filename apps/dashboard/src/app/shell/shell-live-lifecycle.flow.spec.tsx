@@ -221,12 +221,15 @@ describe('live-lifecycle (centerpiece flow)', () => {
     await screen.findByText('Call wall');
     expect(openFor('TSLA').length).toBe(1);
 
-    // navigate-on-Enter to a new symbol (the relocated route prefix `/ticker/`).
-    const input = screen.getByLabelText('Ticker') as HTMLInputElement;
-    await user.clear(input);
-    await user.type(input, 'AAPL');
+    // Ticker fidelity repair, change 3 (F3) — the populated desk carries no bare ticker input
+    // (`TickerToolbar.tsx`'s own module doc); the palette (⌘K) is the ticker-entry job now, via its
+    // "open anyway" item (`CommandPalette.tsx`) for a plausible symbol the scan fixture doesn't
+    // carry a row for. Same navigate-on-activate path the old bare input used.
+    await user.keyboard('{Meta>}k{/Meta}');
+    await screen.findByTestId('command-palette');
+    await user.type(screen.getByTestId('palette-input'), 'AAPL');
     await act(async () => {
-      await user.keyboard('{Enter}');
+      await user.click(await screen.findByTestId('palette-open-anyway'));
     });
 
     await screen.findByText('Call wall');

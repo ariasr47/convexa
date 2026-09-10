@@ -2,6 +2,7 @@
  * Pure alert evaluation against a structure snapshot.
  * Does not fetch; callers pass ticker/scan fields.
  */
+import { LEVEL_LABEL } from './labels';
 import type { AlertEvent, AlertRule } from './types';
 
 export interface StructureSnap {
@@ -112,8 +113,13 @@ export function evaluateRule(
         const crossed =
           (mem.lastPrice < thr && price >= thr) || (mem.lastPrice > thr && price <= thr);
         if (crossed) {
+          // U-23a: a firing recorded after this phase builds its label from the SAME closed
+          // `LEVELS` lookup the rule row itself reads — a new event and its rule read the same
+          // words. (`rule.level` is always defined here: `levelValue` only returns non-null for a
+          // defined level, so this arm is unreachable with an absent level — 47d's `not recorded`
+          // fallback lives in the RULE SUMMARY, `AlertsPage.tsx`, not this firing path.)
           const label =
-            rule.level === 'price' ? `$${thr}` : (rule.level ?? 'level').replace('_', ' ');
+            rule.level === 'price' ? `$${thr}` : rule.level ? LEVEL_LABEL[rule.level] : 'level';
           event = {
             id: `ev_${now}_${rule.id}`,
             ruleId: rule.id,

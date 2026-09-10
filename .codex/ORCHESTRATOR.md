@@ -582,7 +582,7 @@ referencing files rather than pasting them.
   `.codex/tools/interface_conformance.mjs` runs the live backend's response against the
   `## Conformance spec` embedded in `INTERFACE_CONTRACT.md` — proving the BE emits the fields the
   interface promises (= what the FE consumes). A conformance FAIL bounces to Backend (GATE Z).
-- **Lane separation via subagents (system-4) + workspace fence (system-4b):** each role runs in a fresh, role-scoped session. This host has no per-agent tool sets, but its installed `.codex/hooks.json` PreToolUse hook runs `.codex/tools/path_guard.js` and blocks structured writes outside the workspace root. (Project module-boundary tooling may add independent checks where configured. Per-role intra-lane restrictions remain instruction-held because this host has no per-agent tool allowlists.)
+- **Lane separation via subagents (system-4) + workspace fence (system-4b):** each role runs in a fresh, role-scoped session. This Spire adapter does not install per-agent tool restrictions; its installed `.codex/hooks.json` PreToolUse hook runs `.codex/tools/path_guard.js` and blocks structured writes outside the workspace root. (Project module-boundary tooling may add independent checks where configured. Per-role intra-lane restrictions remain instruction-held in this adapter; current vendor configuration controls require a task-shaped Spire trial before being claimed as lane enforcement.)
 - **Ground-truth retrieval (system-5):** a session may load the minimal context pack via
   `node .codex/tools/gates.mjs context_for {FEATURE} --write` instead of re-reading all of
   `PROJECT_CONTEXT.md` (selected from the BRIEF's `Context tags:` + the section shard tags). This writes

@@ -20,6 +20,7 @@ import { AUTH_COPY } from '@/features/auth/copy';
 import { useGate } from '@/features/auth/useGate';
 import { EntryPrefill } from '@/features/trading/TradeEntryDialog';
 import { BrokerTabPanel } from '@/features/trading/broker/BrokerTabPanel';
+import { extrasFor } from '@/shared/theme/tokens';
 import type { LiveUpdate, TickerBundle } from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -110,20 +111,24 @@ export function PortfolioPanel({
     void gate.guard(AUTH_COPY.positions.gateSaveView, run, { serverGate: gate.simTradeGate });
   };
 
-  const tabSx = (active: boolean, activeColor: string, inactiveColor: string) => ({
+  // Segmented pill (design/src/screens/positions.mjs:69, `.pos-tools .seg`): `Simulated | Live ·
+  // read-only`. Same testids/handlers as the shipped underline tabs — this is a visual re-skin
+  // only (canon rule 21's quiet-panel idiom applied to a control, not a value primitive).
+  const segTabSx = (active: boolean) => (theme: { palette: { mode: string } }) => ({
     cursor: 'pointer',
-    border: 'none',
-    background: 'none',
+    border: '1px solid',
+    borderColor: active ? 'divider' : 'transparent',
+    background: active ? extrasFor(theme).panelRaised : 'transparent',
     font: 'inherit',
-    fontSize: '0.9rem',
+    fontSize: '0.82rem',
     fontWeight: 600,
-    padding: '10px 4px',
-    color: active ? activeColor : inactiveColor,
-    borderBottom: '2px solid',
-    borderColor: active ? 'primary.main' : 'transparent',
+    padding: '7px 13px',
+    borderRadius: '7px',
+    color: active ? 'text.primary' : 'text.secondary',
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '7px',
+    whiteSpace: 'nowrap' as const,
   });
 
   return (
@@ -134,14 +139,28 @@ export function PortfolioPanel({
         '& [data-testid^="tr-family-empty-"]': { color: 'text.secondary !important' },
       }}
     >
-      {/* Underline tabs — directly under the page header (no outer Card chrome). */}
-      <Box sx={{ display: 'flex', borderBottom: '1px solid', borderColor: 'divider', mt: '20px' }}>
+      {/* Plain buttons, deliberately no `role="tab"`/`tablist`: this is a VISUAL re-skin (a segmented
+          pill, not an ARIA tab panel pair) — inventing an incomplete tablist pattern (no `aria-controls`,
+          no roving tabindex) would be a NEW axe finding this task does not own. */}
+      <Box
+        sx={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '3px',
+          bgcolor: (t) => extrasFor(t).panelRaised,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: '9px',
+          padding: '3px',
+          mt: '20px',
+        }}
+      >
         <Box
           component="button"
           type="button"
           onClick={() => setTab('simulated')}
           data-testid="tab-simulated"
-          sx={tabSx(tab === 'simulated', 'primary.main', 'text.secondary')}
+          sx={segTabSx(tab === 'simulated')}
         >
           Simulated
           <Box
@@ -166,7 +185,7 @@ export function PortfolioPanel({
           onClick={() => setTab('live')}
           data-testid="tab-live"
           onFocus={revealFocusedControl}
-          sx={{ ...tabSx(tab === 'live', 'primary.main', 'text.secondary'), ml: '18px' }}
+          sx={segTabSx(tab === 'live')}
         >
           Broker
         </Box>

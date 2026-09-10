@@ -12,10 +12,32 @@
  */
 import { extrasFor } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
+import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { CommandPalette } from './CommandPalette/CommandPalette';
 import { TopNav } from './TopNav';
 
 export function AppShell() {
+  // (v2) The ⌘K palette — mounted ONCE in the shell so "one keystroke anywhere" holds on every
+  // in-shell route (SPEC §2.6). NOT mounted on `/` — landing sits outside AppShell (canon rule 19
+  // scopes the palette to the shell). Fires REGARDLESS of what currently holds focus — including a
+  // text field (AC-33 requires the palette to open while a field holds unsaved text) — because
+  // ⌘K/Ctrl-K is never a text-INSERTION key in any browser or OS; unlike a plain letter, it carries
+  // no risk of "fighting" a form field, so no typing-target guard is needed (or correct: VS Code /
+  // Linear / Notion all fire their palette shortcut from inside a focused field the same way).
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const isOpenShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k';
+      if (isOpenShortcut) {
+        event.preventDefault();
+        setPaletteOpen(true);
+      }
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   return (
     <Box
       data-testid="app-shell"
@@ -67,7 +89,8 @@ export function AppShell() {
       >
         Skip to main content
       </Box>
-      <TopNav />
+      <TopNav onOpenPalette={() => setPaletteOpen(true)} />
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       {/* The active in-shell page renders here, inside the app's ONE `<main>` landmark (Stage 0
           item 3). id anchors the skip link (spine #6). The bar above persists across page swaps. */}
       <Box

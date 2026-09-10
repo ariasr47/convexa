@@ -84,6 +84,7 @@ function renderTable(rows: ScanRow[]) {
           nowS={NOW}
           flashActive
           onSort={() => undefined}
+          priceOffline={() => null}
         />
       </MemoryRouter>
     </ThemeProvider>,
@@ -252,7 +253,7 @@ describe('navigation only', () => {
     render(
       <ThemeProvider theme={theme}>
         <MemoryRouter>
-          <ScanCardList rows={rows} nowS={NOW} flashActive />
+          <ScanCardList rows={rows} nowS={NOW} flashActive priceOffline={() => null} />
         </MemoryRouter>
       </ThemeProvider>,
     );
@@ -267,7 +268,7 @@ describe('navigation only', () => {
     render(
       <ThemeProvider theme={theme}>
         <MemoryRouter>
-          <ScanCardList rows={rows} nowS={NOW} flashActive />
+          <ScanCardList rows={rows} nowS={NOW} flashActive priceOffline={() => null} />
         </MemoryRouter>
       </ThemeProvider>,
     );
@@ -304,6 +305,7 @@ describe('sort + density controls speak only the closed wire vocabulary', () => 
             nowS={NOW}
             flashActive
             onSort={onSort}
+            priceOffline={() => null}
           />
         </MemoryRouter>
       </ThemeProvider>,
@@ -335,8 +337,6 @@ describe('sort + density controls speak only the closed wire vocabulary', () => 
             onDensity={onDensity}
             onEditView={() => undefined}
             gate={fakeGate({ allowed: true })}
-            session={{ phase: 'rth', label: 'RTH' }}
-            structureAsOf="42s"
             filters={{ tier: null, volRegime: null, minScore: null, maxAbsDistFlip: null }}
             onFilters={() => undefined}
             filteredCount={1}
@@ -349,6 +349,7 @@ describe('sort + density controls speak only the closed wire vocabulary', () => 
             nowS={NOW}
             flashActive
             onSort={() => undefined}
+            priceOffline={() => null}
           />
         </MemoryRouter>
       </ThemeProvider>,
@@ -381,8 +382,6 @@ describe('the toolbar never overclaims persistence', () => {
             onDensity={() => undefined}
             onEditView={() => undefined}
             gate={fakeGate({ allowed: false })}
-            session={{ phase: 'closed', label: 'Closed' }}
-            structureAsOf="3m"
             filters={{ tier: null, volRegime: null, minScore: null, maxAbsDistFlip: null }}
             onFilters={() => undefined}
             filteredCount={1}
@@ -857,17 +856,40 @@ describe('[live-vs-static-isolation] + [theme-token-discipline] on the scan surf
     renderPage();
     await screen.findByTestId('scan-table');
     const page = screen.getByTestId('scanner-page');
-    // REPLACED 2026-08-06 (owner decision B). This used to assert the page never says "live".
-    // Prices ARE live now, so that assertion would force the UI to lie. The property worth
-    // keeping is the one underneath it: the page must state BOTH data ages, so nobody reads a
-    // 3-minute-old score as a live one — [live-vs-static-isolation] expressed as copy rather
-    // than as a ban on a word.
+    // T5 (curvature-v2-surfaces PLAN FE-4) — this pin used to read `/Prices (live|offline)/`,
+    // which stayed GREEN across the D-A header rewrite because this render legitimately hits the
+    // OFFLINE arm (jsdom has no `EventSource`, so `useLivePrices` flips `offline` immediately) —
+    // recorded run-before/run-after below. Strengthened to pin the offline arm's exact string, so
+    // a future header change cannot silently drift it either.
     const text = page.textContent ?? '';
-    // Either state is correct — what must never happen is the page going quiet about which
-    // one it is in. Under the test's stubbed EventSource the stream never connects, so this
-    // legitimately renders the offline variant.
-    expect(text, 'the page must state the PRICE state').toMatch(/Prices (live|offline)/);
+    expect(text, 'the offline header is byte-identical (D-A leaves it untouched)').toMatch(
+      'Prices offline · showing last known · structure ~3 min',
+    );
     expect(text, 'and must not let structure pass as live').toMatch(/structure ~3 min/);
     expect(screen.getAllByTestId('scan-row')).toHaveLength(4);
+  });
+
+  it('T5 / D-A, ONLINE arm — the new cadence header renders and the word "live" never reaches the page text', async () => {
+    // A controllable EventSource that never fires onerror/onmessage keeps `live.offline` at its
+    // initial `false` — the ONLINE arm the shipped `/Prices (live|offline)/` pin could never
+    // separately prove, because the suite's ambient (no-EventSource) render always hits offline.
+    class SilentEventSource {
+      onmessage: ((e: MessageEvent) => void) | null = null;
+      onerror: ((e: Event) => void) | null = null;
+      close() {
+        /* no-op */
+      }
+    }
+    vi.stubGlobal('EventSource', SilentEventSource as unknown as typeof EventSource);
+    installScanBackend({ symbols: ['SPY'] });
+    renderPage();
+    await screen.findByTestId('scan-table');
+    const text = screen.getByTestId('scanner-page').textContent ?? '';
+    expect(text, 'D-A: the new header, byte-identical').toMatch(
+      'Prices per tick · structure ~3 min · hot names sooner',
+    );
+    expect(text, 'criterion 15: the word "live" never reaches the page text').not.toMatch(
+      /\blive\b/i,
+    );
   });
 });

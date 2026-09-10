@@ -15,8 +15,9 @@
  * reduced-motion guard.
  */
 import { money } from '@/features/trading/positions/labels';
-import { typographyTokens } from '@/shared/theme/tokens';
+import { faceFor, figureStateOf, MONO_FACE, PauseMark } from '@/shared/figure';
 import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
@@ -36,11 +37,6 @@ const ROW_GRID_TEMPLATE = 'minmax(220px, 1.6fr) minmax(120px, 1fr) minmax(110px,
 
 /** The coarse-pointer touch floor (mirrors `LegDisclosure.tsx`'s `HIT_TARGET`). */
 const HIT_TARGET = 44;
-
-const MONO = {
-  fontFamily: typographyTokens.monoFontFamily,
-  fontVariantNumeric: 'tabular-nums',
-} as const;
 
 export interface BrokerGroupHeaderProps {
   group: BrokerGroup;
@@ -72,9 +68,9 @@ function CountClause({ group }: { group: BrokerGroup }) {
         tabIndex={0}
         data-testid="broker-group-count"
         sx={{
+          ...MONO_FACE,
           fontSize: '0.8rem',
           color: 'text.secondary',
-          ...MONO,
           whiteSpace: 'nowrap',
         }}
       >
@@ -144,7 +140,7 @@ function NetEntry({ group }: { group: BrokerGroup }) {
       <Typography
         component="div"
         data-testid="broker-group-net"
-        sx={{ ...MONO, fontWeight: 700, fontSize: '0.9rem' }}
+        sx={{ ...MONO_FACE, fontWeight: 700, fontSize: '0.9rem' }}
       >
         <FactText text={group.net_entry_text} />
       </Typography>
@@ -155,9 +151,9 @@ function NetEntry({ group }: { group: BrokerGroup }) {
             tabIndex={0}
             data-testid="broker-group-net-label"
             sx={{
+              ...MONO_FACE,
               fontSize: '0.6875rem',
               color: 'text.secondary',
-              ...MONO,
               whiteSpace: 'nowrap',
             }}
           >
@@ -171,7 +167,7 @@ function NetEntry({ group }: { group: BrokerGroup }) {
             component="span"
             tabIndex={0}
             data-testid="broker-group-withheld-count"
-            sx={{ fontSize: '0.6875rem', color: 'text.secondary', ...MONO }}
+            sx={{ ...MONO_FACE, fontSize: '0.6875rem', color: 'text.secondary' }}
           >
             {GROUP_COPY.withheldCount(n, group.leg_count)}
           </Box>
@@ -200,21 +196,33 @@ function GroupPl({
 
   let figure: ReactNode;
   if (group.pl_dollar != null) {
+    // Same conversion as `ModeledPl` (`BrokerPositionRow.tsx`) — one member's figure, one group's
+    // figure, one decision. Always the traced register (`mono` is always `true` here).
+    const { mono, dim, showPause } = figureStateOf({
+      value: money(group.pl_dollar),
+      register: 'traced',
+      offline: streamOffline ? { retained: true } : null,
+    });
     figure = (
-      <Typography
-        component="span"
+      <Stack
+        direction="row"
+        spacing={0.5}
         data-testid="broker-group-pl"
-        sx={{
-          ...MONO,
-          fontWeight: 700,
-          fontSize: '0.95rem',
-          color: group.pl_dollar >= 0 ? 'success.main' : 'error.main',
-          opacity: streamOffline ? 0.5 : 1,
-        }}
+        sx={{ alignItems: 'baseline', justifyContent: 'flex-end', opacity: dim ? 0.5 : 1 }}
       >
-        {streamOffline ? '⏸ ' : ''}
-        {money(group.pl_dollar)}
-      </Typography>
+        {showPause && <PauseMark />}
+        <Typography
+          component="span"
+          sx={{
+            ...faceFor(mono),
+            fontWeight: 700,
+            fontSize: '0.95rem',
+            color: group.pl_dollar >= 0 ? 'success.main' : 'error.main',
+          }}
+        >
+          {money(group.pl_dollar)}
+        </Typography>
+      </Stack>
     );
   } else {
     // AC-11 / [absent-is-not-none] fix (GATE Q FAIL B1): the literal is DERIVED through the
@@ -240,9 +248,9 @@ function GroupPl({
           component="div"
           data-testid="broker-group-pl-label"
           sx={{
+            ...MONO_FACE,
             fontSize: '0.6875rem',
             color: 'text.secondary',
-            ...MONO,
             whiteSpace: 'nowrap',
           }}
         >
@@ -268,10 +276,10 @@ export function LoneLegClause() {
         tabIndex={0}
         data-testid="broker-lone-leg-clause"
         sx={{
+          ...MONO_FACE,
           display: 'inline-block',
           fontSize: '0.8rem',
           color: 'text.secondary',
-          ...MONO,
           // Deliberately NOT `nowrap` (unlike this module's other clauses): on a narrow mobile
           // card this clause sits in the SAME flex row as the P/L block (`BrokerPositionCard.tsx`),
           // and a forced single line overflowed its own column into the P/L label at 393px (GATE Q

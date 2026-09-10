@@ -2,7 +2,7 @@
   "schema_version": 1,
   "support_policy_id": "playwright-engines-1.62.1",
   "full_chromium": {
-    "inventory_id": "pre-feature-52-v1",
+    "inventory_id": "curvature-v2-surfaces-108-v1",
     "tests": [
       {
         "test_id": "d38f0e9816f51aa1922817ddad296f9fcfffdcb98335c43716eb971b1cf4f276",
@@ -460,6 +460,509 @@
         "title_path": [
           "lg 1280 no-overflow · dark scheme",
           "/settings fits 1280px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "716ebfe9795cfc528498cfd333d06b28b4751b4727ca470e24eff93eb2b33e11",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "AC-35 — the six converted hover-only info sites",
+          "have a tap AND a keyboard path at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "d443288ce649206734d2430813cc541adf395c34d5908e7d4f3b6e3a61db3086",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "AC-35 — the six converted hover-only info sites",
+          "have a tap AND a keyboard path at 834px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "5fbbd41af2c2d6919a1cdd094c79d8828ff160d5f163405d630a0138b6f98561",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "AC-35 — the six converted hover-only info sites",
+          "have a tap AND a keyboard path at 900px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "f70aa4b8a35f9b094b68659dbc0ea75c07c2083ff39d33211047b46f453c0579",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "AC-35 — the six converted hover-only info sites",
+          "have a tap AND a keyboard path at 1280px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "a2fce082ec3acccd065080deb35d28d35eabf7b936cae9dd28a984420ed30abd",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "U-32 (SB) — the Widget frame header ⓘ at all seven frame roots (hero + tape included)",
+          "every frame's header ⓘ has a tap AND a keyboard path at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "4eec6697c0504d19edc43723e1d095522766ef5c04ad044423202b61463af28f",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "U-32 (SB) — the Widget frame header ⓘ at all seven frame roots (hero + tape included)",
+          "every frame's header ⓘ has a tap AND a keyboard path at 834px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "e3ac36cdf6146c31b006c026a463166e86142e13d9495f547841ad934f5b9fab",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "U-32 (SB) — the Widget frame header ⓘ at all seven frame roots (hero + tape included)",
+          "every frame's header ⓘ has a tap AND a keyboard path at 900px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "54b568ffb1ff09d03fc2dd028d260f49ca20940d1429696fcbeab5144194f719",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "U-32 (SB) — the Widget frame header ⓘ at all seven frame roots (hero + tape included)",
+          "every frame's header ⓘ has a tap AND a keyboard path at 1280px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "4b1407223e2035cb5bb6590094ce21c3babad4cdd1913c55e0d608ac340c38cb",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "AC-20b (review-only evidence) — rendered font-size of a traced FigureCell value, both panels, one viewport"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "d3d8972b71c27981edae5dfae41391fc4dd6b8c3723f7f431ab568990c46c869",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "AC-1a — one connection chip in the viewport, never two, never the deleted stream-state block",
+          "hero chip in view at rest; condensed chip replaces it in-viewport after scroll (hero node stays mounted, off-screen)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "0863040d6895985568b0d6e90c310b272f10fb0bb215b02245028c393e6841c7",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "AC-34 — coarse pointer at 393px: the effective hit area, measured, for every named control",
+          "the palette trigger + its rows, the burger drawer + its four links, and FigureCell’s ⓘ all measure ≥44px in both dimensions"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "6b548be765cbc94f9e11ccce736b21d397cc926b6a7e7170375b696c71f2840d",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "/alerts fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "159418b00977a9e14029062144186ed89348bd7f10cf6eecc889e708e436f2a1",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "AC-40 — the sign-in wall fits at 393px (signed out, a gated surface)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "1dc6a1160cef476541c4a02a4e3ea762ae7b5c9c4317d6e45647571005691810",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "AC-40 — the cold-start failure banner fits at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "bcd829c17709a2561043dac185f5992151ac8a8086a4b3463ef464df40789be5",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "AC-40 — the open ⌘K palette fits at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "e2eecbc13d5ce74c1333cf25e3b2e6dcefae3c48905a1a2b59f0466e63a81c03",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "/alerts fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "f88c7b5634d005183b4e6fa19330d003f6c884081da5b610164d956b280f6453",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "AC-40 — the sign-in wall fits at 393px (signed out, a gated surface)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "218cd01619623a541d51cd616c14808e02b8e878d5669228e69f0bb1de73ea4f",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "AC-40 — the cold-start failure banner fits at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "5a4ccf7cb3baa1a9b392bd500a3cf6f039e09022d89767bca980db24b4629eff",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "AC-40 — the open ⌘K palette fits at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "8d672ff93b271833cfbfca389b2a914af61289ba2452249307e8b1e49b8b3cd4",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "/ fits 834px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "fa9e37558ee0a78314941d1eef11e260d562f697a6bc364dc44a5d984b9bde6a",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "/ticker/TSLA fits 834px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "0d8a09ce0cf4f03a1590698da90e2432869f4ca911bc48d7e743b2a0f07223ba",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "/positions fits 834px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "b4693d7e775f94b81f2f46cbce811bbf4b75066f3f9d4ec1939e561805cb1805",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "/scanner fits 834px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "e379dbf91977d0d37b0568eab206fcbc581862a434414c97ef837e915ec31af6",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "/settings fits 834px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "0e7b76731148dd29c9eb27c22ee8392f5a731981eb194c12ae42b5ea0a1e3d34",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "/alerts fits 834px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "5e0207ffa6024babafba75b588fb159c22e19676992fe7fa344775a1148ee8df",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "md 900 no-overflow · dark scheme",
+          "/alerts fits 900px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "09fc2dcd819cfd5f0ef109e95d6264a4e9e81a38846654686122b96201827433",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · dark scheme",
+          "/alerts fits 1280px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "7c9a59b736deaedd88c886db1414542a48c5854dc1bf3145ada8e696fe72b81c",
+        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
+        "title_path": [
+          "Criterion 45 (SB) — exactly one decision-verdict node at 393 and 1280, same string",
+          "393px: opening the analysis mounts exactly one decision-verdict node (the bottom-sheet peek/body are mutually exclusive)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "ecd188a0cc406275a6d691e0f88f1d05af9c25fff9561b52a1ecac83a5e7a3fd",
+        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
+        "title_path": [
+          "Criterion 45 (SB) — exactly one decision-verdict node at 393 and 1280, same string",
+          "resizing 393 -> 1280 in the SAME session keeps exactly one decision-verdict node, carrying the SAME string (proves the bottom sheet and the wide panel are one field, not two)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "d41d051dfea0a1832ef7214bda787fee740e1e353ec900225b37da3b9ddbfe3e",
+        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
+        "title_path": [
+          "Criteria 20/22 evidence — a stream drop keeps the field attached and geometrically stable; reduce-motion renders without incident",
+          "stream drop: connection flips to offline, the field canvas stays attached at unchanged geometry (browser companion — trail/drift/beam/sweep stopping is proven at the unit tier, paintStep.spec.ts)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "d1ba21e2d0cd4049141e669f64e81b7c9afb6ef6e11cc41f295a3076d4a8228c",
+        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
+        "title_path": [
+          "Criteria 20/22 evidence — a stream drop keeps the field attached and geometrically stable; reduce-motion renders without incident",
+          "reduce-motion: the ticker renders without incident and stays connected (criterion 22 static-frame review capture)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "4a86e48d84286f7093cd156768b5ee076058d8389bb2ce4ce5089aa95a41c896",
+        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
+        "title_path": [
+          "Criterion 52 (P5, review) — the field's own canvas fill is not scheme-invariant",
+          "393px: the canvas's own base fill differs between dark and light — not scheme-invariant"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "2646d4aaeb078597b702641accb55fed199fa19f21370ded8950bfd94f871b28",
+        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
+        "title_path": [
+          "Criterion 52 (P5, review) — the field's own canvas fill is not scheme-invariant",
+          "1280px: the canvas's own base fill differs between dark and light — not scheme-invariant"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "3ab9230e2b8f130c1c653b84ac897c18a12cd0acd985532f2c3252b44936eb61",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "criterion 50 (SB) — the read strip scrolls sideways at 393px while the page itself never does"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "16fe0fa2eed54c39736f4e4865a8d1b917767ddce7b98c6dfeb363d0324cd7e7",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "criterion 50 (SB) — the read strip scrolls sideways at 393px while the page itself never does"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "522483072ccc4666f6a0a1980d4296b1a496dd0771669beac3ee03930dcce9eb",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "criterion 50 (SB) — the read strip never pushes the page wider at 834px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "daffbc63deed7ae39111f700c5661345e8c59eea4544d490a0ab9a2d3b8c336a",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "md 900 no-overflow · dark scheme",
+          "criterion 50 (SB) — the read strip never pushes the page wider at 900px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "ddc37e404acc651e7433b8945e4282d98d21ee4bf3a6a871c72ff7b0e76115fe",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · dark scheme",
+          "criterion 50 (SB) — the read strip never pushes the page wider at 1280px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "6a52b6348cbc2e525b68b7312faad50f6743b4ac9ac4617a2387a22feed6cd02",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · light scheme (criterion 64)",
+          "/ fits 1280px in light mode (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "cfde6c2e65f4657f4729d77259686feac8ff7dcc8f3d18920614f921526fd9a7",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · light scheme (criterion 64)",
+          "/ticker/TSLA fits 1280px in light mode (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "be3566dcec0004929056e5262c3c375e84ed0c96f6acf27c113d6751fe592e63",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · light scheme (criterion 64)",
+          "/positions fits 1280px in light mode (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "592a85c836b877350310868aa6ca8550b804c59bddfee4bc7fc9492959450369",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · light scheme (criterion 64)",
+          "/scanner fits 1280px in light mode (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "68361d2ae459faf7e8c78ad75c51c5c0921674962a7c9ea9f8b053e1e7694db0",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · light scheme (criterion 64)",
+          "/settings fits 1280px in light mode (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "ec73d2cd911c4d017705d562525d9a9dd89fc75b7dbedddc7adeeec4f0287242",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · light scheme (criterion 64)",
+          "/alerts fits 1280px in light mode (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "7b7152c140dd702b90c98beb852bc58fce736ba357b99efab08c1a06ca035950",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "criterion 7a — rendered container step on /positions",
+          "AC-7a (review-only evidence) — 1280 vs 393, real resolved mark"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "4caad7012a7847083082746f4e07b64b4419fa864050dd779626c304cd9bc321",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "criterion 66 (FE-13) — the alerts write affordances at 393px, coarse pointer",
+          "the composer's \"Add rule\" and \"Enable browser notify\" buttons meet the floor"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "1145b5f7b10e1c246f6e6eb96f869ca343c3efffc1e60792358b063e0d66ee62",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "criterion 66 (FE-13) — the alerts write affordances at 393px, coarse pointer",
+          "GATE Z REPAIR — the per-rule Remove button and enable/disable switch now meet the floor"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "dca11f13df19e386709beee6b4afd477be43054cfd07cd61456785230fbe8603",
+        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+        "title_path": [
+          "criterion 66 (GATE Z repair) — the off-exchange proximity chip at 393px, coarse pointer",
+          "the proximity chip meets the 44px floor"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "92880cf66a011551cabef6d03ed6b1f3d7574281f1cebbbe400e06a2df6e150b",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "GATE Z finding 3 (criterion 66) — inputs and selects at 393px, coarse pointer",
+          "the Settings Risk-inputs account-size and cap-value fields meet the 44px floor"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "98e041c49d795d107888932ee1f9419f29f15b6a371ce8d384ba9c0eccc8e048",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "GATE Z finding 3 (criterion 66) — inputs and selects at 393px, coarse pointer",
+          "the Settings default-ticker field and active-persona select meet the 44px floor"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "4f45a59bfba9fe4f42319e367a91845f19d5f17b2823751bd6ba1e79a028f1ac",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "GATE Z finding 3 (criterion 66) — inputs and selects at 393px, coarse pointer",
+          "the alerts composer Symbol field and Kind select meet the 44px floor"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "27c826fd5af18fabf6767df25da9708301e23eb3d371577a8ca4151e5a34faee",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "GATE Z criterion 66, pass 3 — /positions track-record summary at 393px, coarse pointer",
+          "the \"What wasn't counted — and why\" summary meets the 44px floor"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "56c7e7605d3865e897330943d828de00476805c5ca19793bca4d3d0d360349da",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "GATE Z criterion 66, pass 3 — /positions track-record summary at 1280px, fine pointer (desktop unmoved)",
+          "the same summary keeps its shipped desktop geometry (no `hasTouch`, fine pointer)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "821afe9a24708881532bb6d1cb754cca42c05c085d6e87aba08d0a95bf7ba1de",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "GATE Z criterion 66, pass 4 — /positions track-record summary at 393px, coarse pointer (marker restored)",
+          "the disclosure keeps its marker mechanism and stays fully operable at the 44px floor"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "acb0750c7b83f29984a416217dfdec913f5fcd2ff2c6b236ed05d3d99641862f",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "GATE Z criterion 66, pass 4 — /positions track-record summary at 393px, fine pointer (QA comparison point)",
+          "the disclosure keeps its marker mechanism, stays under the coarse floor, and stays operable"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "385934fec5ba3999d248287cc843f8432a46e986766eb7d105fee6b36a2c1b7e",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "GATE Z criterion 66, pass 4 — /positions track-record summary at 1280px, fine pointer (desktop unmoved)",
+          "the disclosure keeps its marker mechanism and stays operable on desktop"
         ],
         "project": "chromium"
       }

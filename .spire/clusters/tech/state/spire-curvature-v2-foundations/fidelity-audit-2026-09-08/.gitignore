@@ -1,0 +1,5 @@
+# Raw captures stay on the machine that made them (48 MB); the harness regenerates them anywhere.
+# The report, the JSON census, the tools, the saved bundles and the JPEG pairs are committed.
+*.png
+_artifact/index.html
+_artifact/*.jpg

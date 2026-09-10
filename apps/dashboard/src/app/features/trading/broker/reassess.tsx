@@ -11,7 +11,7 @@
  * ADVISORY ONLY (AC-19): the surface renders the assembled request for copy/hand-off and offers
  * NO Accept-into-store or any other write action. The sim reassessment Accept flow is untouched.
  */
-import { typographyTokens } from '@/shared/theme/tokens';
+import { MONO_FACE } from '@/shared/figure';
 import type { BrokerBook, OptionRight } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -122,13 +122,7 @@ export function BrokerReassessAction({
           {/* The visible basis carry (AC-18) — foregrounded, not buried in the JSON. */}
           <Typography
             data-testid="broker-reassess-basis"
-            sx={{
-              fontFamily: typographyTokens.monoFontFamily,
-              fontSize: '0.8rem',
-              fontVariantNumeric: 'tabular-nums',
-              color: 'text.secondary',
-              mb: 1,
-            }}
+            sx={{ ...MONO_FACE, fontSize: '0.8rem', color: 'text.secondary', mb: 1 }}
           >
             {req.as_of_basis}
           </Typography>
@@ -136,7 +130,7 @@ export function BrokerReassessAction({
             component="pre"
             data-testid="broker-reassess-json"
             sx={{
-              fontFamily: typographyTokens.monoFontFamily,
+              ...MONO_FACE,
               fontSize: '0.72rem',
               bgcolor: 'background.default',
               border: '1px solid',

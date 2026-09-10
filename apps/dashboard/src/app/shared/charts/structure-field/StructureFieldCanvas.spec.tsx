@@ -1,8 +1,28 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { StructureFieldCanvas } from './StructureFieldCanvas';
+import { StructureFieldCanvas, type StructureFieldSurfaces } from './StructureFieldCanvas';
+import type { LevelPalette } from './levelStrokes';
 import type { StructureFieldModel } from './types';
+
+// Stub RESOLVED theme values — the canvas never resolves a theme itself (SPEC §2.7); it only
+// consumes what the host hands down. Distinctive strings (not real palette colours) so a test can
+// prove the canvas painted from THESE props, not from some reintroduced internal literal.
+const testPalette: LevelPalette = {
+  callWall: 'rgb(1,2,3)',
+  mid: 'rgb(4,5,6)',
+  maxPain: 'rgb(7,8,9)',
+  gammaFlip: 'rgb(10,11,12)',
+  putWall: 'rgb(13,14,15)',
+};
+const testSurfaces: StructureFieldSurfaces = {
+  ink: 'rgb(20,20,20)',
+  panel: 'rgb(21,21,21)',
+  raised: 'rgb(22,22,22)',
+  phosphor: 'rgb(23,23,23)',
+  steel: 'rgb(24,24,24)',
+  warning: 'rgb(25,25,25)',
+};
 
 const model: StructureFieldModel = {
   symbol: 'SPY',
@@ -59,7 +79,15 @@ describe('StructureFieldCanvas hover probe (AC-7)', () => {
       toJSON: () => ({}),
     });
 
-    render(<StructureFieldCanvas model={model} variant="ticker" height={300} />);
+    render(
+      <StructureFieldCanvas
+        model={model}
+        variant="ticker"
+        height={300}
+        palette={testPalette}
+        surfaces={testSurfaces}
+      />,
+    );
     const canvas = screen.getByTestId('structure-field-canvas');
     await userEvent.setup().pointer({ target: canvas, coords: { x: 300, y: 150 } });
     const frame = [...rafs.values()][0];
@@ -70,5 +98,102 @@ describe('StructureFieldCanvas hover probe (AC-7)', () => {
         screen.getByText((text) => text.includes('$452') && text.includes('net GEX')),
       ).toBeInTheDocument(),
     );
+  });
+});
+
+/**
+ * SPEC §2.7 / criterion 7 — the FE-3 slice this task can prove without a ladder (built at FE-5):
+ * the canvas paints EVERY level/surface colour from the props it receives, never from a
+ * reintroduced internal literal. Distinctive stub strings make this a real mutation guard: if a
+ * future edit hardcodes a colour back in, these stub strings stop appearing and the test reds.
+ */
+describe('StructureFieldCanvas — paints only from the resolved `palette`/`surfaces` props (criterion 7, FE-3 slice)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('every painted stroke/fill traces back to a `palette` or `surfaces` prop value', async () => {
+    const rafs = new Map<number, FrameRequestCallback>();
+    let nextRaf = 1;
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      const id = nextRaf++;
+      rafs.set(id, cb);
+      return id;
+    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id) => rafs.delete(id));
+
+    const painted = { fills: [] as string[], strokes: [] as string[] };
+    const target: Record<string, unknown> = {
+      measureText: (text: string) => ({ width: text.length * 7 }),
+      createLinearGradient: () => ({ addColorStop: () => undefined }),
+      createRadialGradient: () => ({ addColorStop: () => undefined }),
+    };
+    const context = new Proxy(target, {
+      get: (t, key) => (key in t ? t[key as keyof typeof t] : () => undefined),
+      set: (t, key, value) => {
+        if (key === 'fillStyle') painted.fills.push(String(value));
+        if (key === 'strokeStyle') painted.strokes.push(String(value));
+        t[key as string] = value;
+        return true;
+      },
+    }) as unknown as CanvasRenderingContext2D;
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context);
+
+    render(
+      <StructureFieldCanvas
+        model={model}
+        variant="ticker"
+        height={300}
+        palette={testPalette}
+        surfaces={testSurfaces}
+      />,
+    );
+    const frame = [...rafs.values()][0];
+    expect(frame).toBeDefined();
+    frame!(performance.now());
+
+    // The base fill (paintStructure's unconditional dark fill — criterion 52's turn-on) comes from
+    // `surfaces.ink`, never a literal.
+    expect(painted.fills).toContain(testSurfaces.ink);
+    // The two level lines (put/call walls) come from `palette`, never `RED`/`GREEN`.
+    expect(painted.strokes).toContain(testPalette.putWall);
+    expect(painted.strokes).toContain(testPalette.callWall);
+  });
+});
+
+/**
+ * SPEC §4.4 / criterion 24 (DELEGATED P1) — the canvas gets a name and a summary. Row 23 (the
+ * levels/mid already readable as text, via the ladder) is proven at `level-ladder/*.spec.tsx`
+ * (FE-5); this is the field's OWN half — an accessible name + a programmatic pointer to a summary
+ * naming what it plots and pointing at the ladder as its tabular equivalent.
+ */
+describe('StructureFieldCanvas — accessible name + summary (criterion 24, DELEGATED P1)', () => {
+  it('the canvas carries role="img", an aria-label naming the symbol, and aria-describedby pointing at a real, visually-hidden summary node', () => {
+    render(
+      <StructureFieldCanvas
+        model={model}
+        variant="ticker"
+        height={300}
+        palette={testPalette}
+        surfaces={testSurfaces}
+      />,
+    );
+    const canvas = screen.getByTestId('structure-field-canvas');
+    expect(canvas.getAttribute('role')).toBe('img');
+    expect(canvas.getAttribute('aria-label')).toBe('Net dealer gamma by strike for SPY');
+    const describedBy = canvas.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    const summary = document.getElementById(describedBy!);
+    expect(summary).not.toBeNull();
+    expect(summary!.tagName).toBe('P');
+    // Names what it plots, the levels it marks, and points at the ladder as the tabular equivalent
+    // (SPEC §4.4) — not merely "present", the actual content criterion 24 requires.
+    expect(summary!.textContent).toMatch(/net dealer gamma/i);
+    expect(summary!.textContent).toMatch(/call wall/i);
+    expect(summary!.textContent).toMatch(/put wall/i);
+    expect(summary!.textContent).toMatch(/ladder/i);
+    // Visually hidden (clip-rect technique), not `display: none` / `aria-hidden` — a screen reader
+    // must still reach it via `aria-describedby`.
+    expect(summary!.style.position).toBe('absolute');
+    expect(summary!.style.width).toBe('1px');
+    expect(summary!.getAttribute('aria-hidden')).toBeNull();
   });
 });

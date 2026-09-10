@@ -10,6 +10,9 @@
  *   polled `bundle` (to compute stale) but NOT `live`/SSE — so an SSE drop leaves the rec untouched.
  * - [best-effort-isolated-or-null] — a transport fault is caught and surfaced as the `unavailable`
  *   panel state; it is never thrown to the page. A status fetch fault degrades the action to inert.
+ *   **Except** when a produced read is already pinned: a failed REFRESH never evicts it (SPEC
+ *   §4.5/§5's A10 retention — "keeps any previously pinned read pinned and readable") — see the
+ *   `setRec` functional-update guard in `request`'s catch block.
  * - server-side key only — the request body carries only identifiers + the gating context.
  */
 import {
@@ -171,17 +174,30 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
           throw err;
         }
         // Transport fault → synthesize the `unavailable` artifact (caught, never thrown to the page).
-        setRec({
-          status: 'unavailable',
-          persona: { id: personaId, name: personaName },
-          as_of: null,
-          pinned_fingerprint: '',
-          stale_born: false,
-          strategy: null,
-          unavailable_reason: 'transport',
-          gate,
-          cap,
-        });
+        // [A10 retention] SPEC §4.5/§5: "A request failure renders A10, keeps any previously pinned
+        // read pinned and readable." A REFRESH (`onRefresh`/`Ask anyway`) fired while a produced read
+        // is already pinned must not evict it — a functional update reads the LATEST `rec`, never a
+        // stale closure value, so a failed refresh over a produced read is a no-op here: the pinned
+        // read survives untouched and `presentationPolicy`'s `resultState` never sees the failure
+        // (`produced` stays true, `requestState` never becomes `unavailable` — the two axes read the
+        // SAME `rec`, so A10 and a produced result are mutually exclusive by construction; see
+        // `presentationPolicy.ts:108`). Only the FIRST failed ask (nothing pinned yet) synthesizes
+        // the `unavailable` artifact.
+        setRec((current) =>
+          current?.status === 'produced'
+            ? current
+            : {
+                status: 'unavailable',
+                persona: { id: personaId, name: personaName },
+                as_of: null,
+                pinned_fingerprint: '',
+                stale_born: false,
+                strategy: null,
+                unavailable_reason: 'transport',
+                gate,
+                cap,
+              },
+        );
       } finally {
         setLoading(false);
       }

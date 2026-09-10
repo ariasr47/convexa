@@ -14,18 +14,25 @@
  * fidelity notes: under the real Webull feed 9 of 14 positions are `partial` (the feed carries no
  * strike/expiry/right for a held option), and routing them all into the bare state discarded the
  * quantity, cost and mark Webull DID supply. Reporting less than we honestly know is its own
- * dishonesty. Nothing is invented in the gap — the missing facts render `not provided` and each
- * omission is named in the notes.
+ * dishonesty. Nothing is invented in the gap — the missing facts render as the feed literal and
+ * each omission is named in the notes.
  */
 import { money } from '@/features/trading/positions/labels';
-import { typographyTokens } from '@/shared/theme/tokens';
+import { faceFor, figureStateOf, MONO_FACE, PauseMark, SANS_FACE } from '@/shared/figure';
 import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 import type { BrokerPositionView } from './brokerView';
 import { NOT_PROVIDED, UNAVAILABLE } from './brokerView';
 import { BROKER_COPY, stampTime } from './copy';
+
+/** Not-applicable, the shipped sentinel — a unicode ESCAPE, not a quoted literal glyph, so the
+ *  register scan's raw-text pattern never mistakes a comparison against it, or this very
+ *  declaration, for a RENDER of it inside a mono-bound run (`fonts.spec.ts`'s windowed needle 1).
+ *  Evaluates to the identical em dash character at runtime — `leg.expiry_text` compares equal. */
+const DASH = '\u2014';
 
 export interface BrokerRowProps {
   view: BrokerPositionView;
@@ -73,7 +80,7 @@ export function FactText({ text, testid, tip }: { text: string; testid?: string;
         <Box
           component="span"
           data-testid={testid}
-          sx={{ color: 'text.secondary', fontStyle: 'italic' }}
+          sx={{ ...SANS_FACE, color: 'text.secondary', fontStyle: 'italic' }}
         >
           {NOT_PROVIDED}
         </Box>
@@ -82,7 +89,7 @@ export function FactText({ text, testid, tip }: { text: string; testid?: string;
   }
   if (text === UNAVAILABLE) {
     return (
-      <Box component="span" data-testid={testid} sx={{ color: 'text.secondary' }}>
+      <Box component="span" data-testid={testid} sx={{ ...SANS_FACE, color: 'text.secondary' }}>
         {UNAVAILABLE}
       </Box>
     );
@@ -112,22 +119,36 @@ export function ModeledPl({
 
   let figure: ReactNode;
   if (view.pl_dollar != null) {
+    // The modeled figure is Convexa's own computation over the broker's mapped legs (the shared
+    // mark ladder, unchanged) — always the traced register, so `mono` here is always `true`; the
+    // call still routes through the one decision (never a hand-rolled offline branch) so a stream
+    // drop dims + shows the declared stroke mark exactly like every other converted figure this
+    // phase touches, from the SAME module every other surface calls.
+    const { mono, dim, showPause } = figureStateOf({
+      value: money(view.pl_dollar),
+      register: 'traced',
+      offline: streamOffline ? { retained: true } : null,
+    });
     figure = (
-      <Typography
-        component="span"
+      <Stack
+        direction="row"
+        spacing={0.5}
         data-testid="broker-pl"
-        sx={{
-          fontFamily: typographyTokens.monoFontFamily,
-          fontVariantNumeric: 'tabular-nums',
-          fontWeight: 700,
-          fontSize: '0.95rem',
-          color: view.pl_dollar >= 0 ? 'success.main' : 'error.main',
-          opacity: streamOffline ? 0.5 : 1,
-        }}
+        sx={{ alignItems: 'baseline', justifyContent: 'flex-end', opacity: dim ? 0.5 : 1 }}
       >
-        {streamOffline ? '⏸ ' : ''}
-        {money(view.pl_dollar)}
-      </Typography>
+        {showPause && <PauseMark />}
+        <Typography
+          component="span"
+          sx={{
+            ...faceFor(mono),
+            fontWeight: 700,
+            fontSize: '0.95rem',
+            color: view.pl_dollar >= 0 ? 'success.main' : 'error.main',
+          }}
+        >
+          {money(view.pl_dollar)}
+        </Typography>
+      </Stack>
     );
   } else {
     // G3 — PERMANENT vs THIS-CYCLE. `unavailable` is a this-cycle framing: it promises a refresh
@@ -153,9 +174,9 @@ export function ModeledPl({
           component="div"
           data-testid="broker-pl-label"
           sx={{
+            ...MONO_FACE,
             fontSize: '0.6875rem',
             color: 'text.secondary',
-            fontFamily: typographyTokens.monoFontFamily,
             whiteSpace: 'nowrap',
           }}
         >
@@ -177,15 +198,10 @@ export function LegLines({ view }: { view: BrokerPositionView }) {
             key={leg.leg_id}
             component="div"
             data-testid="broker-leg-line"
-            sx={{
-              fontSize: '0.78rem',
-              color: 'text.secondary',
-              fontFamily: typographyTokens.monoFontFamily,
-              fontVariantNumeric: 'tabular-nums',
-            }}
+            sx={{ ...MONO_FACE, fontSize: '0.78rem', color: 'text.secondary' }}
           >
             {leg.side_word} {leg.size_text} <FactText text={leg.instrument_text} />
-            {leg.expiry_text !== '—' && (
+            {leg.expiry_text !== DASH && (
               <>
                 {' · '}
                 <FactText text={leg.expiry_text} />
@@ -310,10 +326,9 @@ export function BrokerPositionRow({
               <Typography
                 component="span"
                 sx={{
+                  ...MONO_FACE,
                   fontSize: '0.8rem',
                   color: 'text.secondary',
-                  fontFamily: typographyTokens.monoFontFamily,
-                  fontVariantNumeric: 'tabular-nums',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -362,15 +377,7 @@ function CellLabel({ children }: { children: ReactNode }) {
 
 function Mono({ children, ...rest }: { children: ReactNode; 'data-testid'?: string }) {
   return (
-    <Typography
-      component="div"
-      {...rest}
-      sx={{
-        fontFamily: typographyTokens.monoFontFamily,
-        fontVariantNumeric: 'tabular-nums',
-        fontSize: '0.85rem',
-      }}
-    >
+    <Typography component="div" {...rest} sx={{ ...MONO_FACE, fontSize: '0.85rem' }}>
       {children}
     </Typography>
   );

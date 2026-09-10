@@ -1,0 +1,190 @@
+{
+  "id": "positions-dense-1440-dark",
+  "side": "design",
+  "surface": "positions",
+  "state": "dense",
+  "width": 1440,
+  "scheme": "dark",
+  "url": "/positions.html",
+  "pageHeight": 1032,
+  "overflowX": false,
+  "scrollWidth": 1440,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "nav-bar",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 56,
+      "text": "CONVEA ScannerTickerPositionsAlerts Jump to a ticker…⌘K Open 10:42:07 ET R"
+    },
+    {
+      "key": "wrap:0:wrap.nav-in",
+      "x": 40,
+      "y": 0,
+      "w": 1360,
+      "h": 56,
+      "text": "CONVEA ScannerTickerPositionsAlerts Jump to a ticker…⌘K Open 10:42:07 ET R"
+    },
+    {
+      "key": "wrap:1:wrap",
+      "x": 40,
+      "y": 56,
+      "w": 1360,
+      "h": 162,
+      "text": "PositionsYour simulated book — paper only, saved to your account. Marks come fro"
+    },
+    {
+      "key": "wrap:2:wrap",
+      "x": 40,
+      "y": 218,
+      "w": 1360,
+      "h": 297,
+      "text": "ContractMark basisQtyEntryMarkP/LP/L %Δ entryTrendMax lossExpiry SPY 575/580 C ·"
+    },
+    {
+      "key": "wrap:3:wrap",
+      "x": 40,
+      "y": 515,
+      "w": 1360,
+      "h": 248,
+      "text": "Track recordStatic historical read · closed sim trades · does not dim with the s"
+    },
+    {
+      "key": "wrap:4:wrap.foot-grid",
+      "x": 40,
+      "y": 851,
+      "w": 1360,
+      "h": 181,
+      "text": "CONVEA How Convexa worksBlog — how we read structureLab Convexa is an analysis t"
+    },
+    {
+      "key": "panel:0:panel.pos-table:ContractMark basisQtyEntryMarkP/",
+      "x": 80,
+      "y": 232,
+      "w": 1280,
+      "h": 283,
+      "text": "ContractMark basisQtyEntryMarkP/LP/L %Δ entryTrendMax lossExpiry SPY 575/580 C ·"
+    },
+    {
+      "key": "panel:5:panel.quiet:By persona",
+      "x": 80,
+      "y": 565,
+      "w": 354,
+      "h": 198,
+      "text": "By personaBalanced Swinger7 / 1164%+$612Premium Hunter3 / 650%−$88Default2 / 367"
+    },
+    {
+      "key": "panel:6:panel.quiet:By tier at entry",
+      "x": 448,
+      "y": 565,
+      "w": 295,
+      "h": 198,
+      "text": "By tier at entryPrime4 / 580%Actionable6 / 1060%Watch2 / 540%Sample counts shown"
+    },
+    {
+      "key": "panel:7:panel.quiet:By AI read",
+      "x": 756,
+      "y": 565,
+      "w": 295,
+      "h": 198,
+      "text": "By AI readAccepted read8 / 1267%Own idea4 / 850%Sample counts shown · small samp"
+    },
+    {
+      "key": "panel:8:panel.quiet:By IV-rank band",
+      "x": 1065,
+      "y": 565,
+      "w": 295,
+      "h": 198,
+      "text": "By IV-rank bandIV cheap7 / 1070%Neutral3 / 650%IV rich2 / 450%Sample counts show"
+    },
+    {
+      "key": "block:panel.pos-table",
+      "x": 80,
+      "y": 232,
+      "w": 1280,
+      "h": 283,
+      "text": "ContractMark basisQtyEntryMarkP/LP/L %Δ entryTrendMax lossExpiry SPY 575/580 C ·"
+    }
+  ],
+  "probes": {
+    "connectionState": null,
+    "skeletons": 0,
+    "htmlBackground": "rgb(11, 15, 23)",
+    "bodyBackground": "rgb(11, 15, 23)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", sans-serif",
+    "bodyFontSize": "13px",
+    "panelSelector": "panel pos-table",
+    "panelRadius": "12px",
+    "panelBackground": "rgb(19, 26, 36)",
+    "panelBorder": "1px solid rgba(138, 155, 180, 0.16)",
+    "monoFont": "\"IBM Plex Mono\", ui-monospace, SFMono-Regular, Menlo, monospace",
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": true,
+    "plexSansLoaded": true,
+    "scrollHeight": 1032,
+    "scrollWidth": 1440,
+    "clientWidth": 1440
+  },
+  "panels": [
+    {
+      "key": "div.panel.pos-table",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "div.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "div.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "div.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "div.panel",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "rgba(0, 0, 0, 0.24) 0px 1px 2px 0px, rgba(0, 0, 0, 0.16) 0px 2px 6px 0px, rgba(2"
+    },
+    {
+      "key": "div.panel.quiet",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    },
+    {
+      "key": "div.panel.quiet",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    },
+    {
+      "key": "div.panel.quiet",
+      "radius": "12px",
+      "background": "rgb(19, 26, 36)",
+      "border": "1px solid rgba(138, 155, 180, 0.16)",
+      "shadow": "none"
+    }
+  ],
+  "png": "design/positions-dense-1440-dark.png"
+}

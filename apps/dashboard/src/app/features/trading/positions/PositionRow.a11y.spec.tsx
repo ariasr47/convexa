@@ -35,6 +35,12 @@ describe('position trend help semantics', () => {
       </ThemeProvider>,
     );
     const help = screen.getByTestId('trend-help');
+    // GATE Z — latent duplicate of the FE-5 regression (`5c07dc40`): `trend-help` must be a
+    // positioned containing block, or its visually-hidden `aria-describedby` sibling (`position:
+    // 'absolute'`) escapes to the initial containing block instead of staying local — invisible
+    // but not clipped by `positions-table-frame`'s `overflow-x: auto` (the exact mechanism that
+    // widened `document.documentElement.scrollWidth` at 900px before the original fix).
+    expect(getComputedStyle(help).position).toBe('relative');
     help.focus();
     expect(help).toHaveFocus();
     expect(screen.getByTestId('trend-help').querySelector('svg')).toHaveAttribute(

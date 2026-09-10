@@ -1,6 +1,7 @@
 /**
  * Tint discipline on the positions surface (AC-78, owner ruling #18; SPEC §4 *Call/put tint* and §7
- * invariant 6). `docs/design/DESIGN_SYSTEM.md` L42-43 carries the scoped canon.
+ * invariant 6). The scoped canon lives in `.spire/clusters/tech/context/DESIGN_SYSTEM.md` (Banned table,
+ * green/red row, amended 2026-09-03) and is quoted verbatim in the `docs/design/DESIGN_SYSTEM.md` stub.
  *
  * THE RULE: `success.main` / `error.main` appear on this surface in exactly FIVE places, all of them
  * SIGNED DOLLAR DIRECTION — the `pl` cell, the `pl_pct` cell, the group subtotal, the sparkline
@@ -198,7 +199,10 @@ describe('tint discipline — className identity (AC-78)', () => {
     expect(unavailable.length).toBeGreaterThan(0);
     // Every `unavailable` cell wears one class, and a degraded state is NEVER directional.
     expect(new Set(unavailable.map(cls)).size).toBe(1);
-    expect(screen.getByTestId('positions-table').innerHTML).toMatch(/⏸ offline/);
+    // The pause mark is the declared stroke icon, never the text character (criterion 29).
+    expect(
+      screen.getByTestId('positions-table').querySelector('svg[data-testid="PauseIcon"]'),
+    ).toBeTruthy();
   });
 
   it('the card mirrors the row: no tint on the chip, the entry qualifier or the risk slot', () => {

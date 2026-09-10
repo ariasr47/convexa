@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en" data-scheme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Route fallback + 404 · Convexa design</title>
+<meta name="description" content="Loading a route, and nothing at this address.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  .dlg-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+  .legs { display: grid; grid-template-columns: 70px 1fr 90px 90px 90px; gap: 8px; align-items: center; font-size: 12.5px; }
+  .op-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .picker { display: flex; flex-direction: column; }
+  @media (max-width: 999px) { .dlg-2, .op-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 599px) { .legs { grid-template-columns: 60px 1fr 70px; } .legs .opt { display: none; } }
+
+  [hidden] { display: none !important; }
+  .site-bar { position: fixed; right: 16px; bottom: 16px; z-index: 100; display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 999px; background: var(--raised); border: 1px solid var(--line-2); box-shadow: var(--e4); font-size: 12px; color: var(--steel); flex-wrap: wrap; max-width: calc(100vw - 32px); }
+  .site-bar a, .site-bar button, .site-bar select { height: 28px; border-radius: 999px; border: 1px solid transparent; background: transparent; color: var(--phosphor); font: 600 12px/1 'IBM Plex Sans', system-ui, sans-serif; padding: 0 10px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .site-bar a:hover, .site-bar button:hover { background: var(--raised-2); }
+  .site-bar select { background: var(--ink-2); border-color: var(--line-2); padding: 0 8px; }
+  .site-bar .lbl { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); padding-left: 6px; }
+  @media (max-width: 767px) { .site-bar { bottom: auto; top: 64px; right: 8px; left: 8px; max-width: none; } }
+</style>
+</head>
+<body>
+<div style="width: 100%; min-height: 0px; background: var(--ink); color: var(--phosphor); padding: 32px clamp(16px, 3vw, 40px) 40px; display: flex; flex-direction: column; gap: 22px;">
+    <div><div class="caps" style="color: var(--amber-text);">Shell</div><h1 class="display" style="margin: 6px 0 0; font-size: clamp(22px, 2.4vw, 28px);">Route fallback and not found</h1></div>
+    <div class="dlg-2">
+      <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0;"><div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;"><span style="font-size: 13px; font-weight: 700;">Loading a route</span><span style="font-size: 11.5px; color: var(--steel);">lazy chunk in flight · under 300ms it never shows</span></div><div style="border: 1px solid var(--line-2); border-radius: 14px; background: var(--ink); overflow: hidden; min-height: 360px;"><div class="nav-bar" style="position: static;"><div class="wrap nav-in"><span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 17px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 12.6px; height: 12.2px; margin: 0 0.8px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span><span style="flex: 1;"></span><span class="skel" style="width: 30px; height: 30px; border-radius: 50%;"></span></div></div><div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 90px 20px; color: var(--steel);"><span style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line-2); border-top-color: var(--amber); animation: spin 0.9s linear infinite;"></span><span style="font-size: 12.5px;">Loading the Scanner…</span></div></div></div>
+      <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0;"><div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;"><span style="font-size: 13px; font-weight: 700;">Nothing at this address</span><span style="font-size: 11.5px; color: var(--steel);">404 · the shell stays</span></div><div style="border: 1px solid var(--line-2); border-radius: 14px; background: var(--ink); overflow: hidden; min-height: 360px;"><div class="nav-bar" style="position: static;"><div class="wrap nav-in"><span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 17px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 12.6px; height: 12.2px; margin: 0 0.8px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span><span style="flex: 1;"></span><span style="width: 30px; height: 30px; border-radius: 50%; background: var(--amber); color: var(--amber-ink); display: inline-flex; align-items: center; justify-content: center; font: 700 12px/1 'IBM Plex Sans', sans-serif;">R</span></div></div><div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 60px 20px; text-align: center;"><span class="mono" style="font-size: 12px; color: var(--steel-2);">404</span><h2 class="display" style="margin: 0; font-size: 26px;">Nothing at this address.</h2><p style="margin: 0; font-size: 13px; color: var(--steel); max-width: 380px;">The desk is one symbol away. Ticker analysis is free; the rest is behind a sign-in.</p><div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;"><a href="#" class="btn primary">Open the Ticker <svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a><a href="#" class="btn secondary">Home</a></div></div></div></div>
+    </div>
+  </div>
+<div class="site-bar" role="toolbar" aria-label="Design site controls"><a href="index.html">← All screens</a><span class="lbl">Route fallback + 404</span><button id="scheme-btn" type="button" onclick="toggleScheme()">Light scheme</button></div>
+<script>
+(function () {
+  var KEY = 'convexa-design-scheme';
+  function current() { try { return localStorage.getItem(KEY) || 'dark'; } catch (e) { return 'dark'; } }
+  function apply(s) { document.documentElement.setAttribute('data-scheme', s); if (window.deskSetProps) window.deskSetProps({ scheme: s }); var b = document.getElementById('scheme-btn'); if (b) b.textContent = s === 'dark' ? 'Light scheme' : 'Dark scheme'; }
+  window.toggleScheme = function () { var n = current() === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(KEY, n); } catch (e) {} apply(n); };
+  apply(current());
+})();
+</script>
+
+</body>
+</html>

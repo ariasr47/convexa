@@ -29,11 +29,55 @@ export function validateManifest(value) {
     fail('unsupported policy');
   const tests = value.full_chromium?.tests;
   if (
-    value.full_chromium?.inventory_id !== 'pre-feature-52-v1' ||
+    // (curvature-v2-foundations FE-10) bumped from the frozen `pre-feature-52-v1`/52 baseline: FE-10
+    // added 23 real Chromium tests (16 to `no-overflow.spec.ts` — AC-38/AC-39/AC-40/AC-57's `/alerts`
+    // route, the `tablet 834` width, and 3 degraded-surface cases at 2 schemes — plus 7 new to
+    // `curvature-v2.spec.ts`), so the frozen inventory this validator enforces moves with them.
+    // (curvature-v2-desk-and-read FE-12) bumped 75 → 86: registered `desk-and-read.spec.ts` (6 new
+    // tests — criterion 45's two, the criteria 20/22 evidence pair, criterion 52's two) and added 5
+    // new criterion-50 read-strip-rail tests to `no-overflow.spec.ts` (393 dark/light, 834, 900,
+    // 1280) — the first net-new Chromium tests this phase's own lanes have added (FE-1 through FE-11
+    // only edited/re-pointed existing ones).
+    // (curvature-v2-surfaces FE-12) bumped 86 → 90: U-32's frame-scoped `curvature-v2.spec.ts`
+    // extension (SPEC §2.8, D-C) added a SECOND site list (all eight `widget-{id}` frame roots,
+    // hero and live tape included) alongside the shipped `HOVER_INFO_WIDGETS` five — 4 new tests,
+    // one per checked width (393/834/900/1280).
+    // (curvature-v2-surfaces FE-13) bumped 90 → 99: 9 new tests — the 1280px light-scheme walk
+    // over the four seeded surfaces (criterion 64, 6 tests, one per `ROUTES` entry), the
+    // criterion 7a rendered-container-step review-evidence test (1), and the criterion 66 alerts
+    // write-affordance describe block in `curvature-v2.spec.ts` (2).
+    // (curvature-v2-surfaces GATE Z repair, findings 1-3) bumped 99 → 100: 1 new test — the
+    // off-exchange proximity chip's 44px floor (`OffExchangeBlocks.tsx:113-123`), now reachable via
+    // a local `/api/ticker/**` fixture override carrying real `off_exchange` block data (the shared
+    // `bundle` fixtures in both e2e files had never carried this field, so the chip was previously
+    // unrendered and untestable — FE-13's own "no reachable off-exchange bundle this session" note).
+    // The two existing per-rule Remove/Switch tests were renamed (title_path updated, same test_id)
+    // from "MEASURED, not asserted" to "GATE Z REPAIR" now that both controls are hard-asserted —
+    // no new tests, no count change from that rename.
+    // (curvature-v2-surfaces GATE Z repair pass 2, finding 3) bumped 100 → 103: 3 new tests in a new
+    // `no-overflow.spec.ts` describe block (`GATE Z finding 3 (criterion 66)`), hard-asserting the
+    // 44px coarse-pointer floor on `risk-inputs-account-size`/`risk-inputs-cap-value`,
+    // `settings-ticker`/`settings-persona`, and the alerts composer's Symbol field + Kind select —
+    // all newly reachable once `theme.ts`'s coarse-pointer selector was widened to `input` and
+    // `[role="combobox"]`.
+    // (curvature-v2-surfaces GATE Z repair pass 3, criterion 66 second clause) bumped 103 → 105:
+    // `TrackRecordSection.tsx:226-231`'s `<summary>` on `/positions` was FIXED (this phase touches
+    // the file, `bdc992d8` — unlike the three sibling under-floor `Select`s QA found on `/ticker`,
+    // which stay itemized as carried debt, untouched this phase) — 2 new `no-overflow.spec.ts`
+    // tests: the 393px/coarse floor assertion, and a 1280px/fine-pointer assertion proving the
+    // local coarse-only `sx` never leaks into the desktop row height.
+    // (curvature-v2-surfaces GATE Z repair pass 4, QA pass 3 Medium finding) bumped 105 → 108:
+    // the pass-3 fix's `display: flex` silently removed the `<summary>`'s native `::marker`
+    // (Chromium only generates it under `display: list-item`); pass 4 reaches the same 44px floor
+    // with `line-height` instead, leaving `display` untouched. 3 new `no-overflow.spec.ts` tests —
+    // 393px/coarse, 393px/fine (the direct QA comparison point) and 1280px/fine — each asserting
+    // `getComputedStyle(summary).display === 'list-item'` (the mechanism the marker depends on,
+    // verified to actually flip with the pass-3 defect) plus open/close/focus/Enter operability.
+    value.full_chromium?.inventory_id !== 'curvature-v2-surfaces-108-v1' ||
     !Array.isArray(tests) ||
-    tests.length !== 52
+    tests.length !== 108
   )
-    fail('full Chromium inventory must contain 52 tests');
+    fail('full Chromium inventory must contain 108 tests');
   unique(
     tests.map((x) => x.test_id),
     'full Chromium tests',

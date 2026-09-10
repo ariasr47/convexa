@@ -116,6 +116,53 @@ export function SignedOutGate({
   );
 }
 
+/**
+ * The quiet-gate note — the ONE shared shell for both A1b (idle · quiet gate) and A1c (the
+ * request-scope annex composing over a produced read, SPEC §4.5). `includeStanceLine` is the ONLY
+ * difference between the two arms' DOM: A1b renders Convexa's own Mono `no_trade` stance (there is
+ * no verdict yet to collide with); A1c never does, because a real verdict IS mounted and printing
+ * the machine stance beside it would put two competing stances at the top of one panel (canon rule
+ * 23, criterion 42). Both arms render the SAME title/caption/`Ask anyway` — row 33 forbids
+ * identifying either arm by that shared string alone, which is why callers key on the stance line's
+ * presence/absence (or a mounted verdict) rather than on this component's own testid.
+ */
+export function QuietGateNote({
+  reasons,
+  onAskAnyway,
+  includeStanceLine,
+  sx,
+}: {
+  reasons: string[];
+  onAskAnyway: () => void;
+  includeStanceLine: boolean;
+  sx?: object;
+}) {
+  return (
+    <Box data-testid="ai-rec-quiet-gate" sx={sx}>
+      {includeStanceLine && (
+        <Typography
+          data-testid="ai-rec-quiet-gate-stance"
+          sx={{ fontFamily: MONO, fontSize: 12, color: 'text.disabled', mb: 0.5 }}
+        >
+          no_trade
+        </Typography>
+      )}
+      <Typography sx={{ fontWeight: 500, fontSize: 14, color: 'text.primary', mb: 1.5 }}>
+        {COPY.noEdge.title}
+        {reasons.length ? ` — ${reasons[0]}` : ''}
+      </Typography>
+      <Tooltip arrow describeChild title={COPY.tooltip.askAnyway}>
+        <Button variant="outlined" size="small" color="inherit" onClick={onAskAnyway}>
+          {COPY.action.askAnyway}
+        </Button>
+      </Tooltip>
+      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1.5 }}>
+        {COPY.noEdge.caption}
+      </Typography>
+    </Box>
+  );
+}
+
 // ---- The gated action control ----------------------------------------------------------------
 export function ActionRegion({
   cap,
@@ -200,26 +247,31 @@ export function ActionRegion({
     );
   }
 
-  // no_fresh_edge (AC8) — the guardrails' stance is no_trade; de-emphasized + explicit one-tap
-  // override. The real readiness gate behaves IDENTICALLY with a scenario selected (AC-43).
+  // no_fresh_edge (AC8) — A1b, "idle · quiet gate" (SPEC §4.5 row 41): everything idle (A1a)
+  // renders — the same primary control, disabled under the closed gate exactly as it is disabled
+  // under any other non-actionable idle sub-state — PLUS the quiet-gate note as a footnote beneath
+  // it. `no_edge` is an OVERRIDE, not a wall (`ai-rec/copy.ts:89`): a state that hid the composer and
+  // replaced it outright rendered the override as a block, which is the shape SPEC §4.5 corrects.
+  // The real readiness gate behaves IDENTICALLY with a scenario selected (AC-43).
   if (requestState === 'no_edge') {
     return (
       <Box sx={box}>
-        <Typography sx={{ fontFamily: MONO, fontSize: 12, color: 'text.disabled', mb: 0.5 }}>
-          no_trade
-        </Typography>
-        <Typography sx={{ fontWeight: 500, fontSize: 14, color: 'text.primary', mb: 1.5 }}>
-          {COPY.noEdge.title}
-          {reasons.length ? ` — ${reasons[0]}` : ''}
-        </Typography>
-        <Tooltip arrow describeChild title={COPY.tooltip.askAnyway}>
-          <Button variant="outlined" size="small" color="inherit" onClick={onAskAnyway}>
-            {COPY.action.askAnyway}
+        <Tooltip arrow describeChild title={COPY.tooltip.get.replace('{TICKER}', ticker)}>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={onGet}
+            disabled={!actions.analyze && !actions.retry}
+          >
+            {primaryLabel}
           </Button>
         </Tooltip>
-        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1.5 }}>
-          {COPY.noEdge.caption}
-        </Typography>
+        <QuietGateNote
+          reasons={reasons}
+          onAskAnyway={onAskAnyway}
+          includeStanceLine
+          sx={{ mt: 1.5 }}
+        />
       </Box>
     );
   }

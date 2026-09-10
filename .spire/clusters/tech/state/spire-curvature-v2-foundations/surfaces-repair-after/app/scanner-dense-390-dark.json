@@ -1,0 +1,169 @@
+{
+  "id": "scanner-dense-390-dark",
+  "side": "app",
+  "surface": "scanner",
+  "state": "dense",
+  "width": 390,
+  "scheme": "dark",
+  "url": "/scanner",
+  "pageHeight": 1891,
+  "overflowX": false,
+  "scrollWidth": 390,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "app-shell",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 1891,
+      "text": "Skip to main contentCONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality"
+    },
+    {
+      "key": "skip-to-main",
+      "x": 0,
+      "y": -53,
+      "w": 158,
+      "h": 44,
+      "text": "Skip to main content"
+    },
+    {
+      "key": "top-nav",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 57,
+      "text": "CONVEAScannerTickerPositionsAlertsJump to a ticker…⌘Kquality-user@fixture.invali"
+    },
+    {
+      "key": "scanner-page",
+      "x": 0,
+      "y": 57,
+      "w": 390,
+      "h": 1834,
+      "text": "ScannerOne dense read of the tracked universe — which ticker deserves the deep-d"
+    },
+    {
+      "key": "scan-session-strip",
+      "x": 24,
+      "y": 216,
+      "w": 342,
+      "h": 103,
+      "text": "ClosedPrices offline · showing last known · structure ~3 min · How structure is "
+    },
+    {
+      "key": "scan-cadence-header",
+      "x": 24,
+      "y": 251,
+      "w": 342,
+      "h": 41,
+      "text": "Prices offline · showing last known · structure ~3 min · How structure is comput"
+    },
+    {
+      "key": "scan-methodology-link",
+      "x": 243,
+      "y": 253,
+      "w": 123,
+      "h": 37,
+      "text": "How structure is computed"
+    },
+    {
+      "key": "scan-toolbar",
+      "x": 24,
+      "y": 332,
+      "w": 342,
+      "h": 198,
+      "text": "Default view3 namesEdit viewPrimeActionableWatchIV cheapIV richScore ≥70|Flip| ≤"
+    },
+    {
+      "key": "scan-filters",
+      "x": 24,
+      "y": 386,
+      "w": 342,
+      "h": 86,
+      "text": "PrimeActionableWatchIV cheapIV richScore ≥70|Flip| ≤1%"
+    },
+    {
+      "key": "scan-density",
+      "x": 24,
+      "y": 482,
+      "w": 187,
+      "h": 48,
+      "text": "CompactComfortable"
+    },
+    {
+      "key": "scan-worker-down",
+      "x": 24,
+      "y": 542,
+      "w": 342,
+      "h": 65,
+      "text": "Sweep last ran 20688 d ago — showing the last known rows."
+    },
+    {
+      "key": "scan-cards",
+      "x": 24,
+      "y": 619,
+      "w": 342,
+      "h": 846,
+      "text": "SPYPrime500.00offline · last known+1.20%Score90Prime tier · within 1.00% of flip"
+    },
+    {
+      "key": "scan-card",
+      "x": 24,
+      "y": 619,
+      "w": 342,
+      "h": 275,
+      "text": "SPYPrime500.00offline · last known+1.20%Score90Prime tier · within 1.00% of flip"
+    },
+    {
+      "key": "scan-card",
+      "x": 24,
+      "y": 905,
+      "w": 342,
+      "h": 275,
+      "text": "QQQWatch490.00offline · last known−0.40%Score78Watch tier · +2.00% from flipRegi"
+    },
+    {
+      "key": "scan-card",
+      "x": 24,
+      "y": 1190,
+      "w": 342,
+      "h": 275,
+      "text": "NVDAWatch480.00offline · last known+1.20%Score66Watch tier · +3.00% from flipReg"
+    },
+    {
+      "key": "scan-notes",
+      "x": 24,
+      "y": 1482,
+      "w": 342,
+      "h": 385,
+      "text": "How a score is builtProximity to the nearest wall or flip, IV vs HV stretch, act"
+    }
+  ],
+  "probes": {
+    "connectionState": null,
+    "skeletons": 0,
+    "monoElements": 30,
+    "sansElements": 61,
+    "archivoElements": 2,
+    "otherFontElements": 1,
+    "htmlBackground": "rgb(11, 15, 23)",
+    "bodyBackground": "rgb(11, 15, 23)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", Roboto, sans-serif",
+    "bodyFontSize": "15px",
+    "panelSelector": "top-nav",
+    "panelRadius": "0px",
+    "panelBackground": "rgba(19, 26, 36, 0.82)",
+    "panelBorder": "0px none rgba(0, 0, 0, 0)",
+    "monoFont": null,
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": false,
+    "plexSansLoaded": true,
+    "scrollHeight": 1891,
+    "scrollWidth": 390,
+    "clientWidth": 390
+  },
+  "panels": [],
+  "png": "app/scanner-dense-390-dark.png"
+}

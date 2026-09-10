@@ -9,6 +9,7 @@
  * ring) and the row body forwards a click to the same route. There is no order, trade, or broker
  * affordance anywhere on this surface.
  */
+import { MONO_FACE } from '@/shared/figure';
 import { extrasFor } from '@/shared/theme/tokens';
 import type { ScanDensity, ScanRow, ScanViewSort } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -17,23 +18,22 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import type { PollDelta } from './format';
 import {
   COLUMN_LABELS,
+  regimeLookup,
   SCAN_COLUMNS,
   SCAN_COPY,
   SORTABLE_COLUMNS,
+  volLookup,
   type ScanColumn,
 } from './labels';
 import {
   ChgCell,
   LabelCell,
   LevelDistCell,
-  MONO,
   PriceCell,
-  regimeTextOf,
   ScoreCell,
   StatusCell,
   TierCell,
   UpdatedCell,
-  volTextOf,
 } from './ScanCells';
 
 /** index-first-defaults AC-3 — one table section. `label: null` renders no header row (the
@@ -57,6 +57,10 @@ export interface ScanTableProps {
   groups?: ScanGroup[];
   /** Poll-to-poll structure deltas by symbol. */
   deltas?: Map<string, PollDelta>;
+  /** SPEC §2.2 — `{ retained: boolean } | null` per symbol, computed once at `Scanner.tsx`. The
+   *  outer null/non-null is the stream's own state; the inner boolean is the datum's provenance.
+   *  Price ONLY — no structure figure ever takes this prop (criterion 10). */
+  priceOffline: (symbol: string) => { retained: boolean } | null;
 }
 
 const thSx = {
@@ -149,6 +153,7 @@ function cellContent(
   row: ScanRow,
   nowS: number,
   flashActive: boolean,
+  priceOffline: (symbol: string) => { retained: boolean } | null,
   delta?: PollDelta | null,
 ) {
   switch (column) {
@@ -161,7 +166,7 @@ function cellContent(
           // Spine #6: fill the cell so the real <a> is the keyboard + touch target (≥44 on coarse
           // via theme floor). Row body click remains mouse convenience only.
           sx={{
-            ...MONO,
+            ...MONO_FACE,
             fontWeight: 600,
             color: 'text.primary',
             textDecoration: 'none',
@@ -178,7 +183,7 @@ function cellContent(
         </Box>
       );
     case 'price':
-      return <PriceCell row={row} active={flashActive} />;
+      return <PriceCell row={row} active={flashActive} offline={priceOffline(row.symbol)} />;
     case 'chg_pct':
       return <ChgCell row={row} />;
     case 'score':
@@ -186,9 +191,9 @@ function cellContent(
     case 'tier':
       return <TierCell row={row} />;
     case 'regime':
-      return <LabelCell testid="cell-regime" text={regimeTextOf(row)} />;
+      return <LabelCell testid="cell-regime" result={regimeLookup(row.regime)} />;
     case 'vol_regime':
-      return <LabelCell testid="cell-vol" text={volTextOf(row)} />;
+      return <LabelCell testid="cell-vol" result={volLookup(row.vol_regime)} />;
     case 'flip':
       return (
         <LevelDistCell
@@ -224,6 +229,7 @@ function ScanTableRow({
   flashActive,
   onOpen,
   delta,
+  priceOffline,
 }: {
   row: ScanRow;
   density: ScanDensity;
@@ -231,6 +237,7 @@ function ScanTableRow({
   flashActive: boolean;
   onOpen: (symbol: string) => void;
   delta?: PollDelta | null;
+  priceOffline: (symbol: string) => { retained: boolean } | null;
 }) {
   const tdSx = {
     padding: density === 'compact' ? '7px 10px' : '12px 10px',
@@ -260,7 +267,7 @@ function ScanTableRow({
           key={column}
           sx={column === 'symbol' ? { ...tdSx, ...stickyColSx } : tdSx}
         >
-          {cellContent(column, row, nowS, flashActive, delta)}
+          {cellContent(column, row, nowS, flashActive, priceOffline, delta)}
         </Box>
       ))}
     </Box>
@@ -276,6 +283,7 @@ export function ScanTable({
   onSort,
   groups,
   deltas,
+  priceOffline,
 }: ScanTableProps) {
   const navigate = useNavigate();
   // Ungrouped ⇒ ONE unlabeled section: the body renders identically to the pre-grouping table.
@@ -286,11 +294,13 @@ export function ScanTable({
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: '10px',
-        // The WIDE content scrolls inside its own container — the page body never scrolls sideways.
+        // U-35 (scanner half): the panel role is 12 (`shape.borderRadius`), not a raw '10px' string.
+        borderRadius: 1,
+        // The WIDE content scrolls inside its own container — the page body never scrolls sideways
+        // (criterion 21, the only scroll behaviour that criterion pins). No vertical cap: the
+        // design/src/screens/scanner.mjs table scrolls with the PAGE, not in a second internal
+        // scroller (F8) — `maxHeight: '70vh'` / `overflowY: 'auto'` are gone.
         overflowX: 'auto',
-        maxHeight: '70vh',
-        overflowY: 'auto',
       }}
     >
       <Box
@@ -333,6 +343,7 @@ export function ScanTable({
                   flashActive={flashActive}
                   delta={deltas?.get(row.symbol)}
                   onOpen={(symbol) => navigate(`/ticker/${symbol}`)}
+                  priceOffline={priceOffline}
                 />
               ))}
             </Fragment>

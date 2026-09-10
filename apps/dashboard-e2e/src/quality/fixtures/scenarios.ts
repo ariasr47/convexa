@@ -510,7 +510,12 @@ export const accessibilityScenarios = [
     ...base('A11Y-9', '/ticker/SPY', 'anonymous', { width: 1280, height: 900 }, 'dark', [
       { selector: '[data-testid="command-deck"]' },
       { selector: '[data-testid="widget-bento"]' },
-      { selector: '[data-testid="tape-stream-state"]', text: '⏸ Stream offline' },
+      // Re-pointed (curvature-v2-foundations, AC-57): folded into the ONE connection chip; the
+      // label no longer carries the literal `⚠`/`⏸` glyph (a stroke icon renders instead).
+      {
+        selector: '[data-testid="connection-chip"][data-connection-state="offline"]',
+        text: 'Live offline',
+      },
       { selector: '[data-testid="last-trade"]', text: '⏸ Last trade' },
     ]),
     stream: 'payload-gap' as const,

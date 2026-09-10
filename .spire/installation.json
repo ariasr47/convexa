@@ -1,7 +1,4 @@
 {
-  "active_targets": [
-    "spire-tech-council-synthesizer"
-  ],
   "artifacts": [
     {
       "mode": 420,
@@ -1056,7 +1053,7 @@
       "path": "agents/spire-tech-architect.toml",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "cb23c9a5bfb9a0a170cda4f592357fca49aab6cf817b1390b1d5ca1e70003ceb",
+      "sha256": "30ccb3159ae2e86e9f07feeeb4a966423ce0031ed4900a20192a3e597b25b98f",
       "type": "file"
     },
     {
@@ -1072,7 +1069,7 @@
       "path": "agents/spire-tech-council-skeptic.toml",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "180ce255224f163a8b84a9c3875f594ef78848d61c0db149e2ab07abcaeaf09c",
+      "sha256": "cd6d99ffa232cdd4eacf2126b14eaf951b2f6ba26c65ca0ffd9d6d0bb3bf037f",
       "type": "file"
     },
     {
@@ -1080,7 +1077,7 @@
       "path": "agents/spire-tech-council-synthesizer.toml",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "5ff70d6c71b4b2aa7e9878efb664487c5b4f11ca3ba9aabf9eec125775dc55c6",
+      "sha256": "23081ed7cce5bfb1288e68f9f571907543c2afbcae614a05ce22a3cc07d56321",
       "type": "file"
     },
     {
@@ -1232,7 +1229,7 @@
       "path": "ORCHESTRATOR.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "692c875be4d8a120c289156b62c8cd66d0e5cd2f5d74a09e01b2c7998adf2232",
+      "sha256": "93a001db6c928166c05f1729cf3149d27d54088fbea855706e41a9207c19dce7",
       "type": "file"
     },
     {
@@ -1248,7 +1245,7 @@
       "path": "ROLE_LAUNCH_PROMPTS.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "08333d9324f653ced926c9708e542193b5586ad5a11e6df42697f455888d28e8",
+      "sha256": "b46bbb3eb8c20b7518e41f1f46c6468c54749e4810cbf85fddf4fe72acf6fb15",
       "type": "file"
     },
     {
@@ -3076,6 +3073,13 @@
       "type": "file"
     },
     {
+      "mode": 420,
+      "path": "AGENTS.md",
+      "placement": "repo-root",
+      "sha256": "454ba45a4fc8af24c4b813f62c118e00d6da2ada6b1a20c59da7622737c3378b",
+      "type": "file"
+    },
+    {
       "mode": 493,
       "path": "bin/spire",
       "placement": "spire-root",
@@ -3093,7 +3097,7 @@
       "mode": 420,
       "path": "bin/spire.mjs",
       "placement": "spire-root",
-      "sha256": "d6722be6df16c7b3d0dae7a1bacc318c4a730e7002d7a83feba4d0347a7d2786",
+      "sha256": "1aa163b3c2f1f2b087f058924912cc03fc8ded02a920c7719f32865b43212a0f",
       "type": "file"
     },
     {
@@ -3114,15 +3118,12 @@
       "mode": 420,
       "path": "version",
       "placement": "spire-root",
-      "sha256": "c976b0d75881c89a1542c72cab6a6b14fb8a87a1993c8f72d0a71fd1e49d6272",
+      "sha256": "767f1d086ac898aafc91ad4ac6623d07184729ca244748c6109bf247ebdc3902",
       "type": "file"
     }
   ],
   "ascents": [
     "delivery"
-  ],
-  "canonical_role_ids": [
-    "spire:tech/synthesizer"
   ],
   "cluster": "spire:tech",
   "default_ascent": "delivery",
@@ -3182,7 +3183,7 @@
           },
           {
             "id": "P8",
-            "reason": "per-agent tool fencing is unavailable; role restrictions remain instruction-held"
+            "reason": "this adapter does not install verified per-agent tool fencing; role restrictions remain instruction-held"
           }
         ],
         "supported": [
@@ -3260,33 +3261,12 @@
       "provider_root": ".grok"
     }
   },
-  "installed_adapters": [
-    {
-      "ascent": "delivery",
-      "canonical_id": "spire:tech/synthesizer",
-      "provider": "claude",
-      "render_name": "spire-tech-council-synthesizer"
-    },
-    {
-      "ascent": "delivery",
-      "canonical_id": "spire:tech/synthesizer",
-      "provider": "codex",
-      "render_name": "spire-tech-council-synthesizer"
-    },
-    {
-      "ascent": "delivery",
-      "canonical_id": "spire:tech/synthesizer",
-      "provider": "grok",
-      "render_name": "spire-tech-council-synthesizer"
-    }
-  ],
-  "installed_at": "2026-08-26T23:05:20.316Z",
+  "installed_at": "2026-09-08T10:01:34.762Z",
   "launch_adapter": {
     "installed": "commands/spire-tech.md",
     "invoke": "/spire-tech",
     "kind": "command"
   },
-  "migration_state": "none",
   "product": "spire-os",
   "provider": "claude",
   "provider_capabilities": {
@@ -3328,6 +3308,5 @@
     "grok"
   ],
   "schema_version": 2,
-  "source_version": "3.19.1",
-  "version": "3.19.1"
+  "version": "3.19.3"
 }

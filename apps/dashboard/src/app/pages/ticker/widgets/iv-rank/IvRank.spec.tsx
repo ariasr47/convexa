@@ -1,8 +1,7 @@
 /**
  * IvRank — RISK-BASED widget spec (qa-verify.md §4, 2026-07-13). The page-level contract (whole-null
- * matrix, wire-band-beats-rank authority, basis-rides-with-value presence) lives in
- * `pages/ticker/ticker.risk.spec.tsx`; this spec keeps ONLY the widget's own state machine, where a
- * silent regression is plausible AND invisible:
+ * matrix) lives in `pages/ticker/ticker.risk.spec.tsx`; this spec keeps the widget's own state
+ * machine, where a silent regression is plausible AND invisible:
  *   1. Building never fabricates — no rank/percentile/band number, not even a placeholder — and stays
  *      DISTINCT from Unavailable (the two honest-empty states must not collapse into one).
  *   2. Degenerate-flat never fabricates a rank midpoint (the classic silent "50") and drops the band,
@@ -10,16 +9,23 @@
  *   3. Fail-honest on unknown wire values — an unknown `state` degrades to Unavailable without
  *      throwing; an unknown `band` renders NO token (never raw pass-through) with the rest intact.
  *   4. The wire descriptors are never rendered — sentinel by construction, across all states.
- * NOT asserted (visible + intentional → review): headline/descriptor/basis/advisory wording, band
- * label wording (closure unit-tested in `../_kit/copy.spec.ts`), auth/chart/theme source scans.
+ *   5. Wire-band-beats-rank authority AND rank-value/basis pairing (BOTH moved here PASS 2 change 8,
+ *      from the page-level suite's "wire-label authority" / "model-read self-description" tests:
+ *      `IvRank` no longer mounts on `/ticker`, owner ruling `context-band-is-the-designs-card-list`,
+ *      so only this widget-level spec can still exercise them) — `ivr-band` is `read.band` via the
+ *      closed lookup ONLY, never re-derived from `read.rank`; `ivr-rank-value` and `ivr-basis` share
+ *      the widget body in the computed state.
+ * NOT asserted (visible + intentional → review): headline/descriptor/advisory wording, band label
+ * wording (closure unit-tested in `../_kit/copy.spec.ts`), auth/chart/theme source scans.
  */
 import { theme } from '@/shared/theme/theme';
 import type { IvRankRead } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { IVR_WHOLE_EMPTY } from '../_kit/copy';
-import { IvRank } from './IvRank';
+import { IvRank, ivRankStripFigure } from './IvRank';
 
 // The wire `*_descriptor`/`advisory_note` strings carry a sentinel so any accidental render is caught.
 const WIRE_DESC = 'WIRE-DESCRIPTOR-NEVER-RENDERED';
@@ -104,11 +110,90 @@ describe('IvRank · state machine honesty', () => {
     expect(screen.getByTestId('ivr-rank-value')).toHaveTextContent('82'); // the rest stays intact
   });
 
+  // PASS 2 change 8 (moved here from `pages/ticker/ticker.risk.spec.tsx`, which drops this case:
+  // `IvRank` no longer mounts on `/ticker` — owner ruling `context-band-is-the-designs-card-list` —
+  // so the page-level integration test can no longer exercise it; the invariant itself
+  // (`digested-labels-not-raw-dump`) is a property of THIS component and belongs here per this
+  // file's own docblock division. `IvRank.tsx:165` reads `read.band` ONLY, via the closed
+  // `ivrBandDisplay` lookup — this guards against a regression that re-derives the token from
+  // `rank` instead (e.g. an inlined `rank >= 70 ? 'rich' : 'cheap'`).
+  it('the band token is the WIRE band via the closed lookup, never re-derived from rank', () => {
+    // Rank 82 (≥ 70 would derive "rich" under a naive rank-based mapping) but the wire band says
+    // CHEAP — the closed lookup must win.
+    renderIvr(computed({ rank: 82, band: 'premium_cheap' }));
+    expect(screen.getByTestId('ivr-band')).toHaveTextContent('premium cheap');
+    expect(screen.queryByText('premium rich')).toBeNull();
+  });
+
+  // PASS 2 change 8 (moved here from `pages/ticker/ticker.risk.spec.tsx`'s "model-read
+  // self-description" test, for the same reason as the band test above: `IvRank` no longer mounts
+  // on `/ticker`). `model-read-carries-its-assumptions`: the rank VALUE element and its basis
+  // element share the widget body in the fully-computed state (the degenerate-flat test above
+  // already covers the pairing for the percentile limb in the flat state; this is the rank limb in
+  // the default, non-degenerate one).
+  it('the rank value and its basis element share the widget body (model-read-carries-its-assumptions)', () => {
+    renderIvr(computed());
+    expect(screen.getByTestId('ivr-rank-value')).toBeInTheDocument();
+    expect(screen.getByTestId('ivr-basis')).toBeInTheDocument();
+  });
+
   it('the wire window/basis/advisory descriptor strings never reach the DOM (any state)', () => {
     for (const v of [computed(), building(), flat()]) {
       const { container, unmount } = renderIvr(v);
       expect(container.textContent ?? '').not.toContain(WIRE_DESC);
       unmount();
     }
+  });
+});
+
+// AC-35 (ruling 6, curvature-v2-foundations): the ⓘ affordances are real focusable controls, not
+// hover-only — the shipped `AccessibleHelp` pattern, reachable by tap AND keyboard.
+describe('IvRank · the ⓘ affordances are keyboard-reachable (AC-35)', () => {
+  it('every "About …" control is a real button, opens on Enter, closes on Escape', async () => {
+    const user = userEvent.setup();
+    renderIvr(computed());
+    const helps = screen.getAllByRole('button', { name: /^About /i });
+    expect(helps.length).toBeGreaterThan(0);
+    const first = helps[0];
+    first.focus();
+    expect(first).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(await screen.findByRole('tooltip')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+  });
+});
+
+// curvature-v2-desk-and-read FE-7 — the read strip's own digest of this widget's number (SPEC
+// §2.3/§2.4: "IV rank comes from IvRank.tsx"). This widget's own body (above) is UNCHANGED by this
+// export; these tests cover only the small pure function the strip calls.
+describe('ivRankStripFigure — the read strip digest (criteria 25, 28)', () => {
+  it('computed with a recognized band — the rank plus the SAME closed band label the full widget uses', () => {
+    expect(ivRankStripFigure(computed())).toBe('82 · premium rich');
+  });
+
+  it('computed with an unrecognized band — the rank alone, never a raw wire pass-through', () => {
+    expect(ivRankStripFigure(computed({ band: 'wat' as IvRankRead['band'] }))).toBe('82');
+  });
+
+  it('computed with no band at all — the rank alone', () => {
+    expect(ivRankStripFigure(computed({ band: null }))).toBe('82');
+  });
+
+  it('degenerate-flat (rank null) — the closed `unavailable` member, never a fabricated midpoint', () => {
+    expect(ivRankStripFigure(flat())).toBe('unavailable');
+  });
+
+  it('building — the closed `unavailable` member (the strip is a digest; the full building message stays in this widget)', () => {
+    expect(ivRankStripFigure(building())).toBe('unavailable');
+  });
+
+  it('an unknown wire state — fail-honest to `unavailable`, never a throw', () => {
+    expect(ivRankStripFigure(computed({ state: 'weird' as IvRankRead['state'] }))).toBe(
+      'unavailable',
+    );
+  });
+
+  it('whole read null — `unavailable`', () => {
+    expect(ivRankStripFigure(null)).toBe('unavailable');
   });
 });

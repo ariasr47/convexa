@@ -2,11 +2,17 @@
  * Ticker viewer — recomposed from reusable section components (convexa-redesign Ticker re-skin +
  * componentize). The monolith's stat-tile grid, headline, toolbar, term-structure card, fresh
  * positioning, off-exchange blocks, setups, and GEX chart are now the `ticker/widgets/*` components
- * (StatTile · TickerToolbar · TickerHeader · LiveTape · DealerPositioning · GexStrikeProfile ·
- * TermStructureCard · FreshPositioning · OffExchangeBlocks · Setups). This file is the COMPOSITION +
- * data wiring only.
+ * (FigureCell (was StatTile, curvature-v2-foundations) · TickerToolbar · TickerHeader · LiveTape ·
+ * StructureHeroPanel · ReadStrip (curvature-v2-desk-and-read FE-8: replaces the old dealer
+ * positioning widget, now deleted) · TermStructureCard · FreshPositioning · OffExchangeBlocks ·
+ * Setups). `GexStrikeProfile` (curvature-v2-desk-and-read FE-11) is deleted — it is fully superseded
+ * by `StructureHeroPanel`, the desk's ONE structure instrument; see that widget's own module doc and
+ * `gex-profile-chart/chart.tsx`'s.
+ * This file is the COMPOSITION + data wiring only.
  *
- * Product spine #3 — hierarchy, not equal weight: Structure → Tape & plan → Supporting context.
+ * Product spine #3 — hierarchy, not equal weight: Structure → Tape & plan → Supporting context
+ * (curvature-v2-desk-and-read FE-11 reading order: masthead → structure-hero → read-strip → the
+ * plan group [LiveTape / PositionBrief / AiRecPanel wide / OrdersWidget] → the quiet context band).
  *
  * RE-SKIN + COMPONENTIZE, NOT a logic rewrite (FRONTEND_EXECUTION_CONTRACT hard rules): the bundle
  * poll (~60s), the page-scoped SSE subscription + payload-gap watchdog, the AI-rec hook, the
@@ -45,6 +51,8 @@ import Container from '@mui/material/Container';
 import Fade from '@mui/material/Fade';
 import Skeleton from '@mui/material/Skeleton';
 import Snackbar from '@mui/material/Snackbar';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
@@ -61,10 +69,7 @@ import { useTickerPageModel } from './useTickerPageModel';
 import { useTickerTradeFlows } from './useTickerTradeFlows';
 import {
   DealerFlowProjection,
-  DealerPositioning,
   FreshPositioning,
-  GexStrikeProfile,
-  IvRank,
   LiveTape,
   MarketContext,
   OffExchangeBlocks,
@@ -73,8 +78,10 @@ import {
   StraddleMove,
   TermStructureCard,
 } from './widgets';
-import { humanAge, StatSkeleton } from './widgets/_kit';
-import { CommandDeck, LastTradeReadout, TapePulseStrip, TickerToolbar } from './widgets/chrome';
+import { humanAge, StatSkeleton, universeMemberNote } from './widgets/_kit';
+import { CommandDeck, LastTradeReadout, TickerToolbar } from './widgets/chrome';
+import { buildReadStrip, ReadStrip } from './widgets/read-strip';
+import { StructureHeroPanel } from './widgets/structure-hero';
 
 // The cold-load stat grid: the full tile structure as shimmer (AC-Skel-1).
 function StatGridSkeleton() {
@@ -153,6 +160,12 @@ export function TickerDashboard() {
   }, [ticker]);
   // Expiration filter: null = all (no filter), [] = none selected, else an explicit subset.
   const [selected, setSelected] = useState<string[] | null>(null);
+  // The SAME "all expirations" / "N expirations" phrase `TickerHeader` states beside the headline
+  // (structure hero repair task item 6's subtitle) — never a second, independent computation.
+  const expirationsLabel =
+    selected === null
+      ? 'all expirations'
+      : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`;
   // Dark-pool (off-exchange) context: fixed ON (the toolbar toggle was removed to match the Figma).
   const darkPool = true;
 
@@ -291,11 +304,6 @@ export function TickerDashboard() {
   const allDates = data?.expirations.map((e) => e.date) ?? [];
   const noneSelected = selected !== null && selected.length === 0;
   const checked = selected ?? allDates; // dates shown ticked in the menu
-  // Product spine #4 — structure age/basis from page model (REST path only, never SSE).
-  const expWindowLabel =
-    selected === null
-      ? 'all expirations'
-      : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`;
   // Product spine #5 — open sim book on THIS ticker for the position brief (between structure & plan).
   const openBookViews = useMemo(
     () =>
@@ -485,7 +493,15 @@ export function TickerDashboard() {
                 dataAgeSeconds: fresh?.data_age_seconds ?? null,
                 refreshing: loading,
               }}
-              singleNameCaveat={universeMembership === 'nonmember'}
+              singleNameCaveat={universeMembership.membership === 'nonmember'}
+              // Ticker fidelity repair, change 3 (F3) — the masthead's `Universe member · N tracked
+              // names` note (`quick-note`, `design/src/screens/desk.mjs:285`); `size` stays `null`
+              // (never a fabricated 0) until a well-formed, non-empty universe read resolves.
+              universeMemberNote={
+                universeMembership.membership === 'member' && universeMembership.size != null
+                  ? universeMemberNote(universeMembership.size)
+                  : null
+              }
               symbol={symbol}
               onSymbolChange={setSymbol}
               onSubmitSymbol={onSubmitSymbol}
@@ -500,14 +516,17 @@ export function TickerDashboard() {
               onSelectQuickSymbol={onSelectQuickSymbol}
             />
 
-            {/* Tape Pulse — thin dual-clock strip (structure mid vs live mid). Not a full bento cell. */}
-            <TapePulseStrip structureMid={m.gex_spot ?? m.price} />
-
             {/* The widget BENTO board — product spine #3: NOT equal weight.
-                Reading order matches Scan → Ticker → Plan:
-                  1. Structure  — walls / flip / GEX (why this name)
-                  2. Tape & plan — live tape, AI read, sim orders (act → watch)
-                  3. Context    — supporting advisory reads (never score inputs)
+                Reading order (curvature-v2-desk-and-read FE-11, SPEC §1/§4):
+                  masthead (CommandDeck + TickerToolbar, above, unchanged)
+                    → structure-hero (the field, the ladder, the tape trail, the structure path — ONE
+                      instrument; the standalone `TapePulseStrip` masthead fragment and the standalone
+                      `GexStrikeProfile` widget that used to duplicate parts of it are both GONE, not
+                      merely hidden — see `structure-hero/` and `gex-profile-chart/chart.tsx`'s own
+                      module docs)
+                    → read-strip
+                    → AiRecPanel (wide) beside LiveTape / PositionBrief / OrdersWidget
+                    → quiet context band
                 Zone labels are non-headings (`<p>`) so widget titles stay the only h2s
                 (heading-semantics guard). One selection provider; two-column grid; container
                 queries still size each cell. Widgets mount AT REST (stage-3 §3.1-1). */}
@@ -533,141 +552,302 @@ export function TickerDashboard() {
                   Structure
                 </BoardZoneLabel>
 
-                {/* STATIC positioning — walls, GEX, opportunity. Stay rendered on SSE drop. */}
-                <ErrorBoundary variant="widget" label="Dealer positioning">
-                  <DealerPositioning
+                {/* FE-11's OWN reading-order rewrite: `StructureHeroPanel` is the desk's ONE structure
+                    instrument (field + ladder + tape trail + structure path). The standalone
+                    `GexStrikeProfile` widget that used to render directly below it — a second,
+                    overlapping GEX-wall renderer, disclosed as a KNOWN, NAMED, TEMPORARY condition at
+                    FE-6/FE-8 — is DELETED, not merely unmounted (see `gex-profile-chart/chart.tsx`'s
+                    own module doc: every capability it had — the field canvas, the walls/flip/mid, the
+                    embedded session path strip — is already present here, so nothing it drew is lost). */}
+                <ErrorBoundary variant="widget" label="Structure hero">
+                  <StructureHeroPanel
+                    symbol={ticker}
                     m={m}
-                    sig={sig}
-                    offExchange={data?.off_exchange}
-                    volOiThreshold={volOiThreshold}
-                    unusualCount={unusualStrikes.length}
-                    tierWord={tm.word}
-                    tierColor={tm.color}
-                    opportunityScore={sig?.opportunity_score ?? 0}
+                    strikes={data?.strike_profile.strikes ?? []}
                     structureAgeSeconds={structureAgeSeconds}
+                    pathSamples={structHist.samples}
+                    pathLoading={structHist.loading}
+                    pathError={structHist.error}
+                    pathBasis={structHist.basis}
+                    expirationsLabel={expirationsLabel}
                   />
                 </ErrorBoundary>
-
-                {/* GEX strike profile — structure centerpiece + embedded session path strip. */}
-                {data?.strike_profile && (
-                  <ErrorBoundary variant="widget" label="GEX profile">
-                    <GexStrikeProfile
-                      strikes={data.strike_profile.strikes}
-                      spot={m.gex_spot ?? m.price}
-                      callWall={m.call_wall}
-                      putWall={m.put_wall}
-                      gammaFlip={m.gamma_flip}
-                      expLabel={expWindowLabel}
-                      structureAgeSeconds={structureAgeSeconds}
-                      symbol={ticker}
-                      pathSamples={structHist.samples}
-                      pathLoading={structHist.loading}
-                      pathError={structHist.error}
-                      pathBasis={structHist.basis}
-                    />
-                  </ErrorBoundary>
-                )}
-
-                {/* Product spine #5 — position brief bridges structure → plan (your book on this name). */}
-                <PositionBrief
-                  ticker={ticker}
-                  openViews={openBookViews}
-                  storeFaulted={storeFaulted}
-                  entryBlocked={storeFaulted || tradeOpen}
-                  onOpenTrade={() => openEntry()}
-                  tradeAllowed={orderGate.allowed}
-                  onSignIn={() => orderGate.signIn(GATE_SIGN_IN)}
-                />
+                <ErrorBoundary variant="widget" label="Read strip">
+                  <ReadStrip
+                    cells={buildReadStrip({
+                      m,
+                      offExchange: data?.off_exchange,
+                      volOiThreshold,
+                      unusualCount: unusualStrikes.length,
+                      tierWord: tm.word,
+                      opportunityScore: sig?.opportunity_score ?? 0,
+                      ivRank: m.iv_rank ?? null,
+                      setupsCount: sig?.setups?.length ?? null,
+                    })}
+                    ringScore={sig?.opportunity_score ?? 0}
+                  />
+                </ErrorBoundary>
 
                 {/* ── 2. TAPE & PLAN ───────────────────────────────────────────────── */}
                 <BoardZoneLabel zone="plan">Tape & plan</BoardZoneLabel>
 
-                {/* LIVE-DERIVED tiles — dim on an SSE drop (span 2). */}
-                <ErrorBoundary variant="widget" label="Live tape">
-                  <LiveTape m={m} />
-                </ErrorBoundary>
+                {/* Ticker fidelity repair, change 1 (F1) — the design's `.work` grid
+                    (`design/src/screens/desk.mjs:32`, `DESK_CSS`): `minmax(0,8fr) minmax(0,4fr)` at
+                    a ≥1000px CONTAINER (never viewport — canon 21, "panels are containers", the same
+                    authority the hero repair used). Two grid children only, exactly like the design's
+                    markup: the AI read wide on the left, and a `side` column stacking Live tape /
+                    Position brief / Sim orders on the right. Below 1000 the container collapses to one
+                    column, so DOM order alone decides the stack: read → tape → position → orders,
+                    matching `ticker-hierarchy.spec.tsx`'s existing order guards (none of them pin AI
+                    relative to tape/brief/orders — only tape-before-brief, which this preserves). The
+                    outer `containerType` lives on a plain wrapper (never the styled grid element
+                    itself — an element cannot query the container IT establishes). */}
+                <Box
+                  data-testid="ticker-work-container"
+                  sx={{
+                    gridColumn: { xs: '1 / -1', md: 'span 2' },
+                    containerType: 'inline-size',
+                    containerName: 'ticker-work',
+                    minWidth: 0,
+                  }}
+                >
+                  <Box
+                    data-testid="ticker-work"
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr',
+                      gap: '14px',
+                      alignItems: 'stretch',
+                      [theme.containerQueries('ticker-work').up(1000)]: {
+                        gridTemplateColumns: 'minmax(0, 8fr) minmax(0, 4fr)',
+                      },
+                    }}
+                  >
+                    {/* Act → watch as one motion (UX §4.4): AI-rec paired with sim orders — both
+                        live in this work group, the AI read wide on the left. */}
+                    <AiRecPanel
+                      ticker={ticker}
+                      bundle={data}
+                      ai={aiRec}
+                      personas={readPersonas}
+                      activePersonaId={persona.activeId}
+                      dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
+                      onAccept={onAcceptRec}
+                      onAct={onActRec}
+                      onViewExport={openExport}
+                      readPersonaId={readPersonaId}
+                      onChangeReadPersona={setReadPersonaId}
+                      fillHeight
+                    />
+                    <Box
+                      data-testid="ticker-work-side"
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '14px',
+                        minWidth: 0,
+                      }}
+                    >
+                      {/* LIVE-DERIVED tiles — dim on an SSE drop. */}
+                      <ErrorBoundary variant="widget" label="Live tape">
+                        <LiveTape m={m} />
+                      </ErrorBoundary>
 
-                {/* Act → watch as one motion (UX §4.4): AI-rec paired with sim orders. */}
-                <AiRecPanel
-                  ticker={ticker}
-                  bundle={data}
-                  ai={aiRec}
-                  personas={readPersonas}
-                  activePersonaId={persona.activeId}
-                  dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
-                  onAccept={onAcceptRec}
-                  onAct={onActRec}
-                  onViewExport={openExport}
-                  readPersonaId={readPersonaId}
-                  onChangeReadPersona={setReadPersonaId}
-                  fillHeight
-                />
-                <OrdersWidget ticker={ticker} />
+                      {/* Product spine #5 — position brief bridges structure → plan (your book on
+                          this name). FE-11 moved it INTO the plan zone, beside
+                          LiveTape/AiRecPanel/OrdersWidget (SPEC §1's flow: "AI read brief wide beside
+                          tape / position / orders"); the ticker fidelity repair (F1) absorbs it as
+                          the side column's position card instead of a full-width bar ahead of the
+                          group — `stripSx` no longer spans `1 / -1` (`position-brief` module). */}
+                      <PositionBrief
+                        ticker={ticker}
+                        openViews={openBookViews}
+                        storeFaulted={storeFaulted}
+                        entryBlocked={storeFaulted || tradeOpen}
+                        onOpenTrade={() => openEntry()}
+                        tradeAllowed={orderGate.allowed}
+                        onSignIn={() => orderGate.signIn(GATE_SIGN_IN)}
+                      />
+
+                      <OrdersWidget ticker={ticker} />
+                    </Box>
+                  </Box>
+                </Box>
 
                 {/* ── 3. SUPPORTING CONTEXT (tertiary — quieter Widget chrome) ──────── */}
                 <BoardZoneLabel zone="context">Supporting context</BoardZoneLabel>
 
-                <WidgetChromeProvider value="quiet">
-                  {/* STATIC dealer-flow projection — bound to `m.dealer_flow_projection` only
-                    (`[live-vs-static-isolation]`). */}
-                  <DealerFlowProjection dfp={m.dealer_flow_projection} />
-
-                  {/* STATIC market context pack — `m.market_context ?? null` only. */}
-                  <MarketContext pack={m.market_context ?? null} />
-
-                  {/* Compact pair: IV rank ‖ term structure (both advisory, span 1). Straddle-implied
-                      move (tradeable-rec-inputs) lands immediately after IV rank — no twelfth bento
-                      widget for one scalar; it is a compact widget in the existing quiet zone. */}
-                  <IvRank read={m.iv_rank ?? null} />
-                  <StraddleMove move={m.straddle_move} />
-                  <TermStructureCard
-                    termStructure={m.term_structure}
-                    structureAgeSeconds={structureAgeSeconds}
-                  />
-
-                  {/* Fresh positioning ‖ Off-exchange blocks. Off-exchange is REST-only; with
-                    Dark pool off, Fresh takes the full remaining row. */}
-                  <FreshPositioning
-                    chainVolOiRatio={m.chain_vol_oi_ratio}
-                    volOiThreshold={volOiThreshold}
-                    unusualStrikes={unusualStrikes}
-                    structureAgeSeconds={structureAgeSeconds}
-                  />
-                  {darkPool && (
-                    <OffExchangeBlocks
-                      offExchange={data?.off_exchange}
-                      structureAgeSeconds={structureAgeSeconds}
+                {/* Ticker fidelity repair, change 2 (F2) — the design's `ctx-head` + `ctx-grid`
+                    (`design/src/screens/desk.mjs:43`): a `Context` header carrying a presentational
+                    `All · Flow · Vol · Positioning` filter (only `All` is wired — the band carries no
+                    categories yet, so Flow/Vol/Positioning are disabled + "coming soon", never a
+                    fake-functional filter — `Widget.tsx`'s own affordance-only convention), then a
+                    `repeat(3, minmax(0,1fr))` quiet grid at the design's density. This wrapper spans
+                    the full bento row, same pattern as the `ticker-work` grid change 1 added above. */}
+                <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 2' } }}>
+                  <Box
+                    data-testid="context-band-head"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      flexWrap: 'wrap',
+                      mb: 1.5,
+                    }}
+                  >
+                    <Typography
+                      component="p"
+                      sx={{
+                        m: 0,
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        color: 'text.primary',
+                      }}
+                    >
+                      Context
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'text.secondary', fontSize: '0.75rem' }}
+                    >
+                      Advisory reads that never feed the score · snapshot, never live · refreshes
+                      with the data load
+                    </Typography>
+                    <Box
+                      aria-hidden
+                      sx={{ flex: '1 1 40px', minWidth: 40, height: '1px', bgcolor: 'divider' }}
                     />
-                  )}
+                    <ToggleButtonGroup
+                      value="all"
+                      exclusive
+                      size="small"
+                      aria-label="Filter the context band"
+                      data-testid="context-band-filter"
+                    >
+                      <ToggleButton value="all" sx={{ textTransform: 'none' }}>
+                        All
+                      </ToggleButton>
+                      {(['Flow', 'Vol', 'Positioning'] as const).map((label) => (
+                        <Tooltip key={label} arrow title="Filter by category — coming soon">
+                          <span>
+                            <ToggleButton
+                              value={label.toLowerCase()}
+                              disabled
+                              sx={{ textTransform: 'none' }}
+                            >
+                              {label}
+                            </ToggleButton>
+                          </span>
+                        </Tooltip>
+                      ))}
+                    </ToggleButtonGroup>
+                  </Box>
 
-                  <Setups setups={sig?.setups} structureAgeSeconds={structureAgeSeconds} />
+                  <WidgetChromeProvider value="quiet">
+                    <Box
+                      data-testid="ticker-context-grid"
+                      sx={{
+                        display: 'grid',
+                        // Ticker fidelity repair residual close-out: the design's own `.ctx-grid`
+                        // responsive table (`design/src/screens/responsive-spec.mjs`'s "Context
+                        // band" row) — 1 col below `tablet`(768), 2 from `tablet` (768–1099,
+                        // covering the design's separate tablet/small-laptop rows, both 2-col), 3
+                        // from `laptop` (1100–1599, covering laptop/desktop, both 3-col), 4 from
+                        // `wide`(1600+). The bare `repeat(3, minmax(0,1fr))` this replaces never
+                        // reflowed below laptop width — at 390 it squeezed all nine ctx-grid cards
+                        // into three ~110px columns, the dominant driver of the phone page-height
+                        // overflow. `Widget`'s own `span={2}` (`gridColumn: { xs: '1 / -1', md:
+                        // 'span 2' }`, `Widget.tsx:353`) already degrades correctly against every
+                        // column count here — `1 / -1` is column-count-agnostic — so Setups needs
+                        // no matching change.
+                        gridTemplateColumns: {
+                          xs: '1fr',
+                          tablet: 'repeat(2, minmax(0, 1fr))',
+                          laptop: 'repeat(3, minmax(0, 1fr))',
+                          wide: 'repeat(4, minmax(0, 1fr))',
+                        },
+                        gap: 2,
+                        // Quiet cards vary a lot in natural height (a compact tenor ribbon beside a
+                        // 2×2 stat card); CSS grid's default `stretch` was inflating the shorter
+                        // siblings to match the tallest one in the row instead of sitting at their
+                        // own content height, matching neither this band's own density goal nor the
+                        // design's rendered result (`desk.mjs`'s `.ctx-grid` has no `align-items`
+                        // override either — its cards simply don't vary enough for stretch to show).
+                        alignItems: 'start',
+                      }}
+                    >
+                      {/* STATIC dealer-flow projection — bound to `m.dealer_flow_projection` only
+                        (`[live-vs-static-isolation]`). */}
+                      <DealerFlowProjection dfp={m.dealer_flow_projection} />
 
-                  {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). */}
-                  <Tooltip arrow title="Add widget — coming soon">
-                    <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 2' } }}>
-                      <ComingSoonBox
-                        data-testid="add-widget-slot"
-                        aria-disabled
-                        sx={{
-                          cursor: 'not-allowed',
-                          minHeight: 64,
-                          borderRadius: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          opacity: 0.85,
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{ color: 'text.disabled', fontWeight: 500 }}
-                        >
-                          + Add widget
-                        </Typography>
-                      </ComingSoonBox>
+                      {/* STATIC market context pack — `m.market_context ?? null` only. */}
+                      <MarketContext pack={m.market_context ?? null} />
+
+                      <TermStructureCard
+                        termStructure={m.term_structure}
+                        structureAgeSeconds={structureAgeSeconds}
+                      />
+
+                      {/* PASS 2 change 8 (owner ruling, `context/DECISION_LEDGER.md` key
+                          `context-band-is-the-designs-card-list`, 2026-09-08 "Do all four"):
+                          `IvRank` is unmounted from the band — it is not in the design's
+                          enumerated ctx-grid card list (`desk.mjs:395-421`) and it repeats the
+                          read strip's `IV rank` cell (one fact, one place). The component and its
+                          own unit spec (`iv-rank/IvRank.spec.tsx`) stay — this is an unmount, not a
+                          deletion; `quiet-band.register.spec.tsx` scans the source file by path and
+                          is correctly unaffected. See `TICKER_FIDELITY_REPAIR_REPORT.md` (Pass 2,
+                          change 8) for the e2e/unit assertion edits this required. */}
+                      <StraddleMove move={m.straddle_move} />
+
+                      {/* Fresh positioning ‖ Off-exchange blocks. Off-exchange is REST-only; with
+                        Dark pool off, Fresh takes its own single column. */}
+                      <FreshPositioning
+                        chainVolOiRatio={m.chain_vol_oi_ratio}
+                        volOiThreshold={volOiThreshold}
+                        unusualStrikes={unusualStrikes}
+                        structureAgeSeconds={structureAgeSeconds}
+                      />
+                      {darkPool && (
+                        <OffExchangeBlocks
+                          offExchange={data?.off_exchange}
+                          structureAgeSeconds={structureAgeSeconds}
+                        />
+                      )}
+
+                      <Setups setups={sig?.setups} structureAgeSeconds={structureAgeSeconds} />
+
+                      {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). Single
+                          column (design: `desk.mjs:419` carries no `ctx-span2`) — it sits beside
+                          Setups' 2-col span in the same row, exactly filling the 3-col grid. */}
+                      <Tooltip arrow title="Add widget — coming soon">
+                        <Box>
+                          <ComingSoonBox
+                            data-testid="add-widget-slot"
+                            aria-disabled
+                            sx={{
+                              cursor: 'not-allowed',
+                              minHeight: 64,
+                              borderRadius: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              opacity: 0.85,
+                            }}
+                          >
+                            <Typography
+                              variant="body2"
+                              sx={{ color: 'text.disabled', fontWeight: 500 }}
+                            >
+                              + Add widget
+                            </Typography>
+                          </ComingSoonBox>
+                        </Box>
+                      </Tooltip>
                     </Box>
-                  </Tooltip>
-                </WidgetChromeProvider>
+                  </WidgetChromeProvider>
+                </Box>
               </Box>
             </WidgetSelectionProvider>
           </Box>

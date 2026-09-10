@@ -108,6 +108,10 @@ describe('Ticker · page-level invariants', () => {
     renderAt('/ticker/TSLA');
     await screen.findByText('Call wall');
     // Shared fixture: opportunity_score 42 — rendered verbatim, nothing FE-side feeds it.
-    expect(within(screen.getByTestId('dealer-positioning')).getByText(/42 ·/)).toBeInTheDocument();
+    // (v2, FE-8) the old dealer positioning widget is deleted; the opportunity cell now lives in
+    // the read strip.
+    expect(
+      within(screen.getByTestId('read-strip-cell-opportunity')).getByText(/42 ·/),
+    ).toBeInTheDocument();
   });
 });

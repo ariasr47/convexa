@@ -65,13 +65,24 @@ test('strict visual summary validates arithmetic, inventory and file hash', () =
 });
 test('Chromium summary accepts scalar inventory identity and project fields', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'summary-'));
-  const common = { ...base(root), gate: 'chromium', selected: 52, executed: 52, passed: 52 };
+  // Derived from the real manifest, not a frozen literal — the count/id move together with it
+  // (curvature-v2-foundations FE-10 bumped `pre-feature-52-v1`/52 → `curvature-v2-foundations-75-
+  // v1`/75; this fixture must track whatever the manifest says next time it moves too).
+  const manifest = loadManifest();
+  const chromiumCount = manifest.full_chromium.tests.length;
+  const common = {
+    ...base(root),
+    gate: 'chromium',
+    selected: chromiumCount,
+    executed: chromiumCount,
+    passed: chromiumCount,
+  };
   delete common.scenarios;
   const summary = {
     ...common,
-    inventory_id: 'pre-feature-52-v1',
+    inventory_id: manifest.full_chromium.inventory_id,
     project: 'chromium',
-    tests: loadManifest().full_chromium.tests.map((record) => ({
+    tests: manifest.full_chromium.tests.map((record) => ({
       test_id: record.test_id,
       file: record.file,
       title_path: record.title_path,
@@ -81,12 +92,22 @@ test('Chromium summary accepts scalar inventory identity and project fields', ()
       artifact_paths: [],
     })),
   };
-  assert.doesNotThrow(() => validateSummary(summary, { root, manifest: loadManifest() }));
+  assert.doesNotThrow(() => validateSummary(summary, { root, manifest }));
 });
 test('summary rejects exact-count and identity mutations', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'summary-'));
   const manifest = loadManifest();
-  const common = { ...base(root), gate: 'chromium', selected: 52, executed: 52, passed: 52 };
+  // Derived from the real manifest, not a frozen literal — the count/id move together with it
+  // (curvature-v2-foundations FE-10 bumped `pre-feature-52-v1`/52 → `curvature-v2-foundations-75-
+  // v1`/75; this fixture must track whatever the manifest says next time it moves too).
+  const chromiumCount = manifest.full_chromium.tests.length;
+  const common = {
+    ...base(root),
+    gate: 'chromium',
+    selected: chromiumCount,
+    executed: chromiumCount,
+    passed: chromiumCount,
+  };
   delete common.scenarios;
   const records = manifest.full_chromium.tests.map((record) => ({
     test_id: record.test_id,
@@ -99,7 +120,7 @@ test('summary rejects exact-count and identity mutations', () => {
   }));
   const summary = {
     ...common,
-    inventory_id: 'pre-feature-52-v1',
+    inventory_id: manifest.full_chromium.inventory_id,
     project: 'chromium',
     tests: records,
   };

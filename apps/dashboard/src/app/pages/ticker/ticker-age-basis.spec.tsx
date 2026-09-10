@@ -91,9 +91,19 @@ describe('Ticker · age + basis labels (product spine #4)', () => {
     );
     await screen.findByText('Call wall');
 
-    const dealer = screen.getByTestId('widget-dealer-positioning');
-    expect(dealer.textContent).toMatch(/Structure as-of|structure snapshot/i);
-    expect(dealer.textContent).toMatch(/Snapshot, never live/i);
+    // (v2, curvature-v2-desk-and-read FE-8) the old dealer positioning widget is deleted;
+    // `StructureHeroPanel` (the ladder's Call/Put wall + Max pain, the ladder foot's two GEX
+    // cells, the Field/Magnet toggle) is its structure-bound successor in this exact page slot.
+    // Its own subtitle ("levels are REST structure (as-of Xs) · the mid is tape") is DIFFERENT
+    // wording from the old "Snapshot, never live" — a real, disclosed difference: unlike the old
+    // widget (zero live cells), the hero's ladder Mid row genuinely IS live, so a blanket "never
+    // live" would now be
+    // false. The teeth this test protects — structure age is named, and the widget does not claim
+    // to BE the live stream — survive in the hero's own honest phrasing.
+    const dealer = screen.getByTestId('widget-structure-hero');
+    expect(dealer.textContent).toMatch(/REST structure/i);
+    expect(dealer.textContent).toMatch(/as-of/i);
+    expect(dealer.textContent).toMatch(/the mid is tape/i);
 
     const live = screen.getByTestId('widget-live-tape');
     // Live path names stream vs structure — either live or offline subtitle.

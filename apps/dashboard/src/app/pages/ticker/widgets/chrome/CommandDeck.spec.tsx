@@ -11,9 +11,14 @@
  *   3. The Expirations tri-state WIRE semantics: all-ticked → null (no filter), a partial pick → the
  *      explicit subset, none → [] — a refactor sending the full list instead of null changes backend
  *      scoping with zero visible UI difference.
- * NOT asserted (visible + intentional → review/page): deck composition/panel structure, meta-line
- * folding, symbol input behavior, persona picker contents, CTA wiring, loading spinner,
- * reduced-motion transition styling.
+ *   4. Ticker fidelity repair, change 3 (F3) — the masthead is bare on the ink (no raised-panel
+ *      chrome), the chip row groups regime/connection/last-trade, the headline carries no
+ *      parenthetical, the second line carries Levels@/Structure-as-of/refreshes/expirations, the
+ *      embedded toolbar carries no bare ticker input, and the quick row forwards the caller's
+ *      `universeMemberNote`. This composition WAS explicitly out of this file's scope before F3;
+ *      it is now pinned because this task's own rules require a layout change to get a test.
+ * NOT asserted (visible + intentional → review/page): persona picker contents, CTA wiring, loading
+ * spinner, reduced-motion transition styling.
  */
 import { usePersona } from '@/features/personas/usePersona';
 import { __resetMemory } from '@/features/trading/positions/store';
@@ -23,9 +28,31 @@ import { ThemeProvider } from '@mui/material/styles';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { connectionStateFor } from '../../connection/connectionState';
+import { resolveChipContent } from '../../connection/copy';
 import type { SessionTapeOccupancy } from '../../sessionTapeStanding';
+import { allRulesForClass, emotionClassOf, joinedStyleText } from '../_kit/emotionCssReader';
 import { CommandDeck } from './CommandDeck';
-import { connectionChip } from './TickerHeader';
+
+/**
+ * Migrated off the deleted `TickerHeader.connectionChip()` (curvature-v2-foundations, SPEC §2.4:
+ * "the resolver moves out of `TickerHeader.tsx`"). This adapter mirrors the OLD signature/shape
+ * exactly (`(live, streamOffline, reduced, routeSymbol?) => {tone,text,tip,dot,pulse,warnIcon} |
+ * null`) over the NEW resolver + pure chip-content function, so the 14 call sites below need no
+ * further shape changes — only the two sites asserting the now-corrected `drop`/`fault` and S0
+ * `offline` copy (the literal `⚠` dropped in favour of a real icon, SPEC §4.2 Icons row).
+ */
+function chip(
+  live: LiveUpdate | null,
+  streamOffline: boolean,
+  reduced: boolean,
+  routeSymbol?: string,
+) {
+  const route = routeSymbol ?? live?.ticker ?? '';
+  const state = connectionStateFor({ live, streamOffline, routeSymbol: route });
+  if (state == null) return null;
+  return resolveChipContent(state, live, route, reduced);
+}
 
 // ---- Fixtures --------------------------------------------------------------------------------
 function marketState(over: Partial<MarketState> = {}): MarketState {
@@ -201,29 +228,29 @@ afterEach(() => {
 // ============================================================================================
 describe('connectionChip — the single stream-driven chip (unit)', () => {
   it('live session → live chip with pulse; reduced motion strips the pulse', () => {
-    const c = connectionChip(liveUpdate({ live: true, market_session: 'regular' }), false, false);
+    const c = chip(liveUpdate({ live: true, market_session: 'regular' }), false, false);
     expect(c?.tone).toBe('info');
     expect(c?.text).toContain('live');
     expect(c?.pulse).toBe(true);
-    expect(connectionChip(liveUpdate({ live: true }), false, true)?.pulse).toBe(false);
+    expect(chip(liveUpdate({ live: true }), false, true)?.pulse).toBe(false);
   });
 
   it('stream offline SUPERSEDES a would-be live session — never a stale "live", never a pulse', () => {
-    const c = connectionChip(liveUpdate({ live: true, market_session: 'regular' }), true, false);
+    const c = chip(liveUpdate({ live: true, market_session: 'regular' }), true, false);
     expect(c?.tone).toBe('warning');
     expect(c?.text).toContain('Live offline');
     expect(c?.pulse).toBe(false);
   });
 
   it('no payload → no chip; no ticks in a covered session → the non-live warning (no pulse)', () => {
-    expect(connectionChip(null, false, false)).toBeNull();
-    const c = connectionChip(liveUpdate({ live: false, market_session: 'regular' }), false, false);
+    expect(chip(null, false, false)).toBeNull();
+    const c = chip(liveUpdate({ live: false, market_session: 'regular' }), false, false);
     expect(c?.tone).toBe('warning');
     expect(c?.pulse).toBe(false);
   });
 
   it('S1 starting chip is session tape · starting… not liveStatus', () => {
-    const c = connectionChip(
+    const c = chip(
       liveUpdate({
         live: false,
         feed: 'session_tape',
@@ -242,7 +269,7 @@ describe('connectionChip — the single stream-driven chip (unit)', () => {
   });
 
   it('S1 playing omits · 1× and prints tape HH:MM:SS ET', () => {
-    const c = connectionChip(
+    const c = chip(
       liveUpdate({ live: false, feed: 'session_tape', session_tape: tapeOcc({ pace: 1 }) }),
       false,
       false,
@@ -255,7 +282,7 @@ describe('connectionChip — the single stream-driven chip (unit)', () => {
   });
 
   it('S1 playing prints · 4× when pace is 4', () => {
-    const c = connectionChip(
+    const c = chip(
       liveUpdate({ live: false, feed: 'session_tape', session_tape: tapeOcc({ pace: 4 }) }),
       false,
       false,
@@ -265,24 +292,24 @@ describe('connectionChip — the single stream-driven chip (unit)', () => {
   });
 
   it('S1 streamOffline during playing is Session tape stream dropped not live-offline', () => {
-    const c = connectionChip(
+    const c = chip(
       liveUpdate({ live: false, feed: 'session_tape', session_tape: tapeOcc() }),
       true,
       false,
       'SPY',
     );
-    expect(c?.text).toBe('⚠ Session tape stream dropped');
+    expect(c?.text).toBe('Session tape stream dropped');
     expect(c?.text).not.toContain('Live offline');
     expect(c?.tone).toBe('warning');
   });
 
   it('S0 streamOffline is still Live offline reconnecting', () => {
-    const c = connectionChip(liveUpdate({ live: true, market_session: 'regular' }), true, false);
-    expect(c?.text).toContain('⚠ Live offline — reconnecting…');
+    const c = chip(liveUpdate({ live: true, market_session: 'regular' }), true, false);
+    expect(c?.text).toContain('Live offline — reconnecting…');
   });
 
   it('poison live true + session_tape still hollow session tape not ● live', () => {
-    const c = connectionChip(
+    const c = chip(
       liveUpdate({
         live: true,
         feed: 'session_tape',
@@ -299,7 +326,7 @@ describe('connectionChip — the single stream-driven chip (unit)', () => {
   });
 
   it('not-this-ticker chip names the armed identity', () => {
-    const c = connectionChip(
+    const c = chip(
       liveUpdate({
         ticker: 'QQQ',
         live: false,
@@ -314,7 +341,7 @@ describe('connectionChip — the single stream-driven chip (unit)', () => {
   });
 
   it('ended chip is session tape ended not live-offline', () => {
-    const c = connectionChip(
+    const c = chip(
       liveUpdate({
         live: false,
         feed: 'session_tape',
@@ -330,7 +357,7 @@ describe('connectionChip — the single stream-driven chip (unit)', () => {
   });
 
   it('gap chip only when standing is gap', () => {
-    const c = connectionChip(
+    const c = chip(
       liveUpdate({
         live: false,
         feed: 'session_tape',
@@ -371,7 +398,7 @@ describe('CommandDeck — sticky condensed bar (state-driven scroll condense + l
     setDeckVisible(false);
     const sticky = screen.getByTestId('deck-sticky');
     expect(sticky).toHaveTextContent('TSLA · $415.99'); // static price, NOT the stale 416.50 live mid
-    expect(within(sticky).getByText('⚠ Live offline — reconnecting…')).toBeInTheDocument();
+    expect(within(sticky).getByText('Live offline — reconnecting…')).toBeInTheDocument();
     expect(within(sticky).queryByText(/● live/)).toBeNull();
   });
 });
@@ -437,5 +464,175 @@ describe('CommandDeck — Quick symbols row (recent-ticker-chips)', () => {
     const sticky = screen.getByTestId('deck-sticky');
     expect(within(sticky).queryByTestId('quick-symbols')).toBeNull();
     expect(within(sticky).queryByText('QUICK')).toBeNull();
+  });
+
+  it('forwards `universeMemberNote` through to the quick row, verbatim', () => {
+    renderDeck({ universeMemberNote: 'Universe member · 69 tracked names' });
+    expect(screen.getByTestId('quick-symbols-note')).toHaveTextContent(
+      'Universe member · 69 tracked names',
+    );
+  });
+
+  it('omits the quick-row note when the caller sends none (nonmember/unknown/unresolved)', () => {
+    renderDeck({ universeMemberNote: null });
+    expect(screen.queryByTestId('quick-symbols-note')).toBeNull();
+  });
+});
+
+// ============================================================================================
+// Ticker fidelity repair, change 3 (F3) — the masthead is bare on the ink
+// (`design/src/screens/desk.mjs:255-288`), not a raised panel: the chip row groups regime,
+// connection and last-trade; the headline carries no parenthetical; the second line carries
+// Levels@/Structure-as-of/refreshes/expirations; the EMBEDDED toolbar has no bare ticker input.
+// This composition was explicitly out of this file's scope before F3 (no `command-deck` chrome or
+// `deck-meta` content was pinned anywhere) — every assertion below is a fresh pin.
+// ============================================================================================
+describe('CommandDeck — masthead composition (ticker fidelity repair F3)', () => {
+  it('the deck surface carries no raised-panel chrome — no border, fill or shadow', () => {
+    renderDeck();
+    const deck = screen.getByTestId('command-deck');
+    const cls = emotionClassOf(deck);
+    expect(cls, 'command-deck should carry an emotion (sx) class').toBeTruthy();
+    const rules = allRulesForClass(joinedStyleText(), cls as string)
+      .join(';')
+      .replace(/\s+/g, '');
+
+    expect(rules).not.toContain('border:1pxsolid');
+    expect(rules).not.toContain('box-shadow');
+    expect(rules).not.toContain('border-radius');
+    expect(rules).not.toMatch(/background-color:(?!transparent)/);
+  });
+
+  it('the chip row groups regime, connection and last-trade on one row, ahead of the headline', () => {
+    // A real `live` update, not the pre-first-fact placeholder (rule 18) — so the RESOLVED chip
+    // (`connection-chip`, not `connection-chip-placeholder`) is the one under test.
+    renderDeck({ live: liveUpdate({ live: true, mid: 416.5 }), isLive: true });
+    const deck = screen.getByTestId('command-deck');
+    const connectionChip = within(deck).getByTestId('connection-chip');
+    const lastTrade = within(deck).getByTestId('last-trade');
+    const headline = screen.getByRole('heading', { level: 1 });
+    const deckMeta = within(deck).getByTestId('deck-meta');
+
+    // Same row: last-trade's row-level ancestor also contains the connection chip.
+    const chipRow = connectionChip.closest('div');
+    expect(chipRow).not.toBeNull();
+    expect(chipRow?.contains(lastTrade)).toBe(true);
+
+    // Chip row before the headline; headline before the second line.
+    expect(
+      (chipRow?.compareDocumentPosition(headline) ?? 0) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      headline.compareDocumentPosition(deckMeta) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('the headline carries only symbol + mid — no "(levels @ … · expirations)" parenthetical', () => {
+    renderDeck({ m: marketState({ ticker: 'TSLA', price: 415.99, gex_spot: 410 }) });
+    const headline = screen.getByRole('heading', { level: 1 });
+    expect(headline).toHaveTextContent('TSLA · $415.99');
+    expect(headline.textContent).not.toContain('levels @');
+    expect(headline.textContent).not.toContain('expiration');
+  });
+
+  it('the second line carries Levels@, Structure as-of, the documented refresh cadence, and the expirations count', () => {
+    renderDeck({
+      m: marketState({ gex_spot: 410 }),
+      selected: ['2026-06-26', '2026-07-03'],
+      freshness: { snapshotIso: null, dataAgeSeconds: 30, refreshing: false },
+    });
+    const meta = screen.getByTestId('deck-meta');
+    expect(meta).toHaveTextContent('Levels @ $410.00');
+    expect(meta).toHaveTextContent('Structure as-of');
+    expect(meta).toHaveTextContent('refreshes ~60s');
+    expect(meta).toHaveTextContent('2 expirations');
+  });
+
+  it('all expirations selected reads "All expirations" on the second line, not a bare count', () => {
+    renderDeck({ selected: null });
+    expect(screen.getByTestId('deck-meta')).toHaveTextContent('All expirations');
+  });
+
+  it('the embedded toolbar (inside the deck) carries no bare ticker input — EXPIRATIONS/PERSONA only', () => {
+    renderDeck();
+    const toolbar = screen.getByTestId('ticker-toolbar');
+    expect(within(toolbar).queryByLabelText('Ticker')).toBeNull();
+    expect(document.getElementById('ticker-input')).toBeNull();
+    expect(within(toolbar).getByLabelText('Expirations')).toBeInTheDocument();
+  });
+});
+
+// ==================================================================================================
+// PASS 2 change 9 — the masthead's controls join the headline row at ≥ laptop (1100)
+// ==================================================================================================
+//
+// Width is driven by mocking `window.matchMedia` for the EXACT query `theme.breakpoints.up('laptop')`
+// produces (1100px) — the SAME `vi.stubGlobal('matchMedia', …)` idiom `ai-rec/ReadSheet.spec.tsx`
+// already established for a width-driven layout switch.
+const JOIN_QUERY = theme.breakpoints.up('laptop').replace(/^@media( ?)/, '');
+
+function stubJoinHeadline(join: boolean) {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches: join && query === JOIN_QUERY,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      onchange: null,
+      dispatchEvent: () => false,
+    })),
+  );
+}
+
+describe('CommandDeck — masthead controls join the headline row at ≥ laptop (PASS 2 change 9)', () => {
+  it('below laptop (default — unmocked matchMedia degrades to false): exactly one toolbar mounts, tier 2, AFTER the CTA', () => {
+    renderDeck();
+    const deck = screen.getByTestId('command-deck');
+    expect(within(deck).getAllByTestId('ticker-toolbar')).toHaveLength(1);
+    const toolbar = within(deck).getByTestId('ticker-toolbar');
+    const cta = within(deck).getByTestId('open-sim-trade');
+    // Today's stacked order: the CTA (tier 1, inside TickerHeader) precedes the toolbar (tier 2).
+    expect(cta.compareDocumentPosition(toolbar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('at ≥ laptop: exactly one toolbar mounts, INSIDE the headline row, BEFORE the CTA (design order: fields then the button)', () => {
+    stubJoinHeadline(true);
+    renderDeck();
+    const deck = screen.getByTestId('command-deck');
+    expect(within(deck).getAllByTestId('ticker-toolbar')).toHaveLength(1);
+    const toolbar = within(deck).getByTestId('ticker-toolbar');
+    const cta = within(deck).getByTestId('open-sim-trade');
+    // Placement flips: the toolbar now precedes the CTA (both inside TickerHeader's own row) —
+    // the mechanical proof this join actually happened, not just that nothing crashed.
+    expect(toolbar.compareDocumentPosition(cta) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('at ≥ laptop: the SAME ids/testids/aria-labels — Expirations and Persona stay reachable by their labels', () => {
+    stubJoinHeadline(true);
+    renderDeck();
+    const toolbar = screen.getByTestId('ticker-toolbar');
+    expect(within(toolbar).getByLabelText('Expirations')).toBeInTheDocument();
+    expect(within(toolbar).queryByLabelText('Ticker')).toBeNull();
+    expect(document.getElementById('ticker-input')).toBeNull();
+  });
+
+  it('at ≥ laptop: the toolbar still WRITES through the same wiring (Expirations tri-state unaffected by placement)', async () => {
+    stubJoinHeadline(true);
+    const user = userEvent.setup();
+    // Same reference case the below-laptop suite above already proves ("Unticking the only
+    // remaining date → [] (none), NOT null") — this test's only job is confirming the SAME wiring
+    // still fires once the toolbar moved into the headline row, not re-proving the tri-state rules.
+    const onNone = vi.fn();
+    renderDeck({
+      selected: ['2026-06-26'],
+      checked: ['2026-06-26'],
+      onSelectExpirations: onNone,
+    });
+    await user.click(screen.getByLabelText('Expirations'));
+    await user.click(screen.getByText('2026-06-26'));
+    expect(onNone).toHaveBeenLastCalledWith([]);
   });
 });

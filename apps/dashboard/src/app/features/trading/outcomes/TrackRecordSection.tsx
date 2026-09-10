@@ -31,7 +31,7 @@
  *    `[score-change-is-deliberate-and-measured]`'s enabler, never its exerciser.
  *  - `[theme-token-discipline]` — MUI theme tokens only; zero hardcoded hex; dark/light parity.
  */
-import { typographyTokens } from '@/shared/theme/tokens';
+import { MONO_FACE } from '@/shared/figure';
 import { ArcDivider } from '@/shared/ui/ArcDivider';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Box from '@mui/material/Box';
@@ -85,8 +85,6 @@ import {
 import { computeLedgerRead } from './ledger';
 import { Cell, CellFamily, EXCLUSION_PRECEDENCE, LedgerRead, N_MIN } from './types';
 
-const MONO = typographyTokens.monoFontFamily;
-
 /** The house ⓘ idiom, reimplemented locally (`features/` may not import `pages/ticker/widgets/_kit`).
  *  A tooltip EXPLAINS; it never INFORMS — none of these carries a number, a rate or a count. */
 function InfoTip({ title, testid }: { title: string; testid?: string }) {
@@ -133,7 +131,7 @@ function CellView({ cell, sourcesComplete }: { cell: Cell; sourcesComplete: bool
       <Typography
         variant="body2"
         data-testid={`tr-read-${cell.key}`}
-        sx={{ color: 'text.primary', fontFamily: MONO, fontVariantNumeric: 'tabular-nums' }}
+        sx={{ color: 'text.primary', ...MONO_FACE }}
       >
         {lines.read}
       </Typography>
@@ -159,10 +157,20 @@ function CellView({ cell, sourcesComplete }: { cell: Cell; sourcesComplete: bool
   );
 }
 
+/** A quiet card (design/src/screens/positions.mjs:88-89, `.panel.quiet`) — no lift, no sheen (canon
+ *  rule 21). Purely a frame around the UNCHANGED `FamilyView` content below; carries no tint. */
+const familyCardSx = {
+  border: '1px solid',
+  borderColor: 'divider',
+  borderRadius: '10px',
+  padding: '14px 16px',
+  minWidth: 0,
+};
+
 function FamilyView({ family, sourcesComplete }: { family: CellFamily; sourcesComplete: boolean }) {
   const c = family.coverage;
   return (
-    <Box sx={{ mb: 2.5 }} data-testid={`tr-family-${family.key}`}>
+    <Box sx={familyCardSx} data-testid={`tr-family-${family.key}`}>
       <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 0.25 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
           {TR_FAMILY_HEADING[family.key]}
@@ -227,7 +235,30 @@ function ExclusionBreakdown({ read }: { read: LedgerRead }) {
     <Box component="details" data-testid="tr-breakdown" sx={{ mb: 1.5 }}>
       <Box
         component="summary"
-        sx={{ cursor: 'pointer', color: 'text.secondary', fontSize: '0.8125rem' }}
+        sx={{
+          cursor: 'pointer',
+          color: 'text.secondary',
+          fontSize: '0.8125rem',
+          // GATE Z (criterion 66, pass 3): a native `<summary>` matches none of `theme.ts`'s
+          // coarse-pointer selector list (`button, [role="button"], a, input`) — the SAME escape
+          // mechanism as MUI `Select`'s self-duplicated `.MuiSelect-select` class, just via a
+          // different element instead of a specificity fight. Floored LOCALLY, coarse-pointer only,
+          // so the desktop/fine-pointer row height (measured unchanged at 1280) never moves.
+          //
+          // GATE Z (criterion 66, pass 4 — QA pass 3 finding): the pass-3 fix used
+          // `display: flex`, which computes the UA default `summary { display: list-item }` away —
+          // Chromium then generates no `::marker`, so the native disclosure triangle disappeared on
+          // a coarse pointer (confirmed: at 393/fine, `display` stays `list-item` and the triangle
+          // renders; at 393/coarse it was `flex` and the triangle was gone — same width, so the
+          // fix, not the pointer, was the cause). `line-height` reaches the 44px floor without
+          // touching `display` at all, so `list-item` (and its `::marker`) is never overridden —
+          // verified in isolation with a real Chromium instance: coarse renders the box at
+          // 393x44 with the triangle visible; fine (393 and 1280) is untouched, still list-item.
+          '@media (pointer: coarse)': {
+            minHeight: 44,
+            lineHeight: '44px',
+          },
+        }}
       >
         {TR_BREAKDOWN_SUMMARY}
       </Box>
@@ -351,100 +382,154 @@ export function TrackRecordSection({ personaLabel }: TrackRecordSectionProps) {
       </Stack>
       <Line testid="tr-subtitle">{TR_SUBTITLE}</Line>
 
-      {/* ---- The read frame: always on, never collapsible (AC-17 wants it without interaction) ---- */}
-      <Line testid="tr-advisory">{TR_ADVISORY}</Line>
-      <Line testid="tr-sim-disclosure">{TR_SIM_DISCLOSURE}</Line>
-      <Line testid="tr-storage">{TR_STORAGE}</Line>
-
-      {body === 'unreadable' ? (
-        <Box data-testid="tr-unreadable" sx={{ my: 2 }}>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            {TR_UNREADABLE_TITLE}
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            {TR_UNREADABLE_BODY}
-          </Typography>
-        </Box>
-      ) : body === 'empty' ? (
-        <Box data-testid="tr-empty" sx={{ my: 2 }}>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            {TR_EMPTY_TITLE}
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            {trEmptyBody(N_MIN)}
-          </Typography>
-        </Box>
-      ) : (
-        <>
-          {/* The coverage statement — readable WITHOUT interaction, outside any disclosure. */}
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'flex-start', mt: 1.5 }}>
-            <Typography variant="body2" data-testid="tr-coverage" sx={{ color: 'text.primary' }}>
-              {body === 'partial'
-                ? // ⚠ M is WITHHELD, not caveated: a partial roll-up must never present its smaller
-                  // M as the whole population. The open / never-filled counts are withheld with it —
-                  // they are read from the same understated indices.
-                  trCoveragePartial(coverage.counted)
-                : trCoverage(
-                    coverage.counted,
-                    coverage.recorded_closed,
-                    coverage.adjacent.open_not_counted,
-                    coverage.adjacent.never_filled,
-                  )}
-            </Typography>
-            <InfoTip title={TR_TIP_COVERAGE} testid="tr-coverage-info" />
-          </Stack>
-          <Box sx={{ mt: 1 }}>
-            <ExclusionBreakdown read={read} />
-          </Box>
-        </>
-      )}
-
-      {/* The partial banner — above the families, un-dismissable. */}
-      {!basis.sources_complete && (
-        <Typography
-          variant="body2"
-          data-testid="tr-partial-banner"
-          sx={{ color: 'text.primary', fontWeight: 600, mb: 1 }}
+      {/* "How this is counted" — ONE disclosure holding the honesty copy and the definitions
+          (design/src/screens/positions.mjs has no equivalent of this content at all; the compact
+          cards below are the design's whole surface, so everything the design does not show —
+          `Counted N of M…`, `What wasn't counted — and why`, the definitions — moves BEHIND this
+          one toggle, per the repair task's own must-not-change instruction: it "stays reachable —
+          behind a disclosure the design's compact cards do not show, never deleted". Nothing inside
+          is removed, renamed or reworded — `tr-how-to-read` stays, same testids, same strings. */}
+      <Box component="details" data-testid="tr-how-counted" sx={{ mb: 2 }}>
+        <Box
+          component="summary"
+          sx={{
+            cursor: 'pointer',
+            color: 'text.secondary',
+            fontSize: '0.8125rem',
+            fontWeight: 600,
+            // Same coarse-pointer floor idiom as `tr-breakdown` below (criterion 66) — floored
+            // locally so the desktop/fine-pointer row height never moves.
+            '@media (pointer: coarse)': { minHeight: 44, lineHeight: '44px' },
+          }}
         >
-          {TR_COVERAGE_PARTIAL_BANNER}
-        </Typography>
-      )}
+          How this is counted
+        </Box>
+        <Box sx={{ mt: 1 }}>
+          {/* ---- The read frame: always reachable, never deleted (AC-2/3/4/5) ---- */}
+          <Line testid="tr-advisory">{TR_ADVISORY}</Line>
+          <Line testid="tr-sim-disclosure">{TR_SIM_DISCLOSURE}</Line>
+          <Line testid="tr-storage">{TR_STORAGE}</Line>
 
-      {/* The capture epoch — DERIVED FROM THE DATA (never a hardcoded ship date). */}
-      <Stack direction="row" spacing={0.5} sx={{ alignItems: 'flex-start', mb: 1 }}>
-        <Typography variant="body2" data-testid="tr-epoch" sx={{ color: 'text.secondary' }}>
-          {basis.capture_epoch ? trEpoch(trDate(basis.capture_epoch)) : TR_EPOCH_NONE}
-        </Typography>
-        <InfoTip title={TR_TIP_EPOCH} testid="tr-epoch-info" />
-      </Stack>
+          {body === 'unreadable' ? (
+            <Box data-testid="tr-unreadable" sx={{ my: 2 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {TR_UNREADABLE_TITLE}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                {TR_UNREADABLE_BODY}
+              </Typography>
+            </Box>
+          ) : body === 'empty' ? (
+            <Box data-testid="tr-empty" sx={{ my: 2 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {TR_EMPTY_TITLE}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                {trEmptyBody(N_MIN)}
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              <Stack direction="row" spacing={0.5} sx={{ alignItems: 'flex-start', mt: 1.5 }}>
+                <Typography
+                  variant="body2"
+                  data-testid="tr-coverage"
+                  sx={{ color: 'text.primary' }}
+                >
+                  {body === 'partial'
+                    ? // ⚠ M is WITHHELD, not caveated: a partial roll-up must never present its
+                      // smaller M as the whole population. The open / never-filled counts are
+                      // withheld with it — they are read from the same understated indices.
+                      trCoveragePartial(coverage.counted)
+                    : trCoverage(
+                        coverage.counted,
+                        coverage.recorded_closed,
+                        coverage.adjacent.open_not_counted,
+                        coverage.adjacent.never_filled,
+                      )}
+                </Typography>
+                <InfoTip title={TR_TIP_COVERAGE} testid="tr-coverage-info" />
+              </Stack>
+            </>
+          )}
 
-      {/* "How to read this" — a VISIBLE block, never an accordion: the ACs say the readout CARRIES
-          these facts, and a collapsed block does not. */}
-      <Box data-testid="tr-how-to-read" sx={{ mb: 1 }}>
-        <Line testid="tr-hit-def">{TR_HIT_DEF}</Line>
-        <Line testid="tr-range-def">{TR_RANGE_DEF}</Line>
-        <Line testid="tr-return-def">{TR_RETURN_DEF}</Line>
-        <Line testid="tr-basis-def">{TR_BASIS_DEF}</Line>
-        <Line testid="tr-overlap">{TR_OVERLAP}</Line>
+          {/* The partial banner — un-dismissable. */}
+          {!basis.sources_complete && (
+            <Typography
+              variant="body2"
+              data-testid="tr-partial-banner"
+              sx={{ color: 'text.primary', fontWeight: 600, mb: 1 }}
+            >
+              {TR_COVERAGE_PARTIAL_BANNER}
+            </Typography>
+          )}
+
+          {/* The capture epoch — DERIVED FROM THE DATA (never a hardcoded ship date). */}
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'flex-start', mb: 1 }}>
+            <Typography variant="body2" data-testid="tr-epoch" sx={{ color: 'text.secondary' }}>
+              {basis.capture_epoch ? trEpoch(trDate(basis.capture_epoch)) : TR_EPOCH_NONE}
+            </Typography>
+            <InfoTip title={TR_TIP_EPOCH} testid="tr-epoch-info" />
+          </Stack>
+
+          {/* "How to read this" — the definitions. Same testids, same strings, never deleted. */}
+          <Box data-testid="tr-how-to-read" sx={{ mb: 1 }}>
+            <Line testid="tr-hit-def">{TR_HIT_DEF}</Line>
+            <Line testid="tr-range-def">{TR_RANGE_DEF}</Line>
+            <Line testid="tr-return-def">{TR_RETURN_DEF}</Line>
+            <Line testid="tr-basis-def">{TR_BASIS_DEF}</Line>
+            <Line testid="tr-overlap">{TR_OVERLAP}</Line>
+          </Box>
+
+          {/* The lead explainer — rendered iff NO cell anywhere is computed (empty · day one · a
+              partial that reached no floor). One rule, three cases. */}
+          {noComputedCell && <Line testid="tr-lead-explainer">{trLeadExplainer(N_MIN)}</Line>}
+
+          {/* The multiplicity caution — the last line of the frame. */}
+          <Line testid="tr-multiplicity">{TR_MULTIPLICITY}</Line>
+        </Box>
       </Box>
 
-      {/* The lead explainer — rendered iff NO cell anywhere is computed (empty · day one · a partial
-          that reached no floor). One rule, three cases. */}
-      {noComputedCell && <Line testid="tr-lead-explainer">{trLeadExplainer(N_MIN)}</Line>}
-
-      {/* The multiplicity caution — the LAST line of the frame, immediately above the families, so
-          it is read against the cells rather than three screens away. */}
-      <Line testid="tr-multiplicity">{TR_MULTIPLICITY}</Line>
-
-      {/* ---- The families: five, in a FIXED order. Never sorted by rate — that builds a
-              leaderboard the sample cannot support. ---- */}
-      {body !== 'empty' && body !== 'unreadable' && (
-        <Box data-testid="tr-families" sx={{ mt: 2 }}>
-          {read.families.map((f) => (
-            <FamilyView key={f.key} family={f} sourcesComplete={basis.sources_complete} />
-          ))}
+      {/* `tr-breakdown` stays a TOP-LEVEL, always-directly-clickable disclosure — it shipped before
+          this repair and its own `<summary>` must stay reachable without first expanding "How this
+          is counted" above (nesting one native <details> inside a closed one collapses the inner
+          summary to zero size, which is exactly what GATE Z criterion 66's coarse/fine-pointer
+          passes on this element caught). `tr-coverage` (above, inside the new disclosure) still
+          never sits INSIDE `tr-breakdown` — the two are independent, matching the shipped
+          non-containment assertion. */}
+      {body !== 'unreadable' && body !== 'empty' && (
+        <Box sx={{ mb: 1 }}>
+          <ExclusionBreakdown read={read} />
         </Box>
       )}
+
+      {/* ---- The families: four-plus quiet cards (design/src/screens/positions.mjs:87-90,
+              `repeat(4, minmax(0,1fr))`), ALWAYS rendered — including the empty/unreadable states,
+              each family's own `tr-family-empty-*` message standing in for a `—` cell (the shipped
+              per-family empty-cohort honesty this component already carries; §2.7/canon 4: never a
+              blank space where a fact used to be). Five, in a FIXED order. Never sorted by rate —
+              that builds a leaderboard the sample cannot support. ---- */}
+      <Box
+        data-testid="tr-families"
+        sx={{
+          mt: 1,
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, minmax(0, 1fr))',
+            md: 'repeat(4, minmax(0, 1fr))',
+            // Five families (the design's mock shows four) — one row at ≥ lg so the fifth never
+            // wraps alone under a 4-column grid (conductor fixup after the surfaces repair; the
+            // 1192 px content column gives ~229 px cards, the design's own card width).
+            lg: 'repeat(5, minmax(0, 1fr))',
+          },
+          gap: '12px',
+        }}
+      >
+        {read.families.map((f) => (
+          <FamilyView key={f.key} family={f} sourcesComplete={basis.sources_complete} />
+        ))}
+      </Box>
 
       {/* ---- The archive: present in EVERY state, including empty and unreadable (on an empty
               surface it is the only useful thing here). ---- */}

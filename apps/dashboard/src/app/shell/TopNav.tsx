@@ -17,12 +17,13 @@ import { AccountControl } from '@/features/auth/AccountControl';
 import {
   prefetchPositionsRoute,
   prefetchScannerRoute,
-  prefetchStructureFieldLabRoute,
   prefetchTickerRoute,
 } from '@/shared/lib/prefetchRoutes';
-import { elevationFor } from '@/shared/theme/tokens';
+import { elevationFor, extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import CloseIcon from '@mui/icons-material/Close';
+import KeyboardCommandKeyOutlined from '@mui/icons-material/KeyboardCommandKeyOutlined';
 import MenuIcon from '@mui/icons-material/Menu';
+import SearchIcon from '@mui/icons-material/Search';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
@@ -50,13 +51,12 @@ function warmNav(to: string) {
   if (to.startsWith('/ticker')) void prefetchTickerRoute();
   else if (to.startsWith('/scanner')) void prefetchScannerRoute();
   else if (to.startsWith('/positions')) void prefetchPositionsRoute();
-  else if (to.startsWith('/lab')) void prefetchStructureFieldLabRoute();
 }
 
-// Product spine (where → why → track): Scanner first, then Ticker, Positions, Alerts, Blog.
-// Lab is a public Canvas instrument demo (not product spine, but discoverable).
+// (v2) Product spine, narrowed to FOUR links (canon rule 19, curvature-v2-foundations): Scanner,
+// Ticker, Positions, Alerts. Lab and Blog move to the footer — AC-23.
 // Active-route rules: Scanner `/scanner*`; Ticker `/ticker*`; Positions `/positions*`; etc.
-// Deliberately NO operator entry (`/_ops/metrics` and `/_ops/research` are URL-only).
+// Deliberately NO operator entry (`/_ops/metrics` and `/_ops/research` are URL-only) — AC-23b.
 const NAV: NavEntry[] = [
   {
     label: 'Scanner',
@@ -74,19 +74,19 @@ const NAV: NavEntry[] = [
     to: '/alerts',
     active: (p) => p === '/alerts' || p.startsWith('/alerts/'),
   },
-  {
-    label: 'Lab',
-    to: '/lab',
-    active: (p) => p === '/lab' || p.startsWith('/lab/'),
-  },
-  {
-    label: 'Blog',
-    to: '/blog',
-    active: (p) => p === '/blog' || p.startsWith('/blog/'),
-  },
 ];
 
-export function TopNav() {
+export interface TopNavProps {
+  /**
+   * (v2) The ⌘K palette trigger (SPEC §2.6/§4.4 P1). `TopNav` owns only the AFFORDANCE — the
+   * field/icon that opens it — never the palette itself or the global keyboard listener; those are
+   * `AppShell`'s (curvature-v2-foundations FE-9). Absent → the affordance renders inert (no-op),
+   * which is the correct state until FE-9 wires it.
+   */
+  onOpenPalette?: () => void;
+}
+
+export function TopNav({ onOpenPalette }: TopNavProps = {}) {
   const location = useLocation();
   const path = location.pathname;
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -101,8 +101,12 @@ export function TopNav() {
       data-testid="top-nav"
       sx={{
         // Translucent, blurred chrome (README §1) — frosted glass over the dark canvas; the frost
-        // firms up slightly once scrolled.
-        bgcolor: (t) => alpha(t.palette.background.paper, scrolled ? 0.9 : 0.82),
+        // firms up slightly once scrolled. v2 `glass` (SPEC §2.1): the RESTING arm is theme-derived
+        // — dark is exactly `alpha(panel #131A24, 0.82)`, so this renders byte-identical to the
+        // prior computed value; light's 0.86 is the design mirror's own deliberate value, not a
+        // computation match. NAMED GAP: no token exists yet for the SCROLLED 0.9 state, which keeps
+        // its computed alpha (derived from a palette slot, so not a new hardcoded literal).
+        bgcolor: (t) => (scrolled ? alpha(t.palette.background.paper, 0.9) : extrasFor(t).glass),
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
         borderBottom: 1,
@@ -122,7 +126,16 @@ export function TopNav() {
             minHeight: { xs: 56, md: 60 },
             display: 'flex',
             alignItems: 'center',
-            gap: { xs: 1.5, md: 3 },
+            // `xs` tightened from 1.5→1 (curvature-v2-foundations AC-40, measured): signed-OUT at
+            // 393px the row carries brand + the N5 search-icon affordance + BOTH "Log in"/"Sign up"
+            // + the hamburger simultaneously — a combination no prior overflow test exercised (every
+            // existing `no-overflow.spec.ts` check ran signed-in, where AccountControl renders one
+            // narrower avatar control instead of two buttons). Measured real overflow: scrollWidth
+            // 410 vs innerWidth 393 (17px), reproduced live and fixed here plus the two `size="small"`
+            // trims below (24px reclaimed total) — never touching `AccountControl` (its buttons are
+            // already `size="small"`) or hiding the icon (SPEC N5 requires it visible for the WHOLE
+            // <1100px range, not just tablet).
+            gap: { xs: 1, md: 3 },
           }}
         >
           {/* Wordmark links to `/` (the landing — the honest front door, NOT the operator route). */}
@@ -182,17 +195,107 @@ export function TopNav() {
             })}
           </Stack>
 
+          <Box sx={{ flexGrow: 1 }} />
+
+          {/* (v2) The ⌘K palette affordance (SPEC §2.6/§4.4 P1 · N5) — laptop (1100px, FE-2's
+              additive key) and up: the full field + kbd hint. Below that: an icon button only, and
+              "the ⌘K hint drops with the field and the shortcut still works" (the global listener
+              lives in AppShell, unaffected by this element's width). */}
+          <Box
+            component="button"
+            type="button"
+            onClick={onOpenPalette}
+            data-testid="nav-search-trigger"
+            aria-label="Jump to a ticker"
+            sx={(t) => ({
+              display: { xs: 'none', laptop: 'flex' },
+              alignItems: 'center',
+              gap: 1,
+              height: 36,
+              minWidth: 200,
+              px: 1.5,
+              // CONTROL role = 8px (SPEC §2.2, ruling 4) — theme-derived multiplier, not a literal.
+              borderRadius: 1,
+              border: '1px solid',
+              borderColor: 'divider',
+              bgcolor: extrasFor(t).well,
+              color: 'text.secondary',
+              font: 'inherit',
+              fontSize: '0.8125rem',
+              cursor: 'pointer',
+              transition: 'border-color 160ms ease, color 160ms ease',
+              '&:hover': { color: 'text.primary', borderColor: 'text.disabled' },
+            })}
+          >
+            <SearchIcon sx={{ fontSize: 16 }} aria-hidden />
+            <Box component="span" sx={{ flexGrow: 1, textAlign: 'left' }}>
+              Jump to a ticker…
+            </Box>
+            <Box
+              component="span"
+              aria-hidden
+              sx={{
+                fontSize: 11,
+                // PR #46 CI repair, §B — was the bare CSS keyword `monospace` (never a declared
+                // face): resolved to whatever the HOST calls its default monospace font, which is
+                // exactly why the "⌘" glyph rendered differently per platform. Bound to the design
+                // token instead, matching every other data/figure face in the app.
+                fontFamily: typographyTokens.monoFontFamily,
+                lineHeight: 1,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '1px',
+                // On the declared 4-pt ladder from birth (SPEC §2.2): 1 × 8px, not the off-ladder 6px.
+                px: 1,
+                py: 0.5,
+                borderRadius: 1,
+                border: '1px solid',
+                borderColor: 'divider',
+                // PR #46 CI repair, §A — `text.disabled` measured 2.56:1 (dark) / 2.65:1 (light),
+                // under WCAG AA 4.5:1: `text.disabled` means a disabled CONTROL, and this is
+                // informative text (a live keyboard hint), not a disabled affordance. Bound to
+                // `text.secondary` instead (steel ≈5.7–6.8:1 on every real dark surface it sits on)
+                // — the bordered kbd chrome, not colour, is what marks it "quiet".
+                color: 'text.secondary',
+              }}
+            >
+              {/* PR #46 CI repair, §B — U+2318 (⌘) is not in IBM Plex Sans/Mono at all (verified: no
+                  fontsource subset, no full upstream Plex source, carries this glyph), so no bundled
+                  font can render it; it fell back to the HOST's symbol font, a second host-dependent
+                  surface beside the `fontFamily: 'monospace'` fix above. Replaced with the app's
+                  existing icon system (`@mui/icons-material`, bundled in the JS bundle — the same
+                  host-independence a stroke SVG would give, and the pattern this file already uses
+                  for Search/Menu/Close) rather than a literal character. "K" stays real bundled text
+                  (plain ASCII, covered by every Plex Mono subset already shipped). */}
+              <KeyboardCommandKeyOutlined sx={{ fontSize: 12 }} />K
+            </Box>
+          </Box>
+          <IconButton
+            onClick={onOpenPalette}
+            aria-label="Jump to a ticker"
+            data-testid="nav-search-icon"
+            // `size="small"` (AC-40 overflow fix): trims the CSS-default hit box a few px on a mouse
+            // — real touch devices are unaffected, since `theme.ts`'s `@media (pointer: coarse)`
+            // floor targets the bare `button` element unconditionally (independent of MUI's `size`).
+            size="small"
+            sx={{ display: { xs: 'inline-flex', laptop: 'none' }, color: 'text.primary' }}
+          >
+            <SearchIcon fontSize="small" />
+          </IconButton>
+
           {/* Account control (UX_BLUEPRINT §2.1) — top-right. Loading / login·signup / account menu.
               Non-blocking: the rest of the app renders regardless of who-am-I. */}
-          <Box sx={{ flexGrow: 1 }} />
           <AccountControl />
 
-          {/* Hamburger — below md only. Opens the nav drawer. */}
+          {/* Hamburger — below md only. Opens the nav drawer. `size="small"` — same AC-40 note as
+              the search icon above; the coarse-pointer floor still guarantees ≥44px on a real touch
+              device regardless. */}
           <IconButton
             edge="end"
             aria-label="Open navigation menu"
             data-testid="nav-menu-button"
             onClick={() => setDrawerOpen(true)}
+            size="small"
             sx={{ display: { xs: 'inline-flex', md: 'none' }, color: 'text.primary' }}
           >
             <MenuIcon />

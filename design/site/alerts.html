@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en" data-scheme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Alerts · Convexa design</title>
+<meta name="description" content="Structure rules, the rules list and the fired log.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  .al-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 16px; align-items: start; }
+  .al-rule { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--line); }
+  .al-kind { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  @media (max-width: 899px) { .al-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 599px) { .al-rule { grid-template-columns: 56px minmax(0, 1fr); } .al-rule .al-meta { grid-column: 2; } .al-rule .al-act { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; } .al-rule .al-chev { display: none; } }
+
+  [hidden] { display: none !important; }
+  .site-bar { position: fixed; right: 16px; bottom: 16px; z-index: 100; display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 999px; background: var(--raised); border: 1px solid var(--line-2); box-shadow: var(--e4); font-size: 12px; color: var(--steel); flex-wrap: wrap; max-width: calc(100vw - 32px); }
+  .site-bar a, .site-bar button, .site-bar select { height: 28px; border-radius: 999px; border: 1px solid transparent; background: transparent; color: var(--phosphor); font: 600 12px/1 'IBM Plex Sans', system-ui, sans-serif; padding: 0 10px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .site-bar a:hover, .site-bar button:hover { background: var(--raised-2); }
+  .site-bar select { background: var(--ink-2); border-color: var(--line-2); padding: 0 8px; }
+  .site-bar .lbl { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); padding-left: 6px; }
+  @media (max-width: 767px) { .site-bar { bottom: auto; top: 64px; right: 8px; left: 8px; max-width: none; } }
+</style>
+</head>
+<body>
+<div style="width: 100%; min-height: 0px; background: var(--ink); color: var(--phosphor);">
+    <header class="nav-bar">
+    <div class="wrap nav-in">
+      <a href="#" class="nav-burger" aria-label="Open navigation menu"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M4 7h16M4 12h16M4 17h16"></path></svg></a>
+      <a href="#" style="display: inline-flex; text-decoration: none;"><span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 17px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 12.6px; height: 12.2px; margin: 0 0.8px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span></a>
+      <nav aria-label="primary" class="nav-links"><a href="#" class="">Scanner</a><a href="#" class="">Ticker</a><a href="#" class="">Positions</a><a href="#" class="on">Alerts</a></nav>
+      <div class="nav-right">
+        <div class="field nav-search"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><span class="ph" style="flex: 1;">Jump to a ticker…</span><span class="kbd">⌘K</span></div>
+        <a href="#" class="nav-search-icon" aria-label="Search tickers"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></a>
+        <div class="chip live nav-clock" style="height: 26px;"><span class="dot"></span>Open <span class="mono tick" style="color: var(--steel);">10:42:07 ET</span></div>
+        <a href="#" class="nav-bell" aria-label="Alerts" style="display: inline-flex; color: var(--steel);"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 16V11a6 6 0 0112 0v5l2 2H4l2-2z"></path><path d="M10 20a2 2 0 004 0"></path></svg></a>
+        <a href="#" aria-label="Account settings" style="display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: var(--amber); color: var(--amber-ink); font: 700 12px/1 'IBM Plex Sans', sans-serif; text-decoration: none; flex-shrink: 0;">R</a>
+      </div>
+    </div>
+  </header>
+    <section class="wrap" style="padding-top: 26px;">
+      <h1 class="display" style="margin: 0; font-size: clamp(26px, 2.6vw, 34px); letter-spacing: -0.02em;">Alerts</h1>
+      <p style="margin: 6px 0 0; font-size: 13.5px; color: var(--steel); max-width: 640px;">Level-touch, tier-change and score-gate rules on structure snapshots — not a live stream. Open a ticker so rules can evaluate; optional browser notifications after you allow them. <a href="#">Two-speed structure vs tape</a>.</p>
+      <div class="al-grid" style="margin-top: 18px;"><section class="panel">
+    <div style="padding: 16px 18px 12px; border-bottom: 1px solid var(--line);"><h2 style="margin: 0; font-size: 15px; font-weight: 700;">New rule</h2><p style="margin: 3px 0 0; font-size: 12px; color: var(--steel);">Rules evaluate against structure snapshots while a ticker desk is open — not a background stream.</p></div>
+    <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 14px;">
+      <div><span class="caps" style="display: block; margin-bottom: 6px;">Symbol</span><div class="field mono focus">SPY<span style="width: 1px; height: 16px; background: var(--amber);"></span><span style="flex: 1;"></span><span class="chip outline" style="font-size: 11px;">universe member</span></div></div>
+      <div><span class="caps" style="display: block; margin-bottom: 6px;">Kind</span><div class="al-kind"><div style="display: flex; align-items: center; justify-content: center; height: 40px; border-radius: 8px; border: 1px solid var(--amber); background: var(--amber-tint); color: var(--amber-text); font-size: 12.5px; font-weight: 600; text-align: center;">Score gate</div><div style="display: flex; align-items: center; justify-content: center; height: 40px; border-radius: 8px; border: 1px solid var(--line-2); background: transparent; color: var(--steel); font-size: 12.5px; font-weight: 600; text-align: center;">Tier change</div><div style="display: flex; align-items: center; justify-content: center; height: 40px; border-radius: 8px; border: 1px solid var(--line-2); background: transparent; color: var(--steel); font-size: 12.5px; font-weight: 600; text-align: center;">Level touch</div></div></div>
+      <div><span class="caps" style="display: block; margin-bottom: 6px;">Score ≥</span><div style="display: flex; gap: 8px; align-items: center;"><div class="field mono" style="width: 110px;">70</div><span class="seg"><span>50</span><span class="on">70</span><span>85</span></span><span style="font-size: 11.5px; color: var(--steel);">Prime starts around 80</span></div></div>
+      <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: var(--ink-2); border: 1px solid var(--line); font-size: 12px; color: var(--steel); flex-wrap: wrap;"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 16V11a6 6 0 0112 0v5l2 2H4l2-2z"></path><path d="M10 20a2 2 0 004 0"></path></svg><span style="flex: 1 1 200px;">Browser notifications <span class="chip outline" style="height: 18px; font-size: 11px;">not allowed</span> — you will see fired alerts here and on the desk.</span><button class="btn secondary sm">Allow notifications</button></div>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;"><button class="btn primary"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M12 5v14M5 12h14"></path></svg> Add rule</button><span style="font-size: 11.5px; color: var(--steel-2);">Stored in this browser · 4 rules</span></div>
+    </div>
+  </section><div><section class="panel" style="overflow: hidden;">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 15px; font-weight: 700;">Rules</h2><span class="chip">4</span><span style="flex: 1;"></span><span class="seg"><span class="on">All</span><span>Armed</span><span>Paused</span></span></div>
+    <div class="al-rule">
+      <span class="mono" style="font-size: 13px; font-weight: 600;">SPY</span>
+      <span class="al-meta" style="min-width: 0;"><span style="font-size: 12.5px; font-weight: 600;">Score gate <span class="mono steel" style="font-weight: 500;">· score ≥ 70</span></span><span style="display: block; font-size: 11px; color: var(--steel); margin-top: 2px;"><span class="chip live" style="height: 16px; font-size: 11px; padding: 0 6px;"><span class="dot"></span>desk open</span> armed · evaluated 42s ago on the SPY desk</span></span>
+      <span class="al-act"><span role="switch" aria-checked="true" style="display: inline-flex; align-items: center; width: 38px; height: 22px; padding: 2px; border-radius: 999px; background: var(--amber); justify-content: flex-end;"><span style="width: 18px; height: 18px; border-radius: 50%; background: var(--amber-ink);"></span></span><span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"></path></svg></span></span>
+      <span class="al-chev" style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M9 6l6 6-6 6"></path></svg></span>
+    </div><div class="al-rule">
+      <span class="mono" style="font-size: 13px; font-weight: 600;">NVDA</span>
+      <span class="al-meta" style="min-width: 0;"><span style="font-size: 12.5px; font-weight: 600;">Level touch <span class="mono steel" style="font-weight: 500;">· gamma flip · 133.20</span></span><span style="display: block; font-size: 11px; color: var(--steel); margin-top: 2px;">armed · last evaluated 6 min ago</span></span>
+      <span class="al-act"><span role="switch" aria-checked="true" style="display: inline-flex; align-items: center; width: 38px; height: 22px; padding: 2px; border-radius: 999px; background: var(--amber); justify-content: flex-end;"><span style="width: 18px; height: 18px; border-radius: 50%; background: var(--amber-ink);"></span></span><span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"></path></svg></span></span>
+      <span class="al-chev" style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M9 6l6 6-6 6"></path></svg></span>
+    </div><div class="al-rule">
+      <span class="mono" style="font-size: 13px; font-weight: 600;">QQQ</span>
+      <span class="al-meta" style="min-width: 0;"><span style="font-size: 12.5px; font-weight: 600;">Level touch <span class="mono steel" style="font-weight: 500;">· price ≥ 490.00</span></span><span style="display: block; font-size: 11px; color: var(--steel); margin-top: 2px;">armed · needs an open QQQ desk to evaluate</span></span>
+      <span class="al-act"><span role="switch" aria-checked="true" style="display: inline-flex; align-items: center; width: 38px; height: 22px; padding: 2px; border-radius: 999px; background: var(--amber); justify-content: flex-end;"><span style="width: 18px; height: 18px; border-radius: 50%; background: var(--amber-ink);"></span></span><span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"></path></svg></span></span>
+      <span class="al-chev" style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M9 6l6 6-6 6"></path></svg></span>
+    </div><div class="al-rule">
+      <span class="mono" style="font-size: 13px; font-weight: 600;">TSLA</span>
+      <span class="al-meta" style="min-width: 0;"><span style="font-size: 12.5px; font-weight: 600;">Tier change <span class="mono steel" style="font-weight: 500;">· any change</span></span><span style="display: block; font-size: 11px; color: var(--steel); margin-top: 2px;">paused</span></span>
+      <span class="al-act"><span role="switch" aria-checked="false" style="display: inline-flex; align-items: center; width: 38px; height: 22px; padding: 2px; border-radius: 999px; background: var(--raised-2); justify-content: flex-start;"><span style="width: 18px; height: 18px; border-radius: 50%; background: var(--steel);"></span></span><span style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"></path></svg></span></span>
+      <span class="al-chev" style="display: inline-flex; color: var(--steel-2);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M9 6l6 6-6 6"></path></svg></span>
+    </div>
+    <div style="padding: 10px 16px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--steel);">A rule needs its ticker desk open to evaluate. Nothing runs in the background, and a missed move is never back-filled.</div>
+  </section>
+  <section class="panel quiet" style="overflow: hidden; margin-top: 16px;">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px;"><h2 style="margin: 0; font-size: 15px; font-weight: 700;">Fired</h2><span class="chip">today · 2</span></div>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--line); flex-wrap: wrap;"><span class="mono" style="font-size: 11px; color: var(--steel); min-width: 62px;">10:12 ET</span><span class="mono" style="font-size: 13px; font-weight: 600; min-width: 48px;">SPY</span><span style="font-size: 12.5px; flex: 1 1 200px;">Score gate ≥ 70 fired at 72 · Actionable</span><a href="#" class="btn link" style="font-size: 12px;">Open SPY desk <svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div><div style="display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--line); flex-wrap: wrap;"><span class="mono" style="font-size: 11px; color: var(--steel); min-width: 62px;">09:48 ET</span><span class="mono" style="font-size: 13px; font-weight: 600; min-width: 48px;">NVDA</span><span style="font-size: 12.5px; flex: 1 1 200px;">Gamma flip 133.20 touched · mid 133.18</span><a href="#" class="btn link" style="font-size: 12px;">Open NVDA desk <svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a></div>
+  </section></div></div>
+    </section>
+    <footer style="margin-top: 48px;">
+    <svg viewBox="0 0 1200 40" preserveAspectRatio="none" style="display: block; width: 100%; height: 40px;" aria-hidden="true"><path d="M 0 36 Q 600 -12 1200 36" fill="none" stroke="var(--steel)" stroke-opacity="0.35" stroke-width="1" vector-effect="non-scaling-stroke"></path></svg>
+    <div class="wrap foot-grid">
+      <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+        <span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 15px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 11.1px; height: 10.8px; margin: 0 0.7px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span>
+        <div style="display: flex; gap: 18px; font-size: 12px; flex-wrap: wrap;"><a href="#" style="color: var(--steel);">How Convexa works</a><a href="#" style="color: var(--steel);">Blog — how we read structure</a><a href="#" style="color: var(--steel);">Lab</a></div>
+        <p style="margin: 0; max-width: 720px; font-size: 12px; color: var(--steel);">Convexa is an analysis tool. Positions in the sim book are <strong>simulated</strong> (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.</p>
+        <p style="margin: 0; font-size: 12px; color: var(--steel-2);">© 2026 Convexa. All rights reserved.</p>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--steel);"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"></path></svg><span class="seg" style="padding: 2px;"><span class="on">Dark</span><span>Light</span><span>System</span></span></div>
+    </div>
+  </footer>
+  </div>
+<div class="site-bar" role="toolbar" aria-label="Design site controls"><a href="index.html">← All screens</a><span class="lbl">Alerts</span><button id="scheme-btn" type="button" onclick="toggleScheme()">Light scheme</button></div>
+<script>
+(function () {
+  var KEY = 'convexa-design-scheme';
+  function current() { try { return localStorage.getItem(KEY) || 'dark'; } catch (e) { return 'dark'; } }
+  function apply(s) { document.documentElement.setAttribute('data-scheme', s); if (window.deskSetProps) window.deskSetProps({ scheme: s }); var b = document.getElementById('scheme-btn'); if (b) b.textContent = s === 'dark' ? 'Light scheme' : 'Dark scheme'; }
+  window.toggleScheme = function () { var n = current() === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(KEY, n); } catch (e) {} apply(n); };
+  apply(current());
+})();
+</script>
+
+</body>
+</html>

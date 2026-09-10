@@ -12,6 +12,7 @@
  * sees the same columns until column-customization returns. Header copy uses the terse table-header
  * map. `cellContent` (incl. the offline-dim live cells) is reused as-is.
  */
+import { PauseMark } from '@/shared/figure';
 import { extrasFor } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
@@ -363,8 +364,16 @@ function GroupRows({
             </Box>
             {subtotalNode(group)}
             {props.streamOffline && (
-              <Box component="span" sx={{ color: 'text.disabled', ml: '6px' }}>
-                ⏸
+              <Box
+                component="span"
+                sx={{
+                  display: 'inline-flex',
+                  color: 'text.disabled',
+                  ml: '6px',
+                  verticalAlign: 'middle',
+                }}
+              >
+                <PauseMark />
               </Box>
             )}
           </Box>

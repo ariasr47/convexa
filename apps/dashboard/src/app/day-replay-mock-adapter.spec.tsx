@@ -12,13 +12,30 @@ import type { LiveUpdate, MarketState } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { connectionStateFor } from './pages/ticker/connection/connectionState';
+import { resolveChipContent } from './pages/ticker/connection/copy';
 import {
   consumeStanding,
   genuineIsLive,
   type SessionTapeOccupancy,
 } from './pages/ticker/sessionTapeStanding';
-import { connectionChip } from './pages/ticker/widgets/chrome/TickerHeader';
 import { LiveTape } from './pages/ticker/widgets/live-tape/LiveTape';
+
+/**
+ * Migrated off the deleted `TickerHeader.connectionChip()` (curvature-v2-foundations, SPEC §2.4).
+ * Same shape/signature so the call sites below need no further changes.
+ */
+function connectionChip(
+  live: LiveUpdate | null,
+  streamOffline: boolean,
+  reduced: boolean,
+  routeSymbol?: string,
+) {
+  const route = routeSymbol ?? live?.ticker ?? '';
+  const state = connectionStateFor({ live, streamOffline, routeSymbol: route });
+  if (state == null) return null;
+  return resolveChipContent(state, live, route, reduced);
+}
 
 function occ(over: Partial<SessionTapeOccupancy> = {}): SessionTapeOccupancy {
   return {
@@ -108,7 +125,10 @@ const BANNED = [
   'Streaming live',
   'Live tape',
   'Gamma flip (live)',
-  '⚠ Live offline — reconnecting…',
+  // (v2) The retired parenthetical form's successor (SPEC §2.2, criterion 18) — a session-tape
+  // replay must render `Gamma flip · session tape`, never the `· live` derivation label.
+  'Gamma flip · live',
+  'Live offline — reconnecting…',
   '○ overnight — no live data',
   '○ market closed',
   '○ no live ticks',
@@ -183,7 +203,7 @@ describe('day-replay-mock-adapter · S1 fixture pass', () => {
     expect(play4?.text).toMatch(/4×/);
 
     const dropChip = connectionChip(playing1x, true, false, 'SPY');
-    expect(dropChip?.text).toBe('⚠ Session tape stream dropped');
+    expect(dropChip?.text).toBe('Session tape stream dropped');
     expect(dropChip?.text).not.toContain('Live offline');
 
     const endChip = connectionChip(ended, false, false, 'SPY');
@@ -219,6 +239,8 @@ describe('day-replay-mock-adapter · S1 fixture pass', () => {
     expect(text).not.toMatch(/Net flow \(\d+m\)/);
     expect(text).not.toMatch(/last few minutes/i);
     expect(screen.queryByText('Gamma flip (live)')).toBeNull();
+    expect(screen.queryByText('Gamma flip · live')).toBeNull();
+    expect(screen.getByText('Gamma flip · session tape')).toBeInTheDocument();
 
     // Fills off
     const tick = tickFromLive(poison, false, 1);
@@ -238,7 +260,7 @@ describe('day-replay-mock-adapter · S1 fixture pass', () => {
     expect(chip?.dot).toBe('●');
 
     const offline = connectionChip(s0, true, false);
-    expect(offline?.text).toContain('⚠ Live offline — reconnecting…');
+    expect(offline?.text).toContain('Live offline — reconnecting…');
 
     render(
       <ThemeProvider theme={theme}>
@@ -246,6 +268,8 @@ describe('day-replay-mock-adapter · S1 fixture pass', () => {
       </ThemeProvider>,
     );
     expect(screen.getByText('Live tape')).toBeInTheDocument();
-    expect(screen.getByText('Gamma flip (live)')).toBeInTheDocument();
+    // (v2) The label names the derivation, not the connection state (SPEC §2.2, criterion 18):
+    // `Gamma flip · live` holds through both live and a drop; `Gamma flip (live)` is retired.
+    expect(screen.getByText('Gamma flip · live')).toBeInTheDocument();
   });
 });
