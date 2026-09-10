@@ -58,14 +58,17 @@ function AnalysisSummary({ rec }: { rec: RecResponse }) {
           [
             [PLAN_FIELD_LABEL.structure, strategy.structure, rec.field_reasons?.structure],
             [PLAN_FIELD_LABEL.expiration, strategy.expiration, rec.field_reasons?.expiration],
-            [PLAN_FIELD_LABEL.timeHorizon, strategy.time_horizon, rec.field_reasons?.time_horizon],
+            // Fidelity repair 2, N6 — Time horizon dropped HERE (kept once, in `analysis-plan-fields`
+            // below, beside Confidence — the design's `MANAGE THE TRADE` grouping). It used to render
+            // in BOTH lists (`Structure · Expiration · Time horizon` then `Time horizon ·
+            // Confidence`), visible in the accepted `ai-recommendation` baseline.
           ] as const
         ).map(([label, value, reason]) => {
           const literal = planFieldLiteral({ decision: strategy.decision, value, reason });
           // Fidelity repair 2, N5 — the closed literal selector decides value/dash/not-set/… on the
           // RAW wire token first; only a resolved `value` literal's TEXT is reformatted, and only
-          // for the expiration field (design: `Sep 18 (15 DTE)`) — structure/time-horizon are plain
-          // strings, untouched.
+          // for the expiration field (design: `Sep 18 (15 DTE)`) — structure is a plain string,
+          // untouched.
           const text =
             literal.kind === 'value'
               ? label === PLAN_FIELD_LABEL.expiration

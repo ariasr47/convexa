@@ -404,3 +404,26 @@ describe('AnalysisSurface — as-of and expiration are formatted, never raw (fid
     expect(cited.textContent).toMatch(/Jul \d+ \(\d+ DTE\)/);
   });
 });
+
+// =================================================================================================
+// Fidelity repair 2, N6 — the drawer lists "Time horizon" exactly once (in the plan fields, beside
+// Confidence), never twice (it was ALSO in the structured summary, alongside Structure/Expiration).
+// =================================================================================================
+describe('AnalysisSurface — "Time horizon" renders exactly once (fidelity repair 2, N6)', () => {
+  it('exactly one "Time horizon" label in the drawer, inside analysis-plan-fields (beside Confidence) — none in analysis-structured-summary', () => {
+    renderSurface({ rec: recAllTraced() });
+    expect(screen.getAllByText('Time horizon')).toHaveLength(1);
+    const structured = screen.getByTestId('analysis-structured-summary');
+    expect(within(structured).queryByText('Time horizon')).toBeNull();
+    const planFields = screen.getByTestId('analysis-plan-fields');
+    expect(within(planFields).getByText('Time horizon')).toBeInTheDocument();
+    expect(within(planFields).getByText('Confidence')).toBeInTheDocument();
+  });
+
+  it('the structured summary keeps Structure and Expiration (only Time horizon dropped)', () => {
+    renderSurface({ rec: recAllTraced() });
+    const structured = screen.getByTestId('analysis-structured-summary');
+    expect(within(structured).getByText('Structure')).toBeInTheDocument();
+    expect(within(structured).getByText('Expiration')).toBeInTheDocument();
+  });
+});
