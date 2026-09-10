@@ -342,9 +342,13 @@ describe('liquidityLine — AC-4/66', () => {
 });
 
 describe('candidateFreshnessLine — AC-8 (GATE Q correction)', () => {
-  it('names the as-of and a live-session/prior-close label', () => {
+  // Fidelity repair 2, N5 — the exchange-clock form (design: "Candidates as of 10:41:52 ET"),
+  // never the raw ISO the review's evidence quoted ("Candidates as of
+  // 2026-08-23T16:00:00.000Z · unknown session").
+  it('names the as-of (exchange-clock form, never the raw ISO) and a live-session/prior-close label', () => {
     const line = candidateFreshnessLine(tradeRecEqualToCap().sent!.candidates);
-    expect(line).toContain(tradeRecEqualToCap().sent!.candidates.as_of as string);
+    expect(line).not.toContain(tradeRecEqualToCap().sent!.candidates.as_of as string);
+    expect(line).toMatch(/^Candidates as of \d{2}:\d{2}:\d{2} ET/);
     expect(line).toMatch(/prior close|live session/);
   });
   it('maps `rth` to live session and `after_close`/`closed_pre` to prior close', () => {
@@ -364,12 +368,14 @@ describe('candidateFreshnessLine — AC-8 (GATE Q correction)', () => {
 });
 
 describe('citedLine — AC-8 as-of interpolation (GATE Q correction)', () => {
-  it('interpolates the passed as-of into the quoted-arm fact line, never a bare "chain snapshot"', () => {
+  // Fidelity repair 2, N5 — the exchange-clock form, never the raw ISO the review's evidence named.
+  it('interpolates the passed as-of into the quoted-arm fact line (exchange-clock form, never the raw ISO), never a bare "chain snapshot"', () => {
     const cited = tradeRecEqualToCap().cited_contract!;
     const line = citedLine(cited, '2026-06-23T14:00:00Z');
     expect(line.kind).toBe('cited');
     if (line.kind === 'cited') {
-      expect(line.quoteText).toContain('from the 2026-06-23T14:00:00Z chain snapshot');
+      expect(line.quoteText).not.toContain('2026-06-23T14:00:00Z');
+      expect(line.quoteText).toMatch(/from the \d{2}:\d{2}:\d{2} ET · .+ chain snapshot/);
       expect(line.quoteText).not.toContain('from the chain snapshot');
     }
   });

@@ -13,6 +13,7 @@ import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { fmtAsOfEt, fmtExpiry } from '@/pages/ticker/widgets/_kit/copy';
 import { CapAnnotation } from './CapAnnotation';
 import { CitedContractLine } from './CitedContractLine';
 import { FigureClause } from './FigureClause';
@@ -41,7 +42,8 @@ function AnalysisSummary({ rec }: { rec: RecResponse }) {
       </Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
         Persona · {rec.persona.name}
-        {rec.as_of ? ` · As of ${rec.as_of}` : ''}
+        {/* Fidelity repair 2, N5 — the exchange-clock form, never the raw ISO instant. */}
+        {rec.as_of ? ` · As of ${fmtAsOfEt(rec.as_of)}` : ''}
       </Typography>
       {rec.scenario && (
         <Typography variant="caption">{`SCRIPTED SCENARIO · ${rec.scenario.name} · ${COPY.provenance.sim}`}</Typography>
@@ -60,14 +62,22 @@ function AnalysisSummary({ rec }: { rec: RecResponse }) {
           ] as const
         ).map(([label, value, reason]) => {
           const literal = planFieldLiteral({ decision: strategy.decision, value, reason });
+          // Fidelity repair 2, N5 — the closed literal selector decides value/dash/not-set/… on the
+          // RAW wire token first; only a resolved `value` literal's TEXT is reformatted, and only
+          // for the expiration field (design: `Sep 18 (15 DTE)`) — structure/time-horizon are plain
+          // strings, untouched.
+          const text =
+            literal.kind === 'value'
+              ? label === PLAN_FIELD_LABEL.expiration
+                ? fmtExpiry(literal.text)
+                : literal.text
+              : literalCopy(literal.kind).text;
           return (
             <Box key={label}>
               <Typography variant="caption" color="text.secondary">
                 {label}
               </Typography>
-              <Typography variant="body2">
-                {literal.kind === 'value' ? literal.text : literalCopy(literal.kind).text}
-              </Typography>
+              <Typography variant="body2">{text}</Typography>
             </Box>
           );
         })}

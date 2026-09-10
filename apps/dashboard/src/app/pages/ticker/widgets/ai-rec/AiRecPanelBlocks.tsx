@@ -5,6 +5,7 @@
 import { catalogForPreference } from '@/features/auth/aiProviderLabels';
 import { AUTH_COPY } from '@/features/auth/copy';
 import { RUN_SCENARIO, SCRIPTED_CHIP } from '@/features/trading/orders/copy';
+import { fmtAsOfEt } from '@/pages/ticker/widgets/_kit/copy';
 import { typographyTokens } from '@/shared/theme/tokens';
 import type { AiProvidersBootstrap, RecScenarioInfo, TickerBundle } from '@convexa/api';
 import Alert from '@mui/material/Alert';
@@ -69,7 +70,12 @@ export function SnapshotHint({ bundle }: { bundle: TickerBundle | null }) {
   return (
     <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
       Reads the current snapshot
-      {bundle?.meta.freshness.snapshot_iso ? `, as of ${bundle.meta.freshness.snapshot_iso}` : ''}.
+      {/* Fidelity repair 2, N5 — the exchange-clock form (design: `Snapshot as of 10:41:52 ET`),
+          never the raw ISO instant. */}
+      {bundle?.meta.freshness.snapshot_iso
+        ? `, as of ${fmtAsOfEt(bundle.meta.freshness.snapshot_iso)}`
+        : ''}
+      .
     </Typography>
   );
 }

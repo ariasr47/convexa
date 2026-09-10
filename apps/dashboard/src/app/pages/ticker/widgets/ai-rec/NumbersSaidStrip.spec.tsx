@@ -116,10 +116,11 @@ describe('NumbersSaidStrip — AC-4/54/66 (ship-blocking)', () => {
     expect(screen.getByTestId('numbers-said-liquidity')).toHaveTextContent(/unavailable/);
   });
 
-  it('AC-8 (GATE Q correction) — renders the candidate set as-of and session basis, un-hovered', () => {
+  it('AC-8 (GATE Q correction) — renders the candidate set as-of (exchange-clock form, fidelity repair 2 N5) and session basis, un-hovered', () => {
     renderStrip();
     const freshness = screen.getByTestId('numbers-said-freshness');
-    expect(freshness).toHaveTextContent(candidates().as_of as string);
+    expect(freshness.textContent ?? '').not.toContain(candidates().as_of as string);
+    expect(freshness).toHaveTextContent(/\d{2}:\d{2}:\d{2} ET/);
     expect(freshness).toHaveTextContent(/prior close|live session/);
   });
 
