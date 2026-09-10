@@ -1,5 +1,5 @@
 # curvature-v2-landing-and-site — pipeline manifest
-Stage:        GATE C — council complete (R1–R4 + S2 ×2 at the cap); owner rulings D-B = (A), D-A = (A) folded at R4 pass 3. **SPEC APPROVED 2026-09-10** — owner answered the approval question with "whatever you recommend" and the conductor's recommendation was approve (lint 0, all S2 findings folded, both rulings the owner's). **Next: rebase this branch onto `main` (after `docs/owner-blockers-2026-09-10` merges — one rewrite, force-push asked for explicitly) → GATE PLAN**
+Stage:        GATE C complete; **SPEC APPROVED 2026-09-10** (owner-delegated). **Rebased onto `main` 4ca9edc7 on 2026-09-10** (phases 1–3 merged as `3f9d941e`; the blockers record #47 and the fidelity review #48 on main). **Next: GATE PLAN** (`spire-tech-planner`, frontend track only — `NO_BACKEND_CHANGE`). A separate desk repair lane (`fix/fidelity-repair-2`, review findings N1–N7) runs before this feature's build lane so the visual baselines are re-accepted once.
 Repos:        frontend
 Brief:        BRIEF.md present (five defects recorded in council/decisions.md §0 — the decisions win where they differ)
 Contracts:
