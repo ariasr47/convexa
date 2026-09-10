@@ -1,0 +1,395 @@
+<title>Curvature v2 Fidelity Review</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Curvature Terminal v2 tokens — the reviewed system's own palette, dark-first as the product is. */
+  :root {
+    --ink: #0B0F17; --panel: #131A24; --well: #0E131C; --raised: #1A2230;
+    --phosphor: #E9E4D6; --steel: #8A9BB4; --steel-2: #7B8CA6;
+    --line: rgba(138,155,180,0.16); --line-2: rgba(138,155,180,0.32);
+    --amber: #F2A93B; --amber-text: #F2A93B; --amber-soft: rgba(242,169,59,0.14);
+    --signal: #5E8BC4; --signal-text: #8CB0DE; --warn: #E07A3F; --warn-soft: rgba(224,122,63,0.14);
+    --shadow: rgba(0,0,0,0.24) 0 1px 2px, rgba(0,0,0,0.16) 0 2px 6px;
+    --sans: 'IBM Plex Sans', system-ui, 'Segoe UI', sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --display: 'Archivo', 'IBM Plex Sans', system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --ink: #F6F6F3; --panel: #FFFFFF; --well: #EEEEEA; --raised: #F3F3EF;
+      --phosphor: #17202B; --steel: #5D6B84; --steel-2: #576578;
+      --line: rgba(23,32,43,0.12); --line-2: rgba(23,32,43,0.24);
+      --amber: #C57F19; --amber-text: #8F5C0F; --amber-soft: rgba(197,127,25,0.12);
+      --signal: #3D6AA6; --signal-text: #2F547D; --warn: #B85A25; --warn-soft: rgba(184,90,37,0.12);
+      --shadow: rgba(23,32,43,0.08) 0 1px 2px, rgba(23,32,43,0.06) 0 2px 6px;
+    }
+  }
+  :root[data-theme="light"] {
+    --ink: #F6F6F3; --panel: #FFFFFF; --well: #EEEEEA; --raised: #F3F3EF;
+    --phosphor: #17202B; --steel: #5D6B84; --steel-2: #576578;
+    --line: rgba(23,32,43,0.12); --line-2: rgba(23,32,43,0.24);
+    --amber: #C57F19; --amber-text: #8F5C0F; --amber-soft: rgba(197,127,25,0.12);
+    --signal: #3D6AA6; --signal-text: #2F547D; --warn: #B85A25; --warn-soft: rgba(184,90,37,0.12);
+    --shadow: rgba(23,32,43,0.08) 0 1px 2px, rgba(23,32,43,0.06) 0 2px 6px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ink); color: var(--phosphor); font-family: var(--sans); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: var(--signal-text); text-decoration: none; border-bottom: 1px solid var(--line-2); }
+  a:hover { border-bottom-color: var(--signal-text); }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .page { max-width: 1160px; margin: 0 auto; padding: 40px clamp(16px, 4vw, 48px) 96px; display: grid; gap: 56px; }
+  .caps { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--steel); }
+  h1 { font-family: var(--display); font-weight: 700; font-size: clamp(30px, 4vw, 46px); letter-spacing: -0.02em; line-height: 1.05; margin: 10px 0 0; text-wrap: balance; }
+  h2 { font-family: var(--display); font-weight: 600; font-size: 22px; letter-spacing: -0.01em; margin: 0 0 14px; text-wrap: balance; }
+  h3 { font-family: var(--display); font-weight: 600; font-size: 16px; margin: 0 0 6px; }
+  p { margin: 0; max-width: 72ch; }
+  .lede { font-family: var(--display); font-weight: 500; font-size: 19px; line-height: 1.4; margin-top: 18px; max-width: 64ch; text-wrap: pretty; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 18px; font-family: var(--mono); font-size: 12px; color: var(--steel); }
+  .meta b { color: var(--phosphor); font-weight: 500; }
+  header { border-bottom: 1px solid var(--line); padding-bottom: 28px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 26px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .stat .v { font-family: var(--mono); font-size: 26px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.1; margin-top: 6px; }
+  .stat .c { font-size: 12px; color: var(--steel); margin-top: 6px; }
+  section { display: grid; gap: 16px; }
+  .prose { display: grid; gap: 12px; }
+  .prose p { max-width: 74ch; }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+  th { border-top: 0; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); font-weight: 500; white-space: nowrap; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td code, li code, p code { font-family: var(--mono); font-size: 12.5px; color: var(--phosphor); background: var(--well); padding: 1px 5px; border-radius: 4px; }
+  .met { color: var(--phosphor); }
+  .met::before { content: "✓ "; color: var(--steel); }
+  .miss { color: var(--warn); }
+  .miss::before { content: "▲ "; }
+  .findings { display: grid; gap: 14px; }
+  .finding { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 14px; padding: 16px 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+  .finding.s1 { border-color: var(--warn); }
+  .sev { display: grid; gap: 6px; align-content: start; }
+  .chip { display: inline-block; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--steel); width: max-content; }
+  .chip.s1 { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
+  .chip.s2 { background: var(--amber-soft); border-color: var(--amber); color: var(--amber-text); }
+  .fid { font-family: var(--display); font-weight: 700; font-size: 18px; }
+  .finding h3 { margin: 0 0 6px; }
+  .finding p { max-width: 80ch; color: var(--phosphor); }
+  .finding .fix { margin-top: 8px; color: var(--steel); }
+  .finding .fix b { color: var(--phosphor); font-weight: 500; }
+  figure { margin: 0; display: grid; gap: 8px; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: var(--well); }
+  figure.inline { margin-top: 12px; }
+  figcaption { font-size: 12.5px; color: var(--steel); max-width: 90ch; }
+  figcaption b { color: var(--phosphor); font-weight: 500; }
+  .pairs { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; }
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+  ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; max-width: 84ch; }
+  ol { margin: 0; padding-left: 22px; display: grid; gap: 8px; max-width: 84ch; }
+  li b { font-weight: 600; }
+  .quiet { color: var(--steel); font-size: 13px; }
+  .foot { border-top: 1px solid var(--line); padding-top: 18px; font-size: 12.5px; color: var(--steel); display: grid; gap: 6px; }
+  @media (max-width: 640px) { .finding { grid-template-columns: 1fr; } .sev { grid-auto-flow: column; justify-content: start; } }
+  @media (prefers-reduced-motion: no-preference) { a { transition: border-color 120ms ease; } }
+</style>
+
+<div class="page">
+  <header>
+    <div class="caps">Curvature Terminal v2 · design-fidelity review · <span style="font-family: var(--mono); text-transform: none; letter-spacing: 0;">main @ 3f9d941e</span> · 2026-09-10</div>
+    <h1>Curvature v2 Fidelity Review</h1>
+    <p class="lede">The redesign's structure is implemented and holds on every surface the design draws, at every width it registers. What is left is one state the build never reshaped, three clipped labels, raw timestamps, and a short list of owner calls.</p>
+    <div class="meta">
+      <span>reference <b>design/site · canvas.config.mjs</b></span>
+      <span>app <b>production bundle, strict fixtures + the saved SPY bundle</b></span>
+      <span>widths <b>1440 · 1280 · 834 · 390</b></span>
+      <span>captures <b>29 pairs + 2 state pairs · 40 crops</b></span>
+      <span>baselines <b>none re-taken</b> · gates <b>none loosened</b></span>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="caps">desk height vs design · 1280</div><div class="v">1.07×</div><div class="c">was 1.57× on 2026-09-08 · 2,705 px against 2,532</div></div>
+      <div class="stat"><div class="caps">horizontal overflow</div><div class="v">0 / 58</div><div class="c">every capture, both sides, every width</div></div>
+      <div class="stat"><div class="caps">console errors</div><div class="v">0 / 58</div><div class="c">fonts loaded on all 58</div></div>
+      <div class="stat"><div class="caps">composition drift since 09-08</div><div class="v">0 px</div><div class="c">every named region identical to the cold-verified pass</div></div>
+      <div class="stat"><div class="caps">new findings</div><div class="v">14</div><div class="c">1 severe · 4 real defects · 9 polish or owner calls</div></div>
+    </div>
+  </header>
+
+  <section>
+    <h2>Verdict</h2>
+    <div class="prose">
+      <p>The desk is the design's desk: bare masthead with the controls on the headline row, the structure hero with its ladder and foot, the eight-cell read strip, the wide AI brief beside tape / position / orders, the quiet context band with its filter. Positions, alerts and settings carry the design's compositions — figure cells and the five-card track record, the two-column composer, provider tabs. The scanner carries the score bar, the group header and the three note cards. The light scheme is a token swap everywhere, including the term-structure ribbon that was a black block two days ago.</p>
+      <p>Composition is byte-identical to the 2026-09-08 cold-verified numbers: the CI-repair commits (contrast tokens, bundled glyphs) moved no region. So this pass confirms that state on the merged tree and adds what a full pass against the design finds beyond heights.</p>
+      <p>What is not right, most severe first: the desk's <b>cold-load state is still v1's tile grid</b>, not the final shape the design draws and the foundations spec's ship-blocking AC-46 requires. Below that: three clipped-text defects, raw machine timestamps in the AI read, a duplicated field in the analysis drawer, and a cold-start failure that reads "API error 502" where the design writes a sentence.</p>
+    </div>
+    <div class="pairs">
+      <figure><img src="{{img:desk-real-1280-dark}}" alt="Full-page composite: the app desk on the left and the design desk on the right, both 1280 wide, dark"><figcaption><b>Desk · 1280 · dark · real SPY bundle.</b> App 2,705 px (left) against the design's 2,532. Same fonts on both sides. The order of regions matches top to bottom; the band is the only region still taller than drawn.</figcaption></figure>
+      <figure><img src="{{img:desk-real-1280-light}}" alt="Full-page composite of the desk in the light scheme, app left, design right"><figcaption><b>Desk · 1280 · light.</b> A token swap, not a second layout: paper ground, white panels, dark amber CTA, the term ribbon on the panel.</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Scoreboard</h2>
+    <p class="quiet">Real content bottom in CSS px — <code>max(region.y + region.h)</code> from the census — because the harness's raw page height reads the grown viewport on short pages. Thresholds are the repair lanes' own.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>capture</th><th class="num">app</th><th class="num">design</th><th class="num">ratio</th><th>threshold</th><th>verdict</th></tr></thead>
+      <tbody>
+        <tr><td>desk · real · 1440 dark</td><td class="num">2,705</td><td class="num">2,483</td><td class="num">1.089</td><td>≤ 2,950</td><td class="met">met</td></tr>
+        <tr><td>desk · real · 1280 dark / light</td><td class="num">2,705</td><td class="num">2,532</td><td class="num">1.068</td><td>≤ 3,000 · light parity</td><td class="met">met</td></tr>
+        <tr><td>desk · real · 834 dark</td><td class="num">3,628</td><td class="num">3,290</td><td class="num">1.103</td><td>≤ 4,170</td><td class="met">met</td></tr>
+        <tr><td>desk · real · 390 dark</td><td class="num">5,484</td><td class="num">4,340</td><td class="num">1.264</td><td>≤ 5,520 (page 4,416 + 25 %)</td><td class="met">met by 36 px</td></tr>
+        <tr><td>positions · dense · 1280</td><td class="num">1,298</td><td class="num">1,120</td><td class="num">1.159</td><td>≤ 1.20</td><td class="met">met</td></tr>
+        <tr><td>positions · dense · 1440</td><td class="num">1,298</td><td class="num">1,032</td><td class="num">1.258</td><td>≤ 1.20</td><td class="miss">missed — <code>OrdersPanel</code> 158 px is test-pinned</td></tr>
+        <tr><td>positions · dense · 390</td><td class="num">3,075</td><td class="num">2,787</td><td class="num">1.103</td><td>≤ 1.25</td><td class="met">met</td></tr>
+        <tr><td>alerts · seeded · 1280 / 1440</td><td class="num">855</td><td class="num">947</td><td class="num">0.903</td><td>≤ 1.20 · two columns · composer ≤ 45 %</td><td class="met">met — composer 39.2 %</td></tr>
+        <tr><td>alerts · seeded · 390</td><td class="num">1,484</td><td class="num">1,945</td><td class="num">0.763</td><td>≤ 1.25</td><td class="met">met</td></tr>
+        <tr><td>settings · signed-in · 1280 / 1440</td><td class="num">2,169</td><td class="num">1,873</td><td class="num">1.158</td><td>≤ 1.20</td><td class="met">met</td></tr>
+        <tr><td>settings · signed-in · 390</td><td class="num">2,532</td><td class="num">2,841</td><td class="num">0.891</td><td>≤ 1.25</td><td class="met">met</td></tr>
+        <tr><td>scanner · dense · 1280 / 1440 / 834 / 390</td><td class="num">771 / 771 / 1,011 / 1,891</td><td class="num">1,296 / 1,275 / 2,161 / 3,639</td><td class="num">n/a</td><td>3 fixture rows vs 12 drawn · score bar · notes · no overflow</td><td class="met">met</td></tr>
+      </tbody>
+    </table></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>named region · 1280 unless stated</th><th class="num">app</th><th class="num">design</th><th>threshold</th><th>verdict</th></tr></thead>
+      <tbody>
+        <tr><td><code>command-deck</code> (masthead)</td><td class="num">215</td><td class="num">186</td><td>≤ 200</td><td class="miss">15 over — owner residual</td></tr>
+        <tr><td><code>widget-structure-hero</code></td><td class="num">483</td><td class="num">470</td><td>—</td><td class="met">close</td></tr>
+        <tr><td><code>widget-read-strip</code></td><td class="num">131</td><td class="num">112</td><td>≤ 130</td><td class="met">1 over</td></tr>
+        <tr><td><code>widget-ai-rec</code> beside the side column</td><td class="num">759 w / 379 w</td><td class="num">793 w / 396 w</td><td>side ≤ 420</td><td class="met">met</td></tr>
+        <tr><td><code>ticker-context-grid</code> (band)</td><td class="num">968</td><td class="num">673</td><td>≤ 800 — open owner density item</td><td class="miss">168 over</td></tr>
+        <tr><td>hero at 390</td><td class="num">968</td><td class="num">905</td><td>≤ 950</td><td class="miss">18 over</td></tr>
+        <tr><td><code>tr-families</code></td><td class="num">176</td><td class="num">—</td><td>≤ 320</td><td class="met">met</td></tr>
+        <tr><td><code>settings-ai-key-panel</code></td><td class="num">633</td><td class="num">335</td><td>≤ 420</td><td class="miss">Grok card kept by decision</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Findings, most severe first</h2>
+    <div class="findings">
+
+      <div class="finding s1">
+        <div class="sev"><span class="fid">N1</span><span class="chip s1">S1</span></div>
+        <div>
+          <h3>The desk's cold-load state is the retired v1 tile grid, not the final shape.</h3>
+          <p>Before the first bundle the page renders a raised toolbar with a spinner, a title shimmer, and twelve identical tiles in a five-column grid (<code>TickerDashboard.tsx:86-93</code>, mounted at <code>:445-450</code>). The design's <i>Cold load · first paint</i> frame draws the masthead, the field with its ladder and the strip as shimmer — "so the first bundle lands without a jump". The foundations spec makes that binding: AC-46 (ship-blocking) "Cold load shows skeletons in the final shape". QA passed it test-only through the absence-after-load half; the final-shape half was never observed, and phase 2 reshaped the desk without touching the skeleton. On every first load the user watches v1 turn into v2.</p>
+          <p class="fix"><b>Fix.</b> A lane task with a RED test first: the <code>cold-load</code> subtree renders the hero, ladder and strip skeleton shapes; keep the absence-after-load assertion. Re-verify AC-46 by observation.</p>
+          <figure class="inline"><img src="{{img:desk-cold-load-1280-dark}}" alt="App cold-load skeleton (twelve tiles under a toolbar) beside the design's cold-load frame (masthead, field with ladder, strip)"><figcaption><b>Cold load, 1280.</b> App with the ticker route held (left); the design's states page, first frame (right).</figcaption></figure>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="sev"><span class="fid">N2</span><span class="chip s2">S2</span></div>
+        <div>
+          <h3>The side column's widget title truncates: "Simulated or…"</h3>
+          <p>In the 379-px side column the Simulated orders widget renders its title as <code>Simulated or…</code> beside the SIMULATED chip and "All orders →" — at 1280 and at 1440. The design's title is <code>Sim orders · SPY</code>. Clipped text is a bug, not a density choice.</p>
+          <p class="fix"><b>Fix.</b> The design's shorter title, or let the title wrap and give the chip and link no fixed reserve.</p>
+          <figure class="inline" style="max-width: 420px;"><img src="{{img:orders-1440}}" alt="The Simulated orders widget header at 1440 with its title cut to Simulated or…"><figcaption>1440 wide, crop from <code>app/desk-real-1440-dark.png</code>.</figcaption></figure>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="sev"><span class="fid">N3</span><span class="chip s2">S2</span></div>
+        <div>
+          <h3>Every Market-context caption is ellipsised.</h3>
+          <p>"As of session Fri Sep 4 · dail…", "At spot $770.19 · 482 strike…", "Today's session cumulative …", "As of session Fri Sep 4 · vs c…". Decided during the 2026-09-08 repair (single line, ellipsis, a <code>title</code> tooltip carrying the full text). It still fails the reader: a tooltip has no tap path, and the caption's job is a three-word basis — the design's are <code>momentum positive</code>, <code>balance tilts calls</code>, <code>flow with the wall</code>, <code>5d 5.4 · 30d 6.8</code>.</p>
+          <p class="fix"><b>Fix.</b> Author captions of the design's length; remove the ellipsis rule.</p>
+          <figure class="inline" style="max-width: 520px;"><img src="{{img:crop-market-context-real}}" alt="Market context card, app above with clipped captions, design below with short captions"><figcaption>App (top) and design (bottom), 1280, real bundle.</figcaption></figure>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="sev"><span class="fid">N4</span><span class="chip s2">S2</span></div>
+        <div>
+          <h3>The ladder truncates "Gamma flip" to "Gamma f…" at 834.</h3>
+          <p>At tablet width the ladder becomes one five-column row and the second label ellipsises; the design's 834 ladder shows all five labels in full.</p>
+          <p class="fix"><b>Fix.</b> Let the label wrap, or drop the per-cell <code>noWrap</code> below ~900 px.</p>
+          <figure class="inline" style="max-width: 700px;"><img src="{{img:ladder-834}}" alt="The level ladder at 834 wide with the Gamma flip label cut to Gamma f…"><figcaption>834 wide, crop from <code>app/desk-real-834-dark.png</code>.</figcaption></figure>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="sev"><span class="fid">N5</span><span class="chip s2">S2</span></div>
+        <div>
+          <h3>Raw machine timestamps and ISO dates in the AI read.</h3>
+          <p>Trade state: <code>As of 2026-08-23T16:00:00.000Z</code>, <code>Expiration 2026-09-18</code>, "implied move for 2026-09-18"; idle state: "Reads the current snapshot, as of 2026-09-08T10:59:51+00:00". The design writes <code>read pinned as of 10:41:52 ET · 48s ago</code> and <code>Sep 18 (15 DTE)</code>. The same raw forms sit in the accepted <code>ai-recommendation</code> visual baseline, so the gate pins them.</p>
+          <p class="fix"><b>Fix.</b> One formatter for as-of (ET clock + age) and for expirations, applied in <code>DecisionCard</code>, <code>AiRecPanelBlocks</code> and <code>AnalysisSurface</code>; re-accept the baseline through the receipt flow as a content change.</p>
+          <figure class="inline" style="max-width: 640px;"><img src="{{img:crop-ai-read-trade}}" alt="The AI read in its produced state, app above and design below"><figcaption><b>AI read · produced.</b> App (top): prose-first brief with ISO dates and the whole verdict in amber. Design (bottom): verdict first, four figure cells with provenance checks, WHY, manage the trade.</figcaption></figure>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="sev"><span class="fid">N6</span><span class="chip">S3</span></div>
+        <div>
+          <h3>The analysis drawer renders "Time horizon" twice.</h3>
+          <p><code>AnalysisSurface.tsx:59</code> lists it in the structured summary and <code>:83</code> lists it again in the plan fields — visible in the accepted baseline as "Structure · Expiration · Time horizon" followed by "Time horizon · Confidence".</p>
+          <p class="fix"><b>Fix.</b> Drop it from one list.</p>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="sev"><span class="fid">N7</span><span class="chip">S3</span></div>
+        <div>
+          <h3>Cold-start failure copy is a raw status.</h3>
+          <p>With the bundle refused the desk shows "⚠ API error 502 · Retry" over the v1 toolbar. The design's frame: "Couldn't load SPY. The structure request failed before any snapshot arrived. Nothing is cached for this desk yet." with Retry, burnt orange plus the icon, the toolbar still usable. Accessibility scenario A11Y-8 asserts the literal "API error 503", so the gate pins the raw copy.</p>
+          <p class="fix"><b>Fix.</b> Change the copy and the assertion together.</p>
+          <figure class="inline"><img src="{{img:desk-cold-failure-1280-dark}}" alt="App failure bar reading API error 502 beside the design's Couldn't load SPY frame"><figcaption>Cold-start failure, 1280: app (left, 502 fulfilled by the harness) and the design frame (right).</figcaption></figure>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="sev"><span class="fid">N8</span><span class="chip">S3</span></div>
+        <div>
+          <h3>Live tape figures are boxed cards; the flow spark and captions are absent.</h3>
+          <p>The four tape figures render as bordered, filled cards where the design — and the app's own read strip — divide cells with hairlines. The FLOW spark row is the recorded owner item; the captions ("buyers lifting the ask", "tight · liquid", "mid +0.22% above") are absent — check whether they were cut with cause under canon 24 before adding.</p>
+          <figure class="inline" style="max-width: 420px;"><img src="{{img:crop-live-tape-real}}" alt="Live tape widget, app above with boxed figure cards, design below with hairline cells and a flow spark"><figcaption>App (top) and design (bottom), 1280.</figcaption></figure>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="sev"><span class="fid">N9</span><span class="chip">S3</span></div>
+        <div>
+          <h3>The opportunity cell's ring is empty and the tier word is not amber.</h3>
+          <p>App: an amber arc with nothing inside, then "78 ·" and "Actionable" wrapping onto two lines, then "3 setups". Design: 72 inside the ring, Actionable in amber, caption "near wall · IV cheap · 2 setups".</p>
+          <div class="two">
+            <figure class="inline" style="max-width: 220px;"><img src="{{img:opp-1280}}" alt="The app's opportunity cell with an empty ring and the score beside it"><figcaption>App, 1280.</figcaption></figure>
+            <figure class="inline"><img src="{{img:crop-read-strip-real}}" alt="The read strip, app above and design below"><figcaption>The strip, app (top) and design (bottom): eight cells fit at 1280, hairline-divided on both sides.</figcaption></figure>
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="sev"><span class="fid">N10</span><span class="chip">S3</span></div>
+        <div>
+          <h3>Masthead: chips above the title; no day change, no instrument name.</h3>
+          <p>App order is chip row → "SPY · $767.82" → meta. The design leads with "SPY 573.12 +1.84 · +0.32%", then the chips, "SPDR S&amp;P 500 ETF" and the last trade. Neither the day change nor the name is cut with cause in the desk-and-read spec. If the bundle does not carry them, record the cut; if it does, add them.</p>
+          <figure class="inline"><img src="{{img:crop-masthead-real}}" alt="Masthead, app above and design below"><figcaption>App (top) and design (bottom), 1280. The controls join the headline row on both sides now.</figcaption></figure>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="sev"><span class="fid">N11</span><span class="chip">S3</span></div>
+        <div>
+          <h3>Nav: amber active label, 65 px, e-mail in the bar.</h3>
+          <p>The active link is amber text (<code>TopNav.tsx:182</code>) where the design's active link is phosphor with the amber underline; 65 px against 56; the account e-mail is printed; the session clock chip and bell are absent. Four links · search · ⌘K · palette match.</p>
+          <figure class="inline"><img src="{{img:crop-nav-real}}" alt="Navigation bar, app above and design below"><figcaption>App (top) and design (bottom), 1280.</figcaption></figure>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="sev"><span class="fid">N12</span><span class="chip">S3</span></div>
+        <div>
+          <h3>The cap line uses the warning idiom for a non-warning fact.</h3>
+          <p>"⚠ $300 is within your cap of $500." renders with the warning icon in the warning colour — by design (<code>CapAnnotation.tsx</code>: both <i>within</i> and <i>above</i> use the same chrome, AC-60). The canon reserves burnt orange plus the icon for warnings; the design renders the within-cap case as a calm info box.</p>
+          <p class="fix"><b>Owner call.</b> Keep the icon for <i>above</i>, drop it for <i>within</i>.</p>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="sev"><span class="fid">N13</span><span class="chip">S3</span></div>
+        <div>
+          <h3>The trade-state AI panel carries an amber outline.</h3>
+          <p>In the produced-read capture the whole panel has a 1-px amber border. The harness performs no interaction there, so it is not the focus ring, and the source was not located in <code>DecisionCard</code>, <code>AiRecPanel</code> or <code>Widget</code>. Rule 16's closed list of non-text amber does not include a panel border.</p>
+          <p class="fix"><b>Needs a source check.</b> If it is a "fresh read" highlight, it is a fourth amber.</p>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="sev"><span class="fid">N14</span><span class="chip">S3</span></div>
+        <div>
+          <h3>Elevation differs between the desk and the pages.</h3>
+          <p>Desk widgets carry e1, matching the design's <code>.panel</code>; the settings, positions and alerts page panels render no shadow where the design's are e1.</p>
+        </div>
+      </div>
+
+    </div>
+    <p class="quiet">Latent copy: "TERM STRUCTURE · contango" lowercase vs "Contango"; "OFF-EXCHANGE %" vs "OFF-EXCHANGE"; the term caption prints an 829-day tenor as the far end where the design's window is 7d → 90d; the fixture sentinel "Structure as-of 496527h" (carried). Runtime, not fidelity: the local API's <code>?dark_pool=true</code> ticker request did not answer within 120 s during pre-market and the plain route stopped answering after it — why the live desk sat on N1's skeleton.</p>
+  </section>
+
+  <section>
+    <h2>The other surfaces</h2>
+    <div class="pairs">
+      <figure><img src="{{img:positions-dense-1280-dark}}" alt="Positions page composite, app left, design right"><figcaption><b>Positions · 1280.</b> 1,298 vs 1,120 (1.159, met). Figure cells in the mast, one table, five track-record families on one row. The Simulated orders card above the book is test-pinned.</figcaption></figure>
+      <figure><img src="{{img:alerts-seeded-1280-dark}}" alt="Alerts page composite, app left, design right"><figcaption><b>Alerts · 1280.</b> 855 vs 947. Two columns: composer with presets and the notifications row beside Rules and Recent.</figcaption></figure>
+      <figure><img src="{{img:settings-signed-in-1280-dark}}" alt="Settings page composite, app left, design right"><figcaption><b>Settings · 1280.</b> 2,169 vs 1,873 (1.158, met). Provider tabs; the rail is deferred by owner ruling; no effective-cap block yet.</figcaption></figure>
+      <figure><img src="{{img:scanner-dense-1280-dark}}" alt="Scanner page composite, app left, design right"><figcaption><b>Scanner · 1280.</b> Score bar, tier chips, group header, three note cards. Three fixture rows against the design's twelve; the hover preview and the age chip are carried residuals.</figcaption></figure>
+      <figure><img src="{{img:desk-real-834-dark}}" alt="Desk at 834 wide, app left, design right"><figcaption><b>Desk · 834.</b> 3,628 vs 3,290. Ladder below the field as one row (N4), strip as a rail on both sides.</figcaption></figure>
+      <figure><img src="{{img:desk-real-390-dark}}" alt="Desk at 390 wide, top of the page, app left, design right"><figcaption><b>Desk · 390 (top).</b> 5,484 vs 4,340 over the full page. The hero header wraps; the ladder is two columns; the idle read is inline by the recorded rule where the design shows the peek sheet.</figcaption></figure>
+      <figure><img src="{{img:scanner-dense-390-dark}}" alt="Scanner at 390, top of the page, app left, design right"><figcaption><b>Scanner · 390 (top).</b> Cards with the score bar carried through; the fixture's sweep sentinel shows in the header.</figcaption></figure>
+      <figure><img src="{{img:positions-dense-390-dark}}" alt="Positions at 390, top of the page, app left, design right"><figcaption><b>Positions · 390 (top).</b> Figure cells stack; the CTA sits below the controls where the design keeps it in the mast.</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>The 2026-09-08 audit's findings, re-scored on main</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>id</th><th>then</th><th>now</th></tr></thead>
+      <tbody>
+        <tr><td>F1 tape &amp; plan inverted</td><td>far</td><td class="met">closed — AI brief 759 w beside a 379 w column</td></tr>
+        <tr><td>F2 context band 3×</td><td>far</td><td class="miss">partial — 968 vs 673 (1.44×, was ≈ 2,125); ≤ 800 is the open owner item; N3</td></tr>
+        <tr><td>F3 masthead framing</td><td>partial</td><td class="met">mostly closed — bare, controls on the headline row; 15 px over; N10</td></tr>
+        <tr><td>F4 read strip chrome</td><td>partial</td><td class="met">closed — title-less strip, eight cells fit; N9</td></tr>
+        <tr><td>F5 positions</td><td>far</td><td class="met">closed at 1280 / 390; 1440 at 1.258 with the test-pinned orders panel</td></tr>
+        <tr><td>F6 alerts one column</td><td>far</td><td class="met">closed — two columns, composer 39.2 %</td></tr>
+        <tr><td>F7 settings</td><td>far</td><td class="met">closed at page level; AI panel 633 vs 420 by decision; rail deferred by ruling</td></tr>
+        <tr><td>F8 scanner</td><td>partial</td><td class="met">closed for score bar, notes, page scroll; STATUS column and preview carried</td></tr>
+        <tr><td>F9 term structure dark in light</td><td>new</td><td class="met">closed</td></tr>
+        <tr><td>F10 hero residuals</td><td>—</td><td class="met">closed at 1280 / 390; N4 at 834</td></tr>
+        <tr><td>F11 nav</td><td>note</td><td class="miss">carried as N11</td></tr>
+        <tr><td>L1 <code>live · undefined</code></td><td>fixture</td><td class="met">closed — every fixture capture reads live</td></tr>
+        <tr><td>L2 <code>Structure as-of 496527h</code></td><td>fixture</td><td class="miss">carried (fixture sentinel)</td></tr>
+        <tr><td>oracle template leaks</td><td>design</td><td class="met">closed — no <code>{{…}}</code> in any design capture</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="two">
+    <div>
+      <h2>Preserve — deliberate deviations</h2>
+      <ul>
+        <li><b>The structure field's diverging curve</b> with glow — canon rule 11, owner-locked. The design draws per-strike bars.</li>
+        <li><b>Ladder distances from the levels anchor</b> — rule 14 amended; the design says "from mid".</li>
+        <li><b>The hero mid readout's Live / Mid word deleted</b> — desk-and-read §4.2; liveness carried once by the ladder's mid dot.</li>
+        <li><b>The idle read renders inline at phone</b> — no verdict, no sheet; the spec's peek row carries a verdict.</li>
+        <li><b>Alerts Kind as a select; the orders panel mounted; five track-record families on one row; providers as pressed buttons</b> — each pinned by a named test or invariant.</li>
+        <li><b>The closed not-a-number vocabulary</b> — <code>unavailable</code>, <code>—</code>, <code>not provided</code>, <code>not recorded</code>, <code>unnamed shape</code>.</li>
+        <li><b>textDim and textInfo</b> — dimmed text is a solid token, never opacity; the small live chips use the text-grade signal companion.</li>
+      </ul>
+      <figure class="inline"><img src="{{img:crop-hero-real}}" alt="Structure hero, app above and design below"><figcaption><b>The hero.</b> App (top) and design (bottom): the field's form is the locked deviation; the ladder, foot, tape row and structure path follow the drawing.</figcaption></figure>
+    </div>
+    <div>
+      <h2>States and coverage</h2>
+      <div class="tablewrap"><table>
+        <thead><tr><th>state</th><th>observed</th></tr></thead>
+        <tbody>
+          <tr><td>cold load</td><td class="miss">v1 tile grid — N1</td></tr>
+          <tr><td>cold-start failure</td><td class="miss">"API error 502" bar — N7</td></tr>
+          <tr><td>stream offline</td><td class="met">chip, ⏸ marks, textDim — gate A11Y-9 passed on this tree</td></tr>
+          <tr><td>signed out</td><td class="met">refusal on the read; 0.915× the mock</td></tr>
+          <tr><td>AI idle / produced</td><td class="miss">produced is prose-first, not the 2×2 figure cells (audit: partial, unchanged)</td></tr>
+          <tr><td>scanner closed / offline prices</td><td class="met">CLOSED chip, ⏸ last-known cells</td></tr>
+          <tr><td>⌘K palette</td><td class="met">opens anywhere; links + tracked names</td></tr>
+          <tr><td>phone nav, sheet, tooltips, focus</td><td>not screenshotted this pass; the accessibility gate's 16 scans + 7 keyboard sequences passed</td></tr>
+        </tbody>
+      </table></div>
+      <h2 style="margin-top: 22px;">Next, in order</h2>
+      <ol>
+        <li><b>N1</b> — lane task, RED test first, then observe AC-46.</li>
+        <li><b>N2 + N4</b> — two wrap rules with a snapshot each.</li>
+        <li><b>N5 + N6</b> — one as-of / expiration formatter; drop the duplicate; re-accept the baseline as content.</li>
+        <li><b>N3</b> — author four short captions; remove the ellipsis rule.</li>
+        <li><b>N7</b> — failure copy and the A11Y-8 assertion together.</li>
+        <li><b>Owner rulings</b> — N10, N12, N8, the band's ≤ 800 target, the masthead's last 15 px.</li>
+        <li><b>Backend</b> — the dark-pool hang during pre-market.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <h2>Method and limits</h2>
+    <div class="prose">
+      <p>Same harness as the 2026-09-08 audit: the production bundle rebuilt from <code>3f9d941e</code> and the generated design pages rendered side by side at the design's own widths, measured by DOM census, screenshotted at DPR 1; the self-hosted fonts answered on both sides. Two state captures scripted the same way (cold load with the route held, failure with a 502). 60 harness tests, 0 failures, 1.7 minutes. Every number here is read from the JSON beside the PNGs.</p>
+      <p>Limits. Authenticated surfaces are fixture-driven; no account was created and no password typed. The live desk could not be walked with today's data because the local API's dark-pool ticker request hung during pre-market. The browser pane's viewport emulation became unreliable mid-session, so the interaction states beyond the palette were not screenshotted from it; their coverage rests on the gates that passed on this tree. The harness's Plex Mono probe is weight-specific and reads false on pages that set Mono at 600 only — a probe artefact, <code>document.fonts.status</code> is loaded on all 58 captures.</p>
+    </div>
+    <div class="foot">
+      <span>Evidence: <code>.spire/clusters/tech/state/spire-curvature-v2-foundations/fidelity-review-2026-09-10/</code> — <code>VISUAL_REVIEW.md</code>, <code>app/</code>, <code>design/</code>, <code>pairs/</code>, <code>crops/</code>, <code>_tools/</code>.</span>
+      <span>Reviewer: the Mac session, 2026-09-10, after the handover. No baseline re-taken, no gate loosened, the design not rebuilt.</span>
+    </div>
+  </section>
+</div>
