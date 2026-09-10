@@ -1,6 +1,80 @@
 # RESUME — spire/curvature-v2-foundations
 
-## ⬆ UPDATE — 2026-09-09 (Windows box): PR #46 OPEN · first CI run red on four repaired causes · baselines RE-ACCEPTED at `be00d739` on both platforms · branch at `27eb19e2` · phase 4 council at the S2 cap, ONE owner ruling open
+## ➡ HANDOVER — to the owner's Mac session (written 2026-09-10 on the Windows box). Read this first; everything below is history.
+
+**Owner's words:** "I will do the final blockers on mac now." Three blockers, all the owner's, none of them a
+baseline. Everything else on both branches is committed, pushed, tree clean, no local-only state that matters.
+
+**Pick up with:**
+
+```
+git fetch origin
+git switch spire/curvature-v2-foundations && git pull --ff-only      # adbfb408
+git switch spire/curvature-v2-landing-and-site && git pull --ff-only  # b8313efc
+```
+
+Then `/spire-tech` with "Boot from RESUME.md's 2026-09-10 handover". Re-verify the two heads against `git`
+before believing this block.
+
+**Where things are (verified 2026-09-10 from this box):**
+
+- **PR #46** `spire/curvature-v2-foundations` → `main`, head `adbfb408`. CI run 3 (`34327029939`): frontend
+  green — visual 6/6 on linux (two green runs, the runbook's parity proof is met), chromium 108/108 0 flaky,
+  accessibility 16/16 no waivers, compatibility 15/15; backend, capacity and Cloudflare Pages green. The
+  **only red is the supply-chain policy job**, on exactly two `npm_advisories` findings (js-yaml under
+  `@redocly/openapi-core`). **The repo has no branch protection (private, free plan), so GitHub reports the PR
+  `MERGEABLE` (state `UNSTABLE`) — the owner can merge with that job red.**
+- **Phase 4 council** (`curvature-v2-landing-and-site`) on branch `spire/curvature-v2-landing-and-site`, head
+  `b8313efc`: R1–R4 done, S2 ran twice (the cap), SPEC 71 rows / receipt 31/31 / lint 0, INTERFACE_CONTRACT
+  `NO_BACKEND_CHANGE`. That branch is **4 ahead / 15 behind** foundations (cut before the CI repair) — fine for
+  the ruling and the final fold (docs only); **rebase it onto foundations (or onto `main` after the merge) before
+  GATE PLAN**, never before.
+
+**Blocker 1 — F-J, the policy job (owner decision; recommended: merge now, fix after):**
+`js-yaml` 4.x is vulnerable in every version; only 5.x is fixed. `openapi-typescript@7.13.0` (the API contract
+generator) pins `@redocly/openapi-core@^1.34.6`, whose 1.x line needs js-yaml 4 (`types.merge`, gone in 5).
+Upstream `@redocly/openapi-core@2.51.2` already depends on `js-yaml@^5.2.2`. Options:
+- **(a) merge PR #46 with the policy job red and keep F-J open** — nothing is blocked by it (see above);
+  **recommended**, the two advisories are a YAML parser reachable only through the contract generator at build time.
+- **(b) try an override to openapi-core 2.x** — `"@redocly/openapi-core": "2.51.2"` in `package.json` `overrides`
+  (drop the nested js-yaml 4 override), then `npm i`, then `npx nx run api-contract-check --skip-nx-cache` and
+  `npm run typecheck`; if the generator still works, the policy job goes green with zero overrides for js-yaml. A
+  bounded 15-minute experiment; if it fails, revert and stay on (a).
+- **(c) an exception record** is NOT available today: `validateExceptions` returns `security-exception-prohibited`
+  for `npm-advisory` rule ids (`tools/supply-chain/policy/exceptions.mjs:11`), and records are capped at 30 days
+  with predecessor chaining. Allowing it means changing the policy and its specs — do not.
+
+**Blocker 2 — rotate `MASSIVE_API_KEY`** (owner action at the vendor + `apps/api/.env` on each machine + the Railway
+variable). The key sat in `apps/api/.env` in the initial commit `1aac13ec` (2026-06-18), removed in `fc9c8d28`,
+present in GitHub history forever. No history rewrite (worktrees on three machines). Say in the ledger when it was
+rotated.
+
+**Blocker 3 — D-B, the landing hero instrument's dimensionality** (council branch,
+`contracts/curvature-v2-landing-and-site/council/decisions.md` §4). **(A)** static SVG isometric projection as the
+artboard draws it, canon gets a one-line Amendments clarification — **recommended** · **(B)** runtime three.js/WebGL
+hero — new heavy dependency, non-deterministic pixels for the visual gate, effort leaves M · **(C)** ship (A) now
+and pre-register a three.js hero for the lab track after the responsive sweep. To rule: write the choice into the
+D-B row's status column in decisions.md §4, then dispatch **one final R4 synthesizer pass** folding D-B **plus S2
+pass 2's 2 Important + 1 Minor** (`council/S2-findings.md`), run `contract_lint`, no third S2 (cap reached) →
+spec approval → **GATE PLAN**. D-A (blog draft slots) proceeds on (A) unless vetoed in the same edit.
+
+**Not blockers, do not re-open:** BACKLOG **F-L** (the `AccessibleHelp` tap race: a lane item, RED test first,
+never a gate loosening) · **F-G/F-H** (gates never ran before the PR; a11y summary carries no findings — process
+items) · the license baseline (regenerated `50243496`; **any** future `package-lock.json` change needs
+`node tools/supply-chain/generate-license-baseline.mjs` re-run and its diff reviewed, or `npm_licenses` fails on
+every row).
+
+**Local app on the Mac, if wanted:** `.claude/launch.json` is generated on demand from
+`.spire/clusters/tech/project.json` (two entries: `npx nx serve api` :8000, `npx nx serve @convexa/dashboard`
+:4200) and must stay uncommitted (`.git/info/exclude` on this box). The API's dev serve hits the live vendor. For a
+login without Postgres, add `AUTH_DEMO_SEED=<email>:<password ≥ 8 chars>` to `apps/api/.env` — the store is in
+memory, the seed is recreated on every start, and the Log in dialog prefills it. The Windows `.env` carries one
+already; the Mac's needs its own.
+
+**Windows-only state, nothing to carry:** Docker container and volume for the linux baseline flow removed; the
+Playwright image stays pulled here. Local servers stopped, no listeners on 8000/4200/4300.
+
+## ⬆ UPDATE — 2026-09-09 (Windows box): PR #46 OPEN · first CI run red on four repaired causes · baselines RE-ACCEPTED at `be00d739` on both platforms · branch at `27eb19e2` · phase 4 council at the S2 cap, ONE owner ruling open — SUPERSEDED by the handover above
 
 **Read this first; every block below is history.** Owner: "pr first, then council". PR #46
 (https://github.com/ariasr47/convexa/pull/46, `spire/curvature-v2-foundations` → `main`) opened at `11307915`.
@@ -634,7 +708,7 @@ value of **60**, and the gap is in the canon's prose, not the code.
 
 # RESUME — spire/curvature-v2-foundations (2026-09-03)
 
-**Resume status:** ACTIVE — **phases 1–3 closed at GATE S; PR #46 open; win32 + linux visual baselines re-accepted 2026-09-09 at `be00d739` (branch at `27eb19e2`); phase 4 council at the S2 cap with the D-B ruling open — see the 2026-09-09 block at the top.**  
+**Resume status:** HANDED OVER to the Mac 2026-09-10 — **phases 1–3 closed at GATE S; PR #46 mergeable (only the policy job red, F-J); phase 4 council at the S2 cap awaiting the D-B ruling — see the HANDOVER block at the top.**  
 **Written:** 2026-09-03 (GATE R, phase 1 closed at GATE S — a clean phase boundary, not a mid-build checkpoint)
 
 Written at GATE R for a **fresh session on another machine**. Self-contained against `PROJECT_CONTEXT.md`.
