@@ -169,6 +169,14 @@ change line or a name.
   `package-lock.json` change fails `npm_licenses` on all ~1050 rows** (each baseline row carries the lock hash) until
   `generate-license-baseline.mjs` is re-run and its diff reviewed; the generator also hashed `Cargo.lock` raw, so a
   Windows (CRLF) checkout churned every cargo row — fixed to the same CRLF-normalised hash as npm.
+  **Owner rulings 2026-09-10 (Mac):** (1) PR #46 merged to `main` as `3f9d941e` (merge commit, 193 commits) with the
+  policy job red on exactly these two advisories — nothing downstream is gated on it; F-J stays open until
+  `openapi-typescript` moves to a js-yaml-5 `@redocly/openapi-core` (2.51.2 upstream already does). (2) **Key rotated
+  2026-09-10:** the leaked `MASSIVE_API_KEY` was still live that morning (probe HTTP 200; a bogus key 401) and was the
+  key Railway production ran on — an earlier hash comparison that said otherwise had a trailing newline in it. Owner
+  revoked it at the vendor (old key now 401), set the replacement in the Mac `apps/api/.env` and on the Railway
+  `api-rust` service (both hash `1bafe84a…`, new key probe 200). **Windows `apps/api/.env` still carries the revoked
+  key — update it on that box.** History stays; no rewrite.
 - **F-K — `execFileSync`'s default buffer in the receipt helper.** Six changed PNG baselines produce a 1.06 MB binary
   patch, over the 1 MB default; fixed with a 64 MB `maxBuffer` (`097d37a7`). The container bootstrap also copied a
   second run's evidence over the first's; it now clears the folder.
