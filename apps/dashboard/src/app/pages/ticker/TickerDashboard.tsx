@@ -232,7 +232,7 @@ function HeroSkeleton() {
             padding: '12px 18px 14px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 1.25,
+            gap: 1, // on the 4-pt ladder (AC-45c) — 8px between the five ladder skeleton rows.
             [theme.containerQueries('panel').down(1000)]: {
               borderLeft: 0,
               borderTop: '1px solid',
