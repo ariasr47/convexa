@@ -230,7 +230,7 @@ describe('fmtExpiry — "Mon D (N DTE)", never negative, the exchange calendar d
     expect(fmtExpiry('2026-03-15', Date.parse('2026-03-01T12:00:00.000Z'))).toBe('Mar 15 (14 DTE)');
   });
 
-  it("the exchange (ET) calendar date, not the UTC date, decides DTE — a UTC instant that is still yesterday in ET counts from yesterday", () => {
+  it('the exchange (ET) calendar date, not the UTC date, decides DTE — a UTC instant that is still yesterday in ET counts from yesterday', () => {
     // 2026-01-01T04:30:00Z is 2025-12-31T23:30 EST — the ET calendar date is Dec 31, not Jan 1.
     expect(fmtExpiry('2026-01-02', Date.parse('2026-01-01T04:30:00.000Z'))).toBe('Jan 2 (2 DTE)');
   });

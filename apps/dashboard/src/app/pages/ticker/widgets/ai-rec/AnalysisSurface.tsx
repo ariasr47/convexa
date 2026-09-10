@@ -1,3 +1,4 @@
+import { fmtAsOfEt, fmtExpiry } from '@/pages/ticker/widgets/_kit/copy';
 import type {
   Grounding,
   OpenPositionsDigest,
@@ -13,7 +14,6 @@ import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { fmtAsOfEt, fmtExpiry } from '@/pages/ticker/widgets/_kit/copy';
 import { CapAnnotation } from './CapAnnotation';
 import { CitedContractLine } from './CitedContractLine';
 import { FigureClause } from './FigureClause';

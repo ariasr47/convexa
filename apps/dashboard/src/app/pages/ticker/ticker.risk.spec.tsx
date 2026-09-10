@@ -43,11 +43,7 @@ import App from '@/app';
 import { makeBundle } from '@/features/auth/testBackend';
 import { __resetMemory } from '@/features/trading/positions/store';
 import { theme } from '@/shared/theme/theme';
-import {
-  allRulesForClass,
-  emotionClassOf,
-  joinedStyleText,
-} from './widgets/_kit/emotionCssReader';
+import { allRulesForClass, emotionClassOf, joinedStyleText } from './widgets/_kit/emotionCssReader';
 
 // ---- Rich static-read fixtures (every independently-nullable section POPULATED) ---------------
 const IVR_FIX: IvRankRead = {
