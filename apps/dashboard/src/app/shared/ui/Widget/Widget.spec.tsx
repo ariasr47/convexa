@@ -341,3 +341,35 @@ describe('Widget — title region keeps the row below `sm`, `titleBadge` (PASS 2
     expect(screen.queryByTestId('probe-badge')).toBeNull();
   });
 });
+
+// =================================================================================================
+// Fidelity repair 2, N2 — `titleWrap`, an opt-in title-wrap escape hatch. `OrdersWidget`'s title
+// still ellipsised in the 379px side column even after the design's shorter copy fix — measured 5px
+// over in a real browser (`Sim orders · SPY` beside the SIMULATED chip + `All orders →` link). Default
+// off: every OTHER widget keeps today's single-line ellipsis, unchanged.
+// =================================================================================================
+describe('Widget — `titleWrap` (fidelity repair 2, N2): opt-in title wrap, default off', () => {
+  it('default (unset): the title keeps white-space:nowrap / text-overflow:ellipsis — every existing widget is byte-identical', () => {
+    wrap(
+      <Widget id="w" title="Read strip">
+        <div>body</div>
+      </Widget>,
+    );
+    const title = screen.getByRole('heading', { level: 2, name: 'Read strip' });
+    const cs = getComputedStyle(title);
+    expect(cs.whiteSpace).toBe('nowrap');
+    expect(cs.textOverflow).toBe('ellipsis');
+  });
+
+  it('titleWrap: the title allows wrapping — no white-space:nowrap / text-overflow:ellipsis', () => {
+    wrap(
+      <Widget id="w" title="Sim orders · SPY" titleWrap>
+        <div>body</div>
+      </Widget>,
+    );
+    const title = screen.getByRole('heading', { level: 2, name: 'Sim orders · SPY' });
+    const cs = getComputedStyle(title);
+    expect(cs.whiteSpace).not.toBe('nowrap');
+    expect(cs.textOverflow).not.toBe('ellipsis');
+  });
+});
