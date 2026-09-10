@@ -1,0 +1,3 @@
+# Raw captures stay on the machine that made them; the harness regenerates them anywhere.
+# The JSON census, the tools, the saved bundles and the JPEG pairs are committed.
+*.png
