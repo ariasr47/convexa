@@ -180,8 +180,8 @@ describe('live-lifecycle (centerpiece flow)', () => {
     expect(screen.getByTestId('landing')).toBeInTheDocument();
     expect(esLog.length).toBe(0);
 
-    // --- Free-path CTA into /ticker (primary is Scanner; secondary stays public) ---
-    await user.click(screen.getByTestId('cta-secondary'));
+    // --- Free-path CTA into /ticker (the primary CTA; secondary → /methodology) ---
+    await user.click(screen.getByTestId('cta-primary'));
     await screen.findByText('Call wall');
     expect(openFor('SPY').length).toBe(1); // exactly one, open
 
