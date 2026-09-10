@@ -8,5 +8,5 @@ Contracts:
   - PLAN.md                    GATE PLAN 2026-09-10 — 16 FE tasks (F1 prerequisite · F2–F13 independent · F14/F15 blocked on fidelity-repair-2 merge · F16 closer), 0 BE, V-1…V-15; decisions D1–D6; C1/C2 recorded above
 Open amendments: none — S2 pass 2's 1 Critical closed by owner ruling D-B (A); its 2 Important + 1 Minor folded at R4 pass 3 (SPEC §1/§2.6, §4 + §7 item 17, §3 ship-blocking). No third S2 (cap). Canon Amendments row + ledger `hero-3d-is-a-static-isometric-projection` live on `docs/owner-blockers-2026-09-10` → main
 QA (GATE Q):  n/a
-Workers:      frontend — F1 ✓ `a3c7c4d9` (probes 1/1/0 as required; one pre-existing red left for F7: `landing.spec.tsx:26` imports the trading store) · pair 1: F3 + F5 (spawned) · queue: (F6, F2) → (F7, F4) → (F8, F9) → (F10, F11) → (F12, F13) → F14/F15/F16 after PR #49 merges. backend — n/a (no rows)
+Workers:      frontend — F1 ✓ `a3c7c4d9` · F3 ✓ `9c57e082` · F5 (running) · F6 (spawned) · queue: F2 → (F7, F4) → (F8, F9) → (F10, F11) → (F12, F13) → F14/F15/F16 after PR #49 merges. backend — n/a (no rows)
 Last gateway:  GATE PLAN @ 2026-09-10 (planner on Opus 5, one pass, no revision) → build lanes
