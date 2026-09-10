@@ -8,7 +8,7 @@ Contracts:
   - PLAN.md                    GATE PLAN 2026-09-10 — 16 FE tasks (F1 prerequisite · F2–F13 independent · F14/F15 blocked on fidelity-repair-2 merge · F16 closer), 0 BE, V-1…V-15; decisions D1–D6; C1/C2 recorded above
 Open amendments: none — S2 pass 2's 1 Critical closed by owner ruling D-B (A); its 2 Important + 1 Minor folded at R4 pass 3 (SPEC §1/§2.6, §4 + §7 item 17, §3 ship-blocking). No third S2 (cap). Canon Amendments row + ledger `hero-3d-is-a-static-isometric-projection` live on `docs/owner-blockers-2026-09-10` → main
 QA (GATE Q):  n/a
-Workers:      frontend — F1 ✓ `a3c7c4d9` · F3 ✓ `9c57e082` · F5 ✓ `6e63ce6a` · F2 ✓ `c9d5a704` · F6 ✓ `3e34b9bb` · F4 ✓ `ca43cb57` · F8 ✓ `a54728e9` · F7 ✓ `6a21dcec`+`c7c6bcd2` · F7b ✓ `7c6914b6` · F9 ✓ `98f9028e` · F11 ✓ `06c2db88` · F12 ✓ `c445ab0c` · F10 ✓ `d26b4f60` · F13 ✓ `36776477` (four mutation arms proven; trap: `--skip-nx-cache` when poisoning `libs/quant-engine` / `design/*.mjs` pins) · **all `Independent: yes` rows joined** · F14 / F15 / F16 (closer) wait for PR #49 to merge · GATE Q not run. backend — n/a (no rows)
+Workers:      frontend — F1 ✓ `a3c7c4d9` · F3 ✓ `9c57e082` · F5 ✓ `6e63ce6a` · F2 ✓ `c9d5a704` · F6 ✓ `3e34b9bb` · F4 ✓ `ca43cb57` · F8 ✓ `a54728e9` · F7 ✓ `6a21dcec`+`c7c6bcd2` · F7b ✓ `7c6914b6` · F9 ✓ `98f9028e` · F11 ✓ `06c2db88` · F12 ✓ `c445ab0c` · F10 ✓ `d26b4f60` · F13 ✓ `36776477` · conductor fixup `1398dcf9` (scoped Prettier) · **F7c ✓ `591e2654`** (light-scheme CTA contrast via `textAmber`: 3.0→5.2, 3.3→5.7; A11Y-2 passes) · **every independent row joined** · F14 / F15 / F16 (closer) wait for PR #49 to merge · GATE Q not run. backend — n/a (no rows)
 Last gateway:  GATE PLAN @ 2026-09-10 (planner on Opus 5, one pass, no revision) → build lanes
 
 ## Conductor's cold verification — 2026-09-10 night, after every independent row joined (`1398dcf9`; not the lanes' numbers)
@@ -34,4 +34,6 @@ Build outputs deleted first; every command standalone, ports 4200/4310 freed, po
 
 **Looked at (not just measured):** the 1440 pair — hero with the static isometric surface beside the headline, the structure-field panel, the score strip, the AI-read sample, the trust cards, the CTA band, the footer once; the 390 pair — the same stack; the phone CTAs are narrower than the design's full-width pair (polish for the closer).
 
-**Open after this pass:** F7c (light contrast) → re-run `browser:a11y`; F14 / F15 / F16 after PR #49 merges; then GATE Q; then the landing baseline on Windows.
+**After F7c (`591e2654`), the final cold pass on the whole tree:** typecheck 0 · **254 files / 3,061 tests** · lint 0 · format 0 · build 0 · bundle 0 · e2e **108/108, 0 flaky** · a11y **15/16** (only `A11Y-B2`, F15's) · lanes diff 0.
+
+**Open after this pass:** F14 / F15 / F16 after PR #49 merges (F16 decides the §2.4 split — the entry chunk is 20.88 kB gzip); then GATE Q; then the landing baseline on Windows. Polish for the closer: the phone CTAs are narrower than the design's full-width pair.
