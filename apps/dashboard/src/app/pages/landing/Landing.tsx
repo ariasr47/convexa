@@ -200,8 +200,14 @@ export function Landing() {
                   alignSelf: 'flex-start',
                   height: 'auto',
                   minHeight: 26,
+                  // Fill-grade amber stays the TINT (`primary.main`, ≥3:1 UI class); the label
+                  // ITSELF is small (<18px) amber text, so it takes the TEXT-GRADE amber
+                  // (`extrasFor(theme).textAmber`, ≥4.5:1) — the same split `Eyebrow` above
+                  // already uses. `primary.main` alone measured 2.68:1 on `paper` in light mode
+                  // (color-contrast, serious) — the two-amber-grades rule this file already
+                  // follows for every eyebrow, just not yet for this chip.
                   bgcolor: (theme) => alpha(theme.palette.primary.main, 0.12),
-                  color: 'primary.main',
+                  color: (theme) => extrasFor(theme).textAmber,
                   fontWeight: 600,
                   borderRadius: 999,
                   '& .MuiChip-label': { whiteSpace: 'normal', px: 1.5, py: 0.5, lineHeight: 1.3 },
@@ -255,6 +261,14 @@ export function Landing() {
                   variant="outlined"
                   size="large"
                   data-testid="cta-secondary"
+                  // A11Y-2 (color-contrast, serious): an outlined button's label takes
+                  // `primary.main` as TEXT by MUI default — the FILL-grade amber, only measured
+                  // to the 3:1 UI-component floor. In light mode that is `amberDeep` on
+                  // `background.default`, 3.02:1, under the 4.5:1 text floor. The border stays
+                  // `primary.main`-derived (a 3:1-class UI element, unaffected by this override);
+                  // only the label moves to the TEXT-GRADE amber (`extrasFor(theme).textAmber`,
+                  // ≥4.5:1) — dark is byte-identical (`textAmber` = `gammaAmber` there).
+                  sx={{ color: (theme) => extrasFor(theme).textAmber }}
                 >
                   {LANDING_COPY.hero.secondary}
                 </Button>
@@ -394,7 +408,10 @@ export function Landing() {
                 to="/methodology"
                 variant="text"
                 data-testid="cta-methodology"
-                sx={{ mt: 2, px: 0, minWidth: 0 }}
+                // A11Y-2 (color-contrast, serious): same fix as `cta-secondary` below — a `text`
+                // variant button also labels itself with `primary.main` by default (3.01:1 on
+                // `background.default` in light mode, measured). Text-grade amber clears 4.5:1.
+                sx={{ mt: 2, px: 0, minWidth: 0, color: (theme) => extrasFor(theme).textAmber }}
               >
                 {LANDING_COPY.register.action}
               </Button>
@@ -483,6 +500,10 @@ export function Landing() {
                 ref={signInRef}
                 onClick={() => openAuth({ returnFocus: signInRef.current })}
                 data-testid="cta-band-secondary"
+                // A11Y-2 (color-contrast, serious): this band sits on `background.paper` (white
+                // in light mode), so the default `primary.main` label measured 3.27:1 — still
+                // under 4.5:1. Same text-grade-amber fix as the hero's `cta-secondary`.
+                sx={{ color: (theme) => extrasFor(theme).textAmber }}
               >
                 {LANDING_COPY.cta.secondary}
               </Button>
