@@ -223,6 +223,14 @@ export function AuthDialog({
                 <CloseIcon fontSize="small" />
               </IconButton>
             </Box>
+            {/* curvature-v2-landing-and-site SPEC §4/AC-A4 — the closed door is declared BEFORE the
+                visitor types anything, not discovered only after a refused submit (`mapError`'s
+                `signups_closed` case below stays the separate post-submit refusal copy). */}
+            {mode === 'signup' && (
+              <Alert severity="info" data-testid="auth-signups-closed">
+                {AUTH_COPY.signup.signupsClosed}
+              </Alert>
+            )}
             {reason && (
               <Alert severity="info" data-testid="auth-reason">
                 {reason}

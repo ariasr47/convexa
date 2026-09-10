@@ -12,6 +12,7 @@
  * Product spine: refuse VISIBLY (never silent redirect), say what unlocks, and leave a free path
  * into the public Ticker so the funnel does not dead-end.
  */
+import { RouteFallback } from '@/shared/ui/RouteFallback';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
@@ -53,14 +54,16 @@ function wallCopy(surface: string): { unlocks: string; freePath: string } {
 }
 
 export function RequireAuth({ children, surface }: Props) {
-  const { ready, authenticated } = useAuth();
+  const { ready, authenticated, subsystemDegraded, refresh } = useAuth();
   const { openAuth } = useAuthDialog();
   const signInRef = useRef<HTMLButtonElement>(null);
   const copy = wallCopy(surface);
 
-  // Hold the wall back until who-am-I resolves, or a signed-in user sees a sign-in prompt flash
-  // on every hard load of these routes.
-  if (!ready) return null;
+  // The who-am-I read is in flight → the shared QUIET FILL. Never the wall, never `null`, never a
+  // wall skeleton or a greyed `Sign in`. `null` is not a hold a person can perceive; the fallback's
+  // only string is aria-label="Loading page", which asserts nothing about the session. This is the
+  // codebase's own answer: `DefaultTickerRedirect` renders it on the identical fact.
+  if (!ready) return <RouteFallback />;
   if (authenticated) return <>{children}</>;
 
   return (
@@ -72,8 +75,13 @@ export function RequireAuth({ children, surface }: Props) {
       >
         <Stack spacing={2} sx={{ alignItems: 'center' }}>
           <Typography variant="h6" component="h1">
-            Sign in to open {surface}
+            {subsystemDegraded ? AUTH_COPY.gate.sessionUnknown : `Sign in to open ${surface}`}
           </Typography>
+          {subsystemDegraded && (
+            <Typography variant="body2" color="text.secondary">
+              {AUTH_COPY.gate.unavailable}
+            </Typography>
+          )}
           <Typography variant="body2" color="text.secondary">
             {copy.unlocks}
           </Typography>
@@ -97,6 +105,15 @@ export function RequireAuth({ children, surface }: Props) {
             >
               {AUTH_COPY.account.signIn}
             </Button>
+            {subsystemDegraded && (
+              <Button
+                variant="outlined"
+                onClick={() => void refresh()}
+                data-testid="require-auth-retry"
+              >
+                {AUTH_COPY.gate.retry}
+              </Button>
+            )}
             <Button
               component={RouterLink}
               to="/ticker"
