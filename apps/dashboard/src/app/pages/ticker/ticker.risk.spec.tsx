@@ -455,7 +455,21 @@ describe('Ticker · cold-load skeleton takes the desk’s final shape (AC-46, fi
     const cold = await screen.findByTestId('cold-load');
 
     const hero = within(cold).getByTestId('cold-load-hero');
-    const cls = emotionClassOf(hero);
+    // MUTATION GUARD — `cold-load-hero` (`SkeletonPanel`) must itself ESTABLISH the `panel`
+    // container name; a query placed on this SAME element (rather than a descendant) would never
+    // match at any width — a real-browser-only regression (jsdom never lays out `@container`) a
+    // prior version of this fix shipped: the hero measured 483px at 390px instead of 968px because
+    // the `down(1000)` override sat on the container-establishing element itself.
+    const heroCls = emotionClassOf(hero);
+    expect(heroCls).toBeTruthy();
+    const heroRules = allRulesForClass(joinedStyleText(), heroCls as string)
+      .join(';')
+      .replace(/\s+/g, '');
+    expect(heroRules).toContain('container-type:inline-size');
+    expect(heroRules).toContain('container-name:panel');
+
+    const grid = within(hero).getByTestId('cold-load-hero-grid');
+    const cls = emotionClassOf(grid);
     expect(cls).toBeTruthy();
     const rules = allRulesForClass(joinedStyleText(), cls as string)
       .join(';')
@@ -478,6 +492,31 @@ describe('Ticker · cold-load skeleton takes the desk’s final shape (AC-46, fi
     const cold = await screen.findByTestId('cold-load');
     const strip = within(cold).getByTestId('cold-load-strip');
     expect(within(strip).getAllByTestId('cold-load-strip-cell')).toHaveLength(8);
+  });
+
+  it('the read-strip skeleton rail switches rail→grid behind the SAME `panel` container the hero uses (mutation guard, matching the hero’s own fix)', async () => {
+    tickerDeferred = true;
+    renderAt('/ticker/TSLA');
+    const cold = await screen.findByTestId('cold-load');
+    const strip = within(cold).getByTestId('cold-load-strip');
+    const stripCls = emotionClassOf(strip);
+    expect(stripCls).toBeTruthy();
+    const stripRules = allRulesForClass(joinedStyleText(), stripCls as string)
+      .join(';')
+      .replace(/\s+/g, '');
+    expect(stripRules).toContain('container-type:inline-size');
+    expect(stripRules).toContain('container-name:panel');
+
+    const rail = within(strip).getByTestId('cold-load-strip-rail');
+    const railCls = emotionClassOf(rail);
+    expect(railCls).toBeTruthy();
+    const railRules = allRulesForClass(joinedStyleText(), railCls as string)
+      .join(';')
+      .replace(/\s+/g, '');
+    expect(railRules).toContain('display:flex');
+    expect(railRules).toContain('grid-template-columns:1.35frrepeat(7,minmax(0,1fr))');
+    const squashed = joinedStyleText().replace(/\s+/g, '');
+    expect(squashed).toContain('@containerpanel(min-width:1000px)');
   });
 
   it('RED (b) — the ladder skeleton sits below the field skeleton in document order (the single-column, under-1000px shape)', async () => {

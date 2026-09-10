@@ -115,6 +115,14 @@ const panelChromeSx = (t: Theme) => ({
   borderColor: 'divider',
   borderRadius: 1,
   boxShadow: elevationFor(t).e1,
+  // `Widget.tsx`'s own body establishes this name (SPEC §2.5) — WITHOUT it, `HeroSkeleton`'s and
+  // `StripSkeleton`'s own `theme.containerQueries('panel')` rules query a container that does not
+  // exist anywhere in the ancestor chain, so the condition never matches at ANY width (a real-browser
+  // regression a jsdom test cannot see — jsdom never lays out `@container` at all; caught here by
+  // measuring the cold-load capture in a real browser at 390px, where the hero read 483px instead of
+  // the intended 968px).
+  containerType: 'inline-size' as const,
+  containerName: 'panel',
 });
 
 /** `.panel` chrome (`Widget.tsx`'s own frame — radius/fill/hairline/e1) with no header: cold-load
@@ -162,7 +170,11 @@ function ZoneLabelSkeleton() {
 // line keeps filling from the first SSE payload during cold load, exactly as before this change.
 function MastheadSkeleton() {
   return (
-    <Box data-testid="cold-load-masthead" sx={{ pt: 2.5, pb: 1.5, mb: 1.5 }}>
+    // minHeight 215 — the widget's own measured final height (review: `command-deck` 215px at
+    // 1280), the same "pin to the final height" pattern the hero (483) and strip (131) skeletons
+    // below use, verified against a real browser capture (measured 189px unpinned — ~12% short,
+    // outside the task's ±10% band).
+    <Box data-testid="cold-load-masthead" sx={{ pt: 2.5, pb: 1.5, mb: 1.5, minHeight: 215 }}>
       <Stack spacing={1.5}>
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
           <ChipSkeleton width={96} />
@@ -200,18 +212,22 @@ function MastheadSkeleton() {
 function HeroSkeleton() {
   const theme = useTheme();
   return (
-    <SkeletonPanel
-      data-testid="cold-load-hero"
-      sx={{
-        minHeight: 483,
-        [theme.containerQueries('panel').down(1000)]: { minHeight: 968 },
-      }}
-    >
+    // NOTE: the responsive rules live on the INNER `Box` below, never on `SkeletonPanel` itself —
+    // `SkeletonPanel` is what ESTABLISHES the `panel` container name (`panelChromeSx`), and a
+    // container cannot query the container it establishes (the same rule `ticker-work-container`'s
+    // own comment names); a query placed here would never match at any width. Caught by measuring a
+    // real browser capture at 390px (the hero read 483px instead of 968 before this was fixed).
+    <SkeletonPanel data-testid="cold-load-hero">
       <Box
+        data-testid="cold-load-hero-grid"
         sx={{
           display: 'grid',
           gridTemplateColumns: 'minmax(0, 1fr) 300px',
-          [theme.containerQueries('panel').down(1000)]: { gridTemplateColumns: '1fr' },
+          minHeight: 483,
+          [theme.containerQueries('panel').down(1000)]: {
+            gridTemplateColumns: '1fr',
+            minHeight: 968,
+          },
         }}
       >
         <Box data-testid="cold-load-hero-field" sx={{ minWidth: 0, padding: '10px 6px 0' }}>
@@ -255,36 +271,49 @@ function HeroSkeleton() {
 function StripSkeleton() {
   const theme = useTheme();
   return (
-    <SkeletonPanel
-      data-testid="cold-load-strip"
-      sx={{
-        minHeight: 131,
-        display: 'flex',
-        overflow: 'hidden',
-        [theme.containerQueries('panel').up(1000)]: {
-          display: 'grid',
-          gridTemplateColumns: '1.35fr repeat(7, minmax(0, 1fr))',
-        },
-      }}
-    >
-      {Array.from({ length: 8 }).map((_, i) => (
-        <Box
-          key={i}
-          data-testid="cold-load-strip-cell"
-          sx={{
-            flex: i === 0 ? '0 0 220px' : '0 0 170px',
-            minWidth: 0,
-            py: 1.5,
-            px: 1.5,
-            borderRight: '1px solid',
-            borderColor: 'divider',
-            [theme.containerQueries('panel').up(1000)]: { flex: 'unset' },
-          }}
-        >
-          <Skeleton data-testid="cold-skeleton" variant="text" width="60%" sx={{ fontSize: 11 }} />
-          <Skeleton data-testid="cold-skeleton" variant="text" width="70%" sx={{ fontSize: 18 }} />
-        </Box>
-      ))}
+    // Same rule as `HeroSkeleton` above — the rail/grid switch lives on the inner `Box`, never on
+    // `SkeletonPanel` (the `panel`-container-establishing element itself).
+    <SkeletonPanel data-testid="cold-load-strip" sx={{ minHeight: 131 }}>
+      <Box
+        data-testid="cold-load-strip-rail"
+        sx={{
+          display: 'flex',
+          overflow: 'hidden',
+          [theme.containerQueries('panel').up(1000)]: {
+            display: 'grid',
+            gridTemplateColumns: '1.35fr repeat(7, minmax(0, 1fr))',
+          },
+        }}
+      >
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Box
+            key={i}
+            data-testid="cold-load-strip-cell"
+            sx={{
+              flex: i === 0 ? '0 0 220px' : '0 0 170px',
+              minWidth: 0,
+              py: 1.5,
+              px: 1.5,
+              borderRight: '1px solid',
+              borderColor: 'divider',
+              [theme.containerQueries('panel').up(1000)]: { flex: 'unset' },
+            }}
+          >
+            <Skeleton
+              data-testid="cold-skeleton"
+              variant="text"
+              width="60%"
+              sx={{ fontSize: 11 }}
+            />
+            <Skeleton
+              data-testid="cold-skeleton"
+              variant="text"
+              width="70%"
+              sx={{ fontSize: 18 }}
+            />
+          </Box>
+        ))}
+      </Box>
     </SkeletonPanel>
   );
 }
