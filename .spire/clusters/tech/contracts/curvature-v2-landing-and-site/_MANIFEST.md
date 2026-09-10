@@ -1,5 +1,5 @@
 # curvature-v2-landing-and-site — pipeline manifest
-Stage:        GATE C — council complete (R1–R4 + S2 ×2 at the cap); owner rulings D-B = (A) and D-A = (A) landed 2026-09-10 and folded at R4 pass 3; **SPEC awaiting owner approval → GATE PLAN (rebase this branch onto `main`, now carrying PR #46 as `3f9d941e`, first)**
+Stage:        GATE C — council complete (R1–R4 + S2 ×2 at the cap); owner rulings D-B = (A), D-A = (A) folded at R4 pass 3. **SPEC APPROVED 2026-09-10** — owner answered the approval question with "whatever you recommend" and the conductor's recommendation was approve (lint 0, all S2 findings folded, both rulings the owner's). **Next: rebase this branch onto `main` (after `docs/owner-blockers-2026-09-10` merges — one rewrite, force-push asked for explicitly) → GATE PLAN**
 Repos:        frontend
 Brief:        BRIEF.md present (five defects recorded in council/decisions.md §0 — the decisions win where they differ)
 Contracts:
