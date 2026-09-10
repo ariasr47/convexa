@@ -1,5 +1,38 @@
 # RESUME — spire/curvature-v2-foundations
 
+## ✅ CLOSE-OUT — 2026-09-10 (Mac): the three owner blockers are done · PR #46 MERGED as `3f9d941e` · key rotated · D-B = (A), D-A = (A) folded at R4 pass 3 · next: SPEC approval → rebase → GATE PLAN
+
+**Read this first; the HANDOVER below it is history (its three blockers are closed here).** Heads re-verified against
+`git` before acting: foundations was `32c4e276` (one docs commit past the `adbfb408` the handover named — the handover
+commit itself), landing `b8313efc` as stated.
+
+- **Blocker 1 — PR #46 / F-J: MERGED** ([#46](https://github.com/ariasr47/convexa/pull/46) → `main` `3f9d941e`, a
+  **merge commit** — 193 commits kept, every SHA this file cites still resolves; branch not deleted). Ruling (a): merge
+  with the policy job red on exactly the two `js-yaml` advisories; CI run `34457727322` on `32c4e276` was green on
+  backend, frontend, capacity and the policy identity/capabilities children first. F-J stays open in BACKLOG
+  (`openapi-typescript` → js-yaml-5 `@redocly/openapi-core` is the fix; exceptions stay prohibited by
+  `exceptions.mjs:11`). Post-merge on main: Deploy smoke ✓, CI's product jobs ✓, supply-chain evidence red on the same
+  two findings (expected). Production answered `release=3f9d941e` at 09:38 UTC.
+- **Blocker 2 — `MASSIVE_API_KEY`: ROTATED 2026-09-10.** The key from `1aac13ec` was **still live** (probe HTTP 200,
+  bogus key 401) and — correcting an earlier hash comparison that had a trailing newline in it — **was the key Railway
+  production ran on**. Owner revoked it at the vendor (old key now 401) and set the replacement in the Mac
+  `apps/api/.env` and on Railway `api-rust` (hash-verified `1bafe84a…` on both, new key 200; values never read into
+  the session). Production served vendor 401s for ~10 min during the redeploy, then recovered with the new release.
+  **Windows `apps/api/.env` still carries the revoked key — update it there.** Ledger: `leaked-secret-is-rotated-not-rewritten`.
+- **Blocker 3 — D-B = (A), D-A = (A)** (decisions.md §4 status cells, dated). R4 pass 3 (final) folded both plus S2
+  pass 2's 2 Important + 1 Minor into SPEC/INTERFACE_CONTRACT on `spire/curvature-v2-landing-and-site` (`5ea7e0ff`):
+  71 rows, receipt 31/31, ship-blocking 19 (AC-C1a in), new §7 item 17, `contract_lint` 0 errors, SPEC 114 KB.
+  Canon Amendments row (2026-09-10) + ledger `hero-3d-is-a-static-isometric-projection` are on this docs branch.
+  No third S2 (cap). No baseline re-taken, no gate loosened.
+
+**Branch map after this session:** `main` = `3f9d941e` (phases 1–3 shipped) · `docs/owner-blockers-2026-09-10` (this
+file, BACKLOG, ledger ×3 rows, canon amendment) → PR to main · `spire/curvature-v2-landing-and-site` = `5ea7e0ff`,
+**4+1 ahead / 20 behind main** — rebase onto `main` **before GATE PLAN, never before spec approval** (docs-only, expect
+no conflicts; the context files it does not touch). `spire/curvature-v2-foundations` is merged and can be left as is.
+
+**Next:** owner approves SPEC.md (§3's 71 rows + the 19 ship-blocking) → rebase landing onto main → **GATE PLAN**
+(`spire-tech-planner`, frontend track only — `NO_BACKEND_CHANGE`). Nothing else is open on these branches.
+
 ## ➡ HANDOVER — to the owner's Mac session (written 2026-09-10 on the Windows box). Read this first; everything below is history.
 
 **Owner's words:** "I will do the final blockers on mac now." Three blockers, all the owner's, none of them a
@@ -708,7 +741,7 @@ value of **60**, and the gap is in the canon's prose, not the code.
 
 # RESUME — spire/curvature-v2-foundations (2026-09-03)
 
-**Resume status:** HANDED OVER to the Mac 2026-09-10 — **phases 1–3 closed at GATE S; PR #46 mergeable (only the policy job red, F-J); phase 4 council at the S2 cap awaiting the D-B ruling — see the HANDOVER block at the top.**  
+**Resume status:** CLOSED OUT on the Mac 2026-09-10 — **phases 1–3 merged to main (`3f9d941e`); key rotated; phase 4 SPEC folded and awaiting owner approval → GATE PLAN — see the CLOSE-OUT block at the top.**  
 **Written:** 2026-09-03 (GATE R, phase 1 closed at GATE S — a clean phase boundary, not a mid-build checkpoint)
 
 Written at GATE R for a **fresh session on another machine**. Self-contained against `PROJECT_CONTEXT.md`.
