@@ -4,7 +4,7 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     commit-message:
       prefix: "deps/npm"
     labels: ["dependencies", "ecosystem:npm", "owner:security"]
@@ -26,12 +26,18 @@ updates:
       npm-playwright-testing:
         patterns: ["@playwright/*", "@testing-library/*"]
         update-types: ["minor", "patch"]
+      # Majors match no group above, so each one opened its own pull request and its own CI run.
+      # They are still reviewed as breaking changes; they now arrive as one pull request per
+      # ecosystem per week instead of one per package.
+      npm-major:
+        patterns: ["*"]
+        update-types: ["major"]
 
   - package-ecosystem: cargo
     directory: "/"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     commit-message:
       prefix: "deps/cargo"
     labels: ["dependencies", "ecosystem:cargo", "owner:security"]
@@ -49,12 +55,18 @@ updates:
       cargo-crypto-auth:
         patterns: ["aes-gcm", "argon2", "hmac", "sha1", "sha2", "subtle", "rand"]
         update-types: ["minor", "patch"]
+      # Crates below 1.0 treat a minor bump as breaking, so most cargo updates here are "major"
+      # to Dependabot and escaped every group above. aes-gcm, sha1, rand and redis each opened
+      # a separate pull request for this reason.
+      cargo-major:
+        patterns: ["*"]
+        update-types: ["major"]
 
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 2
     commit-message:
       prefix: "deps/actions"
     labels: ["dependencies", "ecosystem:actions", "owner:build"]
@@ -63,12 +75,15 @@ updates:
       github-actions:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+      github-actions-major:
+        patterns: ["*"]
+        update-types: ["major"]
 
   - package-ecosystem: docker
     directory: "/apps/api"
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 2
     commit-message:
       prefix: "deps/docker-api"
     labels: ["dependencies", "ecosystem:docker", "owner:build"]
@@ -77,8 +92,8 @@ updates:
   - package-ecosystem: docker
     directory: "/apps/dashboard"
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 2
     commit-message:
       prefix: "deps/docker-dashboard"
     labels: ["dependencies", "ecosystem:docker", "owner:build"]
