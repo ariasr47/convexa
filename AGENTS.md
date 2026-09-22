@@ -5,4 +5,4 @@ Every host boots the receipted generation through the bridge `.spire/bin/spire.m
     node .spire/bin/spire.mjs <cmd> --input <json-file> --out <dir>
 
 Provider adapters live under each provider root at `spire/<work>.md` and name only that bridge.
-Root identity 082ab6972c3798fb3471ad2190fa59ad53f6f506368b4ead2dcd0ff1dea36bc9; target version 4.0.0; generation gen-74f7daa49278df06.
+Root identity 082ab6972c3798fb3471ad2190fa59ad53f6f506368b4ead2dcd0ff1dea36bc9; target version 4.2.0; generation gen-344efe06b2d76427.
