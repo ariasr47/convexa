@@ -11,7 +11,7 @@
 - Silently rewriting an existing working app into Nx during codify.
 - Treating Nx (or any monorepo tool) as mandatory Spire law.
 - One “onboarding skill” that mixes git + CI + Nx + PROJECT_CONTEXT + BACKLOG.
-- Claiming selection receipts or CI green equal full delivery ascent proof.
+- Claiming selection receipts or CI green equal full web-app ascent proof.
 - Putting monorepo-tool-specific ports/paths into framework role prose as hard requirements.
 
 ## When to run
@@ -122,4 +122,4 @@ Do **not** author a kitchen-sink onboarding skill package. If trials show proces
 | Project stand-up | Product identity + BACKLOG |
 | **This method** | Optional repo foundation (Nx opt-in) |
 | Design-system | Visual canon |
-| Delivery | Features |
+| Web-app | Features |

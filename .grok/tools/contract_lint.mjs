@@ -226,7 +226,31 @@ export function validateCouncilFoldingReceipt(specBody, r2Bodies) {
   return { valid: true, error: null };
 }
 
+// M1 — the declared folder kind. One token in one file, written when the folder is created at
+// GATE C (no folder-name rule — cycle 4's ban on name allowlists holds). `declaredFolderKind` reads
+// it; a missing file, or a file whose content does not parse to one of the two known kinds, both
+// count as "absent" so `classifyContractFolder` falls back to today's inference UNCHANGED — every
+// folder authored before the marker exists, here and in every consumer, keeps its verdict.
+const KIND_MARKER_FILE = '_KIND.md';
+const KIND_MARKER_RE = /^Kind:\s*(change|delivery)\s*$/m;
+
+/** The folder's DECLARED kind from its `_KIND.md` marker, or null when the marker is absent or
+ *  unparseable. Pure; never throws (mirrors `classifyContractFolder`'s existence-check style). */
+export function declaredFolderKind(folder) {
+  let body;
+  try {
+    if (!fs.existsSync(path.join(folder, KIND_MARKER_FILE))) return null;
+    body = read(path.join(folder, KIND_MARKER_FILE));
+  } catch {
+    return null;
+  }
+  const m = KIND_MARKER_RE.exec(body);
+  return m ? m[1] : null;
+}
+
 export function classifyContractFolder(folder) {
+  const declared = declaredFolderKind(folder);
+  if (declared) return declared;
   const has = (name) => {
     try {
       return fs.existsSync(path.join(folder, name));
@@ -237,6 +261,38 @@ export function classifyContractFolder(folder) {
   if (has('CHANGE_SPEC.md')) return 'change';
   if ((has('CULL.md') || has('HARVEST.md')) && !has('_MANIFEST.md')) return 'change';
   return 'delivery';
+}
+
+// M1's one red-first ERROR class: inside a folder carrying the marker, a declared kind contradicted
+// by a present artifact of the OTHER ascent's family (a folder declaring `change` while holding
+// `_MANIFEST.md`, or declaring `delivery` while holding `CHANGE_SPEC.md`/`CULL.md`/`HARVEST.md`).
+// R3 T5 (hard constraint, not a preference): this fires ONLY when `declaredFolderKind` returns
+// non-null — an absent marker takes no finding at all, so no pre-marker folder anywhere can go red
+// from this check. `tools/contract_lint.mjs` composes into every consumer on its next install
+// (`manifest.json` `framework_files`, not ascent-scoped); an ungated ERROR here would redden the
+// fleet's delivery gate on every folder authored before this grammar existed.
+const DELIVERY_FAMILY_FILE = '_MANIFEST.md';
+const CHANGE_FAMILY_FILES = Object.freeze(['CHANGE_SPEC.md', 'CULL.md', 'HARVEST.md']);
+
+function checkDeclaredKindContradiction(folder, f) {
+  const declared = declaredFolderKind(folder);
+  if (!declared) return; // grandfathered: no marker, no finding (M1 residual i keeps this silent)
+  const name = path.basename(folder);
+  const exists = (n) => fs.existsSync(path.join(folder, n));
+  if (declared === 'change' && exists(DELIVERY_FAMILY_FILE)) {
+    f.err(`${name}/${KIND_MARKER_FILE}`,
+      `declares 'change' but ${DELIVERY_FAMILY_FILE} is present (a delivery artifact) — the `
+      + 'declaration contradicts a present artifact of the other ascent\'s family');
+    return;
+  }
+  if (declared === 'delivery') {
+    const contradictor = CHANGE_FAMILY_FILES.find(exists);
+    if (contradictor) {
+      f.err(`${name}/${KIND_MARKER_FILE}`,
+        `declares 'delivery' but ${contradictor} is present (a change artifact) — the declaration `
+        + 'contradicts a present artifact of the other ascent\'s family');
+    }
+  }
 }
 
 function lintChangeFeature(folder, f) {
@@ -254,6 +310,7 @@ function lintChangeFeature(folder, f) {
 }
 
 export function lintFeature(folder, f) {
+  checkDeclaredKindContradiction(folder, f);
   if (classifyContractFolder(folder) === 'change') {
     lintChangeFeature(folder, f);
     return;

@@ -5,7 +5,7 @@ model_reasoning_effort = "high"
 developer_instructions = '''
 
 
-You are the delivery pipeline's planner — a fresh session that turns ONE approved spec into ONE
+You are the web-app pipeline's planner — a fresh session that turns ONE approved spec into ONE
 implementation plan. You are not one of the builders, and you are not the council: the design is
 settled, the spec is approved, and your sole job is decomposition into PLAN.md, not re-litigation.
 

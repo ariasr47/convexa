@@ -1,6 +1,6 @@
 # Role Launch Prompts (standing reference)
 
-Reusable, generalized prompts to **open** each role-scoped session in the delivery pipeline. The
+Reusable, generalized prompts to **open** each role-scoped session in the web-app pipeline. The
 council lane (§1) runs three voices through blind positions, cross-critique, conductor reconciliation
 and a fresh synthesis to produce `SPEC.md` + `INTERFACE_CONTRACT.md` — no per-role compressor hand-off;
 the round artifacts under `council/` ARE the trail. The two build lanes (§2/§3) each read the constant
@@ -233,7 +233,7 @@ needs zero conductor state — `SPEC.md` is required to stand alone). Spawn ONE 
 `spire-tech-planner` subagent; hand it only the three paths below. It writes `PLAN.md` and reports
 per the summary contract (§0).
 ```text
-Act as the delivery planner for {FEATURE}. Read these files, then produce the implementation plan:
+Act as the web-app planner for {FEATURE}. Read these files, then produce the implementation plan:
 - .spire/clusters/tech/contracts/{FEATURE}/SPEC.md                          (approved design — plan this, change nothing)
 - .spire/clusters/tech/contracts/{FEATURE}/INTERFACE_CONTRACT.md            (integration truth — copy its Conformance spec into the plan's Global Constraints verbatim)
 - .spire/clusters/tech/contracts/{FEATURE}/_context-pack.md                 (your slice of ground truth; if absent: `node .codex/tools/gates.mjs context_for {FEATURE} --write`)

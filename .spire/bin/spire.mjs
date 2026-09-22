@@ -14,6 +14,7 @@ const ERROR_STATUS = Object.freeze({
   PROVIDER_MISMATCH: 7,
   UNKNOWN_ASCENT: 8,
   ASCENT_NOT_INSTALLED: 9,
+  UNSUPPORTED_RUNTIME: 10,
 });
 const SPIRE_VERSION_PATTERN = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u;
 const SPIRE_GUARD_OWNER = 'spire:tech/path-guard';
@@ -34,12 +35,21 @@ const DESCRIPTOR = Object.freeze({
 // Ascent universe this selector understands. It ships in the same install as the receipt that
 // records which of them a consumer actually has, so the two never disagree by version skew.
 const ASCENTS = Object.freeze({
-  'spire:tech': Object.freeze(['delivery', 'evolution']),
+  'spire:tech': Object.freeze(['web-app', 'agentic-os']),
 });
-// Receipts written before ascents existed carry neither field and mean the single delivery ascent.
-const IMPLIED_ASCENTS = Object.freeze(['delivery']);
-const IMPLIED_DEFAULT_ASCENT = 'delivery';
+// Receipts written before ascents existed carry neither field and mean the single default ascent.
+const IMPLIED_ASCENTS = Object.freeze(['web-app']);
+const IMPLIED_DEFAULT_ASCENT = 'web-app';
 const ASCENT_ID = /^[a-z][a-z0-9-]*$/u;
+// The ascent rename's alias table (cycle 19, §2.0): an old id reads as a translation to its
+// canonical replacement, never accepted as a name in its own right. This selector may depend on
+// nothing outside Node built-ins (it is copied verbatim into a consumer as .spire/bin/spire.mjs),
+// so the table is duplicated here rather than imported — held in step by spire.test.mjs:400's
+// paired-verdict table, not by a shared function.
+const ASCENT_ALIASES = Object.freeze({ delivery: 'web-app', evolution: 'agentic-os' });
+function canonicalAscent(id) {
+  return Object.hasOwn(ASCENT_ALIASES, id) ? ASCENT_ALIASES[id] : id;
+}
 
 const CATALOG = Object.freeze({
   schema_version: 1,
@@ -193,6 +203,7 @@ const USAGE_HINTS = Object.freeze({
   PROVIDER_MISMATCH: 'Pass --provider claude|codex|grok matching an installed host root',
   UNKNOWN_ASCENT: `Valid ascents for tech: ${ASCENTS['spire:tech'].join(', ')}`,
   ASCENT_NOT_INSTALLED: 'Reinstall with --ascents to add it',
+  UNSUPPORTED_RUNTIME: 'Run cluster entry on a newer Node — see docs/GETTING_STARTED.md for the consumer floor',
 });
 
 function parseArgs(argv) {
@@ -426,7 +437,12 @@ function validateProviderConfig(root, installation, provider) {
 }
 
 // Mirrors the installer's receipt contract: both ascent fields or neither, and when present the
-// list is sorted, unique, non-empty, and contains the recorded default.
+// list is sorted, unique, non-empty, and contains the recorded default. M2 (§2.0): this reader's
+// consumer is THIS kit's new universe, so it translates every id to its canonical replacement and
+// re-sorts — shared.mjs's reader preserves the receipt verbatim instead, because its consumer is a
+// consumer's own older installed selector (M3). Neither reader knows any ascent NAME; this function
+// still shape-checks the raw ids first, then adds one refusal the shape check cannot see: two
+// entries that collide once translated to the same canonical id are corruption, not an alias.
 function receiptAscents(receipt) {
   const hasList = Object.hasOwn(receipt, 'ascents');
   const hasDefault = Object.hasOwn(receipt, 'default_ascent');
@@ -440,11 +456,35 @@ function receiptAscents(receipt) {
       new Set(ascents).size !== ascents.length ||
       [...ascents].sort().join('\0') !== ascents.join('\0') ||
       typeof fallback !== 'string' || !ascents.includes(fallback)) return null;
-  return { ascents: [...ascents], default_ascent: fallback };
+  const canonical = ascents.map(canonicalAscent);
+  if (new Set(canonical).size !== canonical.length) return null;
+  return { ascents: [...canonical].sort(), default_ascent: canonicalAscent(fallback) };
 }
 
 function artifactKey(artifact) {
   return `${artifact.placement}:${artifact.provider_root ?? ''}:${artifact.path}`;
+}
+
+// The self-hosted consumer rule (F-3, task 15). Reproduced here rather than imported: this file is
+// copied verbatim into a consumer as `.spire/bin/spire.mjs`, so it may depend on nothing outside
+// Node built-ins. The authority is platform/os/bridge/self_hosted.mjs, and the two marker paths and
+// the existence-only test must stay identical to it — a consumer root is self-hosted when it IS the
+// kit's own source, where repository-root AGENTS.md is the kit's own governance document and never a
+// governed router, so no install path writes, requires, verifies or restores one there.
+const SELF_HOSTED_MARKERS = Object.freeze(['clusters/tech/manifest.json', 'platform/os/cli/index.mjs']);
+
+function isSelfHostedRoot(root) {
+  if (typeof root !== 'string' || root.length === 0) return false;
+  for (const marker of SELF_HOSTED_MARKERS) {
+    let stat;
+    try {
+      stat = fs.statSync(path.join(root, ...marker.split('/')));
+    } catch {
+      return false;
+    }
+    if (!stat.isFile()) return false;
+  }
+  return true;
 }
 
 function validateArtifacts(root, receipt, provider, selected) {
@@ -501,10 +541,14 @@ function validateArtifacts(root, receipt, provider, selected) {
     `provider-root:${selectedRoot}:${provider.adapter.installed}`,
   ];
   // Multi installs always ship the repo-root router; single installs ship it only for the
-  // providers whose boot doc relocates there.
-  if (multi || selected.name === 'codex' || selected.name === 'grok') mandatory.push('repo-root::AGENTS.md');
+  // providers whose boot doc relocates there. A self-hosted root (F-3) ships none, for any provider
+  // set: the repository-root AGENTS.md there is the kit's own governance document. This is a
+  // write-time rule only: a pre-rule receipt that still inventories it must keep validating on
+  // read, so no read-time refusal is added here.
+  const selfHosted = isSelfHostedRoot(root);
+  if (!selfHosted && (multi || selected.name === 'codex' || selected.name === 'grok')) mandatory.push('repo-root::AGENTS.md');
   for (const key of mandatory) if (!folded.has(key.toLowerCase())) throw new Error(`mandatory artifact is absent: ${key}`);
-  if (!multi && selected.name === 'claude' && folded.has('repo-root::agents.md')) {
+  if (!selfHosted && !multi && selected.name === 'claude' && folded.has('repo-root::agents.md')) {
     throw new Error('Claude installation must not inventory repo-root AGENTS.md');
   }
 }
@@ -603,9 +647,21 @@ function validateInstallation(root, requestedProvider = null) {
   }
 }
 
+const SELECTION_RECEIPT_REL = [...DESCRIPTOR.state_root.split('/'), 'receipts', 'selection.json'].join('/');
+
+// A MISSING receipts directory is a fresh clone. A SYMLINKED one is an attack. Telling them apart is
+// this function's whole job, and it used to conflate them: the parent was inspected with no tolerance
+// for absence, so `prepareSelection` threw before `commitSelection` — which has always created the
+// directory — ever ran. Because the directory's only file is gitignored ("session stamp, not install
+// evidence"), a clone of any consumer that tracks its own `.spire/` arrives without it, and cluster
+// entry died there. Absence is now tolerated; every ancestor ABOVE it is still walked and still
+// refuses a symlink, a non-directory and a real path that escapes the root.
 function inspectSelectionTarget(root, destination, { allowMissing = true } = {}) {
   const parent = path.dirname(destination);
-  inspectContained(root, parent, { leaf: 'directory' });
+  const parentState = inspectContained(root, parent, { leaf: 'directory', allowMissingLeaf: true });
+  // Nothing to inspect at the destination while its directory does not exist. commitSelection
+  // creates it and re-inspects; `--check` never commits, so a check still writes nothing.
+  if (!parentState.exists) return { exists: false, path: path.resolve(destination), stat: null };
   return inspectContained(root, destination, {
     leaf: 'file',
     allowMissingLeaf: allowMissing,
@@ -728,8 +784,10 @@ function select(parsed) {
     );
   }
   // An unrequested ascent falls back to the consumer's recorded default, never to a kit default.
-  // Unknown to this kit version and known-but-absent from the receipt are distinct refusals.
-  const ascent = parsed.ascent ?? validated.ascent.default_ascent;
+  // Unknown to this kit version and known-but-absent from the receipt are distinct refusals. A
+  // typed old id (`run tech delivery`) is translated the same way a receipt's is (M2, §2.0): its
+  // consumer is this kit's frozen universe checked immediately below.
+  const ascent = parsed.ascent === null ? validated.ascent.default_ascent : canonicalAscent(parsed.ascent);
   if (!(ASCENTS[cluster] ?? []).includes(ascent)) {
     return refusal('UNKNOWN_ASCENT', `unknown ascent '${ascent}' for cluster '${cluster}'`, USAGE_HINTS.UNKNOWN_ASCENT);
   }
@@ -746,7 +804,14 @@ function select(parsed) {
     const plan = prepareSelection(root, validated, ascent);
     if (!parsed.check) commitSelection(root, plan);
   } catch {
-    return refusal('INVALID_INSTALLATION', `selection receipt path at '${root}' is unsafe`, USAGE_HINTS.INVALID_INSTALLATION);
+    // Name the path the operator has to go and look at. v3.19.2 established that selector exit 4
+    // reports a stable category and never the inspector's raw words; a fixed, derived path is not
+    // raw detail, and a refusal that names only the root leaves nothing to act on.
+    return refusal(
+      'INVALID_INSTALLATION',
+      `selection receipt path '${SELECTION_RECEIPT_REL}' at '${root}' is unsafe`,
+      USAGE_HINTS.INVALID_INSTALLATION,
+    );
   }
   return { ok: true, cluster, ascent, provider: validated.selected.name, root };
 }
@@ -765,6 +830,27 @@ function emit(result, json) {
   return ERROR_STATUS[result.error] ?? 1;
 }
 
+// `engines` never ships to a consumer. It lives in the kit's package.json, while what a consumer
+// runs is this file on whatever Node that machine has — and this file calls `crypto.hash()` and
+// `fs.realpathSync.native()`. Without this check the absence surfaced from inside receipt validation
+// as `TypeError: crypto.hash is not a function`, which reads as a corrupt installation and sends an
+// operator to reinstall a tree that is perfectly fine.
+//
+// CAPABILITY-checked, never version-checked: the Node release that introduced `crypto.hash()` is a
+// docs-derived claim this repository has not re-read, and the capability is what actually decides
+// whether cluster entry works. Checked before anything else, because every later step needs them.
+function runtimeCapabilityFinding() {
+  const missing = [];
+  if (typeof crypto.hash !== 'function') missing.push('crypto.hash()');
+  if (typeof fs.realpathSync?.native !== 'function') missing.push('fs.realpathSync.native()');
+  if (missing.length === 0) return null;
+  return refusal(
+    'UNSUPPORTED_RUNTIME',
+    `this Node (${process.version}) is missing ${missing.join(' and ')}, which Spire cluster entry requires`,
+    USAGE_HINTS.UNSUPPORTED_RUNTIME,
+  );
+}
+
 const parsed = parseArgs(process.argv.slice(2));
-const result = parsed.finding ?? select(parsed.parsed);
+const result = runtimeCapabilityFinding() ?? parsed.finding ?? select(parsed.parsed);
 process.exitCode = emit(result, parsed.parsed?.json === true || process.argv.includes('--json'));

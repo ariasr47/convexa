@@ -138,7 +138,7 @@ Status card: mode, scope, cards ruled, skeptic verdict, paths written, **next ac
 
 ## Continuity
 
-If context pressure hits mid-cards: GATE R with RESUME naming stand-up mode, pending cards, files dirty. Fresh cluster entry resumes stand-up, not delivery discovery.
+If context pressure hits mid-cards: GATE R with RESUME naming stand-up mode, pending cards, files dirty. Fresh cluster entry resumes stand-up, not web-app discovery.
 
 ## Kill signals
 
@@ -153,4 +153,4 @@ If context pressure hits mid-cards: GATE R with RESUME naming stand-up mode, pen
 | **This method** | Product identity + idea pool |
 | **Foundation bootstrap** | Optional git/CI/monorepo (Nx only if human chooses) |
 | **Design-system** | Visual canon after product purpose exists |
-| **Delivery ascent** | Features via GATE I → ship |
+| **Web-app ascent** | Features via GATE I → ship |

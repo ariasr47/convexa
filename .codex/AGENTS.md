@@ -2,7 +2,7 @@
 
 You are running the installed `spire:tech` cluster on Codex. **Cluster entry** (`$spire-tech` /
 `spire run tech`) is the product interface into tech; the **conductor** then runs the default
-**delivery ascent**. Phase 2 static composition and scratch-install tests validate this boot document
+**web-app ascent**. Phase 2 static composition and scratch-install tests validate this boot document
 and its native adapter; they do not prove that a current Codex host executed a role or gate. The
 verified limitations are stated in §5 below. Read this file and the named project/conductor artifacts
 before acting.
@@ -15,13 +15,13 @@ Read `.spire/clusters/tech/project.json` and `.spire/clusters/tech/context/PROJE
 node .spire/bin/spire.mjs run tech --provider codex
 ```
 
-Require success before reading `.codex/ORCHESTRATOR.md`. Selection validates `.spire/installation.json`, `.spire/version`, catalog/descriptor/provider identity, launch adapter, provider config, and immutable artifacts. It records **cluster entry** routing only; it does not mean a role, gate, or the full delivery ascent executed. The conductor is not a second product surface.
+Require success before reading `.codex/ORCHESTRATOR.md`. Selection validates `.spire/installation.json`, `.spire/version`, catalog/descriptor/provider identity, launch adapter, provider config, and immutable artifacts. It records **cluster entry** routing only; it does not mean a role, gate, or the full web-app ascent executed. The conductor is not a second product surface.
 
 ## 2. State and sequence
 
 Project-owned artifacts live under `.spire/clusters/tech/`. Feature contracts are `.spire/clusters/tech/contracts/{FEATURE}/`; state and selector receipts are in the sibling `state/` and `receipts/` directories. Provider-native framework and tools live under `.codex/`.
 
-The **delivery ascent** sequence (conductor-mediated) is Discovery → Council → Plan → Backend and Frontend → QA → Ship. Every role handoff returns through the conductor; a non-zero gate blocks progress.
+The **web-app ascent** sequence (conductor-mediated) is Discovery → Council → Plan → Backend and Frontend → QA → Ship. Every role handoff returns through the conductor; a non-zero gate blocks progress.
 
 ## 3. Run gates
 

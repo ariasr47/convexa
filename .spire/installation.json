@@ -21,7 +21,7 @@
       "path": "agents/spire-tech-council-skeptic.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "d376a6c1d579f5308d6408250d7f3a1de75ba24486ac7c87e455792d66b9061a",
+      "sha256": "769ee8d05c9563d5a237a018e6da38039c5883637da5101852aee29ce507e3cd",
       "type": "file"
     },
     {
@@ -45,7 +45,7 @@
       "path": "agents/spire-tech-planner.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "a5b79bea2515d4fd25a37ec78fcf2477b4c9406420d75f98b773e5420f3116d9",
+      "sha256": "a16c1c3fd94b29c43958d9dd2c04e359f87756d7f1d897401e905db7ef0f5d5e",
       "type": "file"
     },
     {
@@ -77,7 +77,7 @@
       "path": "commands/conductor.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "cffa0a69cdc8ccfa19310ac1774abc6bce21fa86f060048808895c42b7f785a0",
+      "sha256": "f11a15bb98a02a305d15573f53d4104b3c1bb7b1e12c0ab4c9cc8bf314081fc7",
       "type": "file"
     },
     {
@@ -101,7 +101,7 @@
       "path": "commands/foundation.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "0334f84506ed70ed55d5eb00d0d47f93f47c54943fbd4e104fb968f96f88f896",
+      "sha256": "7dc313f15735bd0c9b59fd90e93669a378e86b7bcb09e7993db3c92655a8cca1",
       "type": "file"
     },
     {
@@ -133,7 +133,7 @@
       "path": "commands/spire-tech.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "c52fa47746efa68dd769823c7f9c42a8da9b840a93dd8c8ce7c69c25189cd7e7",
+      "sha256": "e120b6ed2dffa76f36e0bc10c86034409cdb426a2901b3c791feb5042e15ee12",
       "type": "file"
     },
     {
@@ -213,7 +213,7 @@
       "path": "foundation/FOUNDATION_BOOTSTRAP_METHOD.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "81b62238cc8ec536d2e2477f9e92cc0e42787ed6f6429c8703bcdb38db0b2fe4",
+      "sha256": "aba77a6fbe2f5c7d10ff0275480bb274e84a92525e5fcd807686c11e53053195",
       "type": "file"
     },
     {
@@ -253,7 +253,7 @@
       "path": "ORCHESTRATOR.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "0f80026f9bc9f155f503c57766d7ff7259e6e53620ebbccd20872b76a3201d97",
+      "sha256": "b70fdcd866eb8eaeca473eee4c5470ff6303b77ccefd38ed264e6e9416fb8b02",
       "type": "file"
     },
     {
@@ -269,7 +269,7 @@
       "path": "ROLE_LAUNCH_PROMPTS.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "e76207f979cbe3f36991d0631ccf5922efc8d3b9d7d2c5642c656b096d0ae9f1",
+      "sha256": "94315b668bc3c0bbc448cd6e63415fdd7a08317a1a68d0cab3ac9299a3eb5a2f",
       "type": "file"
     },
     {
@@ -909,7 +909,7 @@
       "path": "standup/PROJECT_STANDUP_METHOD.md",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "515195c8d1f78c4a582b310a33b95f023bbd97713c53e5aa0ef7271f5a81954a",
+      "sha256": "08a8ee73f85b5fd8babf1c14b8e43236b3672c07aaaf5628283cc5745a859c53",
       "type": "file"
     },
     {
@@ -965,7 +965,7 @@
       "path": "tools/contract_lint.mjs",
       "placement": "provider-root",
       "provider_root": ".claude",
-      "sha256": "05fe3cb58088f486bf27330ee660cbca66e4078663d06cb118df812fee12a204",
+      "sha256": "ef5c5c85715114a4c10dfe64ea86a25b715d9bbf4b16e0741e0758f51f233c78",
       "type": "file"
     },
     {
@@ -1045,7 +1045,7 @@
       "path": "AGENTS.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "c60b130bca97ae8fefe22de513694ded7acf2867ec37803f5fd2ab99fd2efa2a",
+      "sha256": "86859209d04e0e1722e6cc94a5e12359650ea8ae98a6bf0e0c25a36ecf47e9d9",
       "type": "file"
     },
     {
@@ -1069,7 +1069,7 @@
       "path": "agents/spire-tech-council-skeptic.toml",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "cd6d99ffa232cdd4eacf2126b14eaf951b2f6ba26c65ca0ffd9d6d0bb3bf037f",
+      "sha256": "5aba0ed21544708ca1b7ecf7e6ec7361f2b4e4d67195117709a33307fb4ffdb0",
       "type": "file"
     },
     {
@@ -1093,7 +1093,7 @@
       "path": "agents/spire-tech-planner.toml",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "fad56cb4ccdb63f357aeb06c2d685f9b529977d878e4b4e778ce96fa1c72de48",
+      "sha256": "98ad9370599fbd23627aec13ce239b2181c8b954296038fc4a174c1da5d470e4",
       "type": "file"
     },
     {
@@ -1189,7 +1189,7 @@
       "path": "foundation/FOUNDATION_BOOTSTRAP_METHOD.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "371b6d93bacd07849ec35ec47bc62c752c9b73b49f445b3cdb5908cc634766a9",
+      "sha256": "4523895c0d97fdd443dd53c899907acbe724ce398e760c87c32d1cf0fd5ae8af",
       "type": "file"
     },
     {
@@ -1229,7 +1229,7 @@
       "path": "ORCHESTRATOR.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "93a001db6c928166c05f1729cf3149d27d54088fbea855706e41a9207c19dce7",
+      "sha256": "129806d6b3eecfcfb909bb62c4fe439ddba601499361bcb935cb3f068099af2b",
       "type": "file"
     },
     {
@@ -1245,7 +1245,7 @@
       "path": "ROLE_LAUNCH_PROMPTS.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "b46bbb3eb8c20b7518e41f1f46c6468c54749e4810cbf85fddf4fe72acf6fb15",
+      "sha256": "46047a1f0f3e17c6d10fef466db42e5e6d5abd8d0f783b399580052d956e9b77",
       "type": "file"
     },
     {
@@ -1885,7 +1885,7 @@
       "path": "skills/spire-tech/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "b4a8b1896db94fbf9d6f697647514f82962979fa22207afcf524f3135d838c74",
+      "sha256": "63de9d9aa7b9bd72d5f11ed757e08837e77e2009afcdac10405ab968a749cfa7",
       "type": "file"
     },
     {
@@ -1893,7 +1893,7 @@
       "path": "standup/PROJECT_STANDUP_METHOD.md",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "d92bba3e18091cc831c4f049845447d3db5dd1b0962fe2b2cdcc362f65522cdd",
+      "sha256": "3e90cf88a6f5ee06f153873571545b17d8d70804c73462eb90be50e269c9b2c7",
       "type": "file"
     },
     {
@@ -1949,7 +1949,7 @@
       "path": "tools/contract_lint.mjs",
       "placement": "provider-root",
       "provider_root": ".codex",
-      "sha256": "4ebb825190e7c068da156b696a53090521fead9350bf8e5482d783696edb3d2d",
+      "sha256": "add07ce56e73dc4ddda08d691f936d037fcbc856310e8e36621efc95b1bbe05f",
       "type": "file"
     },
     {
@@ -2029,7 +2029,7 @@
       "path": "AGENTS.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "d4ff8d548d38a9ff395fb6237866b95da864c4df89c6dc59c17753751f74387f",
+      "sha256": "e086f89545d84946b7797949b0aede56703711666d735b0162f7eafdfc0a5a44",
       "type": "file"
     },
     {
@@ -2053,7 +2053,7 @@
       "path": "agents/spire-tech-council-skeptic.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "bf65bce8d32767d6d9a7c9076d5340047cc123d77628a4064894f2329d4a9f20",
+      "sha256": "ff0f2573059785c697df435542313630ee750007845863e360e0ccabe93f2ed7",
       "type": "file"
     },
     {
@@ -2077,7 +2077,7 @@
       "path": "agents/spire-tech-planner.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "bd2e62291ec2bf7b82dcd7b5369234460b8e0e7ddeb5e54cce8ed56e39ceabc8",
+      "sha256": "019356244381127f336a2622d4df9deb17d0cef576e5d5fc7e0b146f28d2a192",
       "type": "file"
     },
     {
@@ -2109,7 +2109,7 @@
       "path": "commands/conductor.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "ae562b1ff1aeba5fb81dbfd9ef7a76c232d50ffa4e8b369f1b94e6a3b0337c6b",
+      "sha256": "f4ab46c9ee3ce8ca4bcdf5c4bc2164e578dbcca8b74ece7f7b4e5966b39f0a50",
       "type": "file"
     },
     {
@@ -2133,7 +2133,7 @@
       "path": "commands/foundation.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "bd87c581708bbc3ec785889548ba9177a5058a2c7968ddd13560d28929e75fd5",
+      "sha256": "52002e27399efcc172417c659aeedd8d37d6d62f8a013d258b8c3d5eb1dd1019",
       "type": "file"
     },
     {
@@ -2237,7 +2237,7 @@
       "path": "foundation/FOUNDATION_BOOTSTRAP_METHOD.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "371b6d93bacd07849ec35ec47bc62c752c9b73b49f445b3cdb5908cc634766a9",
+      "sha256": "4523895c0d97fdd443dd53c899907acbe724ce398e760c87c32d1cf0fd5ae8af",
       "type": "file"
     },
     {
@@ -2277,7 +2277,7 @@
       "path": "ORCHESTRATOR.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "8f486dde69e90838a00d208bd8bfafca44307a1279c2c65d497f2f0d552773aa",
+      "sha256": "9e105b87ff823cd970e3832f0ff90bad66ae57f8bc05e23c7166a07d8e52afa0",
       "type": "file"
     },
     {
@@ -2293,7 +2293,7 @@
       "path": "ROLE_LAUNCH_PROMPTS.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "77259c604dfb09d242bde9a8503d02e4f0f04be9803fa02531f05048d23a8abc",
+      "sha256": "16189a956c521c9bd526e0d840fd63bcea4ec0706884a9069ef32326305aac79",
       "type": "file"
     },
     {
@@ -2933,7 +2933,7 @@
       "path": "skills/spire-tech/SKILL.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "667f386764048cd527b6835701f2bd5697dbf89c6430dd902361d1f95ef2c8e2",
+      "sha256": "e5f5e2c170cf69dbc4600b23fbc199f7bc6b661d5a94e23dcb625c92bb02f1e5",
       "type": "file"
     },
     {
@@ -2941,7 +2941,7 @@
       "path": "standup/PROJECT_STANDUP_METHOD.md",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "d92bba3e18091cc831c4f049845447d3db5dd1b0962fe2b2cdcc362f65522cdd",
+      "sha256": "3e90cf88a6f5ee06f153873571545b17d8d70804c73462eb90be50e269c9b2c7",
       "type": "file"
     },
     {
@@ -2997,7 +2997,7 @@
       "path": "tools/contract_lint.mjs",
       "placement": "provider-root",
       "provider_root": ".grok",
-      "sha256": "16d9beb9932d8d09e1b028d247c0e41e8cfbddae555809f8aeb89826ead58ce6",
+      "sha256": "49bcb5d12e3583696795cdadfa0b55f38d1b4695db03698abacdfc9c5d298ed7",
       "type": "file"
     },
     {
@@ -3097,7 +3097,7 @@
       "mode": 420,
       "path": "bin/spire.mjs",
       "placement": "spire-root",
-      "sha256": "1aa163b3c2f1f2b087f058924912cc03fc8ded02a920c7719f32865b43212a0f",
+      "sha256": "4d659028411413bdc79bb09b04f3d9df7f5ce057762f9a367215618074176417",
       "type": "file"
     },
     {
@@ -3123,10 +3123,10 @@
     }
   ],
   "ascents": [
-    "delivery"
+    "web-app"
   ],
   "cluster": "spire:tech",
-  "default_ascent": "delivery",
+  "default_ascent": "web-app",
   "descriptor_sha256": "2f8af4dbcb5866673be8ee1f08767c4dae566323b2c4f23581f91bd045300af7",
   "installations": {
     "claude": {
@@ -3261,7 +3261,7 @@
       "provider_root": ".grok"
     }
   },
-  "installed_at": "2026-09-08T10:01:34.762Z",
+  "installed_at": "2026-09-22T23:05:14.945Z",
   "launch_adapter": {
     "installed": "commands/spire-tech.md",
     "invoke": "/spire-tech",
