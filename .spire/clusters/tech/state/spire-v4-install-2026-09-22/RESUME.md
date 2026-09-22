@@ -26,10 +26,10 @@ which the post-refresh entry check restamps. `.claude/launch.json`, `.claude/set
 
 ## Hazards — read before any git operation in this checkout
 
-- **Keep `C:/Dev/convexa` on this branch, or a branch that contains it, until it is merged into
-  `main`.** Checking out `main` or any branch without these commits rewrites the tracked v4 files
-  with v3 bytes, and the doctor stays red until you come back. The same goes for `git reset` or
-  `git checkout` to any commit before `bb1a6dbc`.
+- **Keep `C:/Dev/convexa` on this branch, or a local branch that contains it.** Checking out `main`
+  or any branch without these commits rewrites the tracked v4 files with v3 bytes, and the doctor
+  stays red until you come back. The same goes for `git reset` or `git checkout` to any commit
+  before `bb1a6dbc`.
 - **Never `git clean` here.** `.spire/generations/`, `.spire/upgrade-effects/` and `.spire/tmp/` are
   untracked on purpose; the kernel runs from the generation, and rollback needs the upgrade effects.
 - **The install is machine-local.** The receipt, the `AGENTS.md` bridge and the `*/spire/*.md`
@@ -49,8 +49,21 @@ which the post-refresh entry check restamps. `.claude/launch.json`, `.claude/set
 - **Byte backup** of `.claude`, `.codex`, `.grok`, `.spire`, `.agents`, `AGENTS.md`, `.gitattributes`,
   `.git/info/exclude` and the fleet registry: `C:/Dev/convexa-provider-roots-backup-20260922`.
 
-## Next
+## Owner ruling — keep it local (2026-09-22)
 
-Owner decision: open a PR from this branch to `main` (the Mac then needs its own install to run
-v4), or keep it local. Evidence: spire-os `docs/research/2026-09-22-convexa-v4-install/REPORT.md`;
-raw logs under `C:/Dev/convexa-v4-rollout-20260922/live/run`.
+The owner chose option A: the install stays on this machine. Until the owner decides otherwise,
+this branch is not pushed and not opened as a PR. Working rules that follow:
+
+- **Picking up `main`:** `git fetch origin`, then `git merge origin/main` into this branch, then run
+  the doctor. If a merge ever touches `.claude/`, `.codex/`, `.grok/`, `.spire/bin/`,
+  `.spire/installation.json`, `.spire/version` or `AGENTS.md`, keep this branch's side. A conflict
+  in `IN_FLIGHT.md` keeps both sides' rows.
+- **Feature work that will become a PR:** cut its branch from `origin/main` in a worktree under
+  `.worktrees/`, never from this branch. A branch cut from here carries the install commits.
+- **Guard:** `.git/hooks/pre-push` (local, untracked, shared by every worktree) refuses any push
+  whose commits include `c6b61340`. `git push --no-verify` bypasses it deliberately; deleting the
+  file removes it.
+
+Still owed elsewhere: the owner's KC-MIG-3 ruling in spire-os, before any other project is cut over.
+Evidence: spire-os `docs/research/2026-09-22-convexa-v4-install/REPORT.md`; raw logs under
+`C:/Dev/convexa-v4-rollout-20260922/live/run`.
