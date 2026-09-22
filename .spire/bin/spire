@@ -1,2 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
+# Spire bridge shim (shim-posix), Direct-v4 target 4.0.0, generation gen-74f7daa49278df06.
+set -e
 exec node "$(dirname "$0")/spire.mjs" "$@"
