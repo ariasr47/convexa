@@ -179,14 +179,25 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
                     fontSize: '0.95rem',
                     fontWeight: 600,
                     py: 2,
-                    color: isActive ? 'primary.main' : 'text.secondary',
+                    // AC-10 (no-vendor-production-posture) caught this: `primary.main` is the
+                    // deliberately-quiet FILL-grade amber (`[theme-token-discipline]`'s top-of-file
+                    // note) — 3.23:1 as small nav-link TEXT in light mode, below the 4.5:1 floor
+                    // ('color-contrast', serious, first exposed by the first light+1280 `/ticker`
+                    // scan). `extrasFor(theme).textAmber` is the measured TEXT-GRADE companion this
+                    // codebase already ships for exactly this fill-vs-text split (same fix F7c
+                    // applied to the landing, `52d79ea0` to /blog, /methodology and the auth walls).
+                    color: (t) => (isActive ? extrasFor(t).textAmber : t.palette.text.secondary),
                     borderBottom: 2,
                     borderColor: isActive ? 'primary.main' : 'transparent',
                     transition: 'color 160ms ease, border-color 160ms ease',
                     // Subtle primary glow under the active item — cohesive with the card polish.
+                    // A border/glow is a UI component (≥3:1 floor), never TEXT — `primary.main`
+                    // stays correct here; only the label glyph itself needed the text-grade swap.
                     boxShadow: (t) =>
                       isActive ? `0 2px 12px -6px ${alpha(t.palette.primary.main, 0.8)}` : 'none',
-                    '&:hover': { color: isActive ? 'primary.main' : 'text.primary' },
+                    '&:hover': {
+                      color: (t) => (isActive ? extrasFor(t).textAmber : t.palette.text.primary),
+                    },
                   }}
                 >
                   {e.label}
@@ -354,9 +365,11 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
                   primary={e.label}
                   slotProps={{
                     primary: {
+                      // Same text-grade swap as the desktop nav above (AC-10) — this drawer label
+                      // is the identical small-text-on-`primary.main` shape.
                       sx: {
                         fontWeight: 600,
-                        color: isActive ? 'primary.main' : 'text.primary',
+                        color: (t) => (isActive ? extrasFor(t).textAmber : t.palette.text.primary),
                       },
                     },
                   }}
