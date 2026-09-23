@@ -25,6 +25,14 @@ pub async fn load_analytics(
     max_dte: Option<f64>,
     refresh: bool,
 ) -> Result<(Option<AnalyticsSnapshot>, String), AppError> {
+    // SPEC B2: paused answers 503 at once — before the cache read, before singleflight, before
+    // any chance of reaching the vendor. This is the single choke point every analytics-rendering
+    // route shares (ticker bundle, market-data, signals, strike-profile, per-contract lookup, the
+    // dedicated selector route, recommendation export/status) — deliberately unconditional (not
+    // "only on a cache miss"): once the vendor is paused, a warm cache would never refresh again.
+    if state.config.market_data_mode.is_paused() {
+        return Err(AppError::MarketDataPaused);
+    }
     // Armed replay: ReplayHold before gex_cache; never Massive four-fetch (any ticker).
     if state.replay_occupancy.is_armed().await {
         if let Some(hit) = state.replay_hold.get(sym).await {
@@ -81,6 +89,11 @@ pub async fn load_analytics(
 /// Unlike [`refresh_analytics`], this **does not** force a vendor re-fetch when the
 /// gex cache is still warm — kills warmer+scanner stampede on hot names.
 pub async fn load_or_compute(state: &AppState, sym: &str) -> Result<AnalyticsSnapshot, AppError> {
+    // SPEC B1: defense in depth — the scanner (this fn's only caller) never spawns when paused,
+    // but this keeps the invariant true even if that changes.
+    if state.config.market_data_mode.is_paused() {
+        return Err(AppError::MarketDataPaused);
+    }
     // Armed replay: hold hit or honest absent — never gex_cache / Massive four-fetch.
     if state.replay_occupancy.is_armed().await {
         if let Some(hit) = state.replay_hold.get(sym).await {
@@ -115,6 +128,11 @@ pub async fn load_or_compute(state: &AppState, sym: &str) -> Result<AnalyticsSna
 /// Force-refresh analytics (used by the warmer). Singleflight so concurrent warmer
 /// + scanner + user share one chain pull.
 pub async fn refresh_analytics(state: &AppState, sym: &str) -> Result<AnalyticsSnapshot, AppError> {
+    // SPEC B1: defense in depth — the warmer (this fn's only caller) never spawns when paused,
+    // but this keeps the invariant true even if that changes.
+    if state.config.market_data_mode.is_paused() {
+        return Err(AppError::MarketDataPaused);
+    }
     // Replay construct does not start the warmer; still refuse Massive refresh if armed.
     if state.replay_occupancy.is_armed().await {
         return Err(AppError::Config(
@@ -572,6 +590,54 @@ mod hermetic_tests {
     fn golden_path() -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("../../libs/quant-engine/tests/fixtures/gex_SPY.json")
+    }
+
+    /// SPEC B1/B2: paused answers 503 at once, before the cache read and before the vendor
+    /// fixture/four-fetch join — even a state that WOULD resolve from a fixture must not.
+    #[tokio::test]
+    async fn load_analytics_short_circuits_when_paused() {
+        let book = crate::services::capacity_harness::fixture::load_capacity_book(&golden_path())
+            .expect("golden");
+        let mut state = crate::state::AppState::for_capacity_harness(book.catalog, 4, 9)
+            .await
+            .expect("harness state");
+        let mut cfg = (*state.config).clone();
+        cfg.market_data_mode = crate::config::MarketDataMode::Paused;
+        state.config = std::sync::Arc::new(cfg);
+        let err = load_analytics(&state, "SPY", None, None, false)
+            .await
+            .unwrap_err();
+        assert_eq!(err.to_string(), "Market data is paused.");
+        assert_eq!(state.massive_request_count(), 0);
+    }
+
+    /// Same invariant for the scanner/warmer entry points (defense in depth: neither actually
+    /// spawns when paused, per `server.rs`, but both must refuse if ever called anyway).
+    #[tokio::test]
+    async fn load_or_compute_and_refresh_analytics_short_circuit_when_paused() {
+        let book = crate::services::capacity_harness::fixture::load_capacity_book(&golden_path())
+            .expect("golden");
+        let mut state = crate::state::AppState::for_capacity_harness(book.catalog, 4, 9)
+            .await
+            .expect("harness state");
+        let mut cfg = (*state.config).clone();
+        cfg.market_data_mode = crate::config::MarketDataMode::Paused;
+        state.config = std::sync::Arc::new(cfg);
+        assert_eq!(
+            load_or_compute(&state, "SPY")
+                .await
+                .unwrap_err()
+                .to_string(),
+            "Market data is paused."
+        );
+        assert_eq!(
+            refresh_analytics(&state, "SPY")
+                .await
+                .unwrap_err()
+                .to_string(),
+            "Market data is paused."
+        );
+        assert_eq!(state.massive_request_count(), 0);
     }
 
     #[tokio::test]

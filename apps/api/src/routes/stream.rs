@@ -145,6 +145,22 @@ fn stream_capacity(body: AppErrorBody) -> Response {
         .into_response()
 }
 
+/// SPEC B2/AC-3: exact paused body, no SSE opened. Both stream routes go through
+/// `RouteResponse<...>` unconditionally (never via `AppError`), and their declared 503
+/// (`Capacity`) already requires `Retry-After` — reused here rather than adding a second,
+/// undeclarable 503 response variant for the same status code.
+fn market_data_paused_response() -> Response {
+    (
+        StatusCode::SERVICE_UNAVAILABLE,
+        [(axum::http::header::RETRY_AFTER, "30")],
+        Json(AppErrorBody {
+            detail: crate::error::AppError::MarketDataPaused.to_string(),
+            code: Some(crate::error::MARKET_DATA_PAUSED_CODE.to_string()),
+        }),
+    )
+        .into_response()
+}
+
 impl IntoResponse for StreamPricesResponse {
     fn into_response(self) -> Response {
         match self {
@@ -211,6 +227,7 @@ fn representative_live_update() -> LiveUpdateBody {
 fn representative_stream_error(kind: &str) -> AppErrorBody {
     AppErrorBody {
         detail: format!("{kind}: stream request was rejected"),
+        code: None,
     }
 }
 
@@ -403,6 +420,9 @@ async fn stream_prices_http(
     State(state): State<AppState>,
     Query(q): Query<PricesStreamQuery>,
 ) -> Response {
+    if state.config.market_data_mode.is_paused() {
+        return market_data_paused_response();
+    }
     let raw = q.symbols.unwrap_or_default();
     let symbols = clean_symbols(&raw);
     if symbols.is_empty() {
@@ -598,10 +618,14 @@ async fn stream_ticker_http(
     Path(ticker): Path<String>,
     Query(_q): Query<TickerStreamQuery>,
 ) -> Response {
+    if state.config.market_data_mode.is_paused() {
+        return market_data_paused_response();
+    }
     let sym = ticker.trim().to_ascii_uppercase();
     if sym.is_empty() {
         return StreamTickerResponse::NotFound(AppErrorBody {
             detail: "not found: empty ticker".into(),
+            code: None,
         })
         .into_response();
     }
@@ -976,6 +1000,59 @@ mod response_conversion_tests {
             "application/json",
             &["retry-after"],
         );
+    }
+
+    #[tokio::test]
+    async fn paused_stream_routes_answer_503_without_opening_sse() {
+        use crate::config::MarketDataMode;
+        use crate::services::chain_snapshot::ChainSnapshotStore;
+        use crate::services::session_chain_archive::SessionChainArchive;
+
+        let mut state =
+            AppState::for_tests(ChainSnapshotStore::memory(), SessionChainArchive::memory())
+                .await
+                .unwrap();
+        let mut cfg = (*state.config).clone();
+        cfg.market_data_mode = MarketDataMode::Paused;
+        state.config = std::sync::Arc::new(cfg);
+
+        let exact = br#"{"detail":"Market data is paused.","code":"market_data_paused"}"#;
+
+        let prices = stream_prices(
+            State(state.clone()),
+            Query(PricesStreamQuery {
+                symbols: Some("SPY".into()),
+            }),
+        )
+        .await
+        .into_response();
+        assert_eq!(prices.status(), StatusCode::SERVICE_UNAVAILABLE);
+        assert_eq!(
+            prices.headers()[axum::http::header::CONTENT_TYPE],
+            "application/json"
+        );
+        assert_eq!(prices.headers()[axum::http::header::RETRY_AFTER], "30");
+        let body = axum::body::to_bytes(prices.into_body(), 1024)
+            .await
+            .unwrap();
+        assert_eq!(&body[..], exact);
+
+        let ticker = stream_ticker(
+            State(state.clone()),
+            Path("SPY".to_string()),
+            Query(TickerStreamQuery::default()),
+        )
+        .await
+        .into_response();
+        assert_eq!(ticker.status(), StatusCode::SERVICE_UNAVAILABLE);
+        assert_eq!(
+            ticker.headers()[axum::http::header::CONTENT_TYPE],
+            "application/json"
+        );
+        let body = axum::body::to_bytes(ticker.into_body(), 1024)
+            .await
+            .unwrap();
+        assert_eq!(&body[..], exact);
     }
 
     #[test]

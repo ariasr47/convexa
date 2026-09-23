@@ -213,6 +213,11 @@ async fn stream_progressive_http(
     Path(ticker): Path<String>,
     Query(q): Query<TickerQuery>,
 ) -> Result<Response, AppError> {
+    if state.config.market_data_mode.is_paused() {
+        // Err bypasses RouteResponse<ProgressiveStreamResponse> (which declares no 503) and goes
+        // straight through AppError::into_response — no SSE stream is ever opened (SPEC B2).
+        return Err(AppError::MarketDataPaused);
+    }
     let sym = normalize_ticker(&ticker)?;
     let min_dte = q.min_dte;
     let max_dte = q.max_dte;
@@ -454,6 +459,37 @@ mod response_conversion_tests {
         })
         .into_response();
         assert_eq!(ticker.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn paused_progressive_stream_answers_503_without_opening_sse() {
+        use crate::config::MarketDataMode;
+        use crate::services::chain_snapshot::ChainSnapshotStore;
+        use crate::services::session_chain_archive::SessionChainArchive;
+
+        let mut state =
+            AppState::for_tests(ChainSnapshotStore::memory(), SessionChainArchive::memory())
+                .await
+                .unwrap();
+        let mut cfg = (*state.config).clone();
+        cfg.market_data_mode = MarketDataMode::Paused;
+        state.config = std::sync::Arc::new(cfg);
+
+        let response = stream_progressive(
+            State(state),
+            Path("SPY".into()),
+            Query(TickerQuery::default()),
+        )
+        .await
+        .expect_err("paused progressive stream must be an AppError")
+        .into_response();
+        assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+        assert_eq!(response.headers()[header::CONTENT_TYPE], "application/json");
+        let body = to_bytes(response.into_body(), 1024).await.unwrap();
+        assert_eq!(
+            &body[..],
+            br#"{"detail":"Market data is paused.","code":"market_data_paused"}"#
+        );
     }
 
     #[test]
