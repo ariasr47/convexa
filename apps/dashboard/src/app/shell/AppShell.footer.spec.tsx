@@ -33,7 +33,22 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const ROUTES = ['/', '/blog', '/methodology', '/alerts', '/settings', '/lab', '/nope'] as const;
+// GATE Z m-10 — AC-F1 names ten pages ("landing, ticker, scanner, positions, alerts, settings,
+// blog, methodology, lab and the 404"); this ROUTES table covered seven. `/scanner` and
+// `/positions` render the sign-in wall signed-out (the stub below is anonymous) — the footer must
+// still be the shell's ONE mount regardless, which is the property this table is proving.
+const ROUTES = [
+  '/',
+  '/ticker/SPY',
+  '/scanner',
+  '/positions',
+  '/blog',
+  '/methodology',
+  '/alerts',
+  '/settings',
+  '/lab',
+  '/nope',
+] as const;
 
 describe('AC-F1/F2/F3/F4 — one footer, one main, on every in-shell page', () => {
   for (const path of ROUTES) {
