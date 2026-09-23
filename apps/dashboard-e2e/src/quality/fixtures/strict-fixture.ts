@@ -81,6 +81,12 @@ export const strictTest = base.extend<{ scenario: Scenario }>({
 export async function installScenario(page: import('@playwright/test').Page, scenario: Scenario) {
   const unexpected: string[] = [];
   let tickerStreamDelivered = false;
+  // Flipped by `freezeStream()` right before the visual frame's clock jump (visual-frame.ts
+  // `freezeVisualFrame`). The browser's EventSource reconnects on real wall-clock time regardless
+  // of the page's fake clock, so a `connected` stream would otherwise keep answering reconnects
+  // with a fresh "live" payload after the freeze — silently undoing the deterministic offline
+  // transition the jump is meant to produce and making the capture racy (visual flake).
+  let streamFrozen = false;
   const watchdogArm = scenario.id === 'ticker-stream-loss' || scenario.id === 'A11Y-9';
   let releaseStream: (() => void) | undefined;
   let streamReleased = false;
@@ -125,7 +131,7 @@ export async function installScenario(page: import('@playwright/test').Page, sce
       });
     }
     if (url.pathname === '/api/stream/SPY' && scenario.stream !== 'none') {
-      if (scenario.stream === 'payload-gap' && tickerStreamDelivered) {
+      if (streamFrozen || (scenario.stream === 'payload-gap' && tickerStreamDelivered)) {
         return route.fulfill({
           status: 200,
           contentType: 'text/event-stream',
@@ -198,6 +204,10 @@ export async function installScenario(page: import('@playwright/test').Page, sce
         throw new Error(`initial ticker stream already released for ${scenario.id}`);
       streamReleased = true;
       releaseStream();
+    },
+    /** Stop answering `/api/stream/SPY` with fresh "live" payloads — heartbeat only from here on. */
+    freezeStream: () => {
+      streamFrozen = true;
     },
   };
 }

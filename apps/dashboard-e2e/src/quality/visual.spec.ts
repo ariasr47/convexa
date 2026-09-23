@@ -54,7 +54,23 @@ for (const scenario of visualScenarios) {
     }
     const topState = await stabilizeVisualTop(page);
     expect(topState).toMatchObject({ scrollY: 0, top: 0, position: 'sticky' });
-    await freezeVisualFrame(page, scenario);
+    await freezeVisualFrame(page, scenario, requestState.freezeStream);
+    if (process.env.BROWSER_QUALITY_STREAM_RACE_PROBE === '1') {
+      // Permanent opt-in stress control (same shape as BROWSER_QUALITY_VISUAL_DRIFT above): holds
+      // the page open on real wall-clock time right where the slow-runner reconnect race used to
+      // land, after the fixture was told to stop answering the stream (`freezeStream`). Expected
+      // to still PASS — proved RED without `freezeStream` wired up (59,015px on ticker-desktop,
+      // 40,792px on positions-dense) and GREEN with it, twice, before this landed. If this ever
+      // goes red again, the freeze-time stream gate in strict-fixture.ts has regressed.
+      await page.waitForTimeout(4_000);
+    }
+    if (scenario.id === 'ticker-desktop') {
+      // Deterministic once the fixture stops answering `/api/stream/SPY` after the freeze
+      // (`requestState.freezeStream`, strict-fixture.ts): the +30s clock jump inside
+      // `freezeVisualFrame` trips the 15s payload-gap watchdog on every run, same state
+      // `ticker-offline-mobile` already asserts explicitly above.
+      await expect(page.getByTestId('connection-chip').first()).toContainText('Live offline');
+    }
     await expect
       .poll(() =>
         page.evaluate(() =>
