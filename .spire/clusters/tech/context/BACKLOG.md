@@ -87,6 +87,23 @@ for now and finish any outstanding work first such as phase 4". No re-subscripti
 **Lesson (candidate canon at the next GATE S):** a feature that only works once a production variable is set is
 not shipped until production shows it running: a startup log line, a health field, or a stored artifact.
 
+## Harvest — 2026-09-23 (curvature-v2-landing-and-site GATE S carries)
+<!-- atlas: theme=desk-fidelity horizon=next -->
+Not a BRIEF. Filed by the conductor at GATE S from `QA_REPORT.md`'s minor findings and the ship run. None
+blocked the ship, and all but the last two predate the feature.
+
+| Item | Shape | Why it is here |
+|---|---|---|
+| `who-am-i-client-timeout` | FE | A hung `/api/auth/session` holds the route fill indefinitely, because the client has no timeout (QA m-5). The degraded wall only renders on a transport fault that actually arrives. |
+| `signups-closed-sentence-once` | FE | A refused sign-up shows the policy sentence twice: the info alert before typing and the error after submit (QA m-6). |
+| `google-sign-in-future-copy` | FE copy | The dialog's "Google sign-in isn't available yet" promises a future feature on the acquisition path (QA m-7). |
+| `nav-account-skeleton-pulse` | FE | The nav's account Skeleton pulses during the who-am-I read on every route (QA m-11). Check it against `[data-signal-motion-class]`: chrome, or a second moving element? |
+| `topnav-active-link-light-contrast` | FE a11y | The top nav's active link fails contrast in the light scheme at desktop widths. It was 4 of QA's 64 sweep scans, and it sits outside the gate matrix, which only scans light at 393. Fix it, then add one light 1280 scan. |
+| `hero-curve-crosses-text-on-phones` | FE design | At 393 px the decorative `HeroCurve` crosses body text: the footnote's "An" and the end of the sub's line. It is the same element as before phase 4, now over taller copy. Clip or reposition it below 700 px, checked against `Landing390.dc.html`. |
+| `design-source-stale-lines` | design | SPEC open question 1, still the owner's call. Three lines are stale: `responsive-spec.mjs:28` (the desk strip), `landing.mjs:56` (the three.js caption) and `components-sheet.mjs:173` (the GPU note). They contradict ruling D-B = A. Left stale, the successor `curvature-v2-responsive-sweep` reads them back in. |
+| `postgres-release-safety-flake` | backend test | `simultaneous_serve_processes_are_read_only` (`apps/api/tests/postgres_release_safety_postgres.rs`) intermittently fails with "…server did not become healthy". It failed on PR #49's run `35816545955` attempt 1 and on two npm-only dependabot runs. Root-cause the health wait; do not retry-loop it. |
+| `api-boot-dials-vendor-without-warm` | backend/ops | `serve` refuses to boot without `MASSIVE_API_KEY`. With a placeholder key and `WARM_ENABLED=0 SCAN_ENABLED=0`, `StockStreamHub` still subscribes the warm symbols at boot (`state.rs:572`) and dials `wss://socket.massive.com` every ~1 s. Local verification therefore cannot run vendor-free. Belongs with `no-vendor-production-posture`. |
+
 ## Harvest — 2026-09-22 (PR #49 visual-flake repair: two harness residuals)
 <!-- atlas: theme=gates-that-gate horizon=next -->
 Not a BRIEF. Filed by the conductor while repairing the visual-gate flake on PR #49 (`964aa754`: the strict

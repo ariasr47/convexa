@@ -2,7 +2,7 @@
   "schema_version": 1,
   "support_policy_id": "playwright-engines-1.62.1",
   "full_chromium": {
-    "inventory_id": "curvature-v2-surfaces-108-v1",
+    "inventory_id": "curvature-v2-landing-and-site-128-v1",
     "tests": [
       {
         "test_id": "d38f0e9816f51aa1922817ddad296f9fcfffdcb98335c43716eb971b1cf4f276",
@@ -965,6 +965,186 @@
           "the disclosure keeps its marker mechanism and stays operable on desktop"
         ],
         "project": "chromium"
+      },
+      {
+        "test_id": "e355053f632330f106328f61a84c9159f7c4f669420f6fefc55f7dc26d1b22de",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "/blog fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "1d73ff53848b39f834ecc3798dda591251ea8ad7d36f15cb49b8e7264b7b1964",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "/blog fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "299f3f617ff28167685061204f2cbf4197cd169862e49c4088addd93b6b20127",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "/blog fits 834px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "1987f19fb65783a9066dc87ea80013e8b014c08989a442caf79c866f1ad13d16",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "md 900 no-overflow · dark scheme",
+          "/blog fits 900px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "f161b4ab8b26ccaf207b6317b25fad1fe538e81b74e42f4f261bf1afaf95b396",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · dark scheme",
+          "/blog fits 1280px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "ac4aaed664ff6f25d9434a10647e4f6ee2d6be9b5767af4035d2eef513e04611",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · light scheme (criterion 64)",
+          "/blog fits 1280px in light mode (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "5bdfe8bf85c96c2560f9cd67f953e5af993fd96c1c0c251020be506ce3b28e6b",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "/methodology fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "9e0f93040d9420042ca9120cd3b87e3fd697e2e9cfbc156fb6c26952932e1180",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "/methodology fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "77efec53c8a889e4f4d219b94fc148e9d4655eb9b0bb96853eca8afe1fcade65",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "/methodology fits 834px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "cc31c3d984297c58855e3cd171b4c6b304c8158dc294ff1d7e5983925cd641c4",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "md 900 no-overflow · dark scheme",
+          "/methodology fits 900px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "fb4e8d3b2d8b5b82dbd9e7783e9f18c6a8ce41866ca80f2ac91390177931d4e0",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · dark scheme",
+          "/methodology fits 1280px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "2bff717c9bda99c7e1619bec0734633ae57746c56b9076a152d660ad4bef75fb",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · light scheme (criterion 64)",
+          "/methodology fits 1280px in light mode (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "94ef7cb287d915112fba35655b4544fbe51fb9784dd3af28e9a6945a2734ea00",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "/this-address-does-not-exist fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "9c3bfb98bdd0df6056e310d41169a4bb372264a4530e15f45016a63de4f0480b",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "/this-address-does-not-exist fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "2319f1bf93a898a95b2036c23a28d55433135cbfe383d7ca8f2301c0e081065f",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "tablet 834 no-overflow · dark scheme",
+          "/this-address-does-not-exist fits 834px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "9bcf3d21007e8f8702800995c7553916193c0744c6a827d0a501ef4118997390",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "md 900 no-overflow · dark scheme",
+          "/this-address-does-not-exist fits 900px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "ba9e4538feb6e5033a8a8e337c5c8a0baa551a9d8a40dece76d1afe23fa27ccc",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · dark scheme",
+          "/this-address-does-not-exist fits 1280px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "931d5fd66619a9c42eb0412d5195e18f8d74b46d127493e51207b5e5a63431a4",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · light scheme (criterion 64)",
+          "/this-address-does-not-exist fits 1280px in light mode (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "0e6dff1e297bf0f550c909c40a982d9fb584d30bce478a94328d0a385c2f4fbe",
+        "file": "apps/dashboard-e2e/src/e2e/navigation.spec.ts",
+        "title_path": [
+          "client-side navigation",
+          "methodology on-page index (GATE Z I-1, AC-M6/AC-M1) — click stays in-page despite <base href=\"/\">"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "e252da4cad1fc99e51974c8ac379e28def32065f65cae70283ad7fd0835a10c2",
+        "file": "apps/dashboard-e2e/src/e2e/navigation.spec.ts",
+        "title_path": [
+          "client-side navigation",
+          "methodology deep link (GATE Z I-1, AC-M1) — a fresh load of /methodology#id lands on its section"
+        ],
+        "project": "chromium"
       }
     ]
   },
@@ -1065,6 +1245,111 @@
         "id": "A11Y-9",
         "route": "/ticker/SPY",
         "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-10",
+        "route": "/blog",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-11",
+        "route": "/methodology",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-12",
+        "route": "/this-address-does-not-exist",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-13",
+        "route": "/",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-14",
+        "route": "/",
+        "colorScheme": "light",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-15",
+        "route": "/blog",
+        "colorScheme": "light",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-16",
+        "route": "/methodology",
+        "colorScheme": "light",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-17",
+        "route": "/this-address-does-not-exist",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-18",
+        "route": "/this-address-does-not-exist",
+        "colorScheme": "light",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-19",
+        "route": "/scanner",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-20",
+        "route": "/scanner",
+        "colorScheme": "light",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-21",
+        "route": "/scanner",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-22",
+        "route": "/scanner",
+        "colorScheme": "light",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-23",
+        "route": "/",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-24",
+        "route": "/",
+        "colorScheme": "light",
         "ready": ["app-shell"],
         "forbidden": ["route-fallback"]
       }

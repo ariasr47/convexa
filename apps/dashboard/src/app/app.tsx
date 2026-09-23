@@ -45,9 +45,8 @@ import { AppThemeProvider } from '@/features/auth/ThemeProvider';
 import { useSettings } from '@/features/auth/useSettings';
 import { Landing } from '@/pages/landing/Landing';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
+import { RouteFallback } from '@/shared/ui/RouteFallback';
 import { AppShell } from '@/shell/AppShell';
-import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
 import { lazy, Suspense, type ReactElement } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
@@ -93,19 +92,9 @@ const TermHeatLab = lazy(() =>
 const FlowRibbonsLab = lazy(() =>
   import('@/pages/lab/demos/FlowRibbonsLab').then((m) => ({ default: m.FlowRibbonsLab })),
 );
-
-/** Minimal page-chunk loading fill — theme tokens only (`[theme-token-discipline]`), centered,
- *  quiet. Shown inside the shell's <Outlet/> region; the nav chrome stays interactive. */
-function RouteFallback() {
-  return (
-    <Box
-      data-testid="route-fallback"
-      sx={{ display: 'flex', justifyContent: 'center', py: 8, color: 'text.secondary' }}
-    >
-      <CircularProgress size={24} color="inherit" aria-label="Loading page" />
-    </Box>
-  );
-}
+const NotFound = lazy(() =>
+  import('@/pages/not-found/NotFound').then((m) => ({ default: m.NotFound })),
+);
 
 /** Per-route Suspense + error boundary: loading fill never blanks the shell (AC-Nav-4);
  *  a throw in one page does not unmount nav chrome. */
@@ -144,10 +133,27 @@ export function AppRoutes() {
       <Route element={<AppShell />}>
         {/* Landing — OWNER DECISION (convexa-redesign): now the shell INDEX route so the persistent
             top nav shows on `/` too. Full-bleed below the bar (no width container). `/` is NEVER a
-            redirect to a ticker. EAGER (the entry experience — no chunk wait on first paint). */}
-        <Route index element={<Landing />} />
+            redirect to a ticker. EAGER (the entry experience — no chunk wait on first paint).
+            EAGER index — a BARE route ErrorBoundary, no Suspense: a Suspense here would reintroduce
+            the chunk wait the eager route exists to avoid (SPEC §2.5). Today a throw inside Landing
+            unmounts the whole React tree, because `main.tsx:16-26` adds no boundary above <App/>. */}
+        <Route
+          index
+          element={
+            <ErrorBoundary variant="route">
+              <Landing />
+            </ErrorBoundary>
+          }
+        />
         {/* Bare `/ticker` → the effective default (pref-wins; unset ⇒ SPY). `/` never redirects. */}
-        <Route path="/ticker" element={<DefaultTickerRedirect />} />
+        <Route
+          path="/ticker"
+          element={
+            <ErrorBoundary variant="route">
+              <DefaultTickerRedirect />
+            </ErrorBoundary>
+          }
+        />
         <Route path="/ticker/:ticker" element={lazyRoute(<TickerDashboard />)} />
         {/* OWNER LOCKDOWN 2026-08-06 — private testing. Positions + Scanner are behind a sign-in
             wall; Landing, /ticker/*, /blog and /settings stay PUBLIC by owner decision. The wall is
@@ -179,6 +185,12 @@ export function AppRoutes() {
         <Route path="/lab/flow-ribbons" element={lazyRoute(<FlowRibbonsLab />)} />
         {/* Settings — the 3 light prefs (account menu links here when signed in; viewable anonymously). */}
         <Route path="/settings" element={lazyRoute(<SettingsPage />)} />
+        {/* Catch-all — LAST child of the shell group, so the 404 wears the nav AND the footer
+            (SPEC §2.5). The two operator routes are declared before this group and match exactly,
+            so they are unaffected; a MISTYPED operator URL falls through to this trader 404, which
+            links nothing operator-shaped. Not a redirect: an address that once existed and no
+            longer does gets the 404 and its offer — that is how a bookmark stops being a lie. */}
+        <Route path="*" element={lazyRoute(<NotFound />)} />
       </Route>
     </Routes>
   );

@@ -1276,6 +1276,19 @@ conformance, and volume-replacement receipts.
   workflow; normal checks cannot rewrite baselines. Fresh QA passed 45/0/0 with no Critical findings.
   Hosted Ubuntu evidence remains `NOT RUN` until GitHub runner access returns. `NO_BACKEND_CHANGE`;
   contracts at `_archive/browser-quality-gates/`.
+- **The public site (`curvature-v2-landing-and-site`, FE-only, shipped 2026-09-23)** — Curvature v2
+  phase 4.
+  - **The landing:** `/` is rebuilt as the design draws it. The hero is a static isometric dealer-gamma
+    surface in SVG (no WebGL, pinned by a viewBox scan and an ESLint ban on three, regl and pixi). Every
+    sample panel carries one shared "Illustrative sample" mark and makes no live claim. Headings use the
+    Archivo display face.
+  - **New surfaces:** `/blog` (one published read), `/methodology` (ten sections, engine-true copy, an
+    in-page index that survives `<base href="/">`), a real 404, the global footer, and the sign-in wall's
+    degraded branch.
+  - **Gates:** they serve the build with production's routing (`apps/dashboard-e2e/tools/serve-dist.mjs`
+    mirrors Cloudflare Pages plus `_redirects`). The a11y gate scans both schemes and the
+    wall/degraded/dialog states, 24 scans with zero waivers.
+  - **Status:** `NO_BACKEND_CHANGE`; contracts at `_archive/curvature-v2-landing-and-site/`.
 
 ## 7. Conventions
 <!-- shard: tags=conventions,env,run,config,vendor -->

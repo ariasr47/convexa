@@ -119,7 +119,9 @@ function normalizeAiKeyState(partial?: Partial<AiKeyBackendState>): AiKeyBackend
 export interface AuthBackendState {
   session: SessionStatus;
   sessionFails: boolean; // who-am-I transport fault ⇒ FE degrades to anonymous
-  signup: 'ok' | 'email_taken' | 'validation' | 'auth_unavailable';
+  // GATE Z m-1 (AC-A5) — `signups_closed`: the owner-lockdown refusal a submitted sign-up gets
+  // while sign-ups are closed (distinct from `auth_unavailable`, a transient fault).
+  signup: 'ok' | 'email_taken' | 'validation' | 'auth_unavailable' | 'signups_closed';
   login: 'ok' | 'bad_credentials' | 'validation' | 'auth_unavailable';
   settingsWrite: 'ok' | 'auth_required' | 'auth_unavailable' | 'validation';
   // The gated-action server outcomes (ai-rec POST / a hypothetical positions write).
@@ -566,6 +568,14 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
         }
         if (state.signup === 'auth_unavailable')
           return authErr('auth_unavailable', 'auth down', 503);
+        // GATE Z m-1 (AC-A5) — the owner-lockdown refusal, 403, matching what QA observed against
+        // the live backend (`POST /api/auth/signup` → 403 `signups_closed`).
+        if (state.signup === 'signups_closed')
+          return authErr(
+            'signups_closed',
+            'New sign-ups are closed while Convexa is in private testing.',
+            403,
+          );
         const sess = userSession(
           'u-new',
           body.email,

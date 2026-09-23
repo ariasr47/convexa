@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "gate": "visual",
+  "run_id": "local-1790178019686-3212a3f3",
+  "source_revision": "65e6abf6020e94beabbb9d39005494acca4a663d",
+  "selected": 6,
+  "executed": 6,
+  "passed": 6,
+  "failed": 0,
+  "flaky": 0,
+  "not_run": 0,
+  "status": "pass",
+  "playwright_version": "1.62.1",
+  "browser_revision": "1234",
+  "host_platform": "win32",
+  "artifacts": [],
+  "scenarios": [
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "landing"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [],
+      "scenario_id": "landing",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/landing.png",
+      "expected_sha256": "a752e719ad0105f586e6128c3fa0bd2796c8a6f19fac96bdcef57a00dac37b20",
+      "actual_path": null,
+      "actual_sha256": null,
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "ticker-offline-mobile"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [],
+      "scenario_id": "ticker-offline-mobile",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/ticker-offline-mobile.png",
+      "expected_sha256": "6aef0610c00c8314c8aec1b5ca014f75bbec9bcbcc2373e64eaa4de8f4cf9291",
+      "actual_path": null,
+      "actual_sha256": null,
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "scanner-dense"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [],
+      "scenario_id": "scanner-dense",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/scanner-dense.png",
+      "expected_sha256": "08650895f9f62657d58d46f017809b2595e2579db455630e9c732e5766b33d80",
+      "actual_path": null,
+      "actual_sha256": null,
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "ticker-desktop"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [],
+      "scenario_id": "ticker-desktop",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/ticker-desktop.png",
+      "expected_sha256": "42e7b8203007a469fa847656098253838ed4a50eba5057a24eb208648a9ff175",
+      "actual_path": null,
+      "actual_sha256": null,
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "positions-dense"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [],
+      "scenario_id": "positions-dense",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/positions-dense.png",
+      "expected_sha256": "d39d97f4e7976496650177a7e997857f9c6bc08906d6f9af2733996544054211",
+      "actual_path": null,
+      "actual_sha256": null,
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "ai-recommendation"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [],
+      "scenario_id": "ai-recommendation",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/ai-recommendation.png",
+      "expected_sha256": "f84bace1d768caf1b2fae062b1d93e2a46d93c57e3bb88cbdd99bfdff7940737",
+      "actual_path": null,
+      "actual_sha256": null,
+      "diff_path": null,
+      "diff_sha256": null
+    }
+  ]
+}

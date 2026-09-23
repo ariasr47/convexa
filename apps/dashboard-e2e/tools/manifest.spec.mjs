@@ -26,10 +26,19 @@ test('browser quality manifest is closed and has the required inventories', () =
   // reaches 44px with `line-height` instead, leaving `display: list-item` intact. 3 new
   // `no-overflow.spec.ts` tests (393 coarse, 393 fine, 1280 fine) each asserting the marker
   // mechanism (`display: list-item`) and full open/close/focus/Enter operability.
-  assert.equal(manifest.full_chromium.tests.length, 108);
+  // (curvature-v2-landing-and-site F15) 108 → 126: three new public routes (/blog, /methodology,
+  // an unmatched path) × six ROUTES loops in `no-overflow.spec.ts` = 18 net-new Chromium tests.
+  // Accessibility scans 9 → 12: one new axe scan per new surface (AC-G1).
+  // (curvature-v2-landing-and-site GATE Z I-2, amendment 5) Accessibility scans 12 → 24: the
+  // NAMED six-surface × {dark,light} × 393 matrix (the 404 also at 1280, unchanged; the open
+  // sign-in dialog counted as a surface too). Chromium was unchanged at 126 by THAT repair.
+  // (curvature-v2-landing-and-site GATE Z I-1) Chromium 126 → 128: one e2e case in
+  // `navigation.spec.ts` covers the methodology TOC click and the fresh deep link past
+  // `index.html`'s `<base href="/">` (AC-M6/AC-M1).
+  assert.equal(manifest.full_chromium.tests.length, 128);
   assert.equal(manifest.compatibility.journeys.length, 5);
   assert.deepEqual(manifest.compatibility.projects, ['chromium', 'firefox', 'webkit']);
-  assert.equal(manifest.accessibility.scans.length, 9);
+  assert.equal(manifest.accessibility.scans.length, 24);
   assert.equal(manifest.accessibility.behaviors.length, 7);
   assert.equal(manifest.visual.scenarios.length, 6);
 });

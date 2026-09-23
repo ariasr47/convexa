@@ -1,0 +1,408 @@
+{
+  "conflicts": [
+    {
+      "quote": "Across the six surfaces exactly one CSS animation is invoked \u2014 the `HeroCurve` draw; under `prefers-reduced-motion` it renders as the static drawn frame.",
+      "source": "ux",
+      "why": "The one thing on `/` most likely to move is not a CSS animation, so this AC is satisfiable by a page that animates continuously. The field sample is `StructureFieldCanvas`, a Canvas2D rAF loop scheduled at `StructureFieldCanvas.tsx:199` and re-armed at `:141,165`, repainting while mounted. Its phosphor grain at `paintStep.ts:850-858` positions 18 dots with `Math.sin(now * 0.001 ...)` / `Math.cos(now * 0.0007 ...)` under `if (!reduced && !calm)` \u2014 there is no `m.live` term in that gate. And `calm` is not a prop: `calm = embedded = variant === 'ticker'` (`StructureFieldCanvas.tsx:81-83`), and the component's default is `variant = 'lab'` (`:64`). So a landing that mounts the shipped field the obvious way drifts forever while `single-motion-moment.spec.ts` \u2014 a CSS-keyframe scan \u2014 stays green. Canon rule 22 ('a drifting particle ... may only run while a genuine stream is delivering') then fails invisibly, on the page carrying the words 'Snapshot, never live'.",
+      "proposal": "Restate as 'exactly one animated MOMENT across the six surfaces' and split the enforcement, because one mechanism cannot see both halves. CSS half: `single-motion-moment.spec.ts`, unchanged. Canvas half: assert at the props/model level in the landing's own spec \u2014 the field mounts with `variant='ticker'` (the only lever that sets `calm`) and a model carrying `live: false, liveMid: null, source: 'demo', asOfSec: null`. `paintStep.spec.ts:92-114` already mutation-proves the `m.live` gates, so the props assertion is the only new work.",
+      "kind": "technical",
+      "conflict_id": "804a6fc066f9fe528570f346b194ce4e67027375021cb8cf992d84dce9b030b7",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Everything above is composed from shipped primitives (`Widget`, the figure cell, chips, `Refused`, the empty-state block, the route `ErrorBoundary`, `Footer`, `ArcDivider`).",
+      "source": "ux",
+      "why": "Two of the named pieces are not primitives this feature can compose from, so the Amendments event UX wants named at R2 is already owed. (1) The figure cell is `pages/ticker/widgets/_kit/FigureCell.tsx` \u2014 page-local to the ticker, not `shared/`. PROJECT_CONTEXT.md:136-137 binds new FE work: 'dependency direction is downward only (pages/features to shared); pages NEVER import sibling pages'. The landing cannot mount it without a `shared/` promotion whose blast radius is the desk that phases 2-3 just stabilised, with visual baselines attached. (2) The hero instrument UX's own AC-U2 requires \u2014 the dealer-gamma surface \u2014 exists nowhere in `apps/dashboard`. It is `gammaSurface()` at `design/src/lib.mjs:383-425`, and DESIGN_SYSTEM.md:138 forbids the app importing from `design/` at runtime: 'Nothing in the app imports from design/ at runtime'. (`Widget` and `Refused` ARE genuinely shared \u2014 `shared/ui/Widget/Widget.tsx`, `shared/ui/Refused.tsx` \u2014 so the assumption is half right.)",
+      "proposal": "Name the new components now rather than discovering them at build: `pages/landing/GammaSurfaceHero.tsx` (a port of the isometric projection as inline SVG \u2014 prop-free, geometry computed once at module load, `role='img'` plus an accessible name, and no `arc.ts` import so `arc.spec.ts` stays at three importers) and landing-local score/AI-read compositions fed from `pages/landing/samples.ts`. Cap them so 'one hero instrument and nothing else' stays decidable: a `?raw` set-equality scan (the proven `arc.spec.ts` pattern) asserting that the modules under `pages/landing/**` containing a `viewBox` are exactly {HeroCurve.tsx, GammaSurfaceHero.tsx}.",
+      "kind": "technical",
+      "conflict_id": "60b85e24c604e9803700479b846b15d4a9f4c7e4ed41c037b2c81cfcd71144c8",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The footer renders on all four full pages (landing, blog, methodology, 404) and carries the wordmark, `How Convexa works`, `Blog \u2014 how we read structure`, `Lab \u2014 instrument demos`, the disclaimer and the copyright.",
+      "source": "ux",
+      "why": "A four-page AC is satisfied by a four-page mount, and the only four-page mount is a per-page render or a route allow-list \u2014 the list someone forgets. It also under-specifies against both the design source and the other lane: `footer()` renders on nine design screens, including `desk.mjs:438`, `scanner.mjs:109`, `positions.mjs:92`, `settings.mjs:81` and `alerts.mjs:51`, and PM's AC-F1 requires it on ten surfaces by name. Today `Footer` has exactly one product importer (`Landing.tsx:19,238`), so canon rule 19's 'Lab and Blog live in the footer' is unreachable from seven of eight in-shell pages; a four-page fix leaves it unreachable from six. The single mechanism that makes it structural is one mount after the `<main>` Box in `AppShell.tsx:96-109`, and that necessarily puts a footer on the ticker desk. I state the cost rather than hide it: the desk carries committed visual baselines, so this is a baseline re-acceptance (a two-stage human receipt), not a code-only change.",
+      "proposal": "Adopt PM's ten-surface scope with the single AppShell mount, and restate AC-U31 as 'the footer renders on every in-shell route, including the ticker desk'. Record the desk baseline re-acceptance as a named cost of this feature. If UX objects to a footer under the dense desk pages on composition grounds, say so at R2: the mechanism then collapses to a route allow-list and I withdraw the word 'structural' for it.",
+      "kind": "technical",
+      "conflict_id": "939f095fb4cbd115627baecfc008161c6ca7cf32fa0f2be228041e6e4bc94f57",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The existing end-to-end journeys still pass unchanged; no journey is deleted or weakened to accommodate a new composition.",
+      "source": "pm",
+      "why": "This row cannot be satisfied alongside AC-L3 and P-1 in the same position. `apps/dashboard-e2e/src/quality/accessibility.spec.ts:115-125` (A11Y-B2) asserts `cta-primary` has href `/scanner`, then presses `waitlist-button` and asserts the polite text 'Thanks \u2014 we'll let you know when brokerage connect is live.' AC-L3 deletes that control; P-1 reverses that href. `landing.spec.tsx:148-164` pins the same two hrefs plus four `vp-*` CTA ids, `:110-130` presses the same waitlist button, and `:194-200` asserts 'the primary Scanner CTA hits the sign-in wall when signed out'. `scenarios.ts:427-460` clicks `cta-primary` in the compat journey. PM's own A9 concedes exactly this, so AC-G3 is the row that contradicts the assumption list \u2014 and it is the row a build lane would cite to refuse the change.",
+      "proposal": "Replace AC-G3 with 'no journey is DELETED; every journey whose subject this feature changes is rewritten in the same change, and the rewritten suite passes with zero waivers', and name the four files up front: `accessibility.spec.ts`, `landing.spec.tsx`, `landing-structure.spec.tsx`, `scenarios.ts`. Keep the two arms of `landing.spec.tsx` that are the real invariant \u2014 the strict fetch harness (`:57-63`) and the zero-EventSource assertion (`:137-141`). Separately, the BRIEF's 'the 108 chromium e2e journeys are unchanged' must say COUNT or PASS: `no-overflow.spec.ts`'s ROUTES table (`:394`) must gain `/blog`, `/methodology` and an unmatched path, and the loop is routes x schemes x widths, so the count goes up.",
+      "kind": "technical",
+      "conflict_id": "7ccd6b6f052d5c6ff70da973ccc445631451d4430b7a2a9afec0dd915da0fad4",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "With JavaScript enabled but the hero instrument unable to render on the visitor's device, the hero still presents its headline, its sentence, and its primary action \u2014 the section does not collapse to empty space.",
+      "source": "pm",
+      "why": "Marked `test`, it commissions a state the build cannot produce once the instrument is settled. Both other lanes delegated the technology to me (PM's A2/A3; UX: 'The architect owns whether the hero instrument is WebGL or an SVG projection'), and my ruling is the SVG projection \u2014 `design/src/lib.mjs:383-425` is a closed-form isometric projection with no WebGL, no dependency and no animation. An inline `<svg>` whose geometry is computed once at module load has no device-conditional render path: it cannot fail on a low-end phone, and there is nothing to mock to make the row bite. The only real failure is a JS throw, and that is UX's AC-U12 route-`ErrorBoundary` row \u2014 which today does not exist for `/` at all.",
+      "proposal": "Convert AC-L12 into a build constraint plus the boundary row. Constraint: the hero instrument is inline SVG, prop-free and static from first paint, with no WebGL and no new runtime dependency \u2014 enforced by the `?raw` viewBox set-equality scan above plus a `no-restricted-imports` ban on three/WebGL packages inside `pages/landing/**`. Row: keep UX's AC-U12 as the one degraded state for the hero. This also answers A3 affirmatively: first paint gains about forty lines of arithmetic, not a dependency.",
+      "kind": "technical",
+      "conflict_id": "01d33a0bebb8cf79d6ca6354adac5d8a909d6eaf80e4b66876a149eb5f205dbc",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A signed-in trader loading `/` is offered a way back to their desk in place of the create-an-account action.",
+      "source": "pm",
+      "why": "'In place of' is the part that cannot stand; the choice among P-8's (a)/(b)/(c) is the owner's and I do not touch it. `/` is the EAGER index route (`app.tsx:36-39,148`) and the who-am-I read is deliberately non-blocking \u2014 the shipped pattern is `DefaultTickerRedirect` holding behind a fill while `!ready` (`app.tsx:127-131`). A landing that REPLACES its create-an-account action with a resume action therefore either paints the anonymous action first and swaps it when `ready` flips \u2014 the visible-swap failure UX's own section 3 rejects for the wall ('Showing the wall first and swapping it for content would be a false refusal flash') \u2014 or holds the acquisition page's primary action empty until the session read resolves, on the one page whose whole point is the first click. It also breaks UX's matrix, which has the landing's loading row as 'n/a-by-construction'.",
+      "proposal": "If (c) is ruled: the resume affordance is ADDITIVE, not a replacement. The anonymous composition paints unconditionally at first paint; a secondary 'back to your last symbol' action appears only once `ready && authenticated`, and the primary CTA never changes identity. Add a `ready === false` row to the landing's state matrix. No new data edge is created \u2014 `useAuth()` is the app-wide read that already fires once at `app.tsx:197`, so PM's P-4 and UX's zero-network assumption both survive.",
+      "kind": "technical",
+      "conflict_id": "9651943b3e8d63e35082c6b03b389417e73760014eed057bfc49ac1b59b10d82",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Already structural via `lazyRoute`; the new 404 must not be the one route that bypasses it.",
+      "source": "architect",
+      "why": "Self-revision \u2014 I withdraw this, and UX is right. `lazyRoute` (`app.tsx:112-116`) wraps every route element EXCEPT the one this feature is about: `app.tsx:148` is the bare eager index, `<Route index element={<Landing />} />`. And there is no boundary above it \u2014 `main.tsx:16-26` wraps `<App/>` in `StrictMode` plus `BrowserRouter` and nothing else. So a throw inside the Landing today unmounts the entire React tree, not just the outlet; the nav goes with it and the document blanks. My R1 asserted a property the route table does not have, on the exact surface the feature ships.",
+      "proposal": "Adopt UX's fix as the architecture rule and generalise it: EVERY route element in the table is wrapped in an ErrorBoundary \u2014 `lazyRoute` for the lazy ones, a bare route-variant `ErrorBoundary` for the eager index, with no `Suspense` (which would reintroduce the chunk wait the eager route exists to avoid). Pin it with a `?raw` scan of `app.tsx` asserting that every route element in the shell group is either `lazyRoute(...)` or wrapped in `ErrorBoundary`, so a future route added without a boundary red-builds instead of being noticed.",
+      "kind": "technical",
+      "conflict_id": "e1837901790eeef6c262f5a3fec89843ac432a544218aa327a37560a3fda6946",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "an ESLint `no-restricted-imports` deny-list scoped to `apps/dashboard/src/app/pages/{landing,blog,methodology,not-found}/**` banning `@convexa/api`, `@/pages/*` (other pages), `@/features/trading/*` and `@/features/auth/*`.",
+      "source": "architect",
+      "why": "Self-revision \u2014 the `@/features/auth/*` arm is too broad and would red-build both other lanes' rulings. UX's AC-U9 requires the private-testing sentence to render from the imported `AUTH_COPY.signup.signupsClosed` rather than a retyped literal; PM's P-7 requires that declaration at the point of every create-an-account affordance, including the landing's CTA band; and UX replaces the band's 'Create an account' with 'Sign in', which needs the dialog opener. Those live at `features/auth/copy.ts` and `features/auth/AuthDialogProvider.tsx`. Banning the folder would force the landing to retype the string \u2014 the exact three-literal drift UX's risk 8 names. I banned a folder when the invariant is about a capability.",
+      "proposal": "Narrow the arm from a folder to a purpose: ban `@convexa/api`, `@/pages/*`, `@/features/trading/*`, and the auth module that owns the TRANSPORT (`features/auth/AuthContext`), while explicitly allowing `features/auth/copy` (a pure string module with no functions that fetch) and `features/auth/AuthDialogProvider` (an opener). The zero-data-edge invariant keeps its runtime arm regardless \u2014 the strict fetch harness (`landing.spec.tsx:57-63`) throws on any non-auth call and `:137-141` asserts zero EventSources \u2014 and the deny-list keeps its forward-proofing on the modules that can actually reach the network. Probe the rule with a fixture import so it is proven non-vacuous.",
+      "kind": "technical",
+      "conflict_id": "7c81de201e715ac58993a2afb302277efda365723d8196d04536c47969e7830c",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "With `live: false, liveMid: null` the instrument paints a genuinely static frame with no tape claim.",
+      "source": "architect",
+      "why": "Self-revision \u2014 I withdraw the word 'static'. The tape half holds and `paintStep.spec.ts:92-114` mutation-proves it: with `live: false` the trail, particles, sweep, well and drift all stop. But those two flags do not gate everything that moves or everything that speaks. `paintStep.ts:850-858` paints a phosphor grain whose 18 dot positions are driven by `now` under `if (!reduced && !calm)` \u2014 no `m.live` term \u2014 and `calm` is derived from `variant`, not settable (`StructureFieldCanvas.tsx:81-83`), with the default being `variant = 'lab'` (`:64`). At that default the same code path also paints the lab chrome INTO the canvas: 'demo as-of / synthetic demo / probe strikes' (`paintStep.ts:827-837`, via `relAge`'s `asOfSec == null` branch at `:182-184`) and a `TAPE OFF` pill filled with `surfaces.warning` (`:839-846`). A warning-coloured 'TAPE OFF' on a marketing sample is precisely the degrade treatment my own section 7.6 forbids, and it is invisible to every DOM assertion in this feature.",
+      "proposal": "The flags are necessary, not sufficient. The binding statement becomes: the landing mounts `StructureFieldCanvas` with `variant='ticker'` AND a model carrying `live: false, liveMid: null, source: 'demo', asOfSec: null`. `variant='ticker'` is the single lever \u2014 it is what sets `calm` (killing the grain) and `embedded` (suppressing the title strip and the tape pill). Assert the props in the landing spec, not the DOM, because canvas pixels are outside the reach of both a Testing Library query and a CSS-keyframe scan. This also removes the need for any authored panel-head copy inside the instrument.",
+      "kind": "technical",
+      "conflict_id": "5cb7604cabe7fa8d3767f30f9acd767be77bcdcc6d58f226344063a023caef1e",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "**(b) Shrink to a line, keep the mechanism** \u2014 a button styled as a line action plus the existing polite in-place acknowledgement (`Landing.tsx:228,240-247`).",
+      "source": "architect",
+      "why": "The sentence the affordance would sit under is false. Read-only brokerage connect SHIPPED \u2014 `OPEN_THREADS \u00a77z:1044-1049` records it as SHIPPED + ARCHIVED 2026-08-05, per-user credentials via Settings, and `features/trading/positions/PortfolioPanel.tsx:181-195` renders a trader-visible \"Broker\" tab today. UX found this independently. So (b) preserves a control that enrols a visitor into a notification about a capability that already exists, records nothing, and promises a message nobody can send. My R1 P-6 is also wrong in the same direction and I am correcting it here: I ruled that \"the landing may **state** that brokerage connect (read-only) is coming\" \u2014 it may not, because it is not coming, it is here. Keeping the mechanism to spare a test a new subject inverts the order: the test's subject is being removed because the product claim is false.",
+      "proposal": "The landing says nothing about brokerage connect: no \"coming\", no notify control, no acknowledgement. Ruling on the open PM question UX routed to me (\"Whether the landing should instead *advertise* the shipped read-only broker is a PM call \u2192 R2\"): it does not advertise it either \u2014 it sits behind a sign-in the visitor cannot obtain while sign-ups are closed and it needs the visitor's own broker credentials, so on the acquisition surface it is a second dead-end funnel. The accessibility check gets its new subject from the primary CTA's changed destination, which it needs anyway. The owner can overrule this cheaply; if they do, the only honest form is that read-only brokerage connect ships today for signed-in accounts \u2014 never that it is coming.",
+      "kind": "technical",
+      "conflict_id": "0dd564b192f5aec3aee08f36024d997c2d31519f917f8ace279dd2985cb80c0f",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`/` renders exactly seven sections in the order hero \u00b7 field \u00b7 score \u00b7 AI read \u00b7 register+trust \u00b7 CTA band \u00b7 footer.",
+      "source": "ux",
+      "why": "Seven is only reachable by counting the footer as a landing section, and the architect's mechanism removes it from the landing entirely: \"mount `<Footer/>` once in `AppShell`, immediately after the `<main>` Box (`AppShell.tsx:96-109`), and delete the render from `Landing.tsx:238`\". With the desk strip cut \u2014 which all three of us rule \u2014 the design's landing carries six sections: `landing.html` 57 (hero), 117 (field), 150 (score), 166 (AI read), 183 (register, which contains the three trust cards at :185-187), 190 (CTA band). This matters because the inventory is the deliverable and both of us marked it `test`: a check written to UX's seven passes only if the footer stays page-owned, which undoes the one mechanism that makes \"footer on every full page\" structural rather than a checklist.",
+      "proposal": "The landing's inventory is six sections in the design's order \u2014 hero, structure field, triage score, AI read, \"Numbers say where they came from\" (which contains the three trust cards), the CTA band \u2014 and no seventh. The footer is chrome and is asserted by its own criterion across every full page, not as landing section seven. One number, stated once, so the same check cannot pass on one lane's reading and fail on the other's.",
+      "kind": "technical",
+      "conflict_id": "7f26ee4c134a12db3a04650959ee008c9f1f060b1246c65267244f8423b9e318",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Loading `/` presents exactly the seven design sections, in the design's order \u2014 hero, structure field, triage score, AI read, \"Numbers say where they came from\", the three trust cards, the CTA band \u2014 and no eighth section.",
+      "source": "pm",
+      "why": "Self-revision. My own count is wrong, from the opposite direction to UX's. The three trust cards are not a section: they sit inside the register section at `landing.html:183-188`, under the \"Numbers say where they came from\" heading and its methodology action. I reached seven by splitting a section the design does not split; UX reached seven by counting the footer. Mine is the one marked ship-blocking, so mine is the one a build would have been written against \u2014 it would have forced a deviation from the design source in order to pass an AC that claims to enforce the design source. I withdraw the partition; the requirement (the inventory is the deliverable, no extra section) stands unchanged.",
+      "proposal": "AC-L1 reads: loading `/` presents exactly the six design sections, in the design's order \u2014 hero, structure field, triage score, AI read, \"Numbers say where they came from\", the CTA band \u2014 and no seventh section. The three trust promises keep their own criterion (AC-L7) as named content of the register section rather than as a section of their own.",
+      "kind": "technical",
+      "conflict_id": "ff779bdd4941867a8dcca8c559085f2c49c95cc36ee91b4ad978ff608251e522",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "A signed-in trader loading `/` is offered a way back to their desk in place of the create-an-account action.",
+      "source": "pm",
+      "why": "Self-revision, and the loudest thing I flagged in R1. I ruled option (c) without pricing what it costs the surface it lands on. Two positions I had not seen price it: UX records the landing's consumed fields as \"none\" and its loading state as \"n/a-by-construction\", and the architect's data flow makes the landing part of a zero-edge tree whose only session read is the auth wall. A resume affordance puts a session-dependent branch on the one eager, highest-traffic route, so the primary action region must either wait on the who-am-I read or show the wrong action and swap it \u2014 the same false-flash shape the architect protects against on the wall. What it buys is one navigation click for an invited tester, and the persistent top nav already carries Ticker on `/` (`app.tsx:145-148` mounts the landing inside the shell precisely so the nav shows there). I cannot defend that trade.",
+      "proposal": "Drop AC-L14 from the acceptance surface and withdraw the (c) ruling in P-8. Option (a) \u2014 today's behavior, `/` is the landing for everyone and reads no session fact \u2014 stands at zero cost, and it agrees with the architect's \u00a70.1. Restoring condition recorded so a later session does not re-derive it: if the owner wants a resume path, it belongs on a surface that already knows the session (the nav or the command palette), never in the landing's CTA region.",
+      "kind": "technical",
+      "conflict_id": "9e2d7b7b011cc5abe225eb5890c10f611cd92c6d334421958a46ee2a6f7202c2",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "The footer renders on all four full pages (landing, blog, methodology, 404) and carries the wordmark, `How Convexa works`, `Blog \u2014 how we read structure`, `Lab \u2014 instrument demos`, the disclaimer and the copyright.",
+      "source": "ux",
+      "why": "Four pages contradicts the BRIEF's own observed-when \u2014 \"Lab and Blog are reachable from the footer on every full page\" \u2014 and canon rule 19, which makes the footer the ONLY route to Lab and Blog now that both are out of the nav (`Footer.tsx:48-58`). Under the four-page version, a trader on the ticker desk, scanner, positions, alerts, settings or lab has no route to either surface at all, which is the state that ships today and that this feature exists to fix. The design source sides with the BRIEF, not with the AC: the footer block is present on nine full pages (`design/site/{landing,desk,scanner,positions,alerts,settings,blog,methodology,lab}.html` \u2014 I read `lab.html:118-129` and the eight `footer()` call sites in `design/src/screens/` this round). The architect's single mount point delivers all of them at once; a four-page criterion re-introduces the per-page list someone forgets.",
+      "proposal": "The criterion reads: from every full page a visitor can reach \u2014 landing, ticker, scanner, positions, alerts, settings, blog, methodology, lab and the 404 \u2014 the footer offers Blog, Lab and \"How Convexa works\" and carries the simulated / read-only-brokerage / not-investment-advice disclaimer. If the objection is the desk's visual baselines, state it as a cost to be re-accepted (the architect already names it as a two-stage human receipt), not as a narrower acceptance criterion \u2014 narrowing the AC hides the cost instead of paying it.",
+      "kind": "technical",
+      "conflict_id": "0d322f719982ba89fe78b523bb4eaf6b9182fd746e851ad4050694fcbcedf747",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "an ESLint `no-restricted-imports` deny-list scoped to `apps/dashboard/src/app/pages/{landing,blog,methodology,not-found}/**` banning `@convexa/api`, `@/pages/*` (other pages), `@/features/trading/*` and `@/features/auth/*`.",
+      "source": "architect",
+      "why": "As scoped, this guard forbids the landing from reading the one string P-7 depends on. UX's AC-U9 requires \"The private-testing sentence renders from the imported `AUTH_COPY.signup.signupsClosed`, not a retyped literal.\" \u2014 and that string lives at `apps/dashboard/src/app/features/auth/copy.ts:28`, inside the banned path. The guard and the criterion cannot both be satisfied, and the cheap resolution is the bad one: retype the sentence on the landing and now three surfaces assert the access policy in three literals that drift, so reopening sign-ups fixes two of them. The guard's intent is right \u2014 the landing must reach no auth *behavior*. Copy is not behavior.",
+      "proposal": "Keep the ban on auth behavior and give the closed-signups sentence a home that both the landing and the auth surfaces may read, or exempt the copy module from the deny-list by name. Whichever architecture picks, the product requirement is one sentence with one source, so that the day the owner sets sign-ups open, every surface that states the policy changes together. If neither is possible, say so at R3 and I will re-cut P-7's landing arm rather than accept a second copy of the sentence.",
+      "kind": "technical",
+      "conflict_id": "0c05cac4d407e5749f9900d0b27c9d676a7506792baa471bbb579dbae4d0f71b",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`/blog` renders one published card plus two cards tagged `Draft \u00b7 not yet published`; the draft cards expose no `href`, are not focusable as links, and no chip, tooltip or link elsewhere in the app points at a draft.",
+      "source": "ux",
+      "why": "The mechanism is right and I accept every part of it; the scope decision underneath it is not mine or UX's to make. The two named slots are exactly the two explanations the BRIEF says this feature exists to deliver \u2014 \"methodology and blog carry the 'two clocks' and 'a no-trade read is a complete answer' explanations the desk's chips point at\". So the feature ships the index that names both and writes neither, and UX has already had to relocate the no-trade explanation into methodology because the post that would carry it does not exist. Two permanently visible \"not yet published\" cards are a public content commitment nobody has been assigned to keep: honest on the day it ships, and in four months it reads as an abandoned product, with no test that will ever notice. That is a priority and value call about what we promise strangers, which is the owner's.",
+      "proposal": "Owner rules one of three: (i) ship the index with the one published read and no draft slots \u2014 honest, ages well, deviates from the design source in one place; (ii) ship the two slots as drafts, recorded in the ledger as a content commitment with an owner-named expiry date after which they are removed rather than left standing; (iii) write the two posts this phase, which moves the effort off M. My recommendation is (i) unless the owner intends to write them soon. Whichever way it goes, UX's and the architect's mechanism \u2014 no destination, not focusable, nothing anywhere in the app points at a draft \u2014 is the right one and stays.",
+      "kind": "product",
+      "conflict_id": "9c991a7b0b97b93f03d0476696d79a9d8e6bbd7f4860a620ae4efd1724a9a03d",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "No element on any of the six surfaces renders a live chip, a live dot, a pulse, a beam, a particle, or the word \"live\" applied to itself.",
+      "source": "ux",
+      "why": "Marked `test` and scoped to all six surfaces, and methodology is one of the six. Methodology's job in this feature is to teach the two data clocks and to define the vocabulary \u2014 it cannot be written without the word, and neither can the landing's own field bullet that UX keeps verbatim (\"The mid is tape \u2014 it pulses only while the stream is genuinely live\"). \"Applied to itself\" is a distinction a careful reader can make and a structural check cannot. Under `[structural-over-prose-enforcement]` this becomes either a word scan that red-builds the education the BRIEF names as this feature's decision impact, or a check quietly narrowed at build time until it asserts nothing. My own AC-L5 has the same shape but is scoped to `/` only, where nothing needs the word; hers reaches the one page that does.",
+      "proposal": "Split it into two criteria. (a) No live chip, live dot, pulse, beam or particle renders on any of the six surfaces \u2014 a negative-space invariant, automate it, and prove it bites. (b) No surface in this feature describes its own displayed figures as live, current, or as-of \u2014 this is the honesty claim, it is about what a sentence means rather than which words it contains, and it is verified by review of the copy. Prose that defines what \"live\" means is explicitly permitted, and methodology is where it belongs.",
+      "kind": "technical",
+      "conflict_id": "206a60b3cddbb9a0240cf6d320f4664e281bc5ab4e859b2fd0e75353fb8376f5",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**PM's \"eleven sections\" (\u00a70.3) is a miscount, not a plan to add an eleventh.**",
+      "source": "architect",
+      "why": "No lane in this council said eleven. The BRIEF did \u2014 \"`methodology.html` (eleven sections)\" \u2014 and my R1 \u00a70k ruled ten against the artboard before I had read either of your positions (\"The count to pin is the artboard's, not the BRIEF's.\"). Attributing it to PM leaves a scope worry standing in the round \u2014 an eleventh section of copy nobody has written, and an effort estimate no longer M \u2014 that no lane proposed. All three of us independently landed on ten.",
+      "proposal": "Attribute the eleven to the BRIEF, where it is a defect worth recording alongside the other three the round found in it, and record that all three lanes independently counted ten. No eleventh section is intended by anyone; the effort estimate is unaffected.",
+      "kind": "technical",
+      "conflict_id": "d0bc5fe85b7ac5038d5da16db225c218c7096870ad5d097adfee9d96b2350a56",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Ruling: the landing may **state** that brokerage connect (read-only) is coming; it may not offer an action that pretends to enrol you.",
+      "source": "pm",
+      "why": "Read-only brokerage connect is not coming \u2014 it shipped. `features/auth/BrokerageSection.tsx` is a live Settings section that takes an app key and secret and renders connected / replace / disconnect states, and `features/trading/positions/PortfolioPanel.tsx:8,190-195` mounts a trader-visible **Broker** tab over `BrokerTabPanel`, whose header comment reads \"the read-only broker surface, whose ONLY network calls are the gated `/api/broker/*` reads\". The product's own shipped disclaimer already speaks in the present tense \u2014 `pages/methodology/copy.ts:12` \"A connected brokerage is read-only\". So this ruling cuts the enrolment control (right) while preserving a sentence the codebase contradicts (wrong), on the same screen as \"Snapshot, never live\". A false tense is the same class of failure as a false live dot; it is just quieter.",
+      "proposal": "Delete the sentence together with the affordance. If the landing says anything about brokerage at all, it says what is true today in the present tense (read-only, connected in Settings, never places an order). Whether it says anything is a PM/owner call \u2014 but \"is coming\" is not available as a wording.",
+      "kind": "technical",
+      "conflict_id": "78ecd37df9b527c41b74870dfbf28fee30d1b3733ba5e4d668b702678f0e5235",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**(b) Shrink to a line, keep the mechanism** \u2014 a button styled as a line action plus the existing polite in-place acknowledgement (`Landing.tsx:228,240-247`).",
+      "source": "architect",
+      "why": "The mechanism is the defect, not its size. The acknowledgement literal is `Landing.tsx:46` \u2014 \"Thanks \u2014 we'll let you know when brokerage connect is live.\" It records nothing, addresses nothing, promises a message no one can send, and says \"when \u2026 is live\" about a capability that is already live (see my conflict on PM's P-6). Restyling the control as a line action changes the type size of the untruth, not the untruth. The a11y spec that presses `waitlist-button` (`accessibility.spec.ts:115-121`) is a reason to give that spec a new subject, not a reason to keep the subject alive.",
+      "proposal": "Delete the button, the Snackbar and the copy. Rewrite A11Y-B2 against the two CTA-band actions that survive (`Open the Ticker` primary, `Sign in` secondary) \u2014 a selector-and-subject change of the same size as (b)'s selector change, with no claim to defend afterwards.",
+      "kind": "technical",
+      "conflict_id": "96c5f81b7d9b9b4a23e3f9731e65b190d13ec218f87e4e283e40a0faa53de46c",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "An auth transport fault degrades to anonymous (`AuthContext`), so the wall shows; that is correct and must not become an error state.",
+      "source": "architect",
+      "why": "Degrading the *route decision* to anonymous is correct; degrading the *sentence* is not. With `subsystemDegraded === true` the shipped wall renders `Sign in to open {surface}` (`RequireAuth.tsx:75`) and `Private testing \u2014 invited accounts only.` (`:84`) to a trader who may well be signed in \u2014 an assertion about the visitor's identity built on a read that failed. The provider itself says the flag exists for exactly this case: `AuthContext.tsx:10-12`, \"a who-am-I transport fault resolves to anonymous + sets a transient `subsystemDegraded` flag. That flag drives ONLY the gated-action \"couldn't reach sign-in\" copy\". A route-level wall is the gated action. I am not asking for a new state peer to the wall; I am asking the wall to stop asserting a fact it does not have.",
+      "proposal": "Keep the wall as the resolution (no new route state, no error page). In the degraded branch add the shipped literal \"Couldn't reach sign-in right now. Please try again in a moment.\" (`features/auth/copy.ts:33,46,197`) plus a Retry calling `refresh()`, and suppress the identity assertion in that branch only. AC-U29 stands as written.",
+      "kind": "technical",
+      "conflict_id": "4bff0a56af82983b2d999efca68c4f58684e7d350b08b9672acdc49fb3073d56",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "It is correct today (\u00a77.5), and a redesign that adds a skeleton to \"improve\" the wall would break it in a way no existing test catches.",
+      "source": "architect",
+      "why": "The app already does the thing this forbids, two routes away and on the identical fact: `app.tsx:127-131`'s `DefaultTickerRedirect` renders `<RouteFallback />` while `!ready`, with the comment \"Waits for the ONE non-blocking who-am-I read (`ready`) behind the quiet route fill\". So a quiet fill on `!ready` is this codebase's own established answer, not an improvement someone invented. `null` is not a hold a person can perceive: on a hard load of `/scanner` a signed-in trader gets an empty region under a mounted nav with nothing saying anything is happening \u2014 which is precisely what PM's AC-A3 forbids (\"it never leaves the visitor on an indefinite blank\"). What must not ship is a *signed-out-looking* placeholder; a neutral fill that makes no auth claim is not one.",
+      "proposal": "While `!ready`, render the same `RouteFallback` the redirect already uses \u2014 not the wall, not a skeleton *of* the wall, not `null`. AC-U28 stands: \"never the wall, never `null`.\"",
+      "kind": "technical",
+      "conflict_id": "4a4bb05c964832fcfa3b76364c575dd45b199807f0b22fe7ec951218353e0e96",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`source: 'demo'` \u2014 an existing member of the model's closed three-member source vocabulary, and the canvas already branches on it (`paintStep.ts:832`).",
+      "source": "architect",
+      "why": "That branch does not only gate motion \u2014 it *paints copy*, and the copy is not mine and not true here. `paintStep.ts:824` opens `if (!embedded)`, and inside it `:830-837` paints `relAge(m.asOfSec, now)` which returns the literal `demo as-of` when `asOfSec` is null (`:183`), then `synthetic demo` (`:833`), then at `:839-842` a warning-toned `TAPE OFF` pill because `m.live === false`. On `/` that is three user-facing strings at once: a second vocabulary for the claim my footnote already makes, an as-of on a panel AC-U4 says carries none, and an offline/degraded assertion the architect's own \u00a77.6 forbids for frozen samples (\"they may never render a pause marker, a dimmed 'offline' treatment\"). The code says so itself at `:823`: \"Title strip + tape pill \u2014 lab chrome only (ticker Widget owns honesty copy).\"",
+      "proposal": "Mount the canvas `embedded` on the landing so it paints no chrome of its own, and let the landing's panel header carry `Structure field` plus `Illustrative sample \u2014 not a live read and not a recorded session.` Keep `source: 'demo'`, `live: false`, `liveMid: null` \u2014 they gate the motion, which is what they are for.",
+      "kind": "technical",
+      "conflict_id": "80f4f7b03ca17041f3cdf91cad732a6d8dd254ba246f0f446c03e9fc983b9515",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Mitigation: a **component-level** `React.lazy` boundary for the field section only, inside the still-eager Landing.",
+      "source": "architect",
+      "why": "That creates a loading state in the middle of the acquisition page \u2014 the one state my matrix declares n/a-by-construction, and the one state no copy exists for. A Suspense fallback there resolves to one of three bad things: a spinner (a second moving element on a page whose motion budget is the hero draw), a skeleton shimmer (a data-signal keyframe, which fails canon's Motion predicate (a) because there is no stream to gate it), or a zero-height box (layout shift directly under the H1 on first paint). The bundle argument is real; the unstated state is mine to answer before the boundary lands, not after.",
+      "proposal": "If the boundary lands, its fallback is a reserved-height quiet panel carrying the section's own `Structure field` title and the sample footnote \u2014 no spinner, no shimmer, no height collapse \u2014 and the landing gains a `loading` row in the state matrix that I will write. If that fallback is unacceptable, import the field eagerly and pay the bytes.",
+      "kind": "technical",
+      "conflict_id": "656c4d95fd5bc1622db235ecef6457f5f133ba04a4db83be12081ca75dc5e41d",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Ruling: either the table is complete, or it says in one clause that it is a selection.",
+      "source": "pm",
+      "why": "Canon rule 24 is not a list this page may sample: \"**nine members** \u2026 Distinct literals, never synonyms; rendered as Sans text, never as a figure; a **tenth** member is an **Amendments** event\" (`DESIGN_SYSTEM.md:179`). A \"this is a selection\" clause on the one page that defines the closed vocabulary teaches the trader that the set is open \u2014 the exact inversion the rule exists to prevent, and the reason the canon was widened from six to nine on 2026-09-03. The architect reached nine independently (\u00a74.5). Separately, neither position addresses the second half of rule 24: `methodology.mjs:60` renders every literal `class=\"mono\"`, i.e. in the figure register, which the rule forbids.",
+      "proposal": "Nine rows, nine distinct definitions, no synonyms, pinned by set-equality to the canon's members so a tenth red-builds the page that documents it; every literal rendered Sans, never mono, never as a figure. AC-U20 stands; delete the \"selection\" escape hatch.",
+      "kind": "technical",
+      "conflict_id": "d1a94c997e0b4b76a1574cc0e40947efde72676491a34a4295c100a2b51d7894",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`/methodology` names no product surface a visitor cannot reach from the running app \u2014 in particular it contains no pointer to a \"what's sent\" screen.",
+      "source": "pm",
+      "why": "The general rule is right and I adopt it; the particular is false. \"What's sent to the AI\" is shipped and reachable: `pages/ticker/widgets/ai-rec/copy.ts:21` is the button label, rendered at `AnalysisSurface.tsx:381-384` and exercised at `AnalysisSurface.spec.tsx:229` (`getByRole('button', { name: 'What's sent to the AI' })`), with a second entry point at `features/auth/RiskInputsSection.tsx:116` (\"View what's sent\"). The design does not link it either \u2014 `methodology.mjs:51` names it in prose inside a muted paragraph. Cutting it withdraws a true sentence about the most trust-bearing behaviour on the page, on the mistaken premise that the surface does not exist.",
+      "proposal": "Keep the phrase, name where it lives (the AI read's full-analysis drawer on a ticker, and Settings \u2192 Risk inputs), and do not render it as a link to a route \u2014 a route link would 404, which is the real hazard AC-M5 is reaching for. Reserve the cut for `persona`, `flows` and `operator`, which genuinely are documentation.",
+      "kind": "technical",
+      "conflict_id": "22f6ae74e81233b9f0d086228449f97231b82d0f6846b16f37a3c8383a98952a",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "| **AC-L11** | S7 | With JavaScript disabled, loading `/` shows a readable line naming Convexa and a working link to a document that renders without JavaScript. Today it shows a blank page. | review |",
+      "source": "pm",
+      "why": "I accept the defect and want the fix; the mark is wrong and the mark is my column. A `<noscript>` block is invisible in every normal pass \u2014 nobody reviews the acquisition page with JavaScript off \u2014 so its silent removal by any future build or template change is unobservable. That is the textbook `test` side of `spire-tech-risk-based-verify` (invariant, negative space, silently regressing) and the opposite of the `review` side (visible, intentional copy). Marked `review`, this criterion is checked exactly once, at build, and never again.",
+      "proposal": "`Verify by: test` \u2014 assert the served `index.html` contains a `<noscript>` whose text names Convexa and whose link resolves to a document that renders without the module bundle. The copy inside it is mine to write.",
+      "kind": "technical",
+      "conflict_id": "bc0fe3d9d902fbe12cb45dd047309480aca2ecaab520b66118f4b16203e9b98c",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "AC-M2 is `review` deliberately: the fact being checked is agreement between a sentence and an engine constant, and `apps/api` is frozen this phase \u2014 an automated cross-check would either import the backend or assert a hard-coded number against another hard-coded number, which proves nothing.",
+      "source": "pm",
+      "why": "Then the page must not assert the numbers. `40 / 25 / 25 / 10 / 6` on a public methodology page is five claims with no vouching mechanism the moment the reviewer walks away; the architect names the same gap and files it as debt (his risk 6), and PM's own risk 4 says this page is where this feature can do real harm. \"Frozen this phase\" is not the horizon that matters \u2014 `[score-change-is-deliberate-and-measured]` explicitly contemplates the score moving. And the third option is available: a test does not have to import the backend, it can read the engine source from disk the way this repo's `?raw` source scans already read app source, and fail when a constant moves. This is the same refusal I made against \"69 tracked names\" in my own R1; I cannot apply it to the landing and waive it on the trust page.",
+      "proposal": "Keep `review` for the wording of the section, and add one `test` that reads the engine's score constants from source and asserts the table's caps equal them, with a mutation proof. If that mechanism is refused, drop the Max column and state each component without a number (the architect's own \u00a74.6 fallback). I will not sign copy that asserts five engine constants nothing checks.",
+      "kind": "technical",
+      "conflict_id": "5b3ba16881db0cb753a07114a50ad6f82a5d3bcd5c70c105af7d8add94e5de03",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "| **AC-L14** | S8 | A signed-in trader loading `/` is offered a way back to their desk in place of the create-an-account action. (Blocked on P-8 if the owner rules otherwise.) | test |",
+      "source": "pm",
+      "why": "Two copy problems, and I am not disputing P-8's option (c) itself. (1) The affordance it swaps does not exist in the composition my lane ruled: with sign-ups closed, the CTA band's secondary is `Sign in` plus the imported `New sign-ups are closed while Convexa is in private testing.` (`features/auth/copy.ts:28`; my AC-U9 / AC-U30, PM's own P-7). \"In place of the create-an-account action\" specifies a replacement for something already gone. (2) It makes the CTA band auth-dependent without naming the third state: `useAuth().ready` is false on first paint (the provider renders children immediately, `AuthContext.tsx:8-9`), so as written the band paints one action and then visibly swaps it \u2014 the biggest button on the acquisition surface changing identity after the fact, the same claim-then-correction shape canon ruling 1 removed from the connection chip.",
+      "proposal": "If the owner rules P-8(c): the band renders the anonymous composition until `ready` resolves; the resume affordance appears only as the **secondary** action; the primary (`Open the Ticker`) never changes identity or destination. Re-word the criterion as \"in place of the sign-in action\", and I will write both strings so there is one author.",
+      "kind": "technical",
+      "conflict_id": "e0e1900519dbbf6cc051ab5cf921307b7e7480860220dfc90126a347c8d85593",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Across the six surfaces exactly one CSS animation is invoked \u2014 the `HeroCurve` draw; under `prefers-reduced-motion` it renders as the static drawn frame.",
+      "source": "ux",
+      "why": "Self-revision \u2014 I cannot defend \"exactly one\" now that the route-loading state is in scope. The shipped fill is `<CircularProgress size={24} color=\"inherit\" aria-label=\"Loading page\" />` (`app.tsx:99-108`), which spins; the design's own 404 artboard keeps a spinner (`dialogs.mjs:157`, `animation: spin 0.9s linear infinite`); and PM's AC-N4 and my AC-U26 both keep a named loading state. Canon's Motion row governs the one orchestrated moment and the data-signal class \u2014 it does not claim a chrome progress indicator is either. My AC was stricter than the canon and false against the code, and it would have red-built a shipped component to satisfy a sentence I wrote.",
+      "proposal": "Replace AC-U13 with: across the six surfaces there is **no data-signal keyframe** (no pulse, dot, beam, particle, drift, trail or shimmer) and **no second orchestrated moment**; the `HeroCurve` draw is the one orchestrated moment and renders drawn under `prefers-reduced-motion`; the shared route fill's indeterminate progress is chrome, not a data signal, and is the only other moving element on any of the six. Verify by `test`.",
+      "kind": "technical",
+      "conflict_id": "09f566164a626d2540022de5019137d2cf411a0317035cd4c1069e405c5295f0",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "The footer renders on all four full pages (landing, blog, methodology, 404) and carries the wordmark, `How Convexa works`, `Blog \u2014 how we read structure`, `Lab \u2014 instrument demos`, the disclaimer and the copyright.",
+      "source": "ux",
+      "why": "Self-revision \u2014 four pages is the wrong scope and I withdraw it. Canon rule 19 moved Lab and Blog into the footer as their **only** home; scoped to four pages, they are unreachable from the seven in-shell pages a signed-in trader actually lives on (`Footer.tsx` has exactly one product importer today, `Landing.tsx:19,238`, verified). The design carries `footer()` on every full screen including the desk (`desk.mjs:438`), and PM's AC-F1 names ten surfaces. My scope would have shipped rule 19 still unmet on the surface the trader uses most, and called it done.",
+      "proposal": "Adopt the architect's single mount in `AppShell` after `<main>` (\u00a72.6) and PM's ten-surface list. AC-U31 becomes: the footer renders once per full page on every in-shell route including the desk and the 404, carrying the wordmark, the three links, the disclaimer and the copyright. I accept the desk footer and the visual-baseline re-acceptance it costs; my only requirement is that it sits below the instrument and that the landing stops rendering a second `<main>` (`Landing.tsx:61`).",
+      "kind": "technical",
+      "conflict_id": "0b1ff840f52a4c0383c25ecd9393e13c14168f2987551797b1f0deac2b5fd0ad",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "UX: does the design's CTA-band radial wash ship? `landing.mjs:116` uses `radial-gradient(60% 120% at 90% 10%, var(--amber-tint), transparent 60%)`, and `landing-structure.spec.tsx:117-123` enforces ZERO `radial-gradient` across `pages/landing/**` as negative space from the stage-2 hero-blob removal that the single-motion-moment graduation cites as evidence. My position is keep the scan and drop the wash. If you want the wash, it is an Amendments event plus a narrowed scan with a fresh mutation proof \u2014 not a test fix, and I will not let it land as one."
+    },
+    {
+      "from": "architect",
+      "ask": "UX: does the ticker desk get the footer? The design source says yes (`desk.mjs:438`) and PM's AC-F1 names the desk explicitly, but AC-U31 stops at four pages. I need one answer, because the mechanism differs: a single `AppShell` mount (structural, re-baselines the desk's committed visual snapshots) versus a route allow-list (no baseline churn, and canon rule 19 becomes a checklist someone forgets)."
+    },
+    {
+      "from": "architect",
+      "ask": "PM: does 'the 108 chromium e2e journeys are unchanged' mean the COUNT is unchanged or that they still PASS? `no-overflow.spec.ts`'s ROUTES table (`:394`) must gain `/blog`, `/methodology` and an unmatched path, and the loop is routes x schemes x widths \u2014 so this feature ADDS e2e tests. If the count is the constraint, the 404 and the two site pages go unchecked at four widths, and I would rather know that now than at the gate."
+    },
+    {
+      "from": "architect",
+      "ask": "UX: must the shared sample footnote ('Illustrative sample \u2014 not a live read and not a recorded session.') be legible in a screenshot of the instrument alone, or is DOM copy adjacent to the panel sufficient? It decides whether the label can be authored at all: with `variant='ticker'` the canvas paints no text, and anything painted INTO the canvas is outside the accessibility tree and outside the copy lane \u2014 it would be a change to `paintStep.ts`, i.e. a desk change."
+    },
+    {
+      "from": "pm",
+      "ask": "architect \u2014 with the footer mounted once in `AppShell`, do the 404 and the auth wall both inherit it? My AC-F1 includes the 404, and the wall is rendered by `RequireAuth` inside a shell route rather than by the page itself. If either renders above or outside the shell's main region, \"the footer is on every full page\" needs a second mount and stops being one mechanism."
+    },
+    {
+      "from": "pm",
+      "ask": "architect and ux together \u2014 where does the single closed-signups sentence live, given the landing may not import from the auth feature? I need one home both the landing and the auth surfaces read, so that reopening sign-ups is one edit and not three. If the answer is that no such home exists this phase, tell me at R3 and I will re-cut the landing arm of P-7 rather than accept a retyped literal."
+    },
+    {
+      "from": "pm",
+      "ask": "ux \u2014 your own risk 9 names it: at 393px the methodology index becomes a horizontal scroller with ten items and no visible affordance. My AC-M6 says a trader reaches \"Where the read is weak\" without scrolling through the preceding sections, and on a phone that scroller is the only route. What makes it discoverable and reachable by touch and by keyboard, or does the phone band need a different pattern?"
+    },
+    {
+      "from": "pm",
+      "ask": "architect \u2014 with the desk strip cut, `responsive-spec.mjs:28`'s Landing row still says \"desk strip scrolls\". Is that design artefact amended in this same change, or does it stay stale? A design source that outranks the SPEC by its own precedence rule, still describing a section we deliberately removed, is how the strip comes back in the successor phase with nobody realising it was ruled out."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: read-only brokerage connect has shipped (`features/auth/BrokerageSection.tsx`, and the Broker tab at `PortfolioPanel.tsx:190-195`). Does the landing mention it in the present tense, or say nothing about brokerage at all? Either is writable; \"coming\" is not."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: does `/` name the tracked-universe count at all? The design says \"the Scanner across 69 tracked names\" (`landing.mjs:117`) and 69 is true today in `apps/api/config/universe.json`, but the landing never reads that file \u2014 so: drop the number, or keep it and pin it with a test that reads `universe.json` and fails when the length moves?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: will `StructureFieldCanvas` mount `embedded` on `/`, so the canvas paints none of its own title strip, `demo as-of`, `synthetic demo` or `TAPE OFF` pill (`paintStep.ts:823-843`) and the panel header plus the sample footnote stay mine?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: will the score-strip and AI-read samples render their CTAs as non-focusable presentational elements rather than real `<button>`s? A picture of a CTA that lands in the tab order is an inert control on the acquisition page, and the feature's zero-waiver accessibility gate (PM's AC-G1, my AC-U33) is where that surfaces."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: if the owner rules P-8(c), what does `/` show between first paint and `ready` \u2014 the anonymous CTA band held until resolution, or something else? I need one answer to write one string, and the swap is visible on the page's biggest button."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: is `RouteFallback` in scope to gain the route name and the sub-300ms suppression (my AC-U26, PM's AC-N4), given it is shared by every lazy route \u2014 or does that land as a separate change so the 404 does not quietly become a redesign of the shell's loading behaviour?"
+    }
+  ],
+  "agree_count": {
+    "architect": 6,
+    "pm": 10,
+    "ux": 8
+  }
+}
