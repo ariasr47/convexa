@@ -53,6 +53,8 @@ function scanResponse(over: Partial<ScanResponse> = {}): ScanResponse {
       updated_at: 0,
     },
     view: {} as ScanResponse['view'],
+    // SPEC B4 — additive, required on the wire; 'live' is this suite's unchanged default.
+    market_data: 'live',
     ...over,
   };
 }

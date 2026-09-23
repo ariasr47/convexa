@@ -59,6 +59,14 @@ export const SCAN_COPY = {
   saveFailed: 'Could not save that view. Please try again.',
   sweepAbsent: "Sweep hasn't reported yet — showing the last known rows.",
   sweepBehind: (age: string) => `Sweep last ran ${age} ago — showing the last known rows.`,
+  /** no-vendor-production-posture F3: replaces `sweepBehind`/`sweepAbsent` whenever `/api/scan`
+   *  reports `market_data: "paused"` — a STANDING fact (the sweep is switched off, backend SPEC
+   *  B1), so this wins regardless of heartbeat freshness. `lastSweptOn` is the last completed
+   *  sweep's date ("Mon D"); omitted (never fabricated) when no completed sweep is on record. */
+  marketDataPaused: (lastSweptOn: string | null) =>
+    lastSweptOn
+      ? `Market data paused · showing the last board, from ${lastSweptOn}`
+      : 'Market data paused · showing the last board',
   /** Per-row structure freshness — never "live" / never bare "Updated" (spine #4). */
   updated: (rel: string) => `Structure as-of ${rel}`,
   /** Structure age for the desk strip (same phrasing as the per-row line). */

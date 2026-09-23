@@ -498,6 +498,9 @@ type PageOpts = {
   sweep?: { updated_at: number; sweep_last_completed: number | null; universe_size: number } | null;
   authenticated?: boolean;
   hold?: boolean; // keep the first read in flight so the skeleton stays visible
+  /** no-vendor-production-posture B4/F3: `/api/scan`'s top-level mode. Defaults `'live'` (unchanged
+   *  shipped behavior) — a test opts in to `'paused'` explicitly. */
+  marketData?: 'live' | 'paused';
 };
 
 function installScanBackend(opts: PageOpts = {}) {
@@ -517,6 +520,7 @@ function installScanBackend(opts: PageOpts = {}) {
       opts.sweep === undefined
         ? { updated_at: nowS, sweep_last_completed: nowS, universe_size: symbols.length }
         : opts.sweep,
+    market_data: opts.marketData ?? 'live',
   };
   vi.stubGlobal(
     'fetch',
@@ -620,6 +624,33 @@ describe('the four honest page states', () => {
       "Sweep hasn't reported yet — showing the last known rows.",
     );
     expect(screen.getAllByTestId('scan-row')).toHaveLength(2);
+  });
+
+  // no-vendor-production-posture AC-7.
+  it('AC-7: paused replaces the cadence line with the honest paused fact; live keeps today’s line', async () => {
+    const nowS = Date.now() / 1000;
+    const lastSweptEpochS = Date.UTC(2026, 8, 16, 15, 0, 0) / 1000; // 2026-09-16, mid-day ET too
+    installScanBackend({
+      marketData: 'paused',
+      sweep: { updated_at: nowS - 5, sweep_last_completed: lastSweptEpochS, universe_size: 2 },
+    });
+    const { unmount } = renderPage();
+    const paused = await screen.findByTestId('scan-worker-down');
+    expect(paused).toHaveTextContent('Market data paused · showing the last board, from Sep 16');
+    expect(paused).not.toHaveTextContent('Sweep last ran');
+    expect(screen.getAllByTestId('scan-row')).toHaveLength(2); // the rows are UNCHANGED
+    unmount();
+
+    // Live, with the SAME behind heartbeat that would otherwise engage the worker-down banner,
+    // keeps today's line byte-for-byte — this feature changes nothing about live mode.
+    installScanBackend({
+      marketData: 'live',
+      sweep: { updated_at: nowS - 900, sweep_last_completed: nowS - 180, universe_size: 2 },
+    });
+    renderPage();
+    expect(await screen.findByTestId('scan-worker-down')).toHaveTextContent(
+      'Sweep last ran 3 min ago — showing the last known rows.',
+    );
   });
 });
 

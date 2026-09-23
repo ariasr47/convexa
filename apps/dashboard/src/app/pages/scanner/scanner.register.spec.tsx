@@ -836,6 +836,12 @@ const FROZEN_SCAN_COPY_FN_SAMPLES: Record<string, { args: unknown[]; expect: str
     args: ['3 min'],
     expect: 'Sweep last ran 3 min ago — showing the last known rows.',
   },
+  // no-vendor-production-posture F3 — a deliberate ADDITION to the frozen table (a new key, never a
+  // changed value): the paused cadence line, sampled with a date and pinned verbatim.
+  marketDataPaused: {
+    args: ['Sep 16'],
+    expect: 'Market data paused · showing the last board, from Sep 16',
+  },
   updated: { args: ['42s'], expect: 'Structure as-of 42s' },
   structureAsOf: { args: ['42s'], expect: 'Structure as-of 42s' },
   filterShowing: { args: [1, 2], expect: 'Showing 1 of 2' },
