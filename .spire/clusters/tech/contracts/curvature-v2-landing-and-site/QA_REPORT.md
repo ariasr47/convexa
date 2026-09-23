@@ -668,3 +668,319 @@ destructive data and binding invariants.
 - **Worktree line endings:** the checkout is CRLF on disk (`core.autocrlf=true`, and these paths
   carry no eol attribute), while the index is LF. Byte comparisons against checked-out files need
   normalizing.
+
+## Re-check — 2026-09-23 at 882407ac
+
+A focused re-check, not a second full pass. It covers the 10 rows that failed at `a2c92f64`, the new
+row AC-L18 (GATE Z amendment 6), amendment 7, regressions from the 11 fix commits
+(`0601fa5f`…`882407ac`, on top of `22b6928d`), and the gates.
+
+- **Tree:** worktree `C:/Dev/convexa/.worktrees/landing-and-site`, branch
+  `spire/curvature-v2-landing-and-site`, HEAD `882407ac`. The tree was clean before and after.
+  `origin/main` (`bfcac794`) is an ancestor; 60 commits sit on the branch beyond it.
+- **Host:** win32, local. This is **Evidence: local**, not hosted or CI evidence.
+- **Build:** cold. `apps/dashboard/dist`, both `out-tsc` folders, `libs/api/dist` and every
+  `*.tsbuildinfo` were deleted first.
+- **Evidence tokens:** as in the first pass's legend, plus two:
+
+  | Token | What was run |
+  | --- | --- |
+  | `RUN:qa.poison_probe` | QA breaks the thing a guard forbids, runs that guard, then restores the file (`git checkout --` or `rm`, `git hash-object` equal to HEAD, `git status` empty) and re-runs it green |
+  | `RUN:qa.axe_sweep` | `@axe-core/playwright` 4.13.0, default rules, over 8 surfaces (landing, blog, methodology, 404, wall, degraded wall, sign-in dialog, sign-up dialog) × {393, 834, 900, 1280} × {dark, light}: 64 scans |
+
+  `RUN:qa.playwright_observe` is QA's own Playwright 1.62.1 scripts against `RUN:qa.serve_dist`
+  (`:4321`, the production build). The scheme is seeded through `convexa.uiprefs.v1`, as the gates do.
+
+| AC | Verdict | Evidence |
+| --- | --- | --- |
+| `/` renders exactly one hero instrument and no second illustration; every other visual on the page is a labelled sample of a surface that exists in the product, and nothing on the page is spot art. | PASS | RUN:frontend.build_cmd,RUN:qa.serve_dist,RUN:qa.playwright_observe,RUN:frontend.test_cmd,RUN:qa.poison_probe,RUN:qa.eslint_stdin_probe |
+| No live chip, live dot, pulse, beam, particle, drift, trail or shimmer renders on any of the six surfaces. | PASS | RUN:qa.serve_dist,RUN:qa.playwright_observe,RUN:frontend.test_cmd,RUN:qa.poison_probe |
+| No surface describes its own displayed figures as live, current, or as-of. Each sample panel is marked once as an illustrative sample, and that mark governs every number inside it. | PASS | RUN:qa.serve_dist,RUN:qa.playwright_observe,RUN:frontend.test_cmd |
+| `/methodology` presents ten sections in the design's order, beginning with the two data speeds, each with a stable anchor that resolves on a deep link. | PASS | RUN:frontend.build_cmd,RUN:qa.serve_dist,RUN:qa.playwright_observe,RUN:qa.browser_chromium,RUN:qa.poison_probe |
+| The wording of each component row — what it reads and in what units — is the product's own language and claims nothing the engine does not do. | PASS | RUN:qa.serve_dist,RUN:qa.playwright_observe,RUN:qa.source_audit,RUN:frontend.test_cmd |
+| The section states that this is the complete set the product renders, not a selection from a longer list. | PASS | RUN:qa.serve_dist,RUN:qa.playwright_observe,RUN:frontend.test_cmd |
+| From `/methodology`, a reader reaches "Where the read is weak" without scrolling through the preceding sections, at every checked width. | PASS | RUN:qa.serve_dist,RUN:qa.playwright_observe,RUN:qa.browser_chromium |
+| If a visitor nonetheless submits a create-account attempt while sign-ups are closed, the refusal states the policy and does not read as a temporary fault or invite a retry. | PASS | RUN:qa.serve_dist,RUN:qa.playwright_observe,RUN:frontend.test_cmd,RUN:qa.poison_probe |
+| Across the six surfaces the accessibility gate reports zero waivers, at every checked width. | PASS | RUN:qa.browser_a11y,RUN:qa.axe_sweep,RUN:qa.serve_dist,RUN:qa.source_audit |
+| Every string this spec **quotes** in §4 renders byte-for-byte on the surface it names, including the apostrophe glyphs and the dash forms. | PASS | RUN:qa.serve_dist,RUN:qa.playwright_observe,RUN:frontend.test_cmd |
+| the landing's h1 and h2 computed `font-family` resolves to Archivo, in both schemes, at 393 and 1280. | PASS | RUN:qa.serve_dist,RUN:qa.playwright_observe,RUN:frontend.test_cmd,RUN:qa.poison_probe |
+
+SUMMARY: 11 PASS / 0 FAIL / 0 UNVERIFIABLE
+GATE Q: PASS
+
+**Verdict: PASS WITH FINDINGS.** All 10 rows that failed at `a2c92f64` now pass, and so does the new
+AC-L18: 11 of 11.
+- Every gate exits as expected, and I made each commissioned guard go red myself.
+- There is no Critical finding, and `apps/api` still diffs empty.
+- **One Important regression came from the fix lane (R-1).** At 700 px and wider, the hero's two
+  CTAs touch (0 px apart) and differ in height (54 px against 42 px).
+  - No AC row names it, so it does not fail GATE Q.
+  - It is on the landing's desktop first screen. Fix it before merge.
+
+### Observations per re-checked row
+
+**AC-L4 · PASS.** The page still holds exactly one instrument, and the missing automation now exists
+and bites.
+- **Runtime, 1280 dark:** there are 12 SVGs.
+  - 10 are MUI icon glyphs.
+  - One is HeroCurve, under an `aria-hidden` wrapper.
+  - One is the `role="img"` gamma surface, described by `gs-sample-caption`.
+  - The one canvas is the field sample.
+- **§7 item 2** (`landing-structure.spec.tsx:215`): went red when QA added a third module with a
+  `viewBox`.
+- **§7 item 3:**
+  - The folder-wide canvas/WebGL scan (`:238`) went red on a `<canvas>` module.
+  - The `package.json` assertion went red when `three` was declared.
+  - ESLint stdin probes of `three`, `@react-three/fiber`, `regl` and `pixi.js` exit 1
+    (`no-restricted-imports`) under `pages/landing` and `pages/methodology`. The control under
+    `pages/ticker` exits 0.
+- **Restored:** the same 5 spec files ran green again, 41/41, exit 0.
+
+**AC-L5 · PASS.**
+- On `/`, 0 animations are running 3.2 s after load, with motion allowed.
+- The §7 item 5 pin went red (`StructureFieldSample.spec.tsx:52`, "expected 'lab' to be 'ticker'")
+  when QA changed the mount's `variant="ticker"` to `"lab"`. It was green again after the restore.
+
+**AC-L5a · PASS.**
+- **Sample marks:** the score panel now carries "Illustrative sample — not a live read and not a
+  recorded session." once (`landing-score-caption`).
+  - The hero, field and score panels carry that shared literal once each.
+  - The AI-read panel carries its own literal once.
+- **The field canvas, read from Chromium's accessibility tree (CDP):**
+  - Name: "Net dealer gamma by strike for SPY".
+  - Description: the shared sample mark, through `aria-describedby="landing-field-caption"`.
+- **No live claim:** the landing DOM holds no "live tape", no "ladder" and no generated summary
+  paragraph. "live" appears only inside the negation "not a live read", which amendment 3 itself
+  mandates by pointing at the section's caption.
+
+**AC-M1 · PASS.** The page renders 10 sections in order, from `two-data-speeds` to `vocabulary`.
+- **Fresh deep links:** I loaded `#score-and-tier`, `#two-data-speeds`, `#vocabulary` and
+  `#where-the-read-is-weak` at 393, 834, 900 and 1280. All of them land:
+  - The h2 sits 72–76 px from the top, or 106/140 px where the page cannot scroll further.
+  - scrollY is above 0, focus is on the section, and it is still there at 5 s.
+  - At 300 ms the lazy route has not rendered yet. The mount effect then scrolls.
+- **Automation:** the two new e2e cases pass in the chromium gate.
+  - I rebuilt with the pre-fix `MethodologyPage.tsx`, and both went red. The href read
+    "#where-the-read-is-weak", and the deep link reported "viewport ratio 0".
+  - After the restore and a rebuild, both were green again.
+
+**AC-M2b · PASS.** The Flip transition row reads "the mid sits within 1% of the gamma flip",
+byte-equal to amendment 1.
+- The engine agrees: `near_flip = |gamma_flip_pct| <= FLIP_PROXIMITY_PCT (0.01)`
+  (`signals.rs:19,241`). `gamma_flip_pct` is the flip's signed distance from price (`:226`), and
+  `transition = 10` when near (`:489`).
+- The retired cross-snapshot phrase is absent from the page.
+
+**AC-M4a · PASS.** The Vocabulary section renders the h2, then "This is the complete set: the
+product renders no other word in place of a number." (byte-equal to amendment 2), then the table of
+9 rows.
+
+**AC-M6 · PASS.** I clicked "Where the read is weak" in the index at 393, 834, 900 and 1280.
+- The href is `/methodology#where-the-read-is-weak`. It resolves to
+  `http://localhost:4321/methodology#…`, not to `/#…`.
+- **After the click:**
+  - The URL stays on `/methodology`, and the document did not reload (the sentinel survived).
+  - The landing never rendered.
+  - The h2 lands 72–76 px from the top, and focus is on the section.
+- Pressing Enter on the entry, at 393 and 1280, gives the same result.
+- At load, the index sits 224–283 px from the top, inside the first viewport at every width.
+
+**AC-A5 · PASS.**
+- **Runtime:** on the production build, with the sign-up answered by a mocked 403 `signups_closed`:
+  - The post-submit error reads "New sign-ups are closed while Convexa is in private testing.".
+  - It is still there after 6 s.
+  - There is no Snackbar and no "try again", and exactly 1 POST was sent.
+- **Automation:** `auth.risk.spec.tsx` "signups closed (AC-A5)" went red when QA mapped
+  `signups_closed` to the transient-fault copy. It was green again after the restore.
+
+**AC-G1 · PASS.**
+- **Gate:** `browser:a11y` exits 0, twice.
+  - 31/31, 0 flaky.
+  - The summary holds 24 scans and 7 behaviours, with 0 findings and 0 waived, at
+    `source_revision` `882407ac`.
+  - `a11y-waivers.json` is `[]` and has not been touched since `1685edd8`.
+- **Matrix against amendment 5:** it matches.
+  - `/`, `/blog`, `/methodology`, the 404, the wall and the degraded wall are each scanned dark and
+    light at 393 (A11Y-10/11/13–22).
+  - The 404 is also scanned at 1280 (A11Y-12).
+  - The open sign-in dialog is scanned dark and light at 393 (A11Y-23/24).
+- **Frozen inventory:** the edits only raised counts.
+  - `manifest.json` gained 14 ids (12 scans and 2 chromium tests), lost 0, and changed 0 existing
+    entries.
+  - Chromium went 126→128, scans 12→24, and the accessibility total 19→31.
+  - Behaviours (7), compat (15) and visual (6) are unchanged.
+  - No skip, only or fixme was added.
+- **QA's own sweep, 64 scans:** 60 are clean. The first pass found 28 of 56 serious.
+  - The 4 serious findings are all one element: the TopNav active link (`nav-scanner`,
+    `aria-current="page"`) at 3.23:1, in light, at 900 and 1280, on the wall and the degraded wall.
+  - That link is pre-existing shell chrome: `TopNav.tsx` diffs empty against `origin/main`. The same
+    link fails on `/positions`, `/alerts` and `/ticker/SPY` too. It is carried to BACKLOG below.
+  - The dialog's `aria-labelledby` resolves to its title ("Welcome back" / "Create your account").
+
+**AC-C1 · PASS.**
+- The field bullet renders "On a ticker desk the mid is tape — it pulses only while the stream is
+  genuinely live.", period included.
+- All four amendment quotes render byte-equal to SPEC in a programmatic compare: the flip cell, the
+  completeness sentence, the score mark and the bullet.
+- The fix commits touched no other quoted string.
+
+**AC-L18 · PASS.** At 393 and 1280, in dark and light, the h1 and all five h2s compute
+`Archivo, "IBM Plex Sans", system-ui, sans-serif`, with font-stretch 112.5% and weight 700.
+- The h1 is 44 px at 393 and 56 px at 1280.
+- The Archivo face is loaded: variable 100–900, 62–125%, and `document.fonts.check` is true.
+- **Automation:** `display-face.spec.tsx` went red in all 4 scheme × width cases when QA removed
+  `variant="h1"`. It was green again after the restore.
+
+### Regressions from the fixes
+
+**First-pass PASS rows whose files the fixes touched: still PASS** (`RUN:qa.serve_dist`,
+`RUN:qa.playwright_observe`).
+
+| Row | Re-observed at `882407ac` |
+| --- | --- |
+| AC-L1 | 6 sections in order; the 3 trust `h3`s sit inside the fifth |
+| AC-L3, AC-L3a | 0 hits for coming, on the way, in the works, waitlist or notify me |
+| AC-L6, AC-L15 | both "Open the Ticker" actions go to `/ticker`; no shared name has two destinations |
+| AC-L13 | overflowX 0 and 5/5 CTAs inside the viewport, at 393/834/900/1280 in dark and light |
+| AC-L13a | hero, field, score, AI read and register switch to two columns at 1100 (one at 1099); trust cards 3-up at 700 (1-up at 699); CTA band 2-up at 900 (1-up at 899). m-3 is closed. |
+| AC-L17 | the only request is `GET /api/auth/session` |
+| AC-G2a | 0 running animations 3.2 s after load |
+| AC-A1, AC-A1a | wall copy intact; `Open free Ticker →` goes to `/ticker/SPY` with no wall |
+| AC-A4 | the sign-up dialog shows the closure notice before any typing |
+| AC-A6 | a 401 gives the inline "Those credentials didn't match. …" |
+| AC-A7 | band `Sign in` at scrollY 2306, then Escape: still 2306, focus back on `cta-band-secondary` |
+| AC-A9 | degraded copy intact, no "Sign in to open"; session reads 1 at load, 1 after 4 s idle, 2 after one press |
+| AC-F1, AC-F2, AC-F4 | all 10 routes: 1 footer, 1 main, footer outside main, with Blog, Lab, How Convexa works and the disclaimer. `AppShell.footer.spec.tsx` now lists all 10 (m-10 closed). |
+
+**The ticker desk and `StructureFieldCanvas`: intact.**
+- **Setup:** I used the e2e ticker fixture plus 9 injected strike rows. The fixture's own
+  `strike_profile.strikes` is `[]`, which mounts no field.
+- **At 1280 dark and at 393 light**, the desk canvas's accessible description is still the generated
+  paragraph: "…marking the call wall, put wall, gamma flip and max pain levels plus the live tape mid.
+  The level ladder beside this field states the same levels and distances as text." The ladder is
+  present.
+- **Visual gate:** `ticker-desktop` and `ticker-offline-mobile` pass. Those baselines mount no field,
+  though (m-R4). The paint path is untouched: the diff adds only the optional `describedById` prop
+  and makes the summary `<p>` conditional on it. The desk passes no such prop.
+
+**Other surfaces the fixes touched:**
+- **The sign-in dialog link, now `extras.textInfo`:** 6.97:1 in dark and 6.60:1 in light, in both
+  dialog modes.
+- **The `How it’s built` label, now `text.primary`:** 15.1:1 in dark and 15.18:1 in light.
+
+**R-1: the hero CTA row regressed at 700 px and wider.** This is the one real regression.
+
+| Width | `cta-primary` height | `cta-secondary` height | Gap | Secondary offset |
+| --- | --- | --- | --- | --- |
+| 834 and 1280, `22b6928d`'s `Landing.tsx` rebuilt | 42 px | 42 px | 12 px | 0 |
+| 700, 834, 899, 900, 1099, 1100, 1199, 1280 at HEAD | 54 px | 42 px | 0 px | 12 px lower |
+
+- **Cause:** `3e281aed` replaced the Stack's responsive `direction` with an `sx` `flexDirection`
+  switch at 700. The Stack still applies its column spacing (`margin-top: 12px` on the second child)
+  in row mode.
+- **What the design draws:** `.hero-ctas { display:flex; gap:12px; align-items:center }`, with both
+  buttons 44 px tall.
+- **Why nothing caught it:** the landing's visual baseline is 393 px only, and no AC row covers the
+  CTA row at 700 px and wider.
+- **Repro:** load `/` at 834 or 1280 and compare the two hero CTAs' boxes.
+
+### Gates, re-run by QA (exit codes, not summaries)
+
+| V | Command (QA, local win32) | Exit | Result |
+| --- | --- | --- | --- |
+| V-1 | `git diff --stat origin/main HEAD -- apps/api libs/quant-engine libs/api` | 0 | Empty. Also empty against `a2c92f64`. |
+| Typecheck | `npx nx run-many -t typecheck -p @convexa/dashboard,dashboard-e2e --skip-nx-cache` | 0 | Cold run |
+| Lint | `npx nx run-many -t lint -p @convexa/dashboard,dashboard-e2e,@convexa/api --skip-nx-cache` | 0 | 0 errors; 4 pre-existing `no-explicit-any` warnings |
+| Format | `npm run format:check` | 0 | All matched files are Prettier-clean |
+| Build | `npx nx build @convexa/dashboard --configuration=production --skip-nx-cache` | 0 | `index-DO-_-ZIv.js` 68.26 kB, gzip 21.04 kB. `structure-field` is still its own chunk. |
+| Bundle | `npm run check:bundle` | 0 | Entry 17.9 KB brotli (22 KB cap); 43 checks within budget |
+| Unit | `npx nx test @convexa/dashboard --skip-nx-cache` | 0 | 261 files, 3,130 tests |
+| Chromium | `BROWSER_QUALITY_PREBUILD_STATUS=pass npm run browser:chromium` | 0 (×2) | 128/128, 0 flaky |
+| A11y | `… npm run browser:a11y` | 0 (×2) | 31/31, 0 findings, waivers `[]` |
+| Compat | `… npm run browser:compat` | 0 | 15/15 (chromium, firefox, webkit) |
+| Visual | `… npm run browser:visual` (compare-only) | 1 (expected) | Exactly `landing` (72,821 px, 0.22) and `scanner-dense` (761 px, 0.01) fail; 4 pass, `ticker-desktop` among them. The 12 baseline PNG hashes are identical before and after, `git status -- apps/dashboard-e2e/src/quality` is empty, and `browser:visual:update` was never run. |
+| V-12 | `node --test apps/dashboard-e2e/tools/{manifest,visual-review,visual-update}.spec.mjs` | 0 | 13/13 |
+| V-14 | not re-run | n/a | `NO_BACKEND_CHANGE`: the backend diff is 0 since the first pass's QA receipt (PASS, 2026-09-23T13:25:42Z). No backend was started, and no receipt was written. |
+
+### Critical sweep of the 11 commits: no Critical finding
+
+- **Auth:** no authentication, authorization, secret or destructive change.
+  - `RequireAuth` gains only `sx` colours. Its branches are byte-identical.
+  - `AuthDialog` gains an `id`/`aria-labelledby` pair and a link colour.
+- **Methodology:** the new mount effect decodes `location.hash` inside a try/catch, then calls only
+  `getElementById`, `scrollIntoView` and `focus`. There is no HTML sink.
+- **Deny-list:** the structural spec now skips `*.spec.*` files. The ESLint block's `files` globs
+  still cover spec files, so enforcement is unchanged. The new ESLint entry only adds a ban.
+
+### Landing baseline fitness: fit to authorize, after one owner check
+
+- **The frame:** the new actual is
+  `apps/dashboard-e2e/test-output/playwright/visual/attachments/0-1-landing-actual.png` (393×852 dark,
+  sha256 `cc461ab1…`). A later Playwright run cleared `test-results/`, so this copy is the only one left.
+- **What the first pass withheld over is fixed:**
+  - (a) The h1 is Archivo SemiExpanded 700, both computed and loaded.
+  - (b) The phone CTAs are full-width (361 px each) and stacked 12 px apart.
+  - (c) The `How it’s built` label is phosphor.
+- **Also right:** the copy is byte-correct, and there is no as-of chip or live dot. R-1 does not
+  reach this frame, which is below 700 px.
+- **Owner check (m-R3):** the secondary's **border** is still MUI's outlined amber, where the design
+  draws line-2 (`lineStrong`). Amendment 7 names only the label.
+  - If the owner wants the border matched, change it before signing, because the baseline would pin
+    it.
+  - Otherwise, authorize as is.
+- **`scanner-dense` (761 px):** unchanged since the first pass, and still fit.
+
+### Findings
+
+**Critical:** none.
+
+**Important:**
+- **R-1:** the hero CTA row regressed at 700 px and wider (see above). It came from `3e281aed`.
+  Suggested fix: `useFlexGap` on that Stack, or a responsive `direction` keyed to 700.
+
+**Minor:**
+- **m-R2:** amendment 5 opens with "Every checked width includes both schemes", but the gate scans
+  the 404 at 1280 in dark only (A11Y-12, "as today"). In QA's sweep, the 404 at 1280 in light has 0
+  serious findings. The owner should add a light twin or reword the amendment.
+- **m-R3:** the secondary CTA's border is `rgba(242,169,59,0.5)` in dark and `rgba(197,127,25,0.5)`
+  in light, which is 1.69:1 on the light background. The design uses line-2.
+- **m-R4:** the visual gate's ticker scenarios mount no structure field, so a green `ticker-desktop`
+  does not cover `StructureFieldCanvas` pixels.
+- **m-R5:** the `package.json` assertion checks five named packages, not "no new dependency" in
+  general. The ESLint ban still stops any `@react-three/*` import.
+- **m-R6:** axe reports `region` (moderate, non-blocking) on the open sign-in dialog at 834, in both
+  schemes.
+
+### Amendments bounced to Frontend
+
+| AC | Expected | Actual | Owner |
+| --- | --- | --- | --- |
+| R-1 (regression; amendment 7, design conformance) | At 700 px and wider, the hero's two CTAs sit in one row 12 px apart at equal height, as the design draws them and as they did at `22b6928d` | 0 px apart; 54 px against 42 px; the secondary sits 12 px lower | Frontend |
+
+### Carry to BACKLOG (not blockers)
+
+- **m-5:** a hung who-am-I holds the fill indefinitely. There is no client timeout.
+- **m-6:** a refused sign-up shows the policy sentence twice: the pre-type notice and the post-submit
+  error. Re-observed.
+- **m-7:** the dialog's "Google sign-in isn't available yet" is forward-looking copy.
+- **m-11:** the nav's account Skeleton pulses during the who-am-I read.
+- **TopNav active link in light:** 3.23:1 (`#C57F19` on `#FEFEFD`) at 900 px and wider, on every
+  route with an active nav link. It is pre-existing.
+- **m-8:** `_MANIFEST.md` still reads "F14 / F15 / F16 … wait for PR #49 … GATE Q not run".
+- **m-9:** PLAN V-1 still diffs against local `main`.
+- **Also carried:** m-R2, m-R4, m-R5 and m-R6.
+
+### End state
+
+- **Mutations:** QA mutated 8 targets.
+  - Two probe files under `pages/landing`.
+  - `package.json`, `StructureFieldSample.tsx`, `AuthDialog.tsx` and `Landing.tsx`.
+  - `MethodologyPage.tsx`, swapped to `22b6928d`.
+  - `Landing.tsx` again, swapped to `22b6928d` for the R-1 comparison.
+- **Restores:** every mutation was restored.
+  - Each restored file's `git hash-object` equals HEAD, and `git status` is empty.
+  - `dist` was rebuilt from HEAD. Its chunk names match the first build (`index-DO-_-ZIv.js`,
+    `MethodologyPage-D76o62r0.js`).
+- **Gate outputs:** a 2-test chromium run overwrote `test-output/playwright/chromium/summary.json`.
+  The full gate was re-run afterwards: exit 0, 128/128.
+- **Ports:** nothing listens on 4200, 4300, 4321 or 8000. The only file written is this section.
