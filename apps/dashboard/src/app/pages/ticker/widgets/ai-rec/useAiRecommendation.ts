@@ -18,6 +18,7 @@
 import {
   AuthError,
   fetchRecStatus,
+  isMarketDataPaused,
   OpenPositionsDigest,
   RecCap,
   RecGate,
@@ -108,13 +109,41 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
         applyGating(s.gate, s.cap);
         setStatusReady(true);
       })
-      .catch(() => {
-        // Transport fault on status: degrade the action to inert, keep the rest of the page intact.
+      .catch((err: unknown) => {
         if (cancelled) return;
         setInAppEnabled(false);
         setPowering(null);
         setScenarios({ enabled: false, catalog: [] });
         setStatusReady(true);
+        // no-vendor-production-posture F4: `GET /api/recommendation/status/{ticker}` is a B2 route —
+        // its 503 carries the SAME typed code the ticker desk keys off. This status check runs
+        // whether or not the panel's JSX is currently mounted (it is not, in the shipped app, while
+        // paused — the ticker bundle it would sit beside also 503s, so `CommandDeck` never renders),
+        // but the panel must still answer honestly if it ever IS reachable (a unit-tested fixture,
+        // or a future composition). Synthesizing the SAME `unavailable` artifact `request`'s own
+        // catch below produces for a transport fault gives the panel's EXISTING `phase==='unavailable'`
+        // render path a reason string `presentationPolicy.ts` recognizes and treats as
+        // non-retryable — never a NEW request state, never a `readLayoutFor` change.
+        if (isMarketDataPaused(err)) {
+          setRec((current) =>
+            current?.status === 'produced'
+              ? current
+              : {
+                  status: 'unavailable',
+                  persona: {
+                    id: optsRef.current.personaId,
+                    name: optsRef.current.personaName,
+                  },
+                  as_of: null,
+                  pinned_fingerprint: '',
+                  stale_born: false,
+                  strategy: null,
+                  unavailable_reason: 'market_data_paused',
+                  gate: DEFAULT_GATE,
+                  cap: DEFAULT_CAP,
+                },
+          );
+        }
       });
     return () => {
       cancelled = true;

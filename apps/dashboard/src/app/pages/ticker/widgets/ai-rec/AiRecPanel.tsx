@@ -403,6 +403,7 @@ export function AiRecPanel({
               retryAllowed={presentation.actions.retry}
               onRetry={ai.retry}
               scenario={rec?.scenario ?? null}
+              reason={rec?.unavailable_reason ?? null}
             />
           )}
 

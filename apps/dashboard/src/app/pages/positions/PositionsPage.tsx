@@ -31,7 +31,13 @@ import { usePortfolio } from '@/features/trading/positions/usePortfolio';
 import { FigureCell } from '@/pages/ticker/widgets/_kit/FigureCell';
 import { isDeliveringLive } from '@/shared/liveness/liveClaim';
 import { PanelContainer } from '@/shared/ui/PanelContainer';
-import { getTicker, LiveUpdate, streamTicker, TickerBundle } from '@convexa/api';
+import {
+  getTicker,
+  isMarketDataPaused,
+  LiveUpdate,
+  streamTicker,
+  TickerBundle,
+} from '@convexa/api';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useEffect, useMemo, useState } from 'react';
@@ -105,15 +111,26 @@ export function PositionsPage() {
 
   // Anchor bundle: best-effort. A failure leaves `data` null — `usePortfolio` then degrades marks to
   // `tracking unavailable` / last-known per row, never blanking the records. Polls on the cache cadence.
+  //
+  // no-vendor-production-posture F4 ("positions pricing"): `GET /api/ticker` is a B2 route. A
+  // `market_data_paused` fault is a STANDING fact, not a transient miss — once it lands, this effect
+  // stops polling for the rest of this ticker's lifetime (mirrors the ticker desk's own
+  // `usePollingResource`'s `haltOn`); a focused-ticker change (a new effect run) is the only thing
+  // that asks again. Marks already degrade to their existing closed-vocabulary absent value with
+  // `data` staying null — this only stops the silent, indefinite re-ask of a route that will never
+  // answer differently.
   useEffect(() => {
     let cancelled = false;
+    let halted = false;
     const load = () => {
+      if (halted) return;
       getTicker(ticker)
         .then((d) => {
           if (!cancelled) setData(d);
         })
-        .catch(() => {
+        .catch((err: unknown) => {
           /* best-effort: leave prior data; per-row marks degrade, records persist */
+          if (isMarketDataPaused(err)) halted = true;
         });
     };
     load();
