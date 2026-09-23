@@ -56,6 +56,48 @@ the ascent — `docs/research/TEST_SUITE_AND_BACKTESTING_REVIEW_2026-09-08.md`).
 **Sequencing recommendation, not a feature:** open the phases 1–3 PR first and build phase 4 on a branch off
 it, so the PR stays reviewable and the visual child's verdict is not muddied by new pixels.
 
+## Parked — 2026-09-22 (no market-data vendor: reconstructed replay days)
+<!-- atlas: theme=prove-the-edge horizon=later -->
+Owner-directed parking, **not** a GATE I cull and **not** a BRIEF. Owner 2026-09-22: "put it in the backlog
+for now and finish any outstanding work first such as phase 4". No re-subscription in the short term.
+
+**What changed (verified 2026-09-22 against Railway production logs and code, not assumed):**
+- **Massive is cancelled.** Production's last start-of-day books were stored 00:00–04:18 ET on Wed
+  2026-09-16; the first `403 NOT_AUTHORIZED` ("not entitled to this data") landed by 10:59 ET that day. The key
+  now sits on the free Stocks Basic tier: 5 calls/min, 2 years of minute aggregates, **no** trades, quotes,
+  snapshots or websockets. Since then ticker bundles fail, the scanner prices 0/69, the warmer keeps calling
+  (~67k errors), and Deploy smoke fails at "Ticker SPY (bundle)". The nightly Conformance run stays green
+  because `public-surface.json` and `scanner.json` check shape only.
+- **No day was ever recorded for replay.** `session-day-tape-capture` (QA 66/0/0, GATE S 2026-08-30) records
+  only when `SESSION_DAY_TAPE_BODY_ROOT` is set. Every production deploy since the code landed (2026-09-03,
+  09-05, 09-10) logged `SESSION_DAY_TAPE_BODY_ROOT unset; session day tape not storing`, and the flat-file
+  keeper was off too (`flat files not fetching — production unset`). Owner ruling D3 made an unset root silent
+  in the trader UI, and no gate read production after ship. The owner had cancelled Massive expecting
+  replayable whole days for a portfolio demo.
+- **What survives:** start-of-day chain books (per-contract OI, IV, vendor greeks, bid/ask, spot) in
+  production, ~2026-08-26 → 2026-09-16, the only copy of most of them. On the Windows box
+  `data/session_chain_archive_bodies` holds trading days SPY 08-19/08-20/08-31, QQQ 08-20/08-31 and
+  IWM 08-19/08-20/08-31.
+
+| Item | Shape | Why it is here |
+|---|---|---|
+| `reconstructed-replay-days` | both lanes | The `session-day-replay` player is already tick by tick (`player.rs`: a Δt/k walk of Path-A trades, analytics recomputed at each Path-B mark) and vendor-free by construction. It has nothing to play. Rebuild real past days from **free historical underlying ticks** plus that morning's **archived chain book** as the options side (OI only updates daily), with levels repriced by our own model as price moves and IV held at the morning values, **said so on screen**. Tick source is the owner's pick at promotion: **A** Alpaca free plan (historical SIP since 2016 for anything at least 15 min old, 200 req/min, free account; confirm the trades endpoint with one call) or **B** Massive free tier (minute bars only, 5 req/min, needs production's warmer off first). Labeled reconstructed, never live (`[present-is-live-paid-only]`, `[model-read-carries-its-assumptions]`). Prove one local SPY day before any build. **Precondition:** copy the production archive off Railway first. |
+| `no-vendor-production-posture` | backend/ops | Production still boots against a cancelled vendor and fails per request. Decide the honest posture: warmer and scanner off (`WARM_ENABLED=0` is the one known switch), a stated "market data paused" state instead of errors, Deploy smoke re-scoped. Production change, so the owner's OK. |
+
+**Lesson (candidate canon at the next GATE S):** a feature that only works once a production variable is set is
+not shipped until production shows it running: a startup log line, a health field, or a stored artifact.
+
+## Harvest — 2026-09-22 (PR #49 visual-flake repair: two harness residuals)
+<!-- atlas: theme=gates-that-gate horizon=next -->
+Not a BRIEF. Filed by the conductor while repairing the visual-gate flake on PR #49 (`964aa754`: the strict
+fixture stopped answering `/api/stream/SPY` with live payloads once the visual frame freezes). Neither item
+changes an approved baseline; both are test-harness debt.
+
+| Item | Shape | Why it is here |
+|---|---|---|
+| `strict-fixture-stream-conforms` | e2e | The strict fixture's stream payload (`apps/dashboard-e2e/src/quality/fixtures/strict-fixture.ts`: `ticker`, `mid`, `last_trade`, `net_flow`, `live`) omits two fields the contract requires: `flow_window_s` and `feed` (`apps/api/src/routes/stream.rs:78,83`, non-`Option`; `libs/api/src/generated/schema.ts:1557,1559`). Any gate that reaches the live state renders `Net flow (NaNm)` (`LiveTape.tsx:143,173`) and the tooltip `Streaming live undefined ticks.` (`connection/copy.ts:47`). Production always sends both, so this is fixture drift, not a live bug. Fix the fixture to the contract. Optionally make both labels absent-safe (`[absent-is-not-none]`). No approved baseline pictures the live state today; the `ticker-desktop` baseline is the offline frame. |
+| `visual-frame-meta-test-red` | e2e | `apps/dashboard-e2e/tools/visual-frame.spec.mjs` exits 1. Its launch-args regex predates `be00d739` (2026-09-09), which added `--disable-lcd-text` to `playwright.visual.config.ts`. No nx target or CI job runs it, which is how it went red unnoticed. Either wire it into CI with the regex updated, or park it under a `PARKED` marker. |
+
 ## Harvest — 2026-09-08 (ticker fidelity repair: two wire fields the design draws and the API does not send)
 <!-- atlas: theme=desk-fidelity horizon=next -->
 Not a BRIEF. Filed by the conductor from the `/ticker` fidelity repair lane's GATE Z items (owner 2026-09-08:
