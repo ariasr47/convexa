@@ -55,6 +55,16 @@ export interface StructureFieldCanvasProps {
   /** The scheme's panel + body surfaces, same reason. Replaces the unconditional `INK`/`PANEL`/
    *  `RAISED`/`PHOSPHOR`/`STEEL`/`BURNT` fills the file used to carry as module-level hex. */
   surfaces: StructureFieldSurfaces;
+  /**
+   * GATE Z I-3 (SPEC amendment 3, AC-L5a) — override the canvas's accessible description: point
+   * `aria-describedby` at an EXISTING DOM node (a host-owned visible caption) instead of the
+   * internally-generated hidden summary paragraph below. The generated summary is written for a
+   * REAL ticker desk — it claims "the live tape mid" and points at "the level ladder beside this
+   * field", both true there (a real stream, a real ladder) and both FALSE on a frozen sample that
+   * has neither. Every other consumer (the ticker desk, `/lab`) is unaffected: this prop is
+   * unset there, so the generated summary still renders exactly as before.
+   */
+  describedById?: string;
 }
 
 export function StructureFieldCanvas({
@@ -64,6 +74,7 @@ export function StructureFieldCanvas({
   variant = 'lab',
   palette,
   surfaces,
+  describedById,
 }: StructureFieldCanvasProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -232,7 +243,7 @@ export function StructureFieldCanvas({
         data-testid="structure-field-canvas"
         role="img"
         aria-label={`Net dealer gamma by strike for ${model.symbol}`}
-        aria-describedby={summaryId}
+        aria-describedby={describedById ?? summaryId}
         style={{
           display: 'block',
           width: '100%',
@@ -260,25 +271,31 @@ export function StructureFieldCanvas({
       {/* The text equivalent (criterion 24): what the field plots, the levels it marks, and a
           pointer at the ladder as its tabular equivalent (criterion 23 — the ladder already puts
           every level + distance in the DOM, beside the field). Visually hidden, not decorative —
-          this is the canvas's accessible description, not a caption. */}
-      <p
-        id={summaryId}
-        style={{
-          position: 'absolute',
-          width: 1,
-          height: 1,
-          padding: 0,
-          margin: -1,
-          overflow: 'hidden',
-          clip: 'rect(0 0 0 0)',
-          whiteSpace: 'nowrap',
-          border: 0,
-        }}
-      >
-        Net dealer gamma by strike for {model.symbol}, marking the call wall, put wall, gamma flip
-        and max pain levels plus the live tape mid. The level ladder beside this field states the
-        same levels and distances as text.
-      </p>
+          this is the canvas's accessible description, not a caption.
+          GATE Z I-3: this claims a live tape mid and a ladder, both real facts on the ticker desk
+          this paragraph is written for. Skipped entirely when `describedById` is set — a host
+          supplying its own description (the landing's frozen sample) has neither fact to claim,
+          and the override above already points screen readers at that host's own caption. */}
+      {!describedById && (
+        <p
+          id={summaryId}
+          style={{
+            position: 'absolute',
+            width: 1,
+            height: 1,
+            padding: 0,
+            margin: -1,
+            overflow: 'hidden',
+            clip: 'rect(0 0 0 0)',
+            whiteSpace: 'nowrap',
+            border: 0,
+          }}
+        >
+          Net dealer gamma by strike for {model.symbol}, marking the call wall, put wall, gamma
+          flip and max pain levels plus the live tape mid. The level ladder beside this field
+          states the same levels and distances as text.
+        </p>
+      )}
       {hoverReadout && (
         <div
           style={{

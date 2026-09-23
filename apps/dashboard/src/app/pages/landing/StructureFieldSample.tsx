@@ -7,6 +7,12 @@
  *
  * The panel header and the sample footnote are DOM copy OWNED BY THE LANDING, not canvas pixels.
  *
+ * GATE Z I-3 (SPEC amendment 3, AC-L5a): `describedById="landing-field-caption"` overrides the
+ * canvas's own generated accessible description (written for a real ticker desk — "the live tape
+ * mid", "the level ladder beside this field") with a pointer at THIS panel's own sample caption
+ * below, mirroring the hero panel's `aria-describedby="gs-sample-caption"` mechanism exactly. The
+ * caption makes no live, tape or current claim and names no ladder `/` does not render.
+ *
  * EAGER IMPORT — no React.lazy, no Suspense, no IntersectionObserver (SPEC §2.4). Every candidate
  * fallback is already forbidden: a spinner is a second moving element on a page whose motion budget
  * is the hero draw; a shimmer is a data-signal keyframe with no stream to gate it; a zero-height box
@@ -56,8 +62,12 @@ export function StructureFieldSample() {
         variant="ticker"
         palette={palette}
         surfaces={surfaces}
+        describedById="landing-field-caption"
       />
+      {/* `StructureFieldCanvas`'s `aria-describedby="landing-field-caption"` points HERE — the
+          same mechanism `GammaSurfaceHero`'s `aria-describedby="gs-sample-caption"` uses. */}
       <Typography
+        id="landing-field-caption"
         variant="caption"
         data-testid="landing-field-caption"
         sx={{ display: 'block', mt: 1, color: 'text.secondary' }}

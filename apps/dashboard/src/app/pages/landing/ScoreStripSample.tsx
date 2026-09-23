@@ -13,13 +13,19 @@
  * No ring gauge (SPEC §2 — no ring-gauge component exists in `apps/dashboard`, and inventing one for
  * the acquisition page only is a second illustration under the canon's one-hero-instrument limit) and
  * no `<svg>` at all in this file, so §7 item 2's set-equality scan stays decidable.
+ *
+ * GATE Z I-3 (AC-L5a, amendment 3): this panel carries the SHARED sample literal
+ * (`SAMPLE_MARK`) once — the same words the hero and field panels carry, so `/` still has two
+ * sample literals (this one, and the AI-read panel's own distinct withdrawal) and only two, never
+ * a third vocabulary for the same claim.
  */
 import { MONO_FACE, SANS_FACE } from '@/shared/figure';
 import { extrasFor } from '@/shared/theme/tokens';
 import { TintChip } from '@/shared/ui';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
-import { LANDING_SAMPLE } from './samples';
+import Typography from '@mui/material/Typography';
+import { LANDING_SAMPLE, SAMPLE_MARK } from './samples';
 
 /** The mirrored projection (see the docblock). Signed percentage only, one decimal, figure minus. */
 function percentOnly(level: number, spot: number): string {
@@ -148,6 +154,13 @@ export function ScoreStripSample() {
           0–100 triage score · not a trade signal
         </Box>
       </Stack>
+      <Typography
+        variant="caption"
+        data-testid="landing-score-caption"
+        sx={{ display: 'block', px: 2, py: 1, color: 'text.secondary', borderTop: '1px solid', borderColor: 'divider' }}
+      >
+        {SAMPLE_MARK}
+      </Typography>
     </Box>
   );
 }

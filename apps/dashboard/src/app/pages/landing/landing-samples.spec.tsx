@@ -45,6 +45,13 @@ describe('AC-L5 / AC-L5a — the sample panels claim nothing they cannot support
     expect(container.querySelectorAll('svg')).toHaveLength(0); // no ring gauge, no icon geometry
   });
 
+  it('GATE Z I-3 (AC-L5a) — the score panel carries the shared sample mark, same words as the hero/field', () => {
+    wrap(<ScoreStripSample />);
+    expect(
+      screen.getByText('Illustrative sample — not a live read and not a recorded session.'),
+    ).toBeInTheDocument();
+  });
+
   it('AC-L4 — the CTA-shaped elements in the AI-read sample are NOT controls', () => {
     const { container } = wrap(<AiReadSample />);
     expect(container.querySelectorAll('button')).toHaveLength(0);
@@ -74,6 +81,27 @@ describe('AC-L5 / AC-L5a — the sample panels claim nothing they cannot support
     for (const banned of ['demo as-of', 'synthetic demo', 'TAPE OFF']) {
       expect(container.textContent).not.toContain(banned);
     }
+  });
+
+  it('GATE Z I-3 (AC-L5a) — the field canvas points aria-describedby at the visible sample caption, and makes no live/tape/ladder claim', () => {
+    const { container } = wrap(<StructureFieldSample />);
+    const canvas = screen.getByTestId('structure-field-canvas');
+    const describedBy = canvas.getAttribute('aria-describedby');
+    expect(describedBy).toBe('landing-field-caption');
+    const description = document.getElementById(describedBy!);
+    expect(description).not.toBeNull();
+    expect(description).toBe(screen.getByTestId('landing-field-caption'));
+    // Note: the caption legitimately contains the WORD "live" — "not a live read" is a
+    // disclaimer, not a claim. What must be absent is the canvas's own generated wording, which
+    // ASSERTS liveness/a ladder rather than disclaiming it.
+    const text = (description!.textContent ?? '').toLowerCase();
+    expect(text).not.toMatch(/live tape mid/);
+    expect(text).not.toMatch(/\btape\b/);
+    expect(text).not.toMatch(/ladder/);
+    expect(text).not.toMatch(/\bcurrent\b/);
+    // The canvas's own internally-generated hidden summary (the ticker-desk wording) must not
+    // ALSO exist — only the one visible caption resolves the description.
+    expect(container.textContent).not.toContain('Net dealer gamma by strike');
   });
 
   it('no as-of, no live chip, no pause mark on any sample panel', () => {
