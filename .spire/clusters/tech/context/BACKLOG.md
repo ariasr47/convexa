@@ -87,6 +87,17 @@ for now and finish any outstanding work first such as phase 4". No re-subscripti
 **Lesson (candidate canon at the next GATE S):** a feature that only works once a production variable is set is
 not shipped until production shows it running: a startup log line, a health field, or a stored artifact.
 
+## Harvest — 2026-09-22 (PR #49 visual-flake repair: two harness residuals)
+<!-- atlas: theme=gates-that-gate horizon=next -->
+Not a BRIEF. Filed by the conductor while repairing the visual-gate flake on PR #49 (`964aa754`: the strict
+fixture stopped answering `/api/stream/SPY` with live payloads once the visual frame freezes). Neither item
+changes an approved baseline; both are test-harness debt.
+
+| Item | Shape | Why it is here |
+|---|---|---|
+| `strict-fixture-stream-conforms` | e2e | The strict fixture's stream payload (`apps/dashboard-e2e/src/quality/fixtures/strict-fixture.ts`: `ticker`, `mid`, `last_trade`, `net_flow`, `live`) omits two fields the contract requires: `flow_window_s` and `feed` (`apps/api/src/routes/stream.rs:78,83`, non-`Option`; `libs/api/src/generated/schema.ts:1557,1559`). Any gate that reaches the live state renders `Net flow (NaNm)` (`LiveTape.tsx:143,173`) and the tooltip `Streaming live undefined ticks.` (`connection/copy.ts:47`). Production always sends both, so this is fixture drift, not a live bug. Fix the fixture to the contract. Optionally make both labels absent-safe (`[absent-is-not-none]`). No approved baseline pictures the live state today; the `ticker-desktop` baseline is the offline frame. |
+| `visual-frame-meta-test-red` | e2e | `apps/dashboard-e2e/tools/visual-frame.spec.mjs` exits 1. Its launch-args regex predates `be00d739` (2026-09-09), which added `--disable-lcd-text` to `playwright.visual.config.ts`. No nx target or CI job runs it, which is how it went red unnoticed. Either wire it into CI with the regex updated, or park it under a `PARKED` marker. |
+
 ## Harvest — 2026-09-08 (ticker fidelity repair: two wire fields the design draws and the API does not send)
 <!-- atlas: theme=desk-fidelity horizon=next -->
 Not a BRIEF. Filed by the conductor from the `/ticker` fidelity repair lane's GATE Z items (owner 2026-09-08:
