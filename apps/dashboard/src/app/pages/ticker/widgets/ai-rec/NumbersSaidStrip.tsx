@@ -5,6 +5,7 @@
  * move for the cited expiration (exact match; no match ⇒ says so for that expiry and never relabels
  * another tenor's number). No per-contract rows, no strike axis, no sorting, no expansion.
  */
+import { fmtExpiry } from '@/pages/ticker/widgets/_kit/copy';
 import type { CandidateSetEnvelope, StraddleMove as StraddleMoveRead } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -53,9 +54,12 @@ export function NumbersSaidStrip({ candidates, move, citedExpiration }: Props) {
           sx={{ color: 'text.secondary', display: 'block' }}
           data-testid={tenor ? 'numbers-said-move' : 'numbers-said-move-absent'}
         >
+          {/* Fidelity repair 2, N5 follow-up — `targetExpiration` is already decided (present or not)
+              from the RAW wire tokens above (`citedExpiration ?? move?.primary_expiration`); only its
+              resolved TEXT is reformatted here (design: `Sep 18 (15 DTE)`), never the raw ISO date. */}
           {tenor
-            ? `${headline(tenor.move_dollars, tenor.move_pct)} implied move for ${targetExpiration}`
-            : `No straddle-implied move for ${targetExpiration} in this read.`}
+            ? `${headline(tenor.move_dollars, tenor.move_pct)} implied move for ${fmtExpiry(targetExpiration)}`
+            : `No straddle-implied move for ${fmtExpiry(targetExpiration)} in this read.`}
         </Typography>
       )}
     </Box>

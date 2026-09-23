@@ -6,6 +6,7 @@
  * this copy). (The old dealer positioning widget is deleted at curvature-v2-desk-and-read FE-8; its
  * two consumers of this file's copy are its successors above.)
  */
+import type { NotANumber } from '@/shared/copy/notANumber';
 import type { IvSkew, TermStructure } from '@convexa/api';
 
 // Fallback for the blocks empty-state copy when a (pre-amendment) bundle omits the threshold.
@@ -538,6 +539,95 @@ export function humanAge(seconds: number | null): string {
   if (d >= 1) return `${d}d ${h % 24}h`;
   if (h >= 1) return `${h}h ${m % 60}m`;
   return `${m}m`;
+}
+
+// ---- Fidelity repair 2, N5 — one as-of / expiration formatter, exchange clock -------------------
+// Every raw ISO/date site the review found (the AI read's provenance chip, the analysis drawer's
+// "As of", the snapshot hint, the candidate-set freshness line, the cited-contract quote and its
+// expiration) reads through these two pure helpers instead of interpolating the wire string
+// directly. ET (`America/New_York`) is the SAME exchange clock the product already uses for session
+// words (`sessionTapeStanding.ts`'s occupancy classifier, the scanner's session captions) — never a
+// second timezone authority. `formatToParts` (not a locale-formatted string) so the `HH:MM:SS`
+// literal is immune to the `en-US`/`hour12:false` "24:00" midnight artifact some ICU builds have.
+
+const ET_TIME_PARTS = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  hourCycle: 'h23',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+});
+const ET_DATE_PARTS = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+// UTC, deliberately NOT 'America/New_York': the wire expiration is already a bare `YYYY-MM-DD`
+// calendar date (`Date.parse` anchors a date-only ISO string at UTC midnight) — re-converting that
+// instant through the ET zone would roll it back to the PREVIOUS calendar day for any UTC offset
+// west of midnight, which is the whole afternoon and evening in ET (measured: 2026-09-18 read
+// back as "Sep 17"). Formatting in UTC reads the calendar date printed on the wire, unchanged.
+const EXPIRY_MONTH_DAY = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'UTC',
+  month: 'short',
+  day: 'numeric',
+});
+
+function partsOf(fmt: Intl.DateTimeFormat, date: Date): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const p of fmt.formatToParts(date)) out[p.type] = p.value;
+  return out;
+}
+
+/** The instant's ET calendar date as a UTC-noon-anchored `Date` (DST-arithmetic-proof: two ET
+ *  calendar dates always diff to a whole number of days via this representation). */
+function etCalendarDateUtc(date: Date): Date {
+  const p = partsOf(ET_DATE_PARTS, date);
+  return new Date(Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day)));
+}
+
+const MS_PER_DAY = 86_400_000;
+
+/**
+ * `fmtAsOfEt(iso, now)` -> `"10:41:52 ET · 48s ago"` (design: `read pinned as of 10:41:52 ET ·
+ * 48s ago`, `Snapshot as of 10:41:52 ET`). Age via `humanAge` over the whole-second delta to `now`.
+ * `null`/unparseable renders the closed-vocabulary member (`unavailable`) — never the raw string.
+ */
+export function fmtAsOfEt(
+  iso: string | null | undefined,
+  now: number | Date = Date.now(),
+): string | NotANumber {
+  if (!iso) return 'unavailable';
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return 'unavailable';
+  const nowMs = now instanceof Date ? now.getTime() : now;
+  const p = partsOf(ET_TIME_PARTS, new Date(t));
+  const ageSeconds = Math.max(0, Math.round((nowMs - t) / 1000));
+  return `${p.hour}:${p.minute}:${p.second} ET · ${humanAge(ageSeconds)}`;
+}
+
+/**
+ * `fmtExpiry(isoDate, now)` -> `"Sep 18 (15 DTE)"` (design: `Sep 18 (15 DTE)`). DTE is the whole-day
+ * difference between `isoDate` and `now`'s ET CALENDAR date (never negative — a same-day or already
+ * -passed expiration reads `0 DTE`, never a negative count). `isoDate` is the wire's bare `YYYY-MM-DD`
+ * (`libs/api/src/lib/convexa.ts:1563`'s own comment) — parsed as a calendar date, not a timezone
+ * instant. `null`/unparseable renders the closed-vocabulary member (`unavailable`) — never the raw
+ * string.
+ */
+export function fmtExpiry(
+  isoDate: string | null | undefined,
+  now: number | Date = Date.now(),
+): string | NotANumber {
+  if (!isoDate) return 'unavailable';
+  const t = Date.parse(isoDate);
+  if (!Number.isFinite(t)) return 'unavailable';
+  const expDay = new Date(t); // date-only ISO parses as UTC midnight — already calendar-anchored.
+  const nowMs = now instanceof Date ? now.getTime() : now;
+  const nowDay = etCalendarDateUtc(new Date(nowMs));
+  const dte = Math.max(0, Math.round((expDay.getTime() - nowDay.getTime()) / MS_PER_DAY));
+  const md = partsOf(EXPIRY_MONTH_DAY, expDay);
+  return `${md.month} ${md.day} (${dte} DTE)`;
 }
 
 // ---- Product spine #4 — age + basis always visible on structure-bound surfaces ---------------

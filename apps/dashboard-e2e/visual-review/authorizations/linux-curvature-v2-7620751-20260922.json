@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "authorization_id": "linux-curvature-v2-7620751-20260922",
+  "decision": "authorize_candidate_generation",
+  "state": "authorized",
+  "actor": {
+    "id": "workspace-owner",
+    "role": "owner"
+  },
+  "source_revision": "762075140dc02ef1573e28fdec896b7a0986b1ae",
+  "platform": "linux",
+  "created_at": "2026-09-23T01:51:26.614Z",
+  "failed_compare": {
+    "run_id": "local-1790128260148-1bcc91fa",
+    "summary_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-7620751-20260922/summary.json",
+    "summary_sha256": "788b98da90a42da168af4f4e31e80fe3d6337c9d12c50c6e0b8452ffdb409eb3"
+  },
+  "scenarios": [
+    {
+      "scenario_id": "landing",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-7620751-20260922/landing-expected.png",
+      "expected_sha256": "d22a0387d6edf26416fc9a8b4b055f1244f9a810726650401684053c08fd288a",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-7620751-20260922/landing.png",
+      "actual_sha256": "d22a0387d6edf26416fc9a8b4b055f1244f9a810726650401684053c08fd288a",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "ticker-desktop",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-7620751-20260922/ticker-desktop-expected.png",
+      "expected_sha256": "5b10208026b62fc8fa86230dc443bf674184fc73dec99bec0f0565b7fb5d914c",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-7620751-20260922/ticker-desktop.png",
+      "actual_sha256": "5b10208026b62fc8fa86230dc443bf674184fc73dec99bec0f0565b7fb5d914c",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "ticker-offline-mobile",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-7620751-20260922/ticker-offline-mobile-expected.png",
+      "expected_sha256": "05ec3e4c98ec2216fa958dd4e6e1ef34179e136ff109b069d080f9ff3aba8806",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-7620751-20260922/ticker-offline-mobile.png",
+      "actual_sha256": "05ec3e4c98ec2216fa958dd4e6e1ef34179e136ff109b069d080f9ff3aba8806",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "positions-dense",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-7620751-20260922/positions-dense-expected.png",
+      "expected_sha256": "d7609f61da0624ed79c9c4e3b580ea291af6e355c406a16e31d7773c9675f687",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-7620751-20260922/positions-dense.png",
+      "actual_sha256": "d7609f61da0624ed79c9c4e3b580ea291af6e355c406a16e31d7773c9675f687",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "scanner-dense",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-7620751-20260922/scanner-dense-expected.png",
+      "expected_sha256": "acbd7057aaee6ee3631b17e8f846c318e7740176e63db4481b6451ae725e0ee4",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-7620751-20260922/scanner-dense.png",
+      "actual_sha256": "acbd7057aaee6ee3631b17e8f846c318e7740176e63db4481b6451ae725e0ee4",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "ai-recommendation",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-7620751-20260922/ai-recommendation-expected.png",
+      "expected_sha256": "cddcd5525ed190e718bc99c8683a7bb2a9f71f4b94a9f3ef1418cf5ae3b3d8e1",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-7620751-20260922/ai-recommendation.png",
+      "actual_sha256": "1aa03cd82b712c913989dadcaa19e5f5f00e70fac253deb100fa5e80556139e4",
+      "diff_path": "apps/dashboard-e2e/visual-review/evidence/linux-curvature-v2-7620751-20260922/ai-recommendation-diff.png",
+      "diff_sha256": "ac570290e26dee378917afc1ba823631aa37b244583abc3ed88409c78766507d"
+    }
+  ]
+}

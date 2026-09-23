@@ -344,6 +344,14 @@ export interface FigureRowProps {
    * affordance for a DIFFERENT kind of copy — a figure's own methodology, not an elaborated caption).
    */
   captionTitle?: string;
+  /**
+   * Fidelity repair 2, N4 — opt-in label wrap for `direction="row"` only (default `false`: every
+   * consumer keeps today's single-line `white-space:nowrap; text-overflow:ellipsis`). The level
+   * ladder is the one caller that sets it — full labels ("Gamma flip") must never clip in its
+   * five-up band (< 1000px container). Ignored by `direction="column"` (the foot's label never
+   * truncates today; nothing there was reported clipping).
+   */
+  labelWrap?: boolean;
 }
 
 export function FigureRow({
@@ -361,6 +369,7 @@ export function FigureRow({
   valueSize = 14,
   liveBadge,
   captionTitle,
+  labelWrap = false,
 }: FigureRowProps) {
   const {
     figureState,
@@ -487,9 +496,14 @@ export function FigureRow({
             fontSize: 12,
             fontWeight: showDot ? 600 : 500,
             color: showDot ? 'info.main' : 'text.secondary',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
+            // Fidelity repair 2, N4 — `labelWrap` opt-in (default off, every OTHER `direction="row"`
+            // consumer — `LadderFoot` — keeps today's single-line ellipsis unchanged). The ladder
+            // alone sets it: under a five-up (< 1000px container) column, "Gamma flip" has no room
+            // to stay on one line without clipping (`crops/ladder-834.png`); the design keeps the
+            // full label, wrapped, never truncated.
+            whiteSpace: labelWrap ? 'normal' : 'nowrap',
+            overflow: labelWrap ? 'visible' : 'hidden',
+            textOverflow: labelWrap ? 'clip' : 'ellipsis',
           }}
         >
           {label}

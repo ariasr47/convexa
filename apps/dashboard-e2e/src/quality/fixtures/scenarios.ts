@@ -499,7 +499,10 @@ export const accessibilityScenarios = [
     'anonymous',
     { width: 1280, height: 900 },
     'dark',
-    [{ selector: '[role="alert"]', text: 'API error 503' }],
+    // Fidelity repair 2, N7 — the design's cold-start-failure sentence, never the raw client
+    // status string (the status itself is kept, as a Mono detail line — `HTTP 503` — so this
+    // substring match still proves nothing is hidden).
+    [{ selector: '[role="alert"]', text: "Couldn't load SPY." }],
     [
       { selector: '[data-testid="cold-load"]' },
       { selector: '[data-testid="command-deck"]' },

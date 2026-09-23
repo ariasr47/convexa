@@ -361,3 +361,32 @@ describe('plan-scope caption on DecisionCard', () => {
     expect(screen.queryByTestId('decision-metadata')).toBeNull();
   });
 });
+
+// =================================================================================================
+// Fidelity repair 2, N5 — the provenance chip's "As of" and the structure line's expiration read
+// through fmtAsOfEt/fmtExpiry; the raw ISO/date string never reaches the DOM. `data-rec-as-of` keeps
+// the raw ISO (a machine attribute, not copy) — untouched.
+// =================================================================================================
+describe('DecisionCard — as-of and expiration are formatted, never raw (fidelity repair 2, N5)', () => {
+  it('the raw ISO as_of string is absent from the DOM text; the design-shaped "HH:MM:SS ET" chip is present', () => {
+    renderCard(recAllTraced());
+    const card = screen.getByTestId('ai-rec-decision-card');
+    expect(card.textContent).not.toContain('2026-06-26T14:00:00Z');
+    expect(screen.getByText(/^As of \d{2}:\d{2}:\d{2} ET/)).toBeInTheDocument();
+  });
+
+  it('the raw expiration date string is absent from decision-metadata; the design-shaped "Mon D (N DTE)" form is present', () => {
+    renderCard(recAllTraced());
+    const metadata = screen.getByTestId('decision-metadata');
+    expect(metadata.textContent).not.toContain('2026-07-18');
+    expect(metadata.textContent).toMatch(/Jul \d+ \(\d+ DTE\)/);
+  });
+
+  it('data-rec-as-of keeps the raw ISO on the card root — a machine attribute, never copy', () => {
+    renderCard(recAllTraced());
+    expect(screen.getByTestId('ai-rec-decision-card')).toHaveAttribute(
+      'data-rec-as-of',
+      '2026-06-26T14:00:00Z',
+    );
+  });
+});
