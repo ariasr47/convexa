@@ -112,16 +112,29 @@ test.describe('A11Y behavioral sequences', () => {
     expect(url.pathname).toBe('/settings');
     expect(url.hash).toBe('');
   });
-  test('A11Y-B2 native actions and polite waitlist announcement', async ({ page }) => {
+  test('A11Y-B2 native CTA actions, keyboard-reachable, naming their destination', async ({
+    page,
+  }) => {
     const requestState = await installScenario(page, accessibilityScenarios[0]);
     expect(() => requestState.releaseInitialStream()).toThrow(/not armed/);
     await page.goto('/');
-    await expect(page.getByTestId('cta-primary')).toHaveAttribute('href', '/scanner');
-    await expect(page.getByTestId('cta-secondary')).toHaveAttribute('href', '/ticker');
-    await page.getByTestId('waitlist-button').press('Enter');
-    await expect(page.locator('[aria-live="polite"]')).toContainText(
-      "Thanks — we'll let you know when brokerage connect is live.",
-    );
+    for (const id of ['cta-primary', 'cta-band-primary']) {
+      const a = page.getByTestId(id);
+      await expect(a).toHaveAttribute('href', '/ticker');
+      await expect(a).toHaveAccessibleName('Open the Ticker');
+      expect(await a.evaluate((n) => n.tagName)).toBe('A');
+      await a.focus();
+      await expect.poll(() => a.evaluate((n) => n.matches(':focus-visible'))).toBe(true);
+    }
+    const secondary = page.getByTestId('cta-band-secondary');
+    expect(await secondary.evaluate((n) => n.tagName)).toBe('BUTTON');
+    await expect(secondary).toHaveAccessibleName('Sign in');
+    await expect(
+      page.getByText('New sign-ups are closed while Convexa is in private testing.'),
+    ).toBeVisible();
+    await secondary.press('Enter');
+    await expect(page.getByTestId('auth-dialog')).toBeVisible();
+    // NO [aria-live] region is asserted, because none is mounted (the waitlist toast is gone).
   });
   test('A11Y-B3 auth dialog containment, rejected submit and return focus', async ({ page }) => {
     const scenario = journeys.find((item) => item.id === 'signed-out-auth-dialog');

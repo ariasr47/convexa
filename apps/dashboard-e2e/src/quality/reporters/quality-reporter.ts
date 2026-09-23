@@ -93,9 +93,14 @@ const gateCounts: Record<string, number> = {
   // 44px with `line-height` instead, leaving `display: list-item` intact. 3 new
   // `no-overflow.spec.ts` tests (393 coarse, 393 fine, 1280 fine); bump to
   // `curvature-v2-surfaces-108-v1` (`tools/lib/manifest.mjs` enforces the same number).
-  chromium: 108,
+  // (curvature-v2-landing-and-site F15) 108 → 126: three new public routes (/blog, /methodology,
+  // an unmatched path) × six `ROUTES` loops in `no-overflow.spec.ts` = 18 net-new Chromium tests;
+  // bump to `curvature-v2-landing-and-site-126-v1` (`tools/lib/manifest.mjs` enforces the same
+  // number). Accessibility 16 → 19: one new axe scan per new surface (AC-G1), scans 9 → 12, held
+  // against the unchanged 7 behaviors (12 + 7 = 19).
+  chromium: 126,
   compatibility: 15,
-  accessibility: 16,
+  accessibility: 19,
   visual: 6,
 };
 export type VisualAttachmentRole = 'expected' | 'actual' | 'diff' | undefined;

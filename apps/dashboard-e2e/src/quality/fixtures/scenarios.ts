@@ -523,6 +523,25 @@ export const accessibilityScenarios = [
     ]),
     stream: 'payload-gap' as const,
   },
+  // (curvature-v2-landing-and-site F15, AC-G1) three new public surfaces. A11Y-1/A11Y-2 already
+  // scan `/` in dark and light and pick up the footer mount; every scan below picks up the footer
+  // for free.
+  base('A11Y-10', '/blog', 'anonymous', { width: 393, height: 852 }, 'dark', [
+    { selector: '[data-testid="blog-page"]' },
+    { selector: '[data-testid="site-footer"]' },
+  ]),
+  base('A11Y-11', '/methodology', 'anonymous', { width: 393, height: 852 }, 'dark', [
+    { selector: '[data-testid="methodology-page"]' },
+    { selector: '[data-testid="methodology-toc"]' },
+  ]),
+  base(
+    'A11Y-12',
+    '/this-address-does-not-exist',
+    'anonymous',
+    { width: 1280, height: 900 },
+    'dark',
+    [{ selector: '[data-testid="not-found-page"]' }, { selector: '[data-testid="site-footer"]' }],
+  ),
 ];
 export const visualScenarios = [
   base('landing', '/', 'anonymous', { width: 393, height: 852 }, 'dark', [

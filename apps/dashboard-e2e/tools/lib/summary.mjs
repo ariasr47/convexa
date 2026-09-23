@@ -184,8 +184,10 @@ export function validateSummary(summary, options = {}) {
     }
   }
   if (
+    // (curvature-v2-landing-and-site F15) 16 → 19: scans 9 → 12 (one new axe scan per new public
+    // surface, AC-G1), held against the unchanged 7 behaviors.
     summary.gate === 'accessibility' &&
-    (summary.selected !== 16 || summary.scans.length !== 9 || summary.behaviors.length !== 7)
+    (summary.selected !== 19 || summary.scans.length !== 12 || summary.behaviors.length !== 7)
   )
     err('accessibility inventory');
   if (summary.gate === 'accessibility') {

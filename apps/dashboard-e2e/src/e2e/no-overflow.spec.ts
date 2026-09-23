@@ -435,6 +435,30 @@ const ROUTES: Array<{ path: string; ready: (page: Page) => Promise<void> }> = [
     path: '/alerts',
     ready: async (p) => void (await expect(p.getByTestId('alerts-page')).toBeAttached()),
   },
+  // (curvature-v2-landing-and-site F15) three new public surfaces (AC-G3b) — each with a ready
+  // marker per the suite's own vacuity-guard idiom.
+  {
+    path: '/blog',
+    ready: async (p) => void (await expect(p.getByTestId('blog-page')).toBeAttached()),
+  },
+  {
+    path: '/methodology',
+    ready: async (p) => {
+      await expect(p.getByTestId('methodology-page')).toBeAttached();
+      // VACUITY GUARD — all ten sections actually rendered before we measure. PLAN.md's F15 text
+      // names a `methodology-section` testid; `MethodologyPage.tsx` (F10, already shipped) carries
+      // no such testid, and F15's own paths are `apps/dashboard-e2e/**` only — adding one there is
+      // outside this task's write scope. Counting the real `<section>` landmark elements the page
+      // renders (`component="section"` per `METHOD_COPY.sections`, confirmed ten in
+      // `methodology.spec.tsx`) is the same non-vacuous property without touching F10's file.
+      await expect(p.getByTestId('methodology-page').locator('section')).toHaveCount(10);
+    },
+  },
+  {
+    // AC-G3b — an address that matches no route. Deliberately not a near-miss of a real path.
+    path: '/this-address-does-not-exist',
+    ready: async (p) => void (await expect(p.getByTestId('not-found-page')).toBeAttached()),
+  },
 ];
 
 // ---- A SEEDED positions book ---------------------------------------------------------------------
