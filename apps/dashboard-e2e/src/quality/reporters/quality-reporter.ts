@@ -98,9 +98,15 @@ const gateCounts: Record<string, number> = {
   // bump to `curvature-v2-landing-and-site-126-v1` (`tools/lib/manifest.mjs` enforces the same
   // number). Accessibility 16 → 19: one new axe scan per new surface (AC-G1), scans 9 → 12, held
   // against the unchanged 7 behaviors (12 + 7 = 19).
+  // (curvature-v2-landing-and-site GATE Z I-2, amendment 5) Accessibility 19 → 31: the scan
+  // matrix is NAMED — the six surfaces (/, /blog, /methodology, the 404, the sign-in wall, the
+  // degraded wall) in dark AND light at 393, the 404 additionally at 1280 (unchanged), and the
+  // open sign-in dialog counted as a surface too, both schemes at 393. Scans 12 → 24, held
+  // against the unchanged 7 behaviors (24 + 7 = 31). Chromium is unchanged at 126 — this repair
+  // does not touch `no-overflow.spec.ts`.
   chromium: 126,
   compatibility: 15,
-  accessibility: 19,
+  accessibility: 31,
   visual: 6,
 };
 export type VisualAttachmentRole = 'expected' | 'actual' | 'diff' | undefined;

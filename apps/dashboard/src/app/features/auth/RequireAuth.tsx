@@ -12,6 +12,7 @@
  * Product spine: refuse VISIBLY (never silent redirect), say what unlocks, and leave a free path
  * into the public Ticker so the funnel does not dead-end.
  */
+import { extrasFor } from '@/shared/theme/tokens';
 import { RouteFallback } from '@/shared/ui/RouteFallback';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -110,6 +111,11 @@ export function RequireAuth({ children, surface }: Props) {
                 variant="outlined"
                 onClick={() => void refresh()}
                 data-testid="require-auth-retry"
+                // GATE Z I-2 (AC-G1, color-contrast, serious): outlined-button labels default to
+                // `primary.main` (measured 3.26:1 on the wall's `background.paper` panel in light
+                // mode) — same text-grade-amber fix as the landing's `cta-secondary` (F7c,
+                // `591e2654`).
+                sx={{ color: (theme) => extrasFor(theme).textAmber }}
               >
                 {AUTH_COPY.gate.retry}
               </Button>
@@ -119,6 +125,9 @@ export function RequireAuth({ children, surface }: Props) {
               to="/ticker"
               variant="outlined"
               data-testid="require-auth-ticker"
+              // GATE Z I-2 (AC-G1, color-contrast, serious): same fix as `require-auth-retry`
+              // above (3.26:1 measured, under the 4.5:1 text floor).
+              sx={{ color: (theme) => extrasFor(theme).textAmber }}
             >
               Open free Ticker →
             </Button>

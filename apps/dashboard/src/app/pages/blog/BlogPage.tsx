@@ -89,7 +89,15 @@ export function BlogPage() {
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                   {a.description}
                 </Typography>
-                <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 600 }}>
+                <Typography
+                  variant="body2"
+                  // GATE Z I-2 (AC-G1, color-contrast, serious): the light-scheme fill-grade amber
+                  // (`primary.main`) measured 3.26:1 on `background.paper` — under the 4.5:1 text
+                  // floor. Same fix as the landing's outlined/text CTAs (F7c, `591e2654`): the
+                  // LABEL takes the TEXT-GRADE amber (`extrasFor(theme).textAmber`, ≥4.5:1); dark
+                  // is byte-identical.
+                  sx={{ color: (theme) => extrasFor(theme).textAmber, fontWeight: 600 }}
+                >
                   {BLOG_COPY.readPost}
                 </Typography>
               </Stack>

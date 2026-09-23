@@ -29,10 +29,14 @@ test('browser quality manifest is closed and has the required inventories', () =
   // (curvature-v2-landing-and-site F15) 108 → 126: three new public routes (/blog, /methodology,
   // an unmatched path) × six ROUTES loops in `no-overflow.spec.ts` = 18 net-new Chromium tests.
   // Accessibility scans 9 → 12: one new axe scan per new surface (AC-G1).
+  // (curvature-v2-landing-and-site GATE Z I-2, amendment 5) Accessibility scans 12 → 24: the
+  // NAMED six-surface × {dark,light} × 393 matrix (the 404 also at 1280, unchanged; the open
+  // sign-in dialog counted as a surface too). Chromium unchanged at 126 — this repair does not
+  // touch `no-overflow.spec.ts`.
   assert.equal(manifest.full_chromium.tests.length, 126);
   assert.equal(manifest.compatibility.journeys.length, 5);
   assert.deepEqual(manifest.compatibility.projects, ['chromium', 'firefox', 'webkit']);
-  assert.equal(manifest.accessibility.scans.length, 12);
+  assert.equal(manifest.accessibility.scans.length, 24);
   assert.equal(manifest.accessibility.behaviors.length, 7);
   assert.equal(manifest.visual.scenarios.length, 6);
 });

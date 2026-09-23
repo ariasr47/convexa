@@ -77,6 +77,8 @@ export function validateManifest(value) {
     // gained /blog, /methodology and one unmatched path (AC-G3b), and ROUTES is iterated by six
     // loops — 393 dark, 393 light, tablet 834, md 900, lg 1280, and the lg-1280 light walk.
     // 3 routes × 6 loops = 18 net-new Chromium tests. Added coverage, not a breach of AC-G3.
+    // (curvature-v2-landing-and-site GATE Z I-2, amendment 5) chromium count UNCHANGED at 126 —
+    // this repair widens the ACCESSIBILITY scan matrix only (below), not `no-overflow.spec.ts`.
     value.full_chromium?.inventory_id !== 'curvature-v2-landing-and-site-126-v1' ||
     !Array.isArray(tests) ||
     tests.length !== 126
@@ -123,7 +125,13 @@ export function validateManifest(value) {
     // (curvature-v2-landing-and-site F15) 9 → 12: AC-G1 requires the accessibility gate to cover the
     // six surfaces, and /blog, /methodology and the 404 had no scan. The id regex is widened with the
     // count — `A11Y-[1-9]` structurally rejected a tenth scan, which is why both move together.
-    scans.length !== 12 ||
+    // (curvature-v2-landing-and-site GATE Z I-2, amendment 5) 12 → 24: the matrix is NAMED —
+    // every one of the six surfaces (/, /blog, /methodology, the 404, the sign-in wall, the
+    // degraded wall) in dark AND light at 393 (twelve combinations, two of which — blog/dark,
+    // methodology/dark — already existed), the 404 stays additionally at 1280 (unchanged), and
+    // the open sign-in dialog counts as a surface too, scanned in both schemes at 393. Twelve net
+    // new scans. The id regex below moves with it.
+    scans.length !== 24 ||
     !Array.isArray(behaviors) ||
     behaviors.length !== 7 ||
     value.accessibility.waiver_path !== 'apps/dashboard-e2e/src/quality/a11y-waivers.json'
@@ -140,7 +148,7 @@ export function validateManifest(value) {
   if (
     scans.some(
       (x) =>
-        !/^A11Y-(?:[1-9]|1[0-2])$/.test(x.id) ||
+        !/^A11Y-(?:[1-9]|1\d|2[0-4])$/.test(x.id) ||
         !Array.isArray(x.ready) ||
         !x.ready.length ||
         !Array.isArray(x.forbidden) ||

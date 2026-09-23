@@ -23,6 +23,13 @@ for (const scenario of accessibilityScenarios) {
       await page.clock.fastForward(1_000);
     }
     await assertReady(page, scenario);
+    // GATE Z I-2 (amendment 5) — the open sign-in dialog counts as a surface: open it AFTER the
+    // landing shell is ready, before the axe scan, so the scan sees the dialog's own contrast
+    // and its (now-wired) accessible name too.
+    if (scenario.id === 'A11Y-23' || scenario.id === 'A11Y-24') {
+      await page.getByTestId('cta-band-secondary').click();
+      await expect(page.getByTestId('auth-dialog')).toBeVisible();
+    }
     if (scenario.id === 'A11Y-5') {
       await expect
         .poll(() =>

@@ -181,6 +181,13 @@ export function AuthDialog({
         }
       }}
       data-testid="auth-dialog"
+      // GATE Z I-2 (AC-G1, `aria-dialog-name`): MUI's `Dialog` always emits an `aria-labelledby`
+      // (`useId(ariaLabelledbyProp)`, `Dialog.js`), generating one even when unset — it only
+      // resolves to a real node when a `<DialogTitle>` registers that id via `DialogContext`.
+      // This dialog renders its title as a plain `Typography` (never `DialogTitle`), so the
+      // auto-generated id pointed at nothing and the dialog's accessible name never resolved.
+      // Passing an explicit id here, matched on the title node below, wires it for real.
+      aria-labelledby="auth-dialog-title-heading"
       slotProps={{
         root: { onTransitionExited: onExited },
         transition: { onExited },
@@ -205,7 +212,12 @@ export function AuthDialog({
             {/* Header — bold title + subtitle + close, per the Figma AuthModal. */}
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
               <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                <Typography variant="h6" sx={{ fontWeight: 700 }} data-testid="auth-dialog-title">
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700 }}
+                  data-testid="auth-dialog-title"
+                  id="auth-dialog-title-heading"
+                >
                   {title}
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
