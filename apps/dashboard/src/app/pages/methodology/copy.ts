@@ -16,7 +16,7 @@
  * `chip live` + dot + `levels as-of 42s`) — it does not ship: both are banned on a page with no
  * stream (AC-L5), and the state matrix commissions no instrument on this page.
  *
- * FOUR NAMED DELTAS (quoted, so AC-C1 pins them — the quote governs where it deviates from the
+ * SIX NAMED DELTAS (quoted, so AC-C1 pins them — the quote governs where it deviates from the
  * source line named beside it):
  *   1. Score section's introducing clause — verbatim up to "never re-derives the score from scan
  *      rows alone."; the final clause is corrected to state the two-stage clamp (the five maxima
@@ -29,6 +29,16 @@
  *   4. The vocabulary table carries every member of the shipped closed union (imported, never
  *      retyped, so a tenth member without a definition red-builds — §7 item 9's set-equality),
  *      each rendered Plex Sans, never mono, never a figure. No "this is a selection" clause.
+ *   5. GATE Z amendment 1 (AC-M2b) — the score table's `Flip transition` row's "What it reads"
+ *      cell is `the mid sits within 1% of the gamma flip`, replacing the design source's `the
+ *      flip moved across the mid since the last snapshot`: the engine scores this component when
+ *      `|gamma_flip_pct| <= FLIP_PROXIMITY_PCT` (`signals.rs:19,241`, one snapshot, no
+ *      cross-snapshot comparison) — the design's wording describes a move the engine never
+ *      computes.
+ *   6. GATE Z amendment 2 (AC-M4a) — the Vocabulary section states, once, before its table:
+ *      `This is the complete set: the product renders no other word in place of a number.` §4
+ *      supplied no such sentence at synthesis; this one claims closure without a count, so it
+ *      stays true as the imported union grows.
  *
  * Score table `Max` column (40 / 25 / 25 / 10 / 6): pinned to `libs/quant-engine/src/signals.rs`
  * by F13's structural spec (AC-M2, §7 item 10) — this module states the design source's own
@@ -139,7 +149,7 @@ const SECTIONS: readonly MethodSection[] = [
           ['Proximity to walls / flip', '40', 'how close the mid sits to a level that matters'],
           ['|IV/HV − 1| stretch', '25', 'how far implied vol sits from realised'],
           ['Active setups', '25', 'rule-based reads currently firing'],
-          ['Flip transition', '10', 'the flip moved across the mid since the last snapshot'],
+          ['Flip transition', '10', 'the mid sits within 1% of the gamma flip'],
           ['Dark-pool confluence', '6', 'optional · off-exchange prints near a level'],
         ],
       },
@@ -224,6 +234,12 @@ const SECTIONS: readonly MethodSection[] = [
     id: 'vocabulary',
     h: 'Vocabulary',
     blocks: [
+      {
+        kind: 'prose',
+        body: [
+          'This is the complete set: the product renders no other word in place of a number.',
+        ],
+      },
       {
         kind: 'table',
         head: ['Literal', 'Means'],

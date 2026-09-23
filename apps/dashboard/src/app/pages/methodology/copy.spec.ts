@@ -187,6 +187,22 @@ describe('The three quoted deltas land byte-exact (AC-C1)', () => {
     const serialized = JSON.stringify(METHOD_COPY).toLowerCase();
     expect(serialized).not.toMatch(/persona screen|flows screen|operator screen/);
   });
+
+  it('GATE Z amendment 1 (AC-M2b) — the Flip transition row reads the engine-true cell, never the retired cross-snapshot claim', () => {
+    const [table] = tableBlocks(section('score-and-tier'));
+    const row = table.rows.find((r) => r[0] === 'Flip transition');
+    expect(row?.[2]).toBe('the mid sits within 1% of the gamma flip');
+    expect(row?.[2]).not.toMatch(/moved across the mid since the last snapshot/);
+  });
+
+  it('GATE Z amendment 2 (AC-M4a) — the Vocabulary section states the set is complete', () => {
+    const text = proseBlocks(section('vocabulary'))
+      .flatMap((b) => b.body)
+      .join(' ');
+    expect(text).toBe(
+      'This is the complete set: the product renders no other word in place of a number.',
+    );
+  });
 });
 
 describe('Retired v1 fragments do not survive the rewrite (AC-C1a’s negative half)', () => {

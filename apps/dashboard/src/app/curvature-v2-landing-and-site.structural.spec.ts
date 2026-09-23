@@ -124,7 +124,10 @@ describe('Arm A · copy fidelity to design/src/screens/methodology.mjs (AC-C1a, 
   const isDelta = (s: string): boolean =>
     s.includes('capped twice') || // delta 1 — score section's corrected intro clause (AC-M2a)
     s.includes('A "no trade" read is a complete, correct answer') || // delta 2 — canon rule 16
-    s.startsWith('What leaves the machine, on demand'); // delta 3 — the reviewable-payload sentence
+    s.startsWith('What leaves the machine, on demand') || // delta 3 — the reviewable-payload sentence
+    // GATE Z amendment 2 (AC-M4a) — the vocabulary section's completeness sentence: §4 supplied
+    // no such sentence at synthesis, so it has no home in the design source by construction.
+    s === 'This is the complete set: the product renders no other word in place of a number.';
 
   function allProse(): string[] {
     return METHOD_COPY.sections.flatMap((s) =>
@@ -134,11 +137,11 @@ describe('Arm A · copy fidelity to design/src/screens/methodology.mjs (AC-C1a, 
     );
   }
 
-  it('anti-vacuity — ten headings and seventeen paragraphs, three of which are the named deltas', () => {
+  it('anti-vacuity — ten headings and eighteen paragraphs, four of which are the named deltas', () => {
     expect(METHOD_COPY.sections).toHaveLength(10);
     const prose = allProse();
-    expect(prose).toHaveLength(17);
-    expect(prose.filter(isDelta)).toHaveLength(3);
+    expect(prose).toHaveLength(18);
+    expect(prose.filter(isDelta)).toHaveLength(4);
     expect(prose.filter((s) => !isDelta(s))).toHaveLength(14);
   });
 
@@ -147,14 +150,14 @@ describe('Arm A · copy fidelity to design/src/screens/methodology.mjs (AC-C1a, 
     expect(missingFrom(METHODOLOGY_MJS, headings)).toEqual([]);
   });
 
-  it('every paragraph except the three named deltas is present byte-for-byte', () => {
+  it('every paragraph except the four named deltas is present byte-for-byte', () => {
     const kept = allProse().filter((s) => !isDelta(s));
     expect(missingFrom(METHODOLOGY_MJS, kept)).toEqual([]);
   });
 
-  it('negative control — the three excluded deltas are NOT verbatim upstream (the exclusion is real, not a loophole)', () => {
+  it('negative control — the four excluded deltas are NOT verbatim upstream (the exclusion is real, not a loophole)', () => {
     const deltas = allProse().filter(isDelta);
-    expect(deltas).toHaveLength(3);
+    expect(deltas).toHaveLength(4);
     expect(missingFrom(METHODOLOGY_MJS, deltas)).toEqual(deltas);
   });
 });
