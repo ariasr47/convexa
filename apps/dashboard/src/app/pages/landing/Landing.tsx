@@ -251,6 +251,7 @@ export function Landing() {
               </Typography>
               <Stack
                 spacing={1.5}
+                useFlexGap
                 // GATE Z amendment 7 (design conformance, QA m-3): the design draws the two hero
                 // CTAs FULL-WIDTH and stacked at <=699px, row from 700 — a threshold neither MUI
                 // named breakpoint (`sm`=600) nor any other already-declared one carries, so this
@@ -259,11 +260,26 @@ export function Landing() {
                 // by its `alignItems: 'flex-start'` parent, `:195` above) plus the Stack's own
                 // default `align-items: stretch` in column mode is what makes the BUTTONS
                 // themselves full-width — no per-button `sx` needed.
+                //
+                // QA re-check R-1 (2026-09-23): without `useFlexGap`, `spacing` renders as a
+                // per-child margin keyed to the `direction` PROP, which stayed 'column' by default
+                // while this `sx` flipped only the visual `flexDirection` at 700 — the stale
+                // `margin-top: 12px` on the second child then read as CROSS-AXIS margin in row
+                // mode (0px gap, secondary pushed 12px lower, and `align-items: stretch`'s line-box
+                // grew to fit that margin, stretching the primary button to 54px). `useFlexGap`
+                // renders `spacing` as a flex `gap`, which tracks whichever `flexDirection` is
+                // active — matching the design's `.hero-ctas` rule (flex, a 12px gap, centred
+                // cross-axis alignment) in both row and column mode, with no per-child margin to
+                // distort the line box.
                 sx={(theme) => ({
                   mt: 1,
                   width: '100%',
                   flexDirection: 'column',
-                  [theme.breakpoints.up(700)]: { width: 'auto', flexDirection: 'row' },
+                  [theme.breakpoints.up(700)]: {
+                    width: 'auto',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  },
                 })}
               >
                 <Button
@@ -293,7 +309,20 @@ export function Landing() {
                   // design's secondary is phosphor"). `text.primary` clears 4.5:1 in both schemes
                   // by construction (it is the body-text colour), so AC-G1 stays satisfied without
                   // the amber override the outlined-button default would otherwise need.
-                  sx={{ color: 'text.primary' }}
+                  //
+                  // QA re-check m-R3 (2026-09-23): the BORDER stayed MUI's outlined default
+                  // (`alpha(primary.main, 0.5)` — measured 1.69:1 on the light background), where
+                  // the design's `.btn.secondary` draws `border-color: var(--line-2)`
+                  // (`extrasFor(theme).lineStrong`, the v2 `line2` strong-divider/control-border
+                  // token). Amber on a secondary outline also spends the accent grade the canon's
+                  // "Two amber grades" rule (DESIGN_SYSTEM.md) reserves for the primary fill,
+                  // text-grade copy and the focus ring — the `:focus-visible` amber ring
+                  // (`theme.ts`'s `MuiButtonBase-root:focus-visible` outline) is a separate box-
+                  // model layer from `border-color` and still renders unchanged.
+                  sx={{
+                    color: 'text.primary',
+                    borderColor: (theme) => extrasFor(theme).lineStrong,
+                  }}
                 >
                   {LANDING_COPY.hero.secondary}
                 </Button>
