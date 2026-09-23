@@ -224,6 +224,19 @@ change line or a name.
 - **F-S — Page panels have no elevation where the design's are e1 (review N14).** Desk widgets carry e1 (matching `.panel`); settings,
   positions and alerts panels render `shadow: none`. One decision, one token. Also open from the review: the band's ≤ 800 px density target
   (968 today) and the masthead's last 15 px (215 vs ≤ 200) — both already owner items from the 2026-09-08 repair.
+- **F-T — a stuck ticker compute wedges every later request for that ticker; the local desk "never loads".** Seen twice on
+  2026-09-10 on the Mac API (`WARM_ENABLED=0`): `/api/ticker/SPY` (with and without `dark_pool=true`) and
+  `/api/recommendation/status/SPY` stopped answering (curl timeouts at 45 s, 120 s, >4 min) while `/api/health`, `/api/scan`
+  and `/api/ticker/QQQ` (4.4 s) kept answering; the vendor REST answered directly in 0.3–1.6 s and production (same key,
+  warmer on) answered in 0.15 s. After a restart with `WARM_ENABLED=1 WARM_SYMBOLS=SPY,QQQ` the warmer computed SPY in
+  **4.8 s** (`compute_ms=4820`) and the route answered in 15 ms — so the hang was not chain size (13,296 contracts, 54 vendor
+  pages ≈ 58 s to page through). Mechanism to confirm: the analytics singleflight (`state.rs:272` "Coalesce concurrent
+  analytics computes for the same ticker") holds a future that never completes (a dark-pool or pagination call with no
+  deadline?), and every later request coalesces onto it with no expiry; the desk's 60 s poll then aborts and re-issues
+  (`ERR_ABORTED` ×N in the network log), never seeing a bundle. Fix shape: a deadline on the coalesced compute (drop the
+  entry on timeout), a per-call timeout on the vendor client, and a `WARN` when a compute exceeds N s. The Mac `.env` now
+  runs the warmer for SPY,QQQ as a workaround; the stock websocket also disconnects every ~60–120 s locally while
+  production holds the same key (one socket per key?) — worth confirming with the vendor's limits.
 
 ## Harvest — 2026-09-06 (owner direction: AI-powered Convexa)
 <!-- atlas: theme=trust-the-signal horizon=next -->

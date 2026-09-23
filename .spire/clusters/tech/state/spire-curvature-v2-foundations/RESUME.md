@@ -1,5 +1,82 @@
 # RESUME — spire/curvature-v2-foundations
 
+## 🌅 MORNING — 2026-09-11 (written at the end of the night shift; read this first — the NIGHT SHIFT and CLOSE-OUT blocks below are history)
+
+**Phase 4's frontend build ran to the end of what the plan allows without you.** On `spire/curvature-v2-landing-and-site`
+(pushed; 30+ commits over `main`): F1 → F13 all landed through k=2 workers, plus three conductor-routed follow-ups the
+plan had not seen (F7b: the shell's live-lifecycle flow test now enters `/ticker` through the primary CTA; F7c: the
+landing's outlined buttons and hero chip label with the text-grade amber — light-scheme contrast 3.0 → 5.2, A11Y-2
+passes; a scoped Prettier pass on seven lane files). **Conductor's cold pass on the final tree `591e2654`:** typecheck 0 ·
+**254 files / 3,061 tests** (F1 baseline 243 / 2,941) · lint 0 · format 0 · production build 0 · bundle budget 0 ·
+e2e **108/108, 0 flaky** · accessibility **15/16** (only `A11Y-B2`, which asserts the OLD landing's CTA hrefs and waitlist
+button and lives in `dashboard-e2e/**` — F15's file) · `apps/api` / `libs/quant-engine` / `libs/api` diff **0**. The landing
+measures 1.06× the design's height at 1440/1280 and 1.01–1.02× at 834/390 with no overflow
+(`state/spire-curvature-v2-foundations/phase4-build-verify/pairs/landing-*.jpg`). Full record: the feature's
+`_MANIFEST.md` (Workers line + "Conductor's cold verification").
+
+**What is deliberately NOT done, and why (in order for you):**
+1. **PR #49 (`fix/fidelity-repair-2`) is still open** — the Windows receipt flow (win32 + linux) for `ticker-desktop`,
+   `ai-recommendation` and possibly `ticker-offline-mobile`, per `visual-baseline-receipts/RUNBOOK.md`, then two green CI
+   visual runs, then merge (merge commit). Nothing else in this list can start before that merge.
+2. **F14, F15 and the closer F16** on the landing branch wait for that merge (F15 writes `scenarios.ts`, which #49 edits;
+   F14 pins against `distanceToLevel.ts`). After merging #49: rebase the landing branch onto main, then run F14 and F15 as
+   a pair, then F16. F16's live decision: the entry chunk is **20.88 kB gzip**, above SPEC §2.4's 20 kB line, so the
+   `Suspense` split is licensed — the closer measures and decides; `check:bundle` (22 KB brotli) currently passes.
+3. **GATE Q** (`spire-tech-qa`, fresh, on Opus) after F16 — it will also audit the `Workers:` line against the Independence
+   table. Then GATE S needs the **landing baseline** re-accepted on Windows (the same runbook; `landing` is red by design).
+4. **Compatibility gate** could not run here (no Firefox/WebKit on this Mac; chromium journeys 5/5). CI runs all three.
+
+**Polish the closer should pick up (seen, not fixed):** the phone landing's two CTAs are narrower than the design's
+full-width pair; the pre-load toolbar on `/ticker` still renders as v1's raised panel above the new skeleton (R1 in the
+repair report); the side-column title wraps "· SPY" (R2). Owner calls stay in BACKLOG F-M…F-S.
+
+**Records landed on `main` overnight:** #47 (blocker records), #48 (the fidelity review), #50 (the interim night handover),
+and this one. Nothing else touched `main`; nothing deployed by this session; no baseline written; no history rewritten.
+
+**Machines and ports:** the Mac's dev servers are stopped; `npx nx serve @convexa/dashboard` (:4200) and a static
+`design/site` server (:4310) bring the pair back; the API on :8000 is free again (the pdf-translator harness released it).
+The Write tool is path-guarded to the repo root — agents cannot write into sibling worktrees (the planner fell back to
+`~/.claude/plans`); the conductor's Bash edits in a worktree work. Traps learned tonight: `--skip-nx-cache` whenever a
+pin's input lives in another project (`libs/quant-engine`, `design/*.mjs`); MUI's `sx` does not resolve theme paths for
+`fill`/`stroke` (use the callback form); outlined/text buttons label with the FILL amber unless told otherwise.
+
+## 🌙 NIGHT SHIFT — 2026-09-10 (Mac, unattended; owner asleep, judgement delegated) — supersedes the CLOSE-OUT block below
+
+**Read this first.** Written at GATE PLAN, refreshed at the end of the night if the session lasts. Everything is on branches
+or on `main`; nothing was merged to `main` except records, nothing deployed, no baseline written, no history rewritten.
+
+**Landed on `main` (records only):** #47 (blocker records) `3f0a4ae1` · #48 (the fidelity review) `4ca9edc7` · this handover.
+
+**PR #49 `fix/fidelity-repair-2` — OPEN, do not merge until the baselines are re-accepted.** The review's six desk defects
+(N1 cold-load skeleton in the final shape · N2 side-column title · N4 ladder label at 834 · N5 as-of/expiration formatter
+on the exchange clock, follow-up included · N6 one "Time horizon" · N7 the failure sentence), each with a RED test first;
+conductor cold-verified standalone: typecheck 0 · **2,977** unit tests · lint 0 · format 0 · build 0 · desk e2e **108/108,
+0 flaky** · accessibility **16/16** · harness 22/22 · composition byte-identical to the lane's (2,719 at 1280/1440; 5,464 at
+390). Report `FIDELITY_REPAIR_2_REPORT.md`; evidence `fidelity-repair-2-{after,verify}/`; residuals R1 (pre-load toolbar
+still v1's raised panel) and R2 (title wraps "· SPY") named there. **Owner calls from the review are BACKLOG F-M…F-S.**
+
+**What the owner does on waking, in order:**
+1. **Windows box → the receipt flow for PR #49**, both platforms, per `visual-baseline-receipts/RUNBOOK.md` (win32 natively,
+   linux in the Playwright container via `linux-container/*.sh`): `git fetch && git switch fix/fidelity-repair-2 && git pull
+   --ff-only` → compare-only (`BROWSER_QUALITY_PREBUILD_STATUS=pass npm run browser:visual`, expected red on `ticker-desktop`,
+   `ai-recommendation`, possibly `ticker-offline-mobile`) → look → `visual_receipts.mjs authorize` → `browser:visual:update
+   -- --authorization …` → look → `accept` → two clean compares → `stability` → one commit per platform → push. Then two
+   green CI runs of the visual child → merge #49 (merge commit).
+2. **Then phase 4's blocked rows:** F14, F15 and the closer F16 on `spire/curvature-v2-landing-and-site` wait for that merge
+   (they touch or read the repair's paths). Rebase the landing branch onto main after #49 lands.
+
+**Phase 4 (`curvature-v2-landing-and-site`) — GATE PLAN complete, frontend build in flight.** SPEC approved (owner-delegated);
+branch rebased onto main and force-pushed with lease (`0eaf3f8b`); PLAN.md at `cfc7e51e` (planner on Opus 5, one pass):
+16 frontend tasks, backend empty by contract, V-1…V-15; conductor rulings **C1** (the `VALUE_CARD_RAW` pin goes with
+`ValueCard`) and **C2** (a conditional GATE Z on the bundle budget — never raise the pin). Workers run in the main working
+tree, k=2, in the plan's dependency order: F1 → (F2, F5) → (F3, F6) → (F4, F8) → (F9, F11) → (F7, F10) → (F12, F13); each
+commits on the branch; the conductor pushes the branch as a backup after each join. **GATE Q has not run.** `landing`'s visual
+scenario will be red by design until the owner re-accepts it (win32 + linux) — the same flow as item 1, after the closer.
+
+**Ports / machines:** the pdf-translator harness pins :8000 by a literal; that session gave the all-clear at ~11:20 UTC, but
+check `lsof -i :8000` before relaunching the API. The Mac has no Docker; darwin receipts are invalid by schema. The design site
+and the dashboard dev server were stopped for the gates.
+
 ## ✅ CLOSE-OUT — 2026-09-10 (Mac): the three owner blockers are done · PR #46 MERGED as `3f9d941e` · key rotated · D-B = (A), D-A = (A) folded at R4 pass 3 · next: SPEC approval → rebase → GATE PLAN
 
 **Read this first; the HANDOVER below it is history (its three blockers are closed here).** Heads re-verified against
@@ -741,7 +818,7 @@ value of **60**, and the gap is in the canon's prose, not the code.
 
 # RESUME — spire/curvature-v2-foundations (2026-09-03)
 
-**Resume status:** CLOSED OUT on the Mac 2026-09-10 — **phases 1–3 merged to main (`3f9d941e`); key rotated; phase 4 SPEC folded and awaiting owner approval → GATE PLAN — see the CLOSE-OUT block at the top.**  
+**Resume status:** MORNING 2026-09-11 — **phases 1–3 on main; repair PR #49 open (Windows baselines first); phase 4 built through F13 + follow-ups on `spire/curvature-v2-landing-and-site` (`591e2654`, cold-verified); F14/F15/F16 → GATE Q → landing baseline are the owner's next steps — see the MORNING block at the top.**  
 **Written:** 2026-09-03 (GATE R, phase 1 closed at GATE S — a clean phase boundary, not a mid-build checkpoint)
 
 Written at GATE R for a **fresh session on another machine**. Self-contained against `PROJECT_CONTEXT.md`.

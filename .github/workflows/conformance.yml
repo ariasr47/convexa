@@ -82,6 +82,11 @@ jobs:
   local-auth:
     name: Local API + auth-gated
     runs-on: ubuntu-24.04
+    # The nightly exists to watch the DEPLOYED contract drift, which prod-public already does on
+    # its own. This job boots api-rust in the runner, so it is the expensive half of the workflow
+    # and it tests this commit rather than production — nothing the schedule can learn. It runs on
+    # every push to main and on demand, which is when its answer can actually change.
+    if: github.event_name != 'schedule'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
