@@ -8,8 +8,26 @@
  * `METHOD_COPY.sections` list (PLAN D1/D2) — they read the same array, so they cannot diverge.
  * Each section renders as `<Box component="section" id={section.id} aria-labelledby={...}>`
  * (AC-M1's stable deep-link anchor lives on the section wrapper, not the heading) with an
- * `<h2>`; each index entry is a plain `<a href={'#' + section.id}>` (native fragment
- * navigation, not a `RouterLink` — these never leave the page).
+ * `<h2>`; each index entry is a plain `<a href={'/methodology#' + section.id}>` (native
+ * fragment navigation, not a `RouterLink` — these never leave the page).
+ *
+ * GATE Z I-1 (AC-M6/AC-M1): `apps/dashboard/index.html:5` declares `<base href="/">`, and the
+ * HTML fragment-resolution algorithm resolves a BARE `href="#id"` against that base, not against
+ * the document's current path — so a bare hash landed the reader on `/#id` (the landing), never
+ * on this page. An ABSOLUTE-PATH href (`/methodology#id`) is unaffected by `<base>` and, because
+ * the browser recognises it as a same-document reference once already on `/methodology`, still
+ * navigates natively (no reload, no RouterLink, no onClick override) — the plain-anchor
+ * FRAGMENT-NAVIGATION property this file has always wanted stays true, the base-tag hazard just
+ * needed an absolute path to be immune to it. jsdom implements no `<base>` resolution at all, so
+ * `methodology.spec.tsx`'s render-level test never saw this (the bounced GATE Q finding); the
+ * regression is covered by an e2e case instead
+ * (`apps/dashboard-e2e/src/e2e/navigation.spec.ts`, "methodology on-page index").
+ *
+ * A FRESH load of `/methodology#id` has the same defect for a different reason: the browser's
+ * own scroll-to-fragment step runs once, at navigation time, before this lazy route's chunk has
+ * rendered the section elements — the id does not exist in the DOM yet, so the browser's own
+ * attempt silently finds nothing and never retries. The effect below is the manual equivalent,
+ * run once after mount.
  *
  * The on-this-page index is a plain VERTICAL list at every width, sticky above `md` (mirrors
  * `design/src/screens/methodology.mjs:6`'s `.toc { position: sticky }`), plain in-flow below —
@@ -28,6 +46,7 @@
  * inversion canon rule 24 exists to prevent.
  */
 import { SANS_FACE } from '@/shared/figure';
+import { extrasFor } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -118,6 +137,23 @@ export function MethodologyPage() {
     };
   }, []);
 
+  // GATE Z I-1 (AC-M1) — a FRESH `/methodology#id` load: the browser's own scroll-to-fragment
+  // step already ran, before React had rendered this lazy route's sections, so it found nothing.
+  // Run the equivalent once after mount, against the real DOM.
+  useEffect(() => {
+    if (!window.location.hash) return;
+    let id: string;
+    try {
+      id = decodeURIComponent(window.location.hash.slice(1));
+    } catch {
+      return;
+    }
+    const target = document.getElementById(id);
+    if (!target) return;
+    target.scrollIntoView({ block: 'start' });
+    target.focus();
+  }, []);
+
   return (
     <Box
       data-testid="methodology-page"
@@ -160,7 +196,7 @@ export function MethodologyPage() {
             <Box
               key={section.id}
               component="a"
-              href={`#${section.id}`}
+              href={`/methodology#${section.id}`}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -185,6 +221,7 @@ export function MethodologyPage() {
               component="section"
               id={section.id}
               aria-labelledby={headingId(section)}
+              tabIndex={-1}
               sx={{ scrollMarginTop: SCROLL_CLEAR }}
             >
               <Typography
@@ -230,7 +267,10 @@ export function MethodologyPage() {
           to="/ticker"
           variant="outlined"
           data-testid="methodology-cta-ticker"
-          sx={{ minHeight: 44 }}
+          // GATE Z I-2 (AC-G1, color-contrast, serious): outlined-button labels default to
+          // `primary.main` (measured 3.01:1 on `background.default` in light mode) — same
+          // text-grade-amber fix as the landing's `cta-secondary` (F7c, `591e2654`).
+          sx={{ minHeight: 44, color: (theme) => extrasFor(theme).textAmber }}
         >
           {METHOD_COPY.ctaTicker}
         </Button>
@@ -239,7 +279,9 @@ export function MethodologyPage() {
           to="/"
           variant="text"
           data-testid="methodology-cta-home"
-          sx={{ minHeight: 44 }}
+          // GATE Z I-2 (AC-G1, color-contrast, serious): same fix as `methodology-cta-ticker`
+          // above — a `text` variant button also labels itself with `primary.main` by default.
+          sx={{ minHeight: 44, color: (theme) => extrasFor(theme).textAmber }}
         >
           {METHOD_COPY.ctaBack}
         </Button>

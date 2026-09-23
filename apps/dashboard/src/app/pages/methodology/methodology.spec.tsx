@@ -17,6 +17,13 @@
  * `design/src/screens/methodology.mjs` (AC-C1a) and the score table's `Max` column against
  * `libs/quant-engine/src/signals.rs` (AC-M2) are PLAN.md F13's structural spec, homed outside
  * `pages/**`, not duplicated here.
+ *
+ * GATE Z (m-12) — SPEC §7 item 4's strict-fetch + EventSource harness, copied in SHAPE from
+ * `landing.spec.tsx:57-63`/`:137-141` and `blog.spec.tsx`'s own extension of it: this page is a
+ * STATIC zero-data-edge tree (docblock, `MethodologyPage.tsx`), and until now that was true only
+ * because the page happens to call neither API — nothing FAILED the build if a future edit added
+ * one. The strict mock below throws on any non-auth call, so that invariant is now enforced by
+ * construction.
  */
 import { NOT_A_NUMBER } from '@/shared/copy/notANumber';
 import { SANS_FACE } from '@/shared/figure';
@@ -27,11 +34,56 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { METHOD_COPY } from './copy';
 import { MethodologyPage } from './MethodologyPage';
 
-afterEach(() => cleanup());
+let fetchMock: ReturnType<typeof vi.fn>;
+let openedEventSources = 0;
+
+const json = (body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+beforeEach(() => {
+  openedEventSources = 0;
+  class SilentEventSource {
+    onmessage: ((e: MessageEvent) => void) | null = null;
+    onerror: ((e: Event) => void) | null = null;
+    constructor() {
+      openedEventSources += 1;
+    }
+    close() {
+      /* no-op */
+    }
+  }
+  vi.stubGlobal('EventSource', SilentEventSource as unknown as typeof EventSource);
+
+  // STRICT mock: only the app-wide who-am-I read is allowed; ANY trader/bundle call throws, so
+  // the "zero data edge" invariant is enforced by construction (SPEC §7 item 4).
+  fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes('/api/auth/session')) {
+      return json({ authenticated: false, user: null, google_available: false, settings: null });
+    }
+    throw new Error(`Unexpected fetch from MethodologyPage: ${url}`);
+  });
+  vi.stubGlobal('fetch', fetchMock);
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+/** Any NON-AUTH fetch? Mirrors `landing.spec.tsx`'s/`blog.spec.tsx`'s helper — the who-am-I read
+ *  is excluded. */
+function calledNonAuth(): boolean {
+  return fetchMock.mock.calls.some((c) => !String(c[0]).includes('/api/auth/'));
+}
 
 function renderPage() {
   return render(
@@ -71,13 +123,13 @@ describe('MethodologyPage (/methodology) — SPEC §7, PLAN F10', () => {
     }
   });
 
-  it('3. the on-this-page index has exactly ten entries whose hrefs equal the section ids, in order', () => {
+  it('3. the on-this-page index has exactly ten entries whose hrefs are absolute-path fragments to the section ids, in order (GATE Z I-1/AC-M6 — a bare "#id" resolves against index.html\'s <base href="/"> to the landing; jsdom implements no <base>, so only an absolute path is a real regression guard here)', () => {
     renderPage();
     const toc = screen.getByTestId('methodology-toc');
     const links = within(toc).getAllByRole('link');
     expect(links).toHaveLength(10);
     expect(links.map((a) => a.getAttribute('href'))).toEqual(
-      METHOD_COPY.sections.map((s) => `#${s.id}`),
+      METHOD_COPY.sections.map((s) => `/methodology#${s.id}`),
     );
   });
 
@@ -123,9 +175,12 @@ describe('MethodologyPage (/methodology) — SPEC §7, PLAN F10', () => {
     expect(anchors.length).toBeGreaterThanOrEqual(13);
     for (const a of anchors) {
       const href = a.getAttribute('href') ?? '';
-      if (href.startsWith('#')) continue; // same-page fragment — always resolves
-      const staticDoc = resolve(root, 'apps', 'dashboard', 'public', href.replace(/^\//, ''));
-      const resolves = routePaths.has(href) || existsSync(staticDoc);
+      const [path, hash] = href.split('#');
+      if (hash !== undefined && path === '') continue; // bare "#id" — same-page fragment, always resolves
+      // GATE Z I-1: the TOC's own entries are `/methodology#id` (an absolute path, immune to
+      // index.html's <base href="/">) — resolve on the PATH half, same as every other anchor.
+      const staticDoc = resolve(root, 'apps', 'dashboard', 'public', path.replace(/^\//, ''));
+      const resolves = routePaths.has(path) || existsSync(staticDoc);
       expect(resolves, `dead link: ${href}`).toBe(true);
     }
   });
@@ -134,5 +189,11 @@ describe('MethodologyPage (/methodology) — SPEC §7, PLAN F10', () => {
     const { container } = renderPage();
     const text = (container.textContent ?? '').toLowerCase();
     expect(text).not.toMatch(/persona screen|flows screen|operator screen/);
+  });
+
+  it('8. issues no non-auth fetch and opens no EventSource on mount (GATE Z m-12, SPEC §7 item 4)', () => {
+    renderPage();
+    expect(calledNonAuth()).toBe(false);
+    expect(openedEventSources).toBe(0);
   });
 });
