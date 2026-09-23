@@ -4,7 +4,12 @@
 > `PROJECT_CONTEXT.md` (the standing ground truth) — this file is the "what's still open."
 > Decisions, not deliberation. As of the latest commit; the code/docs are all committed & clean.
 
-## 1. Data-vendor decision (OPEN — no change made yet)
+## 1. Data-vendor decision (Massive CANCELLED — entitlement ended 2026-09-16; no vendor for now)
+**Update 2026-09-22:** the owner cancelled Massive. Production lost entitlement the morning of 2026-09-16
+(`403 NOT_AUTHORIZED` in the api-rust logs), and the owner will not re-subscribe in the short term. What that
+breaks and what survives: `BACKLOG.md` "Parked — 2026-09-22". The evaluation below is kept as history for the
+next vendor decision.
+
 Evaluating a possible move off Massive (= Polygon.io rebrand) because Massive does **not**
 cover the overnight equity session (see thread 2). Conclusions reached:
 - **Massive (current):** ~$200–400/mo flat per asset class; **computes greeks/IV/OI for us**
