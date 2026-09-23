@@ -15,6 +15,10 @@ use std::process::Command;
 pub const REFERENCE_REVISION: &str = "c30ed8151b82f847fd75552528dcba30bdca5ae8";
 const IDENTITY_REL: &str = "apps/api/tests/fixtures/capacity-baseline/v1/identity";
 const GENERATED_ROOT: &str = "libs/api/src/generated";
+// Re-pinned for `no-vendor-production-posture` (2026-09-23): `AppErrorBody.code` (optional),
+// `HealthWire.market_data` and `ScanEnvelope.market_data` are additive schema growth (SPEC B5,
+// ledger `route-growth-repins-api-artifact-oracle`) — zero new operations, so
+// `precutover-operation-baseline.json` is unchanged and stays pinned to its prior hash.
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -22,19 +26,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "58e23729a61bf1f031ff80c5ec1fa2645f85d298e3408609d6698a26211d4486",
+        "8d031037259617250af9388ef1dbf8206246c64e1a0a259929ab4b5c6a452805",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "912412e92294f4fcabe280bf2c8777f6852943a680054494957e5ff5963cc5cc",
+        "bd89b24fb53c4e1aef4c2216b74d2c9af3574b6448eac6d6179f75d55f9e72a4",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "3dfaf718ca0d1fcaed7cd234cf4f9fb86c3d340504c9f6bdd4007ccdc8e56f43",
+        "b10f6dfdac08cabb8c84a1482b6487abd6d4ba7b2c9436c0150199a6310a2e1d",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "25510860ea9cd9208cd168bd522c8f21f67961dbc5197d1c5931858513542b8e",
+        "a6488c6f0f6b9b8e8c06a108fb35b854268c16ee05eae25360027b79fb17e9d4",
     ),
 ];
 
