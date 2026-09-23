@@ -43,7 +43,7 @@ export default defineConfig({
     {
       command: LIVE
         ? `npx nx run @convexa/dashboard:serve --port=${APP_PORT}`
-        : `npx http-server apps/dashboard/dist -c-1 --cors -a localhost -P http://localhost:${APP_PORT}? -p ${APP_PORT}`,
+        : `node apps/dashboard-e2e/tools/serve-dist.mjs apps/dashboard/dist ${APP_PORT} localhost`,
       url: `http://localhost:${APP_PORT}`,
       reuseExistingServer: false,
       cwd: workspaceRoot,

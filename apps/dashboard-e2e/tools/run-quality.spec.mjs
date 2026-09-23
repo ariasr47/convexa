@@ -134,7 +134,7 @@ test('prebuilt child servers are read-only and failed preparation is rejected be
   );
   const runGate = fs.readFileSync(new URL('./run-gate.mjs', import.meta.url), 'utf8');
   assert.match(sharedConfig, /BROWSER_QUALITY_PREBUILD_STATUS/);
-  assert.match(sharedConfig, /http-server apps\/dashboard\/dist/);
+  assert.match(sharedConfig, /serve-dist\.mjs apps\/dashboard\/dist/);
   assert.match(runGate, /BROWSER_QUALITY_PREBUILD_STATUS === 'fail'/);
   assert.match(runGate, /browser quality dashboard prebuild failed/);
 });
