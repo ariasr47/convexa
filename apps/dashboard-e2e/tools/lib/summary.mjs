@@ -189,8 +189,11 @@ export function validateSummary(summary, options = {}) {
     // (curvature-v2-landing-and-site GATE Z I-2, amendment 5) 19 → 31: scans 12 → 24 (the NAMED
     // six-surface × {dark,light} × 393 matrix, the 404 also at 1280, the open sign-in dialog
     // counted as a surface too), held against the unchanged 7 behaviors.
+    // (no-vendor-production-posture AC-10) 31 → 35: scans 24 → 28 (a seventh surface — the paused
+    // ticker-desk panel — at both breakpoints and both color schemes), held against the unchanged
+    // 7 behaviors.
     summary.gate === 'accessibility' &&
-    (summary.selected !== 31 || summary.scans.length !== 24 || summary.behaviors.length !== 7)
+    (summary.selected !== 35 || summary.scans.length !== 28 || summary.behaviors.length !== 7)
   )
     err('accessibility inventory');
   if (summary.gate === 'accessibility') {

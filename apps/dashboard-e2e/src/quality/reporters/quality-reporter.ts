@@ -108,9 +108,13 @@ const gateCounts: Record<string, number> = {
   // `navigation.spec.ts` ("client-side navigation") covers both the TOC click and the fresh deep
   // link past `index.html`'s `<base href="/">` (AC-M6/AC-M1) — jsdom implements no `<base>`
   // resolution, so only a real browser proves this class of fix.
+  // (no-vendor-production-posture AC-10) Accessibility 31 → 35: a seventh surface — the paused
+  // ticker-desk panel (F2) — scanned at both breakpoints (393/1280) and both color schemes. Scans
+  // 24 → 28, held against the unchanged 7 behaviors (28 + 7 = 35). Chromium/compatibility/visual
+  // are untouched by this feature (no new browser:chromium/compat/visual case).
   chromium: 128,
   compatibility: 15,
-  accessibility: 31,
+  accessibility: 35,
   visual: 6,
 };
 export type VisualAttachmentRole = 'expected' | 'actual' | 'diff' | undefined;

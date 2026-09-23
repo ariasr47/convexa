@@ -622,6 +622,63 @@ export const accessibilityScenarios = [
   base('A11Y-24', '/', 'anonymous', { width: 393, height: 852 }, 'light', [
     { selector: '[data-testid="landing"]' },
   ]),
+  // no-vendor-production-posture AC-10 — the paused ticker-desk panel (F2), both breakpoints and
+  // both color schemes. `strict-fixture.ts` special-cases these four ids (mirrors A11Y-8's own
+  // ticker-failure override) to answer every `GET /api/ticker/SPY*` with the exact paused 503 — a
+  // prefix match, not an exact `rest` key, because the query string a fresh anonymous /ticker/SPY
+  // visit sends (`dark_pool=true`) is an FE default, not a value worth pinning here.
+  base(
+    'A11Y-25',
+    '/ticker/SPY',
+    'anonymous',
+    { width: 393, height: 852 },
+    'dark',
+    [{ selector: '[role="status"]', text: 'Market data is paused.' }],
+    [
+      { selector: '[data-testid="cold-load"]' },
+      { selector: '[data-testid="command-deck"]' },
+      { selector: '[role="alert"]' },
+    ],
+  ),
+  base(
+    'A11Y-26',
+    '/ticker/SPY',
+    'anonymous',
+    { width: 393, height: 852 },
+    'light',
+    [{ selector: '[role="status"]', text: 'Market data is paused.' }],
+    [
+      { selector: '[data-testid="cold-load"]' },
+      { selector: '[data-testid="command-deck"]' },
+      { selector: '[role="alert"]' },
+    ],
+  ),
+  base(
+    'A11Y-27',
+    '/ticker/SPY',
+    'anonymous',
+    { width: 1280, height: 900 },
+    'dark',
+    [{ selector: '[role="status"]', text: 'Market data is paused.' }],
+    [
+      { selector: '[data-testid="cold-load"]' },
+      { selector: '[data-testid="command-deck"]' },
+      { selector: '[role="alert"]' },
+    ],
+  ),
+  base(
+    'A11Y-28',
+    '/ticker/SPY',
+    'anonymous',
+    { width: 1280, height: 900 },
+    'light',
+    [{ selector: '[role="status"]', text: 'Market data is paused.' }],
+    [
+      { selector: '[data-testid="cold-load"]' },
+      { selector: '[data-testid="command-deck"]' },
+      { selector: '[role="alert"]' },
+    ],
+  ),
 ];
 export const visualScenarios = [
   base('landing', '/', 'anonymous', { width: 393, height: 852 }, 'dark', [

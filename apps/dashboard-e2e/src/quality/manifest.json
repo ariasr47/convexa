@@ -1352,6 +1352,34 @@
         "colorScheme": "light",
         "ready": ["app-shell"],
         "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-25",
+        "route": "/ticker/SPY",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-26",
+        "route": "/ticker/SPY",
+        "colorScheme": "light",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-27",
+        "route": "/ticker/SPY",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-28",
+        "route": "/ticker/SPY",
+        "colorScheme": "light",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       }
     ],
     "behaviors": [

@@ -135,7 +135,10 @@ export function validateManifest(value) {
     // methodology/dark — already existed), the 404 stays additionally at 1280 (unchanged), and
     // the open sign-in dialog counts as a surface too, scanned in both schemes at 393. Twelve net
     // new scans. The id regex below moves with it.
-    scans.length !== 24 ||
+    // (no-vendor-production-posture AC-10) 24 → 28: the paused ticker-desk panel (F2), a SEVENTH
+    // surface, at both breakpoints (393/1280) and both color schemes — four net new scans
+    // (A11Y-25..28). The id regex below moves with it.
+    scans.length !== 28 ||
     !Array.isArray(behaviors) ||
     behaviors.length !== 7 ||
     value.accessibility.waiver_path !== 'apps/dashboard-e2e/src/quality/a11y-waivers.json'
@@ -152,7 +155,7 @@ export function validateManifest(value) {
   if (
     scans.some(
       (x) =>
-        !/^A11Y-(?:[1-9]|1\d|2[0-4])$/.test(x.id) ||
+        !/^A11Y-(?:[1-9]|1\d|2[0-8])$/.test(x.id) ||
         !Array.isArray(x.ready) ||
         !x.ready.length ||
         !Array.isArray(x.forbidden) ||
