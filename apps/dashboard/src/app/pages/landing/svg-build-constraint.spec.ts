@@ -19,9 +19,9 @@
  * SVG present at first paint under the strict fetch harness" is `landing.spec.tsx`'s existing
  * render (the hero has no async work — SPEC §2.1 — so it paints unconditionally).
  */
+import { ESLint } from 'eslint';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { ESLint } from 'eslint';
 import { describe, expect, it } from 'vitest';
 
 function workspaceRoot(): string {
@@ -67,58 +67,42 @@ describe('GATE Z I-4 (§7 item 3, mechanism 2) — the ESLint ban, fixture-probe
     15_000,
   );
 
-  it(
-    'the same ban bites on the other three public surfaces (blog, methodology, not-found)',
-    async () => {
-      for (const surface of ['blog', 'methodology', 'not-found']) {
-        const result = await lint(
-          `apps/dashboard/src/app/pages/${surface}/QaProbe.tsx`,
-          BANNED_IMPORT_FIXTURES['three'],
-        );
-        const hit = result.messages.find((m) => m.ruleId === 'no-restricted-imports');
-        expect(hit, `no-restricted-imports did not fire on pages/${surface}/**`).toBeTruthy();
-      }
-    },
-    15_000,
-  );
-
-  it(
-    'MUTATION GUARD (negative control): the SAME import is clean outside the four public-surface folders',
-    async () => {
+  it('the same ban bites on the other three public surfaces (blog, methodology, not-found)', async () => {
+    for (const surface of ['blog', 'methodology', 'not-found']) {
       const result = await lint(
-        'apps/dashboard/src/app/pages/ticker/QaProbe.tsx',
+        `apps/dashboard/src/app/pages/${surface}/QaProbe.tsx`,
         BANNED_IMPORT_FIXTURES['three'],
       );
       const hit = result.messages.find((m) => m.ruleId === 'no-restricted-imports');
-      expect(hit, 'the ban must be SCOPED to the public surfaces, not global').toBeUndefined();
-    },
-    15_000,
-  );
+      expect(hit, `no-restricted-imports did not fire on pages/${surface}/**`).toBeTruthy();
+    }
+  }, 15_000);
 
-  it(
-    'MUTATION GUARD (negative control): an unrelated, allowed import on a landing file stays clean',
-    async () => {
-      const result = await lint(
-        'apps/dashboard/src/app/pages/landing/QaProbe.tsx',
-        `import Box from '@mui/material/Box';\nexport const x = Box;\n`,
-      );
-      expect(result.errorCount).toBe(0);
-    },
-    15_000,
-  );
+  it('MUTATION GUARD (negative control): the SAME import is clean outside the four public-surface folders', async () => {
+    const result = await lint(
+      'apps/dashboard/src/app/pages/ticker/QaProbe.tsx',
+      BANNED_IMPORT_FIXTURES['three'],
+    );
+    const hit = result.messages.find((m) => m.ruleId === 'no-restricted-imports');
+    expect(hit, 'the ban must be SCOPED to the public surfaces, not global').toBeUndefined();
+  }, 15_000);
 
-  it(
-    'the four pre-existing deny-list bans (SPEC §2.1) still bite on pages/landing/** — the new ban did not silently replace them',
-    async () => {
-      const result = await lint(
-        'apps/dashboard/src/app/pages/landing/QaProbe.tsx',
-        `import { getScan } from '@convexa/api';\nexport const x = getScan;\n`,
-      );
-      const hit = result.messages.find((m) => m.ruleId === 'no-restricted-imports');
-      expect(hit?.message).toMatch(/zero-edge tree/);
-    },
-    15_000,
-  );
+  it('MUTATION GUARD (negative control): an unrelated, allowed import on a landing file stays clean', async () => {
+    const result = await lint(
+      'apps/dashboard/src/app/pages/landing/QaProbe.tsx',
+      `import Box from '@mui/material/Box';\nexport const x = Box;\n`,
+    );
+    expect(result.errorCount).toBe(0);
+  }, 15_000);
+
+  it('the four pre-existing deny-list bans (SPEC §2.1) still bite on pages/landing/** — the new ban did not silently replace them', async () => {
+    const result = await lint(
+      'apps/dashboard/src/app/pages/landing/QaProbe.tsx',
+      `import { getScan } from '@convexa/api';\nexport const x = getScan;\n`,
+    );
+    const hit = result.messages.find((m) => m.ruleId === 'no-restricted-imports');
+    expect(hit?.message).toMatch(/zero-edge tree/);
+  }, 15_000);
 });
 
 describe('GATE Z I-4 (§7 item 3, "no new dependency") — package.json', () => {

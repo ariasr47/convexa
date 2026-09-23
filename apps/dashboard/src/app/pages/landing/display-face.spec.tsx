@@ -19,8 +19,8 @@
  * a real render at each width is what proves a future responsive override cannot silently narrow
  * the face to one viewport.
  */
+import { theme as darkTheme, lightTheme } from '@/shared/theme/theme';
 import { typographyTokens } from '@/shared/theme/tokens';
-import { lightTheme, theme as darkTheme } from '@/shared/theme/theme';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider, type Theme } from '@mui/material/styles';
 import { cleanup, render, screen } from '@testing-library/react';

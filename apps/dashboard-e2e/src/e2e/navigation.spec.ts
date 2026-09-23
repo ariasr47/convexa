@@ -160,10 +160,7 @@ test.describe('client-side navigation', () => {
     // Stayed on `/methodology` (never ejected to the landing) and the URL now carries the anchor.
     await expect(page).toHaveURL(/\/methodology#where-the-read-is-weak$/);
     await expect(page.getByTestId('methodology-page')).toBeAttached();
-    expect(
-      await sentinelSurvived(page),
-      'clicking a TOC entry reloaded the document',
-    ).toBe(true);
+    expect(await sentinelSurvived(page), 'clicking a TOC entry reloaded the document').toBe(true);
 
     // Reached the section: its heading sits at or above the viewport's top edge, not still at
     // the top of the document (scrollY 0 is exactly the failure GATE Q observed).

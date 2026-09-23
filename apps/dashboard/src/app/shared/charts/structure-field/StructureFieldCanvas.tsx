@@ -291,9 +291,9 @@ export function StructureFieldCanvas({
             border: 0,
           }}
         >
-          Net dealer gamma by strike for {model.symbol}, marking the call wall, put wall, gamma
-          flip and max pain levels plus the live tape mid. The level ladder beside this field
-          states the same levels and distances as text.
+          Net dealer gamma by strike for {model.symbol}, marking the call wall, put wall, gamma flip
+          and max pain levels plus the live tape mid. The level ladder beside this field states the
+          same levels and distances as text.
         </p>
       )}
       {hoverReadout && (

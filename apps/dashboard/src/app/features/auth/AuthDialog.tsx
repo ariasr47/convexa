@@ -352,7 +352,11 @@ export function AuthDialog({
               // `extras.textInfo` is the TEXT-GRADE counterpart this codebase already ships for
               // exactly this split (`tokens.ts`, mirroring `textAmber`) — this is its fourth
               // consumer, not a new token.
-              sx={{ alignSelf: 'center', fontWeight: 600, color: (theme) => extrasFor(theme).textInfo }}
+              sx={{
+                alignSelf: 'center',
+                fontWeight: 600,
+                color: (theme) => extrasFor(theme).textInfo,
+              }}
             >
               {mode === 'signup' ? AUTH_COPY.signup.switch : AUTH_COPY.login.switch}
             </Link>

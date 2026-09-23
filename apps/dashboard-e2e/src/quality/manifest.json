@@ -7,10 +7,7 @@
       {
         "test_id": "d38f0e9816f51aa1922817ddad296f9fcfffdcb98335c43716eb971b1cf4f276",
         "file": "apps/dashboard-e2e/src/e2e/app-loads.spec.ts",
-        "title_path": [
-          "app shell",
-          "loads"
-        ],
+        "title_path": ["app shell", "loads"],
         "project": "chromium"
       },
       {
@@ -88,10 +85,7 @@
       {
         "test_id": "17368bd9989383c8b0ae86287a827d73238534d56e8a660322e401244dbfc0f6",
         "file": "apps/dashboard-e2e/src/e2e/navigation.spec.ts",
-        "title_path": [
-          "client-side navigation",
-          "the nav links route WITHOUT a page reload"
-        ],
+        "title_path": ["client-side navigation", "the nav links route WITHOUT a page reload"],
         "project": "chromium"
       },
       {
@@ -115,10 +109,7 @@
       {
         "test_id": "23721165a95be1a59301afcc9b11d143b6a0bc2572c109ab5b9092de977b1790",
         "file": "apps/dashboard-e2e/src/e2e/navigation.spec.ts",
-        "title_path": [
-          "client-side navigation",
-          "a URL parameter reaches the page it addresses"
-        ],
+        "title_path": ["client-side navigation", "a URL parameter reaches the page it addresses"],
         "project": "chromium"
       },
       {
@@ -1190,11 +1181,7 @@
         "auth": "authenticated"
       }
     ],
-    "projects": [
-      "chromium",
-      "firefox",
-      "webkit"
-    ]
+    "projects": ["chromium", "firefox", "webkit"]
   },
   "accessibility": {
     "scans": [
@@ -1202,265 +1189,169 @@
         "id": "A11Y-1",
         "route": "/",
         "colorScheme": "dark",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-2",
         "route": "/",
         "colorScheme": "light",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-3",
         "route": "/ticker/SPY",
         "colorScheme": "dark",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-4",
         "route": "/settings",
         "colorScheme": "dark",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-5",
         "route": "/positions",
         "colorScheme": "dark",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-6",
         "route": "/scanner",
         "colorScheme": "dark",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-7",
         "route": "/scanner",
         "colorScheme": "dark",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-8",
         "route": "/ticker/SPY",
         "colorScheme": "dark",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-9",
         "route": "/ticker/SPY",
         "colorScheme": "dark",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-10",
         "route": "/blog",
         "colorScheme": "dark",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-11",
         "route": "/methodology",
         "colorScheme": "dark",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-12",
         "route": "/this-address-does-not-exist",
         "colorScheme": "dark",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-13",
         "route": "/",
         "colorScheme": "dark",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-14",
         "route": "/",
         "colorScheme": "light",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-15",
         "route": "/blog",
         "colorScheme": "light",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-16",
         "route": "/methodology",
         "colorScheme": "light",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-17",
         "route": "/this-address-does-not-exist",
         "colorScheme": "dark",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-18",
         "route": "/this-address-does-not-exist",
         "colorScheme": "light",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-19",
         "route": "/scanner",
         "colorScheme": "dark",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-20",
         "route": "/scanner",
         "colorScheme": "light",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-21",
         "route": "/scanner",
         "colorScheme": "dark",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-22",
         "route": "/scanner",
         "colorScheme": "light",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-23",
         "route": "/",
         "colorScheme": "dark",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       },
       {
         "id": "A11Y-24",
         "route": "/",
         "colorScheme": "light",
-        "ready": [
-          "app-shell"
-        ],
-        "forbidden": [
-          "route-fallback"
-        ]
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
       }
     ],
     "behaviors": [

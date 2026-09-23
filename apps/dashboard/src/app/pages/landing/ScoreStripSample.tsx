@@ -157,7 +157,14 @@ export function ScoreStripSample() {
       <Typography
         variant="caption"
         data-testid="landing-score-caption"
-        sx={{ display: 'block', px: 2, py: 1, color: 'text.secondary', borderTop: '1px solid', borderColor: 'divider' }}
+        sx={{
+          display: 'block',
+          px: 2,
+          py: 1,
+          color: 'text.secondary',
+          borderTop: '1px solid',
+          borderColor: 'divider',
+        }}
       >
         {SAMPLE_MARK}
       </Typography>

@@ -153,9 +153,7 @@ describe('Landing CTA contrast (A11Y-2) — token floor, both schemes', () => {
   });
 
   it('GATE Z amendment 7 — cta-secondary’s new mechanism (text.primary, the design’s phosphor grade) clears 4.5:1 on every real background, both schemes', () => {
-    expect(
-      contrastOn(palette.light.text.primary, LIGHT_BG.default),
-    ).toBeGreaterThanOrEqual(4.5);
+    expect(contrastOn(palette.light.text.primary, LIGHT_BG.default)).toBeGreaterThanOrEqual(4.5);
     expect(contrastOn(palette.dark.text.primary, DARK_BG.default)).toBeGreaterThanOrEqual(4.5);
   });
 });

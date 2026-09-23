@@ -236,9 +236,7 @@ const SECTIONS: readonly MethodSection[] = [
     blocks: [
       {
         kind: 'prose',
-        body: [
-          'This is the complete set: the product renders no other word in place of a number.',
-        ],
+        body: ['This is the complete set: the product renders no other word in place of a number.'],
       },
       {
         kind: 'table',
