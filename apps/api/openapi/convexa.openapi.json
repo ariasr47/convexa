@@ -79,6 +79,10 @@
       "AppErrorBody": {
         "description": "The shared framework error envelope emitted by `AppError::into_response`.",
         "properties": {
+          "code": {
+            "description": "Only the paused reply (SPEC B5) sets this; every other error body omits the key entirely.",
+            "type": ["string", "null"]
+          },
           "detail": {
             "type": "string"
           }
@@ -2048,6 +2052,10 @@
           "gex_kernel": {
             "type": "string"
           },
+          "market_data": {
+            "description": "`\"live\"` | `\"paused\"` (SPEC B3) — `MARKET_DATA_MODE`, read once at boot.",
+            "type": "string"
+          },
           "metrics_auth": {
             "type": "string"
           },
@@ -2086,7 +2094,8 @@
           "ai_meter",
           "metrics_auth",
           "warm",
-          "gex_cache"
+          "gex_cache",
+          "market_data"
         ],
         "type": "object"
       },
@@ -4452,6 +4461,10 @@
       },
       "ScanEnvelope": {
         "properties": {
+          "market_data": {
+            "description": "`\"live\"` | `\"paused\"` (SPEC B4) — `MARKET_DATA_MODE`, read once at boot.",
+            "type": "string"
+          },
           "rows": {
             "items": {
               "$ref": "#/components/schemas/ScanRowDto"
@@ -4472,7 +4485,7 @@
             "$ref": "#/components/schemas/ScanView"
           }
         },
-        "required": ["view", "rows", "sweep"],
+        "required": ["view", "rows", "sweep", "market_data"],
         "type": "object"
       },
       "ScanRowDto": {

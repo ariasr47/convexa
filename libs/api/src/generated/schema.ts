@@ -885,6 +885,8 @@ export interface components {
     };
     /** @description The shared framework error envelope emitted by `AppError::into_response`. */
     AppErrorBody: {
+      /** @description Only the paused reply (SPEC B5) sets this; every other error body omits the key entirely. */
+      code?: string | null;
       detail: string;
     };
     AtrHorizonWire: {
@@ -1499,6 +1501,8 @@ export interface components {
       durable_store: string;
       gex_cache: components['schemas']['HealthCacheMetrics'];
       gex_kernel: string;
+      /** @description `"live"` | `"paused"` (SPEC B3) — `MARKET_DATA_MODE`, read once at boot. */
+      market_data: string;
       metrics_auth: string;
       price_cache: string;
       rate_limit: components['schemas']['HealthRateLimit'];
@@ -2233,6 +2237,8 @@ export interface components {
     /** @enum {string} */
     ScanDensitySchema: 'compact' | 'comfortable';
     ScanEnvelope: {
+      /** @description `"live"` | `"paused"` (SPEC B4) — `MARKET_DATA_MODE`, read once at boot. */
+      market_data: string;
       rows: components['schemas']['ScanRowDto'][];
       sweep: null | components['schemas']['SweepHeartbeatDto'];
       view: components['schemas']['ScanView'];
