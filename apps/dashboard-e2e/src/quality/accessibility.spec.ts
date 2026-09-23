@@ -25,10 +25,23 @@ for (const scenario of accessibilityScenarios) {
     await assertReady(page, scenario);
     // GATE Z I-2 (amendment 5) — the open sign-in dialog counts as a surface: open it AFTER the
     // landing shell is ready, before the axe scan, so the scan sees the dialog's own contrast
-    // and its (now-wired) accessible name too.
+    // and its (now-wired) accessible name too. `toBeVisible()` alone resolves the instant the
+    // Fade transition STARTS (Playwright's visibility check does not wait for a CSS transition
+    // to finish, only for non-zero opacity) — MUI's Dialog applies that fade to
+    // `.MuiDialog-container` (the Paper itself keeps a steady local opacity of 1 throughout, so
+    // waiting on the Paper's own opacity resolves immediately and proves nothing). A scan taken
+    // while the container is still mid-fade measures every colour against a still-transitioning
+    // background, which axe correctly, but misleadingly, reports as a wall of color-contrast
+    // violations (confirmed by direct DOM inspection, not guessed). Waiting for the CONTAINER's
+    // opacity to actually settle at 1 is what makes this scan measure the dialog's real, at-rest
+    // state.
     if (scenario.id === 'A11Y-23' || scenario.id === 'A11Y-24') {
       await page.getByTestId('cta-band-secondary').click();
       await expect(page.getByTestId('auth-dialog')).toBeVisible();
+      await page.waitForFunction(() => {
+        const el = document.querySelector('.MuiDialog-container');
+        return !!el && getComputedStyle(el).opacity === '1';
+      });
     }
     if (scenario.id === 'A11Y-5') {
       await expect
