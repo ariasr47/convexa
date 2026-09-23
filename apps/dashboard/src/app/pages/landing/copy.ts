@@ -59,10 +59,12 @@ export const LANDING_COPY = {
     body: 'Dealer hedging creates structure you can see: a call wall that caps, a put wall that catches, and a gamma flip where hedging turns from dampening to amplifying. The structure field plots net dealer gamma by strike and drops the live mid onto it, so you read where price is attracted or repelled at a glance.',
     bullets: [
       'Levels refresh about every minute on the desk and carry their as-of',
-      // AMENDED (SPEC §4): `landing.mjs:126`'s bullet reads "The mid is tape — …"; four words
-      // ("On a ticker desk") are added so the subject is named — sitting three inches from a
-      // frozen sample, the bare subject "the mid" would read as THIS mid. No new claim.
-      'On a ticker desk the mid is tape — it pulses only while the stream is genuinely live',
+      // AMENDED (SPEC §4, GATE Z amendment 4): `landing.mjs:126`'s bullet reads "The mid is
+      // tape — …", no trailing period. Four words ("On a ticker desk") are added so the subject
+      // is named — sitting three inches from a frozen sample, the bare subject "the mid" would
+      // read as THIS mid. No new claim. The quoted form governs the trailing byte too (AC-C1):
+      // "four words added" counted words, not punctuation — the period is added, not inherited.
+      'On a ticker desk the mid is tape — it pulses only while the stream is genuinely live.',
       'Magnet view shows the same levels as a pull, for the visual thinkers',
     ] as const,
   },
