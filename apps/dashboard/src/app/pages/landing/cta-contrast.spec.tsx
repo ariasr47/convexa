@@ -38,6 +38,15 @@
  * the fill grade is visible here too); (2) rendered — the actual `<Landing/>` resolves each CTA's
  * live `color` to a value that clears the same floor, so a future revert of the `sx` override (not
  * just a token edit) red-builds this file too.
+ *
+ * GATE Z amendment 7 (design conformance) split `cta-secondary` off from this fix's own mechanism:
+ * the design's `.btn.secondary` label is `var(--phosphor)` (the app's `text.primary`), not amber —
+ * QA's visual review caught F7c's amber label as a fidelity miss even though it cleared AC-G1.
+ * `cta-secondary` now binds `text.primary` (clears 4.5:1 by construction — it IS the body-text
+ * colour — with more margin than `textAmber` had); `cta-methodology` and `cta-band-secondary` are
+ * UNCHANGED, still `textAmber`, and still exercised exactly as this file always has. The "rendered"
+ * test below asserts the SAME 4.5:1 floor for all three regardless of which mechanism clears it, so
+ * it stays the correct regression guard for both.
  */
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider, type Theme } from '@mui/material/styles';
@@ -142,6 +151,13 @@ describe('Landing CTA contrast (A11Y-2) — token floor, both schemes', () => {
       contrastOn(palette.dark.primary.contrastText, palette.dark.primary.main),
     ).toBeGreaterThanOrEqual(4.5);
   });
+
+  it('GATE Z amendment 7 — cta-secondary’s new mechanism (text.primary, the design’s phosphor grade) clears 4.5:1 on every real background, both schemes', () => {
+    expect(
+      contrastOn(palette.light.text.primary, LIGHT_BG.default),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(contrastOn(palette.dark.text.primary, DARK_BG.default)).toBeGreaterThanOrEqual(4.5);
+  });
 });
 
 function renderLandingIn(activeTheme: Theme) {
@@ -179,10 +195,9 @@ describe('Landing CTA contrast (A11Y-2) — rendered, both schemes', () => {
     vi.unstubAllGlobals();
   });
 
-  it('light: every outlined/text CTA resolves a live `color` that clears 4.5:1 on its real background', () => {
+  it('light: every outlined/text CTA still bound to textAmber resolves a live `color` that clears 4.5:1 on its real background', () => {
     renderLandingIn(lightTheme);
     const cases: Array<[string, string]> = [
-      ['cta-secondary', LIGHT_BG.default],
       ['cta-methodology', LIGHT_BG.default],
       ['cta-band-secondary', LIGHT_BG.paper],
     ];
@@ -194,8 +209,14 @@ describe('Landing CTA contrast (A11Y-2) — rendered, both schemes', () => {
 
   // `cta-primary`/`cta-band-primary` (contained) are NOT re-asserted here: MUI's `cssVariables:
   // true` renders their default contrastText as `var(--variant-containedColor)`, which jsdom's
-  // `getComputedStyle` does not resolve to an `rgb()` triple (unlike the three literal-hex `sx`
+  // `getComputedStyle` does not resolve to an `rgb()` triple (unlike the two literal-hex `sx`
   // overrides above) — the "rendered" proof for the two contained CTAs would test jsdom's variable
   // resolution, not this fix. They are unmodified by this change and already proven by token math
   // above (`palette.light.primary.contrastText` on `palette.light.primary.main`).
+  //
+  // GATE Z amendment 7 — `cta-secondary` moved OFF this list for the same reason: its new `sx`
+  // (`color: 'text.primary'`) is a recognised MUI palette dot-path, so under this app's
+  // `cssVariables: true` theme it ALSO resolves to `var(--mui-palette-text-primary)` in jsdom —
+  // unlike `extrasFor(theme).textAmber`, which is a plain (non-palette) token and renders as a
+  // literal hex. Proven by token math instead, in the describe block above.
 });

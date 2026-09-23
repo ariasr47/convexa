@@ -123,14 +123,18 @@ function FeatureSection({
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', lg: '1fr 1.15fr' },
-            gap: { xs: 4, lg: 7 },
+            // GATE Z amendment 7 — the design's two-column switch is 1100, not the MUI `lg`
+            // breakpoint (1200). `laptop` (1100) is an ADDITIVE breakpoint theme.ts already
+            // declares (SPEC §2.2 ruling 4 territory), so this binds to it rather than inventing
+            // a second numeric literal for the same threshold.
+            gridTemplateColumns: { xs: '1fr', laptop: '1fr 1.15fr' },
+            gap: { xs: 4, laptop: 7 },
             alignItems: 'center',
           }}
         >
           <Stack spacing={1.75} sx={{ maxWidth: 480, minWidth: 0 }}>
             <Eyebrow>{eyebrow}</Eyebrow>
-            <Typography component="h2" sx={sectionHeadingSx}>
+            <Typography component="h2" variant="h2" sx={sectionHeadingSx}>
               {heading}
             </Typography>
             <Typography variant="body1" sx={{ color: 'text.secondary' }}>
@@ -158,7 +162,10 @@ function FeatureSection({
               ))}
             </Stack>
           </Stack>
-          <Box sx={{ minWidth: 0, order: { xs: 0, lg: flip ? -1 : 0 } }}>{visual}</Box>
+          {/* `order` moves with the SAME 1100 threshold as the grid above — a "flip" section's
+              visual column only makes sense to lead once the grid has actually gone two-column;
+              a mismatched breakpoint here would flip the reading order a beat early/late. */}
+          <Box sx={{ minWidth: 0, order: { xs: 0, laptop: flip ? -1 : 0 } }}>{visual}</Box>
         </Box>
       </Container>
     </Box>
@@ -187,8 +194,9 @@ export function Landing() {
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: { xs: '1fr', lg: '1.05fr 1fr' },
-              gap: { xs: 5, lg: 6 },
+              // GATE Z amendment 7 — two-column at 1100 (`laptop`), not MUI's `lg` (1200).
+              gridTemplateColumns: { xs: '1fr', laptop: '1.05fr 1fr' },
+              gap: { xs: 5, laptop: 6 },
               alignItems: 'center',
             }}
           >
@@ -215,6 +223,7 @@ export function Landing() {
               />
               <Typography
                 component="h1"
+                variant="h1"
                 sx={{
                   m: 0,
                   fontSize: `clamp(${displayScale.minPx}px, 38px + 1.5vw, ${displayScale.maxPx}px)`,
@@ -240,7 +249,23 @@ export function Landing() {
               >
                 {LANDING_COPY.hero.spine}
               </Typography>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 1 }}>
+              <Stack
+                spacing={1.5}
+                // GATE Z amendment 7 (design conformance, QA m-3): the design draws the two hero
+                // CTAs FULL-WIDTH and stacked at <=699px, row from 700 — a threshold neither MUI
+                // named breakpoint (`sm`=600) nor any other already-declared one carries, so this
+                // stays a literal function-form media query rather than adding a shared theme
+                // breakpoint for a single caller. `width: '100%'` on this Stack (itself un-sized
+                // by its `alignItems: 'flex-start'` parent, `:195` above) plus the Stack's own
+                // default `align-items: stretch` in column mode is what makes the BUTTONS
+                // themselves full-width — no per-button `sx` needed.
+                sx={(theme) => ({
+                  mt: 1,
+                  width: '100%',
+                  flexDirection: 'column',
+                  [theme.breakpoints.up(700)]: { width: 'auto', flexDirection: 'row' },
+                })}
+              >
                 <Button
                   component={RouterLink}
                   to="/ticker"
@@ -261,14 +286,14 @@ export function Landing() {
                   variant="outlined"
                   size="large"
                   data-testid="cta-secondary"
-                  // A11Y-2 (color-contrast, serious): an outlined button's label takes
-                  // `primary.main` as TEXT by MUI default — the FILL-grade amber, only measured
-                  // to the 3:1 UI-component floor. In light mode that is `amberDeep` on
-                  // `background.default`, 3.02:1, under the 4.5:1 text floor. The border stays
-                  // `primary.main`-derived (a 3:1-class UI element, unaffected by this override);
-                  // only the label moves to the TEXT-GRADE amber (`extrasFor(theme).textAmber`,
-                  // ≥4.5:1) — dark is byte-identical (`textAmber` = `gammaAmber` there).
-                  sx={{ color: (theme) => extrasFor(theme).textAmber }}
+                  // GATE Z amendment 7 (design conformance): the design's `.btn.secondary` label
+                  // is `var(--phosphor)` — the app's own body-text colour (`text.primary`), NOT
+                  // amber (F7c's earlier fix bound this to the text-grade amber, which cleared
+                  // AC-G1 but drew the wrong colour — QA's visual review: "labelled amber; the
+                  // design's secondary is phosphor"). `text.primary` clears 4.5:1 in both schemes
+                  // by construction (it is the body-text colour), so AC-G1 stays satisfied without
+                  // the amber override the outlined-button default would otherwise need.
+                  sx={{ color: 'text.primary' }}
                 >
                   {LANDING_COPY.hero.secondary}
                 </Button>
@@ -389,14 +414,15 @@ export function Landing() {
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: { xs: '1fr', lg: '1fr 2fr' },
-              gap: { xs: 4, lg: 6 },
+              // GATE Z amendment 7 — two-column at 1100 (`laptop`), not MUI's `lg` (1200).
+              gridTemplateColumns: { xs: '1fr', laptop: '1fr 2fr' },
+              gap: { xs: 4, laptop: 6 },
               alignItems: 'start',
             }}
           >
             <Box sx={{ minWidth: 0 }}>
               <Eyebrow>{LANDING_COPY.register.eyebrow}</Eyebrow>
-              <Typography component="h2" sx={{ ...sectionHeadingSx, mt: 1.5 }}>
+              <Typography component="h2" variant="h2" sx={{ ...sectionHeadingSx, mt: 1.5 }}>
                 {LANDING_COPY.register.h2}
               </Typography>
               <Typography variant="body1" sx={{ color: 'text.secondary', mt: 1.5 }}>
@@ -417,11 +443,16 @@ export function Landing() {
               </Button>
             </Box>
             <Box
-              sx={{
+              sx={(theme) => ({
                 display: 'grid',
-                gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
+                gridTemplateColumns: '1fr',
                 gap: 2,
-              }}
+                // GATE Z amendment 7 — the design's trust-card row goes three-up from 700, not
+                // MUI's `sm` (600); 700 has no named breakpoint elsewhere in this theme, so this
+                // stays a literal function-form media query (the same idiom the hero CTA stack
+                // above uses for the same numeral).
+                [theme.breakpoints.up(700)]: { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' },
+              })}
             >
               {LANDING_COPY.register.trustCards.map((card) => (
                 <Box
@@ -475,6 +506,7 @@ export function Landing() {
             <Box sx={{ minWidth: 0 }}>
               <Typography
                 component="h2"
+                variant="h2"
                 sx={{ ...sectionHeadingSx, fontSize: 'clamp(24px, 2.4vw, 32px)' }}
               >
                 {LANDING_COPY.cta.heading}
