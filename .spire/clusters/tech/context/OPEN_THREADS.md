@@ -1768,6 +1768,25 @@ Scanner badge Closed. Ensure does not wake. Generated/pin-tested scanner replica
 - Production-maturity #6 `remote-archive-body-store` still next in that program’s order.
 - Tape store-start watermark still GATE Z residual (`session-day-tape-capture` AC-32).
 
+## 7ay. curvature-v2-landing-and-site — the public site (SHIPPED + ARCHIVED 2026-09-23)
+Curvature v2 phase 4, frontend only. Contracts are at `.spire/clusters/tech/contracts/_archive/curvature-v2-landing-and-site/`. The conformance pin (the anonymous `GET /api/auth/session` 200) is at `state/conformance/curvature-v2-landing-and-site.json`.
+
+**What shipped:**
+- the landing rewrite: the static isometric gamma-surface hero (owner ruling D-B = A), marked samples, the Archivo display face;
+- `/blog` and `/methodology`, with engine-true copy and a working in-page index;
+- a real 404 and the route fallback;
+- the global footer;
+- the sign-in wall's degraded branch;
+- the provenance and deny-list pins.
+
+**Evidence:**
+- GATE Q failed first at 61 of 71 rows. GATE Z fixed 10 findings under 7 SPEC amendments. The re-check passed 11 of 11, and one regression (R-1) was fixed.
+- Gates at ship: chromium 128, a11y 31 with no waivers, compat 15, unit 3,130.
+- Baselines are re-accepted on win32 and linux (`landing`, `scanner-dense`) by the owner-ruled receipt flow.
+- Harness changes: the gates now serve the build the way production routes it (`serve-dist.mjs`), and the a11y matrix covers both schemes and the overlays.
+
+**Carried to BACKLOG:** the "Harvest — 2026-09-23" entry. The successor, `curvature-v2-responsive-sweep`, stays pre-registered.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).
