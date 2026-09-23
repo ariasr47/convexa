@@ -2,7 +2,7 @@
   "schema_version": 1,
   "support_policy_id": "playwright-engines-1.62.1",
   "full_chromium": {
-    "inventory_id": "curvature-v2-landing-and-site-126-v1",
+    "inventory_id": "curvature-v2-landing-and-site-128-v1",
     "tests": [
       {
         "test_id": "d38f0e9816f51aa1922817ddad296f9fcfffdcb98335c43716eb971b1cf4f276",
@@ -1134,6 +1134,24 @@
         "title_path": [
           "lg 1280 no-overflow · light scheme (criterion 64)",
           "/this-address-does-not-exist fits 1280px in light mode (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "0e6dff1e297bf0f550c909c40a982d9fb584d30bce478a94328d0a385c2f4fbe",
+        "file": "apps/dashboard-e2e/src/e2e/navigation.spec.ts",
+        "title_path": [
+          "client-side navigation",
+          "methodology on-page index (GATE Z I-1, AC-M6/AC-M1) — click stays in-page despite <base href=\"/\">"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "e252da4cad1fc99e51974c8ac379e28def32065f65cae70283ad7fd0835a10c2",
+        "file": "apps/dashboard-e2e/src/e2e/navigation.spec.ts",
+        "title_path": [
+          "client-side navigation",
+          "methodology deep link (GATE Z I-1, AC-M1) — a fresh load of /methodology#id lands on its section"
         ],
         "project": "chromium"
       }

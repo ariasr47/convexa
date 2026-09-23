@@ -77,13 +77,17 @@ export function validateManifest(value) {
     // gained /blog, /methodology and one unmatched path (AC-G3b), and ROUTES is iterated by six
     // loops — 393 dark, 393 light, tablet 834, md 900, lg 1280, and the lg-1280 light walk.
     // 3 routes × 6 loops = 18 net-new Chromium tests. Added coverage, not a breach of AC-G3.
-    // (curvature-v2-landing-and-site GATE Z I-2, amendment 5) chromium count UNCHANGED at 126 —
-    // this repair widens the ACCESSIBILITY scan matrix only (below), not `no-overflow.spec.ts`.
-    value.full_chromium?.inventory_id !== 'curvature-v2-landing-and-site-126-v1' ||
+    // (curvature-v2-landing-and-site GATE Z I-2, amendment 5) chromium count UNCHANGED at 126 by
+    // that repair — it widens the ACCESSIBILITY scan matrix only, not `no-overflow.spec.ts`.
+    // (curvature-v2-landing-and-site GATE Z I-1) 126 → 128: one e2e case
+    // (`navigation.spec.ts`, "client-side navigation") covers both the TOC click and the fresh
+    // deep link past `index.html`'s `<base href="/">` — jsdom implements no `<base>` resolution,
+    // so only a real browser proves this class of fix. 2 net-new Chromium tests.
+    value.full_chromium?.inventory_id !== 'curvature-v2-landing-and-site-128-v1' ||
     !Array.isArray(tests) ||
-    tests.length !== 126
+    tests.length !== 128
   )
-    fail('full Chromium inventory must contain 126 tests');
+    fail('full Chromium inventory must contain 128 tests');
   unique(
     tests.map((x) => x.test_id),
     'full Chromium tests',

@@ -102,9 +102,13 @@ const gateCounts: Record<string, number> = {
   // matrix is NAMED — the six surfaces (/, /blog, /methodology, the 404, the sign-in wall, the
   // degraded wall) in dark AND light at 393, the 404 additionally at 1280 (unchanged), and the
   // open sign-in dialog counted as a surface too, both schemes at 393. Scans 12 → 24, held
-  // against the unchanged 7 behaviors (24 + 7 = 31). Chromium is unchanged at 126 — this repair
-  // does not touch `no-overflow.spec.ts`.
-  chromium: 126,
+  // against the unchanged 7 behaviors (24 + 7 = 31). Chromium was unchanged at 126 by THIS
+  // repair — it does not touch `no-overflow.spec.ts`.
+  // (curvature-v2-landing-and-site GATE Z I-1) Chromium 126 → 128: one e2e case in
+  // `navigation.spec.ts` ("client-side navigation") covers both the TOC click and the fresh deep
+  // link past `index.html`'s `<base href="/">` (AC-M6/AC-M1) — jsdom implements no `<base>`
+  // resolution, so only a real browser proves this class of fix.
+  chromium: 128,
   compatibility: 15,
   accessibility: 31,
   visual: 6,

@@ -31,9 +31,11 @@ test('browser quality manifest is closed and has the required inventories', () =
   // Accessibility scans 9 → 12: one new axe scan per new surface (AC-G1).
   // (curvature-v2-landing-and-site GATE Z I-2, amendment 5) Accessibility scans 12 → 24: the
   // NAMED six-surface × {dark,light} × 393 matrix (the 404 also at 1280, unchanged; the open
-  // sign-in dialog counted as a surface too). Chromium unchanged at 126 — this repair does not
-  // touch `no-overflow.spec.ts`.
-  assert.equal(manifest.full_chromium.tests.length, 126);
+  // sign-in dialog counted as a surface too). Chromium was unchanged at 126 by THAT repair.
+  // (curvature-v2-landing-and-site GATE Z I-1) Chromium 126 → 128: one e2e case in
+  // `navigation.spec.ts` covers the methodology TOC click and the fresh deep link past
+  // `index.html`'s `<base href="/">` (AC-M6/AC-M1).
+  assert.equal(manifest.full_chromium.tests.length, 128);
   assert.equal(manifest.compatibility.journeys.length, 5);
   assert.deepEqual(manifest.compatibility.projects, ['chromium', 'firefox', 'webkit']);
   assert.equal(manifest.accessibility.scans.length, 24);
