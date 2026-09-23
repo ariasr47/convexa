@@ -64,6 +64,7 @@ this branch is not pushed and not opened as a PR. Working rules that follow:
   whose commits include `c6b61340`. `git push --no-verify` bypasses it deliberately; deleting the
   file removes it.
 
-Still owed elsewhere: the owner's KC-MIG-3 ruling in spire-os, before any other project is cut over.
+KC-MIG-3 was ruled survived on 2026-09-22 (spire-os `docs/research/2026-09-22-convexa-v4-install/DECISIONS.md`,
+D-2), so other projects may be cut over. Nothing else is owed from this rollout.
 Evidence: spire-os `docs/research/2026-09-22-convexa-v4-install/REPORT.md`; raw logs under
 `C:/Dev/convexa-v4-rollout-20260922/live/run`.
