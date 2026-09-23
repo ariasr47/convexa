@@ -1157,6 +1157,58 @@ neither needs a sign-off line before the build lane starts.
    whichever way it goes:** whatever ships must pass AC-G1 and AC-M6 at 393 with a tap path and a focus
    path; the six-band treatment above and below that width belongs to the successor.
 
+## GATE Z amendments — 2026-09-23 (conductor, from `QA_REPORT.md`)
+
+GATE Q at `a2c92f64` failed: 61 of 71 rows pass, 10 fail, and 0 are unverifiable. Six of its bounces were
+SPEC gaps or contradictions, not build errors. Each is closed below so the fix lane has one wording and the
+re-check has one target. The owner may veto any of them; until then they bind like the rest of §4.
+
+1. **AC-M2b: fifth methodology delta.** The score table's `Flip transition` row ships with the
+   "What it reads" cell `the mid sits within 1% of the gamma flip`.
+   - It replaces the design source's `the flip moved across the mid since the last snapshot`, which
+     describes a move across snapshots that the engine never computes.
+   - Engine: `libs/quant-engine/src/signals.rs:241` sets `near_flip` when
+     `|gamma_flip_pct| <= FLIP_PROXIMITY_PCT` (`:19`, `0.01`).
+   - `opportunity_score_parts` then scores `transition = 10` when `near_flip`, else `0`.
+   - AC-C1 pins the quoted cell.
+2. **AC-M4a: the completeness sentence.** The vocabulary section states, once, before its table:
+   `This is the complete set: the product renders no other word in place of a number.`
+   - It claims closure without a count, so it stays true as the imported union grows.
+   - The "no *this is a selection* clause" rule above stands; this adds the positive statement AC-M4a
+     asks a reviewer to find.
+3. **AC-L5a: the score sample carries the shared mark.** The score panel carries
+   `Illustrative sample — not a live read and not a recorded session.`, once.
+   - That is the same shared literal as the hero and the field, so `/` still has two sample literals and
+     only two.
+   - The structure-field sample's accessible text on `/` makes **no** live claim: no "live", no "tape",
+     no "current".
+   - It refers to no element `/` does not render: no ladder.
+   - It points `aria-describedby` at its section's caption, as the hero does.
+4. **AC-C1: the field bullet's last byte.** The quoted form governs, trailing period included:
+   `On a ticker desk the mid is tape — it pulses only while the stream is genuinely live.` "Four words
+   added" counts words, not punctuation.
+5. **AC-G1: the scan matrix is named.** Every checked width includes both schemes. The accessibility gate
+   scans:
+   - each of the six surfaces in **dark and light at 393**;
+   - the 404 also at 1280, as today;
+   - the sign-in wall, the degraded wall and the open sign-in dialog, each in both schemes at 393. For
+     this row they count as surfaces.
+   The frozen inventory (`tools/lib/manifest.mjs`, `manifest.ts`, `manifest.json`, the reporter and
+   summary pins) is edited deliberately to the new count, as F15 did. It is never waived and never
+   narrowed.
+6. **Display face (a criteria gap QA raised as I-7).** The landing's h1 and every h2 render in the canon
+   display face, **Archivo** at the landing display scale (`DESIGN_SYSTEM.md:100`: "Archivo (display…) ·
+   IBM Plex Sans (body/UI)"; `displayScale` 44–56 px / 700), not IBM Plex Sans. It is a new acceptance
+   row:
+   - **AC-L18** (test): the landing's h1 and h2 computed `font-family` resolves to Archivo, in both
+     schemes, at 393 and 1280.
+7. **Phone CTAs and breakpoints (design conformance, QA m-3 and m-4).**
+   - At ≤ 699 px the hero's two CTAs are full-width and stacked, as the design source draws them.
+   - The secondary `How it’s built` label takes the design's secondary colour grade and must still clear
+     AC-G1 in both schemes.
+   - The hero, features and register switch to two columns at **1100**.
+   - The trust cards go three-up from **700**.
+
 <!-- spire:council-folding:v1
 {"schema_version":1,"resolutions":[{"source":"R2-architect.md","index":0,"conflict_id":"804a6fc066f9fe528570f346b194ce4e67027375021cb8cf992d84dce9b030b7","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":1,"conflict_id":"60b85e24c604e9803700479b846b15d4a9f4c7e4ed41c037b2c81cfcd71144c8","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":2,"conflict_id":"939f095fb4cbd115627baecfc008161c6ca7cf32fa0f2be228041e6e4bc94f57","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":3,"conflict_id":"7ccd6b6f052d5c6ff70da973ccc445631451d4430b7a2a9afec0dd915da0fad4","disposition":"folded","section":"§3"},{"source":"R2-architect.md","index":4,"conflict_id":"01d33a0bebb8cf79d6ca6354adac5d8a909d6eaf80e4b66876a149eb5f205dbc","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":5,"conflict_id":"9651943b3e8d63e35082c6b03b389417e73760014eed057bfc49ac1b59b10d82","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":6,"conflict_id":"e1837901790eeef6c262f5a3fec89843ac432a544218aa327a37560a3fda6946","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":7,"conflict_id":"7c81de201e715ac58993a2afb302277efda365723d8196d04536c47969e7830c","disposition":"folded","section":"§2"},{"source":"R2-architect.md","index":8,"conflict_id":"5cb7604cabe7fa8d3767f30f9acd767be77bcdcc6d58f226344063a023caef1e","disposition":"folded","section":"§2"},{"source":"R2-pm.md","index":0,"conflict_id":"0dd564b192f5aec3aee08f36024d997c2d31519f917f8ace279dd2985cb80c0f","disposition":"folded","section":"§1"},{"source":"R2-pm.md","index":1,"conflict_id":"7f26ee4c134a12db3a04650959ee008c9f1f060b1246c65267244f8423b9e318","disposition":"folded","section":"§4"},{"source":"R2-pm.md","index":2,"conflict_id":"ff779bdd4941867a8dcca8c559085f2c49c95cc36ee91b4ad978ff608251e522","disposition":"folded","section":"§3"},{"source":"R2-pm.md","index":3,"conflict_id":"9e2d7b7b011cc5abe225eb5890c10f611cd92c6d334421958a46ee2a6f7202c2","disposition":"folded","section":"§1"},{"source":"R2-pm.md","index":4,"conflict_id":"0d322f719982ba89fe78b523bb4eaf6b9182fd746e851ad4050694fcbcedf747","disposition":"folded","section":"§4"},{"source":"R2-pm.md","index":5,"conflict_id":"0c05cac4d407e5749f9900d0b27c9d676a7506792baa471bbb579dbae4d0f71b","disposition":"folded","section":"§2"},{"source":"R2-pm.md","index":6,"conflict_id":"9c991a7b0b97b93f03d0476696d79a9d8e6bbd7f4860a620ae4efd1724a9a03d","disposition":"folded","section":"§1"},{"source":"R2-pm.md","index":7,"conflict_id":"206a60b3cddbb9a0240cf6d320f4664e281bc5ab4e859b2fd0e75353fb8376f5","disposition":"folded","section":"§3"},{"source":"R2-pm.md","index":8,"conflict_id":"d0bc5fe85b7ac5038d5da16db225c218c7096870ad5d097adfee9d96b2350a56","disposition":"folded","section":"§1"},{"source":"R2-ux.md","index":0,"conflict_id":"78ecd37df9b527c41b74870dfbf28fee30d1b3733ba5e4d668b702678f0e5235","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":1,"conflict_id":"96c5f81b7d9b9b4a23e3f9731e65b190d13ec218f87e4e283e40a0faa53de46c","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":2,"conflict_id":"4bff0a56af82983b2d999efca68c4f58684e7d350b08b9672acdc49fb3073d56","disposition":"folded","section":"§5"},{"source":"R2-ux.md","index":3,"conflict_id":"4a4bb05c964832fcfa3b76364c575dd45b199807f0b22fe7ec951218353e0e96","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":4,"conflict_id":"80f4f7b03ca17041f3cdf91cad732a6d8dd254ba246f0f446c03e9fc983b9515","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":5,"conflict_id":"656c4d95fd5bc1622db235ecef6457f5f133ba04a4db83be12081ca75dc5e41d","disposition":"folded","section":"§2"},{"source":"R2-ux.md","index":6,"conflict_id":"d1a94c997e0b4b76a1574cc0e40947efde72676491a34a4295c100a2b51d7894","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":7,"conflict_id":"22f6ae74e81233b9f0d086228449f97231b82d0f6846b16f37a3c8383a98952a","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":8,"conflict_id":"bc0fe3d9d902fbe12cb45dd047309480aca2ecaab520b66118f4b16203e9b98c","disposition":"folded","section":"§3"},{"source":"R2-ux.md","index":9,"conflict_id":"5b3ba16881db0cb753a07114a50ad6f82a5d3bcd5c70c105af7d8add94e5de03","disposition":"folded","section":"§3"},{"source":"R2-ux.md","index":10,"conflict_id":"e0e1900519dbbf6cc051ab5cf921307b7e7480860220dfc90126a347c8d85593","disposition":"folded","section":"§1"},{"source":"R2-ux.md","index":11,"conflict_id":"09f566164a626d2540022de5019137d2cf411a0317035cd4c1069e405c5295f0","disposition":"folded","section":"§4"},{"source":"R2-ux.md","index":12,"conflict_id":"0b1ff840f52a4c0383c25ecd9393e13c14168f2987551797b1f0deac2b5fd0ad","disposition":"folded","section":"§2"}]}
 -->
