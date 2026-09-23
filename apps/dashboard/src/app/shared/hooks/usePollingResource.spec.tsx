@@ -101,6 +101,59 @@ describe('usePollingResource', () => {
     expect(result.current.data).toBe(42);
   });
 
+  it('haltOn: a matching fault stops every future trigger (interval, visibility, manual refresh) for this key', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const fatal = Object.assign(new Error('paused'), { code: 'market_data_paused' });
+    const fetcher = vi.fn(async () => {
+      throw fatal;
+    });
+    const { result } = renderHook(() =>
+      usePollingResource('SPY', fetcher, {
+        intervalMs: 1_000,
+        haltOn: (e) => (e as { code?: string })?.code === 'market_data_paused',
+      }),
+    );
+    await waitFor(() => expect(result.current.error).toBe('paused'));
+    expect(result.current.errorCause).toBe(fatal);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+
+    // Interval ticks: none reach the network once halted.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(65_000);
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+
+    // Visibility resume: also inert.
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+
+    // A manual refresh (e.g. a leftover Retry wiring) is inert too.
+    await act(async () => {
+      result.current.refresh({ force: true });
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it('a non-matching fault does not halt — the interval keeps polling (unchanged default behavior)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const fetcher = vi.fn(async () => {
+      throw new Error('transient');
+    });
+    renderHook(() =>
+      usePollingResource('SPY', fetcher, {
+        intervalMs: 1_000,
+        haltOn: (e) => (e as { code?: string })?.code === 'market_data_paused',
+      }),
+    );
+    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000);
+    });
+    expect(fetcher.mock.calls.length).toBeGreaterThan(1);
+  });
+
   it('does not fetch when key is null or enabled is false', async () => {
     const fetcher = vi.fn(async () => 1);
     const { rerender } = renderHook(

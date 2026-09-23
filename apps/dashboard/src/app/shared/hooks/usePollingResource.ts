@@ -24,14 +24,26 @@ export interface UsePollingResourceOptions {
    * (e.g. empty expiration selection).
    */
   enabled?: boolean;
+  /**
+   * When supplied and it returns true for a caught fault, this resource stops fetching for the
+   * rest of this `key`'s lifetime: no further interval tick, no visibility-triggered refresh, and
+   * `refresh()` itself becomes inert. Only a `key` change resumes it. For a FATAL, non-retryable
+   * fault (e.g. `market_data_paused`, no-vendor-production-posture F2b) where nothing about
+   * retrying — automatic or user-triggered — could ever change the answer.
+   */
+  haltOn?: (error: unknown) => boolean;
 }
 
 export interface PollingResource<T> {
   data: T | null;
   error: string | null;
+  /** The fault behind `error` (undefined once `error` is null). `error` itself is a display
+   *  string; a caller that needs to classify WHY (e.g. a typed `code`) reads this instead —
+   *  `usePollingResource` stays fault-shape-agnostic. */
+  errorCause?: unknown;
   /** True while a request is in flight and we have no data yet for this key. */
   loading: boolean;
-  /** Force a fetch even when the tab is hidden (Retry). */
+  /** Force a fetch even when the tab is hidden (Retry). A no-op once `haltOn` has matched. */
   refresh: (opts?: { force?: boolean }) => void;
 }
 
@@ -51,16 +63,19 @@ function isAbort(e: unknown): boolean {
 export function usePollingResource<T>(
   key: string | null,
   fetcher: PollingFetcher<T>,
-  { intervalMs, keepOnError = true, enabled = true }: UsePollingResourceOptions,
+  { intervalMs, keepOnError = true, enabled = true, haltOn }: UsePollingResourceOptions,
 ): PollingResource<T> {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorCause, setErrorCause] = useState<unknown>(undefined);
   const [loading, setLoading] = useState(false);
 
   const fetcherRef = useRef(fetcher);
   fetcherRef.current = fetcher;
   const keepRef = useRef(keepOnError);
   keepRef.current = keepOnError;
+  const haltOnRef = useRef(haltOn);
+  haltOnRef.current = haltOn;
 
   // Imperative handle so interval + visibility always call the latest run without
   // re-subscribing on every data change.
@@ -70,6 +85,7 @@ export function usePollingResource<T>(
     if (key == null || !enabled) {
       setData(null);
       setError(null);
+      setErrorCause(undefined);
       setLoading(false);
       runRef.current = () => undefined;
       return;
@@ -77,8 +93,12 @@ export function usePollingResource<T>(
 
     let ac = new AbortController();
     let hasData = false;
+    // F2b: once a haltOn match fires for this key, every trigger (interval / visibility /
+    // manual refresh) short-circuits below — permanently, until the key itself changes.
+    let halted = false;
 
     const run = (force: boolean) => {
+      if (halted) return;
       if (!force && typeof document !== 'undefined' && document.hidden) return;
       ac.abort();
       ac = new AbortController();
@@ -92,6 +112,7 @@ export function usePollingResource<T>(
           hasData = true;
           setData(result);
           setError(null);
+          setErrorCause(undefined);
           setLoading(false);
         })
         .catch((e: unknown) => {
@@ -101,10 +122,12 @@ export function usePollingResource<T>(
               ? String((e as { message?: string }).message)
               : 'Request failed';
           setError(msg);
+          setErrorCause(e);
           if (!keepRef.current) {
             hasData = false;
             setData(null);
           }
+          if (haltOnRef.current?.(e)) halted = true;
           setLoading(false);
         });
     };
@@ -113,6 +136,7 @@ export function usePollingResource<T>(
     // Fresh key: clear previous resource before first paint of new data.
     setData(null);
     setError(null);
+    setErrorCause(undefined);
     hasData = false;
     run(true);
 
@@ -134,5 +158,5 @@ export function usePollingResource<T>(
     runRef.current(opts?.force !== false);
   }, []);
 
-  return { data, error, loading, refresh };
+  return { data, error, errorCause, loading, refresh };
 }

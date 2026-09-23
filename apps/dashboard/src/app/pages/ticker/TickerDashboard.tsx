@@ -44,6 +44,7 @@ import { StateExportDrawer } from '@/pages/ticker/widgets/ai-rec/StateExportDraw
 import { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommendation';
 import { PrimeBanner, tierMeta } from '@/pages/ticker/widgets/opportunity-tier';
 import { OptionRight } from '@convexa/api';
+import PauseCircleOutlinedIcon from '@mui/icons-material/PauseCircleOutlined';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
@@ -52,6 +53,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Fade from '@mui/material/Fade';
+import Link from '@mui/material/Link';
 import Skeleton from '@mui/material/Skeleton';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
@@ -61,9 +63,9 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useTheme, type Theme } from '@mui/material/styles';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 
-import { elevationFor, typographyTokens } from '@/shared/theme/tokens';
+import { elevationFor, extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
 import { WidgetChromeProvider, WidgetSelectionProvider } from '@/shared/ui/Widget';
@@ -506,7 +508,7 @@ export function TickerDashboard() {
   // Live tape subscription — portfolio / orders / deck need ticks. Structure widgets are memoized
   // on REST props so they skip re-render when only the tape changes (§3.8 Phase C).
   const { live, streamOffline, isLive, displayActive, lastSessionPhase } = useLiveTape();
-  const { data, loading, error, refresh: load } = page.bundle;
+  const { data, loading, error, paused: marketDataPaused, refresh: load } = page.bundle;
   const structHist = page.history;
   const universeMembership = page.universeMembership;
   const structureAgeSeconds = page.structureAgeSeconds;
@@ -722,8 +724,49 @@ export function TickerDashboard() {
           own sentence (fidelity repair 2, N7), never the raw client status string; the status
           itself stays, as a Mono detail line, so nothing is hidden. A poll failure AFTER a prior
           success keeps the whole bundle on screen behind a soft warning (the other branch, below —
-          untouched; same code path ONLY when `error && !data`, never `error && data`). */}
-      {error && !data && (
+          untouched; same code path ONLY when `error && !data`, never `error && data`).
+
+          no-vendor-production-posture F2: a PAUSED cold-start is not a transient failure — it is a
+          standing, honest fact (`docs/mockups/2026-09-23-market-data-paused.html`). It gets its own
+          info-toned panel with NO Retry and NO HTTP line (retrying cannot change the answer); every
+          OTHER cold-start error keeps today's warning panel byte-for-byte (AC-8). F2b: the fetch
+          behind `error` has already stopped polling by the time this renders (`useTickerBundle`'s
+          `haltOn: isMarketDataPaused`) — changing the ticker is the only thing that asks again. */}
+      {error && !data && marketDataPaused && (
+        <Alert severity="info" icon={<PauseCircleOutlinedIcon />} role="status">
+          <AlertTitle>Market data is paused.</AlertTitle>
+          <Typography variant="body2">
+            Convexa isn’t connected to a market-data feed right now, so this desk can’t load prices
+            or dealer structure. Nothing is broken, and retrying won’t change it.
+          </Typography>
+          <Stack direction="row" spacing={2} sx={{ mt: 1, rowGap: 0.5, flexWrap: 'wrap' }}>
+            {/* `info.main` is the deliberately-quiet FILL-grade blue (`[theme-token-discipline]`'s
+                own top-of-file note) — too quiet as small link TEXT (AC-10 caught it: 'color-contrast'
+                serious on light at 1280, this exact site). `extrasFor(theme).textInfo` is the
+                measured TEXT-GRADE companion `ConnectionChip`/`StructureHeroPanel`/`AuthDialog`
+                already use for the same reason. */}
+            <Link
+              component={RouterLink}
+              to="/methodology"
+              variant="body2"
+              underline="always"
+              sx={{ color: (theme) => extrasFor(theme).textInfo }}
+            >
+              How the desk reads structure →
+            </Link>
+            <Link
+              component={RouterLink}
+              to="/#landing-sample-field"
+              variant="body2"
+              underline="always"
+              sx={{ color: (theme) => extrasFor(theme).textInfo }}
+            >
+              See an illustrative sample →
+            </Link>
+          </Stack>
+        </Alert>
+      )}
+      {error && !data && !marketDataPaused && (
         <Alert
           severity="warning"
           icon={<WarningAmberIcon />}
