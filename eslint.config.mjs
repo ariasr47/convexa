@@ -236,6 +236,19 @@ export default [
               message:
                 'SPEC §2.1: AuthContext owns the TRANSPORT. `@/features/auth/copy` (strings) and `@/features/auth/AuthDialogProvider` (an opener) are allowed — this ban is the capability, not the folder.',
             },
+            // GATE Z I-4 (SPEC §7 item 3) — the one hero instrument ships as static SVG, never
+            // WebGL (owner ruling D-B, §2.3). Scoped to all four surface folders (the same block
+            // above), not landing alone: adding it as a SECOND override object with its own
+            // `no-restricted-imports` key would SILENTLY REPLACE this block's patterns for any
+            // file matching both `files` globs (ESLint flat config does not merge rule VALUES
+            // across matching configs — the later one wins whole), dropping the four bans above
+            // for every file under `pages/landing/**`. One `patterns` array is the only way to
+            // add a ban here without a real risk of quietly weakening this exact list.
+            {
+              group: ['three', '@react-three/*', 'regl', 'pixi.js'],
+              message:
+                'SPEC §2.3/§7 item 3: the one hero instrument is static SVG, never WebGL (owner ruling D-B, 2026-09-10) — three/@react-three/*/regl/pixi.js are banned on the public surfaces.',
+            },
           ],
         },
       ],

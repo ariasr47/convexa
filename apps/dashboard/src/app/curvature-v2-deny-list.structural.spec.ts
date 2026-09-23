@@ -33,8 +33,14 @@ const REQUIRED_SPECIFIERS = [
   '../../features/auth/AuthContext',
 ] as const;
 
+// GATE Z I-4 — excludes spec files, matching every sibling scanner of this shape in the repo
+// (`landing-structure.spec.tsx`'s `LANDING_SOURCES`, Arm A′'s `METHODOLOGY_SOURCES`): a spec file
+// legitimately references a banned specifier as a FIXTURE string (`svg-build-constraint.spec.ts`'s
+// ESLint probes, which construct `import { getScan } from '@convexa/api'` as in-memory lint
+// input, not a real import of this file's own module graph) — this glob was the one scanner of
+// its kind in the app that had not yet needed that exclusion.
 const SURFACE_SOURCES = import.meta.glob(
-  ['/src/app/pages/{landing,blog,methodology,not-found}/**/*.{ts,tsx}'],
+  ['/src/app/pages/{landing,blog,methodology,not-found}/**/*.{ts,tsx}', '!**/*.spec.{ts,tsx}'],
   { query: '?raw', import: 'default', eager: true },
 ) as Record<string, string>;
 

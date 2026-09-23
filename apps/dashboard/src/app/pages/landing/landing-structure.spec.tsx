@@ -1,5 +1,13 @@
 /**
- * Landing structure — SPEC §7 items 2/6/17; PLAN F7 step 4.
+ * Landing structure — SPEC §7 items 2/3/6/17; PLAN F7 step 4.
+ *
+ *   GATE Z I-4 (§7 item 2) — the ONE-HERO-INSTRUMENT cap: a `?raw` set-equality scan (the proven
+ *          `arc.spec.ts` idiom) asserting the modules under `pages/landing/**` containing a
+ *          `viewBox` are exactly `{HeroCurve.tsx, GammaSurfaceHero.tsx}`. A third instrument —
+ *          any third SVG carrying its own `viewBox` — red-builds this.
+ *   GATE Z I-4 (§7 item 3, mechanism 1) — no `<canvas>` and no `WebGLRenderingContext` ANYWHERE
+ *          under `pages/landing/**` (widened from `GammaSurfaceHero.spec.tsx`'s own scan of
+ *          itself alone, which a sibling module in this folder could bypass entirely).
  *
  *   §8-8 — the landing landmark + heading order: exactly one `<main>`, exactly one `<h1>`, the
  *          outline walks h1 → h2 → h3 with no skipped level and NO h4–h6; the three trust-card
@@ -178,5 +186,55 @@ describe('§8-7 · the radial blob is gone — negative space (mutation-guarded 
       .filter(([, src]) => referencesMotif(src))
       .map(([f]) => f);
     expect(referencing).toEqual([]);
+  });
+});
+
+/** Pure checker (mutation-tested): a real JSX/TSX `viewBox` ATTRIBUTE — `viewBox={...}` or
+ *  `viewBox="..."` — never a bare mention of the word (e.g. in a comment), which the `Landing.tsx`
+ *  docblock's own prose ("the one-hero-instrument `viewBox` scan") would otherwise false-positive. */
+const hasViewBoxAttribute = (src: string): boolean => /\bviewBox\s*=\s*[{"]/.test(src);
+
+describe('GATE Z I-4 (§7 item 2) · one-hero-instrument cap — viewBox SET EQUALITY (mutation-guarded)', () => {
+  it('the glob is not vacuous', () => {
+    expect(Object.keys(LANDING_SOURCES).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('MUTATION GUARD: the checker flags a real attribute and ignores a bare comment mention', () => {
+    expect(hasViewBoxAttribute(`viewBox={\`0 0 ${'${WIDTH}'} ${'${HEIGHT}'}\`}`)).toBe(true);
+    expect(hasViewBoxAttribute(`viewBox="0 0 1200 400"`)).toBe(true);
+    // The exact false-positive this scan must NOT produce — `Landing.tsx`'s own docblock prose.
+    expect(hasViewBoxAttribute('the one-hero-instrument `viewBox` scan (§7 item 2)')).toBe(false);
+    expect(hasViewBoxAttribute('no icon here paints its `viewBox` into this folder')).toBe(false);
+  });
+
+  it('modules under pages/landing/** containing a viewBox == {HeroCurve.tsx, GammaSurfaceHero.tsx} — a 3rd instrument red-builds', () => {
+    const withViewBox = Object.entries(LANDING_SOURCES)
+      .filter(([, src]) => hasViewBoxAttribute(src))
+      .map(([f]) => f)
+      .sort();
+    expect(withViewBox).toEqual([
+      '/src/app/pages/landing/GammaSurfaceHero.tsx',
+      '/src/app/pages/landing/HeroCurve.tsx',
+    ]);
+  });
+});
+
+/** Pure checker (mutation-tested): SPEC §7 item 3's first mechanism — no `<canvas>` element and
+ *  no `WebGLRenderingContext` reference anywhere under `pages/landing/**` (widened from
+ *  `GammaSurfaceHero.spec.tsx`'s scan of that ONE file — a sibling module could otherwise mount a
+ *  second, WebGL-backed instrument and this class of guard would never see it). */
+const hasCanvasOrWebGL = (src: string): boolean =>
+  src.includes('<canvas') || src.includes('WebGLRenderingContext');
+
+describe('GATE Z I-4 (§7 item 3, mechanism 1) · no <canvas>/WebGL anywhere under pages/landing/**', () => {
+  it('MUTATION GUARD: the checker flags both forms and ignores an unrelated tag', () => {
+    expect(hasCanvasOrWebGL('<canvas ref={canvasRef} />')).toBe(true);
+    expect(hasCanvasOrWebGL('const ctx: WebGLRenderingContext = gl;')).toBe(true);
+    expect(hasCanvasOrWebGL('<svg viewBox="0 0 1 1" />')).toBe(false);
+  });
+
+  it('zero <canvas>/WebGLRenderingContext across pages/landing/** (the SVG build constraint, SPEC §2.3)', () => {
+    const violations = Object.entries(LANDING_SOURCES).filter(([, src]) => hasCanvasOrWebGL(src));
+    expect(violations.map(([f]) => f)).toEqual([]);
   });
 });
