@@ -1,0 +1,747 @@
+{
+  "id": "desk-real-1280-light",
+  "side": "app",
+  "surface": "desk",
+  "state": "real",
+  "width": 1280,
+  "scheme": "light",
+  "url": "/ticker/SPY",
+  "pageHeight": 2719,
+  "contentBottom": 2719,
+  "overflowX": false,
+  "scrollWidth": 1280,
+  "consoleErrors": [],
+  "regions": [
+    {
+      "key": "app-shell",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 2719,
+      "text": "Skip to main contentCONVEAScannerTickerPositionsAlertsJump to a ticker…Kquality-"
+    },
+    {
+      "key": "skip-to-main",
+      "x": 0,
+      "y": -53,
+      "w": 158,
+      "h": 44,
+      "text": "Skip to main content"
+    },
+    {
+      "key": "top-nav",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 65,
+      "text": "CONVEAScannerTickerPositionsAlertsJump to a ticker…Kquality-user@fixture.invalid"
+    },
+    {
+      "key": "nav-search-trigger",
+      "x": 809,
+      "y": 14,
+      "w": 200,
+      "h": 36,
+      "text": "Jump to a ticker…K"
+    },
+    {
+      "key": "command-deck",
+      "x": 64,
+      "y": 89,
+      "w": 1152,
+      "h": 215,
+      "text": "negative gammalive · open · mid $767.82● Last trade $767.82SPY · $767.82Levels @"
+    },
+    {
+      "key": "deck-meta",
+      "x": 64,
+      "y": 203,
+      "w": 374,
+      "h": 40,
+      "text": "Levels @ $770.19·Structure as-of 0s· refreshes ~60s·All expirations"
+    },
+    {
+      "key": "ticker-toolbar",
+      "x": 454,
+      "y": 109,
+      "w": 589,
+      "h": 47,
+      "text": "ExpirationsAll expirations​PersonaDefault (no persona)​"
+    },
+    {
+      "key": "open-sim-trade",
+      "x": 1055,
+      "y": 119,
+      "w": 161,
+      "h": 31,
+      "text": "+ Open simulated trade"
+    },
+    {
+      "key": "quick-symbols",
+      "x": 64,
+      "y": 255,
+      "w": 1152,
+      "h": 37,
+      "text": "QUICKSPYQQQNVDAUniverse member · 3 tracked names"
+    },
+    {
+      "key": "quick-symbols-note",
+      "x": 1021,
+      "y": 266,
+      "w": 195,
+      "h": 26,
+      "text": "Universe member · 3 tracked names"
+    },
+    {
+      "key": "widget-bento",
+      "x": 64,
+      "y": 316,
+      "w": 1152,
+      "h": 2379,
+      "text": "StructureStructure fieldlivemid · tapeNet dealer gamma by strike · all expiratio"
+    },
+    {
+      "key": "widget-structure-hero",
+      "x": 64,
+      "y": 352,
+      "w": 1152,
+      "h": 483,
+      "text": "Structure fieldlivemid · tapeNet dealer gamma by strike · all expirations · leve"
+    },
+    {
+      "key": "dealer-view-toggle",
+      "x": 1049,
+      "y": 365,
+      "w": 121,
+      "h": 39,
+      "text": "FieldMagnet"
+    },
+    {
+      "key": "structure-hero",
+      "x": 65,
+      "y": 421,
+      "w": 1150,
+      "h": 414,
+      "text": "Net dealer gamma by strike for SPY, marking the call wall, put wall, gamma flip "
+    },
+    {
+      "key": "structure-field-canvas",
+      "x": 71,
+      "y": 431,
+      "w": 838,
+      "h": 300,
+      "text": ""
+    },
+    {
+      "key": "tape-trail-row",
+      "x": 71,
+      "y": 739,
+      "w": 838,
+      "h": 39,
+      "text": "Tape · 5m mid trailMid $767.82Structure $770.19"
+    },
+    {
+      "key": "tape-pulse-strip",
+      "x": 71,
+      "y": 739,
+      "w": 838,
+      "h": 39,
+      "text": "Tape · 5m mid trailMid $767.82Structure $770.19"
+    },
+    {
+      "key": "tape-pulse-header",
+      "x": 71,
+      "y": 748,
+      "w": 838,
+      "h": 30,
+      "text": "Tape · 5m mid trailMid $767.82Structure $770.19"
+    },
+    {
+      "key": "structure-history",
+      "x": 71,
+      "y": 784,
+      "w": 838,
+      "h": 51,
+      "text": "Structure path · slow laneCold start — path empty until the scanner slow lane re"
+    },
+    {
+      "key": "level-ladder",
+      "x": 934,
+      "y": 433,
+      "w": 263,
+      "h": 223,
+      "text": "Levelsdistance from levels @ $770.19Call wall$780+1.3%Gamma flip$771.3+0.1%Midli"
+    },
+    {
+      "key": "ladder-foot",
+      "x": 934,
+      "y": 729,
+      "w": 263,
+      "h": 91,
+      "text": "Vol-norm GEX−$66.4Bprimary magnitudeRaw GEX (1% shock)−$7.1Bsecondary"
+    },
+    {
+      "key": "widget-read-strip",
+      "x": 64,
+      "y": 852,
+      "w": 1152,
+      "h": 131,
+      "text": "Opportunity78 · Actionable3 setupsNet DEX$45.4Bdelta hedging pressureIV / HV0.92"
+    },
+    {
+      "key": "read-strip-rail",
+      "x": 65,
+      "y": 854,
+      "w": 1150,
+      "h": 128,
+      "text": "Opportunity78 · Actionable3 setupsNet DEX$45.4Bdelta hedging pressureIV / HV0.92"
+    },
+    {
+      "key": "read-strip-cell-opportunity",
+      "x": 65,
+      "y": 854,
+      "w": 186,
+      "h": 128,
+      "text": "Opportunity78 · Actionable3 setups"
+    },
+    {
+      "key": "read-strip-cell-netDex",
+      "x": 251,
+      "y": 854,
+      "w": 138,
+      "h": 128,
+      "text": "Net DEX$45.4Bdelta hedging pressure"
+    },
+    {
+      "key": "read-strip-cell-ivHv",
+      "x": 389,
+      "y": 854,
+      "w": 138,
+      "h": 128,
+      "text": "IV / HV0.92options look cheap"
+    },
+    {
+      "key": "read-strip-cell-ivRank",
+      "x": 526,
+      "y": 854,
+      "w": 138,
+      "h": 128,
+      "text": "IV rankunavailable—"
+    },
+    {
+      "key": "read-strip-cell-volOi",
+      "x": 664,
+      "y": 854,
+      "w": 138,
+      "h": 128,
+      "text": "Vol/OI0.15×8 unusual strikes"
+    },
+    {
+      "key": "read-strip-cell-ivSkew",
+      "x": 802,
+      "y": 854,
+      "w": 138,
+      "h": 128,
+      "text": "IV skew−0.6 pts · greedupside is bid (greed/complacency)"
+    },
+    {
+      "key": "read-strip-cell-termStructure",
+      "x": 940,
+      "y": 854,
+      "w": 138,
+      "h": 128,
+      "text": "Term structurecontango1d 11.6 → 829d 19.9"
+    },
+    {
+      "key": "read-strip-cell-offExchange",
+      "x": 1077,
+      "y": 854,
+      "w": 138,
+      "h": 128,
+      "text": "Off-exchange %18.9%context only, no side"
+    },
+    {
+      "key": "board-zone-plan",
+      "x": 64,
+      "y": 1006,
+      "w": 1152,
+      "h": 25,
+      "text": "Tape & plan"
+    },
+    {
+      "key": "ticker-work-container",
+      "x": 64,
+      "y": 1048,
+      "w": 1152,
+      "h": 567,
+      "text": "AI recommendation · SPYView what's sent→Risk-first read on the current snapshot,"
+    },
+    {
+      "key": "ticker-work",
+      "x": 64,
+      "y": 1048,
+      "w": 1152,
+      "h": 567,
+      "text": "AI recommendation · SPYView what's sent→Risk-first read on the current snapshot,"
+    },
+    {
+      "key": "ai-rec-panel",
+      "x": 64,
+      "y": 1048,
+      "w": 759,
+      "h": 567,
+      "text": "AI recommendation · SPYView what's sent→Risk-first read on the current snapshot,"
+    },
+    {
+      "key": "widget-ai-rec",
+      "x": 64,
+      "y": 1048,
+      "w": 759,
+      "h": 326,
+      "text": "AI recommendation · SPYView what's sent→Risk-first read on the current snapshot,"
+    },
+    {
+      "key": "ai-rec-model-select",
+      "x": 81,
+      "y": 1243,
+      "w": 725,
+      "h": 39,
+      "text": "claude-opus-4-8 · catalog recommended default​"
+    },
+    {
+      "key": "ticker-work-side",
+      "x": 837,
+      "y": 1048,
+      "w": 379,
+      "h": 567,
+      "text": "Live tapeLive stream · not the structure snapshot belowNet flow (5m)live+1,250Sp"
+    },
+    {
+      "key": "widget-live-tape",
+      "x": 837,
+      "y": 1048,
+      "w": 379,
+      "h": 318,
+      "text": "Live tapeLive stream · not the structure snapshot belowNet flow (5m)live+1,250Sp"
+    },
+    {
+      "key": "live-tape",
+      "x": 854,
+      "y": 1128,
+      "w": 345,
+      "h": 220,
+      "text": "Net flow (5m)live+1,250Spread—Gamma flip · livelive$771.3+$1.1 · 0.1% aboveVWAP$"
+    },
+    {
+      "key": "position-brief",
+      "x": 837,
+      "y": 1380,
+      "w": 379,
+      "h": 93,
+      "text": "Your book · simulated3 open sim positions on SPY — open the book for the full re"
+    },
+    {
+      "key": "position-brief-multi",
+      "x": 854,
+      "y": 1415,
+      "w": 345,
+      "h": 46,
+      "text": "3 open sim positions on SPY — open the book for the full read.Open book →"
+    },
+    {
+      "key": "widget-orders",
+      "x": 837,
+      "y": 1487,
+      "w": 379,
+      "h": 128,
+      "text": "Sim orders · SPYSIMULATEDAll orders →No simulated orders for SPY. Act on an AI r"
+    },
+    {
+      "key": "orders-widget-empty",
+      "x": 854,
+      "y": 1561,
+      "w": 345,
+      "h": 37,
+      "text": "No simulated orders for SPY. Act on an AI read to create one — it watches the li"
+    },
+    {
+      "key": "board-zone-context",
+      "x": 64,
+      "y": 1635,
+      "w": 1152,
+      "h": 25,
+      "text": "Supporting context"
+    },
+    {
+      "key": "context-band-head",
+      "x": 64,
+      "y": 1676,
+      "w": 1152,
+      "h": 39,
+      "text": "ContextAdvisory reads that never feed the score · snapshot, never live · refresh"
+    },
+    {
+      "key": "context-band-filter",
+      "x": 1023,
+      "y": 1676,
+      "w": 193,
+      "h": 39,
+      "text": "AllFlowVolPositioning"
+    },
+    {
+      "key": "ticker-context-grid",
+      "x": 64,
+      "y": 1727,
+      "w": 1152,
+      "h": 968,
+      "text": "Projected dealer flowSnapshot, never live — refreshes with the data load, not th"
+    },
+    {
+      "key": "widget-dealer-flow-projection",
+      "x": 64,
+      "y": 1727,
+      "w": 373,
+      "h": 387,
+      "text": "Projected dealer flowSnapshot, never live — refreshes with the data load, not th"
+    },
+    {
+      "key": "dealer-flow-projection",
+      "x": 81,
+      "y": 1826,
+      "w": 339,
+      "h": 271,
+      "text": "Charm · drift into OPEX−$49.0B delta driftto Fri Sep 18 (10 days)base −$4.9B / d"
+    },
+    {
+      "key": "dfp-charm",
+      "x": 81,
+      "y": 1826,
+      "w": 339,
+      "h": 87,
+      "text": "Charm · drift into OPEX−$49.0B delta driftto Fri Sep 18 (10 days)base −$4.9B / d"
+    },
+    {
+      "key": "dfp-vanna",
+      "x": 81,
+      "y": 1921,
+      "w": 339,
+      "h": 87,
+      "text": "Vanna · per vol move+$6.8B on +1 IV pt+$33.8B on +5 IV pt (illus.)+ = vol up · a"
+    },
+    {
+      "key": "dfp-footer",
+      "x": 81,
+      "y": 2023,
+      "w": 339,
+      "h": 74,
+      "text": "Linear first-order projection at spot $770.19, holding spot & vol.Dealer-flow co"
+    },
+    {
+      "key": "widget-market-context",
+      "x": 453,
+      "y": 1727,
+      "w": 373,
+      "h": 345,
+      "text": "Market contextContext the AI also reads · snapshot, never live — refreshes with "
+    },
+    {
+      "key": "market-context",
+      "x": 470,
+      "y": 1826,
+      "w": 339,
+      "h": 228,
+      "text": "TrendUptrendAs of session Fri Sep 4 · daily bars · EMA 20/50 · ADX(14) · RSI(14)"
+    },
+    {
+      "key": "mc-ti",
+      "x": 470,
+      "y": 1826,
+      "w": 162,
+      "h": 81,
+      "text": "TrendUptrendAs of session Fri Sep 4 · daily bars · EMA 20/50 · ADX(14) · RSI(14)"
+    },
+    {
+      "key": "mc-trend",
+      "x": 470,
+      "y": 1858,
+      "w": 162,
+      "h": 25,
+      "text": "Uptrend"
+    },
+    {
+      "key": "mc-trend-label",
+      "x": 470,
+      "y": 1858,
+      "w": 162,
+      "h": 25,
+      "text": "Uptrend"
+    },
+    {
+      "key": "mc-shape",
+      "x": 648,
+      "y": 1826,
+      "w": 162,
+      "h": 81,
+      "text": "Profile shapeDispersedAt spot $770.19 · 482 strikes in the selected window"
+    },
+    {
+      "key": "mc-concentration",
+      "x": 648,
+      "y": 1858,
+      "w": 162,
+      "h": 25,
+      "text": "Dispersed"
+    },
+    {
+      "key": "mc-concentration-label",
+      "x": 648,
+      "y": 1858,
+      "w": 162,
+      "h": 25,
+      "text": "Dispersed"
+    },
+    {
+      "key": "mc-flow",
+      "x": 470,
+      "y": 1923,
+      "w": 162,
+      "h": 81,
+      "text": "Flow vs positioningRotatingToday's session cumulative option volume, unsigned (n"
+    },
+    {
+      "key": "mc-location",
+      "x": 470,
+      "y": 1955,
+      "w": 162,
+      "h": 25,
+      "text": "Rotating"
+    },
+    {
+      "key": "mc-location-label",
+      "x": 470,
+      "y": 1955,
+      "w": 162,
+      "h": 25,
+      "text": "Rotating"
+    },
+    {
+      "key": "mc-atr",
+      "x": 648,
+      "y": 1923,
+      "w": 162,
+      "h": 81,
+      "text": "ATR 14d$5.50 · 0.7%As of session Fri Sep 4 · vs close $770.19 · 5/14/30 trading "
+    },
+    {
+      "key": "mc-atr-14d",
+      "x": 648,
+      "y": 1955,
+      "w": 162,
+      "h": 25,
+      "text": "$5.50 · 0.7%"
+    },
+    {
+      "key": "mc-atr-14d-label",
+      "x": 648,
+      "y": 1955,
+      "w": 162,
+      "h": 25,
+      "text": "$5.50 · 0.7%"
+    },
+    {
+      "key": "mc-footer",
+      "x": 470,
+      "y": 2018,
+      "w": 339,
+      "h": 37,
+      "text": "Advisory context for you and the AI — not a scored signal, not a forecast, not a"
+    },
+    {
+      "key": "widget-term-structure",
+      "x": 843,
+      "y": 1727,
+      "w": 373,
+      "h": 172,
+      "text": "Term structureATM IV by tenor · contango · Structure as-of 0s10.87d12.017d12.631"
+    },
+    {
+      "key": "term-structure",
+      "x": 860,
+      "y": 1808,
+      "w": 339,
+      "h": 74,
+      "text": "10.87d12.017d12.631d13.452d14.083dContango · slope +8.3"
+    },
+    {
+      "key": "term-ribbon",
+      "x": 860,
+      "y": 1808,
+      "w": 339,
+      "h": 46,
+      "text": "10.87d12.017d12.631d13.452d14.083d"
+    },
+    {
+      "key": "widget-straddle-move",
+      "x": 64,
+      "y": 2130,
+      "w": 373,
+      "h": 210,
+      "text": "Straddle-implied move± $9.71 (± 1.3%)From the 2026-09-15 ATM straddle · 7 DTE · "
+    },
+    {
+      "key": "straddle-move",
+      "x": 81,
+      "y": 2190,
+      "w": 339,
+      "h": 133,
+      "text": "± $9.71 (± 1.3%)From the 2026-09-15 ATM straddle · 7 DTE · mid quotes · % of the"
+    },
+    {
+      "key": "straddle-move-headline",
+      "x": 81,
+      "y": 2190,
+      "w": 339,
+      "h": 42,
+      "text": "± $9.71 (± 1.3%)"
+    },
+    {
+      "key": "straddle-move-basis",
+      "x": 81,
+      "y": 2238,
+      "w": 309,
+      "h": 40,
+      "text": "From the 2026-09-15 ATM straddle · 7 DTE · mid quotes · % of the levels-anchor s"
+    },
+    {
+      "key": "straddle-move-advisory",
+      "x": 81,
+      "y": 2286,
+      "w": 339,
+      "h": 37,
+      "text": "What options are priced for — not a forecast, not a probability, not a scored si"
+    },
+    {
+      "key": "widget-fresh-positioning",
+      "x": 453,
+      "y": 2130,
+      "w": 373,
+      "h": 265,
+      "text": "Fresh positioning (Vol/OI)Strikes trading heavily versus standing open interest "
+    },
+    {
+      "key": "widget-off-exchange-blocks",
+      "x": 843,
+      "y": 2130,
+      "w": 373,
+      "h": 153,
+      "text": "Off-exchange blocksLargest recent off-exchange prints near spot. Context, not a "
+    },
+    {
+      "key": "widget-setups",
+      "x": 64,
+      "y": 2411,
+      "w": 763,
+      "h": 284,
+      "text": "SetupsRule-based · same structure snapshot · Structure as-of 0sGamma-flip transi"
+    },
+    {
+      "key": "setups-grid",
+      "x": 81,
+      "y": 2485,
+      "w": 729,
+      "h": 193,
+      "text": "Gamma-flip transitionMEDIUMPrice within 1% of zero-gamma $771.30; a cross flips "
+    },
+    {
+      "key": "add-widget-slot",
+      "x": 843,
+      "y": 2411,
+      "w": 373,
+      "h": 69,
+      "text": "+ Add widget"
+    }
+  ],
+  "probes": {
+    "connectionState": "live",
+    "skeletons": 0,
+    "monoElements": 62,
+    "sansElements": 148,
+    "archivoElements": 3,
+    "otherFontElements": 0,
+    "htmlBackground": "rgb(246, 246, 243)",
+    "bodyBackground": "rgb(246, 246, 243)",
+    "bodyFont": "\"IBM Plex Sans\", system-ui, \"Segoe UI\", Roboto, sans-serif",
+    "bodyFontSize": "15px",
+    "panelSelector": "top-nav",
+    "panelRadius": "0px",
+    "panelBackground": "rgba(255, 255, 255, 0.86)",
+    "panelBorder": "0px none rgba(0, 0, 0, 0)",
+    "monoFont": null,
+    "fontsLoaded": "loaded",
+    "archivoLoaded": true,
+    "plexMonoLoaded": true,
+    "plexSansLoaded": true,
+    "scrollHeight": 2719,
+    "scrollWidth": 1280,
+    "clientWidth": 1280
+  },
+  "panels": [
+    {
+      "key": "command-deck",
+      "radius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "0px none rgb(23, 32, 43)",
+      "shadow": "none"
+    },
+    {
+      "key": "widget-bento",
+      "radius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "0px none rgb(23, 32, 43)",
+      "shadow": "none"
+    },
+    {
+      "key": "widget-structure-hero",
+      "radius": "12px",
+      "background": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(23, 32, 43, 0.12)",
+      "shadow": "rgba(0, 0, 0, 0.06) 0px 1px 2px 0px, rgba(0, 0, 0, 0.05) 0px 2px 6px 0px"
+    },
+    {
+      "key": "widget-read-strip",
+      "radius": "12px",
+      "background": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(23, 32, 43, 0.12)",
+      "shadow": "rgba(0, 0, 0, 0.06) 0px 1px 2px 0px, rgba(0, 0, 0, 0.05) 0px 2px 6px 0px"
+    },
+    {
+      "key": "ai-rec-panel",
+      "radius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "0px none rgb(23, 32, 43)",
+      "shadow": "none"
+    },
+    {
+      "key": "widget-ai-rec",
+      "radius": "12px",
+      "background": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(23, 32, 43, 0.12)",
+      "shadow": "rgba(0, 0, 0, 0.06) 0px 1px 2px 0px, rgba(0, 0, 0, 0.05) 0px 2px 6px 0px"
+    },
+    {
+      "key": "widget-live-tape",
+      "radius": "12px",
+      "background": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(23, 32, 43, 0.12)",
+      "shadow": "rgba(0, 0, 0, 0.06) 0px 1px 2px 0px, rgba(0, 0, 0, 0.05) 0px 2px 6px 0px"
+    },
+    {
+      "key": "widget-orders",
+      "radius": "12px",
+      "background": "rgb(255, 255, 255)",
+      "border": "1px solid rgba(23, 32, 43, 0.12)",
+      "shadow": "rgba(0, 0, 0, 0.06) 0px 1px 2px 0px, rgba(0, 0, 0, 0.05) 0px 2px 6px 0px"
+    }
+  ],
+  "png": "app/desk-real-1280-light.png"
+}

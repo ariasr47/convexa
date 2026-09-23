@@ -1,4 +1,5 @@
 import { GROK_SUBSCRIPTION_LABEL, ownKeyChip } from '@/features/auth/aiProviderLabels';
+import { fmtAsOfEt, fmtExpiry } from '@/pages/ticker/widgets/_kit/copy';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { AccessibleHelp } from '@/shared/ui';
 import type { RecResponse, TickerBundle } from '@convexa/api';
@@ -141,7 +142,10 @@ export function Provenance({ rec }: { rec: RecResponse }) {
         label="Persona provenance help"
         text={COPY.tooltip.persona.replace('{name}', rec.persona.name)}
       />
-      <Chip size="small" variant="outlined" label={`As of ${rec.as_of ?? 'unknown snapshot'}`} />
+      {/* Fidelity repair 2, N5 — the exchange-clock form (design: `read pinned as of 10:41:52 ET ·
+          48s ago`), never the raw ISO instant. `data-rec-as-of` (below, the card root) keeps the raw
+          ISO for machine consumers — this chip is copy, not the attribute. */}
+      <Chip size="small" variant="outlined" label={`As of ${fmtAsOfEt(rec.as_of)}`} />
       <AccessibleHelp label="Snapshot provenance help" text={COPY.tooltip.asOf} />
       <Chip size="small" variant="outlined" label={COPY.provenance.sim} />
       <AccessibleHelp label="Simulated advisory help" text={COPY.tooltip.advisory} />
@@ -232,11 +236,18 @@ function DecisionMetadata({ rec, bundle }: { rec: RecResponse; bundle: TickerBun
       />
       <RiskField
         label={PLAN_FIELD_LABEL.expiration}
-        literal={planFieldLiteral({
-          decision: s.decision,
-          value: s.expiration,
-          reason: rec.field_reasons?.expiration,
-        })}
+        // Fidelity repair 2, N5 — the closed literal selector decides value/dash/not-set/… on the
+        // RAW wire token first (never on the formatted string — `fmtExpiry`'s own `unavailable`
+        // fallback must not race the selector's own reason-token lookup); only a resolved `value`
+        // literal's TEXT is then reformatted (design: `Sep 18 (15 DTE)`).
+        literal={(() => {
+          const literal = planFieldLiteral({
+            decision: s.decision,
+            value: s.expiration,
+            reason: rec.field_reasons?.expiration,
+          });
+          return literal.kind === 'value' ? { ...literal, text: fmtExpiry(literal.text) } : literal;
+        })()}
         caption={
           dteMin != null && dteMax != null ? (
             <Typography component="span" variant="caption" color="text.secondary">

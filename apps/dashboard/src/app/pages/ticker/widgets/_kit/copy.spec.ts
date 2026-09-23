@@ -13,6 +13,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  fmtAsOfEt,
+  fmtExpiry,
   fmtSigned2,
   fmtSignedUsdCompact,
   fmtUsdCompact,
@@ -180,5 +182,62 @@ describe('product spine #4 — structure age + basis phrases', () => {
       LIVE_TAPE_SUBTITLE_OFFLINE_EMPTY,
     ];
     expect(new Set(arms).size).toBe(arms.length);
+  });
+});
+
+// =================================================================================================
+// Fidelity repair 2, N5 — fmtAsOfEt / fmtExpiry: one as-of / expiration formatter, exchange clock.
+// Fixed clocks (never `Date.now()` inside a test), both sides of a DST transition, null/unparseable
+// input.
+// =================================================================================================
+describe('fmtAsOfEt — "HH:MM:SS ET · <age>", the exchange clock (fidelity repair 2, N5)', () => {
+  it('EST side (January, UTC-5) — the design’s own example: 15:41:52Z is 10:41:52 ET, 48s later', () => {
+    const iso = '2026-01-15T15:41:52.000Z';
+    const now = Date.parse(iso) + 48_000;
+    expect(fmtAsOfEt(iso, now)).toBe('10:41:52 ET · 48s');
+  });
+
+  it('EDT side (July, UTC-4) — the SAME wall-clock example reads the same HH:MM:SS via the other offset', () => {
+    const iso = '2026-07-15T14:41:52.000Z'; // UTC-4 in EDT -> 10:41:52 local
+    const now = Date.parse(iso) + 48_000;
+    expect(fmtAsOfEt(iso, now)).toBe('10:41:52 ET · 48s');
+  });
+
+  it('age is computed via humanAge (bucketed), not re-derived — a multi-minute gap buckets the same way', () => {
+    const iso = '2026-01-15T15:41:52.000Z';
+    const now = Date.parse(iso) + 125_000; // 2m 5s
+    expect(fmtAsOfEt(iso, now)).toBe(`10:41:52 ET · ${humanAge(125)}`);
+  });
+
+  it('null / unparseable renders the closed-vocabulary member, never the raw string', () => {
+    expect(fmtAsOfEt(null, 0)).toBe('unavailable');
+    expect(fmtAsOfEt(undefined, 0)).toBe('unavailable');
+    expect(fmtAsOfEt('not-a-timestamp', 0)).toBe('unavailable');
+  });
+});
+
+describe('fmtExpiry — "Mon D (N DTE)", never negative, the exchange calendar date (fidelity repair 2, N5)', () => {
+  it('the design’s own example: Sep 18 from a Sep 3 clock is 15 DTE', () => {
+    expect(fmtExpiry('2026-09-18', Date.parse('2026-09-03T15:00:00.000Z'))).toBe('Sep 18 (15 DTE)');
+  });
+
+  it('never negative — same-day or already-passed expirations floor at 0 DTE', () => {
+    expect(fmtExpiry('2026-09-18', Date.parse('2026-09-18T20:00:00.000Z'))).toBe('Sep 18 (0 DTE)');
+    expect(fmtExpiry('2026-09-18', Date.parse('2026-09-25T15:00:00.000Z'))).toBe('Sep 18 (0 DTE)');
+  });
+
+  it('DST-spanning window — 14 calendar days stays 14 DTE across the March transition (2026-03-08), never 13 or 15 from the 23-hour day', () => {
+    expect(fmtExpiry('2026-03-15', Date.parse('2026-03-01T12:00:00.000Z'))).toBe('Mar 15 (14 DTE)');
+  });
+
+  it('the exchange (ET) calendar date, not the UTC date, decides DTE — a UTC instant that is still yesterday in ET counts from yesterday', () => {
+    // 2026-01-01T04:30:00Z is 2025-12-31T23:30 EST — the ET calendar date is Dec 31, not Jan 1.
+    expect(fmtExpiry('2026-01-02', Date.parse('2026-01-01T04:30:00.000Z'))).toBe('Jan 2 (2 DTE)');
+  });
+
+  it('null / unparseable renders the closed-vocabulary member, never the raw string', () => {
+    expect(fmtExpiry(null, 0)).toBe('unavailable');
+    expect(fmtExpiry(undefined, 0)).toBe('unavailable');
+    expect(fmtExpiry('not-a-date', 0)).toBe('unavailable');
   });
 });

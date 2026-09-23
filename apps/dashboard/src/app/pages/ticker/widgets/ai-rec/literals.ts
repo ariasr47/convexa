@@ -4,6 +4,7 @@
  * testing a null, never by re-deriving a label from a scalar (`[digested-labels-not-raw-dump]`,
  * `[absent-is-not-none]`). Pure; no React, no fetch.
  */
+import { fmtAsOfEt } from '@/pages/ticker/widgets/_kit/copy';
 import { typographyTokens } from '@/shared/theme/tokens';
 import type {
   AnchorKind,
@@ -142,8 +143,12 @@ function quoteTextFor(c: CandidateContract, asOf: string | null): string {
   const ivPct = c.iv != null ? `${Math.round(c.iv * 100)}%` : '—';
   const delta = c.greeks.delta != null ? c.greeks.delta : '—';
   // AC-8: the candidate set's as-of is INTERPOLATED here — never a bare literal — so a cited quote
-  // always names the snapshot it came from.
-  return `bid ${c.bid} / ask ${c.ask} · Δ ${delta} · IV ${ivPct} · from the ${asOf ?? 'unknown'} chain snapshot`;
+  // always names the snapshot it came from. Fidelity repair 2, N5 — the exchange-clock form when
+  // present (never the raw ISO); the honest `unknown` token (unchanged) when absent — `fmtAsOfEt`'s
+  // own `unavailable` fallback is for a MISSING fact, a different word than this branch's "the set
+  // carries no as-of" case, so the ternary stays rather than handing `null` straight to the helper.
+  const asOfText = asOf ? fmtAsOfEt(asOf) : 'unknown';
+  return `bid ${c.bid} / ask ${c.ask} · Δ ${delta} · IV ${ivPct} · from the ${asOfText} chain snapshot`;
 }
 
 /** Closed lookup on `cited_contract.state` — never a partial-key match assembled client-side
@@ -230,7 +235,10 @@ const SESSION_LABEL: Record<string, string> = {
 
 /** `As of {as_of} · {live session|prior close}` — rendered, without hovering, on every surface that
  *  shows a candidate-derived number (AC-8). `null` when the set carries no as-of yet (e.g. still
- *  loading, or unavailable), so the caller can simply omit the line rather than print a lie. */
+ *  loading, or unavailable), so the caller can simply omit the line rather than print a lie.
+ *  Fidelity repair 2, N5 — `as_of` reads through `fmtAsOfEt` (the exchange-clock form), never the
+ *  raw ISO instant (`fidelity-review-2026-09-10`'s own evidence quote: "Candidates as of
+ *  2026-08-23T16:00:00.000Z · unknown session"). */
 export function candidateFreshnessLine(
   envelope: CandidateSetEnvelope | null | undefined,
 ): string | null {
@@ -238,7 +246,7 @@ export function candidateFreshnessLine(
   const label = envelope.session_basis
     ? (SESSION_LABEL[envelope.session_basis] ?? 'unknown session')
     : 'unknown session';
-  return `Candidates as of ${envelope.as_of} · ${label}`;
+  return `Candidates as of ${fmtAsOfEt(envelope.as_of)} · ${label}`;
 }
 
 // ---- The superseded-inputs change detector (AC-64, SPEC §2.4(a)) --------------------------------

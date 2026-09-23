@@ -6,6 +6,7 @@
  * An untraced value NEVER renders identically to a traced one: `the AI's own number` is in VISIBLE TEXT
  * beneath it (never colour alone, never tooltip alone — tooltips are unreachable on touch).
  */
+import { fmtExpiry } from '@/pages/ticker/widgets/_kit/copy';
 import type { GroundingField } from '@convexa/api';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
@@ -55,7 +56,11 @@ export function FigureClause({
     case 'near':
       return caption(nearLine(c.anchor, c.value));
     case 'inside_range':
-      return caption(insideRangeLine(c.expiration, c.low, c.high));
+      // Fidelity repair 2, N5 follow-up — `figureClause()` (`literals.ts`) has already decided this
+      // IS `inside_range` from the RAW wire token (state/basis/range_low/range_high/expiration); only
+      // the resolved expiration's TEXT is reformatted here (design: `Sep 18 (15 DTE)`), never the
+      // selector, and never before it has decided a value exists.
+      return caption(insideRangeLine(fmtExpiry(c.expiration), c.low, c.high));
     case 'untraced':
       return caption(UNTRACED_LINE, UNTRACED_TIP);
     case 'not_checkable':
