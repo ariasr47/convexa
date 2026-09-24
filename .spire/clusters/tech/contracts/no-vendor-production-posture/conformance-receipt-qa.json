@@ -1,0 +1,114 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "PASS",
+  "mode": "live",
+  "source": "C:/Users/rodri/AppData/Local/Temp/claude/C--Dev-convexa/32b7fe11-22da-4e9f-a15b-7e0112d1d3ef/scratchpad/nvp/qa-folded-interface.json",
+  "base_url": "http://127.0.0.1:8000",
+  "auth": null,
+  "checked_at": "2026-09-23T19:50:49Z",
+  "summary": {
+    "pass": 14,
+    "fail": 0,
+    "total": 14
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "verdict": "PASS",
+      "required_checked": 4,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/scan",
+      "verdict": "PASS",
+      "required_checked": 4,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/scan/{symbol}/history",
+      "verdict": "PASS",
+      "required_checked": 2,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/ticker/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 2,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/ticker/{ticker}/progressive",
+      "verdict": "PASS",
+      "required_checked": 2,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/market-data",
+      "verdict": "PASS",
+      "required_checked": 2,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/signals",
+      "verdict": "PASS",
+      "required_checked": 2,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/strike-profile",
+      "verdict": "PASS",
+      "required_checked": 2,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/candidates/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 2,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/contract/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 2,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/stream/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 2,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/stream/prices",
+      "verdict": "PASS",
+      "required_checked": 2,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/recommendation/export/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 2,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/recommendation/status/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 2,
+      "failures": []
+    }
+  ]
+}

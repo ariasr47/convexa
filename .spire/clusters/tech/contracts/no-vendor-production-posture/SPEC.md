@@ -113,3 +113,36 @@ Set Railway `MARKET_DATA_MODE=paused` on `api-rust` in production. Then verify:
 - Railway logs show no `massive` lines for 5 minutes.
 
 To reverse it later, set `live` with a working key. No code change is needed.
+
+## 6. Interface contract
+
+`INTERFACE_CONTRACT.md`, in this folder, carries the machine-checkable conformance block for the paused
+mode: the health and scan fields, and the 503 paused body on every B2 GET route. SPEC B2–B5 above remain
+the prose source. The contract restates them in checkable form and adds nothing.
+
+## GATE Z amendments — 2026-09-24 (conductor, from `QA_REPORT.md`)
+
+1. **B2: `POST /api/recommendation/{ticker}` is a B2 route.** It builds a fresh bundle, so when paused it
+   answers the paused 503 with the exact AC-3 body, checked after `require_user`. It never answers
+   `200` with `unavailable_reason: "llm_error"`, which is the dishonest transient-failure message this
+   feature exists to remove. Signed-out callers keep today's auth answer. The backend integration test
+   lists this route with the other B2 routes.
+2. **F2b, clarified.** "No retry loop" means each B2 consumer makes **at most one** request per ticker and
+   never repeats it.
+   - Consumers are the bundle, the recommendation status read, and the stream: one EventSource attempt
+     whose non-2xx ends it for good.
+   - A ticker change therefore makes at most one request per consumer: three requests, each answered
+     503, and nothing after that.
+   - AC-6's 60-second silence still binds.
+3. **§3's live-mode non-goal gets one exception.** The active top-nav link in **light** mode moves from
+   `primary.main` (3.23:1) to the text-grade amber (`extrasFor(theme).textAmber`, about 5.7:1).
+   - AC-10's scan matrix exposed it, and ledger `a11y-gate-scans-both-schemes-and-overlays` allows no
+     waiver.
+   - Dark mode is byte-identical.
+   - This closes BACKLOG carry `topnav-active-link-light-contrast`.
+4. **AC-9's live half is verified by review.** No market-data vendor exists to serve a live 200 bundle. The
+   deploy-smoke live branch is byte-identical to the pre-feature probe
+   (`git diff 77b7d4a8..HEAD -- .github/workflows/deploy-smoke.yml` touches only the paused branch and
+   the mode switch), and QA observed the switch selecting it from `health.market_data`. The paused half
+   is verified by test.
+
