@@ -481,10 +481,22 @@ export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    /** Typed error code (SPEC B5, `no-vendor-production-posture`). Absent on every error body that
+     *  doesn't carry one — never invented; only a genuine wire `code` ever lands here. */
+    readonly code?: string,
   ) {
     super(message);
     this.name = 'ApiError';
   }
+}
+
+/** SPEC B2/B5 wire value: the ONLY `code` the paused reply ever sets. */
+const MARKET_DATA_PAUSED_CODE = 'market_data_paused';
+
+/** True iff `error` is the typed "market data is paused" fault (F1). The one place that string
+ *  ever gets compared — every consumer calls this instead of matching `code`/`message` itself. */
+export function isMarketDataPaused(error: unknown): boolean {
+  return error instanceof ApiError && error.code === MARKET_DATA_PAUSED_CODE;
 }
 
 // ---- User accounts (auth + per-user settings; INTERFACE_CONTRACT user-accounts) ---------------
@@ -619,8 +631,22 @@ export class AuthError extends Error {
  *  generic code/message when the body is absent or malformed — but never invents a misleading code. */
 type ClientResult<T> = { data?: T; error?: unknown; response: Response };
 
+/** Read the typed `code` off a non-OK JSON body (SPEC B5) — `openapi-fetch` already parses it into
+ *  `result.error`. Absent on every body that doesn't carry one; never invented. */
+function codeOf(result: ClientResult<unknown>): string | undefined {
+  const body =
+    result.error && typeof result.error === 'object'
+      ? (result.error as Record<string, unknown>)
+      : {};
+  return typeof body.code === 'string' ? body.code : undefined;
+}
+
 function resultError(result: ClientResult<unknown>, message: string): ApiError {
-  return new ApiError(`${message} (${result.response.status})`, result.response.status);
+  return new ApiError(
+    `${message} (${result.response.status})`,
+    result.response.status,
+    codeOf(result),
+  );
 }
 
 function authResultError(result: ClientResult<unknown>): AuthError {
@@ -1330,13 +1356,23 @@ export async function getTicker(
     headers: fetchOpts.signal ? { 'x-convexa-preserve-signal': '1' } : undefined,
   });
   if (!result.response.ok) {
+    const code = codeOf(result);
+    // F1: the paused reply's own `detail` ("Market data is paused.") is the honest message — never
+    // the generic status-shaped text the other branches synthesize (`isMarketDataPaused` is what
+    // callers key on; this text is a debug fallback only, never parsed).
+    const bodyDetail =
+      result.error && typeof result.error === 'object'
+        ? (result.error as Record<string, unknown>).detail
+        : undefined;
     const detail =
-      result.response.status === 404
-        ? `No option-chain data for ${symbol.toUpperCase()}`
-        : result.response.status === 429
-          ? `Rate limited (${result.response.status})`
-          : `API error ${result.response.status}`;
-    throw new ApiError(detail, result.response.status);
+      code === MARKET_DATA_PAUSED_CODE && typeof bodyDetail === 'string'
+        ? bodyDetail
+        : result.response.status === 404
+          ? `No option-chain data for ${symbol.toUpperCase()}`
+          : result.response.status === 429
+            ? `Rate limited (${result.response.status})`
+            : `API error ${result.response.status}`;
+    throw new ApiError(detail, result.response.status, code);
   }
   if (result.data === undefined) throw resultError(result, 'Ticker read failed');
   if (!isTickerBundle(result.data)) throw new ApiError('Malformed ticker payload', 200);
@@ -2073,6 +2109,16 @@ export async function requestRecommendation(
     params: { path: { ticker: symbol.toUpperCase() } },
     body,
   });
+  // no-vendor-production-posture B2 amendment (GATE Z 2026-09-24): this route is also a B2 route —
+  // paused answers the SAME typed 503 as every other one (`code: "market_data_paused"`, no `error`
+  // field). Checked FIRST and by `code` alone (never by status), because the auth-class branch right
+  // below also matches on a bare 503 and would otherwise swallow this into `auth_unavailable` (same
+  // status, no `code`) — routing a signed-in, paused caller into the sign-in gate's "couldn't reach"
+  // prompt instead of the honest paused panel. `isMarketDataPaused` only ever recognizes `ApiError`,
+  // so this must throw one, not an `AuthError`.
+  if (codeOf(result) === MARKET_DATA_PAUSED_CODE) {
+    throw resultError(result, 'Recommendation request failed');
+  }
   // user-accounts (D6f): the auth gate is the OUTERMOST precondition on the LLM invoke. A 403
   // `auth_required` / 503 `auth_unavailable` is an AUTH-class outcome — surface it as an `AuthError`
   // (NOT the ai-rec `unavailable` artifact) so the FE shows the sign-in / "couldn't reach" prompt

@@ -36,6 +36,8 @@ pub struct HealthWire {
     pub metrics_auth: String,
     pub warm: HealthWarm,
     pub gex_cache: HealthCacheMetrics,
+    /// `"live"` | `"paused"` (SPEC B3) — `MARKET_DATA_MODE`, read once at boot.
+    pub market_data: String,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct HealthScanner {
@@ -159,6 +161,7 @@ fn contract_representative_wire() -> HealthWire {
             ttl_default_secs: 0,
             ttl_liquid_secs: 0,
         },
+        market_data: "live".into(),
     }
 }
 
@@ -557,7 +560,10 @@ pub async fn health(State(state): State<AppState>) -> Json<Value> {
         "data_feed": state.config.data_feed.as_str(),
         "gex_kernel": quant_engine::gex_kernel_name(),
         "scanner": {
-            "enabled": state.config.scan_enabled,
+            // Paused ⇒ never sweeping regardless of SCAN_ENABLED (B1/B3): the scanner is not
+            // started at all in that mode (server.rs), so this stays honest even without a
+            // fresh sweep to prove it.
+            "enabled": state.config.scan_enabled && state.config.market_data_mode.is_live(),
             "embedded": true,
             "market_hours_only": state.config.scan_market_hours_only,
             "universe_size": state.universe.as_ref().map(|u| u.universe.len()).unwrap_or(0),
@@ -589,12 +595,15 @@ pub async fn health(State(state): State<AppState>) -> Json<Value> {
             "open"
         },
         "warm": {
-            "enabled": state.config.warm_enabled,
+            // Paused ⇒ never running regardless of WARM_ENABLED (B1/B3): the warmer is not
+            // spawned at all in that mode (server.rs).
+            "enabled": state.config.warm_enabled && state.config.market_data_mode.is_live(),
             "symbols": state.config.warm_symbols,
             "interval_secs": state.config.warm_interval_secs,
             "concurrency": state.config.warm_concurrency,
         },
         "gex_cache": metrics,
+        "market_data": state.config.market_data_mode.as_str(),
     }))
 }
 
@@ -959,6 +968,31 @@ mod wire_divergence_tests {
             .expect("representative body is an object")
             .insert("not_on_the_wire".into(), json!("x"));
         let _ = super::health_wire_from_body(body);
+    }
+
+    #[tokio::test]
+    async fn paused_health_reports_market_data_and_forces_warm_and_scanner_off() {
+        let mut state = crate::state::AppState::for_tests(
+            crate::services::chain_snapshot::ChainSnapshotStore::memory(),
+            crate::services::session_chain_archive::SessionChainArchive::memory(),
+        )
+        .await
+        .unwrap();
+        let mut cfg = (*state.config).clone();
+        // Both flip true so a naive `state.config.scan_enabled` echo would still read true —
+        // proving the health handler ANDs with market_data_mode, not just config.
+        cfg.scan_enabled = true;
+        cfg.warm_enabled = true;
+        cfg.market_data_mode = crate::config::MarketDataMode::Paused;
+        state.config = std::sync::Arc::new(cfg);
+
+        let axum::Json(body) = super::health(axum::extract::State(state)).await;
+        assert_eq!(body["market_data"], "paused");
+        assert_eq!(body["warm"]["enabled"], false);
+        assert_eq!(body["scanner"]["enabled"], false);
+
+        let wire = super::health_wire_from_body(body);
+        assert_eq!(wire.market_data, "paused");
     }
 
     #[test]

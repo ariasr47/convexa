@@ -117,7 +117,11 @@ function FeatureSection({
       component="section"
       data-testid="landing-section"
       data-section={section}
-      sx={{ py: { xs: 7, md: 10 } }}
+      // no-vendor-production-posture (F2): a stable scroll target for the ticker desk's paused-panel
+      // "See an illustrative sample" link (`TickerDashboard.tsx`) — an ID only, never a copy change.
+      id={`landing-sample-${section}`}
+      tabIndex={-1}
+      sx={{ py: { xs: 7, md: 10 }, outline: 'none' }}
     >
       <Container maxWidth="lg">
         <Box
@@ -179,6 +183,25 @@ export function Landing() {
   // The one intentional non-data edge (SPEC §2.1): warms route chunks after first paint, touches
   // no API. `/` otherwise reads no session fact and issues zero requests (AC-L17).
   useEffect(() => scheduleLandingPrefetch(), []);
+
+  // no-vendor-production-posture (F2): a fresh `/#landing-sample-field` load (from the ticker desk's
+  // paused panel) races the browser's own scroll-to-fragment step against this lazy route's render,
+  // same as `MethodologyPage.tsx`'s identical effect — run the equivalent once after mount.
+  useEffect(() => {
+    if (!window.location.hash) return;
+    let id: string;
+    try {
+      id = decodeURIComponent(window.location.hash.slice(1));
+    } catch {
+      return;
+    }
+    const target = document.getElementById(id);
+    if (!target) return;
+    // Optional-called: jsdom does not implement `scrollIntoView` (`FaultedBanner.tsx` precedent) —
+    // an uncaught TypeError there would fail any test that mounts this page with a hash present.
+    target.scrollIntoView?.({ block: 'start' });
+    target.focus();
+  }, []);
 
   return (
     <Box data-testid="landing" sx={{ bgcolor: 'background.default', color: 'text.primary' }}>

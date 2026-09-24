@@ -1787,6 +1787,20 @@ Curvature v2 phase 4, frontend only. Contracts are at `.spire/clusters/tech/cont
 
 **Carried to BACKLOG:** the "Harvest — 2026-09-23" entry. The successor, `curvature-v2-responsive-sweep`, stays pre-registered.
 
+## 7az. no-vendor-production-posture — honest production without a data vendor (SHIPPED + ARCHIVED 2026-09-24)
+Both lanes. Contracts are at `.spire/clusters/tech/contracts/_archive/no-vendor-production-posture/`. The paused-mode conformance pin is at `state/conformance/no-vendor-production-posture.json`, and it is not in the nightly set.
+
+**What shipped:** one boot-time switch, `MARKET_DATA_MODE=live|paused`, with `live` as the byte-identical default. When paused:
+- zero vendor contact, and boot needs no key;
+- every vendor route answers 503 `{"detail":"Market data is paused.","code":"market_data_paused"}`, including the recommendation POST;
+- `/api/health` and `/api/scan` report `market_data`;
+- the desk shows an info-tone "Market data is paused." panel (owner-approved mock) with no Retry and no retry loop;
+- the scanner's cadence line and the AI panel say "paused".
+
+**Gates:** the first GATE Q FAILED 7/2/1. GATE Z made 4 SPEC amendments and fixes. The re-check PASSED 10/0/0.
+
+**Production:** `WARM_ENABLED=0` since 2026-09-23. `MARKET_DATA_MODE=paused` goes in after merge (owner plan A).
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).
@@ -1882,6 +1896,12 @@ Curvature v2 phase 4, frontend only. Contracts are at `.spire/clusters/tech/cont
   true multi-session block history needs a heavier batched pull. Future.
 
 ## 9. Resolved decisions (do NOT revisit)
+- **API-surface change re-pins the artifact oracle in the same commit** (`[route-growth-repins-api-artifact-oracle]`,
+  promoted 2026-09-24). Prose is in CONTEXT §5. Hand-editing generated artifacts, or leaving the pin
+  stale for a later commit, is a GATE-Z reversal.
+- **The a11y gate covers both schemes and every overlay or state** (`[a11y-gate-scans-both-schemes-and-overlays]`,
+  promoted 2026-09-24). Prose is in CONTEXT §5. A dark-only or happy-path-only scan matrix for a new
+  surface, or a waiver in place of a fix, is a GATE-Z reversal.
 - **Route/OpenAPI integration is repository-owned** — production route registration and `utoipa`
   metadata are paired once through `ContractRouter`; `utoipa-axum` and `paste` are absent from the
   locked graph. There is no public contract-tooling route and no dashboard runtime change. Reintroducing

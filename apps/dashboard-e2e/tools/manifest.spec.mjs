@@ -35,10 +35,12 @@ test('browser quality manifest is closed and has the required inventories', () =
   // (curvature-v2-landing-and-site GATE Z I-1) Chromium 126 → 128: one e2e case in
   // `navigation.spec.ts` covers the methodology TOC click and the fresh deep link past
   // `index.html`'s `<base href="/">` (AC-M6/AC-M1).
+  // (no-vendor-production-posture AC-10) Accessibility scans 24 → 28: the paused ticker-desk
+  // panel (F2), a seventh surface, at both breakpoints (393/1280) and both color schemes.
   assert.equal(manifest.full_chromium.tests.length, 128);
   assert.equal(manifest.compatibility.journeys.length, 5);
   assert.deepEqual(manifest.compatibility.projects, ['chromium', 'firefox', 'webkit']);
-  assert.equal(manifest.accessibility.scans.length, 24);
+  assert.equal(manifest.accessibility.scans.length, 28);
   assert.equal(manifest.accessibility.behaviors.length, 7);
   assert.equal(manifest.visual.scenarios.length, 6);
 });

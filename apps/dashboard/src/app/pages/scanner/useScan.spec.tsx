@@ -69,6 +69,8 @@ function scanBody(symbols = ['SPY', 'QQQ']): ScanResponse {
       sweep_last_completed: Date.now() / 1000,
       universe_size: 2,
     },
+    // SPEC B4 — additive, required on the wire; 'live' is this suite's unchanged default.
+    market_data: 'live',
   };
 }
 

@@ -183,6 +183,22 @@ export async function installScenario(page: import('@playwright/test').Page, sce
           body: JSON.stringify({ detail: 'Unable to load ticker test fixture.' }),
         };
       }
+      // no-vendor-production-posture AC-10 — the paused ticker-desk panel (F2), SPEC B2's exact
+      // byte-for-byte wire body (never the ad hoc fixture text A11Y-8 uses above for a GENERIC
+      // failure — this is the specific typed reply the FE keys `isMarketDataPaused` off of).
+      if (
+        (scenario.id === 'A11Y-25' ||
+          scenario.id === 'A11Y-26' ||
+          scenario.id === 'A11Y-27' ||
+          scenario.id === 'A11Y-28') &&
+        key.startsWith('GET /api/ticker/SPY')
+      ) {
+        response = {
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ detail: 'Market data is paused.', code: 'market_data_paused' }),
+        };
+      }
       if (!response) {
         unexpected.push(key);
         return route.abort('blockedbyclient');

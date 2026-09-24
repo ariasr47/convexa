@@ -525,6 +525,7 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
                 max_live_sessions: 0,
                 max_live_subscribers: 0,
                 workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
+                market_data_mode: api_rust::config::MarketDataMode::Live,
             });
             let path = path.unwrap_or_else(|| cfg.default_fixture_path());
             cmd_fixture(&path, json, check)?;
@@ -1077,6 +1078,7 @@ async fn cmd_score_lab(
             max_live_sessions: 0,
             max_live_subscribers: 0,
             workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
+            market_data_mode: api_rust::config::MarketDataMode::Live,
         }
     });
 
@@ -1286,6 +1288,7 @@ async fn cmd_archive_coverage(et_date: Option<String>) -> ExitCode {
         max_live_sessions: 0,
         max_live_subscribers: 0,
         workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
+        market_data_mode: api_rust::config::MarketDataMode::Live,
     });
     let now = Utc::now();
     let archive = match api_rust::services::session_chain_archive::open_session_archive_for_cli(
@@ -1391,6 +1394,7 @@ async fn cmd_session_day_tape(symbol: Option<String>, et_date: Option<String>) -
         max_live_sessions: 0,
         max_live_subscribers: 0,
         workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
+        market_data_mode: api_rust::config::MarketDataMode::Live,
     });
     let store = match api_rust::services::day_tape::cli::open_session_day_tape_for_cli(&cfg).await {
         Ok(s) => s,
@@ -1481,6 +1485,7 @@ async fn cmd_flat_files(
         max_live_sessions: 0,
         max_live_subscribers: 0,
         workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
+        market_data_mode: api_rust::config::MarketDataMode::Live,
     });
     let store = api_rust::services::flat_file_keep::cli::open_flat_files_for_cli(&cfg);
     let (stdout, stderr, code) = match action {
@@ -1575,6 +1580,7 @@ async fn cmd_session_day_replay(symbol: String, et_date: String, pace: Option<u3
         max_live_sessions: 0,
         max_live_subscribers: 0,
         workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
+        market_data_mode: api_rust::config::MarketDataMode::Live,
     });
     let store = match api_rust::services::day_tape::cli::open_session_day_tape_for_cli(&cfg).await {
         Ok(s) => s,
@@ -1755,6 +1761,7 @@ async fn cmd_batch_backtest(
         max_live_sessions: 0,
         max_live_subscribers: 0,
         workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
+        market_data_mode: api_rust::config::MarketDataMode::Live,
     });
 
     let store = match open_chain_store_for_cli(store_path, &cfg).await {

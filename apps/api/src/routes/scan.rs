@@ -82,6 +82,8 @@ pub struct ScanEnvelope {
     pub rows: Vec<ScanRowDto>,
     #[schema(required = true)]
     pub sweep: Option<SweepHeartbeatDto>,
+    /// `"live"` | `"paused"` (SPEC B4) — `MARKET_DATA_MODE`, read once at boot.
+    pub market_data: String,
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -301,6 +303,7 @@ fn representative_scan_envelope() -> ScanEnvelope {
         view: representative_view(),
         rows: Vec::new(),
         sweep: None,
+        market_data: "live".into(),
     }
 }
 
@@ -599,7 +602,12 @@ pub async fn get_scan(State(state): State<AppState>, headers: HeaderMap) -> Json
         .read_heartbeat()
         .await
         .map(SweepHeartbeatDto::from);
-    Json(ScanEnvelope { view, rows, sweep })
+    Json(ScanEnvelope {
+        view,
+        rows,
+        sweep,
+        market_data: state.config.market_data_mode.as_str().to_string(),
+    })
 }
 
 #[derive(Debug, Deserialize, ToSchema, IntoParams)]
@@ -760,7 +768,12 @@ pub async fn get_scan_all(State(state): State<AppState>, headers: HeaderMap) -> 
         .await
         .map(SweepHeartbeatDto::from);
     let rows = rows.into_iter().map(ScanRowDto::from).collect();
-    Json(ScanEnvelope { view, rows, sweep })
+    Json(ScanEnvelope {
+        view,
+        rows,
+        sweep,
+        market_data: state.config.market_data_mode.as_str().to_string(),
+    })
 }
 
 /// PUT /api/scan/view — signed-in only; gate outermost.
@@ -911,6 +924,29 @@ mod response_conversion_tests {
                 .and_then(|value| value.split(';').next()),
             Some("application/json")
         );
+    }
+
+    /// AC-4: paused, `GET /api/scan` keeps serving persisted rows and gains a top-level
+    /// `market_data`. Live stays `"live"` (byte-identical shape, per AC-5).
+    #[tokio::test]
+    async fn scan_envelope_reports_market_data_mode() {
+        let mut state = crate::state::AppState::for_tests(
+            crate::services::chain_snapshot::ChainSnapshotStore::memory(),
+            crate::services::session_chain_archive::SessionChainArchive::memory(),
+        )
+        .await
+        .unwrap();
+
+        let Json(live) = get_scan(State(state.clone()), HeaderMap::new()).await;
+        assert_eq!(live.market_data, "live");
+
+        let mut cfg = (*state.config).clone();
+        cfg.market_data_mode = crate::config::MarketDataMode::Paused;
+        state.config = std::sync::Arc::new(cfg);
+        let Json(paused) = get_scan(State(state.clone()), HeaderMap::new()).await;
+        assert_eq!(paused.market_data, "paused");
+        let Json(paused_all) = get_scan_all(State(state), HeaderMap::new()).await;
+        assert_eq!(paused_all.market_data, "paused");
     }
 
     #[test]

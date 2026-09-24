@@ -535,6 +535,22 @@ conformance, and volume-replacement receipts.
   *(liquid-names-session-capture; session-day-tape-capture.)* Prose single-sourced in the
   Single-ticker paragraph above.
 
+- **`[route-growth-repins-api-artifact-oracle]`** (promoted 2026-09-24, 2 binding): any change that
+  grows or alters the API surface does three things.
+  - It regenerates the OpenAPI artifacts through the repository pipeline (`npm run
+    api:contract:generate` / `:check`), never by hand.
+  - It re-pins the artifact-oracle hashes (`apps/api/src/capacity/identity.rs` plus its fixture
+    manifest) in the **same commit**, with a dated comment saying why.
+  - The oracle pins the pairing and the drift, never a frozen count.
+  *(mainline-integration-2026-09; no-vendor-production-posture.)*
+- **`[a11y-gate-scans-both-schemes-and-overlays]`** (promoted 2026-09-24, 2 binding): the
+  accessibility gate scans every shipped surface and every new user-facing state in **both** colour
+  schemes. That includes the overlays and gated states a surface can present: the wall, the degraded
+  wall, dialogs and named states such as "Market data is paused."
+  - A finding the widened matrix exposes is fixed, never waived.
+  - The frozen inventory is raised deliberately, in the same change.
+  *(curvature-v2-landing-and-site; no-vendor-production-posture.)*
+
 ## 6. Current feature state (works end-to-end)
 <!-- shard: tags=features,state,observability,darkpool,ghost-trade,dex,personas,metrics -->
 - **Archive coverage guardrails (`archive-coverage-guardrails`, backend/operations, shipped 2026-08-26)** —
@@ -1289,6 +1305,17 @@ conformance, and volume-replacement receipts.
     mirrors Cloudflare Pages plus `_redirects`). The a11y gate scans both schemes and the
     wall/degraded/dialog states, 24 scans with zero waivers.
   - **Status:** `NO_BACKEND_CHANGE`; contracts at `_archive/curvature-v2-landing-and-site/`.
+- **Market data paused (`no-vendor-production-posture`, both lanes, shipped 2026-09-24)** — one boot-time
+  switch, `MARKET_DATA_MODE=live|paused`, with `live` the default and byte-identical.
+  - **Backend, when paused:** the process never contacts the vendor. There is no warmer, no scanner
+    sweep, no stock socket and no REST call, and boot needs no `MASSIVE_API_KEY`. Every vendor route,
+    including the recommendation POST, answers 503 with `code: "market_data_paused"`
+    (`AppErrorBody.code`). `/api/health` and `/api/scan` report `market_data`, and the board keeps its
+    last persisted rows.
+  - **Frontend:** the desk renders "Market data is paused." in the info tone, with no Retry and no retry
+    loop. The scanner's cadence line and the AI panel say "paused".
+  - **Turning data back on:** set `live` with a working key. No code change is needed.
+  - **Contracts:** `_archive/no-vendor-production-posture/`.
 
 ## 7. Conventions
 <!-- shard: tags=conventions,env,run,config,vendor -->

@@ -93,35 +93,42 @@ pub async fn serve(config: Config) -> AppResult<()> {
     }
     info!(%addr, "api-rust listening");
     // No background producer starts until the listener has successfully bound.
-    worker_state.stock_worker.start();
-    crate::services::day_tape::path_a::spawn(worker_state.clone());
-    warmer::spawn(worker_state.clone());
-    crate::services::session_chain_archive::ensure_worker::spawn(worker_state.clone());
-    if worker_state.config.scan_enabled {
-        if let Some(uni) = worker_state.universe.clone() {
-            let loop_cfg = LoopConfig {
-                fast_interval: Duration::from_secs(
-                    worker_state.config.scan_fast_interval_secs.max(5),
-                ),
-                stale_after: worker_state.config.scan_stale_after_secs as f64,
-                idle_interval: Duration::from_secs(300),
-                sweep: SweepConfig {
-                    move_threshold_pct: 0.75,
-                    slow_batch_size: worker_state.config.scan_slow_batch_size,
-                    promotion_cap: worker_state
-                        .config
-                        .scan_promotion_cap
-                        .min(worker_state.config.scan_slow_batch_size),
-                },
-                market_hours_only: worker_state.config.scan_market_hours_only,
-                bands: scanner::TierBands::default(),
-            };
-            scanner::spawn(worker_state.clone(), (*uni).clone(), loop_cfg);
+    if worker_state.config.market_data_mode.is_live() {
+        worker_state.stock_worker.start();
+        crate::services::day_tape::path_a::spawn(worker_state.clone());
+        warmer::spawn(worker_state.clone());
+        crate::services::session_chain_archive::ensure_worker::spawn(worker_state.clone());
+        if worker_state.config.scan_enabled {
+            if let Some(uni) = worker_state.universe.clone() {
+                let loop_cfg = LoopConfig {
+                    fast_interval: Duration::from_secs(
+                        worker_state.config.scan_fast_interval_secs.max(5),
+                    ),
+                    stale_after: worker_state.config.scan_stale_after_secs as f64,
+                    idle_interval: Duration::from_secs(300),
+                    sweep: SweepConfig {
+                        move_threshold_pct: 0.75,
+                        slow_batch_size: worker_state.config.scan_slow_batch_size,
+                        promotion_cap: worker_state
+                            .config
+                            .scan_promotion_cap
+                            .min(worker_state.config.scan_slow_batch_size),
+                    },
+                    market_hours_only: worker_state.config.scan_market_hours_only,
+                    bands: scanner::TierBands::default(),
+                };
+                scanner::spawn(worker_state.clone(), (*uni).clone(), loop_cfg);
+            } else {
+                info!("scanner enabled but universe missing; not starting");
+            }
         } else {
-            info!("scanner enabled but universe missing; not starting");
+            info!("scanner disabled (SCAN_ENABLED=0)");
         }
     } else {
-        info!("scanner disabled (SCAN_ENABLED=0)");
+        info!(
+            "MARKET_DATA_MODE=paused: warmer, scanner, stock-stream hub and chain-archive ensure \
+             worker not started (B1 — zero vendor contact)"
+        );
     }
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
@@ -560,5 +567,42 @@ mod snapshot_validation_tests {
 
         cfg.chain_snapshot_store_path = PathBuf::from("/data/chain_snapshots");
         assert!(validate_snapshot_storage(&cfg).is_ok());
+    }
+}
+
+#[cfg(test)]
+mod market_data_paused_boot_tests {
+    /// SPEC B1: "no warmer, no scanner sweeps, no stock-stream hub subscription or connect, no
+    /// flat-file or chain-archive fetcher" — source-level proof that every vendor-touching worker
+    /// spawn is textually inside the live-mode branch, so paused boot cannot reach any of them
+    /// regardless of how long the process stays up (AC-2's "3 minutes idle" is unconditional by
+    /// construction, not by timing).
+    #[test]
+    fn paused_boot_gate_wraps_every_vendor_touching_worker_spawn() {
+        let src = include_str!("server.rs");
+        let start = src.find("pub async fn serve(").expect("serve fn present");
+        let body = &src[start..];
+        let end = body
+            .find("\n/// Bind the existing HTTP/SSE graph")
+            .expect("serve fn body bounded by the next doc'd fn");
+        let fn_body = &body[..end];
+        let guard_at = fn_body
+            .find("if worker_state.config.market_data_mode.is_live()")
+            .expect("live-mode guard present");
+        for call in [
+            "worker_state.stock_worker.start()",
+            "crate::services::day_tape::path_a::spawn(worker_state.clone())",
+            "warmer::spawn(worker_state.clone())",
+            "crate::services::session_chain_archive::ensure_worker::spawn(worker_state.clone())",
+            "scanner::spawn(worker_state.clone()",
+        ] {
+            let call_at = fn_body
+                .find(call)
+                .unwrap_or_else(|| panic!("missing expected call: {call}"));
+            assert!(
+                guard_at < call_at,
+                "{call} must be textually inside the live-mode guard"
+            );
+        }
     }
 }

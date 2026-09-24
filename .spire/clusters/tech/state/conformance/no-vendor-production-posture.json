@@ -1,0 +1,179 @@
+{
+  "_comment": "Promoted at GATE S (2026-09-24) from contracts/_archive/no-vendor-production-posture/INTERFACE_CONTRACT.md. PAUSED-MODE contract: run ONLY against a backend booted with MARKET_DATA_MODE=paused (no MASSIVE_API_KEY needed). Every vendor-backed route answers 503 {detail:\"Market data is paused.\",code:\"market_data_paused\"}; health and scan report market_data. NOT part of the nightly production set (conformance.yml names its specs explicitly) - production mode can be flipped back to live.",
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "expect_status": 200,
+      "required": {
+        "status": "string",
+        "market_data": "string",
+        "warm.enabled": "boolean",
+        "scanner.enabled": "boolean"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/scan",
+      "expect_status": 200,
+      "required": {
+        "market_data": "string",
+        "rows": "array",
+        "view": "object",
+        "sweep": "object|null"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/scan/{symbol}/history",
+      "path_params": {
+        "symbol": "SPY"
+      },
+      "query": {
+        "limit": 3
+      },
+      "expect_status": 200,
+      "required": {
+        "samples": "array",
+        "basis": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ticker/{ticker}",
+      "path_params": {
+        "ticker": "SPY"
+      },
+      "expect_status": 503,
+      "required": {
+        "detail": "string",
+        "code": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ticker/{ticker}/progressive",
+      "path_params": {
+        "ticker": "SPY"
+      },
+      "expect_status": 503,
+      "required": {
+        "detail": "string",
+        "code": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/market-data",
+      "query": {
+        "ticker": "SPY"
+      },
+      "expect_status": 503,
+      "required": {
+        "detail": "string",
+        "code": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/signals",
+      "query": {
+        "ticker": "SPY"
+      },
+      "expect_status": 503,
+      "required": {
+        "detail": "string",
+        "code": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/strike-profile",
+      "query": {
+        "ticker": "SPY"
+      },
+      "expect_status": 503,
+      "required": {
+        "detail": "string",
+        "code": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/candidates/{ticker}",
+      "path_params": {
+        "ticker": "SPY"
+      },
+      "expect_status": 503,
+      "required": {
+        "detail": "string",
+        "code": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/contract/{ticker}",
+      "path_params": {
+        "ticker": "SPY"
+      },
+      "query": {
+        "expiration": "2026-10-16",
+        "strike": 500,
+        "right": "call"
+      },
+      "expect_status": 503,
+      "required": {
+        "detail": "string",
+        "code": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/stream/{ticker}",
+      "path_params": {
+        "ticker": "SPY"
+      },
+      "expect_status": 503,
+      "required": {
+        "detail": "string",
+        "code": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/stream/prices",
+      "query": {
+        "symbols": "SPY"
+      },
+      "expect_status": 503,
+      "required": {
+        "detail": "string",
+        "code": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/recommendation/export/{ticker}",
+      "path_params": {
+        "ticker": "SPY"
+      },
+      "expect_status": 503,
+      "required": {
+        "detail": "string",
+        "code": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/recommendation/status/{ticker}",
+      "path_params": {
+        "ticker": "SPY"
+      },
+      "expect_status": 503,
+      "required": {
+        "detail": "string",
+        "code": "string"
+      }
+    }
+  ]
+}

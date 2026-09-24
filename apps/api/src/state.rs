@@ -568,8 +568,12 @@ impl AppState {
 
         let (stock_hub, stock_worker) = StockStreamHub::dormant(&config);
         let stock_worker = Arc::new(StockStreamWorkerStarter::new(stock_worker));
-        // Warm hub with configured symbols so progressive/scanner paths get live ticks sooner.
-        let _ = stock_hub.subscribe(&config.warm_symbols).await;
+        if config.market_data_mode.is_live() {
+            // Warm hub with configured symbols so progressive/scanner paths get live ticks sooner.
+            let _ = stock_hub.subscribe(&config.warm_symbols).await;
+        } else {
+            info!("MARKET_DATA_MODE=paused: stock stream hub not subscribed at boot (B1)");
+        }
 
         let live_capacity =
             LiveCapacity::new(config.max_live_sessions, config.max_live_subscribers);
@@ -989,6 +993,9 @@ impl AppState {
     /// (v2 `capacity load|soak`). With neither set, identical to
     /// `MassiveRestClient::fetch_quick_live_price`.
     pub async fn quick_live_price(&self, sym: &str) -> AppResult<LivePrice> {
+        if self.config.market_data_mode.is_paused() {
+            return Err(crate::error::AppError::MarketDataPaused);
+        }
         if let Some(port) = &self.harness_market_data {
             let bundle = port.resolve(sym, None).await?;
             return Ok(LivePrice {
@@ -1085,6 +1092,7 @@ pub(crate) fn test_stub_config() -> Config {
         max_live_sessions: 0,
         max_live_subscribers: 0,
         workspace_root: PathBuf::from("."),
+        market_data_mode: crate::config::MarketDataMode::Live,
     }
 }
 
@@ -1618,6 +1626,7 @@ mod tests {
             max_live_sessions: 0,
             max_live_subscribers: 0,
             workspace_root: PathBuf::from("."),
+            market_data_mode: crate::config::MarketDataMode::Live,
         }
     }
 
@@ -1911,6 +1920,49 @@ mod tests {
         let live = s.quick_live_price("SPY").await.unwrap();
         assert_eq!(live.symbol, "SPY");
         assert_eq!(live.price, expected_spot);
+    }
+
+    /// SPEC B1/B2: paused short-circuits before the harness/fixture/massive fallback chain —
+    /// no vendor client is ever consulted, regardless of what the state carries.
+    #[tokio::test]
+    async fn quick_live_price_short_circuits_before_any_fallback_when_paused() {
+        let mut state = AppState::for_tests(
+            crate::services::chain_snapshot::ChainSnapshotStore::memory(),
+            crate::services::session_chain_archive::SessionChainArchive::memory(),
+        )
+        .await
+        .unwrap();
+        let mut cfg = (*state.config).clone();
+        cfg.market_data_mode = crate::config::MarketDataMode::Paused;
+        state.config = Arc::new(cfg);
+        let err = state.quick_live_price("SPY").await.unwrap_err();
+        assert_eq!(err.to_string(), "Market data is paused.");
+    }
+
+    /// SPEC B1: "no boot subscription" — construct() must never reach the hub subscribe call
+    /// except behind the live-mode guard. Source-level, hermetic (construct() itself opens real
+    /// filesystem stores, which a unit test should not exercise just to prove this ordering).
+    #[test]
+    fn construct_only_subscribes_stock_hub_when_live() {
+        let src = include_str!("state.rs");
+        let start = src
+            .find("async fn construct(\n")
+            .expect("construct fn present");
+        let body = &src[start..];
+        let end = body
+            .find("\n    /// Hermetic constructor")
+            .expect("construct fn body bounded by the next doc'd method");
+        let fn_body = &body[..end];
+        let subscribe_at = fn_body
+            .find("stock_hub.subscribe(&config.warm_symbols)")
+            .expect("boot subscribe call present");
+        let guard_at = fn_body
+            .find("if config.market_data_mode.is_live()")
+            .expect("live-mode guard present");
+        assert!(
+            guard_at < subscribe_at,
+            "boot subscribe must be textually inside the live-mode guard"
+        );
     }
 }
 

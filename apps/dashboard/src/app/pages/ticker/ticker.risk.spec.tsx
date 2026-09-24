@@ -198,6 +198,7 @@ interface MockES {
 }
 let esInstances: MockES[] = [];
 let tickerOk = true;
+let tickerPaused = false; // no-vendor-production-posture F2: the 503 market_data_paused reply
 let tickerDeferred = false; // cold path: the bundle resolves only when the test says so
 let resolveTicker: ((b: TickerBundle) => void) | null = null;
 let bundleProvider: () => TickerBundle = richBundle;
@@ -216,6 +217,7 @@ beforeEach(() => {
   __resetMemory();
   esInstances = [];
   tickerOk = true;
+  tickerPaused = false;
   tickerDeferred = false;
   resolveTicker = null;
   bundleProvider = richBundle;
@@ -248,6 +250,11 @@ beforeEach(() => {
         return new Promise<Response>((res) => {
           resolveTicker = (b: TickerBundle) => res(json(b));
         });
+      if (tickerPaused)
+        return new Response(
+          JSON.stringify({ detail: 'Market data is paused.', code: 'market_data_paused' }),
+          { status: 503, headers: { 'Content-Type': 'application/json' } },
+        );
       if (!tickerOk) return new Response('error', { status: 500 });
       return json(bundleProvider());
     }
@@ -598,6 +605,58 @@ describe('Ticker · cold-start failure reads like the design (fidelity repair 2,
     tickerOk = false;
     renderAt('/ticker/TSLA');
     await screen.findByRole('alert');
+    expect(screen.getByTestId('ticker-toolbar')).toBeInTheDocument();
+  });
+});
+
+// =================================================================================================
+// 2d. no-vendor-production-posture F2/F2b — the paused cold-start panel is NOT the warning panel
+// =================================================================================================
+describe('Ticker · market data paused (no-vendor-production-posture F2/F2b)', () => {
+  it('AC-6: the byte-exact info panel — role=status, no Retry, no HTTP line — and zero further /api/ticker calls for 60s+', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    tickerPaused = true;
+    renderAt('/ticker/TSLA');
+
+    const panel = await screen.findByRole('status');
+    expect(panel).toHaveTextContent('Market data is paused.');
+    expect(panel).toHaveTextContent(
+      'Convexa isn’t connected to a market-data feed right now, so this desk can’t load prices or ' +
+        'dealer structure. Nothing is broken, and retrying won’t change it.',
+    );
+    expect(screen.queryByRole('alert')).toBeNull(); // never the warning-severity panel too
+    expect(screen.queryByText('Retry')).toBeNull();
+    expect(panel.textContent ?? '').not.toMatch(/HTTP \d{3}/);
+    expect(screen.getByRole('link', { name: 'How the desk reads structure →' })).toHaveAttribute(
+      'href',
+      '/methodology',
+    );
+    expect(screen.getByRole('link', { name: 'See an illustrative sample →' })).toHaveAttribute(
+      'href',
+      '/#landing-sample-field',
+    );
+
+    const tickerCalls = () =>
+      fetchMock.mock.calls.filter((c) => String(c[0]).includes('/api/ticker/')).length;
+    expect(tickerCalls()).toBe(1); // the one request that discovered paused
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(65_000); // > the 60s bundle poll cadence
+    });
+    expect(tickerCalls()).toBe(1); // F2b — no poll, no auto-retry, ever, for this ticker
+
+    // The visibility-resume path is ALSO a trigger `usePollingResource` normally honors — must stay
+    // inert once paused, exactly like the interval.
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(tickerCalls()).toBe(1);
+  });
+
+  it('the toolbar stays usable while paused (the trader can still change ticker/expirations)', async () => {
+    tickerPaused = true;
+    renderAt('/ticker/TSLA');
+    await screen.findByRole('status');
     expect(screen.getByTestId('ticker-toolbar')).toBeInTheDocument();
   });
 });

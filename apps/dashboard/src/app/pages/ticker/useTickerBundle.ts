@@ -9,7 +9,7 @@
  * `usePollingResource` (perf §3.1–3.3).
  */
 import { usePollingResource } from '@/shared/hooks/usePollingResource';
-import { getTicker, type OptionRight, type TickerBundle } from '@convexa/api';
+import { getTicker, isMarketDataPaused, type OptionRight, type TickerBundle } from '@convexa/api';
 import { useCallback, useMemo, useRef } from 'react';
 
 export const TICKER_BUNDLE_POLL_MS = 60_000;
@@ -35,6 +35,10 @@ export interface TickerBundleApi {
   data: TickerBundle | null;
   loading: boolean;
   error: string | null;
+  /** True once the desk has learned `market_data_paused` for the CURRENT ticker (F2/F2b). Sticky
+   *  for this ticker: polling has already halted, so this cannot flip back to false except by
+   *  changing `ticker`, which mounts a fresh resource. */
+  paused: boolean;
   refresh: (opts?: { force?: boolean }) => void;
 }
 
@@ -86,11 +90,14 @@ export function useTickerBundle({
     [ticker, selected, darkPool, positionQuery],
   );
 
-  const { data, error, loading, refresh } = usePollingResource(key, fetcher, {
+  const { data, error, errorCause, loading, refresh } = usePollingResource(key, fetcher, {
     intervalMs: TICKER_BUNDLE_POLL_MS,
     keepOnError: true,
     enabled,
+    // F2b: once paused is known, no further request to this B2 route for this ticker — changing
+    // the ticker (a new `key`) is the only thing that fetches again.
+    haltOn: isMarketDataPaused,
   });
 
-  return { data, loading, error, refresh };
+  return { data, loading, error, paused: isMarketDataPaused(errorCause), refresh };
 }

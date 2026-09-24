@@ -79,6 +79,9 @@ pub struct WireError {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, utoipa::ToSchema)]
 pub struct AppErrorBody {
     pub detail: String,
+    /// Only the paused reply (SPEC B5) sets this; every other error body omits the key entirely.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub code: Option<String>,
 }
 
 /// A route-owned response boundary.
