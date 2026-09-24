@@ -631,7 +631,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** POST /api/recommendation/{ticker} — auth outermost; always 200 for rec outcomes. */
+    /**
+     * POST /api/recommendation/{ticker} — auth outermost; paused answers the exact AC-3 503 (SPEC B2
+     *     amendment, GATE Z 2026-09-24); otherwise always 200 for rec outcomes.
+     */
     post: operations['recommendation_post'];
     delete?: never;
     options?: never;

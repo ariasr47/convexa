@@ -19,6 +19,13 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // `HealthWire.market_data` and `ScanEnvelope.market_data` are additive schema growth (SPEC B5,
 // ledger `route-growth-repins-api-artifact-oracle`) — zero new operations, so
 // `precutover-operation-baseline.json` is unchanged and stays pinned to its prior hash.
+//
+// Re-pinned again for GATE Z (2026-09-24, AC-3 amendment): `post_recommendation`'s doc comment
+// now documents the paused 503 (`routes/recommendation.rs`), which changes only the exported
+// `summary` text for `POST /api/recommendation/{ticker}` in `convexa.openapi.json` (and its
+// `schema.ts`/`parity-coverage.json`/manifest descendants) — still zero new operations and zero
+// schema-shape changes, so `precutover-operation-baseline.json` again stays pinned to its prior
+// hash.
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -26,19 +33,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "8d031037259617250af9388ef1dbf8206246c64e1a0a259929ab4b5c6a452805",
+        "b0e1348bb9492f9a86afc0dfd730ddf5d452bc47dd3b1e0944c256a9834db911",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "bd89b24fb53c4e1aef4c2216b74d2c9af3574b6448eac6d6179f75d55f9e72a4",
+        "cd7fc2284c7b094ed5f2d4d306b46359bcd2e63ad3886141e88c405270877382",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "b10f6dfdac08cabb8c84a1482b6487abd6d4ba7b2c9436c0150199a6310a2e1d",
+        "8e94e92fd5101555f8a45692d0e9418698d319600d2f02dfeaf4a184cce4310e",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "a6488c6f0f6b9b8e8c06a108fb35b854268c16ee05eae25360027b79fb17e9d4",
+        "4d66a1fa96a5050c0f16eec4a1001ff2bd393d283da1e665ef1834d24a3cb46f",
     ),
 ];
 

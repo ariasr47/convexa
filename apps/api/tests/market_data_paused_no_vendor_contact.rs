@@ -77,6 +77,43 @@ async fn paused_boot_and_every_b2_route_open_zero_vendor_connections() {
         "constructing state/router must not dial the vendor"
     );
 
+    // GATE Z amendment (2026-09-24), AC-3: `POST /api/recommendation/{ticker}` is a B2 route too,
+    // but it is `session`-gated (checked after `require_user`), unlike every route in the list
+    // below. Sign a real user in first — auth is pure in-memory (`AuthStore::open_memory`), so it
+    // cannot itself dial the vendor — so the paused check below is exercised the same way a
+    // signed-in caller hits it in production, not bypassed by a 403.
+    let signup = router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/auth/signup")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    r#"{"email":"paused-b2-post-rec@example.test","password":"paused-b2-post-rec-password","display_name":"Paused B2 Post Rec"}"#,
+                ))
+                .expect("signup request builds"),
+        )
+        .await
+        .expect("router always answers");
+    assert_eq!(
+        signup.status(),
+        StatusCode::OK,
+        "signup must succeed while paused — auth never touches market data"
+    );
+    let cookie = signup
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .map(|v| v.split(';').next().unwrap().to_owned())
+        .expect("signup session cookie");
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    assert_eq!(
+        connections.load(Ordering::SeqCst),
+        0,
+        "signing in must not dial the vendor either"
+    );
+
     // Every B2 route (SPEC §2, B2 enumeration): the ticker family, the dedicated candidate
     // selector, the tracked-contract lookup, both stream routes, and the two recommendation
     // routes that render a fresh bundle. `/api/scan` is deliberately absent — it is the
@@ -123,6 +160,37 @@ async fn paused_boot_and_every_b2_route_open_zero_vendor_connections() {
             "{method} {uri} body must be byte-exact"
         );
     }
+
+    // GATE Z amendment (2026-09-24), AC-3: signed in, paused, `POST /api/recommendation/{ticker}`
+    // must answer the same byte-exact 503 — never the dishonest 200 `unavailable_reason:
+    // "llm_error"` the pre-existing bundle-failure fallback used to produce for this route.
+    let rec_request = Request::builder()
+        .method("POST")
+        .uri("/api/recommendation/SPY")
+        .header("content-type", "application/json")
+        .header("cookie", cookie)
+        .body(Body::from(
+            r#"{"snapshot_fingerprint":"paused-b2-post-rec"}"#,
+        ))
+        .expect("post recommendation request builds");
+    let rec_response = router
+        .clone()
+        .oneshot(rec_request)
+        .await
+        .expect("router always answers");
+    assert_eq!(
+        rec_response.status(),
+        StatusCode::SERVICE_UNAVAILABLE,
+        "POST /api/recommendation/{{ticker}} must answer 503 while paused, signed in"
+    );
+    let rec_body = to_bytes(rec_response.into_body(), 4096)
+        .await
+        .expect("body reads");
+    assert_eq!(
+        &rec_body[..],
+        EXACT_BODY,
+        "POST /api/recommendation/{{ticker}} body must be byte-exact"
+    );
 
     tokio::time::sleep(Duration::from_millis(200)).await;
     assert_eq!(

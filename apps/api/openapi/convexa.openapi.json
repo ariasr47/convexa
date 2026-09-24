@@ -8925,7 +8925,7 @@
             "session-cookie": []
           }
         ],
-        "summary": "POST /api/recommendation/{ticker} — auth outermost; always 200 for rec outcomes.",
+        "summary": "POST /api/recommendation/{ticker} — auth outermost; paused answers the exact AC-3 503 (SPEC B2\namendment, GATE Z 2026-09-24); otherwise always 200 for rec outcomes.",
         "x-convexa-security": "session",
         "x-convexa-surface": "json"
       }
