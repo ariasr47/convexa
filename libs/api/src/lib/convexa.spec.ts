@@ -377,6 +377,7 @@ describe('scanner client', () => {
   it('getScan hits the poll endpoint same-origin and returns the envelope untouched', async () => {
     const body: ScanResponse = {
       view: VIEW,
+      market_data: 'live',
       rows: [
         {
           symbol: 'SPY',
