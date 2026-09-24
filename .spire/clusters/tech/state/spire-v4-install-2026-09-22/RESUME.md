@@ -1,6 +1,6 @@
 # RESUME — branch `spire/v4-install-2026-09-22`
 
-**Resume status:** ACTIVE
+**Resume status:** CONSUMED (as of 2026-09-23)
 **Written:** 2026-09-22 on the Windows box (`C:/Dev/convexa`), right after the Spire v4.2.0 install.
 **Branch:** `spire/v4-install-2026-09-22`, cut from `origin/main` `f8c9077a`. Local only, **not pushed**.
 
