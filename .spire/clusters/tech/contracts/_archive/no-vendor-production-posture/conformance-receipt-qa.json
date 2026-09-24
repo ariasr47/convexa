@@ -2,10 +2,10 @@
   "tool": "interface_conformance",
   "verdict": "PASS",
   "mode": "live",
-  "source": "C:/Users/rodri/AppData/Local/Temp/claude/C--Dev-convexa/32b7fe11-22da-4e9f-a15b-7e0112d1d3ef/scratchpad/nvp/qa-folded-interface.json",
+  "source": ".spire/clusters/tech/contracts/no-vendor-production-posture/INTERFACE_CONTRACT.md",
   "base_url": "http://127.0.0.1:8000",
   "auth": null,
-  "checked_at": "2026-09-23T19:50:49Z",
+  "checked_at": "2026-09-24T19:12:53Z",
   "summary": {
     "pass": 14,
     "fail": 0,
