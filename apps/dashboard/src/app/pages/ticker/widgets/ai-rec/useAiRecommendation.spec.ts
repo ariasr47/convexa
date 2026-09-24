@@ -13,7 +13,7 @@
  * Mocks ONLY the network boundary (`@convexa/api`'s `requestRecommendation`/`fetchRecStatus`), never
  * a component — matching every other rec-hook-adjacent suite in this tree.
  */
-import type { RecResponse, RecStatus, TickerBundle } from '@convexa/api';
+import { ApiError, type RecResponse, type RecStatus, type TickerBundle } from '@convexa/api';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { noTradeRec } from './fixtures';
@@ -97,5 +97,30 @@ describe('useAiRecommendation — A10 retention', () => {
     // Proves the retention guard does not swallow the base A10 case: the FIRST failure, with no
     // produced read to protect, must still synthesize `unavailable` exactly as before.
     expect(result.current.rec?.status).toBe('unavailable');
+  });
+});
+
+describe('useAiRecommendation — no-vendor-production-posture B2 amendment (GATE Z 2026-09-24)', () => {
+  // In the shipped app the status read normally reports paused first, which disables the Analyze
+  // action before `request` ever fires — this covers the race where a request beats that response
+  // (or a future caller that reaches `request` directly), and proves the exact regression the
+  // amendment names: this fault must render the honest paused copy, never `transport` (which
+  // `AiRecPanelBlocks.tsx` renders as "AI unavailable — try again"), and it must not be rethrown the
+  // way an `AuthError` is (the panel would otherwise never re-render at all, or a host `guard()`
+  // would show a sign-in prompt instead).
+  it('a paused POST renders the honest paused reason — never `transport`, and is not rethrown', async () => {
+    requestSpy.mockRejectedValueOnce(
+      new ApiError('Recommendation request failed (503)', 503, 'market_data_paused'),
+    );
+    const { result } = renderHook(() => useAiRecommendation('TSLA', bundle(), opts));
+    await waitFor(() => expect(result.current.statusReady).toBe(true));
+
+    await act(async () => {
+      await result.current.request();
+    });
+
+    expect(result.current.rec?.status).toBe('unavailable');
+    expect(result.current.rec?.unavailable_reason).toBe('market_data_paused');
+    expect(result.current.loading).toBe(false);
   });
 });

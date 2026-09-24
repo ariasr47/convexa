@@ -100,6 +100,41 @@ describe('requestRecommendation', () => {
     stubFetch(() => new Response('', { status: 502 }));
     await expect(requestRecommendation('TSLA', REQ)).rejects.toBeInstanceOf(ApiError);
   });
+
+  // no-vendor-production-posture B2 amendment (GATE Z 2026-09-24): this route also answers the
+  // paused 503, and it ALSO treats a bare 503 as an auth-class outcome (below) — only the body's
+  // `code` distinguishes the two, so the paused check must win or a signed-in, paused caller gets
+  // routed into the sign-in gate's "couldn't reach" prompt instead of the honest paused panel.
+  it('a paused 503 throws ApiError with the code — never AuthError', async () => {
+    stubFetch(() => pausedResponse());
+    let caught: unknown;
+    try {
+      await requestRecommendation('SPY', REQ);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(ApiError);
+    expect(caught).not.toBeInstanceOf(AuthError);
+    expect(isMarketDataPaused(caught)).toBe(true);
+  });
+
+  it('still throws AuthError for a REAL auth-class 503 (no code) on this same route', async () => {
+    stubFetch(
+      () =>
+        new Response(JSON.stringify({ error: 'auth_unavailable', message: 'try later' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+    );
+    let caught: unknown;
+    try {
+      await requestRecommendation('SPY', REQ);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(AuthError);
+    expect(isMarketDataPaused(caught)).toBe(false);
+  });
 });
 
 describe('getTicker generated query compatibility', () => {

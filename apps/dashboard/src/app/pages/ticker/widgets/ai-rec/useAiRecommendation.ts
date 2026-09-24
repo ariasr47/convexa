@@ -203,6 +203,14 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
           throw err;
         }
         // Transport fault → synthesize the `unavailable` artifact (caught, never thrown to the page).
+        // no-vendor-production-posture B2 amendment (GATE Z 2026-09-24): this POST is itself a B2
+        // route, so paused mode answers it with the SAME typed 503 the status-fetch catch above
+        // already recognizes (`isMarketDataPaused`). Route it to the honest `market_data_paused`
+        // reason — never the generic `transport` bucket, which `AiRecPanelBlocks.tsx` renders as
+        // "AI unavailable — try again" and `presentationPolicy.ts` treats as retryable. In the
+        // shipped app the status read normally reports paused first and disables the action before
+        // this can fire; this still covers the race where a request beats that response (or a
+        // future caller that reaches `request` directly).
         // [A10 retention] SPEC §4.5/§5: "A request failure renders A10, keeps any previously pinned
         // read pinned and readable." A REFRESH (`onRefresh`/`Ask anyway`) fired while a produced read
         // is already pinned must not evict it — a functional update reads the LATEST `rec`, never a
@@ -222,7 +230,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
                 pinned_fingerprint: '',
                 stale_born: false,
                 strategy: null,
-                unavailable_reason: 'transport',
+                unavailable_reason: isMarketDataPaused(err) ? 'market_data_paused' : 'transport',
                 gate,
                 cap,
               },

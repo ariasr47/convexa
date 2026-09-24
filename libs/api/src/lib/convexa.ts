@@ -2109,6 +2109,16 @@ export async function requestRecommendation(
     params: { path: { ticker: symbol.toUpperCase() } },
     body,
   });
+  // no-vendor-production-posture B2 amendment (GATE Z 2026-09-24): this route is also a B2 route —
+  // paused answers the SAME typed 503 as every other one (`code: "market_data_paused"`, no `error`
+  // field). Checked FIRST and by `code` alone (never by status), because the auth-class branch right
+  // below also matches on a bare 503 and would otherwise swallow this into `auth_unavailable` (same
+  // status, no `code`) — routing a signed-in, paused caller into the sign-in gate's "couldn't reach"
+  // prompt instead of the honest paused panel. `isMarketDataPaused` only ever recognizes `ApiError`,
+  // so this must throw one, not an `AuthError`.
+  if (codeOf(result) === MARKET_DATA_PAUSED_CODE) {
+    throw resultError(result, 'Recommendation request failed');
+  }
   // user-accounts (D6f): the auth gate is the OUTERMOST precondition on the LLM invoke. A 403
   // `auth_required` / 503 `auth_unavailable` is an AUTH-class outcome — surface it as an `AuthError`
   // (NOT the ai-rec `unavailable` artifact) so the FE shows the sign-in / "couldn't reach" prompt
