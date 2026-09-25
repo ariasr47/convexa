@@ -10,8 +10,15 @@ pub struct MigrateReport {
     pub skipped: usize,
 }
 
-/// SQL applied after every inline BYTEA row has been put + NULLed.
-#[allow(dead_code)] // consumed by the postgres adapter (`--features postgres`)
+/// PARKED 2026-09-24: nothing executes this. It ran at the end of the Postgres inline-body
+/// migrator, which runs on every `serve` start, so startup altered the schema (against
+/// postgres-release-safety AC-23) and two replicas could race: one dropped the column between the
+/// other's existence check and its select, and the loser refused startup — the CI flake in
+/// `simultaneous_serve_processes_are_read_only`. To restore it, ship it as a numbered migration in
+/// `db/migrations.rs` (applied by `postgres-migrate` under the migration lock), and only once every
+/// environment has moved its inline bodies: the move needs the app's body volume, which the
+/// pre-deploy migration container does not mount.
+#[allow(dead_code)]
 pub const DROP_BODY_COLUMN_SQL: &str =
     "ALTER TABLE session_chain_archive DROP COLUMN IF EXISTS body";
 

@@ -6,7 +6,7 @@ use crate::error::{AppError, AppResult};
 use crate::services::chain_snapshot::wire::{as_of_string, parse_as_of};
 use crate::services::market_data::MarketDataSourceKind;
 use crate::services::session_chain_archive::body_store::{mint_body_locator, FsBodyStore};
-use crate::services::session_chain_archive::migrate::{MigrateReport, DROP_BODY_COLUMN_SQL};
+use crate::services::session_chain_archive::migrate::MigrateReport;
 use crate::services::session_chain_archive::{SessionBookMeta, StoredSessionBook};
 use chrono::{DateTime, Utc};
 use sqlx::Row;
@@ -216,6 +216,13 @@ impl PgSessionChainArchive {
         Err(AppError::Config("body object unreadable: missing".into()))
     }
 
+    /// Move legacy inline bodies into the body store and point their rows at it.
+    ///
+    /// This runs on every `serve` start, so it rewrites rows and never the table: production
+    /// startup is read-only with respect to schema (postgres-release-safety AC-23). It used to end
+    /// with `DROP_BODY_COLUMN_SQL`, which let two replicas starting together race — one dropped the
+    /// column between the other's `body_column_exists` and its select, and the loser refused
+    /// startup. The legacy column is nullable and `load` handles it present or absent.
     pub async fn migrate_inline_bodies(&self) -> AppResult<MigrateReport> {
         if !self.body_column_exists().await? {
             return Ok(MigrateReport {
@@ -255,10 +262,6 @@ impl PgSessionChainArchive {
             .map_err(|e| AppError::Config(format!("session_chain_archive migrate update: {e}")))?;
             moved += 1;
         }
-        sqlx::query(DROP_BODY_COLUMN_SQL)
-            .execute(&self.pg.pool)
-            .await
-            .map_err(|e| AppError::Config(format!("session_chain_archive drop body: {e}")))?;
         Ok(MigrateReport { moved, skipped: 0 })
     }
 
