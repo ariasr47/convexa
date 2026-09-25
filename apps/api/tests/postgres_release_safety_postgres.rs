@@ -66,11 +66,27 @@ async fn drop_db(pool: &PgPool, db: &str) {
         .execute(pool)
         .await;
 }
+/// The schema half of `fp` beyond relation names. Names alone cannot see an `ALTER TABLE`: a
+/// `serve` start that dropped a column passed a name-only fingerprint, and its race with a second
+/// replica surfaced only as a flaky startup. Each row is (key, canonical definition), sorted.
+const SCHEMA_SHAPE_SQL: [(&str, &str); 3] = [
+    ("column", "SELECT c.relname::text||'.'||a.attname::text, concat_ws(' ',a.attnum,format_type(a.atttypid,a.atttypmod),a.attnotnull,a.attidentity::text,a.attgenerated::text,pg_get_expr(d.adbin,d.adrelid)) FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE n.nspname='public' AND a.attnum>0 AND NOT a.attisdropped ORDER BY 1,2"),
+    ("constraint", "SELECT conrelid::regclass::text||'.'||conname::text, contype::text||' '||pg_get_constraintdef(oid) FROM pg_constraint WHERE connamespace='public'::regnamespace ORDER BY 1,2"),
+    ("index", "SELECT indexname::text, indexdef FROM pg_indexes WHERE schemaname='public' ORDER BY 1,2"),
+];
 async fn fp(db: &str) -> String {
     let p = PgPool::connect(db)
         .await
         .expect("connect disposable database");
     let rows:Vec<(String,String,String)>=sqlx::query_as("SELECT n.nspname,c.relname,c.relkind::text FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' ORDER BY 1,2,3").fetch_all(&p).await.expect("catalog fingerprint");
+    let mut shape: Vec<(String, String)> = Vec::new();
+    for (kind, sql) in SCHEMA_SHAPE_SQL {
+        let found: Vec<(String, String)> = sqlx::query_as(sql)
+            .fetch_all(&p)
+            .await
+            .expect("schema shape fingerprint");
+        shape.extend(found.into_iter().map(|(key, def)| (format!("{kind} {key}"), def)));
+    }
     let ledger: Vec<(i64, String)> =
         sqlx::query_as("SELECT version,name FROM schema_migrations ORDER BY version")
             .fetch_all(&p)
@@ -83,6 +99,12 @@ async fn fp(db: &str) -> String {
         h.update(b.as_bytes());
         h.update([0]);
         h.update(c.as_bytes());
+        h.update([0]);
+    }
+    for (key, def) in shape {
+        h.update(key.as_bytes());
+        h.update([0]);
+        h.update(def.as_bytes());
         h.update([0]);
     }
     for (v, n) in ledger {
@@ -434,28 +456,61 @@ fn serve_on_port(db: &str, p: u16) -> Running {
         _root: root,
     }
 }
+/// One `/api/health` probe: true only for a 200 that carries the pinned health shape.
+async fn health_probe(client: &reqwest::Client, p: u16, per_probe: Duration) -> bool {
+    let Ok(Ok(r)) = timeout(
+        per_probe,
+        client
+            .get(format!("http://127.0.0.1:{p}/api/health"))
+            .send(),
+    )
+    .await
+    else {
+        return false;
+    };
+    if r.status() != StatusCode::OK {
+        return false;
+    }
+    let v: Value = r.json().await.expect("health JSON");
+    for k in ["status", "service", "durable_store", "metrics_auth"] {
+        assert!(v[k].is_string(), "health missing {k}");
+    }
+    true
+}
+/// A fixed ~6 s window of probes. Only the negative control uses it, to show that nothing answers
+/// on the port of a server that refused startup.
 async fn health(p: u16) -> bool {
     let client = reqwest::Client::new();
     for _ in 0..80 {
-        if let Ok(Ok(r)) = timeout(
-            Duration::from_millis(150),
-            client
-                .get(format!("http://127.0.0.1:{p}/api/health"))
-                .send(),
-        )
-        .await
-        {
-            if r.status() == StatusCode::OK {
-                let v: Value = r.json().await.expect("health JSON");
-                for k in ["status", "service", "durable_store", "metrics_auth"] {
-                    assert!(v[k].is_string(), "health missing {k}");
-                }
-                return true;
-            }
+        if health_probe(&client, p, Duration::from_millis(150)).await {
+            return true;
         }
         sleep(Duration::from_millis(75)).await;
     }
     false
+}
+/// Positive startups get a wall-clock bound, not a probe count. It covers the server's own
+/// pre-bind budget (the 20 s schema preflight timeout) with room for a loaded 2-vCPU runner; a
+/// healthy start takes about a second.
+const SERVE_STARTUP_BOUND: Duration = Duration::from_secs(30);
+/// Wait until a started server answers `/api/health`. Stops as soon as the process exits: a
+/// refused startup never binds, so polling its port only burns the window and hides the reason.
+/// The error says which happened; callers print it with the process's stderr.
+async fn wait_healthy(r: &mut Running, bound: Duration) -> Result<(), String> {
+    let client = reqwest::Client::new();
+    let deadline = tokio::time::Instant::now() + bound;
+    loop {
+        if let Some(status) = r.child.try_wait().expect("observe api-rust serve") {
+            return Err(format!("exited before answering health: {status}"));
+        }
+        if health_probe(&client, r.port, Duration::from_secs(2)).await {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("no healthy answer within {bound:?}"));
+        }
+        sleep(Duration::from_millis(75)).await;
+    }
 }
 fn stop(r: Running) -> Output {
     let mut c = r.child;
@@ -686,9 +741,15 @@ fn serve_current_binds_after_verify_and_health_shape_is_unchanged() {
         create(&a, &n).await;
         let d = url(&base(), &n);
         assert!(migrate(&d, &[]).status.success());
-        let r = serve(&d);
-        assert!(health(r.port).await);
+        let mut r = serve(&d);
+        let healthy = wait_healthy(&mut r, SERVE_STARTUP_BOUND).await;
         let output = stop(r);
+        if let Err(reason) = healthy {
+            panic!(
+                "current-schema server did not become healthy ({reason}); stderr={}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
         assert_no_secret_egress(&output);
         drop_db(&a, &n).await;
     });
@@ -792,20 +853,20 @@ fn simultaneous_serve_processes_are_read_only() {
         assert!(migrate(&d, &[]).status.success());
         let before = fp(&d).await;
         let (x_port, y_port) = distinct_ports();
-        let x = serve_on_port(&d, x_port);
-        let y = serve_on_port(&d, y_port);
-        let x_healthy = health(x.port).await;
-        let y_healthy = health(y.port).await;
+        let mut x = serve_on_port(&d, x_port);
+        let mut y = serve_on_port(&d, y_port);
+        let x_healthy = wait_healthy(&mut x, SERVE_STARTUP_BOUND).await;
+        let y_healthy = wait_healthy(&mut y, SERVE_STARTUP_BOUND).await;
         let xo = stop(x);
         let yo = stop(y);
-        assert!(
-            x_healthy,
-            "first simultaneous server did not become healthy"
-        );
-        assert!(
-            y_healthy,
-            "second simultaneous server did not become healthy"
-        );
+        for (which, healthy, out) in [("first", x_healthy, &xo), ("second", y_healthy, &yo)] {
+            if let Err(reason) = healthy {
+                panic!(
+                    "{which} simultaneous server did not become healthy ({reason}); stderr={}",
+                    String::from_utf8_lossy(&out.stderr)
+                );
+            }
+        }
         assert_no_secret_egress(&xo);
         assert_no_secret_egress(&yo);
         assert_eq!(before, fp(&d).await);
