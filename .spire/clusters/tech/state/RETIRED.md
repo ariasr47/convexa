@@ -17,3 +17,7 @@ RETIRED: tools/api-router-integration-baseline.spec.mjs; parent 94e544875c8695bc
 RETIRED: tools/api-router-integration-compile-probe.spec.mjs; parent 94e544875c8695bc619c59d187518581d9cf721b; risk-gone; 13 tests
 RETIRED: tools/api-router-integration-rollback.spec.mjs; parent 94e544875c8695bc619c59d187518581d9cf721b; risk-gone; 4 tests
 RETIRED: tools/vite-mui-path-imports.spec.mjs; parent 94e544875c8695bc619c59d187518581d9cf721b; risk-gone; 7 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/widgets/ai-rec/AiRecPanelBlocks.spec.tsx; parent 3bf04dde73003092aa1b3bcee530a8dec9b3b9e8; structure; 2 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/widgets/ai-rec/FigureClause.spec.tsx; parent 3bf04dde73003092aa1b3bcee530a8dec9b3b9e8; structure; 1 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/widgets/ai-rec/ReadSheet.spec.tsx; parent 3bf04dde73003092aa1b3bcee530a8dec9b3b9e8; structure; 7 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/widgets/ai-rec/readLayout.spec.ts; parent 3bf04dde73003092aa1b3bcee530a8dec9b3b9e8; structure; 113 tests
