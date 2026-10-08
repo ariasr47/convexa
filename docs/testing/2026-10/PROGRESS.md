@@ -77,3 +77,4 @@ Append-only. One line per step. Times are local (America/Los_Angeles) unless mar
 - 2026-10-08 P2 batches 13+13a verified (run b13a at a8a29c99): all exit 0, 796 s; vitest 2911 + 45, tools 94, cargo 1636 (+1 new test), chromium 128, a11y 35, pg 2+9+1, byte-identity green, 0 skips.
 - 2026-10-08 P2 batch 14 committed 46130b37; verified (run b14): all exit 0, 596 s; vitest 2905 (-6), rest unchanged; 0 skips.
 - 2026-10-08 P2 batch 15 committed 5c205479; verified (run b15): all exit 0, 599 s; vitest 2820 (-85), rest unchanged; 0 skips.
+- 2026-10-08 P2 batch 16 committed 9494b956; verified (run b16): all exit 0, 603 s; vitest 2787 (-33), rest unchanged; 0 skips.

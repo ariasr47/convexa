@@ -58,3 +58,7 @@ RETIRED: apps/dashboard/src/app/pages/operator-metrics/useLatencyTrend.spec.tsx;
 RETIRED: apps/dashboard/src/app/pages/landing/GammaSurfaceHero.spec.tsx; parent 5c205479c0d28e537a33f20ea0156aac0b584010; structure; 10 tests
 RETIRED: apps/dashboard/src/app/pages/landing/display-face.spec.tsx; parent 5c205479c0d28e537a33f20ea0156aac0b584010; structure; 5 tests
 RETIRED: apps/dashboard/src/app/pages/landing/landing-structure.spec.tsx; parent 5c205479c0d28e537a33f20ea0156aac0b584010; structure; 13 tests
+RETIRED: apps/dashboard/src/app/curvature-v2-landing-samples.structural.spec.ts; parent 9494b95677fbb0e49f16cfb2da570fafe501ff66; structure; 3 tests
+RETIRED: apps/dashboard/src/app/day-replay-mock-adapter.structural.spec.ts; parent 9494b95677fbb0e49f16cfb2da570fafe501ff66; structure; 4 tests
+RETIRED: apps/dashboard/src/app/index-head.structural.spec.ts; parent 9494b95677fbb0e49f16cfb2da570fafe501ff66; structure; 7 tests
+RETIRED: libs/api/src/lib/contract-compat.spec.ts; parent 9494b95677fbb0e49f16cfb2da570fafe501ff66; structure; 1 tests
