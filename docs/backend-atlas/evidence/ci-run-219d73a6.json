@@ -1,0 +1,157 @@
+{
+  "source_revision": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
+  "run_url": "https://github.com/ariasr47/convexa/actions/runs/37732918597",
+  "conclusion": "failure",
+  "raw_snapshot": {
+    "path": ".spire/tmp/ci-completed-219d73a6.json",
+    "sha256": "9bdb3ebba26a9e131c0bb70ed62ab03ca5e4ed1f3f61270af32f9501957e18d5"
+  },
+  "jobs": [
+    {
+      "name": "Frontend (lint · typecheck · test · build · e2e)",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-10-08T05:32:50Z",
+      "completed_at": "2026-10-08T05:57:59Z",
+      "failed_steps": [
+        "Browser quality gate"
+      ],
+      "skipped_steps": [
+        "Upload Vitest log on failure",
+        "Demo build-mode guard (G5)",
+        "Demo production build",
+        "Demo browser journey (G1)",
+        "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020"
+      ]
+    },
+    {
+      "name": "Backend (cargo test · release+postgres)",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-08T05:32:50Z",
+      "completed_at": "2026-10-08T06:02:03Z",
+      "failed_steps": [],
+      "skipped_steps": []
+    },
+    {
+      "name": "Capacity baseline (Linux)",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-08T05:32:50Z",
+      "completed_at": "2026-10-08T05:37:55Z",
+      "failed_steps": [],
+      "skipped_steps": []
+    },
+    {
+      "name": "Supply-chain policy / identity",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-08T05:32:50Z",
+      "completed_at": "2026-10-08T05:33:06Z",
+      "failed_steps": [],
+      "skipped_steps": []
+    },
+    {
+      "name": "Supply-chain policy / policy",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-10-08T05:33:07Z",
+      "completed_at": "2026-10-08T05:34:51Z",
+      "failed_steps": [
+        "Run complete policy surface",
+        "Render sanitized policy summary"
+      ],
+      "skipped_steps": [
+        "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020"
+      ]
+    },
+    {
+      "name": "Supply-chain policy / capabilities",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-08T05:33:10Z",
+      "completed_at": "2026-10-08T05:34:57Z",
+      "failed_steps": [],
+      "skipped_steps": []
+    },
+    {
+      "name": "Supply-chain policy / artifacts",
+      "status": "completed",
+      "conclusion": "skipped",
+      "started_at": "2026-10-08T05:33:06Z",
+      "completed_at": "2026-10-08T05:33:06Z",
+      "failed_steps": [],
+      "skipped_steps": []
+    },
+    {
+      "name": "Supply-chain policy / aggregate",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-10-08T05:34:59Z",
+      "completed_at": "2026-10-08T05:35:13Z",
+      "failed_steps": [
+        "Validate current-run children and decide"
+      ],
+      "skipped_steps": []
+    }
+  ],
+  "gates": [
+    {
+      "gate": "chromium",
+      "summary_path": ".spire/tmp/linux-chromium-219d73a6/summary.json",
+      "summary_sha256": "f43ec9ad7d0609f99e33f1b9e0b7f12c58d43079399999f0fbecda104a06d17a",
+      "source_revision": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
+      "run_id": "95586514-fb3a-4693-bb2e-aec846394856",
+      "status_as_emitted": "incomplete",
+      "counts_as_emitted": {
+        "selected": 128,
+        "executed": 129,
+        "passed": 127,
+        "failed": 1,
+        "flaky": 1,
+        "not_run": 0
+      }
+    },
+    {
+      "gate": "compatibility",
+      "summary_path": ".spire/tmp/linux-compatibility-219d73a6/summary.json",
+      "summary_sha256": "fc109bfa1f52cee073331d4340dc0e3e60bc961b2aad1b7c8bb0f145fbee7829",
+      "source_revision": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
+      "run_id": "95586514-fb3a-4693-bb2e-aec846394856",
+      "status_as_emitted": "incomplete",
+      "counts_as_emitted": {
+        "selected": 15,
+        "executed": 20,
+        "passed": 10,
+        "failed": 10,
+        "flaky": 0,
+        "not_run": 0
+      }
+    },
+    {
+      "gate": "accessibility",
+      "summary_path": ".spire/tmp/linux-accessibility-219d73a6/summary.json",
+      "summary_sha256": "b0240ffbfcb557f356e03bfe9dbf77a96b2235ca2a21d3e8c549e9324e913cf2",
+      "source_revision": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
+      "run_id": "95586514-fb3a-4693-bb2e-aec846394856",
+      "status_as_emitted": "pass",
+      "counts_as_emitted": {
+        "selected": 35,
+        "executed": 35,
+        "passed": 35,
+        "failed": 0,
+        "flaky": 0,
+        "not_run": 0
+      },
+      "finding_count": 7
+    }
+  ],
+  "diagnosis": {
+    "chromium": "One AC-35 identity failed then passed on retry; 127 unique passes and one flaky result. Initial-failure trace was not retained. Touch helper dispatched to offscreen coordinates; that fidelity defect alone does not establish the precise first-attempt cause.",
+    "compatibility": "Five WebKit journeys each failed twice. All ten attempts received HTTP document 200, then nine HTTPS assets failed TLS handshakes: exact CSP upgrade-insecure-requests met an HTTP-only local server. Chromium and Firefox passed ten unique arms.",
+    "summary_accounting": "Reporter counted attempts as tests, producing invalid arithmetic. Original summaries are retained unchanged; repair must preserve failed/retry evidence and keep flaky results failing.",
+    "visual": "Four of six passed. Two ticker images differ after navigation tabs were added; authorization is for candidate generation only, not acceptance.",
+    "policy": "See ci-policy-baseline-comparison.json. Matching failing check records/counts do not prove identical npm advisory IDs. Emitted policy revision is the PR merge SHA."
+  },
+  "downstream_demo_checks": "CI G5, demo build and G1 were skipped after browser-quality failure. Existing local and hosted demo receipts retain their original scope."
+}

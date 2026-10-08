@@ -28,15 +28,10 @@ test('malformed Scanner SSE payload is a readiness failure, not a product fallba
 });
 
 test('retained Chromium maps the quality port to both server and client URL', () => {
-  assert.match(
-    chromiumConfig,
-    /const PORT = Number\(process\.env\['BROWSER_QUALITY_PORT'\] \?\? 4200\)/,
-  );
-  assert.match(
-    chromiumConfig,
-    /const baseURL = process\.env\['BASE_URL'\] \|\| `http:\/\/localhost:\$\{PORT\}`/,
-  );
-  assert.match(chromiumConfig, /\.\.\.sharedConfig\('chromium'\)/);
+  assert.match(chromiumConfig, /const shared = sharedConfig\('chromium'\)/);
+  assert.match(chromiumConfig, /\.\.\.shared,/);
+  assert.match(chromiumConfig, /\.\.\.shared\.use,/);
+  assert.doesNotMatch(chromiumConfig, /baseURL\s*[:,=]/);
 });
 
 test('book fixture does not present a newer empty server book', () => {

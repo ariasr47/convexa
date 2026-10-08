@@ -525,58 +525,41 @@ test.describe('AC-34 — coarse pointer at 393px: the effective hit area, measur
  *  down (the same shipped `AccessibleHelp` primitive/pattern). */
 const HOVER_INFO_WIDGETS = ['market-context', 'straddle-move', 'dealer-flow-projection'] as const;
 
-/**
- * A REAL touch tap — `touchstart` then a brief hold then `touchend` — not Playwright's `.tap()`
- * convenience method, which dispatches `touchstart`/`touchend` back-to-back with no gap at all.
- * That atomic pairing is faster than any human finger (a real tap always has *some* contact
- * duration) and, measured live, is fast enough to race MUI's own `setTimeout`-scheduled tooltip
- * "enter" callback even at `enterTouchDelay={0}` (`AccessibleHelp.tsx`) — a 0ms delay still yields
- * to the next tick, and `.tap()`'s `touchend` can land in the SAME tick as its `touchstart`. A 40ms
- * hold is comfortably past that, and comfortably under what a user would perceive as a long press.
- */
-async function realisticTap(locator: Locator) {
-  const box = await locator.boundingBox();
-  if (!box) throw new Error('realisticTap: target has no bounding box');
-  const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-  await locator.dispatchEvent('touchstart', {
-    touches: [{ identifier: 0, clientX: point.x, clientY: point.y }],
-    changedTouches: [{ identifier: 0, clientX: point.x, clientY: point.y }],
-  });
-  await new Promise((resolve) => setTimeout(resolve, 40));
-  await locator.dispatchEvent('touchend', { touches: [], changedTouches: [] });
-}
-
 async function assertTapAndKeyboardReveal(page: Page, help: Locator, label: string) {
   await expect(help, `${label} is present`).toBeVisible();
   expect(await help.evaluate((el) => el.tagName), `${label} is a real <button>`).toBe('BUTTON');
 
-  // TAP path — a genuine touch tap (see `realisticTap` above) reveals the info content. This is
-  // the code path AC-35/ruling 6 actually names ("reachable by tap") and the one a mouse `.click()`
-  // never exercises at all: MUI `Tooltip`'s touch handling is entirely separate from its
-  // hover/focus handling (`enterTouchDelay`, `AccessibleHelp.tsx`).
-  await realisticTap(help);
-  await expect(page.locator('[role="tooltip"]'), `${label}: tap reveals content`).toBeVisible();
+  // Native touch checks actionability and scrolls the target into view. Synthetic dispatchEvent
+  // could reach offscreen controls and hid the canceled touch-enter timer in AccessibleHelp.
+  await help.tap();
+  await expect(help, `${label}: tap associates its content`).toHaveAttribute(
+    'aria-describedby',
+    /\S+/,
+  );
+  const tooltipId = await help.getAttribute('aria-describedby');
+  const tooltip = page.locator(`[role="tooltip"][id=${JSON.stringify(tooltipId)}]`);
+  await expect(tooltip, `${label}: tap reveals content`).toBeVisible();
   await page.keyboard.press('Escape');
-  await expect(page.locator('[role="tooltip"]'), `${label}: closes`).toBeHidden();
+  await expect(tooltip, `${label}: closes`).toBeHidden();
   // Escape closes the MUI Tooltip's `open` state but does not blur the trigger (correct — a real
   // Escape-to-dismiss never un-focuses the control that opened it). Explicitly blur here so the
   // KEYBOARD path below fires a GENUINELY NEW focus event — `.focus()` on an already-focused element
   // is a no-op (no new `focus` event), which would make that check pass or fail for the wrong reason.
   await help.blur();
 
-  // KEYBOARD path — focus alone (no pointer at all) reveals the SAME content, because it is a real
-  // `<button>` (native tab order) wrapped by a `Tooltip` that opens `onFocus`, not a hover-only one.
+  // Return through native Tab order so the preceding touch gesture cannot leave the browser in
+  // pointer modality. The final focus comes from the keyboard, not a second pointer gesture.
   await help.focus();
-  await expect(
-    page.locator('[role="tooltip"]'),
-    `${label}: keyboard focus reveals content`,
-  ).toBeVisible();
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  await expect(help, `${label}: Tab reaches the trigger`).toBeFocused();
+  await expect(tooltip, `${label}: keyboard focus reveals content`).toBeVisible();
   await help.blur();
-  await expect(page.locator('[role="tooltip"]'), `${label}: hides on blur`).toBeHidden();
+  await expect(tooltip, `${label}: hides on blur`).toBeHidden();
 }
 
 test.describe('AC-35 — the six converted hover-only info sites', () => {
-  // `hasTouch` — required for `realisticTap`'s manual touch-event dispatch to mean anything; also
+  // `hasTouch` — required for Playwright's native tap; also
   // makes `@media (pointer: coarse)` true, matching a real phone/tablet at every width checked here.
   test.use({ hasTouch: true });
 

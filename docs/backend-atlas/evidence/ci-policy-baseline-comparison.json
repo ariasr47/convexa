@@ -1,0 +1,25 @@
+{
+  "pr_head": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
+  "ci_run": "https://github.com/ariasr47/convexa/actions/runs/37732918597",
+  "baseline_run": "https://github.com/ariasr47/convexa/actions/runs/37710107607",
+  "emitted_revision": "35acd624f1a3a1cd9e15115fc06838b729de8899",
+  "expected_revision_binding": "Emitted report names PR merge SHA, not head SHA; retain raw report and do not relabel it",
+  "identical_failing_check_objects": true,
+  "failed_checks": [
+    {
+      "check_id": "npm_advisories",
+      "finding_count": 26,
+      "state": "fail",
+      "evidence_sha256": null
+    },
+    {
+      "check_id": "cargo_policy",
+      "finding_count": 1,
+      "state": "fail",
+      "evidence_sha256": "8375f312c69b957dcd858a1b0ae04f23c10c4cecd2d7dbab2b0b21d90b3ca93b"
+    }
+  ],
+  "policy_hash_matches": true,
+  "limitation": "Both reports emit empty findings arrays and npm evidence_sha256=null; matching npm advisory IDs cannot be established from these artifacts.",
+  "changes": "Independent Git comparison found package-lock.json, Cargo.lock, all Cargo.toml and dependency sections unchanged; changed package manifests alter scripts/Nx build configuration only."
+}

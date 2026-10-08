@@ -13,26 +13,41 @@ export function sharedConfig(gate: Gate) {
     (!Number.isInteger(workers) || (workers as number) < 1 || (workers as number) > 16)
   )
     throw new Error('BROWSER_QUALITY_WORKERS must be an integer from 1 through 16');
-  const baseURL = process.env.BASE_URL ?? `http://localhost:${port}`;
+  const builtArtifact = prebuildStatus === 'pass' || Boolean(process.env.CI);
+  // Certificate exceptions belong only to the server this config starts. Hosted/BASE_URL
+  // overrides always retain normal certificate verification, even when CI/prebuild is set.
+  const externalUrl = process.env.DEMO_HOSTED_URL ?? process.env.BASE_URL;
+  const localHttps = builtArtifact && externalUrl === undefined;
+  const baseURL = externalUrl ?? `${builtArtifact ? 'https' : 'http'}://localhost:${port}`;
+  const serveArtifact = `node apps/dashboard-e2e/tools/serve-dist.mjs apps/dashboard/dist ${port} localhost https`;
   return defineConfig({
     fullyParallel: true,
     ...(workers === undefined ? {} : { workers }),
     forbidOnly: Boolean(process.env.CI),
     failOnFlakyTests: true,
     retries: process.env.CI ? 1 : 0,
-    use: { baseURL, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
-    webServer: {
-      command:
-        prebuildStatus === 'pass'
-          ? `node apps/dashboard-e2e/tools/serve-dist.mjs apps/dashboard/dist ${port} localhost`
-          : process.env.CI
-            ? `npx nx run @convexa/dashboard:serve-static --port=${port}`
-            : `npx nx run @convexa/dashboard:serve --port=${port}`,
-      url: baseURL,
-      reuseExistingServer: false,
-      cwd: workspaceRoot,
-      timeout: 180_000,
+    use: {
+      baseURL,
+      ignoreHTTPSErrors: localHttps,
+      trace: 'retain-on-failure',
+      screenshot: 'only-on-failure',
     },
+    webServer:
+      externalUrl === undefined
+        ? {
+            command:
+              prebuildStatus === 'pass'
+                ? serveArtifact
+                : process.env.CI
+                  ? `npx nx run @convexa/dashboard:build --configuration=production && ${serveArtifact}`
+                  : `npx nx run @convexa/dashboard:serve --port=${port}`,
+            url: baseURL,
+            ignoreHTTPSErrors: localHttps,
+            reuseExistingServer: false,
+            cwd: workspaceRoot,
+            timeout: 180_000,
+          }
+        : undefined,
     reporter: [
       ['list'],
       [

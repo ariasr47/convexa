@@ -1,11 +1,11 @@
 {
-  "scope": "Local production matrix on frozen implementation worktree before final source commit. Steps 1 and 3 are normal cache-enabled builds after the final source edits; history must show actual misses followed by the unchanged demo hit and restore. The machine cache itself was not globally cleared. Native exits verified; Nx task identities read independently from its local history database. This is not hosted or CI evidence.",
+  "scope": "Local production matrix on the frozen worktree after the native help repair, before final source commit. Every step is cache-enabled; status records the observed miss or hit, without interpreting a mode switch as a cold build. The repaired LIVE artifact may already be cached by its focused browser verification. No cache was cleared or forced off. Native exits verified; Nx task identities read independently from its local history database. This is not hosted or CI evidence.",
   "productionEnvironment": "NODE_ENV=production pinned in Nx production configuration",
   "steps": [
     {
-      "label": "matrix-demo-cold",
+      "label": "matrix-demo-initial",
       "mode": "demo",
-      "buildWallSeconds": 8.1052879,
+      "buildWallSeconds": 8.2160274,
       "nativeBuildExit": 0,
       "receipt": {
         "mode": "demo",
@@ -20,20 +20,20 @@
           "/*"
         ]
       },
-      "publicDigest": "7acaf9e6dc9f667a570868b777adfffc5fc3ccff56700e84110eaefe0b7a52a5",
-      "privateDigest": "03eaf554b5ca03f7ff760cff9f40e2e72202914f9df00081b17112a897201798",
+      "publicDigest": "e140a8c19edde1634c863085bd5070afc8d83e8d51edb43605615637a890a565",
+      "privateDigest": "1a5daadda352ff09c74fea83dca7cbcb82d35f72d4c2cd1087f5caea4ba9c7c6",
       "publicFileCount": 199,
       "privateFileCount": 47,
-      "hash": "5456579965763133353",
+      "hash": "7825241614970460158",
       "status": "success",
       "code": 0,
-      "start": 1791437294584,
-      "end": 1791437297596
+      "start": 1791440134994,
+      "end": 1791440137761
     },
     {
       "label": "matrix-demo-hit",
       "mode": "demo",
-      "buildWallSeconds": 4.7503575,
+      "buildWallSeconds": 4.5857889,
       "nativeBuildExit": 0,
       "receipt": {
         "mode": "demo",
@@ -48,20 +48,20 @@
           "/*"
         ]
       },
-      "publicDigest": "7acaf9e6dc9f667a570868b777adfffc5fc3ccff56700e84110eaefe0b7a52a5",
-      "privateDigest": "03eaf554b5ca03f7ff760cff9f40e2e72202914f9df00081b17112a897201798",
+      "publicDigest": "e140a8c19edde1634c863085bd5070afc8d83e8d51edb43605615637a890a565",
+      "privateDigest": "1a5daadda352ff09c74fea83dca7cbcb82d35f72d4c2cd1087f5caea4ba9c7c6",
       "publicFileCount": 199,
       "privateFileCount": 47,
-      "hash": "5456579965763133353",
+      "hash": "7825241614970460158",
       "status": "local-cache",
       "code": 0,
-      "start": 1791437302874,
-      "end": 1791437303065
+      "start": 1791440142509,
+      "end": 1791440142663
     },
     {
-      "label": "matrix-live-cold",
+      "label": "matrix-live-switch",
       "mode": "live",
-      "buildWallSeconds": 7.6202695,
+      "buildWallSeconds": 6.9397955,
       "nativeBuildExit": 0,
       "receipt": {
         "mode": "live",
@@ -74,20 +74,20 @@
         ],
         "exclude": []
       },
-      "publicDigest": "fa8852421beab4364fd2d56b9b345819d6c1a551a395c69bdef03e4fb21fd0df",
-      "privateDigest": "03eaf554b5ca03f7ff760cff9f40e2e72202914f9df00081b17112a897201798",
+      "publicDigest": "fe8fb7b933c3a533cd4b8004b91c3c727523f6ca4abc6639be18a7d2062f288f",
+      "privateDigest": "1a5daadda352ff09c74fea83dca7cbcb82d35f72d4c2cd1087f5caea4ba9c7c6",
       "publicFileCount": 199,
       "privateFileCount": 47,
-      "hash": "4748686420162933255",
+      "hash": "17629102782126001067",
       "status": "success",
       "code": 0,
-      "start": 1791437309281,
-      "end": 1791437311831
+      "start": 1791440148105,
+      "end": 1791440150689
     },
     {
       "label": "matrix-demo-restore",
       "mode": "demo",
-      "buildWallSeconds": 4.8517883,
+      "buildWallSeconds": 5.8126887,
       "nativeBuildExit": 0,
       "receipt": {
         "mode": "demo",
@@ -102,15 +102,15 @@
           "/*"
         ]
       },
-      "publicDigest": "7acaf9e6dc9f667a570868b777adfffc5fc3ccff56700e84110eaefe0b7a52a5",
-      "privateDigest": "03eaf554b5ca03f7ff760cff9f40e2e72202914f9df00081b17112a897201798",
+      "publicDigest": "e140a8c19edde1634c863085bd5070afc8d83e8d51edb43605615637a890a565",
+      "privateDigest": "1a5daadda352ff09c74fea83dca7cbcb82d35f72d4c2cd1087f5caea4ba9c7c6",
       "publicFileCount": 199,
       "privateFileCount": 47,
-      "hash": "5456579965763133353",
+      "hash": "7825241614970460158",
       "status": "local-cache",
       "code": 0,
-      "start": 1791437316833,
-      "end": 1791437316997
+      "start": 1791440156654,
+      "end": 1791440156845
     }
   ],
   "seedAssets": [
@@ -144,13 +144,13 @@
     "demoByteIdenticalAfterLiveRestore": true,
     "privateMapsRestored": true,
     "sixCanonicalSeedsIdenticalAcrossModes": true,
-    "noPublicMapsDeclarationsOrBuildInfo": true,
+    "noPublicMapsDeclarationsOrBuildInfo": true
+  },
+  "earlierUnchangedGuardEvidence": {
+    "receiptSourceRevision": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
     "invalidModeRejectedBeforeNx": {
       "exitCode": 2
     },
-    "forbiddenPublicFixtureOrSourceMapReferences": {
-      "rgExitCode": 1,
-      "meaning": "no match in emitted JavaScript"
-    }
+    "note": "The build-mode guard is unchanged and was not rerun by this matrix; its earlier native result retains that scope."
   }
 }

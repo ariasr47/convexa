@@ -15,28 +15,45 @@
  * directory with no `index.html` is not a static-asset match, so it falls through to the SPA shell.
  * Measured 2026-09-23: `curl https://convexa.pages.dev/blog` and `.../blog/` both return 200 with the
  * SPA shell (4,946 bytes, `<div id="root">`). This server reproduces exactly that rule for the gates,
- * using node built-ins only (http, fs, path, url — no new dependency, no devDependency bump):
+ * using node built-ins only (http/https, fs, path, url — no new dependency):
  *   - an existing regular FILE is served with its Content-Type from the MIME map below;
  *   - an existing DIRECTORY that itself carries an `index.html` serves that file;
  *   - everything else — including a directory with no `index.html`, like `/blog` — serves the ROOT
  *     `index.html` with 200, exactly like the `_redirects` catch-all.
  *
- * Usage: node serve-dist.mjs <root> <port> <host>
+ * Usage: node serve-dist.mjs <root> <port> <host> [http|https]
+ * HTTPS uses a public, test-only localhost certificate and accepts only loopback bind hosts.
+ * It keeps upgrade-insecure-requests effective without upgrading assets onto an HTTP listener.
  */
 import { promises as fs } from 'node:fs';
-import { createServer } from 'node:http';
+import { createServer as createHttpServer } from 'node:http';
+import { createServer as createHttpsServer } from 'node:https';
 import path from 'node:path';
 import { URL } from 'node:url';
 
-const [, , rootArg, portArg, hostArg] = process.argv;
-if (!rootArg || !portArg || !hostArg) {
-  console.error('usage: node serve-dist.mjs <root> <port> <host>');
+const [, , rootArg, portArg, hostArg, protocol = 'http', ...extraArgs] = process.argv;
+if (
+  !rootArg ||
+  !portArg ||
+  !hostArg ||
+  !['http', 'https'].includes(protocol) ||
+  extraArgs.length ||
+  !Number.isInteger(Number(portArg)) ||
+  Number(portArg) < 1 ||
+  Number(portArg) > 65535
+) {
+  console.error('usage: node serve-dist.mjs <root> <port 1-65535> <host> [http|https]');
+  process.exit(1);
+}
+if (protocol === 'https' && !['localhost', '127.0.0.1', '::1'].includes(hostArg)) {
+  console.error('[serve-dist] the public test-only TLS certificate requires a loopback host');
   process.exit(1);
 }
 const ROOT = path.resolve(process.cwd(), rootArg);
 const ROOT_WITH_SEP = ROOT.endsWith(path.sep) ? ROOT : ROOT + path.sep;
 const PORT = Number(portArg);
 const HOST = hostArg;
+const ORIGIN = `${protocol}://${HOST === '::1' ? '[::1]' : HOST}:${PORT}`;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -138,7 +155,7 @@ function sendEmpty(res, status, extraHeaders = {}) {
   res.end();
 }
 
-const server = createServer((req, res) => {
+const handleRequest = (req, res) => {
   void (async () => {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       sendEmpty(res, 405, { Allow: 'GET, HEAD' });
@@ -146,7 +163,7 @@ const server = createServer((req, res) => {
     }
     let pathname;
     try {
-      pathname = new URL(req.url ?? '/', `http://${HOST}`).pathname;
+      pathname = new URL(req.url ?? '/', ORIGIN).pathname;
     } catch {
       sendEmpty(res, 404);
       return;
@@ -177,8 +194,19 @@ const server = createServer((req, res) => {
     if (!res.headersSent) sendEmpty(res, 500);
     else res.end();
   });
-});
+};
+
+const server =
+  protocol === 'https'
+    ? createHttpsServer(
+        {
+          cert: await fs.readFile(new URL('./fixtures/localhost-test-cert.pem', import.meta.url)),
+          key: await fs.readFile(new URL('./fixtures/localhost-test-key.pem', import.meta.url)),
+        },
+        handleRequest,
+      )
+    : createHttpServer(handleRequest);
 
 server.listen(PORT, HOST, () => {
-  console.log(`[serve-dist] serving ${ROOT} at http://${HOST}:${PORT}`);
+  console.log(`[serve-dist] serving ${ROOT} at ${ORIGIN}`);
 });

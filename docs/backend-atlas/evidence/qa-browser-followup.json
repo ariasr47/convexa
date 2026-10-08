@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "scope": "incremental independent browser QA of frozen uncommitted follow-up worktree",
+  "published_baseline": {
+    "source_revision": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
+    "hosted_preview": "https://0c9f45c7.convexa.pages.dev",
+    "prior_qa": "20 PASS / 0 FAIL / 0 UNVERIFIABLE"
+  },
+  "local_candidate": {
+    "immutable_artifact": ".spire/tmp/portfolio-qa-demo-touch-dist",
+    "index_sha256": "237FA0E7A081F1D4C433869ED0EE4E48230F0A4E8C3975B7752DAE26A08E6087",
+    "working_dist_files": 199,
+    "immutable_files": 199,
+    "sha256_differences": 0,
+    "mode": "demo",
+    "transport": "https://localhost with the artifact's exact global Content-Security-Policy",
+    "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests"
+  },
+  "g1": {
+    "command": "npm exec --no -- playwright test --config apps/dashboard-e2e/playwright.demo.config.ts",
+    "native_exit": 0,
+    "passed": 1,
+    "failed": 0,
+    "duration_seconds": 50.1,
+    "observation": "The built demo journey completed its core routes, provenance, stream, retained-state, and zero forbidden-egress assertions."
+  },
+  "help_interaction": {
+    "route": "/ticker/SPY",
+    "control": "Market context / About Trend",
+    "initial_probe": {
+      "native_tap_opened": true,
+      "escape_closed": true,
+      "subsequent_keyboard_reopen_within_5s": false,
+      "fresh_keyboard_probe_after_only_ticker_sample_basis": false,
+      "focus_logging": "After Tab the trigger was document.activeElement; aria-describedby and tooltip were initially absent. In one mixed-gesture probe a tooltip was visible after another 1200 ms; a separate fresh-keyboard probe did not show it after 1200 ms.",
+      "interpretation": "These observations conflicted with the existing test and did not establish a product defect or a precise timing cause."
+    },
+    "settled_independent_probe": {
+      "readiness": "Rendered Call wall attached, then 1500 ms observation settle before interaction",
+      "native_tap_opened": true,
+      "escape_closed": true,
+      "keyboard_shift_tab_then_tab_reopened": true,
+      "blur_closed": true,
+      "fresh_desktop_hover_opened": true,
+      "pointer_exit_closed": true,
+      "http_status": 200,
+      "forbidden_requests": 0,
+      "page_errors": 0,
+      "native_exit": 0
+    },
+    "focused_existing_suite": {
+      "command": "npm exec --no -- playwright test --config apps/dashboard-e2e/playwright.config.ts --grep 'AC-35 — the six converted hover-only info sites' --workers=1",
+      "native_exit": 0,
+      "viewport_cases": [393, 834, 900, 1280],
+      "passed": 4,
+      "failed": 0,
+      "retries": 0,
+      "reporter_scope_note": "The fixed-inventory quality reporter marked this filtered four-test run incomplete against the full 128-test manifest; this is not a full Chromium gate receipt."
+    }
+  },
+  "backend": {
+    "contract_posture": "NO_BACKEND_CHANGE",
+    "restricted_source_diff_exit": 0,
+    "prior_independent_receipt": ".spire/clusters/tech/contracts/portfolio-demo-platform/conformance-receipt-qa.json",
+    "prior_independent_endpoints": "2 PASS / 0 FAIL",
+    "rerun": "exempt for this frontend-only follow-up"
+  },
+  "critical_sweep": {
+    "changed_surfaces": ["AccessibleHelp", "local HTTPS static server", "Playwright configuration", "quality reporter", "browser tests"],
+    "critical_findings": 0
+  },
+  "hosted_followup": {
+    "status": "PENDING_NEW_SOURCE_DEPLOYMENT",
+    "new_source_revision": null,
+    "new_preview": null,
+    "new_source_g6": "NOT RUN"
+  }
+}

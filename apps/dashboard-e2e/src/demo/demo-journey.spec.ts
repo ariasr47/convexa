@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const symbols = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'NVDA', 'TSLA'];
-const expiryDates = ['2026-10-09', '2026-10-16', '2026-11-20'];
 const screenshots = path.resolve(
   process.cwd(),
   'apps/dashboard-e2e/test-output/playwright/demo/screenshots',

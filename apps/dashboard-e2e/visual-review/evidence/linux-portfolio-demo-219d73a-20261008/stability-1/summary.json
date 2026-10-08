@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "gate": "visual",
+  "run_id": "linux-candidate-37735626254-1-stability-1",
+  "source_revision": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
+  "selected": 6,
+  "executed": 6,
+  "passed": 6,
+  "failed": 0,
+  "flaky": 0,
+  "not_run": 0,
+  "status": "pass",
+  "playwright_version": "1.62.1",
+  "browser_revision": "1234",
+  "host_platform": "linux",
+  "artifacts": [
+    {
+      "path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/0-0-landing-actual.png",
+      "sha256": "a869a171559a3fe5e04917324acf4a2f4670d21fce3e7f4bf59168e0f5c756ea"
+    },
+    {
+      "path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/1-0-ticker-desktop-actual.png",
+      "sha256": "e6e349644c56754be53e27dd366e6b00eac2e670c2b90d1d4751a31df22c7c5e"
+    },
+    {
+      "path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/2-0-ticker-offline-mobile-actual.png",
+      "sha256": "ba238097ae20e42932a0dbbaf8c42ad60d1a0e9cd7f2952a99a07856abef54d5"
+    },
+    {
+      "path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/3-0-positions-dense-actual.png",
+      "sha256": "d7609f61da0624ed79c9c4e3b580ea291af6e355c406a16e31d7773c9675f687"
+    },
+    {
+      "path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/4-0-scanner-dense-actual.png",
+      "sha256": "09d6edba6ccaff27c5fbc88b4fd46dc5985755c735ce0752c96ab3b08aff2e26"
+    },
+    {
+      "path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-0-ai-recommendation-actual.png",
+      "sha256": "1aa03cd82b712c913989dadcaa19e5f5f00e70fac253deb100fa5e80556139e4"
+    }
+  ],
+  "scenarios": [
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "landing"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [
+        "apps/dashboard-e2e/test-output/playwright/visual/attachments/0-0-landing-actual.png"
+      ],
+      "scenario_id": "landing",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/linux/chromium/landing.png",
+      "expected_sha256": "a869a171559a3fe5e04917324acf4a2f4670d21fce3e7f4bf59168e0f5c756ea",
+      "actual_path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/0-0-landing-actual.png",
+      "actual_sha256": "a869a171559a3fe5e04917324acf4a2f4670d21fce3e7f4bf59168e0f5c756ea",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "ticker-desktop"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [
+        "apps/dashboard-e2e/test-output/playwright/visual/attachments/1-0-ticker-desktop-actual.png"
+      ],
+      "scenario_id": "ticker-desktop",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/linux/chromium/ticker-desktop.png",
+      "expected_sha256": "e6e349644c56754be53e27dd366e6b00eac2e670c2b90d1d4751a31df22c7c5e",
+      "actual_path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/1-0-ticker-desktop-actual.png",
+      "actual_sha256": "e6e349644c56754be53e27dd366e6b00eac2e670c2b90d1d4751a31df22c7c5e",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "ticker-offline-mobile"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [
+        "apps/dashboard-e2e/test-output/playwright/visual/attachments/2-0-ticker-offline-mobile-actual.png"
+      ],
+      "scenario_id": "ticker-offline-mobile",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/linux/chromium/ticker-offline-mobile.png",
+      "expected_sha256": "ba238097ae20e42932a0dbbaf8c42ad60d1a0e9cd7f2952a99a07856abef54d5",
+      "actual_path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/2-0-ticker-offline-mobile-actual.png",
+      "actual_sha256": "ba238097ae20e42932a0dbbaf8c42ad60d1a0e9cd7f2952a99a07856abef54d5",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "positions-dense"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [
+        "apps/dashboard-e2e/test-output/playwright/visual/attachments/3-0-positions-dense-actual.png"
+      ],
+      "scenario_id": "positions-dense",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/linux/chromium/positions-dense.png",
+      "expected_sha256": "d7609f61da0624ed79c9c4e3b580ea291af6e355c406a16e31d7773c9675f687",
+      "actual_path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/3-0-positions-dense-actual.png",
+      "actual_sha256": "d7609f61da0624ed79c9c4e3b580ea291af6e355c406a16e31d7773c9675f687",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "scanner-dense"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [
+        "apps/dashboard-e2e/test-output/playwright/visual/attachments/4-0-scanner-dense-actual.png"
+      ],
+      "scenario_id": "scanner-dense",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/linux/chromium/scanner-dense.png",
+      "expected_sha256": "09d6edba6ccaff27c5fbc88b4fd46dc5985755c735ce0752c96ab3b08aff2e26",
+      "actual_path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/4-0-scanner-dense-actual.png",
+      "actual_sha256": "09d6edba6ccaff27c5fbc88b4fd46dc5985755c735ce0752c96ab3b08aff2e26",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "ai-recommendation"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [
+        "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-0-ai-recommendation-actual.png"
+      ],
+      "scenario_id": "ai-recommendation",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/linux/chromium/ai-recommendation.png",
+      "expected_sha256": "1aa03cd82b712c913989dadcaa19e5f5f00e70fac253deb100fa5e80556139e4",
+      "actual_path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-0-ai-recommendation-actual.png",
+      "actual_sha256": "1aa03cd82b712c913989dadcaa19e5f5f00e70fac253deb100fa5e80556139e4",
+      "diff_path": null,
+      "diff_sha256": null
+    }
+  ]
+}

@@ -153,10 +153,10 @@ export class QualityReporter implements Reporter {
   private gate: 'chromium' | 'compatibility' | 'accessibility' | 'visual' = 'chromium';
   private output = 'apps/dashboard-e2e/test-output/playwright/chromium/summary.json';
   private selected = 0;
-  private records: Array<Record<string, unknown>> = [];
+  private records = new Map<string, Record<string, unknown>>();
+  private attemptSequence = 0;
   private artifacts: Array<{ path: string; sha256: string }> = [];
   private findings: Array<Record<string, unknown>> = [];
-  private results = new Map<string, TestResult>();
   private configRoot = ROOT;
 
   constructor(options: unknown = {}) {
@@ -181,8 +181,12 @@ export class QualityReporter implements Reporter {
   }
 
   onTestEnd(test: TestCase, result: TestResult) {
-    const key = `${test.location.file}:${test.titlePath().join(' › ')}:${result.retry}`;
-    this.results.set(key, result);
+    const title = test.titlePath();
+    const file = relative(test.location.file);
+    const project = test.parent?.project()?.name ?? 'chromium';
+    const key = JSON.stringify([file, project, title]);
+    // Retries share an outcome, but every attempt needs its own attachment filenames.
+    const attempt = this.attemptSequence++;
     const attachmentPaths: string[] = [];
     let actualArtifact: { path: string; sha256: string } | undefined;
     let diffArtifact: { path: string; sha256: string } | undefined;
@@ -197,7 +201,7 @@ export class QualityReporter implements Reporter {
         this.output.startsWith('apps/') ? ROOT : this.configRoot,
         path.dirname(this.output.replace(/\\/g, '/')),
         'attachments',
-        `${this.records.length}-${index}-${attachmentName}`,
+        `${attempt}-${index}-${attachmentName}`,
       );
       fs.mkdirSync(path.dirname(destination), { recursive: true });
       if (sourcePath) fs.copyFileSync(sourcePath, destination);
@@ -231,11 +235,8 @@ export class QualityReporter implements Reporter {
           : result.status === 'passed'
             ? 'passed'
             : 'failed';
-    const title = test.titlePath();
     const identifier =
       title.at(-1) ?? path.basename(test.location.file, path.extname(test.location.file));
-    const file = relative(test.location.file);
-    const project = test.parent?.project()?.name ?? 'chromium';
     const record: Record<string, unknown> =
       this.gate === 'chromium'
         ? {
@@ -276,18 +277,38 @@ export class QualityReporter implements Reporter {
           ? { behavior_id: mapAccessibilityBehaviorId(title) }
           : { scan_id: identifier },
       );
-    this.records.push(record);
+    const previous = this.records.get(key);
+    if (!previous) {
+      this.records.set(key, record);
+      return;
+    }
+    const retryField = this.gate === 'chromium' ? 'retries' : 'retry';
+    const previousRetry = Number(previous[retryField]);
+    const latest = result.retry >= previousRetry ? record : previous;
+    latest[retryField] = Math.max(previousRetry, result.retry);
+    latest.artifact_paths = [
+      ...new Set([...(previous.artifact_paths as string[]), ...attachmentPaths]),
+    ];
+    if (this.gate === 'visual' && latest === record) {
+      for (const role of ['actual', 'diff']) {
+        if (latest[`${role}_path`] === null) {
+          latest[`${role}_path`] = previous[`${role}_path`];
+          latest[`${role}_sha256`] = previous[`${role}_sha256`];
+        }
+      }
+    }
+    this.records.set(key, latest);
   }
 
   onEnd() {
-    const passed = this.records.filter((x) => x.status === 'passed').length;
-    const failed = this.records.filter((x) => x.status === 'failed').length;
-    const flaky = this.records.filter((x) => x.status === 'flaky').length;
+    const records = [...this.records.values()];
+    const passed = records.filter((x) => x.status === 'passed').length;
+    const failed = records.filter((x) => x.status === 'failed').length;
+    const flaky = records.filter((x) => x.status === 'flaky').length;
     const notRun =
-      this.records.filter((x) => x.status === 'not_run').length +
-      Math.max(0, this.selected - this.records.length);
-    const incomplete =
-      this.records.length !== this.selected || this.selected !== gateCounts[this.gate];
+      records.filter((x) => x.status === 'not_run').length +
+      Math.max(0, this.selected - records.length);
+    const incomplete = records.length !== this.selected || this.selected !== gateCounts[this.gate];
     const status = incomplete ? 'incomplete' : failed || flaky || notRun ? 'fail' : 'pass';
     const identity = runtime();
     const summary: Record<string, unknown> = {
@@ -312,20 +333,20 @@ export class QualityReporter implements Reporter {
         // here would have been a second place to forget on the next bump).
         inventory_id: qualityManifest.full_chromium.inventory_id,
         project: 'chromium',
-        tests: this.records,
+        tests: records,
       });
-    else if (this.gate === 'compatibility') summary.arms = this.records;
+    else if (this.gate === 'compatibility') summary.arms = records;
     else if (this.gate === 'accessibility')
       Object.assign(summary, {
         disclaimer:
           'Automated WCAG-oriented scanning is not a complete manual accessibility audit or assistive-technology certification.',
-        scans: this.records.filter(
+        scans: records.filter(
           (x) => String(x.identity).includes('A11Y-') && !String(x.identity).includes('A11Y-B'),
         ),
-        behaviors: this.records.filter((x) => String(x.identity).includes('A11Y-B')),
+        behaviors: records.filter((x) => String(x.identity).includes('A11Y-B')),
         findings: this.findings,
       });
-    else summary.scenarios = this.records;
+    else summary.scenarios = records;
     const output = path.resolve(
       this.output.startsWith('apps/') ? ROOT : this.configRoot,
       this.output,
@@ -342,7 +363,7 @@ export class QualityReporter implements Reporter {
       return;
     }
     if (this.gate === 'visual') {
-      const failedScenarios = this.records.filter((record) => record.status === 'failed');
+      const failedScenarios = records.filter((record) => record.status === 'failed');
       if (failedScenarios.length > 0) {
         for (const record of failedScenarios) {
           console.log(

@@ -1,11 +1,11 @@
 # portfolio-demo-platform — pipeline manifest
-Stage:        VERIFY — implementation joined; independent local QA and release evidence
+Stage:        VERIFY — browser repairs locally verified; new static preview and Linux CI rerun pending
 Repos:        frontend
 Brief:        BRIEF.md present
 Contracts:
   - SPEC.md                    locked
   - INTERFACE_CONTRACT.md      NO_BACKEND_CHANGE
-Open amendments: none; hosted AC-18 implementation failure isolated to inline bootstrap under existing CSP; external blocking asset and test-server policy parity joined
-QA (GATE Q):  19 PASS / 1 FAIL / 0 UNVERIFIABLE (hosted AC-18); old failure reproduced locally under CSP; repaired first-paint isolation and G1 independently PASS (46.7s, zero egress), redeployment verification pending
-Workers:      backend=[NO_BACKEND_CHANGE]; frontend=[S1,S2,S3,S4,S5,S6,F1,F2,R1,F3,F4,F5,F5a,F6 all source joined]; final matrix and bundle gates PASS; Windows LIVE references independently accepted with two stable compare runs; Linux/hosted evidence pending
-Last gateway:  GATE PLAN @ 2026-10-07
+Open amendments: F6 repairs joined — local HTTPS transport, retry accounting, native help tap; hosted follow-up and Linux rerun owed; no backend/interface change
+QA (GATE Q):  PASS — 20/20; exact Pages219d73a6 direct/reload12/12 with provenance, zero forbidden requests/page errors; local CSP-aware G1 PASS (46.7s)
+Workers:      backend=[NO_BACKEND_CHANGE; full Linux CI backend PASS]; frontend=[all source joined; native AC35/U32 8/8; independent final DEMO G1 1/1 at50.1s; scoped help runtime PASS]; final matrix and55bundlechecks PASS; Linux source219d73a6 references independently accepted44894ccd with two6/6zero-retry comparisons; final hosted QA/deploy and Linux CI rerun still owed
+Last gateway:  GATE Q @ 2026-10-08
