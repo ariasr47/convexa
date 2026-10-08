@@ -1,6 +1,6 @@
 /**
  * The HARDENED emotion-CSS-rule reader (curvature-v2-foundations SPEC §2.5). Extracted to its own
- * plain module (not a `.spec.ts` file) so BOTH `type-floor.spec.tsx` and `FigureCell.spec.tsx` can
+ * plain module (not a `.spec.ts` file) so spec files can
  * import it without importing one spec file into another — a spec-into-spec import would re-run
  * the imported file's top-level `describe()` registrations inside the importer's test context.
  *
@@ -10,7 +10,7 @@
  * class via a global regex over the joined, whitespace-stripped `<style>` text.
  */
 
-/** Pure checker (drives the mutation guard in `type-floor.spec.tsx`). */
+/** Pure checker. */
 export function allRulesForClass(css: string, cls: string): string[] {
   const squashed = css.replace(/\s+/g, '');
   const blocks = Array.from(

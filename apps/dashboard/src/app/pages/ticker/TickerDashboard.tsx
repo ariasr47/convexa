@@ -387,8 +387,8 @@ function ColdLoadSkeleton() {
 
 /**
  * Board zone label — visual hierarchy only (product spine #3).
- * Renders as `<p>`, never a heading: widget titles remain the only h2s on the page
- * (`ticker-semantics.spec.tsx`). Full-row span so the two-column bento cannot sandwich
+ * Renders as `<p>`, never a heading: widget titles remain the only h2s on the page.
+ * Full-row span so the two-column bento cannot sandwich
  * a label beside a widget.
  */
 function BoardZoneLabel({
@@ -960,9 +960,8 @@ export function TickerDashboard() {
                     authority the hero repair used). Two grid children only, exactly like the design's
                     markup: the AI read wide on the left, and a `side` column stacking Live tape /
                     Position brief / Sim orders on the right. Below 1000 the container collapses to one
-                    column, so DOM order alone decides the stack: read → tape → position → orders,
-                    matching `ticker-hierarchy.spec.tsx`'s existing order guards (none of them pin AI
-                    relative to tape/brief/orders — only tape-before-brief, which this preserves). The
+                    column, so DOM order alone decides the stack: read → tape → position → orders
+                    (tape before brief, as before). The
                     outer `containerType` lives on a plain wrapper (never the styled grid element
                     itself — an element cannot query the container IT establishes). */}
                 <Box

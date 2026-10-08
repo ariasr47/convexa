@@ -21,3 +21,14 @@ RETIRED: apps/dashboard/src/app/pages/ticker/widgets/ai-rec/AiRecPanelBlocks.spe
 RETIRED: apps/dashboard/src/app/pages/ticker/widgets/ai-rec/FigureClause.spec.tsx; parent 3bf04dde73003092aa1b3bcee530a8dec9b3b9e8; structure; 1 tests
 RETIRED: apps/dashboard/src/app/pages/ticker/widgets/ai-rec/ReadSheet.spec.tsx; parent 3bf04dde73003092aa1b3bcee530a8dec9b3b9e8; structure; 7 tests
 RETIRED: apps/dashboard/src/app/pages/ticker/widgets/ai-rec/readLayout.spec.ts; parent 3bf04dde73003092aa1b3bcee530a8dec9b3b9e8; structure; 113 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/stage3-headings.spec.tsx; parent 268779d05bccb015fcd83baf192bdf32fc001a5a; structure; 7 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/ticker-age-basis.spec.tsx; parent 268779d05bccb015fcd83baf192bdf32fc001a5a; structure; 2 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/ticker-hierarchy.spec.tsx; parent 268779d05bccb015fcd83baf192bdf32fc001a5a; structure; 10 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/ticker-semantics.spec.tsx; parent 268779d05bccb015fcd83baf192bdf32fc001a5a; structure; 2 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/connection/LivenessAnnouncer.spec.tsx; parent 268779d05bccb015fcd83baf192bdf32fc001a5a; structure; 4 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/recentTickers/navigation.spec.ts; parent 268779d05bccb015fcd83baf192bdf32fc001a5a; structure; 2 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/widgets/_kit/lookalikes.spec.ts; parent 268779d05bccb015fcd83baf192bdf32fc001a5a; structure; 4 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/widgets/_kit/type-floor.spec.tsx; parent 268779d05bccb015fcd83baf192bdf32fc001a5a; structure; 9 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/widgets/chrome/QuickSymbols.spec.tsx; parent 268779d05bccb015fcd83baf192bdf32fc001a5a; structure; 7 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/widgets/read-strip/ReadStrip.spec.tsx; parent 268779d05bccb015fcd83baf192bdf32fc001a5a; structure; 15 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/widgets/structure-hero/TapeTrailRow.spec.tsx; parent 268779d05bccb015fcd83baf192bdf32fc001a5a; structure; 5 tests

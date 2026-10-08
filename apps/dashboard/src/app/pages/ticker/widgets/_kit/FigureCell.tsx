@@ -37,7 +37,7 @@
  * `About {label}`, opening on tap/Enter/Space, closing on Escape (Tooltip `describeChild`).
  *
  * Container steps (20 → 17 → 15px under 360/280px of NAMED panel width) land in FE-6, once the
- * `type-floor.spec.tsx` reader is hardened first (SPEC §2.5) — this file ships the 20px base only;
+ * emotion-CSS reader (`emotionCssReader.ts`) is hardened first (SPEC §2.5) — this file ships the 20px base only;
  * do not add `@container` rules here ahead of that sequencing.
  *
  * The live dot is DECORATIVE + static (no pulse): `[single-motion-moment]` pins `liveDotPulse`'s
