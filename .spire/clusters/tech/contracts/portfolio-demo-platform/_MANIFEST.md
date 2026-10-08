@@ -1,5 +1,5 @@
 # portfolio-demo-platform — pipeline manifest
-Stage:        BUILD — shared foundation and F1 complete; app state/orders and F5 views active
+Stage:        BUILD — F4 active; bounded S2/S4 retry, late-frame and selected-export corrections joining
 Repos:        frontend
 Brief:        BRIEF.md present
 Contracts:
@@ -7,5 +7,5 @@ Contracts:
   - INTERFACE_CONTRACT.md      NO_BACKEND_CHANGE
 Open amendments: none
 QA (GATE Q):  pending
-Workers:      backend=[]; frontend=[F2,F3,F5] in two disjoint workers; closer=F6 pending; S1–S5 and F1 complete
+Workers:      backend=[]; frontend=[F4,S2/S4 corrections]; closer=F6 prepared, waiting for both joins
 Last gateway:  GATE PLAN @ 2026-10-07
