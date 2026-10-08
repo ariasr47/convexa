@@ -28,3 +28,17 @@ The F5 builder reported canonical dashboard Nx typecheck, scoped Prettier and di
 ## Still owed
 
 F4 visible shell/capability/sample-analysis integration; F6 route/tab join, production build/browser journey and CI wiring; final full test/type/lint/build-cache/bundle/browser checks; fresh independent QA; feature-only preview deployment and hosted smoke. None of those outcomes is established by this checkpoint.
+
+## First composed full-suite run (before F6)
+
+The conductor ran `npm exec --no -- vitest run --config C:/Dev/convexa/apps/dashboard/vite.config.mts --reporter=dot` from the workspace root. Native **exit 1**; **5 failed / 257 passed files, 6 failed / 3,133 passed tests**, duration **77.07 s**. Raw local log: `.spire/tmp/portfolio-dashboard-unit.log`.
+
+One suite could not collect because its existing source scan assumes dashboard cwd; the final full run must use the canonical Nx target or dashboard cwd. The real failures were three AppShell keyboard cases whose API mock lacks the new demoClock helper, the focus-install source guard still expecting the moved call in main.tsx instead of mountApp.tsx, the amber-link guard's pinned export-callback marker, and the outcome ledger's no-API-import guard encountering the pure demoStorageKey resolver. Assigned repairs preserve keyboard/focus ordering, link color and no-network protections; no test is removed. This failed run is not a final verification result.
+
+## F4 join and guard repairs
+
+F4 completed shell provenance/visitor/reset/Retry, typed scanner subscription and non-flashing demo updates, read-only capability/sample holdings presentation, and the explicit authored-analysis action. The export drawer receives a demo-only optional fingerprint; F6 still supplies it from the selected ticker at the final route join.
+
+The F4 builder corrected DTO reads to use nullable projections under market_state, and uses the returned effective expirations for the displayed bundle's basis. Its final canonical dashboard typecheck, Prettier and diff checks returned **exit 0**. Focused keyboard, amber-link and BrokerTabPanel suites returned **38/38, exit 0**. The separate F1/F2 owner repaired the actual startup-path and exact pure-storage-helper guards; **2 files / 37 tests, exit 0**. Neither repair removed the corresponding accessibility, color or network restriction.
+
+After all provider changes, the conductor independently reran the full API suite from the API project cwd: **8 files / 58 tests, native exit 0, 938 ms**. This includes the JSON asset loader, clock lifecycle and exact fingerprint selection. F6 now owns the final production/browser integration; the final full dashboard run remains owed.

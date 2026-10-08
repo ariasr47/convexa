@@ -11,7 +11,18 @@
  * Product spine #6 — keyboard: a skip link is the first tab stop, targeting the ONE `<main>` landmark.
  */
 import { extrasFor } from '@/shared/theme/tokens';
+import {
+  dataMode,
+  demoClock,
+  resetDemoWorkspace,
+  resumeDemoPlayback,
+  subscribeDemoClock,
+  type DemoClock,
+} from '@convexa/api';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette/CommandPalette';
@@ -27,6 +38,13 @@ export function AppShell() {
   // no risk of "fighting" a form field, so no typing-target guard is needed (or correct: VS Code /
   // Linear / Notion all fire their palette shortcut from inside a focused field the same way).
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [playback, setPlayback] = useState<DemoClock | null>(() => demoClock());
+  useEffect(() => {
+    if (dataMode !== 'demo') return;
+    return subscribeDemoClock((clock) =>
+      setPlayback((current) => (current?.playback === clock.playback ? current : clock)),
+    );
+  }, []);
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const isOpenShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k';
@@ -90,6 +108,55 @@ export function AppShell() {
       >
         Skip to main content
       </Box>
+      {dataMode === 'demo' && playback && (
+        <Box
+          role="status"
+          aria-label="Demo scenario provenance"
+          data-testid="demo-provenance"
+          sx={{
+            px: { xs: 2, md: 3 },
+            py: 1,
+            bgcolor: 'background.paper',
+            borderBottom: 1,
+            borderColor: 'divider',
+          }}
+        >
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={0.5}
+            sx={{ alignItems: { xs: 'stretch', sm: 'center' }, flexWrap: 'wrap' }}
+          >
+            <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.primary' }}>
+              Demo · sample data
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Authored scenario · October 7, 2026 · no market feed connected
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Demo visitor
+            </Typography>
+            <Box sx={{ flexGrow: 1 }} />
+            {playback.playback === 'paused' && (
+              <>
+                <Typography variant="caption" color="text.secondary">
+                  Simulated playback paused. Showing the last sample.
+                </Typography>
+                <Button size="small" onClick={resumeDemoPlayback} sx={{ minHeight: 44 }}>
+                  Retry demo
+                </Button>
+              </>
+            )}
+            {playback.playback === 'ended' && (
+              <Typography variant="caption" color="text.secondary">
+                Sample playback complete. Showing the last sample.
+              </Typography>
+            )}
+            <Button size="small" onClick={resetDemoWorkspace} sx={{ minHeight: 44 }}>
+              Reset Demo
+            </Button>
+          </Stack>
+        </Box>
+      )}
       <TopNav onOpenPalette={() => setPaletteOpen(true)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       {/* The active in-shell page renders here, inside the app's ONE `<main>` landmark (Stage 0

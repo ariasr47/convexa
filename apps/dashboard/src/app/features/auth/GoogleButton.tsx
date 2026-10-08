@@ -8,6 +8,7 @@
  *  - `available=true` (AC-G3): enabled/clickable; starts the server-side flow by navigating to
  *    `/api/auth/google/start` (a full-page redirect — the server does the OAuth dance).
  */
+import { dataMode } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
@@ -44,7 +45,9 @@ function GoogleG() {
 }
 
 export function GoogleButton({ available }: { available: boolean }) {
+  const enabled = available && dataMode === 'live';
   const start = () => {
+    if (dataMode === 'demo') return;
     // Full-page redirect into the server-side Google flow (only reachable when enabled).
     window.location.href = '/api/auth/google/start';
   };
@@ -57,10 +60,10 @@ export function GoogleButton({ available }: { available: boolean }) {
       variant="contained"
       disableElevation
       startIcon={<GoogleG />}
-      disabled={!available}
-      onClick={available ? start : undefined}
+      disabled={!enabled}
+      onClick={enabled ? start : undefined}
       data-testid="google-button"
-      aria-disabled={!available}
+      aria-disabled={!enabled}
       sx={{
         bgcolor: '#fff',
         color: '#1f1f1f',
@@ -76,21 +79,30 @@ export function GoogleButton({ available }: { available: boolean }) {
 
   return (
     <Box>
-      {available ? (
+      {enabled ? (
         button
       ) : (
         // A disabled MUI button suppresses pointer events, so wrap in a span for the tooltip to fire.
-        <Tooltip arrow title={AUTH_COPY.google.tooltipDisabled}>
+        <Tooltip
+          arrow
+          title={
+            dataMode === 'demo'
+              ? 'Unavailable in the public demo.'
+              : AUTH_COPY.google.tooltipDisabled
+          }
+        >
           <span>{button}</span>
         </Tooltip>
       )}
-      {!available && (
+      {!enabled && (
         <Typography
           variant="caption"
           sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
           data-testid="google-helper"
         >
-          {AUTH_COPY.google.helperDisabled}
+          {dataMode === 'demo'
+            ? 'Sign-in connections are unavailable in this demo.'
+            : AUTH_COPY.google.helperDisabled}
         </Typography>
       )}
     </Box>

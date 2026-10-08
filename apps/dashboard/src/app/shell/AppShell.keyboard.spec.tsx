@@ -12,8 +12,19 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { AppShell } from './AppShell';
 
-const { getScanMock } = vi.hoisted(() => ({ getScanMock: vi.fn() }));
-vi.mock('@convexa/api', () => ({ getScan: getScanMock }));
+const { getScanMock, resumeDemoPlaybackMock, resetDemoWorkspaceMock } = vi.hoisted(() => ({
+  getScanMock: vi.fn(),
+  resumeDemoPlaybackMock: vi.fn(),
+  resetDemoWorkspaceMock: vi.fn(),
+}));
+vi.mock('@convexa/api', () => ({
+  dataMode: 'live',
+  demoClock: () => null,
+  subscribeDemoClock: () => () => {},
+  resumeDemoPlayback: resumeDemoPlaybackMock,
+  resetDemoWorkspace: resetDemoWorkspaceMock,
+  getScan: getScanMock,
+}));
 
 describe('AppShell · keyboard skip link (spine #6)', () => {
   it('exposes a skip link targeting #main-content and a main landmark with that id', () => {

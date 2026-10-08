@@ -137,7 +137,7 @@ export function Scanner() {
 
   // The sanctioned price flash only fires when the data really is turning over — a drop stops it
   // too (criterion 14): nothing on a dead stream should read as "just changed".
-  const flashActive = !scan.workerDown && !scan.degraded && !live.offline;
+  const flashActive = !live.isSample && !scan.workerDown && !scan.degraded && !live.offline;
 
   // Overlay, never replace: a symbol with no live tick yet keeps the swept price, so a quiet tape
   // or a dropped stream leaves the table fully populated ([best-effort-isolated-or-null]).

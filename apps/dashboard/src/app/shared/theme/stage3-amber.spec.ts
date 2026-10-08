@@ -244,7 +244,7 @@ const HOVER_CENSUS_FILES = [
 const MOVE_TO_INFO_SITES: Array<{ file: string; marker: string; window: 'after' | 'before' }> = [
   {
     file: '/src/app/pages/ticker/widgets/ai-rec/AiRecPanel.tsx',
-    marker: 'onViewExport(readPersonaIdForRequest)',
+    marker: 'onViewExport(',
     window: 'after',
   },
   {

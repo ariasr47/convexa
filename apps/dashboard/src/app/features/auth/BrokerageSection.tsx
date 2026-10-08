@@ -19,9 +19,12 @@
 import { typographyTokens } from '@/shared/theme/tokens';
 import {
   AuthError,
+  dataMode,
   deleteBrokerCredential,
+  fetchBrokerBook,
   fetchBrokerCredential,
   putBrokerCredential,
+  type BrokerBook,
   type BrokerCredentialHint,
 } from '@convexa/api';
 import Alert from '@mui/material/Alert';
@@ -53,6 +56,7 @@ export function BrokerageSection({ embedded = false }: { embedded?: boolean } = 
   const [saveError, setSaveError] = useState(false);
   const [disconnectConfirm, setDisconnectConfirm] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [sampleBook, setSampleBook] = useState<BrokerBook | null>(null);
 
   const readHint = useCallback(() => {
     let cancelled = false;
@@ -75,6 +79,21 @@ export function BrokerageSection({ embedded = false }: { embedded?: boolean } = 
     }
     return readHint();
   }, [auth.authenticated, readHint]);
+
+  useEffect(() => {
+    if (dataMode !== 'demo') return;
+    let cancelled = false;
+    fetchBrokerBook()
+      .then((book) => {
+        if (!cancelled) setSampleBook(book);
+      })
+      .catch(() => {
+        if (!cancelled) setSampleBook(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const clearDrafts = useCallback(() => {
     setAppKey('');
@@ -123,6 +142,10 @@ export function BrokerageSection({ embedded = false }: { embedded?: boolean } = 
       setSubmitting(false);
     }
   }, []);
+
+  if (dataMode === 'demo') {
+    return <DemoBrokerHoldings book={sampleBook} embedded={embedded} />;
+  }
 
   // ---- Anonymous: a stored credential is per-account — sign-in prompt, no form -----------------
   if (!auth.authenticated) {
@@ -278,6 +301,34 @@ export function BrokerageSection({ embedded = false }: { embedded?: boolean } = 
   );
 }
 
+/** Read-only authored holdings shared by the Settings section and ticker Broker tab in demo mode. */
+export function DemoBrokerHoldings({
+  book,
+  embedded = false,
+}: {
+  book: BrokerBook | null;
+  embedded?: boolean;
+}) {
+  return (
+    <Section embedded={embedded}>
+      <Alert severity="info" sx={{ mt: 1 }} data-testid="settings-brokerage-demo-readonly">
+        Broker connections are unavailable in this demo. Holdings shown here are samples.
+      </Alert>
+      <Box sx={{ mt: 1 }} data-testid="settings-brokerage-sample-book">
+        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+          Read-only sample holdings · {book?.account_ref ?? 'Demo sample account'}
+        </Typography>
+        {book?.state === 'ok' && (
+          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+            {book.positions.length} sample holding{book.positions.length === 1 ? '' : 's'} · no
+            brokerage connection
+          </Typography>
+        )}
+      </Box>
+    </Section>
+  );
+}
+
 /** The write-only two-field form. Hoisted to module scope so React preserves input identity. */
 function KeyPairForm({
   kind,
@@ -386,7 +437,7 @@ function Section({ children, embedded = false }: { children: ReactNode; embedded
     <Box id="brokerage" data-testid="settings-brokerage-section">
       {!embedded && <Typography variant="h6">{C.heading}</Typography>}
       <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-        {C.helper}
+        {dataMode === 'demo' ? 'Sample broker holdings · read-only in this browser.' : C.helper}
       </Typography>
       {children}
     </Box>

@@ -210,7 +210,12 @@ describe('boundary 1 + 3 — the ledger is a pure client-local read', () => {
   it('NO_BACKEND_CHANGE — no module in this feature makes a network call of any kind', () => {
     for (const [name, source] of OUTCOMES_SOURCES) {
       // No endpoint, no SSE, no fetcher. The empty `apps/api` diff IS the no-auto-tuning guarantee.
-      expect(source, name).not.toMatch(/@convexa\/api/);
+      const apiImports = source.match(/import\s+[^;]*?from\s+['"]@convexa\/api['"]\s*;?/gs) ?? [];
+      // `sources.ts` needs only the pure key-prefix helper for demo-local storage reads. Keep this
+      // exact allowlist: a client/fetcher import or any other API surface remains forbidden.
+      expect(apiImports, name).toEqual(
+        name === 'sources' ? ["import { demoStorageKey } from '@convexa/api';"] : [],
+      );
       expect(source, name).not.toMatch(/\bfetch\(|streamTicker|getTicker|EventSource|axios/);
     }
   });

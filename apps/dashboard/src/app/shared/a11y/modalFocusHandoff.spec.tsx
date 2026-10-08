@@ -266,7 +266,7 @@ describe('installModalFocusHandoff — focus is never inside the aria-hidden bac
 describe('the seam is installed for the real app', () => {
   // `import.meta.glob` (the repo's source-scan idiom — see `theme/focus-visible.spec.tsx`) rather
   // than a raw path import, which `@nx/enforce-module-boundaries` rejects.
-  const SOURCES = import.meta.glob(['/src/main.tsx', '/src/app/shared/theme/theme.ts'], {
+  const SOURCES = import.meta.glob(['/src/main.tsx', '/src/mountApp.tsx', '/src/app/shared/theme/theme.ts'], {
     query: '?raw',
     import: 'default',
     eager: true,
@@ -276,11 +276,28 @@ describe('the seam is installed for the real app', () => {
     expect(Object.keys(SOURCES).sort()).toEqual([
       '/src/app/shared/theme/theme.ts',
       '/src/main.tsx',
+      '/src/mountApp.tsx',
     ]);
   });
 
-  it('main.tsx installs the handoff before rendering', () => {
-    expect(SOURCES['/src/main.tsx']).toContain('installModalFocusHandoff()');
+  it('main awaits workspace initialization before dynamically mounting the app', () => {
+    const source = SOURCES['/src/main.tsx'];
+    const initialize = source.indexOf('api.initializeDemoWorkspace()');
+    const mountImport = source.indexOf("await import('./mountApp')");
+    const mountCall = source.indexOf('mountApp()');
+    expect(initialize).toBeGreaterThanOrEqual(0);
+    expect(mountImport).toBeGreaterThan(initialize);
+    expect(mountCall).toBeGreaterThan(mountImport);
+  });
+
+  it('mountApp installs the handoff before createRoot and render', () => {
+    const source = SOURCES['/src/mountApp.tsx'];
+    const install = source.indexOf('installModalFocusHandoff()');
+    const createRoot = source.indexOf('ReactDOM.createRoot(');
+    const render = source.indexOf('root.render(');
+    expect(install).toBeGreaterThanOrEqual(0);
+    expect(createRoot).toBeGreaterThan(install);
+    expect(render).toBeGreaterThan(createRoot);
   });
 
   it('the theme stands FocusTrap’s mis-ordered restore down (the other half of the pair)', () => {

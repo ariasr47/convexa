@@ -6,6 +6,15 @@
  */
 
 export const COPY = {
+  demo: {
+    provenance: 'Sample analysis · authored for this scenario',
+    noModel: 'This is an authored example. No model was called.',
+    action: 'View sample analysis',
+    viewExport: 'View sample export',
+    retry: 'Retry demo',
+    coldError: 'Sample data could not load.',
+    retainedError: 'Couldn’t update the sample view. Showing the last sample.',
+  },
   // Advisory intro under the card title (Figma `AI Recommendation`, node 149:621).
   intro:
     'Risk-first read on the current snapshot, framed by your persona. Advisory — you confirm every paper trade.',
