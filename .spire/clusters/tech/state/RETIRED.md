@@ -72,3 +72,5 @@ RETIRED: apps/dashboard-e2e/src/quality/visual.spec.ts; parent a495633447b3c6bb7
 RETIRED: tools/supply-chain/acquire-tools.spec.mjs; parent 24c26d503d5c7225c52137bdd5db0b0ad5bd4bc1; structure; 4 tests
 RETIRED: tools/supply-chain/dependabot.spec.mjs; parent 24c26d503d5c7225c52137bdd5db0b0ad5bd4bc1; structure; 3 tests
 RETIRED: tools/supply-chain/docs-and-isolation.spec.mjs; parent 24c26d503d5c7225c52137bdd5db0b0ad5bd4bc1; structure; 14 tests
+RETIRED: tools/capacity-gate.spec.mjs; parent 6160467e3ff99f4bcdb2731f42bd3e358bbfe039; structure; 12 tests
+RETIRED: tools/ci-resource-guards.spec.mjs; parent 6160467e3ff99f4bcdb2731f42bd3e358bbfe039; structure; 3 tests

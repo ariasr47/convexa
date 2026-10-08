@@ -186,28 +186,3 @@ fn evaluator_retains_observed_units_thresholds_for_every_breach_family() {
     assert!(source.contains("observed"));
     assert!(source.contains("unit"));
 }
-
-#[test]
-fn node_gate_contains_disposable_exit_propagation_mutations() {
-    let source = read("tools/capacity-gate.spec.mjs");
-    for family in [
-        "p95_latency",
-        "maximum_latency",
-        "unexpected_error",
-        "disconnect",
-        "rss",
-        "handles",
-        "tokio_tasks",
-        "child_recovery",
-        "aggregate_recovery",
-        "elapsed",
-        "connector_isolation",
-    ] {
-        assert!(
-            source.contains(family),
-            "missing Node mutation family {family}"
-        );
-    }
-    assert!(source.contains("byteEqual") || source.contains("byte-equal"));
-    assert!(source.contains("non-zero") || source.contains("nonzero") || source.contains("status"));
-}

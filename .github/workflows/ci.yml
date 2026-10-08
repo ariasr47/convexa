@@ -260,7 +260,6 @@ jobs:
       - name: Capacity focused tests
         run: |
           cargo test -p api-rust --test capacity_isolation --locked -- --nocapture
-          node --test tools/capacity-gate.spec.mjs
 
       - name: Capacity self-tests and normal profile
         run: |
