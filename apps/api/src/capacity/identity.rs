@@ -176,6 +176,12 @@ fn apply_fixed_sse_clock(event: &mut Value, input: &Value) -> Result<()> {
         .with_timezone(&chrono::Utc);
     event["ts"] = fixed_timestamp;
     event["market_session"] = crate::routes::market_session_at(fixed_utc).into();
+    // `tick_age_s` is wall-clock now minus the tick's wall second (routes/stream.rs `tick_age`), so a
+    // tick and its frame that straddle a second boundary read 1 instead of 0. Under the fixed clock
+    // they share one instant; a larger age is real staleness and is left to fail the comparison.
+    if matches!(event.get("tick_age_s").and_then(Value::as_i64), Some(0 | 1)) {
+        event["tick_age_s"] = 0.into();
+    }
     Ok(())
 }
 
@@ -473,6 +479,27 @@ mod tests {
 
         assert_eq!(event["ts"], 1_787_620_168_000_i64);
         assert_eq!(event["market_session"], "overnight");
+    }
+
+    #[test]
+    fn fixed_sse_clock_pins_a_same_second_tick_age_and_keeps_real_staleness() {
+        let input = json!({
+            "first_data_timestamp": 1_787_620_168_000_i64,
+            "fixed_utc": "2026-08-24T00:00:00Z"
+        });
+        // A tick and its frame that straddle a wall-clock second read 1 (the byte-identity flake
+        // seen 2026-10-08); under the fixed clock they share one instant. A real age stays.
+        for (age, pinned) in [
+            (json!(0), json!(0)),
+            (json!(1), json!(0)),
+            (json!(5), json!(5)),
+            (Value::Null, Value::Null),
+        ] {
+            let mut event =
+                json!({"ts": 1, "market_session": "premarket", "tick_age_s": age.clone()});
+            apply_fixed_sse_clock(&mut event, &input).expect("fixed clock should apply");
+            assert_eq!(event["tick_age_s"], pinned, "tick_age_s {age}");
+        }
     }
 
     #[test]
