@@ -1,0 +1,174 @@
+{
+  "source_revision": "3c08d71978745962a1dadfeb8ea9038e96769438",
+  "fixture_dir": "C:\\Dev\\convexa\\.tmp-csp-parity-20261008\\fixtures-drniHl",
+  "expected_csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests",
+  "baseline": {
+    "status": 200,
+    "actual_csp": null,
+    "reproduced_missing_csp": true
+  },
+  "checks": [
+    {
+      "mode": "global_csp",
+      "method": "GET",
+      "path": "/",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests",
+      "cache_control": "no-store",
+      "access_control_allow_origin": "*"
+    },
+    {
+      "mode": "global_csp",
+      "method": "GET",
+      "path": "/blog",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests",
+      "cache_control": "no-store",
+      "access_control_allow_origin": "*"
+    },
+    {
+      "mode": "global_csp",
+      "method": "GET",
+      "path": "/assets/app.js",
+      "status": 200,
+      "content_type": "text/javascript; charset=utf-8",
+      "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests",
+      "cache_control": "no-store",
+      "access_control_allow_origin": "*"
+    },
+    {
+      "mode": "global_csp",
+      "method": "HEAD",
+      "path": "/blog",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests",
+      "cache_control": "no-store",
+      "access_control_allow_origin": "*"
+    },
+    {
+      "mode": "global_csp",
+      "method": "POST",
+      "path": "/",
+      "status": 405,
+      "content_type": null,
+      "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests",
+      "cache_control": "no-store",
+      "access_control_allow_origin": "*"
+    },
+    {
+      "mode": "global_csp",
+      "method": "GET",
+      "path": "/%zz",
+      "status": 404,
+      "content_type": null,
+      "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests",
+      "cache_control": "no-store",
+      "access_control_allow_origin": "*"
+    },
+    {
+      "mode": "global_csp",
+      "method": "GET",
+      "path": "/..%2f..%2foutside",
+      "status": 404,
+      "content_type": null,
+      "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests",
+      "cache_control": "no-store",
+      "access_control_allow_origin": "*"
+    },
+    {
+      "mode": "global_csp",
+      "method": "GET",
+      "path": "/missing",
+      "status": 500,
+      "content_type": null,
+      "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests",
+      "cache_control": "no-store",
+      "access_control_allow_origin": "*"
+    },
+    {
+      "mode": "missing_headers",
+      "method": "GET",
+      "path": "/",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "csp": null,
+      "cache_control": "no-store",
+      "access_control_allow_origin": "*"
+    },
+    {
+      "mode": "missing_headers",
+      "method": "GET",
+      "path": "/blog",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "csp": null,
+      "cache_control": "no-store",
+      "access_control_allow_origin": "*"
+    },
+    {
+      "mode": "missing_headers",
+      "method": "GET",
+      "path": "/assets/app.js",
+      "status": 200,
+      "content_type": "text/javascript; charset=utf-8",
+      "csp": null,
+      "cache_control": "no-store",
+      "access_control_allow_origin": "*"
+    },
+    {
+      "mode": "missing_headers",
+      "method": "HEAD",
+      "path": "/blog",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "csp": null,
+      "cache_control": "no-store",
+      "access_control_allow_origin": "*"
+    },
+    {
+      "mode": "missing_headers",
+      "method": "POST",
+      "path": "/",
+      "status": 405,
+      "content_type": null,
+      "csp": null,
+      "cache_control": "no-store",
+      "access_control_allow_origin": "*"
+    },
+    {
+      "mode": "missing_headers",
+      "method": "GET",
+      "path": "/%zz",
+      "status": 404,
+      "content_type": null,
+      "csp": null,
+      "cache_control": "no-store",
+      "access_control_allow_origin": "*"
+    },
+    {
+      "mode": "missing_headers",
+      "method": "GET",
+      "path": "/..%2f..%2foutside",
+      "status": 404,
+      "content_type": null,
+      "csp": null,
+      "cache_control": "no-store",
+      "access_control_allow_origin": "*"
+    },
+    {
+      "mode": "missing_headers",
+      "method": "GET",
+      "path": "/missing",
+      "status": 500,
+      "content_type": null,
+      "csp": null,
+      "cache_control": "no-store",
+      "access_control_allow_origin": "*"
+    }
+  ],
+  "completed_at": "2026-10-08T05:27:28.624Z",
+  "passed_requests": 16
+}

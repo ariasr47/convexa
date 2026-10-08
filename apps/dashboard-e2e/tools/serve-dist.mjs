@@ -59,9 +59,38 @@ const MIME = {
 };
 const DEFAULT_TYPE = 'application/octet-stream';
 
-/** Every response, success or error, carries these two — set once, applied everywhere. */
+/** Read only the artifact's global CSP; this is not a general Pages _headers emulator. */
+async function readGlobalCsp() {
+  let source;
+  try {
+    source = await fs.readFile(path.join(ROOT, '_headers'), 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  }
+  let globalBlock = false;
+  for (const line of source.split(/\r?\n/)) {
+    if (!line.trim() || line.trimStart().startsWith('#')) continue;
+    if (!/^\s/.test(line)) {
+      globalBlock = line.trim() === '/*';
+      continue;
+    }
+    if (globalBlock) {
+      const match = line.match(/^\s+Content-Security-Policy:\s*(.+?)\s*$/i);
+      if (match) return match[1];
+    }
+  }
+  return null;
+}
+const GLOBAL_CSP = await readGlobalCsp();
+
+/** Every response keeps the gate cache/CORS behavior and the artifact's global CSP, if present. */
 function commonHeaders() {
-  return { 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' };
+  return {
+    'Cache-Control': 'no-store',
+    'Access-Control-Allow-Origin': '*',
+    ...(GLOBAL_CSP === null ? {} : { 'Content-Security-Policy': GLOBAL_CSP }),
+  };
 }
 
 /**

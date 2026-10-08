@@ -5,6 +5,7 @@
  * tokens so the duplicate cannot drift.
  */
 import { palette } from '@/shared/theme/tokens';
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createServer } from 'vite';
@@ -37,7 +38,7 @@ function dashboardRoot(): string {
   throw new Error('dashboard root not found from ' + process.cwd());
 }
 const stylesCss = readFileSync(resolve(dashboardRoot(), 'src', 'styles.css'), 'utf-8');
-async function generatedIndexHtml(mode: 'demo' | 'live' = 'live'): Promise<string> {
+async function generatedBootstrap(mode: 'demo' | 'live' = 'live') {
   const previous = process.env.VITE_DATA_MODE;
   process.env.VITE_DATA_MODE = mode;
   const server = await createServer({
@@ -45,10 +46,21 @@ async function generatedIndexHtml(mode: 'demo' | 'live' = 'live'): Promise<strin
     root: dashboardRoot(),
     mode: 'production',
     appType: 'custom',
-    server: { middlewareMode: true },
+    server: { host: '127.0.0.1', port: 0 },
   });
   try {
-    return await server.transformIndexHtml('/', indexHtml);
+    await server.listen();
+    const html = await server.transformIndexHtml('/', indexHtml);
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+    const script = parsed.querySelector('script[src*="convexa-bootstrap-"]');
+    const src = script?.getAttribute('src');
+    if (!script || !src) throw new Error('missing external blocking bootstrap script');
+    const address = server.httpServer?.address();
+    if (!address || typeof address === 'string') throw new Error('missing Vite server address');
+    const response = await fetch(`http://127.0.0.1:${address.port}${src}`);
+    if (!response.ok) throw new Error(`bootstrap request failed: ${response.status}`);
+    expect(response.headers.get('content-type')).toContain('javascript');
+    return { html, script, src, body: await response.text() };
   } finally {
     await server.close();
     if (previous == null) delete process.env.VITE_DATA_MODE;
@@ -137,11 +149,15 @@ describe('index.html blocking script is pinned to the module', () => {
   });
 
   it('a Vite-generated blocking bootstrap runs BEFORE the React bundle and names the same keys + canvases', async () => {
-    const html = await generatedIndexHtml('live');
-    const blocking = html.match(/<script>([\s\S]*?)<\/script>/);
-    if (!blocking)
-      throw new Error('index.html must carry a blocking (no type=module) first-paint script');
-    const body = blocking[1];
+    const { html, script, src, body } = await generatedBootstrap('live');
+    expect(script.hasAttribute('type')).toBe(false);
+    expect(script.hasAttribute('async')).toBe(false);
+    expect(script.hasAttribute('defer')).toBe(false);
+    expect(script.textContent).toBe('');
+    const hash = createHash('sha256').update(body).digest('hex').slice(0, 16);
+    expect(src).toBe(`/assets/convexa-bootstrap-${hash}.js`);
+    expect((await generatedBootstrap('demo')).src).not.toBe(src);
+    expect(html).not.toContain('__CONVEXA_BOOT__');
     expect(body).toContain(THEME_PAINT_KEY);
     expect(body).toContain(UIPREFS_KEY);
     expect(body).toContain(UIPREFS_LEGACY_KEY);
@@ -149,14 +165,14 @@ describe('index.html blocking script is pinned to the module', () => {
     expect(body).toContain(PAPER);
     expect(body).toContain('data-theme');
     expect(body).toContain('__CONVEXA_BOOT__');
-    const blockingIdx = html.indexOf('<script>');
-    expect(blockingIdx).toBeGreaterThan(-1);
+    const blockingIdx = html.indexOf(script.outerHTML);
+    expect(blockingIdx).toBeGreaterThan(html.indexOf('<meta name="theme-color"'));
     expect(blockingIdx).toBeLessThan(html.indexOf('</head>'));
     expect(html).toContain('type="module"');
   });
 
   it('MUTATION GUARD: the generated script carries the light canvas', async () => {
-    expect((await generatedIndexHtml('live')).includes(PAPER)).toBe(true);
+    expect((await generatedBootstrap('live')).body.includes(PAPER)).toBe(true);
     expect(`<meta name="theme-color" content="${INK}" />`.includes(PAPER)).toBe(false);
   });
 });
@@ -178,11 +194,9 @@ describe('index.html blocking script actually paints (jsdom eval)', () => {
   });
 
   async function runBoot(mode: 'demo' | 'live' = 'live'): Promise<void> {
-    const html = await generatedIndexHtml(mode);
-    const blocking = html.match(/<script>([\s\S]*?)<\/script>/);
-    if (!blocking) throw new Error('missing blocking script');
+    const { body } = await generatedBootstrap(mode);
     // The boot IIFE is first-paint code; eval is the only way to exercise the duplicate.
-    eval(blocking[1]);
+    eval(body);
   }
 
   it('light uiprefs → data-theme=light and the paper theme-color', async () => {

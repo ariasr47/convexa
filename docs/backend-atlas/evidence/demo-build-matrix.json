@@ -5,7 +5,7 @@
     {
       "label": "matrix-demo-cold",
       "mode": "demo",
-      "buildWallSeconds": 7.9866264,
+      "buildWallSeconds": 8.1052879,
       "nativeBuildExit": 0,
       "receipt": {
         "mode": "demo",
@@ -20,20 +20,20 @@
           "/*"
         ]
       },
-      "publicDigest": "24e10aaa73a1b4e332366556196bd1d3f184099822073d441d1c3b63acf580c1",
+      "publicDigest": "7acaf9e6dc9f667a570868b777adfffc5fc3ccff56700e84110eaefe0b7a52a5",
       "privateDigest": "03eaf554b5ca03f7ff760cff9f40e2e72202914f9df00081b17112a897201798",
-      "publicFileCount": 196,
+      "publicFileCount": 199,
       "privateFileCount": 47,
-      "hash": "102652253033440566",
+      "hash": "5456579965763133353",
       "status": "success",
       "code": 0,
-      "start": 1791436447053,
-      "end": 1791436450048
+      "start": 1791437294584,
+      "end": 1791437297596
     },
     {
       "label": "matrix-demo-hit",
       "mode": "demo",
-      "buildWallSeconds": 5.0205449,
+      "buildWallSeconds": 4.7503575,
       "nativeBuildExit": 0,
       "receipt": {
         "mode": "demo",
@@ -48,20 +48,20 @@
           "/*"
         ]
       },
-      "publicDigest": "24e10aaa73a1b4e332366556196bd1d3f184099822073d441d1c3b63acf580c1",
+      "publicDigest": "7acaf9e6dc9f667a570868b777adfffc5fc3ccff56700e84110eaefe0b7a52a5",
       "privateDigest": "03eaf554b5ca03f7ff760cff9f40e2e72202914f9df00081b17112a897201798",
-      "publicFileCount": 196,
+      "publicFileCount": 199,
       "privateFileCount": 47,
-      "hash": "102652253033440566",
+      "hash": "5456579965763133353",
       "status": "local-cache",
       "code": 0,
-      "start": 1791436455288,
-      "end": 1791436455480
+      "start": 1791437302874,
+      "end": 1791437303065
     },
     {
       "label": "matrix-live-cold",
       "mode": "live",
-      "buildWallSeconds": 7.3364123,
+      "buildWallSeconds": 7.6202695,
       "nativeBuildExit": 0,
       "receipt": {
         "mode": "live",
@@ -74,20 +74,20 @@
         ],
         "exclude": []
       },
-      "publicDigest": "f136e479af714080b802283fc9de138ddf9c3ffebfa0c1188bc65f4c2857b40d",
+      "publicDigest": "fa8852421beab4364fd2d56b9b345819d6c1a551a395c69bdef03e4fb21fd0df",
       "privateDigest": "03eaf554b5ca03f7ff760cff9f40e2e72202914f9df00081b17112a897201798",
-      "publicFileCount": 196,
+      "publicFileCount": 199,
       "privateFileCount": 47,
-      "hash": "12233153773887572285",
+      "hash": "4748686420162933255",
       "status": "success",
       "code": 0,
-      "start": 1791436461436,
-      "end": 1791436464214
+      "start": 1791437309281,
+      "end": 1791437311831
     },
     {
       "label": "matrix-demo-restore",
       "mode": "demo",
-      "buildWallSeconds": 5.3877042,
+      "buildWallSeconds": 4.8517883,
       "nativeBuildExit": 0,
       "receipt": {
         "mode": "demo",
@@ -102,15 +102,15 @@
           "/*"
         ]
       },
-      "publicDigest": "24e10aaa73a1b4e332366556196bd1d3f184099822073d441d1c3b63acf580c1",
+      "publicDigest": "7acaf9e6dc9f667a570868b777adfffc5fc3ccff56700e84110eaefe0b7a52a5",
       "privateDigest": "03eaf554b5ca03f7ff760cff9f40e2e72202914f9df00081b17112a897201798",
-      "publicFileCount": 196,
+      "publicFileCount": 199,
       "privateFileCount": 47,
-      "hash": "102652253033440566",
+      "hash": "5456579965763133353",
       "status": "local-cache",
       "code": 0,
-      "start": 1791436469624,
-      "end": 1791436469900
+      "start": 1791437316833,
+      "end": 1791437316997
     }
   ],
   "seedAssets": [

@@ -1,5 +1,6 @@
 /// <reference types='vitest' />
 import react from '@vitejs/plugin-react';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { visualizer } from 'rollup-plugin-visualizer';
 import type { PluginOption } from 'vite';
@@ -16,19 +17,52 @@ export default defineConfig(({ mode }) => {
     throw new Error(`Invalid VITE_DATA_MODE ${JSON.stringify(dataMode)}; expected demo or live`);
   }
 
+  const serializedMode = JSON.stringify(dataMode);
+  const bootstrapSource = `(function(){var mode=${serializedMode};var boot={mode:mode,key:function(k){return mode==='demo'?'convexa.demo.v1.'+k:k;}};window.__CONVEXA_BOOT__=boot;var DARK='#0B0F17',LIGHT='#F6F6F3',theme='dark';try{var cached=localStorage.getItem(boot.key('convexa.theme-paint'));if(cached==='light'||cached==='dark')theme=cached;else{var raw=localStorage.getItem(boot.key('convexa.uiprefs.v1'))||(mode==='live'?localStorage.getItem('gammaflow.uiprefs.v1'):null);var pref=raw?JSON.parse(raw).theme:'dark';if(pref==='light')theme='light';else if(pref==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)theme='light';}}catch(e){}document.documentElement.setAttribute('data-theme',theme);var meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute('content',theme==='light'?LIGHT:DARK);})();`;
+  const bootstrapHash = createHash('sha256').update(bootstrapSource).digest('hex').slice(0, 16);
+  let bootstrapFileName: string;
+  let bootstrapUrl: string;
+  let isBuild = false;
+
   const plugins: PluginOption[] = [
     react(),
     {
       name: 'convexa-build-bootstrap',
-      transformIndexHtml() {
-        const serializedMode = JSON.stringify(dataMode);
-        return [{
-          tag: 'script',
-          children: `(function(){var mode=${serializedMode};var boot={mode:mode,key:function(k){return mode==='demo'?'convexa.demo.v1.'+k:k;}};window.__CONVEXA_BOOT__=boot;var DARK='#0B0F17',LIGHT='#F6F6F3',theme='dark';try{var cached=localStorage.getItem(boot.key('convexa.theme-paint'));if(cached==='light'||cached==='dark')theme=cached;else{var raw=localStorage.getItem(boot.key('convexa.uiprefs.v1'))||(mode==='live'?localStorage.getItem('gammaflow.uiprefs.v1'):null);var pref=raw?JSON.parse(raw).theme:'dark';if(pref==='light')theme='light';else if(pref==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)theme='light';}}catch(e){}document.documentElement.setAttribute('data-theme',theme);var meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute('content',theme==='light'?LIGHT:DARK);})();`,
-          // Vite inserts before </head>: the existing theme-color meta is already parseable and
-          // module scripts still have not executed, so the blocking script sets the first paint.
-          injectTo: 'head',
-        }];
+      configResolved(config) {
+        isBuild = config.command === 'build';
+        bootstrapFileName = path.posix.join(
+          config.build.assetsDir,
+          `convexa-bootstrap-${bootstrapHash}.js`,
+        );
+        bootstrapUrl = `${config.base}${bootstrapFileName}`;
+      },
+      buildStart() {
+        if (isBuild) {
+          // Mode is part of the content hash, so demo/live cannot reuse each other's CDN cache.
+          this.emitFile({ type: 'asset', fileName: bootstrapFileName, source: bootstrapSource });
+        }
+      },
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (req.url?.split('?')[0] !== bootstrapUrl) return next();
+          res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache');
+          res.end(bootstrapSource);
+        });
+      },
+      transformIndexHtml: {
+        order: 'post',
+        handler() {
+          return [
+            {
+              tag: 'script',
+              attrs: { src: bootstrapUrl },
+              // A same-origin classic script satisfies script-src 'self'. It blocks parsing before
+              // </head>, after the theme-color meta and before module execution / first body paint.
+              injectTo: 'head',
+            },
+          ];
+        },
       },
     },
   ];

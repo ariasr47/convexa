@@ -1,0 +1,43 @@
+{
+  "scope": "Independent negative/positive local CSP parity; not hosted evidence",
+  "old": {
+    "url": "http://127.0.0.1:4391/",
+    "artifact": ".spire/tmp/portfolio-qa-demo-contrast-dist",
+    "responseStatus": 200,
+    "csp": "script-src 'self'",
+    "rootDescendantCount": 0,
+    "consoleViolation": "inline script blocked by script-src 'self'",
+    "pageError": "Missing Convexa build bootstrap; refusing network or storage access"
+  },
+  "repaired": {
+    "url": "http://127.0.0.1:4392/",
+    "artifact": ".spire/tmp/portfolio-qa-demo-csp-dist",
+    "indexSha256": "18DF9B810222DEDDE55B3ED00436E270A82DCE34B94FD0103652C769BBA7D320",
+    "bootstrapAsset": "assets/convexa-bootstrap-aafa561a8b237e2a.js",
+    "responseStatus": 200,
+    "csp": "script-src 'self'",
+    "beforeModule": {
+      "theme": "light",
+      "mode": "demo",
+      "resolvedKey": "convexa.demo.v1.convexa.theme-paint",
+      "conflictingLiveTheme": "dark",
+      "rootDescendantCount": 0,
+      "pageErrors": 0
+    },
+    "afterMount": {
+      "theme": "light",
+      "mode": "demo",
+      "h1": "Technical analysis · SPY"
+    },
+    "g1": {
+      "nativeExitCode": 0,
+      "passed": 1,
+      "failed": 0,
+      "wallSeconds": 46.7,
+      "testSeconds": 45.9,
+      "forbiddenEgressAttempts": 0,
+      "resultCopy": ".spire/tmp/qa-g1-csp-results.json"
+    }
+  },
+  "hostedStatus": "Earlier 3c08d719 preview remains FAIL until repaired revision deploys"
+}
