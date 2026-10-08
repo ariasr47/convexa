@@ -12,7 +12,7 @@ Examples of automate-worthy classes:
 - Auth / tenant / permission boundaries.
 - Byte-identity or fingerprint guarantees the feature declares.
 - Stateful UI motion that can vanish while the suite stays green.
-- Error and empty paths that only appear under specific fixtures.
+- Error paths that swallow a failure, lose or corrupt data, or show a wrong value as if right.
 
 ## Prefer review when
 

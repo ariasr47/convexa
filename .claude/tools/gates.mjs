@@ -16,6 +16,7 @@
 import { pathToFileURL } from 'node:url';
 
 const TOOL_SPECS = Object.freeze({
+  closure: './closure.mjs',
   continuity: './continuity.mjs',
   contract_lint: './contract_lint.mjs',
   context_for: './context_for.mjs',
@@ -25,6 +26,7 @@ const TOOL_SPECS = Object.freeze({
   interface_conformance: './interface_conformance.mjs',
   ledger_tally: './ledger_tally.mjs',
   memory_query: './memory_query.mjs',
+  outbound: './outbound.mjs',
   project_standup_ready: './project_standup_ready.mjs',
 });
 

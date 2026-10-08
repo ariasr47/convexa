@@ -1,14 +1,14 @@
-# Exceptions and mutation proof
+# When red-first is owed, and proving a check can fail
 
-## Exceptions are prospective and explicit
+## When red-first is owed
 
-A true exception is decided before production implementation and recorded by the plan or owner. Examples may include a disposable exploration that will be deleted, generated output whose generator is tested, or a declarative-only change verified by a stronger existing check. “The code is already written” is not an exception.
+Red-first is the default way to get the can-fail proof when the expected result can be stated before the code: floor items, bug reproductions, rules with worked examples. Otherwise write the test alongside the code, then prove it can fail by breaking the guarded behavior once. Small steps with a check after each are what the evidence carries, not the order.
 
-When an exception applies, name the replacement evidence and its limits. Do not call untested behavior TDD.
+The plan records the choice per task as `**Red-first:** yes|no — <reason>`. A role or plan that mandates red-first governs over this discretion. Gates, validators and guards are decided in the skill's step 6.
 
 ## Mutation proves the rejecting side
 
-Use mutation when the claim is that a test, validator or gate prevents a class of defect:
+Every owed check, a named existing check included, is seen failing once for the intended reason. Use mutation when the check was not written red first, or when the claim is that a test, validator or gate prevents a class of defect:
 
 1. Start from green.
 2. Plant one minimal violation that the check is supposed to reject.
@@ -24,4 +24,4 @@ Do not derive the mutation from the implementation's own table and then iterate 
 
 ## Record the evidence
 
-Report the mutation, the exact command, the intended RED, the restoration and the final GREEN. If the mutation stays green, the claimed enforcement does not exist; fix the check before reporting completion.
+Report the mutation, the exact command, the intended RED, the restoration and the final GREEN as one done-report line. If the mutation stays green, the claimed enforcement does not exist; fix the check before reporting completion.

@@ -5,6 +5,8 @@
 // Claude carve-outs (sanctioned harness write locations outside the repo):
 //   - the per-project Claude auto-memory store (~/.claude/projects/<proj>/memory)
 //   - the approved-plan store (~/.claude/plans) — runbooks the harness writes/reads
+//   - the session scratchpad (<tmpdir>/claude/<project>/<session>/scratchpad) — the harness tells Claude
+//     to put working files there, so fencing it pushed scratch work into the repo instead
 const path = require('path');
 const os = require('os');
 const REPO_ROOT = path.resolve(__dirname, '..', '..'); // <provider>/tools/ -> repo root
@@ -47,14 +49,24 @@ function isInside(root, target) {
   return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
 }
 
-function isClaudeCarveOut(target, home) {
+// A file inside a session scratchpad: <tmp>/claude/<project>/<session>/scratchpad/<file...>.
+// Exactly that depth, so a sibling store (tasks, tool-results) or a lookalike folder stays fenced.
+function isClaudeScratchpad(target, tmp) {
+  const rel = path.relative(path.join(tmp, 'claude'), target);
+  if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return false;
+  const parts = rel.split(path.sep);
+  return parts.length >= 4 && parts[2] === 'scratchpad';
+}
+
+function isClaudeCarveOut(target, home, tmp) {
   const memRel = path.relative(path.join(home, '.claude', 'projects'), target);
   if (memRel && !memRel.startsWith('..') && !path.isAbsolute(memRel) && memRel.split(path.sep).includes('memory')) return true;
+  if (isClaudeScratchpad(target, tmp)) return true;
   const planRel = path.relative(path.join(home, '.claude', 'plans'), target);
   return planRel !== '' && !planRel.startsWith('..') && !path.isAbsolute(planRel);
 }
 
-function evaluate(payload, { protocol, repoRoot = REPO_ROOT, home = os.homedir() }) {
+function evaluate(payload, { protocol, repoRoot = REPO_ROOT, home = os.homedir(), tmp = os.tmpdir() }) {
   const tool = toolNameOf(payload);
   const decoded = decodeTargets(payload, protocol);
   if (!decoded.guarded) return { allow: true };
@@ -65,7 +77,7 @@ function evaluate(payload, { protocol, repoRoot = REPO_ROOT, home = os.homedir()
   const cwd = payload.cwd || payload.workspaceRoot || repoRoot;
   for (const rawTarget of decoded.targets) {
     const target = path.resolve(path.isAbsolute(rawTarget) ? rawTarget : path.join(cwd, rawTarget));
-    if (protocol === 'claude' && isClaudeCarveOut(target, home)) continue;
+    if (protocol === 'claude' && isClaudeCarveOut(target, home, tmp)) continue;
     if (isInside(repoRoot, target)) continue;
     return {
       allow: false,
@@ -97,7 +109,7 @@ function emitVerdict(verdict, protocol) {
     process.exitCode = 2;
     return;
   }
-  process.stderr.write(`${verdict.reason} Carve-outs: ~/.claude/projects/**/memory, ~/.claude/plans.\n`);
+  process.stderr.write(`${verdict.reason} Carve-outs: ~/.claude/projects/**/memory, ~/.claude/plans, <tmp>/claude/<project>/<session>/scratchpad.\n`);
   process.exitCode = 2;
 }
 

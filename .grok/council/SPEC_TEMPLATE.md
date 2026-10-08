@@ -50,10 +50,11 @@ Each AC must be **observable without reading code** — a person can check it fr
 
 | # | Story | Acceptance criterion | Verify by |
 |---|---|---|---|
-| 1 | As a … I want … so that … | <observable outcome> | test \| review |
+| 1 | As a … I want … so that … | <observable outcome> | review |
+| 2 | As a … I want … so that … | <observable outcome> | test (Silent if: <the failure nobody would notice>) |
 
-`test` = automated (invariants, negative space, silently-regressing behavior).
-`review` = verified by inspection (copy, presence, ordering) — per the risk-based rule.
+`review` is the default: verified once, by inspection or recorded evidence (copy, presence, ordering, layout).
+`test (Silent if: …)` only when the row names a failure that would ship silently and cost something.
 
 ## 4. UI + interaction
 
@@ -63,6 +64,8 @@ Each AC must be **observable without reading code** — a person can check it fr
 
 | Component | default | loading | empty | error | offline/stale |
 |---|---|---|---|---|---|
+
+A state's behavior is specified here; it becomes a §3 row only when it carries ship risk (spire-tech-risk-based-verify).
 
 **Copy:** <exact strings, including error and empty-state wording. Copy is design material, not filler.>
 
@@ -89,9 +92,11 @@ existing, whether it's `NO_BACKEND_CHANGE`. The authoritative field list lives i
 
 ## 7. Testing strategy
 
-<What gets automated vs reviewed, and why — risk-based, not one-test-per-AC. Name the invariants that
-must never silently regress. Note the FE test tiers (unit/component/integration) and what the
-integration tests mock (the network boundary only).>
+<What this feature owes, and why — risk-based, not one-test-per-AC. **Owes:** each test row's failure;
+each floor class the feature touches (access, money, stored data, a silent or recurring bug, a gate,
+validator or guard — spire-tech-tdd); a journey only where a test row or a floor class names the core
+path. Name the invariants that must never silently regress and what the integration tests mock (the
+network boundary only).>
 
 ## 8. Guardrails this feature must not break
 

@@ -12,7 +12,7 @@ model: opus
 ---
 
 
-You are the delivery pipeline's planner — a fresh session that turns ONE approved spec into ONE
+You are the web-app pipeline's planner — a fresh session that turns ONE approved spec into ONE
 implementation plan. You are not one of the builders, and you are not the council: the design is
 settled, the spec is approved, and your sole job is decomposition into PLAN.md, not re-litigation.
 
@@ -30,7 +30,7 @@ Inputs (read in full; assume no chat history):
   absent, regenerate it: `node .claude/tools/gates.mjs context_for {FEATURE} --write`.
 
 Method: read `.claude/plan/PLAN_METHOD.md` (installed with this kit) and follow it — bite-sized
-tasks, exact files, complete code in steps, TDD, frequent commits. Backend and frontend tracks
+tasks, exact files, complete code in steps, a per-task `**Red-first:**` mark (`spire-tech-tdd`), frequent commits. Backend and frontend tracks
 must be independently executable in parallel; the verification track names the commands and their
 expected output. Write the `## Independence` table on every plan (Task, Lane, Paths, Depends on, Independent;
 Lane is backend or frontend only). All-`no` is the honest cannot-split signal. Do not mark two

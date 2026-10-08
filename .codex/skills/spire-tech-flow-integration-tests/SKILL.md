@@ -14,10 +14,9 @@ test layout), covering required journeys — not a parallel test-plan document.
 
 ## Critical procedure
 
-1. **Read the requirement set — do not invent it.** Required cases come from:
-   - SPEC §3 acceptance criteria marked `Verify by: test` (via risk-based method),
-   - SPEC §4 component states and degraded behaviors that carry silent risk,
-   - promoted invariants in the feature context pack.
+1. **Read the requirement set — do not invent it.** Required cases come from the journey rows of
+   PLAN.md's `## Test budget` (on a fast path with no plan: §3 `test` rows whose `Silent if:` names a
+   journey break) and the promoted invariants in the feature context pack.
    Cover **all** required cases. If one is untestable, bounce via GATE Z — do not silently omit.
 
 2. **Mount the feature subtree** in the project's component-test stack. Do not require a live backend
@@ -34,12 +33,8 @@ test layout), covering required journeys — not a parallel test-plan document.
 5. **Assert observable behavior and declared invariants** — not coverage %, not implementation
    details, not a default live-vs-static product policy invented by this skill.
 
-6. **Layer other tests below, not instead:**
-   - **unit** — pure logic (reducers, formatters) with no DOM when needed,
-   - **component** — named SPEC §4 states + key interactions,
-   - **flow-integration (this skill)** — the centerpiece journeys.
-   Prefer one strong journey check over many assertion-per-AC pokes
-   (`spire-tech-risk-based-verify`).
+6. **Layer each check where its budget row says** — the lowest layer that can see the failure. Prefer
+   one strong journey check over many assertion-per-AC pokes (`spire-tech-risk-based-verify`).
 
 7. **Run via project commands** (`frontend.test_cmd` and shared-lib test cmd if touched). Read full
    output. Hollow green suites do not count.

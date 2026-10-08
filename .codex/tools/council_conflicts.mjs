@@ -35,7 +35,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { pyRepr, pyJsonDumps } from './_pyfmt.mjs';
+import { formatValue, writeJsonAscii } from './_pyfmt.mjs';
 import { councilConflictId } from './_council_conflict_id.mjs';
 
 // Resolve repo root from this file's location (.codex/tools/council_conflicts.mjs -> repo root).
@@ -59,7 +59,9 @@ const UNIVERSAL_NEWLINE_RE = /\r\n?/g;
 // sorted() on str is codepoint order; §3.1 requires an explicit comparator on every .sort().
 const CODEPOINT_SORT = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
-// --- small Python-semantics shims (local: _pyfmt.mjs owns only output formatting) -----------
+// --- small value-semantics helpers (local: _pyfmt.mjs owns only output formatting) ----------
+// Empty collections count as absent here, and len/iteration accept str and dict as well as list.
+// That is this tool's contract, not a compatibility shim: see _pyfmt.mjs on the expired parity gate.
 
 /** Python `isinstance(v, dict)` for JSON-parsed values. */
 function isDict(v) {
@@ -67,12 +69,12 @@ function isDict(v) {
 }
 
 /** Python `str(v)` for JSON-parsed values — str passes through, everything else reprs. */
-function pyStr(v) {
-  return typeof v === 'string' ? v : pyRepr(v);
+function asText(v) {
+  return typeof v === 'string' ? v : formatValue(v);
 }
 
 /** Python truthiness — empty list/dict are falsy in Python but truthy in JS. */
-function pyTruthy(v) {
+function isNonEmpty(v) {
   if (v === null || v === undefined || v === false || v === 0 || v === '') return false;
   if (Array.isArray(v)) return v.length > 0;
   if (typeof v === 'object') return Object.keys(v).length > 0;
@@ -83,23 +85,23 @@ function pyTruthy(v) {
  * and dict-keys branches are live: `merge()` feeds this a string `asks` (char iteration) or a
  * dict `agree` (key iteration) whenever an R2 block hands one of those shapes to a list-shaped
  * field — both are accepted by CPython, so both must be accepted here too. */
-function pySeq(v) {
+function asSequence(v) {
   if (Array.isArray(v)) return v;
   if (typeof v === 'string') return [...v];
   if (v !== null && typeof v === 'object') return Object.keys(v);
   return [];
 }
 
-/** Python `len(v)` for JSON-parsed values. Same live str/dict branches as `pySeq()` above — a
+/** Python `len(v)` for JSON-parsed values. Same live str/dict branches as `asSequence()` above — a
  * string `agree` counts characters, a dict `agree` counts keys, matching CPython's `len()`. */
-function pyLen(v) {
+function sizeOf(v) {
   if (Array.isArray(v) || typeof v === 'string') return v.length;
   if (v !== null && typeof v === 'object') return Object.keys(v).length;
   return 0;
 }
 
 /** Python `for x in v` / `len(v)` succeed on list, str, and dict — TypeError on anything else
- * (int, bool, float, None; None is already filtered out upstream by pyTruthy). Used to decide
+ * (int, bool, float, None; None is already filtered out upstream by isNonEmpty). Used to decide
  * whether a non-list `asks`/`agree` is one CPython would have accepted (string, dict) or one that
  * would have crashed it (bare number, boolean true). */
 const isPyIterable = (v) => Array.isArray(v) || typeof v === 'string' || (v !== null && typeof v === 'object');
@@ -107,7 +109,7 @@ const isPyIterable = (v) => Array.isArray(v) || typeof v === 'string' || (v !== 
 /** Python `str(dict)` where keys may be non-str — Map keeps key type and insertion order. */
 function reprDict(map) {
   const parts = [];
-  for (const [k, v] of map) parts.push(`${pyRepr(k)}: ${pyRepr(v)}`);
+  for (const [k, v] of map) parts.push(`${formatValue(k)}: ${formatValue(v)}`);
   return `{${parts.join(', ')}}`;
 }
 
@@ -173,20 +175,20 @@ export function extractBlock(text, where, f) {
 /** Schema + verbatim-quote check for one conflict. Returns true if it may stand. */
 export function validateConflict(c, raisedBy, idx, sources, f) {
   const where = `R2-${raisedBy}.md conflict[${idx}]`;
-  const missing = REQUIRED_KEYS.filter((k) => !pyStr(Object.hasOwn(c, k) ? c[k] : '').trim());
+  const missing = REQUIRED_KEYS.filter((k) => !asText(Object.hasOwn(c, k) ? c[k] : '').trim());
   if (missing.length) {
     f.err(where, `missing or empty field(s): ${missing.join(', ')}`);
     return false;
   }
 
   if (!KINDS.includes(c.kind)) {
-    f.err(where, `kind '${pyStr(c.kind)}' is not one of ${KINDS.join('/')} — R3 cannot route it`);
+    f.err(where, `kind '${asText(c.kind)}' is not one of ${KINDS.join('/')} — R3 cannot route it`);
     return false;
   }
 
   const source = c.source;
   if (!ROLES.includes(source)) {
-    f.err(where, `source '${pyStr(source)}' is not one of ${ROLES.join('/')}`);
+    f.err(where, `source '${asText(source)}' is not one of ${ROLES.join('/')}`);
     return false;
   }
   if (!Object.hasOwn(sources, source)) {
@@ -228,11 +230,11 @@ export function merge(council, f) {
 
     let raisedBy = Object.hasOwn(d, 'role') ? d.role : role;
     if (!ROLES.includes(raisedBy)) {
-      f.warn(`R2-${role}.md`, `role field '${pyStr(raisedBy)}' is not a known role; using '${role}'`);
+      f.warn(`R2-${role}.md`, `role field '${asText(raisedBy)}' is not a known role; using '${role}'`);
       raisedBy = role;
     }
 
-    let conflicts = pyTruthy(d.conflicts) ? d.conflicts : [];
+    let conflicts = isNonEmpty(d.conflicts) ? d.conflicts : [];
     if (!Array.isArray(conflicts)) {
       f.err(`R2-${role}.md`, "'conflicts' is not an array");
       conflicts = [];
@@ -259,25 +261,25 @@ export function merge(council, f) {
     // iteration / key iteration / key count respectively) — only a truthy NON-iterable value
     // (bare number, boolean true) raises an unhandled TypeError. So the gate here must match
     // Python's iterability, not Array-ness: a string or dict `asks`/`agree` is accepted and falls
-    // through to pySeq()/pyLen() same as Python would; only the non-iterable case is a deliberate
+    // through to asSequence()/sizeOf() same as Python would; only the non-iterable case is a deliberate
     // deviation, mirroring how the .py itself handles a non-list `conflicts` (its line 158
     // pattern) but surfacing a findings error instead of reproducing an unreproducible traceback
     // (same exit code either way).
-    let asks = pyTruthy(d.asks) ? d.asks : [];
+    let asks = isNonEmpty(d.asks) ? d.asks : [];
     if (!isPyIterable(asks)) {
       f.err(`R2-${role}.md`, "'asks' is not an array");
       asks = [];
     }
-    for (const a of pySeq(asks)) out.asks.push({ from: raisedBy, ask: a });
+    for (const a of asSequence(asks)) out.asks.push({ from: raisedBy, ask: a });
 
     // Same rule as above, mirrored for 'agree': non-iterable is a findings error, string/dict
-    // fall through to pyLen()'s char-count / key-count branches same as CPython's len().
-    let agree = pyTruthy(d.agree) ? d.agree : [];
+    // fall through to sizeOf()'s char-count / key-count branches same as CPython's len().
+    let agree = isNonEmpty(d.agree) ? d.agree : [];
     if (!isPyIterable(agree)) {
       f.err(`R2-${role}.md`, "'agree' is not an array");
       agree = [];
     }
-    out.agree_count[raisedBy] = pyLen(agree);
+    out.agree_count[raisedBy] = sizeOf(agree);
   }
   return out;
 }
@@ -293,7 +295,7 @@ export function report(out, f) {
   const revisions = out.conflicts.filter((c) => c.self_revision && c.quote_verified);
 
   console.log(`  conflicts: ${total}  ${kinds.size ? reprDict(kinds) : '{}'}`);
-  console.log(`  asks: ${out.asks.length}   agree: ${pyRepr(out.agree_count)}`);
+  console.log(`  asks: ${out.asks.length}   agree: ${formatValue(out.agree_count)}`);
   console.log(`  quotes verified: ${verified}/${total}`);
   if (revisions.length) {
     console.log(`  self-revisions: ${revisions.length} (a voice retracting its own R1 — fold in, no exchange)`);
@@ -353,7 +355,7 @@ export function main(argv) {
 
   console.log(`council_conflicts — feature: ${feature}`);
   if (!flags.has('--dry-run')) {
-    fs.writeFileSync(path.join(council, 'conflicts.json'), `${pyJsonDumps(out)}\n`, 'utf8');
+    fs.writeFileSync(path.join(council, 'conflicts.json'), `${writeJsonAscii(out)}\n`, 'utf8');
     console.log(`  wrote ${path.basename(council)}/conflicts.json`);
   }
   report(out, f);

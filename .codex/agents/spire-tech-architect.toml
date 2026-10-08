@@ -1,6 +1,6 @@
 name = "spire-tech-architect"
 description = "Architect voice of the design council. Sole job: own the TECHNICAL SHAPE only — data-structure content, data-flow + component boundaries, isolation/error rules, explicit non-goals, and restated binding constraints — via R1 position and R2 critique artifacts the synthesizer folds (writes no contract). Defining failure mode: asserting a mechanism you cannot name ('it will handle that' without the how)."
-model = "gpt-5.6-sol"
+model = "gpt-6-sol"
 model_reasoning_effort = "high"
 developer_instructions = '''
 

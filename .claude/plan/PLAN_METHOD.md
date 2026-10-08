@@ -16,8 +16,16 @@ a task needs a question answered before an implementer could start it, the plan 
   binds, and Global Constraints — which MUST copy the `## Conformance spec` block from
   `INTERFACE_CONTRACT.md` verbatim so both lanes inherit the same binding shape (GATE PLAN law).
 - **Tasks:** bite-sized, one deliverable each, in dependency order. Backend and frontend tracks
-  must be independently executable in parallel. Each task carries its own test cycle: write the
-  failing test → run it, watch it fail → implement minimally → run it, watch it pass → commit.
+  must be independently executable in parallel. Each task carries a `**Red-first:** yes|no — <reason>`
+  mark, decided with `spire-tech-tdd`. Whatever its mark, a task that adds or changes a gate,
+  validator or guard records a can-fail proof: the check seen failing for the intended reason, written
+  first or by breaking the guarded behavior once after.
+- **Test budget:** a `## Test budget` section: the line `CI budget: +<s> s per push (estimate)`, then a
+  table `| # | Check | Layer | Guards | Task |`. Layer is one of static, unit, component, property,
+  contract, journey; Guards is `AC-<n>` (a §3 test row), `§7: <owed item>`, or `floor: <class>`. Pick
+  each check with `spire-tech-tdd`; a check that already guards the failure is named, not rewritten,
+  and proven able to fail. Zero rows is valid only when SPEC §3 has no test row, SPEC §7 owes nothing,
+  and the feature touches no floor class.
 - **Independence table:** the **planner** writes a `## Independence` table on every GATE PLAN
   (including all-`Independent: no` rows — that is the honest “cannot split” signal). Columns:
   Task · Lane · Paths · Depends on · Independent. Lane is `backend` or `frontend` only — there
@@ -54,4 +62,4 @@ a task needs a question answered before an implementer could start it, the plan 
 This kit has caught plan-authored defects in its own history — wrong regexes, false premises
 about existing behavior, arithmetic that misled implementers. A plan therefore states, per task,
 what a reviewer should probe; and an implementer who finds the plan contradicting the tree
-reports the conflict instead of resolving it silently. DRY, YAGNI, TDD, frequent commits.
+reports the conflict instead of resolving it silently. DRY, YAGNI, frequent commits.

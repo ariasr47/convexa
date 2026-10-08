@@ -24,6 +24,10 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { projectConfig } from './_project.mjs';
 import { councilConflictId } from './_council_conflict_id.mjs';
+import {
+  readPointerLine, parsePointerValue, resolveAnchor, isChangeFolder, backlogRelFor, closureSeam, closureDebt,
+  readFolderPointer,
+} from './closure.mjs';
 
 // Resolve repo root from this file's location (.claude/tools/contract_lint.mjs -> repo root).
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -69,15 +73,6 @@ const AC_HEADING_RE = /^##\s*\d*\.?\s*Acceptance criteria/im;
 const CONFORMANCE_RE = /##\s*Conformance spec[\s\S]*?```json\s*([\s\S]*?)```/i;
 const COUNCIL_ROLES = Object.freeze(['architect', 'pm', 'ux']);
 
-// M10 artifact budgets (advisory). Sized from a measured over-length feature (SPEC 108KB,
-// PLAN 138KB, council positions 15-30KB) versus what its decisions actually needed; a budget is a
-// prompt to compress, never a gate — WARN only.
-const ARTIFACT_BUDGET_BYTES = Object.freeze({
-  'SPEC.md': 40 * 1024,
-  'PLAN.md': 50 * 1024,
-  'QA_REPORT.md': 40 * 1024,
-});
-const COUNCIL_FILE_BUDGET_BYTES = 15 * 1024;
 const COUNCIL_FOLDING_RE = /<!--\s*spire:council-folding:v1\s*\r?\n([\s\S]*?)\r?\n-->/g;
 const COUNCIL_RESOLUTION_RE = /<!--\s*spire:council-resolution:v1\s+([a-f0-9]{64})\s+(folded|open)\s*-->/g;
 const R2_JSON_RE = /^```json\s*\r?\n([\s\S]*?)\r?\n```\s*$/;
@@ -95,7 +90,7 @@ const CANON_KEY_RE = /^\|\s*`([a-z0-9-]+)`\s*\|/gm;
 // some future edit comes to depend on \n-only assumptions holding.
 const UNIVERSAL_NEWLINE_RE = /\r\n?/g;
 // str.splitlines() breaks on far more than \n. read() has already folded \r away, but the CRLF/CR
-// alternatives are kept so pySplitlines matches str.splitlines() on raw text too.
+// alternatives are kept so splitLines matches str.splitlines() on raw text too.
 const PY_LINEBREAK_RE = /\r\n|[\n\r\v\f\x1c\x1d\x1e\x85\u2028\u2029]/;
 // The .py sorts Path objects, not str; JS `<`/`>` on strings compare UTF-16 code units, not true
 // code points, so astral-plane names (outside the BMP) would diverge from Python's ordering. This
@@ -141,7 +136,7 @@ function read(p) {
 }
 
 /** Python str.splitlines() — a trailing line break does NOT yield a final empty element. */
-function pySplitlines(text) {
+function splitLines(text) {
   if (text === '') return [];
   const parts = text.split(PY_LINEBREAK_RE);
   if (parts[parts.length - 1] === '') parts.pop();
@@ -226,7 +221,31 @@ export function validateCouncilFoldingReceipt(specBody, r2Bodies) {
   return { valid: true, error: null };
 }
 
+// M1 — the declared folder kind. One token in one file, written when the folder is created at
+// GATE C (no folder-name rule — cycle 4's ban on name allowlists holds). `declaredFolderKind` reads
+// it; a missing file, or a file whose content does not parse to one of the two known kinds, both
+// count as "absent" so `classifyContractFolder` falls back to today's inference UNCHANGED — every
+// folder authored before the marker exists, here and in every consumer, keeps its verdict.
+const KIND_MARKER_FILE = '_KIND.md';
+const KIND_MARKER_RE = /^Kind:\s*(change|delivery)\s*$/m;
+
+/** The folder's DECLARED kind from its `_KIND.md` marker, or null when the marker is absent or
+ *  unparseable. Pure; never throws (mirrors `classifyContractFolder`'s existence-check style). */
+export function declaredFolderKind(folder) {
+  let body;
+  try {
+    if (!fs.existsSync(path.join(folder, KIND_MARKER_FILE))) return null;
+    body = read(path.join(folder, KIND_MARKER_FILE));
+  } catch {
+    return null;
+  }
+  const m = KIND_MARKER_RE.exec(body);
+  return m ? m[1] : null;
+}
+
 export function classifyContractFolder(folder) {
+  const declared = declaredFolderKind(folder);
+  if (declared) return declared;
   const has = (name) => {
     try {
       return fs.existsSync(path.join(folder, name));
@@ -239,25 +258,43 @@ export function classifyContractFolder(folder) {
   return 'delivery';
 }
 
-function lintChangeFeature(folder, f) {
+// M1's one red-first ERROR class: inside a folder carrying the marker, a declared kind contradicted
+// by a present artifact of the OTHER ascent's family (a folder declaring `change` while holding
+// `_MANIFEST.md`, or declaring `delivery` while holding `CHANGE_SPEC.md`/`CULL.md`/`HARVEST.md`).
+// R3 T5 (hard constraint, not a preference): this fires ONLY when `declaredFolderKind` returns
+// non-null — an absent marker takes no finding at all, so no pre-marker folder anywhere can go red
+// from this check. `tools/contract_lint.mjs` composes into every consumer on its next install
+// (`manifest.json` `framework_files`, not ascent-scoped); an ungated ERROR here would redden the
+// fleet's delivery gate on every folder authored before this grammar existed.
+const DELIVERY_FAMILY_FILE = '_MANIFEST.md';
+const CHANGE_FAMILY_FILES = Object.freeze(['CHANGE_SPEC.md', 'CULL.md', 'HARVEST.md']);
+
+function checkDeclaredKindContradiction(folder, f) {
+  const declared = declaredFolderKind(folder);
+  if (!declared) return; // grandfathered: no marker, no finding (M1 residual i keeps this silent)
   const name = path.basename(folder);
-  const councilDir = path.join(folder, 'council');
-  if (!fs.existsSync(councilDir)) return;
-  for (const entry of fs.readdirSync(councilDir).sort()) {
-    if (!/^R[123]-.*\.md$/.test(entry)) continue;
-    const size = fs.statSync(path.join(councilDir, entry)).size;
-    if (size <= COUNCIL_FILE_BUDGET_BYTES) continue;
-    f.warn(`${name}/council/${entry}`,
-      `${Math.round(size / 1024)}KB exceeds the ${Math.round(COUNCIL_FILE_BUDGET_BYTES / 1024)}KB council `
-      + 'budget — later rounds read every position in full; state positions, not transcripts');
+  const exists = (n) => fs.existsSync(path.join(folder, n));
+  if (declared === 'change' && exists(DELIVERY_FAMILY_FILE)) {
+    f.err(`${name}/${KIND_MARKER_FILE}`,
+      `declares 'change' but ${DELIVERY_FAMILY_FILE} is present (a delivery artifact) — the `
+      + 'declaration contradicts a present artifact of the other ascent\'s family');
+    return;
+  }
+  if (declared === 'delivery') {
+    const contradictor = CHANGE_FAMILY_FILES.find(exists);
+    if (contradictor) {
+      f.err(`${name}/${KIND_MARKER_FILE}`,
+        `declares 'delivery' but ${contradictor} is present (a change artifact) — the declaration `
+        + 'contradicts a present artifact of the other ascent\'s family');
+    }
   }
 }
 
 export function lintFeature(folder, f) {
-  if (classifyContractFolder(folder) === 'change') {
-    lintChangeFeature(folder, f);
-    return;
-  }
+  checkDeclaredKindContradiction(folder, f);
+  checkClosurePointer(folder, f);
+  // A change-kind folder takes no delivery-body demand; its only per-folder checks are the two above.
+  if (classifyContractFolder(folder) === 'change') return;
   lintDeliveryFeature(folder, f);
 }
 
@@ -379,33 +416,6 @@ function lintDeliveryFeature(folder, f) {
     }
   }
 
-  // M10 — artifact size budgets. WARN, never ERROR: length is the author's judgment call, but it
-  // is a judgment every downstream reader pays for — the SPEC seeds both build lanes and QA, the
-  // PLAN seeds the lanes, and each council position is read by two later rounds. A measured feature
-  // shipped 622KB of contract artifacts (its PLAN alone outweighed the whole orchestrator prose),
-  // and its build lane ran deep enough to drop spec-copy fidelity. The remedy is the compressor
-  // discipline that already binds these files: decisions, not deliberation.
-  for (const [fname, budget] of Object.entries(ARTIFACT_BUDGET_BYTES)) {
-    const fpath = path.join(folder, fname);
-    if (!fs.existsSync(fpath)) continue;
-    const size = fs.statSync(fpath).size;
-    if (size <= budget) continue;
-    f.warn(`${name}/${fname}`,
-      `${Math.round(size / 1024)}KB exceeds the ${Math.round(budget / 1024)}KB artifact budget — every `
-      + 'downstream reader re-attends this on every turn; compress to decisions (see COMPRESSOR_PROMPTS.md)');
-  }
-  const councilDir = path.join(folder, 'council');
-  if (fs.existsSync(councilDir)) {
-    for (const entry of fs.readdirSync(councilDir).sort()) {
-      if (!/^R[123]-.*\.md$/.test(entry)) continue;
-      const size = fs.statSync(path.join(councilDir, entry)).size;
-      if (size <= COUNCIL_FILE_BUDGET_BYTES) continue;
-      f.warn(`${name}/council/${entry}`,
-        `${Math.round(size / 1024)}KB exceeds the ${Math.round(COUNCIL_FILE_BUDGET_BYTES / 1024)}KB council `
-        + 'budget — later rounds read every position in full; state positions, not transcripts');
-    }
-  }
-
   // M4 — BRIEF fields (if a BRIEF exists).
   const brief = path.join(folder, 'BRIEF.md');
   if (fs.existsSync(brief)) {
@@ -461,7 +471,7 @@ export function lintContextShardability(f) {
   const sections = [];
   let heading = null;
   let count = 0;
-  for (const ln of pySplitlines(read(CONTEXT))) {
+  for (const ln of splitLines(read(CONTEXT))) {
     if (ln.startsWith('## ')) {
       if (heading !== null) sections.push([heading, count]);
       heading = ln.trim();
@@ -511,6 +521,81 @@ export function findFeature(arg) {
   return null;
 }
 
+function isArchivedFolder(folder) {
+  return folder === ARCHIVE || folder.startsWith(ARCHIVE + path.sep);
+}
+
+// close-sweep T1 pointer check. "Archives unchecked" (grandfather rule: the close can always supply
+// the pointer at close time, no lockout, no bypass) — so this runs on LIVE folders only. Before
+// CLOSURE.md exists the pointer lives where the pick left it — BRIEF §4a's plain line or CULL.md's
+// bold header (checkPickTimePointer). Once CLOSURE.md exists, ITS pointer is what's checked instead
+// (closure.mjs's --scan already carried the value over) — a malformed or unresolved pointer IS an
+// ERROR at that point, because CLOSURE.md made a claim contract_lint can check.
+function checkClosurePointer(folder, f) {
+  if (isArchivedFolder(folder)) return;
+  const name = path.basename(folder);
+  const closurePath = path.join(folder, 'CLOSURE.md');
+  if (!fs.existsSync(closurePath)) {
+    checkPickTimePointer(folder, f);
+    return;
+  }
+  const pointerLine = readPointerLine(read(closurePath));
+  const value = parsePointerValue(pointerLine);
+  if (value.kind === 'missing' || value.kind === 'invalid') {
+    f.err(`${name}/CLOSURE.md`, `Backlog item is missing or malformed: "${pointerLine}"`);
+    return;
+  }
+  if (value.kind === 'none') return; // legal — pre-pointer work or an explicitly unpicked folder
+  checkAnchorAgainstBacklog(folder, value.anchor, `${name}/CLOSURE.md`, f);
+}
+
+// The pick-time half (no CLOSURE.md yet): absent is normal — a folder that predates the pointer, or
+// simply has not been picked yet — so it is a WARN naming the fix, never an ERROR (pre-pointer
+// silence must hold until an author has actually written something contract_lint can check). Reuses
+// closure.mjs's own readFolderPointer/resolveAnchor rather than re-parsing the grammar a second time
+// (mechanized mirror: checkAnchorAgainstBacklog is the single resolver both halves call through, so
+// the two checks cannot silently read the pointer grammar differently).
+function checkPickTimePointer(folder, f) {
+  const name = path.basename(folder);
+  const pointer = readFolderPointer(folder);
+  if (!pointer) {
+    f.warn(name, "no Backlog item pointer yet — add `Backlog item: <anchor> | none (<reason>)` to BRIEF.md's §4a or CULL.md's header");
+    return;
+  }
+  const { value, source, raw } = pointer;
+  if (value.kind === 'missing' || value.kind === 'invalid') {
+    f.err(`${name}/${source}`, `Backlog item is missing or malformed: "${raw}"`);
+    return;
+  }
+  if (value.kind === 'none') return; // legal — an explicitly unpicked or pre-pointer folder
+  checkAnchorAgainstBacklog(folder, value.anchor, `${name}/${source}`, f);
+}
+
+/** Shared by both pointer checks: an anchor must resolve to exactly one non-heading backlog line. */
+function checkAnchorAgainstBacklog(folder, anchor, where, f) {
+  const backlogRel = backlogRelFor(isChangeFolder(folder), closureSeam(_CFG));
+  if (!backlogRel) {
+    f.err(where, 'this change-classified folder needs its ascent named in closure.backlog_files (project.json) to resolve its pointer');
+    return;
+  }
+  const backlogAbs = path.join(ROOT, ...backlogRel.split('/'));
+  if (!fs.existsSync(backlogAbs)) {
+    f.err(where, `backlog file ${backlogRel} does not exist`);
+    return;
+  }
+  const { matches, heading } = resolveAnchor(read(backlogAbs), anchor);
+  if (heading) {
+    f.err(where, `anchor "${anchor}" only resolves inside a heading line in ${backlogRel} (elided from GATE I discovery)`);
+  } else if (matches !== 1) {
+    f.err(where, `anchor "${anchor}" resolves to ${matches} line(s) in ${backlogRel} (need exactly 1)`);
+  }
+}
+
+/** The three closureDebt ERROR classes, folded in the same place lintCanon runs (every mode). */
+function lintClosureDebt(f) {
+  for (const msg of closureDebt(ROOT)) f.err('closure debt', msg);
+}
+
 export function main(argv) {
   READ_CACHE = new Map(); // run-scoped single-read cache (see read())
   const f = new Findings();
@@ -520,6 +605,7 @@ export function main(argv) {
   if (arg === '--canon-only') {
     lintCanon(f);
     lintContextShardability(f);
+    lintClosureDebt(f);
     folders = [];
   } else if (arg === '--all') {
     // The .py's conditional expression binds the whole concatenation:
@@ -527,6 +613,7 @@ export function main(argv) {
     folders = fs.existsSync(ARCHIVE) ? [...liveFeatures(), ...archiveFeatures()] : liveFeatures();
     lintCanon(f);
     lintContextShardability(f);
+    lintClosureDebt(f);
   } else if (arg && !arg.startsWith('--')) {
     const target = findFeature(arg);
     if (target === null) {
@@ -536,10 +623,12 @@ export function main(argv) {
     folders = [target];
     lintCanon(f);
     lintContextShardability(f);
+    lintClosureDebt(f);
   } else {
     folders = liveFeatures();
     lintCanon(f);
     lintContextShardability(f);
+    lintClosureDebt(f);
   }
 
   for (const folder of folders) lintFeature(folder, f);

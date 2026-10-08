@@ -1,12 +1,8 @@
-# Spire OS — multi-provider workspace
+# Spire OS -- Direct-v4 workspace
 
-This consumer has Spire Tech installed for every supported host. Shared project state lives only under
-`.spire/clusters/tech/`. Provider roots hold framework bytes and host adapters — not product memory.
+Every host boots the receipted generation through the bridge `.spire/bin/spire.mjs`:
 
-| Host | Root | Boot |
-|------|------|------|
-| claude | `.claude/` | `.claude/ORCHESTRATOR.md` via `/spire-tech` |
-| codex | `.codex/` | `.codex/AGENTS.md` via `$spire-tech` |
-| grok | `.grok/` | `.grok/AGENTS.md` via `$spire-tech` |
+    node .spire/bin/spire.mjs <cmd> --input <json-file> --out <dir>
 
-Open the matching host and use its launch adapter. Do not copy contracts or context into provider trees.
+Provider adapters live under each provider root at `spire/<work>.md` and name only that bridge.
+Root identity 082ab6972c3798fb3471ad2190fa59ad53f6f506368b4ead2dcd0ff1dea36bc9; target version 4.8.0; generation gen-e04559a83188e6e6.

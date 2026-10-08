@@ -9,15 +9,16 @@ Acceptance criteria live in `SPEC.md` under `## 3. Acceptance criteria (with use
 
 | # | Story | Acceptance criterion | Verify by |
 |---|---|---|---|
-| 1 | As a … I want … so that … | <observable outcome> | test \| review |
+| 1 | As a … I want … so that … | <observable outcome> | review |
+| 2 | As a … I want … so that … | <observable outcome> | test (Silent if: <the failure nobody would notice>) |
 
 `SPEC_TEMPLATE.md` owns the structure. This skill owns the quality of each row and the evidence used to close it.
 
 ## Critical procedure
 
 1. **Write independently checkable criteria.** Each row: one observable behavior, precondition/boundary, and result. Include negative behavior explicitly. Reject unbounded words (“fast,” “intuitive,” “secure,” “works”) — replace with thresholds, states, or permissions. If checking requires reading source, rewrite around behavior or classify as a binding invariant.
-2. **Split degraded states.** Empty, loading, stale, offline, error, null, unauthorized, not-found get their own rows when they change user-visible behavior or ship risk. Name which rows block ship.
-3. **Choose `Verify by` with risk-based method** — invoke `spire-tech-risk-based-verify` for the decision: `test` vs `review`, depth, no one-test-per-AC.
+2. **Degraded states.** Empty, loading, stale, offline, error, null, unauthorized, not-found get their own row only when they carry ship risk — a failure that would ship silently and cost something; otherwise their behavior is specified in SPEC §4. Name which rows block ship.
+3. **Choose `Verify by` with risk-based method** — `review` by default; `test (Silent if: …)` per `spire-tech-risk-based-verify`. Invoke it for the decision: `test` vs `review`, depth, no one-test-per-AC.
 4. **Verify before claiming done.** Run exact relevant commands against current bytes; read complete output. Record unverified work as `UNVERIFIABLE`. When claiming a gate enforces behavior, prove rejecting and accepting sides.
 
 ## Reference routing

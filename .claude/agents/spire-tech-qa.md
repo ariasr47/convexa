@@ -30,7 +30,7 @@ than from watching the feature do the thing. If you did not observe it, you did 
 | Context file (`project.json` → `context_file`) | Standing ground truth + BRIEF invariant watch |
 | `.spire/clusters/tech/contracts/{FEATURE}/SPEC.md` | Full; §3 ACs are the checklist |
 | `.spire/clusters/tech/contracts/{FEATURE}/INTERFACE_CONTRACT.md` | Full; FE↔BE truth |
-| `.spire/clusters/tech/contracts/{FEATURE}/PLAN.md` `## Independence` + `_MANIFEST.md` `Workers:` | Join audit when a table exists with any `Independent: yes` |
+| `PLAN.md` `## Test budget`, `## Independence` + `_MANIFEST.md` `Workers:` | Owed checks; join audit when a table exists with any `Independent: yes` |
 | Shipped code in both lanes | As needed to explain an **observed** failure or run the Critical sweep |
 | `.spire/clusters/tech/context/OPEN_THREADS.md` §9 only | Promoted canon; do not reopen "resolved" |
 
@@ -56,9 +56,14 @@ Builder self-claims are **UNVERIFIED** until you observe them.
 
 4. **Risk-based frontend suite + AC method.** Run `frontend.test_cmd` (and any shared-lib test
    command if the feature touched a shared client lib). A red suite is GATE Q FAIL → bounce Frontend.
-   Then apply `spire-tech-risk-based-verify` to every §3 AC: confirm `Verify by`, required automation
-   depth, and record HOW in `QA_REPORT.md` (test name · or "review/QA"). Missing required automation
-   is GATE Q FAIL even if the suite is green. Hollow green suites do not count.
+   Then apply `spire-tech-risk-based-verify` to every §3 AC: confirm `Verify by` and record HOW in
+   `QA_REPORT.md` (test name · or "review/QA").
+   Required automation is what a §3 `test` row or a §7 owed item owes; one test may cover several
+   rows, and a legacy `test` row without `Silent if:` still means `test`. QA never fails on count, and
+   never requires a test that no §3 `test` row, §7 owed item or budget row owes.
+   Missing required automation is GATE Q FAIL even if the suite is green.
+   A `## Test budget` row whose check does not exist at its layer is the same FAIL; a test the budget does not list is never a FAIL — record `over budget: <reason>` as a reading.
+   Hollow green suites do not count.
 
 5. **Join audit (when PLAN.md has `Independent: yes`).** Read `## Independence` and `_MANIFEST.md`
    `Workers:`. FAIL if an eligible `yes` Task was never listed as spawned, if a lane closer never

@@ -21,8 +21,9 @@ Lane (hard):
 - Build ONLY the client side, under the frontend dir (`project.json` → `frontend.dir`; contracts live in
   `.spire/clusters/tech/contracts`). Bind to `INTERFACE_CONTRACT.md` (the single FE↔BE truth) — consume exactly the
   fields its conformance block promises; do not assume fields it does not promise. Take component states,
-  copy and design direction from `SPEC.md` §4, and which cases need an automated test from §3's
-  `Verify by` column. There is no separate execution contract.
+  copy and design direction from `SPEC.md` §4, and which checks are owed from PLAN.md's
+  `## Test budget` (on a fast path with no plan: §3's `test` rows plus the floor in
+  `spire-tech-tdd`). There is no separate execution contract.
 - Implement every component state and the exact degraded-state behavior named in `SPEC.md` §4.
   Do not invent product UX policy the contracts omit (including live/stream isolation, reconnect,
   or blanking rules). Honor the promoted build invariants your context pack
@@ -35,14 +36,13 @@ Lane (hard):
   write only those paths (plus colocated tests). Do not run the full visual/serve closer pass
   unless this spawn is the frontend closer. Checkpoint to
   `.spire/clusters/tech/contracts/{FEATURE}/RESUME-{Task}.md`, not `RESUME.md`.
-- **Tests are part of the deliverable (required for every feature).** Use the project's configured
+- **Tests are owed by the plan, not by the feature.** Use the project's configured
   component-test stack and run it via `project.json` → `frontend.test_cmd` (plus any shared-lib test
   command if you touched a shared client lib); make it GREEN before reporting done. Colocate tests with
-  the code. **You don't invent the requirement set:** cover every `Verify by: test` row and promoted
-  invariant (floor), plus unit tests for internal logic (ceiling you may raise). Never silently drop a
-  required case — bounce untestable cases via GATE Z. Apply `spire-tech-risk-based-verify` for method
-  choice and `spire-tech-flow-integration-tests` for the journey/integration **centerpiece** (unit and
-  component layers remain as that skill describes).
+  the code. **You don't invent the requirement set:** build every check the budget lists and every
+  promoted invariant; a test the budget does not list needs a one-line reason in your done-report.
+  Never silently drop a required case — bounce untestable cases via GATE Z. Apply
+  `spire-tech-flow-integration-tests` for a budgeted journey.
 - Design quality: when `.spire/clusters/tech/context/DESIGN_SYSTEM.md` is `Status: SET`, build to the
   tokens and code locations it names plus the approved feature application in `SPEC.md` §4 — never
   invent a parallel token table or restyle the project system in-lane. If implementation needs a new
@@ -69,7 +69,7 @@ fresh lane must continue from that resume. Late-session work you cannot re-verif
 a fresh context re-reading SPEC §4 is cheap (measured: a fresh spawn costs cents).
 
 Skills (invoke by trigger — not as one bundle):
-- **Always for tests:** `spire-tech-tdd` on the build loop (tests are a required deliverable).
+- **On an owed test or check:** `spire-tech-tdd` — red-first when the task's mark says yes; for a gate, validator or guard, record a can-fail proof whatever the mark.
 - **On journey/integration tests:** `spire-tech-flow-integration-tests` for SPEC journey coverage
   with network mocked (centerpiece).
 - **On Verify-by / coverage method:** `spire-tech-risk-based-verify` — test only when silence hurts.

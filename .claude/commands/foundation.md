@@ -41,5 +41,5 @@ stop and Decision-card a fall back (workspaces / single package / document-only)
 - Force Nx on greenfield without a C ruling.
 - Migrate a working non-Nx app to Nx without an explicit migration card.
 - Mix product stand-up (context/backlog invent) into this command.
-- Claim CI green proves a Spire delivery ascent finished.
+- Claim CI green proves a Spire web-app ascent finished.
 - Commit secrets or force-push.

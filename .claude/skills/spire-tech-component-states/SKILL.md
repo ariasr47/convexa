@@ -20,8 +20,9 @@ invoked from folding) — no parallel state-matrix document.
 3. **Map each acceptance criterion to state(s).** Every AC that is user-visible must land on at least
    one named state. If an AC has no state, add a state or split the AC (hand AC shape issues to
    `spire-tech-acceptance-criteria`).
-4. **Cover degraded paths.** Stale, offline, error, empty, unauthorized/not-found when they change
-   behavior get first-class rows — do not bury them inside happy-path copy.
+4. **Cover degraded paths.** Stale, offline, error, empty and unauthorized/not-found states are
+   specified in SPEC §4 when they change behavior; they get a §3 row only when they carry ship risk —
+   do not bury them inside happy-path copy.
 5. **Align Verify-by with risk.** Use `spire-tech-risk-based-verify` for `test` vs `review` marks on
    the ACs that exercise these states; do not invent a separate test matrix file.
 6. **Stay in UX ownership.** Name fields the UI *consumes*; do not invent endpoint signatures or

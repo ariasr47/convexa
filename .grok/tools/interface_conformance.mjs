@@ -66,7 +66,7 @@ import { parseArgs } from 'node:util';
 import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { pyRepr, pyJsonDumps } from './_pyfmt.mjs';
+import { formatValue, writeJsonAscii } from './_pyfmt.mjs';
 import { validateReceipt } from './_receipt.mjs';
 import { projectConfig } from './_project.mjs';
 
@@ -108,7 +108,9 @@ const TYPE_CHECKS = new Map([
   ['null', (v) => v === null],
 ]);
 
-// --- small Python-semantics shims (local: _pyfmt.mjs owns only output formatting) -----------
+// --- small value-semantics helpers (local: _pyfmt.mjs owns only output formatting) ----------
+// Empty collections count as absent here, and len/iteration accept str and dict as well as list.
+// That is this tool's contract, not a compatibility shim: see _pyfmt.mjs on the expired parity gate.
 
 /** Python `isinstance(v, dict)` for JSON-parsed values. */
 function isDict(v) {
@@ -116,12 +118,12 @@ function isDict(v) {
 }
 
 /** Python `str(v)` for JSON-parsed values — str passes through, everything else reprs. */
-function pyStr(v) {
-  return typeof v === 'string' ? v : pyRepr(v);
+function asText(v) {
+  return typeof v === 'string' ? v : formatValue(v);
 }
 
 /** Python truthiness — empty list/dict/string are falsy in Python; {} and [] are truthy in JS. */
-function pyTruthy(v) {
+function isNonEmpty(v) {
   if (v === null || v === undefined || v === false || v === 0 || v === '') return false;
   if (Array.isArray(v)) return v.length > 0;
   if (typeof v === 'object') return Object.keys(v).length > 0;
@@ -129,14 +131,14 @@ function pyTruthy(v) {
 }
 
 /** Python `len(v)` for JSON-parsed values (dict keys / list items / str chars). */
-function pyLen(v) {
+function sizeOf(v) {
   if (Array.isArray(v) || typeof v === 'string') return v.length;
   if (v !== null && typeof v === 'object') return Object.keys(v).length;
   return 0;
 }
 
 /** Python `d.get(k, dflt)` without reaching Object.prototype for a colliding JSON key. */
-function pyGet(obj, key, dflt) {
+function getOr(obj, key, dflt) {
   return isDict(obj) && Object.hasOwn(obj, key) ? obj[key] : dflt;
 }
 
@@ -146,7 +148,7 @@ function readText(p) {
 }
 
 /** Python `str(e)` for an exception — the message, no class name. */
-function pyErrStr(e) {
+function errorText(e) {
   return e && typeof e.message === 'string' ? e.message : String(e);
 }
 
@@ -168,33 +170,33 @@ export function shellQuote(arg) {
 
 /** urllib.parse.quote(s) — default safe="/". encodeURIComponent leaves !'()* literal and escapes
  *  "/", so both differences have to be undone to land on Python's byte-for-byte output. */
-function pyQuote(s) {
+function urlQuote(s) {
   return encodeURIComponent(s)
     .replace(QUOTE_EXTRA_RE, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)
     .replace(PERCENT_SLASH_RE, '/');
 }
 
 /** urllib.parse.urlencode(d) — quote_plus (safe="", space → "+") on str(k)/str(v), joined by "&". */
-function pyUrlencode(d) {
+function urlEncodeParams(d) {
   const quotePlus = (s) =>
     encodeURIComponent(s)
       .replace(QUOTE_EXTRA_RE, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)
       .replace(PERCENT_SPACE_RE, '+');
   return Object.entries(d)
-    .map(([k, v]) => `${quotePlus(pyStr(k))}=${quotePlus(pyStr(v))}`)
+    .map(([k, v]) => `${quotePlus(asText(k))}=${quotePlus(asText(v))}`)
     .join('&');
 }
 
 /** json.dumps(obj) with no indent — Python's default separators are ", " and ": " (JSON.stringify
  *  emits neither space), and ensure_ascii=True escapes every non-ASCII codepoint. Request bodies go
  *  on the wire, so the bytes have to match what urllib would have sent. */
-function pyJsonCompact(v) {
-  if (Array.isArray(v)) return `[${v.map(pyJsonCompact).join(', ')}]`;
+function jsonCompact(v) {
+  if (Array.isArray(v)) return `[${v.map(jsonCompact).join(', ')}]`;
   if (v !== null && typeof v === 'object') {
-    // pyJsonDumps() on a bare string gives json.dumps's quoted, ensure_ascii-escaped form.
-    return `{${Object.entries(v).map(([k, x]) => `${pyJsonDumps(k)}: ${pyJsonCompact(x)}`).join(', ')}}`;
+    // writeJsonAscii() on a bare string gives json.dumps's quoted, ensure_ascii-escaped form.
+    return `{${Object.entries(v).map(([k, x]) => `${writeJsonAscii(k)}: ${jsonCompact(x)}`).join(', ')}}`;
   }
-  return pyJsonDumps(v);
+  return writeJsonAscii(v);
 }
 
 // --- the port, function-for-function in source order ----------------------------------------
@@ -221,7 +223,7 @@ function walk(node, segs, tspec, optional, full, failures) {
   if (segs.length === 0) {
     if (!typeOk(node, tspec)) {
       // Python's `{node!r:.40}` is format(repr(node), '.40') — the repr, truncated to 40 chars.
-      failures.push(`${full}: expected ${tspec}, got ${typename(node)} (${pyRepr(node).slice(0, 40)})`);
+      failures.push(`${full}: expected ${tspec}, got ${typename(node)} (${formatValue(node).slice(0, 40)})`);
     }
     return;
   }
@@ -266,7 +268,7 @@ export function extractSpecFromContract(text) {
 // operator can correct in seconds, whereas missing one produces a bare 401 that reads as a broken
 // endpoint and bounces GATE Q to the wrong lane entirely.
 export function needsSession(ep) {
-  const v = pyGet(ep, 'auth', false);
+  const v = getOr(ep, 'auth', false);
   if (v === false || v === 0 || v === null || v === undefined) return false;
   if (typeof v === 'string') {
     const s = v.trim().toLowerCase();
@@ -282,11 +284,11 @@ export function needsSession(ep) {
  * @returns {number}
  */
 export function expectStatus(ep) {
-  const raw = pyGet(ep, 'expect_status', 200);
+  const raw = getOr(ep, 'expect_status', 200);
   if (raw === undefined || raw === null || raw === '') return 200;
   const n = typeof raw === 'number' ? raw : Number(raw);
   if (!Number.isInteger(n) || n < 100 || n > 599) {
-    throw new Fail(`invalid expect_status ${pyRepr(raw)} (want integer 100–599)`);
+    throw new Fail(`invalid expect_status ${formatValue(raw)} (want integer 100–599)`);
   }
   return n;
 }
@@ -303,18 +305,18 @@ export function parseResponseBody(text) {
   try {
     return JSON.parse(trimmed);
   } catch (error) {
-    throw new Fail(`response body is not JSON: ${pyErrStr(error)}`);
+    throw new Fail(`response body is not JSON: ${errorText(error)}`);
   }
 }
 
 /** urllib fetch → global fetch. Timeout from FETCH_TIMEOUT_MS; status must match expect_status. */
 async function fetchEndpoint(base, ep, cookie = null) {
   let epPath = ep.path;
-  for (const [k, v] of Object.entries(pyGet(ep, 'path_params', {}))) {
-    epPath = epPath.replaceAll(`{${k}}`, pyQuote(pyStr(v)));
+  for (const [k, v] of Object.entries(getOr(ep, 'path_params', {}))) {
+    epPath = epPath.replaceAll(`{${k}}`, urlQuote(asText(v)));
   }
   let url = base.replace(TRAILING_SLASHES_RE, '') + epPath;
-  if (pyTruthy(pyGet(ep, 'query', undefined))) url += `?${pyUrlencode(ep.query)}`;
+  if (isNonEmpty(getOr(ep, 'query', undefined))) url += `?${urlEncodeParams(ep.query)}`;
   // Optional JSON request body (for POST/PUT endpoints). Absent ⇒ no body (GET semantics
   // unchanged), so this is fully backward-compatible with every existing flat spec.
   let data = null;
@@ -322,8 +324,8 @@ async function fetchEndpoint(base, ep, cookie = null) {
   // Only endpoints the spec marks `"auth": true` receive the session. Sending it everywhere would
   // make an anonymous endpoint's 200 prove nothing about its anonymous behaviour.
   if (cookie && needsSession(ep)) headers.Cookie = cookie;
-  if (pyGet(ep, 'body', null) !== null) {
-    data = pyJsonCompact(ep.body);
+  if (getOr(ep, 'body', null) !== null) {
+    data = jsonCompact(ep.body);
     headers['Content-Type'] = 'application/json';
   }
   // urlopen raises HTTPError (a URLError) for >=400 before Python reaches its own status check;
@@ -334,7 +336,7 @@ async function fetchEndpoint(base, ep, cookie = null) {
   let resp;
   try {
     resp = await fetch(url, {
-      method: pyGet(ep, 'method', 'GET'),
+      method: getOr(ep, 'method', 'GET'),
       body: data,
       headers,
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -354,7 +356,7 @@ async function fetchEndpoint(base, ep, cookie = null) {
 
 export function validateEndpoint(ep, payload) {
   const failures = [];
-  for (const [p, tspec] of Object.entries(pyGet(ep, 'required', {}))) {
+  for (const [p, tspec] of Object.entries(getOr(ep, 'required', {}))) {
     checkPath(payload, p, tspec, failures);
   }
   return failures;
@@ -452,7 +454,7 @@ export async function main(argv) {
   // tool (spec §2.4). The kit still validates the RECEIPT — that, not the runner, is what it
   // guarantees. Lives here rather than in gates.mjs, which routes only: any behaviour difference
   // between `gates.mjs <tool> ARGS` and `node <tool>.mjs ARGS` is by its own header a bug there.
-  const override = pyGet(pyGet(projectConfig(), 'conformance', {}), 'command', null);
+  const override = getOr(getOr(projectConfig(), 'conformance', {}), 'command', null);
   if (typeof override === 'string' && override !== '') {
     const forwarded = argv.slice(1);
     // A receipt left over from an earlier run must not be mistaken for THIS run's output — without
@@ -469,7 +471,7 @@ export async function main(argv) {
       try {
         fs.rmSync(args.report, { force: true });
       } catch (e) {
-        console.log(`could not clear ${args.report}: ${pyErrStr(e)}`);
+        console.log(`could not clear ${args.report}: ${errorText(e)}`);
         return 2;
       }
     }
@@ -478,7 +480,7 @@ export async function main(argv) {
     const commandLine = [override, ...forwarded.map(shellQuote)].join(' ');
     const r = spawnSync(commandLine, { shell: true, encoding: 'utf8', stdio: 'inherit' });
     if (r.error) {
-      console.log(`conformance.command failed to start: ${pyErrStr(r.error)}`);
+      console.log(`conformance.command failed to start: ${errorText(r.error)}`);
       return 2;
     }
     if (!args.report) return normalizeChildExit(r.status);
@@ -486,7 +488,7 @@ export async function main(argv) {
     try {
       produced = JSON.parse(fs.readFileSync(args.report, 'utf8'));
     } catch (e) {
-      console.log(`conformance.command wrote no readable receipt at ${args.report}: ${pyErrStr(e)}`);
+      console.log(`conformance.command wrote no readable receipt at ${args.report}: ${errorText(e)}`);
       return 2;
     }
     const problems = validateReceipt(produced);
@@ -509,12 +511,12 @@ export async function main(argv) {
       spec = JSON.parse(readText(args.spec));
     }
   } catch (e) {
-    console.log(`spec error: ${pyErrStr(e)}`);
+    console.log(`spec error: ${errorText(e)}`);
     return 2;
   }
 
-  const endpoints = pyGet(spec, 'endpoints', []);
-  if (!pyTruthy(endpoints)) {
+  const endpoints = getOr(spec, 'endpoints', []);
+  if (!isNonEmpty(endpoints)) {
     console.log('spec has no endpoints');
     return 2;
   }
@@ -548,7 +550,7 @@ export async function main(argv) {
       console.log('  requests, so a bootstrapped session would have nothing to be replayed against.');
       return 2;
     }
-    const authCfg = pyGet(pyGet(projectConfig(), 'conformance', {}), 'auth', null);
+    const authCfg = getOr(getOr(projectConfig(), 'conformance', {}), 'auth', null);
     const signupPath = authCfg === null ? undefined : authCfg.signup_path;
     if (authCfg === null || typeof signupPath !== 'string' || !signupPath.startsWith('/') || authCfg.signup_body === undefined) {
       console.log('--auth-signup needs `conformance.auth` in .spire/clusters/tech/project.json, with `signup_path`');
@@ -563,7 +565,7 @@ export async function main(argv) {
     try {
       cookie = await bootstrapSession(args.url, authCfg);
     } catch (e) {
-      console.log(`could not bootstrap a session: ${pyErrStr(e)}`);
+      console.log(`could not bootstrap a session: ${errorText(e)}`);
       return 2;
     }
     // Same discipline as --auth-cookie above: whatever the backend sent back in Set-Cookie could in
@@ -581,7 +583,7 @@ export async function main(argv) {
     const offenders = endpoints.filter((ep) => needsSession(ep));
     console.log('spec marks endpoint(s) needing a session but no session was supplied:');
     for (const ep of offenders) {
-      console.log(`  ${pyStr(pyGet(ep, 'method', 'GET'))} ${pyStr(ep.path)}`);
+      console.log(`  ${asText(getOr(ep, 'method', 'GET'))} ${asText(ep.path)}`);
     }
     console.log('  pass --auth-cookie NAME=VALUE, or --auth-signup (see project.json `conformance.auth`)');
     return 2;
@@ -609,7 +611,7 @@ export async function main(argv) {
       try {
         cases.push([ep, await fetchEndpoint(args.url, ep, cookie), null]);
       } catch (e) {
-        cases.push([ep, null, pyErrStr(e)]);
+        cases.push([ep, null, errorText(e)]);
       }
     }
   } else {
@@ -621,12 +623,12 @@ export async function main(argv) {
   const results = [];
   console.log(`interface_conformance — ${cases.length} endpoint(s)`);
   for (const [ep, payload, err] of cases) {
-    const label = `${pyStr(pyGet(ep, 'method', 'GET'))} ${pyStr(ep.path)}`;
+    const label = `${asText(getOr(ep, 'method', 'GET'))} ${asText(ep.path)}`;
     const entry = {
-      method: pyGet(ep, 'method', 'GET'),
+      method: getOr(ep, 'method', 'GET'),
       path: ep.path,
       verdict: 'PASS',
-      required_checked: pyLen(pyGet(ep, 'required', {})),
+      required_checked: sizeOf(getOr(ep, 'required', {})),
       failures: [],
     };
     if (err !== null) {
@@ -646,7 +648,7 @@ export async function main(argv) {
       entry.verdict = 'FAIL';
       entry.failures = failures;
     } else {
-      const n = pyLen(pyGet(ep, 'required', {}));
+      const n = sizeOf(getOr(ep, 'required', {}));
       const statusNote = args.sample ? '' : ` (HTTP ${expectStatus(ep)})`;
       console.log(`  PASS  ${label}${statusNote} — ${n} required field(s) present + well-typed`);
     }
@@ -695,9 +697,9 @@ export async function main(argv) {
       return 2;
     }
     try {
-      fs.writeFileSync(args.report, `${pyJsonDumps(receipt)}\n`, 'utf8');
+      fs.writeFileSync(args.report, `${writeJsonAscii(receipt)}\n`, 'utf8');
     } catch (e) {
-      console.log(`  (warning: could not write --report to ${args.report}: ${pyErrStr(e)})`);
+      console.log(`  (warning: could not write --report to ${args.report}: ${errorText(e)})`);
     }
   }
 

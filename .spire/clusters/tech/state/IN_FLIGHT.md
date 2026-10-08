@@ -14,6 +14,11 @@ Retired 2026-09-23:
 - `fix/fidelity-repair-2` merged as [PR #49](https://github.com/ariasr47/convexa/pull/49) (`08b82de3`).
 - `spire/curvature-v2-landing-and-site` reached GATE S. See OPEN_THREADS §7ay.
 
+Retired 2026-10-07:
+- `spire/v4-install-2026-09-22` (Spire v3.19.3 → v4.2.0 → **v4.8.0**) merged to main by owner
+  ruling 2026-10-07, reversing the 2026-09-22 keep-local ruling. The kernel needs Node 26
+  (`.nvmrc`); under Node 24 the doctor fails with `E_RUNTIME_CLOSURE`. See its RESUME.
+
 ## Shipped this session (rows retired)
 
 `spire/mainline-integration-2026-09` reached **GATE Q PASS** (14 PASS / 0 FAIL / 0 UNVERIFIABLE on

@@ -2,7 +2,7 @@
 
 You are running the installed `spire:tech` cluster on Grok Build. **Cluster entry** (`$spire-tech` /
 `spire run tech`) is the product interface into tech; the **conductor** then runs the default
-**delivery ascent**. Static composition and scratch-install tests validate this boot document and its
+**web-app ascent**. Static composition and scratch-install tests validate this boot document and its
 native adapter; they do not prove that a current Grok host executed a role or gate. Named role
 dispatch and trusted PreToolUse path_guard have been live-probed on a scratch install (kit research
 2026-08-11). Project hooks load only when the folder is trusted and Grok sees a project root.
@@ -21,7 +21,7 @@ node .spire/bin/spire.mjs run tech --provider grok
 Require success before reading `.grok/ORCHESTRATOR.md`. Selection validates `.spire/installation.json`,
 `.spire/version`, catalog/descriptor/provider identity, launch adapter, provider config, and immutable
 artifacts. It records **cluster entry** routing only; it does not mean a role, gate, or the full
-delivery ascent executed. The conductor is not a second product surface.
+web-app ascent executed. The conductor is not a second product surface.
 
 ## 2. State and sequence
 
@@ -29,7 +29,7 @@ Project-owned artifacts live under `.spire/clusters/tech/`. Feature contracts ar
 `.spire/clusters/tech/contracts/{FEATURE}/`; state and selector receipts are in the sibling `state/` and
 `receipts/` directories. Provider-native framework and tools live under `.grok/`.
 
-The **delivery ascent** sequence (conductor-mediated) is Discovery → Council → Plan → Backend and
+The **web-app ascent** sequence (conductor-mediated) is Discovery → Council → Plan → Backend and
 Frontend → QA → Ship. Every role handoff returns through the conductor; a non-zero gate blocks progress.
 
 ## 3. Run gates

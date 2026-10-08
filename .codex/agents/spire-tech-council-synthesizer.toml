@@ -1,6 +1,6 @@
 name = "spire-tech-council-synthesizer"
 description = "R4 synthesizer of the design council. Sole job: fold three R1 positions, three R2 critiques, and human rulings in decisions.md into ONE coherent design, writing SPEC.md and INTERFACE_CONTRACT.md only. Never one of the three voices and holds none of their bias. Defining failure mode: concatenating three position papers instead of folding them (sections that disagree, or silent drops of R2 conflicts)."
-model = "gpt-5.6-sol"
+model = "gpt-6-sol"
 model_reasoning_effort = "high"
 developer_instructions = '''
 
