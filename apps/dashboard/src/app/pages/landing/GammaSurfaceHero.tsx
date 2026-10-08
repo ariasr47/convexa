@@ -55,8 +55,8 @@
  * bare string there is emitted VERBATIM as invalid CSS (e.g. `fill:primary.main`) and silently
  * drops to the SVG initial value (`fill:black` / `stroke:none`) — an invisible wireframe and a
  * black spot dot, passing every DOM-presence assertion while failing to render. Confirmed against
- * this folder's own shipped precedent: `HeroCurve.tsx:88,95` and `shared/ui/ArcDivider.spec.tsx`
- * use the callback form exclusively; there is no bare dot-path `fill`/`stroke` anywhere else in the
+ * this folder's own shipped precedent: `HeroCurve.tsx:88,95`
+ * uses the callback form exclusively; there is no bare dot-path `fill`/`stroke` anywhere else in the
  * app. `GammaSurfaceHero.spec.tsx`'s "resolved paint, not a broken theme path" block proves this
  * both ways (mutation-tested: reintroducing a bare string turns the guard red).
  */

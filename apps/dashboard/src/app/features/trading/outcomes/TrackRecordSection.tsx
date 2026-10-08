@@ -369,7 +369,7 @@ export function TrackRecordSection({ personaLabel }: TrackRecordSectionProps) {
   return (
     <Box component="section" data-testid="track-record" sx={{ mt: 4 }}>
       {/* The book ↔ "Track record" section seam — the shared ArcDivider (redesign-stage-2 §5.2
-          seam #2, a named seam pin in arc.spec.ts). */}
+          seam #2). */}
       <ArcDivider sx={{ mb: 3 }} />
 
       {/* ---- Header ---- */}

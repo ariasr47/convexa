@@ -10,7 +10,7 @@
  * the MUI-palette subset becomes `--mui-palette-*` CSS vars (theme.ts `cssVariables: true`).
  *
  * Editing rule: change a token HERE, never hardcode a hex in a component
- * (`[theme-token-discipline]`, enforced by `hex-discipline.spec.ts` + `banned-hexes.spec.ts`).
+ * (`[theme-token-discipline]`, enforced by `hex-discipline.spec.ts`).
  *
  * Amber-vs-warning rule (binding, proposal §3): brand amber (`gammaAmber`) is FILLED/STRUCTURAL
  * — wordmark, primary actions, active states, the gamma-flip line. A surface that means
@@ -265,7 +265,7 @@ export const extrasFor = (theme: {
 // vocabulary ("the gradient mark is dead") and both consumers (the account avatar + the Sign-up
 // pill) were rebound to flat `primary.main` + `primary.contrastText` — which also fixed their
 // measured-broken white-on-amber labels (~2:1). A token with zero consumers is a standing
-// invitation to re-sprinkle; stage1-tokens.spec.ts pins its ABSENCE (the `accentViolet` precedent).
+// invitation to re-sprinkle; keep it absent (the `accentViolet` precedent).
 
 /**
  * Categorical chart palette — operator/diagnostic series colors (Tableau-10 subset). Deliberately

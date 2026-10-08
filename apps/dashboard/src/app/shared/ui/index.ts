@@ -8,8 +8,8 @@
  * the ticker `copy` map stay ticker-local (still one consumer each).
  *
  * DELIBERATELY NOT exported here (redesign-stage-2 §8-1): `arc.ts` (the convex-arc primitive) and
- * `ArcDivider.tsx` — their importer sets are pinned by scan (arc.spec.ts), so consumers import the
- * module paths directly; a barrel re-export would blind the scan. (The old hero motif was DELETED
+ * `ArcDivider.tsx` — their importer sets are closed (§8-1), so consumers import the
+ * module paths directly; a barrel re-export would hide them. (The old hero motif was DELETED
  * at stage 2 — absorbed into the landing's HeroCurve moment.)
  */
 export { AccessibleHelp } from './AccessibleHelp';

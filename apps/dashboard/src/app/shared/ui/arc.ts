@@ -7,8 +7,8 @@
  *   1. `shell/ConvexaMark.tsx`   (the mark's arc-X glyph)
  *   2. `pages/landing/HeroCurve.tsx` (the one orchestrated hero moment)
  *   3. `shared/ui/ArcDivider.tsx` (the shared section-seam divider)
- * — enforced by SET EQUALITY in `arc.spec.ts` (§8-1). A fourth importer is a violation, not a
- * flourish: it fails the build. Deliberately NOT re-exported from the `shared/ui` barrel
+ * — the closed importer set (§8-1). A fourth importer is a violation, not a
+ * flourish. Deliberately NOT re-exported from the `shared/ui` barrel
  * (`index.ts`) so the importer scan stays sound — import the module path directly.
  */
 
