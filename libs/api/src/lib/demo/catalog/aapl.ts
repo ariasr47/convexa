@@ -1,2 +1,4 @@
+// Compatibility/test fixture wrapper; browser runtime uses the retryable JSON asset loader.
+import seed from './aapl.seed.json';
 import { makeScenario } from './shared';
-export default makeScenario('AAPL', 257, 0.12, 3);
+export default makeScenario('AAPL', seed.base, seed.step, seed.phase);

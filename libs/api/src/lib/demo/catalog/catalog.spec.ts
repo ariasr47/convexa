@@ -1,9 +1,27 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { effectiveExpiries, loadScenario, SYMBOLS } from './index';
 import { assertCuratedVariants, EXPIRIES } from './shared';
+import aaplSeed from './aapl.seed.json';
+import msftSeed from './msft.seed.json';
+import nvdaSeed from './nvda.seed.json';
+import qqqSeed from './qqq.seed.json';
+import spySeed from './spy.seed.json';
+import tslaSeed from './tsla.seed.json';
+
+const { fetchSeedAssetMock } = vi.hoisted(() => ({ fetchSeedAssetMock: vi.fn() }));
+vi.mock('./asset-fetch', () => ({ fetchScenarioSeedAsset: fetchSeedAssetMock }));
+const canonicalSeeds = { SPY: spySeed, QQQ: qqqSeed, AAPL: aaplSeed, MSFT: msftSeed, NVDA: nvdaSeed, TSLA: tslaSeed };
+const canonicalScenarioSeedForAsset = (assetUrl: string) => {
+  const symbol = (Object.keys(canonicalSeeds) as (keyof typeof canonicalSeeds)[]).find((item) => assetUrl.toLowerCase().includes(`/${item.toLowerCase()}.seed.json`));
+  if (!symbol) throw new Error(`Unknown catalog asset ${assetUrl}`);
+  return canonicalSeeds[symbol];
+};
+beforeEach(() => {
+  fetchSeedAssetMock.mockImplementation(async (assetUrl: string) => canonicalScenarioSeedForAsset(assetUrl));
+});
 
 describe('authored scenario catalog', () => {
-  it('has six lazy symbol modules with 60 ordered bars and seven curated nonempty expiry sets each', async () => {
+  it('has six lazy seed assets with 60 ordered bars and seven curated nonempty expiry sets each', async () => {
     expect(SYMBOLS).toEqual(['SPY', 'QQQ', 'AAPL', 'MSFT', 'NVDA', 'TSLA']);
     const keys = Array.from({ length: 7 }, (_, i) => EXPIRIES.filter((_, bit) => i + 1 & (1 << bit)).join(','));
     const scenarios = await Promise.all(SYMBOLS.map((symbol) => loadScenario(symbol)));
@@ -28,6 +46,39 @@ describe('authored scenario catalog', () => {
     expect(november.fingerprint).not.toBe(all.fingerprint);
     const poisoned = { ...spy.variants, [EXPIRIES[2]]: { ...november, fingerprint: all.fingerprint } };
     expect(() => assertCuratedVariants('SPY', poisoned)).toThrow(/seven unique curated expiry patches/);
+  });
+
+  it('retries a failed seed fetch, shares in-flight work, and caches only validated success', async () => {
+    vi.resetModules();
+    const { loadScenario: retryLoad } = await import('./index');
+    const requests: string[] = [];
+    let resolveSeed: ((value: unknown) => void) | undefined;
+    fetchSeedAssetMock.mockImplementation((url: string) => {
+      requests.push(url);
+      if (requests.length === 1) {
+        return Promise.reject(new Error('temporary asset failure'));
+      }
+      return new Promise((resolve) => { resolveSeed = resolve; });
+    });
+
+    await expect(retryLoad('SPY')).rejects.toThrow('temporary asset failure');
+    const retry = retryLoad('spy');
+    const concurrent = retryLoad('SPY');
+    expect(requests).toHaveLength(2);
+    expect(requests[0]).toContain('/spy.seed.json');
+    expect(requests[1]).toBe(requests[0]);
+    resolveSeed?.(spySeed);
+    const [scenario, sameScenario] = await Promise.all([retry, concurrent]);
+    expect(scenario).not.toBeNull();
+    expect(sameScenario).toBe(scenario);
+    expect(await retryLoad('SPY')).toBe(scenario);
+    expect(requests).toHaveLength(2);
+
+    vi.resetModules();
+    const { loadScenario: invalidLoad } = await import('./index');
+    fetchSeedAssetMock.mockReset();
+    fetchSeedAssetMock.mockResolvedValue({ ...spySeed, symbol: 'QQQ' });
+    await expect(invalidLoad('SPY')).rejects.toThrow('Invalid SPY scenario seed');
   });
 
   it('intersects DTE and explicit expiry bounds and rejects unsupported projections', () => {

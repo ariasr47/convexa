@@ -1,4 +1,4 @@
-import { loadScenario, effectiveExpiries, EXPIRIES, SYMBOLS, sampleContractMark } from './catalog';
+import { loadScenario, effectiveExpiries, DTE, EXPIRIES, SYMBOLS, sampleContractMark } from './catalog';
 import { dataMode } from './mode';
 import { demoStorageKey } from './mode';
 import type { TickerBundle, ScanResponse, ScanView, AiProvidersBootstrap, BookEnvelope, StructureHistoryResponse } from '../convexa';
@@ -178,7 +178,7 @@ function readScanView(): ScanView {
 function candidateSet(symbol: string, scenario: NonNullable<Awaited<ReturnType<typeof loadScenario>>>): CandidateSetWire {
   return {
     ticker: symbol, state: 'unavailable', as_of: DEMO_TIME, anchor_basis: 'gex_spot', anchor_spot: scenario.bars.at(-1)!.close,
-    session_basis: 'regular', snapshot_age_seconds: 0, quote_age: 'not_available', band_pct: 10, budget: 'handoff',
+    session_basis: 'rth', snapshot_age_seconds: 0, quote_age: 'not_available', band_pct: 10, budget: 'handoff',
     caps: { max_bytes: 0, max_records: 0, rights: 2, strikes_per_tenor_right: 0, tenors: 3 },
     contracts: [], included: { contracts: 0, expiration_count: 0, expirations: [] },
     omitted: { total: 0, expirations_omitted_by_cap: 0, by_reason: { expiration_cap: 0, no_interest: 0, outside_band: 0, outside_window: 0, strike_cap: 0 } },
@@ -191,13 +191,43 @@ function scoreDrivers(total: number) {
   return { total, proximity: 18, setups: 12, vol: total - 35, transition: 5, dark_pool: 0 };
 }
 
-function recommendation(symbol: string, variant: NonNullable<Awaited<ReturnType<typeof loadScenario>>>['variants'][string]): RecommendationWire {
+function recommendationStatus(): RecommendationWire {
   return {
-    status: 'produced', ticker: symbol, as_of: DEMO_TIME, persona: { id: 'sample-reviewer', name: 'Sample reviewer' },
-    gate: { state: 'gated_off', cooldown_remaining_seconds: 0, reasons: ['This authored sample does not invoke an AI provider.'] },
+    persona: { id: null, name: '' },
+    gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
+    cap: { over_limit: false, remaining_today: 0, resets_at: '' },
+    availability: { in_app_enabled: false },
+    powering: { key_source: 'none', provider: null, model: null, unavailable_reason: 'no_key' },
+    scenarios: { enabled: false, catalog: [] },
+  };
+}
+
+function sampleAnalysisText(symbol: string, variant: NonNullable<Awaited<ReturnType<typeof loadScenario>>>['variants'][string], sourceId: string): string {
+  return `Sample analysis · authored for this scenario. ${symbol} shows ${variant.setup.toLowerCase()} with authored score ${variant.score}. Fingerprint ${variant.fingerprint}; source bar ${sourceId}. This is educational scenario copy, not a forecast, provider-generated response, or executable instruction. No market, broker, or AI provider was used.`;
+}
+
+function recommendationExport(symbol: string, scenario: NonNullable<Awaited<ReturnType<typeof loadScenario>>>, variant: NonNullable<Awaited<ReturnType<typeof loadScenario>>>['variants'][string]): RecommendationWire {
+  const sourceId = scenario.research.evidence[0]?.state === 'present' ? scenario.research.evidence[0].sourceIds[0] : 'unavailable';
+  return {
+    ticker: symbol,
+    as_of: DEMO_TIME,
+    persona: { id: null, name: 'Authored sample' },
+    context: { candidates: candidateSet(symbol, scenario), risk_inputs: { state: 'not_set', account_size: null, per_trade_cap: null }, open_positions: { source: 'simulated', state: 'not_sent' } },
+    egress_note: 'No content was sent to a model or external provider. This export contains authored sample context only.',
+    glossary: sampleAnalysisText(symbol, variant, sourceId),
+    egress_categories: [
+      { key: 'context', sent: false }, { key: 'candidates', sent: false }, { key: 'risk_inputs', sent: false },
+      { key: 'open_positions', sent: false }, { key: 'persona_prompt', sent: false }, { key: 'glossary', sent: false },
+    ],
+  };
+}
+
+function recommendation(symbol: string, variant: NonNullable<Awaited<ReturnType<typeof loadScenario>>>['variants'][string], personaId?: string | null): RecommendationWire {
+  return {
+    status: 'produced', ticker: symbol, as_of: DEMO_TIME, persona: { id: personaId ?? 'demo-careful-reader', name: 'Careful sample reader' },
+    gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
     cap: { over_limit: false, remaining_today: 0, resets_at: DEMO_TIME },
-    availability: { in_app_enabled: false }, key_source: 'none', unavailable_reason: 'sample_only_no_provider',
-    scenario: { id: 'portfolio-2026-10-07-v1', name: 'Authored structure example' },
+    availability: { in_app_enabled: false }, key_source: 'none',
     strategy: {
       bias: 'neutral', confidence: 'low', decision: 'no_trade', exit_plan: { target: null, stop: null }, strikes: [],
       structure: variant.setup, summary: 'Authored sample analysis; not a model recommendation.',
@@ -211,11 +241,11 @@ const supportedPath = (method: string, pathname: string): boolean => {
   const routes: [string, RegExp][] = [
     ['GET', /^\/api\/auth\/session$/], ['POST', /^\/api\/auth\/(signup|login|logout)$/], ['PUT', /^\/api\/auth\/settings$/],
     ['POST', /^\/api\/positions\/sim-trade\/gate$/], ['GET', /^\/api\/scan(?:\/universe|\/view)?$/], ['PUT', /^\/api\/scan\/view$/],
-    ['GET', /^\/api\/scan\/[A-Z]+\/history$/], ['GET', /^\/api\/ticker\/[A-Z]+$/], ['GET', /^\/api\/contract\/[A-Z]+$/],
-    ['GET', /^\/api\/candidates\/[A-Z]+$/], ['GET', /^\/api\/_metrics$/], ['GET', /^\/api\/auth\/ai-key$/],
+    ['GET', /^\/api\/scan\/[A-Z]+\/history$/i], ['GET', /^\/api\/ticker\/[A-Z]+$/i], ['GET', /^\/api\/contract\/[A-Z]+$/i],
+    ['GET', /^\/api\/candidates\/[A-Z]+$/i], ['GET', /^\/api\/_metrics$/], ['GET', /^\/api\/auth\/ai-key$/],
     ['PUT', /^\/api\/auth\/ai-key$/], ['DELETE', /^\/api\/auth\/ai-key$/], ['DELETE', /^\/api\/auth\/grok$/],
-    ['GET', /^\/api\/book$/], ['PUT', /^\/api\/book$/], ['POST', /^\/api\/recommendation\/[A-Z]+$/],
-    ['GET', /^\/api\/recommendation\/(status|export)\/[A-Z]+$/], ['GET', /^\/api\/personas$/],
+    ['GET', /^\/api\/book$/], ['PUT', /^\/api\/book$/], ['POST', /^\/api\/recommendation\/[A-Z]+$/i],
+    ['GET', /^\/api\/recommendation\/(status|export)\/[A-Z]+$/i], ['GET', /^\/api\/personas$/],
     ['GET', /^\/api\/broker\/credential$/], ['PUT', /^\/api\/broker\/credential$/], ['DELETE', /^\/api\/broker\/credential$/],
     ['GET', /^\/api\/broker\/book$/], ['POST', /^\/api\/broker\/book\/refresh$/],
   ];
@@ -249,13 +279,13 @@ function tickerPayload(scenario: Awaited<ReturnType<typeof loadScenario>> & {}, 
     atm_iv: 26, hv_30d: 23, iv_hv_ratio: 1.13, net_flow: null, put_call_ratio: 0.91, chain_vol_oi_ratio: 0.38,
     total_volume: 126_400, vol_oi_unusual_threshold: 1, iv_skew: null, term_structure: null, dealer_flow_projection: null,
     market_context: null, iv_rank: null, vol_normalized_gex: null,
-    straddle_move: { state: 'no_quote', as_of: DEMO_TIME, session_basis: 'regular', anchor_basis: 'gex_spot', anchor_label: 'gex_spot', anchor_spot: spot, primary_expiration: null, wide_quote_threshold_pct: 15, tenors: [] },
+    straddle_move: { state: 'no_quote', as_of: DEMO_TIME, session_basis: 'rth', anchor_basis: 'gex_spot', anchor_label: 'gex_spot', anchor_spot: spot, primary_expiration: null, wide_quote_threshold_pct: 15, tenors: [] },
   };
   const signals: TickerBundle['signals'] = {
     ticker: scenario.symbol, regime: 'positive_gamma', regime_note: 'Authored synthetic structure snapshot.', vol_regime: 'neutral',
     distances: { call_wall_pct: Number(((variant.wall - spot) / spot).toFixed(4)), gamma_flip_pct: variant.distance },
-    setups: [{ name: variant.setup, bias: 'neutral', conviction: 'moderate', strategy: 'observe', rationale: 'Authored scenario variant.' }],
-    opportunity_score: variant.score, opportunity_tier: variant.score >= 65 ? 'actionable' : 'watch', prime_prompt_eligible: false,
+    setups: [{ name: variant.setup, bias: 'neutral', conviction: 'medium', strategy: 'observe', rationale: 'Authored scenario variant.' }],
+    opportunity_score: variant.score, opportunity_tier: variant.score >= 60 ? 'actionable' : 'watch', prime_prompt_eligible: false,
     score_drivers: scoreDrivers(variant.score), dark_pool_confluence: null,
   };
   const bundle: TickerBundle = {
@@ -277,9 +307,9 @@ export async function demoFetch(request: Request): Promise<Response> {
   const pathname = url.pathname.replace(/\/$/, '');
   if (!supportedPath(method, pathname)) return refused('demo_unavailable', 'This method and path are not part of the local demo contract.');
 
-  const tickerMatch = pathname.match(/^\/api\/(?:ticker|contract|candidates)\/([A-Z]+)$/);
+  const tickerMatch = pathname.match(/^\/api\/(?:ticker|contract|candidates)\/([A-Z]+)$/i);
   if (tickerMatch && (pathname.startsWith('/api/ticker/') || pathname.startsWith('/api/contract/') || pathname.startsWith('/api/candidates/'))) {
-    const symbol = tickerMatch[1];
+    const symbol = tickerMatch[1].toUpperCase();
     const scenario = await loadScenario(symbol);
     if (!scenario) return refused('demo_unsupported', `No authored sample exists for ${symbol}.`);
     if (pathname.startsWith('/api/ticker/')) {
@@ -314,7 +344,7 @@ export async function demoFetch(request: Request): Promise<Response> {
       return json(response);
     } catch { return refused('demo_unavailable', 'The local demo settings could not be read.'); }
   }
-  if (pathname === '/api/auth/signup' || pathname === '/api/auth/login' || pathname === '/api/auth/logout' || pathname === '/api/auth/grok' || pathname === '/api/auth/ai-key' && method !== 'GET' || pathname === '/api/broker/credential' && method !== 'GET' || pathname === '/api/broker/book/refresh') return refused('demo_unavailable', 'Credentials, sign-in, AI-provider, OAuth, and broker actions are disabled in this local sample.');
+  if (pathname === '/api/auth/signup' || pathname === '/api/auth/login' || pathname === '/api/auth/logout' || pathname === '/api/auth/grok' || pathname === '/api/auth/ai-key' && method !== 'GET' || pathname === '/api/broker/credential' && method !== 'GET') return refused('demo_unavailable', 'Credentials, sign-in, AI-provider, and OAuth actions are disabled in this local sample.');
   if (pathname === '/api/_metrics') return refused('demo_unavailable', 'Operator metrics are unavailable in the public sample.');
   if (pathname === '/api/auth/settings' && method === 'PUT') {
     try {
@@ -381,7 +411,7 @@ export async function demoFetch(request: Request): Promise<Response> {
       const variant = sample!.variants[EXPIRIES.join(',')];
       const putWall = Number((variant.wall - price * 0.075).toFixed(2));
       const nearerWall = Math.abs(price - variant.wall) <= Math.abs(price - putWall) ? variant.wall : putWall;
-      return { symbol, status: 'ready', price, as_of: stamp / 1000, chg_pct: 0.42, call_wall: variant.wall, put_wall: putWall, flip: variant.flip, dist_to_flip_pct: Number(((price - variant.flip) / price * 100).toFixed(2)), dist_to_wall_pct: Number(((price - nearerWall) / price * 100).toFixed(2)), regime: 'positive_gamma', score: variant.score, tier: variant.score > 60 ? 'actionable' : 'watch', vol_regime: 'neutral', score_drivers: scoreDrivers(variant.score) };
+      return { symbol, status: 'ok', price, as_of: stamp / 1000, chg_pct: 0.42, call_wall: variant.wall, put_wall: putWall, flip: variant.flip, dist_to_flip_pct: Number(((price - variant.flip) / price * 100).toFixed(2)), dist_to_wall_pct: Number(((price - nearerWall) / price * 100).toFixed(2)), regime: 'positive_gamma', score: variant.score, tier: variant.score >= 60 ? 'actionable' : 'watch', vol_regime: 'neutral', score_drivers: scoreDrivers(variant.score) };
     }));
     let view: ScanView;
     try { view = readScanView(); }
@@ -392,7 +422,7 @@ export async function demoFetch(request: Request): Promise<Response> {
     return json(response);
   }
   if (pathname.endsWith('/history')) {
-    const symbol = pathname.split('/')[3];
+    const symbol = pathname.split('/')[3].toUpperCase();
     const scenario = await loadScenario(symbol);
     if (!scenario) return refused('demo_unsupported', `No authored sample exists for ${symbol}.`);
     const variant = scenario.variants[EXPIRIES.join(',')];
@@ -400,7 +430,7 @@ export async function demoFetch(request: Request): Promise<Response> {
     const limit = Number.isFinite(limitValue) && limitValue > 0 ? Math.min(96, Math.floor(limitValue)) : 48;
     const samples: StructureHistoryResponse['samples'] = scenario.bars.slice(-limit).map((bar) => ({
       symbol, as_of: Date.parse(`${bar.date}T16:00:00Z`) / 1000, price: bar.close, score: variant.score,
-      tier: variant.score > 60 ? 'actionable' : 'watch', regime: 'positive_gamma', vol_regime: 'neutral',
+      tier: variant.score >= 60 ? 'actionable' : 'watch', regime: 'positive_gamma', vol_regime: 'neutral',
       flip: variant.flip, dist_to_flip_pct: Number(((bar.close - variant.flip) / bar.close * 100).toFixed(2)), call_wall: variant.wall,
       put_wall: Number((variant.wall - bar.close * 0.075).toFixed(2)),
       dist_to_wall_pct: (variant.wall - bar.close) / bar.close * 100,
@@ -419,16 +449,19 @@ export async function demoFetch(request: Request): Promise<Response> {
     return json(bootstrap);
   }
   if (pathname === '/api/broker/credential') return json({ set: false, last4: null, storage_available: true });
-  if (pathname === '/api/broker/book') {
+  if (pathname === '/api/broker/book' || pathname === '/api/broker/book/refresh') {
     const sample: BrokerBook = { state: 'ok', basis: 'cache', account_ref: 'Demo sample account · synthetic', as_of: DEMO_TIME, positions: [{ broker_position_id: 'demo-broker-aapl-equity', fidelity: 'exact', fidelity_notes: ['Authored sample holding; no brokerage connection.'], legs: [{ kind: 'equity', symbol: 'AAPL', underlying: 'AAPL', quantity: 25, multiplier: 1, cost_basis: { state: 'supplied', value: 240 }, broker_mark: { state: 'supplied', value: 265 } }], unrealized_pl: { state: 'supplied', value: 625 } }] };
     return json(sample);
   }
   if (pathname.startsWith('/api/recommendation/')) {
-    const match = pathname.match(/^\/api\/recommendation\/(?:status\/|export\/)?([A-Z]+)$/);
+    const match = pathname.match(/^\/api\/recommendation\/(?:status\/|export\/)?([A-Z]+)$/i);
     if (!match) return refused('demo_unavailable', 'The recommendation route is not part of the local sample contract.');
-    const symbol = match[1];
+    const symbol = match[1].toUpperCase();
     const scenario = await loadScenario(symbol);
     if (!scenario) return refused('demo_unsupported', `No authored sample exists for ${symbol}.`);
+    const isStatus = pathname.toLowerCase().startsWith('/api/recommendation/status/');
+    const isExport = pathname.toLowerCase().startsWith('/api/recommendation/export/');
+    if (isStatus) return json(recommendationStatus());
     let minDte: number | undefined;
     let maxDte: number | undefined;
     let requestBody: Record<string, unknown> = {};
@@ -441,25 +474,35 @@ export async function demoFetch(request: Request): Promise<Response> {
       minDte = url.searchParams.has('min_dte') ? Number(url.searchParams.get('min_dte')) : undefined;
       maxDte = url.searchParams.has('max_dte') ? Number(url.searchParams.get('max_dte')) : undefined;
     }
-    const projection = effectiveExpiries({ minDte, maxDte });
-    if (projection.state !== 'ready') return refused('demo_unsupported', projection.detail);
-    const variant = scenario.variants[projection.key];
-    if (method === 'POST' && typeof requestBody.snapshot_fingerprint === 'string' && requestBody.snapshot_fingerprint !== variant.fingerprint) return refused('demo_unavailable', 'The requested analysis fingerprint does not match this authored expiry projection.');
-    const wire = recommendation(symbol, variant);
-    if (pathname.startsWith('/api/recommendation/export/')) {
-      const sourceId = scenario.research.evidence[0]?.state === 'present' ? scenario.research.evidence[0].sourceIds[0] : 'unavailable';
-      const body: RecommendationWire = {
-        ...wire,
-        egress_note: `Sample analysis only: ${symbol} uses ${variant.setup} with authored score ${variant.score}; fingerprint ${variant.fingerprint}. Source ${sourceId}. No provider or live data was used.`,
-        glossary: 'This sample is educational scenario copy. It is not a forecast, recommendation, or provider-generated response.',
-        egress_categories: [
-          { key: 'context', sent: false }, { key: 'candidates', sent: false }, { key: 'risk_inputs', sent: false },
-          { key: 'open_positions', sent: false }, { key: 'persona_prompt', sent: false }, { key: 'glossary', sent: false },
-        ],
-      };
-      return json(body);
+    const dteValidation = effectiveExpiries({ minDte, maxDte });
+    if (dteValidation.state !== 'ready') return refused('demo_unavailable', dteValidation.detail);
+    const requestedFingerprint = method === 'POST'
+      ? requestBody.snapshot_fingerprint
+      : isExport ? request.headers.get('x-convexa-sample-fingerprint') : null;
+    let selected: { key: string; variant: (typeof scenario.variants)[string] } | undefined;
+    if (typeof requestedFingerprint === 'string' && requestedFingerprint.length > 0) {
+      const matches = Object.entries(scenario.variants)
+        .filter(([, candidate]) => candidate.fingerprint === requestedFingerprint);
+      if (matches.length !== 1) return refused('demo_unavailable', 'The requested fingerprint is not a unique authored sample for this symbol.');
+      selected = { key: matches[0][0], variant: matches[0][1] };
+      const dates = selected.key.split(',');
+      if (dates.some((date) => !(date in DTE) ||
+          (minDte !== undefined && DTE[date as keyof typeof DTE] < minDte) ||
+          (maxDte !== undefined && DTE[date as keyof typeof DTE] > maxDte))) {
+        return refused('demo_unavailable', 'The selected authored expiries do not fit the requested DTE bounds.');
+      }
+    } else if (method === 'POST') {
+      return refused('demo_unavailable', 'An exact authored sample fingerprint is required for analysis.');
+    } else {
+      const projection = effectiveExpiries({ minDte, maxDte });
+      if (projection.state !== 'ready') return refused('demo_unsupported', projection.detail);
+      selected = { key: projection.key, variant: scenario.variants[projection.key] };
     }
-    return json(wire);
+    const variant = selected.variant;
+    if (isExport) return json(recommendationExport(symbol, scenario, variant));
+    if (method !== 'POST') return refused('demo_unavailable', 'The recommendation route is not part of the local sample contract.');
+    const personaId = typeof requestBody.persona_id === 'string' ? requestBody.persona_id : null;
+    return json(recommendation(symbol, variant, personaId));
   }
   if (pathname === '/api/positions/sim-trade/gate') {
     const body: components['schemas']['SimTradeGateBody'] = { authorized: canSimulatePaperAction() };

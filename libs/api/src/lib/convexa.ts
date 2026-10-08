@@ -2145,13 +2145,16 @@ export async function requestRecommendation(
  *  ticker was never fetched. Triggers no LLM call. */
 export async function fetchRecExport(
   symbol: string,
-  { personaId }: { personaId?: string | null } = {},
+  { personaId, sampleFingerprint }: { personaId?: string | null; sampleFingerprint?: string } = {},
 ): Promise<RecExport> {
   const result = await http.GET('/api/recommendation/export/{ticker}', {
     params: {
       path: { ticker: symbol.toUpperCase() },
       query: { persona_id: personaId ?? undefined },
     },
+    ...(dataMode === 'demo' && sampleFingerprint
+      ? { headers: { 'x-convexa-sample-fingerprint': sampleFingerprint } }
+      : {}),
   });
   const projected = projectRecommendation(dataOf(result, 'Export unavailable'));
   return {

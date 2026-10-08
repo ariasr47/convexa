@@ -1,12 +1,10 @@
 import type { SupportedDemoSymbol } from '../mode';
-import type { ScenarioSymbol } from './shared';
 import { DTE, EXPIRIES } from './shared';
+import { scenarioSeedAssets } from './assets';
+import { fetchScenarioSeedAsset } from './asset-fetch';
+import { createScenarioLoader } from './scenario-loader';
 export * from './shared';
-const loaders: Record<SupportedDemoSymbol, () => Promise<{ default: ScenarioSymbol }>> = {
-  SPY: () => import('./spy'), QQQ: () => import('./qqq'), AAPL: () => import('./aapl'),
-  MSFT: () => import('./msft'), NVDA: () => import('./nvda'), TSLA: () => import('./tsla'),
-};
-export const SYMBOLS = Object.keys(loaders) as SupportedDemoSymbol[];
+export const SYMBOLS = Object.keys(scenarioSeedAssets) as SupportedDemoSymbol[];
 export interface TickerProjectionQuery { minDte?: number; maxDte?: number; expirations?: string[]; darkPool?: boolean }
 export type ExpiryProjection = { state: 'ready'; dates: string[]; key: string } | { state: 'unsupported'; reason: 'unsupported_symbol' | 'unsupported_filter'; detail: string };
 export function effectiveExpiries(query: TickerProjectionQuery): ExpiryProjection {
@@ -24,9 +22,4 @@ export function effectiveExpiries(query: TickerProjectionQuery): ExpiryProjectio
   if (!dates.length) return { state: 'unsupported', reason: 'unsupported_filter', detail: 'No sample expiries match the requested filters.' };
   return { state: 'ready', dates, key: dates.join(',') };
 }
-export async function loadScenario(symbol: string): Promise<ScenarioSymbol | null> {
-  const normalized = symbol.toUpperCase() as SupportedDemoSymbol;
-  const loader = loaders[normalized];
-  if (!loader) return null;
-  return (await loader()).default;
-}
+export const loadScenario = createScenarioLoader(scenarioSeedAssets, fetchScenarioSeedAsset);

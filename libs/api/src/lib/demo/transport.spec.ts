@@ -1,4 +1,19 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import aaplSeed from './catalog/aapl.seed.json';
+import msftSeed from './catalog/msft.seed.json';
+import nvdaSeed from './catalog/nvda.seed.json';
+import qqqSeed from './catalog/qqq.seed.json';
+import spySeed from './catalog/spy.seed.json';
+import tslaSeed from './catalog/tsla.seed.json';
+
+const { fetchSeedAssetMock } = vi.hoisted(() => ({ fetchSeedAssetMock: vi.fn() }));
+vi.mock('./catalog/asset-fetch', () => ({ fetchScenarioSeedAsset: fetchSeedAssetMock }));
+const canonicalSeeds = { SPY: spySeed, QQQ: qqqSeed, AAPL: aaplSeed, MSFT: msftSeed, NVDA: nvdaSeed, TSLA: tslaSeed };
+const canonicalScenarioSeedForAsset = (assetUrl: string) => {
+  const symbol = (Object.keys(canonicalSeeds) as (keyof typeof canonicalSeeds)[]).find((item) => assetUrl.toLowerCase().includes(`/${item.toLowerCase()}.seed.json`));
+  if (!symbol) throw new Error(`Unknown catalog asset ${assetUrl}`);
+  return canonicalSeeds[symbol];
+};
 
 function installStorage() {
   const values = new Map<string, string>();
@@ -7,6 +22,7 @@ function installStorage() {
 }
 
 describe('demo HTTP projections', () => {
+  beforeEach(() => { fetchSeedAssetMock.mockImplementation(async (assetUrl: string) => canonicalScenarioSeedForAsset(assetUrl)); });
   afterEach(() => { vi.resetModules(); delete window.__CONVEXA_BOOT__; });
 
   it('keeps ticker, scanner, history, contracts, and recommendation projections on one authored variant', async () => {
@@ -43,6 +59,7 @@ describe('demo HTTP projections', () => {
     const scanResponse = await demoFetch(new Request('http://localhost/api/scan'));
     const scan = await scanResponse.json() as import('../convexa').ScanResponse;
     const spyRow = scan.rows.find((row) => row.symbol === 'SPY')!;
+    expect(spyRow.status).toBe('ok');
     expect(spyRow.dist_to_flip_pct).toBe(Number(((spyRow.price! - spyRow.flip!) / spyRow.price! * 100).toFixed(2)));
     expect(spyRow.dist_to_flip_pct).toBeGreaterThan(0);
 
@@ -51,12 +68,49 @@ describe('demo HTTP projections', () => {
     const request = new Request('http://localhost/api/recommendation/SPY', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ snapshot_fingerprint: novemberVariant.fingerprint, dte_min: 44, dte_max: 60, persona_id: 'demo-careful-reader', dark_pool: true, override: false }) });
     const recResponse = await demoFetch(request);
     expect(recResponse.status).toBe(200);
-    const rec = await recResponse.json() as { pinned_fingerprint: string; strategy: { summary: string; rationale: string } };
+    const rec = await recResponse.json() as import('../convexa').RecResponse;
+    expect(rec.strategy).not.toBeNull();
+    if (!rec.strategy) throw new Error('The authored recommendation must include a strategy.');
     expect(rec.pinned_fingerprint).toBe(novemberVariant.fingerprint);
     expect(rec.strategy.summary).toContain('Authored sample');
     expect(rec.strategy.rationale).toContain(novemberVariant.setup.toLowerCase());
+    expect(rec.status).toBe('produced');
+    const noncontiguousKey = `${EXPIRIES[0]},${EXPIRIES[2]}`;
+    const noncontiguousVariant = scenario!.variants[noncontiguousKey];
+    const noncontiguous = await demoFetch(new Request('http://localhost/api/recommendation/SPY', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ snapshot_fingerprint: noncontiguousVariant.fingerprint, dte_min: 2, dte_max: 44 }) }));
+    expect(noncontiguous.status).toBe(200);
+    expect((await noncontiguous.json() as import('../convexa').RecResponse).pinned_fingerprint).toBe(noncontiguousVariant.fingerprint);
+    const missingFingerprint = await demoFetch(new Request('http://localhost/api/recommendation/SPY', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ dte_min: 2, dte_max: 44 }) }));
+    expect(missingFingerprint.status).toBe(501);
+    const unknownFingerprint = await demoFetch(new Request('http://localhost/api/recommendation/SPY', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ snapshot_fingerprint: 'unknown-sample', dte_min: 2, dte_max: 44 }) }));
+    expect(unknownFingerprint.status).toBe(501);
     const stale = await demoFetch(new Request('http://localhost/api/recommendation/SPY', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ snapshot_fingerprint: scenario!.variants[EXPIRIES.join(',')].fingerprint, dte_min: 44, dte_max: 60 }) }));
     expect(stale.status).toBe(501);
+
+    const statusResponse = await demoFetch(new Request('http://localhost/api/recommendation/status/spy'));
+    expect(await statusResponse.json()).toMatchObject({ availability: { in_app_enabled: false }, gate: { state: 'available' }, powering: { unavailable_reason: 'no_key' } });
+    const exportResponse = await demoFetch(new Request('http://localhost/api/recommendation/export/spy?min_dte=44&max_dte=44'));
+    const exportBody = await exportResponse.json() as import('../convexa').RecExport;
+    expect(exportBody.context.candidates.ticker).toBe('SPY');
+    expect(exportBody.glossary).toContain(scenario!.variants[EXPIRIES[2]].fingerprint);
+    expect(exportBody.egress_categories).toHaveLength(6);
+    expect(exportBody.egress_categories.every((item) => !item.sent)).toBe(true);
+    expect('strategy' in exportBody).toBe(false);
+    const api = await import('../convexa');
+    expect(await api.fetchRecStatus('spy')).toMatchObject({ availability: { in_app_enabled: false }, gate: { state: 'available' }, powering: { unavailable_reason: 'no_key' } });
+    const projectedExport = await api.fetchRecExport('spy');
+    expect(projectedExport.glossary).toContain(scenario!.variants[EXPIRIES.join(',')].fingerprint);
+    const selectedExport = await api.fetchRecExport('spy', { sampleFingerprint: noncontiguousVariant.fingerprint });
+    expect(selectedExport.glossary).toContain(noncontiguousVariant.fingerprint);
+    expect(selectedExport.glossary).not.toContain(scenario!.variants[EXPIRIES.join(',')].fingerprint);
+    const unknownExport = await demoFetch(new Request('http://localhost/api/recommendation/export/spy', { headers: { 'x-convexa-sample-fingerprint': 'unknown-sample' } }));
+    expect(unknownExport.status).toBe(501);
+
+    const tickerProjection = await demoFetch(new Request('http://localhost/api/ticker/spy?expirations=2026-10-09,2026-11-20'));
+    const selected = await tickerProjection.json() as import('../convexa').TickerBundle;
+    expect(selected.signals.opportunity_tier).toBe('actionable');
+    expect(selected.signals.setups[0].conviction).toBe('medium');
+    expect(selected.market_state.straddle_move?.session_basis).toBe('rth');
 
     const historyResponse = await demoFetch(new Request('http://localhost/api/scan/SPY/history?limit=2'));
     const history = await historyResponse.json() as import('../convexa').StructureHistoryResponse;
@@ -67,5 +121,13 @@ describe('demo HTTP projections', () => {
     expect((await contract.json() as { option_quote: { mid: number } }).option_quote.mid).toBe(2.47);
     const candidates = await demoFetch(new Request('http://localhost/api/candidates/SPY'));
     expect(await candidates.json()).toMatchObject({ ticker: 'SPY', state: 'unavailable', contracts: [], sent_to_model: false });
+
+    const brokerBook = await demoFetch(new Request('http://localhost/api/broker/book'));
+    const refreshedBook = await demoFetch(new Request('http://localhost/api/broker/book/refresh', { method: 'POST' }));
+    expect(refreshedBook.status).toBe(200);
+    expect(await refreshedBook.json()).toEqual(await brokerBook.json());
+    const brokerApi = await import('../broker');
+    expect((await brokerApi.fetchBrokerBook()).basis).toBe('cache');
+    expect((await brokerApi.refreshBrokerBook()).positions).toHaveLength(1);
   });
 });

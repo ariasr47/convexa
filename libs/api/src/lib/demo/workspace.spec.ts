@@ -1,4 +1,19 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import aaplSeed from './catalog/aapl.seed.json';
+import msftSeed from './catalog/msft.seed.json';
+import nvdaSeed from './catalog/nvda.seed.json';
+import qqqSeed from './catalog/qqq.seed.json';
+import spySeed from './catalog/spy.seed.json';
+import tslaSeed from './catalog/tsla.seed.json';
+
+const { fetchSeedAssetMock } = vi.hoisted(() => ({ fetchSeedAssetMock: vi.fn() }));
+vi.mock('./catalog/asset-fetch', () => ({ fetchScenarioSeedAsset: fetchSeedAssetMock }));
+const canonicalSeeds = { SPY: spySeed, QQQ: qqqSeed, AAPL: aaplSeed, MSFT: msftSeed, NVDA: nvdaSeed, TSLA: tslaSeed };
+const canonicalScenarioSeedForAsset = (assetUrl: string) => {
+  const symbol = (Object.keys(canonicalSeeds) as (keyof typeof canonicalSeeds)[]).find((item) => assetUrl.toLowerCase().includes(`/${item.toLowerCase()}.seed.json`));
+  if (!symbol) throw new Error(`Unknown catalog asset ${assetUrl}`);
+  return canonicalSeeds[symbol];
+};
 
 function installStorage() {
   const values = new Map<string, string>();
@@ -7,7 +22,8 @@ function installStorage() {
 }
 
 describe('demo workspace clock and stream lifecycle', () => {
-  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.resetModules(); delete window.__CONVEXA_BOOT__; });
+  beforeEach(() => { fetchSeedAssetMock.mockImplementation(async (assetUrl: string) => canonicalScenarioSeedForAsset(assetUrl)); });
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.doUnmock('./catalog'); vi.resetModules(); delete window.__CONVEXA_BOOT__; });
 
   it('seeds only the demo namespace once and emits an order frame only after playback advances', async () => {
     vi.useFakeTimers();
@@ -81,6 +97,99 @@ describe('demo workspace clock and stream lifecycle', () => {
     expect(second.length).toBeGreaterThan(secondCount);
     stopSecond();
     stopDirect();
+  });
+
+  it('pauses cleanly when localStorage acquisition throws and resumes without touching existing bytes', async () => {
+    installStorage();
+    window.__CONVEXA_BOOT__ = { mode: 'demo', key: (key) => `convexa.demo.v1.${key}` };
+    const storage = window.localStorage;
+    const preservedKey = 'convexa.demo.v1.existing-sample-setting';
+    const preservedValue = '{"keep":"original bytes"}';
+    storage.setItem(preservedKey, preservedValue);
+    storage.setItem('convexa.live.user-key', 'live bytes');
+    const before = [storage.getItem(preservedKey), storage.getItem('convexa.live.user-key'), storage.length];
+    const workspace = await import('./workspace');
+    Object.defineProperty(window, 'localStorage', { configurable: true, get() { throw new Error('storage blocked'); } });
+
+    expect(() => workspace.initializeDemoWorkspace()).not.toThrow();
+    expect(workspace.demoClock()?.playback).toBe('paused');
+    expect(() => workspace.resetDemoWorkspace()).not.toThrow();
+    workspace.resumeDemoPlayback();
+    expect(workspace.demoClock()?.playback).toBe('paused');
+    expect([storage.getItem(preservedKey), storage.getItem('convexa.live.user-key'), storage.length]).toEqual(before);
+
+    Object.defineProperty(window, 'localStorage', { configurable: true, value: storage });
+    workspace.resumeDemoPlayback();
+    expect(workspace.demoClock()?.playback).toBe('running');
+    expect(storage.getItem(preservedKey)).toBe(preservedValue);
+    expect(storage.getItem('convexa.live.user-key')).toBe('live bytes');
+    expect(storage.getItem('convexa.demo.v1.convexa.demo.workspace.initialized.v1')).toBe('1');
+  });
+
+  it('drops stale batches, pauses on load failure, and rejects late frames after playback end', async () => {
+    vi.useFakeTimers();
+    installStorage();
+    window.__CONVEXA_BOOT__ = { mode: 'demo', key: (key) => `convexa.demo.v1.${key}` };
+    const realCatalog = await import('./catalog');
+    const spyScenario = await realCatalog.loadScenario('SPY');
+    const appleScenario = await realCatalog.loadScenario('AAPL');
+    let deferredSymbol: string | null = 'SPY';
+    let releaseDeferred: ((scenario: typeof spyScenario) => void) | undefined;
+    let rejectDeferred: ((reason: Error) => void) | undefined;
+    vi.doMock('./catalog', async () => {
+      const actual = await vi.importActual<typeof import('./catalog')>('./catalog');
+      return {
+        ...actual,
+        loadScenario: vi.fn((symbol: string) => {
+          if (symbol === deferredSymbol) {
+            deferredSymbol = null;
+            return new Promise<typeof spyScenario>((resolve, reject) => { releaseDeferred = resolve; rejectDeferred = reject; });
+          }
+          return actual.loadScenario(symbol);
+        }),
+      };
+    });
+    const workspace = await import('./workspace');
+    const removedObserverFrames: string[] = [];
+    const stopRemoved = workspace.subscribeDemoOrderFrames((frame) => removedObserverFrames.push(frame.frameId));
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(releaseDeferred).toBeTypeOf('function');
+    const replacementFrames: string[] = [];
+    stopRemoved();
+    workspace.subscribeDemoOrderFrames((frame) => replacementFrames.push(frame.frameId));
+
+    const storage = window.localStorage;
+    Object.defineProperty(window, 'localStorage', { configurable: true, get() { throw new Error('storage blocked'); } });
+    workspace.initializeDemoWorkspace();
+    expect(workspace.demoClock()?.playback).toBe('paused');
+    releaseDeferred?.(spyScenario);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(removedObserverFrames).toHaveLength(0);
+    expect(replacementFrames).toHaveLength(0);
+
+    Object.defineProperty(window, 'localStorage', { configurable: true, value: storage });
+    workspace.resumeDemoPlayback();
+    deferredSymbol = 'AAPL';
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(releaseDeferred).toBeTypeOf('function');
+    const retainedOffset = workspace.demoClock()?.offsetMs;
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(workspace.demoClock()).toMatchObject({ playback: 'running', offsetMs: (retainedOffset ?? 0) + 5_000 });
+    expect(replacementFrames).toHaveLength(0);
+    rejectDeferred?.(new Error('temporary asset failure'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(workspace.demoClock()).toMatchObject({ playback: 'paused', offsetMs: (retainedOffset ?? 0) + 5_000 });
+    expect(replacementFrames).toHaveLength(0);
+
+    deferredSymbol = 'AAPL';
+    workspace.resumeDemoPlayback();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(releaseDeferred).toBeTypeOf('function');
+    await vi.advanceTimersByTimeAsync(360_000);
+    expect(workspace.demoClock()?.playback).toBe('ended');
+    releaseDeferred?.(appleScenario);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(replacementFrames).toHaveLength(0);
   });
 
   it('keeps live scanner server timestamps and reports error, silence, and recovery', async () => {

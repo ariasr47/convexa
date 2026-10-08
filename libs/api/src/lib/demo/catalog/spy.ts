@@ -1,2 +1,4 @@
+// Compatibility/test fixture wrapper; browser runtime uses the retryable JSON asset loader.
+import seed from './spy.seed.json';
 import { makeScenario } from './shared';
-export default makeScenario('SPY', 670, 0.32, 1);
+export default makeScenario('SPY', seed.base, seed.step, seed.phase);

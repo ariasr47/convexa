@@ -1,5 +1,5 @@
 import { dataMode, demoStorageKey, type SupportedDemoSymbol } from './mode';
-import { loadScenario, sampleContractMark } from './catalog';
+import { loadScenario, sampleContractMark, type ScenarioSymbol } from './catalog';
 
 export interface DemoClock { anchor: '2026-10-07T18:30:00Z'; end: '2026-10-07T19:00:00Z'; offsetMs: number; nowMs: number; playback: 'running' | 'paused' | 'ended' }
 export interface DemoOrderFrame { frameId: string; scenarioTimeMs: number; symbol: SupportedDemoSymbol; underlyingMid: number; marksByContractId: Record<string, number> }
@@ -9,43 +9,69 @@ const DURATION = 30 * 60_000;
 const demoPrefix = 'convexa.demo.v1.';
 let offset = 0;
 let playback: DemoClock['playback'] = 'running';
+let storageUnavailable = false;
 let interval: ReturnType<typeof setInterval> | undefined;
+let frameGeneration = 0;
+let frameRunPending = false;
 const observers = new Set<(clock: DemoClock) => void>();
 const frameObservers = new Set<(frame: DemoOrderFrame) => void>();
 const clockValue = (): DemoClock => ({ anchor: '2026-10-07T18:30:00Z', end: '2026-10-07T19:00:00Z', offsetMs: offset, nowMs: ANCHOR + offset, playback });
 function emitClock() { const value = clockValue(); for (const observer of observers) observer(value); }
 function stopTimer() { if (interval) clearInterval(interval); interval = undefined; }
+function invalidateFrames() { frameGeneration++; }
+function pauseForStorageFault() { storageUnavailable = true; playback = 'paused'; invalidateFrames(); stopTimer(); emitClock(); }
 function startTimer() {
   if (interval || observers.size + frameObservers.size === 0 || playback !== 'running') return;
   interval = setInterval(() => {
     offset = Math.min(DURATION, offset + 5_000);
-    if (offset >= DURATION) { playback = 'ended'; stopTimer(); }
+    if (offset >= DURATION) { playback = 'ended'; invalidateFrames(); stopTimer(); }
     emitClock();
-    void emitFrames();
+    if (!frameRunPending && playback === 'running') void emitFrames(frameGeneration, clockValue(), [...frameObservers]);
   }, 1000);
 }
-async function emitFrames() {
-  if (playback !== 'running' || frameObservers.size === 0) return;
-  const frameClock = clockValue();
-  for (const symbol of ['SPY', 'QQQ', 'AAPL', 'MSFT', 'NVDA', 'TSLA'] as const) {
-    let scenario;
-    try { scenario = await loadScenario(symbol); }
-    catch { playback = 'paused'; stopTimer(); emitClock(); return; }
-    if (!scenario) continue;
-    const spot = Number((scenario.bars.at(-1)!.close * (1 + frameClock.offsetMs / DURATION * 0.001)).toFixed(2));
-    const marks: Record<string, number> = {};
-    for (const expiration of ['2026-10-09', '2026-10-16', '2026-11-20']) {
-      const seededStrikes = symbol === 'SPY' ? [690] : symbol === 'QQQ' ? [630] : [];
-      for (const strike of [...new Set([...seededStrikes, Math.floor(spot / 5) * 5 - 5, Math.floor(spot / 5) * 5, Math.floor(spot / 5) * 5 + 5])]) {
-        for (const right of ['call', 'put'] as const) {
-          const dte = expiration === '2026-10-09' ? 2 : expiration === '2026-10-16' ? 9 : 44;
-          marks[`${symbol}|${expiration}|${strike}|${right}`] = sampleContractMark(spot, strike, right, dte);
+function frameRunIsCurrent(generation: number, recipients: readonly ((frame: DemoOrderFrame) => void)[]): boolean {
+  return playback === 'running' && frameGeneration === generation && recipients.length > 0 && recipients.every((observer) => frameObservers.has(observer));
+}
+function frameSnapshotIsCurrent(generation: number, frameClock: DemoClock, recipients: readonly ((frame: DemoOrderFrame) => void)[]): boolean {
+  return frameRunIsCurrent(generation, recipients) && offset === frameClock.offsetMs;
+}
+async function emitFrames(generation: number, frameClock: DemoClock, recipients: readonly ((frame: DemoOrderFrame) => void)[]) {
+  if (frameRunPending || !frameSnapshotIsCurrent(generation, frameClock, recipients)) return;
+  frameRunPending = true;
+  try {
+    const loaded: { symbol: SupportedDemoSymbol; scenario: ScenarioSymbol }[] = [];
+    for (const symbol of ['SPY', 'QQQ', 'AAPL', 'MSFT', 'NVDA', 'TSLA'] as const) {
+      let scenario;
+      try { scenario = await loadScenario(symbol); }
+      catch {
+        if (frameRunIsCurrent(generation, recipients)) {
+          playback = 'paused'; invalidateFrames(); stopTimer(); emitClock();
+        }
+        return;
+      }
+      if (!frameSnapshotIsCurrent(generation, frameClock, recipients)) return;
+      if (scenario) loaded.push({ symbol, scenario });
+    }
+    for (const { symbol, scenario } of loaded) {
+      if (!frameSnapshotIsCurrent(generation, frameClock, recipients)) return;
+      const spot = Number((scenario.bars.at(-1)!.close * (1 + frameClock.offsetMs / DURATION * 0.001)).toFixed(2));
+      const marks: Record<string, number> = {};
+      for (const expiration of ['2026-10-09', '2026-10-16', '2026-11-20']) {
+        const seededStrikes = symbol === 'SPY' ? [690] : symbol === 'QQQ' ? [630] : [];
+        for (const strike of [...new Set([...seededStrikes, Math.floor(spot / 5) * 5 - 5, Math.floor(spot / 5) * 5, Math.floor(spot / 5) * 5 + 5])]) {
+          for (const right of ['call', 'put'] as const) {
+            const dte = expiration === '2026-10-09' ? 2 : expiration === '2026-10-16' ? 9 : 44;
+            marks[`${symbol}|${expiration}|${strike}|${right}`] = sampleContractMark(spot, strike, right, dte);
+          }
         }
       }
+      const frame: DemoOrderFrame = Object.freeze({ frameId: `${symbol}-${frameClock.offsetMs}`, scenarioTimeMs: frameClock.nowMs, symbol, underlyingMid: spot, marksByContractId: Object.freeze(marks) });
+      for (const observer of recipients) {
+        if (!frameSnapshotIsCurrent(generation, frameClock, recipients)) return;
+        observer(frame);
+      }
     }
-    const frame: DemoOrderFrame = Object.freeze({ frameId: `${symbol}-${frameClock.offsetMs}`, scenarioTimeMs: frameClock.nowMs, symbol, underlyingMid: spot, marksByContractId: Object.freeze(marks) });
-    for (const observer of frameObservers) observer(frame);
-  }
+  } finally { frameRunPending = false; }
 }
 export function demoClock(): DemoClock | null { return dataMode === 'demo' ? clockValue() : null; }
 export function subscribeDemoClock(onState: (state: DemoClock) => void): Unsubscribe {
@@ -55,18 +81,24 @@ export function subscribeDemoClock(onState: (state: DemoClock) => void): Unsubsc
 }
 export function subscribeDemoOrderFrames(onFrame: (frame: DemoOrderFrame) => void): Unsubscribe {
   if (dataMode !== 'demo') return () => {};
-  frameObservers.add(onFrame); startTimer();
-  return () => { frameObservers.delete(onFrame); if (observers.size + frameObservers.size === 0) stopTimer(); };
+  frameObservers.add(onFrame); invalidateFrames(); startTimer();
+  return () => { if (frameObservers.delete(onFrame)) invalidateFrames(); if (observers.size + frameObservers.size === 0) stopTimer(); };
 }
-export function resumeDemoPlayback() { if (dataMode === 'demo' && playback === 'paused') { playback = 'running'; emitClock(); startTimer(); } }
+export function resumeDemoPlayback() {
+  if (dataMode !== 'demo' || playback !== 'paused') return;
+  if (storageUnavailable) initializeDemoWorkspace();
+  if (storageUnavailable) return;
+  playback = 'running'; invalidateFrames(); emitClock(); startTimer();
+}
 export function demoNowMs() { return dataMode === 'demo' ? ANCHOR + offset : Date.now(); }
 export function canSimulatePaperAction() { return dataMode === 'demo' && playback === 'running'; }
 
 export function initializeDemoWorkspace(): void {
   if (dataMode !== 'demo' || typeof window === 'undefined') return;
-  const storage = window.localStorage;
-  const sentinel = demoStorageKey('convexa.demo.workspace.initialized.v1');
   try {
+    const storage = window.localStorage;
+    const sentinel = demoStorageKey('convexa.demo.workspace.initialized.v1');
+    storageUnavailable = false;
     if (storage.getItem(sentinel) !== null) return;
     const seed: Record<string, unknown> = {
       'convexa.positions.v3': {
@@ -115,7 +147,8 @@ export function initializeDemoWorkspace(): void {
       if (storage.getItem(resolved) === null) storage.setItem(resolved, key === 'convexa.theme-paint' || key === 'convexa.positions.touch_at' ? String(value) : JSON.stringify(value));
     }
     storage.setItem(sentinel, '1');
-  } catch { /* A storage fault cannot authorize replacing bytes or falling through to live storage. */ }
+    storageUnavailable = false;
+  } catch { /* A storage fault cannot authorize replacing bytes or falling through to live storage. */ pauseForStorageFault(); }
 }
 export function resetDemoWorkspace(): void {
   if (dataMode !== 'demo' || typeof window === 'undefined') return;
@@ -126,5 +159,5 @@ export function resetDemoWorkspace(): void {
       if (key?.startsWith(demoPrefix)) storage.removeItem(key);
     }
     window.location.reload();
-  } catch { /* storage access failure cannot authorize clearing live or legacy keys */ }
+  } catch { /* storage access failure cannot authorize clearing live or legacy keys */ pauseForStorageFault(); }
 }
