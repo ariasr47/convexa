@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Inside Convexa · Backend atlas</title>
+  <link rel="stylesheet" href="atlas.css">
+  <script src="atlas.js" defer></script>
+</head>
+<body>
+  <header class="masthead">
+    <a class="wordmark" href="index.html">conve<span>x</span>a <small>/ engineering atlas</small></a>
+    <button id="theme" type="button" aria-label="Switch color scheme">Light scheme</button>
+  </header>
+  <main>
+    <div class="intro">
+      <p class="eyebrow">A visual guide to the actual repository</p>
+      <h1>Inside Convexa</h1>
+      <p class="lede">Follow a ticker from the screen through market data, models, caches, streams, and a simulated portfolio.</p>
+      <p class="evidence">Source baseline <code>8932fc11</code> · audited October 7, 2026 · diagrams describe code, not recorded traffic.</p>
+    </div>
+    <nav class="tabs" aria-label="Atlas sections">
+      <button type="button" data-view="system" aria-pressed="true">01 · System map</button>
+      <button type="button" data-view="traces" aria-pressed="false">02 · Follow a request</button>
+      <button type="button" data-view="data" aria-pressed="false">03 · Data & widgets</button>
+      <button type="button" data-view="journeys" aria-pressed="false">04 · User journeys</button>
+      <button type="button" data-view="stack" aria-pressed="false">05 · Stack & operations</button>
+      <button type="button" data-view="demo" aria-pressed="false">06 · Demo architecture</button>
+    </nav>
+
+    <section id="system" class="view" aria-labelledby="system-title">
+      <div class="section-heading"><div><p class="eyebrow">Current architecture</p><h2 id="system-title">A modular monolith, with two data paths.</h2></div><span class="tag">Source-derived</span></div>
+      <p class="measure">REST builds a structural snapshot. A separate WebSocket → SSE path updates prices. Background jobs prepare scanner and research data outside the request path.</p>
+      <div class="map-layout">
+        <div class="system-map" aria-label="Select a system component to inspect it">
+          <div class="lane"><span class="lane-label">Browser</span><button data-node="browser">React dashboard<small>Ticker · Scanner · Positions · Alerts</small></button><button data-node="facade">Typed API facade<small>openapi-fetch + separate streams</small></button></div>
+          <div class="connector">↓ same-origin HTTP + EventSource</div>
+          <div class="lane"><span class="lane-label">Edge</span><button data-node="edge">Cloudflare Pages<small>Static frontend + API proxy</small></button></div>
+          <div class="connector">↓ trader routes only · operator routes blocked</div>
+          <div class="lane"><span class="lane-label">Server</span><button data-node="router">Axum + AppState<small>Routes · auth · admission · contracts</small></button></div>
+          <div class="connector">↓</div>
+          <div class="lane branches"><span class="lane-label">Services</span><button data-node="analytics">Analytics<small>Cache → singleflight → compute</small></button><button data-node="stream">Price streams<small>One stock hub → many subscribers</small></button><button data-node="identity">Identity + books<small>Sessions · settings · sim/broker</small></button></div>
+          <div class="connector">↓ independent boundaries</div>
+          <div class="lane branches"><span class="lane-label">Core</span><button data-node="quant">Quant engine<small>Pure Rust · no vendor I/O</small></button><button data-node="vendor">External adapters<small>Massive · LLMs · broker port</small></button><button data-node="storage">Storage<small>Postgres · JSON · files · caches</small></button></div>
+          <div class="connector">↳ bounded jobs, capture, and offline analysis</div>
+          <div class="lane"><span class="lane-label">Off-path</span><button data-node="scanner">Scanner workers<small>Fast prices + slow structure sweep</small></button><button data-node="research">Research pipeline<small>Capture → archive → replay → outcomes</small></button></div>
+        </div>
+        <aside class="detail" id="node-detail" aria-live="polite"></aside>
+      </div>
+      <div class="boundary-note"><strong>What is running today?</strong> This map describes the implementation. The subscription has ended. <code>MARKET_DATA_MODE=paused</code> stops the five market-data producers and refuses market reads; it does not fill the UI with demo data.</div>
+    </section>
+
+    <section id="traces" class="view" hidden aria-labelledby="traces-title">
+      <div class="section-heading"><div><p class="eyebrow">Source-derived sequence walkthroughs</p><h2 id="traces-title">Follow one request, one step at a time.</h2></div><span class="tag">No timings invented</span></div>
+      <div class="controls"><label for="trace-select">Journey <select id="trace-select"></select></label><button id="trace-prev" type="button">← Previous</button><button id="trace-next" type="button">Next step →</button></div>
+      <div id="trace-map" class="trace-map"></div>
+      <div id="trace-detail" class="trace-detail" aria-live="polite"></div>
+      <p class="boundary-note">There is HTTP tracing and phase logging in the server, but <code>/api/_metrics</code> currently reports instrumentation disabled and returns no recent traces. These walkthroughs are code paths, not captured production spans.</p>
+    </section>
+
+    <section id="data" class="view" hidden aria-labelledby="data-title">
+      <div class="section-heading"><div><p class="eyebrow">Ownership and provenance</p><h2 id="data-title">One snapshot should tell one consistent story.</h2></div></div>
+      <div class="controls"><label for="data-select">Explore <select id="data-select"><option value="widgets">Screens & widgets</option><option value="stores">Stores & lifetime</option><option value="api">API families</option></select></label></div>
+      <div id="data-content"></div>
+      <p class="boundary-note">The checked-in OpenAPI artifact contains <strong>50 paths / 57 operations</strong>. The browser facade uses <strong>30 ordinary HTTP call sites</strong>. These count different things; neither count means a test or hosted request passed.</p>
+    </section>
+
+    <section id="journeys" class="view" hidden aria-labelledby="journeys-title">
+      <div class="section-heading"><div><p class="eyebrow">What users actually do</p><h2 id="journeys-title">From exploration to a recorded decision.</h2></div></div>
+      <div id="journey-content"></div>
+    </section>
+
+    <section id="stack" class="view" hidden aria-labelledby="stack-title">
+      <div class="section-heading"><div><p class="eyebrow">Tools, boundaries, and failure behavior</p><h2 id="stack-title">What keeps the system understandable.</h2></div></div>
+      <div id="stack-content"></div>
+      <div class="reading-grid"><a href="nx-production-research.md">Nx production research <span>Evidence and primary-source links →</span></a><a href="backend-source-audit.md">Full backend inventory <span>Providers, tables, paths, and citations →</span></a><a href="frontend-source-audit.md">Full frontend inventory <span>Widgets, stores, streams, and bypasses →</span></a></div>
+    </section>
+
+    <section id="demo" class="view" hidden aria-labelledby="demo-title">
+      <div class="section-heading"><div><p class="eyebrow">Proposed composition · implementation status in delivery record</p><h2 id="demo-title">Same product. A different data source.</h2></div></div>
+      <div class="controls" aria-label="Compare data modes"><button type="button" data-mode="demo" aria-pressed="true">Demo</button><button type="button" data-mode="live" aria-pressed="false">Live</button><button type="button" data-mode="paused" aria-pressed="false">Paused backend</button></div>
+      <div id="mode-flow" class="mode-flow"></div><div id="mode-detail" aria-live="polite"></div>
+      <h3>The seams that must all switch together</h3>
+      <div class="seam-grid"><div><b>HTTP</b><p>Session, bundles, scan rows, marks, book, sample analysis and settings.</p></div><div><b>Streams</b><p>Ticker and scanner subscriptions, cleanup, provenance and display eligibility.</p></div><div><b>Browser state</b><p>Demo keys, legacy fallback reads, outcome sources, seeded data and reset.</p></div><div><b>Escape routes</b><p>OAuth navigation, credential forms, operator research and unsupported calls.</p></div></div>
+      <div class="boundary-note"><strong>Honest portfolio claim:</strong> the static demo demonstrates the real frontend and local simulated workflows. The atlas documents the Rust backend. A static deployment does not mean the Rust service processed the visitor’s request.</div>
+      <p><a href="design-canvas.html">Open the proposed experience canvas →</a></p>
+    </section>
+    <footer><span>Read the diagrams left-to-right or top-to-bottom; select any module to see its responsibility and source.</span><a href="README.md">Reading guide & evidence legend</a></footer>
+  </main>
+</body>
+</html>

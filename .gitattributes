@@ -1,4 +1,6 @@
 # Line-ending policy.
+# All text follows the workspace LF agreement; byte-exact and binary overrides below win.
+*                   text=auto eol=lf
 #
 # Why this file exists: `core.autocrlf = true` is set on this machine and there was
 # no `.gitattributes`, so every checkout rewrote Spire's byte-exact receipts to CRLF.
