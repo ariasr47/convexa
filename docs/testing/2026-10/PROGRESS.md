@@ -65,3 +65,4 @@ Append-only. One line per step. Times are local (America/Los_Angeles) unless mar
 - 2026-10-08 P2 batch 9 committed 3bf04dde; verified (run b09): all exit 0, 592 s; test:tools 94 (-56), rest unchanged; 0 skips.
 - 2026-10-08 P2 batch 10 committed 268779d0; verified (run b10): all exit 0, 609 s; vitest 2999 (-123) + 45, tools 94, cargo 1635, chromium 128, a11y 35, pg 2+9+1, 0 skips.
 - 2026-10-08 P2 batch 11 committed c8a727e7; verified (run b11): all exit 0, 595 s; vitest 2932 (-67) + 45, tools 94, cargo 1635, chromium 128, a11y 35, pg 2+9+1, 0 skips.
+- 2026-10-08 P2 batch 12 committed 10000ed1; verified (run b12): all exit 0, 591 s; vitest 2913 (-19) + 45, tools 94, cargo 1635, chromium 128, a11y 35, pg 2+9+1, 0 skips.

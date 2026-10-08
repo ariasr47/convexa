@@ -38,3 +38,4 @@ RETIRED: apps/dashboard/src/app/features/trading/positions/future-copy.spec.ts; 
 RETIRED: apps/dashboard/src/app/features/trading/positions/offlineLayout.spec.tsx; parent c8a727e7aafe2d49f1df789da6fef18162d5c881; structure; 1 tests
 RETIRED: apps/dashboard/src/app/features/trading/positions/pauseGlyph.spec.ts; parent c8a727e7aafe2d49f1df789da6fef18162d5c881; structure; 4 tests
 RETIRED: apps/dashboard/src/app/features/trading/positions/positions-stage0.spec.tsx; parent c8a727e7aafe2d49f1df789da6fef18162d5c881; structure; 7 tests
+RETIRED: apps/dashboard/src/app/features/trading/orders/copy.spec.ts; parent 10000ed13e0952046d94bccba6292c8ad10573f6; structure; 2 tests
