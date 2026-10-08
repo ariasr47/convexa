@@ -151,7 +151,11 @@ export function AppShell() {
                 Sample playback complete. Showing the last sample.
               </Typography>
             )}
-            <Button size="small" onClick={resetDemoWorkspace} sx={{ minHeight: 44 }}>
+            <Button
+              size="small"
+              onClick={resetDemoWorkspace}
+              sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
+            >
               Reset Demo
             </Button>
           </Stack>

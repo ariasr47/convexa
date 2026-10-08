@@ -1,3 +1,4 @@
+import { extrasFor } from '@/shared/theme/tokens';
 import { loadSampleResearch, type LocalOutcome, type SampleResearchCase } from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -32,7 +33,7 @@ function FactList({
 }) {
   return (
     <Box>
-      <Typography variant="subtitle1" sx={{ mb: 1 }}>
+      <Typography component="h2" variant="subtitle1" sx={{ mb: 1 }}>
         {title}
       </Typography>
       <Stack component="ul" spacing={1} sx={{ pl: 2, mt: 0 }}>
@@ -158,6 +159,9 @@ export function ResearchView({ symbol }: { symbol: string }) {
   if (state.phase === 'loading')
     return (
       <Stack spacing={2} aria-label="Loading sample research">
+        <Typography component="h1" variant="overline" color="text.secondary">
+          Sample research note · authored for this scenario
+        </Typography>
         <Skeleton variant="rounded" height={90} />
         <Skeleton variant="rounded" height={250} />
         <Typography role="status">Loading sample data…</Typography>
@@ -173,7 +177,10 @@ export function ResearchView({ symbol }: { symbol: string }) {
           </Button>
         }
       >
-        <strong>{state.title}</strong> {state.detail}
+        <Typography component="h1" variant="inherit" sx={{ display: 'inline', fontWeight: 700 }}>
+          {state.title}
+        </Typography>{' '}
+        {state.detail}
       </Alert>
     );
   const research = state.result.value;
@@ -188,7 +195,7 @@ export function ResearchView({ symbol }: { symbol: string }) {
           component={Link}
           to={`/ticker/${encodeURIComponent(symbol)}`}
           size="small"
-          sx={{ minHeight: 44 }}
+          sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
         >
           Overview
         </Button>
@@ -196,7 +203,7 @@ export function ResearchView({ symbol }: { symbol: string }) {
           component={Link}
           to={`/ticker/${encodeURIComponent(symbol)}/technical-analysis`}
           size="small"
-          sx={{ minHeight: 44 }}
+          sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
         >
           Technical analysis
         </Button>
@@ -208,7 +215,7 @@ export function ResearchView({ symbol }: { symbol: string }) {
       )}
       <Card variant="outlined" sx={{ borderTop: 2, borderTopColor: 'primary.main' }}>
         <CardContent>
-          <Typography variant="h5" component="h2" sx={{ mb: 1 }}>
+          <Typography variant="h5" component="h1" sx={{ mb: 1 }}>
             {research.title}
           </Typography>
           <Typography color="text.secondary">{research.thesis}</Typography>
@@ -234,7 +241,7 @@ export function ResearchView({ symbol }: { symbol: string }) {
                 scenarioId={research.scenarioId}
               />
               <Box>
-                <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                <Typography component="h2" variant="subtitle1" sx={{ mb: 1 }}>
                   Risks
                 </Typography>
                 <Stack component="ul" spacing={1} sx={{ pl: 2, mt: 0 }}>
@@ -246,7 +253,7 @@ export function ResearchView({ symbol }: { symbol: string }) {
                 </Stack>
               </Box>
               <Box>
-                <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                <Typography component="h2" variant="subtitle1" sx={{ mb: 1 }}>
                   Invalidation
                 </Typography>
                 <Typography color="text.secondary">{research.invalidation}</Typography>
@@ -264,7 +271,7 @@ export function ResearchView({ symbol }: { symbol: string }) {
                 scenarioId={research.scenarioId}
               />
               <Box>
-                <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                <Typography component="h2" variant="subtitle1" sx={{ mb: 1 }}>
                   Assumptions
                 </Typography>
                 <Stack component="ul" spacing={1} sx={{ pl: 2, mt: 0 }}>
@@ -294,7 +301,7 @@ export function ResearchView({ symbol }: { symbol: string }) {
         <Button
           onClick={() => void fetchResearch(true)}
           disabled={state.refreshing}
-          sx={{ minHeight: 44 }}
+          sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
         >
           {state.refreshing ? 'Refreshing…' : 'Refresh sample'}
         </Button>

@@ -1,0 +1,59 @@
+{
+  "scope": "Independent local QA observation against frozen production DEMO artifact; not hosted evidence",
+  "artifact": {
+    "path": ".spire/tmp/portfolio-qa-demo-contrast-dist",
+    "servedUrl": "http://127.0.0.1:4390/",
+    "indexSha256": "56472E23E599BC899814F60E137813B1924BDFF1CDE369DB53C7A71392E74FD1",
+    "httpStatus": 200
+  },
+  "axe": {
+    "browser": "Chromium",
+    "routes": [
+      "/ticker/SPY/technical-analysis",
+      "/ticker/SPY/research"
+    ],
+    "schemes": [
+      "dark",
+      "light"
+    ],
+    "states": [
+      "ready",
+      "unsupported IBM",
+      "cold seed-asset error",
+      "held seed-asset loading"
+    ],
+    "caseCount": 16,
+    "violations": 0,
+    "pageH1CountPerCase": 1,
+    "method": "AxeBuilder after state-specific rendered selector became visible"
+  },
+  "g1": {
+    "command": "DEMO_HOSTED_URL=http://127.0.0.1:4390 npm exec --no -- playwright test --config apps/dashboard-e2e/playwright.demo.config.ts",
+    "nativeExitCode": 0,
+    "passed": 1,
+    "failed": 0,
+    "wallSeconds": 52,
+    "testSeconds": 51,
+    "resultCopy": ".spire/tmp/qa-g1-final-results.json",
+    "egressAttempts": 0
+  },
+  "canonicalSuites": {
+    "api": {
+      "files": 8,
+      "tests": 59,
+      "nativeExitCode": 0
+    },
+    "dashboard": {
+      "files": 262,
+      "tests": 3150,
+      "nativeExitCode": 0
+    }
+  },
+  "conformance": {
+    "qaReceipt": ".spire/clusters/tech/contracts/portfolio-demo-platform/conformance-receipt-qa.json",
+    "verdict": "PASS",
+    "anonymousGetPinsPassed": 2
+  },
+  "atlasUrl": "http://127.0.0.1:4387/",
+  "hostedStatus": "NOT RUN; exact Pages preview URL unavailable at this observation"
+}

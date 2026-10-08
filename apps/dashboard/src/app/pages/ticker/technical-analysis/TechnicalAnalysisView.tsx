@@ -1,3 +1,4 @@
+import { extrasFor } from '@/shared/theme/tokens';
 import {
   loadSampleBars,
   type IndicatorName,
@@ -132,6 +133,9 @@ export function TechnicalAnalysisView({ symbol }: { symbol: string }) {
   if (state.phase === 'loading')
     return (
       <Stack spacing={2} aria-label="Loading sample data">
+        <Typography component="h1" variant="overline" color="text.secondary">
+          Technical analysis · {symbol}
+        </Typography>
         <Skeleton variant="rounded" height={280} />
         <Skeleton variant="rounded" height={190} />
         <Typography role="status">Loading sample data…</Typography>
@@ -147,14 +151,17 @@ export function TechnicalAnalysisView({ symbol }: { symbol: string }) {
           </Button>
         }
       >
-        <strong>{state.title}</strong> {state.detail}
+        <Typography component="h1" variant="inherit" sx={{ display: 'inline', fontWeight: 700 }}>
+          {state.title}
+        </Typography>{' '}
+        {state.detail}
       </Alert>
     );
   if (!view || !bar) return null;
   return (
     <Stack spacing={2.5} sx={{ minWidth: 0 }}>
       <Box sx={{ display: 'flex', gap: 2, alignItems: 'baseline', flexWrap: 'wrap' }}>
-        <Typography variant="overline" color="text.secondary">
+        <Typography component="h1" variant="overline" color="text.secondary">
           Technical analysis · {symbol}
         </Typography>
         <Typography variant="body2" color="text.secondary">
@@ -165,7 +172,7 @@ export function TechnicalAnalysisView({ symbol }: { symbol: string }) {
           component={Link}
           to={`/ticker/${encodeURIComponent(symbol)}`}
           size="small"
-          sx={{ minHeight: 44 }}
+          sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
         >
           Overview
         </Button>
@@ -173,7 +180,7 @@ export function TechnicalAnalysisView({ symbol }: { symbol: string }) {
           component={Link}
           to={`/ticker/${encodeURIComponent(symbol)}/research`}
           size="small"
-          sx={{ minHeight: 44 }}
+          sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
         >
           Research
         </Button>
@@ -189,7 +196,9 @@ export function TechnicalAnalysisView({ symbol }: { symbol: string }) {
             direction={{ xs: 'column', sm: 'row' }}
             sx={{ justifyContent: 'space-between', gap: 1 }}
           >
-            <Typography variant="subtitle1">Sample series · not recorded market history</Typography>
+            <Typography component="h2" variant="subtitle1">
+              Sample series · not recorded market history
+            </Typography>
             <Typography variant="body2" color="text.secondary">
               Daily close · USD · synthetic scenario
             </Typography>
@@ -245,7 +254,7 @@ export function TechnicalAnalysisView({ symbol }: { symbol: string }) {
           </Box>
           <Typography variant="caption" component="p" color="text.secondary">
             Close ·{' '}
-            <Box component="span" sx={{ color: 'primary.main' }}>
+            <Box component="span" sx={(theme) => ({ color: extrasFor(theme).textAmber })}>
               EMA 20
             </Box>{' '}
             ·{' '}
@@ -279,7 +288,7 @@ export function TechnicalAnalysisView({ symbol }: { symbol: string }) {
       </Card>
       <Card variant="outlined">
         <CardContent>
-          <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          <Typography component="h2" variant="subtitle1" sx={{ mb: 1 }}>
             Indicator readings · {bar.date}
           </Typography>
           <Box
@@ -358,7 +367,7 @@ export function TechnicalAnalysisView({ symbol }: { symbol: string }) {
         <Button
           onClick={() => void fetchBars(true)}
           disabled={state.refreshing}
-          sx={{ minHeight: 44 }}
+          sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
         >
           {state.refreshing ? 'Refreshing…' : 'Refresh sample'}
         </Button>

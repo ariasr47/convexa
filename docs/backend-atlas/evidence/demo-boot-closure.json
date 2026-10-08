@@ -14,11 +14,11 @@
         "sha256": "44674ca0c2756b966126d352e2a923dfcd2dd4900e43333d4803bba5398a0a4f"
       },
       {
-        "asset": "assets/AuthDialogProvider-44zj6cny.js",
+        "asset": "assets/AuthDialogProvider-CxGU29Qd.js",
         "rawBytes": 20538,
-        "brotliBytes": 6610,
+        "brotliBytes": 6614,
         "hasPrecompressedArtifact": true,
-        "sha256": "b43acd8a209873e17d148c8f7f616ca433cd47899368bce4dbce2218eb1a0101"
+        "sha256": "21e35476eaf0308318081ecaa0b365b683b250fc23ecdaeafa5c7096d34e929f"
       },
       {
         "asset": "assets/TintChip-hu6Oj7wx.js",
@@ -42,11 +42,11 @@
         "sha256": "ce4cd5043fb506e6dc24496ebc0a45e643d7d4fab71de9adf67614178e5ed866"
       },
       {
-        "asset": "assets/index-BNA24poQ.js",
+        "asset": "assets/index-Bhfg9sNN.js",
         "rawBytes": 6722,
-        "brotliBytes": 2221,
+        "brotliBytes": 2215,
         "hasPrecompressedArtifact": true,
-        "sha256": "ce24b2fc376980bcd1e4ef4cd833614751a4a8d7601b076918b7f68c70c9e1b4"
+        "sha256": "81803134195a469889926ca1396e1dcb90efa3207b9d0fcecf0bc5e9b2cdd261"
       },
       {
         "asset": "assets/index-Cr60H_du.css",
@@ -56,18 +56,18 @@
         "sha256": "025b7216190f5494f23dbd8590189b5842f827f051982831cd4f1cb38c1556ce"
       },
       {
-        "asset": "assets/migrate-CqltDQ8e.js",
+        "asset": "assets/migrate-B-dWgYPZ.js",
         "rawBytes": 18565,
-        "brotliBytes": 5859,
+        "brotliBytes": 5835,
         "hasPrecompressedArtifact": true,
-        "sha256": "7da7f57cd1581a98fee2b9b6db037376c8cc60edb1e58f324b06b55fc5fab0d1"
+        "sha256": "f2f5ef8fbf2e310255cd2ccd110eab1f7ae6f31fef281b8a0a6810b68015f15a"
       },
       {
-        "asset": "assets/mountApp-CtT4Lw8t.js",
-        "rawBytes": 54605,
-        "brotliBytes": 14380,
+        "asset": "assets/mountApp-BtYPrZC5.js",
+        "rawBytes": 54637,
+        "brotliBytes": 14375,
         "hasPrecompressedArtifact": true,
-        "sha256": "8023a519b0d43d521d6e7818fdcdbf91d874f3ce602d3c713b4c1463cf2f3581"
+        "sha256": "94d40d022b31da99f46dd3f54781662aa1914fbe71560312d678ca939f774cf1"
       },
       {
         "asset": "assets/mui-CkNSlttA.js",
@@ -98,11 +98,11 @@
         "sha256": "7cc62cd66aebefc2945eea688c40c1885ed4efc68a1909b5b3652fa4605d2d03"
       },
       {
-        "asset": "assets/store-Dvz3fv7l.js",
+        "asset": "assets/store-ANO6TQ-e.js",
         "rawBytes": 1285,
-        "brotliBytes": 570,
+        "brotliBytes": 569,
         "hasPrecompressedArtifact": true,
-        "sha256": "5b01a6ec72054e20a5769bad120c5931c494fe6b938d0806ad844cfcf5c05fdf"
+        "sha256": "ad567e095b88ca081e6679a83c9d425dfe29518298d293e182fc32347b4702ae"
       },
       {
         "asset": "assets/streams-BBqIxyPM.js",
@@ -140,42 +140,42 @@
         "sha256": "e14ef4899f082bfd0065ca5fb66ce792e3aeb8103b74c965e7ca14bfa4e4ea63"
       },
       {
-        "asset": "assets/useSettings-CxQPnKHW.js",
+        "asset": "assets/useSettings-pXvQuzhQ.js",
         "rawBytes": 2603,
-        "brotliBytes": 978,
+        "brotliBytes": 982,
         "hasPrecompressedArtifact": true,
-        "sha256": "8176b38dc75ac7d500960be5139998cbdb1e7415023a0fa960c83e992d0871d3"
+        "sha256": "282dbcbcaec1bfa8fbfcf22cd040eae13d79fa373ac7ec5f52e242bd183e67de"
       }
     ],
     "jsRequests": 19,
-    "rawBytes": 820504,
-    "brotliBytes": 223650
+    "rawBytes": 820536,
+    "brotliBytes": 223622
   },
   "routes": {
     "TickerDashboard": {
-      "chunk": "TickerDashboard-ELLx1hLF.js",
+      "chunk": "TickerDashboard-CuyvJcSj.js",
       "incrementalAfterBoot": {
         "assets": [
           {
-            "asset": "assets/FigureCell-C9JLpFsf.js",
+            "asset": "assets/FigureCell-D6kQk1LD.js",
             "rawBytes": 96521,
-            "brotliBytes": 26889,
+            "brotliBytes": 26847,
             "hasPrecompressedArtifact": true,
-            "sha256": "eea2e929f46e306b71f715ab2c9017fc18c5b696a67ebff56e8e0dbc7ad05d46"
+            "sha256": "a61e5f5762eea76dbcffca8e8a8c977076c6eea3579ce52325afae35ddb00308"
           },
           {
-            "asset": "assets/TickerDashboard-ELLx1hLF.js",
+            "asset": "assets/TickerDashboard-CuyvJcSj.js",
             "rawBytes": 171685,
-            "brotliBytes": 43121,
+            "brotliBytes": 43105,
             "hasPrecompressedArtifact": true,
-            "sha256": "f05e7fe98b69f5524bdf14297564b8763b105822d79ed891a282810b41b9d7f6"
+            "sha256": "78b9f8304283e2146da55ad423dccb19ea52efca74e4af4a6fb7dbb3a3b38ce1"
           },
           {
-            "asset": "assets/aiProviderLabels-CyQJImSe.js",
+            "asset": "assets/aiProviderLabels-C1n8IJ2v.js",
             "rawBytes": 9616,
-            "brotliBytes": 3545,
+            "brotliBytes": 3538,
             "hasPrecompressedArtifact": true,
-            "sha256": "004ff54bc64d618e1a204835ef06004d650e322e02a16ba207e22ae48babd394"
+            "sha256": "a429cf4716a9b8536a3443421dff5fd02c09c268082d8899c1d81466cfbdc962"
           },
           {
             "asset": "assets/notANumber-IdsJwuGp.js",
@@ -192,11 +192,11 @@
             "sha256": "88a37c80a840793ec463bace5a9b24c9ca63fcd202d9a516c7f53b8fea7ebd3a"
           },
           {
-            "asset": "assets/useAlerts-BiWGDzKi.js",
+            "asset": "assets/useAlerts-wb0QEXS4.js",
             "rawBytes": 4708,
             "brotliBytes": 1818,
             "hasPrecompressedArtifact": true,
-            "sha256": "ab41d5132414aa27dea320f8f222b6d3526be84178cb08b49e6270b08914aeda"
+            "sha256": "42172d906aa67e85e44c9c83fd1624937edcca5122157c8dc9877b386f1103db"
           },
           {
             "asset": "assets/useFlashOnChange-CqvYm5ct.js",
@@ -206,16 +206,16 @@
             "sha256": "b214b03c6297e5a9f8379052b1ef0e8633ba3cc02c1d5064326c02feb01dd563"
           },
           {
-            "asset": "assets/useGate-D5BccdmX.js",
+            "asset": "assets/useGate-BOB6DCXD.js",
             "rawBytes": 1291,
-            "brotliBytes": 649,
+            "brotliBytes": 662,
             "hasPrecompressedArtifact": true,
-            "sha256": "bc1ea495112fc345cce2f7378095bb2f950cf44acbeb1e78ca386ece30190d44"
+            "sha256": "ec40e3c89d17139ddacf9eee94735c893dbea50e797e188253f85fa4836f812b"
           }
         ],
         "jsRequests": 8,
         "rawBytes": 289421,
-        "brotliBytes": 77932
+        "brotliBytes": 77880
       },
       "totalWithBoot": {
         "assets": [
@@ -227,25 +227,25 @@
             "sha256": "44674ca0c2756b966126d352e2a923dfcd2dd4900e43333d4803bba5398a0a4f"
           },
           {
-            "asset": "assets/AuthDialogProvider-44zj6cny.js",
+            "asset": "assets/AuthDialogProvider-CxGU29Qd.js",
             "rawBytes": 20538,
-            "brotliBytes": 6610,
+            "brotliBytes": 6614,
             "hasPrecompressedArtifact": true,
-            "sha256": "b43acd8a209873e17d148c8f7f616ca433cd47899368bce4dbce2218eb1a0101"
+            "sha256": "21e35476eaf0308318081ecaa0b365b683b250fc23ecdaeafa5c7096d34e929f"
           },
           {
-            "asset": "assets/FigureCell-C9JLpFsf.js",
+            "asset": "assets/FigureCell-D6kQk1LD.js",
             "rawBytes": 96521,
-            "brotliBytes": 26889,
+            "brotliBytes": 26847,
             "hasPrecompressedArtifact": true,
-            "sha256": "eea2e929f46e306b71f715ab2c9017fc18c5b696a67ebff56e8e0dbc7ad05d46"
+            "sha256": "a61e5f5762eea76dbcffca8e8a8c977076c6eea3579ce52325afae35ddb00308"
           },
           {
-            "asset": "assets/TickerDashboard-ELLx1hLF.js",
+            "asset": "assets/TickerDashboard-CuyvJcSj.js",
             "rawBytes": 171685,
-            "brotliBytes": 43121,
+            "brotliBytes": 43105,
             "hasPrecompressedArtifact": true,
-            "sha256": "f05e7fe98b69f5524bdf14297564b8763b105822d79ed891a282810b41b9d7f6"
+            "sha256": "78b9f8304283e2146da55ad423dccb19ea52efca74e4af4a6fb7dbb3a3b38ce1"
           },
           {
             "asset": "assets/TintChip-hu6Oj7wx.js",
@@ -255,11 +255,11 @@
             "sha256": "a3c9b6a9f5e2fa6958d8542c0d865929ef8557aa8c4a5818af44116cd4d23042"
           },
           {
-            "asset": "assets/aiProviderLabels-CyQJImSe.js",
+            "asset": "assets/aiProviderLabels-C1n8IJ2v.js",
             "rawBytes": 9616,
-            "brotliBytes": 3545,
+            "brotliBytes": 3538,
             "hasPrecompressedArtifact": true,
-            "sha256": "004ff54bc64d618e1a204835ef06004d650e322e02a16ba207e22ae48babd394"
+            "sha256": "a429cf4716a9b8536a3443421dff5fd02c09c268082d8899c1d81466cfbdc962"
           },
           {
             "asset": "assets/avatar-ClxdNNbq.js",
@@ -276,11 +276,11 @@
             "sha256": "ce4cd5043fb506e6dc24496ebc0a45e643d7d4fab71de9adf67614178e5ed866"
           },
           {
-            "asset": "assets/index-BNA24poQ.js",
+            "asset": "assets/index-Bhfg9sNN.js",
             "rawBytes": 6722,
-            "brotliBytes": 2221,
+            "brotliBytes": 2215,
             "hasPrecompressedArtifact": true,
-            "sha256": "ce24b2fc376980bcd1e4ef4cd833614751a4a8d7601b076918b7f68c70c9e1b4"
+            "sha256": "81803134195a469889926ca1396e1dcb90efa3207b9d0fcecf0bc5e9b2cdd261"
           },
           {
             "asset": "assets/index-Cr60H_du.css",
@@ -290,18 +290,18 @@
             "sha256": "025b7216190f5494f23dbd8590189b5842f827f051982831cd4f1cb38c1556ce"
           },
           {
-            "asset": "assets/migrate-CqltDQ8e.js",
+            "asset": "assets/migrate-B-dWgYPZ.js",
             "rawBytes": 18565,
-            "brotliBytes": 5859,
+            "brotliBytes": 5835,
             "hasPrecompressedArtifact": true,
-            "sha256": "7da7f57cd1581a98fee2b9b6db037376c8cc60edb1e58f324b06b55fc5fab0d1"
+            "sha256": "f2f5ef8fbf2e310255cd2ccd110eab1f7ae6f31fef281b8a0a6810b68015f15a"
           },
           {
-            "asset": "assets/mountApp-CtT4Lw8t.js",
-            "rawBytes": 54605,
-            "brotliBytes": 14380,
+            "asset": "assets/mountApp-BtYPrZC5.js",
+            "rawBytes": 54637,
+            "brotliBytes": 14375,
             "hasPrecompressedArtifact": true,
-            "sha256": "8023a519b0d43d521d6e7818fdcdbf91d874f3ce602d3c713b4c1463cf2f3581"
+            "sha256": "94d40d022b31da99f46dd3f54781662aa1914fbe71560312d678ca939f774cf1"
           },
           {
             "asset": "assets/mui-CkNSlttA.js",
@@ -346,11 +346,11 @@
             "sha256": "7cc62cd66aebefc2945eea688c40c1885ed4efc68a1909b5b3652fa4605d2d03"
           },
           {
-            "asset": "assets/store-Dvz3fv7l.js",
+            "asset": "assets/store-ANO6TQ-e.js",
             "rawBytes": 1285,
-            "brotliBytes": 570,
+            "brotliBytes": 569,
             "hasPrecompressedArtifact": true,
-            "sha256": "5b01a6ec72054e20a5769bad120c5931c494fe6b938d0806ad844cfcf5c05fdf"
+            "sha256": "ad567e095b88ca081e6679a83c9d425dfe29518298d293e182fc32347b4702ae"
           },
           {
             "asset": "assets/streams-BBqIxyPM.js",
@@ -381,11 +381,11 @@
             "sha256": "3ec498dd8c5e8d7141e98f5cffb133f762997283132d36043d578cbcb074670c"
           },
           {
-            "asset": "assets/useAlerts-BiWGDzKi.js",
+            "asset": "assets/useAlerts-wb0QEXS4.js",
             "rawBytes": 4708,
             "brotliBytes": 1818,
             "hasPrecompressedArtifact": true,
-            "sha256": "ab41d5132414aa27dea320f8f222b6d3526be84178cb08b49e6270b08914aeda"
+            "sha256": "42172d906aa67e85e44c9c83fd1624937edcca5122157c8dc9877b386f1103db"
           },
           {
             "asset": "assets/useFlashOnChange-CqvYm5ct.js",
@@ -395,11 +395,11 @@
             "sha256": "b214b03c6297e5a9f8379052b1ef0e8633ba3cc02c1d5064326c02feb01dd563"
           },
           {
-            "asset": "assets/useGate-D5BccdmX.js",
+            "asset": "assets/useGate-BOB6DCXD.js",
             "rawBytes": 1291,
-            "brotliBytes": 649,
+            "brotliBytes": 662,
             "hasPrecompressedArtifact": true,
-            "sha256": "bc1ea495112fc345cce2f7378095bb2f950cf44acbeb1e78ca386ece30190d44"
+            "sha256": "ec40e3c89d17139ddacf9eee94735c893dbea50e797e188253f85fa4836f812b"
           },
           {
             "asset": "assets/useReducedMotion--uXfYCFB.js",
@@ -409,28 +409,28 @@
             "sha256": "e14ef4899f082bfd0065ca5fb66ce792e3aeb8103b74c965e7ca14bfa4e4ea63"
           },
           {
-            "asset": "assets/useSettings-CxQPnKHW.js",
+            "asset": "assets/useSettings-pXvQuzhQ.js",
             "rawBytes": 2603,
-            "brotliBytes": 978,
+            "brotliBytes": 982,
             "hasPrecompressedArtifact": true,
-            "sha256": "8176b38dc75ac7d500960be5139998cbdb1e7415023a0fa960c83e992d0871d3"
+            "sha256": "282dbcbcaec1bfa8fbfcf22cd040eae13d79fa373ac7ec5f52e242bd183e67de"
           }
         ],
         "jsRequests": 27,
-        "rawBytes": 1109925,
-        "brotliBytes": 301582
+        "rawBytes": 1109957,
+        "brotliBytes": 301502
       }
     },
     "Scanner": {
-      "chunk": "Scanner-E0FlROvj.js",
+      "chunk": "Scanner-CDylqUEr.js",
       "incrementalAfterBoot": {
         "assets": [
           {
-            "asset": "assets/Scanner-E0FlROvj.js",
+            "asset": "assets/Scanner-CDylqUEr.js",
             "rawBytes": 39253,
-            "brotliBytes": 10926,
+            "brotliBytes": 10912,
             "hasPrecompressedArtifact": true,
-            "sha256": "b3fb1f773aaad6df4b5a17ac66133a3c690dfa60fb42c0504471e68b55bc9f4f"
+            "sha256": "44dc46bcd751c850881dd644fe897b59953bd974e8100dc09888d80cd4c96e00"
           },
           {
             "asset": "assets/notANumber-IdsJwuGp.js",
@@ -447,16 +447,16 @@
             "sha256": "b214b03c6297e5a9f8379052b1ef0e8633ba3cc02c1d5064326c02feb01dd563"
           },
           {
-            "asset": "assets/useGate-D5BccdmX.js",
+            "asset": "assets/useGate-BOB6DCXD.js",
             "rawBytes": 1291,
-            "brotliBytes": 649,
+            "brotliBytes": 662,
             "hasPrecompressedArtifact": true,
-            "sha256": "bc1ea495112fc345cce2f7378095bb2f950cf44acbeb1e78ca386ece30190d44"
+            "sha256": "ec40e3c89d17139ddacf9eee94735c893dbea50e797e188253f85fa4836f812b"
           }
         ],
         "jsRequests": 4,
         "rawBytes": 42616,
-        "brotliBytes": 12495
+        "brotliBytes": 12494
       },
       "totalWithBoot": {
         "assets": [
@@ -468,18 +468,18 @@
             "sha256": "44674ca0c2756b966126d352e2a923dfcd2dd4900e43333d4803bba5398a0a4f"
           },
           {
-            "asset": "assets/AuthDialogProvider-44zj6cny.js",
+            "asset": "assets/AuthDialogProvider-CxGU29Qd.js",
             "rawBytes": 20538,
-            "brotliBytes": 6610,
+            "brotliBytes": 6614,
             "hasPrecompressedArtifact": true,
-            "sha256": "b43acd8a209873e17d148c8f7f616ca433cd47899368bce4dbce2218eb1a0101"
+            "sha256": "21e35476eaf0308318081ecaa0b365b683b250fc23ecdaeafa5c7096d34e929f"
           },
           {
-            "asset": "assets/Scanner-E0FlROvj.js",
+            "asset": "assets/Scanner-CDylqUEr.js",
             "rawBytes": 39253,
-            "brotliBytes": 10926,
+            "brotliBytes": 10912,
             "hasPrecompressedArtifact": true,
-            "sha256": "b3fb1f773aaad6df4b5a17ac66133a3c690dfa60fb42c0504471e68b55bc9f4f"
+            "sha256": "44dc46bcd751c850881dd644fe897b59953bd974e8100dc09888d80cd4c96e00"
           },
           {
             "asset": "assets/TintChip-hu6Oj7wx.js",
@@ -503,11 +503,11 @@
             "sha256": "ce4cd5043fb506e6dc24496ebc0a45e643d7d4fab71de9adf67614178e5ed866"
           },
           {
-            "asset": "assets/index-BNA24poQ.js",
+            "asset": "assets/index-Bhfg9sNN.js",
             "rawBytes": 6722,
-            "brotliBytes": 2221,
+            "brotliBytes": 2215,
             "hasPrecompressedArtifact": true,
-            "sha256": "ce24b2fc376980bcd1e4ef4cd833614751a4a8d7601b076918b7f68c70c9e1b4"
+            "sha256": "81803134195a469889926ca1396e1dcb90efa3207b9d0fcecf0bc5e9b2cdd261"
           },
           {
             "asset": "assets/index-Cr60H_du.css",
@@ -517,18 +517,18 @@
             "sha256": "025b7216190f5494f23dbd8590189b5842f827f051982831cd4f1cb38c1556ce"
           },
           {
-            "asset": "assets/migrate-CqltDQ8e.js",
+            "asset": "assets/migrate-B-dWgYPZ.js",
             "rawBytes": 18565,
-            "brotliBytes": 5859,
+            "brotliBytes": 5835,
             "hasPrecompressedArtifact": true,
-            "sha256": "7da7f57cd1581a98fee2b9b6db037376c8cc60edb1e58f324b06b55fc5fab0d1"
+            "sha256": "f2f5ef8fbf2e310255cd2ccd110eab1f7ae6f31fef281b8a0a6810b68015f15a"
           },
           {
-            "asset": "assets/mountApp-CtT4Lw8t.js",
-            "rawBytes": 54605,
-            "brotliBytes": 14380,
+            "asset": "assets/mountApp-BtYPrZC5.js",
+            "rawBytes": 54637,
+            "brotliBytes": 14375,
             "hasPrecompressedArtifact": true,
-            "sha256": "8023a519b0d43d521d6e7818fdcdbf91d874f3ce602d3c713b4c1463cf2f3581"
+            "sha256": "94d40d022b31da99f46dd3f54781662aa1914fbe71560312d678ca939f774cf1"
           },
           {
             "asset": "assets/mui-CkNSlttA.js",
@@ -566,11 +566,11 @@
             "sha256": "7cc62cd66aebefc2945eea688c40c1885ed4efc68a1909b5b3652fa4605d2d03"
           },
           {
-            "asset": "assets/store-Dvz3fv7l.js",
+            "asset": "assets/store-ANO6TQ-e.js",
             "rawBytes": 1285,
-            "brotliBytes": 570,
+            "brotliBytes": 569,
             "hasPrecompressedArtifact": true,
-            "sha256": "5b01a6ec72054e20a5769bad120c5931c494fe6b938d0806ad844cfcf5c05fdf"
+            "sha256": "ad567e095b88ca081e6679a83c9d425dfe29518298d293e182fc32347b4702ae"
           },
           {
             "asset": "assets/streams-BBqIxyPM.js",
@@ -608,11 +608,11 @@
             "sha256": "b214b03c6297e5a9f8379052b1ef0e8633ba3cc02c1d5064326c02feb01dd563"
           },
           {
-            "asset": "assets/useGate-D5BccdmX.js",
+            "asset": "assets/useGate-BOB6DCXD.js",
             "rawBytes": 1291,
-            "brotliBytes": 649,
+            "brotliBytes": 662,
             "hasPrecompressedArtifact": true,
-            "sha256": "bc1ea495112fc345cce2f7378095bb2f950cf44acbeb1e78ca386ece30190d44"
+            "sha256": "ec40e3c89d17139ddacf9eee94735c893dbea50e797e188253f85fa4836f812b"
           },
           {
             "asset": "assets/useReducedMotion--uXfYCFB.js",
@@ -622,42 +622,42 @@
             "sha256": "e14ef4899f082bfd0065ca5fb66ce792e3aeb8103b74c965e7ca14bfa4e4ea63"
           },
           {
-            "asset": "assets/useSettings-CxQPnKHW.js",
+            "asset": "assets/useSettings-pXvQuzhQ.js",
             "rawBytes": 2603,
-            "brotliBytes": 978,
+            "brotliBytes": 982,
             "hasPrecompressedArtifact": true,
-            "sha256": "8176b38dc75ac7d500960be5139998cbdb1e7415023a0fa960c83e992d0871d3"
+            "sha256": "282dbcbcaec1bfa8fbfcf22cd040eae13d79fa373ac7ec5f52e242bd183e67de"
           }
         ],
         "jsRequests": 23,
-        "rawBytes": 863120,
-        "brotliBytes": 236145
+        "rawBytes": 863152,
+        "brotliBytes": 236116
       }
     },
     "PositionsPage": {
-      "chunk": "PositionsPage-B7r-gYxi.js",
+      "chunk": "PositionsPage-Dp0g3twv.js",
       "incrementalAfterBoot": {
         "assets": [
           {
-            "asset": "assets/BrokerageSection-BmFc7Qpd.js",
+            "asset": "assets/BrokerageSection-Hi2ixaf1.js",
             "rawBytes": 6407,
-            "brotliBytes": 1925,
+            "brotliBytes": 1926,
             "hasPrecompressedArtifact": true,
-            "sha256": "e82bdb79d8687aef51e16e49976aec5be5696ddcfd354fa772919828ee437d0b"
+            "sha256": "cc3ff8733fa97fdb01d9a1a885eb24bb6cceaa536c0611e7c71f3c14bfa0d093"
           },
           {
-            "asset": "assets/FigureCell-C9JLpFsf.js",
+            "asset": "assets/FigureCell-D6kQk1LD.js",
             "rawBytes": 96521,
-            "brotliBytes": 26889,
+            "brotliBytes": 26847,
             "hasPrecompressedArtifact": true,
-            "sha256": "eea2e929f46e306b71f715ab2c9017fc18c5b696a67ebff56e8e0dbc7ad05d46"
+            "sha256": "a61e5f5762eea76dbcffca8e8a8c977076c6eea3579ce52325afae35ddb00308"
           },
           {
-            "asset": "assets/PositionsPage-B7r-gYxi.js",
+            "asset": "assets/PositionsPage-Dp0g3twv.js",
             "rawBytes": 116207,
-            "brotliBytes": 28311,
+            "brotliBytes": 28323,
             "hasPrecompressedArtifact": true,
-            "sha256": "4aa440800c9e048b78fa03b03fd2dbf90b76703909f877cc776a688940096178"
+            "sha256": "d62ad43569a16c26da1da8b98cada980e14a6ade30bf529595769dbc4c511bbb"
           },
           {
             "asset": "assets/notANumber-IdsJwuGp.js",
@@ -681,16 +681,16 @@
             "sha256": "b214b03c6297e5a9f8379052b1ef0e8633ba3cc02c1d5064326c02feb01dd563"
           },
           {
-            "asset": "assets/useGate-D5BccdmX.js",
+            "asset": "assets/useGate-BOB6DCXD.js",
             "rawBytes": 1291,
-            "brotliBytes": 649,
+            "brotliBytes": 662,
             "hasPrecompressedArtifact": true,
-            "sha256": "bc1ea495112fc345cce2f7378095bb2f950cf44acbeb1e78ca386ece30190d44"
+            "sha256": "ec40e3c89d17139ddacf9eee94735c893dbea50e797e188253f85fa4836f812b"
           }
         ],
         "jsRequests": 7,
         "rawBytes": 226026,
-        "brotliBytes": 59684
+        "brotliBytes": 59668
       },
       "totalWithBoot": {
         "assets": [
@@ -702,32 +702,32 @@
             "sha256": "44674ca0c2756b966126d352e2a923dfcd2dd4900e43333d4803bba5398a0a4f"
           },
           {
-            "asset": "assets/AuthDialogProvider-44zj6cny.js",
+            "asset": "assets/AuthDialogProvider-CxGU29Qd.js",
             "rawBytes": 20538,
-            "brotliBytes": 6610,
+            "brotliBytes": 6614,
             "hasPrecompressedArtifact": true,
-            "sha256": "b43acd8a209873e17d148c8f7f616ca433cd47899368bce4dbce2218eb1a0101"
+            "sha256": "21e35476eaf0308318081ecaa0b365b683b250fc23ecdaeafa5c7096d34e929f"
           },
           {
-            "asset": "assets/BrokerageSection-BmFc7Qpd.js",
+            "asset": "assets/BrokerageSection-Hi2ixaf1.js",
             "rawBytes": 6407,
-            "brotliBytes": 1925,
+            "brotliBytes": 1926,
             "hasPrecompressedArtifact": true,
-            "sha256": "e82bdb79d8687aef51e16e49976aec5be5696ddcfd354fa772919828ee437d0b"
+            "sha256": "cc3ff8733fa97fdb01d9a1a885eb24bb6cceaa536c0611e7c71f3c14bfa0d093"
           },
           {
-            "asset": "assets/FigureCell-C9JLpFsf.js",
+            "asset": "assets/FigureCell-D6kQk1LD.js",
             "rawBytes": 96521,
-            "brotliBytes": 26889,
+            "brotliBytes": 26847,
             "hasPrecompressedArtifact": true,
-            "sha256": "eea2e929f46e306b71f715ab2c9017fc18c5b696a67ebff56e8e0dbc7ad05d46"
+            "sha256": "a61e5f5762eea76dbcffca8e8a8c977076c6eea3579ce52325afae35ddb00308"
           },
           {
-            "asset": "assets/PositionsPage-B7r-gYxi.js",
+            "asset": "assets/PositionsPage-Dp0g3twv.js",
             "rawBytes": 116207,
-            "brotliBytes": 28311,
+            "brotliBytes": 28323,
             "hasPrecompressedArtifact": true,
-            "sha256": "4aa440800c9e048b78fa03b03fd2dbf90b76703909f877cc776a688940096178"
+            "sha256": "d62ad43569a16c26da1da8b98cada980e14a6ade30bf529595769dbc4c511bbb"
           },
           {
             "asset": "assets/TintChip-hu6Oj7wx.js",
@@ -751,11 +751,11 @@
             "sha256": "ce4cd5043fb506e6dc24496ebc0a45e643d7d4fab71de9adf67614178e5ed866"
           },
           {
-            "asset": "assets/index-BNA24poQ.js",
+            "asset": "assets/index-Bhfg9sNN.js",
             "rawBytes": 6722,
-            "brotliBytes": 2221,
+            "brotliBytes": 2215,
             "hasPrecompressedArtifact": true,
-            "sha256": "ce24b2fc376980bcd1e4ef4cd833614751a4a8d7601b076918b7f68c70c9e1b4"
+            "sha256": "81803134195a469889926ca1396e1dcb90efa3207b9d0fcecf0bc5e9b2cdd261"
           },
           {
             "asset": "assets/index-Cr60H_du.css",
@@ -765,18 +765,18 @@
             "sha256": "025b7216190f5494f23dbd8590189b5842f827f051982831cd4f1cb38c1556ce"
           },
           {
-            "asset": "assets/migrate-CqltDQ8e.js",
+            "asset": "assets/migrate-B-dWgYPZ.js",
             "rawBytes": 18565,
-            "brotliBytes": 5859,
+            "brotliBytes": 5835,
             "hasPrecompressedArtifact": true,
-            "sha256": "7da7f57cd1581a98fee2b9b6db037376c8cc60edb1e58f324b06b55fc5fab0d1"
+            "sha256": "f2f5ef8fbf2e310255cd2ccd110eab1f7ae6f31fef281b8a0a6810b68015f15a"
           },
           {
-            "asset": "assets/mountApp-CtT4Lw8t.js",
-            "rawBytes": 54605,
-            "brotliBytes": 14380,
+            "asset": "assets/mountApp-BtYPrZC5.js",
+            "rawBytes": 54637,
+            "brotliBytes": 14375,
             "hasPrecompressedArtifact": true,
-            "sha256": "8023a519b0d43d521d6e7818fdcdbf91d874f3ce602d3c713b4c1463cf2f3581"
+            "sha256": "94d40d022b31da99f46dd3f54781662aa1914fbe71560312d678ca939f774cf1"
           },
           {
             "asset": "assets/mui-CkNSlttA.js",
@@ -821,11 +821,11 @@
             "sha256": "7cc62cd66aebefc2945eea688c40c1885ed4efc68a1909b5b3652fa4605d2d03"
           },
           {
-            "asset": "assets/store-Dvz3fv7l.js",
+            "asset": "assets/store-ANO6TQ-e.js",
             "rawBytes": 1285,
-            "brotliBytes": 570,
+            "brotliBytes": 569,
             "hasPrecompressedArtifact": true,
-            "sha256": "5b01a6ec72054e20a5769bad120c5931c494fe6b938d0806ad844cfcf5c05fdf"
+            "sha256": "ad567e095b88ca081e6679a83c9d425dfe29518298d293e182fc32347b4702ae"
           },
           {
             "asset": "assets/streams-BBqIxyPM.js",
@@ -863,11 +863,11 @@
             "sha256": "b214b03c6297e5a9f8379052b1ef0e8633ba3cc02c1d5064326c02feb01dd563"
           },
           {
-            "asset": "assets/useGate-D5BccdmX.js",
+            "asset": "assets/useGate-BOB6DCXD.js",
             "rawBytes": 1291,
-            "brotliBytes": 649,
+            "brotliBytes": 662,
             "hasPrecompressedArtifact": true,
-            "sha256": "bc1ea495112fc345cce2f7378095bb2f950cf44acbeb1e78ca386ece30190d44"
+            "sha256": "ec40e3c89d17139ddacf9eee94735c893dbea50e797e188253f85fa4836f812b"
           },
           {
             "asset": "assets/useReducedMotion--uXfYCFB.js",
@@ -877,33 +877,33 @@
             "sha256": "e14ef4899f082bfd0065ca5fb66ce792e3aeb8103b74c965e7ca14bfa4e4ea63"
           },
           {
-            "asset": "assets/useSettings-CxQPnKHW.js",
+            "asset": "assets/useSettings-pXvQuzhQ.js",
             "rawBytes": 2603,
-            "brotliBytes": 978,
+            "brotliBytes": 982,
             "hasPrecompressedArtifact": true,
-            "sha256": "8176b38dc75ac7d500960be5139998cbdb1e7415023a0fa960c83e992d0871d3"
+            "sha256": "282dbcbcaec1bfa8fbfcf22cd040eae13d79fa373ac7ec5f52e242bd183e67de"
           }
         ],
         "jsRequests": 26,
-        "rawBytes": 1046530,
-        "brotliBytes": 283334
+        "rawBytes": 1046562,
+        "brotliBytes": 283290
       }
     },
     "TechnicalAnalysisView": {
-      "chunk": "TechnicalAnalysisView-Dh0QlxYH.js",
+      "chunk": "TechnicalAnalysisView-BGGbBuK9.js",
       "incrementalAfterBoot": {
         "assets": [
           {
-            "asset": "assets/TechnicalAnalysisView-Dh0QlxYH.js",
-            "rawBytes": 7455,
-            "brotliBytes": 2411,
+            "asset": "assets/TechnicalAnalysisView-BGGbBuK9.js",
+            "rawBytes": 7798,
+            "brotliBytes": 2457,
             "hasPrecompressedArtifact": true,
-            "sha256": "0eacfd1c7b065f83b59bf1932c66ae9db5554d10096f7c00e05c39f581cab995"
+            "sha256": "4202eef616ad0d15f79c595991463fbd3cd22d839581365546ee2275ae752958"
           }
         ],
         "jsRequests": 1,
-        "rawBytes": 7455,
-        "brotliBytes": 2411
+        "rawBytes": 7798,
+        "brotliBytes": 2457
       },
       "totalWithBoot": {
         "assets": [
@@ -915,18 +915,18 @@
             "sha256": "44674ca0c2756b966126d352e2a923dfcd2dd4900e43333d4803bba5398a0a4f"
           },
           {
-            "asset": "assets/AuthDialogProvider-44zj6cny.js",
+            "asset": "assets/AuthDialogProvider-CxGU29Qd.js",
             "rawBytes": 20538,
-            "brotliBytes": 6610,
+            "brotliBytes": 6614,
             "hasPrecompressedArtifact": true,
-            "sha256": "b43acd8a209873e17d148c8f7f616ca433cd47899368bce4dbce2218eb1a0101"
+            "sha256": "21e35476eaf0308318081ecaa0b365b683b250fc23ecdaeafa5c7096d34e929f"
           },
           {
-            "asset": "assets/TechnicalAnalysisView-Dh0QlxYH.js",
-            "rawBytes": 7455,
-            "brotliBytes": 2411,
+            "asset": "assets/TechnicalAnalysisView-BGGbBuK9.js",
+            "rawBytes": 7798,
+            "brotliBytes": 2457,
             "hasPrecompressedArtifact": true,
-            "sha256": "0eacfd1c7b065f83b59bf1932c66ae9db5554d10096f7c00e05c39f581cab995"
+            "sha256": "4202eef616ad0d15f79c595991463fbd3cd22d839581365546ee2275ae752958"
           },
           {
             "asset": "assets/TintChip-hu6Oj7wx.js",
@@ -950,11 +950,11 @@
             "sha256": "ce4cd5043fb506e6dc24496ebc0a45e643d7d4fab71de9adf67614178e5ed866"
           },
           {
-            "asset": "assets/index-BNA24poQ.js",
+            "asset": "assets/index-Bhfg9sNN.js",
             "rawBytes": 6722,
-            "brotliBytes": 2221,
+            "brotliBytes": 2215,
             "hasPrecompressedArtifact": true,
-            "sha256": "ce24b2fc376980bcd1e4ef4cd833614751a4a8d7601b076918b7f68c70c9e1b4"
+            "sha256": "81803134195a469889926ca1396e1dcb90efa3207b9d0fcecf0bc5e9b2cdd261"
           },
           {
             "asset": "assets/index-Cr60H_du.css",
@@ -964,18 +964,18 @@
             "sha256": "025b7216190f5494f23dbd8590189b5842f827f051982831cd4f1cb38c1556ce"
           },
           {
-            "asset": "assets/migrate-CqltDQ8e.js",
+            "asset": "assets/migrate-B-dWgYPZ.js",
             "rawBytes": 18565,
-            "brotliBytes": 5859,
+            "brotliBytes": 5835,
             "hasPrecompressedArtifact": true,
-            "sha256": "7da7f57cd1581a98fee2b9b6db037376c8cc60edb1e58f324b06b55fc5fab0d1"
+            "sha256": "f2f5ef8fbf2e310255cd2ccd110eab1f7ae6f31fef281b8a0a6810b68015f15a"
           },
           {
-            "asset": "assets/mountApp-CtT4Lw8t.js",
-            "rawBytes": 54605,
-            "brotliBytes": 14380,
+            "asset": "assets/mountApp-BtYPrZC5.js",
+            "rawBytes": 54637,
+            "brotliBytes": 14375,
             "hasPrecompressedArtifact": true,
-            "sha256": "8023a519b0d43d521d6e7818fdcdbf91d874f3ce602d3c713b4c1463cf2f3581"
+            "sha256": "94d40d022b31da99f46dd3f54781662aa1914fbe71560312d678ca939f774cf1"
           },
           {
             "asset": "assets/mui-CkNSlttA.js",
@@ -1006,11 +1006,11 @@
             "sha256": "7cc62cd66aebefc2945eea688c40c1885ed4efc68a1909b5b3652fa4605d2d03"
           },
           {
-            "asset": "assets/store-Dvz3fv7l.js",
+            "asset": "assets/store-ANO6TQ-e.js",
             "rawBytes": 1285,
-            "brotliBytes": 570,
+            "brotliBytes": 569,
             "hasPrecompressedArtifact": true,
-            "sha256": "5b01a6ec72054e20a5769bad120c5931c494fe6b938d0806ad844cfcf5c05fdf"
+            "sha256": "ad567e095b88ca081e6679a83c9d425dfe29518298d293e182fc32347b4702ae"
           },
           {
             "asset": "assets/streams-BBqIxyPM.js",
@@ -1048,33 +1048,33 @@
             "sha256": "e14ef4899f082bfd0065ca5fb66ce792e3aeb8103b74c965e7ca14bfa4e4ea63"
           },
           {
-            "asset": "assets/useSettings-CxQPnKHW.js",
+            "asset": "assets/useSettings-pXvQuzhQ.js",
             "rawBytes": 2603,
-            "brotliBytes": 978,
+            "brotliBytes": 982,
             "hasPrecompressedArtifact": true,
-            "sha256": "8176b38dc75ac7d500960be5139998cbdb1e7415023a0fa960c83e992d0871d3"
+            "sha256": "282dbcbcaec1bfa8fbfcf22cd040eae13d79fa373ac7ec5f52e242bd183e67de"
           }
         ],
         "jsRequests": 20,
-        "rawBytes": 827959,
-        "brotliBytes": 226061
+        "rawBytes": 828334,
+        "brotliBytes": 226079
       }
     },
     "ResearchView": {
-      "chunk": "ResearchView-BM6RJREt.js",
+      "chunk": "ResearchView-BoezgDup.js",
       "incrementalAfterBoot": {
         "assets": [
           {
-            "asset": "assets/ResearchView-BM6RJREt.js",
-            "rawBytes": 5888,
-            "brotliBytes": 1675,
+            "asset": "assets/ResearchView-BoezgDup.js",
+            "rawBytes": 6264,
+            "brotliBytes": 1734,
             "hasPrecompressedArtifact": true,
-            "sha256": "edb13be7031296fde44a0212d232e9862c41402b246709fb730a2e08654a9107"
+            "sha256": "46b7ee180cf718af806c46e67533ab1a723140b75763681f4a87d28c2c28667e"
           }
         ],
         "jsRequests": 1,
-        "rawBytes": 5888,
-        "brotliBytes": 1675
+        "rawBytes": 6264,
+        "brotliBytes": 1734
       },
       "totalWithBoot": {
         "assets": [
@@ -1086,18 +1086,18 @@
             "sha256": "44674ca0c2756b966126d352e2a923dfcd2dd4900e43333d4803bba5398a0a4f"
           },
           {
-            "asset": "assets/AuthDialogProvider-44zj6cny.js",
+            "asset": "assets/AuthDialogProvider-CxGU29Qd.js",
             "rawBytes": 20538,
-            "brotliBytes": 6610,
+            "brotliBytes": 6614,
             "hasPrecompressedArtifact": true,
-            "sha256": "b43acd8a209873e17d148c8f7f616ca433cd47899368bce4dbce2218eb1a0101"
+            "sha256": "21e35476eaf0308318081ecaa0b365b683b250fc23ecdaeafa5c7096d34e929f"
           },
           {
-            "asset": "assets/ResearchView-BM6RJREt.js",
-            "rawBytes": 5888,
-            "brotliBytes": 1675,
+            "asset": "assets/ResearchView-BoezgDup.js",
+            "rawBytes": 6264,
+            "brotliBytes": 1734,
             "hasPrecompressedArtifact": true,
-            "sha256": "edb13be7031296fde44a0212d232e9862c41402b246709fb730a2e08654a9107"
+            "sha256": "46b7ee180cf718af806c46e67533ab1a723140b75763681f4a87d28c2c28667e"
           },
           {
             "asset": "assets/TintChip-hu6Oj7wx.js",
@@ -1121,11 +1121,11 @@
             "sha256": "ce4cd5043fb506e6dc24496ebc0a45e643d7d4fab71de9adf67614178e5ed866"
           },
           {
-            "asset": "assets/index-BNA24poQ.js",
+            "asset": "assets/index-Bhfg9sNN.js",
             "rawBytes": 6722,
-            "brotliBytes": 2221,
+            "brotliBytes": 2215,
             "hasPrecompressedArtifact": true,
-            "sha256": "ce24b2fc376980bcd1e4ef4cd833614751a4a8d7601b076918b7f68c70c9e1b4"
+            "sha256": "81803134195a469889926ca1396e1dcb90efa3207b9d0fcecf0bc5e9b2cdd261"
           },
           {
             "asset": "assets/index-Cr60H_du.css",
@@ -1135,18 +1135,18 @@
             "sha256": "025b7216190f5494f23dbd8590189b5842f827f051982831cd4f1cb38c1556ce"
           },
           {
-            "asset": "assets/migrate-CqltDQ8e.js",
+            "asset": "assets/migrate-B-dWgYPZ.js",
             "rawBytes": 18565,
-            "brotliBytes": 5859,
+            "brotliBytes": 5835,
             "hasPrecompressedArtifact": true,
-            "sha256": "7da7f57cd1581a98fee2b9b6db037376c8cc60edb1e58f324b06b55fc5fab0d1"
+            "sha256": "f2f5ef8fbf2e310255cd2ccd110eab1f7ae6f31fef281b8a0a6810b68015f15a"
           },
           {
-            "asset": "assets/mountApp-CtT4Lw8t.js",
-            "rawBytes": 54605,
-            "brotliBytes": 14380,
+            "asset": "assets/mountApp-BtYPrZC5.js",
+            "rawBytes": 54637,
+            "brotliBytes": 14375,
             "hasPrecompressedArtifact": true,
-            "sha256": "8023a519b0d43d521d6e7818fdcdbf91d874f3ce602d3c713b4c1463cf2f3581"
+            "sha256": "94d40d022b31da99f46dd3f54781662aa1914fbe71560312d678ca939f774cf1"
           },
           {
             "asset": "assets/mui-CkNSlttA.js",
@@ -1177,11 +1177,11 @@
             "sha256": "7cc62cd66aebefc2945eea688c40c1885ed4efc68a1909b5b3652fa4605d2d03"
           },
           {
-            "asset": "assets/store-Dvz3fv7l.js",
+            "asset": "assets/store-ANO6TQ-e.js",
             "rawBytes": 1285,
-            "brotliBytes": 570,
+            "brotliBytes": 569,
             "hasPrecompressedArtifact": true,
-            "sha256": "5b01a6ec72054e20a5769bad120c5931c494fe6b938d0806ad844cfcf5c05fdf"
+            "sha256": "ad567e095b88ca081e6679a83c9d425dfe29518298d293e182fc32347b4702ae"
           },
           {
             "asset": "assets/streams-BBqIxyPM.js",
@@ -1219,16 +1219,16 @@
             "sha256": "e14ef4899f082bfd0065ca5fb66ce792e3aeb8103b74c965e7ca14bfa4e4ea63"
           },
           {
-            "asset": "assets/useSettings-CxQPnKHW.js",
+            "asset": "assets/useSettings-pXvQuzhQ.js",
             "rawBytes": 2603,
-            "brotliBytes": 978,
+            "brotliBytes": 982,
             "hasPrecompressedArtifact": true,
-            "sha256": "8176b38dc75ac7d500960be5139998cbdb1e7415023a0fa960c83e992d0871d3"
+            "sha256": "282dbcbcaec1bfa8fbfcf22cd040eae13d79fa373ac7ec5f52e242bd183e67de"
           }
         ],
         "jsRequests": 20,
-        "rawBytes": 826392,
-        "brotliBytes": 225325
+        "rawBytes": 826800,
+        "brotliBytes": 225356
       }
     }
   }

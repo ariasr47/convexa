@@ -29,6 +29,14 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      # The failed source predates its authorization. Restore only the receipt and
+      # hash-bound evidence from the dispatch ref; build exactly source_revision.
+      - name: Restore source-bound authorization evidence
+        env:
+          AUTHORIZATION_PATH: ${{ inputs.authorization_path }}
+          AUTHORIZATION_REVISION: ${{ github.sha }}
+          EXPECTED_SOURCE_REVISION: ${{ inputs.source_revision }}
+        run: node tools/restore-visual-authorization.mjs
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - name: Build live production dashboard for visual review
