@@ -61,3 +61,4 @@ Append-only. One line per step. Times are local (America/Los_Angeles) unless mar
 - 2026-10-08 P2 batch 6 committed c1c5f79b; verified (run b06): all exit 0, 583 s; counts unchanged (the six specs had no runner); 0 skips.
 - 2026-10-08 P2 batch 7 count: fidelity.spec.ts throws at import unless AUDIT_OUT is set, so its listing needs AUDIT_OUT=<dir>: playwright --list --config playwright.audit.config.ts = 50 tests in 1 file (without it: 0, 'No tests found').
 - 2026-10-08 P2 batch 7 committed 353bd391; verified (run b07): all exit 0, 590 s; counts unchanged (fidelity survey had no CI runner); 0 skips.
+- 2026-10-08 P2 batch 8 committed 94e54487; verified (run b08): all exit 0, 591 s; counts unchanged (no runner); 0 skips.

@@ -10,11 +10,8 @@ export const ALLOWED = [
   'tools/api-contract.mjs',
   'tools/api-contract.spec.mjs',
   'tools/api-router-integration-baseline.mjs',
-  'tools/api-router-integration-baseline.spec.mjs',
   'tools/api-router-integration-compile-probe.mjs',
-  'tools/api-router-integration-compile-probe.spec.mjs',
   'tools/api-router-integration-rollback.mjs',
-  'tools/api-router-integration-rollback.spec.mjs',
 ];
 export const D7_PRODUCT_ALLOWLIST = [
   'apps/dashboard/src/app/shared/ui/Widget/Widget.tsx',

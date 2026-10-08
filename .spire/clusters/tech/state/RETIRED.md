@@ -12,3 +12,8 @@ RETIRED: apps/dashboard-e2e/tools/visual-review.spec.mjs; parent 9248aa9df13e543
 RETIRED: apps/dashboard-e2e/tools/visual-update.spec.mjs; parent 9248aa9df13e5436ca4be554ec5c5a025e777e00; risk-gone; 6 tests
 RETIRED: apps/dashboard-e2e/src/audit/fidelity.spec.ts; parent c1c5f79bf130dd02384891ac140aa458c5163d07; risk-gone; 50 tests
 RETIRED: tools/supply-chain/remediation.spec.mjs; parent 353bd3918eac5ccf15d876e10303d2aff5eaaaea; risk-gone; 11 tests
+RETIRED: tools/api-contract-baseline.spec.mjs; parent 94e544875c8695bc619c59d187518581d9cf721b; risk-gone; 12 tests
+RETIRED: tools/api-router-integration-baseline.spec.mjs; parent 94e544875c8695bc619c59d187518581d9cf721b; risk-gone; 20 tests
+RETIRED: tools/api-router-integration-compile-probe.spec.mjs; parent 94e544875c8695bc619c59d187518581d9cf721b; risk-gone; 13 tests
+RETIRED: tools/api-router-integration-rollback.spec.mjs; parent 94e544875c8695bc619c59d187518581d9cf721b; risk-gone; 4 tests
+RETIRED: tools/vite-mui-path-imports.spec.mjs; parent 94e544875c8695bc619c59d187518581d9cf721b; risk-gone; 7 tests
