@@ -69,3 +69,6 @@ RETIRED: apps/dashboard-e2e/tools/visual-frame.spec.mjs; parent b5a677aa8d57a484
 RETIRED: apps/dashboard-e2e/tools/wiring.spec.mjs; parent b5a677aa8d57a4840fa4af651f7c8b6a487d3bc4; structure; 3 tests
 RETIRED: apps/dashboard-e2e/src/e2e/no-overflow.spec.ts; parent a495633447b3c6bb7e86626189bdb1c1a6484093; structure; 93 tests
 RETIRED: apps/dashboard-e2e/src/quality/visual.spec.ts; parent a495633447b3c6bb7e86626189bdb1c1a6484093; structure; 6 tests
+RETIRED: tools/supply-chain/acquire-tools.spec.mjs; parent 24c26d503d5c7225c52137bdd5db0b0ad5bd4bc1; structure; 4 tests
+RETIRED: tools/supply-chain/dependabot.spec.mjs; parent 24c26d503d5c7225c52137bdd5db0b0ad5bd4bc1; structure; 3 tests
+RETIRED: tools/supply-chain/docs-and-isolation.spec.mjs; parent 24c26d503d5c7225c52137bdd5db0b0ad5bd4bc1; structure; 14 tests
