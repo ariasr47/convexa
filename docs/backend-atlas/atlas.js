@@ -2,10 +2,12 @@
 (() => {
   'use strict';
   const base = 'https://github.com/ariasr47/convexa/blob/8932fc1176543eff3fa826de6924e12ec52f3310/';
+  const demoBase = 'https://github.com/ariasr47/convexa/blob/codex/portfolio-demo-platform/';
   const be = 'apps/api/src/', fe = 'apps/dashboard/src/app/', api = 'libs/api/src/lib/', quant = 'libs/quant-engine/src/';
   const ref = (path, line) => [path, line];
   const b = (path, line) => ref(be + path, line), f = (path, line) => ref(fe + path, line);
   const a = (path, line) => ref(api + path, line), q = (path, line) => ref(quant + path, line);
+  const d = (path, line) => [path, line, demoBase];
   const byId = id => document.getElementById(id);
   const element = (tag, text, className) => {
     const node = document.createElement(tag);
@@ -16,9 +18,9 @@
   const sources = refs => {
     const list = element('div', undefined, 'source-links');
     list.setAttribute('aria-label', 'Source references');
-    refs.forEach(([path, line]) => {
+    refs.forEach(([path, line, sourceBase]) => {
       const link = element('a', `${path}:${line}`);
-      link.href = `${base}${path}#L${line}`;
+      link.href = `${sourceBase ?? base}${path}#L${line}`;
       list.append(link);
     });
     return list;
@@ -184,8 +186,8 @@
     ['Verification boundaries', 'Contract parity · paused-network guard · quant golden cases · Playwright', 'These are existing verification facilities, not a passing-test receipt. The proposed demo needs an artifact-level journey with backend/provider traffic blocked, plus storage isolation and truthful provenance checks.', [ref('apps/api/tests/api_contract_router.rs', 1), ref('apps/api/tests/market_data_paused_no_vendor_contact.rs', 48), ref('libs/quant-engine/tests/golden.rs', 1), ref('apps/dashboard-e2e/src/quality/fixtures/strict-fixture.ts', 124)]]
   ];
   const modes = {
-    demo: ['PROPOSED · not an implemented data-mode selector', [['Real frontend', 'Existing components'], ['Demo facade + streams', 'Versioned synthetic scenario'], ['Browser demo store', 'Isolated local changes']], 'Build-time VITE_DATA_MODE=demo|live would select HTTP, streams and browser stores together. Demo would work with all backend endpoints blocked. Unknown operations/symbols would return explicit unsupported states.', 'The proposed demo demonstrates frontend workflows. Sample analysis is authored or deterministic; animated sample prices must never acquire a genuine-live claim. It does not prove Rust processed a visitor request.', [a('client.ts', 5), a('convexa.ts', 1306), f('pages/scanner/useLivePrices.ts', 57), f('shared/liveness/liveClaim.ts', 52)]],
-    live: ['EXISTING SOURCE PATH · deployment not measured here', [['Frontend HTTP + SSE', 'Real session and request lifecycle'], ['Pages → Rust API', 'Typed routes + AppState'], ['Vendors + durable stores', 'Configured credentials required']], 'The existing live application uses same-origin HTTP and SSE, with separate provider and persistence boundaries. Backend MARKET_DATA_MODE defaults to live. DATA_FEED realtime/delayed is a separate choice.', 'Real market acquisition, broker credential resolution and online LLM explanation remain separate services. Demo build selection is proposed; this button only changes the explanation in the atlas.', [ref('functions/api/[[path]].ts', 81), b('config.rs', 119), b('config.rs', 216), b('services/llm.rs', 234), b('services/broker/service.rs', 102)]],
+    demo: ['IMPLEMENTED LOCAL FOUNDATION · dashboard integration and hosted checks pending', [['VITE_DATA_MODE=demo', 'Build-selected provider'], ['Local facade + clock', 'Authored scenario + isolated store'], ['Static Pages routes', 'No Function/API proxy']], 'The wrapper resolves an explicit VITE_DATA_MODE=demo|live; unset defaults to live except CF_PAGES=1 on codex/portfolio-demo-platform. The value enters Nx hashing before the production build. Demo bootstrap, the API facade, streams and namespaced browser state are selected together. Six symbols have seven curated expiry variants; invalid operations return typed dispositions.', 'The local foundation is implemented and its focused checks pass. The full dashboard composition, production build/cache matrix, browser journey and hosted Pages routing are still NOT RUN. Synthetic marks and authored analysis are educational examples, never genuine-live observations or Rust responses.', [d('tools/build-dashboard.mjs', 1), d('tools/write-dashboard-routes.mjs', 1), d('libs/api/src/lib/demo/mode.ts', 1), d('libs/api/src/lib/demo/transport.ts', 1), d('libs/api/src/lib/demo/workspace.ts', 1), d('libs/api/src/lib/demo/streams.ts', 1)]],
+    live: ['EXISTING SOURCE PATH · deployment not measured here', [['Frontend HTTP + SSE', 'Real session and request lifecycle'], ['Pages → Rust API', 'Typed routes + AppState'], ['Vendors + durable stores', 'Configured credentials required']], 'The existing live application uses same-origin HTTP and SSE, with separate provider and persistence boundaries. Backend MARKET_DATA_MODE defaults to live. DATA_FEED realtime/delayed is a separate choice.', 'Live mode remains the default when VITE_DATA_MODE is unset. The static artifact routes /api to Functions; this local source and mode receipt do not establish hosted availability.', [ref('functions/api/[[path]].ts', 81), b('config.rs', 119), b('config.rs', 216), b('services/llm.rs', 234), b('services/broker/service.rs', 102)]],
     paused: ['IMPLEMENTED BACKEND MODE · not a populated demo', [['MARKET_DATA_MODE=paused', 'Backend configuration'], ['HTTP application', 'No five market producers'], ['Market reads refused', 'No synthetic fallback']], 'Paused mode stops the stock-stream worker, tape capture, warmer, session-archive ensure worker and scanner. Demand paths refuse market acquisition instead of contacting the vendor.', 'Paused is useful for stopping market-data work. It neither seeds every widget nor switches browser persistence, OAuth, broker credentials or explanation providers into a public demo.', [b('server.rs', 95), b('config.rs', 119), ref('apps/api/tests/market_data_paused_no_vendor_contact.rs', 48)]]
   };
   function renderNode(key) {

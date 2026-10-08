@@ -10,8 +10,28 @@ const analyze = process.env.ANALYZE === '1' || process.env.ANALYZE === 'true';
 
 export default defineConfig(({ mode }) => {
   const isProd = mode === 'production';
+  const explicitMode = process.env.VITE_DATA_MODE;
+  const dataMode = explicitMode ?? 'live';
+  if (dataMode !== 'demo' && dataMode !== 'live') {
+    throw new Error(`Invalid VITE_DATA_MODE ${JSON.stringify(dataMode)}; expected demo or live`);
+  }
 
-  const plugins: PluginOption[] = [react()];
+  const plugins: PluginOption[] = [
+    react(),
+    {
+      name: 'convexa-build-bootstrap',
+      transformIndexHtml() {
+        const serializedMode = JSON.stringify(dataMode);
+        return [{
+          tag: 'script',
+          children: `(function(){var mode=${serializedMode};var boot={mode:mode,key:function(k){return mode==='demo'?'convexa.demo.v1.'+k:k;}};window.__CONVEXA_BOOT__=boot;var DARK='#0B0F17',LIGHT='#F6F6F3',theme='dark';try{var cached=localStorage.getItem(boot.key('convexa.theme-paint'));if(cached==='light'||cached==='dark')theme=cached;else{var raw=localStorage.getItem(boot.key('convexa.uiprefs.v1'))||(mode==='live'?localStorage.getItem('gammaflow.uiprefs.v1'):null);var pref=raw?JSON.parse(raw).theme:'dark';if(pref==='light')theme='light';else if(pref==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)theme='light';}}catch(e){}document.documentElement.setAttribute('data-theme',theme);var meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute('content',theme==='light'?LIGHT:DARK);})();`,
+          // Vite inserts before </head>: the existing theme-color meta is already parseable and
+          // module scripts still have not executed, so the blocking script sets the first paint.
+          injectTo: 'head',
+        }];
+      },
+    },
+  ];
   if (analyze) {
     plugins.push(
       visualizer({

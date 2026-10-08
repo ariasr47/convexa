@@ -16,7 +16,7 @@ Open `index.html` directly, or run `node docs/backend-atlas/serve.mjs` from the 
 
 The paid Massive subscription is no longer active. The current backend supports `MARKET_DATA_MODE=live|paused`; paused avoids vendor workers and denies unavailable market-data requests. Existing fixture/replay adapters are research/test facilities and must not be relabeled as paid live observations.
 
-The proposed portfolio composition uses the real frontend behind an explicit, environment-selected demo adapter. Synthetic market data, sample recommendations and a separate sample portfolio must never call paid services, masquerade as current market data, or write into a visitor's real saved state. The Spire design artifacts in `.spire/clusters/tech/contracts/portfolio-demo-platform/` will settle the exact interfaces before build.
+The portfolio composition uses the real frontend behind an explicit, build-selected demo adapter. Its shared provider foundation is implemented locally; dashboard integration and hosted delivery are still pending. Synthetic market data, sample analysis and the separate sample portfolio must never call paid services, masquerade as current market data, or write into a visitor's live saved state. The approved interfaces and scope are in `.spire/clusters/tech/contracts/portfolio-demo-platform/`.
 
 ## Evidence legend
 
@@ -26,6 +26,14 @@ The proposed portfolio composition uses the real frontend behind an explicit, en
 - **Proposed:** design not yet implemented or verified.
 
 Recorded evidence is under `evidence/`: local production-build/test baseline, atlas/canvas review, and a separate two-endpoint anonymous hosted API shape check. That API check does not establish paid-feed operation or deployment of the new demo.
+
+## Demo mode runbook and current status
+
+Set `VITE_DATA_MODE=demo` or `VITE_DATA_MODE=live` before `npm run build:dashboard`. An unset value resolves to `live`, except that the wrapper chooses `demo` when `CF_PAGES=1` and `CF_PAGES_BRANCH=codex/portfolio-demo-platform`; any other explicit value fails before Nx. Mode is included in the Nx build identity, so changing it requires a new build and deployment. Do not switch modes by editing browser storage.
+
+Demo catalog coverage is six symbols: SPY, QQQ, AAPL, MSFT, NVDA and TSLA. The authored expiries are 2026-10-09 (2 DTE), 2026-10-16 (9 DTE) and 2026-11-20 (44 DTE), with seven curated nonempty expiry selections. Dark-pool-only queries and unsupported operations are explicitly unavailable. Sample bars and research are demo-only; live mode reports the provider as unavailable rather than borrowing demo data. The demo preview is intended to use static Pages routes with Functions excluded. Loaded and cached content can remain visible offline; uncached routes or chunks are not promised offline behavior. To return to live behavior, build and deploy with `VITE_DATA_MODE=live`.
+
+Current local evidence is scoped to the shared foundation: four focused Vitest files (nine checks), the G5 build-mode/routing/cache guard (four checks), and the API library typecheck have passed. These results do not establish a complete dashboard build or browser experience. The production build/cache mode matrix, bundle closure, composed dashboard journey, hosted route/no-egress observation, CI gates and final independent QA remain **NOT RUN**. See [demo-local evidence](evidence/demo-local.md) for exact commands, exits and limitations.
 
 ## Delivery boundary
 
