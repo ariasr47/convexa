@@ -1,0 +1,30 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "PASS",
+  "mode": "live",
+  "source": "C:\\Dev\\convexa\\.spire\\clusters\\tech\\contracts\\portfolio-demo-platform\\INTERFACE_CONTRACT.md",
+  "base_url": "https://convexa-production.up.railway.app",
+  "auth": null,
+  "checked_at": "2026-10-08T01:34:56Z",
+  "summary": {
+    "pass": 2,
+    "fail": 0,
+    "total": 2
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/auth/session",
+      "verdict": "PASS",
+      "required_checked": 4,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/scan",
+      "verdict": "PASS",
+      "required_checked": 8,
+      "failures": []
+    }
+  ]
+}

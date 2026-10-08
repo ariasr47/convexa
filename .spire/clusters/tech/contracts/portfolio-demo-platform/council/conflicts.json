@@ -1,0 +1,98 @@
+{
+  "conflicts": [
+    {
+      "quote": "Preserve meaningful filtering, symbol navigation, simulated trade actions, and exports where those flows already exist.",
+      "source": "pm",
+      "why": "My R1 finite precomputed bundle-variant mechanism does not cover the current ticker query's independent DTE bounds, expiry set, optional off-exchange inclusion, and position contract/P&L inputs. A matching expiry set alone cannot supply a correct position evaluation or preserve all existing filter choices; returning an unrelated variant would fabricate agreement across widgets.",
+      "proposal": "Withdraw the claim that expiry-set variants alone are complete. Compile a full-chain scenario as the base, then use a deterministic local projection for supported filter and position inputs, validated against the live DTO's field semantics. If a specific input cannot be projected truthfully, mark that operation unavailable at its control and in the response without network fallback.",
+      "kind": "technical",
+      "conflict_id": "2529a37a3a983dc699e1f8f5e7d94786ea4f8c1319e5f674e94c63f8d13f4c6d",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Once the demo is loaded, loss of network access leaves sample pages explorable.",
+      "source": "pm",
+      "why": "The proposed static build lazy-loads analysis, research, and per-symbol catalog chunks. Loading the landing page does not by itself put unvisited chunks in the browser cache, so an immediate network loss can make those pages fail even though their data provider is local.",
+      "proposal": "Precache the public route code and supported scenario assets before declaring the demo ready, then verify navigation with the network blocked. Measure the startup-byte cost against the landing budget; if that cost is unacceptable, return a separate product decision to narrow offline scope.",
+      "kind": "technical",
+      "conflict_id": "d5df83dde000a9fd68596146314c3f0edb3c2086c5230e05afc769ad154148e9",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A scenario compiler can use the existing pure quant path to materialize filtered bundle variants offline; the runtime imports the compiled catalog, never computes a market sweep.",
+      "source": "architect",
+      "why": "The source follow-up found a reusable compute helper but no ready full-bundle offline compiler: explicit expiry subsets and full bundle assembly still need refactoring. Treating compilation as available could expand this demo into a Rust refactor and delay the visitor journey without improving its truthfulness.",
+      "proposal": "Bound exposed filter combinations, curate internally coherent synthetic snapshots for them, and validate the displayed numbers against the existing quant definitions. State unsupported combinations explicitly. Keep live math behavior unchanged.",
+      "kind": "technical",
+      "conflict_id": "425d046e8529a3157dc0c97fbd5b99c79d4729bfd8f84ed6ce0c5a709edb6a2c",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Keep research/chart code and per-symbol scenario data behind route-level dynamic imports so landing does not absorb them.",
+      "source": "architect",
+      "why": "My AC27 overclaims offline availability: after the initial page loads, a first visit to an uncached lazy route still needs its static assets. The brief requires local sample data without paid-network dependency, not installable offline navigation.",
+      "proposal": "Keep route splitting and narrow my AC27 to previously loaded or cached sample views remaining usable after network loss. Make the first visit to an uncached route an explicit static-asset limitation in the atlas.",
+      "kind": "technical",
+      "conflict_id": "0228985f5c9f9ddf06d3411ef570270cd0d2c8d57de070ca9345cb681476be40",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "On each public data page in the demo, a visitor can identify the content as sample data and find its scenario as-of date without opening documentation.",
+      "source": "pm",
+      "why": "The SET DESIGN_SYSTEM.md rule 18 requires one page connection chip drawn from live, closed, overnight, no ticks, offline, or replay. None truthfully describes an authored synthetic scenario. Satisfying the page-level provenance criterion while obeying that unchanged chip rule would force a false connection or recorded-session claim. This is a design-canon amendment decision, not a seventh state UX can silently invent.",
+      "proposal": "Amend rule 18 narrowly for demo mode: show persistent text-visible 'Demo \u00b7 sample data' provenance with the scenario as-of date, suppress the six-state connection chip and paid-live motion for synthetic figures, and retain the existing six states for genuine live mode. Put the amendment in DESIGN_SYSTEM.md after the council ruling.",
+      "kind": "product",
+      "conflict_id": "f0b23ef394bb990d182c098c230a8bea6dd98a28706b28b126883d8f4bfefcf2",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: Does offline exploration mean every supported route after only the landing page has loaded, including routes the visitor has never opened?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: Which simulated order transitions must occur during playback, beyond a seeded pending/completed history and a newly confirmed paper trade?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: Is the stored simulation epoch a fixed authored value independent of wall-clock time, so a fresh browser sees the same explicitly dated scenario?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: Can the existing manually confirmed simulated market, limit, cancellation, and book interactions run in demo without setting a paid-live liveness claim or adding an automatic order capability?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: In the research criterion, does changing a supported sample scenario mean selecting another symbol, or must one symbol offer multiple selectable cases? The answer determines Research navigation and its empty state."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: Is the stored simulation epoch a fixed authored scenario anchor or a visitor's first-use wall-clock instant? Which explicit field supplies the as-of label so sample history and expiries never imply an observed market date?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: Which distinct typed outcomes will identify an unsupported symbol, absent optional value, insufficient indicator history, cold load error, failed refresh with retained data, and paused playback? UX has different copy and retention behavior for each."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: Does browser network loss pause local simulated playback, or can it continue from already loaded assets? UX will reserve 'Simulated playback paused' for an actual pause rather than treating browser offline status as evidence of one."
+    }
+  ],
+  "agree_count": {
+    "architect": 3,
+    "pm": 3,
+    "ux": 4
+  }
+}

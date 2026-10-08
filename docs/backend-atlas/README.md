@@ -25,6 +25,8 @@ The proposed portfolio composition uses the real frontend behind an explicit, en
 - **Hosted:** observed on the deployed revision. Local green is never substituted for this.
 - **Proposed:** design not yet implemented or verified.
 
+Recorded evidence is under `evidence/`: local production-build/test baseline, atlas/canvas review, and a separate two-endpoint anonymous hosted API shape check. That API check does not establish paid-feed operation or deployment of the new demo.
+
 ## Delivery boundary
 
 Prefer a static demo deployment using existing hosting. This work does not authorize production database migrations or modifications to production data. Existing Railway configuration includes a migration hook; avoid that deployment path for a static demo.
