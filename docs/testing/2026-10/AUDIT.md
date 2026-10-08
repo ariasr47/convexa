@@ -399,4 +399,4 @@ Full lists with files, counts and same-commit edits: [BATCHES.md](BATCHES.md).
 
 | Batch | File | Cases before → after | Removed or merged (named in the commit) |
 |---|---|---|---|
-| — | (filled as trim batches land) | | |
+| 4 | `apps/api/src/services/research/score_lab.rs` (in-file test module; risk-gone) | 4 → 0 | removed: driver_attribution_runs_with_drivers, horizon_filter_ignores_other_horizons, pair_and_baseline_detects_positive_score_abs_lift, uncorrelated_scores_near_chance_auc |
