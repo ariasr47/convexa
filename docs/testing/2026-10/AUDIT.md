@@ -48,6 +48,8 @@ case count after the area's batches, adjusted by the reconciliation.
 | A2-ticker-other | 49 | 487 | 7 | 26 | 0 | 15 | 1 | 0 | 214 |
 | A3a-trading-positions | 33 | 486 | 9 | 16 | 1 | 7 | 0 | 0 | 342 |
 | A3b-trading-broker-orders-outcomes | 37 | 565 | 19 | 16 | 1 | 1 | 0 | 0 | 487 |
+| 20 | `apps/api/src/capacity/harness_app.rs` (in-file test module; structure) | 2 → 0 | removed: loader_rejects_invalid_fixture_root, loader_supports_dedicated_and_legacy_fixture_roots |
+| 20 | `apps/api/src/services/capacity_harness/inject.rs` (in-file test module; structure) | 1 → 0 | removed: inject_publishes_changing_quotes |
 | A4-auth-alerts | 13 | 114 | 1 | 10 | 1 | 1 | 0 | 0 | 64 |
 | A5-shared-shell-theme | 47 | 357 | 12 | 16 | 4 | 15 | 0 | 0 | 169 |
 | A6-pages-other | 37 | 416 | 8 | 22 | 0 | 7 | 0 | 0 | 210 |
@@ -402,3 +404,5 @@ Full lists with files, counts and same-commit edits: [BATCHES.md](BATCHES.md).
 | 4 | `apps/api/src/services/research/score_lab.rs` (in-file test module; risk-gone) | 4 → 0 | removed: driver_attribution_runs_with_drivers, horizon_filter_ignores_other_horizons, pair_and_baseline_detects_positive_score_abs_lift, uncorrelated_scores_near_chance_auc |
 | 18 | `apps/api/src/routes/recommendation.rs` (in-file test modules schema_tests, gate_schema_tests; structure) | 5 → 0 | removed: recommendation_schema_is_not_empty, export_egress_category_fixture_is_closed_and_exhaustive, gate_runtime_success_fixture_matches_closed_dto, recommendation_enum_conversions_match_into_responses, sim_trade_enum_conversions_match_into_responses |
 | 19 | `apps/api/src/infrastructure/redis/price_cache.rs` (in-file test module; structure) | 1 → 0 | removed: memory_roundtrip |
+| 20 | `apps/api/src/capacity/harness_app.rs` (in-file test module; structure) | 2 → 0 | removed: loader_rejects_invalid_fixture_root, loader_supports_dedicated_and_legacy_fixture_roots |
+| 20 | `apps/api/src/services/capacity_harness/inject.rs` (in-file test module; structure) | 1 → 0 | removed: inject_publishes_changing_quotes |

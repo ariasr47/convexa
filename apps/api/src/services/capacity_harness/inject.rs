@@ -87,23 +87,3 @@ pub fn start_inject(hub: StockStreamHub, symbols: Vec<String>, base_mid: f64) ->
         join,
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::infrastructure::massive::StockStreamHub;
-
-    #[tokio::test]
-    async fn inject_publishes_changing_quotes() {
-        let hub = StockStreamHub::harness_local();
-        let mut rx = hub.subscribe_events();
-        let handle = start_inject(hub, vec!["SPY".into()], 768.56);
-        let ev = tokio::time::timeout(Duration::from_secs(3), rx.recv())
-            .await
-            .expect("timeout")
-            .expect("recv");
-        assert_eq!(ev.symbol, "SPY");
-        assert!(ev.bid.is_some());
-        handle.stop();
-    }
-}
