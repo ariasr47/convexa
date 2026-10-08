@@ -26,8 +26,11 @@ describe('demo HTTP projections', () => {
     expect(Number(state.net_dex)).toBeCloseTo(strikes.reduce((sum, row) => sum + (row.net_dex ?? 0), 0), 2);
     expect(Number(state.call_dex)).toBeCloseTo(strikes.reduce((sum, row) => sum + (row.call_dex ?? 0), 0), 2);
     expect(Number(state.put_dex)).toBeCloseTo(strikes.reduce((sum, row) => sum + (row.put_dex ?? 0), 0), 2);
-    expect(full.signals.score_drivers.total).toBe(full.signals.opportunity_score);
-    expect(full.signals.score_drivers.proximity + full.signals.score_drivers.setups + full.signals.score_drivers.vol + full.signals.score_drivers.transition + full.signals.score_drivers.dark_pool).toBe(full.signals.opportunity_score);
+    const scoreDrivers = full.signals.score_drivers;
+    expect(scoreDrivers).not.toBeNull();
+    if (!scoreDrivers) throw new Error('The curated ticker scenario must include score-driver totals.');
+    expect(scoreDrivers.total).toBe(full.signals.opportunity_score);
+    expect(scoreDrivers.proximity + scoreDrivers.setups + scoreDrivers.vol + scoreDrivers.transition + scoreDrivers.dark_pool).toBe(full.signals.opportunity_score);
     expect(full.signals.distances.gamma_flip_pct).toBe(Number(((state.gamma_flip - state.price) / state.price).toFixed(4)));
 
     const novemberResponse = await demoFetch(new Request('http://localhost/api/ticker/SPY?min_dte=44&max_dte=60'));

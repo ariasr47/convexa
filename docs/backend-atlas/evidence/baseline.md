@@ -19,3 +19,9 @@ The raw command output is in `baseline-build.log`. This is local build evidence 
 Before application edits, live mode with Nx daemon/cloud disabled: npm exec --no -- nx test @convexa/dashboard --run --skip-nx-cache. Native exit code **0**; **261 files / 3,139 tests passed**. Wall time **84.65 s**, Vitest **80.75 s**. Parallel aggregate phase durations exceed wall time and are not added together. The log includes existing jsdom canvas and React/colour warnings; these are not new failures. Raw log: baseline-tests.log. Resolved target: dashboard-resolved-baseline.json. This is local evidence, not a GitHub CI or hosted result.
 
 Raw command logs and the full inferred-target dump remain local and are ignored by Git. The compact resolved build/test/typecheck evidence is retained in dashboard-targets-baseline.json.
+
+## Original static startup dependency closure
+
+Before replacing the original built artifact, a read-only `es-module-lexer` pass followed the entry's static imports and HTML module preloads/stylesheets. The entry `index-C3sa394P.js` matches the original build log. The resulting **12 assets total 196,143 Brotli bytes (191.55 KiB)** and 726,088 uncompressed bytes; individual names, hashes and byte counts are in `baseline-boot-closure.json`.
+
+This is an artifact graph measurement, not an observed browser transfer. The receipt lists 17 statically resolvable dynamic route imports separately and records one unresolved generic dynamic expression. The final measurement must add the new immediately imported `mountApp` closure and any startup-loaded assets; a smaller entry chunk alone does not establish an improvement.

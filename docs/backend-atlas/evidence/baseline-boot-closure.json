@@ -1,0 +1,110 @@
+{
+  "baselineSha": "8932fc1176543eff3fa826de6924e12ec52f3310",
+  "scope": "Original built index entry static import closure plus HTML preloads and stylesheets. Dynamic imports listed separately, not claimed as observed browser requests.",
+  "entry": [
+    "/assets/index-C3sa394P.js"
+  ],
+  "assets": [
+    {
+      "asset": "assets/AuthDialogProvider-DINUv3wU.js",
+      "rawBytes": 19856,
+      "brotliBytes": 6412,
+      "sha256": "8d0d21a1c71cee752178bbc09e2c1eb2dfe9eda05d68296fc88db970a16bacfe"
+    },
+    {
+      "asset": "assets/index-C3sa394P.js",
+      "rawBytes": 68643,
+      "brotliBytes": 18365,
+      "sha256": "bd8b5a4e542763f9ec424fcec6a2485e2e21937a7a42ef495d3a655794fb3b30"
+    },
+    {
+      "asset": "assets/index-Cr60H_du.css",
+      "rawBytes": 4393,
+      "brotliBytes": 482,
+      "sha256": "025b7216190f5494f23dbd8590189b5842f827f051982831cd4f1cb38c1556ce"
+    },
+    {
+      "asset": "assets/migrate-CGnxjX0x.js",
+      "rawBytes": 18118,
+      "brotliBytes": 5688,
+      "sha256": "96de86b19fb1c4745ab9da2a4fd70dab08e7ba800e7015c4e760b4ba27d9515a"
+    },
+    {
+      "asset": "assets/mui-DLLXTYuR.js",
+      "rawBytes": 350187,
+      "brotliBytes": 89325,
+      "sha256": "8c517eb37016c8d1eebf0e7dbdcc52c38a3971d4a5233459f5251f669234b64e"
+    },
+    {
+      "asset": "assets/react-CpRK60OM.js",
+      "rawBytes": 178709,
+      "brotliBytes": 48344,
+      "sha256": "0c2426ba10c7db11434c581c2f8494083ed0020701c07472457eee1d87e5e9e2"
+    },
+    {
+      "asset": "assets/rolldown-runtime-hePW80VL.js",
+      "rawBytes": 716,
+      "brotliBytes": 381,
+      "sha256": "580ad8c58061a4dde99bde0a56905e382f0568516ee2f5b84dbfb52085709021"
+    },
+    {
+      "asset": "assets/router-DBW0OONy.js",
+      "rawBytes": 39329,
+      "brotliBytes": 12625,
+      "sha256": "fafc8c5ceddbba683087e5536d2572d15692208518f62f83bfd1ebc369423c08"
+    },
+    {
+      "asset": "assets/src-HTYG6c5Y.js",
+      "rawBytes": 26319,
+      "brotliBytes": 7461,
+      "sha256": "96e77a6395dd9c7094770f05d160740bb7828d7e59778c2202615bd0323b5562"
+    },
+    {
+      "asset": "assets/structure-field-DK-bYnxB.js",
+      "rawBytes": 16773,
+      "brotliBytes": 5810,
+      "sha256": "fa87d8ddf63469128fead0e472f6c6bf2eb1cf91c0f3a74a00009d8458d86aa3"
+    },
+    {
+      "asset": "assets/tokens-lH7QUd2c.js",
+      "rawBytes": 2433,
+      "brotliBytes": 983,
+      "sha256": "937d6e29d0d6bf7628991581361746b3336139e90c8947819bfb1e4edab53c3b"
+    },
+    {
+      "asset": "assets/useReducedMotion-DewTn1ge.js",
+      "rawBytes": 612,
+      "brotliBytes": 267,
+      "sha256": "b92b9e6b8e03a9892e61098748e289dc728cfb06da262178c3c4f21b3e398f16"
+    }
+  ],
+  "totals": {
+    "rawBytes": 726088,
+    "brotliBytes": 196143
+  },
+  "dynamicImports": [
+    "assets/AlertsPage-DAOLKrpA.js",
+    "assets/BlogPage-DM78caRO.js",
+    "assets/FlowRibbonsLab-BKaAU1nn.js",
+    "assets/LabIndex-CIQ9h-Nq.js",
+    "assets/MethodologyPage-aF0dWkaQ.js",
+    "assets/NotFound-BQuAMS1t.js",
+    "assets/OperatorSessionArchive-h5h52I_L.js",
+    "assets/PositionsPage-DoGNJrHe.js",
+    "assets/Scanner-DqMnb-VS.js",
+    "assets/SettingsPage-Di6WdY3r.js",
+    "assets/StructureFieldLab-Wgd3Gkzd.js",
+    "assets/TapePulseLab-ICkbwAR3.js",
+    "assets/TermHeatLab-DxN8EzHp.js",
+    "assets/TickerDashboard-CD6VEJSF.js",
+    "assets/WallMagnetLab-BRC48nsh.js",
+    "assets/bookSync-BFFP0Vwe.js",
+    "assets/operator-metrics-vkCGcdLE.js"
+  ],
+  "unresolvedDynamicImports": [
+    {
+      "asset": "assets/router-DBW0OONy.js",
+      "expression": "import(e.module)"
+    }
+  ]
+}

@@ -16,8 +16,10 @@ describe('authored scenario catalog', () => {
       expect(scenario!.research.evidence.every((fact) => fact.state !== 'present' || fact.sourceIds.every((id) => scenario!.bars.some((bar) => bar.id === id)))).toBe(true);
     }
     const spy = await loadScenario('SPY');
-    const all = spy!.variants[EXPIRIES.join(',')];
-    const november = spy!.variants[EXPIRIES[2]];
+    expect(spy).not.toBeNull();
+    if (!spy) throw new Error('SPY sample scenario is required for the curated variant oracle.');
+    const all = spy.variants[EXPIRIES.join(',')];
+    const november = spy.variants[EXPIRIES[2]];
     expect(november.wall).not.toBe(all.wall);
     expect(november.flip).not.toBe(all.flip);
     expect(november.distance).not.toBe(all.distance);
@@ -29,7 +31,10 @@ describe('authored scenario catalog', () => {
   });
 
   it('intersects DTE and explicit expiry bounds and rejects unsupported projections', () => {
-    expect(effectiveExpiries({ minDte: 9 }).state === 'ready' && effectiveExpiries({ minDte: 9 }).dates).toEqual(['2026-10-16', '2026-11-20']);
+    const minimumDte = effectiveExpiries({ minDte: 9 });
+    expect(minimumDte.state).toBe('ready');
+    if (minimumDte.state !== 'ready') throw new Error('A valid DTE projection should have curated expiries.');
+    expect(minimumDte.dates).toEqual(['2026-10-16', '2026-11-20']);
     expect(effectiveExpiries({ expirations: ['2026-11-20', '2026-10-09', '2026-11-20'] })).toMatchObject({ state: 'ready', dates: ['2026-10-09', '2026-11-20'] });
     expect(effectiveExpiries({ minDte: 45 }).state).toBe('unsupported');
     expect(effectiveExpiries({ darkPool: false }).state).toBe('unsupported');

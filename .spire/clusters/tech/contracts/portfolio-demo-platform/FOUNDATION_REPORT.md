@@ -22,12 +22,16 @@ Commands ran from absolute PowerShell workdirs with Nx daemon/cloud disabled. Vi
 | `npx vitest run --config vite.config.mts src/lib/demo/indicators.spec.ts src/lib/demo/catalog/catalog.spec.ts src/lib/demo/transport.spec.ts src/lib/demo/workspace.spec.ts` from `C:\Dev\convexa\libs\api` | **Exit 0; 4 files / 10 tests passed; 0.693 s.** Includes corrupt settings/view/book preservation and write refusal. |
 | `npm exec --no -- vitest run --config C:/Dev/convexa/libs/api/vite.config.mts --reporter=dot` | **Exit 0; 8 files / 55 tests passed; 0.753 s.** Existing contract-authority and API tests included. |
 | `npx tsc --noEmit -p libs/api/tsconfig.lib.json` | **Exit 0; 3.44 s.** Generated DTO success builders are checked against generated schema types. |
+| `npx tsc --build --emitDeclarationOnly libs/api/tsconfig.json --pretty false` | **Exit 0.** Project-reference declaration build includes API specs. |
+| Focused follow-up: `npx vitest run --config vite.config.mts src/lib/demo/catalog/catalog.spec.ts src/lib/demo/transport.spec.ts` from `C:\Dev\convexa\libs\api` | **Exit 0; 2 files / 3 tests passed; 0.847 s.** |
 | `node --check docs/backend-atlas/atlas.js` | **Exit 0.** |
 | `git diff --check` across owned implementation and atlas paths | **Exit 0.** Git reported existing CRLF-to-LF normalization warnings on a few repository files; no whitespace errors. |
 
 G4 can-fail proof: temporarily changed the ATR divisor from 14 to 13, then ran `npx vitest run --config vite.config.mts src/lib/demo/indicators.spec.ts` from `libs/api`. Native exit **1**; the independent flat vector expected 2 and received 2.1538461538461537 (one failed, one passed). Restored the divisor to 14 and reran the focused G2–G4 set above: **exit 0, 9/9 passed**.
 
 G2 includes the poisoned-variant oracle in `catalog/catalog.spec.ts`: it supplies the November patch with the full-chain fingerprint to `assertCuratedVariants` and asserts that the invariant throws. G5 similarly runs the real Nx query then asserts a poisoned mode-input identity is rejected. These are checked counterexamples inside the green test suites; they do not substitute for a full product-level QA run.
+
+The follow-up project-reference declaration build initially surfaced test-only strict-null errors: the nullable lazy SPY scenario, discriminated expiry result, and optional `score_drivers`. Specs now assert and explicitly narrow those states before inspecting required fields; no nullability was erased with casts. The declaration build and both focused specs pass after that fix.
 
 ## Frozen public interface
 
