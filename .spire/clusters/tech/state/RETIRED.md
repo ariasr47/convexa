@@ -62,3 +62,8 @@ RETIRED: apps/dashboard/src/app/curvature-v2-landing-samples.structural.spec.ts;
 RETIRED: apps/dashboard/src/app/day-replay-mock-adapter.structural.spec.ts; parent 9494b95677fbb0e49f16cfb2da570fafe501ff66; structure; 4 tests
 RETIRED: apps/dashboard/src/app/index-head.structural.spec.ts; parent 9494b95677fbb0e49f16cfb2da570fafe501ff66; structure; 7 tests
 RETIRED: libs/api/src/lib/contract-compat.spec.ts; parent 9494b95677fbb0e49f16cfb2da570fafe501ff66; structure; 1 tests
+RETIRED: apps/dashboard-e2e/tools/browser-policy.spec.mjs; parent b5a677aa8d57a4840fa4af651f7c8b6a487d3bc4; structure; 3 tests
+RETIRED: apps/dashboard-e2e/tools/d7-fixture-repairs.spec.mjs; parent b5a677aa8d57a4840fa4af651f7c8b6a487d3bc4; structure; 9 tests
+RETIRED: apps/dashboard-e2e/tools/process.spec.mjs; parent b5a677aa8d57a4840fa4af651f7c8b6a487d3bc4; structure; 3 tests
+RETIRED: apps/dashboard-e2e/tools/visual-frame.spec.mjs; parent b5a677aa8d57a4840fa4af651f7c8b6a487d3bc4; structure; 4 tests
+RETIRED: apps/dashboard-e2e/tools/wiring.spec.mjs; parent b5a677aa8d57a4840fa4af651f7c8b6a487d3bc4; structure; 3 tests
