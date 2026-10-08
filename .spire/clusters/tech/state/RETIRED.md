@@ -53,3 +53,8 @@ RETIRED: apps/dashboard/src/app/shared/ui/Refused.spec.tsx; parent 46130b376dbc6
 RETIRED: apps/dashboard/src/app/shared/ui/arc.spec.ts; parent 46130b376dbc67ea8a8dea1d47db3985ce092167; structure; 9 tests
 RETIRED: apps/dashboard/src/app/shared/charts/structure-field/levelStrokes.spec.ts; parent 46130b376dbc67ea8a8dea1d47db3985ce092167; structure; 11 tests
 RETIRED: apps/dashboard/src/app/shared/charts/structure-field/markerLayout.spec.ts; parent 46130b376dbc67ea8a8dea1d47db3985ce092167; structure; 8 tests
+RETIRED: apps/dashboard/src/app/pages/lab/structureFieldDemo.spec.ts; parent 5c205479c0d28e537a33f20ea0156aac0b584010; structure; 4 tests
+RETIRED: apps/dashboard/src/app/pages/operator-metrics/useLatencyTrend.spec.tsx; parent 5c205479c0d28e537a33f20ea0156aac0b584010; structure; 1 tests
+RETIRED: apps/dashboard/src/app/pages/landing/GammaSurfaceHero.spec.tsx; parent 5c205479c0d28e537a33f20ea0156aac0b584010; structure; 10 tests
+RETIRED: apps/dashboard/src/app/pages/landing/display-face.spec.tsx; parent 5c205479c0d28e537a33f20ea0156aac0b584010; structure; 5 tests
+RETIRED: apps/dashboard/src/app/pages/landing/landing-structure.spec.tsx; parent 5c205479c0d28e537a33f20ea0156aac0b584010; structure; 13 tests

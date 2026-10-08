@@ -76,3 +76,4 @@ Append-only. One line per step. Times are local (America/Los_Angeles) unless mar
 - 2026-10-08 P2 batch 13a: identity.rs apply_fixed_sse_clock now pins tick_age_s 0|1 -> 0 (a larger age is left to fail). New unit test fixed_sse_clock_pins_a_same_second_tick_age_and_keeps_real_staleness: RED before the fix (tick_age_s 1: left 1, right 0; cargo test --lib capacity::identity exit 101), GREEN after (4 passed).
 - 2026-10-08 P2 batches 13+13a verified (run b13a at a8a29c99): all exit 0, 796 s; vitest 2911 + 45, tools 94, cargo 1636 (+1 new test), chromium 128, a11y 35, pg 2+9+1, byte-identity green, 0 skips.
 - 2026-10-08 P2 batch 14 committed 46130b37; verified (run b14): all exit 0, 596 s; vitest 2905 (-6), rest unchanged; 0 skips.
+- 2026-10-08 P2 batch 15 committed 5c205479; verified (run b15): all exit 0, 599 s; vitest 2820 (-85), rest unchanged; 0 skips.
