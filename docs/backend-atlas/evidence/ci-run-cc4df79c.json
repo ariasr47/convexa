@@ -1,0 +1,1202 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-10-08T08:18:51.536925+00:00",
+  "source_revision": "cc4df79c6a0e4ad6eabd1ce31a068112260a9d16",
+  "head_sha": "cc4df79c6a0e4ad6eabd1ce31a068112260a9d16",
+  "policy_report_merge_sha": "435021c4432af797f8c8dcaf132b289c5e0151f1",
+  "revision_binding_note": "Browser summaries and run head bind the source commit; the policy report revision is the pull-request merge commit.",
+  "run_id": 37743441304,
+  "run_url": "https://github.com/ariasr47/convexa/actions/runs/37743441304",
+  "final_attempt": 2,
+  "actual_overall_conclusion": "failure",
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_conclusion": "cancelled",
+      "jobs": [
+        {
+          "id": 113199264645,
+          "name": "Frontend (lint \u00b7 typecheck \u00b7 test \u00b7 build \u00b7 e2e)",
+          "status": "completed",
+          "conclusion": "cancelled",
+          "started_at": "2026-10-08T07:26:32Z",
+          "completed_at": "2026-10-08T07:56:43Z",
+          "steps": [
+            {
+              "number": 1,
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "number": 2,
+              "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+              "conclusion": "success"
+            },
+            {
+              "number": 3,
+              "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+              "conclusion": "success"
+            },
+            {
+              "number": 4,
+              "name": "Run npm ci",
+              "conclusion": "success"
+            },
+            {
+              "number": 5,
+              "name": "Build generated API declarations",
+              "conclusion": "success"
+            },
+            {
+              "number": 6,
+              "name": "API contract check",
+              "conclusion": "success"
+            },
+            {
+              "number": 7,
+              "name": "Format check",
+              "conclusion": "success"
+            },
+            {
+              "number": 8,
+              "name": "Lint",
+              "conclusion": "success"
+            },
+            {
+              "number": 9,
+              "name": "Typecheck",
+              "conclusion": "success"
+            },
+            {
+              "number": 10,
+              "name": "Unit tests (Vitest)",
+              "conclusion": "success"
+            },
+            {
+              "number": 11,
+              "name": "Upload Vitest log on failure",
+              "conclusion": "skipped"
+            },
+            {
+              "number": 12,
+              "name": "Production build (dashboard)",
+              "conclusion": "success"
+            },
+            {
+              "number": 13,
+              "name": "Bundle size gate",
+              "conclusion": "success"
+            },
+            {
+              "number": 14,
+              "name": "Browser quality engine install",
+              "conclusion": "cancelled"
+            },
+            {
+              "number": 15,
+              "name": "Browser quality gate",
+              "conclusion": "skipped"
+            },
+            {
+              "number": 16,
+              "name": "Upload Chromium browser evidence",
+              "conclusion": "failure"
+            },
+            {
+              "number": 17,
+              "name": "Upload compatibility browser evidence",
+              "conclusion": "failure"
+            },
+            {
+              "number": 18,
+              "name": "Upload accessibility browser evidence",
+              "conclusion": "failure"
+            },
+            {
+              "number": 19,
+              "name": "Upload visual browser evidence",
+              "conclusion": "failure"
+            },
+            {
+              "number": 20,
+              "name": "Demo build-mode guard (G5)",
+              "conclusion": "skipped"
+            },
+            {
+              "number": 21,
+              "name": "Demo production build",
+              "conclusion": "skipped"
+            },
+            {
+              "number": 22,
+              "name": "Demo browser journey (G1)",
+              "conclusion": "skipped"
+            },
+            {
+              "number": 23,
+              "name": "Upload demo browser evidence",
+              "conclusion": "success"
+            },
+            {
+              "number": 45,
+              "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+              "conclusion": "skipped"
+            },
+            {
+              "number": 46,
+              "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+              "conclusion": "success"
+            },
+            {
+              "number": 47,
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ],
+          "execution_origin_attempt": 1,
+          "inherited_outcome": false,
+          "original_job_id": 113199264645
+        },
+        {
+          "id": 113199264917,
+          "name": "Capacity baseline (Linux)",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-08T07:26:32Z",
+          "completed_at": "2026-10-08T07:32:59Z",
+          "steps": [
+            {
+              "number": 1,
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "number": 2,
+              "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+              "conclusion": "success"
+            },
+            {
+              "number": 3,
+              "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+              "conclusion": "success"
+            },
+            {
+              "number": 4,
+              "name": "Install locked Node dependencies",
+              "conclusion": "success"
+            },
+            {
+              "number": 5,
+              "name": "Build generated API declarations",
+              "conclusion": "success"
+            },
+            {
+              "number": 6,
+              "name": "Install baseline Rust 1.97.1",
+              "conclusion": "success"
+            },
+            {
+              "number": 7,
+              "name": "Cache cargo",
+              "conclusion": "success"
+            },
+            {
+              "number": 8,
+              "name": "Capacity focused tests",
+              "conclusion": "success"
+            },
+            {
+              "number": 9,
+              "name": "Capacity self-tests and normal profile",
+              "conclusion": "success"
+            },
+            {
+              "number": 10,
+              "name": "Upload capacity evidence",
+              "conclusion": "success"
+            },
+            {
+              "number": 18,
+              "name": "Post Cache cargo",
+              "conclusion": "success"
+            },
+            {
+              "number": 19,
+              "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+              "conclusion": "success"
+            },
+            {
+              "number": 20,
+              "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+              "conclusion": "success"
+            },
+            {
+              "number": 21,
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ],
+          "execution_origin_attempt": 1,
+          "inherited_outcome": false,
+          "original_job_id": 113199264917
+        },
+        {
+          "id": 113199264949,
+          "name": "Supply-chain policy / identity",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-08T07:27:08Z",
+          "completed_at": "2026-10-08T07:27:23Z",
+          "steps": [
+            {
+              "number": 1,
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "number": 2,
+              "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+              "conclusion": "success"
+            },
+            {
+              "number": 3,
+              "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+              "conclusion": "success"
+            },
+            {
+              "number": 4,
+              "name": "Run event=\"$EVENT_NAME\"",
+              "conclusion": "success"
+            },
+            {
+              "number": 7,
+              "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+              "conclusion": "success"
+            },
+            {
+              "number": 8,
+              "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+              "conclusion": "success"
+            },
+            {
+              "number": 9,
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ],
+          "execution_origin_attempt": 1,
+          "inherited_outcome": false,
+          "original_job_id": 113199264949
+        },
+        {
+          "id": 113199265051,
+          "name": "Backend (cargo test \u00b7 release+postgres)",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-08T07:26:33Z",
+          "completed_at": "2026-10-08T07:54:38Z",
+          "steps": [
+            {
+              "number": 1,
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "number": 2,
+              "name": "Initialize containers",
+              "conclusion": "success"
+            },
+            {
+              "number": 3,
+              "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+              "conclusion": "success"
+            },
+            {
+              "number": 4,
+              "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+              "conclusion": "success"
+            },
+            {
+              "number": 5,
+              "name": "Install locked Node dependencies",
+              "conclusion": "success"
+            },
+            {
+              "number": 6,
+              "name": "Build generated API declarations",
+              "conclusion": "success"
+            },
+            {
+              "number": 7,
+              "name": "API contract check",
+              "conclusion": "success"
+            },
+            {
+              "number": 8,
+              "name": "Free preinstalled runner disk",
+              "conclusion": "success"
+            },
+            {
+              "number": 9,
+              "name": "Install baseline Rust 1.97.1",
+              "conclusion": "success"
+            },
+            {
+              "number": 10,
+              "name": "Cache cargo",
+              "conclusion": "success"
+            },
+            {
+              "number": 11,
+              "name": "Cargo test",
+              "conclusion": "success"
+            },
+            {
+              "number": 12,
+              "name": "Capacity load harness",
+              "conclusion": "success"
+            },
+            {
+              "number": 13,
+              "name": "Free default-feature debug build space",
+              "conclusion": "success"
+            },
+            {
+              "number": 14,
+              "name": "Production runtime guardrails (postgres)",
+              "conclusion": "success"
+            },
+            {
+              "number": 15,
+              "name": "PostgreSQL release safety",
+              "conclusion": "success"
+            },
+            {
+              "number": 16,
+              "name": "Upload PostgreSQL release safety evidence",
+              "conclusion": "success"
+            },
+            {
+              "number": 17,
+              "name": "Free debug build space",
+              "conclusion": "success"
+            },
+            {
+              "number": 18,
+              "name": "Cargo release build (postgres)",
+              "conclusion": "success"
+            },
+            {
+              "number": 33,
+              "name": "Post Cache cargo",
+              "conclusion": "success"
+            },
+            {
+              "number": 34,
+              "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+              "conclusion": "success"
+            },
+            {
+              "number": 35,
+              "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+              "conclusion": "success"
+            },
+            {
+              "number": 36,
+              "name": "Stop containers",
+              "conclusion": "success"
+            },
+            {
+              "number": 37,
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ],
+          "execution_origin_attempt": 1,
+          "inherited_outcome": false,
+          "original_job_id": 113199265051
+        },
+        {
+          "id": 113199553737,
+          "name": "Supply-chain policy / capabilities",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-08T07:27:25Z",
+          "completed_at": "2026-10-08T07:29:15Z",
+          "steps": [
+            {
+              "number": 1,
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "number": 2,
+              "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+              "conclusion": "success"
+            },
+            {
+              "number": 3,
+              "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+              "conclusion": "success"
+            },
+            {
+              "number": 4,
+              "name": "Run docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435",
+              "conclusion": "success"
+            },
+            {
+              "number": 5,
+              "name": "Run npm ci",
+              "conclusion": "success"
+            },
+            {
+              "number": 6,
+              "name": "Run node tools/supply-chain/acquire-tools.mjs",
+              "conclusion": "success"
+            },
+            {
+              "number": 7,
+              "name": "Execute capability poison set",
+              "conclusion": "success"
+            },
+            {
+              "number": 8,
+              "name": "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+              "conclusion": "success"
+            },
+            {
+              "number": 14,
+              "name": "Post Run docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435",
+              "conclusion": "success"
+            },
+            {
+              "number": 15,
+              "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+              "conclusion": "success"
+            },
+            {
+              "number": 16,
+              "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+              "conclusion": "success"
+            },
+            {
+              "number": 17,
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ],
+          "execution_origin_attempt": 1,
+          "inherited_outcome": false,
+          "original_job_id": 113199553737
+        },
+        {
+          "id": 113199553751,
+          "name": "Supply-chain policy / policy",
+          "status": "completed",
+          "conclusion": "failure",
+          "started_at": "2026-10-08T07:27:25Z",
+          "completed_at": "2026-10-08T07:28:58Z",
+          "steps": [
+            {
+              "number": 1,
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "number": 2,
+              "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+              "conclusion": "success"
+            },
+            {
+              "number": 3,
+              "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+              "conclusion": "success"
+            },
+            {
+              "number": 4,
+              "name": "Run npm ci",
+              "conclusion": "success"
+            },
+            {
+              "number": 5,
+              "name": "Acquire checksum-verified policy tools",
+              "conclusion": "success"
+            },
+            {
+              "number": 6,
+              "name": "Run complete policy surface",
+              "conclusion": "failure"
+            },
+            {
+              "number": 7,
+              "name": "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+              "conclusion": "success"
+            },
+            {
+              "number": 8,
+              "name": "Render sanitized policy summary",
+              "conclusion": "failure"
+            },
+            {
+              "number": 15,
+              "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+              "conclusion": "skipped"
+            },
+            {
+              "number": 16,
+              "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+              "conclusion": "success"
+            },
+            {
+              "number": 17,
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ],
+          "execution_origin_attempt": 1,
+          "inherited_outcome": false,
+          "original_job_id": 113199553751
+        },
+        {
+          "id": 113199556973,
+          "name": "Supply-chain policy / artifacts",
+          "status": "completed",
+          "conclusion": "skipped",
+          "started_at": "2026-10-08T07:27:24Z",
+          "completed_at": "2026-10-08T07:27:23Z",
+          "steps": [],
+          "execution_origin_attempt": 1,
+          "inherited_outcome": false,
+          "original_job_id": 113199556973
+        },
+        {
+          "id": 113200171387,
+          "name": "Supply-chain policy / aggregate",
+          "status": "completed",
+          "conclusion": "failure",
+          "started_at": "2026-10-08T07:29:18Z",
+          "completed_at": "2026-10-08T07:29:32Z",
+          "steps": [
+            {
+              "number": 1,
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "number": 2,
+              "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+              "conclusion": "success"
+            },
+            {
+              "number": 3,
+              "name": "Run actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+              "conclusion": "success"
+            },
+            {
+              "number": 4,
+              "name": "Validate current-run children and decide",
+              "conclusion": "failure"
+            },
+            {
+              "number": 5,
+              "name": "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+              "conclusion": "success"
+            },
+            {
+              "number": 10,
+              "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+              "conclusion": "success"
+            },
+            {
+              "number": 11,
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ],
+          "execution_origin_attempt": 1,
+          "inherited_outcome": false,
+          "original_job_id": 113200171387
+        }
+      ]
+    },
+    {
+      "attempt": 2,
+      "run_conclusion": "failure",
+      "jobs": [
+        {
+          "id": 113209589041,
+          "name": "Frontend (lint \u00b7 typecheck \u00b7 test \u00b7 build \u00b7 e2e)",
+          "status": "completed",
+          "conclusion": "failure",
+          "started_at": "2026-10-08T07:57:14Z",
+          "completed_at": "2026-10-08T08:14:34Z",
+          "steps": [
+            {
+              "number": 1,
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "number": 2,
+              "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+              "conclusion": "success"
+            },
+            {
+              "number": 3,
+              "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+              "conclusion": "success"
+            },
+            {
+              "number": 4,
+              "name": "Run npm ci",
+              "conclusion": "success"
+            },
+            {
+              "number": 5,
+              "name": "Build generated API declarations",
+              "conclusion": "success"
+            },
+            {
+              "number": 6,
+              "name": "API contract check",
+              "conclusion": "success"
+            },
+            {
+              "number": 7,
+              "name": "Format check",
+              "conclusion": "success"
+            },
+            {
+              "number": 8,
+              "name": "Lint",
+              "conclusion": "success"
+            },
+            {
+              "number": 9,
+              "name": "Typecheck",
+              "conclusion": "success"
+            },
+            {
+              "number": 10,
+              "name": "Unit tests (Vitest)",
+              "conclusion": "success"
+            },
+            {
+              "number": 11,
+              "name": "Upload Vitest log on failure",
+              "conclusion": "skipped"
+            },
+            {
+              "number": 12,
+              "name": "Production build (dashboard)",
+              "conclusion": "success"
+            },
+            {
+              "number": 13,
+              "name": "Bundle size gate",
+              "conclusion": "success"
+            },
+            {
+              "number": 14,
+              "name": "Browser quality engine install",
+              "conclusion": "success"
+            },
+            {
+              "number": 15,
+              "name": "Browser quality gate",
+              "conclusion": "failure"
+            },
+            {
+              "number": 16,
+              "name": "Upload Chromium browser evidence",
+              "conclusion": "success"
+            },
+            {
+              "number": 17,
+              "name": "Upload compatibility browser evidence",
+              "conclusion": "success"
+            },
+            {
+              "number": 18,
+              "name": "Upload accessibility browser evidence",
+              "conclusion": "success"
+            },
+            {
+              "number": 19,
+              "name": "Upload visual browser evidence",
+              "conclusion": "success"
+            },
+            {
+              "number": 20,
+              "name": "Demo build-mode guard (G5)",
+              "conclusion": "skipped"
+            },
+            {
+              "number": 21,
+              "name": "Demo production build",
+              "conclusion": "skipped"
+            },
+            {
+              "number": 22,
+              "name": "Demo browser journey (G1)",
+              "conclusion": "skipped"
+            },
+            {
+              "number": 23,
+              "name": "Upload demo browser evidence",
+              "conclusion": "success"
+            },
+            {
+              "number": 45,
+              "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+              "conclusion": "skipped"
+            },
+            {
+              "number": 46,
+              "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+              "conclusion": "success"
+            },
+            {
+              "number": 47,
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ],
+          "execution_origin_attempt": 2,
+          "inherited_outcome": false,
+          "original_job_id": 113209589041
+        },
+        {
+          "id": 113209590606,
+          "name": "Capacity baseline (Linux)",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-08T07:26:32Z",
+          "completed_at": "2026-10-08T07:32:59Z",
+          "execution_origin_attempt": 1,
+          "inherited_outcome": true,
+          "original_job_id": 113199264917,
+          "steps_reference": "Identical to original_job_id in attempt 1; exact equality verified."
+        },
+        {
+          "id": 113209590831,
+          "name": "Supply-chain policy / artifacts",
+          "status": "completed",
+          "conclusion": "skipped",
+          "started_at": "2026-10-08T07:57:12Z",
+          "completed_at": "2026-10-08T07:27:23Z",
+          "execution_origin_attempt": 1,
+          "inherited_outcome": true,
+          "original_job_id": 113199556973,
+          "metadata_note": "GitHub changed the start timestamp on this skipped record; its prior completed timestamp and empty steps are retained. No execution is claimed.",
+          "steps_reference": "Identical to original_job_id in attempt 1; exact equality verified."
+        },
+        {
+          "id": 113209591109,
+          "name": "Backend (cargo test \u00b7 release+postgres)",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-08T07:26:33Z",
+          "completed_at": "2026-10-08T07:54:38Z",
+          "execution_origin_attempt": 1,
+          "inherited_outcome": true,
+          "original_job_id": 113199265051,
+          "steps_reference": "Identical to original_job_id in attempt 1; exact equality verified."
+        },
+        {
+          "id": 113209591436,
+          "name": "Supply-chain policy / identity",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-08T07:27:08Z",
+          "completed_at": "2026-10-08T07:27:23Z",
+          "execution_origin_attempt": 1,
+          "inherited_outcome": true,
+          "original_job_id": 113199264949,
+          "steps_reference": "Identical to original_job_id in attempt 1; exact equality verified."
+        },
+        {
+          "id": 113209592070,
+          "name": "Supply-chain policy / policy",
+          "status": "completed",
+          "conclusion": "failure",
+          "started_at": "2026-10-08T07:27:25Z",
+          "completed_at": "2026-10-08T07:28:58Z",
+          "execution_origin_attempt": 1,
+          "inherited_outcome": true,
+          "original_job_id": 113199553751,
+          "steps_reference": "Identical to original_job_id in attempt 1; exact equality verified."
+        },
+        {
+          "id": 113209594369,
+          "name": "Supply-chain policy / aggregate",
+          "status": "completed",
+          "conclusion": "failure",
+          "started_at": "2026-10-08T07:29:18Z",
+          "completed_at": "2026-10-08T07:29:32Z",
+          "execution_origin_attempt": 1,
+          "inherited_outcome": true,
+          "original_job_id": 113200171387,
+          "steps_reference": "Identical to original_job_id in attempt 1; exact equality verified."
+        },
+        {
+          "id": 113209642494,
+          "name": "Supply-chain policy / capabilities",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-08T07:27:25Z",
+          "completed_at": "2026-10-08T07:29:15Z",
+          "execution_origin_attempt": 1,
+          "inherited_outcome": true,
+          "original_job_id": 113199553737,
+          "steps_reference": "Identical to original_job_id in attempt 1; exact equality verified."
+        }
+      ]
+    }
+  ],
+  "infrastructure_retry": {
+    "scope": "Only the frontend job was rerun on the same source; other outcomes were inherited.",
+    "attempt_1_install_seconds": 1240,
+    "attempt_1_last_package_at": "2026-10-08T07:56:33.9976307Z",
+    "attempt_1_last_package": "Get:78 libsamplerate0 1344 kB",
+    "classification": "Slow Ubuntu mirror transfer with continuing progress, cancelled before browser tests. Not a browser-test failure.",
+    "attempt_1_browser_gate_and_G5_G1": "skipped",
+    "attempt_1_missing_evidence": "Four upload steps failed because no browser output existed.",
+    "attempt_2_install_seconds": 50,
+    "attempt_2_install_conclusion": "success"
+  },
+  "browser_gates": [
+    {
+      "artifact_id": 11537146340,
+      "name": "browser-quality-accessibility",
+      "github_digest": "sha256:c96865f01bf6c1e11c41fb249116b6e1e5051e1fc04b7b5e64be0a3d01c16ef2",
+      "zip": {
+        "path": ".spire/tmp/ci-observation-cc4df79c/browser-quality-accessibility/browser-quality-accessibility.zip",
+        "sha256": "c96865f01bf6c1e11c41fb249116b6e1e5051e1fc04b7b5e64be0a3d01c16ef2"
+      },
+      "summary": {
+        "path": ".spire/tmp/ci-observation-cc4df79c/browser-quality-accessibility/summary.json",
+        "sha256": "94ad96abc9eb2db31f2119d831cc45d7c18e9cdd4621adeebfce0c8e13dba9f7"
+      },
+      "digest_verified": true,
+      "all_reported_attachment_hashes_verified": true,
+      "counts": {
+        "gate": "accessibility",
+        "status": "pass",
+        "selected": 35,
+        "executed": 35,
+        "passed": 35,
+        "failed": 0,
+        "flaky": 0,
+        "not_run": 0,
+        "source_revision": "cc4df79c6a0e4ad6eabd1ce31a068112260a9d16",
+        "host_platform": "linux"
+      }
+    },
+    {
+      "artifact_id": 11537021677,
+      "name": "browser-quality-chromium",
+      "github_digest": "sha256:10fdf9e060880f3e151a83dadac0743d8f498c1e75a293a3a088aa43f4976175",
+      "zip": {
+        "path": ".spire/tmp/ci-observation-cc4df79c/browser-quality-chromium/browser-quality-chromium.zip",
+        "sha256": "10fdf9e060880f3e151a83dadac0743d8f498c1e75a293a3a088aa43f4976175"
+      },
+      "summary": {
+        "path": ".spire/tmp/ci-observation-cc4df79c/browser-quality-chromium/summary.json",
+        "sha256": "70cf51be08d1d048dcf0c4105e0bfd91bb92c87b86b39ba2de1fa68b0e607dde"
+      },
+      "digest_verified": true,
+      "all_reported_attachment_hashes_verified": true,
+      "counts": {
+        "gate": "chromium",
+        "status": "fail",
+        "selected": 128,
+        "executed": 128,
+        "passed": 127,
+        "failed": 0,
+        "flaky": 1,
+        "not_run": 0,
+        "source_revision": "cc4df79c6a0e4ad6eabd1ce31a068112260a9d16",
+        "host_platform": "linux"
+      }
+    },
+    {
+      "artifact_id": 11537016756,
+      "name": "browser-quality-visual",
+      "github_digest": "sha256:6360645213f40dd1bf6c76e9b6e7ddb292f91fd8f98fa7a539321723fbb573b1",
+      "zip": {
+        "path": ".spire/tmp/ci-observation-cc4df79c/browser-quality-visual/browser-quality-visual.zip",
+        "sha256": "6360645213f40dd1bf6c76e9b6e7ddb292f91fd8f98fa7a539321723fbb573b1"
+      },
+      "summary": {
+        "path": ".spire/tmp/ci-observation-cc4df79c/browser-quality-visual/summary.json",
+        "sha256": "4500cdea45e13cea879d00fbec20091fd22ad4c7b74bee0ca41d36275cbf40c5"
+      },
+      "digest_verified": true,
+      "all_reported_attachment_hashes_verified": true,
+      "counts": {
+        "gate": "visual",
+        "status": "pass",
+        "selected": 6,
+        "executed": 6,
+        "passed": 6,
+        "failed": 0,
+        "flaky": 0,
+        "not_run": 0,
+        "source_revision": "cc4df79c6a0e4ad6eabd1ce31a068112260a9d16",
+        "host_platform": "linux"
+      }
+    },
+    {
+      "artifact_id": 11536404245,
+      "name": "browser-quality-compatibility",
+      "github_digest": "sha256:5bf0b8dc50b115c6a533a2c1a742deae034fb457fc71b6adc6616a67c64e218d",
+      "zip": {
+        "path": ".spire/tmp/ci-observation-cc4df79c/browser-quality-compatibility/browser-quality-compatibility.zip",
+        "sha256": "5bf0b8dc50b115c6a533a2c1a742deae034fb457fc71b6adc6616a67c64e218d"
+      },
+      "summary": {
+        "path": ".spire/tmp/ci-observation-cc4df79c/browser-quality-compatibility/summary.json",
+        "sha256": "63421e31cc2a5b4798204981acff80958850cd2314620ef173de3ddbd61464f1"
+      },
+      "digest_verified": true,
+      "all_reported_attachment_hashes_verified": true,
+      "counts": {
+        "gate": "compatibility",
+        "status": "pass",
+        "selected": 15,
+        "executed": 15,
+        "passed": 15,
+        "failed": 0,
+        "flaky": 0,
+        "not_run": 0,
+        "source_revision": "cc4df79c6a0e4ad6eabd1ce31a068112260a9d16",
+        "host_platform": "linux"
+      }
+    }
+  ],
+  "chromium_non_clean_tests": [
+    {
+      "test_id": "f70aa4b8a35f9b094b68659dbc0ea75c07c2083ff39d33211047b46f453c0579",
+      "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
+      "title_path": [
+        "AC-35 \u2014 the six converted hover-only info sites",
+        "have a tap AND a keyboard path at 1280px"
+      ],
+      "project": "chromium",
+      "status": "flaky",
+      "retries": 1,
+      "artifact_paths": [
+        "apps/dashboard-e2e/test-output/playwright/chromium/attachments/14-0-test-failed-1.png",
+        "apps/dashboard-e2e/test-output/playwright/chromium/attachments/14-1-error-context.md",
+        "apps/dashboard-e2e/test-output/playwright/chromium/attachments/14-2-trace.zip"
+      ]
+    }
+  ],
+  "first_failure": {
+    "message": "FigureCell info at 1280px: tap remains active after mouse exit",
+    "locator": "ladder-foot About Vol-norm GEX button",
+    "observed": "aria-describedby absent after help.hover() then page.mouse.move(0,0)",
+    "timeout_ms": 5000,
+    "source_location": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts:545",
+    "caller_location": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts:601",
+    "log": {
+      "path": ".spire/tmp/ci-observation-cc4df79c/attempt-2-frontend.log",
+      "sha256": "1d49d3632dfa77881703e52458386202012afd8487b5a595deffa1ec10ca855d"
+    },
+    "log_first_error_line": 2551,
+    "retry_outcome": "Passed after one retry; Chromium gate remains fail due to one flaky result."
+  },
+  "downstream": [
+    {
+      "name": "Demo build-mode guard (G5)",
+      "conclusion": "skipped",
+      "executed": false,
+      "counts": null,
+      "counts_reason": "Skipped by CI; no execution or count is claimed."
+    },
+    {
+      "name": "Demo production build",
+      "conclusion": "skipped",
+      "executed": false,
+      "counts": null,
+      "counts_reason": "Skipped by CI; no execution or count is claimed."
+    },
+    {
+      "name": "Demo browser journey (G1)",
+      "conclusion": "skipped",
+      "executed": false,
+      "counts": null,
+      "counts_reason": "Skipped by CI; no execution or count is claimed."
+    }
+  ],
+  "policy": {
+    "actual_aggregate": "fail",
+    "checks": [
+      {
+        "check_id": "npm_advisories",
+        "state": "fail",
+        "completion": "complete",
+        "rule_id": "npm-advisory",
+        "finding_count": 26
+      },
+      {
+        "check_id": "npm_licenses",
+        "state": "pass",
+        "completion": "complete",
+        "rule_id": "license-continuity-pass",
+        "finding_count": 0
+      },
+      {
+        "check_id": "npm_sources",
+        "state": "pass",
+        "completion": "complete",
+        "rule_id": "npm-lock-valid",
+        "finding_count": 0
+      },
+      {
+        "check_id": "cargo_policy",
+        "state": "fail",
+        "completion": "complete",
+        "rule_id": "cargo-policy-finding",
+        "finding_count": 1
+      },
+      {
+        "check_id": "repository_secrets",
+        "state": "pass",
+        "completion": "complete",
+        "rule_id": "secret-clean",
+        "finding_count": 0
+      },
+      {
+        "check_id": "configuration",
+        "state": "pass",
+        "completion": "complete",
+        "rule_id": "configuration-pass",
+        "finding_count": 0
+      }
+    ],
+    "baseline_run_id": 37710107607,
+    "baseline_revision": "8932fc1176543eff3fa826de6924e12ec52f3310",
+    "full_failed_check_records_equal_baseline": true,
+    "exact_advisory_ids_available": false,
+    "dependency_lock_bytes_unchanged": {
+      "package-lock.json": true,
+      "Cargo.lock": true
+    },
+    "dependency_manifest_sections_unchanged": {
+      "package.json": true,
+      "libs/api/package.json": true,
+      "apps/dashboard-e2e/package.json": true,
+      "apps/dashboard/package.json": true,
+      "Cargo.toml": true,
+      "libs/quant-engine/Cargo.toml": true,
+      "apps/api/Cargo.toml": true
+    },
+    "artifact_id": 11534364074,
+    "github_digest": "sha256:1753cfc78fd3777096e9cbfee3815f5be7db03c6dba6f73e6ced8e16bddf5e3d",
+    "digest_verified": true,
+    "raw_report": {
+      "path": ".spire/tmp/ci-observation-cc4df79c/policy/policy-report.json",
+      "sha256": "d9aba9d921fe3753aa68e52a014323fc5ffe7d477d2a05863df8a74376e02dde"
+    }
+  },
+  "visual_reference": {
+    "accepted_source_revision": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
+    "candidate_set_id": "44894ccd5fa8e8e986c66bd3e6c4841d",
+    "authorization_id": "linux-portfolio-demo-219d73a-20261008",
+    "candidate_receipt_path": ".spire/tmp/linux-candidates-219d73a6/visual-review/candidate-sets/44894ccd5fa8e8e986c66bd3e6c4841d.json",
+    "candidate_receipt_sha256": "5ec830133daaa2d12678edd56a0207b4b05a6b954dccc63b8442f4c03238125f",
+    "current_build_source_revision": "cc4df79c6a0e4ad6eabd1ce31a068112260a9d16",
+    "all_six_expected_and_actual_hashes_match_retained_reference": true
+  },
+  "hosted_binding": {
+    "observed_at": "2026-10-08T07:28:52.747505+00:00",
+    "source_revision": "cc4df79c6a0e4ad6eabd1ce31a068112260a9d16",
+    "preview_url": "https://848874c6.convexa.pages.dev",
+    "pages_deployment_id": "848874c6-0300-4cb6-9926-53ccec75b061",
+    "pages_status": "completed",
+    "pages_conclusion": "success",
+    "pages_check_id": 113199703786,
+    "pages_comment_id": 6052920983,
+    "pages_comment_updated_at": "2026-10-08T07:27:52Z",
+    "limitations": [
+      "Hosted runtime QA and ongoing CI are separate checks; previous accepted visual reference source is 219d73a6, not this build source."
+    ]
+  },
+  "hosted_runtime_qa": "Separate independent evidence; not inferred from deployment success or this CI observation.",
+  "native_query_exits": {
+    "final_attempt_run_api": 0,
+    "final_attempt_jobs_api": 0,
+    "attempt_1_frontend_log_api": 0,
+    "attempt_2_frontend_log_api": 0,
+    "backend_metadata_and_log_api": 0,
+    "artifact_metadata_and_all_zip_api": 0,
+    "baseline_dependency_git_show_queries": 0
+  },
+  "limitations": [
+    "Overall CI is failure: one flaky Chromium test and retained baseline dependency policy failures.",
+    "G5, demo build and G1 did not execute in either CI attempt.",
+    "No raw policy run-key values are included."
+  ],
+  "raw_evidence": [
+    {
+      "path": ".spire/tmp/ci-observation-cc4df79c/attempt-1-run-final.json",
+      "sha256": "04cabeb89c66dd0e4e50867d6cdc36f6d63ed9ecb715532cf6b2d25a4a23f488"
+    },
+    {
+      "path": ".spire/tmp/ci-observation-cc4df79c/attempt-1-jobs-final.json",
+      "sha256": "36b1aeb0c35cd36c7d997ce0703120fcfe13bf6a6c5fd7cdc38745f52d11a2c0"
+    },
+    {
+      "path": ".spire/tmp/ci-observation-cc4df79c/attempt-1-frontend.log",
+      "sha256": "b3c829518db5bea31757a6abd30562866431e0ffa2eee9439f2ebca996336a11"
+    },
+    {
+      "path": ".spire/tmp/ci-observation-cc4df79c/attempt-2-run-final.json",
+      "sha256": "d2318a51bfb41535b0e3d53183986dfc41060a649c03458589c8a129b946b288"
+    },
+    {
+      "path": ".spire/tmp/ci-observation-cc4df79c/attempt-2-jobs-final.json",
+      "sha256": "129b634a0d9aaf33dd3e86cb999544b6714fdcd89e00861ec1d0ec7b0779c77a"
+    },
+    {
+      "path": ".spire/tmp/ci-observation-cc4df79c/attempt-2-frontend.log",
+      "sha256": "1d49d3632dfa77881703e52458386202012afd8487b5a595deffa1ec10ca855d"
+    },
+    {
+      "path": ".spire/tmp/ci-observation-cc4df79c/attempt-2-artifacts-final.json",
+      "sha256": "211ee3686456624f391ddc14421c7506f9feca31f9cbd85c74fb3151f28eb6d9"
+    },
+    {
+      "path": ".spire/tmp/ci-observation-cc4df79c/backend-job-final.json",
+      "sha256": "d8499646cbdbbc3954f411cbcdfea0bb6cd480b1525e225d54ba70612d763255"
+    },
+    {
+      "path": ".spire/tmp/ci-observation-cc4df79c/backend-job.log",
+      "sha256": "1f47ed244cf9bfdf29f33e1d9da1606bd31b9997aac60f40328b7bf837b7dd44"
+    },
+    {
+      "path": ".spire/tmp/ci-observation-cc4df79c/source-checks-initial.json",
+      "sha256": "860248da10537394608c60fc27425e8f7fbcda63420a24f1d66929cc98e80a8c"
+    },
+    {
+      "path": ".spire/tmp/ci-observation-cc4df79c/pages-deployment-comment.json",
+      "sha256": "7ebd9b8a7de4a36b5e6cbeafc6cbbd001ad7d4553b79a4ccab820a99bf489313"
+    },
+    {
+      "path": ".spire/tmp/ci-observation-cc4df79c/policy/policy-report.json",
+      "sha256": "d9aba9d921fe3753aa68e52a014323fc5ffe7d477d2a05863df8a74376e02dde"
+    },
+    {
+      "path": ".spire/tmp/ci-observation-cc4df79c/policy/supply-chain-policy.zip",
+      "sha256": "1753cfc78fd3777096e9cbfee3815f5be7db03c6dba6f73e6ced8e16bddf5e3d"
+    }
+  ],
+  "receipt_generation": {
+    "initial_draft_exit": 1,
+    "reason": "Initial inherited timestamp equality check exposed changed start timestamp on already skipped artifact job; preserved as metadata anomaly, not new execution.",
+    "corrected_draft_exit": 0,
+    "compact_export_exit": 0
+  }
+}

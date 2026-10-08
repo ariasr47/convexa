@@ -130,6 +130,7 @@
   },
   "activation_repair_local": {
     "source_identity": "uncommitted activation repair atop 2211d829e9315077ca26fedd5a6441580be08c1c",
+    "subsequently_committed_revision": "cc4df79c6a0e4ad6eabd1ce31a068112260a9d16",
     "immutable_artifact": ".spire/tmp/portfolio-qa-demo-activation-dist",
     "index_sha256": "7DE6CC4E392D1D8D34BDC9BB8560E495D34FFD586F82D9DDB271A4D126078506",
     "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests",
@@ -166,5 +167,110 @@
     },
     "new_linux_full_chromium": "NOT RUN",
     "gate_q": "FAIL_PENDING_LINUX_RECHECK"
+  },
+  "activation_repair_hosted": {
+    "source_revision": "cc4df79c6a0e4ad6eabd1ce31a068112260a9d16",
+    "preview": "https://848874c6.convexa.pages.dev",
+    "deployment_id": "848874c6-0300-4cb6-9926-53ccec75b061",
+    "source_binding": "Cloudflare successful deployment and exact-head Pages SUCCESS observed by the release observer",
+    "tls": "normal certificate verification",
+    "mode_manifest": {
+      "status": 200,
+      "mode": "demo",
+      "scenarioId": "portfolio-2026-10-07-v1"
+    },
+    "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests",
+    "routes": [
+      { "path": "/", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo" },
+      { "path": "/scanner", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo" },
+      { "path": "/ticker/SPY", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo" },
+      { "path": "/ticker/SPY/technical-analysis", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo" },
+      { "path": "/ticker/SPY/research", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo" },
+      { "path": "/positions", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo" }
+    ],
+    "direct_loads": 6,
+    "hard_refreshes": 6,
+    "native_touch": {
+      "viewport_width": 393,
+      "hasTouch": true,
+      "route": "/ticker/SPY",
+      "market_context": ["tap survived hover and pointer exit with described tooltip visible", "Escape closed"],
+      "off_exchange_frame": ["tap survived hover and pointer exit with described tooltip visible", "Escape closed"],
+      "keyboard": ["Tab reopened", "blur closed"],
+      "http_status": 200
+    },
+    "forbidden_requests": [],
+    "page_errors": [],
+    "console_errors": [],
+    "native_exit": 0,
+    "allPassed": true,
+    "gate_q": "FAIL_PENDING_LINUX_RECHECK"
+  },
+  "atlas_release_surface_local": {
+    "url": "http://127.0.0.1:4387/",
+    "source_file": "docs/backend-atlas/index.html",
+    "source_sha256": "601CF0C05FCDF9A8EFEFAF7203845F651035EB69D8B5DF6A99A69CD31E0CF962",
+    "recorded_after_observation_at_utc": "2026-10-08T07:41:15Z",
+    "tab": "06 · Demo architecture",
+    "viewports": [
+      { "width": 393, "http_status": 200, "horizontal_overflow_px": 0, "release_cards_inside_viewport": 4, "card_text_size_px": 15 },
+      { "width": 1280, "http_status": 200, "horizontal_overflow_px": 0, "release_cards_inside_viewport": 4, "card_text_size_px": 15 }
+    ],
+    "release_ids_present": ["release-preview", "release-qa", "release-ci", "release-build", "release-gate"],
+    "native_details": "release-evidence summary opened with Enter and closed with Space at both widths",
+    "visible_release_links": 7,
+    "reachable_http_200_links": 7,
+    "links_checked": ["published preview", "branch alias", "release README", "hosted and local QA receipt", "activation repair receipt", "build matrix", "boot and route sizes"],
+    "native_exit": 0,
+    "gate_q_unchanged": "FAIL_PENDING_LINUX_RECHECK"
+  },
+  "pointer_hit_test_followup_local": {
+    "source_identity": "uncommitted test-only helper adjustment atop cc4df79c6a0e4ad6eabd1ce31a068112260a9d16",
+    "test_file": "apps/dashboard-e2e/src/demo/demo-journey.spec.ts",
+    "test_file_sha256": "33237595E0F34165616B2FD4E4E161716F47B8B29AB2194CCF146BF13D29E28C",
+    "app_artifact": ".spire/tmp/portfolio-qa-demo-activation-dist",
+    "app_index_sha256": "7DE6CC4E392D1D8D34BDC9BB8560E495D34FFD586F82D9DDB271A4D126078506",
+    "working_dist_index_identical": true,
+    "test_change": "After native tap, move the mouse to the rendered help-button center and assert the pointer hits that button before pointer exit and retained-tooltip assertions.",
+    "pre_final_assertion_run": {
+      "native_exit": 0,
+      "passed": 1,
+      "failed": 0,
+      "test_duration_seconds": 58.8,
+      "overall_duration_display": "1.0m",
+      "limit": "Started before the final :hover hit assertion was saved; not counted as final test-byte evidence."
+    },
+    "final_test_bytes_run": {
+      "command": "npm exec --no -- playwright test --config apps/dashboard-e2e/playwright.demo.config.ts",
+      "port": 4271,
+      "transport": "local HTTPS with exact artifact CSP",
+      "native_exit": 0,
+      "passed": 1,
+      "failed": 0,
+      "test_duration_seconds": 53.2,
+      "overall_duration_seconds": 55.9,
+      "touch_oracle": "Both help sites require native pointer to hit the touched button, then retain a described visible tooltip after pointer exit until Escape."
+    },
+    "gate_q": "FAIL_PENDING_NEW_LINUX_TEST_ONLY_VERIFICATION"
+  },
+  "linux_cc4_first_full_chromium": {
+    "source_revision": "cc4df79c6a0e4ad6eabd1ce31a068112260a9d16",
+    "summary": ".spire/tmp/ci-observation-cc4df79c/browser-quality-chromium/summary.json",
+    "selected": 128,
+    "passed": 127,
+    "failed": 0,
+    "flaky": 1,
+    "not_run": 0,
+    "status": "fail",
+    "flaky_case": "AC-35 native tap and keyboard at 1280px, FigureCell About Vol-norm GEX",
+    "first_attempt": "After native tap and locator.hover then pointer exit, aria-describedby was absent for the 5-second assertion window.",
+    "retry": "passed",
+    "other_full_browser_gates": {
+      "compatibility": "15 PASS / 0 FAIL / 0 FLAKY",
+      "accessibility": "35 PASS / 0 FAIL / 0 FLAKY",
+      "visual": "6 PASS / 0 FAIL / 0 FLAKY"
+    },
+    "disposition": "The full Chromium gate is red under failOnFlakyTests. Local direct-pointer test helper passed G1 on unchanged demo bytes; its new Linux full-gate result is pending.",
+    "gate_q": "FAIL"
   }
 }

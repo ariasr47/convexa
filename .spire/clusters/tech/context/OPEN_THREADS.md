@@ -1802,8 +1802,8 @@ Both lanes. Contracts are at `.spire/clusters/tech/contracts/_archive/no-vendor-
 **Production:** `WARM_ENABLED=0` since 2026-09-23. `MARKET_DATA_MODE=paused` goes in after merge (owner plan A).
 
 ## 7bb. portfolio-demo-platform — browser-local portfolio preview (ACTIVE — VERIFY)
-The static Pages preview is deployed and being verified; exact-source hosted QA and CI/Linux results
-remain pending. [Draft PR #76](https://github.com/ariasr47/convexa/pull/76) remains unmerged. GATE S is
+The static Pages preview is deployed; hosted QA passed and a Linux recheck is pending after a
+test timing correction. [Draft PR #76](https://github.com/ariasr47/convexa/pull/76) remains unmerged. GATE S is
 not complete; contracts remain [active](../contracts/portfolio-demo-platform/_MANIFEST.md).
 
 **Implemented scope:** six-symbol authored synthetic local providers, an isolated local paper book and

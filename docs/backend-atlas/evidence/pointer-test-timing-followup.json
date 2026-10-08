@@ -1,0 +1,74 @@
+{
+  "kind": "focused_pointer_timing_followup",
+  "status": "test_only_timing_repair_verified_locally_linux_ci_pending",
+  "source_application_revision": "cc4df79c6a0e4ad6eabd1ce31a068112260a9d16",
+  "scope": "Existing AC-35/U-32 helper and existing G1 touch journey only. No app source change, build, dist overwrite, retry, timeout extension, or new test group.",
+  "original_linux_run": {
+    "run_id": "37743441304",
+    "result": "127 passed, 0 failed, 1 flaky; retry passed. AC-35 1280px FigureCell was the sole flaky test.",
+    "first_failure": {
+      "test": "AC-35 have a tap AND a keyboard path at 1280px; FigureCell About Vol-norm GEX",
+      "assertion": "curvature-v2.spec.ts:545, tap remains active after mouse exit; expected aria-describedby _r_s_, received null",
+      "trace": ".spire/tmp/ci-observation-cc4df79c/browser-quality-chromium/attachments/14-2-trace.zip",
+      "trace_sha256": "2b97ab7da68c2381ffbb596adf66b062812c678b6a634802a7387d95afa3659b",
+      "error_context": ".spire/tmp/ci-observation-cc4df79c/browser-quality-chromium/attachments/14-1-error-context.md",
+      "error_context_sha256": "046c9490e91a55ba9b23d1d9206401b29d02993d4cc996993b736db5033064",
+      "screenshot": ".spire/tmp/ci-observation-cc4df79c/browser-quality-chromium/attachments/14-0-test-failed-1.png",
+      "observed_timing_ms": {
+        "tap_call_start": 119766.917,
+        "tap_call_complete": 120372.346,
+        "tooltip_visible": 120604.369,
+        "locator_hover_start": 120605.107,
+        "locator_hover_complete": 122680.199,
+        "locator_hover_duration": 2075.092,
+        "mouse_exit_start": 122680.982,
+        "failed_persistence_assertion_start": 122853.364,
+        "elapsed_from_tap_complete_to_mouse_exit": 2308.636
+      },
+      "trace_observation": "locator.hover logged element-not-stable retries, then waited for visibility/stability and scroll-into-view. By mouse exit, more than the existing 1500ms touch-dismiss period had elapsed. This failure is a test sequencing delay across natural expiry; it does not establish a renewed component mouseleave regression.",
+      "preserved_retry_evidence": {
+        "summary": ".spire/tmp/ci-observation-cc4df79c/browser-quality-chromium/summary.json",
+        "summary_sha256": "70cf51be08d1d048dcf0c4105e0bfd91bb92c87b86b39ba2de1fa68b0e607dde",
+        "frontend_log": ".spire/tmp/ci-observation-cc4df79c/attempt-2-frontend.log",
+        "frontend_log_sha256": "1d49d3632dfa77881703e52458386202012afd8487b5a595deffa1ec10ca855d",
+        "outcome": "one flaky test; passed on retry; all other Chromium cases passed"
+      }
+    }
+  },
+  "artifact_under_test": {
+    "path": ".spire/tmp/chromium-activation-live-dist",
+    "mode": "live",
+    "files": 199,
+    "manifest": ".spire/tmp/chromium-activation-live-manifest.json",
+    "manifest_sha256": "73bb34924127ca903a69aa050f37438f3ccce8a703db3eca919caf391a521b1c",
+    "serve_origin": "https://localhost:4261",
+    "build_performed": false
+  },
+  "repair": "Replace locator.hover()'s layout-stability wait with trusted page.mouse.move() to the freshly measured visible trigger center, assert the trigger matches :hover, move outside, then retain the same tooltip persistence assertion. This keeps the pointer oracle actionable without waiting past natural touch expiry or changing component semantics.",
+  "focused_verification": {
+    "report": ".spire/tmp/pointer-timing-ac35-report-final.json",
+    "report_sha256": "67e19bf3264f8c2f141f1ec33ed4b21ef06238232cfe2b2026c409936db0b0da",
+    "command": "node node_modules/playwright/cli.js test --config .spire/tmp/chromium-activation-scoped-4261.config.ts --grep 'AC-35|U-32' --project chromium",
+    "retry_count": 0,
+    "tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "flaky": 0,
+    "duration_seconds": 57.2,
+    "covers": "Four AC-35 widths 393/834/900/1280 and four U-32 widths 393/834/900/1280, including tap, pointer actually over trigger, pointer exit, persistence, Escape, Tab, and blur."
+  },
+  "static_verification": {
+    "prettier_check": "PASS; both edited test files",
+    "e2e_typescript_no_emit": "PASS; apps/dashboard-e2e/tsconfig.json",
+    "git_diff_check": "PASS; both edited test files"
+  },
+  "test_source_sha256": {
+    "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts": "bc65be5d055cfa2b722ca2b7a9f8005ceec2272b5361a369d78da5ae44fe8f2b",
+    "apps/dashboard-e2e/src/demo/demo-journey.spec.ts": "33237595e0f34165616b2fd4e4e161716f47b8b29ab2194ccf146bf13d29e28c"
+  },
+  "limits": [
+    "Focused run used the Windows Chromium host against the frozen Linux-CI-equivalent production bundle; it does not replace a fresh Linux CI run of the edited source.",
+    "The initial direct-mouse run before the :hover oracle also passed 8/8 and is retained at .spire/tmp/pointer-timing-ac35-pre-hover-assert-report.json; final verification is the subsequent 8/8 run above.",
+    "No G5/demo-build test was run."
+  ]
+}

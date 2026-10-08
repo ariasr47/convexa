@@ -1322,7 +1322,7 @@ conformance, and volume-replacement receipts.
   ticker-local Technical analysis and Research show sample bars and authored cases. Demo preferences,
   book and reset stay isolated from live storage, with persistent sample provenance. The source-linked
   [visual backend atlas](../../../../docs/backend-atlas/README.md) explains both modes and their boundaries.
-  The static Pages preview is deployed; exact-source hosted QA and CI/Linux verification remain pending.
+  The static Pages preview is deployed; hosted QA passed and a Linux recheck is pending after a test timing correction.
   [Draft PR #76](https://github.com/ariasr47/convexa/pull/76) is unmerged; `NO_BACKEND_CHANGE`.
   Follow the [branch checkpoint](../state/codex-portfolio-demo-platform/RESUME.md) and
   [active contract](../contracts/portfolio-demo-platform/_MANIFEST.md). GATE S is not complete.

@@ -114,7 +114,15 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
         .getByRole('button', { name: /^About /i })
         .first();
       await help.tap();
-      await help.hover();
+      // Keep compatibility pointer input inside the natural touch-display interval; locator.hover()
+      // can spend that interval waiting for an unrelated layout transition to settle.
+      const bounds = await help.boundingBox();
+      expect(bounds, `${site}: touched trigger remains rendered`).toBeTruthy();
+      await touchPage.mouse.move(bounds!.x + bounds!.width / 2, bounds!.y + bounds!.height / 2);
+      expect(
+        await help.evaluate((element) => element.matches(':hover')),
+        `${site}: native pointer reaches the touched trigger`,
+      ).toBe(true);
       await touchPage.mouse.move(0, 0);
       await expect(help, `${site}: explicit touch survives pointer exit`).toHaveAttribute(
         'aria-describedby',

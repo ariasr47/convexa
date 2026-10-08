@@ -539,8 +539,18 @@ async function assertTapAndKeyboardReveal(page: Page, help: Locator, label: stri
   const tooltipId = await help.getAttribute('aria-describedby');
   const tooltip = page.locator(`[role="tooltip"][id=${JSON.stringify(tooltipId)}]`);
   await expect(tooltip, `${label}: tap reveals content`).toBeVisible();
-  // Touch activation must survive native compatibility mouse movement on hybrid devices.
-  await help.hover();
+  // Touch activation must survive native compatibility mouse movement on hybrid devices. Use
+  // trusted mouse input at the rendered button coordinates directly: locator.hover() waits for
+  // layout stability and can outlast MUI's intentional 1500ms touch-dismiss timer on a moving page.
+  // That would test natural expiry instead of whether pointer exit replaces it with an immediate
+  // close. The tap above already scrolls the trigger into view.
+  const bounds = await help.boundingBox();
+  expect(bounds, `${label}: trigger remains rendered after tap`).toBeTruthy();
+  await page.mouse.move(bounds!.x + bounds!.width / 2, bounds!.y + bounds!.height / 2);
+  expect(
+    await help.evaluate((el) => el.matches(':hover')),
+    `${label}: pointer reaches trigger`,
+  ).toBe(true);
   await page.mouse.move(0, 0);
   await expect(help, `${label}: tap remains active after mouse exit`).toHaveAttribute(
     'aria-describedby',
