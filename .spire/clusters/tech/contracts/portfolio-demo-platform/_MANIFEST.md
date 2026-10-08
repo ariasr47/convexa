@@ -1,5 +1,5 @@
 # portfolio-demo-platform — pipeline manifest
-Stage:        VERIFY — source cc4df79c deployed; Linux test timing flake isolated; test-only pointer correction under verification
+Stage:        VERIFY (PAUSED BY OWNER for Mac/Claude Code handoff) — source aac3ced7 deployed; hosted12/12 PASS; CI37750021768 still running at stop
 Repos:        frontend
 Brief:        BRIEF.md present
 Contracts:

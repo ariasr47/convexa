@@ -1,10 +1,12 @@
 # Portfolio demo — conductor checkpoint
 
-**Resume status:** ACTIVE — deployed app unchanged; test-only timing correction under verification; fresh Linux proof owed
+**Resume status:** PAUSED BY OWNER — committed/pushed handoff for Mac + Claude Code; resume at VERIFY
+**Authoritative transfer guide:** `docs/backend-atlas/HANDOFF.md`. Owner asked to stop this session and push; local agents are stopped. CI remains running remotely. Snapshot at2026-10-08 08:42:59UTC: frontend Vitest and backend capacity harness in progress, capacity PASS, baseline policy failures retained. The handoff commit uses `[skip ci]` and changes no app/test/build files.
 **Date:** 2026-10-08
 **Branch:** codex/portfolio-demo-platform
 **Baseline:** 8932fc1176543eff3fa826de6924e12ec52f3310
-**Published source:** cc4df79c6a0e4ad6eabd1ce31a068112260a9d16. Committed and pushed on the feature branch; re-read Git before acting.
+**Published source:** aac3ced7f6484ce05fd975eca3f0f8932f8a56fb at https://771ed561.convexa.pages.dev (deployment771ed561-9c63-4073-a113-8225e57735bf). Independent hosted G6 passed12/12 with exact CSP, strict TLS, sample provenance and zero forbidden egress/page/console errors. App source is unchanged from cc4, but no served-byte equality is claimed. Re-read Git before acting.
+**Latest test/evidence revision:** aac3ced7f6484ce05fd975eca3f0f8932f8a56fb, pushed and remote-verified. CI https://github.com/ariasr47/convexa/actions/runs/37750021768 was running at the stop (frontend 113220687489, backend 113220687382). Pages deployment 771ed561-9c63-4073-a113-8225e57735bf completed and passed the hosted check above. App, dependency and build sources are unchanged from cc4; only two test helpers and documentation/evidence changed. Committed-history Gitleaks passed native exit 0, zero findings across 15 commits / 2.27 MB. Local observer scratch is `.spire/tmp/ci-observation-aac3ced7/`; the observer is stopped. The owner-requested handoff push uses `[skip ci]`; inspect this existing run before starting another full verification cycle.
 **Draft PR:** https://github.com/ariasr47/convexa/pull/76 (attached, unmerged)
 
 Boot, discovery, council, S2 and PLAN are complete. Do not reboot. Contract: 20 ACs, 14 tasks, six retained groups, NO_BACKEND_CHANGE. User authorized the visual atlas, synthetic portfolio demo, TA/Research, env-selected live mode, Nx production optimization, economical verification and a static Pages preview. No main merge/Railway deployment: its predeploy migration needs separate chat authority.

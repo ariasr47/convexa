@@ -253,6 +253,36 @@
     },
     "gate_q": "FAIL_PENDING_NEW_LINUX_TEST_ONLY_VERIFICATION"
   },
+  "pointer_hit_test_followup_hosted": {
+    "observed_at_utc": "2026-10-08T08:33:26Z",
+    "source_revision": "aac3ced7f6484ce05fd975eca3f0f8932f8a56fb",
+    "preview": "https://771ed561.convexa.pages.dev",
+    "deployment_id": "771ed561-9c63-4073-a113-8225e57735bf",
+    "source_binding": "Exact deployment and source revision supplied by the release observer; this QA probe independently checked the served site, not byte equality with the prior preview.",
+    "tls": "normal browser certificate verification",
+    "mode_manifest": {
+      "status": 200,
+      "mode": "demo",
+      "scenarioId": "portfolio-2026-10-07-v1"
+    },
+    "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests",
+    "routes": [
+      { "path": "/", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo", "direct_csp_exact": true, "hard_csp_exact": true },
+      { "path": "/scanner", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo", "direct_csp_exact": true, "hard_csp_exact": true },
+      { "path": "/ticker/SPY", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo", "direct_csp_exact": true, "hard_csp_exact": true },
+      { "path": "/ticker/SPY/technical-analysis", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo", "direct_csp_exact": true, "hard_csp_exact": true },
+      { "path": "/ticker/SPY/research", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo", "direct_csp_exact": true, "hard_csp_exact": true },
+      { "path": "/positions", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo", "direct_csp_exact": true, "hard_csp_exact": true }
+    ],
+    "direct_loads": 6,
+    "hard_refreshes": 6,
+    "forbidden_requests": [],
+    "page_errors": [],
+    "console_errors": [],
+    "native_exit": 0,
+    "allPassed": true,
+    "gate_q": "FAIL_PENDING_NEW_LINUX_TEST_ONLY_VERIFICATION"
+  },
   "linux_cc4_first_full_chromium": {
     "source_revision": "cc4df79c6a0e4ad6eabd1ce31a068112260a9d16",
     "summary": ".spire/tmp/ci-observation-cc4df79c/browser-quality-chromium/summary.json",
