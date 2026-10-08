@@ -99,6 +99,11 @@ function LadderLine({ row, palette }: { row: LadderRow; palette: LevelPalette })
       valueSize={big ? 18 : 14}
       liveBadge={big ? 'tape' : undefined}
       leading={<LadderTick id={row.id} palette={palette} />}
+      // Fidelity repair 2, N4 — the five-up band (< 1000px container) has no room for a full label
+      // on one line; wrap instead of the shared row layout's default ellipsis (`crops/ladder-834.png`
+      // — "Gamma flip" clipped to "Gamma f…"). The ≥1000px two-column-beside-field layout is
+      // untouched — this is a label-chrome change, not a column-count change.
+      labelWrap
     />
   );
 }

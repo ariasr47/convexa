@@ -218,6 +218,24 @@ export function coarseAge(seconds: number): string {
   return `${Math.floor(s / 86400)} d`;
 }
 
+/** "Mon D" (e.g. "Sep 16"), America/New_York — the same session clock this file uses everywhere
+ *  else (`marketSessionPhase`). F3's date for "showing the last board, from …". */
+export function monthDay(epochSeconds: number): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(epochSeconds * 1000));
+}
+
+/** Narrow the wire's widened `market_data` string (SPEC B4) into the closed set — never trust an
+ *  OpenAPI-widened `string` as already-validated (`[digested-labels-not-raw-dump]`). Anything other
+ *  than the literal `"paused"` reads as `"live"`, matching the backend's own "live is the default"
+ *  rule and failing toward TODAY'S unchanged behavior rather than toward a needless paused banner. */
+export function scanMarketDataMode(value: string | null | undefined): 'live' | 'paused' {
+  return value === 'paused' ? 'paused' : 'live';
+}
+
 /** `null`/`undefined`/non-finite ⇒ the em-dash. A real `0` formats normally — a zero is data. */
 export function dash(value: number | null | undefined, format: (n: number) => string): string {
   return value == null || !Number.isFinite(value) ? EM_DASH : format(value);
@@ -313,11 +331,22 @@ export const SWEEP_DOWN_AFTER_S = 180;
  * Engagement is decided on `updated_at` (worker liveness); the "last ran {X} ago" wording is only
  * honest when a COMPLETED pass exists, so a heartbeat with `sweep_last_completed: null` falls to the
  * "hasn't reported yet" variant (Open decision 3). Rows always keep rendering beneath it.
+ *
+ * no-vendor-production-posture F3: `marketData: "paused"` is a STANDING fact — the sweep is
+ * switched off entirely (backend SPEC B1), not a transient worker hiccup — so it wins unconditionally
+ * over the heartbeat-freshness engagement check below and never falls through to the "hasn't
+ * reported"/"behind" copy. Defaults `'live'` so every existing caller/test is untouched.
  */
 export function sweepBanner(
   sweep: SweepHeartbeat | null,
   nowS: number,
+  marketData: 'live' | 'paused' = 'live',
 ): { engaged: boolean; text: string } {
+  if (marketData === 'paused') {
+    const lastSweptOn =
+      sweep?.sweep_last_completed != null ? monthDay(sweep.sweep_last_completed) : null;
+    return { engaged: true, text: SCAN_COPY.marketDataPaused(lastSweptOn) };
+  }
   if (sweep == null) return { engaged: true, text: SCAN_COPY.sweepAbsent };
   if (nowS - sweep.updated_at <= SWEEP_DOWN_AFTER_S) return { engaged: false, text: '' };
   return sweep.sweep_last_completed != null

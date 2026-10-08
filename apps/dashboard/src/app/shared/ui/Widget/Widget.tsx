@@ -102,6 +102,17 @@ export interface WidgetProps {
    * is unaffected either way.
    */
   hideHeader?: boolean;
+  /**
+   * Fidelity repair 2, N2 — opt-in title wrap (default `false`: every OTHER widget keeps today's
+   * single-line `white-space:nowrap; text-overflow:ellipsis`). `OrdersWidget`'s title still
+   * ellipsised in the 379px side column even after switching to the design's shorter copy
+   * (`Sim orders · SPY`) — measured 5px over `clientWidth` in a real browser once the `SIMULATED`
+   * chip + `All orders →` link's own widths are accounted for; wrapping is the safety net the task
+   * names ("let the title wrap … whichever keeps the chip and link on the title row"). The header
+   * row's own `alignItems:'flex-start'` already keeps `actions` pinned to the first line while the
+   * title grows taller beside it — no other layout change needed.
+   */
+  titleWrap?: boolean;
 }
 
 /**
@@ -147,6 +158,7 @@ export function Widget({
   bodyVariant = 'flush',
   bodyPad = 'default',
   hideHeader = false,
+  titleWrap = false,
 }: WidgetProps) {
   const reduced = useReducedMotion();
   // `live` (the branded delivering-stream claim) OR `watch` (OrdersWidget's open-orders fact) both
@@ -268,9 +280,11 @@ export function Widget({
             component="h2"
             sx={{
               minWidth: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
+              // Fidelity repair 2, N2 — `titleWrap` opt-in (default off, every OTHER widget keeps
+              // today's single-line ellipsis unchanged).
+              overflow: titleWrap ? 'visible' : 'hidden',
+              textOverflow: titleWrap ? 'clip' : 'ellipsis',
+              whiteSpace: titleWrap ? 'normal' : 'nowrap',
               ...(quiet ? { fontSize: '1rem', fontWeight: 600 } : null),
             }}
           >

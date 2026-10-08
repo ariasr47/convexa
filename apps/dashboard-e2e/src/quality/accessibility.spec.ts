@@ -23,6 +23,26 @@ for (const scenario of accessibilityScenarios) {
       await page.clock.fastForward(1_000);
     }
     await assertReady(page, scenario);
+    // GATE Z I-2 (amendment 5) — the open sign-in dialog counts as a surface: open it AFTER the
+    // landing shell is ready, before the axe scan, so the scan sees the dialog's own contrast
+    // and its (now-wired) accessible name too. `toBeVisible()` alone resolves the instant the
+    // Fade transition STARTS (Playwright's visibility check does not wait for a CSS transition
+    // to finish, only for non-zero opacity) — MUI's Dialog applies that fade to
+    // `.MuiDialog-container` (the Paper itself keeps a steady local opacity of 1 throughout, so
+    // waiting on the Paper's own opacity resolves immediately and proves nothing). A scan taken
+    // while the container is still mid-fade measures every colour against a still-transitioning
+    // background, which axe correctly, but misleadingly, reports as a wall of color-contrast
+    // violations (confirmed by direct DOM inspection, not guessed). Waiting for the CONTAINER's
+    // opacity to actually settle at 1 is what makes this scan measure the dialog's real, at-rest
+    // state.
+    if (scenario.id === 'A11Y-23' || scenario.id === 'A11Y-24') {
+      await page.getByTestId('cta-band-secondary').click();
+      await expect(page.getByTestId('auth-dialog')).toBeVisible();
+      await page.waitForFunction(() => {
+        const el = document.querySelector('.MuiDialog-container');
+        return !!el && getComputedStyle(el).opacity === '1';
+      });
+    }
     if (scenario.id === 'A11Y-5') {
       await expect
         .poll(() =>
@@ -112,16 +132,29 @@ test.describe('A11Y behavioral sequences', () => {
     expect(url.pathname).toBe('/settings');
     expect(url.hash).toBe('');
   });
-  test('A11Y-B2 native actions and polite waitlist announcement', async ({ page }) => {
+  test('A11Y-B2 native CTA actions, keyboard-reachable, naming their destination', async ({
+    page,
+  }) => {
     const requestState = await installScenario(page, accessibilityScenarios[0]);
     expect(() => requestState.releaseInitialStream()).toThrow(/not armed/);
     await page.goto('/');
-    await expect(page.getByTestId('cta-primary')).toHaveAttribute('href', '/scanner');
-    await expect(page.getByTestId('cta-secondary')).toHaveAttribute('href', '/ticker');
-    await page.getByTestId('waitlist-button').press('Enter');
-    await expect(page.locator('[aria-live="polite"]')).toContainText(
-      "Thanks — we'll let you know when brokerage connect is live.",
-    );
+    for (const id of ['cta-primary', 'cta-band-primary']) {
+      const a = page.getByTestId(id);
+      await expect(a).toHaveAttribute('href', '/ticker');
+      await expect(a).toHaveAccessibleName('Open the Ticker');
+      expect(await a.evaluate((n) => n.tagName)).toBe('A');
+      await a.focus();
+      await expect.poll(() => a.evaluate((n) => n.matches(':focus-visible'))).toBe(true);
+    }
+    const secondary = page.getByTestId('cta-band-secondary');
+    expect(await secondary.evaluate((n) => n.tagName)).toBe('BUTTON');
+    await expect(secondary).toHaveAccessibleName('Sign in');
+    await expect(
+      page.getByText('New sign-ups are closed while Convexa is in private testing.'),
+    ).toBeVisible();
+    await secondary.press('Enter');
+    await expect(page.getByTestId('auth-dialog')).toBeVisible();
+    // NO [aria-live] region is asserted, because none is mounted (the waitlist toast is gone).
   });
   test('A11Y-B3 auth dialog containment, rejected submit and return focus', async ({ page }) => {
     const scenario = journeys.find((item) => item.id === 'signed-out-auth-dialog');

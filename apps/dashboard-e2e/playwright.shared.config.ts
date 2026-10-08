@@ -24,7 +24,7 @@ export function sharedConfig(gate: Gate) {
     webServer: {
       command:
         prebuildStatus === 'pass'
-          ? `npx http-server apps/dashboard/dist -c-1 --cors -a localhost -P http://localhost:${port}? -p ${port}`
+          ? `node apps/dashboard-e2e/tools/serve-dist.mjs apps/dashboard/dist ${port} localhost`
           : process.env.CI
             ? `npx nx run @convexa/dashboard:serve-static --port=${port}`
             : `npx nx run @convexa/dashboard:serve --port=${port}`,

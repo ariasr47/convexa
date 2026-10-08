@@ -45,6 +45,7 @@ import {
   EMPTY_FILTERS,
   filterRows,
   filtersActive,
+  scanMarketDataMode,
   sessionBadge,
   snapRows,
   sortRows,
@@ -70,6 +71,9 @@ interface Snapshot {
   view: ScanView | null;
   sweep: SweepHeartbeat | null;
   degraded: boolean;
+  /** SPEC B4 (narrowed off the wire's widened string, F3). Defaults 'live' pre-first-read and on a
+   *  degraded poll — a failed poll never invents a mode change. */
+  marketData: 'live' | 'paused';
 }
 
 export interface ScanApi {
@@ -120,6 +124,7 @@ export function useScan(): ScanApi {
     view: null,
     sweep: null,
     degraded: false,
+    marketData: 'live',
   }));
   const [sortDraft, setSortDraft] = useState<ScanViewSort | null>(urlSeed.sort);
   const [densityDraft, setDensityDraft] = useState<ScanDensity | null>(null);
@@ -152,6 +157,7 @@ export function useScan(): ScanApi {
         view: res.view,
         sweep: res.sweep,
         degraded: false,
+        marketData: scanMarketDataMode(res.market_data),
       });
     } catch {
       // Best-effort: keep whatever we already showed. A transport fault must never blank the table
@@ -203,7 +209,10 @@ export function useScan(): ScanApi {
   // Sort first (stable), then filter — filters never reorder; sort never re-derives.
   const sortedRows = useMemo(() => sortRows(snapshot.rows, sort), [snapshot.rows, sort]);
   const rows = useMemo(() => filterRows(sortedRows, filters), [sortedRows, filters]);
-  const banner = useMemo(() => sweepBanner(snapshot.sweep, nowS), [snapshot.sweep, nowS]);
+  const banner = useMemo(
+    () => sweepBanner(snapshot.sweep, nowS, snapshot.marketData),
+    [snapshot.sweep, nowS, snapshot.marketData],
+  );
   const session = useMemo(() => sessionBadge(nowS * 1000), [nowS]);
   // Structure age is computed from the FULL sorted set (not the filtered subset) so a tight filter
   // cannot hide that the sweep is still producing stamps.

@@ -141,7 +141,17 @@ export function OrdersWidget({
   );
 
   return (
-    <Widget id="orders" title={WIDGET_TITLE(symbol)} watch={watchingAny} actions={actions}>
+    <Widget
+      id="orders"
+      title={WIDGET_TITLE(symbol)}
+      watch={watchingAny}
+      actions={actions}
+      // Fidelity repair 2, N2 — the shorter design title (`Sim orders · SPY`) still ellipsised by a
+      // measured 5px in the 379px side column once the SIMULATED chip + All orders link's own widths
+      // are accounted for; wrap is the stated fallback ("whichever keeps the chip and link on the
+      // title row").
+      titleWrap
+    >
       <Box component="span" aria-live="polite" sx={srOnly} data-testid="orders-announce">
         {announcement}
       </Box>

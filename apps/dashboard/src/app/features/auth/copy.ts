@@ -195,6 +195,12 @@ export const AUTH_COPY = {
   gate: {
     // The "couldn't reach sign-in" copy on a gated action when the auth subsystem is degraded (503).
     unavailable: "Couldn't reach sign-in right now. Please try again in a moment.",
+    // curvature-v2-landing-and-site SPEC §5 — the degraded wall. Degrading the ROUTE DECISION to
+    // anonymous is correct; degrading the SENTENCE is not. With subsystemDegraded === true the
+    // shipped wall today tells a trader who may well be signed in `Sign in to open the scanner` —
+    // an assertion about identity built on a read that FAILED.
+    sessionUnknown: "We couldn't check your session.",
+    retry: 'Try again',
   },
 } as const;
 

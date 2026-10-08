@@ -4,7 +4,12 @@
 > `PROJECT_CONTEXT.md` (the standing ground truth) — this file is the "what's still open."
 > Decisions, not deliberation. As of the latest commit; the code/docs are all committed & clean.
 
-## 1. Data-vendor decision (OPEN — no change made yet)
+## 1. Data-vendor decision (Massive CANCELLED — entitlement ended 2026-09-16; no vendor for now)
+**Update 2026-09-22:** the owner cancelled Massive. Production lost entitlement the morning of 2026-09-16
+(`403 NOT_AUTHORIZED` in the api-rust logs), and the owner will not re-subscribe in the short term. What that
+breaks and what survives: `BACKLOG.md` "Parked — 2026-09-22". The evaluation below is kept as history for the
+next vendor decision.
+
 Evaluating a possible move off Massive (= Polygon.io rebrand) because Massive does **not**
 cover the overnight equity session (see thread 2). Conclusions reached:
 - **Massive (current):** ~$200–400/mo flat per asset class; **computes greeks/IV/OI for us**
@@ -1763,6 +1768,39 @@ Scanner badge Closed. Ensure does not wake. Generated/pin-tested scanner replica
 - Production-maturity #6 `remote-archive-body-store` still next in that program’s order.
 - Tape store-start watermark still GATE Z residual (`session-day-tape-capture` AC-32).
 
+## 7ay. curvature-v2-landing-and-site — the public site (SHIPPED + ARCHIVED 2026-09-23)
+Curvature v2 phase 4, frontend only. Contracts are at `.spire/clusters/tech/contracts/_archive/curvature-v2-landing-and-site/`. The conformance pin (the anonymous `GET /api/auth/session` 200) is at `state/conformance/curvature-v2-landing-and-site.json`.
+
+**What shipped:**
+- the landing rewrite: the static isometric gamma-surface hero (owner ruling D-B = A), marked samples, the Archivo display face;
+- `/blog` and `/methodology`, with engine-true copy and a working in-page index;
+- a real 404 and the route fallback;
+- the global footer;
+- the sign-in wall's degraded branch;
+- the provenance and deny-list pins.
+
+**Evidence:**
+- GATE Q failed first at 61 of 71 rows. GATE Z fixed 10 findings under 7 SPEC amendments. The re-check passed 11 of 11, and one regression (R-1) was fixed.
+- Gates at ship: chromium 128, a11y 31 with no waivers, compat 15, unit 3,130.
+- Baselines are re-accepted on win32 and linux (`landing`, `scanner-dense`) by the owner-ruled receipt flow.
+- Harness changes: the gates now serve the build the way production routes it (`serve-dist.mjs`), and the a11y matrix covers both schemes and the overlays.
+
+**Carried to BACKLOG:** the "Harvest — 2026-09-23" entry. The successor, `curvature-v2-responsive-sweep`, stays pre-registered.
+
+## 7az. no-vendor-production-posture — honest production without a data vendor (SHIPPED + ARCHIVED 2026-09-24)
+Both lanes. Contracts are at `.spire/clusters/tech/contracts/_archive/no-vendor-production-posture/`. The paused-mode conformance pin is at `state/conformance/no-vendor-production-posture.json`, and it is not in the nightly set.
+
+**What shipped:** one boot-time switch, `MARKET_DATA_MODE=live|paused`, with `live` as the byte-identical default. When paused:
+- zero vendor contact, and boot needs no key;
+- every vendor route answers 503 `{"detail":"Market data is paused.","code":"market_data_paused"}`, including the recommendation POST;
+- `/api/health` and `/api/scan` report `market_data`;
+- the desk shows an info-tone "Market data is paused." panel (owner-approved mock) with no Retry and no retry loop;
+- the scanner's cadence line and the AI panel say "paused".
+
+**Gates:** the first GATE Q FAILED 7/2/1. GATE Z made 4 SPEC amendments and fixes. The re-check PASSED 10/0/0.
+
+**Production:** `WARM_ENABLED=0` since 2026-09-23. `MARKET_DATA_MODE=paused` goes in after merge (owner plan A).
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).
@@ -1858,6 +1896,12 @@ Scanner badge Closed. Ensure does not wake. Generated/pin-tested scanner replica
   true multi-session block history needs a heavier batched pull. Future.
 
 ## 9. Resolved decisions (do NOT revisit)
+- **API-surface change re-pins the artifact oracle in the same commit** (`[route-growth-repins-api-artifact-oracle]`,
+  promoted 2026-09-24). Prose is in CONTEXT §5. Hand-editing generated artifacts, or leaving the pin
+  stale for a later commit, is a GATE-Z reversal.
+- **The a11y gate covers both schemes and every overlay or state** (`[a11y-gate-scans-both-schemes-and-overlays]`,
+  promoted 2026-09-24). Prose is in CONTEXT §5. A dark-only or happy-path-only scan matrix for a new
+  surface, or a waiver in place of a fix, is a GATE-Z reversal.
 - **Route/OpenAPI integration is repository-owned** — production route registration and `utoipa`
   metadata are paired once through `ContractRouter`; `utoipa-axum` and `paste` are absent from the
   locked graph. There is no public contract-tooling route and no dashboard runtime change. Reintroducing

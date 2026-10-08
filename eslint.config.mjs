@@ -190,4 +190,68 @@ export default [
       ],
     },
   },
+  // ---- curvature-v2-landing-and-site · SPEC §2.1 — the public-surface deny-list ------------------
+  // The four public surfaces are a ZERO-EDGE tree: no transport, no sibling page, no trading domain,
+  // no auth TRANSPORT. `features/auth/copy` (a pure string module) and `features/auth/AuthDialogProvider`
+  // (an opener) are DELIBERATELY allowed — the invariant is about a capability, not a folder, and the
+  // landing's closed-signups sentence must render from the imported AUTH_COPY literal, not a retyped one.
+  //
+  // Both the alias form AND the relative form are listed: `patterns.group` entries are literal
+  // specifiers, not path-normalizing (the broker-option-grouping GATE Q finding recorded above).
+  // Intra-folder imports use RELATIVE paths (`./copy`), which is why `@/pages/*/**` can be banned whole.
+  {
+    files: [
+      '**/pages/landing/**/*.{ts,tsx}',
+      '**/pages/blog/**/*.{ts,tsx}',
+      '**/pages/methodology/**/*.{ts,tsx}',
+      '**/pages/not-found/**/*.{ts,tsx}',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@convexa/api', '@convexa/api/*'],
+              message:
+                'SPEC §2.1: the six public surfaces are a zero-edge tree — no API client, ever. The landing/blog/methodology/404 make no request.',
+            },
+            {
+              group: ['@/pages/*', '@/pages/*/**', '../*/**'],
+              message:
+                'SPEC §2.1 + repo rule: pages NEVER import sibling pages. Import your own folder relatively (./copy), or promote to shared/ on the 2nd consumer.',
+            },
+            {
+              group: [
+                '@/features/trading/*',
+                '@/features/trading/*/**',
+                '../../features/trading/*',
+                '../../features/trading/*/**',
+              ],
+              message:
+                'SPEC §2.1: no trading domain on a marketing surface ([no-real-order-path] — a picture of a CTA never becomes a mounted TradeEntryDialog).',
+            },
+            {
+              group: ['@/features/auth/AuthContext', '../../features/auth/AuthContext'],
+              message:
+                'SPEC §2.1: AuthContext owns the TRANSPORT. `@/features/auth/copy` (strings) and `@/features/auth/AuthDialogProvider` (an opener) are allowed — this ban is the capability, not the folder.',
+            },
+            // GATE Z I-4 (SPEC §7 item 3) — the one hero instrument ships as static SVG, never
+            // WebGL (owner ruling D-B, §2.3). Scoped to all four surface folders (the same block
+            // above), not landing alone: adding it as a SECOND override object with its own
+            // `no-restricted-imports` key would SILENTLY REPLACE this block's patterns for any
+            // file matching both `files` globs (ESLint flat config does not merge rule VALUES
+            // across matching configs — the later one wins whole), dropping the four bans above
+            // for every file under `pages/landing/**`. One `patterns` array is the only way to
+            // add a ban here without a real risk of quietly weakening this exact list.
+            {
+              group: ['three', '@react-three/*', 'regl', 'pixi.js'],
+              message:
+                'SPEC §2.3/§7 item 3: the one hero instrument is static SVG, never WebGL (owner ruling D-B, 2026-09-10) — three/@react-three/*/regl/pixi.js are banned on the public surfaces.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];

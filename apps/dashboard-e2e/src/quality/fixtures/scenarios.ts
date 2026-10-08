@@ -423,6 +423,21 @@ const base = (
   ready,
   forbidden,
 });
+/** GATE Z I-2 (amendment 5) — force the app-wide who-am-I read to FAIL (503), so `RequireAuth`
+ *  renders its DEGRADED branch (`subsystemDegraded`) instead of the normal wall: the new "Try
+ *  again" CTA (`require-auth-retry`) the widened AC-G1 scan matrix must also cover. */
+function withSessionFault(scenario: Scenario): Scenario {
+  return {
+    ...scenario,
+    rest: {
+      ...scenario.rest,
+      'GET /api/auth/session': errorResponse(503, {
+        error: 'auth_unavailable',
+        message: 'auth down',
+      }),
+    },
+  };
+}
 export const journeys = [
   base('landing-ticker-navigation', '/', 'anonymous', { width: 1280, height: 900 }, 'dark', [
     { selector: '[data-testid="landing"]' },
@@ -499,7 +514,10 @@ export const accessibilityScenarios = [
     'anonymous',
     { width: 1280, height: 900 },
     'dark',
-    [{ selector: '[role="alert"]', text: 'API error 503' }],
+    // Fidelity repair 2, N7 — the design's cold-start-failure sentence, never the raw client
+    // status string (the status itself is kept, as a Mono detail line — `HTTP 503` — so this
+    // substring match still proves nothing is hidden).
+    [{ selector: '[role="alert"]', text: "Couldn't load SPY." }],
     [
       { selector: '[data-testid="cold-load"]' },
       { selector: '[data-testid="command-deck"]' },
@@ -520,6 +538,147 @@ export const accessibilityScenarios = [
     ]),
     stream: 'payload-gap' as const,
   },
+  // (curvature-v2-landing-and-site F15, AC-G1) three new public surfaces. A11Y-1/A11Y-2 already
+  // scan `/` in dark and light and pick up the footer mount; every scan below picks up the footer
+  // for free.
+  base('A11Y-10', '/blog', 'anonymous', { width: 393, height: 852 }, 'dark', [
+    { selector: '[data-testid="blog-page"]' },
+    { selector: '[data-testid="site-footer"]' },
+  ]),
+  base('A11Y-11', '/methodology', 'anonymous', { width: 393, height: 852 }, 'dark', [
+    { selector: '[data-testid="methodology-page"]' },
+    { selector: '[data-testid="methodology-toc"]' },
+  ]),
+  base(
+    'A11Y-12',
+    '/this-address-does-not-exist',
+    'anonymous',
+    { width: 1280, height: 900 },
+    'dark',
+    [{ selector: '[data-testid="not-found-page"]' }, { selector: '[data-testid="site-footer"]' }],
+  ),
+  // GATE Z I-2 (AC-G1, amendment 5) — the scan matrix is NAMED, not left to whatever the gate
+  // happened to cover: each of the six surfaces (/, /blog, /methodology, the 404, the sign-in
+  // wall, the degraded wall) in dark AND light at 393; the 404 stays additionally at 1280
+  // (A11Y-12 above, unchanged — "as today"); the sign-in wall, the degraded wall and the open
+  // sign-in dialog each count as surfaces and are scanned in both schemes at 393 too. Of the
+  // twelve 393-scheme combinations the six-surface bullet requires, two already existed
+  // (A11Y-10 blog/dark, A11Y-11 methodology/dark) — only the gaps are new here. APPENDED, never
+  // inserted: A11Y-1..A11Y-12's array INDICES are hard-relied-on by A11Y-B1/B2/B4/B5/B6/B7 below.
+  base('A11Y-13', '/', 'anonymous', { width: 393, height: 852 }, 'dark', [
+    { selector: '[data-testid="landing"]' },
+  ]),
+  base('A11Y-14', '/', 'anonymous', { width: 393, height: 852 }, 'light', [
+    { selector: '[data-testid="landing"]' },
+  ]),
+  base('A11Y-15', '/blog', 'anonymous', { width: 393, height: 852 }, 'light', [
+    { selector: '[data-testid="blog-page"]' },
+    { selector: '[data-testid="site-footer"]' },
+  ]),
+  base('A11Y-16', '/methodology', 'anonymous', { width: 393, height: 852 }, 'light', [
+    { selector: '[data-testid="methodology-page"]' },
+    { selector: '[data-testid="methodology-toc"]' },
+  ]),
+  base(
+    'A11Y-17',
+    '/this-address-does-not-exist',
+    'anonymous',
+    { width: 393, height: 852 },
+    'dark',
+    [{ selector: '[data-testid="not-found-page"]' }, { selector: '[data-testid="site-footer"]' }],
+  ),
+  base(
+    'A11Y-18',
+    '/this-address-does-not-exist',
+    'anonymous',
+    { width: 393, height: 852 },
+    'light',
+    [{ selector: '[data-testid="not-found-page"]' }, { selector: '[data-testid="site-footer"]' }],
+  ),
+  base('A11Y-19', '/scanner', 'anonymous', { width: 393, height: 852 }, 'dark', [
+    { selector: '[data-testid="require-auth-wall"]' },
+  ]),
+  base('A11Y-20', '/scanner', 'anonymous', { width: 393, height: 852 }, 'light', [
+    { selector: '[data-testid="require-auth-wall"]' },
+  ]),
+  withSessionFault(
+    base('A11Y-21', '/scanner', 'anonymous', { width: 393, height: 852 }, 'dark', [
+      { selector: '[data-testid="require-auth-wall"]' },
+      { selector: '[data-testid="require-auth-retry"]' },
+    ]),
+  ),
+  withSessionFault(
+    base('A11Y-22', '/scanner', 'anonymous', { width: 393, height: 852 }, 'light', [
+      { selector: '[data-testid="require-auth-wall"]' },
+      { selector: '[data-testid="require-auth-retry"]' },
+    ]),
+  ),
+  // The open sign-in dialog: loaded at `/` (anonymous), then `accessibility.spec.ts` opens it
+  // (via `cta-band-secondary`) before the axe scan — same special-case mechanism A11Y-9 already
+  // uses. `ready` only requires the landing shell; the dialog's own presence is asserted there.
+  base('A11Y-23', '/', 'anonymous', { width: 393, height: 852 }, 'dark', [
+    { selector: '[data-testid="landing"]' },
+  ]),
+  base('A11Y-24', '/', 'anonymous', { width: 393, height: 852 }, 'light', [
+    { selector: '[data-testid="landing"]' },
+  ]),
+  // no-vendor-production-posture AC-10 — the paused ticker-desk panel (F2), both breakpoints and
+  // both color schemes. `strict-fixture.ts` special-cases these four ids (mirrors A11Y-8's own
+  // ticker-failure override) to answer every `GET /api/ticker/SPY*` with the exact paused 503 — a
+  // prefix match, not an exact `rest` key, because the query string a fresh anonymous /ticker/SPY
+  // visit sends (`dark_pool=true`) is an FE default, not a value worth pinning here.
+  base(
+    'A11Y-25',
+    '/ticker/SPY',
+    'anonymous',
+    { width: 393, height: 852 },
+    'dark',
+    [{ selector: '[role="status"]', text: 'Market data is paused.' }],
+    [
+      { selector: '[data-testid="cold-load"]' },
+      { selector: '[data-testid="command-deck"]' },
+      { selector: '[role="alert"]' },
+    ],
+  ),
+  base(
+    'A11Y-26',
+    '/ticker/SPY',
+    'anonymous',
+    { width: 393, height: 852 },
+    'light',
+    [{ selector: '[role="status"]', text: 'Market data is paused.' }],
+    [
+      { selector: '[data-testid="cold-load"]' },
+      { selector: '[data-testid="command-deck"]' },
+      { selector: '[role="alert"]' },
+    ],
+  ),
+  base(
+    'A11Y-27',
+    '/ticker/SPY',
+    'anonymous',
+    { width: 1280, height: 900 },
+    'dark',
+    [{ selector: '[role="status"]', text: 'Market data is paused.' }],
+    [
+      { selector: '[data-testid="cold-load"]' },
+      { selector: '[data-testid="command-deck"]' },
+      { selector: '[role="alert"]' },
+    ],
+  ),
+  base(
+    'A11Y-28',
+    '/ticker/SPY',
+    'anonymous',
+    { width: 1280, height: 900 },
+    'light',
+    [{ selector: '[role="status"]', text: 'Market data is paused.' }],
+    [
+      { selector: '[data-testid="cold-load"]' },
+      { selector: '[data-testid="command-deck"]' },
+      { selector: '[role="alert"]' },
+    ],
+  ),
 ];
 export const visualScenarios = [
   base('landing', '/', 'anonymous', { width: 393, height: 852 }, 'dark', [

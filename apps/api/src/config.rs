@@ -112,6 +112,50 @@ pub struct Config {
     pub max_live_subscribers: usize,
     /// Workspace root (for fixture paths).
     pub workspace_root: PathBuf,
+    /// `live` (default) or `paused`. Read once at boot; no runtime toggle (SPEC B1).
+    pub market_data_mode: MarketDataMode,
+}
+
+/// `MARKET_DATA_MODE`: `live` (default, unchanged behaviour, `MASSIVE_API_KEY` required) or
+/// `paused` (no vendor contact anywhere in `serve`; `MASSIVE_API_KEY` optional).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MarketDataMode {
+    Live,
+    Paused,
+}
+
+impl MarketDataMode {
+    pub fn is_live(self) -> bool {
+        matches!(self, Self::Live)
+    }
+
+    pub fn is_paused(self) -> bool {
+        matches!(self, Self::Paused)
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Live => "live",
+            Self::Paused => "paused",
+        }
+    }
+
+    fn from_env() -> Result<Self, AppError> {
+        Self::from_raw(env::var("MARKET_DATA_MODE").ok().as_deref())
+    }
+
+    /// Env-free core of [`from_env`], testable without mutating process env (which races every
+    /// other test in the binary). `None` = unset (default `live`).
+    fn from_raw(raw: Option<&str>) -> Result<Self, AppError> {
+        match raw {
+            None => Ok(Self::Live),
+            Some(v) if v.trim().eq_ignore_ascii_case("live") => Ok(Self::Live),
+            Some(v) if v.trim().eq_ignore_ascii_case("paused") => Ok(Self::Paused),
+            Some(v) => Err(AppError::Config(format!(
+                "MARKET_DATA_MODE must be 'live' or 'paused', got {v:?}"
+            ))),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -170,12 +214,21 @@ impl DataFeed {
 impl Config {
     /// Load from process env (call `dotenvy::dotenv()` first in main).
     pub fn from_env() -> AppResult<Self> {
-        let massive_api_key = env::var("MASSIVE_API_KEY").map_err(|_| {
-            AppError::Config("MASSIVE_API_KEY is not set (check apps/api/.env)".into())
-        })?;
-        if massive_api_key.trim().is_empty() {
-            return Err(AppError::Config("MASSIVE_API_KEY is empty".into()));
-        }
+        // Read once, before MASSIVE_API_KEY, so paused boots never require the vendor key.
+        let market_data_mode = MarketDataMode::from_env()?;
+        let massive_api_key = if market_data_mode.is_live() {
+            let key = env::var("MASSIVE_API_KEY").map_err(|_| {
+                AppError::Config("MASSIVE_API_KEY is not set (check apps/api/.env)".into())
+            })?;
+            if key.trim().is_empty() {
+                return Err(AppError::Config("MASSIVE_API_KEY is empty".into()));
+            }
+            key
+        } else {
+            // Paused: optional. Present-but-unused when set; empty is fine (no vendor client call
+            // is ever reachable on this path — see B1/B2).
+            env::var("MASSIVE_API_KEY").unwrap_or_default()
+        };
 
         let data_feed =
             DataFeed::from_env_str(&env::var("DATA_FEED").unwrap_or_else(|_| "realtime".into()));
@@ -437,6 +490,7 @@ impl Config {
             max_live_sessions,
             max_live_subscribers,
             workspace_root,
+            market_data_mode,
         })
     }
 
@@ -560,6 +614,63 @@ pub fn keep_root_conflicts(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn market_data_mode_unset_defaults_live() {
+        assert_eq!(
+            MarketDataMode::from_raw(None).unwrap(),
+            MarketDataMode::Live
+        );
+    }
+
+    #[test]
+    fn market_data_mode_accepts_live_and_paused_case_insensitively() {
+        assert_eq!(
+            MarketDataMode::from_raw(Some("live")).unwrap(),
+            MarketDataMode::Live
+        );
+        assert_eq!(
+            MarketDataMode::from_raw(Some("LIVE")).unwrap(),
+            MarketDataMode::Live
+        );
+        assert_eq!(
+            MarketDataMode::from_raw(Some("paused")).unwrap(),
+            MarketDataMode::Paused
+        );
+        assert_eq!(
+            MarketDataMode::from_raw(Some("Paused")).unwrap(),
+            MarketDataMode::Paused
+        );
+    }
+
+    #[test]
+    fn market_data_mode_rejects_any_other_value_naming_the_variable() {
+        for bad in ["", "PAUSE", "0", "1", "true", " live "] {
+            // " live " trims to a valid value; the rest must name MARKET_DATA_MODE in the error.
+            if bad.trim().eq_ignore_ascii_case("live") {
+                assert_eq!(
+                    MarketDataMode::from_raw(Some(bad)).unwrap(),
+                    MarketDataMode::Live
+                );
+                continue;
+            }
+            let err = MarketDataMode::from_raw(Some(bad)).unwrap_err();
+            assert!(
+                err.to_string().contains("MARKET_DATA_MODE"),
+                "{bad:?}: {err}"
+            );
+        }
+    }
+
+    #[test]
+    fn market_data_mode_str_round_trip() {
+        assert_eq!(MarketDataMode::Live.as_str(), "live");
+        assert_eq!(MarketDataMode::Paused.as_str(), "paused");
+        assert!(MarketDataMode::Live.is_live());
+        assert!(!MarketDataMode::Live.is_paused());
+        assert!(MarketDataMode::Paused.is_paused());
+        assert!(!MarketDataMode::Paused.is_live());
+    }
 
     #[test]
     fn http_bind_prefers_explicit_value_then_railway_port_then_default() {

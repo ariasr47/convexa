@@ -81,6 +81,12 @@ export const strictTest = base.extend<{ scenario: Scenario }>({
 export async function installScenario(page: import('@playwright/test').Page, scenario: Scenario) {
   const unexpected: string[] = [];
   let tickerStreamDelivered = false;
+  // Flipped by `freezeStream()` right before the visual frame's clock jump (visual-frame.ts
+  // `freezeVisualFrame`). The browser's EventSource reconnects on real wall-clock time regardless
+  // of the page's fake clock, so a `connected` stream would otherwise keep answering reconnects
+  // with a fresh "live" payload after the freeze — silently undoing the deterministic offline
+  // transition the jump is meant to produce and making the capture racy (visual flake).
+  let streamFrozen = false;
   const watchdogArm = scenario.id === 'ticker-stream-loss' || scenario.id === 'A11Y-9';
   let releaseStream: (() => void) | undefined;
   let streamReleased = false;
@@ -125,7 +131,7 @@ export async function installScenario(page: import('@playwright/test').Page, sce
       });
     }
     if (url.pathname === '/api/stream/SPY' && scenario.stream !== 'none') {
-      if (scenario.stream === 'payload-gap' && tickerStreamDelivered) {
+      if (streamFrozen || (scenario.stream === 'payload-gap' && tickerStreamDelivered)) {
         return route.fulfill({
           status: 200,
           contentType: 'text/event-stream',
@@ -177,6 +183,22 @@ export async function installScenario(page: import('@playwright/test').Page, sce
           body: JSON.stringify({ detail: 'Unable to load ticker test fixture.' }),
         };
       }
+      // no-vendor-production-posture AC-10 — the paused ticker-desk panel (F2), SPEC B2's exact
+      // byte-for-byte wire body (never the ad hoc fixture text A11Y-8 uses above for a GENERIC
+      // failure — this is the specific typed reply the FE keys `isMarketDataPaused` off of).
+      if (
+        (scenario.id === 'A11Y-25' ||
+          scenario.id === 'A11Y-26' ||
+          scenario.id === 'A11Y-27' ||
+          scenario.id === 'A11Y-28') &&
+        key.startsWith('GET /api/ticker/SPY')
+      ) {
+        response = {
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ detail: 'Market data is paused.', code: 'market_data_paused' }),
+        };
+      }
       if (!response) {
         unexpected.push(key);
         return route.abort('blockedbyclient');
@@ -198,6 +220,10 @@ export async function installScenario(page: import('@playwright/test').Page, sce
         throw new Error(`initial ticker stream already released for ${scenario.id}`);
       streamReleased = true;
       releaseStream();
+    },
+    /** Stop answering `/api/stream/SPY` with fresh "live" payloads — heartbeat only from here on. */
+    freezeStream: () => {
+      streamFrozen = true;
     },
   };
 }

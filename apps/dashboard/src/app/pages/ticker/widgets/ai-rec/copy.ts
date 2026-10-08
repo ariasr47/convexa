@@ -51,6 +51,13 @@ export const COPY = {
     title: 'AI unavailable — try again',
     body: "Couldn't get a read right now. This didn't affect the rest of the dashboard.",
   },
+  /** no-vendor-production-posture F4 — the honest line for a `market_data_paused` fault (never the
+   *  generic `unavailable` copy above, which implies an LLM/key hiccup worth retrying). Shortest
+   *  faithful line: states the real cause, and that it is not an AI/key problem. */
+  marketDataPaused: {
+    title: 'Market data is paused.',
+    body: 'There’s nothing to analyze right now — this isn’t an AI or key problem.',
+  },
   noKey: {
     chip: 'In-app AI not configured',
     caption:

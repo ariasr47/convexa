@@ -5,6 +5,7 @@
 import { catalogForPreference } from '@/features/auth/aiProviderLabels';
 import { AUTH_COPY } from '@/features/auth/copy';
 import { RUN_SCENARIO, SCRIPTED_CHIP } from '@/features/trading/orders/copy';
+import { fmtAsOfEt } from '@/pages/ticker/widgets/_kit/copy';
 import { typographyTokens } from '@/shared/theme/tokens';
 import type { AiProvidersBootstrap, RecScenarioInfo, TickerBundle } from '@convexa/api';
 import Alert from '@mui/material/Alert';
@@ -29,7 +30,7 @@ import {
   retryInCooldown,
   retryWhenReset,
 } from './copy';
-import type { deriveAiRecPresentation } from './presentationPolicy';
+import { MARKET_DATA_PAUSED_REASON, type deriveAiRecPresentation } from './presentationPolicy';
 
 const MONO = typographyTokens.monoFontFamily;
 
@@ -69,7 +70,12 @@ export function SnapshotHint({ bundle }: { bundle: TickerBundle | null }) {
   return (
     <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
       Reads the current snapshot
-      {bundle?.meta.freshness.snapshot_iso ? `, as of ${bundle.meta.freshness.snapshot_iso}` : ''}.
+      {/* Fidelity repair 2, N5 — the exchange-clock form (design: `Snapshot as of 10:41:52 ET`),
+          never the raw ISO instant. */}
+      {bundle?.meta.freshness.snapshot_iso
+        ? `, as of ${fmtAsOfEt(bundle.meta.freshness.snapshot_iso)}`
+        : ''}
+      .
     </Typography>
   );
 }
@@ -304,6 +310,7 @@ export function UnavailableBlock({
   retryAllowed,
   onRetry,
   scenario = null,
+  reason = null,
 }: {
   cap: { over_limit: boolean; resets_at: string };
   cooldownRemaining: number;
@@ -313,20 +320,29 @@ export function UnavailableBlock({
    *  shows so the operator knows it was scripted (UX §6, AC-40). The block itself is the standard
    *  unavailable handling — no special copy (AC-35). */
   scenario?: RecScenarioInfo | null;
+  /** `rec.unavailable_reason` (no-vendor-production-posture F4). A `market_data_paused` fault gets
+   *  its own honest, no-blame copy and an info tone — `retryAllowed` is already false for it
+   *  (`presentationPolicy.ts`'s sole authority), this only swaps the WORDS. Every other reason
+   *  (including the generic transport fault) keeps today's copy byte-for-byte. */
+  reason?: string | null;
 }) {
+  const paused = reason === MARKET_DATA_PAUSED_REASON;
   // Presentation policy is the sole authority for retry actionability. Cap/cooldown remain visible
   // as explanatory context, but must not independently disable a retry (scenario retries bypass them).
   const blockedByCooldown = cooldownRemaining > 0;
   const blockedByCap = cap.over_limit;
-  const sub = blockedByCooldown
-    ? retryInCooldown(cooldownRemaining)
-    : blockedByCap
-      ? retryWhenReset(friendlyResetTime(cap.resets_at))
-      : null;
+  const sub = paused
+    ? null // nothing about cap/cooldown explains a standing paused fact
+    : blockedByCooldown
+      ? retryInCooldown(cooldownRemaining)
+      : blockedByCap
+        ? retryWhenReset(friendlyResetTime(cap.resets_at))
+        : null;
   return (
     <Alert
-      severity="warning"
+      severity={paused ? 'info' : 'warning'}
       sx={{ mt: 1 }}
+      data-testid={paused ? 'ai-rec-state-market-data-paused' : undefined}
       action={
         <Stack spacing={0.25} sx={{ alignItems: 'flex-end' }}>
           {retryAllowed && (
@@ -344,9 +360,11 @@ export function UnavailableBlock({
     >
       {/* component="p" (stage-3 §5.6): transient-state title, not document structure. */}
       <Typography variant="subtitle2" component="p">
-        {COPY.unavailable.title}
+        {paused ? COPY.marketDataPaused.title : COPY.unavailable.title}
       </Typography>
-      <Typography variant="body2">{COPY.unavailable.body}</Typography>
+      <Typography variant="body2">
+        {paused ? COPY.marketDataPaused.body : COPY.unavailable.body}
+      </Typography>
       {scenario && (
         <Chip
           size="small"

@@ -56,6 +56,69 @@ the ascent — `docs/research/TEST_SUITE_AND_BACKTESTING_REVIEW_2026-09-08.md`).
 **Sequencing recommendation, not a feature:** open the phases 1–3 PR first and build phase 4 on a branch off
 it, so the PR stays reviewable and the visual child's verdict is not muddied by new pixels.
 
+## Parked — 2026-09-22 (no market-data vendor: reconstructed replay days)
+<!-- atlas: theme=prove-the-edge horizon=later -->
+Owner-directed parking, **not** a GATE I cull and **not** a BRIEF. Owner 2026-09-22: "put it in the backlog
+for now and finish any outstanding work first such as phase 4". No re-subscription in the short term.
+
+**What changed (verified 2026-09-22 against Railway production logs and code, not assumed):**
+- **Massive is cancelled.** Production's last start-of-day books were stored 00:00–04:18 ET on Wed
+  2026-09-16; the first `403 NOT_AUTHORIZED` ("not entitled to this data") landed by 10:59 ET that day. The key
+  now sits on the free Stocks Basic tier: 5 calls/min, 2 years of minute aggregates, **no** trades, quotes,
+  snapshots or websockets. Since then ticker bundles fail, the scanner prices 0/69, the warmer keeps calling
+  (~67k errors), and Deploy smoke fails at "Ticker SPY (bundle)". The nightly Conformance run stays green
+  because `public-surface.json` and `scanner.json` check shape only.
+- **No day was ever recorded for replay.** `session-day-tape-capture` (QA 66/0/0, GATE S 2026-08-30) records
+  only when `SESSION_DAY_TAPE_BODY_ROOT` is set. Every production deploy since the code landed (2026-09-03,
+  09-05, 09-10) logged `SESSION_DAY_TAPE_BODY_ROOT unset; session day tape not storing`, and the flat-file
+  keeper was off too (`flat files not fetching — production unset`). Owner ruling D3 made an unset root silent
+  in the trader UI, and no gate read production after ship. The owner had cancelled Massive expecting
+  replayable whole days for a portfolio demo.
+- **What survives:** start-of-day chain books (per-contract OI, IV, vendor greeks, bid/ask, spot) in
+  production, ~2026-08-26 → 2026-09-16, the only copy of most of them. On the Windows box
+  `data/session_chain_archive_bodies` holds trading days SPY 08-19/08-20/08-31, QQQ 08-20/08-31 and
+  IWM 08-19/08-20/08-31.
+
+| Item | Shape | Why it is here |
+|---|---|---|
+| `reconstructed-replay-days` | both lanes | The `session-day-replay` player is already tick by tick (`player.rs`: a Δt/k walk of Path-A trades, analytics recomputed at each Path-B mark) and vendor-free by construction. It has nothing to play. Rebuild real past days from **free historical underlying ticks** plus that morning's **archived chain book** as the options side (OI only updates daily), with levels repriced by our own model as price moves and IV held at the morning values, **said so on screen**. Tick source is the owner's pick at promotion: **A** Alpaca free plan (historical SIP since 2016 for anything at least 15 min old, 200 req/min, free account; confirm the trades endpoint with one call) or **B** Massive free tier (minute bars only, 5 req/min, needs production's warmer off first). Labeled reconstructed, never live (`[present-is-live-paid-only]`, `[model-read-carries-its-assumptions]`). Prove one local SPY day before any build. **Precondition:** copy the production archive off Railway first. **Owner 2026-09-24: deferred ("consider later").** In the meantime production runs `MARKET_DATA_MODE=paused` (PR #71), so the desk says "Market data is paused." instead of failing. |
+| `site-wide-no-data-notice` | FE (design first) | Candidate. Owner 2026-09-24: "show something … indicating that we don't have data". Today only `/ticker` (the paused panel) and the signed-in scanner (its cadence line) say so. The landing, whose main button is `Open the Ticker →`, gives no hint before the click. Option: a slim notice in the app header, or under the landing hero, shown only while `/api/health` reports `market_data: "paused"`. It is a new user-facing surface, so mock it in `docs/mockups/` before any build. Landing copy is pinned by `_archive/curvature-v2-landing-and-site` AC-C1, so it needs a SPEC amendment rather than a copy edit. |
+| ~~`no-vendor-production-posture`~~ **SHIPPED 2026-09-24** | backend/ops | **Done** via PR #71 (`MARKET_DATA_MODE=paused`: zero vendor contact, a typed 503 `market_data_paused`, and the desk's "Market data is paused." panel). Archived at `contracts/_archive/no-vendor-production-posture/`. Production `WARM_ENABLED=0` since 2026-09-23. `MARKET_DATA_MODE=paused` is set after merge (owner-approved plan A). |
+
+**Lesson (candidate canon at the next GATE S):** a feature that only works once a production variable is set is
+not shipped until production shows it running: a startup log line, a health field, or a stored artifact.
+
+## Harvest — 2026-09-23 (curvature-v2-landing-and-site GATE S carries)
+<!-- atlas: theme=desk-fidelity horizon=next -->
+Not a BRIEF. Filed by the conductor at GATE S from `QA_REPORT.md`'s minor findings and the ship run. None
+blocked the ship, and all but the last two predate the feature.
+
+| Item | Shape | Why it is here |
+|---|---|---|
+| `who-am-i-client-timeout` | FE | A hung `/api/auth/session` holds the route fill indefinitely, because the client has no timeout (QA m-5). The degraded wall only renders on a transport fault that actually arrives. |
+| `signups-closed-sentence-once` | FE | A refused sign-up shows the policy sentence twice: the info alert before typing and the error after submit (QA m-6). |
+| `google-sign-in-future-copy` | FE copy | The dialog's "Google sign-in isn't available yet" promises a future feature on the acquisition path (QA m-7). |
+| `nav-account-skeleton-pulse` | FE | The nav's account Skeleton pulses during the who-am-I read on every route (QA m-11). Check it against `[data-signal-motion-class]`: chrome, or a second moving element? |
+| ~~`topnav-active-link-light-contrast`~~ **RESOLVED 2026-09-24** | FE a11y | Fixed in `6b60407a` (no-vendor-production-posture). The light active link now uses the text-grade amber, about 5.7:1, and dark is unchanged. The new light 1280 `/ticker` scan (A11Y-25..28) now guards it. |
+| `a11y-3-ticker-desk-contrast-flake` | FE a11y | `A11Y-3` (`/ticker/SPY`, anonymous, dark, 1280) failed locally 3 out of 3 times on 2026-09-24 at `5733ba8c` **and** at `main` `77b7d4a8`. It passed in CI (#70 twice, #71) and in QA's single re-run, so it is timing-dependent. Axe measured widget subtitles `text.secondary` at an effective `#728197` on `#121822`, 4.49:1 (steel composited at about 0.8). It measured the `board-zone-structure` label (`opacity: 0.8`, `TickerDashboard.tsx:418`) at 3.5:1 and the `open-sim-trade-refused` captions at 4.17:1. Find which opacity composite is live at scan time, replace opacity-on-text with a solid token (the `textDim` rule), and make the scan wait for a settled frame. Never waive it. |
+| `hero-curve-crosses-text-on-phones` | FE design | At 393 px the decorative `HeroCurve` crosses body text: the footnote's "An" and the end of the sub's line. It is the same element as before phase 4, now over taller copy. Clip or reposition it below 700 px, checked against `Landing390.dc.html`. |
+| `design-source-stale-lines` | design | SPEC open question 1, still the owner's call. Three lines are stale: `responsive-spec.mjs:28` (the desk strip), `landing.mjs:56` (the three.js caption) and `components-sheet.mjs:173` (the GPU note). They contradict ruling D-B = A. Left stale, the successor `curvature-v2-responsive-sweep` reads them back in. |
+| ~~`postgres-release-safety-flake`~~ **RESOLVED 2026-09-24** | backend | Fixed in `06847b60`. The cause was not the health wait. Every `serve` start ran `ALTER TABLE session_chain_archive DROP COLUMN IF EXISTS body` (the inline-body migrator), so two servers starting together could race, and the loser refused startup before binding. Startup is now schema-read-only (AC-23). The test's fingerprint now covers columns, constraints and indexes, so any startup DDL fails it on every run, not just some. |
+| `session-archive-legacy-body-column` | backend/db | Fresh databases now keep the nullable legacy `session_chain_archive.body` column, because startup no longer drops it. Production most likely lost it long ago to the old startup drop; check before acting. Dropping it would be a numbered migration and is the owner's call. The PARKED note on `DROP_BODY_COLUMN_SQL` (`services/session_chain_archive/migrate.rs`) says when that is safe. |
+| `session-archive-unit-tests-share-state` | backend test | `cargo test -p api-rust --lib session_chain_archive` failed 4 of 6 local runs on 2026-09-24. The failures rotate across `coverage::matrix` tests and `ensure_worker::coverage_err_is_swallowed_and_ensure_still_runs`, and single-threaded it passes 3 of 3. The tests share process-global state, such as `COVERAGE_VENDOR_CALLS` and the warn capture. |
+| ~~`api-boot-dials-vendor-without-warm`~~ **RESOLVED 2026-09-24** | backend/ops | `MARKET_DATA_MODE=paused` (PR #71) boots with no `MASSIVE_API_KEY` and makes zero vendor connections: a local recorder saw 0 across boot, idle and every route. Local verification can now run vendor-free. In `live` mode the boot subscription is unchanged by design. |
+
+## Harvest — 2026-09-22 (PR #49 visual-flake repair: two harness residuals)
+<!-- atlas: theme=gates-that-gate horizon=next -->
+Not a BRIEF. Filed by the conductor while repairing the visual-gate flake on PR #49 (`964aa754`: the strict
+fixture stopped answering `/api/stream/SPY` with live payloads once the visual frame freezes). Neither item
+changes an approved baseline; both are test-harness debt.
+
+| Item | Shape | Why it is here |
+|---|---|---|
+| `strict-fixture-stream-conforms` | e2e | The strict fixture's stream payload (`apps/dashboard-e2e/src/quality/fixtures/strict-fixture.ts`: `ticker`, `mid`, `last_trade`, `net_flow`, `live`) omits two fields the contract requires: `flow_window_s` and `feed` (`apps/api/src/routes/stream.rs:78,83`, non-`Option`; `libs/api/src/generated/schema.ts:1557,1559`). Any gate that reaches the live state renders `Net flow (NaNm)` (`LiveTape.tsx:143,173`) and the tooltip `Streaming live undefined ticks.` (`connection/copy.ts:47`). Production always sends both, so this is fixture drift, not a live bug. Fix the fixture to the contract. Optionally make both labels absent-safe (`[absent-is-not-none]`). No approved baseline pictures the live state today; the `ticker-desktop` baseline is the offline frame. |
+| `visual-frame-meta-test-red` | e2e | `apps/dashboard-e2e/tools/visual-frame.spec.mjs` exits 1. Its launch-args regex predates `be00d739` (2026-09-09), which added `--disable-lcd-text` to `playwright.visual.config.ts`. No nx target or CI job runs it, which is how it went red unnoticed. Either wire it into CI with the regex updated, or park it under a `PARKED` marker. |
+
 ## Harvest — 2026-09-08 (ticker fidelity repair: two wire fields the design draws and the API does not send)
 <!-- atlas: theme=desk-fidelity horizon=next -->
 Not a BRIEF. Filed by the conductor from the `/ticker` fidelity repair lane's GATE Z items (owner 2026-09-08:
@@ -202,6 +265,28 @@ change line or a name.
   Windows box 40 runs of the two tests under the unit suite as load, 0 failures (a much faster machine than the
   2-vCPU runner — not a refutation). A CPU-throttled probe (`Emulation.setCPUThrottlingRate` via CDP before the
   tap) is the next faithful reproduction.
+- **F-M — Market-context captions are ellipsised by decision (review N3).** All four captions clip at 1280 (`MarketContext.tsx:152,165`,
+  the 2026-09-08 repair's change-2 close-out); a `title` tooltip has no tap path (canon 20). The design's captions are three-word bases
+  (`momentum positive`, `balance tilts calls`, `flow with the wall`, `5d 5.4 · 30d 6.8`). Owner/UX call: author four short captions with a
+  vouched source each, then drop the ellipsis rule. Not a lane item until the copy is ratified.
+- **F-N — Live tape cells are boxed cards; flow spark and captions absent (review N8).** `LiveTape.tsx` renders four bordered, filled
+  `FigureCell`s where the design and the app's own read strip divide cells with hairlines; the `FLOW` spark row is the standing
+  "flow-spark data" owner item; the captions (`buyers lifting the ask`, `tight · liquid`) need a canon-24 source before they exist. Owner call.
+- **F-O — The opportunity cell's ring is empty and the tier word is not amber (review N9).** Design: the score inside the ring, `Actionable`
+  in amber, a caption. App: an empty arc, `78 ·` + `Actionable` wrapping, `3 setups`. Composition only; owner call because amber text
+  outside the AI panel is a canon-16 question.
+- **F-P — Masthead: no day change / percent and no instrument name; chips above the title (review N10).** The design leads with
+  `SPY 573.12 +1.84 · +0.32%` then chips and `SPDR S&P 500 ETF`. Neither datum is cut with cause in the desk-and-read SPEC. Owner call:
+  record the cut, or add them if the bundle carries them (check `/api/ticker` for a change and a name field first).
+- **F-Q — The cap line uses the warning idiom for the within-cap case (review N12).** `CapAnnotation.tsx` renders `⚠ $300 is within your
+  cap of $500.` with the warning icon and colour on purpose (AC-60: same chrome for `within` and `above`). Canon reserves burnt orange +
+  icon for warnings; the design shows the within case as a calm info box. Owner re-ruling: keep the icon for `above` only.
+- **F-R — The produced-read AI panel carries an amber outline (review N13).** `desk-trade-1280-dark` shows a 1-px amber border around the
+  whole panel with no interaction performed; not located in `DecisionCard` / `AiRecPanel` / `Widget`. Rule 16's closed list of non-text
+  amber has no panel border. Needs a source check; if it is a "fresh read" highlight it is a fourth amber and needs a ruling.
+- **F-S — Page panels have no elevation where the design's are e1 (review N14).** Desk widgets carry e1 (matching `.panel`); settings,
+  positions and alerts panels render `shadow: none`. One decision, one token. Also open from the review: the band's ≤ 800 px density target
+  (968 today) and the masthead's last 15 px (215 vs ≤ 200) — both already owner items from the 2026-09-08 repair.
 - **F-T — a stuck ticker compute wedges every later request for that ticker; the local desk "never loads".** Seen twice on
   2026-09-10 on the Mac API (`WARM_ENABLED=0`): `/api/ticker/SPY` (with and without `dark_pool=true`) and
   `/api/recommendation/status/SPY` stopped answering (curl timeouts at 45 s, 120 s, >4 min) while `/api/health`, `/api/scan`

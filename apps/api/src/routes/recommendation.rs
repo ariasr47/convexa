@@ -541,7 +541,8 @@ pub(crate) fn contract_representative_response(boundary: &str) -> Option<Respons
     Some(response)
 }
 
-/// POST /api/recommendation/{ticker} — auth outermost; always 200 for rec outcomes.
+/// POST /api/recommendation/{ticker} — auth outermost; paused answers the exact AC-3 503 (SPEC B2
+/// amendment, GATE Z 2026-09-24); otherwise always 200 for rec outcomes.
 #[utoipa::path(post, path = "/api/recommendation/{ticker}", operation_id = "recommendation_post", params(("ticker" = String, Path, description = "Ticker symbol")), request_body = RecommendationRequest, responses(RecommendationResponse))]
 pub async fn post_recommendation(
     State(state): State<AppState>,
@@ -564,6 +565,15 @@ async fn post_recommendation_http(
         Ok(u) => u,
         Err(r) => return r,
     };
+    // SPEC B2 amendment (GATE Z, 2026-09-24) / AC-3: this route builds a fresh bundle, so a
+    // signed-in caller gets the exact paused 503 here — before generate_recommendation ever
+    // reaches build_bundle, whose bundle-failure fallback below would otherwise swallow
+    // AppError::MarketDataPaused into the dishonest 200 `unavailable_reason: "llm_error"`. Live
+    // mode never takes this branch, so the existing fallback for real LLM/bundle failures is
+    // untouched.
+    if state.config.market_data_mode.is_paused() {
+        return AppError::MarketDataPaused.into_response();
+    }
     let sym = ticker.trim().to_ascii_uppercase();
     let body: RecRequestBody = body.into();
     let out = generate_recommendation(&state, &sym, &body, &user).await;

@@ -15,6 +15,7 @@ import Box from '@mui/material/Box';
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette/CommandPalette';
+import { Footer } from './Footer';
 import { TopNav } from './TopNav';
 
 export function AppShell() {
@@ -107,6 +108,12 @@ export function AppShell() {
       >
         <Outlet />
       </Box>
+      {/* Canon rule 19 — Lab and Blog live in the footer, so the footer must reach every full page.
+          ONE mount point is what makes "reachable from every in-shell page" STRUCTURAL instead of a
+          checklist someone forgets; a route allow-list re-introduces the list. It necessarily puts a
+          footer under the ticker desk — that cost is NAMED AND PAID (SPEC §8), not hidden by
+          narrowing the criterion. Chrome, outside the <main> landmark, below the instrument. */}
+      <Footer />
     </Box>
   );
 }

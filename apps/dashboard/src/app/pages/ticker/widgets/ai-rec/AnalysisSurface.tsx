@@ -1,3 +1,4 @@
+import { fmtAsOfEt, fmtExpiry } from '@/pages/ticker/widgets/_kit/copy';
 import type {
   Grounding,
   OpenPositionsDigest,
@@ -41,7 +42,8 @@ function AnalysisSummary({ rec }: { rec: RecResponse }) {
       </Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
         Persona · {rec.persona.name}
-        {rec.as_of ? ` · As of ${rec.as_of}` : ''}
+        {/* Fidelity repair 2, N5 — the exchange-clock form, never the raw ISO instant. */}
+        {rec.as_of ? ` · As of ${fmtAsOfEt(rec.as_of)}` : ''}
       </Typography>
       {rec.scenario && (
         <Typography variant="caption">{`SCRIPTED SCENARIO · ${rec.scenario.name} · ${COPY.provenance.sim}`}</Typography>
@@ -56,18 +58,29 @@ function AnalysisSummary({ rec }: { rec: RecResponse }) {
           [
             [PLAN_FIELD_LABEL.structure, strategy.structure, rec.field_reasons?.structure],
             [PLAN_FIELD_LABEL.expiration, strategy.expiration, rec.field_reasons?.expiration],
-            [PLAN_FIELD_LABEL.timeHorizon, strategy.time_horizon, rec.field_reasons?.time_horizon],
+            // Fidelity repair 2, N6 — Time horizon dropped HERE (kept once, in `analysis-plan-fields`
+            // below, beside Confidence — the design's `MANAGE THE TRADE` grouping). It used to render
+            // in BOTH lists (`Structure · Expiration · Time horizon` then `Time horizon ·
+            // Confidence`), visible in the accepted `ai-recommendation` baseline.
           ] as const
         ).map(([label, value, reason]) => {
           const literal = planFieldLiteral({ decision: strategy.decision, value, reason });
+          // Fidelity repair 2, N5 — the closed literal selector decides value/dash/not-set/… on the
+          // RAW wire token first; only a resolved `value` literal's TEXT is reformatted, and only
+          // for the expiration field (design: `Sep 18 (15 DTE)`) — structure is a plain string,
+          // untouched.
+          const text =
+            literal.kind === 'value'
+              ? label === PLAN_FIELD_LABEL.expiration
+                ? fmtExpiry(literal.text)
+                : literal.text
+              : literalCopy(literal.kind).text;
           return (
             <Box key={label}>
               <Typography variant="caption" color="text.secondary">
                 {label}
               </Typography>
-              <Typography variant="body2">
-                {literal.kind === 'value' ? literal.text : literalCopy(literal.kind).text}
-              </Typography>
+              <Typography variant="body2">{text}</Typography>
             </Box>
           );
         })}

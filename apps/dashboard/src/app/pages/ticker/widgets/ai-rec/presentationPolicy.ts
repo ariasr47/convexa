@@ -1,6 +1,12 @@
 import type { RecCap, RecResponse, RiskInputs } from '@convexa/api';
 import { riskInputsSuperseded } from './literals';
 
+/** no-vendor-production-posture F4 — the FE-synthesized `unavailable_reason`
+ *  (`useAiRecommendation.ts`'s status-fetch catch) for a `market_data_paused` fault. NOT a wire
+ *  value on this field; a sentinel this module and `AiRecPanelBlocks.tsx` both recognize so the
+ *  panel renders honest copy with no Retry, instead of the generic "AI unavailable — try again". */
+export const MARKET_DATA_PAUSED_REASON = 'market_data_paused';
+
 export type AiRecRequestState =
   | 'idle'
   | 'loading'
@@ -151,6 +157,10 @@ export function deriveAiRecPresentation(input: PresentationInput): AiRecPresenta
     requestState === 'subscription_unavailable';
   const unavailableRetryGate =
     requestState === 'unavailable' &&
+    // A paused fact is not a transient fault — retrying cannot change the answer (SPEC F2/F4:
+    // "Never a Retry loop … for the paused code"). Checked here, not ad hoc in the block, because
+    // this policy is documented as the SOLE authority for retry actionability.
+    rec?.unavailable_reason !== MARKET_DATA_PAUSED_REASON &&
     signedIn &&
     input.inAppEnabled &&
     input.readinessGateState === 'available' &&

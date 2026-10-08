@@ -66,14 +66,21 @@ jobs:
               sys.exit(1)
           PY
 
-      - name: Ticker SPY (bundle)
+      - name: Ticker SPY (bundle, or the paused reply when health says paused)
         if: steps.origin.outputs.skip != 'true'
         run: |
           set -euo pipefail
           code=$(curl -sS -o /tmp/ticker.json -w "%{http_code}" \
             "${{ steps.origin.outputs.api }}/api/ticker/SPY")
-          test "$code" = "200"
-          grep -q market_state /tmp/ticker.json
+          market_data=$(python3 -c "import json; print(json.load(open('/tmp/health.json')).get('market_data', 'live'))")
+          if [ "$market_data" = "paused" ]; then
+            test "$code" = "503"
+            grep -q '"code":"market_data_paused"' /tmp/ticker.json
+            grep -q '"detail":"Market data is paused."' /tmp/ticker.json
+          else
+            test "$code" = "200"
+            grep -q market_state /tmp/ticker.json
+          fi
 
       - name: Scan envelope
         if: steps.origin.outputs.skip != 'true'

@@ -64,7 +64,18 @@ generation `gen-e04559a83188e6e6`. Installed doctor exit 0, healthy, 7/7; self-c
   to a file, run `node .spire/bin/spire.mjs rollback-v4 --input <file> --out <dir>; exit $LASTEXITCODE`
   on Node 26, then the doctor. Capsule retained until 2026-11-07T00:23:05Z.
 
-## Owner ruling — keep it local (2026-09-22)
+## Owner ruling — merge to main (2026-10-07)
+
+The owner asked to merge this branch into `main`, reversing the keep-local ruling below. The local
+pre-push guard (`.git/hooks/pre-push`) was deleted for that reason. What follows from the merge:
+
+- Any checkout of `main` now carries the v4 files. A machine without its own install (the Mac)
+  gets `no recovery launcher installed` from the entry; the entry treats that as "not installed
+  here" and continues. That clone needs its own install to run v4.
+- The hazard about checking out `main` no longer applies; branches before `c6b61340` still turn v4
+  off in this checkout.
+
+## Owner ruling — keep it local (2026-09-22, superseded 2026-10-07)
 
 The owner chose option A: the install stays on this machine. Until the owner decides otherwise,
 this branch is not pushed and not opened as a PR. Working rules that follow:

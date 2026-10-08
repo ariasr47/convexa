@@ -140,6 +140,48 @@ test.describe('client-side navigation', () => {
     await expect(page).toHaveURL(/\/$/);
   });
 
+  test('methodology on-page index (GATE Z I-1, AC-M6/AC-M1) — click stays in-page despite <base href="/">', async ({
+    page,
+  }) => {
+    // `apps/dashboard/index.html:5` declares `<base href="/">`. jsdom implements no <base>
+    // resolution at all, so `methodology.spec.tsx` cannot see this class of regression — only a
+    // real browser resolves a bare `href="#id"` against that base (landing it on `/#id`, the
+    // landing page) instead of against the document's current path. This is the only mechanism
+    // that can prove the fix.
+    await page.goto('/methodology');
+    await expect(page.getByTestId('methodology-page')).toBeAttached();
+    await plantSpaSentinel(page);
+
+    const toc = page.getByTestId('methodology-toc');
+    const entry = toc.getByRole('link', { name: 'Where the read is weak' });
+    await expect(entry).toHaveAttribute('href', '/methodology#where-the-read-is-weak');
+    await entry.click();
+
+    // Stayed on `/methodology` (never ejected to the landing) and the URL now carries the anchor.
+    await expect(page).toHaveURL(/\/methodology#where-the-read-is-weak$/);
+    await expect(page.getByTestId('methodology-page')).toBeAttached();
+    expect(await sentinelSurvived(page), 'clicking a TOC entry reloaded the document').toBe(true);
+
+    // Reached the section: its heading sits at or above the viewport's top edge, not still at
+    // the top of the document (scrollY 0 is exactly the failure GATE Q observed).
+    const target = page.getByRole('heading', { level: 2, name: 'Where the read is weak' });
+    await expect(target).toBeInViewport();
+  });
+
+  test('methodology deep link (GATE Z I-1, AC-M1) — a fresh load of /methodology#id lands on its section', async ({
+    page,
+  }) => {
+    await page.goto('/methodology#vocabulary');
+    await expect(page.getByTestId('methodology-page')).toBeAttached();
+
+    const target = page.getByRole('heading', { level: 2, name: 'Vocabulary' });
+    await expect(target).toBeInViewport();
+    const scrollY = await page.evaluate(() => window.scrollY);
+    expect(scrollY, 'a fresh deep link left the page at the top (GATE Q failure)').toBeGreaterThan(
+      0,
+    );
+  });
+
   test('a URL parameter reaches the page it addresses', async ({ page }) => {
     // `useParams` is the other router surface this app depends on; pin that it still binds.
     //

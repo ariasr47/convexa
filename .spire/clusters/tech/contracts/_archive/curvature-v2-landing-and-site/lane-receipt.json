@@ -1,0 +1,181 @@
+{
+  "feature": "curvature-v2-landing-and-site",
+  "phase": "phase 4 — frontend closer (PLAN.md F16)",
+  "head_sha": "55394a4942818db380f614a4ddbe114c0167fef8",
+  "branch": "spire/curvature-v2-landing-and-site",
+  "worktree": "C:/Dev/convexa/.worktrees/landing-and-site",
+  "note": "head_sha is the tree every V-n below was run against, and the summary.json source_revision the visual gate itself stamped. This receipt and its one accompanying source fix (V-15) land as a commit on top of it.",
+
+  "bundle_measurement": {
+    "rule": "SPEC §2.4 — if the gzip delta attributable to shared/charts/structure-field exceeds 20 kB, land the ErrorBoundary+Suspense split, exactly as specified; otherwise no boundary, no Suspense.",
+    "base": {
+      "commit": "4ca9edc7",
+      "worktree": "C:/Dev/convexa/.worktrees/landing-base-4ca9edc7 (npm ci + production build, then removed and confirmed gone)",
+      "entry_file": "index-BAsu9U2c.js",
+      "raw_kb": 53.3,
+      "gzip_kb": 16.6,
+      "brotli_kb": 14.5,
+      "source": "node tools/check-dashboard-bundle.mjs --json, assets[] entry matching /^index-.*\\.js$/",
+      "vite_build_log_gzip_kb": 17.14
+    },
+    "head": {
+      "commit": "55394a49",
+      "entry_file": "index-B0R08Y1l.js",
+      "raw_kb": 66.2,
+      "gzip_kb": 20.3,
+      "brotli_kb": 17.7,
+      "source": "node tools/check-dashboard-bundle.mjs --json, assets[] entry matching /^index-.*\\.js$/",
+      "vite_build_log_gzip_kb": 20.94
+    },
+    "delta": {
+      "gzip_kb": 3.7,
+      "brotli_kb": 3.2
+    },
+    "structure_field_chunk_control": {
+      "note": "shared/charts/structure-field ships as its OWN chunk in both builds (already used elsewhere pre-feature), byte-for-byte identical in size across base and head — proof the entry-index delta above is NOT attributable to it, it is the landing composition code (Hero/samples/copy) bundled eagerly into the entry.",
+      "base": { "file": "structure-field-esDgxZhL.js", "gzip_kb": 6.3, "brotli_kb": 5.7 },
+      "head": { "file": "structure-field-Kq-mpVqb.js", "gzip_kb": 6.3, "brotli_kb": 5.7 }
+    },
+    "decision": "NO SPLIT. Gzip delta (+3.7 kB) is far under the 20 kB SPEC §2.4 threshold, and the structure-field chunk itself is unchanged, so no part of the delta is attributable to it either. No ErrorBoundary/Suspense pair is added; StructureFieldSample.tsx keeps its existing eager import unmodified.",
+    "check_bundle_gate": "V-8 independently passed with entry-index at 17.7 KB brotli against the 22 KB cap (well clear) — the C2 conditional GATE Z gap (a check:bundle failure while under the 20 kB gzip escape hatch) did not occur. No source file was touched for this item.",
+    "base_worktree_removed_and_confirmed_gone": true
+  },
+
+  "visual_gate": {
+    "command": "BROWSER_QUALITY_PREBUILD_STATUS=pass npm run browser:visual",
+    "run_mode": "compare-only — browser:visual:update was never run; no PNG under apps/dashboard-e2e/src/quality/** was written, deleted or regenerated",
+    "exit_code": 1,
+    "expected": "non-zero exit, landing + scanner-dense fail, other 4 pass",
+    "actual_matches_expected": true,
+    "quality_dir_git_status_before": "clean (git status --porcelain -- apps/dashboard-e2e/src/quality)",
+    "quality_dir_git_status_after": "clean (git status --porcelain -- apps/dashboard-e2e/src/quality)",
+    "passed": ["ticker-offline-mobile", "ticker-desktop", "positions-dense", "ai-recommendation"],
+    "failed": [
+      {
+        "scenario_id": "landing",
+        "diff_pixels": 88020,
+        "diff_ratio": 0.27,
+        "expected_path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/landing.png",
+        "actual_path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/1-1-landing-actual.png",
+        "diff_path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/1-2-landing-diff.png",
+        "also_under_test_results": {
+          "actual": "apps/dashboard-e2e/test-results/visual-landing-chromium/landing-actual.png",
+          "diff": "apps/dashboard-e2e/test-results/visual-landing-chromium/landing-diff.png"
+        },
+        "cause": "the feature replaces the whole landing composition, as expected"
+      },
+      {
+        "scenario_id": "scanner-dense",
+        "diff_pixels": 761,
+        "diff_ratio": 0.01,
+        "expected_path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/scanner-dense.png",
+        "actual_path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-1-scanner-dense-actual.png",
+        "diff_path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-2-scanner-dense-diff.png",
+        "also_under_test_results": {
+          "actual": "apps/dashboard-e2e/test-results/visual-scanner-dense-chromium/scanner-dense-actual.png",
+          "diff": "apps/dashboard-e2e/test-results/visual-scanner-dense-chromium/scanner-dense-diff.png"
+        },
+        "cause": "per the conductor's prior read, anti-aliasing only (max channel delta 12/255, none >=40), most likely from the new global footer; not independently re-measured pixel-by-pixel in this pass, cited as given"
+      }
+    ],
+    "third_scenario_or_material_difference": "none observed — exactly the two expected failures, exact pixel counts match the figures given to this closer"
+  },
+
+  "verification_track": [
+    { "id": "V-1", "command": "git diff --stat origin/main -- apps/api libs/quant-engine", "note": "diffed against origin/main (fetched fresh, no update) per this closer's instructions, not local main, since local main may be stale", "exit_code": 0, "result": "empty output — NO_BACKEND_CHANGE holds" },
+    { "id": "V-2", "command": "npx nx lint @convexa/dashboard", "exit_code": 0, "result": "0 errors" },
+    { "id": "V-3", "command": "npm run lint", "exit_code": 0, "result": "0 errors, 4 pre-existing warnings (no-explicit-any in playwright *.config.ts files) across @convexa/dashboard, @convexa/api, dashboard-e2e" },
+    { "id": "V-4", "command": "npx nx typecheck @convexa/dashboard", "exit_code": 0, "result": "0 errors" },
+    { "id": "V-5", "command": "npx nx test @convexa/dashboard", "exit_code": 0, "result": "258 files / 3100 tests passed, 0 failed, 0 skipped. Baseline at F1 start = 2,941 tests (243 files); after (3100) >= before holds. Rise over _MANIFEST.md's post-F7c figure (254/3,061) accounts for F14's pin commit (9c41093a) plus the fix/fidelity-repair-2 merge (baa286a6, commits a19d1407..01524747) landing its own N1-N7 tests. Re-run twice more later in this session (post V-15 fix, post mutation-proof reverts) with identical 258/3100/0-failed." },
+    { "id": "V-6", "command": "npx nx test @convexa/dashboard -- arc radius-scale single-motion-moment hex-discipline banned-hexes stage1-tokens", "exit_code": 0, "result": "24 files / 216 tests passed. Re-run once more at session end, identical." },
+    { "id": "V-7", "command": "npx nx build @convexa/dashboard --configuration=production", "exit_code": 0, "result": "index-B0R08Y1l.js — raw 67.77 kB, gzip 20.94 kB (Vite build-log figure; see bundle_measurement for the check-tool's own gzip/brotli reading of the same file)" },
+    { "id": "V-8", "command": "npm run check:bundle", "exit_code": 0, "result": "entry-index 17.7 KB brotli under the 22 KB cap; 43 brotli checks within budget across 36 js assets; PositionsPage has no charts dependency" },
+    { "id": "V-9", "command": "BROWSER_QUALITY_PREBUILD_STATUS=pass npm run browser:chromium", "exit_code": 0, "result": "126/126 passed, 0 flaky" },
+    { "id": "V-10", "command": "BROWSER_QUALITY_PREBUILD_STATUS=pass npm run browser:a11y", "exit_code": 0, "result": "19/19 passed (12 scans A11Y-1..A11Y-12 + 7 behaviours), 0 flaky, 0 waivers (a11y-waivers.json git-status clean, no new entry)" },
+    { "id": "V-11", "command": "BROWSER_QUALITY_PREBUILD_STATUS=pass npm run browser:compat", "exit_code": 0, "result": "15/15 passed (5 journeys x {chromium, firefox, webkit}), 0 flaky" },
+    { "id": "V-12", "command": "node --test apps/dashboard-e2e/tools/manifest.spec.mjs apps/dashboard-e2e/tools/visual-review.spec.mjs apps/dashboard-e2e/tools/visual-update.spec.mjs", "exit_code": 0, "result": "13/13 passed, 0 failed" },
+    { "id": "V-13", "command": "BROWSER_QUALITY_PREBUILD_STATUS=pass npm run browser:visual ; echo exit=$?", "exit_code": 1, "result": "EXPECTED FAIL, exactly as specified — see visual_gate block above for full detail" },
+    { "id": "V-14", "command": "node .claude/tools/interface_conformance.mjs --contract .spire/clusters/tech/contracts/curvature-v2-landing-and-site/INTERFACE_CONTRACT.md --url http://127.0.0.1:8000 --report .spire/clusters/tech/contracts/curvature-v2-landing-and-site/conformance-receipt.json", "exit_code": null, "result": "BLOCKED — never reached. npm run ports:free reported all clear (8000/4200/4300) before starting. Backend started with CARGO_TARGET_DIR=C:/Dev/convexa/target npx nx serve api in the background; cargo compiled quant-engine + api-rust cleanly in 43.70s, then the binary itself exited 1 on startup: \"error: config: MASSIVE_API_KEY is not set (check apps/api/.env)\". No auth flags were going to be used per instructions (moot — never got that far). No vendor key was set and no config was invented, per instructions. npm run ports:free re-run afterward: all clear again; tasklist confirmed no lingering cargo.exe or api-rust.exe process." },
+    { "id": "V-15", "command": "npm run format:check", "exit_code": 0, "result": "initial run: exit 1, one file (apps/dashboard-e2e/src/quality/visual-frame.ts) had a real Prettier drift — confirmed NOT a CRLF/autocrlf artifact via the rm + `git -c core.autocrlf=false checkout` + direct `prettier --check` recipe (still flagged after forcing a clean LF blob read). The only diff was one function signature collapsed from 4 lines to 1 (freezeVisualFrame's params) — zero logic change. Fixed with the scoped `npx nx format:write --files apps/dashboard-e2e/src/quality/visual-frame.ts` (never a bare format:write), mirroring the identical V-15 failure mode _MANIFEST.md already recorded once (conductor fixup 1398dcf9). Re-run: exit 0. Re-confirmed exit 0 again at the very end of the session after all mutation-proof edits were reverted." }
+  ],
+
+  "v9_v10_v11_v13_timing_note": "V-9/V-10/V-11/V-12/V-13 were captured before the V-15 fix to apps/dashboard-e2e/src/quality/visual-frame.ts. That fix is whitespace-only (diff-verified: one re-wrapped function signature, zero logic change) in a file none of those gates' assertions inspect the formatting of, so the captured results stand for the tree as committed. Not re-run a second time to avoid needless flake exposure on an already-exact match.",
+
+  "mutation_proof_table": [
+    {
+      "task": "F1",
+      "item": "three ESLint probe exit codes",
+      "status": "on record",
+      "source": "commit a3c7c4d9 message body",
+      "detail": "@convexa/api import on pages/landing/ -> eslint exit 1; sibling-page import (@/pages/ticker/...) -> eslint exit 1; features/auth/copy import (allowed) -> eslint exit 0. Fixture discarded at authoring time, not committed."
+    },
+    {
+      "task": "F2",
+      "item": "unbounded-route fixture",
+      "status": "on record",
+      "source": "commit c9d5a704 message body",
+      "detail": "a live poison of app.tsx's own index route (temporarily unwrapped): spec confirmed red, reverted, spec confirmed green, diff confirmed clean."
+    },
+    {
+      "task": "F4",
+      "item": "three restored v1 strings",
+      "status": "re-proved live this session",
+      "source": "F16, this session — apps/dashboard/index.html + src/app/index-head.structural.spec.ts",
+      "detail": "Injected each of V1_TITLE ('Convexa — AI dealer-gamma analytics for options traders'), V1_SHARE_HOOK ('Convexa — See the AI read on your real positioning') and V1_LIVE_CLAIM ('live order flow') into index.html ONE AT A TIME. Each independently reddened the 'all three v1 strings are gone' assertion with a distinct AssertionError naming that exact string. Reverted via `git checkout -- apps/dashboard/index.html` between/after; final `nx test -- index-head.structural` exit 0."
+    },
+    {
+      "task": "F5",
+      "item": "radial-gradient / getContext / requestAnimationFrame fixtures",
+      "status": "on record",
+      "source": "commit 6e63ce6a message body",
+      "detail": "Three mutation fixtures — reinserting radial-gradient(, getContext(, requestAnimationFrame one at a time — each independently proven to redden its exact guard, then reverted (checksum-verified clean)."
+    },
+    {
+      "task": "F13 Arm A",
+      "item": "one changed word",
+      "status": "re-proved live this session",
+      "source": "F16, this session — apps/dashboard/src/app/pages/methodology/copy.ts:86",
+      "detail": "Changed 'drops' -> 'falls' in a kept (non-delta) paragraph. `nx test -- curvature-v2-landing-and-site.structural` went from 25/25 to exactly 1 failed | 24 passed, the exact expected assertion ('every paragraph except the three named deltas is present byte-for-byte'). Reverted via git checkout; re-run exit 0."
+    },
+    {
+      "task": "F13 Arm A'",
+      "item": "one restored retired fragment",
+      "status": "re-proved live this session",
+      "source": "F16, this session — apps/dashboard/src/app/pages/methodology/MethodologyPage.tsx docblock",
+      "detail": "Appended the retired v1 fragment 'live tiles' as a one-line docblock comment (Arm A' does not strip comments). Went to exactly 1 failed | 24 passed, naming that exact file and fragment. Reverted; re-run exit 0."
+    },
+    {
+      "task": "F13 Arm B",
+      "item": "one moved constant",
+      "status": "on record via permanent in-file guard, not freshly poisoned against the real file",
+      "source": "apps/dashboard/src/app/curvature-v2-landing-and-site.structural.spec.ts:304-313, verified passing in this session's V-5 (258 files/3100 tests, 0 failed)",
+      "detail": "The file carries its own dedicated 'MUTATION GUARD' test that reads the REAL libs/quant-engine/src/signals.rs once, then swaps two lines in an in-memory copy only (never touches the file on disk), proving the line-pinned checker rejects a moved constant that a naive substring scan would miss. Not re-poisoned against the real signals.rs in this session because that file is libs/quant-engine — backend/math, out of this lane."
+    },
+    {
+      "task": "F13 Arm C",
+      "item": "each of the three cut phrases pasted back",
+      "status": "re-proved live this session, all three",
+      "source": "F16, this session — apps/dashboard/src/app/pages/landing/copy.ts (end of file)",
+      "detail": "Pasted back 'three.js', then '7d \u2192 90d', then \"rendered from the desk's own bundle\" one at a time (as a trailing // line comment — Arm C strips /* */ block comments only, so a line comment still counts as real source text). Each independently produced exactly 1 failed | 24 passed with an AssertionError naming that exact phrase and file. Reverted via git checkout after the third; `nx test -- curvature-v2-landing-and-site.structural index-head.structural` exit 0, 2 files / 32 tests passed."
+    },
+    {
+      "task": "F14",
+      "item": "poisoned constant (ScoreStripSample's mirrored distancePercentOnly vs. the desk's own projection)",
+      "status": "on record, per this closer's own brief",
+      "source": "commit 9c41093a + same-day conductor mutation run cited in this task's own instructions",
+      "detail": "\"F14's poisoned constant was re-proved today: exit 1 red, then exit 0 green (commit 9c41093a).\" Not independently re-run by F16: F14's mechanism reads pages/ticker/widgets/_kit/distanceToLevel.ts as a live equality reference, and SPEC §2.2 bans editing any ticker file — the same reason F14 itself is marked Independent: no. Cited as already recorded rather than re-poisoned out of lane."
+    }
+  ],
+
+  "deviations_on_record": [
+    "F15's <section> count instead of the PLAN's nonexistent methodology-section testid.",
+    "F15's two extra count pins (quality-reporter.ts, tools/lib/summary.mjs).",
+    "F15b's serve-dist.mjs replacing http-server, because production Cloudflare Pages serves /blog as the SPA shell with a 200 while http-server 302'd to a directory listing.",
+    "F16 (this closer): scoped Prettier fixup on apps/dashboard-e2e/src/quality/visual-frame.ts (V-15, 1 -> 0) via `npx nx format:write --files <that one path>`, never a bare format:write — mirrors the identical failure mode and fix already recorded in _MANIFEST.md as conductor fixup 1398dcf9. Diff is whitespace-only (one function signature re-wrapped), verified via git diff before committing."
+  ],
+
+  "worktree_hygiene": {
+    "base_worktree_C:/Dev/convexa/.worktrees/landing-base-4ca9edc7": "created for the base bundle measurement, removed with `git worktree remove --force` plus a manual `rm -rf` for a Windows-locked leftover node_modules directory, confirmed fully gone from disk and from `git worktree list`.",
+    "mutation_proof_scratch_edits": "every temporary edit made to prove a mutation guard (index.html x3, methodology/copy.ts, MethodologyPage.tsx, landing/copy.ts x3) was reverted with `git checkout -- <file>` and confirmed via `git status --porcelain` before moving to the next step. Final `git status --porcelain` on the worktree shows exactly one modified file: apps/dashboard-e2e/src/quality/visual-frame.ts (the V-15 fix) plus this new lane-receipt.json."
+  }
+}

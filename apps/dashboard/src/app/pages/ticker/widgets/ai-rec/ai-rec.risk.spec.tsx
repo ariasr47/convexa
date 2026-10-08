@@ -249,6 +249,9 @@ interface BackendCfg {
   riskInputs?: RiskInputs;
   /** Optional flow-test seam: hold the second recommendation response until the test settles it. */
   secondRecDeferred?: Promise<RecResponse>;
+  /** no-vendor-production-posture F4 — `GET /api/recommendation/status/{ticker}` answers the exact
+   *  paused 503 (SPEC B2) instead of `state.status`. */
+  statusPaused?: boolean;
 }
 
 function installBackend(cfg: BackendCfg = {}) {
@@ -422,6 +425,8 @@ function installBackend(cfg: BackendCfg = {}) {
       }
       if (url.includes('/api/recommendation/status/')) {
         calls.status++;
+        if (cfg.statusPaused)
+          return json({ detail: 'Market data is paused.', code: 'market_data_paused' }, 503);
         return json(state.status);
       }
       if (url.includes('/api/recommendation/export/')) {
@@ -960,6 +965,21 @@ describe('ai-rec · key-resolution machine (distinct affordance per state)', () 
     expect(screen.getByText('Call wall')).toBeInTheDocument();
     expect(screen.getByTestId('open-sim-trade')).toBeInTheDocument();
     expect(be.calls.ticker).toBe(tickerBefore);
+  });
+
+  // no-vendor-production-posture F4.
+  it('a paused status read renders honest copy with NO Retry — never the generic "AI unavailable" copy', async () => {
+    const be = installBackend({ statusPaused: true });
+    renderApp();
+    await settle();
+    const p = panel();
+    await within(p).findByText(COPY.marketDataPaused.title);
+    expect(within(p).getByText(COPY.marketDataPaused.body)).toBeInTheDocument();
+    expect(within(p).queryByText(COPY.unavailable.title)).toBeNull();
+    expect(within(p).queryByRole('button', { name: COPY.action.retry })).toBeNull();
+    // Isolation: the rest of the desk is untouched, and no rec was ever requested.
+    expect(screen.getByText('Call wall')).toBeInTheDocument();
+    expect(be.calls.rec).toBe(0);
   });
 
   it('transport fault under a denied no-fresh-edge gate hides Retry per presentation policy', async () => {
@@ -1686,25 +1706,31 @@ describe('tradeable-rec-inputs · the provenance chip renders the entered values
 // =================================================================================================
 
 describe('tradeable-rec-inputs · AC-8 — the candidate set as-of + session basis render, un-hovered', () => {
-  it('the strip carries a freshness line naming the as-of and whether it is live-session or prior-close', async () => {
+  it('the strip carries a freshness line naming the as-of (exchange-clock form, fidelity repair 2 N5) and whether it is live-session or prior-close', async () => {
     installBackend({ rec: tradeRecEqualToCap() });
     const user = renderApp();
     await settle();
     await ask(user);
     const analysis = await openAnalysis(user);
     const line = await within(analysis).findByTestId('numbers-said-freshness');
-    expect(line).toHaveTextContent(tradeRecEqualToCap().sent!.candidates.as_of as string);
+    expect(line.textContent ?? '').not.toContain(
+      tradeRecEqualToCap().sent!.candidates.as_of as string,
+    );
+    expect(line).toHaveTextContent(/\d{2}:\d{2}:\d{2} ET/);
     expect(line).toHaveTextContent(/prior close|live session/);
   });
 
-  it('the cited-contract line interpolates the real as-of — never the bare "from the chain snapshot" literal', async () => {
+  it('the cited-contract line interpolates the real as-of (exchange-clock form) — never the raw ISO, never the bare "from the chain snapshot" literal', async () => {
     installBackend({ rec: tradeRecEqualToCap() });
     const user = renderApp();
     await settle();
     await ask(user);
     const analysis = await openAnalysis(user);
     const cited = await within(analysis).findByTestId('cited-contract-line');
-    expect(cited).toHaveTextContent(tradeRecEqualToCap().sent!.candidates.as_of as string);
+    expect(cited.textContent ?? '').not.toContain(
+      tradeRecEqualToCap().sent!.candidates.as_of as string,
+    );
+    expect(cited).toHaveTextContent(/from the \d{2}:\d{2}:\d{2} ET/);
     expect(cited.textContent ?? '').not.toContain('from the chain snapshot');
   });
 });

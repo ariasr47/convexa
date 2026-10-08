@@ -54,6 +54,7 @@ import { AuthDialog, type AuthMode } from './AuthDialog';
 import { AuthDialogProvider } from './AuthDialogProvider';
 import { SettingsPage } from './SettingsPage';
 import { AppThemeProvider } from './ThemeProvider';
+import { AUTH_COPY } from './copy';
 import { __resetLocalPrefs, saveLocalTheme } from './localPrefs';
 import {
   installAuthBackend,
@@ -340,6 +341,28 @@ describe('auth · non-enumerating 401', () => {
     expect(unknownEmailErr).toBe(wrongPwErr); // ...and it is byte-identical across the two causes
     // Neither state may enumerate which credential was wrong.
     expect(wrongPwErr).not.toMatch(/no account|not found|email exists|wrong password/i);
+  });
+});
+
+// =================================================================================================
+// GATE Z m-1 (AC-A5) — a submitted sign-up while sign-ups are closed maps to the policy sentence,
+// never a transient-fault reading, and does not invite a retry.
+// =================================================================================================
+describe('auth · signups closed (AC-A5)', () => {
+  it('POST /api/auth/signup → 403 signups_closed maps to the SAME policy sentence the dialog shows before typing, not the transient-fault copy', async () => {
+    backend = installAuthBackend({ signup: 'signups_closed' });
+    const user = userEvent.setup();
+    render(<DialogHarness mode="signup" />);
+
+    await user.type(screen.getByTestId('auth-email'), 'new@user.com');
+    await user.type(screen.getByTestId('auth-password'), 'longenoughpw');
+    await user.click(screen.getByTestId('auth-submit'));
+
+    const error = await screen.findByTestId('auth-form-error');
+    expect(error).toHaveTextContent(AUTH_COPY.signup.signupsClosed);
+    // Never the transient "auth down, try again" reading — a closed door is not a fault.
+    expect(error.textContent).not.toBe(AUTH_COPY.signup.unavailable);
+    expect(backend.calls.signup).toBe(1);
   });
 });
 

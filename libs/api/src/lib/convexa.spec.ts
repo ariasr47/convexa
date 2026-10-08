@@ -13,11 +13,13 @@ import {
   fetchPersonas,
   fetchRecExport,
   fetchRecStatus,
+  fetchTrackedContract,
   getAiKeyStatus,
   getScan,
   getScanUniverse,
   getStructureHistory,
   getTicker,
+  isMarketDataPaused,
   removeAiKey,
   requestRecommendation,
   saveScanView,
@@ -37,6 +39,12 @@ function stubFetch(impl: (url: string, init?: RequestInit) => Response | Promise
   return fn;
 }
 const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
+// no-vendor-production-posture SPEC B2/AC-3 — the paused reply's exact wire shape.
+const pausedResponse = () =>
+  new Response(JSON.stringify({ detail: 'Market data is paused.', code: 'market_data_paused' }), {
+    status: 503,
+    headers: { 'Content-Type': 'application/json' },
+  });
 
 const REQ: RecRequest = {
   persona_id: 'income_keeper',
@@ -92,6 +100,41 @@ describe('requestRecommendation', () => {
     stubFetch(() => new Response('', { status: 502 }));
     await expect(requestRecommendation('TSLA', REQ)).rejects.toBeInstanceOf(ApiError);
   });
+
+  // no-vendor-production-posture B2 amendment (GATE Z 2026-09-24): this route also answers the
+  // paused 503, and it ALSO treats a bare 503 as an auth-class outcome (below) — only the body's
+  // `code` distinguishes the two, so the paused check must win or a signed-in, paused caller gets
+  // routed into the sign-in gate's "couldn't reach" prompt instead of the honest paused panel.
+  it('a paused 503 throws ApiError with the code — never AuthError', async () => {
+    stubFetch(() => pausedResponse());
+    let caught: unknown;
+    try {
+      await requestRecommendation('SPY', REQ);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(ApiError);
+    expect(caught).not.toBeInstanceOf(AuthError);
+    expect(isMarketDataPaused(caught)).toBe(true);
+  });
+
+  it('still throws AuthError for a REAL auth-class 503 (no code) on this same route', async () => {
+    stubFetch(
+      () =>
+        new Response(JSON.stringify({ error: 'auth_unavailable', message: 'try later' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+    );
+    let caught: unknown;
+    try {
+      await requestRecommendation('SPY', REQ);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(AuthError);
+    expect(isMarketDataPaused(caught)).toBe(false);
+  });
 });
 
 describe('getTicker generated query compatibility', () => {
@@ -113,6 +156,68 @@ describe('getTicker generated query compatibility', () => {
     expect(String(f.mock.calls[0][0])).toBe(
       '/api/ticker/TSLA?min_dte=7&max_dte=45&expirations=2026-01-16%2C2026-02-20&pos_expiration=2026-01-16&pos_strike=420&pos_right=call&pos_pl_pct=12.5&dark_pool=true',
     );
+  });
+});
+
+// =================================================================================================
+// no-vendor-production-posture F1 — ApiError carries the typed `code`; `isMarketDataPaused` is the
+// one place any consumer compares it to the wire literal.
+// =================================================================================================
+describe('F1 — market_data_paused code parsing', () => {
+  it('getTicker: a paused 503 throws an ApiError carrying code + the server’s own honest detail', async () => {
+    stubFetch(() => pausedResponse());
+    let caught: unknown;
+    try {
+      await getTicker('SPY');
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(ApiError);
+    const err = caught as ApiError;
+    expect(err.code).toBe('market_data_paused');
+    expect(err.status).toBe(503);
+    expect(err.message).toBe('Market data is paused.'); // the wire's own detail, not "API error 503"
+    expect(isMarketDataPaused(err)).toBe(true);
+  });
+
+  it('fetchTrackedContract / fetchRecStatus / fetchRecExport all surface the code via the shared dataOf path', async () => {
+    const throwsPaused = async (thunk: () => Promise<unknown>) => {
+      let caught: unknown;
+      try {
+        await thunk();
+      } catch (e) {
+        caught = e;
+      }
+      expect(isMarketDataPaused(caught)).toBe(true);
+    };
+    stubFetch(() => pausedResponse());
+    await throwsPaused(() =>
+      fetchTrackedContract('SPY', { expiration: '2026-01-16', strike: 420, right: 'call' }),
+    );
+    stubFetch(() => pausedResponse());
+    await throwsPaused(() => fetchRecStatus('SPY'));
+    stubFetch(() => pausedResponse());
+    await throwsPaused(() => fetchRecExport('SPY'));
+  });
+
+  it('isMarketDataPaused is false for every other code, status, error type, or non-error value', () => {
+    expect(isMarketDataPaused(new ApiError('boom', 502))).toBe(false); // no code at all
+    expect(isMarketDataPaused(new ApiError('boom', 503, 'auth_required'))).toBe(false); // wrong code
+    expect(isMarketDataPaused(new Error('nope'))).toBe(false); // not an ApiError
+    expect(isMarketDataPaused(null)).toBe(false);
+    expect(isMarketDataPaused(undefined)).toBe(false);
+  });
+
+  it('a 404 (no chain) still carries no code — code is additive, never invented', async () => {
+    stubFetch(() => new Response(JSON.stringify({ detail: 'not found' }), { status: 404 }));
+    let caught: unknown;
+    try {
+      await getTicker('SPY');
+    } catch (e) {
+      caught = e;
+    }
+    expect((caught as ApiError).code).toBeUndefined();
+    expect(isMarketDataPaused(caught)).toBe(false);
   });
 });
 
@@ -307,6 +412,7 @@ describe('scanner client', () => {
   it('getScan hits the poll endpoint same-origin and returns the envelope untouched', async () => {
     const body: ScanResponse = {
       view: VIEW,
+      market_data: 'live',
       rows: [
         {
           symbol: 'SPY',

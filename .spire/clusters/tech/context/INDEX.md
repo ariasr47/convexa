@@ -26,12 +26,16 @@
 
 ## Hot work (pointers only — detail stays in RESUME / contracts)
 > Refresh when GATE R or ship changes the picture. Prefer branch RESUME over duplicating state here.
-- Active program: `production-maturity` — #5 `capacity-baseline` SHIPPED 2026-08-29; #4 still blocked; #6 next in program order
-- Active feature: none in pipeline (unnamed `go` still `grounded-morning-snapshot`)
-- Live contracts: `supply-chain-automation` (GATE Q FAIL; external/security blockers)
-- Last ship: `exchange-holiday-calendar` GATE S 2026-08-31 (`_archive/`; re-pin JSON in `state/conformance/`)
-- Research harvest 2026-08-28: coverage + tape + replay + S3 keep + operator corpus browser SHIPPED
-- Harvest 2026-08-31 (post-lab): `docs/briefings/harvest-2026-08-31.html` — `exchange-holiday-calendar` SHIPPED; unnamed `go` still `grounded-morning-snapshot`; keep-paid-books #5 clock 2026-08-26
+- **Last ship:** `no-vendor-production-posture`, GATE S 2026-09-24 via PR #71. It adds `MARKET_DATA_MODE=paused`: zero vendor contact, a typed 503, and the desk's "Market data is paused." panel.
+- **Before that:** `curvature-v2-landing-and-site`, Curvature v2 phase 4, GATE S 2026-09-23. It's in `_archive/`, with the conformance pin in `state/conformance/`.
+  - Phases 1–3 merged as PR #46 (2026-09-10).
+  - The desk repair merged as PR #49 (2026-09-22).
+- **Next in the program:** `curvature-v2-responsive-sweep` (pre-registered, BACKLOG GATE I 2026-09-08).
+- **No market-data vendor:** Massive was cancelled, and entitlement ended 2026-09-16.
+  - Production runs `MARKET_DATA_MODE=paused` from PR #71 onward: the desk says "Market data is paused." and nothing contacts the vendor.
+  - Replay has no recorded days. See BACKLOG "Parked — 2026-09-22" (`reconstructed-replay-days`).
+- **Live contracts:** `supply-chain-automation` (GATE Q FAIL; external/security blockers).
+- **Older program state:** `production-maturity` #5 `capacity-baseline` SHIPPED 2026-08-29, and #4 is still blocked.
 
 ## Operator shortcuts
 - Invariant floor: run the installed `gates.mjs context_for --print` (no feature)

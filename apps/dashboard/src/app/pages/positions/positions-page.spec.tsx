@@ -195,11 +195,15 @@ function seedPosition(over: Partial<Position> = {}): SimPosition {
 type ContractResolver = 'quote' | 'notfound' | 'throw' | 'nullquote';
 let contractMode: ContractResolver = 'quote';
 let fetchMock: ReturnType<typeof vi.fn>;
+// no-vendor-production-posture F4 ("positions pricing"): the focused-ticker anchor bundle answers
+// the exact paused 503 instead of a bundle.
+let tickerPaused = false;
 
 beforeEach(() => {
   localStorage.clear();
   __resetMemory();
   contractMode = 'quote';
+  tickerPaused = false;
 
   class SilentEventSource {
     onmessage: ((e: MessageEvent) => void) | null = null;
@@ -277,7 +281,11 @@ beforeEach(() => {
       return json({ set: false, last4: null, storage_available: true });
     if (url.includes('/api/broker/book'))
       return json({ state: 'unknown', reason: 'no_credential_stored', positions: [] });
-    if (url.includes('/api/ticker/')) return json(makeBundle(tk));
+    if (url.includes('/api/ticker/')) {
+      if (tickerPaused)
+        return json({ detail: 'Market data is paused.', code: 'market_data_paused' }, 503);
+      return json(makeBundle(tk));
+    }
     if (url.includes('/api/recommendation/status/')) {
       return json({
         availability: { in_app_enabled: true },
@@ -584,6 +592,32 @@ async function fetchSettled() {
     }
   });
 }
+
+// =================================================================================================
+// no-vendor-production-posture F4 — the focused-ticker anchor poll stops on a paused fault
+// =================================================================================================
+describe('market data paused (F4, "positions pricing")', () => {
+  it('a paused anchor bundle degrades marks to their existing absent value and stops polling', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    tickerPaused = true;
+    seedPosition();
+    renderAt('/positions');
+    await screen.findByTestId('portfolio-panel');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10);
+    });
+    const tickerCalls = () =>
+      fetchMock.mock.calls.filter((c) => String(c[0]).includes('/api/ticker/')).length;
+    expect(tickerCalls()).toBe(1);
+    // The page renders — it never blanks or throws on the paused anchor.
+    expect(screen.getByTestId('position-row')).toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(65_000); // > the anchor's 60s poll cadence
+    });
+    expect(tickerCalls()).toBe(1); // no retry loop against the paused route
+  });
+});
 
 describe('invariants (positions)', () => {
   it('Broker tab adds only broker reads apart from durable-book sync and exposes no entry affordance', async () => {

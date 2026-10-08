@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Market data paused — mockup</title>
+<style>
+  :root {
+    --ink: #0B0F17; --panel: #131A24; --raised: #1B2432; --line: rgba(138,155,180,0.30);
+    --text: #E6E1D6; --dim: #8A9BB4; --info: #8CB0DE; --amber: #F2A93B;
+    --warn-bg: #2A1A10; --warn-line: #7A4A1E; --warn-text: #F0B37E;
+    --info-bg: #111C2A; --info-line: rgba(140,176,222,0.35);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #06080D; color: var(--text); font: 15px/1.5 "IBM Plex Sans", system-ui, sans-serif; padding: 24px 16px 48px; }
+  h1 { font: 700 22px/1.2 "Archivo", system-ui, sans-serif; margin: 0 0 4px; }
+  .lede { color: var(--dim); margin: 0 0 24px; max-width: 70ch; }
+  .row { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .frame { background: var(--ink); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .phone { width: 390px; max-width: 100%; }
+  .desk { width: 760px; max-width: 100%; }
+  .cap { font: 600 11px/1 "IBM Plex Mono", monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 0 0 8px; }
+  .nav { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .mark { font: 800 18px/1 "Archivo", system-ui; letter-spacing: .06em; }
+  .mark b { color: var(--amber); }
+  .nav .sp { flex: 1; }
+  .nav .login { color: var(--dim); font-size: 13px; }
+  .nav .signup { background: var(--amber); color: #1A1206; font-weight: 600; font-size: 13px; padding: 6px 14px; border-radius: 999px; }
+  .controls { margin: 16px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; display: grid; gap: 10px; }
+  .ctl { display: flex; align-items: center; gap: 10px; }
+  .ctl span { font: 600 11px/1 "IBM Plex Sans"; letter-spacing: .08em; color: var(--dim); width: 92px; }
+  .ctl div { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 150px; }
+  .ctl div.dim { color: var(--dim); }
+  .panel { margin: 16px; border-radius: 10px; padding: 14px 16px; display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; }
+  .panel .t { font-weight: 700; margin: 0 0 4px; }
+  .panel p { margin: 0; font-size: 14px; }
+  .warn { background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-text); }
+  .warn .t { color: var(--warn-text); }
+  .warn p { color: #E9D2BF; }
+  .warn .mono { font: 11px/1 "IBM Plex Mono", monospace; color: var(--dim); margin-top: 6px; }
+  .warn .retry { font-weight: 600; font-size: 13px; }
+  .paused { background: var(--info-bg); border: 1px solid var(--info-line); }
+  .paused .ico { color: var(--info); }
+  .paused p { color: var(--text); }
+  .paused .links { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; }
+  .paused .links a { color: var(--info); text-decoration: underline; text-underline-offset: 3px; }
+  .footer-sliver { border-top: 1px solid var(--line); padding: 14px 16px; color: var(--dim); font-size: 13px; }
+  .notes { margin-top: 28px; max-width: 980px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--dim); font-weight: 600; }
+  code { font: 13px "IBM Plex Mono", monospace; color: var(--info); }
+  .cad { margin: 16px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 10px; font-size: 13px; color: var(--dim); }
+  .cad strong { color: var(--text); font-weight: 600; }
+</style>
+</head>
+<body>
+  <h1>Market data paused: ticker desk mockup</h1>
+  <p class="lede">Before (what visitors see today) and after (proposed), at phone width, plus the desk at a wider size.
+    The proposed state reuses the desk's existing alert slot (<code>TickerDashboard.tsx:726</code>). It uses a
+    neutral info tone instead of the warning tone, has no Retry, and has no HTTP line, because nothing failed and
+    retrying can't help. Amber stays spent only on the primary fill and the focus ring.</p>
+
+  <div class="row">
+    <div>
+      <p class="cap">Today · 390 px</p>
+      <div class="frame phone">
+        <div class="nav"><span class="mark">CONVE<b>X</b>A</span><span class="sp"></span><span class="login">Log in</span><span class="signup">Sign up</span></div>
+        <div class="controls">
+          <div class="ctl"><span>TICKER</span><div>SPY</div></div>
+          <div class="ctl"><span>EXPIRATIONS</span><div class="dim">All expirations</div></div>
+          <div class="ctl"><span>PERSONA</span><div>Default (no persona)</div></div>
+        </div>
+        <div class="panel warn">
+          <div>⚠</div>
+          <div><p class="t">Couldn't load SPY.</p><p>The structure request failed before any snapshot arrived. Nothing is cached for this desk yet.</p><div class="mono">HTTP 502</div></div>
+          <div class="retry">Retry</div>
+        </div>
+        <div class="footer-sliver">How Convexa works · Blog — how we read structure</div>
+      </div>
+    </div>
+
+    <div>
+      <p class="cap">Proposed · 390 px</p>
+      <div class="frame phone">
+        <div class="nav"><span class="mark">CONVE<b>X</b>A</span><span class="sp"></span><span class="login">Log in</span><span class="signup">Sign up</span></div>
+        <div class="controls">
+          <div class="ctl"><span>TICKER</span><div>SPY</div></div>
+          <div class="ctl"><span>EXPIRATIONS</span><div class="dim">All expirations</div></div>
+          <div class="ctl"><span>PERSONA</span><div>Default (no persona)</div></div>
+        </div>
+        <div class="panel paused" role="status">
+          <div class="ico">⏸</div>
+          <div>
+            <p class="t">Market data is paused.</p>
+            <p>Convexa isn't connected to a market-data feed right now, so this desk can't load prices or dealer structure. Nothing is broken, and retrying won't change it.</p>
+            <div class="links"><a href="#">How the desk reads structure →</a><a href="#">See an illustrative sample →</a></div>
+          </div>
+          <div></div>
+        </div>
+        <div class="footer-sliver">How Convexa works · Blog — how we read structure</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:24px">
+    <div>
+      <p class="cap">Proposed · desk at ≥ 900 px (same panel, full width of the desk column)</p>
+      <div class="frame desk">
+        <div class="nav"><span class="mark">CONVE<b>X</b>A</span><span style="color:var(--dim);font-size:14px">Scanner&nbsp;&nbsp;Ticker&nbsp;&nbsp;Positions&nbsp;&nbsp;Alerts</span><span class="sp"></span><span class="login">Log in</span><span class="signup">Sign up</span></div>
+        <div class="panel paused" role="status" style="margin:20px">
+          <div class="ico">⏸</div>
+          <div>
+            <p class="t">Market data is paused.</p>
+            <p>Convexa isn't connected to a market-data feed right now, so this desk can't load prices or dealer structure. Nothing is broken, and retrying won't change it.</p>
+            <div class="links"><a href="#">How the desk reads structure →</a><a href="#">See an illustrative sample →</a></div>
+          </div>
+          <div></div>
+        </div>
+      </div>
+      <p class="cap" style="margin-top:20px">Proposed · scanner cadence line (signed-in users; the board keeps its last rows)</p>
+      <div class="frame desk">
+        <div class="cad"><strong>Market data paused</strong> · showing the last board, from Sep 16 · structure is not refreshing</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <p class="cap">What changes, and what stays</p>
+    <table>
+      <tr><th>Where</th><th>Today</th><th>Proposed</th></tr>
+      <tr><td>Ticker desk, first load</td><td>Warning "Couldn't load SPY." · HTTP 502 · Retry</td><td>Info "Market data is paused." · two links · no Retry, no status code</td></tr>
+      <tr><td>Scanner (signed in)</td><td>"Sweep last ran N d ago — showing the last known rows"</td><td>"Market data paused · showing the last board, from Sep 16"</td></tr>
+      <tr><td>Landing, blog, methodology, 404, sign-in</td><td>Work</td><td>Unchanged. The landing samples are already marked illustrative.</td></tr>
+      <tr><td>Backend</td><td>Retries the vendor every 25 s (warmer) and 60 s (live-price socket); every request fails</td><td>One switch, <code>MARKET_DATA_MODE=paused</code>. The backend contacts the vendor zero times, answers data requests with a typed "paused" reply, and <code>/api/health</code> says so</td></tr>
+      <tr><td>Turning it back on</td><td>—</td><td>Set the switch to <code>live</code> with a working key. No code change.</td></tr>
+    </table>
+  </div>
+</body>
+</html>

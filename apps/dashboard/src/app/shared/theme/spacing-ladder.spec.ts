@@ -46,9 +46,14 @@ export const SPACING_DEBT_BURNDOWN_PHASE = 'curvature-v2 phase 4 (responsive swe
  * entry is removed here, not merely re-justified. `read-strip/ReadStrip.tsx` is a NEW file this
  * repair adds (change 4, F4); its two off-ladder drafts (`py: 1.25`, `gap: 1.25`) were fixed to
  * `1.5`/`1` before landing, never exempted — new code ships on-ladder, it does not grow this list.
+ *
+ * CURVATURE-V2-LANDING-AND-SITE F2 (2026-09-10): `app.tsx`'s one off-ladder value (`py: 8`, the
+ * `RouteFallback` loading fill) MOVED byte-identically to the new `shared/ui/RouteFallback.tsx`
+ * (SPEC §2.2 item 6, PLAN F2 step 4 — same markup, same value, zero render change). The debt
+ * travels with the code, so the entry moves with it rather than being dropped; `app.tsx` now
+ * carries no off-ladder value at all and drops off this list.
  */
 const EXEMPT: string[] = [
-  'app.tsx',
   'features/auth/AiKeySection.tsx',
   'features/auth/RiskInputsSection.tsx',
   'features/auth/SettingsPage.tsx',
@@ -73,6 +78,7 @@ const EXEMPT: string[] = [
   'pages/ticker/widgets/position-brief/PositionBrief.tsx',
   'pages/ticker/widgets/straddle-move/StraddleMove.tsx',
   'pages/ticker/widgets/structure-history/StructurePathStrip.tsx',
+  'shared/ui/RouteFallback.tsx',
   'shared/ui/TintChip.tsx',
 ];
 

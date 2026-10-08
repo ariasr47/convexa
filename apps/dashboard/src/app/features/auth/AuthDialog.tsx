@@ -181,6 +181,13 @@ export function AuthDialog({
         }
       }}
       data-testid="auth-dialog"
+      // GATE Z I-2 (AC-G1, `aria-dialog-name`): MUI's `Dialog` always emits an `aria-labelledby`
+      // (`useId(ariaLabelledbyProp)`, `Dialog.js`), generating one even when unset — it only
+      // resolves to a real node when a `<DialogTitle>` registers that id via `DialogContext`.
+      // This dialog renders its title as a plain `Typography` (never `DialogTitle`), so the
+      // auto-generated id pointed at nothing and the dialog's accessible name never resolved.
+      // Passing an explicit id here, matched on the title node below, wires it for real.
+      aria-labelledby="auth-dialog-title-heading"
       slotProps={{
         root: { onTransitionExited: onExited },
         transition: { onExited },
@@ -205,7 +212,12 @@ export function AuthDialog({
             {/* Header — bold title + subtitle + close, per the Figma AuthModal. */}
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
               <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                <Typography variant="h6" sx={{ fontWeight: 700 }} data-testid="auth-dialog-title">
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700 }}
+                  data-testid="auth-dialog-title"
+                  id="auth-dialog-title-heading"
+                >
                   {title}
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
@@ -223,6 +235,14 @@ export function AuthDialog({
                 <CloseIcon fontSize="small" />
               </IconButton>
             </Box>
+            {/* curvature-v2-landing-and-site SPEC §4/AC-A4 — the closed door is declared BEFORE the
+                visitor types anything, not discovered only after a refused submit (`mapError`'s
+                `signups_closed` case below stays the separate post-submit refusal copy). */}
+            {mode === 'signup' && (
+              <Alert severity="info" data-testid="auth-signups-closed">
+                {AUTH_COPY.signup.signupsClosed}
+              </Alert>
+            )}
             {reason && (
               <Alert severity="info" data-testid="auth-reason">
                 {reason}
@@ -324,7 +344,19 @@ export function AuthDialog({
               type="button"
               onClick={() => onModeChange(mode === 'signup' ? 'login' : 'signup')}
               data-testid="auth-mode-switch"
-              sx={{ alignSelf: 'center', fontWeight: 600 }}
+              // GATE Z I-2 (AC-G1, color-contrast, serious — surfaced by amendment 5's new
+              // open-dialog scan): `MuiLink`'s theme default (`theme.ts`) is `color: 'info.main'`
+              // — the FILL-grade info blue, only measured to the ≥3:1 UI-component floor; as this
+              // link's own small (<18px) TEXT it measured 4.43:1 in dark mode, under the 4.5:1
+              // text floor (QA's independent axe sweep flagged the same element as pre-existing).
+              // `extras.textInfo` is the TEXT-GRADE counterpart this codebase already ships for
+              // exactly this split (`tokens.ts`, mirroring `textAmber`) — this is its fourth
+              // consumer, not a new token.
+              sx={{
+                alignSelf: 'center',
+                fontWeight: 600,
+                color: (theme) => extrasFor(theme).textInfo,
+              }}
             >
               {mode === 'signup' ? AUTH_COPY.signup.switch : AUTH_COPY.login.switch}
             </Link>

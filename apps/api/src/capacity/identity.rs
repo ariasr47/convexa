@@ -15,6 +15,17 @@ use std::process::Command;
 pub const REFERENCE_REVISION: &str = "c30ed8151b82f847fd75552528dcba30bdca5ae8";
 const IDENTITY_REL: &str = "apps/api/tests/fixtures/capacity-baseline/v1/identity";
 const GENERATED_ROOT: &str = "libs/api/src/generated";
+// Re-pinned for `no-vendor-production-posture` (2026-09-23): `AppErrorBody.code` (optional),
+// `HealthWire.market_data` and `ScanEnvelope.market_data` are additive schema growth (SPEC B5,
+// ledger `route-growth-repins-api-artifact-oracle`) — zero new operations, so
+// `precutover-operation-baseline.json` is unchanged and stays pinned to its prior hash.
+//
+// Re-pinned again for GATE Z (2026-09-24, AC-3 amendment): `post_recommendation`'s doc comment
+// now documents the paused 503 (`routes/recommendation.rs`), which changes only the exported
+// `summary` text for `POST /api/recommendation/{ticker}` in `convexa.openapi.json` (and its
+// `schema.ts`/`parity-coverage.json`/manifest descendants) — still zero new operations and zero
+// schema-shape changes, so `precutover-operation-baseline.json` again stays pinned to its prior
+// hash.
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -22,19 +33,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "58e23729a61bf1f031ff80c5ec1fa2645f85d298e3408609d6698a26211d4486",
+        "b0e1348bb9492f9a86afc0dfd730ddf5d452bc47dd3b1e0944c256a9834db911",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "912412e92294f4fcabe280bf2c8777f6852943a680054494957e5ff5963cc5cc",
+        "cd7fc2284c7b094ed5f2d4d306b46359bcd2e63ad3886141e88c405270877382",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "3dfaf718ca0d1fcaed7cd234cf4f9fb86c3d340504c9f6bdd4007ccdc8e56f43",
+        "8e94e92fd5101555f8a45692d0e9418698d319600d2f02dfeaf4a184cce4310e",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "25510860ea9cd9208cd168bd522c8f21f67961dbc5197d1c5931858513542b8e",
+        "4d66a1fa96a5050c0f16eec4a1001ff2bd393d283da1e665ef1834d24a3cb46f",
     ),
 ];
 

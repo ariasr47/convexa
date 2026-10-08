@@ -35,7 +35,12 @@ export async function installVisualFrameController(page: Page) {
   await page.addInitScript({ content: `(${visualFrameController.toString()})();` });
 }
 
-export async function freezeVisualFrame(page: Page, scenario: Scenario) {
+export async function freezeVisualFrame(page: Page, scenario: Scenario, freezeStream?: () => void) {
+  // Cut off any further "live" stream payload BEFORE the clock jump below. The browser's
+  // EventSource reconnects on real wall-clock time, outside the page's fake clock, so a reconnect
+  // landing after `pauseAt` used to be able to re-arm "live" forever (the app's gap-timeout
+  // `setTimeout` cannot re-fire once the clock is paused) — the visual-gate flake this closes.
+  freezeStream?.();
   await page.evaluate(() => document.fonts.ready);
   await page.evaluate(
     () => new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve())),

@@ -4,6 +4,7 @@
  * the candidate set (structural — this component only RENDERS the server's closed `cited_contract`
  * verdict; it performs no matching of its own).
  */
+import { fmtExpiry } from '@/pages/ticker/widgets/_kit/copy';
 import type { CitedContract } from '@convexa/api';
 import Typography from '@mui/material/Typography';
 import { OFF_SET_LITERAL, UNDETERMINED_RIGHT_BOTH_LEGS, UNDETERMINED_RIGHT_NO_QUOTE } from './copy';
@@ -54,7 +55,10 @@ export function CitedContractLine({
       data-testid="cited-contract-line"
       sx={{ color: 'text.secondary' }}
     >
-      {`${line.strike} ${rightLabel} ${line.expiration} · ${line.quoteText}`}
+      {/* Fidelity repair 2, N5 — the design's expiry form (`Sep 18 (15 DTE)`), never the raw
+          `YYYY-MM-DD` date `citedLine` carries (that shape is `CitedLine`'s own data contract,
+          pinned in `literals.spec.ts` — formatted here, at the render boundary, not upstream). */}
+      {`${line.strike} ${rightLabel} ${fmtExpiry(line.expiration)} · ${line.quoteText}`}
     </Typography>
   );
 }

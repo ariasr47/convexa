@@ -9,9 +9,15 @@ has reached GATE R yet.
 | spire/repo-hygiene-2026-09 | `tools/api-contract.mjs` (cache marker → `tmpdir`), `.nxignore` (BOM + stale entries), 13→0 `api-rust` compiler warnings, `useSessionArchive.ts` `useMemo` + `engines.node`. 4 commits, pushed to origin as backup, **no PR opened, not merged** | none — hygiene lane, never entered the pipeline | 2026-09-03 |
 | debug/musl-build | `.github/workflows/musl-debug.yml` (temporary `--progress=plain` container build, used to surface the swallowed `error[E0583]`). **Superseded** — the `.dockerignore` fix it carried landed on main as `ec8f2e5`, and the workflow never merged. Safe to delete, branch + worktree | none — diagnostic lane | 2026-09-03 |
 | spire/curvature-v2-foundations | Curvature Terminal v2 phases 1–3 — **MERGED to main 2026-09-10 as `3f9d941e`** ([PR #46](https://github.com/ariasr47/convexa/pull/46)). Branch kept; nothing in flight | merged | 2026-09-10 |
-| fix/fidelity-repair-2 | The 2026-09-10 review's six desk defects (N1, N2, N4, N5, N6, N7) — `apps/dashboard/src/app/pages/ticker/**`, `shared/ui/Widget/**`, `widgets/_kit/**`, `features/trading/orders/**`, `dashboard-e2e/src/quality/fixtures/scenarios.ts`. **[PR #49](https://github.com/ariasr47/convexa/pull/49) OPEN**, conductor cold-verified green; **waiting on the owner's win32 + linux baseline re-acceptance** (`ticker-desktop`, `ai-recommendation`, maybe `ticker-offline-mobile`) | repair lane verified | 2026-09-10 |
-| spire/curvature-v2-landing-and-site | Phase 4 — landing, 404/fallback, footer, head, methodology, blog, auth-wall branches, provenance pins. **Built through F13 + F7b/F7c at `591e2654`** (cold-verified: 3,061 tests, e2e 108/108, a11y 15/16 with only F15's `A11Y-B2` red, lanes diff 0). **F14/F15/F16 wait for PR #49's merge → GATE Q → landing baseline (Windows)** | build (independent rows joined) | 2026-09-11 |
-| spire/v4-install-2026-09-22 | Spire v3.19.3 → v4.2.0 → **v4.8.0** (2026-10-07) install on the Windows checkout; the kernel needs Node 26 (`.nvmrc`), Node 24 fails the doctor with `E_RUNTIME_CLOSURE`: `.claude/**`, `.codex/**`, `.grok/**`, `.spire/{bin,installation.json,version}`, `AGENTS.md`, `.gitattributes` (`spire.cmd` → `-text`). Local only by owner ruling 2026-09-22: **never pushed**, and a local pre-push hook refuses it. Keep `C:/Dev/convexa` on this branch; PR branches come from `origin/main` in a worktree — see its RESUME | none — framework install, doctor 7/7 | 2026-09-22 |
+
+Retired 2026-09-23:
+- `fix/fidelity-repair-2` merged as [PR #49](https://github.com/ariasr47/convexa/pull/49) (`08b82de3`).
+- `spire/curvature-v2-landing-and-site` reached GATE S. See OPEN_THREADS §7ay.
+
+Retired 2026-10-07:
+- `spire/v4-install-2026-09-22` (Spire v3.19.3 → v4.2.0 → **v4.8.0**) merged to main by owner
+  ruling 2026-10-07, reversing the 2026-09-22 keep-local ruling. The kernel needs Node 26
+  (`.nvmrc`); under Node 24 the doctor fails with `E_RUNTIME_CLOSURE`. See its RESUME.
 
 ## Shipped this session (rows retired)
 

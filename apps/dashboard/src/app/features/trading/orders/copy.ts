@@ -92,7 +92,13 @@ export const staleRecDisclosure = (asOf: string | null) =>
 
 // ---- §4 — the Orders surfaces --------------------------------------------------------------------
 
-export const WIDGET_TITLE = (ticker: string) => `Simulated orders · ${ticker}`;
+// Fidelity repair 2, N2 — the design's side-column title (`design/src/screens/desk.mjs:383`'s
+// `widgetHead('Sim orders · SPY', …)`). The old `Simulated orders · ${ticker}` ellipsised to
+// `Simulated or…` in the work grid's 379px side column at both 1280 and 1440 (`crops/orders-1440.png`,
+// `orders-1280.png`) — beside the non-shrinking `SIMULATED` chip + `All orders →` link, the title
+// region has no room to spare. `PANEL_TITLE` (the `/positions` page's own panel, a different surface
+// the review did not flag) is untouched.
+export const WIDGET_TITLE = (ticker: string) => `Sim orders · ${ticker}`;
 export const PANEL_TITLE = 'Simulated orders';
 export const PANEL_SUBTITLE =
   'Rec-driven entries watched against live data. Paper only — never a real order.';

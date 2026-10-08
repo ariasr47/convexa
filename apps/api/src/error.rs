@@ -31,9 +31,16 @@ pub enum AppError {
     #[error("not found: {0}")]
     NotFound(String),
 
+    /// MARKET_DATA_MODE=paused (SPEC B2). The only variant whose body carries a `code`.
+    #[error("Market data is paused.")]
+    MarketDataPaused,
+
     #[error("{0}")]
     Other(#[from] anyhow::Error),
 }
+
+/// Wire value of the `code` field on the paused reply body (SPEC B2/B5, AC-3).
+pub const MARKET_DATA_PAUSED_CODE: &str = "market_data_paused";
 
 pub type AppResult<T> = Result<T, AppError>;
 
@@ -50,6 +57,7 @@ impl AppError {
             Self::Massive(_) => StatusCode::BAD_GATEWAY,
             Self::Redis(_) | Self::PriceCache(_) => StatusCode::SERVICE_UNAVAILABLE,
             Self::Http(_) => StatusCode::BAD_GATEWAY,
+            Self::MarketDataPaused => StatusCode::SERVICE_UNAVAILABLE,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -90,7 +98,11 @@ impl IntoResponses for AppError {
 impl axum::response::IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
         let status = self.status_code();
-        let body = serde_json::json!({ "detail": self.to_string() });
+        let mut body = serde_json::json!({ "detail": self.to_string() });
+        // Only the paused reply sets `code`; every other error body stays byte-identical (SPEC B5).
+        if matches!(self, Self::MarketDataPaused) {
+            body["code"] = serde_json::json!(MARKET_DATA_PAUSED_CODE);
+        }
         (status, axum::Json(body)).into_response()
     }
 }
@@ -133,4 +145,50 @@ pub(crate) fn representative_error_response(
         _ => AppError::Config("contract representative internal".into()),
     };
     error.into_response()
+}
+
+#[cfg(test)]
+mod market_data_paused_tests {
+    use super::*;
+    use axum::body::to_bytes;
+    use axum::response::IntoResponse;
+
+    #[tokio::test]
+    async fn market_data_paused_is_exactly_503_with_code() {
+        let response = AppError::MarketDataPaused.into_response();
+        assert_eq!(
+            response.status(),
+            axum::http::StatusCode::SERVICE_UNAVAILABLE
+        );
+        assert_eq!(
+            response.headers()[axum::http::header::CONTENT_TYPE],
+            "application/json"
+        );
+        let bytes = to_bytes(response.into_body(), 1024).await.unwrap();
+        // AC-3: byte-exact, key order included — never reformat this assertion.
+        assert_eq!(
+            &bytes[..],
+            br#"{"detail":"Market data is paused.","code":"market_data_paused"}"#
+        );
+    }
+
+    /// AC-5: every OTHER error body stays byte-identical — no stray `code` key leaks in.
+    #[tokio::test]
+    async fn non_paused_error_bodies_never_carry_a_code_key() {
+        for error in [
+            AppError::NotFound("x".into()),
+            AppError::Config("y must be valid".into()),
+            AppError::Massive("z".into()),
+            AppError::Redis("w".into()),
+            AppError::PriceCache("v".into()),
+        ] {
+            let response = error.into_response();
+            let bytes = to_bytes(response.into_body(), 1024).await.unwrap();
+            let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+            let obj = value.as_object().expect("error body is an object");
+            assert_eq!(obj.len(), 1, "{obj:?} must only carry detail");
+            assert!(obj.contains_key("detail"));
+            assert!(!obj.contains_key("code"));
+        }
+    }
 }

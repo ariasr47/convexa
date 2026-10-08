@@ -1,60 +1,138 @@
 /**
- * Blog (`/blog`) — risk-based tests (qa-verify §4, amended 2026-07-13).
+ * Blog (`/blog`) — risk-based tests (SPEC §7 item 4; PLAN.md F8).
  *
  * What earns a TEST here (invariants / silent regressions):
- *  - the article HREFS: each card must point at the exact static file `docs/blog/build_html.py`
- *    emits into `public/blog/` — a drifted slug 404s in prod while the suite stays green (the
- *    classic silent regression), so the slug↔href contract is pinned.
- *  - ZERO network on mount (the static-page discipline shared with Scanner): the page must not
- *    imply it is fetching anything.
- *  - full-document anchors, NOT SPA navigation: the articles are standalone HTML documents; a
+ *  - Zero data edge: the strict fetch harness, copied in SHAPE from `landing.spec.tsx:57-63`
+ *    (throws on any non-auth call) and `:137-141` (zero `EventSource`), extended to this page
+ *    per SPEC §7 item 4 — an accidental trader/bundle fetch added to the blog index fails every
+ *    test in this file.
+ *  - AC-B1: exactly one card, and it is the published read — zero elements anywhere on the page
+ *    whose text contains "Draft" or "not yet published". This is the mechanism that keeps a
+ *    later ruling from silently reintroducing the two slots D-A cut (SPEC §1).
+ *  - AC-B3: no link on the page leads to a blog document that does not exist — the href
+ *    contract (ends `.html`, matches the emitted slug) AND the target file's actual presence on
+ *    disk under `public/blog/`.
+ *  - Full-document anchors, NOT SPA navigation: the articles are standalone HTML documents; a
  *    RouterLink would try to resolve them client-side and render the 404 shell.
- * What is deliberately NOT tested (visible/intentional → review): titles, descriptions, tag copy,
- * ordering, the header prose.
+ *  - The page's `<h1>` is the pinned heading (render check; AC-C1a pins the byte-provenance of
+ *    the string itself in a structural spec homed outside `pages/**`, not here).
+ * What is deliberately NOT tested (visible/intentional → review): the dek/tag copy wording, the
+ * intro sentence wording, ordering, the header prose.
  */
 import { render, screen } from '@testing-library/react';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BLOG_ARTICLES, BlogPage } from './BlogPage';
 
+/** Walks up from cwd to the Nx workspace root — same idiom as the app's `.structural.spec.ts`
+ *  files (e.g. `research-lab-surface.structural.spec.ts:17-24`), duplicated here on purpose so
+ *  this colocated spec stays self-contained (no cross-page import). */
+function workspaceRoot(): string {
+  let dir = process.cwd();
+  for (let i = 0; i < 8; i++) {
+    if (existsSync(resolve(dir, 'nx.json'))) return dir;
+    dir = resolve(dir, '..');
+  }
+  throw new Error('nx workspace root not found from ' + process.cwd());
+}
+
+let fetchMock: ReturnType<typeof vi.fn>;
+let openedEventSources = 0;
+
+const json = (body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+beforeEach(() => {
+  openedEventSources = 0;
+  class SilentEventSource {
+    onmessage: ((e: MessageEvent) => void) | null = null;
+    onerror: ((e: Event) => void) | null = null;
+    constructor() {
+      openedEventSources += 1;
+    }
+    close() {
+      /* no-op */
+    }
+  }
+  vi.stubGlobal('EventSource', SilentEventSource as unknown as typeof EventSource);
+
+  // STRICT mock: only the app-wide who-am-I read is allowed; ANY trader/bundle call throws, so the
+  // "zero data edge" invariant is enforced by construction (SPEC §7 item 4).
+  fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes('/api/auth/session')) {
+      return json({ authenticated: false, user: null, google_available: false, settings: null });
+    }
+    throw new Error(`Unexpected fetch from BlogPage: ${url}`);
+  });
+  vi.stubGlobal('fetch', fetchMock);
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+/** Any NON-AUTH fetch? Mirrors `landing.spec.tsx`'s helper — the who-am-I read is excluded. */
+function calledNonAuth(): boolean {
+  return fetchMock.mock.calls.some((c) => !String(c[0]).includes('/api/auth/'));
+}
+
+function renderBlog() {
+  return render(
+    <MemoryRouter>
+      <BlogPage />
+    </MemoryRouter>,
+  );
+}
+
 describe('BlogPage (/blog)', () => {
-  const fetchSpy = vi.fn();
-  let origFetch: typeof globalThis.fetch;
-
-  beforeEach(() => {
-    origFetch = globalThis.fetch;
-    globalThis.fetch = fetchSpy as unknown as typeof globalThis.fetch;
-  });
-  afterEach(() => {
-    globalThis.fetch = origFetch;
-    fetchSpy.mockClear();
+  it('issues no non-auth fetch and opens no EventSource on mount (SPEC §7 item 4)', () => {
+    renderBlog();
+    expect(calledNonAuth()).toBe(false);
+    expect(openedEventSources).toBe(0);
   });
 
-  it('renders one card per article, each a plain full-document anchor to the emitted static file', () => {
-    render(
-      <MemoryRouter>
-        <BlogPage />
-      </MemoryRouter>,
-    );
+  it('renders exactly one card — the one published read, no draft slots (AC-B1)', () => {
+    renderBlog();
+    expect(BLOG_ARTICLES).toHaveLength(1);
+    expect(screen.getAllByTestId(/^blog-card-/)).toHaveLength(1);
+  });
+
+  it('shows no card labelled as a draft or as not yet published (AC-B1, D-A)', () => {
+    renderBlog();
+    const pageText = screen.getByTestId('blog-page').textContent ?? '';
+    expect(pageText).not.toMatch(/Draft/);
+    expect(pageText).not.toMatch(/not yet published/);
+  });
+
+  it('each card is a plain full-document anchor whose href ends .html (SPEC §4)', () => {
+    renderBlog();
     for (const a of BLOG_ARTICLES) {
       const card = screen.getByTestId(`blog-card-${a.slug}`);
       const anchor = card.querySelector('a');
       expect(anchor).not.toBeNull();
       // The href contract: exactly /blog/<slug>.html — the file build_html.py emits.
       expect(anchor).toHaveAttribute('href', `/blog/${a.slug}.html`);
+      expect(anchor?.getAttribute('href')).toMatch(/\.html$/);
     }
   });
 
-  it('features exactly the published methodology article (a second is a deliberate edit, not drift)', () => {
-    expect(BLOG_ARTICLES.map((a) => a.slug)).toEqual(['how-we-read-dealer-structure']);
+  it('every card href resolves to a file that actually exists on disk (AC-B3)', () => {
+    const root = workspaceRoot();
+    for (const a of BLOG_ARTICLES) {
+      const target = resolve(root, 'apps', 'dashboard', 'public', 'blog', `${a.slug}.html`);
+      expect(existsSync(target), target).toBe(true);
+    }
   });
 
-  it('does ZERO network work on mount (static index discipline)', () => {
-    render(
-      <MemoryRouter>
-        <BlogPage />
-      </MemoryRouter>,
-    );
-    expect(fetchSpy).not.toHaveBeenCalled();
+  it('the page <h1> is the pinned heading "How we read structure"', () => {
+    renderBlog();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('How we read structure');
   });
 });

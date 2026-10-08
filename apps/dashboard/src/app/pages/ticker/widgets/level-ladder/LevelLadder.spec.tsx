@@ -271,3 +271,24 @@ describe('LevelLadder — the levels and the mid are readable as text (criterion
     expect(screen.getByText('$252')).toBeInTheDocument(); // mid
   });
 });
+
+// =================================================================================================
+// Fidelity repair 2, N4 — labels wrap instead of truncating in the five-up band (< 1000px container).
+// `FigureRow`'s shared row-direction label is `white-space:nowrap; text-overflow:ellipsis` by
+// default (every OTHER `direction="row"` consumer — `LadderFoot` — keeps that unchanged); the ladder
+// alone opts into wrapping via the new `labelWrap` prop, so "Gamma flip" no longer clips to
+// "Gamma f…" at 834px (`crops/ladder-834.png`) — the design keeps all five labels in full at that
+// width. This is a static CSS declaration (not gated behind a container query), so jsdom's
+// `getComputedStyle` resolves it directly — no viewport/container simulation needed.
+// =================================================================================================
+describe('LevelLadder — labels wrap instead of truncating (fidelity repair 2, N4)', () => {
+  it('every ladder label allows wrapping — no white-space:nowrap / text-overflow:ellipsis (the five-up 834px band never truncates "Gamma flip")', () => {
+    wrap(FULL_INPUT);
+    for (const text of ['Call wall', 'Put wall', 'Max pain', 'Gamma flip', 'Mid']) {
+      const label = screen.getByText(text);
+      const style = getComputedStyle(label);
+      expect(style.whiteSpace).not.toBe('nowrap');
+      expect(style.textOverflow).not.toBe('ellipsis');
+    }
+  });
+});
