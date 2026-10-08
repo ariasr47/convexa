@@ -47,7 +47,6 @@ export const D8_TEST_ALLOWLIST = [
   'apps/dashboard/src/app/pages/ticker/widgets/fresh-positioning/FreshPositioning.spec.tsx',
   'apps/dashboard/src/app/pages/ticker/widgets/off-exchange-blocks/OffExchangeBlocks.spec.tsx',
   'apps/dashboard/src/app/pages/ticker/widgets/chrome/TapePulseStrip.spec.tsx',
-  'apps/dashboard/src/app/features/trading/positions/PositionRow.a11y.spec.tsx',
   'apps/dashboard/src/app/features/trading/positions/positionCard.spec.tsx',
   'apps/dashboard/src/app/features/trading/positions/legDisclosure.spec.tsx',
   'apps/dashboard/src/app/features/trading/positions/positions.risk.spec.tsx',
