@@ -19,7 +19,7 @@ const COMMON = [
   'host_platform',
   'artifacts',
 ];
-const GATES = new Set(['chromium', 'compatibility', 'accessibility', 'visual']);
+const GATES = new Set(['chromium', 'compatibility', 'accessibility']);
 const STATUS = new Set(['pass', 'fail', 'incomplete']);
 const HEX40 = /^[a-f0-9]{40}$/;
 const HEX64 = /^[a-f0-9]{64}$/;
@@ -27,7 +27,6 @@ const expected = {
   chromium: ['inventory_id', 'project', 'tests'],
   compatibility: ['arms'],
   accessibility: ['disclaimer', 'scans', 'behaviors', 'findings'],
-  visual: ['scenarios'],
 };
 const err = (s) => {
   throw new Error(`invalid ${s}`);
@@ -217,35 +216,6 @@ export function validateSummary(summary, options = {}) {
         record.scan_id ? 'scan_id' : 'behavior_id',
       ]);
       if (record.project !== 'chromium') err('accessibility project');
-    }
-  }
-  if (summary.gate === 'visual' && (summary.selected !== 6 || summary.scenarios.length !== 6))
-    err('visual inventory');
-  if (summary.gate === 'visual') {
-    const scenarioIds = summary.scenarios.map((record) => record.scenario_id);
-    uniqueSet(scenarioIds, 'visual scenarios');
-    if (!manifest.visual.scenarios.every((x) => scenarioIds.includes(x.id))) err('visual identity');
-    for (const record of summary.scenarios) {
-      validateCommonRecord(record, 'visual', [
-        'actual_path',
-        'actual_sha256',
-        'artifact_paths',
-        'diff_path',
-        'diff_sha256',
-        'expected_path',
-        'expected_sha256',
-        'file',
-        'identity',
-        'project',
-        'retry',
-        'scenario_id',
-        'status',
-      ]);
-      if (
-        record.project !== 'chromium' ||
-        !manifest.visual.scenarios.some((x) => x.id === record.scenario_id)
-      )
-        err('visual record');
     }
   }
   return summary;

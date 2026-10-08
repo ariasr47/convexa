@@ -9,7 +9,6 @@ const configs = {
   chromium: 'playwright.config.ts',
   compatibility: 'playwright.compat.config.ts',
   accessibility: 'playwright.a11y.config.ts',
-  visual: 'playwright.visual.config.ts',
 };
 if (!configs[target] || process.argv.length !== 3) {
   console.error('Unknown browser quality gate.');

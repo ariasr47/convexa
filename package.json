@@ -61,8 +61,6 @@
     "browser:chromium": "nx run dashboard-e2e:e2e --skip-nx-cache",
     "browser:compat": "nx run dashboard-e2e:compat --skip-nx-cache",
     "browser:a11y": "nx run dashboard-e2e:a11y --skip-nx-cache",
-    "browser:visual": "nx run dashboard-e2e:visual --skip-nx-cache",
-    "browser:visual:update": "nx run dashboard-e2e:visual-update --skip-nx-cache",
     "browser:quality": "nx run dashboard-e2e:quality --skip-nx-cache"
   },
   "workspaces": ["apps/*", "libs/*"],

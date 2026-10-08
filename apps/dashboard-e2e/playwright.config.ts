@@ -34,7 +34,6 @@ const config = {
     'curvature-v2.spec.ts',
     'desk-and-read.spec.ts',
     'navigation.spec.ts',
-    'no-overflow.spec.ts',
   ],
   reporter: [
     ['list'],

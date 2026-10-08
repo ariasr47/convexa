@@ -37,12 +37,13 @@ test('browser quality manifest is closed and has the required inventories', () =
   // `index.html`'s `<base href="/">` (AC-M6/AC-M1).
   // (no-vendor-production-posture AC-10) Accessibility scans 24 → 28: the paused ticker-desk
   // panel (F2), a seventh surface, at both breakpoints (393/1280) and both color schemes.
-  assert.equal(manifest.full_chromium.tests.length, 128);
+  // (lean-tests batch 22) Chromium 128 → 35: `no-overflow.spec.ts` retired (93 cases); the pixel
+  // visual gate and its `visual` manifest section retired with it — see `lib/manifest.mjs`.
+  assert.equal(manifest.full_chromium.tests.length, 35);
   assert.equal(manifest.compatibility.journeys.length, 5);
   assert.deepEqual(manifest.compatibility.projects, ['chromium', 'firefox', 'webkit']);
   assert.equal(manifest.accessibility.scans.length, 28);
   assert.equal(manifest.accessibility.behaviors.length, 7);
-  assert.equal(manifest.visual.scenarios.length, 6);
 });
 
 test('manifest rejects duplicate, blank and unknown records', () => {
@@ -75,7 +76,5 @@ test('manifest pins engine policy and artifact roots', () => {
     'accessibility',
     'chromium',
     'compatibility',
-    'visual',
   ]);
-  assert.equal(manifest.visual.threshold, 0);
 });

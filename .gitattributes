@@ -52,4 +52,3 @@ libs/api/src/generated/*.ts text eol=lf
 apps/dashboard-e2e/visual-review/**/*.json  text eol=lf
 apps/dashboard-e2e/visual-review/**/*.patch text eol=lf
 apps/dashboard-e2e/visual-review/**/*.png   binary
-apps/dashboard-e2e/src/quality/snapshots/**/*.png binary

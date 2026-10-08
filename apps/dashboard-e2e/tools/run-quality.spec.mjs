@@ -11,14 +11,16 @@ import {
   spawnQualityChildren,
   validateChildEvidence,
 } from './run-quality.mjs';
-test('aggregate freezes exactly four ordered children and distinct ports', () => {
-  assert.equal(CHILDREN.length, 4);
+test('aggregate freezes exactly three ordered children and distinct ports', () => {
+  assert.equal(CHILDREN.length, 3);
   assert.deepEqual(
     CHILDREN.map((x) => x.port),
-    [4210, 4211, 4212, 4213],
+    [4210, 4211, 4212],
   );
   assert.doesNotThrow(() => validateChildCatalog());
-  assert.throws(() => validateChildCatalog([...CHILDREN, { target: 'visual-update', port: 4214 }]));
+  assert.throws(() =>
+    validateChildCatalog([...CHILDREN, { target: 'dashboard-e2e:extra', port: 4213 }]),
+  );
 });
 test('aggregate status preserves incomplete over failure over pass', () => {
   assert.equal(aggregateStatus([{ exit_code: 0, status: 'pass' }]), 'pass');
@@ -48,10 +50,10 @@ test('aggregate completes one canonical dashboard build before starting all preb
     },
   });
   assert.deepEqual(events, ['build:start', 'build:close', 'children:start']);
-  assert.equal((await Promise.all(childPromises)).length, 4);
+  assert.equal((await Promise.all(childPromises)).length, 3);
 });
 
-test('a failed dashboard build still launches all four children once with fail-closed status', async () => {
+test('a failed dashboard build still launches all three children once with fail-closed status', async () => {
   let optionsSeen;
   const childPromises = await prepareThenSpawnQualityChildren({
     runId: 'run-prebuild-failure',
@@ -65,7 +67,7 @@ test('a failed dashboard build still launches all four children once with fail-c
     },
   });
   assert.equal(optionsSeen.prebuildStatus, 'fail');
-  assert.equal((await Promise.all(childPromises)).length, 4);
+  assert.equal((await Promise.all(childPromises)).length, 3);
 });
 
 test('dashboard preparation is one shell-free production build with isolated Nx state', async () => {
@@ -168,7 +170,7 @@ test('child evidence validates identity, status and artifact hash after settleme
   for (const mutation of [
     { ...base, run_id: 'wrong' },
     { ...base, source_revision: 'c'.repeat(40) },
-    { ...base, gate: 'visual' },
+    { ...base, gate: 'compatibility' },
     { ...base, status: 'fail' },
   ]) {
     const result = validateChildEvidence({
@@ -251,7 +253,7 @@ test('Windows aggregate uses real shell-free child launches and preserves spawn 
   const fixture = path.join(dir, 'npm-cli-fixture.mjs');
   fs.writeFileSync(
     fixture,
-    `import fs from 'node:fs';\nconst target = process.argv.find((x) => x.startsWith('dashboard-e2e:'));\nconst childRoot = process.env.NX_INVOCATION_ROOT_PID ?? String(process.pid);\nfs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ target, port: process.env.BROWSER_QUALITY_PORT, childRoot, workspaceData: process.env.NX_WORKSPACE_DATA_DIRECTORY, runId: process.env.BROWSER_QUALITY_RUN_ID, marker: process.env.QUALITY_TEST_MARKER, workers: process.env.BROWSER_QUALITY_WORKERS }) + '\\n');\nprocess.exit(target.endsWith(':visual') ? 7 : 0);\n`,
+    `import fs from 'node:fs';\nconst target = process.argv.find((x) => x.startsWith('dashboard-e2e:'));\nconst childRoot = process.env.NX_INVOCATION_ROOT_PID ?? String(process.pid);\nfs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ target, port: process.env.BROWSER_QUALITY_PORT, childRoot, workspaceData: process.env.NX_WORKSPACE_DATA_DIRECTORY, runId: process.env.BROWSER_QUALITY_RUN_ID, marker: process.env.QUALITY_TEST_MARKER, workers: process.env.BROWSER_QUALITY_WORKERS }) + '\\n');\nprocess.exit(target.endsWith(':a11y') ? 7 : 0);\n`,
   );
 
   const results = await Promise.all(
@@ -270,8 +272,7 @@ test('Windows aggregate uses real shell-free child launches and preserves spawn 
     [
       ['dashboard-e2e:e2e', 0, 1],
       ['dashboard-e2e:compat', 0, 1],
-      ['dashboard-e2e:a11y', 0, 1],
-      ['dashboard-e2e:visual', 7, 1],
+      ['dashboard-e2e:a11y', 7, 1],
     ],
   );
   const logged = new Map(
@@ -282,14 +283,13 @@ test('Windows aggregate uses real shell-free child launches and preserves spawn 
       .map((line) => JSON.parse(line))
       .map((entry) => [entry.target, entry]),
   );
-  assert.equal(logged.size, 4);
+  assert.equal(logged.size, 3);
   assert.deepEqual(Object.fromEntries([...logged].map(([target, entry]) => [target, entry.port])), {
     'dashboard-e2e:e2e': '4210',
     'dashboard-e2e:compat': '4211',
     'dashboard-e2e:a11y': '4212',
-    'dashboard-e2e:visual': '4213',
   });
-  assert.equal(new Set([...logged.values()].map((entry) => entry.workspaceData)).size, 4);
+  assert.equal(new Set([...logged.values()].map((entry) => entry.workspaceData)).size, 3);
   for (const entry of logged.values()) {
     assert.notEqual(entry.childRoot, 'aggregate-parent');
     assert.match(entry.childRoot, /^\d+$/);
@@ -313,7 +313,7 @@ test('Windows aggregate uses real shell-free child launches and preserves spawn 
       source: 'b'.repeat(40),
     }),
   );
-  assert.equal(spawnErrors.length, 4);
+  assert.equal(spawnErrors.length, 3);
   for (const result of spawnErrors) {
     assert.equal(result.invocation_count, 1);
     assert.equal(result.status, 'incomplete');

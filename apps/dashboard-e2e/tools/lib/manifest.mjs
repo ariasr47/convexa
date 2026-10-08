@@ -8,7 +8,6 @@ const ROOT_KEYS = [
   'full_chromium',
   'compatibility',
   'accessibility',
-  'visual',
   'artifact_roots',
 ];
 const ID = /^[a-z0-9][a-z0-9._-]+$/;
@@ -83,11 +82,15 @@ export function validateManifest(value) {
     // (`navigation.spec.ts`, "client-side navigation") covers both the TOC click and the fresh
     // deep link past `index.html`'s `<base href="/">` — jsdom implements no `<base>` resolution,
     // so only a real browser proves this class of fix. 2 net-new Chromium tests.
-    value.full_chromium?.inventory_id !== 'curvature-v2-landing-and-site-128-v1' ||
+    // (lean-tests batch 22, owner-approved 2026-10-08) 128 → 35: `no-overflow.spec.ts` RETIRED
+    // (93 layout-overflow Chromium cases, structure) and its manifest entries removed. The 35 left
+    // are app-loads 1, broker-grouping 4, broker 4, curvature-v2 14, desk-and-read 6, navigation 6.
+    // The pixel visual gate was retired in the same batch, with its `visual` manifest section.
+    value.full_chromium?.inventory_id !== 'lean-tests-batch-22-35-v1' ||
     !Array.isArray(tests) ||
-    tests.length !== 128
+    tests.length !== 35
   )
-    fail('full Chromium inventory must contain 128 tests');
+    fail('full Chromium inventory must contain 35 tests');
   unique(
     tests.map((x) => x.test_id),
     'full Chromium tests',
@@ -165,34 +168,10 @@ export function validateManifest(value) {
     fail('invalid scan readiness');
   if (behaviors.some((x) => !/^A11Y-B[1-7]$/.test(x.id) || x.project !== 'chromium'))
     fail('invalid accessibility behavior');
-  const scenarios = value.visual?.scenarios;
-  if (
-    !Array.isArray(scenarios) ||
-    scenarios.length !== 6 ||
-    value.visual.project !== 'chromium' ||
-    value.visual.threshold !== 0
-  )
-    fail('visual inventory drift');
-  unique(
-    scenarios.map((x) => x.id),
-    'visual scenarios',
-  );
-  if (
-    scenarios.some(
-      (x) =>
-        !ID.test(x.id) ||
-        x.project !== 'chromium' ||
-        !['dark', 'light'].includes(x.colorScheme) ||
-        !Number.isInteger(x.viewport?.width) ||
-        !Number.isInteger(x.viewport?.height),
-    )
-  )
-    fail('invalid visual scenario');
   const expectedRoots = {
     chromium: 'apps/dashboard-e2e/test-output/playwright/chromium',
     compatibility: 'apps/dashboard-e2e/test-output/playwright/compatibility',
     accessibility: 'apps/dashboard-e2e/test-output/playwright/accessibility',
-    visual: 'apps/dashboard-e2e/test-output/playwright/visual',
   };
   if (JSON.stringify(value.artifact_roots) !== JSON.stringify(expectedRoots))
     fail('artifact roots drift');

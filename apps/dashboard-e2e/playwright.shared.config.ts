@@ -1,7 +1,7 @@
 import { workspaceRoot } from '@nx/devkit';
 import { defineConfig, devices } from '@playwright/test';
 
-export type Gate = 'chromium' | 'compatibility' | 'accessibility' | 'visual';
+export type Gate = 'chromium' | 'compatibility' | 'accessibility';
 
 export function sharedConfig(gate: Gate) {
   const port = Number(process.env.BROWSER_QUALITY_PORT ?? 4200);

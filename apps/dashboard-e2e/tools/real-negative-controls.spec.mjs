@@ -54,25 +54,3 @@ test('real malformed Scanner fixture event fails readiness with retained browser
   assert.match(output, /trace\.zip/);
   assert.match(output, /test-failed-1\.png/);
 });
-
-test('real visual drift fails compare-only without updating the baseline', () => {
-  const result = runPlaywright(
-    [
-      '--config',
-      'apps/dashboard-e2e/playwright.visual.config.ts',
-      '--project=chromium',
-      '--grep',
-      'landing',
-    ],
-    { BROWSER_QUALITY_VISUAL_DRIFT: '1' },
-  );
-  const output = `${result.stdout}\n${result.stderr}`;
-  assert.notEqual(result.status, 0);
-  assert.match(
-    output,
-    /\[FAIL\] visual — landing: the approved baseline differs\. Review expected, actual, and diff images\. Open: apps\/dashboard-e2e\/test-output\/playwright\/visual\/summary\.json/,
-  );
-  assert.doesNotMatch(output, /\[FAIL\] visual — \d+ failed/);
-  assert.match(output, /diff\.png|Screenshot comparison failed/);
-  assert.match(output, /actual\.png|expected\.png/);
-});

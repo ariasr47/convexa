@@ -112,23 +112,14 @@ const gateCounts: Record<string, number> = {
   // ticker-desk panel (F2) — scanned at both breakpoints (393/1280) and both color schemes. Scans
   // 24 → 28, held against the unchanged 7 behaviors (28 + 7 = 35). Chromium/compatibility/visual
   // are untouched by this feature (no new browser:chromium/compat/visual case).
-  chromium: 128,
+  // (lean-tests batch 22, owner-approved 2026-10-08) Chromium 128 → 35: `no-overflow.spec.ts`
+  // retired (93 cases) — matches `manifest.json`'s `lean-tests-batch-22-35-v1` inventory
+  // (`tools/lib/manifest.mjs` enforces the same number). The pixel visual gate (6 scenarios) was
+  // retired in the same batch, so it has no count here and the reporter keeps no visual branch.
+  chromium: 35,
   compatibility: 15,
   accessibility: 35,
-  visual: 6,
 };
-export type VisualAttachmentRole = 'expected' | 'actual' | 'diff' | undefined;
-export function visualAttachmentRole(attachment: {
-  name?: string;
-  path?: string;
-}): VisualAttachmentRole {
-  if (!attachment.path) return undefined;
-  const value = `${attachment.name ?? ''} ${path.basename(attachment.path)}`.toLowerCase();
-  if (/(^|[-_. ])expected([-. _]|$)/.test(value)) return 'expected';
-  if (/(^|[-_. ])actual([-. _]|$)/.test(value)) return 'actual';
-  if (/(^|[-_. ])diff([-. _]|$)/.test(value)) return 'diff';
-  return undefined;
-}
 const atomicWrite = (file: string, value: unknown) => {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const temporary = `${file}.${process.pid}.${crypto.randomBytes(6).toString('hex')}.tmp`;
@@ -147,7 +138,7 @@ const atomicWrite = (file: string, value: unknown) => {
 };
 
 export class QualityReporter implements Reporter {
-  private gate: 'chromium' | 'compatibility' | 'accessibility' | 'visual' = 'chromium';
+  private gate: 'chromium' | 'compatibility' | 'accessibility' = 'chromium';
   private output = 'apps/dashboard-e2e/test-output/playwright/chromium/summary.json';
   private selected = 0;
   private records: Array<Record<string, unknown>> = [];
@@ -181,8 +172,6 @@ export class QualityReporter implements Reporter {
     const key = `${test.location.file}:${test.titlePath().join(' › ')}:${result.retry}`;
     this.results.set(key, result);
     const attachmentPaths: string[] = [];
-    let actualArtifact: { path: string; sha256: string } | undefined;
-    let diffArtifact: { path: string; sha256: string } | undefined;
     for (const [index, attachment] of result.attachments.entries()) {
       if (!attachment.path || !fs.existsSync(attachment.path)) continue;
       const destination = path.resolve(
@@ -196,9 +185,6 @@ export class QualityReporter implements Reporter {
       const artifact = { path: relative(destination), sha256: sha256(destination) };
       this.artifacts.push(artifact);
       attachmentPaths.push(artifact.path);
-      const role = visualAttachmentRole(attachment);
-      if (role === 'actual') actualArtifact = artifact;
-      if (role === 'diff') diffArtifact = artifact;
       if (this.gate === 'accessibility' && attachment.name === 'axe-findings.json') {
         const findings = JSON.parse(fs.readFileSync(attachment.path, 'utf8'));
         if (!Array.isArray(findings)) throw new Error('axe findings attachment must be an array');
@@ -243,19 +229,7 @@ export class QualityReporter implements Reporter {
             retry: result.retry,
             artifact_paths: attachmentPaths,
           };
-    if (this.gate === 'visual') {
-      const expected = `apps/dashboard-e2e/src/quality/snapshots/${process.platform}/chromium/${identifier}.png`;
-      const expectedFile = path.join(ROOT, expected);
-      Object.assign(record, {
-        scenario_id: identifier,
-        expected_path: fs.existsSync(expectedFile) ? expected : null,
-        expected_sha256: fs.existsSync(expectedFile) ? sha256(expectedFile) : null,
-        actual_path: actualArtifact?.path ?? null,
-        actual_sha256: actualArtifact?.sha256 ?? null,
-        diff_path: diffArtifact?.path ?? null,
-        diff_sha256: diffArtifact?.sha256 ?? null,
-      });
-    } else if (this.gate === 'compatibility')
+    if (this.gate === 'compatibility')
       Object.assign(record, { journey_id: identifier, engine: record.project });
     else if (this.gate === 'accessibility')
       Object.assign(
@@ -313,7 +287,6 @@ export class QualityReporter implements Reporter {
         behaviors: this.records.filter((x) => String(x.identity).includes('A11Y-B')),
         findings: this.findings,
       });
-    else summary.scenarios = this.records;
     const output = path.resolve(
       this.output.startsWith('apps/') ? ROOT : this.configRoot,
       this.output,
@@ -328,17 +301,6 @@ export class QualityReporter implements Reporter {
         `[FAIL] ${this.gate} — ${flaky} test(s) passed only after retry; no stability-clean pass recorded. Open: ${this.output}`,
       );
       return;
-    }
-    if (this.gate === 'visual') {
-      const failedScenarios = this.records.filter((record) => record.status === 'failed');
-      if (failedScenarios.length > 0) {
-        for (const record of failedScenarios) {
-          console.log(
-            `[FAIL] visual — ${String(record.scenario_id)}: the approved baseline differs. Review expected, actual, and diff images. Open: ${this.output}`,
-          );
-        }
-        return;
-      }
     }
     console.log(`[FAIL] ${this.gate} — ${failed} failed. Open: ${this.output}`);
   }

@@ -82,3 +82,4 @@ Append-only. One line per step. Times are local (America/Los_Angeles) unless mar
 - 2026-10-08 P2 batch 18 committed 536b33f1; verified (run b18): all exit 0, 805 s; cargo 1631 (-5), rest unchanged; 0 skips.
 - 2026-10-08 P2 batch 19 committed d20546a2; verified (run b19): all exit 0, 809 s; cargo 1630 (-1), rest unchanged; 0 skips.
 - 2026-10-08 P2 batch 20 committed b5a677aa; verified (run b20): all exit 0, 819 s; cargo 1627 (-3), rest unchanged; 0 skips.
+- 2026-10-08 P2 batch 21 committed a4956334; verified (run b21): all exit 0, 641 s; counts unchanged (no runner); 0 skips.
