@@ -25,6 +25,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
 import { AUTH_COPY } from './copy';
+import { dataMode } from '@convexa/api';
 
 interface Props {
   children: ReactNode;
@@ -59,6 +60,9 @@ export function RequireAuth({ children, surface }: Props) {
   const { openAuth } = useAuthDialog();
   const signInRef = useRef<HTMLButtonElement>(null);
   const copy = wallCopy(surface);
+
+  // The public sample workspace owns a local paper book and does not use server authorization.
+  if (dataMode === 'demo') return <>{children}</>;
 
   // The who-am-I read is in flight → the shared QUIET FILL. Never the wall, never `null`, never a
   // wall skeleton or a greyed `Sign in`. `null` is not a hold a person can perceive; the fallback's

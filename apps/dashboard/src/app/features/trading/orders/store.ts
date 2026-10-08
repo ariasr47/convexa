@@ -14,6 +14,7 @@
  * drilling — mutations bump the version and notify.
  */
 import type { DecisionRecord } from '@/features/trading/model/types';
+import { dataMode, demoNowMs, demoStorageKey, scenarioProvenance } from '@convexa/api';
 import { ORDERS_SCHEMA_VERSION, SimOrder } from './types';
 
 export const ORDERS_KEY = 'convexa.orders.v1';
@@ -56,7 +57,7 @@ function notify() {
 function read(): Record<string, SimOrder> {
   if (memory) return memory;
   try {
-    const raw = localStorage.getItem(ORDERS_KEY);
+    const raw = localStorage.getItem(demoStorageKey(ORDERS_KEY));
     if (raw == null) {
       memory = {};
       faulted = false;
@@ -84,7 +85,7 @@ function write(orders: Record<string, SimOrder>): boolean {
   memory = orders;
   try {
     const shape: PersistShape = { schema_version: ORDERS_SCHEMA_VERSION, orders };
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(shape));
+    localStorage.setItem(demoStorageKey(ORDERS_KEY), JSON.stringify(shape));
   } catch {
     /* quota/private mode — keep the in-memory copy this session */
   }
@@ -124,6 +125,7 @@ export function putOrder(order: SimOrder): boolean {
 export interface OrdersExport {
   orders: SimOrder[];
   decisions: DecisionRecord[];
+  sample_provenance?: ReturnType<typeof scenarioProvenance>;
 }
 
 /**
@@ -141,11 +143,11 @@ export function buildOrdersExport(decisions: DecisionRecord[]): OrdersExport {
     (d) =>
       d.event_type.startsWith('order_') || orderIds.has(d.trade_id) || positionIds.has(d.trade_id),
   );
-  return { orders, decisions: related };
+  return { orders, decisions: related, ...(dataMode === 'demo' ? { sample_provenance: scenarioProvenance() } : {}) };
 }
 
 /** `convexa-orders-{YYYY-MM-DD}.json` (UX §4.5). */
-export function exportFilename(now: Date = new Date()): string {
+export function exportFilename(now: Date = new Date(dataMode === 'demo' ? demoNowMs() : Date.now())): string {
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, '0');
   const d = String(now.getDate()).padStart(2, '0');

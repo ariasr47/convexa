@@ -49,6 +49,12 @@ import { RouteFallback } from '@/shared/ui/RouteFallback';
 import { AppShell } from '@/shell/AppShell';
 import { lazy, Suspense, type ReactElement } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { dataMode } from '@convexa/api';
+import { Typography } from '@mui/material';
+
+function DemoOperatorUnavailable() {
+  return <main role="status" style={{ padding: 32 }}><Typography variant="h5">Unavailable in the public demo.</Typography></main>;
+}
 
 // Lazy page chunks (named exports mapped to lazy's `default` shape).
 const TickerDashboard = lazy(() =>
@@ -126,8 +132,8 @@ export function AppRoutes() {
   return (
     <Routes>
       {/* Operator routes — off the trader shell, unlinked. FIRST so `/*` never shadows them. */}
-      <Route path="/_ops/metrics" element={lazyRoute(<OperatorMetrics />)} />
-      <Route path="/_ops/research" element={lazyRoute(<OperatorSessionArchive />)} />
+      <Route path="/_ops/metrics" element={dataMode === 'demo' ? <DemoOperatorUnavailable /> : lazyRoute(<OperatorMetrics />)} />
+      <Route path="/_ops/research" element={dataMode === 'demo' ? <DemoOperatorUnavailable /> : lazyRoute(<OperatorSessionArchive />)} />
 
       {/* The persistent shell group: the nav bar mounts once; pages swap in the <Outlet/>. */}
       <Route element={<AppShell />}>

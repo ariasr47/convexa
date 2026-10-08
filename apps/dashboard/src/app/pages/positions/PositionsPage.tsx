@@ -33,10 +33,12 @@ import { isDeliveringLive } from '@/shared/liveness/liveClaim';
 import { PanelContainer } from '@/shared/ui/PanelContainer';
 import {
   getTicker,
+  dataMode,
   isMarketDataPaused,
   LiveUpdate,
-  streamTicker,
+  subscribeTicker,
   TickerBundle,
+  type DemoOrderFrame,
 } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -105,6 +107,7 @@ export function PositionsPage() {
   const ticker = useMemo(() => focusedTicker(), []);
   const [data, setData] = useState<TickerBundle | null>(null);
   const [live, setLive] = useState<LiveUpdate | null>(null);
+  const [demoFrame, setDemoFrame] = useState<DemoOrderFrame | null>(null);
   const [streamOffline, setStreamOffline] = useState(false);
 
   const isLive = isDeliveringLive(live, streamOffline);
@@ -148,11 +151,15 @@ export function PositionsPage() {
     setLive(null);
     setStreamOffline(false);
     let gapTimer: ReturnType<typeof setTimeout> | undefined;
-    const unsub = streamTicker(ticker, {}, (u) => {
-      setLive(u);
-      setStreamOffline(false);
-      if (gapTimer) clearTimeout(gapTimer);
-      gapTimer = setTimeout(() => setStreamOffline(true), STREAM_OFFLINE_MS);
+    const unsub = subscribeTicker(ticker, {}, (event) => {
+      if (event.kind === 'ticker_update') {
+        setLive(event.update);
+        setStreamOffline(false);
+        if (gapTimer) clearTimeout(gapTimer);
+        if (dataMode === 'live') gapTimer = setTimeout(() => setStreamOffline(true), STREAM_OFFLINE_MS);
+      } else if (event.kind === 'demo_order_frame') {
+        setDemoFrame(event.frame);
+      }
     });
     return () => {
       if (gapTimer) clearTimeout(gapTimer);
@@ -166,7 +173,7 @@ export function PositionsPage() {
   // ai-rec-backtest-orders: the order engine rides THIS page's focused-ticker stream (arch §5 —
   // orders for other tickers simply render not-evaluated, D5). A fill writes a Position into the
   // shared durable store, so re-read the portfolio whenever the orders store mutates.
-  useOrderEngine({ ticker, bundle: data, live, isLive, streamOffline });
+  useOrderEngine({ ticker, bundle: data, live, isLive, streamOffline, demoFrame });
   useEffect(() => {
     const unsubscribe = subscribeOrders(() => pf.refreshPositions());
     return () => {

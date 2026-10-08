@@ -9,6 +9,7 @@ import {
   type AlertRule,
   type AlertsState,
 } from './types';
+import { demoStorageKey } from '@convexa/api';
 
 function empty(): AlertsState {
   return { schema_version: 1, rules: [], events: [], notifyBrowser: false };
@@ -68,7 +69,7 @@ function persist(state: AlertsState) {
   // in-memory update and the notify() below still happen, so the current session is not wedged.
   if (!readFaulted) {
     try {
-      localStorage.setItem(ALERTS_KEY, JSON.stringify(state));
+      localStorage.setItem(demoStorageKey(ALERTS_KEY), JSON.stringify(state));
     } catch {
       /* quota / private mode — keep memory only */
     }
@@ -79,7 +80,7 @@ function persist(state: AlertsState) {
 export function readAlerts(): AlertsState {
   if (memory) return memory;
   try {
-    const raw = localStorage.getItem(ALERTS_KEY);
+    const raw = localStorage.getItem(demoStorageKey(ALERTS_KEY));
     if (!raw) {
       memory = empty();
       return memory;

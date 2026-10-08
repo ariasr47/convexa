@@ -17,6 +17,7 @@
  */
 import { seedTestPositionsIfNeeded } from '@/features/trading/positions/testSeed';
 import {
+  dataMode,
   login as apiLogin,
   logout as apiLogout,
   saveSettings as apiSave,
@@ -95,12 +96,23 @@ function applySession(s: SessionStatus): AuthState {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>(ANON);
+  const demo = dataMode === 'demo';
+  const demoState: AuthState = {
+    ready: true,
+    authenticated: false,
+    user: { id: 'demo-visitor', email: 'visitor@demo.invalid', display_name: 'Demo visitor' } as AuthUser,
+    googleAvailable: false,
+    settings: null,
+    demoSeed: null,
+    subsystemDegraded: false,
+  };
+  const [state, setState] = useState<AuthState>(demo ? demoState : ANON);
   // Guard against a stale resolve overwriting a newer one (e.g. logout completes before an in-flight
   // mount read). Each read tags itself; only the latest applies.
   const seq = useRef(0);
 
   const refresh = useCallback(async () => {
+    if (demo) { setState(demoState); return; }
     const id = ++seq.current;
     try {
       const s = await getSession();
@@ -119,12 +131,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       }
     }
-  }, []);
+  }, [demo]);
 
   // One who-am-I on mount. Children render immediately (anonymous-capable) while it's in flight.
   useEffect(() => {
+    if (demo) return;
     void refresh();
-  }, [refresh]);
+  }, [demo, refresh]);
 
   // DEV/TEST convenience: when the always-available test account signs in, seed a simulated
   // portfolio into the client-local positions store (once, non-destructively). A no-op for every
@@ -136,34 +149,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Multi-device durable book: after sign-in, pull server blob if newer (best-effort).
   // Dynamic import so bookSync is not forced into the shell/auth chunk (Vite INEFFECTIVE_DYNAMIC_IMPORT).
   useEffect(() => {
-    if (!state.authenticated) return;
+    if (demo || !state.authenticated) return;
     void import('@/features/trading/positions/bookSync')
       .then((m) => m.pullServerBook())
       .catch(() => undefined);
-  }, [state.authenticated, state.user?.id]);
+  }, [demo, state.authenticated, state.user?.id]);
 
   const signIn = useCallback(async (body: LoginRequest) => {
+    if (demo) throw new Error('Sign-in is unavailable in the public demo.');
     const s = await apiLogin(body); // throws AuthError on failure (form maps the code)
     seq.current++; // invalidate any in-flight who-am-I
     setState(applySession(s));
-  }, []);
+  }, [demo]);
 
   const signUp = useCallback(async (body: SignupRequest) => {
+    if (demo) throw new Error('Sign-up is unavailable in the public demo.');
     const s = await apiSignup(body);
     seq.current++;
     setState(applySession(s));
-  }, []);
+  }, [demo]);
 
   const signOut = useCallback(async () => {
+    if (demo) return;
     await apiLogout(); // idempotent, best-effort
     await refresh(); // re-read who-am-I ⇒ anonymous
-  }, [refresh]);
+  }, [demo, refresh]);
 
   const updateSettings = useCallback(async (patch: UserSettingsPatch) => {
+    if (demo) throw new Error('Account settings are unavailable in the public demo.');
     const saved = await apiSave(patch); // throws on failure → caller reverts
     setState((prev) => (prev.authenticated ? { ...prev, settings: saved } : prev));
     return saved;
-  }, []);
+  }, [demo]);
 
   const api = useMemo<AuthApi>(
     () => ({ ...state, refresh, signIn, signUp, signOut, updateSettings }),

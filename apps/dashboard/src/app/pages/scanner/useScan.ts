@@ -28,6 +28,7 @@
 import { useGate, type GateApi } from '@/features/auth/useGate';
 import {
   AuthError,
+  dataMode,
   getScan,
   saveScanView,
   type ScanDensity,
@@ -73,7 +74,7 @@ interface Snapshot {
   degraded: boolean;
   /** SPEC B4 (narrowed off the wire's widened string, F3). Defaults 'live' pre-first-read and on a
    *  degraded poll — a failed poll never invents a mode change. */
-  marketData: 'live' | 'paused';
+  marketData: 'live' | 'paused' | 'sample';
 }
 
 export interface ScanApi {
@@ -124,7 +125,7 @@ export function useScan(): ScanApi {
     view: null,
     sweep: null,
     degraded: false,
-    marketData: 'live',
+    marketData: dataMode === 'demo' ? 'sample' : 'live',
   }));
   const [sortDraft, setSortDraft] = useState<ScanViewSort | null>(urlSeed.sort);
   const [densityDraft, setDensityDraft] = useState<ScanDensity | null>(null);

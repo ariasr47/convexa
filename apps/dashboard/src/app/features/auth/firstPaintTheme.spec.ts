@@ -7,6 +7,7 @@
 import { palette } from '@/shared/theme/tokens';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { createServer } from 'vite';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   applyPaintMode,
@@ -36,6 +37,13 @@ function dashboardRoot(): string {
   throw new Error('dashboard root not found from ' + process.cwd());
 }
 const stylesCss = readFileSync(resolve(dashboardRoot(), 'src', 'styles.css'), 'utf-8');
+async function generatedIndexHtml(mode: 'demo' | 'live' = 'live'): Promise<string> {
+  const previous = process.env.VITE_DATA_MODE;
+  process.env.VITE_DATA_MODE = mode;
+  const server = await createServer({ configFile: resolve(dashboardRoot(), 'vite.config.mts'), root: dashboardRoot(), mode: 'production', appType: 'custom', server: { middlewareMode: true } });
+  try { return await server.transformIndexHtml('/', indexHtml); }
+  finally { await server.close(); if (previous == null) delete process.env.VITE_DATA_MODE; else process.env.VITE_DATA_MODE = previous; }
+}
 
 const INK = palette.dark.background.default;
 const PAPER = palette.light.background.default;
@@ -117,8 +125,9 @@ describe('index.html blocking script is pinned to the module', () => {
     expect(m[1]).toBe(INK);
   });
 
-  it('a non-module script runs BEFORE the React bundle and names the same keys + canvases', () => {
-    const blocking = indexHtml.match(/<script>([\s\S]*?)<\/script>/);
+  it('a Vite-generated blocking bootstrap runs BEFORE the React bundle and names the same keys + canvases', async () => {
+    const html = await generatedIndexHtml('live');
+    const blocking = html.match(/<script>([\s\S]*?)<\/script>/);
     if (!blocking)
       throw new Error('index.html must carry a blocking (no type=module) first-paint script');
     const body = blocking[1];
@@ -128,14 +137,15 @@ describe('index.html blocking script is pinned to the module', () => {
     expect(body).toContain(INK);
     expect(body).toContain(PAPER);
     expect(body).toContain('data-theme');
-    const blockingIdx = indexHtml.indexOf('<script>');
-    const moduleIdx = indexHtml.indexOf('type="module"');
+    expect(body).toContain('__CONVEXA_BOOT__');
+    const blockingIdx = html.indexOf('<script>');
     expect(blockingIdx).toBeGreaterThan(-1);
-    expect(blockingIdx).toBeLessThan(moduleIdx);
+    expect(blockingIdx).toBeLessThan(html.indexOf('</head>'));
+    expect(html).toContain('type="module"');
   });
 
-  it('MUTATION GUARD: the pin fails if the script loses the light canvas', () => {
-    expect(indexHtml.includes(PAPER)).toBe(true);
+  it('MUTATION GUARD: the generated script carries the light canvas', async () => {
+    expect((await generatedIndexHtml('live')).includes(PAPER)).toBe(true);
     expect(`<meta name="theme-color" content="${INK}" />`.includes(PAPER)).toBe(false);
   });
 });
@@ -156,27 +166,28 @@ describe('index.html blocking script actually paints (jsdom eval)', () => {
     vi.unstubAllGlobals();
   });
 
-  function runBoot(): void {
-    const blocking = indexHtml.match(/<script>([\s\S]*?)<\/script>/);
+  async function runBoot(mode: 'demo' | 'live' = 'live'): Promise<void> {
+    const html = await generatedIndexHtml(mode);
+    const blocking = html.match(/<script>([\s\S]*?)<\/script>/);
     if (!blocking) throw new Error('missing blocking script');
     // The boot IIFE is first-paint code; eval is the only way to exercise the duplicate.
     eval(blocking[1]);
   }
 
-  it('light uiprefs → data-theme=light and the paper theme-color', () => {
+  it('light uiprefs → data-theme=light and the paper theme-color', async () => {
     localStorage.setItem(UIPREFS_KEY, JSON.stringify({ schema_version: 1, theme: 'light' }));
-    runBoot();
+    await runBoot();
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
     expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(PAPER);
   });
 
-  it('no storage → stays dark (does not rewrite the static meta to light)', () => {
-    runBoot();
+  it('no storage → stays dark (does not rewrite the static meta to light)', async () => {
+    await runBoot();
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(INK);
   });
 
-  it('system + prefers-color-scheme: light → light', () => {
+  it('system + prefers-color-scheme: light → light', async () => {
     vi.stubGlobal(
       'matchMedia',
       vi.fn((q: string) => ({
@@ -191,8 +202,16 @@ describe('index.html blocking script actually paints (jsdom eval)', () => {
       })),
     );
     localStorage.setItem(UIPREFS_KEY, JSON.stringify({ theme: 'system' }));
-    runBoot();
+    await runBoot();
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+  });
+
+  it('demo first paint reads the demo namespace and ignores conflicting live preferences', async () => {
+    localStorage.setItem('convexa.demo.v1.convexa.uiprefs.v1', JSON.stringify({ theme: 'light' }));
+    localStorage.setItem('convexa.uiprefs.v1', JSON.stringify({ theme: 'dark' }));
+    await runBoot('demo');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    expect(localStorage.getItem('convexa.theme-paint')).toBeNull();
   });
 });
 

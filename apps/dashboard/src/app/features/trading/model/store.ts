@@ -19,6 +19,7 @@
  * Reads stay guarded so a storage failure degrades to in-memory only and never throws into the UI.
  */
 import { resolveDurable } from '@/shared/lib/durable/resolveDurable';
+import { dataMode, demoStorageKey, demoNowMs, scenarioProvenance } from '@convexa/api';
 import { DecisionRecord, SCHEMA_VERSION } from './types';
 
 const STORAGE_KEY = 'convexa.ghost-trade.v1';
@@ -39,7 +40,7 @@ let memory: PersistShape | null = null; // fallback when localStorage is unavail
 function read(): PersistShape {
   if (memory) return memory;
   try {
-    const raw = resolveDurable(STORAGE_KEY, LEGACY_STORAGE_KEY);
+    const raw = resolveDurable(demoStorageKey(STORAGE_KEY), demoStorageKey(LEGACY_STORAGE_KEY));
     memory = raw ? { ...empty(), ...(JSON.parse(raw) as PersistShape) } : empty();
   } catch {
     memory = empty();
@@ -71,11 +72,11 @@ export function decisionsForTrade(tradeId: string): DecisionRecord[] {
 /** Download the FULL versioned log (all trades + all decisions) as machine-readable JSON. */
 export function exportLog() {
   const s = read();
-  const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(dataMode === 'demo' ? { ...s, sample_provenance: scenarioProvenance() } : s, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `convexa-decision-history-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `convexa-decision-history-${new Date(dataMode === 'demo' ? demoNowMs() : Date.now()).toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();

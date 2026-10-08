@@ -27,6 +27,7 @@
  * arithmetically legible as a result: mark − net entry = P/L.
  */
 import { MARK_BASIS_META } from '@/features/trading/model/mark';
+import { dataMode, demoNowMs } from '@convexa/api';
 import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -103,7 +104,7 @@ export function formatExpiry(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   if (!y || !m || !d) return iso;
   const md = `${MONTHS[m - 1]} ${d}`;
-  const now = new Date();
+  const now = new Date(dataMode === 'demo' ? demoNowMs() : Date.now());
   const dte = Math.max(
     0,
     Math.round(

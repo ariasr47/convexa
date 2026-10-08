@@ -507,7 +507,7 @@ export function TickerDashboard() {
   });
   // Live tape subscription — portfolio / orders / deck need ticks. Structure widgets are memoized
   // on REST props so they skip re-render when only the tape changes (§3.8 Phase C).
-  const { live, streamOffline, isLive, displayActive, lastSessionPhase } = useLiveTape();
+  const { live, demoOrderFrame, streamOffline, isLive, displayActive, lastSessionPhase } = useLiveTape();
   const { data, loading, error, paused: marketDataPaused, refresh: load } = page.bundle;
   const structHist = page.history;
   const universeMembership = page.universeMembership;
@@ -621,7 +621,7 @@ export function TickerDashboard() {
   const tradeOpen = evalSel.position != null;
 
   // Sim-order engine evaluates THIS ticker's orders off THIS page's stream (arch §5 — no extra ES).
-  useOrderEngine({ ticker, bundle: data, live, isLive, streamOffline });
+  useOrderEngine({ ticker, bundle: data, live, isLive, streamOffline, demoFrame: demoOrderFrame });
 
   // Entry / Prime / Act / order confirm — extracted (§3.8 Phase D).
   const {

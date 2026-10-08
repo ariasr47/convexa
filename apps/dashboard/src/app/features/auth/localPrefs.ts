@@ -9,7 +9,7 @@
  * would break per-account isolation, AC-F2).
  */
 import { resolveDurable } from '@/shared/lib/durable/resolveDurable';
-import type { ThemePref } from '@convexa/api';
+import { dataMode, demoStorageKey, type ThemePref } from '@convexa/api';
 import { SETTINGS_DEFAULTS } from './copy';
 
 const KEY = 'convexa.uiprefs.v1';
@@ -29,22 +29,33 @@ const empty = (): PersistShape => ({
 });
 
 let memory: PersistShape | null = null;
+let faulted = false;
 
 function read(): PersistShape {
   if (memory) return memory;
   try {
-    const raw = resolveDurable(KEY, LEGACY_KEY);
-    memory = raw ? { ...empty(), ...(JSON.parse(raw) as PersistShape) } : empty();
+    const raw = dataMode === 'demo'
+      ? localStorage.getItem(demoStorageKey(KEY))
+      : resolveDurable(demoStorageKey(KEY), demoStorageKey(LEGACY_KEY));
+    if (raw == null) { memory = empty(); faulted = false; }
+    else {
+      const parsed = JSON.parse(raw) as Partial<PersistShape>;
+      if (!parsed || !('theme' in parsed) || !('default_ticker' in parsed)) throw new Error('malformed local preferences');
+      memory = { ...empty(), ...parsed };
+      faulted = false;
+    }
   } catch {
     memory = empty();
+    faulted = true;
   }
   return memory;
 }
 
 function write(s: PersistShape) {
   memory = s;
+  if (faulted) return;
   try {
-    localStorage.setItem(KEY, JSON.stringify(s));
+    localStorage.setItem(demoStorageKey(KEY), JSON.stringify(s));
   } catch {
     /* in-memory only */
   }
@@ -67,6 +78,7 @@ export function saveLocalDefaultTicker(t: string | null) {
 /** Test seam — reset the in-memory cache (the persisted layer is cleared by the test's localStorage). */
 export function __resetLocalPrefs() {
   memory = null;
+  faulted = false;
 }
 
 export const UIPREFS_KEY = KEY;

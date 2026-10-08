@@ -31,6 +31,7 @@ import {
   PORTFOLIO_V3_KEY,
 } from '@/features/trading/positions/store';
 import type { Position } from '@/features/trading/positions/types';
+import { demoStorageKey } from '@convexa/api';
 
 /** The durable sources this read spans, in the order they are reported. */
 export const SOURCE_LABELS = [
@@ -62,8 +63,8 @@ export interface RawSources {
 function readBlob(key: string, legacyKey?: string): { ok: boolean; value: unknown } {
   let raw: string | null = null;
   try {
-    raw = localStorage.getItem(key);
-    if (raw == null && legacyKey) raw = localStorage.getItem(legacyKey);
+    raw = localStorage.getItem(demoStorageKey(key));
+    if (raw == null && legacyKey) raw = localStorage.getItem(demoStorageKey(legacyKey));
   } catch {
     return { ok: false, value: null }; // storage unavailable ⇒ an INCOMPLETE read, not an empty one
   }

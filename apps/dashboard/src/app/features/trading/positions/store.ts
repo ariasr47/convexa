@@ -42,6 +42,7 @@
  * store, and mutators return `false` as the second line of defence.
  */
 import { resolveDurable } from '@/shared/lib/durable/resolveDurable';
+import { dataMode, demoStorageKey, demoNowMs } from '@convexa/api';
 import { defaultCustomization } from './defaults';
 import type { SimPosition } from './leg';
 import { liftLegacyRecord, unionSources, type ParsedSource } from './migrate';
@@ -238,7 +239,7 @@ function read(): PersistShapeV3 {
   // ── 1. v3 exists ⇒ IT ALONE IS AUTHORITATIVE. No source is consulted, ever again. ──────────────
   let rawV3: string | null = null;
   try {
-    rawV3 = localStorage.getItem(V3_KEY);
+    rawV3 = localStorage.getItem(demoStorageKey(V3_KEY));
   } catch {
     // Storage unavailable: refuse every write rather than run a migration we cannot persist.
     memory = empty();
@@ -260,8 +261,8 @@ function read(): PersistShapeV3 {
   }
 
   // ── 2. No v3 ⇒ the union runs, ONCE. ──────────────────────────────────────────────────────────
-  const v2 = readLogicalSource(V2_KEY, LEGACY_V2_KEY, SOURCE_V2, (b) => b.positions);
-  const v1 = readLogicalSource(V1_KEY, LEGACY_V1_KEY, SOURCE_V1, (b) => b.trades);
+  const v2 = readLogicalSource(demoStorageKey(V2_KEY), demoStorageKey(LEGACY_V2_KEY), SOURCE_V2, (b) => b.positions);
+  const v1 = readLogicalSource(demoStorageKey(V1_KEY), demoStorageKey(LEGACY_V1_KEY), SOURCE_V1, (b) => b.trades);
   // EXACTLY TWO ParsedSource entries reach the union, never four. Order IS source precedence.
   const union = unionSources([v2.parsed, v1.parsed]);
   const customization = hydrateCustomization(v2.customization);
@@ -286,7 +287,7 @@ function read(): PersistShapeV3 {
     decisions: union.decisions,
     customization,
     provenance: {
-      migrated_at: new Date().toISOString(),
+      migrated_at: new Date(dataMode === 'demo' ? demoNowMs() : Date.now()).toISOString(),
       source_counts: union.source_counts,
       merge_notice_dismissed: false,
     },
@@ -305,8 +306,8 @@ function write(s: PersistShapeV3): boolean {
   if (positionsFaulted()) return false; // NEVER overwrite a readable-but-unparseable prior blob
   memory = s;
   try {
-    localStorage.setItem(V3_KEY, JSON.stringify(s));
-    localStorage.setItem(BOOK_TOUCH_KEY, String(Date.now() / 1000));
+    localStorage.setItem(demoStorageKey(V3_KEY), JSON.stringify(s));
+    localStorage.setItem(demoStorageKey(BOOK_TOUCH_KEY), String((dataMode === 'demo' ? demoNowMs() : Date.now()) / 1000));
   } catch {
     /* quota/private mode — keep the in-memory copy this session */
   }
@@ -326,7 +327,7 @@ export function exportBookBlob(): PersistShapeV3 {
 
 export function localBookTouchAt(): number {
   try {
-    const t = Number(localStorage.getItem(BOOK_TOUCH_KEY) ?? '0');
+    const t = Number(localStorage.getItem(demoStorageKey(BOOK_TOUCH_KEY)) ?? '0');
     return Number.isFinite(t) ? t : 0;
   } catch {
     return 0;
@@ -347,8 +348,8 @@ export function importBookBlobIfNewer(blob: unknown, serverUpdatedAt: number): b
   const next = hydrateV3(blob as Partial<PersistShapeV3>);
   memory = next;
   try {
-    localStorage.setItem(V3_KEY, JSON.stringify(next));
-    if (serverUpdatedAt > 0) localStorage.setItem(BOOK_TOUCH_KEY, String(serverUpdatedAt));
+    localStorage.setItem(demoStorageKey(V3_KEY), JSON.stringify(next));
+    if (serverUpdatedAt > 0 && dataMode !== 'demo') localStorage.setItem(demoStorageKey(BOOK_TOUCH_KEY), String(serverUpdatedAt));
   } catch {
     /* keep memory */
   }
@@ -358,6 +359,7 @@ export function importBookBlobIfNewer(blob: unknown, serverUpdatedAt: number): b
 
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
 function scheduleBookPush() {
+  if (dataMode === 'demo') return;
   if (pushTimer) clearTimeout(pushTimer);
   pushTimer = setTimeout(() => {
     pushTimer = null;

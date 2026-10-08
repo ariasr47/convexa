@@ -27,6 +27,7 @@ import {
 } from '@/features/trading/positions/store';
 import { PORTFOLIO_SCHEMA_VERSION } from '@/features/trading/positions/types';
 import type { OptionRight, TickerBundle } from '@convexa/api';
+import { dataMode, demoNowMs } from '@convexa/api';
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { STORE_FAULT_TITLE } from './copy';
 import { EngineTick, evaluateOrder, isClockExpired, OrderTransition } from './engine';
@@ -78,7 +79,7 @@ function orderDecision(
   return {
     id: newId(),
     event_type: event,
-    clock_time: new Date().toISOString(),
+    clock_time: new Date(dataMode === 'demo' ? demoNowMs() : Date.now()).toISOString(),
     trade_id: order.id,
     contract: {
       ticker: order.ticker,
@@ -133,7 +134,7 @@ export interface CreateOrderResult {
  *  never `waiting`) without one (AC-12/13). REFUSES a faulted store — nothing partial (AC-29). */
 export function createOrder(input: CreateOrderInput, ctx: DecisionCtx = {}): CreateOrderResult {
   if (ordersFaulted()) return { ok: false, reason: STORE_FAULT_TITLE };
-  const now = new Date().toISOString();
+  const now = new Date(dataMode === 'demo' ? demoNowMs() : Date.now()).toISOString();
   const order: SimOrder = {
     id: newOrderId(),
     created_time: now,
@@ -166,7 +167,7 @@ export function cancelOrder(id: string, ctx: DecisionCtx = {}): void {
   const cancelled: SimOrder = {
     ...o,
     status: 'cancelled',
-    close_time: new Date().toISOString(),
+    close_time: new Date(dataMode === 'demo' ? demoNowMs() : Date.now()).toISOString(),
     close_reason: 'cancelled',
   };
   if (!putOrder(cancelled)) return;
@@ -311,10 +312,10 @@ export function applyOrderTransition(
 
 /** Clock-expiry sweep over EVERY non-terminal order (any ticker) — run on engine ticks AND on
  *  store read/render (AC-21: the only off-stream transition). */
-export function sweepExpiredOrders(nowMs: number = Date.now(), ctx: DecisionCtx = {}): void {
+export function sweepExpiredOrders(nowMs: number = dataMode === 'demo' ? demoNowMs() : Date.now(), ctx: DecisionCtx = {}): void {
   for (const o of allOrders()) {
     if (o.status !== 'waiting' && o.status !== 'triggered') continue;
-    if (isClockExpired(o, nowMs)) {
+    if (isClockExpired(o, nowMs, dataMode === 'demo' ? 'demo_simulation' : 'genuine_live')) {
       applyOrderTransition(
         o.id,
         o.status,
@@ -381,7 +382,7 @@ export function useOrders(): OrdersApi {
   // Render-time expiry sweep (AC-21): reads/renders apply the wall-clock transition. Re-running on
   // each version bump is safe — expired orders are terminal, so the sweep converges (no loop).
   useEffect(() => {
-    sweepExpiredOrders();
+    sweepExpiredOrders(dataMode === 'demo' ? demoNowMs() : Date.now());
   }, [version]);
 
   const create = useCallback(

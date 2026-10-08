@@ -9,6 +9,7 @@
  * on a row that has never been computed.
  */
 import type { ScanRow, ScanSortKey, ScanViewSort, SweepHeartbeat } from '@convexa/api';
+import { dataMode } from '@convexa/api';
 import { isIndexMegacap, SCAN_COPY, SESSION_LABEL, type MarketSessionPhase } from './labels';
 import { isNyseFullDayHolidayIso } from './nyseFullDayHolidays';
 
@@ -232,7 +233,8 @@ export function monthDay(epochSeconds: number): string {
  *  OpenAPI-widened `string` as already-validated (`[digested-labels-not-raw-dump]`). Anything other
  *  than the literal `"paused"` reads as `"live"`, matching the backend's own "live is the default"
  *  rule and failing toward TODAY'S unchanged behavior rather than toward a needless paused banner. */
-export function scanMarketDataMode(value: string | null | undefined): 'live' | 'paused' {
+export function scanMarketDataMode(value: string | null | undefined): 'live' | 'paused' | 'sample' {
+  if (dataMode === 'demo' && value === 'sample') return 'sample';
   return value === 'paused' ? 'paused' : 'live';
 }
 
@@ -340,8 +342,11 @@ export const SWEEP_DOWN_AFTER_S = 180;
 export function sweepBanner(
   sweep: SweepHeartbeat | null,
   nowS: number,
-  marketData: 'live' | 'paused' = 'live',
+  marketData: 'live' | 'paused' | 'sample' = 'live',
 ): { engaged: boolean; text: string } {
+  if (marketData === 'sample') {
+    return { engaged: true, text: 'Authored scenario · October 7, 2026 · no market feed connected' };
+  }
   if (marketData === 'paused') {
     const lastSweptOn =
       sweep?.sweep_last_completed != null ? monthDay(sweep.sweep_last_completed) : null;
