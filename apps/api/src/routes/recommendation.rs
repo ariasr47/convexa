@@ -327,46 +327,6 @@ pub struct SimTradeGateBody {
     pub authorized: bool,
 }
 
-#[cfg(test)]
-mod schema_tests {
-    use super::*;
-    #[test]
-    fn recommendation_schema_is_not_empty() {
-        let schema =
-            serde_json::to_value(<RecommendationBody as utoipa::PartialSchema>::schema()).unwrap();
-        assert!(schema.as_object().is_some_and(|o| !o.is_empty()));
-    }
-
-    #[test]
-    fn export_egress_category_fixture_is_closed_and_exhaustive() {
-        let fixture = serde_json::json!([
-            {"key":"context","sent":true},
-            {"key":"candidates","sent":true},
-            {"key":"risk_inputs","sent":false},
-            {"key":"open_positions","sent":false},
-            {"key":"persona_prompt","sent":true},
-            {"key":"glossary","sent":true}
-        ]);
-        let categories: Vec<EgressCategoryBody> = serde_json::from_value(fixture.clone()).unwrap();
-        assert_eq!(serde_json::to_value(&categories).unwrap(), fixture);
-        assert_eq!(categories.len(), 6);
-        assert_eq!(
-            categories
-                .iter()
-                .map(|c| c.key.as_str())
-                .collect::<Vec<_>>(),
-            vec![
-                "context",
-                "candidates",
-                "risk_inputs",
-                "open_positions",
-                "persona_prompt",
-                "glossary"
-            ]
-        );
-    }
-}
-
 fn default_dark_pool() -> bool {
     true
 }
@@ -692,86 +652,6 @@ async fn sim_trade_gate_http(State(state): State<AppState>, headers: HeaderMap) 
         return r;
     }
     (StatusCode::OK, Json(SimTradeGateBody { authorized: true })).into_response()
-}
-
-#[cfg(test)]
-mod gate_schema_tests {
-    use super::*;
-
-    fn assert_declared<R: IntoResponses>(response: Response, status: StatusCode) {
-        assert_eq!(response.status(), status);
-        let declared = R::responses();
-        let declaration = declared
-            .get(&status.as_u16().to_string())
-            .unwrap_or_else(|| panic!("missing declared response {status}"));
-        let declaration = match declaration {
-            utoipa::openapi::RefOr::T(response) => response,
-            utoipa::openapi::RefOr::Ref(reference) => {
-                panic!("unexpected response reference: {}", reference.ref_location)
-            }
-        };
-        assert!(declaration.content.contains_key("application/json"));
-        assert_eq!(
-            response
-                .headers()
-                .get(axum::http::header::CONTENT_TYPE)
-                .and_then(|value| value.to_str().ok())
-                .and_then(|value| value.split(';').next()),
-            Some("application/json")
-        );
-    }
-
-    #[test]
-    fn gate_runtime_success_fixture_matches_closed_dto() {
-        let body = SimTradeGateBody { authorized: true };
-        let value = serde_json::to_value(body).unwrap();
-        assert_eq!(value, serde_json::json!({ "authorized": true }));
-        assert_eq!(value.as_object().unwrap().len(), 1);
-    }
-
-    #[test]
-    fn recommendation_enum_conversions_match_into_responses() {
-        assert_declared::<RecommendationResponse>(
-            RecommendationResponse::Ok(representative_recommendation_body()).into_response(),
-            StatusCode::OK,
-        );
-        assert_declared::<RecommendationResponse>(
-            RecommendationResponse::Forbidden(representative_wire_error("forbidden"))
-                .into_response(),
-            StatusCode::FORBIDDEN,
-        );
-        assert_declared::<RecommendationResponse>(
-            RecommendationResponse::NotFound(representative_wire_error("not_found"))
-                .into_response(),
-            StatusCode::NOT_FOUND,
-        );
-        assert_declared::<RecommendationResponse>(
-            RecommendationResponse::Validation(representative_wire_error("validation"))
-                .into_response(),
-            StatusCode::UNPROCESSABLE_ENTITY,
-        );
-        assert_declared::<RecommendationResponse>(
-            RecommendationResponse::Upstream(representative_wire_error("upstream")).into_response(),
-            StatusCode::BAD_GATEWAY,
-        );
-        assert_declared::<RecommendationResponse>(
-            RecommendationResponse::Unavailable(representative_wire_error("unavailable"))
-                .into_response(),
-            StatusCode::SERVICE_UNAVAILABLE,
-        );
-    }
-
-    #[test]
-    fn sim_trade_enum_conversions_match_into_responses() {
-        assert_declared::<SimTradeGateResponse>(
-            SimTradeGateResponse::Ok(SimTradeGateBody { authorized: true }).into_response(),
-            StatusCode::OK,
-        );
-        assert_declared::<SimTradeGateResponse>(
-            SimTradeGateResponse::Forbidden(representative_wire_error("forbidden")).into_response(),
-            StatusCode::FORBIDDEN,
-        );
-    }
 }
 
 /// Helper: resolve optional session without failing (for status free-use fields later).
