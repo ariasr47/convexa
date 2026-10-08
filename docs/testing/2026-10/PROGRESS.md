@@ -58,3 +58,5 @@ Append-only. One line per step. Times are local (America/Los_Angeles) unless mar
 - 2026-10-08 P2 batch 3 committed c412a03b; verified (run b03): all exit 0, 591 s; vitest 3122 (-4) + 45, tools 150, cargo 1643, chromium 128, a11y 35, pg 2+9+1, 0 skips.
 - 2026-10-08 P2 batch 4 committed d4bbc269; verified (run b04): all exit 0, 778 s (score_lab.rs change recompiled the release capacity binary); vitest 3122 + 45, tools 150, cargo 1639 (-4), chromium 128, a11y 35, pg 2+9+1, 0 skips.
 - 2026-10-08 P2 batch 5 committed 9248aa9d; verified (run b05): all exit 0, 586 s; vitest 3122 + 45, tools 150, cargo 1635 (-4), chromium 128, a11y 35, pg 2+9+1, 0 skips.
+- 2026-10-08 P2 batch 6 committed c1c5f79b; verified (run b06): all exit 0, 583 s; counts unchanged (the six specs had no runner); 0 skips.
+- 2026-10-08 P2 batch 7 count: fidelity.spec.ts throws at import unless AUDIT_OUT is set, so its listing needs AUDIT_OUT=<dir>: playwright --list --config playwright.audit.config.ts = 50 tests in 1 file (without it: 0, 'No tests found').
