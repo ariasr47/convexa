@@ -77,3 +77,6 @@ RETIRED: tools/ci-resource-guards.spec.mjs; parent 6160467e3ff99f4bcdb2731f42bd3
 RETIRED: apps/dashboard/src/app/pages/ticker/widgets/ai-rec/planScopeCaption.render.spec.tsx; parent 55ab4f167cc14562d04996465327c01be0add610; duplicate; 6 tests
 RETIRED: apps/dashboard/src/app/pages/ticker/widgets/ai-rec/powering.banned.spec.ts; parent 55ab4f167cc14562d04996465327c01be0add610; duplicate; 1 tests
 RETIRED: apps/dashboard/src/app/pages/ticker/widgets/ai-rec/reservedMark.render.spec.tsx; parent 55ab4f167cc14562d04996465327c01be0add610; duplicate; 5 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/liveTapeStore.spec.ts; parent 38e123bf9b78f566af4edcd1c70eec18214a39be; duplicate; 1 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/widgets/level-ladder/LevelLadder.spec.tsx; parent 38e123bf9b78f566af4edcd1c70eec18214a39be; duplicate; 19 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/widgets/off-exchange-blocks/OffExchangeBlocks.spec.tsx; parent 38e123bf9b78f566af4edcd1c70eec18214a39be; duplicate; 2 tests
