@@ -19,7 +19,17 @@ type ReadyState = {
 type RequestState =
   { phase: 'loading' } | { phase: 'cold-error'; detail: string; title: string } | ReadyState;
 
-function FactList({ title, facts }: { title: string; facts: SampleResearchCase['evidence'] }) {
+function FactList({
+  title,
+  facts,
+  symbol,
+  scenarioId,
+}: {
+  title: string;
+  facts: SampleResearchCase['evidence'];
+  symbol: string;
+  scenarioId: string;
+}) {
   return (
     <Box>
       <Typography variant="subtitle1" sx={{ mb: 1 }}>
@@ -31,10 +41,46 @@ function FactList({ title, facts }: { title: string; facts: SampleResearchCase['
             {fact.state === 'present' ? (
               <>
                 <Typography component="span">{fact.text}</Typography>
-                <Typography component="span" variant="caption" color="text.secondary">
-                  {' '}
-                  Source: {fact.sourceIds.join(', ')}
-                </Typography>
+                {fact.sourceIds.length <= 3 ? (
+                  <Typography component="span" variant="caption" color="text.secondary">
+                    {' '}
+                    Source: {fact.sourceIds.join(', ')}
+                  </Typography>
+                ) : (
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography component="span" variant="caption" color="text.secondary">
+                      {' '}
+                      Source: {fact.sourceIds.slice(0, 3).join(', ')} …
+                    </Typography>
+                    <Box component="details" sx={{ minWidth: 0 }}>
+                      <Box
+                        component="summary"
+                        sx={{
+                          minHeight: 44,
+                          display: 'flex',
+                          alignItems: 'center',
+                          color: 'text.secondary',
+                          cursor: 'pointer',
+                          overflowWrap: 'anywhere',
+                        }}
+                      >
+                        {fact.sourceIds.length === 60 &&
+                        new Set(fact.sourceIds).size === 60 &&
+                        fact.sourceIds.every((id) => id.startsWith(`${scenarioId}:${symbol}:`))
+                          ? '60 source IDs · all 60 authored bars'
+                          : `${fact.sourceIds.length} source IDs · show all`}
+                      </Box>
+                      <Typography
+                        component="div"
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ overflowWrap: 'anywhere', minWidth: 0 }}
+                      >
+                        {fact.sourceIds.join(', ')}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
               </>
             ) : fact.state === 'checked_none' ? (
               <Typography color="text.secondary">Checked · {fact.text}</Typography>
@@ -181,7 +227,12 @@ export function ResearchView({ symbol }: { symbol: string }) {
         <Card variant="outlined">
           <CardContent>
             <Stack spacing={2.5}>
-              <FactList title="Evidence" facts={research.evidence} />
+              <FactList
+                title="Evidence"
+                facts={research.evidence}
+                symbol={symbol}
+                scenarioId={research.scenarioId}
+              />
               <Box>
                 <Typography variant="subtitle1" sx={{ mb: 1 }}>
                   Risks
@@ -206,7 +257,12 @@ export function ResearchView({ symbol }: { symbol: string }) {
         <Card variant="outlined">
           <CardContent>
             <Stack spacing={2.5}>
-              <FactList title="Catalysts" facts={research.catalysts} />
+              <FactList
+                title="Catalysts"
+                facts={research.catalysts}
+                symbol={symbol}
+                scenarioId={research.scenarioId}
+              />
               <Box>
                 <Typography variant="subtitle1" sx={{ mb: 1 }}>
                   Assumptions

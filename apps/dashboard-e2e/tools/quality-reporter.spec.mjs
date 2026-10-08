@@ -32,6 +32,64 @@ test('accessibility reporter retains axe finding fields and attachment evidence'
   assert.doesNotMatch(source, /findings: \[\]/);
 });
 
+test('accessibility reporter persists Buffer-body axe attachments and their findings', () => {
+  const output = `apps/dashboard-e2e/test-output/playwright/reporter-body-${process.pid}/summary.json`;
+  const outputDirectory = path.dirname(path.resolve(output));
+  const findings = [
+    {
+      id: 'color-contrast',
+      impact: 'serious',
+      target_selector: '.sample-label',
+    },
+  ];
+  const body = Buffer.from(JSON.stringify(findings));
+  const source = `
+    import fs from 'node:fs';
+    import path from 'node:path';
+    import { QualityReporter } from './apps/dashboard-e2e/src/quality/reporters/quality-reporter.ts';
+    const output = ${JSON.stringify(output)};
+    const tests = Array.from({ length: 35 }, (_, index) => ({
+      titlePath: () => ['', 'chromium', 'accessibility.spec.ts', 'scan-' + index],
+      location: { file: path.resolve('apps/dashboard-e2e/src/quality/accessibility.spec.ts') },
+      parent: { project: () => ({ name: 'chromium' }) },
+    }));
+    const findings = ${JSON.stringify(findings)};
+    const reporter = new QualityReporter({ gate: 'accessibility', output });
+    reporter.onBegin({ rootDir: process.cwd() }, { allTests: () => tests });
+    reporter.onTestEnd(tests[0], {
+      status: 'passed',
+      retry: 0,
+      attachments: [{ name: 'axe-findings.json', contentType: 'application/json', body: Buffer.from(JSON.stringify(findings)) }],
+    });
+    for (let index = 1; index < tests.length; index += 1) {
+      reporter.onTestEnd(tests[index], { status: 'passed', retry: 0, attachments: [] });
+    }
+    reporter.onEnd();
+    const summary = JSON.parse(fs.readFileSync(output, 'utf8'));
+    if (summary.status !== 'pass' || summary.findings.length !== 1) process.exit(1);
+    const finding = summary.findings[0];
+    if (finding.id !== 'color-contrast' || !finding.artifact_path) process.exit(2);
+    const artifact = path.resolve(finding.artifact_path);
+    if (JSON.stringify(JSON.parse(fs.readFileSync(artifact, 'utf8'))) !== JSON.stringify(findings)) process.exit(3);
+    if (summary.artifacts.length !== 1 || summary.artifacts[0].path !== finding.artifact_path) process.exit(4);
+  `;
+  try {
+    assert.doesNotThrow(() =>
+      execFileSync(
+        process.execPath,
+        ['--experimental-strip-types', '--input-type=module', '-e', source],
+        {
+          cwd: path.resolve('.'),
+          stdio: 'pipe',
+        },
+      ),
+    );
+  } finally {
+    fs.rmSync(outputDirectory, { recursive: true, force: true });
+  }
+  assert.equal(body.toString('utf8'), JSON.stringify(findings));
+});
+
 test('real reporter identity helpers map manifest Chromium and all behavior IDs', () => {
   const script = `
     import fs from 'node:fs';
@@ -57,7 +115,8 @@ test('real reporter identity helpers map manifest Chromium and all behavior IDs'
 });
 
 test('visual mismatch operator line uses exact SPEC §4 scenario wording', () => {
-  const output = 'apps/dashboard-e2e/test-output/playwright/visual/summary.json';
+  const output = `apps/dashboard-e2e/test-output/playwright/reporter-visual-${process.pid}/summary.json`;
+  const outputDirectory = path.dirname(path.resolve(output));
   const script = `
     import { QualityReporter } from './apps/dashboard-e2e/src/quality/reporters/quality-reporter.ts';
     const logs = [];
@@ -87,14 +146,18 @@ test('visual mismatch operator line uses exact SPEC §4 scenario wording', () =>
     }
     if (logs.some((line) => /\\[FAIL\\] visual — \\d+ failed/.test(line))) process.exit(2);
   `;
-  assert.doesNotThrow(() =>
-    execFileSync(
-      process.execPath,
-      ['--experimental-strip-types', '--input-type=module', '-e', script],
-      {
-        cwd: path.resolve('.'),
-        stdio: 'pipe',
-      },
-    ),
-  );
+  try {
+    assert.doesNotThrow(() =>
+      execFileSync(
+        process.execPath,
+        ['--experimental-strip-types', '--input-type=module', '-e', script],
+        {
+          cwd: path.resolve('.'),
+          stdio: 'pipe',
+        },
+      ),
+    );
+  } finally {
+    fs.rmSync(outputDirectory, { recursive: true, force: true });
+  }
 });

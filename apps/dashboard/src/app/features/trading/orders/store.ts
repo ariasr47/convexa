@@ -143,11 +143,17 @@ export function buildOrdersExport(decisions: DecisionRecord[]): OrdersExport {
     (d) =>
       d.event_type.startsWith('order_') || orderIds.has(d.trade_id) || positionIds.has(d.trade_id),
   );
-  return { orders, decisions: related, ...(dataMode === 'demo' ? { sample_provenance: scenarioProvenance() } : {}) };
+  return {
+    orders,
+    decisions: related,
+    ...(dataMode === 'demo' ? { sample_provenance: scenarioProvenance() } : {}),
+  };
 }
 
 /** `convexa-orders-{YYYY-MM-DD}.json` (UX §4.5). */
-export function exportFilename(now: Date = new Date(dataMode === 'demo' ? demoNowMs() : Date.now())): string {
+export function exportFilename(
+  now: Date = new Date(dataMode === 'demo' ? demoNowMs() : Date.now()),
+): string {
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, '0');
   const d = String(now.getDate()).padStart(2, '0');

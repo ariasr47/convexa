@@ -27,8 +27,8 @@
  * arithmetically legible as a result: mark − net entry = P/L.
  */
 import { MARK_BASIS_META } from '@/features/trading/model/mark';
-import { dataMode, demoNowMs } from '@convexa/api';
 import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
+import { dataMode, demoNowMs } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';

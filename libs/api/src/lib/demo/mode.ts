@@ -18,8 +18,14 @@ declare global {
     removeItem(key: string): void;
     key(index: number): string | null;
   }
-  const window: { __CONVEXA_BOOT__?: BuildBootstrap; localStorage: DemoStorage; location: { reload(): void } };
-  interface ImportMeta { env: { MODE: string } }
+  const window: {
+    __CONVEXA_BOOT__?: BuildBootstrap;
+    localStorage: DemoStorage;
+    location: { reload(): void };
+  };
+  interface ImportMeta {
+    env: { MODE: string };
+  }
 }
 
 function resolveMode(): DataMode {
@@ -35,7 +41,12 @@ function resolveMode(): DataMode {
 export const dataMode: DataMode = resolveMode();
 export function scenarioProvenance(): ScenarioProvenance | null {
   return dataMode === 'demo'
-    ? { kind: 'synthetic_scenario', scenarioId: 'portfolio-2026-10-07-v1', asOf: '2026-10-07T18:30:00Z', label: 'Demo · sample data' }
+    ? {
+        kind: 'synthetic_scenario',
+        scenarioId: 'portfolio-2026-10-07-v1',
+        asOf: '2026-10-07T18:30:00Z',
+        label: 'Demo · sample data',
+      }
     : null;
 }
 export function demoStorageKey(logicalKey: string): string {

@@ -17,11 +17,11 @@
  */
 import { seedTestPositionsIfNeeded } from '@/features/trading/positions/testSeed';
 import {
-  dataMode,
   login as apiLogin,
   logout as apiLogout,
   saveSettings as apiSave,
   signup as apiSignup,
+  dataMode,
   getSession,
   type AuthUser,
   type LoginRequest,
@@ -100,7 +100,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const demoState: AuthState = {
     ready: true,
     authenticated: false,
-    user: { id: 'demo-visitor', email: 'visitor@demo.invalid', display_name: 'Demo visitor' } as AuthUser,
+    user: {
+      id: 'demo-visitor',
+      email: 'visitor@demo.invalid',
+      display_name: 'Demo visitor',
+    } as AuthUser,
     googleAvailable: false,
     settings: null,
     demoSeed: null,
@@ -112,7 +116,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const seq = useRef(0);
 
   const refresh = useCallback(async () => {
-    if (demo) { setState(demoState); return; }
+    if (demo) {
+      setState(demoState);
+      return;
+    }
     const id = ++seq.current;
     try {
       const s = await getSession();
@@ -155,19 +162,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch(() => undefined);
   }, [demo, state.authenticated, state.user?.id]);
 
-  const signIn = useCallback(async (body: LoginRequest) => {
-    if (demo) throw new Error('Sign-in is unavailable in the public demo.');
-    const s = await apiLogin(body); // throws AuthError on failure (form maps the code)
-    seq.current++; // invalidate any in-flight who-am-I
-    setState(applySession(s));
-  }, [demo]);
+  const signIn = useCallback(
+    async (body: LoginRequest) => {
+      if (demo) throw new Error('Sign-in is unavailable in the public demo.');
+      const s = await apiLogin(body); // throws AuthError on failure (form maps the code)
+      seq.current++; // invalidate any in-flight who-am-I
+      setState(applySession(s));
+    },
+    [demo],
+  );
 
-  const signUp = useCallback(async (body: SignupRequest) => {
-    if (demo) throw new Error('Sign-up is unavailable in the public demo.');
-    const s = await apiSignup(body);
-    seq.current++;
-    setState(applySession(s));
-  }, [demo]);
+  const signUp = useCallback(
+    async (body: SignupRequest) => {
+      if (demo) throw new Error('Sign-up is unavailable in the public demo.');
+      const s = await apiSignup(body);
+      seq.current++;
+      setState(applySession(s));
+    },
+    [demo],
+  );
 
   const signOut = useCallback(async () => {
     if (demo) return;
@@ -175,12 +188,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refresh(); // re-read who-am-I ⇒ anonymous
   }, [demo, refresh]);
 
-  const updateSettings = useCallback(async (patch: UserSettingsPatch) => {
-    if (demo) throw new Error('Account settings are unavailable in the public demo.');
-    const saved = await apiSave(patch); // throws on failure → caller reverts
-    setState((prev) => (prev.authenticated ? { ...prev, settings: saved } : prev));
-    return saved;
-  }, [demo]);
+  const updateSettings = useCallback(
+    async (patch: UserSettingsPatch) => {
+      if (demo) throw new Error('Account settings are unavailable in the public demo.');
+      const saved = await apiSave(patch); // throws on failure → caller reverts
+      setState((prev) => (prev.authenticated ? { ...prev, settings: saved } : prev));
+      return saved;
+    },
+    [demo],
+  );
 
   const api = useMemo<AuthApi>(
     () => ({ ...state, refresh, signIn, signUp, signOut, updateSettings }),

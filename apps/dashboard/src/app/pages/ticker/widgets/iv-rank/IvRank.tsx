@@ -79,7 +79,8 @@ const MONO = typographyTokens.monoFontFamily;
 export function ivRankStripFigure(read: IvRankRead | null): string {
   if (read == null || read.state !== 'computed' || read.rank == null) return 'unavailable';
   const band = read.band != null ? ivrBandDisplay(read.band) : null;
-  return band != null ? `${read.rank} · ${band}` : `${read.rank}`;
+  const rank = Math.round(read.rank);
+  return band != null ? `${rank} · ${band}` : `${rank}`;
 }
 
 interface Props {
@@ -182,7 +183,7 @@ function ComputedBody({ read }: { read: IvRankRead }) {
                 sx={{ fontFamily: MONO, fontWeight: 700 }}
                 data-testid="ivr-rank-value"
               >
-                {read.rank}
+                {Math.round(read.rank)}
               </Typography>
               {/* The ONE band token — closed lookup, never re-derived from the rank. Its lean-framing
                   tooltip is the ONLY permitted directional language (and it inherits the advisory frame). */}
@@ -218,14 +219,14 @@ function ComputedBody({ read }: { read: IvRankRead }) {
             sx={{ fontFamily: MONO, fontWeight: 600 }}
             data-testid="ivr-pct-value"
           >
-            {read.percentile}
+            {Math.round(read.percentile)}
           </Typography>
           <Typography
             variant="body2"
             sx={{ color: 'text.secondary' }}
             data-testid="ivr-pct-descriptor"
           >
-            {ivrPctDescriptor(read.percentile)}
+            {ivrPctDescriptor(Math.round(read.percentile))}
           </Typography>
         </Box>
       )}

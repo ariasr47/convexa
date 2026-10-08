@@ -1,0 +1,98 @@
+{
+  "scope": "Final local live-mode accessibility observation on frozen implementation worktree; source_revision is HEAD plus task changes, not a deployed commit",
+  "nativeExit": 0,
+  "selected": 35,
+  "executed": 35,
+  "passed": 35,
+  "failed": 0,
+  "flaky": 0,
+  "not_run": 0,
+  "run_id": "local-1791435120348-413cd714",
+  "summary_sha256": "1d04581f36f57a796c10738cc8f4571edf0c381b7caea53339a576195cda73a2",
+  "findings": [
+    {
+      "scan_id": "A11Y-8",
+      "route": "/ticker/SPY",
+      "state": "A11Y-8",
+      "rule_id": "page-has-heading-one",
+      "impact": "moderate",
+      "help_url": "https://dequeuniversity.com/rules/axe/4.13/page-has-heading-one?application=playwright",
+      "target_selector": "html",
+      "waived": false,
+      "waiver_id": null,
+      "artifact_path": "apps/dashboard-e2e/test-output/playwright/accessibility/attachments/2-0-axe-findings.json"
+    },
+    {
+      "scan_id": "A11Y-5",
+      "route": "/positions",
+      "state": "A11Y-5",
+      "rule_id": "heading-order",
+      "impact": "moderate",
+      "help_url": "https://dequeuniversity.com/rules/axe/4.13/heading-order?application=playwright",
+      "target_selector": ".MuiTypography-subtitle1",
+      "waived": false,
+      "waiver_id": null,
+      "artifact_path": "apps/dashboard-e2e/test-output/playwright/accessibility/attachments/12-0-axe-findings.json"
+    },
+    {
+      "scan_id": "A11Y-5",
+      "route": "/positions",
+      "state": "A11Y-5",
+      "rule_id": "heading-order",
+      "impact": "moderate",
+      "help_url": "https://dequeuniversity.com/rules/axe/4.13/heading-order?application=playwright",
+      "target_selector": "div[data-testid=\"tr-family-tier\"] > .css-1kpv5jg.MuiStack-root > .css-66e1qy.MuiTypography-subtitle2",
+      "waived": false,
+      "waiver_id": null,
+      "artifact_path": "apps/dashboard-e2e/test-output/playwright/accessibility/attachments/12-0-axe-findings.json"
+    },
+    {
+      "scan_id": "A11Y-26",
+      "route": "/ticker/SPY",
+      "state": "A11Y-26",
+      "rule_id": "page-has-heading-one",
+      "impact": "moderate",
+      "help_url": "https://dequeuniversity.com/rules/axe/4.13/page-has-heading-one?application=playwright",
+      "target_selector": "html",
+      "waived": false,
+      "waiver_id": null,
+      "artifact_path": "apps/dashboard-e2e/test-output/playwright/accessibility/attachments/22-0-axe-findings.json"
+    },
+    {
+      "scan_id": "A11Y-28",
+      "route": "/ticker/SPY",
+      "state": "A11Y-28",
+      "rule_id": "page-has-heading-one",
+      "impact": "moderate",
+      "help_url": "https://dequeuniversity.com/rules/axe/4.13/page-has-heading-one?application=playwright",
+      "target_selector": "html",
+      "waived": false,
+      "waiver_id": null,
+      "artifact_path": "apps/dashboard-e2e/test-output/playwright/accessibility/attachments/23-0-axe-findings.json"
+    },
+    {
+      "scan_id": "A11Y-25",
+      "route": "/ticker/SPY",
+      "state": "A11Y-25",
+      "rule_id": "page-has-heading-one",
+      "impact": "moderate",
+      "help_url": "https://dequeuniversity.com/rules/axe/4.13/page-has-heading-one?application=playwright",
+      "target_selector": "html",
+      "waived": false,
+      "waiver_id": null,
+      "artifact_path": "apps/dashboard-e2e/test-output/playwright/accessibility/attachments/26-0-axe-findings.json"
+    },
+    {
+      "scan_id": "A11Y-27",
+      "route": "/ticker/SPY",
+      "state": "A11Y-27",
+      "rule_id": "page-has-heading-one",
+      "impact": "moderate",
+      "help_url": "https://dequeuniversity.com/rules/axe/4.13/page-has-heading-one?application=playwright",
+      "target_selector": "html",
+      "waived": false,
+      "waiver_id": null,
+      "artifact_path": "apps/dashboard-e2e/test-output/playwright/accessibility/attachments/28-0-axe-findings.json"
+    }
+  ]
+}

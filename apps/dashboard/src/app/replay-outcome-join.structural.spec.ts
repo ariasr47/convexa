@@ -8,7 +8,16 @@
  * Mutation-tested: a scan that cannot prove it bites is not enforcement
  * (`[structural-over-prose-enforcement]`).
  */
-import { existsSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmdirSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { isOperatorSessionArchiveSource } from '../testing/operatorSessionArchiveAllowlist';
@@ -193,10 +202,11 @@ describe('F1 · no trader chrome for replay-outcome-join (AC-20/29)', () => {
   });
 
   it('mutation — a poisoned dashboard source file is detected by the fs walk', () => {
-    const poisonPath = resolve(DASHBOARD_APP, '_mutation_poison_replay_outcome_join.ts');
+    const fixtureRoot = mkdtempSync(resolve(tmpdir(), 'replay-outcome-join-'));
+    const poisonPath = resolve(fixtureRoot, '_mutation_poison_replay_outcome_join.ts');
     try {
       writeFileSync(poisonPath, 'export const leak = "replay-outcome-join";\n', 'utf8');
-      const files = collectTsFiles(DASHBOARD_APP);
+      const files = collectTsFiles(fixtureRoot);
       expect(files.some((f) => f === poisonPath)).toBe(true);
       const hits: string[] = [];
       for (const file of files) {
@@ -208,6 +218,7 @@ describe('F1 · no trader chrome for replay-outcome-join (AC-20/29)', () => {
       expect(hits.some((h) => h.includes('replay-outcome-join'))).toBe(true);
     } finally {
       if (existsSync(poisonPath)) unlinkSync(poisonPath);
+      rmdirSync(fixtureRoot);
     }
   });
 });

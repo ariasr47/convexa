@@ -35,7 +35,11 @@ function readDemoRaw(): string | null {
   const legacyKey = demoStorageKey(LEGACY_KEY);
   const legacy = localStorage.getItem(legacyKey);
   if (legacy != null) {
-    try { localStorage.setItem(currentKey, legacy); } catch { /* preserve legacy bytes; render in memory */ }
+    try {
+      localStorage.setItem(currentKey, legacy);
+    } catch {
+      /* preserve legacy bytes; render in memory */
+    }
   }
   return legacy;
 }
@@ -43,13 +47,17 @@ function readDemoRaw(): string | null {
 function read(): PersistShape {
   if (memory) return memory;
   try {
-    const raw = dataMode === 'demo'
-      ? readDemoRaw()
-      : resolveDurable(demoStorageKey(KEY), demoStorageKey(LEGACY_KEY));
-    if (raw == null) { memory = empty(); faulted = false; }
-    else {
+    const raw =
+      dataMode === 'demo'
+        ? readDemoRaw()
+        : resolveDurable(demoStorageKey(KEY), demoStorageKey(LEGACY_KEY));
+    if (raw == null) {
+      memory = empty();
+      faulted = false;
+    } else {
       const parsed = JSON.parse(raw) as Partial<PersistShape>;
-      if (!parsed || !Array.isArray(parsed.customs) || !('active_persona_id' in parsed)) throw new Error('malformed persona store');
+      if (!parsed || !Array.isArray(parsed.customs) || !('active_persona_id' in parsed))
+        throw new Error('malformed persona store');
       memory = { ...empty(), ...parsed };
       faulted = false;
     }

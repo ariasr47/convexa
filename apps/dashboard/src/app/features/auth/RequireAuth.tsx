@@ -14,6 +14,7 @@
  */
 import { extrasFor } from '@/shared/theme/tokens';
 import { RouteFallback } from '@/shared/ui/RouteFallback';
+import { dataMode } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
@@ -25,7 +26,6 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
 import { AUTH_COPY } from './copy';
-import { dataMode } from '@convexa/api';
 
 interface Props {
   children: ReactNode;

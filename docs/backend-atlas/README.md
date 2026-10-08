@@ -1,40 +1,54 @@
 # Convexa backend atlas
 
-This atlas explains the current repository and the portfolio demo initiative. The source baseline is `8932fc1176543eff3fa826de6924e12ec52f3310` (2026-10-07 audit). It is not a production telemetry report.
+This atlas explains the original Rust-backed live service and the implemented browser-local portfolio demo. Live-source links remain pinned to `8932fc1176543eff3fa826de6924e12ec52f3310` (the October 7, 2026 audit); demo links point to the `codex/portfolio-demo-platform` implementation. Neither source diagrams nor local checks claim hosted traffic.
 
 ## Read visually
 
-- [Interactive atlas](index.html) — system map, request walkthroughs, data ownership, stack and user journeys.
-- [Experience canvas](design-canvas.html) — proposed demo indication, technical-analysis and research experience, created before product implementation; desktop/phone, dark/light and degraded states.
+- [Interactive atlas](index.html) — live system map, request traces, data ownership, user journeys, and the implemented demo flow.
+- [Experience canvas](design-canvas.html) — the **pre-build proposed canvas**, including desktop/phone, dark/light and degraded states. It is a design artifact, not a screenshot of the shipped app.
 - `backend-source-audit.md` — Rust architecture and provider/storage/worker evidence.
-- `frontend-source-audit.md` — page/widget to source map and browser-state boundaries.
-- `nx-production-research.md` — current official guidance, repository findings and production/test recommendations.
+- `frontend-source-audit.md` — page/widget-to-source map and browser-state boundaries.
+- [Nx production research](nx-production-research.md) — build/cache findings, deployment research and official source links.
 
-Open `index.html` directly, or run `node docs/backend-atlas/serve.mjs` from the repository and visit `http://127.0.0.1:4387/`. The atlas has no external runtime dependencies. Source links pin the audited Git revision. The diagram and walkthrough controls work locally.
+Open `index.html` directly, or serve the atlas from the repository with `node docs/backend-atlas/serve.mjs` and visit `http://127.0.0.1:4387/`. It has no external runtime dependencies. Select a diagram node or section tab to read its responsibility, evidence class and source links.
 
-## Current boundary
+## How to read the evidence
 
-The paid Massive subscription is no longer active. The current backend supports `MARKET_DATA_MODE=live|paused`; paused avoids vendor workers and denies unavailable market-data requests. Existing fixture/replay adapters are research/test facilities and must not be relabeled as paid live observations.
+- **Source-derived** means the referenced code describes the path; it does not prove a request ran.
+- **Locally measured** means the command or browser observation completed locally with an exit code and result.
+- **Hosted** means the exact deployed revision and URL were observed. Local success cannot substitute for it.
+- **Proposed** identifies a design direction, including the pre-build experience canvas.
 
-The portfolio composition uses the real frontend behind an explicit, build-selected demo adapter. Its shared provider foundation is implemented locally; dashboard integration and hosted delivery are still pending. Synthetic market data, sample analysis and the separate sample portfolio must never call paid services, masquerade as current market data, or write into a visitor's live saved state. The approved interfaces and scope are in `.spire/clusters/tech/contracts/portfolio-demo-platform/`.
+The original live service is a Rust/Axum application behind the Pages proxy. Its market-data subscription has ended. `MARKET_DATA_MODE=paused` stops its five market-data producers and refuses market reads; it does not select or populate the demo. The demo is a separate build-selected dashboard path. It uses authored synthetic data, browser-local services and storage, and does not establish that the Rust service processed the visitor's request.
 
-## Evidence legend
+## Portfolio demo: current behavior
 
-- **Source-derived:** read directly in code, with file/line references. A sequence diagram proves structure, not that an actual request ran.
-- **Measured locally:** a command/browser observation with revision, mode, exit code and result.
-- **Hosted:** observed on the deployed revision. Local green is never substituted for this.
-- **Proposed:** design not yet implemented or verified.
+The built demo uses the existing dashboard composition with a local API-compatible facade, one fixed scenario clock, and the `convexa.demo.v1.*` storage namespace. The catalog supports SPY, QQQ, AAPL, MSFT, NVDA and TSLA, with three authored expiries and seven curated nonempty expiry selections per symbol. Scanner rows and prices, the editable paper portfolio, simulated orders, settings and sample stream remain local. Read-only sample broker holdings are a separate dataset.
 
-Recorded evidence is under `evidence/`: local production-build/test baseline, atlas/canvas review, and a separate two-endpoint anonymous hosted API shape check. That API check does not establish paid-feed operation or deployment of the new demo.
+Technical analysis and Research are separate lazy-loaded views within each ticker. The normal sample bundle is authored for all six symbols and all seven nonempty expiry selections: IV skew, full-chain term structure, both dealer-flow limbs, all four Market Context groups, full-chain IV rank, selected-variant normalized GEX, a quoted selected-expiry straddle, three qualifying positioning rows, and side-unknown off-exchange blocks. Technical analysis reads 60 authored daily bars. Research has six distinct cases, each linked to source items, evidence, risks and invalidation; both are separate from operator archive research. Demo export carries the exact selected expiry variant fingerprint and sample provenance. Live mode reports local bars and research cases as unavailable. Sample-tape figures retain app-local standing and live=false. Final joined local coverage and the user journey were observed; the static data inventory alone does not certify every value/source relationship.
 
-## Demo mode runbook and current status
+Choose the build mode in PowerShell from `C:\Dev\convexa`:
 
-Set `VITE_DATA_MODE=demo` or `VITE_DATA_MODE=live` before `npm run build:dashboard`. An unset value resolves to `live`, except that the wrapper chooses `demo` when `CF_PAGES=1` and `CF_PAGES_BRANCH=codex/portfolio-demo-platform`; any other explicit value fails before Nx. Mode is included in the Nx build identity, so changing it requires a new build and deployment. Do not switch modes by editing browser storage.
+```powershell
+$env:VITE_DATA_MODE = 'demo'
+npm run build:dashboard
+```
 
-Demo catalog coverage is six symbols: SPY, QQQ, AAPL, MSFT, NVDA and TSLA. The authored expiries are 2026-10-09 (2 DTE), 2026-10-16 (9 DTE) and 2026-11-20 (44 DTE), with seven curated nonempty expiry selections. Dark-pool-only queries and unsupported operations are explicitly unavailable. Sample bars and research are demo-only; live mode reports the provider as unavailable rather than borrowing demo data. The demo preview is intended to use static Pages routes with Functions excluded. Loaded and cached content can remain visible offline; uncached routes or chunks are not promised offline behavior. To return to live behavior, build and deploy with `VITE_DATA_MODE=live`.
+Use `live` to build the live dashboard. When the variable is unset, the wrapper defaults to live, except for the configured Cloudflare Pages feature branch (`CF_PAGES=1` and `CF_PAGES_BRANCH=codex/portfolio-demo-platform`), which defaults to demo. Invalid explicit values fail before Nx starts. Mode enters the build identity, so switching modes requires another build. Both modes use the production optimization target.
 
-Current local evidence is scoped to the shared foundation: four focused Vitest files (nine checks), the G5 build-mode/routing/cache guard (four checks), and the API library typecheck have passed. These results do not establish a complete dashboard build or browser experience. The production build/cache mode matrix, bundle closure, composed dashboard journey, hosted route/no-egress observation, CI gates and final independent QA remain **NOT RUN**. See [demo-local evidence](evidence/demo-local.md) for exact commands, exits and limitations.
+For ordinary local builds, clear the variable to restore the live default:
 
-## Delivery boundary
+```powershell
+Remove-Item Env:VITE_DATA_MODE -ErrorAction SilentlyContinue
+npm run build:dashboard
+```
 
-Prefer a static demo deployment using existing hosting. This work does not authorize production database migrations or modifications to production data. Existing Railway configuration includes a migration hook; avoid that deployment path for a static demo.
+The local demo uses static assets and makes no API or vendor request by design. The final production demo journey ran in 54.159 seconds with zero egress, and the separate MSFT 60-source probe passed. This is local worktree evidence, not hosted traffic. Already-loaded views can continue to use local data offline; an uncached lazy view still needs its static chunk.
+
+## Verification status
+
+The final joined implementation covers six symbols × seven expiry selections, six distinct Research cases, and all listed normal widgets. Canonical local checks passed: dashboard 262 files / 3,150 tests, API 8 files / 59 tests, typecheck and generated API contract, format check, and lint across three projects (exit 0 with advisory warnings). The full lint command reported zero errors; warnings were advisory.
+
+Live Chromium passed 128/128 and cross-browser compatibility passed 15/15. Final accessibility execution passed 35/35 with native exit 0, while reporting seven unwaived moderate findings: five missing-H1 findings on ticker routes and two heading-order findings on Positions. Passing execution is not a zero-findings claim. Visual baseline review is pending.
+
+Final G1 production-demo journey passed in 54.159 seconds with zero egress; the MSFT 60-source probe passed. Independent QA against 20 acceptance criteria is still running; visual baseline review is pending. CI and hosted Pages/deep-link checks have not run, so there is no hosted URL, overall PASS, or release claim. These receipts describe a worktree before its checkpoint commit, not a deployed hash. Preserve the original Rust-backed architecture as a separate source-derived path; the demo facade runs in the browser and does not route demo data through Rust.

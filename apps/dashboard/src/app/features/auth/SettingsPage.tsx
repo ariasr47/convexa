@@ -20,7 +20,7 @@
 import { usePersona } from '@/features/personas/usePersona';
 import { DisclaimerCopy } from '@/shared/copy/disclaimer';
 import { extrasFor } from '@/shared/theme/tokens';
-import type { ThemePref } from '@convexa/api';
+import { dataMode, type ThemePref } from '@convexa/api';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
 import SettingsBrightnessOutlinedIcon from '@mui/icons-material/SettingsBrightnessOutlined';
@@ -184,14 +184,25 @@ export function SettingsPage() {
         {/* Honest, mode-aware subtitle (redesign-stage-0 §4.1): anonymous prefs are client-local —
             never claim account persistence for a signed-out user. */}
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          {auth.authenticated ? C.subtitleSignedIn : C.subtitleAnonymous}
+          {dataMode === 'demo'
+            ? "Saved in this browser's demo workspace."
+            : auth.authenticated
+              ? C.subtitleSignedIn
+              : C.subtitleAnonymous}
         </Typography>
       </Stack>
 
       <Stack spacing={3}>
         {/* ===== 1. Account panel — display + Sign out (log out now lives here) ===== */}
         <PanelCard heading={C.accountHeading} testId="settings-account-panel">
-          {auth.authenticated ? (
+          {dataMode === 'demo' ? (
+            <Stack spacing={0.5} data-testid="settings-account-demo">
+              <Typography sx={{ fontWeight: 700 }}>Demo visitor</Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Saved in this browser&apos;s demo workspace.
+              </Typography>
+            </Stack>
+          ) : auth.authenticated ? (
             <Stack
               direction="row"
               spacing={2}

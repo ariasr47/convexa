@@ -20,7 +20,7 @@ const { getScanMock, resumeDemoPlaybackMock, resetDemoWorkspaceMock } = vi.hoist
 vi.mock('@convexa/api', () => ({
   dataMode: 'live',
   demoClock: () => null,
-  subscribeDemoClock: () => () => {},
+  subscribeDemoClock: () => () => undefined,
   resumeDemoPlayback: resumeDemoPlaybackMock,
   resetDemoWorkspace: resetDemoWorkspaceMock,
   getScan: getScanMock,

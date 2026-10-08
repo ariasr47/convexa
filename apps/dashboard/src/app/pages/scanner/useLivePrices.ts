@@ -11,7 +11,7 @@ import {
 } from '@convexa/api';
 import { useEffect, useState } from 'react';
 
-export interface LivePrice extends ScannerPrice {}
+export type LivePrice = ScannerPrice;
 
 export interface LivePricesState {
   /** Symbol → latest changed price and its untouched server/scenario timestamp. */

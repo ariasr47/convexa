@@ -6,7 +6,14 @@
  */
 import type { LiveUpdate } from '@convexa/api';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { EngineTick, evaluateOrder, isClockExpired, tickFromDemo, tickFromLive, triggerMet } from './engine';
+import {
+  EngineTick,
+  evaluateOrder,
+  isClockExpired,
+  tickFromDemo,
+  tickFromLive,
+  triggerMet,
+} from './engine';
 import { __resetOrdersMemory, getOrder } from './store';
 import type { SimOrder } from './types';
 import { applyOrderTransition, createOrder } from './useOrders';
@@ -38,7 +45,15 @@ function order(over: Partial<SimOrder> = {}): SimOrder {
 }
 
 function tick(over: Partial<EngineTick> = {}): EngineTick {
-  return { standing: 'genuine_live', mid: 250, isLive: true, streamOffline: false, optionMark: null, now: NOW, ...over };
+  return {
+    standing: 'genuine_live',
+    mid: 250,
+    isLive: true,
+    streamOffline: false,
+    optionMark: null,
+    now: NOW,
+    ...over,
+  };
 }
 
 describe('triggerMet — the instantaneous level test (strict above/below)', () => {
@@ -59,16 +74,28 @@ describe('evaluateOrder — live-cross-only transitions', () => {
     vi.setSystemTime(new Date('2027-01-15T12:00:00Z'));
     try {
       const frame = {
-        frameId: 'SPY-5000', scenarioTimeMs: Date.parse('2026-10-07T18:30:05Z'),
-        symbol: 'SPY', underlyingMid: 690.7,
+        frameId: 'SPY-5000',
+        scenarioTimeMs: Date.parse('2026-10-07T18:30:05Z'),
+        symbol: 'SPY',
+        underlyingMid: 690.7,
         marksByContractId: { 'SPY|2026-10-16|690|call': 3.2 },
       } as const;
-      const pending = order({ status: 'triggered', trigger: null, expiration: '2026-10-16', expires_at: '2026-10-16T20:00:00Z', limit_price: null });
+      const pending = order({
+        status: 'triggered',
+        trigger: null,
+        expiration: '2026-10-16',
+        expires_at: '2026-10-16T20:00:00Z',
+        limit_price: null,
+      });
       expect(evaluateOrder(pending, tickFromDemo(frame, null, frame.scenarioTimeMs))).toBeNull();
       expect(evaluateOrder(pending, tickFromDemo(frame, 3.2, frame.scenarioTimeMs))).toMatchObject({
-        to: 'filled', filled_time: '2026-10-07T18:30:05.000Z', fill_mark: 3.2,
+        to: 'filled',
+        filled_time: '2026-10-07T18:30:05.000Z',
+        fill_mark: 3.2,
       });
-    } finally { vi.useRealTimers(); }
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('fires on the FIRST live payload satisfying the comparator (waiting → triggered)', () => {

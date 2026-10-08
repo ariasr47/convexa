@@ -345,7 +345,10 @@ export function sweepBanner(
   marketData: 'live' | 'paused' | 'sample' = 'live',
 ): { engaged: boolean; text: string } {
   if (marketData === 'sample') {
-    return { engaged: true, text: 'Authored scenario · October 7, 2026 · no market feed connected' };
+    return {
+      engaged: true,
+      text: 'Authored scenario · October 7, 2026 · no market feed connected',
+    };
   }
   if (marketData === 'paused') {
     const lastSweptOn =

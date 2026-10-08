@@ -1,27 +1,40 @@
-import { vi } from 'vitest';
-import { createElement, type ReactNode } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
+import { vi } from 'vitest';
 
 // This G3 module must start from the same generated bootstrap contract as the production artifact.
 vi.hoisted(() => {
-  (window as Window & { __CONVEXA_BOOT__?: { mode: 'demo'; key: (key: string) => string } }).__CONVEXA_BOOT__ = {
-    mode: 'demo', key: (key: string) => `convexa.demo.v1.${key}`,
+  (
+    window as Window & { __CONVEXA_BOOT__?: { mode: 'demo'; key: (key: string) => string } }
+  ).__CONVEXA_BOOT__ = {
+    mode: 'demo',
+    key: (key: string) => `convexa.demo.v1.${key}`,
   };
 });
 
-import { demoNowMs, initializeDemoWorkspace, resetDemoWorkspace, type DemoOrderFrame } from '@convexa/api';
-import { allDecisions, allPositions, __resetMemory as resetPositions, positionsFaulted } from '@/features/trading/positions/store';
-import { setNotifyBrowser, __resetAlertsMemory } from '@/features/alerts/store';
-import { loadActiveId, saveActiveId, __resetPersonas } from '@/features/personas/store';
-import { recordVisit, listRecents, __resetRecentTickers } from '@/pages/ticker/recentTickers/store';
-import { loadLocalTheme, saveLocalTheme, __resetLocalPrefs } from '@/features/auth/localPrefs';
+import { __resetAlertsMemory, setNotifyBrowser } from '@/features/alerts/store';
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
-import { allOrders, __resetOrdersMemory, getOrder } from './store';
-import { cancelOrder, createOrder, sweepExpiredOrders, useOrders } from './useOrders';
-import { useOrderEngine } from './useOrderEngine';
-import type { SimOrder } from './types';
+import { __resetLocalPrefs, loadLocalTheme, saveLocalTheme } from '@/features/auth/localPrefs';
+import { __resetPersonas, loadActiveId, saveActiveId } from '@/features/personas/store';
+import {
+  allDecisions,
+  allPositions,
+  positionsFaulted,
+  __resetMemory as resetPositions,
+} from '@/features/trading/positions/store';
 import { defaultGoodTil, goodTilToExpiresAt, todayIso } from '@/features/trading/tradeEntry/types';
 import { scanMarketDataMode, sweepBanner } from '@/pages/scanner/format';
+import { __resetRecentTickers, listRecents, recordVisit } from '@/pages/ticker/recentTickers/store';
+import {
+  demoNowMs,
+  initializeDemoWorkspace,
+  resetDemoWorkspace,
+  type DemoOrderFrame,
+} from '@convexa/api';
+import { __resetOrdersMemory, allOrders, getOrder } from './store';
+import type { SimOrder } from './types';
+import { useOrderEngine } from './useOrderEngine';
+import { cancelOrder, createOrder, sweepExpiredOrders, useOrders } from './useOrders';
 
 describe('G3 demo workspace and paper order flow', () => {
   beforeEach(() => {
@@ -43,31 +56,57 @@ describe('G3 demo workspace and paper order flow', () => {
     initializeDemoWorkspace();
 
     expect(localStorage.getItem('convexa.positions.v3')).toBe('live-book-must-stay-byte-identical');
-    expect(localStorage.getItem('gammaflow.positions.v2')).toBe('legacy-book-must-stay-byte-identical');
+    expect(localStorage.getItem('gammaflow.positions.v2')).toBe(
+      'legacy-book-must-stay-byte-identical',
+    );
     expect(localStorage.getItem('convexa.demo.v1.convexa.positions.v3')).not.toBeNull();
     expect(allPositions().map((position) => position.id)).toEqual(
       expect.arrayContaining(['demo-position-spy-oct16-690c', 'demo-position-qqq-oct09-630c']),
     );
-    expect(allOrders().find((order) => order.id === 'demo-order-spy-nov20-limit')?.status).toBe('triggered');
+    expect(allOrders().find((order) => order.id === 'demo-order-spy-nov20-limit')?.status).toBe(
+      'triggered',
+    );
     expect(positionsFaulted()).toBe(false);
     sweepExpiredOrders();
     expect(getOrder('demo-order-spy-nov20-limit')?.status).toBe('triggered'); // host 2027 cannot expire scenario order
 
     try {
       const mountedFrame: DemoOrderFrame = {
-        frameId: 'SPY-mount-stale', scenarioTimeMs: demoNowMs() + 5_000, symbol: 'SPY', underlyingMid: 690.7,
+        frameId: 'SPY-mount-stale',
+        scenarioTimeMs: demoNowMs() + 5_000,
+        symbol: 'SPY',
+        underlyingMid: 690.7,
         marksByContractId: { 'SPY|2026-11-20|690|put': 6.2 },
       };
-      const hook = renderHook((frame: DemoOrderFrame | undefined) => {
-        useOrderEngine({ ticker: 'SPY', bundle: null, live: null, isLive: false, streamOffline: true, demoFrame: frame });
-      }, { initialProps: mountedFrame });
+      const hook = renderHook(
+        (frame: DemoOrderFrame | undefined) => {
+          useOrderEngine({
+            ticker: 'SPY',
+            bundle: null,
+            live: null,
+            isLive: false,
+            streamOffline: true,
+            demoFrame: frame,
+          });
+        },
+        { initialProps: mountedFrame },
+      );
       expect(getOrder('demo-order-spy-nov20-limit')?.status).toBe('triggered'); // mount frame cannot retro-fill
 
       let created!: ReturnType<typeof createOrder>;
-      act(() => { created = createOrder({
-          ticker: 'SPY', expiration: '2026-10-16', strike: 690, right: 'call', qty: 1,
-          trigger: null, limit_price: 3, stop: null, target: null,
-          expires_at: '2026-10-16T23:59:59.999Z', provenance: { source: 'manual' },
+      act(() => {
+        created = createOrder({
+          ticker: 'SPY',
+          expiration: '2026-10-16',
+          strike: 690,
+          right: 'call',
+          qty: 1,
+          trigger: null,
+          limit_price: 3,
+          stop: null,
+          target: null,
+          expires_at: '2026-10-16T23:59:59.999Z',
+          provenance: { source: 'manual' },
         });
       });
       expect(created.ok).toBe(true);
@@ -78,25 +117,41 @@ describe('G3 demo workspace and paper order flow', () => {
       expect(getOrder(order.id)?.status).toBe('triggered');
 
       const pendingFrame: DemoOrderFrame = {
-        frameId: 'SPY-fresh-pending', scenarioTimeMs: demoNowMs() + 10_000, symbol: 'SPY', underlyingMid: 690.8,
+        frameId: 'SPY-fresh-pending',
+        scenarioTimeMs: demoNowMs() + 10_000,
+        symbol: 'SPY',
+        underlyingMid: 690.8,
         marksByContractId: { 'SPY|2026-11-20|690|call': 6.2 },
       };
       act(() => hook.rerender(pendingFrame));
       expect(getOrder('demo-order-spy-nov20-limit')?.status).toBe('filled');
-      expect(getOrder('demo-order-spy-nov20-limit')?.filled_time).toBe(new Date(pendingFrame.scenarioTimeMs).toISOString());
+      expect(getOrder('demo-order-spy-nov20-limit')?.filled_time).toBe(
+        new Date(pendingFrame.scenarioTimeMs).toISOString(),
+      );
       expect(getOrder(order.id)?.status).toBe('triggered'); // its exact call mark was absent
 
       const confirmedFrame: DemoOrderFrame = {
-        frameId: 'SPY-fresh-confirmed', scenarioTimeMs: demoNowMs() + 15_000, symbol: 'SPY', underlyingMid: 690.9,
+        frameId: 'SPY-fresh-confirmed',
+        scenarioTimeMs: demoNowMs() + 15_000,
+        symbol: 'SPY',
+        underlyingMid: 690.9,
         marksByContractId: { 'SPY|2026-10-16|690|call': 2.8 },
       };
       act(() => hook.rerender(confirmedFrame));
       expect(getOrder(order.id)?.status).toBe('filled');
-      expect(getOrder(order.id)).toMatchObject({ filled_time: new Date(confirmedFrame.scenarioTimeMs).toISOString(), fill_mark: 3 });
+      expect(getOrder(order.id)).toMatchObject({
+        filled_time: new Date(confirmedFrame.scenarioTimeMs).toISOString(),
+        fill_mark: 3,
+      });
       expect(allPositions().filter((entry) => entry.origin_order_id === order.id)).toHaveLength(1);
-      expect(allPositions().find((entry) => entry.origin_order_id === order.id)).toMatchObject({ opened_time: new Date(confirmedFrame.scenarioTimeMs).toISOString(), status: 'open' });
+      expect(allPositions().find((entry) => entry.origin_order_id === order.id)).toMatchObject({
+        opened_time: new Date(confirmedFrame.scenarioTimeMs).toISOString(),
+        status: 'open',
+      });
       hook.unmount();
-    } finally { vi.useRealTimers(); }
+    } finally {
+      vi.useRealTimers();
+    }
     expect(localStorage.getItem('convexa.orders.v1')).toBeNull();
     expect(localStorage.getItem('convexa.demo.v1.convexa.orders.v1')).not.toBeNull();
     saveActiveId('demo-careful-reader');
@@ -112,11 +167,11 @@ describe('G3 demo workspace and paper order flow', () => {
     expect(localStorage.getItem('convexa.demo.v1.convexa.alerts.v1')).not.toBeNull();
     expect(localStorage.getItem('convexa.personas.v1')).toBeNull();
     expect(localStorage.getItem('convexa.uiprefs.v1')).toBe('live-preference');
-      expect(scanMarketDataMode('sample')).toBe('sample');
-      expect(sweepBanner(null, 1_800_000, 'sample')).toEqual({
-        engaged: true,
-        text: 'Authored scenario · October 7, 2026 · no market feed connected',
-      });
+    expect(scanMarketDataMode('sample')).toBe('sample');
+    expect(sweepBanner(null, 1_800_000, 'sample')).toEqual({
+      engaged: true,
+      text: 'Authored scenario · October 7, 2026 · no market feed connected',
+    });
   });
 
   it('uses the scenario clock for good-til defaults, cancellation, and decision records', () => {
@@ -128,27 +183,50 @@ describe('G3 demo workspace and paper order flow', () => {
       expect(defaultGoodTil('2026-11-20')).toBe('2026-10-14');
       expect(goodTilToExpiresAt('2026-10-14')).toBe('2026-10-15T03:59:59.999Z');
       const created = createOrder({
-        ticker: 'QQQ', expiration: '2026-10-16', strike: 630, right: 'call', qty: 1,
-        trigger: null, limit_price: null, stop: null, target: null,
-        expires_at: goodTilToExpiresAt('2026-10-14'), provenance: { source: 'manual' },
+        ticker: 'QQQ',
+        expiration: '2026-10-16',
+        strike: 630,
+        right: 'call',
+        qty: 1,
+        trigger: null,
+        limit_price: null,
+        stop: null,
+        target: null,
+        expires_at: goodTilToExpiresAt('2026-10-14'),
+        provenance: { source: 'manual' },
       });
       expect(created.ok).toBe(true);
       cancelOrder((created.order as SimOrder).id);
-      expect(getOrder((created.order as SimOrder).id)?.close_time).toBe(new Date(demoNowMs()).toISOString());
-      expect(allDecisions().filter((decision) => decision.trade_id === (created.order as SimOrder).id).map((decision) => decision.clock_time)).toEqual([
-        new Date(demoNowMs()).toISOString(), new Date(demoNowMs()).toISOString(),
-      ]);
+      expect(getOrder((created.order as SimOrder).id)?.close_time).toBe(
+        new Date(demoNowMs()).toISOString(),
+      );
+      expect(
+        allDecisions()
+          .filter((decision) => decision.trade_id === (created.order as SimOrder).id)
+          .map((decision) => decision.clock_time),
+      ).toEqual([new Date(demoNowMs()).toISOString(), new Date(demoNowMs()).toISOString()]);
       const expiredCandidate = createOrder({
-        ticker: 'SPY', expiration: '2026-11-20', strike: 690, right: 'call', qty: 1,
-        trigger: { kind: 'underlying_above', level: 700 }, limit_price: 2, stop: null, target: null,
-        expires_at: new Date(demoNowMs() - 1).toISOString(), provenance: { source: 'manual' },
+        ticker: 'SPY',
+        expiration: '2026-11-20',
+        strike: 690,
+        right: 'call',
+        qty: 1,
+        trigger: { kind: 'underlying_above', level: 700 },
+        limit_price: 2,
+        stop: null,
+        target: null,
+        expires_at: new Date(demoNowMs() - 1).toISOString(),
+        provenance: { source: 'manual' },
       });
       expect(expiredCandidate.ok).toBe(true);
       renderHook(() => useOrders()); // render-time sweep uses scenario time, independent of host 2027
       expect(getOrder((expiredCandidate.order as SimOrder).id)).toMatchObject({
-        status: 'expired', close_time: new Date(demoNowMs()).toISOString(),
+        status: 'expired',
+        close_time: new Date(demoNowMs()).toISOString(),
       });
-    } finally { vi.useRealTimers(); }
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('preserves corrupt demo bytes and latches writes for that store', () => {
@@ -187,7 +265,11 @@ describe('G3 demo workspace and paper order flow', () => {
     localStorage.setItem('gammaflow.uiprefs.v1', 'legacy-preference');
     initializeDemoWorkspace();
     const reload = vi.fn();
-    vi.stubGlobal('window', { localStorage, location: { reload }, __CONVEXA_BOOT__: { mode: 'demo', key: (key: string) => `convexa.demo.v1.${key}` } });
+    vi.stubGlobal('window', {
+      localStorage,
+      location: { reload },
+      __CONVEXA_BOOT__: { mode: 'demo', key: (key: string) => `convexa.demo.v1.${key}` },
+    });
     resetDemoWorkspace();
     expect(localStorage.getItem('convexa.uiprefs.v1')).toBe('live-preference');
     expect(localStorage.getItem('gammaflow.uiprefs.v1')).toBe('legacy-preference');
@@ -199,7 +281,8 @@ describe('G3 demo workspace and paper order flow', () => {
   it('provides Demo visitor identity without resolving a server session', async () => {
     const fetch = vi.fn(() => Promise.reject(new Error('unexpected network request')));
     vi.stubGlobal('fetch', fetch);
-    const wrapper = ({ children }: { children: ReactNode }) => createElement(AuthProvider, null, children);
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(AuthProvider, null, children);
     const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.ready).toBe(true));
     expect(result.current.authenticated).toBe(false);

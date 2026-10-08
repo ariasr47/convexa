@@ -1,0 +1,156 @@
+{
+  "scope": "Local production matrix on frozen implementation worktree before final source commit. Steps 1 and 3 explicitly bypass cache reads using NX_SKIP_NX_CACHE=true; cold labels denote forced fresh executions, not a naturally empty cache. Native exits verified; Nx task identities read independently from its local history database. This is not hosted or CI evidence.",
+  "productionEnvironment": "NODE_ENV=production pinned in Nx production configuration",
+  "steps": [
+    {
+      "label": "matrix-demo-cold",
+      "mode": "demo",
+      "buildWallSeconds": 8.3940503,
+      "nativeBuildExit": 0,
+      "receipt": {
+        "mode": "demo",
+        "scenarioId": "portfolio-2026-10-07-v1"
+      },
+      "routes": {
+        "version": 1,
+        "include": [
+          "/*"
+        ],
+        "exclude": [
+          "/*"
+        ]
+      },
+      "publicDigest": "2aa3d8a20b4d9550ec348005c19ea2ff1f1bdabd08f379643187819f488ac2e6",
+      "privateDigest": "acb1bd16cbd5bb916796221e41163b8b3d2213f9274d34a550bbf8199d2dea8a",
+      "publicFileCount": 196,
+      "privateFileCount": 47,
+      "hash": "18087900803837621755",
+      "status": "success",
+      "code": 0,
+      "start": 1791435214701,
+      "end": 1791435217231
+    },
+    {
+      "label": "matrix-demo-hit",
+      "mode": "demo",
+      "buildWallSeconds": 5.5964124,
+      "nativeBuildExit": 0,
+      "receipt": {
+        "mode": "demo",
+        "scenarioId": "portfolio-2026-10-07-v1"
+      },
+      "routes": {
+        "version": 1,
+        "include": [
+          "/*"
+        ],
+        "exclude": [
+          "/*"
+        ]
+      },
+      "publicDigest": "2aa3d8a20b4d9550ec348005c19ea2ff1f1bdabd08f379643187819f488ac2e6",
+      "privateDigest": "acb1bd16cbd5bb916796221e41163b8b3d2213f9274d34a550bbf8199d2dea8a",
+      "publicFileCount": 196,
+      "privateFileCount": 47,
+      "hash": "18087900803837621755",
+      "status": "local-cache",
+      "code": 0,
+      "start": 1791435222800,
+      "end": 1791435223009
+    },
+    {
+      "label": "matrix-live-cold",
+      "mode": "live",
+      "buildWallSeconds": 7.9684713,
+      "nativeBuildExit": 0,
+      "receipt": {
+        "mode": "live",
+        "scenarioId": null
+      },
+      "routes": {
+        "version": 1,
+        "include": [
+          "/api/*"
+        ],
+        "exclude": []
+      },
+      "publicDigest": "cbb2a25ef7dea63e4564f3b3333b3ddbe10c67537f4e1b580c23bf0048981213",
+      "privateDigest": "acb1bd16cbd5bb916796221e41163b8b3d2213f9274d34a550bbf8199d2dea8a",
+      "publicFileCount": 196,
+      "privateFileCount": 47,
+      "hash": "3739905099639827135",
+      "status": "success",
+      "code": 0,
+      "start": 1791435229623,
+      "end": 1791435232181
+    },
+    {
+      "label": "matrix-demo-restore",
+      "mode": "demo",
+      "buildWallSeconds": 5.5890235,
+      "nativeBuildExit": 0,
+      "receipt": {
+        "mode": "demo",
+        "scenarioId": "portfolio-2026-10-07-v1"
+      },
+      "routes": {
+        "version": 1,
+        "include": [
+          "/*"
+        ],
+        "exclude": [
+          "/*"
+        ]
+      },
+      "publicDigest": "2aa3d8a20b4d9550ec348005c19ea2ff1f1bdabd08f379643187819f488ac2e6",
+      "privateDigest": "acb1bd16cbd5bb916796221e41163b8b3d2213f9274d34a550bbf8199d2dea8a",
+      "publicFileCount": 196,
+      "privateFileCount": 47,
+      "hash": "18087900803837621755",
+      "status": "local-cache",
+      "code": 0,
+      "start": 1791435237763,
+      "end": 1791435237937
+    }
+  ],
+  "seedAssets": [
+    {
+      "file": "assets/aapl.seed-CPbzu2f5.json",
+      "sha256": "136dd5c82e3b5c1f94a7a14bc529db16f2c98f1b22679d91f88b6e945f668b41"
+    },
+    {
+      "file": "assets/msft.seed-BXt_-qhk.json",
+      "sha256": "c3f179986f0571a1c68590da3bb8bb5ba997ffc48de932e7451c7528fecfe8ff"
+    },
+    {
+      "file": "assets/nvda.seed-4pNkQQcJ.json",
+      "sha256": "0b176728cd2ae59613f94700a5b77d69afb6fbc650ac91bc2f982bee20bd1a8d"
+    },
+    {
+      "file": "assets/qqq.seed-Cq4kOYsO.json",
+      "sha256": "f4c7d5935a6479d3f44743fb8dd6fa9941462e1412dbcac697b5353e6b0304fa"
+    },
+    {
+      "file": "assets/spy.seed-DipWTJ8X.json",
+      "sha256": "b4faca800b03bb76e17889dca39afe839a03372428db464b8a41218af77042f8"
+    },
+    {
+      "file": "assets/tsla.seed-DoGBGmbo.json",
+      "sha256": "a5ca48f057abecdc21857a4112ad55888547252eccf99a50c5ba74cc016a18e8"
+    }
+  ],
+  "assertions": {
+    "modeSeparatedTaskHashes": true,
+    "demoByteIdenticalAfterLiveRestore": true,
+    "privateMapsRestored": true,
+    "sixCanonicalSeedsIdenticalAcrossModes": true,
+    "noPublicMapsDeclarationsOrBuildInfo": true,
+    "invalidModeRejectedBeforeNx": {
+      "exitCode": 2
+    },
+    "forbiddenPublicFixtureOrSourceMapReferences": {
+      "rgExitCode": 1,
+      "meaning": "no match in emitted JavaScript"
+    }
+  }
+}

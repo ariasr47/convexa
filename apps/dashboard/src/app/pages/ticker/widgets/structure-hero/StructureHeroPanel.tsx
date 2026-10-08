@@ -35,7 +35,7 @@ import { StructureFieldCanvas, type StructureFieldModel } from '@/shared/charts/
 import { resolveLevelPalette } from '@/shared/charts/structure-field/levelStrokes';
 import { LiveDot } from '@/shared/figure';
 import { andPresent, isDeliveringLive } from '@/shared/liveness/liveClaim';
-import { extrasFor } from '@/shared/theme/tokens';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
 import { Widget } from '@/shared/ui/Widget';
 import type { MarketState, StrikeRow, StructureSample } from '@convexa/api';
@@ -43,6 +43,7 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { useMemo, useState } from 'react';
 import { useLiveTape } from '../../liveTapeStore';
@@ -207,6 +208,8 @@ export function StructureHeroPanel({
   const tape = useLiveTape();
   const st = sessionTapeOf(tape.live);
   const claim = isDeliveringLive(tape.live, tape.streamOffline);
+  const sampleStanding =
+    tape.sampleStanding?.symbol === symbol.toUpperCase() ? tape.sampleStanding : null;
   // GATE Z (FE-11): the SAME "S0 genuinely live / S1 display-active during replay" discipline
   // `live-tape/LiveTape.tsx`'s own `numbersActive` already established (branching on session-tape
   // occupancy, falling back to the store's live/offline facts) — deliberately NOT `claim` alone.
@@ -218,11 +221,16 @@ export function StructureHeroPanel({
   // `live-tape/LiveTape.tsx`'s `net_flow`/`gamma_flip` reads, which already use this same gate) — the
   // wire ships the same envelope shape either way. `claim` itself (below) is UNCHANGED and still
   // governs `midLive`/the live dot: never true during replay.
-  const numbersActive = st ? tape.displayActive : claim;
+  const sampleMidActive = Boolean(
+    sampleStanding &&
+    tape.live?.ticker.toUpperCase() === symbol.toUpperCase() &&
+    tape.live.live === false,
+  );
+  const numbersActive = st ? tape.displayActive : claim || sampleMidActive;
   // The RAW stream mid (never a `?? bundle` composition) — the value FE-2's latch is fed
   // (`useStreamLatch`'s own contract: "the value AS RECEIVED ON THE STREAM").
   const midStream = numbersActive ? (tape.live?.mid ?? null) : null;
-  const resetToken = `${symbol.toUpperCase()}|${st ? 'replay' : 'live'}`;
+  const resetToken = `${symbol.toUpperCase()}|${st ? 'replay' : sampleStanding ? 'sample' : 'live'}`;
   const midLatch = useStreamLatch(midStream, resetToken);
   const midLive = andPresent(claim, midStream);
   const displayMid = midLatch.value;
@@ -243,6 +251,22 @@ export function StructureHeroPanel({
     [tileOffline, midLatch.retained],
   );
   const midReplay = Boolean(st);
+  const sampleTime = sampleStanding
+    ? new Intl.DateTimeFormat('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'medium',
+        timeZone: 'UTC',
+      }).format(new Date(sampleStanding.scenarioTimeMs))
+    : null;
+  const sampleCaption = sampleStanding
+    ? `Sample tape · ${sampleTime} UTC · ${Math.round((tape.live?.flow_window_s ?? 60) / 60)}m window · ${sampleStanding.playback}`
+    : null;
+  const sampleStatusCaption =
+    sampleStanding?.playback === 'paused'
+      ? 'Simulated playback paused. Showing the last sample.'
+      : sampleStanding?.playback === 'ended'
+        ? 'Sample playback complete. Showing the last sample.'
+        : null;
 
   const anchor = levelSpot(m);
   const rows = useMemo(
@@ -399,16 +423,52 @@ export function StructureHeroPanel({
               )
             )}
           </ErrorBoundary>
-          <TapeTrailRow
-            structureMid={structureMid}
-            claim={claim}
-            mid={displayMid}
-            lastTrade={lastTrade}
-            retained={midLatch.retained}
-            paused={tileOffline}
-            palette={palette}
-            surfaces={surfaces}
-          />
+          {sampleStanding ? (
+            <Box
+              data-testid="sample-mid-readout"
+              sx={{
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: 1,
+                px: 0.5,
+                py: 0.5,
+                flexWrap: 'wrap',
+              }}
+            >
+              <Typography component="span" variant="caption" sx={{ color: 'text.secondary' }}>
+                Sample tape · Mid
+              </Typography>
+              <Typography
+                component="span"
+                sx={{
+                  fontFamily: typographyTokens.monoFontFamily,
+                  fontSize: 13,
+                  color: 'text.primary',
+                }}
+              >
+                {displayMid != null ? `$${displayMid.toFixed(2)}` : '—'}
+              </Typography>
+              <Typography
+                component="span"
+                data-testid="structure-sample-caption"
+                variant="caption"
+                sx={{ color: 'text.secondary' }}
+              >
+                {sampleStatusCaption ? `${sampleStatusCaption} ${sampleCaption}` : sampleCaption}
+              </Typography>
+            </Box>
+          ) : (
+            <TapeTrailRow
+              structureMid={structureMid}
+              claim={claim}
+              mid={displayMid}
+              lastTrade={lastTrade}
+              retained={midLatch.retained}
+              paused={tileOffline}
+              palette={palette}
+              surfaces={surfaces}
+            />
+          )}
           <StructurePathStrip
             symbol={symbol || '—'}
             samples={pathSamples}

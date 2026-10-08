@@ -12,9 +12,15 @@
  * `lastSessionPhase`) is retained so consumeStanding can classify drop vs ended/fault
  * (never live-offline while session_tape was last vouched playing|gap).
  */
-import { dataMode, subscribeTicker } from '@convexa/api';
+import { dataMode, subscribeTicker, type SupportedDemoSymbol } from '@convexa/api';
 import { useEffect } from 'react';
-import { publishLiveTape, resetLiveTape, useLiveTape, type LiveTapeApi } from './liveTapeStore';
+import {
+  getLiveTapeSnapshot,
+  publishLiveTape,
+  resetLiveTape,
+  useLiveTape,
+  type LiveTapeApi,
+} from './liveTapeStore';
 
 export const STREAM_OFFLINE_MS = 15_000;
 
@@ -31,7 +37,13 @@ export function useTickerStreamConnection(
 ): void {
   useEffect(() => {
     const sym = ticker.toUpperCase();
-    publishLiveTape({ live: null, demoOrderFrame: null, streamOffline: false, ticker: sym });
+    publishLiveTape({
+      live: null,
+      demoOrderFrame: null,
+      sampleStanding: null,
+      streamOffline: false,
+      ticker: sym,
+    });
     if (selected !== null && selected.length === 0) {
       return () => {
         resetLiveTape();
@@ -41,11 +53,36 @@ export function useTickerStreamConnection(
     let gapTimer: ReturnType<typeof setTimeout> | undefined;
     const unsub = subscribeTicker(sym, { expirations: selected ?? undefined }, (event) => {
       if (event.kind === 'ticker_update') {
-        publishLiveTape({ live: event.update, streamOffline: false, ticker: sym });
+        const sampleStanding =
+          dataMode === 'demo' && sym === event.update.ticker.toUpperCase()
+            ? {
+                kind: 'sample' as const,
+                symbol: sym as SupportedDemoSymbol,
+                scenarioTimeMs: event.update.ts,
+                playback: getLiveTapeSnapshot().sampleStanding?.playback ?? ('running' as const),
+              }
+            : null;
+        publishLiveTape({ live: event.update, sampleStanding, streamOffline: false, ticker: sym });
         if (gapTimer) clearTimeout(gapTimer);
-        if (dataMode === 'live') gapTimer = setTimeout(() => publishLiveTape({ streamOffline: true, ticker: sym }), STREAM_OFFLINE_MS);
+        if (dataMode === 'live')
+          gapTimer = setTimeout(
+            () => publishLiveTape({ streamOffline: true, ticker: sym }),
+            STREAM_OFFLINE_MS,
+          );
       } else if (event.kind === 'demo_order_frame') {
         publishLiveTape({ demoOrderFrame: event.frame, ticker: sym });
+      } else if (event.kind === 'playback' && dataMode === 'demo') {
+        const previousSample = getLiveTapeSnapshot().sampleStanding;
+        publishLiveTape({
+          sampleStanding: {
+            kind: 'sample',
+            symbol: sym as SupportedDemoSymbol,
+            scenarioTimeMs:
+              previousSample?.symbol === sym ? previousSample.scenarioTimeMs : event.scenarioTimeMs,
+            playback: event.state,
+          },
+          ticker: sym,
+        });
       }
     });
     return () => {

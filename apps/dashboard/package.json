@@ -6,11 +6,22 @@
     "tags": ["scope:frontend", "type:app"],
     "targets": {
       "build": {
-        "inputs": ["production", "^production", { "env": "VITE_DATA_MODE" }, { "env": "ANALYZE" }, { "runtime": "node --version" }, "{workspaceRoot}/tools/build-dashboard.mjs", "{workspaceRoot}/tools/write-dashboard-routes.mjs", "{workspaceRoot}/tools/archive-sourcemaps.mjs", "{workspaceRoot}/tools/precompress-dashboard.mjs"],
+        "inputs": [
+          "production",
+          "^production",
+          { "env": "VITE_DATA_MODE" },
+          { "env": "ANALYZE" },
+          { "runtime": "node --version" },
+          "{workspaceRoot}/tools/build-dashboard.mjs",
+          "{workspaceRoot}/tools/write-dashboard-routes.mjs",
+          "{workspaceRoot}/tools/archive-sourcemaps.mjs",
+          "{workspaceRoot}/tools/precompress-dashboard.mjs"
+        ],
         "outputs": ["{projectRoot}/dist", "{projectRoot}/sourcemaps-private/current"],
         "configurations": {
           "production": {
-            "command": "vite build --mode production && node ../../tools/write-dashboard-routes.mjs && node ../../tools/archive-sourcemaps.mjs && node ../../tools/precompress-dashboard.mjs"
+            "command": "vite build --mode production && node ../../tools/write-dashboard-routes.mjs && node ../../tools/archive-sourcemaps.mjs && node ../../tools/precompress-dashboard.mjs",
+            "env": { "NODE_ENV": "production" }
           },
           "development": {
             "command": "vite build --mode development"

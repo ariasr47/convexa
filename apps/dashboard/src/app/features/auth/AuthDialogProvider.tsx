@@ -5,6 +5,7 @@
  *
  * This is pure UX wiring; the auth STATE lives in AuthContext. Mount this INSIDE AuthProvider.
  */
+import { dataMode } from '@convexa/api';
 import {
   createContext,
   useCallback,
@@ -41,6 +42,7 @@ export function AuthDialogProvider({ children }: { children: ReactNode }) {
   const wasOpenRef = useRef(false);
 
   const openAuth = useCallback((opts: OpenOpts = {}) => {
+    if (dataMode === 'demo') return;
     returnFocusRef.current = opts.returnFocus?.isConnected
       ? opts.returnFocus
       : document.activeElement instanceof HTMLElement

@@ -312,7 +312,10 @@ export function applyOrderTransition(
 
 /** Clock-expiry sweep over EVERY non-terminal order (any ticker) — run on engine ticks AND on
  *  store read/render (AC-21: the only off-stream transition). */
-export function sweepExpiredOrders(nowMs: number = dataMode === 'demo' ? demoNowMs() : Date.now(), ctx: DecisionCtx = {}): void {
+export function sweepExpiredOrders(
+  nowMs: number = dataMode === 'demo' ? demoNowMs() : Date.now(),
+  ctx: DecisionCtx = {},
+): void {
   for (const o of allOrders()) {
     if (o.status !== 'waiting' && o.status !== 'triggered') continue;
     if (isClockExpired(o, nowMs, dataMode === 'demo' ? 'demo_simulation' : 'genuine_live')) {

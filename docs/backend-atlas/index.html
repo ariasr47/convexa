@@ -17,8 +17,8 @@
     <div class="intro">
       <p class="eyebrow">A visual guide to the actual repository</p>
       <h1>Inside Convexa</h1>
-      <p class="lede">Follow a ticker from the screen through market data, models, caches, streams, and a simulated portfolio.</p>
-      <p class="evidence">Source baseline <code>8932fc11</code> · audited October 7, 2026 · diagrams describe code, not recorded traffic.</p>
+      <p class="lede">Explore the original Rust-backed live architecture alongside the implemented browser-local demo, its data sources, local state, and release evidence.</p>
+      <p class="evidence">Live-source citations pin <code>8932fc11</code> · audited October 7, 2026 · demo implementation links follow the feature branch · diagrams describe code, not recorded traffic.</p>
     </div>
     <nav class="tabs" aria-label="Atlas sections">
       <button type="button" data-view="system" aria-pressed="true">01 · System map</button>
@@ -48,7 +48,7 @@
         </div>
         <aside class="detail" id="node-detail" aria-live="polite"></aside>
       </div>
-      <div class="boundary-note"><strong>What is running today?</strong> This map describes the implementation. The subscription has ended. <code>MARKET_DATA_MODE=paused</code> stops the five market-data producers and refuses market reads; it does not fill the UI with demo data.</div>
+      <div class="boundary-note"><strong>Two paths, separate meanings.</strong> This map describes the original Rust-backed live service. The portfolio demo runs in the browser with authored synthetic data and does not prove a Rust request ran. The subscription has ended. <code>MARKET_DATA_MODE=paused</code> stops the five market-data producers and refuses market reads; the demo is selected separately at dashboard build time.</div>
     </section>
 
     <section id="traces" class="view" hidden aria-labelledby="traces-title">
@@ -78,13 +78,13 @@
     </section>
 
     <section id="demo" class="view" hidden aria-labelledby="demo-title">
-      <div class="section-heading"><div><p class="eyebrow">Local foundation implemented · dashboard integration and hosted checks pending</p><h2 id="demo-title">Same product. A different data source.</h2></div></div>
+      <div class="section-heading"><div><p class="eyebrow">Implemented browser-local demo · hosted checks pending</p><h2 id="demo-title">Same dashboard. A local authored scenario.</h2></div></div>
       <div class="controls" aria-label="Compare data modes"><button type="button" data-mode="demo" aria-pressed="true">Demo</button><button type="button" data-mode="live" aria-pressed="false">Live</button><button type="button" data-mode="paused" aria-pressed="false">Paused backend</button></div>
       <div id="mode-flow" class="mode-flow"></div><div id="mode-detail" aria-live="polite"></div>
-      <h3>The seams that must all switch together</h3>
-      <div class="seam-grid"><div><b>HTTP</b><p>Session, bundles, scan rows, marks, book, sample analysis and settings.</p></div><div><b>Streams</b><p>Ticker and scanner subscriptions, cleanup, provenance and display eligibility.</p></div><div><b>Browser state</b><p>Demo keys, legacy fallback reads, outcome sources, seeded data and reset.</p></div><div><b>Escape routes</b><p>OAuth navigation, credential forms, operator research and unsupported calls.</p></div></div>
-      <div class="boundary-note"><strong>Current evidence:</strong> the provider, catalog, local workspace, build-mode guard and source map have focused local checks. Dashboard composition, built-artifact browser journey and hosted routing are still NOT RUN. A future static demo does not mean the Rust service processed the visitor’s request.</div>
-      <p><a href="design-canvas.html">Open the proposed experience canvas →</a></p>
+      <h3>Demo composition and boundaries</h3><p class="measure">The build selects one complete client composition. The original live route remains a separate Pages → Rust path; the demo uses a browser-local facade and authored scenario.</p>
+      <div class="seam-grid"><div><b>Build + facade</b><p>VITE_DATA_MODE chooses demo or live before React mounts. Demo HTTP uses local Response-compatible handlers; unsupported calls fail closed.</p></div><div><b>Authored market view</b><p>Six symbols × seven expiry selections share one scenario. Normal views populate IV skew, term structure, dealer/context reads, normalized GEX, straddle, unusual positioning and off-exchange context.</p></div><div><b>Portfolio + playback</b><p>Paper book, orders, alerts, settings and sample playback stay in browser-local state. Read-only sample broker holdings remain separate.</p></div><div><b>Research + guardrails</b><p>Six distinct linked Research cases and 60 daily bars load in ticker-local views. Live mode reports those local capabilities unavailable; demo never asserts genuine live status.</p></div></div><p class="boundary-note"><strong>Release path:</strong> create a draft feature-branch PR, inspect its exact Pages preview SHA and deep routes after G1/independent QA/CI. Do not merge to main or deploy Railway for this static demo: the main Railway predeploy invokes a migration and migrations are outside this feature.</p>
+      <div class="boundary-note"><strong>Current local evidence:</strong> Final joined normal coverage spans six symbols × seven expiry selections, plus six Research cases. Dashboard passed 262 files / 3,150 tests; API passed 8 files / 59 tests. Final demo G1 passed in 54.159 s with zero egress; the MSFT 60-source probe passed. Live Chromium passed 128/128 and compatibility 15/15. Accessibility execution passed 35/35, with seven unwaived moderate findings (five missing H1 on ticker routes, two heading-order on Positions). Visual baseline review is pending; independent 20-criterion QA is running. CI and hosted checks have not run. These are worktree receipts, not a deployed hash. A demo page does not establish that Rust processed visitor data.</div>
+      <p><a href="design-canvas.html">Open the pre-build proposed experience canvas →</a></p>
     </section>
     <footer><span>Read the diagrams left-to-right or top-to-bottom; select any module to see its responsibility and source.</span><a href="README.md">Reading guide & evidence legend</a></footer>
   </main>

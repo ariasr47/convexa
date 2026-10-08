@@ -1,7 +1,7 @@
 # Nx, production builds, tests, and deployment
 
 Research snapshot: **2026-10-07 (America/Los_Angeles)**, commit `8932fc1176543eff3fa826de6924e12ec52f3310`.
-This is an implementation recommendation, not a claim that these changes or a deployment already happened. Sources are the current checkout, resolved Nx configuration, and primary vendor documentation retrieved for this task.
+The opening sections preserve the implementation-research snapshot. The portfolio demo has since been implemented locally; the current receipts below supersede earlier pending statements. They describe the worktree before its checkpoint commit, not a deployed hash. They do not claim hosted deployment or CI.
 
 ## Decision
 
@@ -19,6 +19,16 @@ flowchart LR
 ```
 
 Vite replaces `import.meta.env` constants during the build. Consequently, changing `VITE_DATA_MODE` requires rebuilding and redeploying; it cannot change an already-uploaded static bundle. Never place provider secrets in `VITE_*` variables. Keep `--mode production` for both demo and live so both receive production optimization. [Vite environment variables and modes](https://vite.dev/guide/env-and-mode).
+
+## Implementation update: production environment and bundle evidence
+
+The sandboxed Nx investigation initially failed while inferring the Vite target, and the inferred target allowed development `NODE_ENV` to reach the production build. Disabling plugin isolation in the approved inspection/build context exposed the inference issue. The resolved production target now pins `NODE_ENV=production`; both the `build:dashboard` wrapper and direct Nx production builds use that target. The wrapper validates and sets `VITE_DATA_MODE` before starting Nx. See the checked-in [build wrapper](../../tools/build-dashboard.mjs), [Nx target configuration](../../nx.json) and [Vite build config](../../apps/dashboard/vite.config.mts). The installed Nx plugin is an implementation dependency, not a remote documentation source; no `node_modules` path is used as a source citation.
+
+The final production bundle guard reported 54 checks across 47 JavaScript files with the existing caps unchanged. The final four-step matrix passed: forced-fresh demo (8.3940503 s), identical demo cache hit (5.5964124 s), forced-fresh live (7.9684713 s), and demo restored from cache (5.5890235 s). “Fresh” uses `NX_SKIP_NX_CACHE`, not a naturally empty cache. Demo/live mode hashes were `18087900803837621755` and `3739905099639827135`; the restored demo public and private maps matched their original demo outputs. Each mode contains six canonical seeds; demo output has 196 public files and 47 private files. Invalid explicit mode failed before Nx (exit 2), and the forbidden public fixture/map scan returned no match (exit 1 by design). See [matrix evidence](evidence/demo-build-matrix.json).
+
+The final static boot closure is 223,650 bytes Brotli q11 (218.408 KiB), compared with the original 196,143-byte (191.546 KiB) baseline. Technical Analysis adds 2,411 bytes and Research adds 1,675 bytes in the static graph. This graph is not observed network transfer. The complete boot is larger than the baseline; the result does not establish an entry-only performance gain. See [boot closure evidence](evidence/demo-boot-closure.json). Mode is selected by build environment and requires rebuilding to change.
+
+Final local browser evidence includes the DEMO production G1 journey (54.159 seconds, zero egress) and an MSFT source expansion probe (60 unique sources, exit 0). The joined dashboard suite passed 262 files / 3,150 tests; API passed 8 files / 59 tests. Typecheck, generated API contract, format, and lint across three projects exited 0; lint had advisory warnings. Live Chromium passed 128/128 and compatibility 15/15. Accessibility execution passed 35/35 but retained seven unwaived moderate findings (five missing-H1 ticker findings and two heading-order findings on Positions). Visual baseline review remains pending and independent QA of 20 criteria is running. CI and hosted Pages checks have not run. See [joined local checks](evidence/joined-local-checks.json), [final accessibility receipt](evidence/live-accessibility-final.json), and the [atlas reading guide](README.md).
 
 ## Verified baseline
 
@@ -75,7 +85,7 @@ Do this at the dashboard target/named-input level rather than making Rust rebuil
 
 `archive-sourcemaps.mjs:47` writes timestamped archives outside `dist`, but the resolved build caches only `dist`. A cache hit therefore cannot restore that build's private debug artifacts. Prefer deterministic `sourcemaps-private/current` plus a deterministic manifest as a declared private output; publish/upload that artifact separately. Alternatively keep archival as a separate uncached packaging operation. Do not cache all historical archives. Explicit `outputs` determine what Nx restores. [Nx project configuration](https://nx.dev/docs/reference/project-configuration).
 
-Prove this once with a build matrix: demo cold build, identical demo cache hit, live cache miss, then demo restored from its own cache. Record exit codes and artifact hashes. Run each mode sequentially because they write the same dist directory. A demo entry must never initiate live requests after restoration.
+The four-step matrix has been recorded in [evidence/demo-build-matrix.json](evidence/demo-build-matrix.json). Its forced-fresh steps bypass cache reads; they are not natural cold-cache timings. Keep the sequential mode switch because both builds write the same dist directory. The final G1 zero-egress assertions cover the restored local demo artifact behavior.
 
 ### 2. Make the demo build a small, honest artifact
 
@@ -147,7 +157,7 @@ Cheapest mechanism: retain Pages' existing Git integration and use the repo's do
 
 Cloudflare injects `CF_PAGES` and `CF_PAGES_BRANCH` into Git builds and documents branch-dependent scripts as a supported approach. This proposed wrapper applies that mechanism through the existing npm entry instead of requiring a new dashboard command. [Pages build configuration](https://developers.cloudflare.com/pages/configuration/build-configuration/) and [branch-specific build commands](https://developers.cloudflare.com/pages/how-to/build-commands-branches/).
 
-After local acceptance, the root agent can push **only the feature branch**, wait for the Pages check for the exact new SHA, and use the returned deployment/branch URL. Confirm `demo` from the built mode receipt and browser behavior; a successful Pages check alone proves neither mode nor feature correctness. Feature previews leave the production site/custom domains unchanged. The eventual alias must be read from the check, not guessed, because names can be sanitized/truncated. [Pages previews](https://developers.cloudflare.com/pages/configuration/preview-deployments/).
+Release sequence for this feature: finish the joined local G1 journey and independent QA; create a **draft PR** from the feature branch; wait for CI and the Pages preview tied to that exact PR head SHA; run hosted deep-link checks there; then report the preview URL and evidence. Do not merge to `main` or deploy Railway for the static demo. Railway main deployment runs a predeploy migration, and schema/data migrations require separate authorization. A Pages preview is the review target; it does not establish production deployment. Confirm `demo` from the built mode receipt and browser behavior; a successful Pages check alone proves neither mode nor feature correctness. Feature previews leave production domains unchanged. Read the exact preview URL from the check instead of guessing its sanitized alias. [Pages previews](https://developers.cloudflare.com/pages/configuration/preview-deployments/).
 
 Before that push, review the diff against Railway's watched paths (`railway.json:4`): `apps/api/**`, `libs/quant-engine/**`, `Cargo.toml`, `Cargo.lock`, `railway.json`. This static demo should touch none of them. Do not merge to main merely to obtain a demo URL; the main commit evidence shows an active production Railway integration, and its predeploy command performs a migration.
 

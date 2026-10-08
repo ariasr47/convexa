@@ -14,7 +14,16 @@
  *   then open DevTools and use "Add source map" if needed.
  */
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -34,10 +43,15 @@ function walk(dir, out = []) {
   return out;
 }
 
-export function archiveSourcemaps({ workspaceRoot = root, distDir = dist, currentDir = currentRoot } = {}) {
+export function archiveSourcemaps({
+  workspaceRoot = root,
+  distDir = dist,
+  currentDir = currentRoot,
+} = {}) {
   if (!existsSync(distDir)) throw new Error('missing dist — build first');
   const resolved = path.resolve(currentDir);
-  if (!resolved.startsWith(`${path.resolve(workspaceRoot)}${path.sep}`)) throw new Error('Refusing sourcemap output outside workspace');
+  if (!resolved.startsWith(`${path.resolve(workspaceRoot)}${path.sep}`))
+    throw new Error('Refusing sourcemap output outside workspace');
   if (existsSync(resolved)) rmSync(resolved, { recursive: true, force: true });
   const destRoot = resolved;
   mkdirSync(destRoot, { recursive: true });
@@ -55,7 +69,12 @@ export function archiveSourcemaps({ workspaceRoot = root, distDir = dist, curren
   const manifest = {
     count: moved.length,
     note: 'Hidden Vite sourcemaps — not linked from JS. Keep private; do not deploy to Pages/CDN.',
-    files: moved.sort().map((rel) => ({ path: rel, sha256: createHash('sha256').update(readFileSync(path.join(destRoot, rel))).digest('hex') })),
+    files: moved.sort().map((rel) => ({
+      path: rel,
+      sha256: createHash('sha256')
+        .update(readFileSync(path.join(destRoot, rel)))
+        .digest('hex'),
+    })),
   };
   writeFileSync(path.join(destRoot, 'MANIFEST.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 
@@ -65,7 +84,9 @@ export function archiveSourcemaps({ workspaceRoot = root, distDir = dist, curren
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const result = archiveSourcemaps();
-    console.log(`[archive-sourcemaps] moved ${result.count} maps → ${path.relative(root, result.destRoot)}`);
+    console.log(
+      `[archive-sourcemaps] moved ${result.count} maps → ${path.relative(root, result.destRoot)}`,
+    );
   } catch (error) {
     console.error(`[archive-sourcemaps] ${error instanceof Error ? error.message : String(error)}`);
     process.exit(2);

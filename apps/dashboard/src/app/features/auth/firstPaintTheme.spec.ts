@@ -40,9 +40,20 @@ const stylesCss = readFileSync(resolve(dashboardRoot(), 'src', 'styles.css'), 'u
 async function generatedIndexHtml(mode: 'demo' | 'live' = 'live'): Promise<string> {
   const previous = process.env.VITE_DATA_MODE;
   process.env.VITE_DATA_MODE = mode;
-  const server = await createServer({ configFile: resolve(dashboardRoot(), 'vite.config.mts'), root: dashboardRoot(), mode: 'production', appType: 'custom', server: { middlewareMode: true } });
-  try { return await server.transformIndexHtml('/', indexHtml); }
-  finally { await server.close(); if (previous == null) delete process.env.VITE_DATA_MODE; else process.env.VITE_DATA_MODE = previous; }
+  const server = await createServer({
+    configFile: resolve(dashboardRoot(), 'vite.config.mts'),
+    root: dashboardRoot(),
+    mode: 'production',
+    appType: 'custom',
+    server: { middlewareMode: true },
+  });
+  try {
+    return await server.transformIndexHtml('/', indexHtml);
+  } finally {
+    await server.close();
+    if (previous == null) delete process.env.VITE_DATA_MODE;
+    else process.env.VITE_DATA_MODE = previous;
+  }
 }
 
 const INK = palette.dark.background.default;

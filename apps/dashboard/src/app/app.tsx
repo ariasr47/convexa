@@ -47,18 +47,30 @@ import { Landing } from '@/pages/landing/Landing';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
 import { RouteFallback } from '@/shared/ui/RouteFallback';
 import { AppShell } from '@/shell/AppShell';
-import { lazy, Suspense, type ReactElement } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
 import { dataMode } from '@convexa/api';
 import { Typography } from '@mui/material';
+import { lazy, Suspense, type ReactElement } from 'react';
+import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 
 function DemoOperatorUnavailable() {
-  return <main role="status" style={{ padding: 32 }}><Typography variant="h5">Unavailable in the public demo.</Typography></main>;
+  return (
+    <main role="status" style={{ padding: 32 }}>
+      <Typography variant="h5">Unavailable in the public demo.</Typography>
+    </main>
+  );
 }
 
 // Lazy page chunks (named exports mapped to lazy's `default` shape).
 const TickerDashboard = lazy(() =>
   import('@/pages/ticker/TickerDashboard').then((m) => ({ default: m.TickerDashboard })),
+);
+const TechnicalAnalysisView = lazy(() =>
+  import('@/pages/ticker/technical-analysis/TechnicalAnalysisView').then((m) => ({
+    default: m.TechnicalAnalysisView,
+  })),
+);
+const ResearchView = lazy(() =>
+  import('@/pages/ticker/research/ResearchView').then((m) => ({ default: m.ResearchView })),
 );
 const PositionsPage = lazy(() =>
   import('@/pages/positions/PositionsPage').then((m) => ({ default: m.PositionsPage })),
@@ -126,14 +138,32 @@ function DefaultTickerRedirect() {
   return <Navigate to={`/ticker/${encodeURIComponent(effective.defaultTicker)}`} replace />;
 }
 
+function TechnicalAnalysisRoute() {
+  const { symbol = '' } = useParams();
+  return <TechnicalAnalysisView symbol={symbol} />;
+}
+
+function ResearchRoute() {
+  const { symbol = '' } = useParams();
+  return <ResearchView symbol={symbol} />;
+}
+
 /** The route table only (ARCHITECTURE §1.2). Must render UNDER a Router + the auth/theme providers
  *  (supplied by <App/>). */
 export function AppRoutes() {
   return (
     <Routes>
       {/* Operator routes — off the trader shell, unlinked. FIRST so `/*` never shadows them. */}
-      <Route path="/_ops/metrics" element={dataMode === 'demo' ? <DemoOperatorUnavailable /> : lazyRoute(<OperatorMetrics />)} />
-      <Route path="/_ops/research" element={dataMode === 'demo' ? <DemoOperatorUnavailable /> : lazyRoute(<OperatorSessionArchive />)} />
+      <Route
+        path="/_ops/metrics"
+        element={dataMode === 'demo' ? <DemoOperatorUnavailable /> : lazyRoute(<OperatorMetrics />)}
+      />
+      <Route
+        path="/_ops/research"
+        element={
+          dataMode === 'demo' ? <DemoOperatorUnavailable /> : lazyRoute(<OperatorSessionArchive />)
+        }
+      />
 
       {/* The persistent shell group: the nav bar mounts once; pages swap in the <Outlet/>. */}
       <Route element={<AppShell />}>
@@ -161,6 +191,11 @@ export function AppRoutes() {
           }
         />
         <Route path="/ticker/:ticker" element={lazyRoute(<TickerDashboard />)} />
+        <Route
+          path="/ticker/:symbol/technical-analysis"
+          element={lazyRoute(<TechnicalAnalysisRoute />)}
+        />
+        <Route path="/ticker/:symbol/research" element={lazyRoute(<ResearchRoute />)} />
         {/* OWNER LOCKDOWN 2026-08-06 — private testing. Positions + Scanner are behind a sign-in
             wall; Landing, /ticker/*, /blog and /settings stay PUBLIC by owner decision. The wall is
             UX only — /api/scan* and the positions write gate refuse signed-out callers server-side

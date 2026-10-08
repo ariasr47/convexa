@@ -184,15 +184,22 @@ export class QualityReporter implements Reporter {
     let actualArtifact: { path: string; sha256: string } | undefined;
     let diffArtifact: { path: string; sha256: string } | undefined;
     for (const [index, attachment] of result.attachments.entries()) {
-      if (!attachment.path || !fs.existsSync(attachment.path)) continue;
+      const sourcePath = attachment.path && fs.existsSync(attachment.path) ? attachment.path : null;
+      const body = attachment.body;
+      if (!sourcePath && !body) continue;
+      const attachmentName = path.basename(
+        sourcePath ?? attachment.name ?? `attachment-${index}.bin`,
+      );
       const destination = path.resolve(
         this.output.startsWith('apps/') ? ROOT : this.configRoot,
         path.dirname(this.output.replace(/\\/g, '/')),
         'attachments',
-        `${this.records.length}-${index}-${path.basename(attachment.path)}`,
+        `${this.records.length}-${index}-${attachmentName}`,
       );
       fs.mkdirSync(path.dirname(destination), { recursive: true });
-      fs.copyFileSync(attachment.path, destination);
+      if (sourcePath) fs.copyFileSync(sourcePath, destination);
+      else if (body) fs.writeFileSync(destination, body);
+      else throw new Error(`attachment ${attachment.name ?? index} has no readable body or file`);
       const artifact = { path: relative(destination), sha256: sha256(destination) };
       this.artifacts.push(artifact);
       attachmentPaths.push(artifact.path);
@@ -200,7 +207,9 @@ export class QualityReporter implements Reporter {
       if (role === 'actual') actualArtifact = artifact;
       if (role === 'diff') diffArtifact = artifact;
       if (this.gate === 'accessibility' && attachment.name === 'axe-findings.json') {
-        const findings = JSON.parse(fs.readFileSync(attachment.path, 'utf8'));
+        const source = sourcePath ? fs.readFileSync(sourcePath, 'utf8') : body?.toString('utf8');
+        if (!source) throw new Error('axe findings attachment must have a readable body');
+        const findings = JSON.parse(source);
         if (!Array.isArray(findings)) throw new Error('axe findings attachment must be an array');
         for (const finding of findings) {
           if (!finding || typeof finding !== 'object') throw new Error('invalid axe finding');

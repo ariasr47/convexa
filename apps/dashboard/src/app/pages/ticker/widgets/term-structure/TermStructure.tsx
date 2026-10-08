@@ -15,7 +15,7 @@
  */
 import { typographyTokens } from '@/shared/theme/tokens';
 import { Widget } from '@/shared/ui/Widget';
-import type { TermStructure } from '@convexa/api';
+import { dataMode, type TermStructure } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { alpha } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
@@ -70,7 +70,11 @@ export const TermStructureCard = memo(function TermStructureCard({
   termStructure,
   structureAgeSeconds = null,
 }: Props) {
-  const termSampled = termStructure ? sampleTermPoints(termStructure.points) : [];
+  const termSampled = termStructure
+    ? dataMode === 'demo'
+      ? termStructure.points.toSorted((a, b) => a.dte - b.dte)
+      : sampleTermPoints(termStructure.points)
+    : [];
   const unavailable = termStructure == null || termSampled.length === 0;
 
   const stateLabel =

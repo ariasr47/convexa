@@ -42,7 +42,7 @@
  * store, and mutators return `false` as the second line of defence.
  */
 import { resolveDurable } from '@/shared/lib/durable/resolveDurable';
-import { dataMode, demoStorageKey, demoNowMs } from '@convexa/api';
+import { dataMode, demoNowMs, demoStorageKey } from '@convexa/api';
 import { defaultCustomization } from './defaults';
 import type { SimPosition } from './leg';
 import { liftLegacyRecord, unionSources, type ParsedSource } from './migrate';
@@ -261,8 +261,18 @@ function read(): PersistShapeV3 {
   }
 
   // ── 2. No v3 ⇒ the union runs, ONCE. ──────────────────────────────────────────────────────────
-  const v2 = readLogicalSource(demoStorageKey(V2_KEY), demoStorageKey(LEGACY_V2_KEY), SOURCE_V2, (b) => b.positions);
-  const v1 = readLogicalSource(demoStorageKey(V1_KEY), demoStorageKey(LEGACY_V1_KEY), SOURCE_V1, (b) => b.trades);
+  const v2 = readLogicalSource(
+    demoStorageKey(V2_KEY),
+    demoStorageKey(LEGACY_V2_KEY),
+    SOURCE_V2,
+    (b) => b.positions,
+  );
+  const v1 = readLogicalSource(
+    demoStorageKey(V1_KEY),
+    demoStorageKey(LEGACY_V1_KEY),
+    SOURCE_V1,
+    (b) => b.trades,
+  );
   // EXACTLY TWO ParsedSource entries reach the union, never four. Order IS source precedence.
   const union = unionSources([v2.parsed, v1.parsed]);
   const customization = hydrateCustomization(v2.customization);
@@ -307,7 +317,10 @@ function write(s: PersistShapeV3): boolean {
   memory = s;
   try {
     localStorage.setItem(demoStorageKey(V3_KEY), JSON.stringify(s));
-    localStorage.setItem(demoStorageKey(BOOK_TOUCH_KEY), String((dataMode === 'demo' ? demoNowMs() : Date.now()) / 1000));
+    localStorage.setItem(
+      demoStorageKey(BOOK_TOUCH_KEY),
+      String((dataMode === 'demo' ? demoNowMs() : Date.now()) / 1000),
+    );
   } catch {
     /* quota/private mode — keep the in-memory copy this session */
   }
@@ -349,7 +362,8 @@ export function importBookBlobIfNewer(blob: unknown, serverUpdatedAt: number): b
   memory = next;
   try {
     localStorage.setItem(demoStorageKey(V3_KEY), JSON.stringify(next));
-    if (serverUpdatedAt > 0 && dataMode !== 'demo') localStorage.setItem(demoStorageKey(BOOK_TOUCH_KEY), String(serverUpdatedAt));
+    if (serverUpdatedAt > 0 && dataMode !== 'demo')
+      localStorage.setItem(demoStorageKey(BOOK_TOUCH_KEY), String(serverUpdatedAt));
   } catch {
     /* keep memory */
   }

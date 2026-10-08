@@ -1,0 +1,49 @@
+{
+  "scope": "Local live compatibility repair; dirty worktree atop recorded source revision",
+  "observedAt": "2026-10-08T04:08:28.8083795Z",
+  "executor": "repair_live_preferences_clock",
+  "nativeExitSource": "Agent tool return receipts, independently read generated gate summaries",
+  "focusedAuth": {
+    "tests": 7,
+    "nativeExit": 0,
+    "files": 1
+  },
+  "liveProductionBuild": {
+    "nativeExit": 0
+  },
+  "gates": {
+    "compatibility": {
+      "nativeExit": 0,
+      "selected": 15,
+      "executed": 15,
+      "passed": 15,
+      "failed": 0,
+      "flaky": 0,
+      "status": "pass",
+      "runId": "local-1791432267931-98a1671f",
+      "sourceRevision": "b45c5f56d6a689009bdedae085f4fbc0d1a77ff4",
+      "summarySha256": "e8eb34451bfcc437cb1a17597267e9ef02b3f1d62894ed047b224a31fe7853f0"
+    },
+    "accessibility": {
+      "nativeExit": 1,
+      "selected": 35,
+      "executed": 35,
+      "passed": 33,
+      "failed": 2,
+      "flaky": 0,
+      "status": "fail",
+      "runId": "local-1791432213767-b3fa5a4a",
+      "sourceRevision": "b45c5f56d6a689009bdedae085f4fbc0d1a77ff4",
+      "summarySha256": "7c6389012205cd20039a077a86c3c453edd92ea57830e3eeb7a57a3c34d7ffe9"
+    }
+  },
+  "remaining": [
+    "A11Y-26 and A11Y-28: selected Overview tab contrast 3.01:1; minimum 4.5:1; scoped F6 repair assigned",
+    "Visual baselines not updated; prior theme mismatch must not be accepted"
+  ],
+  "fixed": [
+    "Validated historical partial live preferences merge defaults without losing surviving fields",
+    "Invalid preference bytes remain preserved with write refusal",
+    "Quality helper awaits mounted command deck before pausing Playwright clock; A11Y-9/B6 now pass"
+  ]
+}

@@ -10,7 +10,7 @@ import {
 
 test.describe.configure({ retries: 0 });
 for (const scenario of visualScenarios) {
-  test(scenario.id, async ({ page }) => {
+  test(scenario.id, async ({ page }, testInfo) => {
     await installVisualFrameController(page);
     const requestState = await installScenario(page, scenario);
     await page.goto(scenario.route);
@@ -82,7 +82,11 @@ for (const scenario of visualScenarios) {
         ),
       )
       .toEqual({ frozen: true, pending: 0 });
-    await page.screenshot({ animations: 'disabled', caret: 'hide' });
+    const actual = await page.screenshot({ animations: 'disabled', caret: 'hide' });
+    await testInfo.attach(`${scenario.id}-actual.png`, {
+      body: actual,
+      contentType: 'image/png',
+    });
     await expect(page).toHaveScreenshot(`${scenario.id}.png`, {
       animations: 'disabled',
       caret: 'hide',

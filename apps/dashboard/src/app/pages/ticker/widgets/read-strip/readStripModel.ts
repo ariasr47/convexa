@@ -226,7 +226,7 @@ export function buildReadStrip(input: ReadStripInput): ReadStripCells {
       sub:
         ivRank?.percentile == null
           ? NO_SUB
-          : `${quartileOrdinal(ivRank.percentile)} quartile · ${ivRank.percentile}${ordinalSuffix(ivRank.percentile)} pct`,
+          : `${quartileOrdinal(ivRank.percentile)} quartile · ${Math.round(ivRank.percentile)}${ordinalSuffix(Math.round(ivRank.percentile))} pct`,
       live: NOT_LIVE,
     },
     {

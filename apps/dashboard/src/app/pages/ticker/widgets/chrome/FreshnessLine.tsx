@@ -12,6 +12,7 @@
  * "Couldn't refresh …" warning keep that. When a background poll is in flight it appends a quiet
  * "· refreshing…" that clears on resolve.
  */
+import { demoNowMs } from '@convexa/api';
 import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import { structureAsOfPhrase } from '../_kit/copy';
@@ -33,7 +34,7 @@ function useAgeSeconds(snapshotIso: string | null): number | null {
     if (!snapshotIso) return null;
     const t = Date.parse(snapshotIso);
     if (Number.isNaN(t)) return null;
-    return Math.max(0, Math.round((Date.now() - t) / 1000));
+    return Math.max(0, Math.round((demoNowMs() - t) / 1000));
   };
   const [age, setAge] = useState<number | null>(compute);
   useEffect(() => {

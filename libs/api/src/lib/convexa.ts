@@ -5,9 +5,9 @@
  * the app is unaffected.
  */
 import type { components } from '../generated/schema';
-export type { components };
 import { http } from './client';
 import { dataMode } from './demo/mode';
+export type { components };
 
 /** IV skew at a single anchor tenor (nearest expiration >= 7 DTE). `slope` = put-side IV −
  *  call-side IV, in IV points; `reference` records which rule produced the reference IVs.
@@ -1319,7 +1319,10 @@ export function streamTicker(
         if (event.kind === 'ticker_update') onUpdate(event.update);
       });
     });
-    return () => { active = false; unsubscribe?.(); };
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
   }
   const params = new URLSearchParams();
   if (minDte != null) params.set('min_dte', String(minDte));

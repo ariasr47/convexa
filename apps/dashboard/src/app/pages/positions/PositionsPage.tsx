@@ -32,8 +32,8 @@ import { FigureCell } from '@/pages/ticker/widgets/_kit/FigureCell';
 import { isDeliveringLive } from '@/shared/liveness/liveClaim';
 import { PanelContainer } from '@/shared/ui/PanelContainer';
 import {
-  getTicker,
   dataMode,
+  getTicker,
   isMarketDataPaused,
   LiveUpdate,
   subscribeTicker,
@@ -156,7 +156,8 @@ export function PositionsPage() {
         setLive(event.update);
         setStreamOffline(false);
         if (gapTimer) clearTimeout(gapTimer);
-        if (dataMode === 'live') gapTimer = setTimeout(() => setStreamOffline(true), STREAM_OFFLINE_MS);
+        if (dataMode === 'live')
+          gapTimer = setTimeout(() => setStreamOffline(true), STREAM_OFFLINE_MS);
       } else if (event.kind === 'demo_order_frame') {
         setDemoFrame(event.frame);
       }

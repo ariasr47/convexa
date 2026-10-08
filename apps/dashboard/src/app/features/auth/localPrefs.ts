@@ -34,14 +34,39 @@ let faulted = false;
 function read(): PersistShape {
   if (memory) return memory;
   try {
-    const raw = dataMode === 'demo'
-      ? localStorage.getItem(demoStorageKey(KEY))
-      : resolveDurable(demoStorageKey(KEY), demoStorageKey(LEGACY_KEY));
-    if (raw == null) { memory = empty(); faulted = false; }
-    else {
-      const parsed = JSON.parse(raw) as Partial<PersistShape>;
-      if (!parsed || !('theme' in parsed) || !('default_ticker' in parsed)) throw new Error('malformed local preferences');
-      memory = { ...empty(), ...parsed };
+    const raw =
+      dataMode === 'demo'
+        ? localStorage.getItem(demoStorageKey(KEY))
+        : resolveDurable(demoStorageKey(KEY), demoStorageKey(LEGACY_KEY));
+    if (raw == null) {
+      memory = empty();
+      faulted = false;
+    } else {
+      const parsed: unknown = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+        throw new Error('malformed local preferences');
+      const value = parsed as Record<string, unknown>;
+      if (
+        ('schema_version' in value && value.schema_version !== SCHEMA_VERSION) ||
+        ('theme' in value &&
+          value.theme !== 'dark' &&
+          value.theme !== 'light' &&
+          value.theme !== 'system') ||
+        ('default_ticker' in value &&
+          value.default_ticker !== null &&
+          typeof value.default_ticker !== 'string')
+      )
+        throw new Error('malformed local preferences');
+      memory = {
+        ...empty(),
+        ...(value.schema_version === undefined
+          ? {}
+          : { schema_version: value.schema_version as number }),
+        ...(value.theme === undefined ? {} : { theme: value.theme as ThemePref }),
+        ...(value.default_ticker === undefined
+          ? {}
+          : { default_ticker: value.default_ticker as string | null }),
+      };
       faulted = false;
     }
   } catch {

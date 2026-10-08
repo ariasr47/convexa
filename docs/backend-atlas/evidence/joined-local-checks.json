@@ -1,0 +1,72 @@
+{
+  "scope": "Canonical local checks on source worktree before final source commit; browser and hosted checks separate",
+  "observedAt": "2026-10-08T04:30:43.8886920Z",
+  "head": "b45c5f56d6a689009bdedae085f4fbc0d1a77ff4",
+  "worktree": "uncommitted portfolio implementation",
+  "dashboard": {
+    "baselineVitestWallSeconds": 80.75,
+    "vitestWallSeconds": 95.95,
+    "nativeExit": 0,
+    "files": 262,
+    "tests": 3150,
+    "note": "Concurrent typecheck; measured wall time is not an isolated performance benchmark",
+    "baselineTests": 3139
+  },
+  "api": {
+    "files": 8,
+    "nativeExit": 0,
+    "note": "API target passed in joined run whose dashboard target initially failed; corrected dashboard rerun passed separately",
+    "tests": 59
+  },
+  "typecheck": {
+    "nxWallSeconds": 57.0,
+    "nativeExit": 0,
+    "generatedApiContract": "pass"
+  },
+  "lint": {
+    "nxWallSeconds": 10.7,
+    "nativeExit": 0,
+    "warnings": "advisory, not zero",
+    "followup": "Changed mutation test file also passed targeted ESLint",
+    "projects": 3
+  },
+  "format": {
+    "nativeExit": 0,
+    "scope": "entire existing scoped format:check"
+  },
+  "earlierFailure": {
+    "nativeExit": 1,
+    "reason": [
+      "Off-ladder sample-mid spacing fixed with existing allowed value",
+      "Existing shared-source mutation fixture isolated in OS temp; assertions preserved"
+    ],
+    "focusedRepair": {
+      "files": 3,
+      "nativeExit": 0,
+      "tests": 23
+    },
+    "dashboardFailedTests": 2
+  },
+  "logs": {
+    "lint": {
+      "sha256": "07be4516690e15d11f99c6fd7430e020985c11d38316d76f20d131b9bc3ec49c",
+      "path": ".spire/tmp/portfolio-joined-lint.log"
+    },
+    "typecheck": {
+      "sha256": "e9639d64a5e10edc88c89c906667cf1bb501eba371bf85bafc6aa979e93d2ed3",
+      "path": ".spire/tmp/portfolio-joined-typecheck-final.log"
+    },
+    "api": {
+      "sha256": "e2712a06ba441617d4ca977066722ebfd85a98b80920be15986af289276ec7bd",
+      "path": ".spire/tmp/portfolio-joined-unit.log"
+    },
+    "dashboard": {
+      "sha256": "e8bc4d5148c2dde31ee45f562f9e5745a6c115858e90a520c520df6b1275d16f",
+      "path": ".spire/tmp/portfolio-joined-unit-final.log"
+    },
+    "format": {
+      "sha256": "d0b8d22285b8eea22aa46e63ebb371bc41b98d86c27562ed767e987bfdfefc9e",
+      "path": ".spire/tmp/portfolio-joined-format-final.log"
+    }
+  }
+}

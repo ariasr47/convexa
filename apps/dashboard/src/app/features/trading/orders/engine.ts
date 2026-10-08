@@ -20,9 +20,8 @@
  */
 import { limitWouldFill } from '@/features/trading/positions/entry';
 import { genuineIsLive } from '@/pages/ticker/sessionTapeStanding';
-import type { LiveUpdate } from '@convexa/api';
+import type { DemoOrderFrame, LiveUpdate } from '@convexa/api';
 import type { OrderFillBasis, SimOrder, Trigger } from './types';
-import type { DemoOrderFrame } from '@convexa/api';
 
 /** One evaluation tick's inputs. `optionMark` MUST already be live-resolved by the caller (null
  *  when the mark is unavailable, frozen, last_known, or the stream isn't live). */
@@ -60,8 +59,19 @@ export function tickFromLive(
 
 /** A demo tick can only be constructed from a controller-issued frame (frames are emitted while
  * playback is running); it carries no genuine-live predicate and never unlocks the live flag. */
-export function tickFromDemo(frame: DemoOrderFrame, optionMark: number | null, nowMs: number): EngineTick {
-  return { standing: 'demo_simulation', mid: frame.underlyingMid, isLive: false, streamOffline: false, optionMark, now: nowMs };
+export function tickFromDemo(
+  frame: DemoOrderFrame,
+  optionMark: number | null,
+  nowMs: number,
+): EngineTick {
+  return {
+    standing: 'demo_simulation',
+    mid: frame.underlyingMid,
+    isLive: false,
+    streamOffline: false,
+    optionMark,
+    now: nowMs,
+  };
 }
 
 /** Instantaneous level test: `underlying_above` ⇒ mid strictly above the level; `underlying_below`
@@ -78,10 +88,16 @@ function endOfDayMs(isoDate: string, standing: EngineTick['standing']): number {
   // Demo contracts expire at 16:00 America/New_York. Resolve the zone offset for that date so
   // October and November samples remain correct when the host is in another timezone.
   const target = Date.UTC(y, m - 1, d, 16, 0, 0, 0);
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset', hour: '2-digit' }).formatToParts(target);
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    timeZoneName: 'shortOffset',
+    hour: '2-digit',
+  }).formatToParts(target);
   const raw = parts.find((part) => part.type === 'timeZoneName')?.value ?? 'GMT-5';
   const match = raw.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
-  const offset = match ? (match[1] === '+' ? 1 : -1) * (Number(match[2]) * 60 + Number(match[3] ?? 0)) : -300;
+  const offset = match
+    ? (match[1] === '+' ? 1 : -1) * (Number(match[2]) * 60 + Number(match[3] ?? 0))
+    : -300;
   return target - offset * 60_000;
 }
 
@@ -141,7 +157,8 @@ export function evaluateOrder(order: SimOrder, tick: EngineTick): OrderTransitio
   }
 
   // 2) Nothing else moves without live data ([live-vs-static-isolation], AC-26/28).
-  const eligible = tick.standing === 'genuine_live' ? tick.isLive : tick.standing === 'demo_simulation';
+  const eligible =
+    tick.standing === 'genuine_live' ? tick.isLive : tick.standing === 'demo_simulation';
   if (!eligible || tick.streamOffline) return null;
 
   const iso = new Date(tick.now).toISOString();

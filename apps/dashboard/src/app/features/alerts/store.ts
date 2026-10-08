@@ -2,6 +2,7 @@
  * Durable client store for alert rules + recent events (localStorage).
  * Server does not own alerts yet — multi-device sync is a later slice.
  */
+import { demoStorageKey } from '@convexa/api';
 import {
   ALERTS_KEY,
   ALERTS_MAX_EVENTS,
@@ -9,7 +10,6 @@ import {
   type AlertRule,
   type AlertsState,
 } from './types';
-import { demoStorageKey } from '@convexa/api';
 
 function empty(): AlertsState {
   return { schema_version: 1, rules: [], events: [], notifyBrowser: false };

@@ -19,7 +19,7 @@
  * Reads stay guarded so a storage failure degrades to in-memory only and never throws into the UI.
  */
 import { resolveDurable } from '@/shared/lib/durable/resolveDurable';
-import { dataMode, demoStorageKey, demoNowMs, scenarioProvenance } from '@convexa/api';
+import { dataMode, demoNowMs, demoStorageKey, scenarioProvenance } from '@convexa/api';
 import { DecisionRecord, SCHEMA_VERSION } from './types';
 
 const STORAGE_KEY = 'convexa.ghost-trade.v1';
@@ -72,7 +72,16 @@ export function decisionsForTrade(tradeId: string): DecisionRecord[] {
 /** Download the FULL versioned log (all trades + all decisions) as machine-readable JSON. */
 export function exportLog() {
   const s = read();
-  const blob = new Blob([JSON.stringify(dataMode === 'demo' ? { ...s, sample_provenance: scenarioProvenance() } : s, null, 2)], { type: 'application/json' });
+  const blob = new Blob(
+    [
+      JSON.stringify(
+        dataMode === 'demo' ? { ...s, sample_provenance: scenarioProvenance() } : s,
+        null,
+        2,
+      ),
+    ],
+    { type: 'application/json' },
+  );
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
