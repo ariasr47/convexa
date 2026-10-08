@@ -56,3 +56,4 @@ Append-only. One line per step. Times are local (America/Los_Angeles) unless mar
 - 2026-10-08 P2 batch 1 committed 643a5396; verified on the clean tree (run b01): all steps exit 0, 580 s; vitest 3136 (-3) + 45, tools 150, cargo 1643, chromium 128, a11y 35, pg 2+9+1, 0 skips.
 - 2026-10-08 P2 batch 2 committed df6ca407; verified (run b02): all exit 0, 583 s; vitest 3126 (-10) + 45, tools 150, cargo 1643, chromium 128, a11y 35, pg 2+9+1, 0 skips.
 - 2026-10-08 P2 batch 3 committed c412a03b; verified (run b03): all exit 0, 591 s; vitest 3122 (-4) + 45, tools 150, cargo 1643, chromium 128, a11y 35, pg 2+9+1, 0 skips.
+- 2026-10-08 P2 batch 4 committed d4bbc269; verified (run b04): all exit 0, 778 s (score_lab.rs change recompiled the release capacity binary); vitest 3122 + 45, tools 150, cargo 1639 (-4), chromium 128, a11y 35, pg 2+9+1, 0 skips.
