@@ -80,3 +80,4 @@ RETIRED: apps/dashboard/src/app/pages/ticker/widgets/ai-rec/reservedMark.render.
 RETIRED: apps/dashboard/src/app/pages/ticker/liveTapeStore.spec.ts; parent 38e123bf9b78f566af4edcd1c70eec18214a39be; duplicate; 1 tests
 RETIRED: apps/dashboard/src/app/pages/ticker/widgets/level-ladder/LevelLadder.spec.tsx; parent 38e123bf9b78f566af4edcd1c70eec18214a39be; duplicate; 19 tests
 RETIRED: apps/dashboard/src/app/pages/ticker/widgets/off-exchange-blocks/OffExchangeBlocks.spec.tsx; parent 38e123bf9b78f566af4edcd1c70eec18214a39be; duplicate; 2 tests
+RETIRED: apps/dashboard/src/app/shared/theme/banned-literals.spec.ts; parent b13931d1101df269587c69474634de7bf5b35690; duplicate; 4 tests
