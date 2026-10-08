@@ -122,8 +122,11 @@ export function visualAttachmentRole(attachment: {
   name?: string;
   path?: string;
 }): VisualAttachmentRole {
-  if (!attachment.path) return undefined;
-  const value = `${attachment.name ?? ''} ${path.basename(attachment.path)}`.toLowerCase();
+  const value = [attachment.name, attachment.path ? path.basename(attachment.path) : undefined]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  if (!value) return undefined;
   if (/(^|[-_. ])expected([-. _]|$)/.test(value)) return 'expected';
   if (/(^|[-_. ])actual([-. _]|$)/.test(value)) return 'actual';
   if (/(^|[-_. ])diff([-. _]|$)/.test(value)) return 'diff';

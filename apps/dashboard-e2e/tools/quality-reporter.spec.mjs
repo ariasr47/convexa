@@ -15,6 +15,57 @@ test('visual reporter maps named actual/diff attachments instead of first PNG', 
   assert.doesNotMatch(source, /!actualArtifact && path\.extname/);
   assert.match(source, /diff_path: diffArtifact\?\.path \?\? null/);
   assert.match(source, /includes\('A11Y-'\) && !String\(x\.identity\)\.includes\('A11Y-B'\)/);
+
+  const output = `apps/dashboard-e2e/test-output/playwright/reporter-visual-attachments-${process.pid}/summary.json`;
+  const outputDirectory = path.dirname(path.resolve(output));
+  const script = `
+    import assert from 'node:assert/strict';
+    import { createHash } from 'node:crypto';
+    import fs from 'node:fs';
+    import path from 'node:path';
+    import { QualityReporter, visualAttachmentRole } from './apps/dashboard-e2e/src/quality/reporters/quality-reporter.ts';
+    const output = ${JSON.stringify(output)};
+    const actualBody = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3]);
+    assert.equal(visualAttachmentRole({ name: 'ticker-desktop-actual.png' }), 'actual');
+    assert.equal(visualAttachmentRole({ name: 'unclassified.bin' }), undefined);
+    const tests = Array.from({ length: 6 }, (_, index) => ({
+      titlePath: () => ['', 'chromium', 'visual.spec.ts', ['ticker-desktop', 'landing', 'ticker-offline-mobile', 'positions-dense', 'scanner-dense', 'ai-recommendation'][index]],
+      location: { file: path.resolve('apps/dashboard-e2e/src/quality/visual.spec.ts') },
+      parent: { project: () => ({ name: 'chromium' }) },
+    }));
+    const reporter = new QualityReporter({ gate: 'visual', output });
+    reporter.onBegin({ rootDir: process.cwd() }, { allTests: () => tests });
+    reporter.onTestEnd(tests[0], {
+      status: 'failed',
+      retry: 0,
+      attachments: [{ name: 'ticker-desktop-actual.png', contentType: 'image/png', body: actualBody }],
+    });
+    for (let index = 1; index < tests.length; index += 1) {
+      reporter.onTestEnd(tests[index], { status: 'passed', retry: 0, attachments: [] });
+    }
+    reporter.onEnd();
+    const summary = JSON.parse(fs.readFileSync(output, 'utf8'));
+    const row = summary.scenarios.find((scenario) => scenario.scenario_id === 'ticker-desktop');
+    assert.ok(row?.actual_path);
+    assert.equal(row.actual_sha256, createHash('sha256').update(actualBody).digest('hex'));
+    const artifact = path.resolve(row.actual_path);
+    assert.deepEqual(fs.readFileSync(artifact), actualBody);
+    assert.ok(summary.artifacts.some((item) => item.path === row.actual_path && item.sha256 === row.actual_sha256));
+  `;
+  try {
+    assert.doesNotThrow(() =>
+      execFileSync(
+        process.execPath,
+        ['--experimental-strip-types', '--input-type=module', '-e', script],
+        {
+          cwd: path.resolve('.'),
+          stdio: 'pipe',
+        },
+      ),
+    );
+  } finally {
+    fs.rmSync(outputDirectory, { recursive: true, force: true });
+  }
 });
 
 test('accessibility reporter retains axe finding fields and attachment evidence', () => {
