@@ -74,3 +74,6 @@ RETIRED: tools/supply-chain/dependabot.spec.mjs; parent 24c26d503d5c7225c52137bd
 RETIRED: tools/supply-chain/docs-and-isolation.spec.mjs; parent 24c26d503d5c7225c52137bdd5db0b0ad5bd4bc1; structure; 14 tests
 RETIRED: tools/capacity-gate.spec.mjs; parent 6160467e3ff99f4bcdb2731f42bd3e358bbfe039; structure; 12 tests
 RETIRED: tools/ci-resource-guards.spec.mjs; parent 6160467e3ff99f4bcdb2731f42bd3e358bbfe039; structure; 3 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/widgets/ai-rec/planScopeCaption.render.spec.tsx; parent 55ab4f167cc14562d04996465327c01be0add610; duplicate; 6 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/widgets/ai-rec/powering.banned.spec.ts; parent 55ab4f167cc14562d04996465327c01be0add610; duplicate; 1 tests
+RETIRED: apps/dashboard/src/app/pages/ticker/widgets/ai-rec/reservedMark.render.spec.tsx; parent 55ab4f167cc14562d04996465327c01be0add610; duplicate; 5 tests

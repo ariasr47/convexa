@@ -406,3 +406,4 @@ Full lists with files, counts and same-commit edits: [BATCHES.md](BATCHES.md).
 | 19 | `apps/api/src/infrastructure/redis/price_cache.rs` (in-file test module; structure) | 1 → 0 | removed: memory_roundtrip |
 | 20 | `apps/api/src/capacity/harness_app.rs` (in-file test module; structure) | 2 → 0 | removed: loader_rejects_invalid_fixture_root, loader_supports_dedicated_and_legacy_fixture_roots |
 | 20 | `apps/api/src/services/capacity_harness/inject.rs` (in-file test module; structure) | 1 → 0 | removed: inject_publishes_changing_quotes |
+| 24 | `apps/api/tests/capacity_isolation.rs` (same-commit edit for the retired capacity-gate spec) | 10 → 9 | removed: node_gate_contains_disposable_exit_propagation_mutations |
