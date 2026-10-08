@@ -6,6 +6,7 @@
 > Design driver: the operator processes information visually — consistent color coding, tight
 > sectioning, bold contrast — and wants exactly the information needed to decide the next move,
 > nothing else. ORCHESTRATOR §0 step 9, §5 and §7 route here; they never restate this file.
+> Scope note (owner ruling, 2026-10-01; this reading of it approved by the owner, 2026-10-02): the cluster entry's startup card reports the startup check's own result and uses this vocabulary before any conductor is read — 🟢 **DONE** when the check found nothing to stop on, whether the entry then opens a conductor or asks which ascent to open (the question that follows does the asking), and 🟠 **PROBLEM** when the check stopped; no sixth chip.
 
 ## 1. Status chips — the color code (fixed vocabulary, never extended)
 
@@ -85,6 +86,11 @@ product> · **Handling:** <what the conductor is doing about it, or the ONE thin
 
 ### 3.5 Ship card — 🟢 at ship time
 Body = what shipped, in outcome words, + one line "what you can now do". No internal jargon.
+
+Calling a change "delivered," and coloring that line 🟢, holds only when a CI pass, a remote read
+confirming the pushed commit, and a deploy pass (if one was declared) all hold. The push question
+itself is its own 🔴 Decision card (§3.3), asked before any push. A root with no delivery step
+declared adds one line naming that the push stays the operator's, uncoloured.
 
 ## 4. Decision-fatigue rules
 

@@ -136,6 +136,7 @@ Read these files for full context, then implement the backend, acting as a backe
 - .spire/clusters/tech/contracts/{FEATURE}/_context-pack.md                 (your slice of the standing ground truth — the always-load invariant floor + this feature's tagged sections. Regenerate it now, unconditionally, even if it already exists: `node .codex/tools/gates.mjs context_for {FEATURE} --write`, then read the file it names — it can be stale, since GATE M/V skip the council round that writes it and `PROJECT_CONTEXT.md` can change after GATE C)
 - .spire/clusters/tech/contracts/{FEATURE}/INTERFACE_CONTRACT.md            (the single source of integration truth)
 - .spire/clusters/tech/contracts/{FEATURE}/SPEC.md                          (§2 architecture + §7 testing strategy — your server work)
+- .spire/clusters/tech/contracts/{FEATURE}/PLAN.md   (## Test budget — the checks your tasks owe; absent on a fast path)
 - .spire/clusters/tech/contracts/{FEATURE}/RESUME.md                        (ONLY if present with `**Resume status:** ACTIVE` — a prior lane hit its session budget and checkpointed; continue from exactly where it stopped instead of redoing done work)
 - .spire/clusters/tech/contracts/{FEATURE}/RESUME-{Task}.md                  (ONLY if this spawn has a Work scope Task id and that file is ACTIVE)
 
@@ -154,6 +155,7 @@ Read these files for full context, then implement the frontend, acting as a fron
 - .spire/clusters/tech/contracts/{FEATURE}/_context-pack.md                 (your slice of the standing ground truth — the always-load invariant floor + this feature's tagged sections. Regenerate it now, unconditionally, even if it already exists: `node .codex/tools/gates.mjs context_for {FEATURE} --write`, then read the file it names — it can be stale, since GATE M/V skip the council round that writes it and `PROJECT_CONTEXT.md` can change after GATE C)
 - .spire/clusters/tech/contracts/{FEATURE}/INTERFACE_CONTRACT.md            (the single source of integration truth)
 - .spire/clusters/tech/contracts/{FEATURE}/SPEC.md                          (§4 — component states, copy, design direction; your UI work)
+- .spire/clusters/tech/contracts/{FEATURE}/PLAN.md   (## Test budget — the checks your tasks owe; absent on a fast path)
 - .spire/clusters/tech/contracts/{FEATURE}/RESUME.md                        (ONLY if present with `**Resume status:** ACTIVE` — a prior lane hit its session budget and checkpointed; continue from exactly where it stopped instead of redoing done work)
 - .spire/clusters/tech/contracts/{FEATURE}/RESUME-{Task}.md                  (ONLY if this spawn has a Work scope Task id and that file is ACTIVE)
 
@@ -161,8 +163,8 @@ If this spawn includes a **Work scope** (Task id + Paths from PLAN.md `## Indepe
 only those paths (plus colocated tests). Do not run the full visual/serve closer pass unless this
 spawn is the lane closer. Checkpoint to `RESUME-{Task}.md`, not `RESUME.md`.
 
-Follow the lane boundaries, interface-binding rule, required unit/component/flow-integration test
-floor, degraded-state behavior, and visual-verification exit discipline in your agent definition.
+Follow the lane boundaries, interface-binding rule, owed-check rule, degraded-state behavior, and
+visual-verification exit discipline in your agent definition.
 Apply them to the feature-specific inputs above; report the states exercised and test result, and
 bounce a missing interface field instead of inventing it.
 ```
@@ -179,7 +181,7 @@ deliberately NOT one of the builders — no one marks their own homework):
 - .spire/clusters/tech/context/PROJECT_CONTEXT.md                                       (standing ground truth)
 - .spire/clusters/tech/contracts/{FEATURE}/SPEC.md                               (§3 ACCEPTANCE CRITERIA — your checklist)
 - .spire/clusters/tech/contracts/{FEATURE}/INTERFACE_CONTRACT.md                 (integration truth — what BE emits / FE consumes)
-- .spire/clusters/tech/contracts/{FEATURE}/PLAN.md                               (## Independence — join audit when any Independent: yes)
+- .spire/clusters/tech/contracts/{FEATURE}/PLAN.md                               (## Test budget — owed checks; ## Independence — join audit when any Independent: yes)
 - .spire/clusters/tech/contracts/{FEATURE}/_MANIFEST.md                          (Workers: line — spawned Task ids + closers, or n/a)
 - .spire/clusters/tech/context/OPEN_THREADS.md §9 ONLY                                    (the "Resolved decisions — do NOT revisit" section: honor those promoted invariants. Read §9; do NOT read §1-§8 — they are open items and shipped history you do not verify against.)
 
@@ -208,11 +210,12 @@ Method:
 - When PLAN.md `## Independence` has any Independent: yes, FAIL if `_MANIFEST.md` `Workers:` omits
   an eligible Task, a lane closer never ran, or any RESUME.md / RESUME-*.md for this feature is
   still ACTIVE.
-- Re-run the frontend test suite + verify AC coverage per its `Verify by` marking (standing rule — tests
-  are part of the FE deliverable): run the configured frontend test command (`project.json` →
+- Re-run the frontend test suite + verify AC coverage per its `Verify by` marking: run the configured
+  frontend test command (`project.json` →
   `frontend.test_cmd`, plus any shared-lib test command if a shared client lib was touched); a failing
   suite is a GATE Q FAIL → bounce to Frontend. Then verify traceability (NOT a spot-check): every
-  SPEC.md §3 AC marked `test` in its `Verify by` column maps to ≥1 named, passing test; every AC marked
+  SPEC.md §3 AC marked `test` in its `Verify by` column maps to ≥1 named, passing test that would fail
+  if its `Silent if:` failure happened (one test may cover several rows); every AC marked
   `review` is confirmed by inspection. A `test`-marked AC with no corresponding test is a FAIL even if the
   green suite passes — name the uncovered AC in the bounce.
 

@@ -63,7 +63,7 @@ fresh lane must continue from that resume. Late-session work you cannot re-verif
 a fresh context re-reading SPEC §4 is cheap (measured: a fresh spawn costs cents).
 
 Skills (invoke by trigger — not as one bundle):
-- **Always for tests:** `spire-tech-tdd` on the build loop.
+- **On an owed test or check:** `spire-tech-tdd` — red-first when the task's mark says yes; for a gate, validator or guard, record a can-fail proof whatever the mark.
 - **On test-depth / Verify-by decisions:** `spire-tech-risk-based-verify`.
 - **On context-pack / promoted invariants:** `spire-tech-invariant-honor`.
 - **After serve / before done:** `spire-tech-conformance-receipt` for builder interface_conformance.

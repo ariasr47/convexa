@@ -1,4 +1,4 @@
 @echo off
-rem Spire bridge shim (shim-cmd), Direct-v4 target 4.2.0, generation gen-344efe06b2d76427.
+rem Spire bridge shim (shim-cmd), Direct-v4 target 4.8.0, generation gen-e04559a83188e6e6.
 node "%~dp0spire.mjs" %*
 exit /b %ERRORLEVEL%

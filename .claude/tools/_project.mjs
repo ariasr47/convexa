@@ -19,10 +19,17 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const STATE_ROOT = path.join(ROOT, '.spire', 'clusters', 'tech');
 
-/** Read the project seam (.spire/clusters/tech/project.json). Absent/malformed ⇒ {} (defaults apply). */
-export function projectConfig() {
+/**
+ * Read the project seam (.spire/clusters/tech/project.json). Absent/malformed ⇒ {} (defaults apply).
+ * @param {string} [root] repo root to resolve the seam under, for a caller that is not itself
+ *   installed two levels under a provider root (a kit-meta script elsewhere in the repository, or a
+ *   test, cannot rely on this file's own install-relative default). continuity.mjs:236 is the
+ *   exports-take-root precedent this mirrors.
+ */
+export function projectConfig(root) {
+  const stateRoot = root ? path.join(root, '.spire', 'clusters', 'tech') : STATE_ROOT;
   try {
-    const parsed = JSON.parse(fs.readFileSync(path.join(STATE_ROOT, 'project.json'), 'utf8'));
+    const parsed = JSON.parse(fs.readFileSync(path.join(stateRoot, 'project.json'), 'utf8'));
     // CPython only guards OSError/JSONDecodeError; a valid-but-non-object project.json (a bare
     // array/string/number) then dies on `.get` with an AttributeError traceback. A gate should not
     // traceback on malformed config, so a non-object reads as "no config" — same net effect as the

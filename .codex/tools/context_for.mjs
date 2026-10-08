@@ -35,7 +35,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { pyRepr, pyFixed0 } from './_pyfmt.mjs';
+import { formatValue, roundHalfEven } from './_pyfmt.mjs';
 import { projectConfig } from './_project.mjs';
 
 // Resolve repo root from this file's location (.codex/tools/context_for.mjs -> repo root).
@@ -79,7 +79,7 @@ function readText(p) {
 }
 
 /** Python str.splitlines() — a trailing line break does NOT yield a final empty element. */
-function pySplitlines(text) {
+function splitLines(text) {
   if (text === '') return [];
   const parts = text.split(PY_LINEBREAK_RE);
   if (parts[parts.length - 1] === '') parts.pop();
@@ -112,7 +112,7 @@ function scanShard(section) {
 
 /** @returns {[string[], {heading: string, lines: string[], tags: Set<string>, always: boolean}[]]} */
 export function parseSections(text) {
-  const lines = pySplitlines(text);
+  const lines = splitLines(text);
   const preamble = [];
   const sections = [];
   let cur = null;
@@ -338,7 +338,7 @@ export function main(argv) {
     // path.relative uses the OS separator, exactly as Python's Path.relative_to(ROOT) does — both
     // print backslashes on Windows, so the bytes match and must NOT be normalised.
     console.log(
-      `context_for — wrote ${path.relative(ROOT, dest)} (${out.length}/${total} lines, ${pyFixed0(pct)}% smaller)`,
+      `context_for — wrote ${path.relative(ROOT, dest)} (${out.length}/${total} lines, ${roundHalfEven(pct)}% smaller)`,
     );
     return 0;
   }
@@ -355,7 +355,7 @@ export function main(argv) {
   const tags = [...ftags].sort(CODEPOINT_SORT);
   // Python prints `sorted(ftags) or '—'`: a LIST repr when non-empty, the em dash when empty.
   console.log(
-    `context_for — feature: ${feature || '(ad-hoc)'}  tags: ${tags.length ? pyRepr(tags) : '—'}`,
+    `context_for — feature: ${feature || '(ad-hoc)'}  tags: ${tags.length ? formatValue(tags) : '—'}`,
   );
   console.log(`  preamble (always): ${preamble.length} lines`);
   for (const s of sections) {
@@ -368,7 +368,7 @@ export function main(argv) {
   }
   const saved = total - loaded;
   const pct = total ? (saved / total) * 100 : 0;
-  console.log(`\n  pack: ${loaded}/${total} lines  —  ${saved} saved (${pyFixed0(pct)}% smaller)`);
+  console.log(`\n  pack: ${loaded}/${total} lines  —  ${saved} saved (${roundHalfEven(pct)}% smaller)`);
   return 0;
 }
 

@@ -30,7 +30,7 @@ Inputs (read in full; assume no chat history):
   absent, regenerate it: `node .claude/tools/gates.mjs context_for {FEATURE} --write`.
 
 Method: read `.claude/plan/PLAN_METHOD.md` (installed with this kit) and follow it — bite-sized
-tasks, exact files, complete code in steps, TDD, frequent commits. Backend and frontend tracks
+tasks, exact files, complete code in steps, a per-task `**Red-first:**` mark (`spire-tech-tdd`), frequent commits. Backend and frontend tracks
 must be independently executable in parallel; the verification track names the commands and their
 expected output. Write the `## Independence` table on every plan (Task, Lane, Paths, Depends on, Independent;
 Lane is backend or frontend only). All-`no` is the honest cannot-split signal. Do not mark two

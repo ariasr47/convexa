@@ -19,14 +19,17 @@ column) — never a parallel verify genre.
    (`spire-tech-acceptance-criteria`).
 
 2. **Classify regression risk.** Ask: if this broke silently under an unrelated change, would a
-   human reviewer still notice on a normal pass?
-   - **Silent / invisible risk** → `test` (automate).
-   - **Visible / intentional change** → `review` (record inspection).
+   human reviewer still notice on a normal pass? And would that failure cost something — for example
+   money, access, data, a wrong value shown as right, or the core journey? Silent and costly → mark
+   `test (Silent if: <that failure, one line>)`. Otherwise → `review`, the default.
 
 3. **Mark `Verify by` honestly.**
    - `test` — invariants, negative space, auth boundaries, byte-identity, motion/state that dies under
      refactors, structural rules that compile green while wrong.
    - `review` — copy wording, static presence, cosmetic layout, ordering that is intentional.
+
+   The cell begins with `test`, carries no "|", and a legacy plain `test` without `Silent if:` still
+   means `test`.
 
 4. **Disclose stack limits (H3).** When the consumer is plain ESM + `node --test` (or equivalent)
    **without** a DOM harness (no jsdom/playwright/cypress in the contract), criteria that assert

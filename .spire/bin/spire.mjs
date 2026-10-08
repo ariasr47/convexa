@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Spire bridge shim (shim-mjs), Direct-v4 target 4.2.0, generation gen-344efe06b2d76427.
+// Spire bridge shim (shim-mjs), Direct-v4 target 4.8.0, generation gen-e04559a83188e6e6.
 // Stable launcher for this consumer root: it dispatches every argument straight through to the
 // external recovery bootstrap under the home directory, which selects the active generation. It
 // carries no selection logic of its own and refuses only when no bootstrap is installed yet (the

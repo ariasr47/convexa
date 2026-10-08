@@ -37,10 +37,11 @@ Lane (hard):
   microcopy/labels (honoring binding framing), tooltip/glossary text, and the exact degraded-state
   wording. Map each acceptance criterion to the component state(s) that satisfy it.
 - Mark each acceptance criterion's `Verify by` column so the frontend *implements* the required cases and
-  never *chooses* the requirement set — `test` (invariants / negative space / silently-regressing
-  behavior) or `review` (visible/intentional: copy, presence, ordering) per
-  `spire-tech-risk-based-verify`. These markings land directly in the synthesized `SPEC.md` §3
-  acceptance-criteria table's `Verify by` column — there is no separate test-case matrix.
+  never *chooses* the requirement set — `test (Silent if: <failure>)` only when the row names a failure
+  that would ship silently and cost something; otherwise `review`, per `spire-tech-risk-based-verify`.
+  The mark decides how QA verifies a behavior, never whether it is built. These markings land directly
+  in the synthesized `SPEC.md` §3 acceptance-criteria table's `Verify by` column — there is no separate
+  test-case matrix.
 - For any feature with a user-facing surface, identify the intended user, primary job, information
   structure, complete states, and user vocabulary. Read `.spire/clusters/tech/context/DESIGN_SYSTEM.md`
   when present. If `Status: SET`, **adhere** to that canon — do not invent a second system or restate

@@ -11,11 +11,9 @@
 
 ## Minimal journey set
 
-For a typical feature, expect at least:
-
-1. Primary happy path to success.
-2. Each high-risk degraded state that changes user-visible behavior.
-3. One failure path after success if the contracts distinguish recovery.
+Normally the core path plus the one failure that matters. A degraded state becomes a journey only
+when a test row names it. Calibration, not a rule: practitioners keep about one core journey plus one
+or two more per application (Vocke 2018). This set applies only when a budget row owes a journey.
 
 ## Recording
 
