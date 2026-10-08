@@ -134,6 +134,12 @@ feature (3 instances within it). **Re-assess at the next vendor-SDK integration*
 be exactly it.
 
 ## Watch list (keys logged, not yet at threshold)
+- `demo-live-boundaries-are-disjoint`: 1 binding decision (`portfolio-demo-platform`, active VERIFY).
+  Demo composition, transports and browser keys stay isolated; unsupported operations refuse locally.
+- `public-demo-is-authored-synthetic`: 1 binding decision (`portfolio-demo-platform`, active VERIFY).
+  Public samples are authored independently of owner records; display and exports retain sample provenance.
+- `static-preview-does-not-migrate-backend`: 1 binding decision (`portfolio-demo-platform`, active VERIFY).
+  Static Pages preview scope excludes Railway migration and production data; no backend execution is implied.
 - _(`route-growth-repins-api-artifact-oracle` and `a11y-gate-scans-both-schemes-and-overlays` GRADUATED
   2026-09-24, each with 2 binding features. See Promoted canon above.)_
 - `vendor-absence-is-a-named-state`: 1 binding (no-vendor-production-posture, 2026-09-24). A data source

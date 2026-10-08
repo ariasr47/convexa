@@ -1316,6 +1316,16 @@ conformance, and volume-replacement receipts.
     loop. The scanner's cadence line and the AI panel say "paused".
   - **Turning data back on:** set `live` with a working key. No code change is needed.
   - **Contracts:** `_archive/no-vendor-production-posture/`.
+- **Portfolio demo (`portfolio-demo-platform`, active static preview — VERIFY)** — build-time
+  `VITE_DATA_MODE=demo|live` selects browser-local synthetic providers or the existing live composition.
+  The demo shares one authored six-symbol scenario across the scanner, ticker and local paper book;
+  ticker-local Technical analysis and Research show sample bars and authored cases. Demo preferences,
+  book and reset stay isolated from live storage, with persistent sample provenance. The source-linked
+  [visual backend atlas](../../../../docs/backend-atlas/README.md) explains both modes and their boundaries.
+  The static Pages preview is deployed; exact-source hosted QA and CI/Linux verification remain pending.
+  [Draft PR #76](https://github.com/ariasr47/convexa/pull/76) is unmerged; `NO_BACKEND_CHANGE`.
+  Follow the [branch checkpoint](../state/codex-portfolio-demo-platform/RESUME.md) and
+  [active contract](../contracts/portfolio-demo-platform/_MANIFEST.md). GATE S is not complete.
 
 ## 7. Conventions
 <!-- shard: tags=conventions,env,run,config,vendor -->

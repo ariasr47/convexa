@@ -539,6 +539,14 @@ async function assertTapAndKeyboardReveal(page: Page, help: Locator, label: stri
   const tooltipId = await help.getAttribute('aria-describedby');
   const tooltip = page.locator(`[role="tooltip"][id=${JSON.stringify(tooltipId)}]`);
   await expect(tooltip, `${label}: tap reveals content`).toBeVisible();
+  // Touch activation must survive native compatibility mouse movement on hybrid devices.
+  await help.hover();
+  await page.mouse.move(0, 0);
+  await expect(help, `${label}: tap remains active after mouse exit`).toHaveAttribute(
+    'aria-describedby',
+    tooltipId!,
+  );
+  await expect(tooltip, `${label}: content remains visible after mouse exit`).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(tooltip, `${label}: closes`).toBeHidden();
   // Escape closes the MUI Tooltip's `open` state but does not blur the trigger (correct — a real

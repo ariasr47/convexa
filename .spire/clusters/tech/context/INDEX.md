@@ -26,6 +26,7 @@
 
 ## Hot work (pointers only — detail stays in RESUME / contracts)
 > Refresh when GATE R or ship changes the picture. Prefer branch RESUME over duplicating state here.
+- **Active preview:** `portfolio-demo-platform` — static Pages demo deployed; exact-source hosted QA and CI/Linux verification pending. [Draft PR #76](https://github.com/ariasr47/convexa/pull/76) remains unmerged. Follow the [branch checkpoint](../state/codex-portfolio-demo-platform/RESUME.md) and [active contract](../contracts/portfolio-demo-platform/_MANIFEST.md); GATE S is not complete.
 - **Last ship:** `no-vendor-production-posture`, GATE S 2026-09-24 via PR #71. It adds `MARKET_DATA_MODE=paused`: zero vendor contact, a typed 503, and the desk's "Market data is paused." panel.
 - **Before that:** `curvature-v2-landing-and-site`, Curvature v2 phase 4, GATE S 2026-09-23. It's in `_archive/`, with the conformance pin in `state/conformance/`.
   - Phases 1–3 merged as PR #46 (2026-09-10).

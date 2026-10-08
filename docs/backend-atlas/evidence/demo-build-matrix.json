@@ -1,11 +1,12 @@
 {
-  "scope": "Local production matrix on the frozen worktree after the native help repair, before final source commit. Every step is cache-enabled; status records the observed miss or hit, without interpreting a mode switch as a cold build. The repaired LIVE artifact may already be cached by its focused browser verification. No cache was cleared or forced off. Native exits verified; Nx task identities read independently from its local history database. This is not hosted or CI evidence.",
+  "scope": "Local production matrix on the frozen worktree after the explicit help activation repair, before final source commit. Every step is cache-enabled; status records the observed miss or hit, without interpreting a mode switch as a cold build. The repaired LIVE artifact may already be cached by its focused browser verification. No cache was cleared or forced off. Native exits verified; Nx task identities read independently from its local history database. This is not hosted or CI evidence.",
   "productionEnvironment": "NODE_ENV=production pinned in Nx production configuration",
+  "timingContext": "The initial demo build overlapped the repository format check. These are observed wall times, not an isolated performance comparison; Nx reported 6.8 seconds for that build target.",
   "steps": [
     {
-      "label": "matrix-demo-initial",
+      "label": "activation-matrix-demo-initial",
       "mode": "demo",
-      "buildWallSeconds": 8.2160274,
+      "buildWallSeconds": 24.1205477,
       "nativeBuildExit": 0,
       "receipt": {
         "mode": "demo",
@@ -20,20 +21,20 @@
           "/*"
         ]
       },
-      "publicDigest": "e140a8c19edde1634c863085bd5070afc8d83e8d51edb43605615637a890a565",
-      "privateDigest": "1a5daadda352ff09c74fea83dca7cbcb82d35f72d4c2cd1087f5caea4ba9c7c6",
+      "publicDigest": "38b28d7f1fe2be1139ad1196c70d718e6f6bc1ea021685c7f2f24b101569dd56",
+      "privateDigest": "522951206e34ba385a1347347d9efccad4316f5e40db61dff822595ad9882dd0",
       "publicFileCount": 199,
       "privateFileCount": 47,
-      "hash": "7825241614970460158",
+      "hash": "103667181284566249",
       "status": "success",
       "code": 0,
-      "start": 1791440134994,
-      "end": 1791440137761
+      "start": 1791443719079,
+      "end": 1791443725717
     },
     {
-      "label": "matrix-demo-hit",
+      "label": "activation-matrix-demo-hit",
       "mode": "demo",
-      "buildWallSeconds": 4.5857889,
+      "buildWallSeconds": 5.9061708,
       "nativeBuildExit": 0,
       "receipt": {
         "mode": "demo",
@@ -48,20 +49,20 @@
           "/*"
         ]
       },
-      "publicDigest": "e140a8c19edde1634c863085bd5070afc8d83e8d51edb43605615637a890a565",
-      "privateDigest": "1a5daadda352ff09c74fea83dca7cbcb82d35f72d4c2cd1087f5caea4ba9c7c6",
+      "publicDigest": "38b28d7f1fe2be1139ad1196c70d718e6f6bc1ea021685c7f2f24b101569dd56",
+      "privateDigest": "522951206e34ba385a1347347d9efccad4316f5e40db61dff822595ad9882dd0",
       "publicFileCount": 199,
       "privateFileCount": 47,
-      "hash": "7825241614970460158",
+      "hash": "103667181284566249",
       "status": "local-cache",
       "code": 0,
-      "start": 1791440142509,
-      "end": 1791440142663
+      "start": 1791443731785,
+      "end": 1791443731970
     },
     {
-      "label": "matrix-live-switch",
+      "label": "activation-matrix-live-switch",
       "mode": "live",
-      "buildWallSeconds": 6.9397955,
+      "buildWallSeconds": 6.2104163,
       "nativeBuildExit": 0,
       "receipt": {
         "mode": "live",
@@ -74,20 +75,20 @@
         ],
         "exclude": []
       },
-      "publicDigest": "fe8fb7b933c3a533cd4b8004b91c3c727523f6ca4abc6639be18a7d2062f288f",
-      "privateDigest": "1a5daadda352ff09c74fea83dca7cbcb82d35f72d4c2cd1087f5caea4ba9c7c6",
+      "publicDigest": "404320aa2fa1ffc1199343bd7dbc31cd0bd1395beea89e447ee4fe961eb7ceca",
+      "privateDigest": "522951206e34ba385a1347347d9efccad4316f5e40db61dff822595ad9882dd0",
       "publicFileCount": 199,
       "privateFileCount": 47,
-      "hash": "17629102782126001067",
-      "status": "success",
+      "hash": "10649328654748830058",
+      "status": "local-cache",
       "code": 0,
-      "start": 1791440148105,
-      "end": 1791440150689
+      "start": 1791443739265,
+      "end": 1791443739489
     },
     {
-      "label": "matrix-demo-restore",
+      "label": "activation-matrix-demo-restore",
       "mode": "demo",
-      "buildWallSeconds": 5.8126887,
+      "buildWallSeconds": 6.2488567,
       "nativeBuildExit": 0,
       "receipt": {
         "mode": "demo",
@@ -102,15 +103,15 @@
           "/*"
         ]
       },
-      "publicDigest": "e140a8c19edde1634c863085bd5070afc8d83e8d51edb43605615637a890a565",
-      "privateDigest": "1a5daadda352ff09c74fea83dca7cbcb82d35f72d4c2cd1087f5caea4ba9c7c6",
+      "publicDigest": "38b28d7f1fe2be1139ad1196c70d718e6f6bc1ea021685c7f2f24b101569dd56",
+      "privateDigest": "522951206e34ba385a1347347d9efccad4316f5e40db61dff822595ad9882dd0",
       "publicFileCount": 199,
       "privateFileCount": 47,
-      "hash": "7825241614970460158",
+      "hash": "103667181284566249",
       "status": "local-cache",
       "code": 0,
-      "start": 1791440156654,
-      "end": 1791440156845
+      "start": 1791443746600,
+      "end": 1791443746808
     }
   ],
   "seedAssets": [

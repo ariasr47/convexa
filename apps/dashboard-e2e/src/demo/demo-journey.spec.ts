@@ -50,6 +50,7 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
   browser,
   baseURL,
   browserName,
+  ignoreHTTPSErrors,
 }) => {
   test.setTimeout(240_000);
   fs.mkdirSync(screenshots, { recursive: true });
@@ -91,6 +92,44 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
   );
   await expect(page.getByTestId('figure-live-dot')).toHaveCount(0);
   await expect(page.getByText('LIVE', { exact: true })).toHaveCount(0);
+
+  // Resizing a desktop page does not exercise native touch. Keep this regression inside G1 so
+  // Linux checks the real demo composition as well as the separate live-fixture help cases.
+  const touchContext = await browser.newContext({
+    baseURL,
+    ignoreHTTPSErrors,
+    hasTouch: true,
+    viewport: { width: 393, height: 852 },
+  });
+  const touchEgress: string[] = [];
+  try {
+    await installBlockedEgress(touchContext, origin, touchEgress);
+    const touchPage = await touchContext.newPage();
+    await touchPage.goto('/ticker/SPY');
+    await expect(touchPage.getByTestId('ticker-sample-basis')).toBeVisible();
+    await expect(touchPage.getByText('Call wall', { exact: true }).first()).toBeVisible();
+    for (const site of ['market-context', 'widget-off-exchange-blocks']) {
+      const help = touchPage
+        .getByTestId(site)
+        .getByRole('button', { name: /^About /i })
+        .first();
+      await help.tap();
+      await help.hover();
+      await touchPage.mouse.move(0, 0);
+      await expect(help, `${site}: explicit touch survives pointer exit`).toHaveAttribute(
+        'aria-describedby',
+        /\S+/,
+      );
+      const id = await help.getAttribute('aria-describedby');
+      const tooltip = touchPage.locator(`[role="tooltip"][id=${JSON.stringify(id)}]`);
+      await expect(tooltip).toBeVisible();
+      await touchPage.keyboard.press('Escape');
+      await expect(tooltip).toBeHidden();
+    }
+  } finally {
+    await touchContext.close();
+  }
+  expect(touchEgress, 'native demo touch must stay local').toEqual([]);
 
   const basis = page.getByTestId('ticker-sample-basis');
   const sampleAction = page.getByRole('button', { name: 'View sample analysis' });

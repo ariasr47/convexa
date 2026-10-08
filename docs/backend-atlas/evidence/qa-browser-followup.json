@@ -1,12 +1,13 @@
 {
   "schema_version": 1,
-  "scope": "incremental independent browser QA of frozen uncommitted follow-up worktree",
+  "scope": "incremental independent browser QA of frozen repair source",
   "published_baseline": {
     "source_revision": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
     "hosted_preview": "https://0c9f45c7.convexa.pages.dev",
     "prior_qa": "20 PASS / 0 FAIL / 0 UNVERIFIABLE"
   },
   "local_candidate": {
+    "source_revision": "2211d829e9315077ca26fedd5a6441580be08c1c",
     "immutable_artifact": ".spire/tmp/portfolio-qa-demo-touch-dist",
     "index_sha256": "237FA0E7A081F1D4C433869ED0EE4E48230F0A4E8C3975B7752DAE26A08E6087",
     "working_dist_files": 199,
@@ -70,9 +71,100 @@
     "critical_findings": 0
   },
   "hosted_followup": {
-    "status": "PENDING_NEW_SOURCE_DEPLOYMENT",
-    "new_source_revision": null,
-    "new_preview": null,
-    "new_source_g6": "NOT RUN"
+    "status": "PASS",
+    "new_source_revision": "2211d829e9315077ca26fedd5a6441580be08c1c",
+    "new_preview": "https://a17bba43.convexa.pages.dev",
+    "deployment_id": "a17bba43-7514-401a-a209-6c0e7bd46fa4",
+    "source_binding": "Cloudflare successful deployment and commit check 113181213785 observed by the release observer",
+    "mode_manifest": {
+      "status": 200,
+      "mode": "demo",
+      "scenarioId": "portfolio-2026-10-07-v1"
+    },
+    "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests",
+    "routes": [
+      { "path": "/", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo" },
+      { "path": "/scanner", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo" },
+      { "path": "/ticker/SPY", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo" },
+      { "path": "/ticker/SPY/technical-analysis", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo" },
+      { "path": "/ticker/SPY/research", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo" },
+      { "path": "/positions", "direct_status": 200, "hard_status": 200, "direct_sample": true, "hard_sample": true, "direct_mode": "demo", "hard_mode": "demo" }
+    ],
+    "direct_loads": 6,
+    "hard_refreshes": 6,
+    "forbidden_requests": [],
+    "page_errors": [],
+    "console_errors": [],
+    "native_exit": 0,
+    "allPassed": true
+  },
+  "ci_counterevidence": {
+    "run_id": 37737797873,
+    "source_revision": "2211d829e9315077ca26fedd5a6441580be08c1c",
+    "build_mode": "live build with stubbed ticker fixture; AccessibleHelp is shared with demo",
+    "linux_demo_help_touch": "NOT RUN",
+    "chromium_summary": ".spire/tmp/ci-observation-2211d829/chromium/summary.json",
+    "chromium": {
+      "selected": 128,
+      "passed": 120,
+      "failed": 8,
+      "flaky": 0,
+      "not_run": 0,
+      "status": "fail"
+    },
+    "failed_cases": {
+      "AC-35_native_touch_and_keyboard": [393, 834, 900, 1280],
+      "U-32_widget_frame_help": [393, 834, 900, 1280],
+      "each_failed_on_initial_attempt_and_retry": true
+    },
+    "observed_failure": "After Playwright's native help.tap(), the trigger lacked a nonempty aria-describedby for the full 5-second assertion window. AC-35 failed first at Market context (393px), with the 834px case first failing at Straddle move; U-32 failed at the Off-exchange blocks frame header. The CI attachments retain the first failure and retry traces.",
+    "other_full_browser_gates": {
+      "compatibility": "15 PASS / 0 FAIL",
+      "accessibility": "35 PASS / 0 FAIL",
+      "visual": "6 PASS / 0 FAIL"
+    },
+    "local_contrast": "The same source passed the frozen-demo G1 journey, four focused Windows AC-35 cases, and a settled independent Windows help interaction probe. These observations remain valid for their environments but do not overrule the Linux Chromium failure.",
+    "cause": "UNRESOLVED",
+    "release_ac_14": "FAIL",
+    "gate_q": "FAIL"
+  },
+  "activation_repair_local": {
+    "source_identity": "uncommitted activation repair atop 2211d829e9315077ca26fedd5a6441580be08c1c",
+    "immutable_artifact": ".spire/tmp/portfolio-qa-demo-activation-dist",
+    "index_sha256": "7DE6CC4E392D1D8D34BDC9BB8560E495D34FFD586F82D9DDB271A4D126078506",
+    "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests",
+    "working_dist_files": 199,
+    "immutable_files": 199,
+    "sha256_differences": 0,
+    "g1": {
+      "command": "npm exec --no -- playwright test --config apps/dashboard-e2e/playwright.demo.config.ts",
+      "native_exit": 0,
+      "passed": 1,
+      "failed": 0,
+      "duration_seconds": 55.2,
+      "new_oracle": "Native touch in a 393px hasTouch context reaches Market context and Off-exchange blocks frame help; explicit tap remains open after hover and pointer exit until Escape; no forbidden egress."
+    },
+    "focused_help_suite": {
+      "command": "npm exec --no -- playwright test --config apps/dashboard-e2e/playwright.config.ts --grep 'AC-35 — the six converted hover-only info sites|U-32 \\(SB\\)' --workers=1",
+      "native_exit": 0,
+      "passed": 8,
+      "failed": 0,
+      "retries": 0,
+      "viewport_cases": [393, 834, 900, 1280],
+      "reporter_scope_note": "The fixed-inventory reporter marks this filtered eight-case run incomplete against the full 128-case manifest; this is not a full Chromium gate receipt."
+    },
+    "independent_direct_probe": {
+      "transport": "immutable artifact on loopback HTTPS with the artifact's exact CSP",
+      "http_status": 200,
+      "market_context": ["native tap survived hover and pointer exit", "Escape closed"],
+      "off_exchange_frame": ["native tap survived hover and pointer exit", "Escape closed"],
+      "keyboard": ["Tab reopened", "blur closed"],
+      "desktop_pointer": ["hover opened", "pointer exit closed"],
+      "forbidden_requests": 0,
+      "page_errors": 0,
+      "native_exit": 0
+    },
+    "new_linux_full_chromium": "NOT RUN",
+    "gate_q": "FAIL_PENDING_LINUX_RECHECK"
   }
 }

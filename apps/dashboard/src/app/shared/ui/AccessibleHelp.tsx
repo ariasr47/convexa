@@ -37,6 +37,9 @@ import { useState } from 'react';
  * A completed click also opens the same controlled Tooltip: a native short touch can release before
  * MUI's zero-delay enter timer runs, and touchend cancels that timer. MUI still owns hover/focus
  * opening and Escape/blur/touch-leave dismissal through onOpen/onClose.
+ * After completed activation, hover listeners are suspended: a compatibility mouseleave would
+ * otherwise replace MUI's touch-leave timer with an immediate close. Genuine dismissal restores
+ * hover behavior; the onClose guard also ignores a mouseleave queued before activation committed.
  *
  * PROMOTED into `shared/ui/` (curvature-v2-surfaces SPEC §2.8, OWNER ruling D-C): the single
  * `Widget.tsx` frame's `info` render site needs this component, and `shared/` may never import from
@@ -47,6 +50,7 @@ import { useState } from 'react';
  */
 export function AccessibleHelp({ label, text }: { label: string; text: string }) {
   const [open, setOpen] = useState(false);
+  const [activated, setActivated] = useState(false);
   const stop = (event: { stopPropagation: () => void }) => event.stopPropagation();
   return (
     <Tooltip
@@ -54,15 +58,21 @@ export function AccessibleHelp({ label, text }: { label: string; text: string })
       title={text}
       describeChild
       enterTouchDelay={0}
+      disableHoverListener={activated}
       open={open}
       onOpen={() => setOpen(true)}
-      onClose={() => setOpen(false)}
+      onClose={(event) => {
+        if (activated && event.type === 'mouseleave') return;
+        setActivated(false);
+        setOpen(false);
+      }}
     >
       <IconButton
         size="small"
         aria-label={label}
         onClick={(event) => {
           stop(event);
+          setActivated(true);
           setOpen(true);
         }}
         onFocus={stop}

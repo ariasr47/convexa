@@ -1801,6 +1801,17 @@ Both lanes. Contracts are at `.spire/clusters/tech/contracts/_archive/no-vendor-
 
 **Production:** `WARM_ENABLED=0` since 2026-09-23. `MARKET_DATA_MODE=paused` goes in after merge (owner plan A).
 
+## 7bb. portfolio-demo-platform — browser-local portfolio preview (ACTIVE — VERIFY)
+The static Pages preview is deployed and being verified; exact-source hosted QA and CI/Linux results
+remain pending. [Draft PR #76](https://github.com/ariasr47/convexa/pull/76) remains unmerged. GATE S is
+not complete; contracts remain [active](../contracts/portfolio-demo-platform/_MANIFEST.md).
+
+**Implemented scope:** six-symbol authored synthetic local providers, an isolated local paper book and
+preferences, ticker Technical analysis and Research, the build-time `VITE_DATA_MODE=demo|live` toggle,
+and a [visual backend atlas](../../../../docs/backend-atlas/README.md). `NO_BACKEND_CHANGE`; this static
+preview does not authorize a Railway deployment or production migration. Current evidence and next
+steps live in the [branch checkpoint](../state/codex-portfolio-demo-platform/RESUME.md).
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).

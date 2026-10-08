@@ -1,0 +1,15 @@
+# Exact historical acknowledgments only: commit + path + rule + line.
+# Reviewed in docs/backend-atlas/evidence/secret-scan-followup.json.
+# New commits, other paths, and other findings remain subject to the scanner.
+
+# Public, self-signed localhost HTTPS test fixture, intentionally committed with its certificate.
+# See apps/dashboard-e2e/tools/fixtures/README.md; never a production credential or trusted CA.
+2211d829e9315077ca26fedd5a6441580be08c1c:apps/dashboard-e2e/tools/fixtures/localhost-test-key.pem:private-key:1
+
+# Public CI report run_key: SHA-256 identity recomputed from event, revision, path, and subjects.
+# The original report bytes stay intact; this acknowledgment applies only to this historical match.
+2211d829e9315077ca26fedd5a6441580be08c1c:docs/backend-atlas/evidence/ci-policy-219d73a6.json:generic-api-key:1
+
+# Baseline report run_key: the same deterministic public identity, using the artifact subject set.
+# This does not permit arbitrary API keys in this report or elsewhere under docs/.
+2211d829e9315077ca26fedd5a6441580be08c1c:docs/backend-atlas/evidence/ci-policy-baseline-8932fc1.json:generic-api-key:1
