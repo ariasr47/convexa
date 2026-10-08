@@ -49,6 +49,21 @@ which the post-refresh entry check restamps. `.claude/launch.json`, `.claude/set
 - **Byte backup** of `.claude`, `.codex`, `.grok`, `.spire`, `.agents`, `AGENTS.md`, `.gitattributes`,
   `.git/info/exclude` and the fleet registry: `C:/Dev/convexa-provider-roots-backup-20260922`.
 
+## Upgrade to 4.8.0 (2026-10-07)
+
+Native upgrade 4.2.0 → **4.8.0** with `platform/lifecycle/upgrade.mjs` from a clean detached worktree
+`C:/Dev/spire-os-v4.8.0` at tag `v4.8.0` (`1852420b`), on Node 26.7.0. Fault matrix
+`tests/platform/os/migration/upgrade_v4.test.mjs` 10/10. Plan: 394 files, 97 changed, 0 removals;
+providers claude, codex, grok; ascent web-app. Transaction `tx-convexa-upgrade-4.8.0-1791418985778`,
+generation `gen-e04559a83188e6e6`. Installed doctor exit 0, healthy, 7/7; self-check `PUBLISHED_V4`.
+
+- **Node 26 is required.** The runtime closure records `node_major: 26`; under Node 24 the doctor
+  exits 1 with `E_RUNTIME_CLOSURE ... drift from a fresh regeneration`. Nothing is broken on disk —
+  run `nvm use 26.7.0` (the repo's `.nvmrc`).
+- **Back to 4.2.0:** write `{"root":"C:/Dev/convexa","transaction_id":"tx-convexa-upgrade-4.8.0-1791418985778"}`
+  to a file, run `node .spire/bin/spire.mjs rollback-v4 --input <file> --out <dir>; exit $LASTEXITCODE`
+  on Node 26, then the doctor. Capsule retained until 2026-11-07T00:23:05Z.
+
 ## Owner ruling — keep it local (2026-09-22)
 
 The owner chose option A: the install stays on this machine. Until the owner decides otherwise,
