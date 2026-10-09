@@ -9,3 +9,7 @@
 .codex
 archive
 .worktrees
+
+# Spire's cluster project.json made Nx register a stray `tech` project. Only that file is ignored,
+# so the .spire files the Rust tests read stay hashed as api:test inputs.
+.spire/**/project.json

@@ -46,7 +46,26 @@
         "command": "cargo test -p api-rust -p quant-engine",
         "cwd": "{workspaceRoot}"
       },
-      "cache": false
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/**/*",
+        "{workspaceRoot}/libs/quant-engine/**/*",
+        "{workspaceRoot}/libs/api/src/generated/**/*",
+        "{workspaceRoot}/libs/api/package.json",
+        "{workspaceRoot}/apps/dashboard/src/**/*",
+        "{workspaceRoot}/.github/workflows/ci.yml",
+        "{workspaceRoot}/.github/workflows/conformance.yml",
+        "{workspaceRoot}/.spire/clusters/tech/contracts/production-runtime-guardrails/conformance-receipt.json",
+        "{workspaceRoot}/.spire/clusters/tech/contracts/_archive/production-runtime-guardrails/conformance-receipt.json",
+        "{workspaceRoot}/.spire/clusters/tech/state/conformance/production-runtime-guardrails-transport.json",
+        "{workspaceRoot}/docs/ENVIRONMENTS.md",
+        "{workspaceRoot}/docs/production-runtime-guardrails.md",
+        "{workspaceRoot}/nx.json",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/Cargo.toml",
+        "{workspaceRoot}/Cargo.lock",
+        { "runtime": "rustc --version" }
+      ]
     },
     "capacity-baseline": {
       "executor": "nx:run-commands",
