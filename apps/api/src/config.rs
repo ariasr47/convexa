@@ -25,6 +25,9 @@ pub struct Config {
     pub gex_cache_ttl_secs: u64,
     /// Longer GEX cache TTL for liquid / pre-warm symbols (seconds).
     pub gex_cache_ttl_liquid_secs: u64,
+    /// Interval of the armed SSE occupancy pump (the JSON keep-alive while a replay is armed), in
+    /// milliseconds. Default 5000; tests set it short instead of waiting real seconds.
+    pub sse_occupancy_keepalive_ms: u64,
     /// Symbols kept warm by the background warmer.
     pub warm_symbols: Vec<String>,
     /// Symbols that get the liquid (longer) TTL. Superset of warm set by default.
@@ -243,6 +246,7 @@ impl Config {
         let gex_cache_ttl_secs = env_u64("GEX_CACHE_TTL_SECS", 10);
         let gex_cache_ttl_liquid_secs =
             env_u64("GEX_CACHE_TTL_LIQUID_SECS", 20).max(gex_cache_ttl_secs);
+        let sse_occupancy_keepalive_ms = env_u64("SSE_OCCUPANCY_KEEPALIVE_MS", 5_000).max(10);
 
         let warm_symbols = parse_symbol_list(
             &env::var("WARM_SYMBOLS").unwrap_or_else(|_| DEFAULT_LIQUID.join(",")),
@@ -444,6 +448,7 @@ impl Config {
             http_bind,
             gex_cache_ttl_secs,
             gex_cache_ttl_liquid_secs,
+            sse_occupancy_keepalive_ms,
             warm_symbols,
             liquid_symbols,
             warm_interval_secs,

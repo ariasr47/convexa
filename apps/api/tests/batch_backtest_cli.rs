@@ -47,6 +47,7 @@ fn dummy_config(store: PathBuf) -> api_rust::Config {
         http_bind: "127.0.0.1:0".into(),
         gex_cache_ttl_secs: 10,
         gex_cache_ttl_liquid_secs: 20,
+        sse_occupancy_keepalive_ms: 5_000,
         warm_symbols: vec![],
         liquid_symbols: HashSet::new(),
         warm_interval_secs: 25,

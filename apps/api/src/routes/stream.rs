@@ -28,7 +28,6 @@ const MAX_SYMBOLS: usize = 120;
 const PRICE_THROTTLE_MS: u64 = 1000;
 const LIVE_TICK_MAX_AGE_S: i64 = 30;
 /// Armed occupancy JSON data period — must stay strictly below client STREAM_OFFLINE_MS (15s).
-const OCCUPANCY_KEEPALIVE_SECS: u64 = 5;
 
 #[derive(Debug, Deserialize, Default, utoipa::IntoParams)]
 pub struct PricesStreamQuery {
@@ -642,6 +641,7 @@ async fn stream_ticker_http(
     let occupancy_slot = state.replay_occupancy.clone();
     let replay_hold = state.replay_hold.clone();
     let armed = occupancy_slot.is_armed().await;
+    let occupancy_keepalive = Duration::from_millis(state.config.sse_occupancy_keepalive_ms);
 
     let (tx, rx_out) = mpsc::channel::<Result<Event, Infallible>>(16);
     tokio::spawn(async move {
@@ -661,8 +661,7 @@ async fn stream_ticker_http(
         let mut sell_vol = 0.0_f64;
         let mut throttle = tokio::time::interval(Duration::from_millis(250));
         throttle.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-        let mut occupancy_pump =
-            tokio::time::interval(Duration::from_secs(OCCUPANCY_KEEPALIVE_SECS));
+        let mut occupancy_pump = tokio::time::interval(occupancy_keepalive);
         occupancy_pump.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         let mut dirty = false;
 
@@ -911,13 +910,18 @@ mod occupancy_pump_tests {
         occupancy
             .write(first_playing_voucher(symbol, et_date, pace))
             .await;
-        let state = AppState::for_session_day_replay_with_env(
+        let mut state = AppState::for_session_day_replay_with_env(
             SessionDayTape::memory(),
             occupancy.clone(),
             Some("dev"),
         )
         .await
         .expect("replay AppState");
+        // A short occupancy keep-alive (configuration, default 5 s) so the pump tests do not wait
+        // real seconds for the JSON keep-alive.
+        let mut config = (*state.config).clone();
+        config.sse_occupancy_keepalive_ms = 50;
+        state.config = std::sync::Arc::new(config);
         (state, occupancy)
     }
 
@@ -926,11 +930,20 @@ mod occupancy_pump_tests {
         want: usize,
         overall: Duration,
     ) -> (Vec<serde_json::Value>, String) {
+        collect_sse_until(response, |events| events.len() >= want, overall).await
+    }
+
+    /// Collects SSE `data:` events until `done(events)` holds or `overall` elapses.
+    async fn collect_sse_until(
+        response: Response,
+        done: impl Fn(&[serde_json::Value]) -> bool,
+        overall: Duration,
+    ) -> (Vec<serde_json::Value>, String) {
         let mut stream = response.into_body().into_data_stream();
         let mut buf = String::new();
         let mut out = Vec::new();
         let deadline = tokio::time::Instant::now() + overall;
-        while out.len() < want {
+        while !done(&out) {
             let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
             if remaining.is_zero() {
                 break;
@@ -1077,7 +1090,19 @@ mod occupancy_pump_tests {
             occ.phase = ReplayPhase::Ended;
             occ_ended.write(occ).await;
         });
-        let (events, _) = collect_sse_data(response, 4, Duration::from_secs(18)).await;
+        // Stop once the terminal phase has repeated twice, not after a fixed event count: the phase
+        // flips on a wall-clock sleep, so a fixed count races the (configurable) pump interval.
+        let (events, _) = collect_sse_until(
+            response,
+            |e| {
+                e.iter()
+                    .filter(|v| v["session_tape"]["phase"] == "ended")
+                    .count()
+                    >= 2
+            },
+            Duration::from_secs(18),
+        )
+        .await;
         drop(keep);
         let ended: Vec<_> = events
             .iter()
@@ -1103,7 +1128,17 @@ mod occupancy_pump_tests {
             occ.phase = ReplayPhase::Fault;
             occ_fault.write(occ).await;
         });
-        let (events, _) = collect_sse_data(response, 4, Duration::from_secs(18)).await;
+        let (events, _) = collect_sse_until(
+            response,
+            |e| {
+                e.iter()
+                    .filter(|v| v["session_tape"]["phase"] == "fault")
+                    .count()
+                    >= 2
+            },
+            Duration::from_secs(18),
+        )
+        .await;
         drop(keep);
         let faulted: Vec<_> = events
             .iter()
