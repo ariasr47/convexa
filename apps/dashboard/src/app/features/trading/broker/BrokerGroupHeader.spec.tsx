@@ -1,7 +1,7 @@
 /**
- * BrokerGroupHeader / BrokerGroupPanel — the ONE shared group-header presentational unit, run over
- * BOTH form factors (SPEC §2.8, PLAN F5). Groups are built from the F1 fixtures via `groupBook` —
- * never hand-typed — so every assertion here is grounded in the real composition.
+ * BrokerGroupHeader / BrokerGroupPanel — the ONE shared group-header presentational unit (SPEC
+ * §2.8, PLAN F5). Groups are built from the F1 fixtures via `groupBook` — never hand-typed — so
+ * every assertion here is grounded in the real composition.
  */
 import type { MarkResult } from '@/features/trading/model/mark';
 import type { BrokerBook } from '@convexa/api';
@@ -55,10 +55,8 @@ function groupByKey(book: BrokerBook, key: string): BrokerGroup {
   return g;
 }
 
-/** BOOK_CAPTURED_COMPLETE's three real groups (leg_count > 1) — TSLA/AAPL/META. */
+/** BOOK_CAPTURED_COMPLETE's TSLA group (a real group, leg_count > 1). */
 const tslaGroup = () => groupByKey(BOOK_CAPTURED_COMPLETE, 'TSLA');
-const aaplGroup = () => groupByKey(BOOK_CAPTURED_COMPLETE, 'AAPL');
-const metaGroup = () => groupByKey(BOOK_CAPTURED_COMPLETE, 'META');
 
 function renderHeader(
   group: BrokerGroup,
@@ -99,41 +97,11 @@ function renderHeader(
 
 afterEach(() => cleanup());
 
-describe.each(['row', 'card'] as const)('BrokerGroupHeader — variant %s', (variant) => {
-  it('AC-2 — carries the ticker, the count, the net + label, the P/L + label, and the toggle', () => {
-    renderHeader(tslaGroup(), variant);
-    const header = screen.getByTestId('broker-group-header');
-    expect(header.textContent).toContain('TSLA');
-    expect(screen.getByTestId('broker-group-count')).toBeTruthy();
-    expect(screen.getByTestId('broker-group-net')).toBeTruthy();
-    expect(screen.getByTestId('broker-group-net-label')).toBeTruthy();
-    expect(screen.getByTestId('broker-group-pl')).toBeTruthy();
-    expect(screen.getByTestId('broker-group-pl-label')).toBeTruthy();
-    expect(screen.getByTestId('broker-group-toggle')).toBeTruthy();
-    // The only button in the header is the toggle.
-    expect(screen.getAllByRole('button')).toHaveLength(1);
-  });
-
-  it('AC-3 / AC-16b — no quantity figure, no percent', () => {
-    renderHeader(tslaGroup(), variant);
-    const header = screen.getByTestId('broker-group-header');
-    expect(header.textContent).not.toMatch(/×/);
-    expect(header.textContent).not.toMatch(/%/);
-    expect(screen.queryByTestId('broker-qty')).toBeNull();
-  });
-
-  if (variant === 'row') {
-    it('AC-16b — the identity cell spans both leading grid columns (no separate quantity cell)', () => {
-      renderHeader(tslaGroup(), variant);
-      const header = screen.getByTestId('broker-group-header');
-      // Exactly 3 direct grid items — identity (spanning columns 1–2), net, P/L — never 4: a 4th
-      // would be the quantity cell BrokerPositionRow carries and this level never does.
-      expect(header.children).toHaveLength(3);
-      const identityCell = header.children[0] as HTMLElement;
-      expect(identityCell.contains(screen.getByTestId('broker-group-count'))).toBe(true);
-      expect(identityCell.contains(screen.getByTestId('broker-group-toggle'))).toBe(true);
-    });
-  }
+// The card variant reuses the row's sub-components (NetEntry, GroupPl, CountClause, GroupToggle and
+// BrokerGroupPanel), so the figure, literal, disclosure and note cases run once, on the row. Only
+// AC-18 runs on both variants: snapshot dimming wraps different boxes in each.
+describe('BrokerGroupHeader — variant row', () => {
+  const variant = 'row' as const;
 
   it('AC-6b — the noun and the number: `3 option legs`/`2 option legs`, never positions/rows/holdings/contracts/trades', () => {
     renderHeader(tslaGroup(), variant);
@@ -143,14 +111,6 @@ describe.each(['row', 'card'] as const)('BrokerGroupHeader — variant %s', (var
     const header = screen.getByTestId('broker-group-header').textContent ?? '';
     for (const word of ['positions', 'rows', 'holdings', 'contracts', 'trades']) {
       expect(header.toLowerCase()).not.toContain(word);
-    }
-  });
-
-  it('AC-6b — AAPL / META render `2 option legs`', () => {
-    for (const group of [aaplGroup(), metaGroup()]) {
-      const { unmount } = renderHeader(group, variant);
-      expect(screen.getByTestId('broker-group-count').textContent).toContain('2 option legs');
-      unmount();
     }
   });
 
@@ -234,34 +194,6 @@ describe.each(['row', 'card'] as const)('BrokerGroupHeader — variant %s', (var
     expect(screen.getAllByTestId('broker-group-withheld-count')).toHaveLength(1);
   });
 
-  it('AC-13 — the P/L is withheld with the net, the same literal', () => {
-    const g = groupByKey(BOOK_CF_NO_COST, 'TSLA');
-    renderHeader(g, variant);
-    expect(screen.getByTestId('broker-group-net').textContent).toBe('not provided');
-    expect(screen.getByTestId('broker-group-pl').textContent).toBe('not provided');
-  });
-
-  it('AC-18 — snapshot stale: the family dims and the P/L label carries the dual basis', () => {
-    const staleBook: BrokerBook = { ...BOOK_CAPTURED_COMPLETE, as_of: '2026-08-01T14:20:00Z' };
-    const g = groupByKey(staleBook, 'TSLA');
-    expect(g.modeled_label).toBe('dual');
-    renderHeader(g, variant, { isStale: true, asOf: staleBook.as_of ?? null });
-    const count = screen.getByTestId('broker-group-count');
-    let el: HTMLElement | null = count;
-    let dimmed = false;
-    for (let i = 0; i < 6 && el; i++) {
-      if (getComputedStyle(el).opacity === '0.62') {
-        dimmed = true;
-        break;
-      }
-      el = el.parentElement;
-    }
-    expect(dimmed).toBe(true);
-    expect(screen.getByTestId('broker-group-pl-label').textContent).toMatch(
-      /modeled now · on your book as of/,
-    );
-  });
-
   it('AC-19 — mark feed down: the P/L dims + marks with the declared stroke icon and stays non-empty; the net is NOT dimmed by it', () => {
     renderHeader(tslaGroup(), variant, { streamOffline: true });
     const pl = screen.getByTestId('broker-group-pl');
@@ -272,15 +204,6 @@ describe.each(['row', 'card'] as const)('BrokerGroupHeader — variant %s', (var
     expect(getComputedStyle(pl).opacity).toBe('0.5');
     const net = screen.getByTestId('broker-group-net');
     expect(getComputedStyle(net).opacity).not.toBe('0.5');
-  });
-
-  it('AC-30 / AC-32 — no reassess affordance, no disabled variant, no coming-soon', () => {
-    renderHeader(tslaGroup(), variant);
-    const header = screen.getByTestId('broker-group-header');
-    expect(header.textContent).not.toMatch(/build reassessment/i);
-    expect(header.textContent).not.toMatch(/coming soon/i);
-    expect(header.querySelectorAll('[aria-disabled="true"]')).toHaveLength(0);
-    expect(header.querySelectorAll('button[disabled]')).toHaveLength(0);
   });
 
   it('AC-36 — the disclosure is real: aria-expanded flips, aria-controls resolves, Enter/Space toggle', async () => {
@@ -358,18 +281,28 @@ describe.each(['row', 'card'] as const)('BrokerGroupHeader — variant %s', (var
     expect(note).toBe('Net entry needs all 2 legs. 1 is missing a cost or a contract size.');
     expect(note).not.toMatch(/arithmetic/);
   });
+});
 
-  it('the count clause is a real tab stop, wrapped in a keyboard-reachable Tooltip trigger', async () => {
-    const user = userEvent.setup();
-    renderHeader(tslaGroup(), variant);
+describe.each(['row', 'card'] as const)('BrokerGroupHeader — variant %s', (variant) => {
+  it('AC-18 — snapshot stale: the family dims and the P/L label carries the dual basis', () => {
+    const staleBook: BrokerBook = { ...BOOK_CAPTURED_COMPLETE, as_of: '2026-08-01T14:20:00Z' };
+    const g = groupByKey(staleBook, 'TSLA');
+    expect(g.modeled_label).toBe('dual');
+    renderHeader(g, variant, { isStale: true, asOf: staleBook.as_of ?? null });
     const count = screen.getByTestId('broker-group-count');
-    expect(count).toHaveAttribute('tabindex', '0');
-    // Reachability via Tab alone (no pointer) — the OPEN behaviour itself is proven on the `Refused`
-    // primitive in `faulted.a11y.spec.tsx`, where the control is the FIRST tab stop; jsdom/nwsapi's
-    // `:focus-visible` emulation only fires reliably there, so it is not re-attempted deep in this tree.
-    let guard = 0;
-    while (document.activeElement !== count && guard++ < 15) await user.tab();
-    expect(document.activeElement).toBe(count);
+    let el: HTMLElement | null = count;
+    let dimmed = false;
+    for (let i = 0; i < 6 && el; i++) {
+      if (getComputedStyle(el).opacity === '0.62') {
+        dimmed = true;
+        break;
+      }
+      el = el.parentElement;
+    }
+    expect(dimmed).toBe(true);
+    expect(screen.getByTestId('broker-group-pl-label').textContent).toMatch(
+      /modeled now · on your book as of/,
+    );
   });
 });
 

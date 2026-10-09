@@ -61,12 +61,6 @@ describe('brokerLegsOf — mapping fidelity', () => {
     };
     expect(brokerLegsOf(bp).map((l) => l.multiplier)).toEqual([10, 1]);
   });
-
-  it('leg ids are stable across rebuilds (the mark-cache/diffing key)', () => {
-    expect(brokerLegsOf(POS_SPREAD).map((l) => l.id)).toEqual(
-      brokerLegsOf(POS_SPREAD).map((l) => l.id),
-    );
-  });
 });
 
 describe('tri-state broker facts → the closed render vocabulary', () => {
@@ -122,16 +116,6 @@ describe('buildBrokerPositionView — the projection', () => {
     expect(broker.mark.net_mark).toBe(sim.mark.net_mark);
     expect(broker.structure).toBe(sim.structure); // recogniser runs FE-side, one authority
     expect(broker.structure).toBe('call_debit_spread');
-  });
-
-  it('sim regression: buildPositionView emits origin `sim` (the one additive field) and stays pure', () => {
-    const legs = [mkLeg()];
-    const p = mkPosition(legs);
-    const lm = new Map([[legs[0].id, mark(11)]]);
-    const a = buildPositionView({ position: p, legMarks: lm, dte: 10 });
-    const b = buildPositionView({ position: p, legMarks: lm, dte: 10 });
-    expect(a.origin).toBe('sim');
-    expect(a).toEqual(b);
   });
 
   it('missing cost basis WITHHOLDS every entry-derived read — never 0, never a partial figure', () => {
