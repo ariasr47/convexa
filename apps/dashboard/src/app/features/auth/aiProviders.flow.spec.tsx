@@ -135,7 +135,8 @@ describe('AI providers · Settings matrix + Ask-AI agreement', () => {
         provider === 'anthropic' ? 'settings-ai-key-input' : `settings-ai-key-input-${provider}`;
       const addId =
         provider === 'anthropic' ? 'settings-ai-key-add' : `settings-ai-key-add-${provider}`;
-      await user.type(screen.getByTestId(inputId), RAW[provider]);
+      await user.click(screen.getByTestId(inputId));
+      await user.paste(RAW[provider]);
       await user.click(screen.getByTestId(addId));
       const last4 = RAW[provider].slice(-4);
       await waitFor(() =>
@@ -165,7 +166,8 @@ describe('AI providers · Settings matrix + Ask-AI agreement', () => {
     await user.click(screen.getByTestId('settings-ai-key-tab-openai'));
     await user.click(screen.getByTestId('settings-ai-key-replace-openai'));
     const rotated = 'sk-openai-rotated-9999';
-    await user.type(screen.getByTestId('settings-ai-key-input-openai'), rotated);
+    await user.click(screen.getByTestId('settings-ai-key-input-openai'));
+    await user.paste(rotated);
     await user.click(screen.getByTestId('settings-ai-key-replace-submit-openai'));
     await waitFor(() =>
       expect(screen.getByTestId('settings-ai-key-masked-openai')).toHaveTextContent(

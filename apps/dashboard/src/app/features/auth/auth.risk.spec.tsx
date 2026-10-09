@@ -258,8 +258,10 @@ describe('auth · session lifecycle', () => {
     // Sign UP from the wall.
     await user.click(within(prompt).getByTestId('require-auth-signin'));
     await user.click(await screen.findByTestId('auth-mode-switch')); // login → signup
-    await user.type(screen.getByTestId('auth-email'), 'new@user.com');
-    await user.type(screen.getByTestId('auth-password'), 'longenoughpw');
+    await user.click(screen.getByTestId('auth-email'));
+    await user.paste('new@user.com');
+    await user.click(screen.getByTestId('auth-password'));
+    await user.paste('longenoughpw');
     await user.click(screen.getByTestId('auth-submit'));
 
     // Signed in: the account control flips and the gated write now executes (the entry dialog opens).
@@ -312,9 +314,11 @@ function DialogHarness({ mode: initial }: { mode: AuthMode }) {
 
 async function submitLogin(user: ReturnType<typeof userEvent.setup>, email: string, pw: string) {
   await user.clear(screen.getByTestId('auth-email'));
-  await user.type(screen.getByTestId('auth-email'), email);
+  await user.click(screen.getByTestId('auth-email'));
+  await user.paste(email);
   await user.clear(screen.getByTestId('auth-password'));
-  await user.type(screen.getByTestId('auth-password'), pw);
+  await user.click(screen.getByTestId('auth-password'));
+  await user.paste(pw);
   await user.click(screen.getByTestId('auth-submit'));
 }
 
