@@ -481,6 +481,12 @@ test.describe('AC-34 — coarse pointer at 393px: the effective hit area, measur
     await expectFloor(page.getByTestId('nav-menu-button'), 'burger drawer opener');
     await page.getByTestId('nav-menu-button').click();
     await expect(page.getByTestId('nav-drawer')).toBeVisible();
+    // Measure the drawer at rest: it is "visible" while still sliding in, and a mid-slide box reads a
+    // fractional translate as 43.99997px wide (6 of 80 repeats, 2026-10-08). At rest it is exactly 44.
+    await expect(page.getByTestId('nav-drawer').locator('.MuiDrawer-paper')).toHaveCSS(
+      'transform',
+      'none',
+    );
     for (const entry of ['scanner', 'ticker', 'positions', 'alerts']) {
       await expectFloor(page.getByTestId(`nav-drawer-${entry}`), `drawer link · ${entry}`);
     }
