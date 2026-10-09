@@ -7,12 +7,10 @@
 import type { BrokerAttemptOutcome, BrokerBook, BrokerReason } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import {
-  AS_OF_AT_THRESHOLD,
   AS_OF_FRESH,
   AS_OF_STALE,
   BOOK_EMPTY,
   BOOK_NO_CREDENTIAL,
-  BOOK_OK_AT_THRESHOLD,
   BOOK_OK_FRESH,
   BOOK_OK_STALE,
   BOOK_UNKNOWN_WITH_CONTRIVED_POSITIONS,
@@ -236,24 +234,5 @@ describe('resolveRenderState · client-context states', () => {
 describe('resolveRenderState · the S6 stale modifier', () => {
   it('rides S3 when the snapshot aged past the server threshold', () => {
     expect(resolve(BOOK_OK_STALE)).toMatchObject({ state: 'S3_ok', isStale: true });
-  });
-
-  it('boundary: EXACTLY at stale_after_seconds ⇒ NOT stale (strictly greater-than)', () => {
-    expect(Date.parse(AS_OF_AT_THRESHOLD)).toBe(FIXED_NOW_MS - STALE_AFTER_SECONDS * 1000);
-    expect(resolve(BOOK_OK_AT_THRESHOLD).isStale).toBe(false);
-    // …and one millisecond past it IS stale (time-varying, client-derived).
-    expect(
-      resolveRenderState({
-        book: BOOK_OK_AT_THRESHOLD,
-        hintSet: null,
-        inFlight: false,
-        firstFetch: false,
-        nowMs: FIXED_NOW_MS + 1,
-      }).isStale,
-    ).toBe(true);
-  });
-
-  it('S6 is a MODIFIER, never a state: no member of the closed set names it', () => {
-    expect(RENDER_STATES.some((s) => /S6/.test(s))).toBe(false);
   });
 });

@@ -510,3 +510,11 @@ Full lists with files, counts and same-commit edits: [BATCHES.md](BATCHES.md).
 | 52 | `apps/dashboard/src/app/features/trading/broker/BrokerTabPanel.spec.tsx` (TRIM; duplicate) | 18 → 17 | removed 1 cases, merged into 0; every removed title is listed in the batch 52 commit message |
 | 52 | `apps/dashboard/src/app/features/trading/broker/broker.risk.spec.tsx` (CONSOLIDATE; duplicate (it.each over ALL_ARMS, 11 rows)) | 28 → 17 | removed 22 cases, merged into 11; every removed title is listed in the batch 52 commit message |
 | 52 | `apps/dashboard/src/app/features/trading/broker/brokerView.spec.ts` (TRIM; structure) | 29 → 27 | removed 2 cases, merged into 0; every removed title is listed in the batch 52 commit message |
+| 53 | `apps/dashboard/src/app/features/trading/broker/genericOptionRow.spec.tsx` (TRIM; duplicate) | 29 → 27 | removed 2 cases, renamed 0; every removed title is listed in the batch 53 commit message |
+| 53 | `apps/dashboard/src/app/features/trading/broker/grouping.integration.spec.tsx` (TRIM; duplicate (AC-29 mobile parity kept)) | 23 → 12 | removed 11 cases, renamed 0; every removed title is listed in the batch 53 commit message |
+| 53 | `apps/dashboard/src/app/features/trading/broker/grouping.spec.ts` (TRIM; structure) | 31 → 30 | removed 1 cases, renamed 0; every removed title is listed in the batch 53 commit message |
+| 53 | `apps/dashboard/src/app/features/trading/broker/renderState.spec.ts` (TRIM; duplicate) | 16 → 14 | removed 2 cases, renamed 0; every removed title is listed in the batch 53 commit message |
+| 53 | `apps/dashboard/src/app/features/trading/outcomes/archive.spec.ts` (TRIM; duplicate) | 24 → 23 | removed 1 cases, renamed 0; every removed title is listed in the batch 53 commit message |
+| 53 | `apps/dashboard/src/app/features/trading/outcomes/boundaries.spec.ts` (TRIM; structure) | 28 → 27 | removed 6 cases, renamed 5; every removed title is listed in the batch 53 commit message |
+| 53 | `apps/dashboard/src/app/features/trading/outcomes/copy.spec.ts` (TRIM; structure) | 10 → 9 | removed 1 cases, renamed 0; every removed title is listed in the batch 53 commit message |
+| 53 | `apps/dashboard/src/app/features/trading/outcomes/ledger.spec.ts` (TRIM; duplicate) | 43 → 42 | removed 1 cases, renamed 0; every removed title is listed in the batch 53 commit message |

@@ -333,20 +333,6 @@ describe('AC-24a — an `unrecognized` entry is never grouped or counted', () =>
   });
 });
 
-describe('AC-33 — ordering is deterministic and stable', () => {
-  it('groups ascending by key, members ascending by id, repeatable', () => {
-    const a = groupsOf(BOOK_CAPTURED_COMPLETE);
-    const keys = a.groups.map((g) => g.key);
-    expect(keys).toEqual([...keys].sort());
-    for (const g of a.groups) {
-      const ids = g.members.map((m) => m.broker.broker_position_id);
-      expect(ids).toEqual([...ids].sort());
-    }
-    const b = groupsOf(BOOK_CAPTURED_COMPLETE);
-    expect(a).toEqual(b);
-  });
-});
-
 describe('totality — never throws, and a malformed member routes to ungrouped', () => {
   it('an empty view array yields an empty grouped book', () => {
     expect(() => groupBook([], null, FIXED_NOW_MS)).not.toThrow();

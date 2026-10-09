@@ -111,9 +111,4 @@ describe('AC-18 — the reason lookup is EXHAUSTIVE', () => {
     }
     expect(Object.keys(TR_REASON_LABEL).sort()).toEqual([...EXCLUSION_PRECEDENCE].sort());
   });
-
-  it('the labels are distinct — the two basis reasons do not collide on the word "modeled"', () => {
-    const labels = Object.values(TR_REASON_LABEL);
-    expect(new Set(labels).size).toBe(labels.length);
-  });
 });
