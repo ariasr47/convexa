@@ -701,3 +701,23 @@ Full lists with files, counts and same-commit edits: [BATCHES.md](BATCHES.md).
 | 87 | `apps/api/src/routes/stream.rs` occupancy_pump_tests (SPEED-UP; no case removed) | 9 | SSE occupancy keep-alive becomes Config.sse_occupancy_keepalive_ms (default 5000); tests use 50 ms; race fixed with collect_sse_until; 30.1 s -> 0.31 s; lib binary 30.1 s -> 1.67 s |
 | 88 | `apps/api/tests/capacity_load.rs`, `capacity_baseline_isolation.rs` (SPEED-UP; no case change) | 1, 13 | test hold overrides: capacity_load 2 s (28.5 s -> 7.6 s), short_hooks 250 ms (8.0 s -> 4.2 s); CI release load step keeps production holds |
 | 90 | `tools/api-contract.spec.mjs` (SPEED-UP; no case change) | 44 | non-mutation spawns use the committed OpenAPI artifact as the export fixture; one real export kept (route-registration mutation); 76-86 s -> 60-64 s |
+
+## Ops workflows (batch 94, listed, no trigger change)
+
+Read-only `gh workflow list --all` on 2026-10-09; trigger blocks read from the files on this branch.
+
+| Workflow | State | Triggers | What it touches | Change |
+|---|---|---|---|---|
+| `conformance.yml` | disabled_manually | `push: [main]`, cron `15 6 * * *` (daily), `workflow_dispatch` | prod-public half reads production; local-auth half is ci-like | none (owner's call; optional `timeout-minutes: 15`) |
+| `deploy-smoke.yml` | disabled_manually | `push: [main]`, `workflow_dispatch` | read-only checks against production | none (owner's call; optional `timeout-minutes: 15`) |
+| `browser-visual-linux-candidates.yml` | active | `workflow_dispatch` only | authorized visual-baseline generation | none, by owner ruling; it now fails if dispatched, because batch 22 retired the visual gate and its tooling |
+| `musl-debug.yml` ("musl debug", id 348868533) | active | not on this branch (created 2026-09-02; GitHub tracks it from another branch) | unknown | none; listed for the owner |
+
+## Root causes of Phase 0 CI failures (batch 95)
+
+| Failure | Root cause | Fix |
+|---|---|---|
+| Chromium gate flake on AC-35/U-32 | product race in `AccessibleHelp`: `enterTouchDelay={0}` arms a 0 ms timer that `touchend` clears (BACKLOG F-L) | BLOCKED: belongs in the owner's PR #76, which already edits the component (`cc4df79c`); batch 81 kept the 8 AC-35/U-32 cases separate until it lands |
+| Supply-chain `policy` red | F-J advisories, owner-ruled baseline (`DECISION_LEDGER.md:1239`) | none |
+| Bundle gate red on a vite bump | correct catch | none; the extra red upload steps it caused were removed in batch 92 |
+| Deploy smoke paused 503 | fixed by `a6a15859` | none |
