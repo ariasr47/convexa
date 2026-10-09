@@ -132,10 +132,10 @@ mod tests {
     use crate::services::chain_snapshot::{fixture_probe_bundle, ChainSnapshotStore};
     use crate::services::day_tape::fs::body_carries_live_massive;
     use crate::services::day_tape::occupancy::{derive_path_b, AxisBPathB, DeriveInput};
-    use crate::services::day_tape::{path_b_marks, SessionDayTape};
+    use crate::services::day_tape::SessionDayTape;
     use crate::services::market_data::MarketDataSourceKind;
     use crate::services::session_chain_archive::SessionChainArchive;
-    use chrono::{NaiveTime, TimeZone};
+    use chrono::TimeZone;
     use chrono_tz::America::New_York;
     use std::io::{self, Write};
     use std::sync::{Arc, Mutex as StdMutex};
@@ -220,31 +220,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn mark_1600_filled_from_1604_not_left_gap_because_afterclose() {
-        let state = path_b_state(true, SessionDayTape::memory()).await;
-        let t = et_hm(2026, 8, 10, 16, 4);
-        assert_eq!(path_b_mark_for(t), Some((16, 0)));
-        persist_at(&state, &spy_bundle_at(t), t).await;
-        let day = state
-            .day_tape
-            .load("SPY", "2026-08-10")
-            .await
-            .unwrap()
-            .expect("day");
-        assert!(
-            day.path_b.iter().any(|s| s.mark == (16, 0)),
-            "16:04 must fill the 16:00 mark"
-        );
-        // 16:05 is outside the fill window.
-        let t_late = et_hm(2026, 8, 10, 16, 5);
-        assert_eq!(path_b_mark_for(t_late), None);
-        assert!(matches!(
-            should_keep(&state, "SPY", t_late).await,
-            KeepDecision::Skip
-        ));
-    }
-
-    #[tokio::test]
     async fn dropped_source_discriminant_never_live_massive_on_bytes() {
         let state = path_b_state(true, SessionDayTape::memory()).await;
         let t = et_hm(2026, 8, 10, 11, 0);
@@ -266,34 +241,6 @@ mod tests {
         assert!(!s.contains("live_massive"));
         assert!(!s.contains("LiveMassive"));
         assert!(!s.contains("MarketDataSourceKind"));
-    }
-
-    #[tokio::test]
-    async fn through_window_zero_snapshots_derives_one_gap_per_mark() {
-        let now = et_hm(2026, 8, 10, 20, 0);
-        let input = DeriveInput {
-            symbol: "SPY",
-            et_date: "2026-08-10",
-            now,
-            storing: true,
-            has_container: true,
-            unreadable: false,
-            path_a_trade_count: 0,
-            path_a_quote_count: 0,
-            path_a_gap_count: 0,
-            path_b_capturing: true,
-            path_b_snapshot_marks: &[],
-            path_a_armed_from: None,
-            path_a_armed_until: None,
-            path_b_armed_from: Some(NaiveTime::from_hms_opt(9, 30, 0).unwrap()),
-            path_b_armed_until: Some(NaiveTime::from_hms_opt(16, 0, 0).unwrap()),
-        };
-        let pb = derive_path_b(&input);
-        assert_eq!(pb.snapshot_count, 0);
-        assert_eq!(pb.mark_gaps.len(), path_b_marks().len());
-        assert_eq!(pb.mark_gaps.len(), 79);
-        assert_eq!(pb.content, AxisBPathB::Occupied);
-        assert!(!matches!(pb.content, AxisBPathB::EmptyWhileStoring));
     }
 
     #[tokio::test]

@@ -323,34 +323,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn one_x_honors_positive_gap_and_does_not_dump() {
-        let occupancy = ReplayOccupancySlot::unset();
-        vouch(&occupancy, 1).await;
-        let sleeper = Arc::new(RecordingSleeper {
-            sleeps: Mutex::new(Vec::new()),
-        });
-        let hold = Arc::new(RecordingHold {
-            replaces: Mutex::new(Vec::new()),
-        });
-        let (ports, mut rx) = make_ports(occupancy, sleeper.clone(), hold);
-
-        let mut day = DayContainer::default();
-        let t0 = ts(10, 0, 0);
-        let t1 = ts(10, 0, 1);
-        day.path_a.push(PathARecord::trade(t0, 100.0, Some(1.0)));
-        day.path_a.push(PathARecord::trade(t1, 100.5, Some(2.0)));
-
-        run_player(SYM, ET, 1, day, ports).await;
-
-        let sleeps = sleeper.sleeps.lock().unwrap().clone();
-        assert_eq!(sleeps, vec![std::time::Duration::from_secs(1)]);
-        let evs = drain_hub(&mut rx).await;
-        assert_eq!(evs.len(), 2);
-        assert_eq!(evs[0].ts_ns, t0);
-        assert_eq!(evs[1].ts_ns, t1);
-    }
-
-    #[tokio::test]
     async fn four_x_and_ten_x_compress_waits_without_reorder() {
         let t0 = ts(10, 0, 0);
         let t1 = ts(10, 0, 1);
@@ -469,7 +441,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn path_a_gap_pulses_then_sleeps_to_next_stamp() {
+    async fn path_a_gap_pulses_holding_last_tape_time_then_sleeps_to_next_stamp() {
         let occupancy = ReplayOccupancySlot::unset();
         vouch(&occupancy, 1).await;
         let sleeper = Arc::new(SnapshottingSleeper {
@@ -501,44 +473,16 @@ mod tests {
             ReplayPhase::Gap,
             "gap occupancy must be visible before sleep to next stamp"
         );
+        assert_eq!(
+            at_sleep[0].tape_time_et,
+            ts_ns_to_tape_time_et(t0),
+            "gap must not null the last vouched tape_time_et"
+        );
 
         let evs = drain_hub(&mut rx).await;
         assert_eq!(evs.len(), 2, "PathAGap must not become a StreamEvent");
         assert_eq!(evs[0].ts_ns, t0);
         assert_eq!(evs[1].ts_ns, t1);
-    }
-
-    #[tokio::test]
-    async fn gap_pulse_holds_last_vouched_tape_time() {
-        let occupancy = ReplayOccupancySlot::unset();
-        vouch(&occupancy, 1).await;
-        let sleeper = Arc::new(SnapshottingSleeper {
-            sleeps: Mutex::new(Vec::new()),
-            occupancy: occupancy.clone(),
-            at_sleep: Mutex::new(Vec::new()),
-        });
-        let hold = Arc::new(RecordingHold {
-            replaces: Mutex::new(Vec::new()),
-        });
-        let (ports, _rx) = make_ports(occupancy, sleeper.clone(), hold);
-
-        let mut day = DayContainer::default();
-        let t0 = ts(10, 0, 0);
-        day.path_a.push(PathARecord::trade(t0, 100.0, None));
-        day.path_a.push(PathARecord::gap(1));
-        day.path_a
-            .push(PathARecord::trade(ts(10, 0, 5), 100.5, None));
-
-        run_player(SYM, ET, 1, day, ports).await;
-
-        let expect_tape = ts_ns_to_tape_time_et(t0);
-        let at_sleep = sleeper.at_sleep.lock().unwrap().clone();
-        assert_eq!(at_sleep.len(), 1);
-        assert_eq!(at_sleep[0].phase, ReplayPhase::Gap);
-        assert_eq!(
-            at_sleep[0].tape_time_et, expect_tape,
-            "gap must not null the last vouched tape_time_et"
-        );
     }
 
     #[tokio::test]

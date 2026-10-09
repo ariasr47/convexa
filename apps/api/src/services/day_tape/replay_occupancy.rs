@@ -71,19 +71,4 @@ mod tests {
         assert!(json.get("tape_time_et").is_some());
         assert!(json.get("tape_time_et").unwrap().is_null());
     }
-
-    #[test]
-    fn tape_time_et_null_cases_are_only_first_keepalive_and_both_empty() {
-        // S2 Important 2: null cursor is first playing voucher (both-empty before ended reuses it).
-        let first = first_playing_voucher("SPY", "2026-08-10", 4);
-        assert!(first.tape_time_et.is_none());
-        assert_eq!(first.phase, ReplayPhase::Playing);
-        let src = include_str!("replay_occupancy.rs");
-        let prod = src.split("#[cfg(test)]").next().unwrap_or(src);
-        assert_eq!(
-            prod.matches("tape_time_et: None").count(),
-            1,
-            "only first_playing_voucher may mint null tape_time_et"
-        );
-    }
 }

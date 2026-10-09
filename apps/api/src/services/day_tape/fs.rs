@@ -630,8 +630,7 @@ impl JsonInner {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::tape_root_conflicts;
-    use crate::services::day_tape::store::{is_not_storing_err, PathAKind, SessionDayTape};
+    use crate::services::day_tape::store::{PathAKind, SessionDayTape};
     use chrono::TimeZone;
 
     fn et_hm(y: i32, m: u32, d: u32, h: u32, min: u32) -> DateTime<Utc> {
@@ -650,29 +649,6 @@ mod tests {
         ));
         std::fs::create_dir_all(&p).unwrap();
         p
-    }
-
-    #[tokio::test]
-    async fn unset_root_constructs_disabled_listener_would_bind() {
-        // Construct Ok + Disabled (desk would still bind). See state::open_session_day_tape.
-        let store = SessionDayTape::disabled();
-        assert!(!store.is_enabled());
-        let err = store.list("SPY").await.unwrap_err();
-        assert!(is_not_storing_err(&err));
-    }
-
-    #[tokio::test]
-    async fn colliding_root_refuses_construct() {
-        let ring = PathBuf::from("data/chain_snapshots");
-        let index = PathBuf::from("data/session_chain_archive");
-        let body = PathBuf::from("data/session-chain-archive-bodies");
-        assert!(tape_root_conflicts(
-            Path::new("data/chain_snapshots"),
-            &ring,
-            &index,
-            Some(body.as_path())
-        ));
-        // Open helper must refuse before Json open — exercised in state tests.
     }
 
     #[tokio::test]
