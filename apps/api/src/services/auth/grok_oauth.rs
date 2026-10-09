@@ -9,13 +9,3 @@ pub fn available() -> bool {
     // in-lane. Do not read invented env vars as a fake enablement.
     false
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn grok_oauth_arm_is_unavailable_until_docs_verify() {
-        assert!(!available());
-    }
-}

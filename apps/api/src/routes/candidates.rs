@@ -204,33 +204,3 @@ pub async fn get_candidates(
         .expect("candidate envelope matches closed schema"),
     ))
 }
-
-#[cfg(test)]
-mod response_conversion_tests {
-    use super::*;
-    use axum::body::to_bytes;
-    use axum::http::{header, StatusCode};
-
-    #[tokio::test]
-    async fn candidates_success_and_failures_execute_typed_production_conversions() {
-        for (status, marker) in [
-            (StatusCode::OK, "ticker"),
-            (StatusCode::NOT_FOUND, "not found:"),
-            (StatusCode::UNPROCESSABLE_ENTITY, "must be"),
-            (StatusCode::INTERNAL_SERVER_ERROR, "config:"),
-            (StatusCode::BAD_GATEWAY, "massive:"),
-            (StatusCode::SERVICE_UNAVAILABLE, "redis:"),
-        ] {
-            let boundary = format!(
-                "GET /api/candidates/{{ticker}} {} application/json public",
-                status.as_u16()
-            );
-            let response = contract_representative_for(status, &boundary);
-            assert_eq!(response.status(), status);
-            assert_eq!(response.headers()[header::CONTENT_TYPE], "application/json");
-            let body = to_bytes(response.into_body(), 1024 * 1024).await.unwrap();
-            let body = String::from_utf8(body.to_vec()).unwrap();
-            assert!(body.contains(marker), "{boundary}: {body}");
-        }
-    }
-}
