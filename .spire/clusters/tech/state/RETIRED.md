@@ -89,3 +89,5 @@ RETIRED: apps/dashboard/src/testing/operatorSessionArchiveAllowlist.spec.ts; par
 RETIRED: apps/api/tests/archive_coverage_isolation.rs; parent b7d0b120f81df6f45f0056ea20768dd2b2609934; duplicate; 8 tests
 RETIRED: apps/api/tests/capacity_harness.rs; parent 9c27a3c1a811810785eb55282ed1435dd8e8c8fa; duplicate; 3 tests
 RETIRED: apps/api/tests/live_capacity_isolation.rs; parent 9c27a3c1a811810785eb55282ed1435dd8e8c8fa; duplicate; 3 tests
+RETIRED: apps/dashboard-e2e/tools/mutations.spec.mjs; parent b04302868c4dfb0eba313b47844908a6f2abf223; duplicate; 3 tests
+RETIRED: apps/dashboard-e2e/tools/negative-controls.spec.mjs; parent b04302868c4dfb0eba313b47844908a6f2abf223; duplicate; 2 tests
