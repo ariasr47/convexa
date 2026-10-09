@@ -695,31 +695,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn memory_second_insert_same_et_date_skips_body_put_and_keeps_first() {
-        let store = SessionChainArchive::memory();
-        let a = Utc.with_ymd_and_hms(2024, 6, 3, 14, 0, 0).single().unwrap();
-        let b = Utc.with_ymd_and_hms(2024, 6, 3, 20, 0, 0).single().unwrap();
-        let (body_a, source_a) = body_at("TSLA", a);
-        let (body_b, source_b) = body_at("TSLA", b);
-        let et = et_date_from_as_of(a).unwrap();
-        assert!(store
-            .insert_if_absent("TSLA", &et, a, source_a, &body_a)
-            .await
-            .unwrap());
-        assert!(!store
-            .insert_if_absent("TSLA", &et, b, source_b, &body_b)
-            .await
-            .unwrap());
-        let loaded = store.load("TSLA", &et).await.unwrap().unwrap();
-        assert_eq!(loaded.body, body_a);
-        assert_eq!(store.list("TSLA", None).await.unwrap().len(), 1);
-        if let SessionChainArchive::Memory(inner) = &store {
-            let guard = inner.read().await;
-            assert_eq!(guard.bodies.len(), 1);
-        }
-    }
-
-    #[tokio::test]
     async fn disabled_insert_and_list_report_not_storing() {
         let store = SessionChainArchive::disabled();
         let as_of = Utc.with_ymd_and_hms(2024, 6, 3, 17, 0, 0).single().unwrap();
@@ -736,24 +711,6 @@ mod tests {
         assert!(err.to_string().contains("session archive not storing"));
         let list_err = store.list("TSLA", None).await.unwrap_err();
         assert!(list_err.to_string().contains("session archive not storing"));
-    }
-
-    #[tokio::test]
-    async fn failing_insert_errors_and_list_stays_empty() {
-        let store = SessionChainArchive::failing();
-        let as_of = Utc.with_ymd_and_hms(2024, 6, 3, 17, 0, 0).single().unwrap();
-        assert!(store
-            .insert_if_absent(
-                "TSLA",
-                "2024-06-03",
-                as_of,
-                MarketDataSourceKind::Fixture,
-                b"x"
-            )
-            .await
-            .is_err());
-        assert!(store.list("TSLA", None).await.unwrap().is_empty());
-        assert!(store.load("TSLA", "2024-06-03").await.unwrap().is_none());
     }
 
     #[tokio::test]

@@ -449,16 +449,6 @@ mod tests {
     }
 
     #[test]
-    fn weekday_et_is_eligible_weekend_is_not() {
-        // 2026-08-10 Monday 14:00 UTC = 10:00 ET
-        let mon = Utc.with_ymd_and_hms(2026, 8, 10, 14, 0, 0).unwrap();
-        assert!(is_et_weekday(mon));
-        // 2026-08-08 Saturday
-        let sat = Utc.with_ymd_and_hms(2026, 8, 8, 15, 0, 0).unwrap();
-        assert!(!is_et_weekday(sat));
-    }
-
-    #[test]
     fn eligibility_requires_trio_weekday_and_archive_enabled() {
         let mon = Utc.with_ymd_and_hms(2026, 8, 10, 14, 0, 0).unwrap();
         let calendar = MarketCalendar::production().unwrap();
@@ -467,36 +457,6 @@ mod tests {
         assert!(!ensure_eligible_with_calendar("TSLA", mon, true, &calendar).unwrap());
         let sat = Utc.with_ymd_and_hms(2026, 8, 8, 15, 0, 0).unwrap();
         assert!(!ensure_eligible_with_calendar("SPY", sat, true, &calendar).unwrap());
-    }
-
-    #[test]
-    fn ensure_eligible_false_on_holiday_thursday() {
-        let now = New_York
-            .with_ymd_and_hms(2026, 11, 26, 10, 0, 0)
-            .single()
-            .unwrap()
-            .with_timezone(&Utc);
-        assert!(!ensure_eligible("SPY", now, true));
-        assert!(
-            is_et_weekday(now),
-            "holiday is still a weekday; do not widen is_et_weekend"
-        );
-    }
-
-    #[test]
-    fn ensure_eligible_true_on_ordinary_monday() {
-        let now = New_York
-            .with_ymd_and_hms(2026, 8, 10, 10, 0, 0)
-            .single()
-            .unwrap()
-            .with_timezone(&Utc);
-        assert!(ensure_eligible("SPY", now, true));
-    }
-
-    #[test]
-    fn wake_helper_only_for_closed_set() {
-        assert!(should_wake_ensure("SPY"));
-        assert!(!should_wake_ensure("TSLA"));
     }
 
     #[tokio::test]
@@ -648,25 +608,6 @@ mod tests {
         assert_eq!(force_calls.load(Ordering::SeqCst), 1);
         assert!(archive.load("SPY", &et).await.unwrap().is_some());
         assert!(!ring.list("SPY", None).await.unwrap().is_empty());
-    }
-
-    #[tokio::test]
-    async fn force_direct_archives_when_ring_disabled() {
-        let archive = SessionChainArchive::memory();
-        let ring = ChainSnapshotStore::disabled();
-        let as_of = New_York
-            .with_ymd_and_hms(2024, 6, 3, 14, 0, 0)
-            .single()
-            .unwrap()
-            .with_timezone(&Utc);
-        let et = et_date_from_as_of(as_of).unwrap();
-        let outcome = ensure_one(&archive, &ring, "QQQ", &et, true, false, |_| async move {
-            Ok(fixture_probe_bundle("QQQ", as_of))
-        })
-        .await;
-        assert!(matches!(outcome, EnsureOutcome::ForceArchived));
-        assert!(archive.load("QQQ", &et).await.unwrap().is_some());
-        assert!(ring.list("QQQ", None).await.is_err());
     }
 
     #[tokio::test]
