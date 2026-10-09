@@ -95,3 +95,4 @@ RETIRED: apps/dashboard-e2e/src/e2e/app-loads.spec.ts; parent 0f68885cb1e13b024d
 RETIRED: apps/dashboard-e2e/src/e2e/broker-grouping.spec.ts; parent 0f68885cb1e13b024d425460be098c68d4051a89; duplicate; 4 tests
 RETIRED: apps/dashboard-e2e/src/e2e/broker.spec.ts; parent 0f68885cb1e13b024d425460be098c68d4051a89; duplicate; 4 tests
 RETIRED: apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts; parent 0f68885cb1e13b024d425460be098c68d4051a89; duplicate; 6 tests
+RETIRED: tools/supply-chain/cli.integration.spec.mjs; parent a60a98c57cb803ffa38a629341baf4196e365be1; duplicate; 4 tests
