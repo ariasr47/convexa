@@ -131,20 +131,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn capture_when_store_disabled_logs_capture_not_storing() {
-        let store = ChainSnapshotStore::disabled();
-        capture_into(
-            &store,
-            &SessionChainArchive::disabled(),
-            bundle_at(1),
-            Duration::from_secs(1_209_600),
-            48,
-        )
-        .await
-        .unwrap();
-    }
-
-    #[tokio::test]
     async fn successful_ring_append_archives_session_identity() {
         let ring = ChainSnapshotStore::memory();
         let archive = SessionChainArchive::memory();

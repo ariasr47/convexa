@@ -652,3 +652,11 @@ Full lists with files, counts and same-commit edits: [BATCHES.md](BATCHES.md).
 | 74 | `apps/api/src/services/capacity_harness/receipt.rs` (in-file tests; TRIM; structure (reconciled)) | 4 → 3 | removed or merged: parse_round_trip_pass_receipt |
 | 74 | `apps/api/src/services/capacity_harness/run.rs` (in-file tests; TRIM; duplicate (reconciled; tests/capacity_load.rs hermetic run stays)) | 6 → 2 | removed or merged: cold_coalesced_wall_holds_under_4000ms, hermetic_load_passes_with_zero_vendor_io, run_constructs_for_capacity_harness_and_binds_twice, short_load_smoke_exercises_driver_path |
 | 74 | `apps/api/src/services/capacity_harness/standing.rs` (in-file tests; TRIM; structure) | 3 → 2 | removed or merged: vouched_standing_starts_with_capacity_harness_mocked_vendors |
+| 75 | `apps/api/src/services/capacity_harness/thresholds.rs` (in-file tests; TRIM; structure) | 5 → 4 | removed: empty_samples_do_not_emit_a_blended_ticker_analysis_p95 |
+| 75 | `apps/api/src/services/chain_snapshot/capture.rs` (in-file tests; TRIM; structure) | 7 → 6 | removed: capture_when_store_disabled_logs_capture_not_storing |
+| 75 | `apps/api/src/services/chain_snapshot/store.rs` (in-file tests; TRIM; structure) | 11 → 10 | removed: prune_failure_does_not_fail_append |
+| 75 | `apps/api/src/services/chain_snapshot/wire.rs` (in-file tests; TRIM; duplicate) | 4 → 3 | removed: serialized_bytes_contain_no_apikey_or_url_query |
+| 75 | `apps/api/src/services/flat_file_keep/cli.rs` (in-file tests; TRIM; duplicate) | 19 → 18 | removed: secrets_and_canary_absent_from_stdout_stderr |
+| 75 | `apps/api/src/services/flat_file_keep/clocks.rs` (in-file tests; TRIM; duplicate) | 4 → 3 | removed: clock_1059_d_plus_1_is_not_elapsed_1100_is_due |
+| 75 | `apps/api/src/services/flat_file_keep/keep.rs` (in-file tests; TRIM; duplicate) | 21 → 16 | removed: naming_one_symbol_fills_siblings_when_get_runs, quotes_still_get_when_only_trades_content_hit, skip_get_does_not_invent_qqq, skip_get_does_not_print_download_failed_or_miss_for_that_class, skip_get_when_spy_trades_kept_qqq_trades_no_stored_extract |
+| 75 | `apps/api/src/services/flat_file_keep/mod.rs` (in-file tests; TRIM; duplicate) | 2 → 1 | removed: occupancy_source_forbids_livemassive_and_present_arms |
