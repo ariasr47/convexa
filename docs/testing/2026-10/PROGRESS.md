@@ -98,3 +98,4 @@ Append-only. One line per step. Times are local (America/Los_Angeles) unless mar
 - 2026-10-08 P2 batch 30 committed 70710258; verified (run b30): all exit 0, 801 s; cargo 1615 (-11), rest unchanged; 0 skips. (A first launch ran go.sh under bash instead of zsh and executed no step; harness error, not a test result.)
 - 2026-10-08 P2 batch 32: removed in-file test modules from services/day_tape/literals.rs (1) and mod.rs poison_tests (2), duplicate; trim-ledger rows, no RETIRED line. cargo --no-run exit 0, no new warnings; rustfmt --check on mod.rs fails identically at HEAD (pre-existing construct.rs:439 and pub-use wrapping), not introduced.
 - 2026-10-08 P2 batch 32 committed b7d0b120; verified (run b32): all exit 0, 781 s; cargo 1612 (-3), rest unchanged; 0 skips.
+- 2026-10-08 P2 batch 33 committed 9c27a3c1; verified (run b33): all exit 0, 630 s; cargo 1604 (-8), rest unchanged; 0 skips.
