@@ -83,3 +83,6 @@ RETIRED: apps/dashboard/src/app/pages/ticker/widgets/off-exchange-blocks/OffExch
 RETIRED: apps/dashboard/src/app/shared/theme/banned-literals.spec.ts; parent b13931d1101df269587c69474634de7bf5b35690; duplicate; 4 tests
 RETIRED: apps/dashboard/src/app/pages/landing/cta-contrast.spec.tsx; parent 1bc9af5cc6b23746741ed2282b3ec2180a61c3cf; duplicate; 7 tests
 RETIRED: apps/dashboard/src/app/pages/landing/svg-build-constraint.spec.ts; parent 1bc9af5cc6b23746741ed2282b3ec2180a61c3cf; duplicate; 9 tests
+RETIRED: apps/dashboard/src/app/day-replay-mock-adapter.spec.tsx; parent a25ca75a106f8e09c9c8964d26f5b220a64df7d7; duplicate; 2 tests
+RETIRED: apps/dashboard/src/app/exchange-holiday-calendar.structural.spec.ts; parent a25ca75a106f8e09c9c8964d26f5b220a64df7d7; duplicate; 6 tests
+RETIRED: apps/dashboard/src/testing/operatorSessionArchiveAllowlist.spec.ts; parent a25ca75a106f8e09c9c8964d26f5b220a64df7d7; duplicate; 2 tests

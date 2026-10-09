@@ -89,3 +89,4 @@ Append-only. One line per step. Times are local (America/Los_Angeles) unless mar
 - 2026-10-08 P2 batch 25 committed 38e123bf; verified (run b25): all exit 0, 630 s; vitest 2761 (-12), rest unchanged; 0 skips.
 - 2026-10-08 P2 batch 26 committed b13931d1; verified (run b26): all exit 0, 630 s; vitest 2739 (-22), rest unchanged; 0 skips.
 - 2026-10-08 P2 batch 27 committed 1bc9af5c; verified (run b27): all exit 0, 609 s; vitest 2735 (-4), rest unchanged; 0 skips.
+- 2026-10-08 P2 batch 28 committed a25ca75a; verified (run b28): all exit 0, 617 s; vitest 2719 (-16), rest unchanged; 0 skips.
