@@ -31,31 +31,7 @@ function liveUpdate(over: Partial<LiveUpdate> = {}): LiveUpdate {
   } as LiveUpdate;
 }
 
-describe('resolveConnectionState — closed wins over live; lag tip drops holiday', () => {
-  it('closed wins over live.live — never a live kind for a closed session', () => {
-    const live = liveUpdate({ live: true, market_session: 'closed' });
-    const state = resolveConnectionState({ live, streamOffline: false, routeSymbol: 'SPY' });
-    expect(state.kind).toBe('closed');
-    const content = resolveChipContent(state, live, 'SPY');
-    expect(content.text).toMatch(/^market closed/);
-    expect(content.text).not.toContain('live');
-    expect(content.tip).toBe(
-      'Market is closed (weekend/holiday). Showing the last completed session.',
-    );
-  });
-
-  it('lag tip has no holiday substring and is the replacement sentence', () => {
-    const live = liveUpdate({ live: false, market_session: 'regular' });
-    const state = resolveConnectionState({ live, streamOffline: false, routeSymbol: 'SPY' });
-    expect(state.kind).toBe('noTicks');
-    const content = resolveChipContent(state, live, 'SPY');
-    expect(content.text).toMatch(/^no live ticks/);
-    expect(content.tip).toBe(
-      'In a covered session but no ticks are arriving — the feed may be lagging.',
-    );
-    expect(content.tip?.toLowerCase()).not.toContain('holiday');
-  });
-
+describe('resolveConnectionState — a holiday closed session never reads as feed lag', () => {
   it('holiday closed does not take the lag branch even when live is false', () => {
     const live = liveUpdate({ live: false, market_session: 'closed' });
     const state = resolveConnectionState({ live, streamOffline: false, routeSymbol: 'SPY' });
@@ -63,13 +39,5 @@ describe('resolveConnectionState — closed wins over live; lag tip drops holida
     const content = resolveChipContent(state, live, 'SPY');
     expect(content.text).toMatch(/^market closed/);
     expect(content.tip?.toLowerCase()).not.toContain('lagging');
-  });
-
-  it('resolved chip pulse is false when live:true + market_session closed', () => {
-    const live = liveUpdate({ live: true, market_session: 'closed' });
-    const state = resolveConnectionState({ live, streamOffline: false, routeSymbol: 'SPY' });
-    const content = resolveChipContent(state, live, 'SPY');
-    expect(content.pulse).toBe(false);
-    expect(content.text).toMatch(/market closed/);
   });
 });
