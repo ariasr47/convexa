@@ -1157,7 +1157,7 @@ export function TickerDashboard() {
                           `IvRank` is unmounted from the band — it is not in the design's
                           enumerated ctx-grid card list (`desk.mjs:395-421`) and it repeats the
                           read strip's `IV rank` cell (one fact, one place). The component and its
-                          own unit spec (`iv-rank/IvRank.spec.tsx`) stay — this is an unmount, not a
+                          spec stay (it covers only `ivRankStripFigure`) — this is an unmount, not a
                           deletion; `quiet-band.register.spec.tsx` scans the source file by path and
                           is correctly unaffected. See `TICKER_FIDELITY_REPAIR_REPORT.md` (Pass 2,
                           change 8) for the e2e/unit assertion edits this required. */}

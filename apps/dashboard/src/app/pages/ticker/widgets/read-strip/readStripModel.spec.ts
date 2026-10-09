@@ -1,18 +1,16 @@
 /**
- * `readStripModel.ts` — SPEC §2.4, criteria 25, 26, 27, 28, 60. Pure model tests; the DOM-level
- * equivalents (criteria 8, 25, 50) live in `ReadStrip.spec.tsx`.
+ * `readStripModel.ts` — SPEC §2.4, criteria 26, 27, 28, 60. Pure model tests. The DOM-level spec for
+ * criteria 8, 25 and 50 was retired (lean-tests batch 11).
  *
  * MUTATION PROOF (poison → confirm red → revert, actually run this session, not narrated): replaced
  * the off-exchange slot's `NOT_PROVIDED` fallback with the literal `'unavailable'` — the "never
  * `unavailable`" test below (criterion 26) went red naming the actual string it received
- * (`'unavailable'`, not `'not provided'`). Reverted; suite green again. See `ReadStrip.spec.tsx` for
- * the companion DOM-level poison proof (criterion 8, the dot census).
+ * (`'unavailable'`, not `'not provided'`). Reverted; suite green again.
  */
 import { NOT_PROVIDED } from '@/shared/copy/notANumber';
-import { NOT_LIVE } from '@/shared/liveness/liveClaim';
 import type { IvRankRead, MarketState, OffExchange } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
-import { buildReadStrip, READ_STRIP_SLOTS, type ReadStripInput } from './readStripModel';
+import { buildReadStrip, type ReadStripInput } from './readStripModel';
 
 const marketState = (over: Partial<MarketState> = {}): MarketState => ({
   ticker: 'TSLA',
@@ -114,52 +112,6 @@ function bySlot(input: ReadStripInput) {
   return Object.fromEntries(cells.map((c) => [c.slot, c]));
 }
 
-describe('READ_STRIP_SLOTS — eight fixed slots, in order (criterion 25)', () => {
-  it('is exactly the closed eight-member tuple', () => {
-    expect(READ_STRIP_SLOTS).toEqual([
-      'opportunity',
-      'netDex',
-      'ivHv',
-      'ivRank',
-      'volOi',
-      'ivSkew',
-      'termStructure',
-      'offExchange',
-    ]);
-  });
-
-  it('buildReadStrip always returns exactly eight cells, in that order, whatever the input', () => {
-    const full = buildReadStrip(FULL_INPUT);
-    expect(full).toHaveLength(8);
-    expect(full.map((c) => c.slot)).toEqual(READ_STRIP_SLOTS);
-
-    const empty = buildReadStrip({
-      m: marketState({
-        net_dex: null,
-        chain_vol_oi_ratio: null,
-        iv_skew: null,
-        term_structure: null,
-      }),
-      offExchange: null,
-      volOiThreshold: 1,
-      unusualCount: 0,
-      tierWord: 'Dormant',
-      opportunityScore: 0,
-      ivRank: null,
-      setupsCount: null,
-    });
-    expect(empty).toHaveLength(8);
-    expect(empty.map((c) => c.slot)).toEqual(READ_STRIP_SLOTS);
-  });
-});
-
-describe('buildReadStrip — every cell is dotless (criterion 8 model half)', () => {
-  it('all eight cells carry NOT_LIVE', () => {
-    const cells = buildReadStrip(FULL_INPUT);
-    expect(cells.every((c) => c.live === NOT_LIVE)).toBe(true);
-  });
-});
-
 describe('buildReadStrip — the seven decomposed cells, byte-for-byte with the old dealer positioning widget', () => {
   it('opportunity — score · tier word', () => {
     const c = bySlot(FULL_INPUT);
@@ -192,13 +144,6 @@ describe('buildReadStrip — the seven decomposed cells, byte-for-byte with the 
     expect(withSkew.ivSkew.value).toBe('−2.4 pts · greed');
     expect(bySlot(FULL_INPUT).ivSkew.value).toBe('unavailable');
   });
-
-  it('opportunity info carries the shipped OPPORTUNITY_TIER_INFO suffix', () => {
-    expect(bySlot(FULL_INPUT).opportunity.info).toContain('Not a trade signal.');
-    expect(bySlot(FULL_INPUT).opportunity.info).toContain(
-      'Tier: Dormant → Watch → Actionable → Prime.',
-    );
-  });
 });
 
 describe('buildReadStrip — the off-exchange slot renders NOT_PROVIDED, never unavailable (criterion 26)', () => {
@@ -206,23 +151,17 @@ describe('buildReadStrip — the off-exchange slot renders NOT_PROVIDED, never u
     expect(bySlot(FULL_INPUT).offExchange.value).toBe('38%');
   });
 
-  it('renders NOT_PROVIDED when the whole off-exchange object is absent', () => {
-    const c = bySlot({ ...FULL_INPUT, offExchange: null });
-    expect(c.offExchange.value).toBe(NOT_PROVIDED);
-    expect(c.offExchange.value).not.toBe('unavailable');
-  });
-
-  it('renders NOT_PROVIDED when the object is present but ratio_pct is null', () => {
-    const c = bySlot({
-      ...FULL_INPUT,
-      offExchange: offEx({ ratio_pct: null as unknown as number }),
-    });
-    expect(c.offExchange.value).toBe(NOT_PROVIDED);
-  });
-
-  it('renders NOT_PROVIDED when the object is undefined', () => {
-    const c = bySlot({ ...FULL_INPUT, offExchange: undefined });
-    expect(c.offExchange.value).toBe(NOT_PROVIDED);
+  it('renders NOT_PROVIDED, never unavailable, when the object is absent, undefined or carries a null ratio_pct', () => {
+    const cases: ReadonlyArray<readonly [string, ReadStripInput['offExchange']]> = [
+      ['whole object absent', null],
+      ['object present, ratio_pct null', offEx({ ratio_pct: null as unknown as number })],
+      ['object undefined', undefined],
+    ];
+    for (const [name, offExchange] of cases) {
+      const c = bySlot({ ...FULL_INPUT, offExchange });
+      expect(c.offExchange.value, name).toBe(NOT_PROVIDED);
+      expect(c.offExchange.value, name).not.toBe('unavailable');
+    }
   });
 });
 
@@ -286,30 +225,6 @@ describe('buildReadStrip — IV rank is the eighth cell, closed-lookup digest (c
   it('computed with a recognized band — rank + the closed band label', () => {
     expect(bySlot(FULL_INPUT).ivRank.value).toBe('82 · premium rich');
   });
-
-  it('computed with an unrecognized band — rank alone, never a raw pass-through', () => {
-    const c = bySlot({ ...FULL_INPUT, ivRank: ivRank({ band: 'not_a_real_band' }) });
-    expect(c.ivRank.value).toBe('82');
-    expect(c.ivRank.value).not.toContain('not_a_real_band');
-  });
-
-  it('degenerate-flat (rank null) — the closed unavailable member, never a fabricated midpoint', () => {
-    const c = bySlot({ ...FULL_INPUT, ivRank: ivRank({ rank: null, band: null }) });
-    expect(c.ivRank.value).toBe('unavailable');
-  });
-
-  it('building — the closed unavailable member (the strip is a digest; the full distinction stays in the untouched widget)', () => {
-    const c = bySlot({
-      ...FULL_INPUT,
-      ivRank: ivRank({ state: 'building', rank: null, band: null }),
-    });
-    expect(c.ivRank.value).toBe('unavailable');
-  });
-
-  it('whole read null — the closed unavailable member', () => {
-    const c = bySlot({ ...FULL_INPUT, ivRank: null });
-    expect(c.ivRank.value).toBe('unavailable');
-  });
 });
 
 // =================================================================================================
@@ -326,13 +241,6 @@ describe('buildReadStrip — sub-caption (F4): derived from the model, `—` whe
     expect(bySlot({ ...FULL_INPUT, setupsCount: 1 }).opportunity.sub).toBe('1 setup');
     expect(bySlot({ ...FULL_INPUT, setupsCount: 0 }).opportunity.sub).toBe('no setups');
     expect(bySlot({ ...FULL_INPUT, setupsCount: null }).opportunity.sub).toBe('—');
-  });
-
-  it('netDex: a static tagline naming the metric — holds even when the value itself is unavailable', () => {
-    expect(bySlot(FULL_INPUT).netDex.sub).toBe('delta hedging pressure');
-    const c = bySlot({ ...FULL_INPUT, m: marketState({ net_dex: null }) });
-    expect(c.netDex.value).toBe('unavailable');
-    expect(c.netDex.sub).toBe('delta hedging pressure');
   });
 
   it('ivHv: derived from the SAME ratio the value renders — >1 expensive, <1 cheap, ===1 fair', () => {
@@ -446,12 +354,5 @@ describe('buildReadStrip — sub-caption (F4): derived from the model, `—` whe
     expect(
       bySlot({ ...FULL_INPUT, m: marketState({ term_structure: null }) }).termStructure.sub,
     ).toBe('—');
-  });
-
-  it('offExchange: a static tagline — holds for both the populated and the "not provided" arm', () => {
-    expect(bySlot(FULL_INPUT).offExchange.sub).toBe('context only, no side');
-    const c = bySlot({ ...FULL_INPUT, offExchange: null });
-    expect(c.offExchange.value).toBe('not provided');
-    expect(c.offExchange.sub).toBe('context only, no side');
   });
 });

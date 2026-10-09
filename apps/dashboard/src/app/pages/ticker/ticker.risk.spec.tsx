@@ -591,8 +591,8 @@ describe('Ticker · wire-label authority (digested-labels-not-raw-dump)', () => 
     // PASS 2 change 8: the iv-rank-band example (`widget-iv-rank`'s `ivr-band` testid) dropped —
     // `IvRank` no longer mounts on `/ticker` (owner ruling `context-band-is-the-designs-card-list`).
     // The invariant (wire label wins over a scalar-derived alternative) stays covered by the three
-    // remaining examples below; `IvRank.spec.tsx`'s own suite (component stays, unmount only) still
-    // covers this same label-authority behavior for the widget itself, in isolation.
+    // remaining examples below. `IvRank.spec.tsx` now covers only the strip figure
+    // (`ivRankStripFigure`); the unmounted widget has no test of its own (lean-tests batch 47).
 
     // Trend direction: the wire label renders; nothing re-derives "Uptrend" from the EMAs.
     const mc = screen.getByTestId('widget-market-context');
@@ -618,8 +618,8 @@ describe('Ticker · model-read self-description', () => {
 
     // PASS 2 change 8: the iv-rank half of this pairing test dropped — `widget-iv-rank` no longer
     // mounts on `/ticker` (owner ruling `context-band-is-the-designs-card-list`). The invariant
-    // (`model-read-carries-its-assumptions`) is still exercised below via dealer-flow-projection,
-    // AND moved to `iv-rank/IvRank.spec.tsx` (component-level) for the rank-value/basis pairing.
+    // (`model-read-carries-its-assumptions`) is still exercised below via dealer-flow-projection;
+    // the unmounted widget's rank-value/basis pairing is no longer tested (lean-tests batch 47).
 
     // Dealer-flow projection: the charm figure AND its horizon element share the widget body.
     const dfp = screen.getByTestId('widget-dealer-flow-projection');
