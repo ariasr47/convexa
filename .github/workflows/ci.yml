@@ -1,12 +1,17 @@
+# CI mode (2026-10-08): manual. Reason: cost. Restore: push: [main], pull_request.
 # Convexa monorepo CI — dashboard (Vite/TS) + api (Rust) + Playwright e2e.
 # Stack: Node from .nvmrc, Cargo workspace (apps/api + libs/quant-engine).
+# Minutes per month below assume 8 dispatches; every job runs on ubuntu-24.04, which GitHub bills
+# 1:1, so raw minutes equal Linux-equivalent minutes.
 name: CI
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  workflow_dispatch:
+    inputs:
+      affected_only:
+        description: Run lint, typecheck and test only for Nx projects affected since the last successful run
+        type: boolean
+        default: false
 
 permissions:
   actions: read
@@ -17,6 +22,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ~6 min/run -> ~48 min/month (raw = Linux-equivalent); its own jobs carry the timeouts.
   supply-chain:
     name: Supply-chain policy
     uses: ./.github/workflows/supply-chain.yml
@@ -29,9 +35,12 @@ jobs:
       contents: read
       actions: read
 
+  # ~17 min/run -> ~136 min/month (raw = Linux-equivalent).
   frontend:
     name: Frontend (lint · typecheck · test · build · e2e)
     runs-on: ubuntu-24.04
+    # Longest of the last 10 successful runs 24.1 min x 1.5.
+    timeout-minutes: 37
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -56,13 +65,25 @@ jobs:
       - name: Format check
         run: npm run format:check
 
+      - name: Set Nx base and head for affected
+        if: ${{ inputs.affected_only }}
+        uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
+
+      # The production build below always runs: the bundle and browser gates need it.
+      - name: Affected lint, typecheck and test
+        if: ${{ inputs.affected_only }}
+        run: npx nx affected -t lint typecheck test
+
       - name: Lint
+        if: ${{ !inputs.affected_only }}
         run: npm run lint
 
       - name: Typecheck
+        if: ${{ !inputs.affected_only }}
         run: npm run typecheck
 
       - name: Unit tests (Vitest)
+        if: ${{ !inputs.affected_only }}
         # Hosted runners become timing-sensitive when Vitest saturates every reported CPU, and the
         # jsdom diagnostics can otherwise push the useful failure summary past GitHub's log cap.
         run: |
@@ -123,9 +144,12 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+  # ~26 min/run -> ~208 min/month (raw = Linux-equivalent).
   backend:
     name: Backend (cargo test · release+postgres)
     runs-on: ubuntu-24.04
+    # Longest of the last 10 successful runs 30.4 min x 1.5 = 45.6, capped at 45.
+    timeout-minutes: 45
     services:
       postgres:
         image: postgres:17.10-trixie@sha256:7958605b474b3d264a969cb3a123d6aa00ad1e1fe9da8a69984dabb704d93317
@@ -222,9 +246,12 @@ jobs:
       - name: Cargo release build (postgres)
         run: cargo build -p api-rust --release --features postgres --locked
 
+  # ~7 min/run -> ~56 min/month (raw = Linux-equivalent).
   capacity-linux:
     name: Capacity baseline (Linux)
     runs-on: ubuntu-24.04
+    # Longest of the last 10 successful runs 6.7 min x 1.5 = 10, floor 15.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
