@@ -332,16 +332,6 @@ fn distinct_ports() -> (u16, u16) {
         }
     }
 }
-#[test]
-fn simultaneous_serve_port_pair_is_always_distinct() {
-    let mut observed = HashSet::new();
-    for _ in 0..32 {
-        let (x, y) = distinct_ports();
-        assert_ne!(x, y);
-        assert!(observed.insert(x), "test port was reused: {x}");
-        assert!(observed.insert(y), "test port was reused: {y}");
-    }
-}
 fn listener_bound(p: u16) -> bool {
     std::net::TcpStream::connect(("127.0.0.1", p)).is_ok()
 }

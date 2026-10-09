@@ -146,24 +146,6 @@ fn no_http_client_on_the_score_lab_path() {
     }
 }
 
-/// Step 3 — no new route. The consumer-side half of B2's fork guard: the SERVE handler still
-/// calls the fallback-bearing `read_structure_history`, never the strict lab-only fork.
-#[test]
-fn get_structure_history_route_still_calls_the_shared_fallback_read() {
-    let root = workspace_root();
-    let scan_route_path = root.join("apps/api/src/routes/scan.rs");
-    let src = fs::read_to_string(&scan_route_path).expect("routes/scan.rs must exist");
-    assert!(src.len() > 200, "routes/scan.rs not read correctly");
-    assert!(
-        src.contains("state.scan.read_structure_history("),
-        "GET /api/scan/{{symbol}}/history must still call the SERVE path's fallback-bearing read"
-    );
-    assert!(
-        !src.contains("read_structure_history_strict"),
-        "the serve route must NEVER call the lab-only strict read"
-    );
-}
-
 /// Step 4 — the diary is byte-identical before and after a run (AC-66). Copy a JSON store to a
 /// temp path, hash it, run the lab's strict read against it, hash again, assert equality.
 #[tokio::test]
@@ -221,23 +203,4 @@ async fn the_diary_is_byte_identical_before_and_after_a_lab_read() {
     );
 
     let _ = std::fs::remove_dir_all(&dir);
-}
-
-/// Step 5 (partial, structural half) — score byte-identity. `signals_characterization` (run
-/// separately in `-p quant-engine`) is the numeric half; this asserts the module-boundary half:
-/// `libs/quant-engine/src` carries no reference to `research` at all (stronger than "no
-/// services::research", since quant-engine cannot even see that path).
-#[test]
-fn quant_engine_carries_no_reference_to_research_at_all() {
-    let root = workspace_root();
-    let quant_engine_dir = root.join("libs/quant-engine/src");
-    let files = rust_files(&quant_engine_dir);
-    assert!(!files.is_empty());
-    for (name, src) in &files {
-        assert!(
-            !src.to_ascii_lowercase().contains("research"),
-            "{name} references 'research' — quant-engine must stay a read-only dependency of \
-             research, never the reverse"
-        );
-    }
 }

@@ -629,6 +629,19 @@ mod tests {
         assert!(r.net_gex > 0.0);
         assert_eq!(r.regime, RegimeTag::Positive);
         assert!((r.put_call_ratio - 9.0).abs() < 0.01);
+        // Volume, like PCR, is counted over the full chain, not the DTE window.
+        assert_eq!(r.total_volume, Some(20.0));
+
+        // A zero lower bound keeps the near contract and still drops the far one.
+        let bounded = process_gex_profile(
+            &contracts,
+            100.0,
+            &GexOptions::default()
+                .with_as_of(as_of)
+                .with_dte_window(Some(0.0), Some(30.0)),
+        );
+        assert!(bounded.net_gex > 0.0);
+        assert!((bounded.put_call_ratio - 9.0).abs() < 0.01);
     }
 
     #[test]

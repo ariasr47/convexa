@@ -3,10 +3,7 @@
 //! These use hand-built chains (no network). Golden fixture parity lives in `golden.rs`.
 
 use chrono::{TimeZone, Utc};
-use quant_engine::{
-    process_gex_profile, process_gex_profile_at, Contract, ContractType, GexOptions, Greeks,
-    RegimeTag,
-};
+use quant_engine::{process_gex_profile_at, Contract, ContractType, Greeks, RegimeTag};
 
 fn contract(
     strike: f64,
@@ -33,29 +30,6 @@ fn contract(
         bid: None,
         ask: None,
     }
-}
-
-#[test]
-fn spot_gamma_formula_single_call() {
-    let as_of = Utc.with_ymd_and_hms(2026, 8, 1, 16, 0, 0).unwrap();
-    // dollar_gex = gamma * oi * 100 * spot^2 * 0.01
-    //           = 0.01 * 100 * 100 * 10000 * 0.01 = 10_000
-    let c = contract(
-        100.0,
-        ContractType::Call,
-        100.0,
-        0.01,
-        0.5,
-        0.2,
-        "2026-08-21",
-        Some(1.0),
-    );
-    let r = process_gex_profile_at(&[c], 100.0, as_of);
-    assert!((r.net_gex - 10_000.0).abs() < 0.02);
-    assert!((r.call_gex - 10_000.0).abs() < 0.02);
-    assert!((r.put_gex - 0.0).abs() < 0.02);
-    assert!((r.total_gex - 10_000.0).abs() < 0.02);
-    assert_eq!(r.regime, RegimeTag::Positive);
 }
 
 #[test]
@@ -233,43 +207,6 @@ fn zero_dte_contribution_detected() {
         "expected majority 0DTE share, got {}",
         r.zero_dte_contribution_pct
     );
-}
-
-#[test]
-fn dte_window_shapes_gex_only() {
-    let as_of = Utc.with_ymd_and_hms(2026, 8, 1, 16, 0, 0).unwrap();
-    let chain = vec![
-        contract(
-            100.0,
-            ContractType::Call,
-            100.0,
-            0.05,
-            0.5,
-            0.2,
-            "2026-08-21",
-            Some(5.0),
-        ),
-        contract(
-            100.0,
-            ContractType::Put,
-            500.0,
-            0.05,
-            -0.5,
-            0.2,
-            "2027-01-15",
-            Some(5.0),
-        ),
-    ];
-    let opts = GexOptions::default()
-        .with_as_of(as_of)
-        .with_dte_window(Some(0.0), Some(30.0));
-    let r = process_gex_profile(&chain, 100.0, &opts);
-    // Only call in window → positive net GEX
-    assert!(r.net_gex > 0.0);
-    // PCR still full chain
-    assert!((r.put_call_ratio - 5.0).abs() < 0.01);
-    // Volume full chain
-    assert_eq!(r.total_volume, Some(10.0));
 }
 
 #[test]

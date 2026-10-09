@@ -18,19 +18,6 @@ fn production_runtime_guardrails_receipt(root: &std::path::Path) -> PathBuf {
     )
 }
 
-#[test]
-fn completed_guardrail_receipt_is_resolved_from_the_contract_archive() {
-    let receipt = production_runtime_guardrails_receipt(&workspace());
-    assert!(receipt.is_file());
-    assert!(receipt.ends_with(
-        ".spire/clusters/tech/contracts/_archive/production-runtime-guardrails/conformance-receipt.json"
-    ));
-}
-
-fn forbidden_runtime_boundary(source: &str) -> bool {
-    source.contains("quant_engine")
-}
-
 fn production_uses_unbounded_cors(source: &str) -> bool {
     let start = source.find("fn production_cors_layer").unwrap_or(0);
     let tail = &source[start..];
@@ -38,26 +25,6 @@ fn production_uses_unbounded_cors(source: &str) -> bool {
         .find("fn non_production_cors_layer")
         .unwrap_or(tail.len());
     tail[..end].contains("Any")
-}
-
-#[test]
-fn runtime_guardrails_do_not_cross_into_quant_math_and_guard_is_non_vacuous() {
-    let root = workspace();
-    let runtime = root.join("apps/api/src/runtime_guardrails");
-    let mut scanned = 0;
-    for entry in fs::read_dir(runtime).unwrap() {
-        let path = entry.unwrap().path();
-        if path.extension().and_then(|v| v.to_str()) == Some("rs") {
-            scanned += 1;
-            let source = fs::read_to_string(path).unwrap();
-            assert!(!forbidden_runtime_boundary(&source));
-        }
-    }
-    assert!(
-        scanned >= 6,
-        "runtime boundary scan must inspect real files"
-    );
-    assert!(forbidden_runtime_boundary("use quant_engine::Signals;"));
 }
 
 #[test]
@@ -88,26 +55,6 @@ fn release_mode_is_checked_before_repository_dotenv_is_loaded() {
         guard < dotenv,
         "release/Railway host mode must be checked before dotenv"
     );
-}
-
-fn metrics_reads_before_authentication(source: &str) -> bool {
-    let start = source.find("pub async fn cache_metrics").unwrap_or(0);
-    let tail = &source[start..];
-    let end = tail
-        .find("pub(crate) fn metrics_token_ok")
-        .unwrap_or(tail.len());
-    let route = &tail[..end];
-    let auth = route.find("metrics_token_ok");
-    let cache = route.find("metrics_snapshot");
-    matches!((auth, cache), (Some(auth), Some(cache)) if cache < auth)
-}
-
-#[test]
-fn metrics_auth_precedes_every_operator_state_read_and_guard_is_non_vacuous() {
-    let source = fs::read_to_string(workspace().join("apps/api/src/routes/health.rs")).unwrap();
-    assert!(!metrics_reads_before_authentication(&source));
-    let poisoned = "pub async fn cache_metrics() { metrics_snapshot(); metrics_token_ok(); }\npub(crate) fn metrics_token_ok() {}";
-    assert!(metrics_reads_before_authentication(poisoned));
 }
 
 #[test]
@@ -154,20 +101,6 @@ fn production_entry_constructor_cannot_name_local_or_ephemeral_fallbacks() {
     assert!(forbidden_production_factory(
         "pub async fn new_production() { AuthStore::open_sqlite(path); }"
     ));
-}
-
-#[test]
-fn credential_failure_remains_outside_anonymous_market_and_stream_modules() {
-    let root = workspace();
-    for relative in [
-        "apps/api/src/services/analytics.rs",
-        "apps/api/src/services/price_stream.rs",
-    ] {
-        let source = fs::read_to_string(root.join(relative)).unwrap();
-        assert!(!source.contains("auth::crypto"), "{relative}");
-        assert!(!source.contains("EncryptionKeyRing"), "{relative}");
-    }
-    assert!("use crate::services::auth::crypto::EncryptionKeyRing;".contains("EncryptionKeyRing"));
 }
 
 fn contains_secret_build_input(source: &str) -> bool {

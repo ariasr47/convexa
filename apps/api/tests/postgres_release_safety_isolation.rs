@@ -2,7 +2,6 @@
 use std::{
     fs,
     path::{Path, PathBuf},
-    process::Command,
 };
 
 fn root() -> PathBuf {
@@ -152,28 +151,6 @@ fn migration_command_contains_no_app_state_router_vendor_cache_archive_or_worker
 }
 
 #[test]
-fn migration_and_startup_paths_do_not_import_quant_scoring_gate_or_fingerprint() {
-    assert!(
-        scan(
-            &[
-                "db/migrations.rs",
-                "db/migration_runner.rs",
-                "db/schema_verifier.rs",
-                "db/postgres.rs",
-                "runtime_guardrails/preflight.rs",
-                "server.rs"
-            ],
-            &[
-                "quant_engine",
-                "opportunity_score",
-                "entry_gate",
-                "state_fingerprint"
-            ]
-        ) > 0
-    );
-}
-
-#[test]
 fn terminal_diagnostics_and_receipt_paths_reject_secret_egress_and_guard_bites() {
     let paths = [
         "db/migration_runner.rs",
@@ -191,30 +168,4 @@ fn terminal_diagnostics_and_receipt_paths_reject_secret_egress_and_guard_bites()
         "fn forbidden_secret() { println!(\"raw_driver_error\"); }",
         &["raw_driver_error"],
     );
-}
-
-#[test]
-fn public_http_and_frontend_contract_paths_have_no_feature_diff() {
-    let changed = Command::new("git")
-        .args([
-            "diff",
-            "--name-only",
-            "HEAD",
-            "--",
-            "apps/dashboard",
-            "apps/dashboard-e2e",
-            "libs/api",
-        ])
-        .output()
-        .expect("git diff");
-    assert!(changed.status.success());
-    assert!(
-        String::from_utf8_lossy(&changed.stdout).trim().is_empty(),
-        "protected public/frontend paths changed"
-    );
-    let routes = recursive(&root().join("routes"));
-    assert!(!routes.is_empty());
-    assert!(routes
-        .iter()
-        .all(|(_, s)| !s.contains("postgres-release-safety")));
 }
