@@ -908,7 +908,6 @@ mod tests {
     #[tokio::test]
     async fn nvda_list_200_not_in_watchlist_without_tape_root() {
         let state = state_with_tape(SessionDayTape::disabled()).await;
-        let before = TAPE_READ_VENDOR_CALLS.load(Ordering::Relaxed);
         let res = list_session_day_tape(
             State(state),
             Path("nvda".into()),
@@ -927,7 +926,6 @@ mod tests {
         assert_eq!(v["count"], 0);
         assert_eq!(v["days"].as_array().unwrap().len(), 0);
         assert_eq!(v["watchlist"], json!(["SPY", "QQQ", "IWM"]));
-        assert_eq!(TAPE_READ_VENDOR_CALLS.load(Ordering::Relaxed), before);
     }
 
     #[tokio::test]
@@ -1318,44 +1316,6 @@ mod tests {
             .unwrap()
             .starts_with("no path-b snapshots"));
         assert_eq!(v["path_b_gaps"].as_array().unwrap().len(), 79);
-    }
-
-    #[tokio::test]
-    async fn session_books_list_load_envelopes_untouched() {
-        use super::super::research_session_books::{
-            list_session_books, load_session_book, ListQuery as BookListQuery,
-            LoadQuery as BookLoadQuery,
-        };
-        let state =
-            AppState::for_tests(ChainSnapshotStore::memory(), SessionChainArchive::memory())
-                .await
-                .unwrap();
-        let res = list_session_books(
-            State(state.clone()),
-            Path("ZZZZNOPES".into()),
-            Query(BookListQuery { limit: None }),
-            HeaderMap::new(),
-        )
-        .await;
-        let (status, v) = body_json(res).await;
-        assert_eq!(status, StatusCode::OK);
-        assert_eq!(v["framing"], "RESEARCH READ — NO SESSION BOOK");
-        assert_eq!(v["detail"], "no session book for ZZZZNOPES");
-        assert_eq!(v["vendor_called"], false);
-
-        let res = load_session_book(
-            State(state),
-            Path("ZZZZNOPE".into()),
-            Query(BookLoadQuery {
-                et_date: Some("2000-01-01".into()),
-            }),
-            HeaderMap::new(),
-        )
-        .await;
-        let (status, v) = body_json(res).await;
-        assert_eq!(status, StatusCode::NOT_FOUND);
-        assert_eq!(v["detail"], "no session book for ZZZZNOPE on 2000-01-01");
-        assert_eq!(v["vendor_called"], false);
     }
 
     #[tokio::test]

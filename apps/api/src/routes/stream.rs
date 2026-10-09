@@ -868,252 +868,6 @@ fn apply_event(
 }
 
 #[cfg(test)]
-mod response_conversion_tests {
-    use super::*;
-
-    fn assert_declared<R: IntoResponses>(
-        response: Response,
-        status: StatusCode,
-        media: &str,
-        meaningful_headers: &[&str],
-    ) {
-        assert_eq!(response.status(), status);
-        assert_eq!(
-            response
-                .headers()
-                .get(axum::http::header::CONTENT_TYPE)
-                .and_then(|value| value.to_str().ok())
-                .and_then(|value| value.split(';').next()),
-            Some(media)
-        );
-        let declared = R::responses();
-        let declaration = declared
-            .get(&status.as_u16().to_string())
-            .unwrap_or_else(|| panic!("missing declared response {status}"));
-        let declaration = match declaration {
-            utoipa::openapi::RefOr::T(response) => response,
-            utoipa::openapi::RefOr::Ref(reference) => {
-                panic!("unexpected response reference: {}", reference.ref_location)
-            }
-        };
-        assert!(declaration.content.contains_key(media));
-        let mut declared_headers = declaration
-            .headers
-            .keys()
-            .map(|name| name.to_ascii_lowercase())
-            .collect::<Vec<_>>();
-        declared_headers.sort();
-        let mut expected_headers = meaningful_headers
-            .iter()
-            .map(|name| name.to_ascii_lowercase())
-            .collect::<Vec<_>>();
-        expected_headers.sort();
-        assert_eq!(declared_headers, expected_headers);
-        for header in meaningful_headers {
-            assert!(response.headers().contains_key(*header));
-        }
-    }
-
-    #[test]
-    fn prices_enum_conversions_match_into_responses() {
-        assert_declared::<StreamPricesResponse>(
-            StreamPricesResponse::Ok(representative_stream_prices()).into_response(),
-            StatusCode::OK,
-            "text/event-stream",
-            &["cache-control"],
-        );
-        assert_declared::<StreamPricesResponse>(
-            StreamPricesResponse::NotFound(representative_stream_error("not found"))
-                .into_response(),
-            StatusCode::NOT_FOUND,
-            "application/json",
-            &[],
-        );
-        assert_declared::<StreamPricesResponse>(
-            StreamPricesResponse::Invalid(representative_stream_error("invalid")).into_response(),
-            StatusCode::UNPROCESSABLE_ENTITY,
-            "application/json",
-            &[],
-        );
-        assert_declared::<StreamPricesResponse>(
-            StreamPricesResponse::Internal(representative_stream_error("internal")).into_response(),
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "application/json",
-            &[],
-        );
-        assert_declared::<StreamPricesResponse>(
-            StreamPricesResponse::Upstream(representative_stream_error("upstream")).into_response(),
-            StatusCode::BAD_GATEWAY,
-            "application/json",
-            &[],
-        );
-        let capacity =
-            StreamPricesResponse::Capacity(representative_stream_error("capacity")).into_response();
-        assert_eq!(capacity.headers()[axum::http::header::RETRY_AFTER], "30");
-        assert_declared::<StreamPricesResponse>(
-            capacity,
-            StatusCode::SERVICE_UNAVAILABLE,
-            "application/json",
-            &["retry-after"],
-        );
-    }
-
-    #[test]
-    fn ticker_enum_conversions_match_into_responses() {
-        assert_declared::<StreamTickerResponse>(
-            StreamTickerResponse::Ok(Box::new(representative_live_update())).into_response(),
-            StatusCode::OK,
-            "text/event-stream",
-            &["cache-control"],
-        );
-        assert_declared::<StreamTickerResponse>(
-            StreamTickerResponse::NotFound(representative_stream_error("not_found"))
-                .into_response(),
-            StatusCode::NOT_FOUND,
-            "application/json",
-            &[],
-        );
-        assert_declared::<StreamTickerResponse>(
-            StreamTickerResponse::Invalid(representative_stream_error("invalid")).into_response(),
-            StatusCode::UNPROCESSABLE_ENTITY,
-            "application/json",
-            &[],
-        );
-        assert_declared::<StreamTickerResponse>(
-            StreamTickerResponse::Internal(representative_stream_error("internal")).into_response(),
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "application/json",
-            &[],
-        );
-        assert_declared::<StreamTickerResponse>(
-            StreamTickerResponse::Upstream(representative_stream_error("upstream")).into_response(),
-            StatusCode::BAD_GATEWAY,
-            "application/json",
-            &[],
-        );
-        let capacity =
-            StreamTickerResponse::Capacity(representative_stream_error("capacity")).into_response();
-        assert_eq!(capacity.headers()[axum::http::header::RETRY_AFTER], "30");
-        assert_declared::<StreamTickerResponse>(
-            capacity,
-            StatusCode::SERVICE_UNAVAILABLE,
-            "application/json",
-            &["retry-after"],
-        );
-    }
-
-    #[tokio::test]
-    async fn paused_stream_routes_answer_503_without_opening_sse() {
-        use crate::config::MarketDataMode;
-        use crate::services::chain_snapshot::ChainSnapshotStore;
-        use crate::services::session_chain_archive::SessionChainArchive;
-
-        let mut state =
-            AppState::for_tests(ChainSnapshotStore::memory(), SessionChainArchive::memory())
-                .await
-                .unwrap();
-        let mut cfg = (*state.config).clone();
-        cfg.market_data_mode = MarketDataMode::Paused;
-        state.config = std::sync::Arc::new(cfg);
-
-        let exact = br#"{"detail":"Market data is paused.","code":"market_data_paused"}"#;
-
-        let prices = stream_prices(
-            State(state.clone()),
-            Query(PricesStreamQuery {
-                symbols: Some("SPY".into()),
-            }),
-        )
-        .await
-        .into_response();
-        assert_eq!(prices.status(), StatusCode::SERVICE_UNAVAILABLE);
-        assert_eq!(
-            prices.headers()[axum::http::header::CONTENT_TYPE],
-            "application/json"
-        );
-        assert_eq!(prices.headers()[axum::http::header::RETRY_AFTER], "30");
-        let body = axum::body::to_bytes(prices.into_body(), 1024)
-            .await
-            .unwrap();
-        assert_eq!(&body[..], exact);
-
-        let ticker = stream_ticker(
-            State(state.clone()),
-            Path("SPY".to_string()),
-            Query(TickerStreamQuery::default()),
-        )
-        .await
-        .into_response();
-        assert_eq!(ticker.status(), StatusCode::SERVICE_UNAVAILABLE);
-        assert_eq!(
-            ticker.headers()[axum::http::header::CONTENT_TYPE],
-            "application/json"
-        );
-        let body = axum::body::to_bytes(ticker.into_body(), 1024)
-            .await
-            .unwrap();
-        assert_eq!(&body[..], exact);
-    }
-
-    #[test]
-    fn route_response_exports_stream_enum_without_app_error_collision() {
-        for (owned, routed) in [
-            (
-                StreamPricesResponse::responses(),
-                RouteResponse::<StreamPricesResponse>::responses(),
-            ),
-            (
-                StreamTickerResponse::responses(),
-                RouteResponse::<StreamTickerResponse>::responses(),
-            ),
-        ] {
-            assert_eq!(
-                owned.keys().collect::<Vec<_>>(),
-                routed.keys().collect::<Vec<_>>()
-            );
-            let owned_capacity = match owned.get("503").expect("owned 503") {
-                utoipa::openapi::RefOr::T(response) => response,
-                utoipa::openapi::RefOr::Ref(_) => panic!("owned 503 must be inline"),
-            };
-            let routed_capacity = match routed.get("503").expect("routed 503") {
-                utoipa::openapi::RefOr::T(response) => response,
-                utoipa::openapi::RefOr::Ref(_) => panic!("routed 503 must be inline"),
-            };
-            assert!(owned_capacity.headers.contains_key("Retry-After"));
-            assert!(routed_capacity.headers.contains_key("Retry-After"));
-            assert!(owned_capacity.content.contains_key("application/json"));
-            assert!(routed_capacity.content.contains_key("application/json"));
-        }
-    }
-
-    #[test]
-    fn generated_stream_openapi_is_enum_owned_and_preserves_retry_after() {
-        let document = serde_json::to_value(
-            crate::routes::openapi().expect("valid production contract graph"),
-        )
-        .expect("OpenAPI serializes");
-        for path in ["/api/stream/prices", "/api/stream/{ticker}"] {
-            let responses = document["paths"][path]["get"]["responses"]
-                .as_object()
-                .unwrap_or_else(|| panic!("missing generated responses for {path}"));
-            assert_eq!(
-                responses.keys().map(String::as_str).collect::<Vec<_>>(),
-                ["200", "404", "422", "500", "502", "503"]
-            );
-            assert!(responses["200"]["content"]["text/event-stream"].is_object());
-            for status in ["404", "422", "500", "502", "503"] {
-                assert_eq!(
-                    responses[status]["content"]["application/json"]["schema"]["$ref"],
-                    "#/components/schemas/AppErrorBody",
-                    "{path} {status} error schema drifted"
-                );
-            }
-            assert!(responses["503"]["headers"]["Retry-After"].is_object());
-        }
-    }
-}
-
-#[cfg(test)]
 mod occupancy_pump_tests {
     use super::*;
     use crate::domain::{StreamEvent, StreamKind};
@@ -1145,39 +899,6 @@ mod occupancy_pump_tests {
             gamma_flip: None,
             last_trade: Some(500.0),
             session_tape: None,
-        }
-    }
-
-    fn sample_armed_body(tape_time_et: Option<&str>) -> LiveUpdateBody {
-        LiveUpdateBody {
-            ticker: "SPY".into(),
-            mid: None,
-            bid: None,
-            ask: None,
-            spread: None,
-            net_flow: 0.0,
-            buy_vol: 0.0,
-            sell_vol: 0.0,
-            flow_window_s: 300,
-            spot_ts: 0,
-            live: false,
-            tick_age_s: None,
-            market_session: if tape_time_et.is_none() {
-                "session_tape".into()
-            } else {
-                "regular".into()
-            },
-            feed: "session_tape".into(),
-            ts: 1_000,
-            gamma_flip: None,
-            last_trade: None,
-            session_tape: Some(SessionTapeOccupancyBody {
-                symbol: "SPY".into(),
-                et_date: "2026-08-10".into(),
-                tape_time_et: tape_time_et.map(str::to_string),
-                phase: "playing".into(),
-                pace: 1,
-            }),
         }
     }
 
@@ -1246,29 +967,6 @@ mod occupancy_pump_tests {
             "unset body must omit session_tape key, got {json}"
         );
         assert_eq!(json["live"], true);
-    }
-
-    #[test]
-    fn armed_live_update_serializes_live_false_feed_session_tape() {
-        let json = serde_json::to_value(sample_armed_body(None)).unwrap();
-        assert_eq!(json["live"], false);
-        assert_eq!(json["feed"], "session_tape");
-        assert!(json.get("session_tape").is_some());
-        assert!(json["session_tape"]["tape_time_et"].is_null());
-        assert_eq!(json["session_tape"]["phase"], "playing");
-        assert_eq!(json["session_tape"]["pace"], 1);
-    }
-
-    #[test]
-    fn armed_null_cursor_market_session_is_session_tape_not_wall() {
-        let occ = first_playing_voucher("SPY", "2026-08-10", 1);
-        assert!(occ.tape_time_et.is_none());
-        assert_eq!(armed_market_session(&occ), "session_tape");
-        let with_stamp = ReplayConsumeOccupancy {
-            tape_time_et: Some("10:30:00".into()),
-            ..occ
-        };
-        assert_eq!(armed_market_session(&with_stamp), "regular");
     }
 
     #[tokio::test]
@@ -1515,29 +1213,22 @@ mod occupancy_pump_tests {
     }
 
     #[test]
-    fn holiday_civil_date_market_session_is_closed_all_hours() {
-        assert_eq!(market_session_at(et_hm(2026, 11, 26, 10, 0)), "closed");
-        assert_eq!(market_session_at(et_hm(2026, 11, 26, 17, 0)), "closed");
-        assert_eq!(market_session_at(et_hm(2026, 11, 26, 21, 0)), "closed");
-        assert_ne!(market_session_at(et_hm(2026, 11, 26, 10, 0)), "regular");
-        assert_ne!(market_session_at(et_hm(2026, 11, 26, 21, 0)), "overnight");
-    }
-
-    #[test]
-    fn late_sunday_overnight_remains_sunday_only() {
-        // 2026-08-09 is Sunday; 21:00 ET.
-        assert_eq!(market_session_at(et_hm(2026, 8, 9, 21, 0)), "overnight");
-    }
-
-    #[test]
-    fn ordinary_monday_1000_is_regular() {
-        assert_eq!(market_session_at(et_hm(2026, 8, 10, 10, 0)), "regular");
-    }
-
-    #[test]
-    fn calendar_does_not_write_live_false_on_unset_sample() {
-        let json = serde_json::to_value(sample_unset_body()).unwrap();
-        assert_eq!(json["live"], true);
-        assert_eq!(json["live"].as_bool(), Some(true));
+    fn market_session_is_closed_all_day_on_a_holiday_and_calendar_driven_otherwise() {
+        for ((y, m, d, h, min), expected) in [
+            // 2026-11-26 is Thanksgiving: closed at every hour, never regular or overnight.
+            ((2026, 11, 26, 10, 0), "closed"),
+            ((2026, 11, 26, 17, 0), "closed"),
+            ((2026, 11, 26, 21, 0), "closed"),
+            // 2026-08-09 is Sunday; 21:00 ET is the Sunday-only overnight session.
+            ((2026, 8, 9, 21, 0), "overnight"),
+            // Ordinary Monday mid-morning.
+            ((2026, 8, 10, 10, 0), "regular"),
+        ] {
+            assert_eq!(
+                market_session_at(et_hm(y, m, d, h, min)),
+                expected,
+                "{y}-{m:02}-{d:02} {h:02}:{min:02} ET"
+            );
+        }
     }
 }

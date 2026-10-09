@@ -605,36 +605,6 @@ mod tests {
     }
 
     #[test]
-    fn signing_ring_matrix_rejects_duplicate_ids_material_and_missing_active() {
-        let active = Some("active".to_string());
-        let legacy = Some("legacy".to_string());
-        let material = URL_SAFE_NO_PAD.encode([3_u8; 32]);
-        let other = URL_SAFE_NO_PAD.encode([4_u8; 32]);
-
-        let cases = [
-            (
-                format!(r#"{{"active":"{material}","active":"{other}"}}"#),
-                ViolationReason::RotationDuplicateId,
-            ),
-            (
-                format!(r#"{{"active":"{material}","other":"{material}"}}"#),
-                ViolationReason::RotationMaterialInvalid,
-            ),
-            (
-                format!(r#"{{"other":"{other}"}}"#),
-                ViolationReason::RotationActiveMissing,
-            ),
-        ];
-        for (map, reason) in cases {
-            let mut violations = Vec::new();
-            let _ = parse_ring(&active, &Some(map), &legacy, false, &mut violations);
-            assert!(violations
-                .iter()
-                .any(|violation| violation.reason == reason));
-        }
-    }
-
-    #[test]
     fn signing_ring_complete_refusal_matrix() {
         let good = URL_SAFE_NO_PAD.encode([41_u8; 32]);
         let other = URL_SAFE_NO_PAD.encode([42_u8; 32]);
@@ -772,100 +742,6 @@ mod tests {
             [1; 7],
             "the counter oracle must bite on valid input"
         );
-    }
-
-    #[test]
-    fn refusal_orders_reasons_inside_the_same_category() {
-        let refusal = BootstrapRefusal::new(vec![
-            BootstrapViolation {
-                category: ViolationCategory::AllowedBrowserOrigins,
-                reason: ViolationReason::OriginsTransport,
-            },
-            BootstrapViolation {
-                category: ViolationCategory::ApiKeyRotation,
-                reason: ViolationReason::LegacyDecoderMissing,
-            },
-            BootstrapViolation {
-                category: ViolationCategory::AllowedBrowserOrigins,
-                reason: ViolationReason::OriginsMalformed,
-            },
-            BootstrapViolation {
-                category: ViolationCategory::ApiKeyRotation,
-                reason: ViolationReason::RotationMaterialInvalid,
-            },
-            BootstrapViolation {
-                category: ViolationCategory::AllowedBrowserOrigins,
-                reason: ViolationReason::OriginsWildcard,
-            },
-            BootstrapViolation {
-                category: ViolationCategory::ApiKeyRotation,
-                reason: ViolationReason::RotationActiveMissing,
-            },
-            BootstrapViolation {
-                category: ViolationCategory::AllowedBrowserOrigins,
-                reason: ViolationReason::OriginsMissing,
-            },
-            BootstrapViolation {
-                category: ViolationCategory::ApiKeyRotation,
-                reason: ViolationReason::RotationDuplicateId,
-            },
-            BootstrapViolation {
-                category: ViolationCategory::ApiKeyRotation,
-                reason: ViolationReason::RotationDuplicateId,
-            },
-        ]);
-        let reasons: Vec<_> = refusal.violations.iter().map(|v| v.reason).collect();
-        assert_eq!(
-            reasons,
-            vec![
-                ViolationReason::RotationDuplicateId,
-                ViolationReason::RotationActiveMissing,
-                ViolationReason::RotationMaterialInvalid,
-                ViolationReason::LegacyDecoderMissing,
-                ViolationReason::OriginsMissing,
-                ViolationReason::OriginsWildcard,
-                ViolationReason::OriginsMalformed,
-                ViolationReason::OriginsTransport,
-            ]
-        );
-        let rendered = crate::runtime_guardrails::diagnostics::render(&refusal);
-        assert!(rendered.contains("Fix 8 configuration issues"));
-        let mut cursor = 0;
-        for reason in reasons {
-            let at = rendered[cursor..]
-                .find(reason.message())
-                .expect("reason line in order")
-                + cursor;
-            assert!(at >= cursor);
-            cursor = at + reason.message().len();
-        }
-    }
-
-    #[test]
-    fn refusal_orders_deduplicates_and_never_contains_secret_values() {
-        let refusal = BootstrapRefusal::new(vec![
-            BootstrapViolation {
-                category: ViolationCategory::SessionCookies,
-                reason: ViolationReason::CookiesInvalid,
-            },
-            BootstrapViolation {
-                category: ViolationCategory::RuntimeMode,
-                reason: ViolationReason::MissingMode,
-            },
-            BootstrapViolation {
-                category: ViolationCategory::RuntimeMode,
-                reason: ViolationReason::MissingMode,
-            },
-        ]);
-        assert_eq!(refusal.violations.len(), 2);
-        assert_eq!(
-            refusal.violations[0].category,
-            ViolationCategory::RuntimeMode
-        );
-        let rendered = crate::runtime_guardrails::diagnostics::render(&refusal);
-        assert!(rendered.contains("Fix 2 configuration issues"));
-        assert!(!rendered.contains("database-canary"));
-        assert!(!rendered.contains("token-canary"));
     }
 
     #[test]

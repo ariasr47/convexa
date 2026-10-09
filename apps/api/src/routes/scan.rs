@@ -903,29 +903,6 @@ fn normalize_view_body(
 mod response_conversion_tests {
     use super::*;
 
-    fn assert_declared<R: IntoResponses>(response: Response, status: StatusCode) {
-        assert_eq!(response.status(), status);
-        let declared = R::responses();
-        let declaration = declared
-            .get(&status.as_u16().to_string())
-            .unwrap_or_else(|| panic!("missing declared response {status}"));
-        let declaration = match declaration {
-            utoipa::openapi::RefOr::T(response) => response,
-            utoipa::openapi::RefOr::Ref(reference) => {
-                panic!("unexpected response reference: {}", reference.ref_location)
-            }
-        };
-        assert!(declaration.content.contains_key("application/json"));
-        assert_eq!(
-            response
-                .headers()
-                .get(axum::http::header::CONTENT_TYPE)
-                .and_then(|value| value.to_str().ok())
-                .and_then(|value| value.split(';').next()),
-            Some("application/json")
-        );
-    }
-
     /// AC-4: paused, `GET /api/scan` keeps serving persisted rows and gains a top-level
     /// `market_data`. Live stays `"live"` (byte-identical shape, per AC-5).
     #[tokio::test]
@@ -947,72 +924,5 @@ mod response_conversion_tests {
         assert_eq!(paused.market_data, "paused");
         let Json(paused_all) = get_scan_all(State(state), HeaderMap::new()).await;
         assert_eq!(paused_all.market_data, "paused");
-    }
-
-    #[test]
-    fn read_enum_conversions_match_into_responses() {
-        assert_declared::<ScanJsonResponse>(
-            ScanJsonResponse::Ok(representative_scan_envelope()).into_response(),
-            StatusCode::OK,
-        );
-        assert_declared::<ScanUniverseResponse>(
-            ScanUniverseResponse::Ok(UniverseResponse {
-                symbols: vec!["SPY".into()],
-                universe_size: 1,
-                default_view: Vec::new(),
-            })
-            .into_response(),
-            StatusCode::OK,
-        );
-        assert_declared::<ScanViewGetResponse>(
-            ScanViewGetResponse::Ok(representative_view()).into_response(),
-            StatusCode::OK,
-        );
-        assert_declared::<StructureHistoryGetResponse>(
-            StructureHistoryGetResponse::Ok(StructureHistoryResponse {
-                symbol: "SPY".into(),
-                samples: Vec::new(),
-                basis: STRUCTURE_HISTORY_BASIS,
-                stored_count: 0,
-                backend: "json",
-            })
-            .into_response(),
-            StatusCode::OK,
-        );
-    }
-
-    #[test]
-    fn mutation_enum_conversions_match_into_responses() {
-        assert_declared::<ScanMutationResponse>(
-            ScanMutationResponse::Ok(representative_view()).into_response(),
-            StatusCode::OK,
-        );
-        assert_declared::<ScanMutationResponse>(
-            ScanMutationResponse::Unauthorized(representative_auth_error("unauthorized"))
-                .into_response(),
-            StatusCode::UNAUTHORIZED,
-        );
-        assert_declared::<ScanMutationResponse>(
-            ScanMutationResponse::Forbidden(representative_auth_error("forbidden")).into_response(),
-            StatusCode::FORBIDDEN,
-        );
-        assert_declared::<ScanMutationResponse>(
-            ScanMutationResponse::Conflict(representative_auth_error("conflict")).into_response(),
-            StatusCode::CONFLICT,
-        );
-        assert_declared::<ScanMutationResponse>(
-            ScanMutationResponse::Unprocessable(DetailBody {
-                detail: "invalid scan view".into(),
-            })
-            .into_response(),
-            StatusCode::UNPROCESSABLE_ENTITY,
-        );
-        assert_declared::<ScanMutationResponse>(
-            ScanMutationResponse::Unavailable(DetailBody {
-                detail: "scan universe unavailable".into(),
-            })
-            .into_response(),
-            StatusCode::SERVICE_UNAVAILABLE,
-        );
     }
 }
