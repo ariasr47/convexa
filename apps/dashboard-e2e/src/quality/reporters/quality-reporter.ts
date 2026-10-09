@@ -63,7 +63,7 @@ const gateCounts: Record<string, number> = {
   // bump to `curvature-v2-foundations-75-v1` (`tools/lib/manifest.mjs` enforces the same number).
   // (curvature-v2-desk-and-read FE-12) 75 → 86: FE-12 registered `desk-and-read.spec.ts` (6 new
   // Chromium tests: criterion 45's two, the criteria 20/22 evidence pair, criterion 52's two) and
-  // added 5 new criterion-50 read-strip-rail tests to `no-overflow.spec.ts` (393 dark/light, 834,
+  // added 5 new criterion-50 read-strip-rail tests to the overflow spec (393 dark/light, 834,
   // 900, 1280) — the first net-new e2e tests this phase's own lanes have added to the registered six
   // (FE-1 through FE-11 only edited/re-pointed existing ones); bump to
   // `curvature-v2-desk-and-read-86-v1` (`tools/lib/manifest.mjs` enforces the same number).
@@ -80,21 +80,21 @@ const gateCounts: Record<string, number> = {
   // `curvature-v2-surfaces-100-v1` (`tools/lib/manifest.mjs` enforces the same number).
   // (curvature-v2-surfaces GATE Z repair pass 2, finding 3) 100 → 103: the coarse-pointer floor
   // widened to `input`/`[role="combobox"]` (`theme.ts`), hard-asserted on 3 new
-  // `no-overflow.spec.ts` tests (Settings risk-inputs account-size/cap-value, Settings
+  // overflow tests (Settings risk-inputs account-size/cap-value, Settings
   // ticker/persona, the alerts composer Symbol/Kind controls); bump to
   // `curvature-v2-surfaces-103-v1` (`tools/lib/manifest.mjs` enforces the same number).
   // (curvature-v2-surfaces GATE Z repair pass 3, criterion 66 second clause) 103 → 105:
   // `TrackRecordSection.tsx`'s `<summary>` on `/positions` (touched this phase, `bdc992d8`) FIXED
-  // to meet the coarse-pointer floor, 2 new `no-overflow.spec.ts` tests (393 coarse + 1280 fine,
+  // to meet the coarse-pointer floor, 2 new overflow tests (393 coarse + 1280 fine,
   // desktop-unmoved); bump to `curvature-v2-surfaces-105-v1` (`tools/lib/manifest.mjs` enforces the
   // same number).
   // (curvature-v2-surfaces GATE Z repair pass 4, QA pass 3 Medium finding) 105 → 108: the pass-3
   // fix's `display: flex` removed the `<summary>`'s native disclosure `::marker`; pass 4 reaches
   // 44px with `line-height` instead, leaving `display: list-item` intact. 3 new
-  // `no-overflow.spec.ts` tests (393 coarse, 393 fine, 1280 fine); bump to
+  // overflow tests (393 coarse, 393 fine, 1280 fine); bump to
   // `curvature-v2-surfaces-108-v1` (`tools/lib/manifest.mjs` enforces the same number).
   // (curvature-v2-landing-and-site F15) 108 → 126: three new public routes (/blog, /methodology,
-  // an unmatched path) × six `ROUTES` loops in `no-overflow.spec.ts` = 18 net-new Chromium tests;
+  // an unmatched path) × six `ROUTES` loops in the overflow spec = 18 net-new Chromium tests;
   // bump to `curvature-v2-landing-and-site-126-v1` (`tools/lib/manifest.mjs` enforces the same
   // number). Accessibility 16 → 19: one new axe scan per new surface (AC-G1), scans 9 → 12, held
   // against the unchanged 7 behaviors (12 + 7 = 19).
@@ -103,7 +103,7 @@ const gateCounts: Record<string, number> = {
   // degraded wall) in dark AND light at 393, the 404 additionally at 1280 (unchanged), and the
   // open sign-in dialog counted as a surface too, both schemes at 393. Scans 12 → 24, held
   // against the unchanged 7 behaviors (24 + 7 = 31). Chromium was unchanged at 126 by THIS
-  // repair — it does not touch `no-overflow.spec.ts`.
+  // repair — it does not touch the overflow spec.
   // (curvature-v2-landing-and-site GATE Z I-1) Chromium 126 → 128: one e2e case in
   // `navigation.spec.ts` ("client-side navigation") covers both the TOC click and the fresh deep
   // link past `index.html`'s `<base href="/">` (AC-M6/AC-M1) — jsdom implements no `<base>`
@@ -112,7 +112,7 @@ const gateCounts: Record<string, number> = {
   // ticker-desk panel (F2) — scanned at both breakpoints (393/1280) and both color schemes. Scans
   // 24 → 28, held against the unchanged 7 behaviors (28 + 7 = 35). Chromium/compatibility/visual
   // are untouched by this feature (no new browser:chromium/compat/visual case).
-  // (lean-tests batch 22, owner-approved 2026-10-08) Chromium 128 → 35: `no-overflow.spec.ts`
+  // (lean-tests batch 22, owner-approved 2026-10-08) Chromium 128 → 35: the overflow spec
   // retired (93 cases) — matches `manifest.json`'s `lean-tests-batch-22-35-v1` inventory
   // (`tools/lib/manifest.mjs` enforces the same number). The pixel visual gate (6 scenarios) was
   // retired in the same batch, so it has no count here and the reporter keeps no visual branch.

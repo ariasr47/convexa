@@ -16,18 +16,18 @@ test('browser quality manifest is closed and has the required inventories', () =
   // (curvature-v2-surfaces GATE Z repair) 99 → 100 — the off-exchange proximity chip's 44px floor,
   // newly reachable — see `lib/manifest.mjs`'s own comment at this same check.
   // (curvature-v2-surfaces GATE Z repair pass 2) 100 → 103 — the input/select 44px floor's 3 new
-  // `no-overflow.spec.ts` tests — see `lib/manifest.mjs`'s own comment at this same check.
+  // overflow tests — see `lib/manifest.mjs`'s own comment at this same check.
   // (curvature-v2-surfaces GATE Z repair pass 3) 103 → 105 — criterion 66's second clause:
   // `TrackRecordSection.tsx`'s `<summary>` on `/positions` (touched this phase, `bdc992d8`) now
-  // meets the 44px coarse-pointer floor; 2 new `no-overflow.spec.ts` tests (393 coarse + 1280 fine,
+  // meets the 44px coarse-pointer floor; 2 new overflow tests (393 coarse + 1280 fine,
   // the latter proving the fix is inert on a fine pointer).
   // (curvature-v2-surfaces GATE Z repair pass 4) 105 → 108 — QA pass 3's Medium finding: the
   // pass-3 fix's `display: flex` removed the `<summary>`'s native disclosure `::marker`; pass 4
   // reaches 44px with `line-height` instead, leaving `display: list-item` intact. 3 new
-  // `no-overflow.spec.ts` tests (393 coarse, 393 fine, 1280 fine) each asserting the marker
+  // overflow tests (393 coarse, 393 fine, 1280 fine) each asserting the marker
   // mechanism (`display: list-item`) and full open/close/focus/Enter operability.
   // (curvature-v2-landing-and-site F15) 108 → 126: three new public routes (/blog, /methodology,
-  // an unmatched path) × six ROUTES loops in `no-overflow.spec.ts` = 18 net-new Chromium tests.
+  // an unmatched path) × six ROUTES loops in the overflow spec = 18 net-new Chromium tests.
   // Accessibility scans 9 → 12: one new axe scan per new surface (AC-G1).
   // (curvature-v2-landing-and-site GATE Z I-2, amendment 5) Accessibility scans 12 → 24: the
   // NAMED six-surface × {dark,light} × 393 matrix (the 404 also at 1280, unchanged; the open
@@ -37,7 +37,7 @@ test('browser quality manifest is closed and has the required inventories', () =
   // `index.html`'s `<base href="/">` (AC-M6/AC-M1).
   // (no-vendor-production-posture AC-10) Accessibility scans 24 → 28: the paused ticker-desk
   // panel (F2), a seventh surface, at both breakpoints (393/1280) and both color schemes.
-  // (lean-tests batch 22) Chromium 128 → 35: `no-overflow.spec.ts` retired (93 cases); the pixel
+  // (lean-tests batch 22) Chromium 128 → 35: the overflow spec retired (93 cases); the pixel
   // visual gate and its `visual` manifest section retired with it — see `lib/manifest.mjs`.
   assert.equal(manifest.full_chromium.tests.length, 35);
   assert.equal(manifest.compatibility.journeys.length, 5);

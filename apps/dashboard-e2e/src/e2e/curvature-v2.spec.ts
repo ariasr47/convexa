@@ -24,9 +24,10 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
  *     two-panel-on-one-screen pair to compare without re-laying out a surface, which is out of this
  *     phase's scope).
  *
- * NETWORK — a self-contained `stubNetwork`/`seed` pair, deliberately not imported from
- * `no-overflow.spec.ts` (that file does not export them, and widening its export surface for one
- * consumer is a bigger change than duplicating the minimal shape this file's own assertions need).
+ * NETWORK — a self-contained `stubNetwork`/`seed` pair, deliberately not imported from the
+ * overflow spec, since retired (that file did not export them, and widening its export surface
+ * for one consumer is a bigger change than duplicating the minimal shape this file's own
+ * assertions need).
  * The one addition beyond that file's idiom: the SSE stub delivers a REAL `data: {...}\n\n` frame so
  * `live` genuinely latches (ruling 1) — AC-1a needs a resolved `connection-chip`, not the cold
  * placeholder, to mean anything.

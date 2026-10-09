@@ -18,7 +18,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const DESKTOP = { width: 1280, height: 900 };
 
-/** Stub only what the destination pages need to render content-full; see no-overflow.spec.ts. */
+/** Stub only what the destination pages need to render content-full. */
 async function stubNetwork(page: Page) {
   await page.route('**/api/**', async (route) => {
     const path = new URL(route.request().url()).pathname;
