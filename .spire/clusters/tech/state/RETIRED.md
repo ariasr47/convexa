@@ -96,3 +96,7 @@ RETIRED: apps/dashboard-e2e/src/e2e/broker-grouping.spec.ts; parent 0f68885cb1e1
 RETIRED: apps/dashboard-e2e/src/e2e/broker.spec.ts; parent 0f68885cb1e13b024d425460be098c68d4051a89; duplicate; 4 tests
 RETIRED: apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts; parent 0f68885cb1e13b024d425460be098c68d4051a89; duplicate; 6 tests
 RETIRED: tools/supply-chain/cli.integration.spec.mjs; parent a60a98c57cb803ffa38a629341baf4196e365be1; duplicate; 4 tests
+RETIRED: apps/dashboard/src/app/chain-archive-object-store.structural.spec.ts; parent 2f4d0ed3c9d56cee1ef2e020c7697a53e7269449; duplicate; 14 tests
+RETIRED: apps/dashboard/src/app/chain-snapshot-capture.structural.spec.ts; parent 2f4d0ed3c9d56cee1ef2e020c7697a53e7269449; duplicate; 10 tests
+RETIRED: apps/dashboard/src/app/liquid-names-session-capture.structural.spec.ts; parent 2f4d0ed3c9d56cee1ef2e020c7697a53e7269449; duplicate; 13 tests
+RETIRED: apps/dashboard/src/app/massive-flat-file-keep.structural.spec.ts; parent 2f4d0ed3c9d56cee1ef2e020c7697a53e7269449; duplicate; 16 tests

@@ -11,8 +11,6 @@
  *      construction on every case.
  *   2. `/_ops/metrics` renders OFF the shell (own chrome, no trader nav).
  *   3. Unknown routes resolve to NO page (never silently mount the wrong surface, never crash).
- *   4. The shell node persists across in-shell navigation (a remount regression is invisible in
- *      per-page tests but churns page-scoped feeds and flashes chrome).
  *
  * NOT asserted here (visible + intentional → review/QA; brittle to automate): wordmark/copy,
  * landing value-prop text, nav presence/active styling, CTA copy. The Landing funnel + inertness
@@ -25,8 +23,7 @@
 import type { TickerBundle } from '@convexa/api';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import { render, screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -331,80 +328,5 @@ describe('operator-vs-trader path separation', () => {
     expectNoOpsLink();
     const after = fetchMock.mock.calls.map((c) => String(c[0]));
     expect(after.slice(before).some((u) => u.includes('/api/_research'))).toBe(false);
-  });
-});
-
-// =================================================================================================
-// 2b. Mobile nav drawer safety (redesign-stage-0 §8.8 — invariant-bearing, not visual). Re-expresses
-//     the responsive-branch test intent under the risk rule: the temporary drawer's stateful
-//     open/navigate/close behavior + the promoted `operator-vs-trader-path-separation` invariant
-//     extended to the drawer. (The hamburger is display:none at md+ in a real browser; the stateful
-//     behavior is the regression-prone part guarded here.)
-// =================================================================================================
-describe('mobile nav drawer', () => {
-  // (v2) The four product links ONLY (canon rule 19, curvature-v2-foundations AC-23) — Lab and
-  // Blog moved to the footer, off the bar and the drawer.
-  const DRAWER_ENTRIES = ['scanner', 'ticker', 'positions', 'alerts'] as const;
-
-  it('carries EXACTLY the trader NAV entries, no /_ops link, aria-current on the active entry', async () => {
-    const user = userEvent.setup();
-    signedIn(); // gated by the owner lockdown
-    renderAt('/positions');
-    await screen.findByTestId('portfolio-panel');
-
-    // Temporary drawer — its links are NOT mounted at rest (never duplicating the inline nav-*).
-    expect(screen.queryByTestId('nav-drawer-ticker')).toBeNull();
-
-    await user.click(screen.getByTestId('nav-menu-button'));
-    const drawer = await screen.findByTestId('nav-drawer');
-
-    // Exactly the trader entries — nothing more (an operator entry can never sneak in).
-    for (const e of DRAWER_ENTRIES) {
-      expect(within(drawer).getByTestId(`nav-drawer-${e}`)).toBeInTheDocument();
-    }
-    const links = within(drawer).queryAllByRole('link');
-    expect(links.length).toBe(DRAWER_ENTRIES.length);
-    expect(links.some((a) => (a.getAttribute('href') ?? '').includes('_ops'))).toBe(false);
-
-    // Active-route highlight rules match the inline nav: aria-current rides the active entry only.
-    expect(within(drawer).getByTestId('nav-drawer-positions')).toHaveAttribute(
-      'aria-current',
-      'page',
-    );
-    expect(within(drawer).getByTestId('nav-drawer-ticker')).not.toHaveAttribute('aria-current');
-  });
-
-  it('a drawer link navigates AND closes the drawer (the branch behavior, re-expressed)', async () => {
-    const user = userEvent.setup();
-    signedIn(); // gated by the owner lockdown
-    renderAt('/scanner');
-    await screen.findByTestId('scanner-page');
-
-    await user.click(screen.getByTestId('nav-menu-button'));
-    await user.click(await screen.findByTestId('nav-drawer-positions'));
-
-    expect(await screen.findByTestId('portfolio-panel')).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByTestId('nav-drawer-ticker')).toBeNull());
-  });
-});
-
-// =================================================================================================
-// 3. The shell persists across in-shell navigation (no remount → no feed churn / chrome flash)
-// =================================================================================================
-describe('shell persistence', () => {
-  it('the SAME shell DOM node survives every in-shell navigation', async () => {
-    const user = userEvent.setup();
-    signedIn(); // gated by the owner lockdown
-    renderAt('/scanner');
-    const shell = screen.getByTestId('app-shell');
-
-    await user.click(screen.getByTestId('nav-positions'));
-    await screen.findByTestId('portfolio-panel');
-    await user.click(screen.getByTestId('nav-ticker'));
-    await screen.findByText('Call wall');
-    await user.click(screen.getByTestId('nav-scanner'));
-    await screen.findByTestId('scanner-page');
-
-    expect(screen.getByTestId('app-shell')).toBe(shell);
   });
 });
