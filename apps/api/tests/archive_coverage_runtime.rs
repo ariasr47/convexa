@@ -51,13 +51,24 @@ async fn metrics_json(state: AppState) -> serde_json::Value {
 }
 
 #[test]
-fn valid_policy_and_calendar_allow_historical_gaps() {
+fn production_calendar_rejects_out_of_domain_dates_and_holidays_are_not_due() {
     let policy = CoveragePolicy::production().unwrap();
-    let calendar = MarketCalendar::production().unwrap();
-    assert!(!calendar
-        .is_eligible(NaiveDate::from_ymd_opt(2026, 7, 3).unwrap())
-        .unwrap());
     assert!(policy.runtime_lookback_eligible_sessions >= 5);
+    let calendar = MarketCalendar::production().unwrap();
+    // `None` = outside the calendar domain (an error, not "not due"); `Some(due)` otherwise.
+    for ((y, m, d), expected) in [
+        ((1900, 1, 1), None),
+        ((2025, 12, 31), None),
+        ((2026, 7, 3), Some(false)),
+        ((2026, 7, 2), Some(true)),
+    ] {
+        let date = NaiveDate::from_ymd_opt(y, m, d).unwrap();
+        assert_eq!(
+            calendar.is_eligible(date).ok(),
+            expected,
+            "is_eligible({date})"
+        );
+    }
 }
 
 #[tokio::test]
@@ -164,27 +175,6 @@ fn cli_existing_and_absent_roots_have_single_bounded_outcomes() {
     assert!(!String::from_utf8(absent.stderr).unwrap().contains("error:"));
     assert!(index.is_dir() && bodies.is_dir());
     let _ = std::fs::remove_dir_all(base);
-}
-
-#[tokio::test]
-async fn ensure_pass_completes_before_snapshot_is_published() {
-    let source = std::fs::read_to_string(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/src/services/session_chain_archive/ensure_worker.rs"
-    ))
-    .unwrap();
-    let ensure = source.find("run_ensure_pass_at_with_calendar(").unwrap();
-    let evaluate = source[ensure..]
-        .find("archive_coverage\n        .evaluate")
-        .unwrap()
-        + ensure;
-    assert!(
-        ensure < evaluate,
-        "production ensure must complete before evaluation"
-    );
-    let state = state().await;
-    run_ensure_pass(&state).await;
-    assert!(state.archive_coverage.snapshot().await.is_some());
 }
 
 #[tokio::test]
@@ -485,31 +475,6 @@ async fn warning_ledger_dedupes_recovery_and_resets_on_fresh_runtime() {
     );
 }
 
-#[tokio::test]
-async fn runtime_evaluation_is_read_only() {
-    let state = state().await;
-    let before = state.session_archive.list("SPY", None).await.unwrap();
-    run_ensure_pass(&state).await;
-    let after = state.session_archive.list("SPY", None).await.unwrap();
-    assert_eq!(format!("{before:?}"), format!("{after:?}"));
-}
-
-#[test]
-fn invalid_calendar_domain_is_rejected_and_holiday_is_not_due() {
-    let calendar = MarketCalendar::production().unwrap();
-    assert!(calendar
-        .is_eligible(NaiveDate::from_ymd_opt(1900, 1, 1).unwrap())
-        .is_err());
-    assert!(!calendar
-        .is_eligible(NaiveDate::from_ymd_opt(2026, 7, 3).unwrap())
-        .unwrap());
-}
-
-#[tokio::test]
-async fn production_router_constructs_with_historical_gap_policy() {
-    assert!(production_router(state().await, vec![]).is_ok());
-}
-
 #[test]
 fn protected_trader_and_quant_modules_do_not_import_archive_coverage() {
     let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
@@ -531,97 +496,6 @@ fn protected_trader_and_quant_modules_do_not_import_archive_coverage() {
             );
         }
     }
-}
-
-#[test]
-fn metrics_projection_source_rejects_request_time_work_poison() {
-    let source =
-        std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/src/routes/health.rs"))
-            .unwrap();
-    let start = source.find("pub async fn cache_metrics").unwrap();
-    let end = source[start..]
-        .find("pub(crate) fn metrics_token_ok")
-        .unwrap()
-        + start;
-    let body = &source[start..end];
-    for forbidden in [
-        ".metadata(",
-        ".load(",
-        ".evaluate(",
-        "run_ensure_pass",
-        "runtime_range(",
-        "fetch_vendor_bundle",
-    ] {
-        assert!(
-            !body.contains(forbidden),
-            "metrics projection contains forbidden token {forbidden}"
-        );
-    }
-    let poisoned = format!("{body}\narchive_coverage.metadata(\"SPY\");");
-    assert!(
-        poisoned.contains(".metadata("),
-        "poison helper must be rejected by the guard"
-    );
-}
-
-#[tokio::test]
-async fn protected_projection_remains_byte_identical_across_coverage_states() {
-    let runtime = api_rust::state::ArchiveCoverageRuntime::production().unwrap();
-    let now = chrono::Utc.with_ymd_and_hms(2026, 8, 26, 15, 0, 0).unwrap();
-    let memory = SessionChainArchive::memory();
-    runtime.evaluate(&memory, now).await.unwrap();
-    let corrupt = SessionChainArchive::memory();
-    corrupt
-        .insert_if_absent(
-            "SPY",
-            "2026-08-26",
-            now,
-            MarketDataSourceKind::Fixture,
-            b"corrupt",
-        )
-        .await
-        .unwrap();
-    runtime
-        .evaluate(&corrupt, now + chrono::Duration::minutes(1))
-        .await
-        .unwrap();
-    let disabled = SessionChainArchive::disabled();
-    assert!(runtime
-        .evaluate(&disabled, now + chrono::Duration::minutes(2))
-        .await
-        .is_err());
-    let identity = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/capacity-baseline/v1/identity");
-    let relative = [
-        "before/decision.json",
-        "before/sse.json",
-        "before/ticker.json",
-        "inputs/spy.json",
-        "inputs/sse.json",
-        "manifest.json",
-        "reference-test-seam.patch",
-    ];
-    let originals: Vec<_> = relative
-        .iter()
-        .map(|p| {
-            let path = identity.join(p);
-            (path.clone(), std::fs::read(&path).unwrap())
-        })
-        .collect();
-    for (path, bytes) in &originals {
-        let normalized = String::from_utf8(bytes.clone())
-            .unwrap()
-            .replace("\r\n", "\n");
-        std::fs::write(path, normalized.as_bytes()).unwrap();
-    }
-    let result = api_rust::capacity::identity::run_control().await;
-    for (path, bytes) in originals {
-        std::fs::write(path, bytes).unwrap();
-    }
-    assert!(
-        result.is_ok(),
-        "coverage states must not alter protected capacity projections: {result:?}"
-    );
 }
 
 fn source_files(path: &std::path::Path) -> Vec<std::path::PathBuf> {

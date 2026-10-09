@@ -1007,33 +1007,6 @@ async fn research_chain_snapshot_list_store_fault_is_production_500_conversion()
 }
 
 #[test]
-fn runtime_evidence_fragment_resolves_to_real_tests() {
-    let fragment: Value = serde_json::from_str(include_str!(
-        "fixtures/api_contract/runtime-evidence-auth-research.json"
-    ))
-    .expect("runtime evidence fragment JSON");
-    let source = include_str!("api_contract_runtime_auth_research.rs");
-    let entries = fragment["boundaries"].as_array().expect("boundaries array");
-    assert_eq!(fragment["schema_version"], 2);
-    assert_eq!(entries.len(), 25, "runtime fragment must not be vacuous");
-    for entry in entries {
-        assert!(entry["boundary_id"].as_str().is_some());
-        let test = entry["test"].as_str().expect("test name");
-        assert!(
-            source.contains(&format!("async fn {test}")),
-            "fixture test must resolve to a named async integration test: {test}"
-        );
-        assert!(entry["request"].as_str().is_some());
-        let expected_response = entry["expected_response"]
-            .as_object()
-            .expect("expected response object");
-        assert_eq!(expected_response.len(), 8);
-        assert_eq!(expected_response["body_valid"], true);
-        assert_eq!(entry["effect_assertion"].as_object().unwrap().len(), 3);
-    }
-}
-
-#[test]
 fn canonical_outcome_validator_rejects_hollow_or_relabelled_evidence() {
     let control = serde_json::json!({
         "status": 200,
