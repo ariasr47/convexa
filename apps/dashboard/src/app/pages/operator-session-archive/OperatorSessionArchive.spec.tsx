@@ -34,7 +34,8 @@ describe('OperatorSessionArchive gate chrome', () => {
     const user = userEvent.setup();
     const fetchImpl = vi.fn();
     wrap(<OperatorSessionArchive fetchImpl={fetchImpl} />);
-    await user.type(screen.getByTestId('osa-origin'), 'https://convexa.pages.dev');
+    await user.click(screen.getByTestId('osa-origin'));
+    await user.paste('https://convexa.pages.dev');
     await user.click(screen.getByTestId('osa-unlock'));
     expect(screen.getByText(COPY.originRejectedTitle)).toBeInTheDocument();
     expect(screen.getByText(COPY.originRejectedPages)).toBeInTheDocument();
@@ -47,8 +48,10 @@ describe('OperatorSessionArchive gate chrome', () => {
     wrap(<OperatorSessionArchive fetchImpl={fetchImpl} />);
     const secret = 'super-secret-token-value';
     const origin = 'https://api.example.com';
-    await user.type(screen.getByTestId('osa-origin'), '   ');
-    await user.type(screen.getByTestId('osa-token'), secret);
+    await user.click(screen.getByTestId('osa-origin'));
+    await user.paste('   ');
+    await user.click(screen.getByTestId('osa-token'));
+    await user.paste(secret);
     await user.click(screen.getByTestId('osa-unlock'));
     const alert = screen.getByRole('alert');
     expect(alert.textContent).not.toContain(secret);

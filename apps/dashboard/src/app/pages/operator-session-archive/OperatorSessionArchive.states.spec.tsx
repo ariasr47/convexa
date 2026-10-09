@@ -72,8 +72,10 @@ async function unlockUsable(
   fetchImpl: ReturnType<typeof vi.fn>,
   user: ReturnType<typeof userEvent.setup>,
 ) {
-  await user.type(screen.getByTestId('osa-origin'), 'http://127.0.0.1:8000');
-  await user.type(screen.getByTestId('osa-token'), 'tok');
+  await user.click(screen.getByTestId('osa-origin'));
+  await user.paste('http://127.0.0.1:8000');
+  await user.click(screen.getByTestId('osa-token'));
+  await user.paste('tok');
   await user.click(screen.getByTestId('osa-unlock'));
   await waitFor(() => expect(fetchImpl).toHaveBeenCalled());
 }
