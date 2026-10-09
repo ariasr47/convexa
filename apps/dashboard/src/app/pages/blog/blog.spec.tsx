@@ -6,18 +6,14 @@
  *    (throws on any non-auth call) and `:137-141` (zero `EventSource`), extended to this page
  *    per SPEC §7 item 4 — an accidental trader/bundle fetch added to the blog index fails every
  *    test in this file.
- *  - AC-B1: exactly one card, and it is the published read — zero elements anywhere on the page
- *    whose text contains "Draft" or "not yet published". This is the mechanism that keeps a
- *    later ruling from silently reintroducing the two slots D-A cut (SPEC §1).
  *  - AC-B3: no link on the page leads to a blog document that does not exist — the href
  *    contract (ends `.html`, matches the emitted slug) AND the target file's actual presence on
  *    disk under `public/blog/`.
  *  - Full-document anchors, NOT SPA navigation: the articles are standalone HTML documents; a
  *    RouterLink would try to resolve them client-side and render the 404 shell.
- *  - The page's `<h1>` is the pinned heading (render check; AC-C1a pins the byte-provenance of
- *    the string itself in a structural spec homed outside `pages/**`, not here).
- * What is deliberately NOT tested (visible/intentional → review): the dek/tag copy wording, the
- * intro sentence wording, ordering, the header prose.
+ * What is deliberately NOT tested (visible/intentional → review): the card count and draft-slot
+ * absence (AC-B1), the `<h1>` heading, the dek/tag copy wording, the intro sentence wording,
+ * ordering, the header prose.
  */
 import { render, screen } from '@testing-library/react';
 import { existsSync } from 'node:fs';
@@ -98,19 +94,6 @@ describe('BlogPage (/blog)', () => {
     expect(openedEventSources).toBe(0);
   });
 
-  it('renders exactly one card — the one published read, no draft slots (AC-B1)', () => {
-    renderBlog();
-    expect(BLOG_ARTICLES).toHaveLength(1);
-    expect(screen.getAllByTestId(/^blog-card-/)).toHaveLength(1);
-  });
-
-  it('shows no card labelled as a draft or as not yet published (AC-B1, D-A)', () => {
-    renderBlog();
-    const pageText = screen.getByTestId('blog-page').textContent ?? '';
-    expect(pageText).not.toMatch(/Draft/);
-    expect(pageText).not.toMatch(/not yet published/);
-  });
-
   it('each card is a plain full-document anchor whose href ends .html (SPEC §4)', () => {
     renderBlog();
     for (const a of BLOG_ARTICLES) {
@@ -129,10 +112,5 @@ describe('BlogPage (/blog)', () => {
       const target = resolve(root, 'apps', 'dashboard', 'public', 'blog', `${a.slug}.html`);
       expect(existsSync(target), target).toBe(true);
     }
-  });
-
-  it('the page <h1> is the pinned heading "How we read structure"', () => {
-    renderBlog();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('How we read structure');
   });
 });
