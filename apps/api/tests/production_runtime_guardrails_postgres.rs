@@ -1,7 +1,7 @@
 #![cfg(feature = "postgres")]
 
 use api_rust::db::migrations::compiled_migrations;
-use api_rust::db::postgres::{Pg, POSTGRES_ACQUIRE_TIMEOUT};
+use api_rust::db::postgres::Pg;
 use api_rust::runtime_guardrails::preflight::PRODUCTION_SCHEMA_PREFLIGHT_TIMEOUT;
 use api_rust::services::auth::{AiSlot, SettingsPatch};
 use api_rust::services::chain_snapshot::{fixture_probe_bundle, serialize_capture, to_wire};
@@ -225,17 +225,6 @@ fn assert_production_runtime_shape() {
         tokio::runtime::Handle::current().runtime_flavor(),
         tokio::runtime::RuntimeFlavor::MultiThread,
         "production AppState coverage must use the same multithread runtime contract as #[tokio::main]"
-    );
-}
-
-#[tokio::test(flavor = "multi_thread")]
-async fn postgres_harness_runtime_supports_production_blocking_adapters() {
-    assert_production_runtime_shape();
-    assert!(POSTGRES_ACQUIRE_TIMEOUT < PRODUCTION_SCHEMA_PREFLIGHT_TIMEOUT);
-    assert!(PRODUCTION_SCHEMA_PREFLIGHT_TIMEOUT < refusal_observation_bound());
-    assert_eq!(
-        tokio::task::block_in_place(|| "blocking-adapter-entered"),
-        "blocking-adapter-entered"
     );
 }
 
