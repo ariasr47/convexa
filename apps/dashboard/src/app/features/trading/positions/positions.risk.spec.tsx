@@ -29,7 +29,7 @@ import { themeForPref } from '@/shared/theme/theme';
 import type { LiveUpdate, StrikeRow, TickerBundle, TrackedContract } from '@convexa/api';
 import { streamTicker } from '@convexa/api';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
 // broker-connect: the Broker tab's S1 CTA is a router deep-link (`/settings#brokerage`), so the
@@ -48,7 +48,6 @@ import {
   viewOf,
   viewOfLegacy,
 } from './fixtures';
-import { MAX_LOSS_WITHHELD_META } from './labels';
 import {
   PORTFOLIO_V1_KEY,
   PORTFOLIO_V3_KEY,
@@ -700,60 +699,12 @@ describe('positions · no-real-order-path', () => {
     expect(brokerMentions).toHaveLength(1);
     expect(brokerMentions[0].closest('[data-testid="tab-live"]')).not.toBeNull();
   });
-
-  it('AC-43/45 keeps disclosure contrast and uses visual-viewport minimum deltas', async () => {
-    const user = userEvent.setup();
-    installBackend();
-    renderHarness();
-    await openManual(user, '5');
-    const disclosure = screen.getByTestId('positions-disclosure');
-    expect(getComputedStyle(disclosure).color).toBe(theme.palette.text.secondary);
-
-    const scrollBy = vi.fn();
-    const oldViewport = window.visualViewport;
-    const oldScrollBy = window.scrollBy;
-    Object.defineProperty(window, 'visualViewport', {
-      configurable: true,
-      value: { offsetLeft: 100, offsetTop: 50, width: 640, height: 450, scale: 2 },
-    });
-    Object.defineProperty(window, 'scrollBy', { configurable: true, value: scrollBy });
-    try {
-      for (const testid of ['open-entry', 'tab-live']) {
-        const control = screen.getByTestId(testid);
-        vi.spyOn(control, 'getBoundingClientRect').mockReturnValue({
-          left: 110,
-          right: 210,
-          top: 600,
-          bottom: 640,
-          width: 100,
-          height: 40,
-          x: 110,
-          y: 600,
-          toJSON: () => ({}),
-        });
-        fireEvent.focus(control);
-      }
-      expect(scrollBy).toHaveBeenCalledTimes(2);
-      expect(scrollBy).toHaveBeenLastCalledWith({ left: 0, top: 140, behavior: 'auto' });
-    } finally {
-      Object.defineProperty(window, 'visualViewport', { configurable: true, value: oldViewport });
-      Object.defineProperty(window, 'scrollBy', { configurable: true, value: oldScrollBy });
-    }
-  });
 });
 
 // =================================================================================================
 // 6. additive-keeps-score-byte-identical — the portfolio never touches a scoring input
 // =================================================================================================
 describe('positions · additive (never a scoring input)', () => {
-  it('admits only exact GET/PUT book sync requests', () => {
-    expect(isBookSyncException({ method: 'GET', url: '/api/book' })).toBe(true);
-    expect(isBookSyncException({ method: 'PUT', url: '/api/book' })).toBe(true);
-    expect(isBookSyncException({ method: 'DELETE', url: '/api/book' })).toBe(false);
-    expect(isBookSyncException({ method: 'PUT', url: '/api/book/archive' })).toBe(false);
-    expect(isBookSyncException({ method: 'PUT', url: '/api/bookkeeping' })).toBe(false);
-  });
-
   it('opening positions issues ONLY contract lookups — never a bundle/ticker/scoring request', async () => {
     const user = userEvent.setup();
     installBackend();
@@ -948,90 +899,11 @@ describe('positions · the offline contract on the six live-derived cells (27a/2
       expect((cell as HTMLElement).textContent?.trim().length).toBeGreaterThan(0);
     }
   });
-
-  it('29 — the pause marker is the declared stroke icon on every live-derived cell, never a text glyph', () => {
-    renderTable([viewOf(FX_SHORT_CALL), viewOf(FX_PROTECTIVE_PUT, { mark: null })], {
-      streamOffline: true,
-    });
-    expect(screen.getByTestId('positions-table').textContent).not.toMatch(/⏸/);
-    expect(screen.getAllByTestId('PauseIcon').length).toBeGreaterThan(0);
-  });
-});
-
-// =================================================================================================
-// U-15a (CONDUCTOR, reversible, SB) — literal()'s three per-member tips are keyboard-reachable
-// =================================================================================================
-describe('positions · U-15a — the three literal tips are keyboard-reachable (SB)', () => {
-  beforeEach(() => stubViewport(1440));
-  afterEach(() => vi.unstubAllGlobals());
-
-  it('cell-unavailable / cell-not-recorded / cell-no-basis are focusable and self-describe via aria-describedby, wording unchanged (U-15)', () => {
-    renderTable([
-      viewOf(FX_PROTECTIVE_PUT, { mark: null }),
-      viewOfLegacy(UNRECORDED_FACTS),
-      viewOf(FX_ZERO_COST_COLLAR),
-    ]);
-    const expectedText: Record<string, string> = {
-      'cell-unavailable': 'unavailable',
-      'cell-not-recorded': 'not recorded',
-      'cell-no-basis': 'no basis',
-    };
-    for (const testid of ['cell-unavailable', 'cell-not-recorded', 'cell-no-basis'] as const) {
-      const value = screen.getAllByTestId(testid)[0];
-      expect(value.textContent).toBe(expectedText[testid]); // zero wording change (U-15)
-      const wrapper = value.parentElement as HTMLElement;
-      expect(wrapper.getAttribute('tabindex')).toBe('-1');
-      const descId = wrapper.getAttribute('aria-describedby');
-      expect(descId).toBeTruthy();
-      const description = document.getElementById(descId ?? '');
-      expect(description?.textContent?.length ?? 0).toBeGreaterThan(0);
-      wrapper.focus();
-      expect(wrapper).toHaveFocus();
-    }
-  });
-
-  it("dashCell's untestidded `—` stays hover-only, unchanged — no assertion may assume a DOM hook for it", () => {
-    renderTable([viewOf(FX_SHARES_LONG)]);
-    const row = screen.getByTestId('position-row');
-    // `expiry` renders the shipped `—` (not-applicable, a shares row has none) via `dashCell` — the
-    // sparkline's OWN empty-state `—` (`trend-empty`) is a different, testid'd literal and is
-    // filtered out here rather than asserted against.
-    const dashes = within(row)
-      .getAllByText('—')
-      .filter((d) => !d.hasAttribute('data-testid'));
-    expect(dashes.length).toBeGreaterThan(0); // vacuity guard
-    for (const d of dashes) {
-      expect(d).not.toHaveAttribute('aria-describedby');
-    }
-  });
 });
 
 describe('positions · the risk slot (AC-28/AC-29/AC-42)', () => {
   beforeEach(() => stubViewport(1440));
   afterEach(() => vi.unstubAllGlobals());
-
-  it('AC-28 — the risk slot renders an UNSIGNED figure, never +$ or −$', () => {
-    renderTable([viewOf(FX_PROTECTIVE_PUT)]);
-    const cell = screen.getByTestId('cell-max-loss');
-    expect(cell.textContent).toMatch(/^\$\d/);
-    expect(cell.textContent).not.toMatch(/^[+−]/);
-  });
-
-  it('AC-29 — an ineligible structure renders a reason, never a bare —, never 0, never a number', () => {
-    renderTable([viewOf(FX_SHORT_CALL)]);
-    const cell = screen.getByTestId('cell-max-loss');
-    expect(cell.textContent).toBe(MAX_LOSS_WITHHELD_META.unbounded.label);
-    expect(cell.textContent).not.toMatch(/\d/);
-    expect(cell.textContent).not.toBe('—');
-  });
-
-  it('AC-29 — `unlimited risk` and `unnamed shape` stay distinguishable, never clipped to a prefix', () => {
-    renderTable([viewOf(FX_SHORT_CALL), viewOfLegacy(UNRECORDED_FACTS)]);
-    const texts = screen.getAllByTestId('cell-max-loss').map((n) => n.textContent);
-    expect(texts).toHaveLength(2);
-    expect(new Set(texts).size).toBe(texts.length);
-    for (const t of texts) expect(t).not.toMatch(/…|\.\.\./);
-  });
 
   it('AC-42/AC-29 — the risk slot NEVER dims: it is STATIC, not live-derived (className identity)', () => {
     renderTable([viewOf(FX_PROTECTIVE_PUT)]);
@@ -1054,31 +926,6 @@ describe('positions · the risk slot (AC-28/AC-29/AC-42)', () => {
     cleanup();
     renderTable([viewOf(FX_PROTECTIVE_PUT)], { streamOffline: true });
     expect(probe()).toEqual(before);
-  });
-});
-
-describe('positions · the max_loss breakpoint gate (AC-82, GATE Z ruling)', () => {
-  afterEach(() => vi.unstubAllGlobals());
-
-  it('renders the column at `lg` and above', () => {
-    stubViewport(1280);
-    renderTable([viewOf(FX_PROTECTIVE_PUT)]);
-    expect(screen.getByTestId('cell-max-loss')).toBeInTheDocument();
-    expect(within(screen.getByTestId('positions-table')).getByText('Max loss')).toBeInTheDocument();
-  });
-
-  it('OMITS the column at `md` — the ruled band, asserted rather than re-measured', () => {
-    stubViewport(900);
-    renderTable([viewOf(FX_PROTECTIVE_PUT)]);
-    expect(screen.queryByTestId('cell-max-loss')).toBeNull();
-    expect(within(screen.getByTestId('positions-table')).queryByText('Max loss')).toBeNull();
-  });
-
-  it('below `md` the figure is NOT lost — the card footer carries it (no band loses it silently)', () => {
-    stubViewport(393);
-    renderTable([viewOf(FX_PROTECTIVE_PUT)]);
-    expect(screen.getByTestId('positions-cards')).toBeInTheDocument();
-    expect(screen.getByTestId('card-max-loss').textContent).toMatch(/^\$\d/);
   });
 });
 

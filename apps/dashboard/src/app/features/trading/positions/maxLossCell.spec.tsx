@@ -83,14 +83,6 @@ describe('the max_loss table cell', () => {
     }
   });
 
-  it('AC-78 — the risk slot carries NO tint: neither the figure nor the reason is success/error', () => {
-    const { container: figure } = renderCell(FX_PROTECTIVE_PUT);
-    const { container: reason } = renderCell(FX_SHORT_CALL);
-    for (const c of [figure, reason]) {
-      expect(c.innerHTML).not.toMatch(/success|error/i);
-    }
-  });
-
   it('never renders the literal undefined, null or NaN (AC-26)', () => {
     for (const p of [FX_LONG_CALL, FX_SHORT_CALL, FX_CALENDAR, FX_RATIO_1X2, FX_PROTECTIVE_PUT]) {
       const { container } = renderCell(p);

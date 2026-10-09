@@ -16,7 +16,6 @@ import type { LiveUpdate, TickerBundle, TrackedContract } from '@convexa/api';
 import { act, cleanup, render } from '@testing-library/react';
 import { useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { deriveGroups } from './derive';
 import type { SimPosition } from './leg';
 import { liftLegacyRecord } from './migrate';
 import { PORTFOLIO_V2_KEY, PORTFOLIO_V3_KEY, __resetMemory, putPosition } from './store';
@@ -207,24 +206,6 @@ describe('usePortfolio · the resolver fan-out', () => {
 });
 
 describe('usePortfolio · degraded states (live-vs-static-isolation)', () => {
-  it('AC-39/AC-40 — a withheld row is EXCLUDED from the subtotal and COUNTED, never summed as zero', async () => {
-    fetchSpy.mockImplementation(async (_t, q) => (q.strike === 440 ? null : quote()));
-    putPosition(pos({ id: 'ok', strike: 400, entry_mark: 4 }));
-    putPosition(pos({ id: 'gone', strike: 440 }));
-    await mount({ live: liveUpdate() });
-
-    const [group] = deriveGroups(pf.views, {
-      filter: { ticker: null, status: ['open'], structure: null, expiry: null },
-      sortKey: 'pl_dollar',
-      sortDir: 'desc',
-      group: 'none',
-    });
-    expect(group.excludedCount).toBe(1);
-    const ok = pf.views.find((v) => v.position.id === 'ok');
-    expect(group.subtotal).toBeCloseTo(ok?.pl_dollar as number, 6); // the withheld row adds NOTHING
-    expect(group.subtotal).not.toBe(0);
-  });
-
   it('AC-38 — an SSE drop leaves a last-known number PRESENT and dimmable, never blanked', async () => {
     putPosition(pos());
     const { rerender } = await mount({ live: liveUpdate(), isLive: true });

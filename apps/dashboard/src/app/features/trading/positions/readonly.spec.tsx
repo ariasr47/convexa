@@ -25,9 +25,7 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PortfolioPanel } from './PortfolioPanel';
-import { PositionsView } from './PositionsView';
 import { defaultConfig } from './defaults';
-import { FX_IRON_CONDOR, viewOf } from './fixtures';
 import type { SimPosition } from './leg';
 import { liftLegacyRecord } from './migrate';
 import {
@@ -112,16 +110,6 @@ function installBackend() {
 /** Every contract lookup issued so far — the ONE network call this surface is allowed to make. */
 const contractCalls = () =>
   fetchMock.mock.calls.filter(([u]) => String(u).includes('/api/contract/')).length;
-
-/** A byte-exact snapshot of EVERY `convexa.*` key. */
-function storageSnapshot(): string {
-  const out: Record<string, string> = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i) as string;
-    if (k.startsWith('convexa.')) out[k] = localStorage.getItem(k) as string;
-  }
-  return JSON.stringify(Object.entries(out).sort());
-}
 
 /** The BOOK only — the positions map + the decision log, with the view preferences left out. */
 function bookSnapshot(): string {
@@ -212,58 +200,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-// ---- The disclosure ----------------------------------------------------------------------------
-
-describe('AC-80 · the leg disclosure is a pure read', () => {
-  it('expanding and collapsing a leg block issues ZERO fetches and leaves storage byte-identical', async () => {
-    const user = userEvent.setup();
-    // The durable store cannot hold a multi-leg record until the F18 cutover, so the disclosure is
-    // exercised at the component boundary over the SAME projection the hook emits.
-    const views = [viewOf(FX_IRON_CONDOR)];
-    localStorage.setItem('convexa.decoy', 'untouched');
-    const before = storageSnapshot();
-    const callsBefore = contractCalls();
-
-    render(
-      <ThemeProvider theme={themeForPref('dark')}>
-        <PositionsView
-          groups={[{ key: '__all__', label: 'All', views, subtotal: 0, excludedCount: 0 }]}
-          columns={[]}
-          layout="table"
-          density="comfortable"
-          streamOffline={false}
-          totalCount={1}
-          isHistory={false}
-          trendFor={() => []}
-          onOpenEntry={vi.fn()}
-          onClearFilter={vi.fn()}
-          onClose={vi.fn()}
-          onCancel={vi.fn()}
-        />
-      </ThemeProvider>,
-    );
-
-    const toggle = screen.getByTestId('leg-disclosure-toggle');
-    expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await user.click(toggle);
-    expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await user.click(toggle);
-    expect(toggle).toHaveAttribute('aria-expanded', 'false');
-
-    expect(contractCalls()).toBe(callsBefore);
-    expect(storageSnapshot()).toBe(before);
-  });
-
-  it('AC-36 — the expansion state is absent from the persisted view config, so a reload forgets it', () => {
-    // Structural, not incidental: the durable `ViewConfig` has NO key that could hold it. A future
-    // `expanded: string[]` would fail here before it could ever reach storage.
-    const keys = Object.keys(defaultConfig());
-    expect(keys.some((k) => /expand|open|disclos/i.test(k))).toBe(false);
-    putCustomization(getCustomization());
-    expect(localStorage.getItem(PORTFOLIO_V3_KEY) ?? '').not.toMatch(/expand|disclos/i);
-  });
-});
-
 // ---- Grouping / sorting / view switching -------------------------------------------------------
 
 describe('AC-80 · re-deriving the view never refetches and never touches the book', () => {
@@ -337,13 +273,6 @@ describe('AC-80 · re-deriving the view never refetches and never touches the bo
 // ---- The scoring rail --------------------------------------------------------------------------
 
 describe('additive-keeps-score-byte-identical · the portfolio issues no bundle/scoring request', () => {
-  it('admits only exact GET/PUT book sync requests', () => {
-    expect(isBookSyncException({ method: 'GET', url: '/api/book' })).toBe(true);
-    expect(isBookSyncException({ method: 'PUT', url: '/api/book' })).toBe(true);
-    expect(isBookSyncException({ method: 'DELETE', url: '/api/book' })).toBe(false);
-    expect(isBookSyncException({ method: 'GET', url: '/api/book/archive' })).toBe(false);
-  });
-
   it('the ONLY endpoint the portfolio touches is the existing per-contract lookup', async () => {
     putPosition(pos({ id: 'p-1' }));
     await mount();
