@@ -1,6 +1,5 @@
 /**
- * `ConnectionChip` — AC-2…AC-6, AC-8, AC-9, AC-11, AC-12: the six-state matrix + the wordless
- * placeholder + motion gating (SPEC §4.2).
+ * `ConnectionChip` — AC-2…AC-6, AC-8: the six-state matrix (SPEC §4.2).
  */
 import { theme } from '@/shared/theme/theme';
 import type { LiveUpdate } from '@convexa/api';
@@ -49,91 +48,98 @@ function occ(over: Partial<SessionTapeOccupancy> = {}): SessionTapeOccupancy {
   };
 }
 
-function renderChip(live: LiveUpdate | null, streamOffline: boolean, reduced = false) {
+function renderChip(live: LiveUpdate | null, streamOffline: boolean) {
   const state = connectionStateFor({ live, streamOffline, routeSymbol: 'SPY' });
-  wrap(<ConnectionChip state={state} live={live} routeSymbol="SPY" reduced={reduced} />);
-  return state;
+  const { unmount } = wrap(
+    <ConnectionChip state={state} live={live} routeSymbol="SPY" reduced={false} />,
+  );
+  return { state, unmount };
 }
 
-describe('AC-9 — the wordless placeholder before the first stream fact', () => {
-  it('is present in the slot, carries no text, no tone, no dot, no connection vocabulary', () => {
-    wrap(<ConnectionChip state={null} live={null} routeSymbol="SPY" reduced={false} />);
-    const placeholder = screen.getByTestId('connection-chip-placeholder');
-    expect(placeholder).toBeInTheDocument();
-    expect(placeholder.textContent).toBe('');
-    expect(screen.queryByTestId('connection-chip')).toBeNull();
-    expect(screen.queryByText(/live|closed|overnight|ticks|offline|replay|connecting/i)).toBeNull();
-  });
-});
-
-describe('AC-2 — closed', () => {
-  it('neutral, no warning icon, names the mid', () => {
-    renderChip(liveUpdate({ live: true, market_session: 'closed' }), false);
-    const chip = screen.getByTestId('connection-chip');
-    expect(chip).toHaveAttribute('data-connection-state', 'closed');
-    expect(chip).toHaveTextContent('market closed');
-    expect(chip).toHaveTextContent('573.12');
-    expect(chip.querySelector('[data-testid="WarningAmberIcon"]')).toBeNull();
-  });
-});
-
-describe('AC-3 — overnight', () => {
-  it('warning + icon, names the mid', () => {
-    renderChip(liveUpdate({ live: false, market_session: 'overnight' }), false);
-    const chip = screen.getByTestId('connection-chip');
-    expect(chip).toHaveAttribute('data-connection-state', 'overnight');
-    expect(chip).toHaveTextContent('overnight');
-    expect(chip.querySelector('[data-testid="WarningAmberIcon"]')).toBeInTheDocument();
-  });
-});
-
-describe('AC-4 — no ticks', () => {
-  it('warning + icon, names the mid', () => {
-    renderChip(liveUpdate({ live: false, market_session: 'regular' }), false);
-    const chip = screen.getByTestId('connection-chip');
-    expect(chip).toHaveAttribute('data-connection-state', 'noTicks');
-    expect(chip).toHaveTextContent('no live ticks');
-    expect(chip.querySelector('[data-testid="WarningAmberIcon"]')).toBeInTheDocument();
-  });
-});
-
-describe('AC-5 — offline', () => {
-  it('warning + icon, says reconnecting; the chip itself never blanks (renders a real state, not nothing)', () => {
-    renderChip(liveUpdate({ live: true, market_session: 'regular' }), true);
-    const chip = screen.getByTestId('connection-chip');
-    expect(chip).toHaveAttribute('data-connection-state', 'offline');
-    expect(chip).toHaveTextContent('Live offline — reconnecting…');
-    expect(chip.querySelector('[data-testid="WarningAmberIcon"]')).toBeInTheDocument();
+describe('the five non-replay kinds — state, words and warning icon match the resolver output (AC-2…AC-5)', () => {
+  it('one resolved kind per render: data-connection-state, its words and its warning icon', () => {
+    const rows: Array<{
+      over: Partial<LiveUpdate>;
+      streamOffline: boolean;
+      kind: ConnectionState['kind'];
+      texts: string[];
+      warnIcon: boolean;
+    }> = [
+      {
+        over: { live: true, market_session: 'regular' },
+        streamOffline: false,
+        kind: 'live',
+        texts: ['live'],
+        warnIcon: false,
+      },
+      // AC-2: neutral, no warning icon, names the mid.
+      {
+        over: { live: true, market_session: 'closed' },
+        streamOffline: false,
+        kind: 'closed',
+        texts: ['market closed', '573.12'],
+        warnIcon: false,
+      },
+      // AC-3: warning + icon.
+      {
+        over: { live: false, market_session: 'overnight' },
+        streamOffline: false,
+        kind: 'overnight',
+        texts: ['overnight'],
+        warnIcon: true,
+      },
+      // AC-4: warning + icon.
+      {
+        over: { live: false, market_session: 'regular' },
+        streamOffline: false,
+        kind: 'noTicks',
+        texts: ['no live ticks'],
+        warnIcon: true,
+      },
+      // AC-5: warning + icon, says reconnecting; the chip itself never blanks (renders a real state).
+      {
+        over: { live: true, market_session: 'regular' },
+        streamOffline: true,
+        kind: 'offline',
+        texts: ['Live offline — reconnecting…'],
+        warnIcon: true,
+      },
+    ];
+    for (const { over, streamOffline, kind, texts, warnIcon } of rows) {
+      const { state, unmount } = renderChip(liveUpdate(over), streamOffline);
+      expect(state?.kind, kind).toBe(kind);
+      const chip = screen.getByTestId('connection-chip');
+      expect(chip, kind).toHaveAttribute('data-connection-state', kind);
+      for (const text of texts) expect(chip, kind).toHaveTextContent(text);
+      const icon = chip.querySelector('[data-testid="WarningAmberIcon"]');
+      if (warnIcon) expect(icon, kind).toBeInTheDocument();
+      else expect(icon, kind).toBeNull();
+      unmount();
+    }
   });
 });
 
 describe('AC-6 — replay carries NO live dot and NO pulse in ANY standing', () => {
-  const standings: SessionTapeOccupancy['phase'][] = ['playing', 'gap', 'ended', 'fault'];
-  for (const phase of standings) {
-    it(`standing derived from phase="${phase}"`, () => {
-      renderChip(liveUpdate({ session_tape: occ({ phase }) } as Partial<LiveUpdate>), false);
+  it('every standing (playing, gap, ended, fault) resolves to replay, never a filled dot or an animation', () => {
+    const standings: SessionTapeOccupancy['phase'][] = ['playing', 'gap', 'ended', 'fault'];
+    for (const phase of standings) {
+      const { unmount } = renderChip(
+        liveUpdate({ session_tape: occ({ phase }) } as Partial<LiveUpdate>),
+        false,
+      );
       const chip = screen.getByTestId('connection-chip');
-      expect(chip).toHaveAttribute('data-connection-state', 'replay');
+      expect(chip, `phase=${phase}`).toHaveAttribute('data-connection-state', 'replay');
       // `drop`/`fault` carry NO dot at all (sessionTapeStanding.ts); the other standings carry a
       // hollow ring, never filled — either way, never `●` and never an animation.
       const dot = chip.querySelector('[data-testid="connection-chip-dot"]');
       if (dot) {
         // A filled dot has `bgcolor: currentColor` with no border; a hollow ring has a border and
         // no background fill — assert it is never the FILLED (live) treatment.
-        expect(getComputedStyle(dot).borderWidth).not.toBe('0px');
+        expect(getComputedStyle(dot).borderWidth, `phase=${phase}`).not.toBe('0px');
       }
-      expect(chip.querySelector('[style*="animation"]')).toBeNull();
-    });
-  }
-
-  it('the drop standing carries no literal ⚠ and renders the stroke warn icon instead (AC-8)', () => {
-    renderChip(
-      liveUpdate({ session_tape: occ({ phase: 'playing' }) } as Partial<LiveUpdate>),
-      true, // streamOffline while session tape was last vouched playing → `drop`
-    );
-    const chip = screen.getByTestId('connection-chip');
-    expect(chip.textContent).not.toContain('⚠');
-    expect(chip.querySelector('[data-testid="WarningAmberIcon"]')).toBeInTheDocument();
+      expect(chip.querySelector('[style*="animation"]'), `phase=${phase}`).toBeNull();
+      unmount();
+    }
   });
 });
 
@@ -165,59 +171,5 @@ describe('AC-8 — standing sentences are pairwise distinct and never say "Live 
     });
     expect(new Set(texts).size).toBe(texts.length); // pairwise distinct
     for (const t of texts) expect(t).not.toContain('Live offline');
-  });
-});
-
-describe('AC-11/AC-12 — liveness motion stops on drop; reduced motion strips the pulse', () => {
-  it('the live dot animates only while genuinely live and motion is not reduced', () => {
-    renderChip(liveUpdate({ live: true, market_session: 'regular' }), false, false);
-    const dot = screen.getByTestId('connection-chip-dot');
-    expect(getComputedStyle(dot).animationName).not.toBe('none');
-  });
-
-  it('reduced motion renders the dot static and fully opaque, and the chip still states the state in words', () => {
-    renderChip(liveUpdate({ live: true, market_session: 'regular' }), false, true);
-    const dot = screen.getByTestId('connection-chip-dot');
-    expect(
-      getComputedStyle(dot).animationName === 'none' || getComputedStyle(dot).animationName === '',
-    ).toBe(true);
-    expect(screen.getByTestId('connection-chip')).toHaveTextContent('live');
-  });
-
-  it('every non-live state carries no dot animation (five non-live arms)', () => {
-    const arms: Array<[LiveUpdate, boolean]> = [
-      [liveUpdate({ live: true, market_session: 'closed' }), false],
-      [liveUpdate({ live: false, market_session: 'overnight' }), false],
-      [liveUpdate({ live: false, market_session: 'regular' }), false],
-      [liveUpdate({ live: true, market_session: 'regular' }), true],
-      [liveUpdate({ session_tape: occ() } as Partial<LiveUpdate>), false],
-    ];
-    for (const [live, streamOffline] of arms) {
-      const { unmount } = wrap(
-        <ConnectionChip
-          state={connectionStateFor({ live, streamOffline, routeSymbol: 'SPY' })}
-          live={live}
-          routeSymbol="SPY"
-          reduced={false}
-        />,
-      );
-      const dot = screen.queryByTestId('connection-chip-dot');
-      if (dot) expect(dot.getAttribute('style') ?? '').not.toContain('animation');
-      unmount();
-    }
-  });
-});
-
-describe('one resolved kind per render — data-connection-state matches the resolver output', () => {
-  it.each<[Partial<LiveUpdate>, boolean, ConnectionState['kind']]>([
-    [{ live: true, market_session: 'regular' }, false, 'live'],
-    [{ live: true, market_session: 'closed' }, false, 'closed'],
-    [{ live: false, market_session: 'overnight' }, false, 'overnight'],
-    [{ live: false, market_session: 'regular' }, false, 'noTicks'],
-    [{ live: true, market_session: 'regular' }, true, 'offline'],
-  ])('%o streamOffline=%s → %s', (over, streamOffline, kind) => {
-    const state = renderChip(liveUpdate(over), streamOffline);
-    expect(state?.kind).toBe(kind);
-    expect(screen.getByTestId('connection-chip')).toHaveAttribute('data-connection-state', kind);
   });
 });

@@ -1,19 +1,17 @@
 /**
  * Ticker page — page-level invariant KEEPERS (risk-based suite, `.claude/agents/qa-verify.md` §4,
  * 2026-07-13). The stream-isolation walk, null matrix, skeleton-first load, wire-label authority and
- * last-trade contract live in `ticker.risk.spec.tsx`; this file holds the two invariants that don't
- * belong to that flow:
- *   1. Cold-start failure is the ONLY blank screen (error + Retry), page-isolated (the shell nav
- *      survives), and Retry actually recovers.
- *   2. Scoring untouched — the Opportunity readout reflects exactly the bundle's signals (the FE
- *      feeds nothing into score/tier).
+ * last-trade contract live in `ticker.risk.spec.tsx`; this file holds the invariant that doesn't
+ * belong to that flow: cold-start failure is the ONLY blank screen (error + Retry), page-isolated
+ * (the shell nav survives), and Retry actually recovers. (Scoring-untouched — the Opportunity
+ * readout reflects exactly the bundle's signals — is asserted in `ticker.risk.spec.tsx`.)
  *
  * Mounts the REAL app subtree via the route table, mocking ONLY the network boundary (`fetch` + a
  * silent `EventSource`). The strict fetch mock THROWS on any unexpected call.
  */
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -102,16 +100,5 @@ describe('Ticker · page-level invariants', () => {
     tickerOk = true;
     await user.click(screen.getByText('Retry'));
     expect(await screen.findByText('Call wall')).toBeInTheDocument();
-  });
-
-  it('scoring untouched — the Opportunity readout reflects exactly the bundle signals', async () => {
-    renderAt('/ticker/TSLA');
-    await screen.findByText('Call wall');
-    // Shared fixture: opportunity_score 42 — rendered verbatim, nothing FE-side feeds it.
-    // (v2, FE-8) the old dealer positioning widget is deleted; the opportunity cell now lives in
-    // the read strip.
-    expect(
-      within(screen.getByTestId('read-strip-cell-opportunity')).getByText(/42 ·/),
-    ).toBeInTheDocument();
   });
 });

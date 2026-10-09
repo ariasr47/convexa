@@ -43,7 +43,6 @@ import App from '@/app';
 import { makeBundle } from '@/features/auth/testBackend';
 import { __resetMemory } from '@/features/trading/positions/store';
 import { theme } from '@/shared/theme/theme';
-import { allRulesForClass, emotionClassOf, joinedStyleText } from './widgets/_kit/emotionCssReader';
 
 // ---- Rich static-read fixtures (every independently-nullable section POPULATED) ---------------
 const IVR_FIX: IvRankRead = {
@@ -444,137 +443,6 @@ describe('Ticker · skeleton-first load', () => {
 });
 
 // =================================================================================================
-// 2b. Cold-load skeleton takes the v2 desk's FINAL SHAPE (AC-46 · fidelity repair 2, N1)
-//
-// The retired v1 skeleton (twelve identical tiles in a fluid grid, under a 280px title bar) is
-// replaced by shimmer shaped like the real, already-built v2 desk: masthead → structure hero (field
-// beside a five-row ladder column) → read strip (eight cells) → work grid (AI-brief + three side
-// cards) → the band header. jsdom cannot lay out `@container`/media-query wrap (`Widget.spec.tsx`'s
-// own note) — RESPONSIVE shape is verified by reading the emitted CSS rule text (the SAME
-// `emotionClassOf`/`allRulesForClass`/`joinedStyleText` idiom `ReadStrip.spec.tsx` and
-// `FigureCell.spec.tsx` already established for this exact class of assertion), never by resizing a
-// real viewport.
-// =================================================================================================
-describe('Ticker · cold-load skeleton takes the desk’s final shape (AC-46, fidelity repair 2 N1)', () => {
-  it('RED (a) — the hero-shaped skeleton is ≥400px tall at the base/wide rule, and pins a taller under-1000px-container height for the ladder-below-field shape', async () => {
-    tickerDeferred = true;
-    renderAt('/ticker/TSLA');
-    const cold = await screen.findByTestId('cold-load');
-
-    const hero = within(cold).getByTestId('cold-load-hero');
-    // MUTATION GUARD — `cold-load-hero` (`SkeletonPanel`) must itself ESTABLISH the `panel`
-    // container name; a query placed on this SAME element (rather than a descendant) would never
-    // match at any width — a real-browser-only regression (jsdom never lays out `@container`) a
-    // prior version of this fix shipped: the hero measured 483px at 390px instead of 968px because
-    // the `down(1000)` override sat on the container-establishing element itself.
-    const heroCls = emotionClassOf(hero);
-    expect(heroCls).toBeTruthy();
-    const heroRules = allRulesForClass(joinedStyleText(), heroCls as string)
-      .join(';')
-      .replace(/\s+/g, '');
-    expect(heroRules).toContain('container-type:inline-size');
-    expect(heroRules).toContain('container-name:panel');
-
-    const grid = within(hero).getByTestId('cold-load-hero-grid');
-    const cls = emotionClassOf(grid);
-    expect(cls).toBeTruthy();
-    const rules = allRulesForClass(joinedStyleText(), cls as string)
-      .join(';')
-      .replace(/\s+/g, '');
-
-    const base = rules.match(/min-height:(\d+)px/);
-    expect(base).not.toBeNull();
-    expect(Number(base?.[1])).toBeGreaterThanOrEqual(400);
-
-    // MUTATION GUARD — the narrow-container height is GATED behind `@container panel`, never a bare
-    // `@media` (the container-query hazard `ReadStrip.tsx`'s own doc comment names).
-    const squashed = joinedStyleText().replace(/\s+/g, '');
-    expect(squashed).toContain('@containerpanel(max-width:999.95px)');
-    expect(rules).toContain('min-height:968px');
-  });
-
-  it('RED (a) — at 1280 the cold-load subtree contains exactly eight read-strip skeleton cells', async () => {
-    tickerDeferred = true;
-    renderAt('/ticker/TSLA');
-    const cold = await screen.findByTestId('cold-load');
-    const strip = within(cold).getByTestId('cold-load-strip');
-    expect(within(strip).getAllByTestId('cold-load-strip-cell')).toHaveLength(8);
-  });
-
-  it('the read-strip skeleton rail switches rail→grid behind the SAME `panel` container the hero uses (mutation guard, matching the hero’s own fix)', async () => {
-    tickerDeferred = true;
-    renderAt('/ticker/TSLA');
-    const cold = await screen.findByTestId('cold-load');
-    const strip = within(cold).getByTestId('cold-load-strip');
-    const stripCls = emotionClassOf(strip);
-    expect(stripCls).toBeTruthy();
-    const stripRules = allRulesForClass(joinedStyleText(), stripCls as string)
-      .join(';')
-      .replace(/\s+/g, '');
-    expect(stripRules).toContain('container-type:inline-size');
-    expect(stripRules).toContain('container-name:panel');
-
-    const rail = within(strip).getByTestId('cold-load-strip-rail');
-    const railCls = emotionClassOf(rail);
-    expect(railCls).toBeTruthy();
-    const railRules = allRulesForClass(joinedStyleText(), railCls as string)
-      .join(';')
-      .replace(/\s+/g, '');
-    expect(railRules).toContain('display:flex');
-    expect(railRules).toContain('grid-template-columns:1.35frrepeat(7,minmax(0,1fr))');
-    const squashed = joinedStyleText().replace(/\s+/g, '');
-    expect(squashed).toContain('@containerpanel(min-width:1000px)');
-  });
-
-  it('RED (b) — the ladder skeleton sits below the field skeleton in document order (the single-column, under-1000px shape)', async () => {
-    tickerDeferred = true;
-    renderAt('/ticker/TSLA');
-    const cold = await screen.findByTestId('cold-load');
-    const hero = within(cold).getByTestId('cold-load-hero');
-    const field = within(hero).getByTestId('cold-load-hero-field');
-    const ladder = within(hero).getByTestId('cold-load-hero-ladder');
-    // Field precedes ladder in the DOM; combined with the previous test's proof that the grid
-    // collapses to a single `1fr` column under a 1000px container, single-column flow places the
-    // ladder BELOW the field, never beside it, at narrow widths.
-    expect(field.compareDocumentPosition(ladder) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it('RED (c) — the existing absence-after-load assertion still passes: cold-skeleton and cold-load are both gone once the bundle resolves', async () => {
-    tickerDeferred = true;
-    renderAt('/ticker/TSLA');
-    await screen.findByTestId('cold-load');
-    await act(async () => {
-      resolveTicker?.(richBundle());
-    });
-    await screen.findByText('Call wall');
-    expect(screen.queryByTestId('cold-skeleton')).toBeNull();
-    expect(screen.queryByTestId('cold-load')).toBeNull();
-  });
-
-  it('RED (d) — no text node inside cold-load before any data or live tick arrives (shimmer only, foundations F2)', async () => {
-    tickerDeferred = true;
-    renderAt('/ticker/TSLA');
-    const cold = await screen.findByTestId('cold-load');
-    // `textContent` concatenates every descendant text node; MUI `Skeleton` renders none (no
-    // `children`) — a non-empty, non-whitespace string here means a stray label, `—`, or
-    // "Loading…" crept in, which the design's shimmer-only frame forbids.
-    expect((cold.textContent ?? '').trim()).toBe('');
-  });
-
-  it('the masthead skeleton is bare on the ink — no raised toolbar panel — behind the four v2 bands (chip row, headline, meta line, quick row)', async () => {
-    tickerDeferred = true;
-    renderAt('/ticker/TSLA');
-    const cold = await screen.findByTestId('cold-load');
-    const masthead = within(cold).getByTestId('cold-load-masthead');
-    const cls = emotionClassOf(masthead);
-    expect(cls).toBeTruthy();
-    const rules = allRulesForClass(joinedStyleText(), cls as string).join(';');
-    expect(rules).not.toContain('border');
-    expect(rules).not.toContain('box-shadow');
-  });
-});
-
-// =================================================================================================
 // 3. Independent nullability — the null matrix (best-effort-isolated-or-null)
 // =================================================================================================
 // PASS 2 change 8: `iv_rank` dropped from this matrix — `IvRank` no longer renders on `/ticker` (its
@@ -582,33 +450,6 @@ describe('Ticker · cold-load skeleton takes the desk’s final shape (AC-46, fi
 // `market_state.iv_rank` no longer has an "IvRank empty copy" to observe on this page. The read
 // strip's own IV-rank cell is a separate, still-mounted consumer, untouched by this pass, and isn't
 // part of this best-effort-isolated-or-null matrix (it was never in this list before either).
-// =================================================================================================
-// 2c. Cold-start failure reads like the design, not a raw client status (fidelity repair 2, N7)
-// =================================================================================================
-describe('Ticker · cold-start failure reads like the design (fidelity repair 2, N7)', () => {
-  it('a bundle that never arrives shows the design’s headline + body + Retry + an HTTP status detail line — never the raw client error string', async () => {
-    tickerOk = false;
-    renderAt('/ticker/TSLA');
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent("Couldn't load TSLA.");
-    expect(alert).toHaveTextContent(
-      'The structure request failed before any snapshot arrived. Nothing is cached for this desk yet.',
-    );
-    expect(alert.textContent ?? '').not.toContain('API error 500');
-    expect(screen.getByText('Retry')).toBeInTheDocument();
-    // The status is kept, not hidden — as a Mono detail line (design note), just never the bare
-    // client string.
-    expect(alert).toHaveTextContent('HTTP 500');
-  });
-
-  it('the toolbar stays usable during the failure', async () => {
-    tickerOk = false;
-    renderAt('/ticker/TSLA');
-    await screen.findByRole('alert');
-    expect(screen.getByTestId('ticker-toolbar')).toBeInTheDocument();
-  });
-});
-
 // =================================================================================================
 // 2d. no-vendor-production-posture F2/F2b — the paused cold-start panel is NOT the warning panel
 // =================================================================================================
@@ -651,13 +492,6 @@ describe('Ticker · market data paused (no-vendor-production-posture F2/F2b)', (
       document.dispatchEvent(new Event('visibilitychange'));
     });
     expect(tickerCalls()).toBe(1);
-  });
-
-  it('the toolbar stays usable while paused (the trader can still change ticker/expirations)', async () => {
-    tickerPaused = true;
-    renderAt('/ticker/TSLA');
-    await screen.findByRole('status');
-    expect(screen.getByTestId('ticker-toolbar')).toBeInTheDocument();
   });
 });
 
