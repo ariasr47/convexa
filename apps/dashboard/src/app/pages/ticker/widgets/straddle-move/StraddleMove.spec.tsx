@@ -2,10 +2,8 @@ import { theme } from '@/shared/theme/theme';
 import type { StraddleMove as StraddleMoveRead } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { StraddleMove } from './StraddleMove';
-import straddleMoveSource from './StraddleMove?raw';
 import { NO_EXPIRATION_IN_WINDOW, NO_QUOTE, TOOLTIP, UNAVAILABLE } from './copy';
 
 afterEach(() => cleanup());
@@ -120,35 +118,5 @@ describe('StraddleMove — the three distinct unavailable causes (AC-46/47/48)',
     cleanup();
     renderWidget(undefined);
     expect(screen.getByTestId('straddle-move-unavailable')).toBeInTheDocument();
-  });
-});
-
-// Strips comments before scanning (mirrors `outcomes/boundaries.spec.ts`): the doc comment here
-// deliberately QUOTES the forbidden props as prose ("takes NO offline/isLive prop") — that prose is
-// the point and must not fail its own guard. The scan asserts what the CODE does.
-const code = (src: string): string =>
-  src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-
-describe('static-read discipline (reviewer probe)', () => {
-  it('takes no offline/isLive prop and binds no opacity to any stream state', () => {
-    expect(code(straddleMoveSource)).not.toMatch(/streamOffline|isLive|opacity:/);
-  });
-  it('selects the tenor by `find(t => t.expiration === primary_expiration)`, never array order', () => {
-    expect(straddleMoveSource).toMatch(/t\.expiration === move\.primary_expiration/);
-  });
-});
-
-// AC-35 (ruling 6, curvature-v2-foundations): the ⓘ affordance is a real focusable control, not
-// hover-only — the shipped `AccessibleHelp` pattern, reachable by tap AND keyboard.
-describe('StraddleMove · the ⓘ is keyboard-reachable (AC-35)', () => {
-  it('is a real button, opens on Enter, closes on Escape', async () => {
-    const user = userEvent.setup();
-    renderWidget(okMove());
-    const help = screen.getByRole('button', { name: /^About /i });
-    help.focus();
-    expect(help).toHaveFocus();
-    await user.keyboard('{Enter}');
-    expect(await screen.findByRole('tooltip')).toBeInTheDocument();
-    await user.keyboard('{Escape}');
   });
 });

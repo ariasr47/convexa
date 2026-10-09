@@ -8,10 +8,8 @@
  * structure instrument wrong, not merely a deleted secondary one.
  *
  * The former criterion-53 host-level "surfaces differ across schemes" proof (palette/surfaces
- * resolution) that used to live here against `GexProfileChart` is NOT dropped — it is ported onto
- * `StructureHeroPanel.spec.tsx` (the file that now owns that resolution in production), so criterion
- * 53's runtime coverage survives the widget's deletion. `hex-discipline.spec.ts`'s static scan is a
- * separate, still-independent check on raw hex literals.
+ * resolution) moved from here to `StructureHeroPanel.spec.tsx` and was removed there in lean-tests
+ * batch 48; criterion 53 now rests on `hex-discipline.spec.ts`'s static scan of raw hex literals.
  */
 import type { StrikeRow } from '@convexa/api';
 import { describe, expect, it } from 'vitest';

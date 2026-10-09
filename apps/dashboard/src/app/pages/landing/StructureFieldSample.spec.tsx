@@ -10,7 +10,7 @@
  * finding: "dropping the prop would make the field drift ... with every suite still green").
  *
  * This file closes that gap by mocking `StructureFieldCanvas` (same idiom as
- * `StructureHeroPanel.spec.tsx:32-42`) and reading the ACTUAL props `StructureFieldSample` hands
+ * `StructureHeroPanel.spec.tsx:26-35`) and reading the ACTUAL props `StructureFieldSample` hands
  * it: `variant='ticker'` and the frozen honesty flags `{live:false, liveMid:null, source:'demo',
  * asOfSec:null}`.
  */
