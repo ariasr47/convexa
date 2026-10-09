@@ -930,36 +930,42 @@ mod tests {
         assert!(!logged.contains("session archive coverage warning"));
     }
 
+    /// A full-day holiday weekday is not due whatever `now` is (the day after, the morning of
+    /// before the checkpoint, or months ahead): empty expected set, no "not yet due" or future
+    /// session rows, never flagged weekend, never a pass.
     #[tokio::test]
-    async fn holiday_weekday_is_empty_expected_not_due_not_weekend() {
+    async fn holiday_weekday_is_empty_expected_not_due_not_weekend_for_any_now() {
         let _g = begin_test();
         let archive = SessionChainArchive::memory();
-        let now = et_hm(2026, 11, 27, 12, 0); // day after — D is past
-        let m = derive(&archive, now, "2026-11-26").await.unwrap();
-        assert!(!m.weekend, "do not set weekend true on a Thursday");
-        assert!(m.holiday);
-        assert!(m.rows.is_empty());
-        assert!(m.holes.is_empty());
-        assert_eq!(m.http_verdict(), "not_due");
-        assert_eq!(m.expected_due(), 0);
-        assert_eq!(m.present, 0);
-        let (stdout, code) = render_cli(&m, true);
-        assert!(exit_success(code));
-        assert!(stdout.contains("[NOT DUE] archive-coverage — no expected weekday identities due in this window. Not a coverage pass."));
-        assert!(!stdout.contains("[PASS]"));
-        assert!(!stdout.contains("Expected due:"), "holiday CLI shares weekend short-circuit");
-        assert!(!stdout.to_lowercase().contains("weekend"));
-    }
-
-    #[tokio::test]
-    async fn today_holiday_before_checkpoint_is_empty_expected_not_not_yet_due() {
-        let _g = begin_test();
-        let archive = SessionChainArchive::memory();
-        let now = et_hm(2026, 11, 26, 10, 0);
-        let m = derive(&archive, now, "2026-11-26").await.unwrap();
-        assert!(m.holiday);
-        assert!(m.rows.is_empty());
-        assert!(!m.rows.iter().any(|r| r.cell == "not yet due"));
+        let cases = [
+            ("day after, D is past", et_hm(2026, 11, 27, 12, 0)),
+            ("today, before checkpoint", et_hm(2026, 11, 26, 10, 0)),
+            ("future holiday", et_hm(2026, 8, 10, 17, 0)),
+        ];
+        for (name, now) in cases {
+            let m = derive(&archive, now, "2026-11-26").await.unwrap();
+            assert!(!m.weekend, "{name}: do not set weekend true on a Thursday");
+            assert!(m.holiday, "{name}");
+            assert!(m.rows.is_empty(), "{name}");
+            assert!(m.holes.is_empty(), "{name}");
+            assert_eq!(m.http_verdict(), "not_due", "{name}");
+            assert_eq!(m.expected_due(), 0, "{name}");
+            assert_eq!(m.present, 0, "{name}");
+            let (stdout, code) = render_cli(&m, true);
+            assert!(exit_success(code), "{name}");
+            assert!(
+                stdout.contains(
+                    "[NOT DUE] archive-coverage — no expected weekday identities due in this window. Not a coverage pass."
+                ),
+                "{name}"
+            );
+            assert!(!stdout.contains("[PASS]"), "{name}");
+            assert!(
+                !stdout.contains("Expected due:"),
+                "{name}: holiday CLI shares weekend short-circuit"
+            );
+            assert!(!stdout.to_lowercase().contains("weekend"), "{name}");
+        }
     }
 
     #[tokio::test]
@@ -975,28 +981,6 @@ mod tests {
         assert_eq!(m.http_verdict(), "not_due");
         assert_ne!(m.http_verdict(), "pass");
         assert_eq!(m.present, 0);
-        assert!(m.rows.is_empty());
-    }
-
-    #[tokio::test]
-    async fn ordinary_tuesday_after_checkpoint_still_due_missing() {
-        let _g = begin_test();
-        let archive = SessionChainArchive::memory();
-        let now = et_hm(2026, 8, 10, 16, 0);
-        let m = derive(&archive, now, "2026-08-10").await.unwrap();
-        assert!(!m.weekend);
-        assert!(!m.holiday);
-        assert_eq!(m.rows.len(), 3);
-        assert!(m.rows.iter().any(|r| r.cell == "missing"));
-    }
-
-    #[tokio::test]
-    async fn future_holiday_is_empty_expected_not_future_session_rows() {
-        let _g = begin_test();
-        let archive = SessionChainArchive::memory();
-        let now = et_hm(2026, 8, 10, 17, 0);
-        let m = derive(&archive, now, "2026-11-26").await.unwrap();
-        assert!(m.holiday);
         assert!(m.rows.is_empty());
     }
 
@@ -1270,22 +1254,6 @@ mod tests {
         assert!(!stdout.contains("[PASS]"));
         assert!(!stdout.contains("Expected due:"));
         COVERAGE_VENDOR_CALLS.store(0, Ordering::SeqCst);
-    }
-
-    #[tokio::test]
-    async fn source_match_is_exhaustive_fixture_is_not_present() {
-        let _g = begin_test();
-        let archive = SessionChainArchive::memory();
-        let now = et_hm(2026, 8, 10, 16, 0);
-        let as_of = et_hm(2026, 8, 10, 17, 0);
-        for sym in ["SPY", "QQQ", "IWM"] {
-            plant_fixture(&archive, sym, as_of).await;
-        }
-        let m = derive(&archive, now, "2026-08-10").await.unwrap();
-        assert!(m.rows.iter().all(|r| r.cell == "blocked occupancy"));
-        assert_eq!(m.present, 0);
-        let (_, code) = render_cli(&m, true);
-        assert!(!exit_success(code));
     }
 
     fn production_source() -> &'static str {

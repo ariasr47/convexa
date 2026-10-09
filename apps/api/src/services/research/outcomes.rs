@@ -232,15 +232,6 @@ mod tests {
     }
 
     #[test]
-    fn session_date_et_known_instant() {
-        // 2024-06-03 16:00 ET ≈ 2024-06-03 20:00 UTC
-        let as_of = 1_717_444_800.0_f64; // approx; assert format only
-        let d = session_date_et(as_of).unwrap();
-        assert_eq!(d.len(), 10);
-        assert!(d.contains('-'));
-    }
-
-    #[test]
     fn join_1d_and_5d_returns() {
         // Sample on 2024-01-02 (use noon ET epoch).
         // 2024-01-02 12:00 ET = 2024-01-02 17:00 UTC

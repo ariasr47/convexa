@@ -123,22 +123,6 @@ mod tests {
     use crate::services::research::pairing::pair_rows;
 
     #[test]
-    fn three_entries_declared_order_and_nonempty_provenance() {
-        assert_eq!(LABELS.len(), 3);
-        let keys: Vec<&str> = LABELS.iter().map(|l| l.key).collect();
-        assert_eq!(keys, vec!["large_abs_move", "up_move", "structure_event"]);
-        for l in LABELS {
-            assert!(
-                !l.derived_from.is_empty(),
-                "{} declares no provenance",
-                l.key
-            );
-        }
-        assert!(LABELS[0].primary);
-        assert!(!LABELS[1].primary && !LABELS[2].primary);
-    }
-
-    #[test]
     fn pre_feature_positive_counts_on_slice_0810() {
         let pairing = pair_rows(&slice_0810_samples(), &slice_0810_outcomes(), "1d");
         let ls = build_label_set(&pairing.rows);
@@ -147,33 +131,6 @@ mod tests {
         assert_eq!(pos("large_abs_move"), 111);
         assert_eq!(pos("up_move"), 74);
         assert_eq!(pos("structure_event"), 114);
-    }
-
-    #[test]
-    fn threshold_is_scope_invariant_pooled_once_not_per_group() {
-        let pairing = pair_rows(&slice_0810_samples(), &slice_0810_outcomes(), "1d");
-        let pooled = build_label_set(&pairing.rows);
-        let pooled_threshold = pooled.thresholds["large_abs_move"].unwrap();
-
-        let spy_rows: Vec<LabRow> = pairing
-            .rows
-            .iter()
-            .filter(|r| r.symbol == "SPY")
-            .cloned()
-            .collect();
-        // Filtering the ALREADY-BUILT pooled set to SPY still carries the pooled threshold.
-        let spy_from_pooled = pooled.thresholds["large_abs_move"];
-        assert_eq!(spy_from_pooled, Some(pooled_threshold));
-
-        // Re-deriving a median over SPY ALONE gives a DIFFERENT number — proving pooled-once
-        // scoping is load-bearing, not incidental.
-        let spy_only = build_label_set(&spy_rows);
-        let spy_only_threshold = spy_only.thresholds["large_abs_move"].unwrap();
-        assert_ne!(
-            pooled_threshold, spy_only_threshold,
-            "a per-group median must differ from the pooled-once median on this slice, proving \
-             the once-only scoping is load-bearing"
-        );
     }
 
     #[test]

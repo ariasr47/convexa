@@ -775,8 +775,8 @@ mod tests {
     // ---- AC-78 — derived, not constant, retention ------------------------------------------
 
     /// AC-78 arm 1+2: two fixtures with DIFFERENT capture rates must print DIFFERENT figures. The
-    /// fixture precondition (the rates really do differ) is asserted separately in B0
-    /// (`the_two_slices_have_materially_different_capture_rates`) so a false-fail here is legible.
+    /// separate fixture-precondition test was retired in lean-tests batch 72, so a failure here may
+    /// also mean the two fixtures' capture rates no longer differ.
     #[test]
     fn retention_figures_are_derived_not_constant() {
         use crate::services::research::fixtures::{

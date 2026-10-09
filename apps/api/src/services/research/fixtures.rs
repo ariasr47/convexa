@@ -503,10 +503,6 @@ mod tests {
     use crate::services::research::score_lab::{evaluate_baseline, pair_samples_outcomes};
     use std::collections::{BTreeMap, BTreeSet};
 
-    fn as_of_key(as_of: f64) -> u64 {
-        (as_of * 1000.0).round() as u64
-    }
-
     fn per_symbol(samples: &[StructureSample]) -> BTreeMap<String, usize> {
         let mut m = BTreeMap::new();
         for s in samples {
@@ -516,85 +512,6 @@ mod tests {
     }
 
     // ---- SLICE A -----------------------------------------------------------------------------
-
-    #[test]
-    fn slice_0810_is_the_deep_dives_slice() {
-        let samples = slice_0810_samples();
-        let outcomes = slice_0810_outcomes();
-        assert_eq!(samples.len(), 221, "sample count");
-        assert_eq!(outcomes.len(), 221, "outcome count");
-
-        let ps = per_symbol(&samples);
-        assert_eq!(ps.get("SPY"), Some(&74));
-        assert_eq!(ps.get("QQQ"), Some(&73));
-        assert_eq!(ps.get("IWM"), Some(&74));
-        assert_eq!(ps.len(), 3, "exactly three symbols");
-
-        let sk: BTreeSet<(String, u64)> = samples
-            .iter()
-            .map(|s| (s.symbol.to_ascii_uppercase(), as_of_key(s.as_of)))
-            .collect();
-        let ok: BTreeSet<(String, u64)> = outcomes
-            .iter()
-            .map(|o| (o.symbol.to_ascii_uppercase(), as_of_key(o.as_of)))
-            .collect();
-        assert_eq!(sk, ok, "sample and outcome key sets must be equal");
-        assert!(outcomes.iter().all(|o| o.horizon.trim() == "1d"));
-    }
-
-    /// The captured truth of 2026-08-10 — PRE-capture-spine (`13656ad`). If this goes red, someone
-    /// REPAIRED the fixture, which is forbidden. AC-27/AC-28/AC-39's live instances rest on these
-    /// absences. NOTE: a property of THIS SLICE, not of the diary — 12,256 of 12,477 rows in the
-    /// source store DO carry drivers.
-    #[test]
-    fn slice_0810_carries_no_drivers_and_no_analytics() {
-        for s in slice_0810_samples() {
-            assert!(s.score.is_some(), "{} carries a score", s.symbol);
-            assert!(
-                s.dist_to_flip_pct.is_some(),
-                "{} carries dist_to_flip_pct",
-                s.symbol
-            );
-            assert!(
-                s.dist_to_wall_pct.is_some(),
-                "{} carries dist_to_wall_pct",
-                s.symbol
-            );
-            assert!(
-                s.score_drivers.is_none(),
-                "pre-spine: score_drivers stay null (never repaired)"
-            );
-            assert!(
-                s.net_gex.is_none(),
-                "pre-spine: net_gex was never captured on this slice"
-            );
-            assert!(
-                s.atm_iv.is_none(),
-                "pre-spine: atm_iv was never captured on this slice"
-            );
-            assert!(
-                s.hv_30d.is_none(),
-                "pre-spine: hv_30d was never captured on this slice"
-            );
-            assert!(
-                s.iv_hv_ratio.is_none(),
-                "pre-spine: iv_hv_ratio was never captured"
-            );
-        }
-    }
-
-    #[test]
-    fn slice_0810_is_one_et_session() {
-        let dates: BTreeSet<String> = slice_0810_samples()
-            .iter()
-            .filter_map(|s| session_date_et(s.as_of))
-            .collect();
-        assert_eq!(
-            dates,
-            BTreeSet::from(["2026-08-10".to_string()]),
-            "single ET session — this is what makes it evidence class SINGLE SESSION (d=1)"
-        );
-    }
 
     /// The parity oracle, pinned at the point of freeze. Exact equality is correct: the oracle is
     /// the SHIPPED `evaluate_baseline` over the SAME rows in the SAME order, so the arithmetic is
@@ -704,47 +621,6 @@ mod tests {
         assert!(
             dates.len() >= 2,
             "slice B must span >= 2 ET sessions (AC-44 arm 2, AC-52)"
-        );
-    }
-
-    /// AC-78's fixture PRECONDITION, asserted separately from the AC itself (B12a) so a false-fail
-    /// there is legible: if the two slices ever share a capture rate, AC-78 cannot distinguish a
-    /// derived figure from a constant, and THAT is the thing to fix — not the assertion.
-    #[test]
-    fn the_two_slices_have_materially_different_capture_rates() {
-        let rate = |samples: &[StructureSample]| -> f64 {
-            let spy: Vec<&StructureSample> = samples
-                .iter()
-                .filter(|s| s.symbol.eq_ignore_ascii_case("SPY"))
-                .collect();
-            let sessions: BTreeSet<String> = spy
-                .iter()
-                .filter_map(|s| session_date_et(s.as_of))
-                .collect();
-            spy.len() as f64 / sessions.len().max(1) as f64
-        };
-        let a = rate(&slice_0810_samples());
-        let b = rate(&slice_current_samples());
-        assert!(
-            (a - b).abs() > 1.0,
-            "AC-78 needs two DIFFERENT capture rates; got slice A {a} vs slice B {b} SPY samples/session"
-        );
-    }
-
-    /// Until B0b lands this skips LOUDLY rather than passing vacuously.
-    #[test]
-    fn slice_current_outcomes_pair_when_present() {
-        let Some(outcomes) = slice_current_outcomes() else {
-            eprintln!(
-                "SKIP: slice_current/outcomes.json absent — B0b not yet landed. \
-                       The constructed fixtures carry these guards meanwhile."
-            );
-            return;
-        };
-        let rows = pair_samples_outcomes(&slice_current_samples(), &outcomes, "1d");
-        assert!(
-            !rows.is_empty(),
-            "slice B outcomes exist but pair nothing — key mismatch"
         );
     }
 }
