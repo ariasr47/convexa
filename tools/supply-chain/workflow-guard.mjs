@@ -62,9 +62,10 @@ export function auditAutomation({ workflows, dockerfiles, dependabot, pins }) {
     }
   const supply = workflows['.github/workflows/supply-chain.yml'] ?? '';
   const ci = workflows['.github/workflows/ci.yml'] ?? '';
+  // Manual mode (owner ruling 2026-10-08): supply-chain runs only through workflow_call (from CI)
+  // and workflow_dispatch; a push, schedule or pull_request trigger is refused.
   if (
-    !/push:[\s\S]*branches:\s*\[main\]/.test(supply) ||
-    !/schedule:/.test(supply) ||
+    /^ {2}(?:push|schedule|pull_request):/m.test(supply) ||
     !/workflow_dispatch:[\s\S]*options:\s*\[policy, artifacts\]/.test(supply)
   )
     errors.push('supply-chain:event-matrix');

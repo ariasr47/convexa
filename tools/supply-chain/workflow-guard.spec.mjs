@@ -24,6 +24,18 @@ const load = async () => ({
 test('live automation passes immutable and fail-closed guard', async () => {
   assert.deepEqual(auditAutomation(await load()), { state: 'pass', errors: [] });
 });
+test('a push or schedule trigger on supply-chain is rejected (manual mode)', async () => {
+  for (const trigger of [
+    '  push:\n    branches: [main]\n',
+    '  schedule:\n    - cron: "17 3 * * 1"\n',
+  ]) {
+    const input = await load();
+    input.workflows['.github/workflows/supply-chain.yml'] = input.workflows[
+      '.github/workflows/supply-chain.yml'
+    ].replace('\non:\n', `\non:\n${trigger}`);
+    assert.ok(auditAutomation(input).errors.includes('supply-chain:event-matrix'), trigger);
+  }
+});
 test('mutable Action mutation is rejected', async () => {
   const input = await load();
   input.workflows['.github/workflows/supply-chain.yml'] = input.workflows[
