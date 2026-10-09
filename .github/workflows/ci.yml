@@ -109,16 +109,28 @@ jobs:
       - name: Bundle size gate
         run: npm run check:bundle
 
+      - name: Read Playwright version
+        id: playwright
+        run: |
+          echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
       - name: Browser quality engine install
         run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Browser quality gate
+        id: browser_quality
         run: npm run browser:quality
         env:
           CI: true
 
       - name: Upload Chromium browser evidence
-        if: always()
+        if: always() && steps.browser_quality.outcome != 'skipped'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: browser-quality-chromium
@@ -127,7 +139,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload compatibility browser evidence
-        if: always()
+        if: always() && steps.browser_quality.outcome != 'skipped'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: browser-quality-compatibility
@@ -136,7 +148,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload accessibility browser evidence
-        if: always()
+        if: always() && steps.browser_quality.outcome != 'skipped'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: browser-quality-accessibility
@@ -180,11 +192,7 @@ jobs:
       - name: Install locked Node dependencies
         run: npm ci
 
-      - name: Build generated API declarations
-        run: npx tsc -p libs/api/tsconfig.lib.json --pretty false
-
-      - name: API contract check
-        run: npm run api:contract:check
+      # The API contract check runs once, in the frontend job.
 
       # ubuntu-24.04 preinstalls ~25 GB of toolchains this job never touches. The merged tree
       # builds 62 debug test binaries, which exhausted the runner *inside* `Cargo test` — before
@@ -209,12 +217,6 @@ jobs:
       # Default features (JSON stores) — full unit/integration surface for api-rust + quant-engine.
       - name: Cargo test
         run: cargo test -p api-rust -p quant-engine --locked
-
-      - name: Capacity load harness
-        run: cargo run -p api-rust --locked --release -- capacity load
-        env:
-          CONVEXA_CAPACITY_CI_STEP: "1"
-          APP_ENV: dev
 
       - name: Free default-feature debug build space
         run: cargo clean
@@ -245,6 +247,13 @@ jobs:
       # Matches Railway/Docker production image (`--features postgres`).
       - name: Cargo release build (postgres)
         run: cargo build -p api-rust --release --features postgres --locked
+
+      # Reuses the release build above (same profile and features), so release compiles once.
+      - name: Capacity load harness
+        run: cargo run -p api-rust --locked --release --features postgres -- capacity load
+        env:
+          CONVEXA_CAPACITY_CI_STEP: "1"
+          APP_ENV: dev
 
   # ~7 min/run -> ~56 min/month (raw = Linux-equivalent).
   capacity-linux:
