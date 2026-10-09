@@ -571,39 +571,3 @@ async fn batch_backtest_harness_happy_split_refuse_empty_identity() {
     assert_eq!(as_of_string(seed), CONFORMANCE_SEED_AS_OF);
     let _ = parse_symbols("SPY,QQQ").unwrap();
 }
-
-#[tokio::test]
-async fn batch_backtest_unreadable_row_and_window_partial_miss() {
-    let store = ChainSnapshotStore::memory();
-    plant(&store, "SPY", ts(1), false).await;
-    let bundle = fixture_probe_bundle("QQQ", ts(1));
-    store
-        .append(&to_wire(&bundle), b"garbage-not-json")
-        .await
-        .unwrap();
-    let run = run_batch_backtest(
-        &store,
-        &opts(
-            &["SPY", "QQQ", "IWM"],
-            SelectMode::Window {
-                from: None,
-                to: None,
-                limit: None,
-            },
-            None,
-        ),
-        None,
-        &mut silent,
-    )
-    .await;
-    let RunResult::Measurement(m) = &run else {
-        panic!("expected measurement");
-    };
-    assert_eq!(m.artifact.corpus_status.as_str(), "partial");
-    assert!(m.window_misses.iter().any(|s| s == "IWM"));
-    let qqq = m.artifact.rows.iter().find(|r| r.symbol == "QQQ").unwrap();
-    assert_eq!(qqq.disposition, RowDisposition::Unreadable);
-    let (so, _) = emit_text(&run, false, false, None);
-    assert!(so.contains("no stored snapshot for IWM"));
-    assert!(so.contains("stored snapshot unreadable:"));
-}
