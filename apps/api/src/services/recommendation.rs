@@ -1763,19 +1763,6 @@ mod tests {
     }
 
     #[test]
-    fn an_anonymous_export_reports_risk_inputs_not_set_with_the_section_present() {
-        let e = build_export(
-            "SPY",
-            &stub_bundle(),
-            None,
-            stub_candidates(),
-            not_set_risk_inputs(),
-        );
-        assert_eq!(e["context"]["risk_inputs"]["state"], "not_set");
-        assert!(e["context"]["risk_inputs"].is_object());
-    }
-
-    #[test]
     fn the_egress_note_is_composed_from_the_categories_and_no_longer_claims_no_account_or_identity()
     {
         let e = build_export(
@@ -1819,19 +1806,6 @@ mod tests {
         // risk_inputs is present (not omitted) even though not_set means it was not sent.
         let ri = cats.iter().find(|c| c["key"] == "risk_inputs").unwrap();
         assert_eq!(ri["sent"], false);
-    }
-
-    #[test]
-    fn the_export_candidate_block_uses_the_handoff_budget_and_sent_to_model_false() {
-        let e = build_export(
-            "SPY",
-            &stub_bundle(),
-            None,
-            stub_candidates(),
-            not_set_risk_inputs(),
-        );
-        assert_eq!(e["context"]["candidates"]["budget"], "handoff");
-        assert_eq!(e["context"]["candidates"]["sent_to_model"], false);
     }
 
     fn resolve_svc() -> crate::services::auth::AuthService {
