@@ -35,6 +35,7 @@
     "graph": "nx graph",
     "ports:free": "node tools/free-ports.mjs",
     "test:tools": "node --test tools/*.spec.mjs",
+    "verify": "node tools/verify.mjs",
     "api:contract:baseline:candidate": "node tools/api-contract-baseline.mjs candidate",
     "api:contract:baseline:accept": "node tools/api-contract-baseline.mjs accept",
     "api:router-integration:baseline:candidate": "node tools/api-router-integration-baseline.mjs candidate",
