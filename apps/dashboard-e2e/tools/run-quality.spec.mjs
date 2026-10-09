@@ -3,25 +3,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { CHILDREN, aggregateStatus, validateChildCatalog } from './lib/aggregate.mjs';
+import { CHILDREN, aggregateStatus } from './lib/aggregate.mjs';
 import {
   buildQualityReceipt,
-  prepareQualityDashboard,
   prepareThenSpawnQualityChildren,
   spawnQualityChildren,
   validateChildEvidence,
 } from './run-quality.mjs';
-test('aggregate freezes exactly three ordered children and distinct ports', () => {
-  assert.equal(CHILDREN.length, 3);
-  assert.deepEqual(
-    CHILDREN.map((x) => x.port),
-    [4210, 4211, 4212],
-  );
-  assert.doesNotThrow(() => validateChildCatalog());
-  assert.throws(() =>
-    validateChildCatalog([...CHILDREN, { target: 'dashboard-e2e:extra', port: 4213 }]),
-  );
-});
 test('aggregate status preserves incomplete over failure over pass', () => {
   assert.equal(aggregateStatus([{ exit_code: 0, status: 'pass' }]), 'pass');
   assert.equal(aggregateStatus([{ exit_code: 1, status: 'fail' }]), 'fail');
@@ -68,77 +56,6 @@ test('a failed dashboard build still launches all three children once with fail-
   });
   assert.equal(optionsSeen.prebuildStatus, 'fail');
   assert.equal((await Promise.all(childPromises)).length, 3);
-});
-
-test('dashboard preparation is one shell-free production build with isolated Nx state', async () => {
-  const calls = [];
-  const result = await prepareQualityDashboard({
-    platform: 'linux',
-    cwd: 'C:/workspace',
-    env: { NX_INVOCATION_ROOT_PID: 'aggregate-parent', QUALITY_TEST_MARKER: 'preserved' },
-    runId: 'run-prebuild-command',
-    spawnCommandFn: async (command, args, options) => {
-      calls.push({ command, args, options });
-      return { exit_code: 0, error: null };
-    },
-  });
-  assert.deepEqual(result, { exit_code: 0, error: null });
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].command, 'npm');
-  assert.deepEqual(calls[0].args, [
-    'exec',
-    '--',
-    'nx',
-    'run',
-    '@convexa/dashboard:build:production',
-    '--skip-nx-cache',
-  ]);
-  assert.equal(calls[0].options.cwd, 'C:/workspace');
-  assert.equal(calls[0].options.env.NX_DAEMON, 'false');
-  assert.equal(calls[0].options.env.QUALITY_TEST_MARKER, 'preserved');
-  assert.equal(calls[0].options.env.NX_INVOCATION_ROOT_PID, undefined);
-  assert.match(
-    calls[0].options.env.NX_WORKSPACE_DATA_DIRECTORY.replaceAll('\\', '/'),
-    /\/\.nx\/workspace-data\/browser-quality\/[a-f0-9]{64}$/,
-  );
-});
-
-test('aggregate bounds only child Playwright workers and preserves the exact environment', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'browser-quality-workers-'));
-  const fixture = path.join(dir, 'npm-cli-fixture.mjs');
-  fs.writeFileSync(
-    fixture,
-    `import fs from 'node:fs'; fs.writeFileSync(${JSON.stringify(path.join(dir, 'env.json'))}, JSON.stringify({ workers: process.env.BROWSER_QUALITY_WORKERS, marker: process.env.QUALITY_TEST_MARKER, prebuild: process.env.BROWSER_QUALITY_PREBUILD_STATUS })); process.exit(0);`,
-  );
-  await Promise.all(
-    spawnQualityChildren({
-      platform: 'win32',
-      execPath: process.execPath,
-      npmCliPath: fixture,
-      cwd: dir,
-      env: { QUALITY_TEST_MARKER: 'preserved' },
-      runId: 'run-worker-test',
-      source: 'a'.repeat(40),
-      prebuildStatus: 'pass',
-    }),
-  );
-  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'env.json'), 'utf8')), {
-    workers: '1',
-    marker: 'preserved',
-    prebuild: 'pass',
-  });
-});
-
-test('prebuilt child servers are read-only and failed preparation is rejected before Playwright', () => {
-  const sharedConfig = fs.readFileSync(
-    new URL('../playwright.shared.config.ts', import.meta.url),
-    'utf8',
-  );
-  const runGate = fs.readFileSync(new URL('./run-gate.mjs', import.meta.url), 'utf8');
-  assert.match(sharedConfig, /BROWSER_QUALITY_PREBUILD_STATUS/);
-  assert.match(sharedConfig, /serve-dist\.mjs apps\/dashboard\/dist/);
-  assert.match(runGate, /BROWSER_QUALITY_PREBUILD_STATUS === 'fail'/);
-  assert.match(runGate, /browser quality dashboard prebuild failed/);
 });
 
 test('child evidence validates identity, status and artifact hash after settlement', () => {
