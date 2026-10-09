@@ -511,13 +511,16 @@ fn tape_read_token_gate_is_metrics_not_auth_true() {
 #[test]
 fn unset_serve_still_live_massive_four_fetch_join() {
     // AC-18 / poison 2+14: production unset path still talks to Massive; no auto-walk.
-    let analytics =
+    // Production code only: scanning to end of file also read the in-file tests, whose own assert
+    // text was the only match for the old `state.massive.` needle (lean-tests batch 66a).
+    let analytics_src =
         fs::read_to_string(workspace_root().join("apps/api/src/services/analytics.rs")).unwrap();
+    let analytics = prod_only(&analytics_src);
     let start = analytics
         .find("async fn compute_analytics(")
         .expect("compute_analytics");
     let body = &analytics[start..];
-    assert!(body.contains("state.massive.fetch_options_market_state(sym)"));
+    assert!(body.contains("massive.fetch_options_market_state(sym)"));
     assert!(body.contains("tokio::join!"));
     assert!(
         body.contains("replay_occupancy.is_armed()"),
