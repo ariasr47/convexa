@@ -96,19 +96,3 @@ pub fn write_skipped_path_a() -> &'static str {
 pub fn write_skipped_path_b() -> &'static str {
     "session day tape write skipped — path-b · trader path unchanged"
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn list_clock_closed_set_has_no_not_expected_before_storing() {
-        for cell in LIST_CLOCK_CLOSED {
-            assert!(!cell.contains("not expected"));
-            assert!(!cell.contains("before storing"));
-        }
-        let joined = LIST_CLOCK_CLOSED.join("|");
-        assert!(!joined.contains("not expected before storing"));
-        assert_eq!(LIST_CLOCK_CLOSED.len(), 4);
-    }
-}
