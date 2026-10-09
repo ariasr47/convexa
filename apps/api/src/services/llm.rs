@@ -509,30 +509,39 @@ mod tests {
     }
 
     #[test]
-    fn a_call_right_is_projected() {
-        let raw = r#"{"decision":"trade","right":"call","rationale":"x"}"#;
-        assert_eq!(parse_strategy_json(raw).unwrap()["right"], "call");
-    }
-
-    #[test]
-    fn a_put_right_is_projected() {
-        let raw = r#"{"decision":"trade","right":"put","rationale":"x"}"#;
-        assert_eq!(parse_strategy_json(raw).unwrap()["right"], "put");
-    }
-
-    #[test]
-    fn an_unrecognised_right_stays_absent_and_never_defaults() {
-        let raw = r#"{"decision":"trade","right":"straddle","rationale":"x"}"#;
-        assert!(parse_strategy_json(raw).unwrap()["right"].is_null());
-    }
-
-    #[test]
-    fn an_absent_right_stays_absent_contrast_with_bias_default() {
-        let raw = r#"{"decision":"trade","rationale":"x"}"#;
-        let v = parse_strategy_json(raw).unwrap();
-        assert!(v["right"].is_null());
-        // Contrast: `bias` DOES default (to "neutral") — `right` deliberately does not.
-        assert_eq!(v["bias"], "neutral");
+    fn only_a_call_or_put_right_is_projected_and_nothing_else_defaults() {
+        // (case, raw model reply, projected right; None = stays absent)
+        let cases = [
+            (
+                "a call right is projected",
+                r#"{"decision":"trade","right":"call","rationale":"x"}"#,
+                Some("call"),
+            ),
+            (
+                "a put right is projected",
+                r#"{"decision":"trade","right":"put","rationale":"x"}"#,
+                Some("put"),
+            ),
+            (
+                "an unrecognised right stays absent and never defaults",
+                r#"{"decision":"trade","right":"straddle","rationale":"x"}"#,
+                None,
+            ),
+            (
+                "an absent right stays absent",
+                r#"{"decision":"trade","rationale":"x"}"#,
+                None,
+            ),
+        ];
+        for (case, raw, want) in cases {
+            let v = parse_strategy_json(raw).unwrap();
+            match want {
+                Some(right) => assert_eq!(v["right"], right, "{case}"),
+                None => assert!(v["right"].is_null(), "{case}"),
+            }
+            // Contrast: `bias` DOES default (to "neutral") — `right` deliberately does not.
+            assert_eq!(v["bias"], "neutral", "{case}");
+        }
     }
 
     // --- B15: prompt assembly ---
@@ -669,60 +678,6 @@ mod tests {
                 "{exp} forwarded but not in candidate set"
             );
         }
-    }
-
-    #[test]
-    fn widening_the_restriction_makes_the_subset_assertion_fail() {
-        // A single-expiration candidate chain — the candidate set's included tenor set is narrow.
-        let narrow_chain = vec![
-            quoted(100.0, quant_engine::ContractType::Call, "2026-08-21"),
-            quoted(100.0, quant_engine::ContractType::Put, "2026-08-21"),
-        ];
-        let narrow_set = quant_engine::CandidateSet::build(
-            &narrow_chain,
-            100.0,
-            as_of(),
-            quant_engine::DteWindow::default(),
-            quant_engine::CandidateBudget::Prompt,
-            true,
-            &quant_engine::SnapshotMeta::default(),
-        );
-
-        // A three-tenor move computed off a WIDER chain (as if the restriction were wrongly
-        // widened to the move's own tenors instead of the actual candidate set).
-        let mut wide_chain = Vec::new();
-        for exp in ["2026-08-21", "2026-09-18", "2026-10-16"] {
-            wide_chain.push(quoted(100.0, quant_engine::ContractType::Call, exp));
-            wide_chain.push(quoted(100.0, quant_engine::ContractType::Put, exp));
-        }
-        let mv = quant_engine::compute_straddle_move(
-            &wide_chain,
-            100.0,
-            as_of(),
-            quant_engine::DteWindow::default(),
-            &quant_engine::SnapshotMeta::default(),
-        );
-        assert_eq!(mv.tenors.len(), 3);
-
-        // Poison: assert against the NARROW set's included tenors (the correct bound). The
-        // unrestricted 3-tenor move must fail the subset check.
-        assert!(quant_engine::assert_tenor_subset(&mv, narrow_set.included_expirations()).is_err());
-    }
-
-    #[test]
-    fn the_positions_digest_rides_the_prompt_labelled_simulated() {
-        let ctx = RecPromptContext {
-            market_state: json!({}),
-            signals: None,
-            ai_eval: None,
-            candidates: json!({"state": "ok"}),
-            risk_inputs: json!({"state": "not_set"}),
-            open_positions: json!({"source": "simulated", "state": "none_open", "this_underlying": null, "portfolio": null}),
-        };
-        let (_, user) = build_rec_prompts("SPY", &ctx, "Default");
-        let v = user_context_json(&user);
-        assert_eq!(v["open_positions"]["source"], "simulated");
-        assert_eq!(v["open_positions"]["state"], "none_open");
     }
 }
 

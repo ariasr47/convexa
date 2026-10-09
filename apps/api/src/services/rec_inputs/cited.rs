@@ -145,55 +145,96 @@ mod tests {
     }
 
     #[test]
-    fn two_strikes_yield_none() {
+    fn resolve_cited_needs_the_full_triple_and_never_picks_a_side() {
         let s = set();
-        let out = resolve_cited(&s, &[100.0, 105.0], Some("2026-09-18"), Some(CT::Call));
-        assert_eq!(out.state, CitedState::None);
-    }
-
-    #[test]
-    fn a_missing_expiration_yields_none() {
-        let s = set();
-        let out = resolve_cited(&s, &[100.0], None, Some(CT::Call));
-        assert_eq!(out.state, CitedState::None);
-    }
-
-    #[test]
-    fn a_missing_right_with_the_strike_and_expiration_in_the_set_yields_right_undetermined_with_both_legs(
-    ) {
-        let s = set();
-        let out = resolve_cited(&s, &[100.0], Some("2026-09-18"), None);
-        assert_eq!(out.state, CitedState::RightUndetermined);
-        assert_eq!(out.legs.len(), 2);
-    }
-
-    #[test]
-    fn a_missing_right_with_the_strike_absent_yields_off_set() {
-        let s = set();
-        let out = resolve_cited(&s, &[999.0], Some("2026-09-18"), None);
-        assert_eq!(out.state, CitedState::OffSet);
-        assert!(out.legs.is_empty());
-    }
-
-    #[test]
-    fn a_full_triple_absent_from_the_set_yields_off_set() {
-        let s = set();
-        let out = resolve_cited(&s, &[999.0], Some("2026-09-18"), Some(CT::Call));
-        assert_eq!(out.state, CitedState::OffSet);
-    }
-
-    #[test]
-    fn a_full_triple_in_the_set_yields_cited() {
-        let s = set();
-        let out = resolve_cited(&s, &[100.0], Some("2026-09-18"), Some(CT::Call));
-        assert_eq!(out.state, CitedState::Cited);
-        assert!(out.contract.is_some());
-    }
-
-    #[test]
-    fn the_local_rule_based_fallback_shape_yields_none() {
-        let s = set();
-        let out = resolve_cited(&s, &[], None, None);
-        assert_eq!(out.state, CitedState::None);
+        // (case, strikes, expiration, right, state, legs returned, cited contract's right)
+        let cases: [(
+            &str,
+            &[f64],
+            Option<&str>,
+            Option<CT>,
+            CitedState,
+            usize,
+            Option<CT>,
+        ); 8] = [
+            (
+                "two strikes yield none",
+                &[100.0, 105.0],
+                Some("2026-09-18"),
+                Some(CT::Call),
+                CitedState::None,
+                0,
+                None,
+            ),
+            (
+                "a missing expiration yields none",
+                &[100.0],
+                None,
+                Some(CT::Call),
+                CitedState::None,
+                0,
+                None,
+            ),
+            (
+                "no right, strike and expiration in the set: right_undetermined with both legs",
+                &[100.0],
+                Some("2026-09-18"),
+                None,
+                CitedState::RightUndetermined,
+                2,
+                None,
+            ),
+            (
+                "a missing right with the strike absent yields off_set",
+                &[999.0],
+                Some("2026-09-18"),
+                None,
+                CitedState::OffSet,
+                0,
+                None,
+            ),
+            (
+                "a full triple absent from the set yields off_set",
+                &[999.0],
+                Some("2026-09-18"),
+                Some(CT::Call),
+                CitedState::OffSet,
+                0,
+                None,
+            ),
+            (
+                "a full call triple in the set yields the cited call",
+                &[100.0],
+                Some("2026-09-18"),
+                Some(CT::Call),
+                CitedState::Cited,
+                0,
+                Some(CT::Call),
+            ),
+            (
+                "a full put triple in the set yields the cited put, not the call",
+                &[100.0],
+                Some("2026-09-18"),
+                Some(CT::Put),
+                CitedState::Cited,
+                0,
+                Some(CT::Put),
+            ),
+            (
+                "the local rule-based fallback shape yields none",
+                &[],
+                None,
+                None,
+                CitedState::None,
+                0,
+                None,
+            ),
+        ];
+        for (case, strikes, expiration, right, state, legs, cited_right) in cases {
+            let out = resolve_cited(&s, strikes, expiration, right);
+            assert_eq!(out.state, state, "{case}");
+            assert_eq!(out.legs.len(), legs, "{case}");
+            assert_eq!(out.contract.map(|c| c.right), cited_right, "{case}");
+        }
     }
 }

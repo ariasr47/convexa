@@ -198,30 +198,47 @@ mod tests {
     }
 
     #[test]
-    fn model_switch_keeps_id_when_in_new_catalog() {
+    fn model_switch_keeps_a_listed_id_else_writes_the_recommended_else_unsets() {
         let openai = byo_catalog("openai").unwrap();
-        let keep = apply_model_switch(Some("gpt-4o"), &openai);
-        assert_eq!(keep.as_deref(), Some("gpt-4o"));
-    }
-
-    #[test]
-    fn model_switch_writes_recommended_when_not_in_catalog() {
         let anthropic = byo_catalog("anthropic").unwrap();
-        let next = apply_model_switch(Some("gpt-4o"), &anthropic);
-        assert_eq!(
-            next.as_deref(),
-            Some(LlmProvider::Anthropic.default_model())
-        );
-    }
-
-    #[test]
-    fn model_switch_unsets_when_catalog_empty() {
         let empty = ProviderCatalog {
             provider: "anthropic",
             models: vec![],
         };
-        assert!(apply_model_switch(Some("claude-opus-4-8"), &empty).is_none());
-        assert!(apply_model_switch(None, &empty).is_none());
+        // (case, current model, new active catalog, model after the switch)
+        let cases: [(&str, Option<&str>, &ProviderCatalog, Option<&str>); 4] = [
+            (
+                "kept when it is in the new catalog",
+                Some("gpt-4o"),
+                &openai,
+                Some("gpt-4o"),
+            ),
+            (
+                "the recommended default when it is not in the new catalog",
+                Some("gpt-4o"),
+                &anthropic,
+                Some(LlmProvider::Anthropic.default_model()),
+            ),
+            (
+                "unset when the new catalog is empty",
+                Some("claude-opus-4-8"),
+                &empty,
+                None,
+            ),
+            (
+                "stays unset when the new catalog is empty",
+                None,
+                &empty,
+                None,
+            ),
+        ];
+        for (case, current, catalog, want) in cases {
+            assert_eq!(
+                apply_model_switch(current, catalog).as_deref(),
+                want,
+                "{case}"
+            );
+        }
     }
 
     #[test]

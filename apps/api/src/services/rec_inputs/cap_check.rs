@@ -40,60 +40,70 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_no_trade_fixture_with_a_cap_set_yields_not_applicable() {
-        assert_eq!(
-            cap_verdict(false, Some(500.0), ParsedRisk::Dollars(300.0)),
-            CapVerdict::NotApplicable
-        );
-    }
-
-    #[test]
-    fn the_same_no_trade_fixture_with_no_cap_yields_not_applicable_not_no_cap() {
-        assert_eq!(
-            cap_verdict(false, None, ParsedRisk::NotParseable(RiskRefusal::NoText)),
-            CapVerdict::NotApplicable
-        );
-    }
-
-    #[test]
-    fn an_entry_stating_fixture_with_a_null_risk_figure_yields_not_checkable() {
-        assert_eq!(
-            cap_verdict(
+    fn cap_verdict_follows_its_fixed_order_first_match_wins() {
+        use super::CapVerdict::{Above, NoCap, NotApplicable, NotCheckable, Within};
+        use super::ParsedRisk::{Dollars, NotParseable};
+        // (case, states_entry, effective cap, parsed max risk, verdict)
+        let cases = [
+            (
+                "a no-trade fixture with a cap set is not applicable",
+                false,
+                Some(500.0),
+                Dollars(300.0),
+                NotApplicable,
+            ),
+            (
+                "the same no-trade fixture with no cap is not applicable, not no_cap",
+                false,
+                None,
+                NotParseable(RiskRefusal::NoText),
+                NotApplicable,
+            ),
+            (
+                "a trade with no cap set is no_cap, whatever the parsed risk",
+                true,
+                None,
+                Dollars(300.0),
+                NoCap,
+            ),
+            (
+                "an entry-stating fixture with a null risk figure is not checkable",
                 true,
                 Some(500.0),
-                ParsedRisk::NotParseable(RiskRefusal::NoText)
+                NotParseable(RiskRefusal::NoText),
+                NotCheckable,
             ),
-            CapVerdict::NotCheckable
-        );
-    }
-
-    #[test]
-    fn equality_is_within() {
-        assert_eq!(
-            cap_verdict(true, Some(300.0), ParsedRisk::Dollars(300.0)),
-            CapVerdict::Within
-        );
-    }
-
-    #[test]
-    fn strictly_greater_is_above() {
-        assert_eq!(
-            cap_verdict(true, Some(300.0), ParsedRisk::Dollars(301.0)),
-            CapVerdict::Above
-        );
-    }
-
-    #[test]
-    fn every_refusal_reason_still_yields_exactly_one_verdict_not_checkable() {
-        for r in [
-            RiskRefusal::NoText,
-            RiskRefusal::NoDollarFigure,
-            RiskRefusal::MultipleDifferentFigures,
-        ] {
-            assert_eq!(
-                cap_verdict(true, Some(500.0), ParsedRisk::NotParseable(r)),
-                CapVerdict::NotCheckable
-            );
+            (
+                "a figure with no dollar amount is not checkable",
+                true,
+                Some(500.0),
+                NotParseable(RiskRefusal::NoDollarFigure),
+                NotCheckable,
+            ),
+            (
+                "two different dollar figures are not checkable",
+                true,
+                Some(500.0),
+                NotParseable(RiskRefusal::MultipleDifferentFigures),
+                NotCheckable,
+            ),
+            (
+                "equality is within",
+                true,
+                Some(300.0),
+                Dollars(300.0),
+                Within,
+            ),
+            (
+                "strictly greater is above",
+                true,
+                Some(300.0),
+                Dollars(301.0),
+                Above,
+            ),
+        ];
+        for (case, states_entry, cap, parsed, want) in cases {
+            assert_eq!(cap_verdict(states_entry, cap, parsed), want, "{case}");
         }
     }
 }
