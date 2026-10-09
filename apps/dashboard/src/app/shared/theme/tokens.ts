@@ -172,7 +172,7 @@ export const extras = {
    * paused Mid value, `FigureCell.tsx`'s dimmed value glyph and `ScanCells.tsx`'s offline-retained
    * `cell-price`) — opacity composites the foreground WITH the background, so it can never carry a
    * contrast guarantee independent of what it sits on. `textDim` is a SOLID colour instead: measured
-   * (`text-dim-contrast.spec.ts`) at `#7B8CA6` on `panel` 5.12:1 (the hardest real dark surface —
+   * (`token-contrast.spec.ts`) at `#7B8CA6` on `panel` 5.12:1 (the hardest real dark surface —
    * `well`/`ink` clear with more headroom, 5.49/5.61), all four clearing the WCAG AA 4.5:1 normal-
    * text floor with real margin, one step quieter than `steel`/`text.secondary` (6.19:1 on panel) so
    * the reduced-emphasis intent still reads. NOT `extras.textTertiary` (steel2): that token names a
@@ -192,7 +192,7 @@ export const extras = {
    * `mid · tape` header badge (3.7:1, composited `action.selected` fill) and the ladder mid row's
    * live badge word (same). `success`/`error`/`warning` do NOT share this failure at the SAME
    * `alpha(tone,0.16)` formula (measured 4.7–7.0:1 — real headroom), so this is `info` alone.
-   * Measured (`text-info-contrast.spec.ts`): dark `#8CB0DE` clears every real composited surface
+   * Measured (`token-contrast.spec.ts`): dark `#8CB0DE` clears every real composited surface
    * these three sites paint on (`alpha(info.main,0.16)` over ink/panel/well 6.3–7.1:1;
    * `action.selected` over panel 4.77:1 — the tighter floor, still clearing with margin).
    */
@@ -222,7 +222,7 @@ export const extrasLight: Record<keyof typeof extras, string> = {
    * canon stated only "a solid light-mode value", and `#61708A` measured 4.23:1 on
    * `extras.panelRaised` — below the WCAG AA 4.5:1 normal-text floor for the widget-card surface
    * a real tertiary label sits on, e.g. `PositionBrief.tsx`'s basis chip). `#5D6B84` clears every
-   * light surface a real consumer paints text on TODAY (grep-verified, `steel2-contrast.spec.ts`):
+   * light surface a real consumer paints text on TODAY (grep-verified, `token-contrast.spec.ts`):
    * `panelRaised` 4.54:1 (dialogs/toolbars/table-hover/`PositionBrief`), `well` 4.75:1 (the inset
    * body of 7 ticker widgets + the nav search trigger), `background.default`/"paper" 4.97:1,
    * `background.paper`/white 5.38:1 (Widget's own card + `FigureCell`'s `CellCard`).
@@ -237,7 +237,7 @@ export const extrasLight: Record<keyof typeof extras, string> = {
   scrim: 'rgba(23,32,43,0.45)',
   glass: 'rgba(255,255,255,0.86)',
   /**
-   * Light `textDim` — measured (`text-dim-contrast.spec.ts`) at `#576578` on `panelRaised` 5.01:1
+   * Light `textDim` — measured (`token-contrast.spec.ts`) at `#576578` on `panelRaised` 5.01:1
    * (the hardest real light surface, same floor `steel2`'s light value clears), `well` 5.24:1,
    * `paper` 5.48:1, white 5.94:1 — all clearing WCAG AA 4.5:1 with real margin. Never exercised by
    * the shipped scans (the offline/paused states this token dims are dark-scheme-only fixtures
@@ -245,7 +245,7 @@ export const extrasLight: Record<keyof typeof extras, string> = {
    */
   textDim: '#576578',
   /**
-   * Light `textInfo` — measured (`text-info-contrast.spec.ts`) at `#2F547D` on `alpha(lightInfo,
+   * Light `textInfo` — measured (`token-contrast.spec.ts`) at `#2F547D` on `alpha(lightInfo,
    * 0.16)` composited over `white`/`paper`/`panelRaised`/`well` (6.31–5.40:1) and on
    * `action.selected` composited over the same surfaces (7.82–6.54:1) — every real light surface
    * these three sites could paint on, all clearing WCAG AA 4.5:1 with real margin. Never exercised

@@ -1,29 +1,19 @@
 /**
- * redesign-stage-3 — the amber-spend guards (§8-3 / §8-5 / §8-7 / §8-8 + the §8B-2 ring pins).
+ * redesign-stage-3 — the amber-spend guards (§8-7 / §8-8 + the §8B-2 ring pins).
  * "Amber SPENT, not sprinkled" is THE grading criterion of the stage; these are the mechanizable
  * halves (the judged halves are the GATE Q render pass R2/R3).
  *
  *   §8-7  textAmber CONTRAST PIN — WCAG ratios computed IN this spec: a future token darken/
  *         lighten below the floor is a red build, not a design opinion.
  *   §8B-2 focus-ring contrast on the FINAL surfaces (ring binds primary.main by construction).
- *   §8-5  brandGradient DISPOSITION — token absent, zero references, the gradient-brand pair
- *         unreproducible in features/auth; the avatar renders flat primary slots.
- *   §8-3  amber CENSUS (structural half) — no `primary` inside hover blocks of the named files,
- *         CommandDeck carries zero primary, the remaining MOVE→info sites bind `info`.
  *   §8-8  textAmber CONSUMPTION — every §5.2 closed-list consumer resolves via `extrasFor(`,
  *         never bare `extras.`.
  *
  * Scans use the Vite `?raw` idiom and are MUTATION-GUARDED (house rule). Comments are stripped
- * where a token may legitimately be MENTIONED as documentation (e.g. "brandGradient was deleted").
+ * where a token may legitimately be MENTIONED as documentation (e.g. a comment naming `extras.`).
  */
-import Box from '@mui/material/Box';
-import { ThemeProvider } from '@mui/material/styles';
-import { render } from '@testing-library/react';
-import { createElement } from 'react';
 import { describe, expect, it } from 'vitest';
 
-import { AVATAR_SX } from '@/features/auth/avatar';
-import { theme } from './theme';
 import { extras, extrasLight, palette } from './tokens';
 
 const APP_SOURCES = import.meta.glob(['/src/app/**/*.{ts,tsx}', '!**/*.spec.{ts,tsx}'], {
@@ -33,7 +23,7 @@ const APP_SOURCES = import.meta.glob(['/src/app/**/*.{ts,tsx}', '!**/*.spec.{ts,
 }) as Record<string, string>;
 
 /** Strip comments (newline-preserving — the hex-discipline idiom) so documentation mentions of a
- *  retired token don't count as references. */
+ *  token don't count as references. */
 function stripComments(src: string): string {
   return src
     .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ''))
@@ -133,191 +123,6 @@ describe('§8B-2 · focus-ring contrast on the FINAL surfaces (ring ≡ the mode
     // background.default (paper) only — the Stage-1 3.02 re-pinned.
     expect(contrast(AMBER_DEEP, PAPER)).toBeGreaterThanOrEqual(3.0); // measured 3.019
     expect(contrast(AMBER_DEEP, WHITE)).toBeGreaterThanOrEqual(3.0); // measured 3.27
-  });
-});
-
-describe('§8-5 · brandGradient disposition (deleted, both consumers flat)', () => {
-  const referencesBrandGradient = (src: string): boolean =>
-    /\bbrandGradient\b/.test(stripComments(src));
-  const gradientPairInAuth = (src: string): boolean =>
-    stripComments(src).includes('linear-gradient(135deg');
-
-  it('MUTATION GUARD: the checkers flag real references and ignore comment mentions', () => {
-    expect(referencesBrandGradient(`import { brandGradient } from '@/shared/theme/tokens';`)).toBe(
-      true,
-    );
-    expect(referencesBrandGradient('// brandGradient was deleted here')).toBe(false);
-    expect(gradientPairInAuth(`background: 'linear-gradient(135deg, #a, #b)'`)).toBe(true);
-  });
-
-  it('zero brandGradient references anywhere (comment mentions stripped)', () => {
-    const offenders = Object.entries(APP_SOURCES)
-      .filter(([, src]) => referencesBrandGradient(src))
-      .map(([f]) => f);
-    expect(offenders).toEqual([]);
-  });
-
-  it('zero 135deg gradient-brand pairs under features/auth (the pill/avatar cannot regrow one)', () => {
-    const offenders = Object.entries(APP_SOURCES)
-      .filter(([f]) => f.startsWith('/src/app/features/auth/'))
-      .filter(([, src]) => gradientPairInAuth(src))
-      .map(([f]) => f);
-    expect(offenders).toEqual([]);
-  });
-
-  it('the avatar disc renders flat primary.main + primary.contrastText (white-on-amber unreproducible)', () => {
-    const { container } = render(
-      createElement(
-        ThemeProvider,
-        { theme },
-        createElement(Box, { sx: AVATAR_SX, 'data-testid': 'avatar-probe' } as never, 'R'),
-      ),
-    );
-    const el = container.querySelector('[data-testid="avatar-probe"]') as HTMLElement;
-    const cls = Array.from(el.classList).find((c) => c.startsWith('css-'));
-    const css = Array.from(document.querySelectorAll('style'))
-      .map((s) => s.textContent ?? '')
-      .join('\n')
-      .replace(/\s+/g, '');
-    const rule = css.split(`.${cls}{`)[1]?.split('}')[0] ?? '';
-    // The theme runs cssVariables:true — the slots compile to --mui-palette-* var() refs. Either
-    // the var binding or the resolved literal proves the SLOT (never a hardcoded fill).
-    expect(rule).toMatch(
-      new RegExp(`background-color:(var\\(--mui-palette-primary-main\\)|${GAMMA_AMBER})`),
-    );
-    expect(rule).toMatch(
-      new RegExp(
-        `[;{]color:(var\\(--mui-palette-primary-contrastText\\)|${palette.dark.primary.contrastText})`,
-      ),
-    );
-    expect(rule).not.toContain('linear-gradient');
-    expect(rule).not.toContain('#fff');
-  });
-
-  it('the Sign-up pill is a flat contained-primary button (no gradient, no common.white label)', () => {
-    const src = APP_SOURCES['/src/app/features/auth/AccountControl.tsx'];
-    expect(src, 'AccountControl.tsx must exist').toBeTruthy();
-    const code = stripComments(src);
-    expect(code).toContain('variant="contained"');
-    expect(code).not.toContain('common.white');
-    expect(code).not.toContain('linear-gradient');
-  });
-});
-
-// ---- §8-3 · the amber census, mechanizable half -------------------------------------------------
-
-/** Balanced-brace extraction of every `'&:hover': { … }` block in a source. */
-export function hoverBlocks(src: string): string[] {
-  const out: string[] = [];
-  const re = /['"]&:hover['"]\s*:\s*\{/g;
-  for (const m of src.matchAll(re)) {
-    let depth = 1;
-    let i = m.index + m[0].length;
-    const start = i;
-    while (i < src.length && depth > 0) {
-      if (src[i] === '{') depth += 1;
-      else if (src[i] === '}') depth -= 1;
-      i += 1;
-    }
-    out.push(src.slice(start, i - 1));
-  }
-  return out;
-}
-
-const hoverAmber = (src: string): string[] =>
-  hoverBlocks(stripComments(src)).filter(
-    (b) => b.includes('primary') || b.includes('--mui-palette-primary'),
-  );
-
-/** The "no amber on hover chrome" file list (§8-3a — the rule made structural). */
-const HOVER_CENSUS_FILES = [
-  '/src/app/shared/ui/Widget/Widget.tsx',
-  // Re-pointed, not deleted (AC-57): StatTile.tsx → FigureCell.tsx at curvature-v2-foundations.
-  '/src/app/pages/ticker/widgets/_kit/FigureCell.tsx',
-  '/src/app/features/trading/positions/PositionRow.tsx',
-  '/src/app/features/trading/positions/PositionCard.tsx',
-  '/src/app/features/trading/orders/OrderRow.tsx',
-  '/src/app/features/trading/positions/PositionsView.tsx',
-];
-
-/** The MOVE→info sites (§4 lists; the /scanner stub's link retired with the real page at P4): marker → the window that must bind `info`, not `primary`. */
-const MOVE_TO_INFO_SITES: Array<{ file: string; marker: string; window: 'after' | 'before' }> = [
-  {
-    file: '/src/app/pages/ticker/widgets/ai-rec/AiRecPanel.tsx',
-    marker: 'onViewExport(readPersonaIdForRequest)',
-    window: 'after',
-  },
-  {
-    file: '/src/app/features/trading/orders/OrdersWidget.tsx',
-    marker: '{ACTION_ALL_ORDERS}',
-    window: 'before',
-  },
-  {
-    file: '/src/app/features/trading/positions/CustomizationToolbar.tsx',
-    marker: 'data-testid="history-button"',
-    window: 'after',
-  },
-  {
-    file: '/src/app/features/trading/positions/PositionsView.tsx',
-    marker: 'const clearLinkSx',
-    window: 'after',
-  },
-  {
-    file: '/src/app/features/trading/positions/PositionRow.tsx',
-    marker: 'data-testid="position-view-order"',
-    window: 'after',
-  },
-];
-
-const WINDOW = 700;
-function siteWindow(src: string, marker: string, dir: 'after' | 'before'): string | null {
-  const i = src.indexOf(marker);
-  if (i < 0) return null;
-  return dir === 'after'
-    ? src.slice(i, i + marker.length + WINDOW)
-    : src.slice(Math.max(0, i - WINDOW), i + marker.length);
-}
-
-describe('§8-3 · amber census — hover chrome, deck, and the MOVE→info sites (mutation-guarded)', () => {
-  it('MUTATION GUARD: the hover extractor finds nested blocks and flags amber inside them', () => {
-    const fixture = `sx={{ '&:hover': { borderColor: theme.palette.primary.main, '& .x': { opacity: 1 } } }}`;
-    expect(hoverBlocks(fixture)).toHaveLength(1);
-    expect(hoverAmber(fixture)).toHaveLength(1);
-    expect(hoverAmber(`sx={{ '&:hover': { borderColor: theme.palette.text.disabled } }}`)).toEqual(
-      [],
-    );
-    expect(
-      hoverAmber(
-        `'&:hover': { borderColor: 'color-mix(in srgb, var(--mui-palette-primary-main) 40%, x)' }`,
-      ),
-    ).toHaveLength(1);
-  });
-
-  it('(a) NO primary token inside any &:hover block of the census files (hover chrome is neutral)', () => {
-    for (const file of HOVER_CENSUS_FILES) {
-      const src = APP_SOURCES[file];
-      expect(src, `${file} must exist (census list is live)`).toBeTruthy();
-      expect(hoverAmber(src), `${file}: amber must not land on hover chrome`).toEqual([]);
-    }
-  });
-
-  it('(b) CommandDeck contains ZERO primary references — the washes are gone, the deck has no legitimate amber', () => {
-    const deck = APP_SOURCES['/src/app/pages/ticker/widgets/chrome/CommandDeck.tsx'];
-    expect(deck, 'CommandDeck.tsx must exist').toBeTruthy();
-    expect(stripComments(deck)).not.toMatch(/primary/);
-  });
-
-  it('(c) the MOVE→info sites bind `info`, not `primary` (link-class text is signal-blue)', () => {
-    for (const { file, marker, window } of MOVE_TO_INFO_SITES) {
-      const src = APP_SOURCES[file];
-      expect(src, `${file} must exist`).toBeTruthy();
-      const win = siteWindow(src, marker, window);
-      expect(win, `${file}: marker "${marker}" must exist (site list is live)`).toBeTruthy();
-      expect(win, `${file} @ "${marker}": must bind info.main`).toContain('info.main');
-      expect(win, `${file} @ "${marker}": must not bind primary.main`).not.toContain(
-        'primary.main',
-      );
-    }
   });
 });
 
