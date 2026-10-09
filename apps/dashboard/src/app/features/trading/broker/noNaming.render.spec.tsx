@@ -108,7 +108,7 @@ describe.each(['row', 'card'] as const)(
 
     it('channel 4 — every keyboard-reachable tooltip is clean on BOTH arms', async () => {
       // ONE ENVIRONMENT NOTE, so nobody weakens these assertions to work around it (verbatim
-      // precedent: `positions/faulted.a11y.spec.tsx`, and this exact trigger's own comment in
+      // precedent: this exact trigger's own comment in
       // `BrokerGroupHeader.spec.tsx:333-336`). `@mui/utils/isFocusVisible` gates Tooltip's
       // open-on-focus behind `element.matches(':focus-visible')`; probed directly, jsdom/nwsapi
       // grants that pseudo-class to a native `<button>` on its first-ever Tab but NEVER to a

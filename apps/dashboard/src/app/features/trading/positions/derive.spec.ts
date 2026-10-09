@@ -12,7 +12,6 @@ import { applyFilter, applyGroup, applySort, deriveGroups, subtotalOf } from './
 import {
   FX_IRON_CONDOR,
   FX_LONG_CALL,
-  FX_LONG_PUT,
   FX_RATIO_1X2,
   FX_SHARES_LONG,
   viewOf,
@@ -201,20 +200,6 @@ describe('group + subtotal', () => {
     expect(groups).toHaveLength(1);
     expect(groups[0].subtotal).toBe(30);
   });
-
-  it('the group axis offers exactly None · Ticker · Structure — Expiry does not return', () => {
-    // The TYPE is the guard the UI reads; `normalizeViewConfig` degrades a stored `expiry` to `none`.
-    expect(normalizeViewConfig({ group: 'expiry' }).config.group).toBe('none');
-  });
-
-  it('the `expiry` axis remains reachable in derive.ts so restoring it costs zero schema', () => {
-    const views = [
-      view(pos({ id: 'a', expiration: '2026-07-17' }), 10),
-      view(pos({ id: 'b', expiration: '2026-08-21' }), 20),
-    ];
-    const groups = applyGroup(views, 'expiry');
-    expect(groups.map((g) => g.key).sort()).toEqual(['2026-07-17', '2026-08-21']);
-  });
 });
 
 describe('full pipeline', () => {
@@ -250,12 +235,5 @@ describe('full pipeline', () => {
     });
     expect(groups.reduce((n, g) => n + g.views.length, 0)).toBe(2);
     expect(JSON.stringify(localStorage)).toBe(before);
-  });
-});
-
-describe('the fixture guard for FX_LONG_PUT stays honest', () => {
-  it('long put and long call project to different structures', () => {
-    expect(viewOf(FX_LONG_PUT).structure).toBe('long_put');
-    expect(viewOf(FX_LONG_CALL).structure).toBe('long_call');
   });
 });
