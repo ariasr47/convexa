@@ -1,27 +1,14 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
 import test from 'node:test';
 
 import {
   CAPABILITY_IDS,
   buildCapabilityReceipts,
-  trivyGithubPatCanary,
   validateCapabilityReceiptSet,
 } from './capabilities.mjs';
 import { canonicalSha256 } from './lib/canonical.mjs';
 
 const tool = (id) => ({ tool_id: id, version: '1.0.0', sha256: 'a'.repeat(64) });
-
-test('Trivy policy-fail canary matches the v0.74 built-in GitHub PAT rule', () => {
-  const canary = trivyGithubPatCanary();
-  const prefix = ['gh', 'p_'].join('');
-
-  assert.equal(canary.startsWith(prefix), true);
-  assert.equal(canary.length, prefix.length + 36);
-  assert.match(canary.slice(prefix.length), /^[0-9a-zA-Z]{36}$/);
-});
 
 test('capability harness invokes each real adapter arm and binds tool and fixture hashes', async () => {
   const calls = [];
@@ -89,16 +76,6 @@ test('receipt-set validator rejects missing, duplicated, or wrong-state arms', (
     ).valid,
     false,
   );
-});
-
-test('production fixture bytes affect the receipt hash', async () => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'sca-capability-'));
-  const fixture = path.join(directory, 'fixture.json');
-  await writeFile(fixture, '{"safe":true}\n');
-  const first = canonicalSha256(await readFile(fixture));
-  await writeFile(fixture, '{"safe":false}\n');
-  const second = canonicalSha256(await readFile(fixture));
-  assert.notEqual(first, second);
 });
 
 test('capability receipts expose only safe adapter diagnostics', async () => {

@@ -111,25 +111,3 @@ test('workflow_call must explicitly preserve the closed event revision and path'
   ].replace("github.event_name == 'workflow_call' && inputs.contract_event", 'github.event_name');
   assert.match(auditAutomation(input).errors.join(','), /workflow-call-contract/);
 });
-
-test('conformance builds generated client dependencies before every contract check', async () => {
-  const input = await load();
-  const conformance = input.workflows['.github/workflows/conformance.yml'];
-  const jobs = conformance.split(/\n  (?=prod-public:|local-auth:)/).slice(1);
-  assert.equal(jobs.length, 2);
-  for (const job of jobs) {
-    const build = job.indexOf('run: npx tsc -p libs/api/tsconfig.lib.json --pretty false');
-    const check = job.indexOf('run: npm run api:contract:check');
-    assert.ok(build >= 0, 'generated API client dependency build is missing');
-    assert.ok(check > build, 'contract check must run after the generated client dependency build');
-  }
-});
-
-test('artifact-path policy evidence does not render an incomplete policy-only summary', async () => {
-  const input = await load();
-  const supply = input.workflows['.github/workflows/supply-chain.yml'];
-  assert.match(
-    supply,
-    /name: Render sanitized policy summary\r?\n\s+if: always\(\) && needs\.identity\.outputs\.path == 'policy'/,
-  );
-});

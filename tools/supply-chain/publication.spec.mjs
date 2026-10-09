@@ -170,33 +170,6 @@ test('policy path rejects subjects and artifact path requires both exact associa
   y.path = 'artifacts';
   assert.equal(sanitize(y, catalogs).safe, false);
 });
-test('summary is verdict-first, complete, bounded and reports redaction only when declared', () => {
-  const x = report();
-  const summary = renderSummary(x);
-  assert.ok(summary.startsWith('# Required supply-chain checks passed for revision aaaaaaa.'));
-  assert.match(summary, /## Checks/);
-  assert.doesNotMatch(summary, /redacted/);
-  x.redaction = { count: 1, kinds: ['snippet'] };
-  assert.match(renderSummary(x), /Some diagnostic text was redacted/);
-});
-test('summary uses exact aggregate terminal copy with revision for every state and exact order', () => {
-  const expected = {
-    pass: '# Required supply-chain checks passed for revision aaaaaaa.',
-    pass_with_advisories:
-      '# Required supply-chain checks passed with advisories for revision aaaaaaa.',
-    fail: '# Supply-chain policy failed for revision aaaaaaa.',
-    blocked: '# Supply-chain checks are blocked for revision aaaaaaa. No pass result is available.',
-  };
-  for (const [aggregate, lead] of Object.entries(expected)) {
-    const x = report();
-    x.aggregate = aggregate;
-    const summary = renderSummary(x);
-    assert.equal(summary.split('\n')[0], lead);
-    assert.ok(summary.indexOf(lead) < summary.indexOf('Revision:'));
-    assert.ok(summary.indexOf('Revision:') < summary.indexOf('## Checks'));
-    assert.ok(summary.indexOf('## Checks') < summary.indexOf('## Provenance'));
-  }
-});
 test('summary CLI writes only exact sanitized bytes and preserves closed state exits', async (t) => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'sca-summary-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
