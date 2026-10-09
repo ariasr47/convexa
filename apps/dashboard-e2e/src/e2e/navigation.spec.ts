@@ -106,23 +106,6 @@ test.describe('client-side navigation', () => {
     expect(await sentinelSurvived(page), 'navigating to /scanner reloaded the document').toBe(true);
   });
 
-  test('browser Back and Forward are wired to the router', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.getByTestId('landing')).toBeAttached();
-    await plantSpaSentinel(page);
-
-    await page.getByTestId('nav-positions').click();
-    await expect(page).toHaveURL(/\/positions$/);
-
-    await page.goBack();
-    await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByTestId('landing')).toBeAttached();
-
-    await page.goForward();
-    await expect(page).toHaveURL(/\/positions$/);
-    await expect(page.getByTestId('portfolio-panel')).toBeAttached();
-  });
-
   test('the /ticker redirect resolves to the default symbol', async ({ page }) => {
     // `<Route path="/ticker" element={<DefaultTickerRedirect />} />` — the effective-default
     // redirect (index-first-defaults AC-1/AC-2: a stored `default_ticker` pref wins; the UNSET

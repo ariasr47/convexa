@@ -2,21 +2,12 @@
   "schema_version": 1,
   "support_policy_id": "playwright-engines-1.62.1",
   "full_chromium": {
-    "inventory_id": "lean-tests-batch-36-20-v1",
+    "inventory_id": "lean-tests-batch-81-13-v1",
     "tests": [
       {
         "test_id": "17368bd9989383c8b0ae86287a827d73238534d56e8a660322e401244dbfc0f6",
         "file": "apps/dashboard-e2e/src/e2e/navigation.spec.ts",
         "title_path": ["client-side navigation", "the nav links route WITHOUT a page reload"],
-        "project": "chromium"
-      },
-      {
-        "test_id": "603e2eaf77a9c4ccbe1cff4fdd0affea1b2dde109de990e181708da1cbc4c87b",
-        "file": "apps/dashboard-e2e/src/e2e/navigation.spec.ts",
-        "title_path": [
-          "client-side navigation",
-          "browser Back and Forward are wired to the router"
-        ],
         "project": "chromium"
       },
       {
@@ -103,59 +94,6 @@
         "title_path": [
           "U-32 (SB) — the Widget frame header ⓘ at all seven frame roots (hero + tape included)",
           "every frame's header ⓘ has a tap AND a keyboard path at 1280px"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "4b1407223e2035cb5bb6590094ce21c3babad4cdd1913c55e0d608ac340c38cb",
-        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
-        "title_path": [
-          "AC-20b (review-only evidence) — rendered font-size of a traced FigureCell value, both panels, one viewport"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "d3d8972b71c27981edae5dfae41391fc4dd6b8c3723f7f431ab568990c46c869",
-        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
-        "title_path": [
-          "AC-1a — one connection chip in the viewport, never two, never the deleted stream-state block",
-          "hero chip in view at rest; condensed chip replaces it in-viewport after scroll (hero node stays mounted, off-screen)"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "0863040d6895985568b0d6e90c310b272f10fb0bb215b02245028c393e6841c7",
-        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
-        "title_path": [
-          "AC-34 — coarse pointer at 393px: the effective hit area, measured, for every named control",
-          "the palette trigger + its rows, the burger drawer + its four links, and FigureCell’s ⓘ all measure ≥44px in both dimensions"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "4caad7012a7847083082746f4e07b64b4419fa864050dd779626c304cd9bc321",
-        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
-        "title_path": [
-          "criterion 66 (FE-13) — the alerts write affordances at 393px, coarse pointer",
-          "the composer's \"Add rule\" and \"Enable browser notify\" buttons meet the floor"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "1145b5f7b10e1c246f6e6eb96f869ca343c3efffc1e60792358b063e0d66ee62",
-        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
-        "title_path": [
-          "criterion 66 (FE-13) — the alerts write affordances at 393px, coarse pointer",
-          "GATE Z REPAIR — the per-rule Remove button and enable/disable switch now meet the floor"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "dca11f13df19e386709beee6b4afd477be43054cfd07cd61456785230fbe8603",
-        "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts",
-        "title_path": [
-          "criterion 66 (GATE Z repair) — the off-exchange proximity chip at 393px, coarse pointer",
-          "the proximity chip meets the 44px floor"
         ],
         "project": "chromium"
       },

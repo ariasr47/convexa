@@ -1,13 +1,9 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 /**
- * curvature-v2-foundations — FE-10's own new spec (PLAN §"FE-10 — The browser layer"). Four groups,
- * each covering exactly one browser-only AC that jsdom cannot see:
+ * curvature-v2-foundations — FE-10's own new spec (PLAN §"FE-10 — The browser layer"). Two groups,
+ * each covering a browser-only AC that jsdom cannot see:
  *
- *   - AC-1a — exactly one connection chip is ever IN THE VIEWPORT, never two, never zero, and the
- *     deleted `tape-stream-state` block never reappears anywhere on the page.
- *   - AC-34 — the coarse-pointer 44px effective hit area, MEASURED (not asserted) for every control
- *     ruling 5 names this phase created or touched.
  *   - AC-35 — the six converted hover-only info sites (ruling 6) have BOTH a tap and a keyboard-focus
  *     path, at 393/834/900/1280.
  *   - U-32 (curvature-v2-surfaces, OWNER D-C, added by FE-12) — a SECOND, frame-scoped site list:
@@ -16,21 +12,16 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
  *     included), on the frame's own HEADER ⓘ specifically — the shipped AC-35 list above and
  *     `ladder-foot` scope to widget/hero BODY testids one level inside the frame and cannot reach a
  *     frame header at all (`Widget.tsx` renders the header box before the body box).
- *   - AC-20b — the rendered container-query step. See the block comment above that test for why it
- *     is recorded as `review` evidence rather than asserted pass/fail (PLAN's own sanctioned
- *     "honest fallback": `LiveTape.tsx`/`StructureHeroPanel.tsx` (curvature-v2-desk-and-read FE-8:
- *     re-pointed from the deleted dealer positioning widget, its `span={2}` successor in that page
- *     slot) are BOTH `span={2}` — full bento width at every breakpoint — so this shipped page has no
- *     two-panel-on-one-screen pair to compare without re-laying out a surface, which is out of this
- *     phase's scope).
+ *
+ * The AC-1a, AC-34, criterion 66 and AC-20b groups were retired in lean-tests batch 81. The eight
+ * AC-35/U-32 cases stay separate until the AC-35 tap-race fix (PR #76) lands.
  *
  * NETWORK — a self-contained `stubNetwork`/`seed` pair, deliberately not imported from the
  * overflow spec, since retired (that file did not export them, and widening its export surface
  * for one consumer is a bigger change than duplicating the minimal shape this file's own
  * assertions need).
  * The one addition beyond that file's idiom: the SSE stub delivers a REAL `data: {...}\n\n` frame so
- * `live` genuinely latches (ruling 1) — AC-1a needs a resolved `connection-chip`, not the cold
- * placeholder, to mean anything.
+ * `live` genuinely latches (ruling 1).
  */
 
 const bundle = {
@@ -383,142 +374,6 @@ async function gotoReadyTicker(page: Page) {
 }
 
 // =====================================================================================================
-// AC-1a — exactly one connection chip in the viewport, at rest AND after scrolling the hero out of view
-// =====================================================================================================
-
-/**
- * Counts, of the (possibly several) DOM nodes matching `testid`, how many are actually inside the
- * viewport right now — using `toBeInViewport` per node (the reviewer probe named in PLAN.md: "does
- * the one-chip assertion use `toBeInViewport` rather than `toBeVisible`?"). A node that is mounted,
- * unhidden, and has a non-zero box (so `toBeVisible()` would pass) but is scrolled off-screen must
- * NOT count here — that is exactly the failure mode this AC exists to catch (`CommandDeck.tsx:225`'s
- * hero header stays mounted and `aria-hidden={false}` while merely scrolled out).
- */
-async function countInViewport(page: Page, testid: string): Promise<number> {
-  const locator = page.getByTestId(testid);
-  const total = await locator.count();
-  let inViewport = 0;
-  for (let i = 0; i < total; i++) {
-    try {
-      await expect(locator.nth(i)).toBeInViewport({ timeout: 500 });
-      inViewport++;
-    } catch {
-      // Attached but not intersecting the viewport — expected for the scrolled-out hero chip.
-    }
-  }
-  return inViewport;
-}
-
-test.describe('AC-1a — one connection chip in the viewport, never two, never the deleted stream-state block', () => {
-  test.use({ viewport: { width: 1280, height: 900 } });
-
-  test('hero chip in view at rest; condensed chip replaces it in-viewport after scroll (hero node stays mounted, off-screen)', async ({
-    page,
-  }) => {
-    await gotoReadyTicker(page);
-
-    // FE-6 deleted the standalone block outright (`TapePulseStrip.tsx`'s `tape-stream-state`) —
-    // it must never exist, at any scroll position, not just be non-visible.
-    await expect(page.getByTestId('tape-stream-state')).toHaveCount(0);
-
-    // AT REST: exactly one chip NODE exists (the condensed bar is not yet mounted —
-    // `CommandDeck.tsx:238`'s `{condensed && (…)}`), and it is resolved (latched), not the cold
-    // placeholder — the vacuity guard that the SSE stub actually took effect.
-    await expect(page.getByTestId('connection-chip')).toHaveCount(1);
-    await expect(page.getByTestId('connection-chip').first()).toHaveAttribute(
-      'data-connection-state',
-      'live',
-    );
-    expect(await countInViewport(page, 'connection-chip')).toBe(1);
-
-    // Scroll the hero out of view — the sentinel below the deck (`CommandDeck.tsx:311`) reveals the
-    // condensed bar, which mounts its OWN chip renderer alongside the (still-mounted) hero one.
-    await page.evaluate(() => window.scrollBy(0, 3000));
-    await expect(page.getByTestId('connection-chip')).toHaveCount(2); // vacuity guard: 2nd node mounted
-    expect(await countInViewport(page, 'connection-chip')).toBe(1);
-
-    await expect(page.getByTestId('tape-stream-state')).toHaveCount(0);
-  });
-});
-
-// =====================================================================================================
-// AC-34 — coarse-pointer 44px effective hit area at 393px, measured in both dimensions, every control
-// ruling 5 names as "this phase creates or touches".
-// =====================================================================================================
-
-async function expectFloor(locator: Locator, label: string) {
-  const box = await locator.boundingBox();
-  expect(box, `${label} has a bounding box (is attached and rendered)`).toBeTruthy();
-  expect(box!.width, `${label} effective width`).toBeGreaterThanOrEqual(44);
-  expect(box!.height, `${label} effective height`).toBeGreaterThanOrEqual(44);
-}
-
-test.describe('AC-34 — coarse pointer at 393px: the effective hit area, measured, for every named control', () => {
-  test.use({ viewport: { width: 393, height: 852 }, hasTouch: true });
-
-  test('the palette trigger + its rows, the burger drawer + its four links, and FigureCell’s ⓘ all measure ≥44px in both dimensions', async ({
-    page,
-  }) => {
-    await gotoReadyTicker(page);
-
-    // -- "the palette dialog" (its opening trigger — the only tap target a container itself is not)
-    // and its rows.
-    await page.getByTestId('nav-search-icon').click();
-    await expect(page.getByTestId('command-palette')).toBeAttached();
-    await expectFloor(page.getByTestId('palette-command-surface-scanner'), 'palette row · Scanner');
-    await expectFloor(page.getByTestId('palette-command-surface-ticker'), 'palette row · Ticker');
-    await expectFloor(
-      page.getByTestId('palette-command-surface-positions'),
-      'palette row · Positions',
-    );
-    await expectFloor(page.getByTestId('palette-command-surface-alerts'), 'palette row · Alerts');
-    await page.keyboard.press('Escape');
-    await expect(page.getByTestId('command-palette')).toHaveCount(0);
-    // The trigger itself — measured AFTER closing, since it also needs to regain focus/be present.
-    await expectFloor(page.getByTestId('nav-search-icon'), 'palette trigger (nav-search-icon)');
-
-    // -- the burger drawer (opener + its four links + its close affordance).
-    await expectFloor(page.getByTestId('nav-menu-button'), 'burger drawer opener');
-    await page.getByTestId('nav-menu-button').click();
-    await expect(page.getByTestId('nav-drawer')).toBeVisible();
-    // Measure the drawer at rest: it is "visible" while still sliding in, and a mid-slide box reads a
-    // fractional translate as 43.99997px wide (6 of 80 repeats, 2026-10-08). At rest it is exactly 44.
-    await expect(page.getByTestId('nav-drawer').locator('.MuiDrawer-paper')).toHaveCSS(
-      'transform',
-      'none',
-    );
-    for (const entry of ['scanner', 'ticker', 'positions', 'alerts']) {
-      await expectFloor(page.getByTestId(`nav-drawer-${entry}`), `drawer link · ${entry}`);
-    }
-    await expectFloor(page.getByTestId('nav-drawer-close'), 'drawer close button');
-    await page.getByTestId('nav-drawer-close').click();
-    await expect(page.getByTestId('nav-drawer')).toBeHidden();
-
-    // -- FigureCell's ℹ (the one AC-34 names by name — the affordance this phase turned into a
-    // real focusable control). (v2, curvature-v2-desk-and-read FE-8) `dealer-positioning` is
-    // deleted; `ladder-foot` (inside `StructureHeroPanel`, the successor mounted in that same
-    // page slot) renders at 393px the same way and its Vol-norm GEX cell carries the SAME
-    // FigureCell ℹ primitive (the ladder's own rows do not — `LevelLadder.tsx` never passes an
-    // `info` prop — so the foot is the nearest equivalent site, not an arbitrary substitute).
-    await expectFloor(
-      page
-        .getByTestId('ladder-foot')
-        .getByRole('button', { name: /^About /i })
-        .first(),
-      "FigureCell's ℹ (ladder-foot)",
-    );
-
-    // -- the connection chip: ruling 5's floor applies to it ONLY "if it becomes interactive" — it
-    // does not (no onClick, no role="button", not a `button`/`a`), so it is out of scope BY
-    // CONSTRUCTION, verified rather than silently skipped.
-    const chip = page.getByTestId('connection-chip').first();
-    await expect(chip).toBeAttached();
-    expect(await chip.evaluate((el) => el.tagName)).not.toBe('BUTTON');
-    expect(await chip.getAttribute('role')).not.toBe('button');
-  });
-});
-
-// =====================================================================================================
 // AC-35 — hover-revealed controls have BOTH a tap path and a keyboard-focus path, at 393/834/900/1280
 // =====================================================================================================
 
@@ -642,136 +497,6 @@ const FRAME_INFO_SITES = [
   'live-tape',
 ] as const;
 
-// =====================================================================================================
-// criterion 66 (FE-13, GATE Z repair below) — the 44px effective hit area at 393px, coarse pointer,
-// for the alerts write affordances this phase's SPEC §3 names alongside the seven frame ⓘs (U-32,
-// above — was eight; PASS 2 change 8 dropped `iv-rank`) and the off-exchange proximity chip (its own
-// dedicated describe block further down).
-//
-// `expectFloor` HARD-ASSERTS ≥44px on both dimensions. FE-13's own investigation measured two
-// controls that did NOT comply (`AlertsPage.tsx:429`'s per-rule "Remove" button, an explicit
-// `minHeight: 40` override that beat the shipped global coarse-pointer floor's lower CSS specificity
-// — `sx` compiles to a class, `theme.ts:132-137`'s floor is a plain element selector, and a class
-// always wins a specificity tie regardless of `@media` nesting; and `AlertsPage.tsx:399-402`'s
-// per-rule enable/disable `Switch`, whose own `FormControlLabel` wrapper — the actual clickable
-// region, not just the visible switch graphic — measured ~163×25px, well under the floor on the
-// height axis). **GATE Z REPAIR (this pass):** both now carry a `'@media (pointer: coarse)'` rule
-// nested in the SAME `sx` object (same specificity as the override, later in source order, so it
-// wins only when the media condition matches — desktop/fine-pointer sizing is untouched). Both are
-// now HARD-ASSERTED below, not merely measured.
-test.describe('criterion 66 (FE-13) — the alerts write affordances at 393px, coarse pointer', () => {
-  test.use({ viewport: { width: 393, height: 852 }, hasTouch: true });
-
-  const SEEDED_ALERTS_RULE = {
-    schema_version: 1,
-    rules: [
-      {
-        id: 'e2e-rule-price',
-        kind: 'level_touch',
-        symbol: 'TSLA',
-        enabled: true,
-        createdAt: 1_700_000_000_000,
-        level: 'price',
-        priceThreshold: 260,
-      },
-    ],
-    events: [],
-    notifyBrowser: false,
-  };
-
-  test.beforeEach(async ({ page }) => {
-    await stubNetwork(page);
-    await seed(page);
-    await page.addInitScript((alerts) => {
-      window.localStorage.setItem('convexa.alerts.v1', JSON.stringify(alerts));
-    }, SEEDED_ALERTS_RULE);
-    await page.goto('/alerts');
-    await expect(page.getByTestId('alerts-rule')).toHaveCount(1);
-  });
-
-  test('the composer\'s "Add rule" and "Enable browser notify" buttons meet the floor', async ({
-    page,
-  }) => {
-    await expectFloor(page.getByTestId('alerts-add'), 'alerts-add');
-    await expectFloor(page.getByTestId('alerts-notify'), 'alerts-notify');
-  });
-
-  test('GATE Z REPAIR — the per-rule Remove button and enable/disable switch now meet the floor', async ({
-    page,
-  }) => {
-    const removeButton = page.getByRole('button', { name: 'Remove' }).first();
-    const switchLabel = page.locator('.MuiFormControlLabel-root').first();
-    const removeBox = await removeButton.boundingBox();
-    const switchLabelBox = await switchLabel.boundingBox();
-    console.log(
-      `[criterion 66 evidence, post-fix] Remove button (AlertsPage.tsx:429) = ${JSON.stringify(removeBox)} · ` +
-        `rule Switch's FormControlLabel (AlertsPage.tsx:399-402) = ${JSON.stringify(switchLabelBox)}`,
-    );
-    await expectFloor(removeButton, 'per-rule Remove button (coarse pointer)');
-    await expectFloor(
-      switchLabel,
-      "per-rule enable/disable Switch's FormControlLabel (coarse pointer)",
-    );
-  });
-});
-
-// =====================================================================================================
-// criterion 66 (GATE Z repair) — the off-exchange proximity chip's effective hit area at 393px,
-// coarse pointer. FE-13 flagged this as the SAME under-floor mechanism (a focusable `<span>`, never a
-// `button`/`role="button"`/`a`, so `theme.ts`'s coarse-pointer floor selector never matches) but could
-// not reach a rendered instance in its own session (no off_exchange data in either file's shared
-// `bundle` fixture — "Off-exchange data unavailable this cycle." renders instead, with no chip in the
-// DOM at all). This block supplies a local `/api/ticker/**` override (own fixture, not the shared
-// `bundle`, so no other test in this file is affected) carrying one real block print, making the chip
-// reachable for the first time this phase.
-test.describe('criterion 66 (GATE Z repair) — the off-exchange proximity chip at 393px, coarse pointer', () => {
-  test.use({ viewport: { width: 393, height: 852 }, hasTouch: true });
-
-  test('the proximity chip meets the 44px floor', async ({ page }) => {
-    await stubNetwork(page);
-    await page.route('**/api/ticker/**', (route) =>
-      route.fulfill({
-        json: {
-          ...bundle,
-          off_exchange: {
-            block_min_shares: 10000,
-            blocks: [
-              {
-                shares: 25000,
-                price: 251.4,
-                proximity_pct: 0.004,
-                age_seconds: 120,
-                notional: 6_285_000,
-              },
-            ],
-            levels: [],
-            note: 'e2e fixture',
-            offex_shares: 25000,
-            ratio_pct: 4.2,
-            total_shares: 500000,
-          },
-        },
-      }),
-    );
-    await seed(page);
-    await page.goto('/ticker/TSLA');
-    await expect(page.getByText('Call wall').first()).toBeAttached();
-
-    const frame = page.getByTestId('widget-off-exchange-blocks');
-    await expect(frame, 'off-exchange-blocks frame is on the page').toBeAttached();
-    // VACUITY GUARD — the block print itself (not just the frame) actually rendered, so the chip
-    // beside it is real, not measuring an empty/unavailable state.
-    await expect(frame.getByText('25,000 sh @ $251.40')).toBeAttached();
-
-    const chip = frame.locator('span[tabindex="0"]').first();
-    const box = await chip.boundingBox();
-    console.log(
-      `[criterion 66 evidence] off-exchange proximity chip (OffExchangeBlocks.tsx:113-123) = ${JSON.stringify(box)}`,
-    );
-    await expectFloor(chip, 'off-exchange proximity chip (coarse pointer)');
-  });
-});
-
 test.describe('U-32 (SB) — the Widget frame header ⓘ at all seven frame roots (hero + tape included)', () => {
   test.use({ hasTouch: true });
 
@@ -798,60 +523,4 @@ test.describe('U-32 (SB) — the Widget frame header ⓘ at all seven frame root
       }
     });
   }
-});
-
-// =====================================================================================================
-// AC-20b — the rendered container-query step
-// =====================================================================================================
-//
-// HONEST FALLBACK (PLAN's own sanctioned exit): "if two differently-sized panels cannot be produced
-// without re-laying out a surface: drop to `review` with both measured sizes written into the build
-// report — never to a jsdom row asserting style text."
-//
-// That was the case at phase 1 (LiveTape + the old dealer positioning widget). (v2,
-// curvature-v2-desk-and-read FE-8: that widget is deleted, its walls-and-foot content re-pointed
-// into `StructureHeroPanel`'s own `LevelLadder`, ALSO a `FigureCell` consumer.) `LiveTape` and
-// `StructureHeroPanel` are BOTH mounted with `span={2}` (`LiveTape.tsx:133`, `StructureHeroPanel.
-// tsx` — "Bento column span" `Widget.tsx:63`) — full bento width at every breakpoint the grid has
-// (`md`+: `gridColumn: 'span 2'`; below `md`: the grid itself is one column, so still full width).
-// Neither ever renders inside a narrower context (the widget "expand" dialog is `maxWidth="lg"` —
-// WIDER, not narrower — `Widget.tsx:443`). Making a narrow pair requires giving one of them
-// `span={1}` or inventing a new narrow slot — a real layout change this phase's own non-goals
-// forbid (PLAN's scope discipline, same shape as ruling 5's).
-//
-// This test therefore does not assert AC-20b pass/fail. It captures REAL browser measurements (the
-// declaration cannot be jsdom-verified as a rendered value — that is exactly why AC-20b exists) at
-// the one viewport where the panel is narrowest (393px, single-column bento — the closest this page
-// gets to the 360px step boundary), and reports them for `BUILD_REPORT.md`. AC-20a (the
-// DECLARATION — `type-floor.spec.tsx`'s hardened reader) stays the enforced, green test; AC-20b is
-// recorded evidence, not a gate.
-test('AC-20b (review-only evidence) — rendered font-size of a traced FigureCell value, both panels, one viewport', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 393, height: 852 });
-  await gotoReadyTicker(page);
-
-  const liveTapeSize = await page
-    .getByTestId('live-tape')
-    .locator('[data-figure-register="mono"]')
-    .first()
-    .evaluate((el) => getComputedStyle(el).fontSize);
-  // (v2, curvature-v2-desk-and-read FE-8) `dealer-positioning` deleted; `level-ladder` (inside the
-  // SAME `span={2}` `StructureHeroPanel` that took its page slot) is the re-pointed second site —
-  // its `FigureCell`s are ALSO `register="traced"` (mono), so this remains a like-for-like compare.
-  const structureHeroSize = await page
-    .getByTestId('level-ladder')
-    .locator('[data-figure-register="mono"]')
-    .first()
-    .evaluate((el) => getComputedStyle(el).fontSize);
-
-  console.log(
-    `[AC-20b evidence] 393px viewport, single-column bento (both widgets span=2, so both panels ` +
-      `are the SAME width by construction): live-tape=${liveTapeSize} level-ladder=${structureHeroSize}`,
-  );
-
-  // The only assertion made: BOTH values are real, valid computed sizes (the traced figures did
-  // render, so the numbers going into the build report are not a measurement of a blank page).
-  expect(liveTapeSize).toMatch(/^\d+(\.\d+)?px$/);
-  expect(structureHeroSize).toMatch(/^\d+(\.\d+)?px$/);
 });

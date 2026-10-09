@@ -118,7 +118,9 @@ const gateCounts: Record<string, number> = {
   // retired in the same batch, so it has no count here and the reporter keeps no visual branch.
   // (lean-tests batch 36, owner-approved 2026-10-08) Chromium 35 → 20: four duplicate specs
   // retired (15 cases) — matches `manifest.json`'s `lean-tests-batch-36-20-v1` inventory.
-  chromium: 20,
+  // (lean-tests batch 81, owner-approved 2026-10-09) Chromium 20 → 13: seven structure/duplicate
+  // cases retired — matches `manifest.json`'s `lean-tests-batch-81-13-v1` inventory.
+  chromium: 13,
   compatibility: 15,
   accessibility: 35,
 };

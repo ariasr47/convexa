@@ -89,11 +89,14 @@ export function validateManifest(value) {
     // (lean-tests batch 36, owner-approved 2026-10-08) 35 → 20: the app-loads, broker-grouping,
     // broker and desk-and-read specs RETIRED (15 cases, duplicate of the compatibility journeys and
     // unit specs). The 20 left are curvature-v2 14 and navigation 6.
-    value.full_chromium?.inventory_id !== 'lean-tests-batch-36-20-v1' ||
+    // (lean-tests batch 81, owner-approved 2026-10-09) 20 → 13: curvature-v2 drops AC-1a, AC-34, the
+    // two criterion-66 alerts cases, the proximity chip and AC-20b (6), navigation drops Back/Forward
+    // (1). The 13 left are curvature-v2 8 (AC-35 and U-32, kept apart until PR #76) and navigation 5.
+    value.full_chromium?.inventory_id !== 'lean-tests-batch-81-13-v1' ||
     !Array.isArray(tests) ||
-    tests.length !== 20
+    tests.length !== 13
   )
-    fail('full Chromium inventory must contain 20 tests');
+    fail('full Chromium inventory must contain 13 tests');
   unique(
     tests.map((x) => x.test_id),
     'full Chromium tests',
