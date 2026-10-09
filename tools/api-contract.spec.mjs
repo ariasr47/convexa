@@ -16,6 +16,12 @@ import {
 } from './api-contract.mjs';
 
 const tool = new URL('./api-contract.mjs', import.meta.url);
+// The committed OpenAPI artifact, which the real exporter must reproduce. Spawns read it through
+// API_CONTRACT_EXPORT_FIXTURE instead of running `cargo run --bin export_openapi` each time; the
+// route-registration mutation test keeps the real exporter, since it toggles a Rust-side route.
+const EXPORT_FIXTURE = fileURLToPath(
+  new URL('../apps/api/openapi/convexa.openapi.json', import.meta.url),
+);
 
 test('forbidden route-integration packages are rejected in manifests, lockfile, and resolved set', () => {
   const manifest = readFileSync('apps/api/Cargo.toml', 'utf8');
@@ -103,6 +109,7 @@ for (const [name, variable, expected] of [
       encoding: 'utf8',
       env: {
         ...process.env,
+        API_CONTRACT_EXPORT_FIXTURE: EXPORT_FIXTURE,
         [variable]:
           variable === 'API_CONTRACT_MISSING_OUTPUT'
             ? 'apps/api/openapi/parity-coverage.json'
@@ -227,7 +234,10 @@ test('check does not write artifacts', () => {
   const paths = manifest.artifacts.map((a) => a.path);
   const before = paths.map((p) => createHash('sha256').update(readFileSync(p)).digest('hex'));
   assert.equal(
-    spawnSync(process.execPath, ['tools/api-contract.mjs', 'check'], { encoding: 'utf8' }).status,
+    spawnSync(process.execPath, ['tools/api-contract.mjs', 'check'], {
+      encoding: 'utf8',
+      env: { ...process.env, API_CONTRACT_EXPORT_FIXTURE: EXPORT_FIXTURE },
+    }).status,
     0,
   );
   assert.deepEqual(
@@ -270,7 +280,11 @@ test('candidate consumer compilation happens before atomic install', () => {
   const before = paths.map((path) => createHash('sha256').update(readFileSync(path)).digest('hex'));
   const result = spawnSync(process.execPath, ['tools/api-contract.mjs', 'generate'], {
     encoding: 'utf8',
-    env: { ...process.env, API_CONTRACT_FAIL_STAGE: 'candidate-compile' },
+    env: {
+      ...process.env,
+      API_CONTRACT_EXPORT_FIXTURE: EXPORT_FIXTURE,
+      API_CONTRACT_FAIL_STAGE: 'candidate-compile',
+    },
   });
   assert.notEqual(result.status, 0);
   assert.match(`${result.stdout}${result.stderr}`, /generation tooling failure/);
@@ -451,6 +465,7 @@ test('the exhaustive signature and mutation matrix is non-vacuous', () => {
 test('offline dead-proxy generate and check are deterministic', () => {
   const env = {
     ...process.env,
+    API_CONTRACT_EXPORT_FIXTURE: EXPORT_FIXTURE,
     npm_config_offline: 'true',
     HTTP_PROXY: 'http://127.0.0.1:9',
     HTTPS_PROXY: 'http://127.0.0.1:9',
@@ -482,6 +497,7 @@ test('canonical commands are independent of caller working directory', () => {
   try {
     const env = {
       ...process.env,
+      API_CONTRACT_EXPORT_FIXTURE: EXPORT_FIXTURE,
       npm_config_offline: 'true',
       HTTP_PROXY: 'http://127.0.0.1:9',
       HTTPS_PROXY: 'http://127.0.0.1:9',
@@ -610,7 +626,11 @@ test('generation stage failure restores every mutable byte', () => {
   const before = paths.map((path) => createHash('sha256').update(readFileSync(path)).digest('hex'));
   const result = spawnSync(process.execPath, ['tools/api-contract.mjs', 'generate'], {
     encoding: 'utf8',
-    env: { ...process.env, API_CONTRACT_FAIL_AFTER_KEY: 'parity' },
+    env: {
+      ...process.env,
+      API_CONTRACT_EXPORT_FIXTURE: EXPORT_FIXTURE,
+      API_CONTRACT_FAIL_AFTER_KEY: 'parity',
+    },
   });
   assert.notEqual(result.status, 0);
   assert.match(`${result.stdout}${result.stderr}`, /generation tooling failure/);
