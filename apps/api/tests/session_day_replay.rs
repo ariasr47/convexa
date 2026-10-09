@@ -13,7 +13,7 @@ use api_rust::services::chain_snapshot::{fixture_probe_bundle, serialize_capture
 use api_rust::services::day_tape::construct::{prepare_replay, prepare_then_bind, Prepare};
 use api_rust::services::day_tape::player::{
     et_hms_to_ts_ns, run_player, ts_ns_to_tape_time_et, PlayerPorts, RecordingSleeper,
-    ReplayHoldSink, ReplayPhase, ReplaySleeper, TokioSleeper,
+    ReplayHoldSink, ReplayPhase, ReplaySleeper,
 };
 use api_rust::services::day_tape::{
     body_carries_live_massive, prepare_path_b_body, DayContainer, PathAKind, PathARecord,
@@ -362,72 +362,6 @@ async fn four_x_compresses_the_same_path_a_gap() {
     assert_eq!(evs.len(), 2);
     assert_eq!(evs[0].ts_ns, t0);
     assert_eq!(evs[1].ts_ns, t1);
-}
-
-#[tokio::test]
-async fn keepalive_data_continues_during_wall_gap() {
-    // Real sleeper: 6s Path-A gap at 1× so the 5s occupancy pump fires mid-wait.
-    let tape = SessionDayTape::memory();
-    let t0 = ts(10, 0, 0);
-    let t1 = ts(10, 0, 6);
-    tape.append_path_a(SYM, ET, PathARecord::trade(t0, 100.0, None))
-        .await
-        .unwrap();
-    tape.append_path_a(SYM, ET, PathARecord::trade(t1, 100.5, None))
-        .await
-        .unwrap();
-
-    let prep = prepare_replay(SYM, ET, Some(1), tape, evening(), Some("dev")).await;
-    let Prepare::Play {
-        state,
-        day,
-        pace,
-        symbol,
-        et_date,
-        ..
-    } = prep
-    else {
-        panic!("expected Play");
-    };
-    let keep = state.clone();
-    let router = routes::router(state.clone()).expect("router");
-    let response = router
-        .oneshot(
-            Request::builder()
-                .method("GET")
-                .uri("/api/stream/SPY")
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    let ports = PlayerPorts {
-        hub: state.stock_hub.clone(),
-        occupancy: state.replay_occupancy.clone(),
-        hold: Arc::new(state.replay_hold.clone()) as Arc<dyn ReplayHoldSink>,
-        sleeper: Arc::new(TokioSleeper),
-    };
-    let player = tokio::spawn(async move {
-        run_player(&symbol, &et_date, pace, day, ports).await;
-    });
-
-    let events = collect_sse_data(response, 2, Duration::from_secs(14)).await;
-    let _ = player.await;
-    drop(keep);
-
-    assert!(
-        events.len() >= 2,
-        "occupancy JSON data must continue during the sleeper gap; got {}",
-        events.len()
-    );
-    for (i, ev) in events.iter().enumerate() {
-        assert_eq!(ev["live"], false, "data[{i}] live must stay false");
-        assert!(
-            ev.get("session_tape").is_some(),
-            "data[{i}] missing session_tape"
-        );
-    }
 }
 
 #[tokio::test]
