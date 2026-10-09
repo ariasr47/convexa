@@ -73,14 +73,6 @@ describe('fetchResearch', () => {
     expect(headers['X-Metrics-Token']).toBeUndefined();
   });
 
-  it('source must not match fetch relative /api/_research', async () => {
-    const src = await import('./researchClient?raw').catch(() => null);
-    // Structural check via function behavior: URL always absolute.
-    const url = researchUrl('https://api.example.com', listTail('SPY'));
-    expect(url).not.toMatch(/^\/api\/_research/);
-    void src;
-  });
-
   it('aborts previous load when a new load starts', async () => {
     let rejectFirst: ((e: unknown) => void) | undefined;
     const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {

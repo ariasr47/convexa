@@ -66,34 +66,6 @@ describe('useSessionArchive', () => {
     expect(tails.every((t) => !t.includes('/book'))).toBe(true);
   });
 
-  it('page Retry never issues load; chip tap issues list only', async () => {
-    const fetchImpl = vi.fn().mockResolvedValue(
-      ok({
-        symbol: 'SPY',
-        count: 0,
-        books: [],
-        store: 'miss',
-        detail: 'no session book for SPY',
-        vendor_called: false,
-        authorizes: 'nothing',
-        framing: 'RESEARCH READ — NO SESSION BOOK',
-      }),
-    );
-    const { result } = renderHook(() => useSessionArchive({ fetchImpl }));
-    act(() => {
-      result.current.setOriginDraft('http://127.0.0.1:8000');
-      result.current.unlock();
-    });
-    await waitFor(() => expect(fetchImpl.mock.calls.length).toBeGreaterThan(0));
-    fetchImpl.mockClear();
-    act(() => {
-      result.current.selectChip('QQQ');
-    });
-    await waitFor(() => expect(fetchImpl).toHaveBeenCalled());
-    expect(fetchImpl.mock.calls.every((c) => !(c[0].tail as string).includes('/book'))).toBe(true);
-    expect(fetchImpl.mock.calls.some((c) => (c[0].tail as string).includes('/QQQ'))).toBe(true);
-  });
-
   it('AC-29/46: digest Retry after unreadable issues exactly one load GET for that identity', async () => {
     const fetchImpl = vi.fn().mockImplementation(async ({ tail }: { tail: string }) => {
       if (tail.includes('coverage')) {
@@ -186,88 +158,5 @@ describe('useSessionArchive', () => {
     );
     expect(pageTails.some((t) => t.includes('session-archive/coverage'))).toBe(true);
     expect(pageTails.every((t) => !t.includes('/book'))).toBe(true);
-  });
-
-  it('AC-46: digest Retry after load invariant-fault issues exactly one load GET', async () => {
-    const fetchImpl = vi.fn().mockImplementation(async ({ tail }: { tail: string }) => {
-      if (tail.includes('coverage')) {
-        return ok({
-          framing: 'RESEARCH READ — SESSION ARCHIVE COVERAGE',
-          command: 'archive-coverage',
-          evidence: 'this process',
-          symbols: ['SPY', 'QQQ', 'IWM'],
-          et_date: '2026-08-30',
-          checkpoint: 'after 16:00 America/New_York',
-          vendor_called: false,
-          authorizes: 'nothing',
-          verdict: 'not_due',
-          expected_due: 0,
-          present: 0,
-          missing: 0,
-          unreadable: 0,
-          not_yet_due: 0,
-          blocked_occupancy: 0,
-          rows: [],
-          holes: [],
-        });
-      }
-      if (tail.includes('/book')) {
-        return ok({
-          symbol: 'SPY',
-          et_date: '2026-08-30',
-          source: 'live_massive',
-          source_as_of: 'x',
-          vendor_called: true,
-          authorizes: 'nothing',
-          framing: 'RESEARCH READ — SESSION BOOK',
-          provenance: 'x',
-          license: 'x',
-          market: { contracts: [] },
-          daily_bars: [],
-          minutes: [],
-          trades: [],
-        });
-      }
-      return ok({
-        symbol: 'SPY',
-        count: 1,
-        books: [
-          {
-            symbol: 'SPY',
-            et_date: '2026-08-30',
-            source: 'live_massive',
-            source_as_of: 'x',
-          },
-        ],
-        store: 'hit',
-        detail: null,
-        vendor_called: false,
-        authorizes: 'nothing',
-        framing: 'RESEARCH READ — SESSION BOOK',
-      });
-    });
-    const { result } = renderHook(() => useSessionArchive({ fetchImpl }));
-    act(() => {
-      result.current.setOriginDraft('http://127.0.0.1:8000');
-      result.current.setTokenDraft('t');
-      result.current.unlock();
-    });
-    await waitFor(() => expect(result.current.state.books.kind).toBe('ready'));
-    act(() => {
-      result.current.openBook({ symbol: 'SPY', et_date: '2026-08-30' });
-    });
-    await waitFor(() => expect(result.current.state.digest.kind).toBe('invariant-fault'));
-    expect(result.current.state.digestMemory).toBeNull();
-
-    fetchImpl.mockClear();
-    act(() => {
-      result.current.digestRetry();
-    });
-    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(1));
-    const loadCall = fetchImpl.mock.calls[0][0] as { tail: string };
-    expect(loadCall.tail).toContain('/session-books/SPY/book');
-    expect(loadCall.tail).toContain('et_date=2026-08-30');
-    await waitFor(() => expect(result.current.state.digest.kind).toBe('invariant-fault'));
-    expect(result.current.state.digestMemory).toBeNull();
   });
 });

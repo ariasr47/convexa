@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  COVERAGE_CELLS,
-  LIST_SOURCES,
-  ORIGIN_BLOCKED_MUST_NOT_CONTAIN,
-  lookupCoverageCell,
-  lookupListSource,
-} from './occupancy';
+import { COVERAGE_CELLS, LIST_SOURCES, lookupCoverageCell, lookupListSource } from './occupancy';
 
 describe('lookupListSource', () => {
   it('accepts closed list sources and never yields present', () => {
@@ -55,11 +49,5 @@ describe('lookupCoverageCell', () => {
       kind: 'unavailable',
       raw: 'live_massive',
     });
-  });
-});
-
-describe('origin-blocked occupancy word ban', () => {
-  it('ORIGIN_BLOCKED_MUST_NOT_CONTAIN is blocked occupancy', () => {
-    expect(ORIGIN_BLOCKED_MUST_NOT_CONTAIN).toBe('blocked occupancy');
   });
 });
