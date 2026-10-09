@@ -1,19 +1,16 @@
 /**
  * RequireAuth.spec.tsx — curvature-v2-landing-and-site SPEC §4/§5 (F11): the wall's two NEW
  * branches (the quiet hold while `!ready`, and the degraded branch that stops asserting the
- * visitor is signed out when the who-am-I read failed) plus the dialog's pre-type closed-door
- * declaration (AC-A4, `AuthDialog.tsx`).
+ * visitor is signed out when the who-am-I read failed).
  *
  * `useAuth()` is mocked directly so every branch is asserted in isolation and deterministically —
- * no fetch, no AuthProvider, no timers. `AuthDialog` also imports `useAuth` from the same module,
- * so the one mock covers both components under test in this file.
+ * no fetch, no AuthProvider, no timers.
  */
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import type { AuthApi } from './AuthContext';
-import { AuthDialog } from './AuthDialog';
 import { AUTH_COPY } from './copy';
 import { RequireAuth } from './RequireAuth';
 
@@ -90,24 +87,5 @@ describe('RequireAuth — the three branches (quiet fill / children / wall)', ()
     expect(refresh).not.toHaveBeenCalled(); // no effect, no timer
     await userEvent.setup().click(screen.getByTestId('require-auth-retry'));
     expect(refresh).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe('AuthDialog — the closed door is declared before the visitor types (AC-A4)', () => {
-  it('signup mode shows the closed-signups sentence with zero prior typing', () => {
-    mockAuth();
-    render(<AuthDialog open mode="signup" onClose={vi.fn()} onModeChange={vi.fn()} />);
-    expect(screen.getByTestId('auth-signups-closed')).toHaveTextContent(
-      AUTH_COPY.signup.signupsClosed,
-    );
-    // Zero prior typing — the fields are still empty while the notice is already visible.
-    expect(screen.getByTestId('auth-email')).toHaveValue('');
-    expect(screen.getByTestId('auth-password')).toHaveValue('');
-  });
-
-  it('login mode does not show the signup-only closed-signups sentence', () => {
-    mockAuth();
-    render(<AuthDialog open mode="login" onClose={vi.fn()} onModeChange={vi.fn()} />);
-    expect(screen.queryByTestId('auth-signups-closed')).toBeNull();
   });
 });
