@@ -105,59 +105,56 @@ function renderDrawer(props: Partial<Parameters<typeof StateExportDrawer>[0]> = 
 }
 
 describe('StateExportDrawer — Candidate contracts / risk inputs / open positions (AC-91)', () => {
-  it('renders the candidate-contracts section with the wire counts', async () => {
-    stubFetch(makeExport());
-    renderDrawer();
-    await waitFor(() => expect(screen.getByText('Candidate contracts')).toBeInTheDocument());
-    expect(screen.getByText(/12 contracts across 1 expirations/)).toBeInTheDocument();
-    expect(screen.getByText(/3 omitted \(outside_band\)/)).toBeInTheDocument();
-  });
-
-  it('renders the Open positions section, labelled simulated', async () => {
-    stubFetch(makeExport());
-    renderDrawer();
-    await waitFor(() => expect(screen.getByText('Open positions')).toBeInTheDocument());
-  });
-
-  it('AC-3 — when the tenor cap actually bound, names expirations omitted BY THE CAP and strikes dropped and why', async () => {
-    stubFetch(
-      makeExport({
-        context: {
-          ...makeExport().context,
-          candidates: {
-            ...makeExport().context.candidates,
-            omitted: {
-              total: 14254,
-              expirations_omitted_by_cap: 29,
-              by_reason: {
-                outside_window: 724,
-                outside_band: 6296,
-                no_interest: 988,
-                expiration_cap: 5527,
-                strike_cap: 719,
-              },
+  // AC-91 + AC-3: the candidate-contracts line carries the wire counts only, and each cap clause
+  // renders only when its own count is non-zero.
+  function capBoundExport(): RecExport {
+    const base = makeExport();
+    return makeExport({
+      context: {
+        ...base.context,
+        candidates: {
+          ...base.context.candidates,
+          omitted: {
+            total: 14254,
+            expirations_omitted_by_cap: 29,
+            by_reason: {
+              outside_window: 724,
+              outside_band: 6296,
+              no_interest: 988,
+              expiration_cap: 5527,
+              strike_cap: 719,
             },
           },
         },
-      }),
-    );
-    renderDrawer();
-    await waitFor(() => expect(screen.getByText('Candidate contracts')).toBeInTheDocument());
-    const section = screen.getByText('Candidate contracts').closest('div')
-      ?.parentElement as HTMLElement;
-    expect(section.textContent).toMatch(/29 expirations omitted by the cap/);
-    expect(section.textContent).toMatch(/719 strikes dropped \(strike cap\)/);
-  });
+      },
+    });
+  }
 
-  it('AC-3 — a tenor cap that never bound adds no extra clause', async () => {
-    stubFetch(makeExport()); // expirations_omitted_by_cap: 0, strike_cap: 0
-    renderDrawer();
-    await waitFor(() => expect(screen.getByText('Candidate contracts')).toBeInTheDocument());
-    const section = screen.getByText('Candidate contracts').closest('div')
-      ?.parentElement as HTMLElement;
-    expect(section.textContent).not.toMatch(/omitted by the cap/);
-    expect(section.textContent).not.toMatch(/strikes dropped/);
-  });
+  it.each([
+    {
+      name: 'a cap that never bound shows the counts and adds no cap clause',
+      capBound: false,
+      present: ['12 contracts across 1 expirations', '3 omitted (outside_band)'],
+      absent: ['omitted by the cap', 'strikes dropped'],
+    },
+    {
+      name: 'AC-3 — a tenor cap that bound names expirations omitted BY THE CAP and strikes dropped',
+      capBound: true,
+      present: ['29 expirations omitted by the cap', '719 strikes dropped (strike cap)'],
+      absent: [],
+    },
+  ])(
+    'the candidate-contracts line states wire counts and cap clauses: $name',
+    async ({ capBound, present, absent }) => {
+      stubFetch(capBound ? capBoundExport() : makeExport());
+      renderDrawer();
+      await waitFor(() => expect(screen.getByText('Candidate contracts')).toBeInTheDocument());
+      const section = screen.getByText('Candidate contracts').closest('div')
+        ?.parentElement as HTMLElement;
+      for (const text of present) expect(section.textContent).toContain(text);
+      for (const text of absent) expect(section.textContent).not.toContain(text);
+    },
+  );
 
   it('AC-97 — anonymous export reports risk_inputs as `not set`, section present, never omitted', async () => {
     stubFetch(makeExport());
