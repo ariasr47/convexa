@@ -564,3 +564,9 @@ Full lists with files, counts and same-commit edits: [BATCHES.md](BATCHES.md).
 | 61 | `apps/dashboard/src/app/pages/operator-session-archive/researchClient.spec.ts` (TRIM; duplicate) | 6 → 5 | removed: fetchResearch source must not match fetch relative /api/_research |
 | 61 | `apps/dashboard/src/app/pages/operator-session-archive/schedule.spec.ts` (TRIM; structure) | 6 → 5 | removed: schedule fan-out TRIO is SPY QQQ IWM |
 | 61 | `apps/dashboard/src/app/pages/operator-session-archive/useSessionArchive.spec.tsx` (TRIM; duplicate) | 5 → 3 | removed: useSessionArchive page Retry never issues load; chip tap issues list only; useSessionArchive AC-46: digest Retry after load invariant-fault issues exactly one load GET |
+| 62 | `apps/dashboard/src/app/pages/operator-session-archive/viewModel.spec.ts` (TRIM; duplicate) | 20 → 18 | removed 2, renamed 0; every removed title is listed in the batch 62 commit message |
+| 62 | `apps/dashboard/src/app/pages/scanner/format.spec.ts` (TRIM; duplicate) | 30 → 27 | removed 3, renamed 0; every removed title is listed in the batch 62 commit message |
+| 62 | `apps/dashboard/src/app/pages/scanner/scanner.register.spec.tsx` (TRIM; duplicate) | 53 → 10 | removed 43, renamed 0; every removed title is listed in the batch 62 commit message |
+| 62 | `apps/dashboard/src/app/pages/scanner/scanner.risk.spec.tsx` (TRIM; structure) | 33 → 20 | removed 13, renamed 0; every removed title is listed in the batch 62 commit message |
+| 62 | `apps/dashboard/src/app/pages/positions/positions-page.spec.tsx` (TRIM; duplicate) | 17 → 5 | removed 12, renamed 0; every removed title is listed in the batch 62 commit message |
+| 62 | `apps/dashboard/src/app/pages/positions/positions.integration.spec.tsx` (TRIM; structure (reconciled)) | 15 → 13 | removed 4, renamed 2; every removed title is listed in the batch 62 commit message |
