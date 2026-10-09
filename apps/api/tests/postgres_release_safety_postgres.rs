@@ -24,14 +24,24 @@ fn bin() -> PathBuf {
     PathBuf::from(env!("CARGO_BIN_EXE_api-rust"))
 }
 fn name(label: &str) -> String {
+    // The counter keeps names unique when parallel tests mint them in the same clock tick.
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     format!(
-        "release_{label}_{}_{}",
+        "release_{label}_{}_{}_{}",
         std::process::id(),
+        NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos()
     )
+}
+#[test]
+fn fixture_names_stay_unique_within_one_clock_tick() {
+    // Parallel tests in this binary share one process id; two fixture names minted in the same
+    // clock tick collided ("File exists", 2026-10-08) until name() carried a per-process counter.
+    let names: std::collections::HashSet<String> = (0..2_000).map(|_| name("serve_root")).collect();
+    assert_eq!(names.len(), 2_000);
 }
 fn url(base: &str, db: &str) -> String {
     let mut u = url::Url::parse(base).expect("TEST_DATABASE_URL must be PostgreSQL");
