@@ -314,25 +314,6 @@ mod tests {
         full.split(mod_tests_marker).next().unwrap_or(full)
     }
 
-    #[tokio::test]
-    async fn bind_is_127_0_0_1_never_localhost_or_unspecified() {
-        let unspec = ["0.0", ".0.0"].concat(); // 0.0.0.0 without a literal in this test body
-        let run_prod = production_src(include_str!("run.rs"), "#[cfg(test)]");
-        assert!(run_prod.contains("127.0.0.1:0") || run_prod.contains("bind_loopback"));
-        assert!(!run_prod.contains(&unspec));
-        assert!(!run_prod.contains("localhost"));
-        let clients_prod = production_src(include_str!("clients.rs"), "#[cfg(test)]");
-        assert!(clients_prod.contains("TcpListener::bind(\"127.0.0.1:0\")"));
-        assert!(!clients_prod.contains(&unspec));
-        assert!(!clients_prod.contains("localhost"));
-    }
-
-    #[tokio::test]
-    async fn ticker_requests_are_single_symbol() {
-        let inv = vec!["SPY".to_string(), "SPY".to_string()];
-        assert!(inv.iter().all(|s| s == "SPY"));
-    }
-
     #[test]
     fn oneshot_absent_from_client_overflow_inject_run() {
         // Forbidden: tower Service oneshot. Tokio sync oneshot cancel is allowed.

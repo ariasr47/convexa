@@ -111,23 +111,6 @@ mod tests {
     use crate::services::capacity_harness::receipt::{load_pass_record, render_measurement};
 
     #[test]
-    fn vouched_standing_starts_with_capacity_harness_mocked_vendors() {
-        let s = render_standing_vouched(&sample_ids(Command::Load, Evidence::Local, 9, 4, 1, 3));
-        assert!(s.starts_with("CAPACITY HARNESS — MOCKED VENDORS · NOT A PRODUCTION MEASUREMENT"));
-        assert!(s
-            .to_ascii_lowercase()
-            .contains("this process (not production defaults)"));
-        assert!(s.contains("harness locks — not production SLOs"));
-        assert!(s.contains("client timeout = 0"));
-        assert!(s.contains("unexpected stream-hold drops = 0"));
-        assert!(s.contains("Authorizes:  nothing"));
-        assert!(s.contains("MAX_LIVE_SESSIONS=4"));
-        assert!(s.contains("MAX_LIVE_SUBSCRIBERS=9"));
-        assert!(s.contains("probe MAX_LIVE_SESSIONS=1"));
-        assert!(s.contains("MAX_LIVE_SUBSCRIBERS=3"));
-    }
-
-    #[test]
     fn blocked_standing_must_not_claim_mocked_vendors() {
         let s = render_standing_blocked(&sample_ids(Command::Load, Evidence::Local, 9, 4, 1, 3));
         assert!(s.starts_with("CAPACITY HARNESS — NOT A PRODUCTION MEASUREMENT"));

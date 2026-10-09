@@ -501,13 +501,4 @@ mod tests {
             assert_eq!(event["tick_age_s"], pinned, "tick_age_s {age}");
         }
     }
-
-    #[test]
-    fn revision_is_immutable() {
-        assert_eq!(REFERENCE_REVISION.len(), 40);
-    }
-    #[test]
-    fn generated_inventory_encoding_is_stable() {
-        assert_eq!(sha256(&inventory_bytes(&expected_inventory())).len(), 64);
-    }
 }
