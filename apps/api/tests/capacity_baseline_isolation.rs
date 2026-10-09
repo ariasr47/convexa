@@ -96,8 +96,8 @@ fn unique_temp(label: &str) -> PathBuf {
 
 fn short_hooks(out: PathBuf) -> RunHooks {
     let mut hooks = RunHooks {
-        http_hold_override: Some(Duration::from_secs(2)),
-        sse_hold_override: Some(Duration::from_secs(2)),
+        http_hold_override: Some(Duration::from_millis(250)),
+        sse_hold_override: Some(Duration::from_millis(250)),
         force_warm_samples_ms: Some(vec![20.0; 64]),
         out_dir_override: Some(out),
         ..RunHooks::default()
