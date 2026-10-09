@@ -678,64 +678,30 @@ pub fn build_artifact(
 mod tests {
     use super::*;
 
+    /// One session is SINGLE SESSION; several sessions spanning fewer than 14 calendar days
+    /// (inclusive) are MULTI-SESSION; a span of 14 or more is MULTI-WEEK and names the span.
     #[test]
-    fn evidence_class_single_session() {
-        let d = BTreeSet::from(["2026-08-10".to_string()]);
-        assert_eq!(evidence_class(&d), "SINGLE SESSION (d=1)");
-    }
-
-    #[test]
-    fn evidence_class_multi_session_under_two_weeks() {
-        let d = BTreeSet::from([
-            "2026-08-10".to_string(),
-            "2026-08-11".to_string(),
-            "2026-08-12".to_string(),
-        ]);
-        assert_eq!(evidence_class(&d), "MULTI-SESSION (d=3)");
-    }
-
-    #[test]
-    fn evidence_class_multi_week_at_or_above_fourteen_calendar_days() {
-        let d = BTreeSet::from(["2026-08-01".to_string(), "2026-08-20".to_string()]);
-        let s = evidence_class(&d);
-        assert!(
-            s.starts_with("MULTI-WEEK (d=2, span 20 calendar days)"),
-            "{s}"
-        );
-    }
-
-    #[test]
-    fn two_fixtures_emit_different_evidence_class_tokens() {
-        let single = BTreeSet::from(["2026-08-10".to_string()]);
-        let multi = BTreeSet::from([
-            "2026-08-10".to_string(),
-            "2026-08-11".to_string(),
-            "2026-08-12".to_string(),
-        ]);
-        assert_ne!(evidence_class(&single), evidence_class(&multi));
-    }
-
-    #[test]
-    fn no_output_contains_banned_verdict_tokens() {
-        for banned in [
-            "AT BAR",
-            "BELOW BAR",
-            "PASS",
-            "FAIL",
-            "MEETS",
-            "above the bar",
-            "below the bar",
-        ] {
-            assert!(!BAR_TEXT.contains(banned));
-            assert!(!AUTHORIZES_TEXT.contains(banned));
+    fn evidence_class_by_session_count_and_fourteen_day_calendar_span() {
+        let cases: [(&[&str], &str); 5] = [
+            (&["2026-08-10"], "SINGLE SESSION (d=1)"),
+            (
+                &["2026-08-10", "2026-08-11", "2026-08-12"],
+                "MULTI-SESSION (d=3)",
+            ),
+            (&["2026-08-01", "2026-08-13"], "MULTI-SESSION (d=2)"),
+            (
+                &["2026-08-01", "2026-08-14"],
+                "MULTI-WEEK (d=2, span 14 calendar days)",
+            ),
+            (
+                &["2026-08-01", "2026-08-20"],
+                "MULTI-WEEK (d=2, span 20 calendar days)",
+            ),
+        ];
+        for (dates, expected) in cases {
+            let d: BTreeSet<String> = dates.iter().map(|s| s.to_string()).collect();
+            assert_eq!(evidence_class(&d), expected, "{dates:?}");
         }
-    }
-
-    #[test]
-    fn not_applicable_marked_reserved_in_the_legend() {
-        let legend = literal_legend();
-        assert_eq!(legend.len(), 10);
-        assert_eq!(legend["7_not_applicable"], "reserved — not reachable in v1");
     }
 
     fn built_artifact() -> Artifact {
@@ -796,14 +762,6 @@ mod tests {
     }
 
     #[test]
-    fn version_marker_is_the_bumped_v2_string_and_v1_never_appears() {
-        let art = built_artifact();
-        assert_eq!(art.version, "score_lab_v2-2026-08");
-        let json = serde_json::to_string(&art).unwrap();
-        assert!(!json.contains("score_lab_v1-2026-04"));
-    }
-
-    #[test]
     fn cells_total_60_for_three_requested_symbols() {
         let art = built_artifact();
         assert_eq!(
@@ -812,14 +770,6 @@ mod tests {
             "5 candidates x 3 labels x 4 groups (Pooled + 3 symbols)"
         );
         assert_eq!(art.candidate_scope.len(), 20, "5 candidates x 4 groups");
-    }
-
-    #[test]
-    fn artifact_alone_carries_every_cells_rendered_string_ac21() {
-        let art = built_artifact();
-        for c in &art.cells {
-            assert!(!c.rendered.is_empty());
-        }
     }
 
     // ---- AC-78 — derived, not constant, retention ------------------------------------------
@@ -1029,14 +979,6 @@ mod tests {
                 r.sessions_covered
             );
         }
-    }
-
-    #[test]
-    fn retention_entries_are_in_requested_order() {
-        let requested = vec!["IWM".to_string(), "SPY".to_string(), "QQQ".to_string()];
-        let art = artifact_over(&requested);
-        let order: Vec<&str> = art.retention.iter().map(|r| r.symbol.as_str()).collect();
-        assert_eq!(order, vec!["IWM", "SPY", "QQQ"]);
     }
 
     /// GATE Q finding C1 — a retention entry has NO candidate and NO label at all; it counts

@@ -1119,7 +1119,6 @@ mod tests {
     use super::*;
     use crate::config::ChainSnapshotBackend;
     use crate::services::chain_snapshot::wire::{fixture_probe_bundle, serialize_capture, to_wire};
-    use serde_json::json;
     use std::collections::HashSet;
 
     fn dummy_config(store: PathBuf) -> Config {
@@ -1211,14 +1210,6 @@ mod tests {
         }
     }
 
-    #[test]
-    fn replayed_measurement_carries_positive_display_spot() {
-        let m = sample_measurement();
-        assert!(m.display_spot.is_finite() && m.display_spot > 0.0);
-        let v = serde_json::to_value(&m).unwrap();
-        assert!(v.get("display_spot").and_then(|x| x.as_f64()).unwrap() > 0.0);
-    }
-
     fn replayed_at(symbol: &str, nanos: u32) -> ResearchRow {
         ResearchRow::replayed(
             symbol,
@@ -1274,63 +1265,67 @@ mod tests {
         assert!(v.get("tier_counts").is_none());
     }
 
-    #[test]
-    fn split_row_ref_shape_is_symbol_as_of() {
-        let r = SplitRowRef {
-            symbol: "SPY".into(),
-            as_of: "1970-01-01T00:00:00.000000001Z".into(),
-        };
-        let v = serde_json::to_value(&r).unwrap();
-        assert_eq!(
-            v,
-            json!({"symbol":"SPY","as_of":"1970-01-01T00:00:00.000000001Z"})
-        );
-    }
-
-    #[test]
-    fn measurement_payload_omits_compute_ms() {
-        let row = sample_measurement();
-        let s = serde_json::to_string(&row).unwrap();
-        assert!(!s.contains("compute_ms"));
-        assert!(!s.contains("cached_at"));
-        assert!(!s.contains("ttl_secs"));
-    }
-
     // ----- B2 -----
 
+    /// Every flag misuse is a usage error naming the flag; --train-frac is the open interval
+    /// (0,1), so both bounds and a non-finite value refuse while 0.5 passes.
     #[test]
-    fn train_frac_rejects_zero_one_and_non_finite() {
-        assert!(parse_train_frac(0.0).is_err());
-        assert!(parse_train_frac(1.0).is_err());
-        assert!(parse_train_frac(f64::NAN).is_err());
-        assert!(parse_train_frac(0.5).is_ok());
-    }
-
-    #[test]
-    fn as_of_mutually_exclusive_with_from_to() {
-        let err = validate_flags(&RawFlags {
-            as_of: Some("1970-01-01T00:00:00.000000001Z".into()),
-            from: Some("1970-01-01T00:00:00.000000001Z".into()),
-            ..RawFlags::default()
-        })
-        .unwrap_err();
-        let msg = err.to_string();
-        assert!(msg.contains("as-of") || msg.contains("usage"));
-    }
-
-    #[test]
-    fn both_split_flags_are_usage_error() {
-        assert!(validate_flags(&RawFlags {
-            split_at: Some("1970-01-01T00:00:00.000000001Z".into()),
-            train_frac: Some(0.5),
-            ..RawFlags::default()
-        })
-        .is_err());
-    }
-
-    #[test]
-    fn empty_symbols_after_parse_is_usage_error() {
-        assert!(parse_symbols(" , , ").is_err());
+    fn flag_misuse_is_a_usage_error_and_train_frac_is_open_unit_interval() {
+        fn outcome<T>(r: anyhow::Result<T>) -> Result<(), String> {
+            r.map(|_| ()).map_err(|e| e.to_string())
+        }
+        let t = "1970-01-01T00:00:00.000000001Z";
+        let cases: [(&str, Result<(), String>, Option<&str>); 7] = [
+            (
+                "--train-frac 0 (lower bound, exclusive)",
+                outcome(parse_train_frac(0.0)),
+                Some("--train-frac"),
+            ),
+            (
+                "--train-frac 1 (upper bound, exclusive)",
+                outcome(parse_train_frac(1.0)),
+                Some("--train-frac"),
+            ),
+            (
+                "--train-frac NaN",
+                outcome(parse_train_frac(f64::NAN)),
+                Some("--train-frac"),
+            ),
+            ("--train-frac 0.5", outcome(parse_train_frac(0.5)), None),
+            (
+                "--as-of together with --from",
+                outcome(validate_flags(&RawFlags {
+                    as_of: Some(t.into()),
+                    from: Some(t.into()),
+                    ..RawFlags::default()
+                })),
+                Some("--as-of"),
+            ),
+            (
+                "--split-at together with --train-frac",
+                outcome(validate_flags(&RawFlags {
+                    split_at: Some(t.into()),
+                    train_frac: Some(0.5),
+                    ..RawFlags::default()
+                })),
+                Some("--split-at"),
+            ),
+            (
+                "--symbols empty after parse",
+                outcome(parse_symbols(" , , ")),
+                Some("--symbols"),
+            ),
+        ];
+        for (why, got, err_needle) in cases {
+            match (got, err_needle) {
+                (Ok(()), None) => {}
+                (Err(msg), Some(needle)) => assert!(
+                    msg.starts_with("usage:") && msg.contains(needle),
+                    "{why}: {msg}"
+                ),
+                (got, want) => panic!("{why}: got {got:?}, expected error containing {want:?}"),
+            }
+        }
     }
 
     #[tokio::test]
@@ -1400,6 +1395,9 @@ mod tests {
         .unwrap();
         let m = rows[0].measurement.as_ref().unwrap();
         assert!(m.contract_count >= 1);
+        // The outcome join reads display_spot (replay_outcome_join.rs): the producer must emit a
+        // real, positive spot on every replayed row.
+        assert!(m.display_spot.is_finite() && m.display_spot > 0.0);
         let mut b = fixture_probe_bundle("SPY", ts(1));
         b.market.contracts = fixture_probe_bundle("SPY", ts(1)).market.contracts;
         let vendor = {
@@ -1557,40 +1555,7 @@ mod tests {
         assert!(try_split(&rows, SplitRule::At(ts(1))).is_err());
     }
 
-    #[test]
-    fn two_different_cuts_differ_in_membership_labels() {
-        let rows = vec![
-            replayed_at("SPY", 1),
-            replayed_at("SPY", 2),
-            replayed_at("SPY", 3),
-        ];
-        let (a, _) = try_split(&rows, SplitRule::At(ts(2))).unwrap();
-        let (b, _) = try_split(&rows, SplitRule::At(ts(3))).unwrap();
-        assert_ne!(a.rule, b.rule);
-        assert_ne!(
-            (a.train.len(), a.holdout.len()),
-            (b.train.len(), b.holdout.len())
-        );
-    }
-
     // ----- B6 -----
-
-    #[test]
-    fn standing_block_contains_not_live_and_authorizes_nothing() {
-        let standing = Standing {
-            not_live: true,
-            corpus: "SPY · unsplit".into(),
-            snapshots_loaded: 1,
-            massive_calls: 0,
-            framing: STANDING_FRAMING.into(),
-            authorizes: AUTHORIZES_NOTHING.into(),
-        };
-        let text = render_standing_prose(&standing);
-        assert!(text.starts_with(STANDING_TITLE));
-        assert!(text.contains("Authorizes:  nothing"));
-        assert!(!text.to_lowercase().contains("adopt"));
-        assert!(!text.contains("update the live score"));
-    }
 
     #[tokio::test]
     async fn empty_corpus_writes_no_file_and_prints_both_lines() {

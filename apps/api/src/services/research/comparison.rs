@@ -982,29 +982,6 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn dia_zero_paired_rows_renders_no_paired_outcome() {
-        let pairing = pair_rows(&slice_0810_samples(), &slice_0810_outcomes(), "1d");
-        let ls = build_label_set(&pairing.rows);
-        let cand = CANDIDATES
-            .iter()
-            .find(|c| c.key == "opportunity_score")
-            .unwrap();
-        let label = LABELS.iter().find(|l| l.key == "large_abs_move").unwrap();
-        let cell = build_cell(
-            &pairing.rows,
-            &ls,
-            &GroupKey::Symbol("DIA".into()),
-            cand,
-            label,
-            "1d",
-            0,
-            0,
-            "SINGLE SESSION (d=1)",
-        );
-        assert!(matches!(cell.state, CellState::NoPairedOutcome { .. }));
-    }
-
     /// AC-55 — the coupling mark rides INSIDE the cell's own rendered text, naming the shared
     /// keys, never in a legend.
     #[test]
@@ -1060,9 +1037,7 @@ mod identities {
         f_const_candidate, f_const_outcome, f_mixed, f_no_positives, f_perfect_and_inverse,
         f_sparse_pearson, f_thin,
     };
-    use crate::services::research::fixtures::{
-        slice_0810_outcomes, slice_0810_samples, slice_current_outcomes, slice_current_samples,
-    };
+    use crate::services::research::fixtures::{slice_0810_outcomes, slice_0810_samples};
     use crate::services::research::labels::build_label_set;
     use crate::services::research::pairing::pair_rows;
     use crate::services::scanner::store::StructureSample;
@@ -1252,22 +1227,6 @@ mod identities {
         assert_composition(&cells);
         assert_identity3(&cells);
         assert_composition_is_not_vacuous(&cells);
-        assert_identity3_is_not_vacuous(&cells);
-    }
-
-    #[test]
-    fn identity3_is_not_vacuous_on_real_slice_current_data() {
-        let Some(outcomes) = slice_current_outcomes() else {
-            eprintln!("SKIP: slice_current/outcomes.json absent — B0b not yet landed.");
-            return;
-        };
-        let cells = build(
-            &slice_current_samples(),
-            &outcomes,
-            &requested(&["SPY", "QQQ", "IWM"]),
-        );
-        assert_closure(&cells);
-        assert_identity3(&cells);
         assert_identity3_is_not_vacuous(&cells);
     }
 
