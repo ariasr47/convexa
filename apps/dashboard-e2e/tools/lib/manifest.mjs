@@ -32,7 +32,7 @@ export function validateManifest(value) {
     // added 23 real Chromium tests (16 to the overflow spec — AC-38/AC-39/AC-40/AC-57's `/alerts`
     // route, the `tablet 834` width, and 3 degraded-surface cases at 2 schemes — plus 7 new to
     // `curvature-v2.spec.ts`), so the frozen inventory this validator enforces moves with them.
-    // (curvature-v2-desk-and-read FE-12) bumped 75 → 86: registered `desk-and-read.spec.ts` (6 new
+    // (curvature-v2-desk-and-read FE-12) bumped 75 → 86: registered the desk-and-read spec (6 new
     // tests — criterion 45's two, the criteria 20/22 evidence pair, criterion 52's two) and added 5
     // new criterion-50 read-strip-rail tests to the overflow spec (393 dark/light, 834, 900,
     // 1280) — the first net-new Chromium tests this phase's own lanes have added (FE-1 through FE-11
@@ -86,11 +86,14 @@ export function validateManifest(value) {
     // (93 layout-overflow Chromium cases, structure) and its manifest entries removed. The 35 left
     // are app-loads 1, broker-grouping 4, broker 4, curvature-v2 14, desk-and-read 6, navigation 6.
     // The pixel visual gate was retired in the same batch, with its `visual` manifest section.
-    value.full_chromium?.inventory_id !== 'lean-tests-batch-22-35-v1' ||
+    // (lean-tests batch 36, owner-approved 2026-10-08) 35 → 20: the app-loads, broker-grouping,
+    // broker and desk-and-read specs RETIRED (15 cases, duplicate of the compatibility journeys and
+    // unit specs). The 20 left are curvature-v2 14 and navigation 6.
+    value.full_chromium?.inventory_id !== 'lean-tests-batch-36-20-v1' ||
     !Array.isArray(tests) ||
-    tests.length !== 35
+    tests.length !== 20
   )
-    fail('full Chromium inventory must contain 35 tests');
+    fail('full Chromium inventory must contain 20 tests');
   unique(
     tests.map((x) => x.test_id),
     'full Chromium tests',

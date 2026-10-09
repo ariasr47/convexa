@@ -61,7 +61,7 @@ const runtime = () => {
 const gateCounts: Record<string, number> = {
   // (curvature-v2-foundations FE-10) 52 → 75: matches `manifest.json`'s `full_chromium.inventory_id`
   // bump to `curvature-v2-foundations-75-v1` (`tools/lib/manifest.mjs` enforces the same number).
-  // (curvature-v2-desk-and-read FE-12) 75 → 86: FE-12 registered `desk-and-read.spec.ts` (6 new
+  // (curvature-v2-desk-and-read FE-12) 75 → 86: FE-12 registered the desk-and-read spec (6 new
   // Chromium tests: criterion 45's two, the criteria 20/22 evidence pair, criterion 52's two) and
   // added 5 new criterion-50 read-strip-rail tests to the overflow spec (393 dark/light, 834,
   // 900, 1280) — the first net-new e2e tests this phase's own lanes have added to the registered six
@@ -116,7 +116,9 @@ const gateCounts: Record<string, number> = {
   // retired (93 cases) — matches `manifest.json`'s `lean-tests-batch-22-35-v1` inventory
   // (`tools/lib/manifest.mjs` enforces the same number). The pixel visual gate (6 scenarios) was
   // retired in the same batch, so it has no count here and the reporter keeps no visual branch.
-  chromium: 35,
+  // (lean-tests batch 36, owner-approved 2026-10-08) Chromium 35 → 20: four duplicate specs
+  // retired (15 cases) — matches `manifest.json`'s `lean-tests-batch-36-20-v1` inventory.
+  chromium: 20,
   compatibility: 15,
   accessibility: 35,
 };

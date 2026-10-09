@@ -27,14 +27,7 @@ const baseURL = process.env['BASE_URL'] || `http://localhost:${PORT}`;
 const config = {
   ...sharedConfig('chromium'),
   testDir: './src/e2e',
-  testMatch: [
-    'app-loads.spec.ts',
-    'broker-grouping.spec.ts',
-    'broker.spec.ts',
-    'curvature-v2.spec.ts',
-    'desk-and-read.spec.ts',
-    'navigation.spec.ts',
-  ],
+  testMatch: ['curvature-v2.spec.ts', 'navigation.spec.ts'],
   reporter: [
     ['list'],
     [

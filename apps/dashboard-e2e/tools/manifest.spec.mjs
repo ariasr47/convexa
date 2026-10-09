@@ -8,7 +8,7 @@ test('browser quality manifest is closed and has the required inventories', () =
   // (curvature-v2-foundations FE-10) 52 → 75 — see `lib/manifest.mjs`'s own comment at this same
   // check for the itemized 23-test delta.
   // (curvature-v2-desk-and-read FE-12) 75 → 86 — see `lib/manifest.mjs`'s own comment at this same
-  // check for the itemized 11-test delta (`desk-and-read.spec.ts` + criterion 50).
+  // check for the itemized 11-test delta (the desk-and-read spec + criterion 50).
   // (curvature-v2-surfaces FE-12) 86 → 90 — U-32's frame-scoped extension to `curvature-v2.spec.ts`
   // (4 new tests, one per checked width).
   // (curvature-v2-surfaces FE-13) 90 → 99 — see `lib/manifest.mjs`'s own comment at this same
@@ -39,7 +39,8 @@ test('browser quality manifest is closed and has the required inventories', () =
   // panel (F2), a seventh surface, at both breakpoints (393/1280) and both color schemes.
   // (lean-tests batch 22) Chromium 128 → 35: the overflow spec retired (93 cases); the pixel
   // visual gate and its `visual` manifest section retired with it — see `lib/manifest.mjs`.
-  assert.equal(manifest.full_chromium.tests.length, 35);
+  // (lean-tests batch 36) Chromium 35 → 20: four duplicate specs retired (15 cases).
+  assert.equal(manifest.full_chromium.tests.length, 20);
   assert.equal(manifest.compatibility.journeys.length, 5);
   assert.deepEqual(manifest.compatibility.projects, ['chromium', 'firefox', 'webkit']);
   assert.equal(manifest.accessibility.scans.length, 28);

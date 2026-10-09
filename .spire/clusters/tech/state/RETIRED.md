@@ -91,3 +91,7 @@ RETIRED: apps/api/tests/capacity_harness.rs; parent 9c27a3c1a811810785eb55282ed1
 RETIRED: apps/api/tests/live_capacity_isolation.rs; parent 9c27a3c1a811810785eb55282ed1435dd8e8c8fa; duplicate; 3 tests
 RETIRED: apps/dashboard-e2e/tools/mutations.spec.mjs; parent b04302868c4dfb0eba313b47844908a6f2abf223; duplicate; 3 tests
 RETIRED: apps/dashboard-e2e/tools/negative-controls.spec.mjs; parent b04302868c4dfb0eba313b47844908a6f2abf223; duplicate; 2 tests
+RETIRED: apps/dashboard-e2e/src/e2e/app-loads.spec.ts; parent 0f68885cb1e13b024d425460be098c68d4051a89; duplicate; 1 tests
+RETIRED: apps/dashboard-e2e/src/e2e/broker-grouping.spec.ts; parent 0f68885cb1e13b024d425460be098c68d4051a89; duplicate; 4 tests
+RETIRED: apps/dashboard-e2e/src/e2e/broker.spec.ts; parent 0f68885cb1e13b024d425460be098c68d4051a89; duplicate; 4 tests
+RETIRED: apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts; parent 0f68885cb1e13b024d425460be098c68d4051a89; duplicate; 6 tests

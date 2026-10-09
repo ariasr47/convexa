@@ -2,86 +2,8 @@
   "schema_version": 1,
   "support_policy_id": "playwright-engines-1.62.1",
   "full_chromium": {
-    "inventory_id": "lean-tests-batch-22-35-v1",
+    "inventory_id": "lean-tests-batch-36-20-v1",
     "tests": [
-      {
-        "test_id": "d38f0e9816f51aa1922817ddad296f9fcfffdcb98335c43716eb971b1cf4f276",
-        "file": "apps/dashboard-e2e/src/e2e/app-loads.spec.ts",
-        "title_path": ["app shell", "loads"],
-        "project": "chromium"
-      },
-      {
-        "test_id": "e1a04a045e5bfb75832ebc08fa7d45ad5bb356e672e814c9caa451d757517836",
-        "file": "apps/dashboard-e2e/src/e2e/broker-grouping.spec.ts",
-        "title_path": [
-          "broker grouping",
-          "AC-37 — 393px, a group EXPANDED, no horizontal overflow"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "c9994eb28d0cea033d1d030a51b03443a7cbb9bbac61f80952fbae33679c907e",
-        "file": "apps/dashboard-e2e/src/e2e/broker-grouping.spec.ts",
-        "title_path": [
-          "broker grouping",
-          "AC-36 — the group control carries exactly ONE focus indicator"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "084ce42b1399f80f6bfbd0748eef8f2010bfa8ae84148fd6bed358bf5678a451",
-        "file": "apps/dashboard-e2e/src/e2e/broker-grouping.spec.ts",
-        "title_path": [
-          "broker grouping",
-          "AC-4 — the populated (collapsed) tab names no shape, on real rendered text"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "bff70436d79e0878f40cca1ff46476356fc9723d2421b7c78acdd545018c8900",
-        "file": "apps/dashboard-e2e/src/e2e/broker-grouping.spec.ts",
-        "title_path": [
-          "broker grouping",
-          "AC-7 / AC-26 — collapsed on load, and collapsed again after a reload"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "ceb8b89449b11ff70bf4288b4d8e7dc080f49b69ff9fdd0268ecb3aa6be30e76",
-        "file": "apps/dashboard-e2e/src/e2e/broker.spec.ts",
-        "title_path": [
-          "broker tab",
-          "signed out: the route wall stands in front of the Broker tab and NO broker request is issued"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "3f264d0b74617b442700b3894d71d75a7ad2634490d6854470f1a5eab100c2ac",
-        "file": "apps/dashboard-e2e/src/e2e/broker.spec.ts",
-        "title_path": [
-          "broker tab",
-          "signed in, no credential: the honest S1 not-connected state — never an empty table"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "3077686a1e2143446a496fc26bfaf9cf137af1a106495a5bfa991cac87364416",
-        "file": "apps/dashboard-e2e/src/e2e/broker.spec.ts",
-        "title_path": [
-          "broker tab",
-          "a populated tab never claims `live`: the freshness word appears only inside the negation phrase"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "5337a3afacd5f5b75f8727b5bb207e84f3ec2880a61e095a5c00178c60c5f545",
-        "file": "apps/dashboard-e2e/src/e2e/broker.spec.ts",
-        "title_path": [
-          "broker tab",
-          "393px: the populated Broker tab does not overflow horizontally"
-        ],
-        "project": "chromium"
-      },
       {
         "test_id": "17368bd9989383c8b0ae86287a827d73238534d56e8a660322e401244dbfc0f6",
         "file": "apps/dashboard-e2e/src/e2e/navigation.spec.ts",
@@ -207,60 +129,6 @@
         "title_path": [
           "AC-34 — coarse pointer at 393px: the effective hit area, measured, for every named control",
           "the palette trigger + its rows, the burger drawer + its four links, and FigureCell’s ⓘ all measure ≥44px in both dimensions"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "7c9a59b736deaedd88c886db1414542a48c5854dc1bf3145ada8e696fe72b81c",
-        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
-        "title_path": [
-          "Criterion 45 (SB) — exactly one decision-verdict node at 393 and 1280, same string",
-          "393px: opening the analysis mounts exactly one decision-verdict node (the bottom-sheet peek/body are mutually exclusive)"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "ecd188a0cc406275a6d691e0f88f1d05af9c25fff9561b52a1ecac83a5e7a3fd",
-        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
-        "title_path": [
-          "Criterion 45 (SB) — exactly one decision-verdict node at 393 and 1280, same string",
-          "resizing 393 -> 1280 in the SAME session keeps exactly one decision-verdict node, carrying the SAME string (proves the bottom sheet and the wide panel are one field, not two)"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "d41d051dfea0a1832ef7214bda787fee740e1e353ec900225b37da3b9ddbfe3e",
-        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
-        "title_path": [
-          "Criteria 20/22 evidence — a stream drop keeps the field attached and geometrically stable; reduce-motion renders without incident",
-          "stream drop: connection flips to offline, the field canvas stays attached at unchanged geometry (browser companion — trail/drift/beam/sweep stopping is proven at the unit tier, paintStep.spec.ts)"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "d1ba21e2d0cd4049141e669f64e81b7c9afb6ef6e11cc41f295a3076d4a8228c",
-        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
-        "title_path": [
-          "Criteria 20/22 evidence — a stream drop keeps the field attached and geometrically stable; reduce-motion renders without incident",
-          "reduce-motion: the ticker renders without incident and stays connected (criterion 22 static-frame review capture)"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "4a86e48d84286f7093cd156768b5ee076058d8389bb2ce4ce5089aa95a41c896",
-        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
-        "title_path": [
-          "Criterion 52 (P5, review) — the field's own canvas fill is not scheme-invariant",
-          "393px: the canvas's own base fill differs between dark and light — not scheme-invariant"
-        ],
-        "project": "chromium"
-      },
-      {
-        "test_id": "2646d4aaeb078597b702641accb55fed199fa19f21370ded8950bfd94f871b28",
-        "file": "apps/dashboard-e2e/src/e2e/desk-and-read.spec.ts",
-        "title_path": [
-          "Criterion 52 (P5, review) — the field's own canvas fill is not scheme-invariant",
-          "1280px: the canvas's own base fill differs between dark and light — not scheme-invariant"
         ],
         "project": "chromium"
       },
