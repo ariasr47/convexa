@@ -100,3 +100,6 @@ RETIRED: apps/dashboard/src/app/chain-archive-object-store.structural.spec.ts; p
 RETIRED: apps/dashboard/src/app/chain-snapshot-capture.structural.spec.ts; parent 2f4d0ed3c9d56cee1ef2e020c7697a53e7269449; duplicate; 10 tests
 RETIRED: apps/dashboard/src/app/liquid-names-session-capture.structural.spec.ts; parent 2f4d0ed3c9d56cee1ef2e020c7697a53e7269449; duplicate; 13 tests
 RETIRED: apps/dashboard/src/app/massive-flat-file-keep.structural.spec.ts; parent 2f4d0ed3c9d56cee1ef2e020c7697a53e7269449; duplicate; 16 tests
+RETIRED: apps/dashboard/src/app/replay-outcome-join.structural.spec.ts; parent 7eafcd56ec0d652ca274849908bd93070c7bdb3a; duplicate; 15 tests
+RETIRED: apps/dashboard/src/app/session-chain-archive.structural.spec.ts; parent 7eafcd56ec0d652ca274849908bd93070c7bdb3a; duplicate; 13 tests
+RETIRED: apps/dashboard/src/app/session-day-tape-capture.structural.spec.ts; parent 7eafcd56ec0d652ca274849908bd93070c7bdb3a; duplicate; 19 tests

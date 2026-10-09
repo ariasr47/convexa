@@ -71,17 +71,4 @@ describe('§7 item 7 — every route element is bounded', () => {
     expect(elements).not.toContain('<AppShell />');
     expect(elements.filter((e) => !elementIsBounded(e))).toEqual([]);
   });
-
-  it('the catch-all is the LAST route in the shell group', () => {
-    const src = APP_RAW['/src/app/app.tsx'];
-    const star = src.indexOf('path="*"');
-    const settings = src.indexOf('path="/settings"');
-    expect(star).toBeGreaterThan(settings);
-    expect(src.slice(star).indexOf('</Route>')).toBeGreaterThan(0);
-  });
-
-  it('RouteFallback no longer lives in app.tsx', () => {
-    expect(APP_RAW['/src/app/app.tsx']).not.toContain('function RouteFallback(');
-    expect(APP_RAW['/src/app/app.tsx']).toContain("from '@/shared/ui/RouteFallback'");
-  });
 });

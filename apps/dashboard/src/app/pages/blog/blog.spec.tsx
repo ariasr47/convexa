@@ -27,7 +27,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BLOG_ARTICLES, BlogPage } from './BlogPage';
 
 /** Walks up from cwd to the Nx workspace root — same idiom as the app's `.structural.spec.ts`
- *  files (e.g. `research-lab-surface.structural.spec.ts:17-24`), duplicated here on purpose so
+ *  files (e.g. `research-lab-surface.structural.spec.ts:14-21`), duplicated here on purpose so
  *  this colocated spec stays self-contained (no cross-page import). */
 function workspaceRoot(): string {
   let dir = process.cwd();

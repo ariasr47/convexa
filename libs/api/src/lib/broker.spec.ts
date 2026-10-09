@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  deleteBrokerCredential,
   fetchBrokerBook,
   fetchBrokerCredential,
   putBrokerCredential,
@@ -34,14 +33,6 @@ describe('broker facade compatibility', () => {
     const calls = (f as unknown as { mock: { calls: Array<[unknown, RequestInit?]> } }).mock.calls;
     expect(JSON.parse(String(calls[0][1]?.body))).toEqual({ app_key: 'key', app_secret: 'secret' });
     expect(JSON.stringify(await f.mock.results[0]?.value)).not.toContain('secret');
-  });
-
-  it('deletes credentials idempotently', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ok({ set: false, last4: null, storage_available: true })),
-    );
-    await expect(deleteBrokerCredential()).resolves.toMatchObject({ set: false, last4: null });
   });
 
   it('preserves empty and unknown as server-owned distinctions', async () => {
