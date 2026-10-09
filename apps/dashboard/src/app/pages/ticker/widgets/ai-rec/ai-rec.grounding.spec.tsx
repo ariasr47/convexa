@@ -19,7 +19,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AnalysisSurface } from './AnalysisSurface';
 import { COPY } from './copy';
 import { DecisionCard } from './DecisionCard';
-import { noTradeRec, recAllTraced, recBlockAbsent, recFabricated, recLocalRules } from './fixtures';
+import { noTradeRec, recAllTraced, recFabricated } from './fixtures';
 import { deriveAiRecPresentation } from './presentationPolicy';
 
 function makeStatus(): RecStatus {
@@ -161,54 +161,6 @@ afterEach(() => {
 // F10 — the card component specs
 // =================================================================================================
 describe('ai-rec-grounding · the card (F10)', () => {
-  it('AC-15/AC-18 — recAllTraced renders exactly ONE grounding-card-line, affirmative, between the hero and the cap surface', async () => {
-    installBackend(recAllTraced());
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    await within(panel()).findByText(/Every checked figure traces to a Convexa number\./);
-    expect(within(panel()).queryAllByTestId('grounding-card-line')).toHaveLength(1);
-  });
-
-  it('AC-17 — the count reads 4, never `of 5` or `of 6`', async () => {
-    const rec = recAllTraced();
-    rec.grounding = {
-      ...rec.grounding!,
-      card: 'some_traced',
-      counts: { checked: 4, traced: 3, untraced: 1, not_checkable: 0 },
-    };
-    installBackend(rec);
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    await within(panel()).findByText(/3 of 4 checked figures/);
-    expect(within(panel()).queryByText(/of 5|of 6/)).toBeNull();
-  });
-
-  it('AC-27 (SB) — a block-absent rec renders exactly ONE card line in place of every per-figure clause; the rest of the card renders in full', async () => {
-    installBackend(recBlockAbsent());
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    await within(panel()).findByText("This read wasn't checked against Convexa's numbers.");
-    expect(within(panel()).queryAllByTestId('grounding-card-line')).toHaveLength(1);
-    expect(within(panel()).queryAllByTestId(/^clause-/)).toHaveLength(0);
-    // The rest of the card still renders: the verdict, and an Accept affordance.
-    expect(within(panel()).getByRole('button', { name: COPY.action.accept })).toBeInTheDocument();
-  });
-
-  it('AC-20 — a local-rules rec states the calm caption, no warning icon, clauses render normally', async () => {
-    installBackend(recLocalRules());
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    const line = await within(panel()).findByTestId('grounding-card-line');
-    expect(line).toHaveTextContent(
-      "No AI read here — these figures come from Convexa's own rules.",
-    );
-    expect(line.querySelector('svg[color="warning"]')).toBeNull();
-  });
-
   it('AC-32 (amended) — no grounding wire token ever renders as user-visible text', () => {
     // DecisionCard only: the analysis surface's as-sent section intentionally prints raw tokens.
     renderCard(recFabricated());

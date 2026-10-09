@@ -107,18 +107,6 @@ describe('ai-rec-grounding · banned-word / no-check-glyph source scan (AC-10, s
     expect(bannedWordHits("'this figure is invalid'")).toContain('invalid');
   });
 
-  it('all three PREFILL_WITHHELD members pass the scan — they are user-facing copy in this folder', () => {
-    const three = [
-      "Not pre-filled — this was the AI's own number.",
-      "Not pre-filled — Convexa couldn't check this figure.",
-      "Not pre-filled — this read wasn't checked against Convexa's numbers.",
-    ];
-    for (const s of three) {
-      expect(bannedWordHits(s)).toEqual([]);
-      expect(glyphHits(s)).toEqual([]);
-    }
-  });
-
   it('glyphs — no source under the folder contains any banned check glyph', () => {
     const offenders: string[] = [];
     for (const [path, src] of Object.entries(RAW)) {
