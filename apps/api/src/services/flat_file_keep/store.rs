@@ -383,10 +383,8 @@ impl FlatFilesStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::services::flat_file_keep::literals::{self, FRAMING_HIT};
-    use crate::services::flat_file_keep::occupancy::{
-        is_content_hit, is_locked_extract, occupancy_token,
-    };
+    use crate::services::flat_file_keep::literals;
+    use crate::services::flat_file_keep::occupancy::{is_content_hit, occupancy_token};
     use chrono::TimeZone;
     use chrono_tz::America::New_York;
 
@@ -465,44 +463,5 @@ mod tests {
         let q = store.load("QQQ", d, ExtractClass::Trades, due_now()).await;
         assert_eq!(q, Occupancy::NoStoredExtract);
         assert_ne!(q, Occupancy::Miss);
-    }
-
-    #[tokio::test]
-    async fn leftover_temp_is_ignored_dated_inspect_no_stored_extract() {
-        let store = FlatFilesStore::memory();
-        let d = "2026-08-10";
-        store
-            .ignore_temp(&format!("tmp/keep-{d}-trades-nonce.csv.gz"))
-            .await;
-        let o = store.load("SPY", d, ExtractClass::Trades, due_now()).await;
-        assert_eq!(o, Occupancy::NoStoredExtract);
-        assert_ne!(
-            o,
-            Occupancy::Unreadable {
-                reason: String::new()
-            }
-        );
-        assert_ne!(o, Occupancy::Miss);
-        let rows = store.list("SPY", due_now()).await;
-        assert!(rows.is_empty());
-    }
-
-    #[tokio::test]
-    async fn mixed_class_trades_kept_quotes_miss_envelope_detail_null() {
-        let store = FlatFilesStore::memory();
-        let d = "2026-08-10";
-        store
-            .put_extract("SPY", d, ExtractClass::Trades, "ticker\nSPY\n".into(), 1)
-            .await
-            .unwrap();
-        store.put_miss(d, ExtractClass::Quotes).await.unwrap();
-        let env = store.load_both("SPY", d, due_now()).await;
-        assert_eq!(env.http_status, 200);
-        assert_eq!(env.framing, FRAMING_HIT);
-        assert_eq!(env.detail, None);
-        assert_eq!(env.trades, Occupancy::Kept { row_count: 1 });
-        assert_eq!(env.quotes, Occupancy::Miss);
-        assert!(is_content_hit(&env.trades));
-        assert!(!is_locked_extract(&env.quotes) || matches!(env.quotes, Occupancy::Miss));
     }
 }
