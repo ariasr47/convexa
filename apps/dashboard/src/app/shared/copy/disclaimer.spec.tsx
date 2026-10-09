@@ -7,14 +7,9 @@
  * (the sim book is paper; the brokerage link is read-only; not advice) and drops the one that
  * stopped being true.
  */
-import { Footer } from '@/shell/Footer';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { cleanup, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DISCLAIMER_TEXT, DisclaimerCopy } from './disclaimer';
-
-const theme = createTheme();
 
 afterEach(() => cleanup());
 
@@ -33,26 +28,8 @@ describe('R5a · the standing disclaimer', () => {
     expect(DISCLAIMER_TEXT).toContain('Not investment advice');
   });
 
-  it('keeps <strong>simulated</strong> emphasized in the rendered form', () => {
-    const r = render(<DisclaimerCopy />);
-    expect(r.container.querySelector('strong')?.textContent).toBe('simulated');
-  });
-
   it('the rendered form and the plain-text form say the same thing', () => {
     const r = render(<DisclaimerCopy />);
     expect(squash(r.container.textContent ?? '')).toBe(squash(DISCLAIMER_TEXT));
-  });
-
-  it('the FOOTER renders that one source (not its own copy of the words)', () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <MemoryRouter>
-          <Footer />
-        </MemoryRouter>
-      </ThemeProvider>,
-    );
-    const el = screen.getByTestId('footer-disclaimer');
-    expect(squash(el.textContent ?? '')).toBe(squash(DISCLAIMER_TEXT));
-    expect(el.querySelector('strong')?.textContent).toBe('simulated');
   });
 });

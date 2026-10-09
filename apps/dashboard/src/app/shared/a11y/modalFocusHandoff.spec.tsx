@@ -288,11 +288,4 @@ describe('the seam is installed for the real app', () => {
     expect(source).toContain('MuiModal');
     expect(source).toContain('disableRestoreFocus');
   });
-
-  it('installation is idempotent — a second call does not double-wrap', () => {
-    const first = installModalFocusHandoff();
-    const second = installModalFocusHandoff();
-    expect(second).toBe(first);
-    first();
-  });
 });

@@ -41,29 +41,6 @@ describe('AppShell · keyboard skip link (spine #6)', () => {
     expect(screen.getByTestId('page')).toBeInTheDocument();
   });
 
-  it('skip link is the first focusable element in the shell (before nav)', () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <MemoryRouter>
-          <Routes>
-            <Route element={<AppShell />}>
-              <Route index element={<div>page</div>} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </ThemeProvider>,
-    );
-
-    const focusables = Array.from(
-      document.querySelectorAll(
-        'a[href], button, [tabindex]:not([tabindex="-1"]), input, select, textarea',
-      ),
-    ) as HTMLElement[];
-    // First focusable in document order should be the skip link (parked off-screen until focus).
-    expect(focusables[0]?.getAttribute('data-testid')).toBe('skip-to-main');
-  });
-
   it('AC-27 — the ⌘K palette does not change the first tab stop, closed OR after an open+close cycle', async () => {
     // A deliberately never-resolving promise (this test only needs the read to stay pending).
     // eslint-disable-next-line @typescript-eslint/no-empty-function

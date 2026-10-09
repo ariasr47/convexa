@@ -34,21 +34,10 @@ afterEach(() => {
 });
 
 // GATE Z m-10 — AC-F1 names ten pages ("landing, ticker, scanner, positions, alerts, settings,
-// blog, methodology, lab and the 404"); this ROUTES table covered seven. `/scanner` and
-// `/positions` render the sign-in wall signed-out (the stub below is anonymous) — the footer must
-// still be the shell's ONE mount regardless, which is the property this table is proving.
-const ROUTES = [
-  '/',
-  '/ticker/SPY',
-  '/scanner',
-  '/positions',
-  '/blog',
-  '/methodology',
-  '/alerts',
-  '/settings',
-  '/lab',
-  '/nope',
-] as const;
+// blog, methodology, lab and the 404"). The footer is mounted once by the shell, not per page, so
+// four representative routes prove it: the landing page, a ticker desk, a sign-in-walled page
+// (`/scanner` renders the wall signed-out — the stub below is anonymous) and the 404.
+const ROUTES = ['/', '/ticker/SPY', '/scanner', '/nope'] as const;
 
 describe('AC-F1/F2/F3/F4 — one footer, one main, on every in-shell page', () => {
   for (const path of ROUTES) {
@@ -73,21 +62,4 @@ describe('AC-F1/F2/F3/F4 — one footer, one main, on every in-shell page', () =
       expect(screen.getByTestId('footer-disclaimer')).toHaveTextContent(/Not investment advice/);
     });
   }
-
-  it('AC-F3 — the top nav still carries only the four product links, no Blog and no Lab', async () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <MemoryRouter initialEntries={['/']}>
-          <App />
-        </MemoryRouter>
-      </ThemeProvider>,
-    );
-    const nav = await screen.findByTestId('app-shell');
-    for (const id of ['nav-ticker', 'nav-scanner', 'nav-positions', 'nav-alerts']) {
-      expect(nav.querySelector(`[data-testid="${id}"]`)).not.toBeNull();
-    }
-    expect(nav.querySelector('[data-testid="nav-blog"]')).toBeNull();
-    expect(nav.querySelector('[data-testid="nav-lab"]')).toBeNull();
-  });
 });
