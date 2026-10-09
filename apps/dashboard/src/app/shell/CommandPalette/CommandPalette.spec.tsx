@@ -1,7 +1,8 @@
 /**
  * `CommandPalette` — component states (SPEC §4.4 P1–P6). Network mocked at `getScan()` only.
- * The keyboard END-TO-END walk (⌘K open → navigate → close, signed-out wall, unsaved-field
- * survival) lives in `palette.flow.spec.tsx` — this file covers the palette's OWN render states.
+ * The keyboard END-TO-END walk (⌘K open → reach all four surfaces) lives in `palette.flow.spec.tsx`;
+ * the signed-out wall is covered in `app.risk.spec.tsx`. This file covers the palette's OWN render
+ * states.
  */
 import { theme } from '@/shared/theme/theme';
 import type { ScanResponse, ScanRow } from '@convexa/api';

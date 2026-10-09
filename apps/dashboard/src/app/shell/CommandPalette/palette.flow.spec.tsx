@@ -3,9 +3,9 @@
  * boundary (`fetch` + `EventSource`), never a live backend. Mirrors `app.risk.spec.tsx`'s proven
  * harness (mount the whole `App`, strict fetch mock) rather than re-deriving one.
  *
- * AC-24 (⌘K opens from anywhere, all four surfaces reachable without a mouse) · AC-25 (Escape
- * closes + returns focus) · AC-26 (scrim click — its OWN arm, not a reuse of Escape's) · AC-28
- * (signed-out gated surface → the same visible wall the nav link produces).
+ * AC-24 (⌘K opens from anywhere, all four surfaces reachable without a mouse). AC-25 (Escape
+ * closes + returns focus) is covered by `modalFocusHandoff.spec.tsx`; AC-28 (signed-out gated
+ * surface → the visible sign-in wall) by `app.risk.spec.tsx`'s signed-out lockdown cases.
  *
  * AC-33 (unsaved field text survives open/dismiss) WAS pinned here against the ticker desk's bare
  * `#ticker-input` — removed by the ticker fidelity repair (F3: "the design has no bare ticker input
@@ -177,10 +177,10 @@ async function selectCommandByArrows(
 }
 
 describe('AC-24 — ⌘K opens the palette from anywhere in the shell; all four surfaces reachable without a mouse', () => {
-  it('opens on ⌘K from the ticker page and reaches Scanner, Ticker, Alerts via the keyboard only', async () => {
-    // Signed in — Scanner is ALSO behind `RequireAuth` (same as Positions), and AC-28's own test
-    // already covers the signed-out wall; this test's job is proving PALETTE navigation reaches
-    // every surface, so it renders each surface's real content.
+  it('opens on ⌘K from the ticker page and reaches Scanner, Ticker, Positions, Alerts via the keyboard only', async () => {
+    // Signed in — Scanner and Positions are both behind `RequireAuth`, and the signed-out wall has
+    // its own coverage in `app.risk.spec.tsx`; this test's job is proving PALETTE navigation
+    // reaches every surface, so it renders each surface's real content.
     signedIn();
     const user = userEvent.setup();
     renderAt('/ticker/SPY');
@@ -200,82 +200,18 @@ describe('AC-24 — ⌘K opens the palette from anywhere in the shell; all four 
     await waitFor(() => expect(screen.queryByTestId('command-palette')).toBeNull());
     await screen.findByTestId('command-deck');
 
+    // Positions — index 2, two ArrowDowns.
+    await openWithKeyboard(user);
+    await screen.findByTestId('palette-command-surface-positions');
+    await selectCommandByArrows(user, 2);
+    await waitFor(() => expect(screen.queryByTestId('command-palette')).toBeNull());
+    await screen.findByTestId('portfolio-panel');
+
     // Alerts — index 3, three ArrowDowns.
     await openWithKeyboard(user);
     await screen.findByTestId('palette-command-surface-alerts');
     await selectCommandByArrows(user, 3);
     await waitFor(() => expect(screen.queryByTestId('command-palette')).toBeNull());
     await screen.findByTestId('alerts-page');
-  });
-
-  it('reaches Positions via the keyboard (signed in, so the surface itself renders)', async () => {
-    signedIn();
-    const user = userEvent.setup();
-    renderAt('/ticker/SPY');
-    await screen.findByTestId('command-deck');
-    await openWithKeyboard(user);
-    await screen.findByTestId('palette-command-surface-positions');
-    // Positions — index 2, two ArrowDowns.
-    await selectCommandByArrows(user, 2);
-    await waitFor(() => expect(screen.queryByTestId('command-palette')).toBeNull());
-    await screen.findByTestId('portfolio-panel');
-  });
-});
-
-describe('AC-25 — Escape closes and returns focus to the element that held it before opening', () => {
-  it('focus returns to the pre-open element; nothing behind the palette changed', async () => {
-    const user = userEvent.setup();
-    renderAt('/ticker/SPY');
-    await screen.findByTestId('command-deck');
-
-    const trigger = screen.getByTestId('nav-search-trigger');
-    trigger.focus();
-    expect(trigger).toHaveFocus();
-    await user.keyboard('{Meta>}k{/Meta}');
-    await screen.findByTestId('command-palette');
-
-    await user.keyboard('{Escape}');
-    await waitFor(() => expect(screen.queryByTestId('command-palette')).toBeNull());
-    await waitFor(() => expect(trigger).toHaveFocus());
-  });
-});
-
-describe('AC-26 — scrim click closes, discards the query, and returns focus — its OWN arm', () => {
-  it('clicking the backdrop closes the dialog and clears the typed query on next open', async () => {
-    const user = userEvent.setup();
-    renderAt('/ticker/SPY');
-    await screen.findByTestId('command-deck');
-
-    const trigger = screen.getByTestId('nav-search-trigger');
-    await user.click(trigger);
-    await screen.findByTestId('command-palette');
-    await user.type(screen.getByTestId('palette-input'), 'AAPL');
-
-    const backdrop = document.querySelector('.MuiBackdrop-root');
-    expect(backdrop).toBeTruthy();
-    await user.click(backdrop as Element);
-    await waitFor(() => expect(screen.queryByTestId('command-palette')).toBeNull());
-    await waitFor(() => expect(trigger).toHaveFocus());
-
-    // Re-open — the query from the dismissed session must be GONE (discarded, not just hidden).
-    await user.click(trigger);
-    const input = (await screen.findByTestId('palette-input')).querySelector(
-      'input',
-    ) as HTMLInputElement;
-    expect(input.value).toBe('');
-  });
-});
-
-describe('AC-28 — signed out, a gated surface from the palette lands on the same visible sign-in wall', () => {
-  it('choosing Positions signed-out shows require-auth-wall, never a blank page or silent redirect', async () => {
-    const user = userEvent.setup();
-    renderAt('/ticker/SPY');
-    await screen.findByTestId('command-deck');
-    await openWithKeyboard(user);
-    const cmd = await screen.findByTestId('palette-command-surface-positions');
-    await user.click(cmd);
-    await waitFor(() => expect(screen.queryByTestId('command-palette')).toBeNull());
-    expect(await screen.findByTestId('require-auth-wall')).toBeInTheDocument();
-    expect(screen.getByTestId('require-auth-ticker')).toBeInTheDocument(); // the onward free path
   });
 });
