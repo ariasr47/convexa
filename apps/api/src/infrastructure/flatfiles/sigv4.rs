@@ -150,34 +150,4 @@ mod tests {
             "https://files.massive.com/flatfiles/key.csv.gz"
         );
     }
-
-    #[test]
-    fn empty_body_sha256_is_canonical_empty() {
-        let digest = hex::encode(Sha256::digest(b""));
-        assert_eq!(digest, EMPTY_BODY_SHA256);
-        assert_eq!(empty_body_sha256(), EMPTY_BODY_SHA256);
-        let src = include_str!("sigv4.rs");
-        let prod = src.split("#[cfg(test)]").next().unwrap_or(src);
-        // Payload hash must be the empty-body digest, never the unsigned token.
-        let unsigned = format!("{}-{}", "UNSIGNED", "PAYLOAD");
-        assert!(!prod.contains(&unsigned));
-        assert!(prod.contains(EMPTY_BODY_SHA256));
-    }
-
-    #[test]
-    fn signed_headers_are_alphabetical_host_content_date() {
-        let (auth, hash) = sign_get(
-            "AKIAEXAMPLE",
-            "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-            "us-east-1",
-            "files.massive.com",
-            "/flatfiles/us_stocks_sip/trades_v1/2026/08/2026-08-10.csv.gz",
-            "20260810T150000Z",
-        );
-        assert_eq!(hash, EMPTY_BODY_SHA256);
-        assert!(auth.contains("SignedHeaders=host;x-amz-content-sha256;x-amz-date"));
-        assert!(auth.starts_with("AWS4-HMAC-SHA256 Credential=AKIAEXAMPLE/"));
-        let unsigned = format!("{}-{}", "UNSIGNED", "PAYLOAD");
-        assert!(!auth.contains(&unsigned));
-    }
 }

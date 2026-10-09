@@ -84,60 +84,68 @@ mod tests {
     }
 
     #[test]
-    fn rth_weekday() {
-        // 2026-08-10 is a Monday; 14:00 UTC = 10:00 ET (EDT)
-        let now = Utc.with_ymd_and_hms(2026, 8, 10, 14, 0, 0).unwrap();
-        assert_eq!(MarketPhase::classify(now), MarketPhase::Rth);
-    }
-
-    #[test]
-    fn after_close_weekday() {
-        // 21:00 UTC = 17:00 ET
-        let now = Utc.with_ymd_and_hms(2026, 8, 10, 21, 0, 0).unwrap();
-        assert_eq!(MarketPhase::classify(now), MarketPhase::AfterClose);
-    }
-
-    #[test]
-    fn closed_pre_weekend() {
-        // Saturday
-        let now = Utc.with_ymd_and_hms(2026, 8, 8, 15, 0, 0).unwrap();
-        assert_eq!(MarketPhase::classify(now), MarketPhase::ClosedPre);
-    }
-
-    #[test]
-    fn holiday_weekday_all_hours_are_closed_pre() {
-        // 2026-11-26 Thanksgiving. EST = UTC-5.
-        assert_eq!(
-            MarketPhase::classify(et_hm(2026, 11, 26, 10, 0)),
-            MarketPhase::ClosedPre
-        );
-        assert_eq!(
-            MarketPhase::classify(et_hm(2026, 11, 26, 17, 0)),
-            MarketPhase::ClosedPre
-        );
-        assert_eq!(
-            MarketPhase::classify(et_hm(2026, 11, 26, 21, 0)),
-            MarketPhase::ClosedPre
-        );
-        assert_ne!(
-            MarketPhase::classify(et_hm(2026, 11, 26, 17, 0)),
-            MarketPhase::AfterClose
-        );
-    }
-
-    #[test]
-    fn ordinary_weekday_1000_is_rth() {
-        assert_eq!(
-            MarketPhase::classify(et_hm(2026, 8, 10, 10, 0)),
-            MarketPhase::Rth
-        );
-    }
-
-    #[test]
-    fn early_close_weekday_1000_may_be_rth() {
-        assert_eq!(
-            MarketPhase::classify(et_hm(2026, 11, 27, 10, 0)),
-            MarketPhase::Rth
-        );
+    fn classify_maps_et_wall_clock_and_session_day_to_phase() {
+        // (label, instant, expected). 2026-08-10 is a Monday (EDT = UTC-4);
+        // 2026-11-26 is Thanksgiving (EST = UTC-5); 2026-11-27 is the early-close Friday.
+        let cases: [(&str, DateTime<Utc>, MarketPhase); 11] = [
+            (
+                "weekday 14:00Z = 10:00 EDT is RTH",
+                Utc.with_ymd_and_hms(2026, 8, 10, 14, 0, 0).unwrap(),
+                MarketPhase::Rth,
+            ),
+            (
+                "weekday 09:29 ET pre-open is closed_pre",
+                et_hm(2026, 8, 10, 9, 29),
+                MarketPhase::ClosedPre,
+            ),
+            (
+                "weekday 09:30 ET open is RTH",
+                et_hm(2026, 8, 10, 9, 30),
+                MarketPhase::Rth,
+            ),
+            (
+                "weekday 16:00 ET close is still RTH",
+                et_hm(2026, 8, 10, 16, 0),
+                MarketPhase::Rth,
+            ),
+            (
+                "weekday 16:01 ET is after_close",
+                et_hm(2026, 8, 10, 16, 1),
+                MarketPhase::AfterClose,
+            ),
+            (
+                "weekday 21:00Z = 17:00 EDT is after_close",
+                Utc.with_ymd_and_hms(2026, 8, 10, 21, 0, 0).unwrap(),
+                MarketPhase::AfterClose,
+            ),
+            (
+                "Saturday mid-day is closed_pre",
+                Utc.with_ymd_and_hms(2026, 8, 8, 15, 0, 0).unwrap(),
+                MarketPhase::ClosedPre,
+            ),
+            (
+                "holiday 10:00 ET is closed_pre, not RTH",
+                et_hm(2026, 11, 26, 10, 0),
+                MarketPhase::ClosedPre,
+            ),
+            (
+                "holiday 17:00 ET is closed_pre, not after_close",
+                et_hm(2026, 11, 26, 17, 0),
+                MarketPhase::ClosedPre,
+            ),
+            (
+                "holiday 21:00 ET is closed_pre",
+                et_hm(2026, 11, 26, 21, 0),
+                MarketPhase::ClosedPre,
+            ),
+            (
+                "early-close weekday 10:00 ET is RTH",
+                et_hm(2026, 11, 27, 10, 0),
+                MarketPhase::Rth,
+            ),
+        ];
+        for (label, now, expected) in cases {
+            assert_eq!(MarketPhase::classify(now), expected, "{label}");
+        }
     }
 }
