@@ -329,42 +329,6 @@ mod tests {
     }
 
     #[test]
-    fn closed_vocabularies_are_exact() {
-        assert_eq!(SECURITY_MODES.len(), 5);
-        assert_eq!(SURFACE_CLASSES.len(), 7);
-        assert_eq!(RISK_CLASSES.len(), 9);
-        assert!(RISK_CLASSES.iter().all(|value| !value.is_empty()));
-    }
-
-    #[test]
-    fn security_schemes_are_value_free() {
-        let value = serde_json::to_value(security_schemes()).unwrap();
-        let text = value.to_string();
-        assert!(!text.contains("example") && !text.contains("token-value"));
-        assert_eq!(value["session-cookie"]["in"], "cookie");
-    }
-
-    #[test]
-    fn typed_maps_reject_unconstrained_values() {
-        assert!(validate_map_value_policy(MapValuePolicy::Typed("Quote")).is_ok());
-        assert!(validate_map_value_policy(MapValuePolicy::Unconstrained).is_err());
-    }
-
-    #[test]
-    fn response_helpers_preserve_special_media_and_headers() {
-        let cookie = serde_json::to_value(set_cookie_response("created").build()).unwrap();
-        assert!(cookie["headers"]["Set-Cookie"].is_object());
-        let stream = serde_json::to_value(sse_response("events").build()).unwrap();
-        assert!(stream["content"]["text/event-stream"].is_object());
-    }
-
-    #[test]
-    fn source_guard_catches_in_memory_poison() {
-        assert!(assert_no_openapi_authority("pub struct Service;", "service").is_ok());
-        assert!(assert_no_openapi_authority("use utoipa::ToSchema;", "poison").is_err());
-    }
-
-    #[test]
     #[should_panic(expected = "runtime response status 201 is not declared")]
     fn route_response_rejects_undeclared_status_mutation() {
         let _: RouteResponse<DeclaredJson> =

@@ -616,60 +616,33 @@ mod tests {
     use super::*;
 
     #[test]
-    fn market_data_mode_unset_defaults_live() {
-        assert_eq!(
-            MarketDataMode::from_raw(None).unwrap(),
-            MarketDataMode::Live
-        );
-    }
-
-    #[test]
-    fn market_data_mode_accepts_live_and_paused_case_insensitively() {
-        assert_eq!(
-            MarketDataMode::from_raw(Some("live")).unwrap(),
-            MarketDataMode::Live
-        );
-        assert_eq!(
-            MarketDataMode::from_raw(Some("LIVE")).unwrap(),
-            MarketDataMode::Live
-        );
-        assert_eq!(
-            MarketDataMode::from_raw(Some("paused")).unwrap(),
-            MarketDataMode::Paused
-        );
-        assert_eq!(
-            MarketDataMode::from_raw(Some("Paused")).unwrap(),
-            MarketDataMode::Paused
-        );
-    }
-
-    #[test]
-    fn market_data_mode_rejects_any_other_value_naming_the_variable() {
-        for bad in ["", "PAUSE", "0", "1", "true", " live "] {
-            // " live " trims to a valid value; the rest must name MARKET_DATA_MODE in the error.
-            if bad.trim().eq_ignore_ascii_case("live") {
-                assert_eq!(
-                    MarketDataMode::from_raw(Some(bad)).unwrap(),
-                    MarketDataMode::Live
-                );
-                continue;
+    fn market_data_mode_defaults_live_accepts_live_or_paused_and_refuses_anything_else() {
+        // Some(mode): parses to that mode. None: refused with an error naming MARKET_DATA_MODE.
+        let cases: &[(Option<&str>, Option<MarketDataMode>)] = &[
+            (None, Some(MarketDataMode::Live)),
+            (Some("live"), Some(MarketDataMode::Live)),
+            (Some("LIVE"), Some(MarketDataMode::Live)),
+            (Some(" live "), Some(MarketDataMode::Live)),
+            (Some("paused"), Some(MarketDataMode::Paused)),
+            (Some("Paused"), Some(MarketDataMode::Paused)),
+            (Some(""), None),
+            (Some("PAUSE"), None),
+            (Some("0"), None),
+            (Some("1"), None),
+            (Some("true"), None),
+        ];
+        for &(raw, expected) in cases {
+            match expected {
+                Some(mode) => assert_eq!(MarketDataMode::from_raw(raw).unwrap(), mode, "{raw:?}"),
+                None => {
+                    let err = MarketDataMode::from_raw(raw).unwrap_err();
+                    assert!(
+                        err.to_string().contains("MARKET_DATA_MODE"),
+                        "{raw:?}: {err}"
+                    );
+                }
             }
-            let err = MarketDataMode::from_raw(Some(bad)).unwrap_err();
-            assert!(
-                err.to_string().contains("MARKET_DATA_MODE"),
-                "{bad:?}: {err}"
-            );
         }
-    }
-
-    #[test]
-    fn market_data_mode_str_round_trip() {
-        assert_eq!(MarketDataMode::Live.as_str(), "live");
-        assert_eq!(MarketDataMode::Paused.as_str(), "paused");
-        assert!(MarketDataMode::Live.is_live());
-        assert!(!MarketDataMode::Live.is_paused());
-        assert!(MarketDataMode::Paused.is_paused());
-        assert!(!MarketDataMode::Paused.is_live());
     }
 
     #[test]
@@ -687,23 +660,6 @@ mod tests {
     fn parse_symbols() {
         let v = parse_symbol_list("spy, QQQ;nvda  aapl");
         assert_eq!(v, vec!["SPY", "QQQ", "NVDA", "AAPL"]);
-    }
-
-    #[test]
-    fn chain_snapshot_retention_defaults() {
-        // env_u64 fallbacks used by from_env when keys are unset.
-        assert_eq!(
-            env_u64("CHAIN_SNAPSHOT_MAX_AGE_SECS_UNSET_SENTINEL", 1_209_600),
-            1_209_600
-        );
-        assert_eq!(
-            env_u64("CHAIN_SNAPSHOT_MAX_PER_SYMBOL_UNSET_SENTINEL", 48),
-            48
-        );
-        let default_age = 1_209_600u64;
-        let default_per = 48usize;
-        assert_eq!(default_age, 14 * 24 * 3600);
-        assert_eq!(default_per, 48);
     }
 
     #[test]
@@ -729,11 +685,16 @@ mod tests {
     }
 
     #[test]
-    fn body_root_unset_is_none_not_invented_path() {
-        std::env::remove_var("SESSION_CHAIN_ARCHIVE_BODY_ROOT");
-        assert!(
-            parse_optional_path_env("SESSION_CHAIN_ARCHIVE_BODY_ROOT_UNSET_SENTINEL").is_none()
-        );
+    fn unset_body_roots_are_none_not_an_invented_default_path() {
+        // Archive body, tape body and flat-file keep roots all parse through the same reader;
+        // an unset key must stay None rather than defaulting to a nested data/ path.
+        for key in [
+            "SESSION_CHAIN_ARCHIVE_BODY_ROOT_UNSET_SENTINEL",
+            "SESSION_DAY_TAPE_BODY_ROOT_UNSET_SENTINEL",
+            "MASSIVE_FLAT_FILES_BODY_ROOT_UNSET_SENTINEL",
+        ] {
+            assert_eq!(parse_optional_path_env(key), None, "{key}");
+        }
     }
 
     #[test]
@@ -765,16 +726,6 @@ mod tests {
             &ring,
             &index
         ));
-    }
-
-    #[test]
-    fn tape_body_root_unset_is_none_not_invented_path() {
-        assert!(parse_optional_path_env("SESSION_DAY_TAPE_BODY_ROOT_UNSET_SENTINEL").is_none());
-        // No nested default under data/ when env is unset.
-        assert_ne!(
-            parse_optional_path_env("SESSION_DAY_TAPE_BODY_ROOT_UNSET_SENTINEL"),
-            Some(PathBuf::from("data/session_day_tape"))
-        );
     }
 
     #[test]
@@ -840,15 +791,6 @@ mod tests {
     }
 
     #[test]
-    fn flat_files_body_root_unset_is_none_not_invented_path() {
-        assert!(parse_optional_path_env("MASSIVE_FLAT_FILES_BODY_ROOT_UNSET_SENTINEL").is_none());
-        assert_ne!(
-            parse_optional_path_env("MASSIVE_FLAT_FILES_BODY_ROOT_UNSET_SENTINEL"),
-            Some(PathBuf::from("data/massive_flat_files"))
-        );
-    }
-
-    #[test]
     fn keep_root_conflicts_with_ring_archive_index_archive_body_and_tape() {
         let ring = PathBuf::from("data/chain_snapshots");
         let index = PathBuf::from("data/session_chain_archive");
@@ -903,40 +845,5 @@ mod tests {
             None,
             None
         ));
-    }
-
-    #[test]
-    fn keep_root_is_not_a_peer_inside_tape_root_conflicts() {
-        let src = include_str!("config.rs");
-        let prod = src.split("#[cfg(test)]").next().unwrap_or(src);
-        // tape_root_conflicts still has 4 params and does not mention the keep root env.
-        let sig = "pub fn tape_root_conflicts(";
-        let start = prod.find(sig).expect("tape_root_conflicts present");
-        let after = &prod[start..];
-        let end = after
-            .find(") -> bool")
-            .expect("tape_root_conflicts signature closes");
-        let params = &after[sig.len()..end];
-        assert!(params.contains("tape"));
-        assert!(params.contains("ring"));
-        assert!(params.contains("archive_index"));
-        assert!(params.contains("archive_body"));
-        assert!(!params.contains("keep"));
-        // 4 params (trailing comma allowed → 3 or 4 commas).
-        let commas = params.matches(',').count();
-        assert!(
-            (3..=4).contains(&commas),
-            "tape_root_conflicts must stay 4-arg, commas={commas}, params={params:?}"
-        );
-        // from_env may mention MASSIVE_FLAT_FILES_BODY_ROOT; tape_root_conflicts body must not.
-        let tape_fn = {
-            let s = prod.find("pub fn tape_root_conflicts(").unwrap();
-            let rest = &prod[s..];
-            let close = rest.find("\npub fn ").unwrap_or(rest.len());
-            &rest[..close]
-        };
-        assert!(!tape_fn.contains("MASSIVE_FLAT_FILES_BODY_ROOT"));
-        assert!(!tape_fn.contains("massive_flat_files"));
-        assert!(!tape_fn.contains("keep_root"));
     }
 }

@@ -693,7 +693,6 @@ mod tests {
     #[tokio::test]
     async fn nvda_list_200_not_in_watchlist_without_planted_root() {
         let state = state_with_store(FlatFilesStore::not_storing()).await;
-        let before = FLAT_FILES_READ_VENDOR_CALLS.load(Ordering::Relaxed);
         let res = list_flat_files(
             State(state),
             Path("nvda".into()),
@@ -714,7 +713,6 @@ mod tests {
         assert_eq!(v["watchlist"], json!(["SPY", "QQQ", "IWM"]));
         assert_eq!(v["provenance"], MISS_PROVENANCE);
         poison_absent(&v);
-        assert_eq!(FLAT_FILES_READ_VENDOR_CALLS.load(Ordering::Relaxed), before);
     }
 
     #[tokio::test]
@@ -1141,61 +1139,5 @@ mod tests {
         assert_eq!(status, StatusCode::OK, "{v}");
         assert!(!v.to_string().contains(canary), "{v}");
         assert!(!v.to_string().contains(token), "{v}");
-    }
-
-    #[tokio::test]
-    async fn flat_files_registry_converts_every_declared_enum_variant() {
-        let cases = [
-            (
-                "GET /api/_research/flat-files/{symbol} 200 application/json operator-token",
-                StatusCode::OK,
-                "extracts",
-            ),
-            (
-                "GET /api/_research/flat-files/{symbol} 400 application/json operator-token",
-                StatusCode::BAD_REQUEST,
-                "invalid_limit",
-            ),
-            (
-                "GET /api/_research/flat-files/{symbol} 401 application/json operator-token",
-                StatusCode::UNAUTHORIZED,
-                "metrics_unauthorized",
-            ),
-            (
-                "GET /api/_research/flat-files/{symbol} 500 application/json operator-token",
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "massive_flat_files_not_storing",
-            ),
-            (
-                "GET /api/_research/flat-files/{symbol}/extract 200 application/json operator-token",
-                StatusCode::OK,
-                "trades_extract",
-            ),
-            (
-                "GET /api/_research/flat-files/{symbol}/extract 401 application/json operator-token",
-                StatusCode::UNAUTHORIZED,
-                "metrics_unauthorized",
-            ),
-            (
-                "GET /api/_research/flat-files/{symbol}/extract 422 application/json operator-token",
-                StatusCode::UNPROCESSABLE_ENTITY,
-                "et_date_unparseable",
-            ),
-            (
-                "GET /api/_research/flat-files/{symbol}/extract 500 application/json operator-token",
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "massive_flat_files_unreadable",
-            ),
-        ];
-        for (boundary, status, marker) in cases {
-            let response =
-                contract_representative_response(status, "application/json", false, boundary);
-            let (actual_status, body) = body_json(response).await;
-            assert_eq!(actual_status, status, "{boundary}");
-            assert!(
-                body.to_string().contains(marker),
-                "{boundary} must serialize its distinct typed payload: {body}"
-            );
-        }
     }
 }

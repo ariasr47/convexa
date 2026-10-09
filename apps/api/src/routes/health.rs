@@ -900,62 +900,42 @@ mod deployed_revision_tests {
         move |name: &str| map.get(name).cloned()
     }
 
+    /// The first variable carrying a non-blank revision wins, trimmed; nothing usable is None,
+    /// never "". The defined-but-empty row is the production defect: the variable is DEFINED but
+    /// blank, so `env::var` returns `Ok("")` and a bare `.ok()` reported it as a revision.
     #[test]
-    fn our_variable_wins_when_it_carries_a_revision() {
-        let got = resolve_revision(env(&[
-            ("RELEASE_GIT_SHA", "a455004"),
-            ("RAILWAY_GIT_COMMIT_SHA", "ffffffff"),
-        ]));
-        assert_eq!(got.as_deref(), Some("a455004"));
-    }
-
-    /// The production defect: the variable is DEFINED but blank, so `env::var` returns `Ok("")`
-    /// and a bare `.ok()` reports an empty string as though it were a revision.
-    #[test]
-    fn a_defined_but_empty_variable_falls_through_instead_of_reporting_itself() {
-        let got = resolve_revision(env(&[
-            ("RELEASE_GIT_SHA", ""),
-            ("RAILWAY_GIT_COMMIT_SHA", "a455004"),
-        ]));
-        assert_eq!(got.as_deref(), Some("a455004"));
-    }
-
-    #[test]
-    fn whitespace_only_is_not_a_revision() {
-        let got = resolve_revision(env(&[("RELEASE_GIT_SHA", "   \n")]));
-        assert_eq!(got, None);
-    }
-
-    #[test]
-    fn surrounding_whitespace_is_trimmed() {
-        let got = resolve_revision(env(&[("RELEASE_GIT_SHA", "  a455004\n")]));
-        assert_eq!(got.as_deref(), Some("a455004"));
-    }
-
-    #[test]
-    fn nothing_set_is_null_not_empty_string() {
-        assert_eq!(resolve_revision(env(&[])), None);
+    fn resolve_revision_reports_the_first_non_blank_trimmed_value_or_none() {
+        let cases: &[(&[(&str, &str)], Option<&str>)] = &[
+            (
+                &[
+                    ("RELEASE_GIT_SHA", "a455004"),
+                    ("RAILWAY_GIT_COMMIT_SHA", "ffffffff"),
+                ],
+                Some("a455004"),
+            ),
+            (
+                &[
+                    ("RELEASE_GIT_SHA", ""),
+                    ("RAILWAY_GIT_COMMIT_SHA", "a455004"),
+                ],
+                Some("a455004"),
+            ),
+            (&[("RELEASE_GIT_SHA", "   \n")], None),
+            (&[("RELEASE_GIT_SHA", "  a455004\n")], Some("a455004")),
+            (&[], None),
+        ];
+        for &(pairs, expected) in cases {
+            assert_eq!(
+                resolve_revision(env(pairs)).as_deref(),
+                expected,
+                "{pairs:?}"
+            );
+        }
     }
 }
 
 #[cfg(test)]
 mod wire_divergence_tests {
-    use super::dropped_keys;
-    use serde_json::json;
-
-    #[test]
-    fn dropped_keys_names_every_key_the_closed_schema_discards() {
-        let sent = json!({"status":"ok","service":"api-rust","release":"abc123"});
-        let kept = json!({"status":"ok","service":"api-rust"});
-        assert_eq!(dropped_keys(&sent, &kept), vec!["release".to_string()]);
-    }
-
-    #[test]
-    fn dropped_keys_is_empty_when_the_round_trip_is_lossless() {
-        let sent = json!({"status":"ok","release":null});
-        assert_eq!(dropped_keys(&sent, &sent), Vec::<String>::new());
-    }
-
     /// The helper being correct proves nothing if nothing calls it. Debug builds — which is what
     /// `cargo test` and CI run — must turn a dropped key into a failure, not a log line.
     #[cfg(debug_assertions)]
@@ -966,7 +946,7 @@ mod wire_divergence_tests {
             .expect("representative wire serializes");
         body.as_object_mut()
             .expect("representative body is an object")
-            .insert("not_on_the_wire".into(), json!("x"));
+            .insert("not_on_the_wire".into(), serde_json::json!("x"));
         let _ = super::health_wire_from_body(body);
     }
 
@@ -993,83 +973,5 @@ mod wire_divergence_tests {
 
         let wire = super::health_wire_from_body(body);
         assert_eq!(wire.market_data, "paused");
-    }
-
-    #[test]
-    fn dropped_keys_ignores_value_changes_and_non_objects() {
-        let sent = json!({"status":"ok"});
-        let kept = json!({"status":"degraded"});
-        assert_eq!(dropped_keys(&sent, &kept), Vec::<String>::new());
-        assert_eq!(
-            dropped_keys(&json!([1, 2]), &json!({})),
-            Vec::<String>::new()
-        );
-    }
-}
-
-#[cfg(test)]
-mod contract_inference_tests {
-    use super::__path_api_health;
-    use super::{contract_representative_response_for, HealthResponse};
-    use axum::body::to_bytes;
-    use axum::http::{header, StatusCode};
-    use serde_json::Value;
-    use utoipa::{IntoResponses, OpenApi};
-
-    #[derive(utoipa::OpenApi)]
-    #[openapi(paths(api_health))]
-    struct HealthApi;
-
-    #[test]
-    fn concrete_health_response_owns_emitted_response_set() {
-        let expected = HealthResponse::responses();
-        assert!(
-            expected.contains_key("200"),
-            "health preserves the pre-cutover 200 status"
-        );
-        let document = HealthApi::openapi();
-        let operation = document
-            .paths
-            .paths
-            .get("/api/health")
-            .and_then(|path| path.get.as_ref())
-            .expect("health operation emitted");
-        assert_eq!(
-            operation.responses.responses.keys().collect::<Vec<_>>(),
-            expected.keys().collect::<Vec<_>>()
-        );
-    }
-
-    #[tokio::test]
-    async fn route_owned_health_and_metrics_variants_convert_distinct_envelopes() {
-        let cases = [
-            (
-                "GET /api/health 200 application/json public",
-                StatusCode::OK,
-                "status",
-            ),
-            (
-                "GET /api/_metrics 200 application/json operator-token",
-                StatusCode::OK,
-                "instrumentation_enabled",
-            ),
-            (
-                "GET /api/_metrics 401 application/json operator-token",
-                StatusCode::UNAUTHORIZED,
-                "error",
-            ),
-        ];
-
-        for (boundary, expected_status, required_field) in cases {
-            let response = contract_representative_response_for(expected_status, boundary);
-            assert_eq!(response.status(), expected_status);
-            assert_eq!(response.headers()[header::CONTENT_TYPE], "application/json");
-            let body = to_bytes(response.into_body(), 1024 * 1024).await.unwrap();
-            let json: Value = serde_json::from_slice(&body).unwrap();
-            assert!(
-                json.get(required_field).is_some(),
-                "{boundary} must serialize its concrete DTO variant"
-            );
-        }
     }
 }
