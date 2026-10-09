@@ -86,3 +86,4 @@ RETIRED: apps/dashboard/src/app/pages/landing/svg-build-constraint.spec.ts; pare
 RETIRED: apps/dashboard/src/app/day-replay-mock-adapter.spec.tsx; parent a25ca75a106f8e09c9c8964d26f5b220a64df7d7; duplicate; 2 tests
 RETIRED: apps/dashboard/src/app/exchange-holiday-calendar.structural.spec.ts; parent a25ca75a106f8e09c9c8964d26f5b220a64df7d7; duplicate; 6 tests
 RETIRED: apps/dashboard/src/testing/operatorSessionArchiveAllowlist.spec.ts; parent a25ca75a106f8e09c9c8964d26f5b220a64df7d7; duplicate; 2 tests
+RETIRED: apps/api/tests/archive_coverage_isolation.rs; parent b7d0b120f81df6f45f0056ea20768dd2b2609934; duplicate; 8 tests
