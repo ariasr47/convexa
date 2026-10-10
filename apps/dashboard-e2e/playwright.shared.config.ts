@@ -32,6 +32,10 @@ export function sharedConfig(gate: Gate) {
       reuseExistingServer: false,
       cwd: workspaceRoot,
       timeout: 180_000,
+      // Without this Playwright SIGKILLs the server process group, which `nx run` cannot forward:
+      // Vite runs in its own group and outlived every gate, holding the port (seen twice per run).
+      // SIGTERM lets Nx stop Vite. Windows ignores this and kills the tree with taskkill.
+      gracefulShutdown: { signal: 'SIGTERM', timeout: 10_000 },
     },
     reporter: [
       ['list'],
