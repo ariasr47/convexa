@@ -204,3 +204,37 @@ describe('StateExportDrawer — the as-sent set cannot be recovered (AC-95)', ()
     );
   });
 });
+
+describe('StateExportDrawer — as-sent counts win over the fresh export (AC-95)', () => {
+  it('with a rec on screen, the candidate line states the counts the rec was SENT, not the fresh export counts', async () => {
+    // The fresh export (what `fetchRecExport` returns NOW) carries 12 contracts / 1 expiration /
+    // 3 omitted (outside_band). The rec on screen was produced with a different, smaller set.
+    const fresh = makeExport();
+    stubFetch(fresh);
+    const asSent = {
+      ...fresh.context.candidates,
+      budget: 'prompt' as const,
+      sent_to_model: true,
+      included: { contracts: 7, expirations: ['2026-07-18', '2026-08-15'], expiration_count: 2 },
+      omitted: {
+        total: 5,
+        expirations_omitted_by_cap: 0,
+        by_reason: {
+          outside_window: 0,
+          outside_band: 0,
+          no_interest: 5,
+          expiration_cap: 0,
+          strike_cap: 0,
+        },
+      },
+    };
+    renderDrawer({ hasRecOnScreen: true, asSentCandidates: asSent });
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('7 contracts across 2 expirations · 5 omitted (no_interest)'),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.queryByText(/^12 contracts across/)).not.toBeInTheDocument();
+  });
+});

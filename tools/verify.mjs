@@ -52,11 +52,13 @@ console.log(`[verify] base ${base}; ${changed.length} changed file(s)`);
 let status = run('npx', nxArgs, { NX_NO_CLOUD: 'true' });
 
 const toolScope =
-  /^(tools\/|apps\/dashboard-e2e\/tools\/|\.github\/|\.supply-chain\/|package(-lock)?\.json$)/;
+  /^(tools\/|functions\/|apps\/dashboard-e2e\/tools\/|\.github\/|\.supply-chain\/|package(-lock)?\.json$)/;
 if (changed.some((file) => toolScope.test(file))) {
   status = run('npm', ['run', 'test:tools']) || status;
 } else {
-  console.log('[verify] tool specs skipped: nothing changed under tools/, .github/ or packages');
+  console.log(
+    '[verify] tool specs skipped: nothing changed under tools/, functions/, .github/ or packages',
+  );
 }
 
 process.exit(status);

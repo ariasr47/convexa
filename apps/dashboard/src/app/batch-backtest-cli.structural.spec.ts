@@ -1,9 +1,10 @@
 /**
  * batch-backtest-cli F1 — NO_UI_CHANGE (AC-21, AC-22).
  *
- * Pages 404 `/api/_research` non-regression + no trader chrome for batch replay +
- * no dashboard / `@convexa/api` import of CLI, research-replay chrome, or capture browse.
- * No new trader page.
+ * No trader chrome for batch replay + no dashboard / `@convexa/api` import of CLI, research-replay
+ * chrome, or capture browse. No new trader page. AC-22 (Pages 404 on `/api/_research`) is proven
+ * by BEHAVIOR in `tools/pages-proxy.spec.mjs`, which calls the real `onRequest` (lean-tests batch 103
+ * retired the source-text regex scans that stood in for it here).
  *
  * Mutation-tested: a scan that cannot prove it bites is not enforcement
  * (`[structural-over-prose-enforcement]`).
@@ -120,7 +121,6 @@ function workspaceRoot(): string {
 }
 
 const ROOT = workspaceRoot();
-const PAGES_FN = resolve(ROOT, 'functions', 'api', '[[path]].ts');
 const API_LIB_SRC = resolve(ROOT, 'libs', 'api', 'src');
 
 function hitsIn(src: string, needles: readonly string[] = TRADER_FORBIDDEN): string[] {
@@ -141,23 +141,6 @@ function scanTraderSources(
     }
   }
   return hits;
-}
-
-function extractOperator404Condition(src: string): string {
-  const match = src.match(
-    /if\s*\(([\s\S]*?)\)\s*\{\s*return new Response\(\s*['"]Not Found['"]\s*,\s*\{\s*status:\s*404\s*\}\s*\)/,
-  );
-  return match?.[1] ?? '';
-}
-
-function pagesSourceBlocksResearch(src: string): boolean {
-  const cond = extractOperator404Condition(src);
-  return (
-    /pathname\s*===\s*['"]\/api\/_research['"]/.test(cond) &&
-    /pathname\.startsWith\(\s*['"]\/api\/_research\/['"]\s*\)/.test(cond) &&
-    /pathname\s*===\s*['"]\/api\/_metrics['"]/.test(cond) &&
-    /pathname\.startsWith\(\s*['"]\/api\/_metrics\/['"]\s*\)/.test(cond)
-  );
 }
 
 function collectTsFiles(dir: string): string[] {
@@ -271,42 +254,6 @@ describe('F2 · operator-session-archive allowlist is explicit and non-vacuous (
     expect(
       isOperatorSessionArchiveSource('/src/app/pages/not-operator-session-archive/evil.ts'),
     ).toBe(false);
-  });
-});
-
-describe('F1 · Pages /api/_research 404 unchanged (AC-22)', () => {
-  it('anti-vacuity — the Pages catch-all exists and already 404s _metrics', () => {
-    expect(existsSync(PAGES_FN), PAGES_FN).toBe(true);
-    const src = readFileSync(PAGES_FN, 'utf8');
-    const cond = extractOperator404Condition(src);
-    expect(cond, 'operator 404 if-block missing').not.toBe('');
-    expect(cond).toContain('/api/_metrics');
-    expect(src).toContain("new Response('Not Found', { status: 404 })");
-  });
-
-  it('the same 404 branch covers /api/_research and /api/_research/*', () => {
-    const src = readFileSync(PAGES_FN, 'utf8');
-    expect(pagesSourceBlocksResearch(src)).toBe(true);
-  });
-
-  it('mutation — omitting _research from the 404 if makes the guard fail', () => {
-    const metricsOnly = `
-      if (url.pathname === '/api/_metrics' || url.pathname.startsWith('/api/_metrics/')) {
-        return new Response('Not Found', { status: 404 });
-      }
-    `;
-    expect(pagesSourceBlocksResearch(metricsOnly)).toBe(false);
-    const both = `
-      if (
-        url.pathname === '/api/_metrics' ||
-        url.pathname.startsWith('/api/_metrics/') ||
-        url.pathname === '/api/_research' ||
-        url.pathname.startsWith('/api/_research/')
-      ) {
-        return new Response('Not Found', { status: 404 });
-      }
-    `;
-    expect(pagesSourceBlocksResearch(both)).toBe(true);
   });
 });
 

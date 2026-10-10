@@ -225,6 +225,21 @@ describe('buildReadStrip — IV rank is the eighth cell, closed-lookup digest (c
   it('computed with a recognized band — rank + the closed band label', () => {
     expect(bySlot(FULL_INPUT).ivRank.value).toBe('82 · premium rich');
   });
+
+  // The band is the WIRE's, never re-derived from the rank. Each row pairs a band with a rank on
+  // the far side of a documented cut (`IVR_TIP_BAND`: rich ≥ 70, cheap < 30), so any local
+  // mapping — including an off-by-one at either cut — prints a different label than the wire sent.
+  it.each<[number, string, string]>([
+    [70, 'neutral', '70 · neutral'],
+    [29, 'neutral', '29 · neutral'],
+    [30, 'premium_cheap', '30 · premium cheap'],
+    [69, 'premium_rich', '69 · premium rich'],
+  ])(
+    'rank %d with wire band %s renders %s — the wire band wins at the cut',
+    (rank, band, value) => {
+      expect(bySlot({ ...FULL_INPUT, ivRank: ivRank({ rank, band }) }).ivRank.value).toBe(value);
+    },
+  );
 });
 
 // =================================================================================================

@@ -706,6 +706,7 @@ Full lists with files, counts and same-commit edits: [BATCHES.md](BATCHES.md).
 | 102 | `apps/api/tests/session_day_replay.rs` (vacuous check replaced) | 8 → 8 | removed: coverage_missing_stays_missing_after_replay_walk (built a fresh archive the replay never saw); added: replay_walk_writes_nothing_to_the_session_archive_its_state_holds (live archive on the replay state; bite analytics.rs:37+218) |
 | 102 | `apps/api/tests/session_day_tape_capture.rs` hermetic_monday_path_a_path_b_gaps_coverage_score (vacuous block replaced) | 4 → 4 | the no-archive-pollution block now asserts zero rows on state.session_archive, the archive every persist_at used |
 | 102 | `apps/api/tests/massive_flat_file_keep.rs` hermetic_monday_occupancy_matrix_ac54_score_sse section 19 (vacuous block replaced) | 1 → 1 | keep now runs against a CLI config with real archive index, body and tape roots, and asserts their bytes unchanged |
+| 103 | `apps/dashboard/src/app/batch-backtest-cli.structural.spec.ts` (duplicate: replaced by behavior) | 13 → 10 | removed the F1 describe "Pages /api/_research 404 unchanged (AC-22)": anti-vacuity — the Pages catch-all exists and already 404s _metrics; the same 404 branch covers /api/_research and /api/_research/*; mutation — omitting _research from the 404 if makes the guard fail; plus helpers PAGES_FN, extractOperator404Condition, pagesSourceBlocksResearch. Covered by tools/pages-proxy.spec.mjs (real onRequest) |
 
 ## Ops workflows (batch 94, listed, no trigger change)
 
