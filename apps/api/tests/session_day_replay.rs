@@ -3,13 +3,15 @@
 //! Plant `(SPY, 2026-08-10)` → `prepare_replay` → first SSE `data:` already carries
 //! `session_tape` + `live: false` → clock honors gap → Path-B only when reached →
 //! vendor counter 0 (incl. QQQ REST) → refuse-before-bind negatives → empty walks →
-//! coverage missing stays missing → score triple identity → secrets stay out of SSE.
+//! replay writes nothing to the session archive → score triple identity → secrets stay out of SSE.
 
 use api_rust::routes;
 use api_rust::services::analytics::{
     compute_analytics_from_vendor, load_analytics, AnalyticsComputeParams,
 };
-use api_rust::services::chain_snapshot::{fixture_probe_bundle, serialize_capture, to_wire};
+use api_rust::services::chain_snapshot::{
+    fixture_probe_bundle, serialize_capture, to_wire, ChainSnapshotStore,
+};
 use api_rust::services::day_tape::construct::{prepare_replay, prepare_then_bind, Prepare};
 use api_rust::services::day_tape::player::{
     et_hms_to_ts_ns, run_player, ts_ns_to_tape_time_et, PlayerPorts, RecordingSleeper,
@@ -20,7 +22,7 @@ use api_rust::services::day_tape::{
     PathBSnapshot, SessionDayTape,
 };
 use api_rust::services::market_data::MarketDataSourceKind;
-use api_rust::services::session_chain_archive::{derive as coverage_derive, SessionChainArchive};
+use api_rust::services::session_chain_archive::SessionChainArchive;
 use api_rust::state::AppState;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
@@ -637,30 +639,36 @@ async fn both_empty_starts_then_ends_without_fabricating() {
 }
 
 #[tokio::test]
-async fn coverage_missing_stays_missing_after_replay_walk() {
-    let archive = SessionChainArchive::memory();
-    let cov_before = coverage_derive(&archive, evening(), ET)
-        .await
-        .expect("coverage");
-    let missing_before = cov_before.missing;
-    let present_before = cov_before.present;
-    assert!(
-        missing_before >= 1 || !cov_before.due,
-        "Monday after close should be due/missing; present={} missing={} due={}",
-        present_before,
-        missing_before,
-        cov_before.due
-    );
-
+async fn replay_walk_writes_nothing_to_the_session_archive_its_state_holds() {
     let tape = SessionDayTape::memory();
     plant_playable(&tape).await;
     let prep = prepare_replay(SYM, ET, Some(1), tape, evening(), None).await;
     let Prepare::Play {
-        state, day, pace, ..
+        mut state,
+        day,
+        pace,
+        ..
     } = prep
     else {
         panic!("expected Play");
     };
+    // prepare_replay builds a state whose archive and ring are Disabled, where any write would be
+    // swallowed silently. Hand the replay state a live archive + ring and a working fixture vendor,
+    // so everything downstream of replay's own isolation (compute -> spawn_capture -> ring append ->
+    // archive insert) would succeed. The only thing between this walk and an archive row is replay.
+    let archive = SessionChainArchive::memory();
+    state.session_archive = archive.clone();
+    state.chain_snapshots = ChainSnapshotStore::memory();
+    let golden = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../libs/quant-engine/tests/fixtures/gex_SPY.json");
+    let book =
+        api_rust::services::capacity_harness::fixture::load_capacity_book(&golden).expect("golden");
+    state.vendor_fixture = AppState::for_capacity_harness(book.catalog, 4, 9)
+        .await
+        .expect("fixture vendor")
+        .vendor_fixture
+        .clone();
+
     let sleeper = Arc::new(RecordingSleeper {
         sleeps: Mutex::new(Vec::new()),
     });
@@ -672,14 +680,30 @@ async fn coverage_missing_stays_missing_after_replay_walk() {
     };
     run_player(SYM, ET, pace, day, ports).await;
 
-    let cov_after = coverage_derive(&archive, evening(), ET)
+    // The armed desk paths a viewer hits during replay — the ones that capture when live.
+    let (spy, _) = load_analytics(&state, SYM, None, None, true)
         .await
-        .expect("coverage after");
-    assert_eq!(
-        cov_after.missing, missing_before,
-        "replay must not flip coverage missing→present"
+        .expect("armed SPY REST must not 5xx");
+    let _ = load_analytics(&state, "QQQ", None, None, false).await;
+    // spawn_capture is fire-and-forget; on this current-thread test runtime a few yields let any
+    // spawned capture run to completion against the in-memory stores (no sleeps, no I/O waits).
+    for _ in 0..8 {
+        tokio::task::yield_now().await;
+    }
+
+    assert!(
+        spy.is_some(),
+        "precondition: the walk must have delivered a Path-B book a capture could archive"
     );
-    assert_eq!(cov_after.present, present_before);
+    let mut written = Vec::new();
+    for sym in ["SPY", "QQQ", "IWM"] {
+        written.extend(archive.list(sym, None).await.expect("archive list"));
+    }
+    assert!(
+        written.is_empty(),
+        "replay must not write the session archive; found {} row(s)",
+        written.len()
+    );
 }
 
 #[tokio::test]

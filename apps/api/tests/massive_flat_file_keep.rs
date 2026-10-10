@@ -14,7 +14,9 @@ use api_rust::services::analytics::{compute_from_port, refresh_analytics, Analyt
 use api_rust::services::chain_snapshot::wire::fixture_probe_bundle;
 use api_rust::services::chain_snapshot::ChainSnapshotStore;
 use api_rust::services::day_tape::SessionDayTape;
-use api_rust::services::flat_file_keep::cli::{evaluate_cli, evaluate_keep};
+use api_rust::services::flat_file_keep::cli::{
+    evaluate_cli, evaluate_keep, open_flat_files_for_cli,
+};
 use api_rust::services::flat_file_keep::keep::{
     both_classes_skipped, keep_process_exit, run_keep, ClassVerdict, GetOutcome,
     KeepCredentialGate, UniverseGet,
@@ -25,9 +27,7 @@ use api_rust::services::flat_file_keep::{
     WRONG_CREDENTIAL_CLASS,
 };
 use api_rust::services::market_data::{load_fixture_dir, MarketDataPort};
-use api_rust::services::session_chain_archive::{
-    derive as coverage_derive, ensure_one, EnsureOutcome, SessionChainArchive,
-};
+use api_rust::services::session_chain_archive::{ensure_one, EnsureOutcome, SessionChainArchive};
 use api_rust::state::AppState;
 use axum::body::to_bytes;
 use axum::http::{HeaderValue, Request, StatusCode};
@@ -41,6 +41,7 @@ use quant_engine::{
     off_exchange_signal_input, DEFAULT_GATE_SCORE,
 };
 use serde_json::Value;
+use std::collections::BTreeMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -86,6 +87,28 @@ fn temp_dir(tag: &str) -> PathBuf {
     ));
     std::fs::create_dir_all(&p).unwrap();
     p
+}
+
+/// Every regular file under `root` with its bytes. A pollution check on this sees writes made
+/// through any API, not only the ones a store's own `list` would report.
+fn tree_bytes(root: &Path) -> BTreeMap<PathBuf, Vec<u8>> {
+    let mut out = BTreeMap::new();
+    let mut stack = vec![root.to_path_buf()];
+    while let Some(dir) = stack.pop() {
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path);
+            } else {
+                let bytes = std::fs::read(&path).unwrap_or_default();
+                out.insert(path, bytes);
+            }
+        }
+    }
+    out
 }
 
 /// Mirror of keep::test_stub::StubClient (cfg(test) is unavailable to integration tests).
@@ -776,24 +799,58 @@ async fn hermetic_monday_occupancy_matrix_ac54_score_sse() {
     ));
     assert_ne!(r_ns.trades, r_refuse.trades);
 
-    // ── 19. Coverage missing stays missing; tape occupancy unchanged (AC-35–38) ──
-    let archive = SessionChainArchive::memory();
-    let evening = et_hm(2026, 8, 10, 20, 0);
-    let cov_before = coverage_derive(&archive, evening, D).await.expect("cov");
-    let missing_before = cov_before.missing;
-    let tape = SessionDayTape::memory();
-    assert!(tape.load("SPY", D).await.unwrap().is_none());
-    // Keep / load must not insert_if_absent or flip coverage.
-    let _ = keep(
+    // ── 19. Keep writes nothing into the session archive or tape it is configured beside (AC-35–38) ──
+    // Lay out the CLI's real sibling roots, open a real on-disk session archive at the configured
+    // index/body paths, and take the keep store from `open_flat_files_for_cli` (the store the
+    // `flat-files keep` command uses), with keep's temp under its own root as
+    // `evaluate_keep_from_config` does. A keep that wrote into any sibling root would land here.
+    let roots = temp_dir("siblings");
+    let mut cfg = (*harness_state(FlatFilesStore::memory()).await.config).clone();
+    cfg.chain_snapshot_store_path = roots.join("ring");
+    cfg.session_chain_archive_store_path = roots.join("archive_index");
+    cfg.session_chain_archive_body_root = Some(roots.join("archive_bodies"));
+    cfg.session_day_tape_body_root = Some(roots.join("tape"));
+    cfg.massive_flat_files_body_root = Some(roots.join("keep"));
+    for dir in ["ring", "archive_index", "archive_bodies", "tape", "keep"] {
+        std::fs::create_dir_all(roots.join(dir)).unwrap();
+    }
+    let _archive = SessionChainArchive::open_json(
+        &cfg.session_chain_archive_store_path,
+        &cfg.chain_snapshot_store_path,
+        &roots.join("archive_bodies"),
+    )
+    .await
+    .expect("real on-disk session archive at the configured paths");
+    let watched = [
+        roots.join("archive_index"),
+        roots.join("archive_bodies"),
+        roots.join("tape"),
+    ];
+    let before: Vec<_> = watched.iter().map(|d| tree_bytes(d)).collect();
+    let keep_store = open_flat_files_for_cli(&cfg);
+    let (_, _, code19) = evaluate_keep(
+        &keep_store,
         &StubClient::both(StubResp::Gzip(plant_gzip(trio_csv()))),
-        &FlatFilesStore::memory(),
+        due_now(),
         "SPY",
+        D,
+        KeepCredentialGate::Ready,
+        &roots.join("keep"),
     )
     .await;
-    let cov_after = coverage_derive(&archive, evening, D).await.expect("cov");
-    assert_eq!(cov_after.missing, missing_before);
-    assert_eq!(cov_after.present, cov_before.present);
-    assert!(tape.load("SPY", D).await.unwrap().is_none());
+    let kept = keep_store
+        .load("SPY", D, ExtractClass::Trades, due_now())
+        .await;
+    let after: Vec<_> = watched.iter().map(|d| tree_bytes(d)).collect();
+    let _ = std::fs::remove_dir_all(&roots);
+    assert!(
+        is_content_hit(&kept),
+        "precondition: keep must have stored the SPY trades extract (exit {code19:?}, got {kept:?})"
+    );
+    assert_eq!(
+        after, before,
+        "keep must not add or change any byte under the session archive or tape roots"
+    );
 
     // ── 20. Load with vendor stub down; gzip discarded; no aggregates (AC-8/9/51/52) ──
     let load_store = FlatFilesStore::memory();

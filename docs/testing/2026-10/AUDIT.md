@@ -703,6 +703,9 @@ Full lists with files, counts and same-commit edits: [BATCHES.md](BATCHES.md).
 | 90 | `tools/api-contract.spec.mjs` (SPEED-UP; no case change) | 44 | non-mutation spawns use the committed OpenAPI artifact as the export fixture; one real export kept (route-registration mutation); 76-86 s -> 60-64 s |
 | 98 | `tools/supply-chain/candidate.spec.mjs` (red fixed at cause; case replaced) | 8 → 8 | removed: current HEAD cannot self-vouch while foundation bytes are unaccepted (its premise ended when the foundation landed); added: a base commit missing a supply-chain foundation file is blocked (fixture repo, pass and blocked arms) |
 | 98 | `tools/supply-chain/workflow-guard.spec.mjs` (guard fix; case added) | 12 → 13 | added: only the exact empty image scratch is exempt from digest pinning |
+| 102 | `apps/api/tests/session_day_replay.rs` (vacuous check replaced) | 8 → 8 | removed: coverage_missing_stays_missing_after_replay_walk (built a fresh archive the replay never saw); added: replay_walk_writes_nothing_to_the_session_archive_its_state_holds (live archive on the replay state; bite analytics.rs:37+218) |
+| 102 | `apps/api/tests/session_day_tape_capture.rs` hermetic_monday_path_a_path_b_gaps_coverage_score (vacuous block replaced) | 4 → 4 | the no-archive-pollution block now asserts zero rows on state.session_archive, the archive every persist_at used |
+| 102 | `apps/api/tests/massive_flat_file_keep.rs` hermetic_monday_occupancy_matrix_ac54_score_sse section 19 (vacuous block replaced) | 1 → 1 | keep now runs against a CLI config with real archive index, body and tape roots, and asserts their bytes unchanged |
 
 ## Ops workflows (batch 94, listed, no trigger change)
 

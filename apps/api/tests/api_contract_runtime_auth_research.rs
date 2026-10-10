@@ -2,6 +2,8 @@ use api_rust::routes;
 use api_rust::services::auth::google_oauth::{consume_state, remember_state, GoogleIdentity};
 use api_rust::services::auth::{BROKER_PROVIDER, COOKIE_NAME, CREDENTIAL_KIND_BROKER};
 use api_rust::services::chain_snapshot::wire::{fixture_probe_bundle, serialize_capture, to_wire};
+use api_rust::services::day_tape::player::et_hms_to_ts_ns;
+use api_rust::services::day_tape::{PathARecord, SessionDayTape};
 use api_rust::services::market_data::MarketDataSourceKind;
 use api_rust::state::AppState;
 use axum::body::{to_bytes, Body, Bytes};
@@ -1219,4 +1221,68 @@ fn canonical_outcome_validator_rejects_hollow_or_relabelled_evidence() {
         .unwrap()
         .remove("memory");
     assert!(validate_canonical_outcome(&hollow_effect).is_err());
+}
+
+#[tokio::test]
+async fn session_day_tape_reads_require_the_operator_token() {
+    // Same shape as OPERATOR_TOKEN (URL-safe base64 of 32 bytes) but different bytes, so a
+    // rejection is the comparison, not the decoder.
+    const WRONG_TOKEN: &str = "BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc";
+    let mut state = AppState::for_runtime_guardrail_tests(OPERATOR_TOKEN.into())
+        .await
+        .expect("hermetic state");
+    // A storing tape with a real SPY day, so a successful read returns tape content.
+    let tape = SessionDayTape::memory();
+    tape.append_path_a(
+        "SPY",
+        "2026-08-10",
+        PathARecord::trade(
+            et_hms_to_ts_ns("2026-08-10", 10, 0, 0).expect("et stamp"),
+            100.0,
+            Some(1.0),
+        ),
+    )
+    .await
+    .expect("plant tape day");
+    state.day_tape = tape;
+    let router = routes::router(state).expect("valid production contract graph");
+
+    let mut observed = Vec::new();
+    for uri in [
+        "/api/_research/session-day-tape/SPY",
+        "/api/_research/session-day-tape/SPY/day?et_date=2026-08-10",
+    ] {
+        for (label, token) in [
+            ("none", None),
+            ("wrong", Some(WRONG_TOKEN)),
+            ("operator", Some(OPERATOR_TOKEN)),
+        ] {
+            let mut request = Request::builder().method("GET").uri(uri);
+            if let Some(token) = token {
+                request = request.header("x-metrics-token", token);
+            }
+            let response = router
+                .clone()
+                .oneshot(request.body(Body::empty()).unwrap())
+                .await
+                .unwrap();
+            observed.push((uri, label, response.status()));
+        }
+    }
+
+    let expected: Vec<_> = observed
+        .iter()
+        .map(|&(uri, label, _)| {
+            let want = if label == "operator" {
+                StatusCode::OK
+            } else {
+                StatusCode::UNAUTHORIZED
+            };
+            (uri, label, want)
+        })
+        .collect();
+    assert_eq!(
+        observed, expected,
+        "session-day-tape reads: 401 without / with a wrong operator token, 200 with it"
+    );
 }
