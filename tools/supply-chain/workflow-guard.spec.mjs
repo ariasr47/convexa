@@ -104,6 +104,16 @@ test('moving Action labels and moving Rust toolchain selectors are rejected', as
   ].replace('toolchain: 1.97.1', 'toolchain: stable');
   assert.match(auditAutomation(movingToolchain).errors.join(','), /moving-rust-toolchain/);
 });
+test('only the exact empty image scratch is exempt from digest pinning', async () => {
+  for (const image of ['busybox', 'scratch:latest', 'scratchy']) {
+    const input = await load();
+    input.dockerfiles['apps/api/Dockerfile'] = input.dockerfiles['apps/api/Dockerfile'].replace(
+      /^FROM scratch$/m,
+      `FROM ${image}`,
+    );
+    assert.ok(auditAutomation(input).errors.includes('apps/api/Dockerfile:mutable-image'), image);
+  }
+});
 test('missing image digest and tag/digest mismatch are rejected', async () => {
   const missing = await load();
   missing.dockerfiles['apps/dashboard/Dockerfile'] = missing.dockerfiles[

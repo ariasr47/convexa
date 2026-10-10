@@ -27,7 +27,10 @@ test('production Dockerfiles expose health and run final images as non-root', as
 
   assert.match(api, /--target x86_64-unknown-linux-musl/);
   assert.match(api, /FROM scratch/);
-  assert.match(api, /HEALTHCHECK[\s\S]*?CMD \["\/usr\/local\/bin\/api-rust", "healthcheck"\]/);
+  assert.match(
+    api,
+    /HEALTHCHECK[\s\S]*?CMD \["\/usr\/local\/bin\/convexa-entrypoint", "\/usr\/local\/bin\/api-rust", "healthcheck"\]/,
+  );
   assert.doesNotMatch(apiEnvironment, /AUTH_(?:COOKIE_SECURE|STORE_PATH)=/);
   assert.doesNotMatch(api, /ENV[^\n]*AUTH_(?:COOKIE_SECURE|STORE_PATH)=/);
   assert.match(api, /USER 10001:10001/);

@@ -701,6 +701,8 @@ Full lists with files, counts and same-commit edits: [BATCHES.md](BATCHES.md).
 | 87 | `apps/api/src/routes/stream.rs` occupancy_pump_tests (SPEED-UP; no case removed) | 9 | SSE occupancy keep-alive becomes Config.sse_occupancy_keepalive_ms (default 5000); tests use 50 ms; race fixed with collect_sse_until; 30.1 s -> 0.31 s; lib binary 30.1 s -> 1.67 s |
 | 88 | `apps/api/tests/capacity_load.rs`, `capacity_baseline_isolation.rs` (SPEED-UP; no case change) | 1, 13 | test hold overrides: capacity_load 2 s (28.5 s -> 7.6 s), short_hooks 250 ms (8.0 s -> 4.2 s); CI release load step keeps production holds |
 | 90 | `tools/api-contract.spec.mjs` (SPEED-UP; no case change) | 44 | non-mutation spawns use the committed OpenAPI artifact as the export fixture; one real export kept (route-registration mutation); 76-86 s -> 60-64 s |
+| 98 | `tools/supply-chain/candidate.spec.mjs` (red fixed at cause; case replaced) | 8 → 8 | removed: current HEAD cannot self-vouch while foundation bytes are unaccepted (its premise ended when the foundation landed); added: a base commit missing a supply-chain foundation file is blocked (fixture repo, pass and blocked arms) |
+| 98 | `tools/supply-chain/workflow-guard.spec.mjs` (guard fix; case added) | 12 → 13 | added: only the exact empty image scratch is exempt from digest pinning |
 
 ## Ops workflows (batch 94, listed, no trigger change)
 

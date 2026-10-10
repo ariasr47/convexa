@@ -35,7 +35,7 @@ jobs:
       contents: read
       actions: read
 
-  # ~17 min/run -> ~136 min/month (raw = Linux-equivalent).
+  # ~18 min/run -> ~144 min/month (raw = Linux-equivalent).
   frontend:
     name: Frontend (lint · typecheck · test · build · e2e)
     runs-on: ubuntu-24.04
@@ -60,6 +60,10 @@ jobs:
 
       - name: API contract check
         run: npm run api:contract:check
+
+      # Hermetic tool and guard specs (tools/test-tools.mjs): ~1 min.
+      - name: Tool and guard specs
+        run: npm run test:tools
 
       # Scoped Prettier (package.json) — never bare `nx format:write` (repo-wide hazard).
       - name: Format check

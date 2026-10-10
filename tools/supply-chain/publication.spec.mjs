@@ -276,8 +276,8 @@ function reportWithAdvisory() {
       classification: 'advisory',
       rationale: 'Current baseline notice requires review.',
       approver_id: 'security',
-      review_at: '2026-08-24T00:00:00.000Z',
-      expires_at: '2026-09-01T00:00:00.000Z',
+      review_at: new Date(Date.now() + 86_400_000).toISOString(),
+      expires_at: new Date(Date.now() + 30 * 86_400_000).toISOString(),
     },
   ];
   x.checks[1].state = 'pass_with_advisories';

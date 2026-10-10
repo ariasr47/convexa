@@ -56,6 +56,7 @@ export function auditAutomation({ workflows, dockerfiles, dependabot, pins }) {
     for (const line of text.split(/\r?\n/)) {
       const selector =
         line.match(/^FROM\s+([^\s]+)/i)?.[1] ?? line.match(/^#\s*syntax=([^\s]+)/i)?.[1];
+      if (selector === 'scratch') continue; // Docker's reserved empty image: nothing to pull or pin
       if (selector && !digestImage.test(selector)) errors.push(`${file}:mutable-image`);
       else if (selector && !pins?.images?.includes(selector))
         errors.push(`${file}:unapproved-image-pin`);
