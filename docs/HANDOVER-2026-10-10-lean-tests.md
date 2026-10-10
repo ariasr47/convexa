@@ -21,8 +21,7 @@ runner output on disk, not recalled. Re-verify anything you act on.
 1. **Merge or not.** Merging puts `ci.yml` and `supply-chain.yml` in manual mode (~456 CI minutes a
    month at 8 dispatches, from 4,959 measured). Until then `main`'s CI keeps push/pull_request
    triggers.
-2. **The `CLAUDE.md` risk-based-testing block** (diff in REPORT.md, "Still open") — applied only on a
-   yes. The test-per-AC rule itself is in `.spire/clusters/tech/context/PROJECT_CONTEXT.md:1398-1412`,
+2. **The `CLAUDE.md` risk-based-testing block** is applied (owner yes, 2026-10-10). The test-per-AC rule itself is in `.spire/clusters/tech/context/PROJECT_CONTEXT.md:1398-1412`,
    which a Spire lane or the owner must change.
 3. **Blocked items:** `capital_at_risk` with an ineligible open position (UNSURE); the AC-35/U-32 fix
    in PR #76.

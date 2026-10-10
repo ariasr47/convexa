@@ -219,8 +219,7 @@ Each break was restored with `git restore`; `git status` identical before and af
   incompleteness signal) — UNSURE, not tested.
 - Batch 95's AC-35/U-32 Chromium flake fix waits on PR #76; the 8 cases stay unconsolidated.
 
-**Agent instructions (Phase 6):** the risk-based block for `CLAUDE.md` awaits your yes on the exact
-diff. The rule that demands a test per change lives in
+**Agent instructions (Phase 6):** the risk-based block is in `CLAUDE.md` (owner yes, 2026-10-10). The rule that demands a test per change lives in
 `.spire/clusters/tech/context/PROJECT_CONTEXT.md:1398-1412` ("each AC = a required behavioral
 test", AC↔test traceability at GATE Q); it is Spire product memory, which this job may not edit.
 
