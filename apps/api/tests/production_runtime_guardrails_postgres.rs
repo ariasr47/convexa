@@ -2,11 +2,17 @@
 
 use api_rust::db::migrations::compiled_migrations;
 use api_rust::db::postgres::Pg;
+use api_rust::routes;
 use api_rust::runtime_guardrails::preflight::PRODUCTION_SCHEMA_PREFLIGHT_TIMEOUT;
 use api_rust::services::auth::{AiSlot, SettingsPatch};
-use api_rust::services::chain_snapshot::{fixture_probe_bundle, serialize_capture, to_wire};
+use api_rust::services::chain_snapshot::{
+    fixture_probe_bundle, serialize_capture, to_wire, ChainSnapshotStore,
+};
 use api_rust::services::scanner::{ScanRow, StructureSample};
+use api_rust::services::session_chain_archive::SessionChainArchive;
 use api_rust::state::AppState;
+use axum::body::{to_bytes, Body};
+use axum::http::{Request, StatusCode};
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use chrono::{TimeZone, Utc};
@@ -15,6 +21,7 @@ use rand::RngCore;
 use sqlx::postgres::PgPoolOptions;
 use std::path::Path;
 use std::time::Duration;
+use tower::ServiceExt;
 
 const HARNESS_COMPLETION_MARGIN: Duration = Duration::from_secs(2);
 const LISTENER_OBSERVATION_INTERVAL: Duration = Duration::from_millis(100);
@@ -226,6 +233,119 @@ fn assert_production_runtime_shape() {
         tokio::runtime::RuntimeFlavor::MultiThread,
         "production AppState coverage must use the same multithread runtime contract as #[tokio::main]"
     );
+}
+
+async fn book_call(
+    router: &axum::Router,
+    method: &str,
+    cookie: &str,
+    body: Option<serde_json::Value>,
+) -> (StatusCode, serde_json::Value) {
+    let mut request = Request::builder()
+        .method(method)
+        .uri("/api/book")
+        .header("cookie", cookie);
+    let body = match body {
+        Some(json) => {
+            request = request.header("content-type", "application/json");
+            Body::from(json.to_string())
+        }
+        None => Body::empty(),
+    };
+    let response = router
+        .clone()
+        .oneshot(request.body(body).unwrap())
+        .await
+        .expect("router always answers");
+    let status = response.status();
+    let bytes = to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .expect("bounded book body");
+    (
+        status,
+        serde_json::from_slice(&bytes).expect("book JSON body"),
+    )
+}
+
+/// `PUT /api/book` is latest-wins by the client's `updated_at`: a stale device that writes an
+/// older book after a newer one has landed must not overwrite it. Only the Postgres store syncs
+/// the book (without `state.pg`, PUT is an ephemeral echo and GET is empty), so this lives in the
+/// real-Postgres suite. It reads no process environment beyond `TEST_DATABASE_URL`, so it is safe
+/// beside the schema-matrix test's `EnvRestore`.
+#[tokio::test]
+async fn book_put_with_older_updated_at_does_not_overwrite_newer_book() {
+    let base = std::env::var("TEST_DATABASE_URL").expect(
+        "TEST_DATABASE_URL must be configured; book latest-wins coverage cannot skip or simulate Postgres",
+    );
+    let admin = PgPoolOptions::new()
+        .max_connections(1)
+        .connect(&base)
+        .await
+        .expect("connect TEST_DATABASE_URL admin database");
+    let name = owned_name("book");
+    create_database(&admin, &name).await;
+    let url = database_url(&base, &name);
+    run_release_migrations(&url, "book_latest_wins");
+
+    let mut state =
+        AppState::for_tests(ChainSnapshotStore::memory(), SessionChainArchive::memory())
+            .await
+            .expect("hermetic state");
+    state.pg = Some(
+        Pg::connect_strict(&url)
+            .await
+            .expect("migrated database reaches current schema"),
+    );
+    let (_, session_id) = state
+        .auth
+        .signup("book-latest-wins@example.com", "password1", Some("Book"))
+        .unwrap();
+    let cookie = format!(
+        "{}={}",
+        state.auth.cookie_name(),
+        state.auth.signed_cookie_value(&session_id)
+    );
+    let router = routes::router(state).expect("production router graph builds");
+
+    let newer = serde_json::json!({
+        "schema_version": 3, "positions": [], "orders": [], "decisions": [], "device": "newer"
+    });
+    let stale = serde_json::json!({
+        "schema_version": 3, "positions": [], "orders": [], "decisions": [], "device": "stale"
+    });
+    let (newer_status, _) = book_call(
+        &router,
+        "PUT",
+        &cookie,
+        Some(serde_json::json!({"schema_version": 3, "updated_at": 2000.0, "blob": newer})),
+    )
+    .await;
+    let (stale_status, _) = book_call(
+        &router,
+        "PUT",
+        &cookie,
+        Some(serde_json::json!({"schema_version": 3, "updated_at": 1000.0, "blob": stale})),
+    )
+    .await;
+    let (read_status, read) = book_call(&router, "GET", &cookie, None).await;
+
+    // Release the pool before dropping the database, then assert.
+    drop(router);
+    drop_database(&admin, &name).await;
+
+    assert_eq!(newer_status, StatusCode::OK, "newer write must be stored");
+    assert_ne!(
+        stale_status,
+        StatusCode::SERVICE_UNAVAILABLE,
+        "the stale write must reach the store, or this test proves nothing"
+    );
+    assert_eq!(read_status, StatusCode::OK);
+    assert_eq!(read["source"], "postgres");
+    assert_eq!(
+        read["updated_at"], 2000.0,
+        "stale write moved the clock back"
+    );
+    assert_eq!(read["blob"], newer, "stale write overwrote the newer book");
 }
 
 #[tokio::test(flavor = "multi_thread")]

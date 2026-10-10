@@ -1141,6 +1141,58 @@ mod tests {
         assert_eq!(err.code, "signups_closed");
     }
 
+    /// Rewrite the stored session behind `sid` so its deadlines sit `idle_offset` /
+    /// `absolute_offset` seconds from the same clock `resolve_session` reads.
+    fn set_session_deadlines(s: &AuthService, sid: &str, idle_offset: f64, absolute_offset: f64) {
+        let user_id = s.store.get_session(sid).unwrap().unwrap().user_id;
+        let now = now_secs();
+        s.store
+            .create_session(&SessionRecord {
+                id: sid.into(),
+                user_id,
+                created_at: now - 7200.0,
+                expires_at: now + idle_offset,
+                absolute_expires_at: now + absolute_offset,
+                revoked: false,
+            })
+            .unwrap();
+    }
+
+    #[test]
+    fn session_is_rejected_after_its_idle_deadline() {
+        let s = svc(true);
+        let (_, sid) = s.signup("idle@b.co", "password1", None).unwrap();
+        let cookie = s.signed_cookie_value(&sid);
+        // The absolute deadline stays an hour out, so only the idle check can reject.
+        for (idle_offset, accepted, case) in [
+            (-60.0, false, "idle deadline passed"),
+            (60.0, true, "inside the idle window"),
+        ] {
+            set_session_deadlines(&s, &sid, idle_offset, 3600.0);
+            let resolved = s.resolve_session(Some(&cookie));
+            assert_eq!(resolved.user.is_some(), accepted, "{case}");
+            assert_eq!(resolved.session_id.is_some(), accepted, "{case}");
+        }
+    }
+
+    #[test]
+    fn session_is_rejected_after_its_absolute_deadline() {
+        let s = svc(true);
+        let (_, sid) = s.signup("absolute@b.co", "password1", None).unwrap();
+        let cookie = s.signed_cookie_value(&sid);
+        // The idle window stays an hour out, so only the absolute check can reject: a session
+        // kept busy forever must still end at its absolute deadline.
+        for (absolute_offset, accepted, case) in [
+            (-60.0, false, "absolute deadline passed"),
+            (60.0, true, "before the absolute deadline"),
+        ] {
+            set_session_deadlines(&s, &sid, 3600.0, absolute_offset);
+            let resolved = s.resolve_session(Some(&cookie));
+            assert_eq!(resolved.user.is_some(), accepted, "{case}");
+            assert_eq!(resolved.session_id.is_some(), accepted, "{case}");
+        }
+    }
+
     fn signed_user(s: &AuthService) -> UserRecord {
         let (_, sid) = s.signup("ai@b.co", "password1", Some("A")).unwrap();
         let cookie = s.signed_cookie_value(&sid);

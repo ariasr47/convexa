@@ -1,5 +1,6 @@
 use api_rust::routes;
 use api_rust::services::auth::google_oauth::{consume_state, remember_state, GoogleIdentity};
+use api_rust::services::auth::{BROKER_PROVIDER, COOKIE_NAME, CREDENTIAL_KIND_BROKER};
 use api_rust::services::chain_snapshot::wire::{fixture_probe_bundle, serialize_capture, to_wire};
 use api_rust::services::market_data::MarketDataSourceKind;
 use api_rust::state::AppState;
@@ -913,6 +914,186 @@ async fn auth_runtime_evidence_preserves_non_enumerating_and_authenticated_gates
         "session",
         serde_json::json!({"durable":"none","memory":"none","cookie":"none"}),
     );
+}
+
+// The four tests below assert behavior only; they deliberately emit no
+// DIRECT_HTTP_EVIDENCE_OUTCOME line, so the contract tool's evidence set is unchanged.
+
+const BROKER_SECRET_CANARY: &str = "webull-app-secret-canary-never-egress";
+
+async fn put_broker_credential(
+    router: &axum::Router,
+    cookie: &str,
+    body: String,
+) -> ObservedResponse {
+    let response = router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("PUT")
+                .uri("/api/broker/credential")
+                .header("cookie", cookie)
+                .header("content-type", "application/json")
+                .body(Body::from(body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    json_response(response).await
+}
+
+fn broker_credential_body(app_key: &str) -> String {
+    format!(r#"{{"app_key":"{app_key}","app_secret":"{BROKER_SECRET_CANARY}"}}"#)
+}
+
+#[tokio::test]
+async fn broker_credential_secret_is_persisted_only_as_ciphertext() {
+    let (state, router) = state_and_router().await;
+    let email = format!("runtime-broker-at-rest-{}@example.test", std::process::id());
+    let (cookie, user_id) = signup(&state, &router, &email, false).await;
+    let stored = put_broker_credential(
+        &router,
+        &cookie,
+        broker_credential_body("webull-app-key-1234"),
+    )
+    .await;
+    assert_eq!(stored.status, StatusCode::OK);
+    assert_eq!(
+        stored.json["set"], true,
+        "the credential must actually be stored"
+    );
+
+    let record = state
+        .auth
+        .conformance_store()
+        .get_credential(&user_id, CREDENTIAL_KIND_BROKER, BROKER_PROVIDER)
+        .expect("auth store readable")
+        .expect("broker credential persisted");
+    // The whole persisted record, not only its ciphertext column: no field may carry the secret.
+    let persisted = serde_json::to_string(&record).expect("credential record serializes");
+    assert!(
+        !persisted.contains(BROKER_SECRET_CANARY),
+        "plaintext app_secret persisted: {persisted}"
+    );
+    // Anti-vacuity: what was persisted really is this secret, encrypted.
+    assert_eq!(
+        state
+            .auth
+            .get_decrypted_broker_credential(&user_id)
+            .map(|(_, secret)| secret)
+            .as_deref(),
+        Some(BROKER_SECRET_CANARY)
+    );
+}
+
+#[tokio::test]
+async fn broker_credential_responses_never_echo_the_secret() {
+    let (state, router) = state_and_router().await;
+    let email = format!("runtime-broker-no-echo-{}@example.test", std::process::id());
+    let (cookie, _) = signup(&state, &router, &email, false).await;
+
+    let accepted = put_broker_credential(
+        &router,
+        &cookie,
+        broker_credential_body("webull-app-key-1234"),
+    )
+    .await;
+    let get = |uri: &'static str| {
+        let router = router.clone();
+        let cookie = cookie.clone();
+        async move {
+            json_response(
+                router
+                    .oneshot(
+                        Request::builder()
+                            .method("GET")
+                            .uri(uri)
+                            .header("cookie", &cookie)
+                            .body(Body::empty())
+                            .unwrap(),
+                    )
+                    .await
+                    .unwrap(),
+            )
+            .await
+        }
+    };
+    let hint = get("/api/broker/credential").await;
+    // The book read decrypts the stored pair server-side (default stub provider, no network);
+    // nothing of it may reach the wire.
+    let book = get("/api/broker/book").await;
+    // A refused write still carried the secret in; its 422 must not reflect it back.
+    let refused = put_broker_credential(&router, &cookie, broker_credential_body("")).await;
+
+    for (case, observed) in [
+        ("PUT accepted", &accepted),
+        ("GET hint", &hint),
+        ("GET book", &book),
+        ("PUT refused", &refused),
+    ] {
+        let body = String::from_utf8_lossy(&observed.body);
+        assert!(
+            !body.contains(BROKER_SECRET_CANARY),
+            "{case} echoed app_secret: {body}"
+        );
+    }
+    // Anti-vacuity: each path really ran — stored, read back as set, refused.
+    assert_eq!(accepted.status, StatusCode::OK);
+    assert_eq!(accepted.json["last4"], "1234");
+    assert_eq!(hint.status, StatusCode::OK);
+    assert_eq!(hint.json["set"], true);
+    assert_eq!(book.status, StatusCode::OK);
+    assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+async fn put_book(router: &axum::Router, cookie: Option<&str>, body: String) -> ObservedResponse {
+    let mut request = Request::builder()
+        .method("PUT")
+        .uri("/api/book")
+        .header("content-type", "application/json");
+    if let Some(cookie) = cookie {
+        request = request.header("cookie", cookie);
+    }
+    let response = router
+        .clone()
+        .oneshot(request.body(Body::from(body)).unwrap())
+        .await
+        .unwrap();
+    json_response(response).await
+}
+
+#[tokio::test]
+async fn book_put_without_a_valid_session_is_forbidden() {
+    let (_state, router) = state_and_router().await;
+    // A well-formed body, so only the missing or unverifiable session can refuse it.
+    let body = r#"{"schema_version":3,"updated_at":1.0,"blob":{"positions":[],"orders":[],"decisions":[]}}"#;
+    let forged = format!("{COOKIE_NAME}=forged-session-id.forged-signature");
+    for (case, cookie) in [
+        ("no cookie", None),
+        ("forged cookie", Some(forged.as_str())),
+    ] {
+        let observed = put_book(&router, cookie, body.to_owned()).await;
+        assert_eq!(observed.status, StatusCode::FORBIDDEN, "{case}");
+        assert_eq!(observed.json["error"], "auth_required", "{case}");
+        assert!(!observed.headers.contains_key("set-cookie"), "{case}");
+    }
+}
+
+#[tokio::test]
+async fn book_put_with_a_non_object_blob_is_rejected_400() {
+    let (state, router) = state_and_router().await;
+    let email = format!("runtime-book-shape-{}@example.test", std::process::id());
+    let (cookie, _) = signup(&state, &router, &email, false).await;
+    // Signed in, so only the body shape can refuse it.
+    for blob in ["[]", "null", "42", r#""positions""#, "true"] {
+        let observed = put_book(
+            &router,
+            Some(&cookie),
+            format!(r#"{{"schema_version":3,"updated_at":1.0,"blob":{blob}}}"#),
+        )
+        .await;
+        assert_eq!(observed.status, StatusCode::BAD_REQUEST, "blob {blob}");
+    }
 }
 
 #[tokio::test]
