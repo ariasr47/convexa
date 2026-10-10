@@ -462,6 +462,9 @@ export const journeys = [
   base('dense-scanner', '/scanner', 'authenticated', { width: 393, height: 852 }, 'dark', [
     { selector: '[data-testid="scanner-page"]' },
   ]),
+  base('ai-recommendation', '/ticker/SPY', 'authenticated', { width: 393, height: 852 }, 'light', [
+    { selector: '[data-testid="widget-bento"]' },
+  ]),
 ];
 export const accessibilityScenarios = [
   base('A11Y-1', '/', 'anonymous', { width: 1280, height: 900 }, 'dark', [

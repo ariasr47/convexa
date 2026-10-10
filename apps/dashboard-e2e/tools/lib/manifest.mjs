@@ -115,7 +115,7 @@ export function validateManifest(value) {
   const journeys = value.compatibility?.journeys;
   if (
     !Array.isArray(journeys) ||
-    journeys.length !== 5 ||
+    journeys.length !== 6 ||
     JSON.stringify(value.compatibility.projects) !==
       JSON.stringify(['chromium', 'firefox', 'webkit'])
   )

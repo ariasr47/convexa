@@ -148,6 +148,12 @@
         "file": "apps/dashboard-e2e/src/quality/compatibility.spec.ts",
         "route": "/scanner",
         "auth": "authenticated"
+      },
+      {
+        "id": "ai-recommendation",
+        "file": "apps/dashboard-e2e/src/quality/compatibility.spec.ts",
+        "route": "/ticker/SPY",
+        "auth": "authenticated"
       }
     ],
     "projects": ["chromium", "firefox", "webkit"]

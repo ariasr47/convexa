@@ -150,7 +150,7 @@ export function validateSummary(summary, options = {}) {
         err('Chromium record');
     }
   }
-  if (summary.gate === 'compatibility' && (summary.selected !== 15 || summary.arms.length !== 15))
+  if (summary.gate === 'compatibility' && (summary.selected !== 18 || summary.arms.length !== 18))
     err('compatibility inventory');
   if (summary.gate === 'compatibility') {
     const expectedArms = manifest.compatibility.journeys.flatMap((journey) =>

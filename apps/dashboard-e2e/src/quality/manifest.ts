@@ -6,6 +6,7 @@ export const qualityManifest = {
       'signed-out-auth-dialog',
       'dense-positions',
       'dense-scanner',
+      'ai-recommendation',
     ],
   },
   accessibility: {
