@@ -2,6 +2,8 @@
 // `npm run verify`: the fast local check before a push.
 //   1. Nx lint, typecheck and test for the projects affected since the merge base with origin/main
 //      (committed, uncommitted and untracked changes). The local Nx cache restores unchanged work.
+//      The Rust project `api` runs only when a Rust path changed: its test also scans dashboard
+//      sources, which would cost ~7 minutes on every dashboard edit. CI runs it on every dispatch.
 //   2. The hermetic tool specs (`npm run test:tools`), only when the change touches what they guard.
 // `--base=<ref>` overrides the merge base, e.g. `npm run verify -- --base=HEAD` checks only the
 // uncommitted work. CI (`.github/workflows/ci.yml`, manual dispatch) still runs the full set.
@@ -36,10 +38,18 @@ function run(command, args, env = {}) {
   return result.status ?? 1;
 }
 
+const rustScope =
+  /^(apps\/api\/|libs\/quant-engine\/|libs\/api\/src\/generated\/|Cargo\.(toml|lock)$)/;
+const nxArgs = ['nx', 'affected', '-t', 'lint', 'typecheck', 'test', `--base=${base}`];
+if (!changed.some((file) => rustScope.test(file))) {
+  nxArgs.push('--exclude=api');
+  console.log(
+    '[verify] api skipped: no Rust, quant-engine, generated-client or Cargo path changed',
+  );
+}
+
 console.log(`[verify] base ${base}; ${changed.length} changed file(s)`);
-let status = run('npx', ['nx', 'affected', '-t', 'lint', 'typecheck', 'test', `--base=${base}`], {
-  NX_NO_CLOUD: 'true',
-});
+let status = run('npx', nxArgs, { NX_NO_CLOUD: 'true' });
 
 const toolScope =
   /^(tools\/|apps\/dashboard-e2e\/tools\/|\.github\/|\.supply-chain\/|package(-lock)?\.json$)/;
