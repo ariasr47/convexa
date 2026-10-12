@@ -1,6 +1,8 @@
 # HANDOVER — 2026-10-10 — lean tests and CI (branch `chore/lean-tests-ci-2026-10`)
 
-**Continuity status:** LIVE (as of 2026-10-10)
+**Continuity status:** SUPERSEDED (as of 2026-10-12) — merged to `main` as PR #77 (merge commit
+`4ce47caf`); the branch and its worktree are deleted. Current state: `docs/testing/2026-10/REPORT.md`.
+The text below is the 2026-10-10 snapshot, kept as written.
 
 Written for whoever picks up this branch, human or agent. Everything below was read from git and from
 runner output on disk, not recalled. Re-verify anything you act on.
