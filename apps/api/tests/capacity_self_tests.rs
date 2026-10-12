@@ -25,7 +25,8 @@ fn optional_fault_preserves_core_and_stream() {
 
 #[test]
 fn identity_control_passes_with_pinned_reference_evidence() {
-    assert!(self_test::run(CapacitySelfTestCase::ByteIdentity).is_ok());
+    // expect, not assert!(is_ok()): a failure must say why (a hosted run once failed with no reason).
+    self_test::run(CapacitySelfTestCase::ByteIdentity).expect("byte-identity self-test");
 }
 
 #[test]

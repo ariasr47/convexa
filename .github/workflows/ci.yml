@@ -196,7 +196,11 @@ jobs:
       - name: Install locked Node dependencies
         run: npm ci
 
-      # The API contract check runs once, in the frontend job.
+      # `Cargo test` runs the capacity byte-identity self-test, which runs `npm run api:contract:check`
+      # (capacity/identity.rs run_contract_check), and that check needs the generated declarations.
+      # The contract check as its own step still runs once, in the frontend job.
+      - name: Build generated API declarations
+        run: npx tsc -p libs/api/tsconfig.lib.json --pretty false
 
       # ubuntu-24.04 preinstalls ~25 GB of toolchains this job never touches. The merged tree
       # builds 62 debug test binaries, which exhausted the runner *inside* `Cargo test` — before
