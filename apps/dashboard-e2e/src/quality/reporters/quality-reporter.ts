@@ -120,8 +120,10 @@ const gateCounts: Record<string, number> = {
   // retired (15 cases) — matches `manifest.json`'s `lean-tests-batch-36-20-v1` inventory.
   // (lean-tests batch 81, owner-approved 2026-10-09) Chromium 20 → 13: seven structure/duplicate
   // cases retired — matches `manifest.json`'s `lean-tests-batch-81-13-v1` inventory.
+  // (lean-tests batch 104) Compatibility 15 → 18: the AI-recommendation open flow is the sixth
+  // journey × three engines — matches `manifest.json`'s compatibility.journeys.
   chromium: 13,
-  compatibility: 15,
+  compatibility: 18,
   accessibility: 35,
 };
 const atomicWrite = (file: string, value: unknown) => {
