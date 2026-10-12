@@ -80,9 +80,15 @@ export function LiveTape({
     routeSymbol: m.ticker,
     lastPhase: tape.lastSessionPhase,
   });
+  const sampleStanding =
+    tape.sampleStanding?.symbol === m.ticker.toUpperCase() ? tape.sampleStanding : null;
+  const sampleFiguresActive = Boolean(
+    sampleStanding && live?.ticker.toUpperCase() === m.ticker.toUpperCase() && live.live === false,
+  );
 
   // S0: numbers + pulse while genuinely live. S1: numbers while display-active; never Widget pulse.
-  const numbersActive = st ? displayActive : isLive && !streamOffline;
+  const liveNumbersActive = st ? displayActive : isLive && !streamOffline;
+  const numbersActive = liveNumbersActive || sampleFiguresActive;
   // GATE Q bounce (curvature-v2-foundations, finding 1) — [live-vs-static-isolation]: the label-row
   // dot, the widget pulse and the tick flash answer "is THIS the delivering live stream right now?",
   // which is NOT what `numbersActive` answers ("should numbers move at all" — true during session-
@@ -105,7 +111,7 @@ export function LiveTape({
 
   // The retention latch's reset token (SPEC §2.2, criteria 16a/16b): route symbol AND replay-armed
   // state, so a symbol change AND a replay arm both empty every latch this widget owns from one token.
-  const resetToken = `${m.ticker.toUpperCase()}|${st ? 'replay' : 'live'}`;
+  const resetToken = `${m.ticker.toUpperCase()}|${st ? 'replay' : sampleStanding ? 'sample' : 'live'}`;
 
   const netFlowStream = numbersActive && live ? live.net_flow : null;
   const netFlowLatch = useStreamLatch(netFlowStream, resetToken);
@@ -151,6 +157,27 @@ export function LiveTape({
   // name a derivation and neither changes with connection state — `· live` holds through live *and*
   // drop; the only switch is live-stream vs session-tape derivation.
   let gammaLabel = 'Gamma flip · live';
+
+  const sampleTime = sampleStanding
+    ? new Intl.DateTimeFormat('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'medium',
+        timeZone: 'UTC',
+      }).format(new Date(sampleStanding.scenarioTimeMs))
+    : null;
+  const sampleStatusCaption =
+    sampleStanding?.playback === 'paused'
+      ? 'Simulated playback paused. Showing the last sample.'
+      : sampleStanding?.playback === 'ended'
+        ? 'Sample playback complete. Showing the last sample.'
+        : null;
+  if (sampleStanding) {
+    title = 'Sample tape';
+    subtitle = `Authored scenario · ${sampleTime} UTC · ${Math.round((live?.flow_window_s ?? 60) / 60)}m window · ${sampleStanding.playback}`;
+    info = 'Authored sample stream for this scenario. It is not a connected market feed.';
+    netFlowLabel = `Net flow (${Math.max(1, Math.round((live?.flow_window_s ?? 60) / 60))}m)`;
+    gammaLabel = 'Gamma flip · sample';
+  }
 
   if (st) {
     title = SESSION_TAPE_TITLE;
@@ -208,6 +235,7 @@ export function LiveTape({
           replay={replayFigure}
           flash={netFlowFlash}
           info={netFlowInfo}
+          caption={sampleStatusCaption}
         />
         {/* Spread — same latch discipline as Net flow / Gamma flip above. */}
         <FigureCell
@@ -219,6 +247,7 @@ export function LiveTape({
           replay={replayFigure}
           flash={spreadFlash}
           info="Best ask minus best bid. Wider = a thinner, more volatile market."
+          caption={sampleStatusCaption}
         />
         {/* Gamma flip — the latch owns BOTH halves (SPEC §2.2, criterion 14). `live` is keyed on the
             RAW STREAM presence (`live?.gamma_flip`), deliberately NOT `flipValue != null` — a dot
@@ -233,7 +262,11 @@ export function LiveTape({
           offline={tileOffline ? { retained: flipValue != null } : null}
           replay={replayFigure}
           flash={flipFlash}
-          caption={flipSecondary}
+          caption={
+            sampleStatusCaption
+              ? `${sampleStatusCaption}${flipSecondary ? ` · ${flipSecondary}` : ''}`
+              : flipSecondary
+          }
           info="Analytic net-GEX zero-crossing (where hedging flips from dampening to amplifying) — not the same as call/put walls, which pick peak vendor-gamma strikes. Above it → steadier/range-bound; below it → more volatile/trending. Secondary line is distance from gex_spot (or mid)."
         />
         {/* VWAP — AC-1c: ALWAYS dotless. `market_state.vwap` is a bundle field (never on the

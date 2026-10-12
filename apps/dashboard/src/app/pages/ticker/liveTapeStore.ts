@@ -11,7 +11,7 @@
  * move headline/tape numbers while fills/pulses stay off. `lastSessionPhase` survives a
  * payload-gap (`streamOffline` flip without clearing `live`).
  */
-import type { LiveUpdate } from '@convexa/api';
+import type { DemoOrderFrame, LiveUpdate, SupportedDemoSymbol } from '@convexa/api';
 import { useSyncExternalStore } from 'react';
 import {
   displayActive as computeDisplayActive,
@@ -22,6 +22,14 @@ import {
 
 export interface LiveTapeSnapshot {
   live: LiveUpdate | null;
+  demoOrderFrame: DemoOrderFrame | null;
+  /** Local demo presentation metadata; never a live/session-tape or order-eligibility signal. */
+  sampleStanding: {
+    kind: 'sample';
+    symbol: SupportedDemoSymbol;
+    scenarioTimeMs: number;
+    playback: 'running' | 'paused' | 'ended';
+  } | null;
   streamOffline: boolean;
   /** Uppercase ticker the stream is bound to (for defensive consumers). */
   ticker: string;
@@ -31,6 +39,8 @@ export interface LiveTapeSnapshot {
 
 const EMPTY: LiveTapeSnapshot = {
   live: null,
+  demoOrderFrame: null,
+  sampleStanding: null,
   streamOffline: false,
   ticker: '',
   lastSessionPhase: null,

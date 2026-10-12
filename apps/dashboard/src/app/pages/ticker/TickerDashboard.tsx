@@ -43,7 +43,7 @@ import { CapAnnotation } from '@/pages/ticker/widgets/ai-rec/CapAnnotation';
 import { StateExportDrawer } from '@/pages/ticker/widgets/ai-rec/StateExportDrawer';
 import { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommendation';
 import { PrimeBanner, tierMeta } from '@/pages/ticker/widgets/opportunity-tier';
-import { OptionRight } from '@convexa/api';
+import { dataMode, getTicker, OptionRight, type Expiration } from '@convexa/api';
 import PauseCircleOutlinedIcon from '@mui/icons-material/PauseCircleOutlined';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Alert from '@mui/material/Alert';
@@ -57,6 +57,8 @@ import Link from '@mui/material/Link';
 import Skeleton from '@mui/material/Skeleton';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
@@ -462,6 +464,10 @@ export function TickerDashboard() {
   }, [ticker]);
   // Expiration filter: null = all (no filter), [] = none selected, else an explicit subset.
   const [selected, setSelected] = useState<string[] | null>(null);
+  const [demoExpiryOptions, setDemoExpiryOptions] = useState<{
+    symbol: string;
+    expirations: Expiration[];
+  } | null>(null);
   // The SAME "all expirations" / "N expirations" phrase `TickerHeader` states beside the headline
   // (structure hero repair task item 6's subtitle) — never a second, independent computation.
   const expirationsLabel =
@@ -470,11 +476,6 @@ export function TickerDashboard() {
       : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`;
   // Dark-pool (off-exchange) context: fixed ON (the toolbar toggle was removed to match the Figma).
   const darkPool = true;
-
-  // Reset the filter to "all" whenever the ticker changes.
-  useEffect(() => {
-    setSelected(null);
-  }, [ticker]);
 
   // Persona DTE pre-fill (one-shot, explicit-navigation only) — consumed by the bundle hook.
   const [dtePrefill, setDtePrefill] = useState<{
@@ -505,10 +506,33 @@ export function TickerDashboard() {
     positionQuery,
     takeDtePrefill,
   });
+  // Reset the filter to "all" whenever the ticker changes.
+  useEffect(() => {
+    setSelected(null);
+  }, [ticker]);
   // Live tape subscription — portfolio / orders / deck need ticks. Structure widgets are memoized
   // on REST props so they skip re-render when only the tape changes (§3.8 Phase C).
-  const { live, streamOffline, isLive, displayActive, lastSessionPhase } = useLiveTape();
+  const { live, demoOrderFrame, streamOffline, isLive, displayActive, lastSessionPhase } =
+    useLiveTape();
   const { data, loading, error, paused: marketDataPaused, refresh: load } = page.bundle;
+  useEffect(() => {
+    if (dataMode !== 'demo') return;
+    const symbol = ticker.toUpperCase();
+    let active = true;
+    getTicker(symbol, { darkPool: true })
+      .then((bundle) => {
+        if (active && bundle.market_state?.ticker?.toUpperCase() === symbol) {
+          setDemoExpiryOptions({ symbol, expirations: bundle.expirations });
+        }
+      })
+      .catch(() => {
+        // The active ticker bundle owns its own cold-load/retry state; keep this picker metadata
+        // optional until the same static provider facade can supply a full-chain response.
+      });
+    return () => {
+      active = false;
+    };
+  }, [ticker, Boolean(data)]);
   const structHist = page.history;
   const universeMembership = page.universeMembership;
   const structureAgeSeconds = page.structureAgeSeconds;
@@ -555,12 +579,14 @@ export function TickerDashboard() {
     openPositions: () =>
       buildOpenPositionsDigest({ ticker, positions: allPositions(), faulted: positionsFaulted() }),
   });
-  const [exportDrawer, setExportDrawer] = useState<{ open: boolean; personaId: string | null }>({
-    open: false,
-    personaId: null,
-  });
+  const [exportDrawer, setExportDrawer] = useState<{
+    open: boolean;
+    personaId: string | null;
+    sampleFingerprint: string | null;
+  }>({ open: false, personaId: null, sampleFingerprint: null });
   const openExport = useCallback(
-    (personaId: string | null) => setExportDrawer({ open: true, personaId }),
+    (personaId: string | null, sampleFingerprint?: string | null) =>
+      setExportDrawer({ open: true, personaId, sampleFingerprint: sampleFingerprint ?? null }),
     [],
   );
 
@@ -604,8 +630,13 @@ export function TickerDashboard() {
     .slice(0, 8);
 
   const allDates = data?.expirations.map((e) => e.date) ?? [];
+  const selectableExpirations =
+    (page.sourceBasis && demoExpiryOptions?.symbol === ticker.toUpperCase()
+      ? demoExpiryOptions.expirations
+      : data?.expirations) ?? [];
+  const selectableDates = selectableExpirations.map((e) => e.date);
   const noneSelected = selected !== null && selected.length === 0;
-  const checked = selected ?? allDates; // dates shown ticked in the menu
+  const checked = selected ?? selectableDates; // dates shown ticked in the menu
   // Product spine #5 — open sim book on THIS ticker for the position brief (between structure & plan).
   const openBookViews = useMemo(
     () =>
@@ -621,7 +652,7 @@ export function TickerDashboard() {
   const tradeOpen = evalSel.position != null;
 
   // Sim-order engine evaluates THIS ticker's orders off THIS page's stream (arch §5 — no extra ES).
-  useOrderEngine({ ticker, bundle: data, live, isLive, streamOffline });
+  useOrderEngine({ ticker, bundle: data, live, isLive, streamOffline, demoFrame: demoOrderFrame });
 
   // Entry / Prime / Act / order confirm — extracted (§3.8 Phase D).
   const {
@@ -700,8 +731,8 @@ export function TickerDashboard() {
             symbol={symbol}
             onSymbolChange={setSymbol}
             onSubmitSymbol={onSubmitSymbol}
-            expirations={data?.expirations ?? []}
-            allDates={allDates}
+            expirations={selectableExpirations}
+            allDates={selectableDates}
             selected={selected}
             checked={checked}
             onSelectExpirations={setSelected}
@@ -710,6 +741,81 @@ export function TickerDashboard() {
             loading={loading}
           />
         </Box>
+      )}
+
+      <Tabs
+        value="overview"
+        aria-label={`${ticker.toUpperCase()} ticker views`}
+        variant="scrollable"
+        scrollButtons="auto"
+        sx={{
+          mb: 2,
+          minHeight: 44,
+          '& .MuiTab-root': { minHeight: 44, minWidth: 112 },
+          '& .MuiTab-root.Mui-selected': {
+            color: (theme) => extrasFor(theme).textAmber,
+          },
+        }}
+      >
+        <Tab
+          component={RouterLink}
+          to={`/ticker/${encodeURIComponent(ticker)}`}
+          value="overview"
+          label="Overview"
+        />
+        <Tab
+          component={RouterLink}
+          to={`/ticker/${encodeURIComponent(ticker)}/technical-analysis`}
+          value="technical"
+          label="Technical analysis"
+        />
+        <Tab
+          component={RouterLink}
+          to={`/ticker/${encodeURIComponent(ticker)}/research`}
+          value="research"
+          label="Research"
+        />
+      </Tabs>
+
+      {page.sourceBasis && (
+        <Stack
+          spacing={0.5}
+          sx={{ mb: 2, p: 1.5, border: 1, borderColor: 'divider', borderRadius: 1 }}
+          data-testid="ticker-sample-basis"
+          data-selected-expiry-key={page.selectedExpiryKey ?? ''}
+          data-state-fingerprint={data?.ai_eval.state_fingerprint ?? ''}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {page.sourceBasis.label} · Authored scenario · October 7, 2026 · no market feed
+            connected
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Structure and related signals use the selected expiry set:{' '}
+            {page.selectedExpiryKey ?? 'awaiting sample snapshot'}. Full-chain context keeps its
+            labeled full-chain basis. Sample analysis is authored for this scenario.
+          </Typography>
+          {page.positionEval == null && (
+            <Typography variant="caption" color="text.secondary">
+              Position evaluation unavailable for this sample.
+            </Typography>
+          )}
+          {Object.entries({
+            'Dealer-flow projection': page.optionalAbsences.dealerFlowProjection,
+            'IV rank': page.optionalAbsences.ivRank,
+            'IV skew': page.optionalAbsences.ivSkew,
+            'Market context': page.optionalAbsences.marketContext,
+            'Off-exchange context': page.optionalAbsences.offExchange,
+            'Straddle move': page.optionalAbsences.straddleMove,
+            'Term structure': page.optionalAbsences.termStructure,
+            'Vol-normalized GEX': page.optionalAbsences.volNormalizedGex,
+          })
+            .filter(([, absent]) => absent)
+            .map(([label]) => (
+              <Typography key={label} variant="caption" color="text.secondary">
+                {label} unavailable for this sample.
+              </Typography>
+            ))}
+        </Stack>
       )}
 
       {/* In-context sign-in prompt for a gated Act (D8-6/D10 — the standard gated-write pattern):
@@ -868,8 +974,8 @@ export function TickerDashboard() {
               symbol={symbol}
               onSymbolChange={setSymbol}
               onSubmitSymbol={onSubmitSymbol}
-              expirations={data?.expirations ?? []}
-              allDates={allDates}
+              expirations={selectableExpirations}
+              allDates={selectableDates}
               checked={checked}
               onSelectExpirations={setSelected}
               persona={persona}
@@ -1306,6 +1412,7 @@ export function TickerDashboard() {
         open={exportDrawer.open}
         ticker={ticker}
         personaId={exportDrawer.personaId}
+        sampleFingerprint={exportDrawer.sampleFingerprint}
         onClose={() => setExportDrawer((s) => ({ ...s, open: false }))}
         hasRecOnScreen={aiRec.rec != null && aiRec.rec.status === 'produced'}
         asSentCandidates={aiRec.rec?.sent?.candidates ?? undefined}

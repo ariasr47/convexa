@@ -12,7 +12,7 @@
  * The auth gate is OUTERMOST: this helper does NOT know about ai-rec's cooldown/cap/no_key — those
  * only run AFTER `allowed` is true, in the existing surfaces.
  */
-import { AuthError, simTradeGate } from '@convexa/api';
+import { AuthError, dataMode, simTradeGate } from '@convexa/api';
 import { useCallback, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
@@ -53,7 +53,7 @@ export function useGate(): GateApi {
   const { openAuth } = useAuthDialog();
   const [promptText, setPromptText] = useState<string | null>(null);
 
-  const allowed = auth.authenticated;
+  const allowed = auth.authenticated || dataMode === 'demo';
 
   const signIn = useCallback(
     (reason: string, onSuccess?: () => void) => {
@@ -77,7 +77,7 @@ export function useGate(): GateApi {
 
   const guard = useCallback(
     async (reason: string, fn: () => void | Promise<void>, opts?: GuardOptions) => {
-      if (!auth.authenticated) {
+      if (!auth.authenticated && dataMode !== 'demo') {
         // FE gate: show the in-context prompt, do NOT execute.
         setPromptText(reason);
         return;
@@ -85,7 +85,9 @@ export function useGate(): GateApi {
       try {
         // Server-enforced gate FIRST (AC-E7): when supplied, it must succeed BEFORE the (possibly
         // pure-client) `fn` runs. If it throws an AuthError, `fn` never runs — nothing is persisted.
-        if (opts?.serverGate) await opts.serverGate();
+        // Demo paper writes are local by design. Skipping a gate here grants no server authority:
+        // the demo transport refuses server operations before they can use fetch.
+        if (opts?.serverGate && dataMode !== 'demo') await opts.serverGate();
         await fn();
         setPromptText(null);
       } catch (err) {

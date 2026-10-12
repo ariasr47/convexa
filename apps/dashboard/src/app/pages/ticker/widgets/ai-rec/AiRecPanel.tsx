@@ -16,13 +16,16 @@ import { useSettings } from '@/features/auth/useSettings';
 import { SCENARIO_CAPTION, SCENARIO_LABEL, SCENARIO_NONE } from '@/features/trading/orders/copy';
 import { Widget } from '@/shared/ui/Widget';
 import {
+  dataMode,
   getAiKeyStatus,
+  scenarioProvenance,
   type AiProvidersBootstrap,
   type PersonaDefinition,
   type RecResponse,
   type RecScenarioInfo,
   type TickerBundle,
 } from '@convexa/api';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import FormControl from '@mui/material/FormControl';
@@ -74,7 +77,7 @@ interface Props {
   /** Optional simulated-order callback for hosts that expose that affordance. Non-order hosts/tests stay
    *  unchanged; the affordance is ABSENT (never disabled) when omitted. */
   onAct?: (rec: RecResponse, personaName: string) => void;
-  onViewExport: (personaId: string | null) => void;
+  onViewExport: (personaId: string | null, sampleFingerprint?: string | null) => void;
   readPersonaId: string;
   onChangeReadPersona: (id: string) => void;
   /** Fill the parent's height (for the side-by-side Term/AI row) instead of the default top margin. */
@@ -108,6 +111,7 @@ export function AiRecPanel({
   } = ai;
   const navigate = useNavigate();
   const auth = useAuth();
+  const demo = dataMode === 'demo';
 
   // Auth gate is OUTERMOST over ai-rec's own gating (D6f, AC-E4/E5). Logged-out ⇒ the "ask AI" control
   // shows a sign-in prompt and the LLM is NOT invoked; ai-rec's cooldown/cap/no_key are NOT shown. The
@@ -228,26 +232,128 @@ export function AiRecPanel({
   // The always-available export link, lifted into the Widget header `actions` slot (Figma 149:621).
   // Stage-3 §4.1: link-class action text binds `info` (the token rule: links/info = signal),
   // never amber — amber on this surface belongs to the Trade verdict alone.
-  const exportAction = presentation.actions.directExport ? (
-    <Button
-      size="small"
-      onClick={() => onViewExport(readPersonaIdForRequest)}
-      sx={{
-        p: 0,
-        minWidth: 0,
-        textTransform: 'none',
-        fontWeight: 500,
-        color: 'info.main',
-        whiteSpace: 'nowrap',
-        '&:hover': { bgcolor: 'transparent' },
-      }}
-    >
-      {COPY.action.viewExport}
-      <Box component="span" aria-hidden sx={{ ml: 0.5 }}>
-        →
+  const exportAction =
+    demo || presentation.actions.directExport ? (
+      <Button
+        size="small"
+        onClick={() =>
+          onViewExport(
+            readPersonaIdForRequest,
+            demo ? (bundle?.ai_eval.state_fingerprint ?? null) : undefined,
+          )
+        }
+        sx={{
+          p: 0,
+          minWidth: 0,
+          textTransform: 'none',
+          fontWeight: 500,
+          color: 'info.main',
+          whiteSpace: 'nowrap',
+          '&:hover': { bgcolor: 'transparent' },
+        }}
+      >
+        {demo ? COPY.demo.viewExport : COPY.action.viewExport}
+        <Box component="span" aria-hidden sx={{ ml: 0.5 }}>
+          →
+        </Box>
+      </Button>
+    ) : null;
+
+  if (demo) {
+    const sampleRec = rec?.status === 'produced' ? rec : null;
+    const provenance = scenarioProvenance();
+    return (
+      <Box
+        data-testid="ai-rec-panel"
+        sx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}
+      >
+        <Widget
+          id="ai-rec"
+          title={`Sample analysis · ${ticker}`}
+          actions={exportAction}
+          bodySx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}
+        >
+          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
+            {COPY.demo.provenance}
+            {provenance ? ` · ${provenance.asOf}` : ''}
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1.5 }}>
+            {COPY.demo.noModel}
+          </Typography>
+          {ai.requestFailed && sampleRec && (
+            <Alert
+              severity="info"
+              sx={{ mb: 1.5 }}
+              data-testid="sample-analysis-retained"
+              action={
+                <Button color="inherit" size="small" onClick={ai.retry}>
+                  {COPY.demo.retry}
+                </Button>
+              }
+            >
+              {COPY.demo.retainedError}
+            </Alert>
+          )}
+          {ai.requestFailed && !sampleRec && (
+            <Alert
+              severity="warning"
+              sx={{ mb: 1.5 }}
+              data-testid="sample-analysis-error"
+              action={
+                <Button color="inherit" size="small" onClick={ai.retry}>
+                  {COPY.demo.retry}
+                </Button>
+              }
+            >
+              {COPY.demo.coldError}
+            </Alert>
+          )}
+          {!ai.requestFailed && rec?.status === 'unavailable' && (
+            <Alert
+              severity="info"
+              sx={{ mb: 1.5 }}
+              data-testid="sample-analysis-unavailable"
+              action={
+                <Button color="inherit" size="small" onClick={ai.retry}>
+                  {COPY.demo.retry}
+                </Button>
+              }
+            >
+              Sample analysis is unavailable for this scenario.
+            </Alert>
+          )}
+          {sampleRec?.strategy && (
+            <Box data-testid="sample-analysis-result" sx={{ mb: 1.5 }}>
+              <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 700 }}>
+                {sampleRec.strategy.decision === 'no_trade'
+                  ? 'No trade — sit this one out'
+                  : sampleRec.strategy.structure}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                {sampleRec.strategy.summary}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
+                {sampleRec.strategy.rationale}
+              </Typography>
+            </Box>
+          )}
+          {ai.loading && (
+            <Typography role="status" variant="caption" sx={{ display: 'block', mb: 1 }}>
+              Loading sample analysis…
+            </Typography>
+          )}
+          <Button
+            variant="contained"
+            size="small"
+            disabled={!bundle || ai.loading}
+            onClick={() => void ai.request({ personaId: null, personaName: 'Authored sample' })}
+          >
+            {COPY.demo.action}
+          </Button>
+        </Widget>
       </Box>
-    </Button>
-  ) : null;
+    );
+  }
 
   return (
     <Box

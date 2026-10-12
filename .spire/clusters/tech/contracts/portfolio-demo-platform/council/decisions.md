@@ -1,0 +1,47 @@
+# R3 decisions — portfolio-demo-platform
+
+Date: 2026-10-07. Authority: Rodrigo's direct request delegates the adapter architecture and authorizes implementation/deployment; the global agreement says continue without routine mid-run questions. These are conductor-selected defaults under that delegation, not claims of separate human approval of individual details. The design canvas exists at `docs/backend-atlas/design-canvas.html` before product implementation.
+
+## Settled scope
+
+1. **Frontend composition, no backend change.** Build-time `VITE_DATA_MODE=demo|live`, default live for existing installations; reject unknown explicit values at build. Demo uses typed local facades at existing HTTP/stream seams. No global fetch monkeypatch, backend fixture-mode relaxation, API route or schema change. New bars/research capabilities are local application-provider methods; live returns a named unavailable outcome until a real source is implemented. Keep all existing live endpoint DTOs/behavior intact.
+2. **One authored scenario, six symbols.** SPY, QQQ, AAPL, MSFT, NVDA, TSLA; fixed scenario timestamp (2026-10-07 during market hours), independent of wall clock. Consistent spot, bars, chain, scanner, portfolio and authored research. Clearly synthetic, never claimed to be recorded history, live observations, real AI inference or backend-computed quantitative output. Mock streaming is explicitly simulated and never sets genuine live status.
+3. **Bounded synthetic snapshots.** Do not build the proposed Rust scenario compiler. Curate coherent fixtures; derive straightforward totals/marks/technical indicators locally from their stated inputs. Expose only supported filter choices. The spec must name exact supported filters/projections and explicit unavailable handling, so no widget silently shows unrelated data. Preserve full-chain semantics where required; unsupported position_eval remains null rather than fabricated. A small typed scenario factory is acceptable; a second market analytics engine is not.
+4. **Local account and book.** Demo visitor requires no key/signup. Namespace every current and legacy store access, migration reader, outcome/export reader, preference/theme reader and sync path. Never read live fallbacks. Seed absent demo state before hydration once; explicit reset touches only demo-owned keys. Respect corrupted storage without deleting it. Support existing manually confirmed simulated market/limit placement, cancellation, book interactions and exports using their shared UI; do not add an order engine capability. Separate simulated eligibility and a fixed demo clock from paid-live predicates. Reload preserves visitor edits.
+5. **Technical analysis and Research as ticker-local views.** Preserve four global links. One research case per supported symbol in the fixed scenario; sample-authored notes, assumptions and risks, no invented external citations. Define exact indicator algorithms/windows (especially simple-mean true-range ATR versus Wilder RSI/ADX); warm-up null is distinct from zero. Live capability absence is honest and does not substitute demo data. Operator research remains separate and inaccessible as a trader feature.
+6. **States.** Define typed ready/unsupported/unavailable/error outcomes plus optional nulls and indicator warm-up reasons; UI separately tracks loading, retained-data refresh failure and actual simulated-playback pause. Network loss alone is not evidence local playback paused. Keep finite methods/outcomes, no broad new state framework.
+7. **Static asset availability.** Keep route/scenario code splitting. Local loaded sample views work without a backend or paid API. First visit to an uncached lazy route still requires static-host assets; no service worker/PWA/precache-all scope. Do not promise entire-site offline readiness from initial landing load.
+8. **Truthful design amendment.** In demo, persistent `Demo · sample data` and scenario as-of replace the page connection chip; no genuine live dot/pulse/flash. Existing six-state chip rule and genuine-live restrictions remain for live builds. See amended DESIGN_SYSTEM rule 18 and amendment table. This is the narrow consequence of the requested demo mode.
+9. **Production build and verification.** Retain existing chunk budgets/splitting; include mode/env/runtime/helper inputs in Nx cache identity and deterministic sourcemap outputs. Measure demo vs recorded live baseline. Existing Rust production safeguards remain untouched; do not run migrations or claim API affected-only coverage without graph edges. Respect BRIEF test economy: at most eight new meaningful groups/journeys initially, supplement with recorded inspection/browser evidence. All AC are verified; they do not each need a new test.
+10. **Deployment.** Prefer static demo preview/Pages assets only. No Railway deploy, main merge that triggers its migration hook, database migration, paid signup or production data changes. Prepare fully tested deployable assets and use existing authenticated hosting/Git integration if possible; record a specific authorization obstacle only if actual deployment cannot proceed. Never count local preview as hosted verification.
+
+## Conflict dispositions (all five)
+
+| conflict_id | Resolution | Reason / downstream binding |
+| --- | --- | --- |
+| 2529a37a3a983dc699e1f8f5e7d94786ea4f8c1319e5f674e94c63f8d13f4c6d | Adopt bounded filtering with explicit supported projections/unavailable states (decisions 2–3). | Expiry-only variants cannot honor every existing query dimension; neither false totals nor network fallback is allowed. |
+| d5df83dde000a9fd68596146314c3f0edb3c2086c5230e05afc769ad154148e9 | Narrow offline promise, retain splitting (decision 7). | User requested no paid data dependency, not installable offline navigation. |
+| 425d046e8529a3157dc0c97fbd5b99c79d4729bfd8f84ed6ce0c5a709edb6a2c | Adopt curated/validated snapshots; no Rust exporter (decision 3). | Source follow-up found no ready full-bundle compiler; using it would add unnecessary backend extraction and verification. |
+| 0228985f5c9f9ddf06d3411ef570270cd0d2c8d57de070ca9345cb681476be40 | Accept PM self-revision; cached/loaded views only (decision 7). | Unvisited lazy chunks require static asset access. |
+| f0b23ef394bb990d182c098c230a8bea6dd98a28706b28b126883d8f4bfefcf2 | Amend design rule 18 narrowly (decision 8). | Authored synthetic data must not wear any of six actual connection states. |
+
+## Eight asks answered
+
+- Architect → PM offline breadth: loaded/cached views only; see 7.
+- Architect → PM order transitions: existing confirmed market/limit, cancel and book flows; finite local simulated price updates may satisfy existing execution semantics, never a new automatic capability; see 4.
+- PM → Architect stored epoch: fixed authored value independent of first use/wall clock; see 2 and 4.
+- PM → Architect simulation without fake live: add separate demo eligibility/clock at consumer boundary; preserve genuinely-live predicates false; see 2 and 4.
+- UX → PM Research selection: switch among six supported symbols, one case each; no multi-scenario engine; see 5.
+- UX → Architect epoch/as-of: explicit provider provenance timestamp shared by all visible surfaces; see 2.
+- UX → Architect state discriminants: exact minimal unions belong in INTERFACE_CONTRACT; separate provider availability, optional null/warm-up, load/refresh UI and playback; see 6.
+- UX → Architect browser offline: loaded playback can continue; pause copy requires actual pause; see 6–7.
+
+## Evidence and non-goals
+
+R2 quote verification: `council_conflicts` exit 0, five of five quotes verified. Sources: both audits in `docs/backend-atlas/`, R1/R2 files, and backend follow-up: `compute_analytics_from_vendor` is reusable without state with IV rank disabled, but full bundle assembly and expiry-subset selection are not a ready exporter. No claim the demo numbers are outputs from that helper. `position_eval` can legitimately be null in the current live bundle. Do not widen into new broker execution, live bars/research endpoints, strategy advice, external news integration, production account changes or an offline installation system.
+
+## S2 repair direction (2026-10-07)
+
+The independent review found one blocking consistency gap and three concrete composition gaps. Return them to the same synthesizer for repair before planning: enumerate coherent fixture-dependent signals for supported filtered structure; preserve timestamp/heartbeat/error/pause channels at stream adapters; adapt the existing order host, inner predicate and every creation/expiry clock without setting genuine liveness; generate/reuse mode-aware first-paint keys before the classic script reads and seed before dynamically importing the mount/store graph. Reset must invalidate hydrated state through explicit reload. Keep the same bounded feature and test budget; no Rust changes or new order capability.
+
+Source reuse constraint: `apps/dashboard/src/app/features/trading/broker/fixtures.ts` explicitly labels the `POS_CAPTURE_*`, `POS_CB_*`, and `BOOK_CAPTURED_COMPLETE` section (from line 149 at baseline) as mirroring the owner's real Webull capture. **These records must never enter the public demo.** Author new synthetic broker holdings/account labels. Likewise, extract shapes from Vitest-backed builders rather than importing test frameworks; old test fixtures are shape references, not a coherent or necessarily public synthetic dataset. The new sample catalog must have independent synthetic provenance.

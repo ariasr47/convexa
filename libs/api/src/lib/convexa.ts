@@ -6,6 +6,8 @@
  */
 import type { components } from '../generated/schema';
 import { http } from './client';
+import { dataMode } from './demo/mode';
+export type { components };
 
 /** IV skew at a single anchor tenor (nearest expiration >= 7 DTE). `slope` = put-side IV −
  *  call-side IV, in IV points; `reference` records which rule produced the reference IVs.
@@ -1311,6 +1313,20 @@ export function streamTicker(
   { minDte, maxDte, expirations }: TickerQuery,
   onUpdate: (u: LiveUpdate) => void,
 ): () => void {
+  if (dataMode === 'demo') {
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
+    void import('./demo/streams').then(({ subscribeTicker }) => {
+      if (!active) return;
+      unsubscribe = subscribeTicker(symbol, { minDte, maxDte, expirations }, (event) => {
+        if (event.kind === 'ticker_update') onUpdate(event.update);
+      });
+    });
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
+  }
   const params = new URLSearchParams();
   if (minDte != null) params.set('min_dte', String(minDte));
   if (maxDte != null) params.set('max_dte', String(maxDte));
@@ -2135,13 +2151,16 @@ export async function requestRecommendation(
  *  ticker was never fetched. Triggers no LLM call. */
 export async function fetchRecExport(
   symbol: string,
-  { personaId }: { personaId?: string | null } = {},
+  { personaId, sampleFingerprint }: { personaId?: string | null; sampleFingerprint?: string } = {},
 ): Promise<RecExport> {
   const result = await http.GET('/api/recommendation/export/{ticker}', {
     params: {
       path: { ticker: symbol.toUpperCase() },
       query: { persona_id: personaId ?? undefined },
     },
+    ...(dataMode === 'demo' && sampleFingerprint
+      ? { headers: { 'x-convexa-sample-fingerprint': sampleFingerprint } }
+      : {}),
   });
   const projected = projectRecommendation(dataOf(result, 'Export unavailable'));
   return {

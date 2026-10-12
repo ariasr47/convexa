@@ -4,11 +4,18 @@
  * per-account isolation (the FE never overwrites the server value from local state).
  */
 import { saveActiveId } from '@/features/personas/store';
+import { demoStorageKey } from '@convexa/api';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AuthProvider } from './AuthContext';
-import { __resetLocalPrefs, saveLocalTheme } from './localPrefs';
+import {
+  __resetLocalPrefs,
+  loadLocalDefaultTicker,
+  loadLocalTheme,
+  saveLocalTheme,
+  UIPREFS_KEY,
+} from './localPrefs';
 import {
   installAuthBackend,
   uninstallAuthBackend,
@@ -94,6 +101,30 @@ describe('useSettings — server-wins when signed in, per account (AC-F1/F2)', (
 });
 
 describe('useSettings — anonymous uses client-local, no server pref (AC-F3/A3)', () => {
+  it('keeps a historical theme-only preference and defaults the missing ticker', async () => {
+    localStorage.setItem(
+      demoStorageKey(UIPREFS_KEY),
+      JSON.stringify({ schema_version: 1, theme: 'light' }),
+    );
+    backend = installAuthBackend(); // anonymous
+    const { result } = renderHook(() => useSettings(), { wrapper });
+    await waitFor(() => expect(result.current.effective.theme).toBe('light'));
+    expect(result.current.effective.defaultTicker).toBe('SPY');
+    expect(loadLocalDefaultTicker()).toBeNull();
+    expect(backend.calls.settingsPut).toBe(0);
+  });
+
+  it('preserves malformed stored bytes and refuses to overwrite them', () => {
+    const key = demoStorageKey(UIPREFS_KEY);
+    const malformed = JSON.stringify({ schema_version: 2, theme: 'light' });
+    localStorage.setItem(key, malformed);
+    __resetLocalPrefs();
+
+    expect(loadLocalTheme()).toBe('dark');
+    saveLocalTheme('light');
+    expect(localStorage.getItem(key)).toBe(malformed);
+  });
+
   it('falls back to the client-local stores and never PUTs', async () => {
     saveActiveId('income_keeper');
     saveLocalTheme('light');

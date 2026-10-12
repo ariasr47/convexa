@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-10-08T06:58:58.417519+00:00",
+  "observation_native_exit": 0,
+  "source_revision": "2211d829e9315077ca26fedd5a6441580be08c1c",
+  "ci_run_id": 37737797873,
+  "ci_url": "https://github.com/ariasr47/convexa/actions/runs/37737797873",
+  "ci_status": "completed",
+  "ci_conclusion": "failure",
+  "raw_run_metadata_path": ".spire/tmp/ci-observation-2211d829/ci-run-final.json",
+  "raw_run_metadata_sha256": "67b6c23b8201efcb25bf36346fae0f0fbb7acc5a3cd220caa2f0c791c4f4cbde",
+  "pages_preview_url": "https://a17bba43.convexa.pages.dev",
+  "pages_binding_receipt": ".spire/tmp/ci-observation-2211d829/preview-binding-receipt.json",
+  "pages_current_checks": [
+    {
+      "name": "Cloudflare Pages",
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "details_url": "https://dash.cloudflare.com/?to=/a494a29239581bb5451da1eb2c4ea4d4/pages/view/convexa/a17bba43-7514-401a-a209-6c0e7bd46fa4"
+    }
+  ],
+  "jobs": [
+    {
+      "id": 113181232462,
+      "name": "Capacity baseline (Linux)",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-08T06:28:34Z",
+      "completed_at": "2026-10-08T06:35:17Z"
+    },
+    {
+      "id": 113181232776,
+      "name": "Frontend (lint \u00b7 typecheck \u00b7 test \u00b7 build \u00b7 e2e)",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-10-08T06:28:34Z",
+      "completed_at": "2026-10-08T06:53:39Z"
+    },
+    {
+      "id": 113181232813,
+      "name": "Backend (cargo test \u00b7 release+postgres)",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-08T06:28:34Z",
+      "completed_at": "2026-10-08T06:57:45Z"
+    },
+    {
+      "id": 113181232816,
+      "name": "Supply-chain policy / identity",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-08T06:28:34Z",
+      "completed_at": "2026-10-08T06:28:55Z"
+    },
+    {
+      "id": 113181345564,
+      "name": "Supply-chain policy / policy",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-10-08T06:28:57Z",
+      "completed_at": "2026-10-08T06:30:26Z"
+    },
+    {
+      "id": 113181345671,
+      "name": "Supply-chain policy / capabilities",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-08T06:28:57Z",
+      "completed_at": "2026-10-08T06:31:05Z"
+    },
+    {
+      "id": 113181346991,
+      "name": "Supply-chain policy / artifacts",
+      "status": "completed",
+      "conclusion": "skipped",
+      "started_at": "2026-10-08T06:28:56Z",
+      "completed_at": "2026-10-08T06:28:55Z"
+    },
+    {
+      "id": 113181989472,
+      "name": "Supply-chain policy / aggregate",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-10-08T06:31:07Z",
+      "completed_at": "2026-10-08T06:31:17Z"
+    }
+  ],
+  "frontend_relevant_steps": [
+    {
+      "name": "Unit tests (Vitest)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Production build (dashboard)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Bundle size gate",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Browser quality gate",
+      "status": "completed",
+      "conclusion": "failure"
+    },
+    {
+      "name": "Demo build-mode guard (G5)",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Demo production build",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Demo browser journey (G1)",
+      "status": "completed",
+      "conclusion": "skipped"
+    }
+  ],
+  "browser_gates": [
+    {
+      "gate": "chromium",
+      "source_revision": "2211d829e9315077ca26fedd5a6441580be08c1c",
+      "host_platform": "linux",
+      "status": "fail",
+      "selected": 128,
+      "executed": 128,
+      "passed": 120,
+      "failed": 8,
+      "flaky": 0,
+      "not_run": 0,
+      "summary_path": ".spire/tmp/ci-observation-2211d829/chromium/summary.json",
+      "summary_sha256": "cd84099c0b2947271df55329af26467e1b91fea900abf8f2fa5e9bed0273c5f9",
+      "artifact_id": 11532964382,
+      "zip_path": ".spire/tmp/ci-observation-2211d829/chromium/browser-quality-chromium.zip",
+      "zip_sha256": "44d291f1a7422b46c9c6d8baa09c7d80f80b6bfe892112ad9a9bde6a05f11f66"
+    },
+    {
+      "gate": "compatibility",
+      "source_revision": "2211d829e9315077ca26fedd5a6441580be08c1c",
+      "host_platform": "linux",
+      "status": "pass",
+      "selected": 15,
+      "executed": 15,
+      "passed": 15,
+      "failed": 0,
+      "flaky": 0,
+      "not_run": 0,
+      "summary_path": ".spire/tmp/ci-observation-2211d829/compatibility/summary.json",
+      "summary_sha256": "e5c00391101c620ddec13a5fa23d04add8308ec3596e70d3655def839aa348fe",
+      "artifact_id": 11533831066,
+      "zip_path": ".spire/tmp/ci-observation-2211d829/compatibility/browser-quality-compatibility.zip",
+      "zip_sha256": "92a30bcc7aab49d4d33ab873a5668864f02adbbb142a7e8fe4fb30a6311e58d5"
+    },
+    {
+      "gate": "accessibility",
+      "source_revision": "2211d829e9315077ca26fedd5a6441580be08c1c",
+      "host_platform": "linux",
+      "status": "pass",
+      "selected": 35,
+      "executed": 35,
+      "passed": 35,
+      "failed": 0,
+      "flaky": 0,
+      "not_run": 0,
+      "summary_path": ".spire/tmp/ci-observation-2211d829/accessibility/summary.json",
+      "summary_sha256": "7704a6d06351cec79755e357eef8b88c9773548fb4fd1875dc0a2dbc42bc31e2",
+      "artifact_id": 11533457342,
+      "zip_path": ".spire/tmp/ci-observation-2211d829/accessibility/browser-quality-accessibility.zip",
+      "zip_sha256": "580ed86ee537ca886e8c6d1f6a4aaa54a5b436bcb0c09b1610ef7eb816931347"
+    },
+    {
+      "gate": "visual",
+      "source_revision": "2211d829e9315077ca26fedd5a6441580be08c1c",
+      "host_platform": "linux",
+      "status": "pass",
+      "selected": 6,
+      "executed": 6,
+      "passed": 6,
+      "failed": 0,
+      "flaky": 0,
+      "not_run": 0,
+      "summary_path": ".spire/tmp/ci-observation-2211d829/visual/summary.json",
+      "summary_sha256": "1704eff4307e379c50096a1c83024e000a88bd97ea456daf6da23b122104a487",
+      "artifact_id": 11533213193,
+      "zip_path": ".spire/tmp/ci-observation-2211d829/visual/browser-quality-visual.zip",
+      "zip_sha256": "dbd902776755f56070fad9f62b0f86eb61fcc5dea80a6c79230043c2ee900ab3"
+    }
+  ],
+  "chromium_failure_group": {
+    "failed": 8,
+    "description": "AC-35 and U-32 tap/keyboard tests failed at 393, 834, 900 and 1280px; native tap did not produce nonempty aria-describedby within 5000ms.",
+    "raw_log_path": ".spire/tmp/ci-observation-2211d829/frontend.log",
+    "raw_log_sha256": "c0cbc2aaf8857b0f0d9236e8ff7a757b657c53af76ea4a44979d0b531be9f362"
+  },
+  "visual_reference_binding": {
+    "reference_source_revision": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
+    "candidate_set_id": "44894ccd5fa8e8e986c66bd3e6c4841d",
+    "expected_and_actual_hashes_match_candidates": 6,
+    "comparison_source_revision": "2211d829e9315077ca26fedd5a6441580be08c1c"
+  },
+  "policy": {
+    "actual_aggregate": "fail",
+    "report_revision": "bddb6c202821ef154d85d42fb81c738bb99ccb1e",
+    "source_identity_note": "Policy report names PR merge SHA; CI build is source_revision above.",
+    "raw_report_path": ".spire/tmp/ci-observation-2211d829/policy/policy-report.json",
+    "raw_report_sha256": "1f062dfb33caa99e8318ee41dd43047e1630013342871e1e55f67399ce8bca7e",
+    "failures": [
+      {
+        "check_id": "npm_advisories",
+        "rule_id": "npm-advisory",
+        "finding_count": 26
+      },
+      {
+        "check_id": "cargo_policy",
+        "rule_id": "cargo-policy-finding",
+        "finding_count": 1
+      },
+      {
+        "check_id": "repository_secrets",
+        "rule_id": "secret-found",
+        "finding_count": 3
+      }
+    ],
+    "baseline_note": "npm 26 and cargo 1 check records match baseline; repository_secrets fail 3 is new in this run.",
+    "separate_followup_note": "Root reported the three secret findings were identified as public test-only key and deterministic receipt hashes, with exact historical fingerprint repair prepared separately. That follow-up is outside this source revision and does not change this recorded failure."
+  },
+  "overall_classification": "CI failed: Chromium 8 failed and supply-chain policy failed. Compatibility, accessibility, visual, backend and capacity passed. G5, demo production build and G1 were skipped."
+}

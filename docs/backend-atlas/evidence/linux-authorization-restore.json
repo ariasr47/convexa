@@ -1,0 +1,53 @@
+{
+  "evidence_type": "synthetic tool fixture; not Linux visual results",
+  "helper_sha256": "2c7143e9eac2068f9fb2baec5d376003c4b70ab27f35230d1cde717d08c50415",
+  "driver_native_exit": 0,
+  "source_scope": "Synthetic one-off Git fixture; not a Linux browser or CI run. Source S already contains the helper.",
+  "cases": [
+    {
+      "case": "success",
+      "native_node_exit": 0,
+      "head_unchanged": true,
+      "tracked_diff": [],
+      "before_files": 2,
+      "after_files": 21,
+      "downstream_validator": "pass"
+    },
+    {
+      "case": "hash-mismatch",
+      "native_node_exit": 1,
+      "head_unchanged": true,
+      "tracked_diff": [],
+      "before_files": 2,
+      "after_files": 2,
+      "downstream_validator": "not run on rejected input"
+    },
+    {
+      "case": "summary-source-mismatch",
+      "native_node_exit": 1,
+      "head_unchanged": true,
+      "tracked_diff": [],
+      "before_files": 2,
+      "after_files": 2,
+      "downstream_validator": "not run on rejected input"
+    },
+    {
+      "case": "existing-conflict",
+      "native_node_exit": 1,
+      "head_unchanged": true,
+      "tracked_diff": [],
+      "before_files": 3,
+      "after_files": 3,
+      "downstream_validator": "not run on rejected input"
+    },
+    {
+      "case": "path-escape",
+      "native_node_exit": 1,
+      "head_unchanged": true,
+      "tracked_diff": [],
+      "before_files": 2,
+      "after_files": 2,
+      "downstream_validator": "not run on rejected input"
+    }
+  ]
+}

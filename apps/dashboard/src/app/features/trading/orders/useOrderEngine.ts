@@ -15,9 +15,16 @@
  *    payload (AC-27). Clock expiry is swept on every tick too (the only off-stream transition).
  */
 import { computeMark } from '@/features/trading/model/mark';
-import { fetchTrackedContract, LiveUpdate, TickerBundle, TrackedContract } from '@convexa/api';
+import {
+  dataMode,
+  fetchTrackedContract,
+  LiveUpdate,
+  TickerBundle,
+  TrackedContract,
+  type DemoOrderFrame,
+} from '@convexa/api';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { tickFromLive } from './engine';
+import { tickFromDemo, tickFromLive } from './engine';
 import { allOrders, getOrdersVersion, subscribeOrders } from './store';
 import type { SimOrder } from './types';
 import { DecisionCtx, evaluateAndApply, sweepExpiredOrders } from './useOrders';
@@ -31,6 +38,7 @@ export interface OrderEngineInputs {
   live: LiveUpdate | null;
   isLive: boolean;
   streamOffline: boolean;
+  demoFrame?: DemoOrderFrame | null;
 }
 
 /** Resolve a LIVE option mark for one order, or null (unavailable / frozen / last_known / not
@@ -66,6 +74,7 @@ export function useOrderEngine({
   live,
   isLive,
   streamOffline,
+  demoFrame,
 }: OrderEngineInputs): void {
   const version = useSyncExternalStore(subscribeOrders, getOrdersVersion, getOrdersVersion);
   const symbol = ticker.toUpperCase();
@@ -86,9 +95,11 @@ export function useOrderEngine({
   const [tracked, setTracked] = useState<Record<string, TrackedContract | null>>({});
   const trackedRef = useRef(tracked);
   trackedRef.current = tracked;
+  const consumedDemoFrame = useRef(demoFrame?.frameId ?? null);
   const servedAt = bundle?.meta.served_at;
 
   useEffect(() => {
+    if (dataMode === 'demo') return;
     let cancelled = false;
     active.forEach((o) => {
       fetchTrackedContract(o.ticker, { expiration: o.expiration, strike: o.strike, right: o.right })
@@ -106,9 +117,38 @@ export function useOrderEngine({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeKey, servedAt]);
 
+  // Demo evaluation is exclusively driven by a new immutable controller frame. Mount, bundle
+  // updates, pause/end, and absent contract marks never enter the pure transition engine.
+  useEffect(() => {
+    if (dataMode !== 'demo' || !demoFrame || demoFrame.frameId === consumedDemoFrame.current)
+      return;
+    consumedDemoFrame.current = demoFrame.frameId;
+    if (demoFrame.symbol !== symbol) return;
+    const now = demoFrame.scenarioTimeMs;
+    const ctx: DecisionCtx = {
+      spot: demoFrame.underlyingMid,
+      tier: bundle?.signals.opportunity_tier ?? '',
+      bundle,
+    };
+    for (const order of allOrders()) {
+      if (order.ticker !== symbol || (order.status !== 'waiting' && order.status !== 'triggered'))
+        continue;
+      const mark =
+        demoFrame.marksByContractId[
+          `${order.ticker}|${order.expiration}|${order.strike}|${order.right}`
+        ] ?? null;
+      try {
+        evaluateAndApply(order, tickFromDemo(demoFrame, mark, now), ctx);
+      } catch {
+        /* isolate one order */
+      }
+    }
+  }, [demoFrame]); // One transition pass per distinct controller frame; never replay on mount/bundle changes.
+
   // The evaluation tick: runs on each new live payload (and liveness flips). Nothing here runs on
   // a bundle poll alone — the bundle is never a trigger/fill input ([live-vs-static-isolation]).
   useEffect(() => {
+    if (dataMode === 'demo') return;
     const now = Date.now();
     const ctx: DecisionCtx = {
       spot: live?.mid ?? bundle?.market_state.price ?? 0,

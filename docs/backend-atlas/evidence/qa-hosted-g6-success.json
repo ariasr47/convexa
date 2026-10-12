@@ -1,0 +1,94 @@
+{
+  "preview": "https://0c9f45c7.convexa.pages.dev",
+  "revision": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
+  "modeStatus": 200,
+  "mode": {
+    "mode": "demo",
+    "scenarioId": "portfolio-2026-10-07-v1"
+  },
+  "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests",
+  "bootstrapScriptCount": 1,
+  "routes": [
+    {
+      "path": "/",
+      "direct": {
+        "status": 200,
+        "url": "https://0c9f45c7.convexa.pages.dev/",
+        "sample": true
+      },
+      "hard": {
+        "status": 200,
+        "url": "https://0c9f45c7.convexa.pages.dev/",
+        "sample": true
+      }
+    },
+    {
+      "path": "/scanner",
+      "direct": {
+        "status": 200,
+        "url": "https://0c9f45c7.convexa.pages.dev/scanner",
+        "sample": true
+      },
+      "hard": {
+        "status": 200,
+        "url": "https://0c9f45c7.convexa.pages.dev/scanner",
+        "sample": true
+      }
+    },
+    {
+      "path": "/ticker/SPY",
+      "direct": {
+        "status": 200,
+        "url": "https://0c9f45c7.convexa.pages.dev/ticker/SPY",
+        "sample": true
+      },
+      "hard": {
+        "status": 200,
+        "url": "https://0c9f45c7.convexa.pages.dev/ticker/SPY",
+        "sample": true
+      }
+    },
+    {
+      "path": "/ticker/SPY/technical-analysis",
+      "direct": {
+        "status": 200,
+        "url": "https://0c9f45c7.convexa.pages.dev/ticker/SPY/technical-analysis",
+        "sample": true
+      },
+      "hard": {
+        "status": 200,
+        "url": "https://0c9f45c7.convexa.pages.dev/ticker/SPY/technical-analysis",
+        "sample": true
+      }
+    },
+    {
+      "path": "/ticker/SPY/research",
+      "direct": {
+        "status": 200,
+        "url": "https://0c9f45c7.convexa.pages.dev/ticker/SPY/research",
+        "sample": true
+      },
+      "hard": {
+        "status": 200,
+        "url": "https://0c9f45c7.convexa.pages.dev/ticker/SPY/research",
+        "sample": true
+      }
+    },
+    {
+      "path": "/positions",
+      "direct": {
+        "status": 200,
+        "url": "https://0c9f45c7.convexa.pages.dev/positions",
+        "sample": true
+      },
+      "hard": {
+        "status": 200,
+        "url": "https://0c9f45c7.convexa.pages.dev/positions",
+        "sample": true
+      }
+    }
+  ],
+  "forbiddenAttempts": [],
+  "pageErrors": [],
+  "allPassed": true
+}

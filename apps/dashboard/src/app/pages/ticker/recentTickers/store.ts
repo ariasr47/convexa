@@ -6,6 +6,8 @@
  * Corrupt/unreadable → empty in-memory; original blob left intact until a successful write.
  * Never throws into the UI. Never a scoring input.
  */
+import { demoStorageKey } from '@convexa/api';
+
 const KEY = 'convexa.recent-tickers.v1';
 const SCHEMA_VERSION = 1;
 export const MAX_RECENTS = 8;
@@ -26,6 +28,7 @@ const empty = (): PersistShape => ({
 const PIN_SET = new Set<string>(PINNED_TICKERS);
 
 let memory: PersistShape | null = null;
+let faulted = false;
 
 function normalize(symbol: string): string {
   return symbol.trim().toUpperCase();
@@ -34,12 +37,14 @@ function normalize(symbol: string): string {
 function read(): PersistShape {
   if (memory) return memory;
   try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) {
+    const raw = localStorage.getItem(demoStorageKey(KEY));
+    if (raw == null) {
       memory = empty();
+      faulted = false;
       return memory;
     }
     const parsed = JSON.parse(raw) as Partial<PersistShape>;
+    if (!parsed || !Array.isArray(parsed.symbols)) throw new Error('malformed recents');
     const symbols = Array.isArray(parsed.symbols)
       ? parsed.symbols
           .filter((s): s is string => typeof s === 'string')
@@ -58,17 +63,20 @@ function read(): PersistShape {
       schema_version: SCHEMA_VERSION,
       symbols: deduped.slice(0, MAX_RECENTS),
     };
+    faulted = false;
   } catch {
     // Corrupt → empty in memory; do NOT removeItem (leave original blob).
     memory = empty();
+    faulted = true;
   }
   return memory;
 }
 
 function write(s: PersistShape) {
+  if (faulted) return;
   memory = s;
   try {
-    localStorage.setItem(KEY, JSON.stringify(s));
+    localStorage.setItem(demoStorageKey(KEY), JSON.stringify(s));
   } catch {
     /* in-memory only (quota / private mode) */
   }
@@ -96,6 +104,7 @@ export function recordVisit(symbol: string): void {
 /** Test seam — drop in-memory cache so the next read re-hydrates from localStorage. */
 export function __resetRecentTickers(): void {
   memory = null;
+  faulted = false;
 }
 
 export const RECENT_TICKERS_KEY = KEY;

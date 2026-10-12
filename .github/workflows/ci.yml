@@ -107,7 +107,9 @@ jobs:
           retention-days: 7
 
       - name: Production build (dashboard)
-        run: npx nx build @convexa/dashboard --configuration=production
+        run: npm run build:dashboard
+        env:
+          VITE_DATA_MODE: live
 
       # §3.8 Phase A — gzip chunk budgets (see tools/check-dashboard-bundle.mjs).
       - name: Bundle size gate
@@ -132,6 +134,7 @@ jobs:
         run: npm run browser:quality
         env:
           CI: true
+          VITE_DATA_MODE: live
 
       - name: Upload Chromium browser evidence
         if: always() && steps.browser_quality.outcome != 'skipped'
@@ -159,6 +162,30 @@ jobs:
           path: apps/dashboard-e2e/test-output/playwright/accessibility
           retention-days: 7
           if-no-files-found: error
+
+      - name: Demo build-mode guard (G5)
+        run: node --test tools/build-dashboard.spec.mjs
+
+      - name: Demo production build
+        run: npm run build:dashboard
+        env:
+          VITE_DATA_MODE: demo
+
+      - name: Demo browser journey (G1)
+        run: npx playwright test --config apps/dashboard-e2e/playwright.demo.config.ts
+        env:
+          CI: true
+          BROWSER_QUALITY_PREBUILD_STATUS: pass
+          BROWSER_QUALITY_PORT: "4217"
+
+      - name: Upload demo browser evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: browser-demo
+          path: apps/dashboard-e2e/test-output/playwright/demo
+          retention-days: 7
+          if-no-files-found: warn
 
   # ~26 min/run -> ~208 min/month (raw = Linux-equivalent).
   backend:

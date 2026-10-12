@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-08T06:07:48.6809645Z",
+  "title": "Local HTTPS preserves artifact CSP for built browser checks",
+  "original_failed_source_revision": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
+  "diagnosis": {
+    "platform": "linux",
+    "artifacts": ".spire/tmp/linux-compatibility-219d73a6/attachments/10-2-trace.zip through 19-2-trace.zip",
+    "webkit_attempts": 10,
+    "document_responses_200": 10,
+    "https_asset_tls_failures": 90,
+    "other_network_failure_types": 0,
+    "failure": "upgrade-insecure-requests upgraded assets to HTTPS on an HTTP-only localhost listener"
+  },
+  "verification_platform": "windows",
+  "artifact": {
+    "root": ".spire/tmp/portfolio-qa-demo-csp-dist",
+    "mode": "demo",
+    "rebuilt": false,
+    "index_sha256": "18df9b810222dedde55b3ed00436e270a82dce34b94fd0103652c769bba7d320",
+    "headers_sha256": "8963ff6417815cb6e412f33068b332a3305f38aa26b4d44185830d91da69069e"
+  },
+  "checks": [
+    {
+      "command": "node --check apps/dashboard-e2e/tools/serve-dist.mjs",
+      "native_exit": 0
+    },
+    {
+      "command": "node --test apps/dashboard-e2e/tools/d7-fixture-repairs.spec.mjs",
+      "native_exit": 0,
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "command": "node .spire/tmp/local-https-parity/verify-harness.cjs",
+      "native_exit": 0,
+      "config_cases": 8,
+      "http_https_response_cases": 10,
+      "malformed_cli_refusals": 6,
+      "default_certificate_trust": {
+        "rejected": true,
+        "code": "DEPTH_ZERO_SELF_SIGNED_CERT"
+      }
+    },
+    {
+      "command": "node node_modules/playwright/cli.js test --config=.spire/tmp/local-https-parity/playwright.config.ts",
+      "native_exit": 0,
+      "passed": 1,
+      "failed": 0,
+      "project": "webkit",
+      "playwright_version": "1.62.1",
+      "browser": "WebKit 26.5 / webkit-2336",
+      "duration_seconds": 4.8,
+      "observations": {
+        "routes": ["/", "/ticker/SPY"],
+        "landingVisible": true,
+        "commandDeckVisible": true,
+        "demoBootstrap": true,
+        "exactArtifactCsp": true,
+        "requests": 101,
+        "failed": [],
+        "consoleErrors": []
+      }
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc --noEmit --skipLibCheck --esModuleInterop --module commonjs --moduleResolution node --target es2022 apps/dashboard-e2e/playwright.shared.config.ts apps/dashboard-e2e/playwright.config.ts apps/dashboard-e2e/playwright.demo.config.ts",
+      "native_exit": 0
+    },
+    {
+      "command": "git diff --check -- apps/dashboard-e2e/tools/serve-dist.mjs apps/dashboard-e2e/playwright.shared.config.ts apps/dashboard-e2e/playwright.config.ts apps/dashboard-e2e/tools/d7-fixture-repairs.spec.mjs",
+      "native_exit": 0
+    }
+  ],
+  "config_cases": [
+    {
+      "name": "development",
+      "baseURL": "http://localhost:4271",
+      "ignoreHTTPSErrors": false,
+      "productionBuild": false,
+      "pass": true
+    },
+    {
+      "name": "prebuilt",
+      "baseURL": "https://localhost:4271",
+      "ignoreHTTPSErrors": true,
+      "productionBuild": false,
+      "pass": true
+    },
+    {
+      "name": "CI fallback",
+      "baseURL": "https://localhost:4271",
+      "ignoreHTTPSErrors": true,
+      "productionBuild": true,
+      "pass": true
+    },
+    {
+      "name": "CI prebuilt",
+      "baseURL": "https://localhost:4271",
+      "ignoreHTTPSErrors": true,
+      "productionBuild": false,
+      "pass": true
+    },
+    {
+      "name": "external BASE_URL",
+      "baseURL": "https://example.invalid",
+      "ignoreHTTPSErrors": false,
+      "productionBuild": false,
+      "pass": true
+    },
+    {
+      "name": "explicit local BASE_URL",
+      "baseURL": "https://localhost:4271",
+      "ignoreHTTPSErrors": false,
+      "productionBuild": false,
+      "pass": true
+    },
+    {
+      "name": "hosted demo CI",
+      "baseURL": "https://demo.example.invalid",
+      "ignoreHTTPSErrors": false,
+      "productionBuild": false,
+      "pass": true
+    },
+    {
+      "name": "hosted overrides prebuild",
+      "baseURL": "https://demo.example.invalid",
+      "ignoreHTTPSErrors": false,
+      "productionBuild": false,
+      "pass": true
+    }
+  ],
+  "evidence_paths": [
+    ".spire/tmp/local-https-parity/harness-results.json",
+    ".spire/tmp/local-https-parity/browser-results.json",
+    ".spire/tmp/local-https-parity/webkit-observations.json",
+    ".spire/tmp/local-https-parity/webkit-ticker.png"
+  ],
+  "limits": [
+    "This is a Windows WebKit smoke check, not the full Linux compatibility gate. Linux rerun remains required.",
+    "The frozen DEMO artifact was used; no app build or LIVE compatibility suite ran in this lane.",
+    "CI fallback production build command and mode inheritance were inspected through config loading; the command was not executed.",
+    "The public localhost certificate is trusted only by local Playwright browser/readiness opt-outs. Production certificate trust and other Cloudflare headers are not emulated.",
+    "Hosted DEMO_HOSTED_URL and any BASE_URL override keep normal certificate verification and do not start the local server.",
+    "Sandbox initially blocked Nx native-cache writes and loopback connections; verification used a workspace native cache and approved local-only execution outside that sandbox.",
+    "An initial typecheck invocation had unsupported ignoreDeprecations=6.0 and exited 1; the corrected command shown above exited 0."
+  ]
+}

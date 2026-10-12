@@ -7,6 +7,7 @@
  * Anonymous never-touched stays dark (AC-A3). `THEME_PAINT_KEY` is the last *resolved mode*,
  * not a settings store — never written into uiprefs (AC-F2 per-account isolation).
  */
+import { dataMode, demoStorageKey } from '@convexa/api';
 import { UIPREFS_KEY, UIPREFS_LEGACY_KEY } from './localPrefs';
 
 export const THEME_PAINT_KEY = 'convexa.theme-paint';
@@ -18,13 +19,15 @@ export function resolveFirstPaintMode(
   prefersLight: boolean,
 ): PaintMode {
   try {
-    const cached = getItem(THEME_PAINT_KEY);
+    const cached = getItem(demoStorageKey(THEME_PAINT_KEY));
     if (cached === 'light' || cached === 'dark') return cached;
   } catch {
     /* storage unavailable */
   }
   try {
-    const raw = getItem(UIPREFS_KEY) ?? getItem(UIPREFS_LEGACY_KEY);
+    const raw =
+      getItem(demoStorageKey(UIPREFS_KEY)) ??
+      (dataMode === 'demo' ? null : getItem(demoStorageKey(UIPREFS_LEGACY_KEY)));
     if (raw) {
       const theme = (JSON.parse(raw) as { theme?: unknown }).theme;
       if (theme === 'light') return 'light';
@@ -48,7 +51,7 @@ export function applyPaintMode(doc: Document, mode: PaintMode, canvas: string): 
   }
   meta.setAttribute('content', canvas);
   try {
-    localStorage.setItem(THEME_PAINT_KEY, mode);
+    localStorage.setItem(demoStorageKey(THEME_PAINT_KEY), mode);
   } catch {
     /* quota / private mode — first paint still applied on the document */
   }

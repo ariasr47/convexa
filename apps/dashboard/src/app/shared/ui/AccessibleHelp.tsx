@@ -1,6 +1,7 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
+import { useState } from 'react';
 
 /**
  * Keyboard and pointer reachable help trigger used by the decision card, `FigureCell`'s ⓘ, and
@@ -33,6 +34,12 @@ import Tooltip from '@mui/material/Tooltip';
  * immediately followed by `touchend`, exactly what a real finger tap or Playwright's `.tap()` does)
  * never opens it, while holding for >700ms does. "Reachable by tap" (ruling 6; AC-35) means an
  * ordinary tap, not a 700ms hold nobody would discover — this override applies to all six sites.
+ * A completed click also opens the same controlled Tooltip: a native short touch can release before
+ * MUI's zero-delay enter timer runs, and touchend cancels that timer. MUI still owns hover/focus
+ * opening and Escape/blur/touch-leave dismissal through onOpen/onClose.
+ * After completed activation, hover listeners are suspended: a compatibility mouseleave would
+ * otherwise replace MUI's touch-leave timer with an immediate close. Genuine dismissal restores
+ * hover behavior; the onClose guard also ignores a mouseleave queued before activation committed.
  *
  * PROMOTED into `shared/ui/` (curvature-v2-surfaces SPEC §2.8, OWNER ruling D-C): the single
  * `Widget.tsx` frame's `info` render site needs this component, and `shared/` may never import from
@@ -42,10 +49,35 @@ import Tooltip from '@mui/material/Tooltip';
  * change for its nine existing importers, all re-pointed in the same change.
  */
 export function AccessibleHelp({ label, text }: { label: string; text: string }) {
+  const [open, setOpen] = useState(false);
+  const [activated, setActivated] = useState(false);
   const stop = (event: { stopPropagation: () => void }) => event.stopPropagation();
   return (
-    <Tooltip arrow title={text} describeChild enterTouchDelay={0}>
-      <IconButton size="small" aria-label={label} onClick={stop} onFocus={stop} sx={{ p: 0.5 }}>
+    <Tooltip
+      arrow
+      title={text}
+      describeChild
+      enterTouchDelay={0}
+      disableHoverListener={activated}
+      open={open}
+      onOpen={() => setOpen(true)}
+      onClose={(event) => {
+        if (activated && event.type === 'mouseleave') return;
+        setActivated(false);
+        setOpen(false);
+      }}
+    >
+      <IconButton
+        size="small"
+        aria-label={label}
+        onClick={(event) => {
+          stop(event);
+          setActivated(true);
+          setOpen(true);
+        }}
+        onFocus={stop}
+        sx={{ p: 0.5 }}
+      >
         <InfoOutlinedIcon fontSize="inherit" />
       </IconButton>
     </Tooltip>

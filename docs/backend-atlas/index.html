@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Inside Convexa · Backend atlas</title>
+  <link rel="stylesheet" href="atlas.css">
+  <script src="atlas.js" defer></script>
+</head>
+<body>
+  <header class="masthead">
+    <a class="wordmark" href="index.html">conve<span>x</span>a <small>/ engineering atlas</small></a>
+    <button id="theme" type="button" aria-label="Switch color scheme">Light scheme</button>
+  </header>
+  <main>
+    <div class="intro">
+      <p class="eyebrow">A visual guide to the actual repository</p>
+      <h1>Inside Convexa</h1>
+      <p class="lede">Explore the original Rust-backed live architecture alongside the implemented browser-local demo, its data sources, local state, and release evidence.</p>
+      <p class="evidence">Live-source citations pin <code>8932fc11</code> · audited October 7, 2026 · demo implementation links follow the feature branch · diagrams describe code, not recorded traffic.</p>
+    </div>
+    <nav class="tabs" aria-label="Atlas sections">
+      <button type="button" data-view="system" aria-pressed="true">01 · System map</button>
+      <button type="button" data-view="traces" aria-pressed="false">02 · Follow a request</button>
+      <button type="button" data-view="data" aria-pressed="false">03 · Data & widgets</button>
+      <button type="button" data-view="journeys" aria-pressed="false">04 · User journeys</button>
+      <button type="button" data-view="stack" aria-pressed="false">05 · Stack & operations</button>
+      <button type="button" data-view="demo" aria-pressed="false">06 · Demo architecture</button>
+    </nav>
+
+    <section id="system" class="view" aria-labelledby="system-title">
+      <div class="section-heading"><div><p class="eyebrow">Current architecture</p><h2 id="system-title">A modular monolith, with two data paths.</h2></div><span class="tag">Source-derived</span></div>
+      <p class="measure">REST builds a structural snapshot. A separate WebSocket → SSE path updates prices. Background jobs prepare scanner and research data outside the request path.</p>
+      <div class="map-layout">
+        <div class="system-map" aria-label="Select a system component to inspect it">
+          <div class="lane"><span class="lane-label">Browser</span><button data-node="browser">React dashboard<small>Ticker · Scanner · Positions · Alerts</small></button><button data-node="facade">Typed API facade<small>openapi-fetch + separate streams</small></button></div>
+          <div class="connector">↓ same-origin HTTP + EventSource</div>
+          <div class="lane"><span class="lane-label">Edge</span><button data-node="edge">Cloudflare Pages<small>Static frontend + API proxy</small></button></div>
+          <div class="connector">↓ trader routes only · operator routes blocked</div>
+          <div class="lane"><span class="lane-label">Server</span><button data-node="router">Axum + AppState<small>Routes · auth · admission · contracts</small></button></div>
+          <div class="connector">↓</div>
+          <div class="lane branches"><span class="lane-label">Services</span><button data-node="analytics">Analytics<small>Cache → singleflight → compute</small></button><button data-node="stream">Price streams<small>One stock hub → many subscribers</small></button><button data-node="identity">Identity + books<small>Sessions · settings · sim/broker</small></button></div>
+          <div class="connector">↓ independent boundaries</div>
+          <div class="lane branches"><span class="lane-label">Core</span><button data-node="quant">Quant engine<small>Pure Rust · no vendor I/O</small></button><button data-node="vendor">External adapters<small>Massive · LLMs · broker port</small></button><button data-node="storage">Storage<small>Postgres · JSON · files · caches</small></button></div>
+          <div class="connector">↳ bounded jobs, capture, and offline analysis</div>
+          <div class="lane"><span class="lane-label">Off-path</span><button data-node="scanner">Scanner workers<small>Fast prices + slow structure sweep</small></button><button data-node="research">Research pipeline<small>Capture → archive → replay → outcomes</small></button></div>
+        </div>
+        <aside class="detail" id="node-detail" aria-live="polite"></aside>
+      </div>
+      <div class="boundary-note"><strong>Two paths, separate meanings.</strong> This map describes the original Rust-backed live service. The portfolio demo runs in the browser with authored synthetic data and does not prove a Rust request ran. The subscription has ended. <code>MARKET_DATA_MODE=paused</code> stops the five market-data producers and refuses market reads; the demo is selected separately at dashboard build time.</div>
+    </section>
+
+    <section id="traces" class="view" hidden aria-labelledby="traces-title">
+      <div class="section-heading"><div><p class="eyebrow">Source-derived sequence walkthroughs</p><h2 id="traces-title">Follow one request, one step at a time.</h2></div><span class="tag">No timings invented</span></div>
+      <div class="controls"><label for="trace-select">Journey <select id="trace-select"></select></label><button id="trace-prev" type="button">← Previous</button><button id="trace-next" type="button">Next step →</button></div>
+      <div id="trace-map" class="trace-map"></div>
+      <div id="trace-detail" class="trace-detail" aria-live="polite"></div>
+      <p class="boundary-note">There is HTTP tracing and phase logging in the server, but <code>/api/_metrics</code> currently reports instrumentation disabled and returns no recent traces. These walkthroughs are code paths, not captured production spans.</p>
+    </section>
+
+    <section id="data" class="view" hidden aria-labelledby="data-title">
+      <div class="section-heading"><div><p class="eyebrow">Ownership and provenance</p><h2 id="data-title">One snapshot should tell one consistent story.</h2></div></div>
+      <div class="controls"><label for="data-select">Explore <select id="data-select"><option value="widgets">Screens & widgets</option><option value="stores">Stores & lifetime</option><option value="api">API families</option></select></label></div>
+      <div id="data-content"></div>
+      <p class="boundary-note">The checked-in OpenAPI artifact contains <strong>50 paths / 57 operations</strong>. The browser facade uses <strong>30 ordinary HTTP call sites</strong>. These count different things; neither count means a test or hosted request passed.</p>
+    </section>
+
+    <section id="journeys" class="view" hidden aria-labelledby="journeys-title">
+      <div class="section-heading"><div><p class="eyebrow">What users actually do</p><h2 id="journeys-title">From exploration to a recorded decision.</h2></div></div>
+      <div id="journey-content"></div>
+    </section>
+
+    <section id="stack" class="view" hidden aria-labelledby="stack-title">
+      <div class="section-heading"><div><p class="eyebrow">Tools, boundaries, and failure behavior</p><h2 id="stack-title">What keeps the system understandable.</h2></div></div>
+      <div id="stack-content"></div>
+      <div class="reading-grid"><a href="nx-production-research.md">Nx production research <span>Evidence and primary-source links →</span></a><a href="backend-source-audit.md">Full backend inventory <span>Providers, tables, paths, and citations →</span></a><a href="frontend-source-audit.md">Full frontend inventory <span>Widgets, stores, streams, and bypasses →</span></a></div>
+    </section>
+
+    <section id="demo" class="view" hidden aria-labelledby="demo-title">
+      <div class="section-heading"><div><p class="eyebrow">Published demo · CI failed, helper correction pending</p><h2 id="demo-title">Same dashboard. A local authored scenario.</h2></div></div>
+      <div class="controls" aria-label="Compare data modes"><button type="button" data-mode="demo" aria-pressed="true">Demo</button><button type="button" data-mode="live" aria-pressed="false">Live</button><button type="button" data-mode="paused" aria-pressed="false">Paused backend</button></div>
+      <div id="mode-flow" class="mode-flow"></div><div id="mode-detail" aria-live="polite"></div>
+      <h3>Demo composition and boundaries</h3><p class="measure">The build selects one complete client composition. The original live route remains a separate Pages → Rust path; the demo uses a browser-local facade and authored scenario.</p>
+      <div class="seam-grid"><div><b>Build + facade</b><p>VITE_DATA_MODE chooses demo or live before React mounts. Demo HTTP uses local Response-compatible handlers; unsupported calls fail closed.</p></div><div><b>Authored market view</b><p>Six symbols × seven expiry selections share one scenario. Normal views populate IV skew, term structure, dealer/context reads, normalized GEX, straddle, unusual positioning and off-exchange context.</p></div><div><b>Portfolio + playback</b><p>Paper book, orders, alerts, settings and sample playback stay in browser-local state. Read-only sample broker holdings remain separate.</p></div><div><b>Research + guardrails</b><p>Six distinct linked Research cases and 60 daily bars load in ticker-local views. Live mode reports those local capabilities unavailable; demo never asserts genuine live status.</p></div></div>
+      <!-- RELEASE_STATUS_START: update these four cards and the gate line from source-bound receipts. -->
+      <h3 id="release-status-title">Release status</h3>
+      <p id="release-gate" class="measure"><strong>QA: 19 PASS / 1 FAIL / 0 UNVERIFIABLE · GATE Q FAIL.</strong> AC14 awaits fresh Linux verification of the test-helper correction.</p>
+      <div id="release-status" class="seam-grid" aria-labelledby="release-status-title">
+        <div id="release-preview">
+          <b>Published preview</b>
+          <p><a href="https://848874c6.convexa.pages.dev">Open the portfolio demo →</a></p>
+          <p>Source <code>cc4df79c</code> · <a href="https://codex-portfolio-demo-platfor.convexa.pages.dev">branch alias</a></p>
+        </div>
+        <div id="release-qa">
+          <b>Independent hosted + local checks</b>
+          <p>Hosted routes <strong>12/12</strong> · native touch, keyboard and dismissal passed.</p>
+          <p>Corrected local G1 <strong>1/1 · 55.9 s total</strong> · focused help <strong>8/8 · 57.2 s</strong>, zero retries.</p>
+          <p>Exact CSP · strict hosted TLS · zero forbidden egress or page errors.</p>
+        </div>
+        <div id="release-ci">
+          <b>Linux CI + policy</b>
+          <p><a href="https://github.com/ariasr47/convexa/actions/runs/37743441304">CI 37743441304</a> <strong>FAILED</strong> · Chromium 127 passed / 0 failed / 1 flaky.</p>
+          <p>Secrets <strong>PASS · 0 findings</strong>. Dependency policy <strong>FAIL · 26 npm / 1 Cargo</strong>.</p>
+        </div>
+        <div id="release-build">
+          <b>Build, cache + size</b>
+          <p><strong>4/4 builds · 55 bundle checks</strong> passed. DEMO miss → hit → LIVE hit → DEMO restore.</p>
+          <p>Boot <strong>224,030 B</strong> Brotli · Technical analysis +2,457 B · Research +1,732 B.</p>
+        </div>
+      </div>
+      <details id="release-evidence" class="boundary-note">
+        <summary>Evidence, limits and earlier results</summary>
+        <p>Published source <code>cc4df79c6a0e4ad6eabd1ce31a068112260a9d16</code>; deployment <code>848874c6-0300-4cb6-9926-53ccec75b061</code>. The hosted receipt includes six direct loads, six hard refreshes, sample provenance and native touch at 393px. Local QA matched all 199 frozen files.</p>
+        <ul>
+          <li>On application source <code>cc4df79c</code>, CI attempt 1 was cancelled during a 20m40s Ubuntu dependency install before browser tests; attempt 2 installed in 50s. AC35 FigureCell at 1280px passed only on retry. Compatibility 15/15, accessibility execution 35/35, visuals 6/6, backend and capacity passed; G5/demo build/G1 were skipped. Accessibility execution does not mean zero findings.</li>
+          <li>The trace showed <code>locator.hover()</code> waiting 2,075 ms for layout, beyond the retained 1,500 ms natural dismissal. The candidate changes only two test helpers to direct trusted pointer input with an actual-hover-hit assertion; application semantics and tooltip assertions stay unchanged. Final local checks passed with the hover-hit assertion: focused 8/8, zero retries/flakes, 57.2 s; G1 1/1, native exit 0, 53.2 s test / 55.9 s total. LIVE and DEMO artifacts are unchanged. Fresh Linux verification is still owed.</li>
+          <li>The focused eight-case local run is incomplete against the 128-case Chromium manifest. It does not replace the full Linux gate. Source <code>2211d829</code> previously had 120 passes, eight native help failures and zero flaky tests.</li>
+          <li>Dependency failures match baseline check records; advisory-ID identity is unproven. The policy report binds merge SHA <code>435021c4432af797f8c8dcaf132b289c5e0151f1</code>. Secret scanning completed <code>secret-clean</code>; overall CI is not green.</li>
+          <li>The mixed-input repair passed locally and on the hosted demo. The original Linux closing event and pre-commit timer edge remain scoped in the activation receipt. Linux visual reference acceptance remains bound to source <code>219d73a6</code>.</li>
+          <li>Build wall times were 24.1205477 / 5.9061708 / 6.2104163 / 6.2488567 s. The first overlapped format checking; this is not an isolated benchmark. Brotli graph sizes are not observed transfer.</li>
+          <li>This static demo does not require a Railway deployment. Main's Railway predeploy invokes a migration, outside this feature's release scope.</li>
+        </ul>
+        <p><a href="README.md#verification-status">Detailed release status and history</a> · <a href="evidence/qa-browser-followup.json">Hosted + local QA</a> · <a href="evidence/ci-run-cc4df79c.json">Completed CI and attempts</a> · <a href="evidence/chromium-activation-followup.json">Activation repair</a> · <a href="evidence/pointer-test-timing-followup.json">Pointer timing correction</a> · <a href="evidence/demo-build-matrix.json">Build/cache matrix</a> · <a href="evidence/demo-boot-closure.json">Boot and route sizes</a></p>
+      </details>
+      <!-- RELEASE_STATUS_END -->
+      <p><a href="design-canvas.html">Open the pre-build proposed experience canvas →</a></p>
+    </section>
+    <footer><span>Read the diagrams left-to-right or top-to-bottom; select any module to see its responsibility and source.</span><a href="README.md">Reading guide & evidence legend</a></footer>
+  </main>
+</body>
+</html>

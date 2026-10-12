@@ -12,6 +12,8 @@ import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FreshnessLine } from './FreshnessLine';
 
+vi.mock('@convexa/api', () => ({ demoNowMs: () => Date.now() }));
+
 function renderFL(props: Partial<React.ComponentProps<typeof FreshnessLine>> = {}) {
   return render(
     <ThemeProvider theme={theme}>

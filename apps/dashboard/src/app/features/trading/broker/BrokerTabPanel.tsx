@@ -17,9 +17,16 @@
  * carve-out) — no broker request is issued anonymously.
  */
 import { useAuth } from '@/features/auth/AuthContext';
+import { DemoBrokerHoldings } from '@/features/auth/BrokerageSection';
 import { SignInPrompt } from '@/features/auth/SignInPrompt';
 import { useGate } from '@/features/auth/useGate';
-import type { LiveUpdate, TickerBundle } from '@convexa/api';
+import {
+  dataMode,
+  fetchBrokerBook,
+  type BrokerBook,
+  type LiveUpdate,
+  type TickerBundle,
+} from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -58,7 +65,7 @@ export function BrokerTabPanel({ data, live, isLive, streamOffline }: Props) {
   const theme = useTheme();
   const compact = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const api = useBrokerBook(auth.authenticated);
+  const api = useBrokerBook(dataMode === 'live' && auth.authenticated);
   const { book, hintSet, inFlight, firstFetch } = api;
 
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -69,6 +76,21 @@ export function BrokerTabPanel({ data, live, isLive, streamOffline }: Props) {
 
   const [refreshNote, setRefreshNote] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [sampleBook, setSampleBook] = useState<BrokerBook | null>(null);
+  useEffect(() => {
+    if (dataMode !== 'demo') return;
+    let cancelled = false;
+    fetchBrokerBook()
+      .then((book) => {
+        if (!cancelled) setSampleBook(book);
+      })
+      .catch(() => {
+        if (!cancelled) setSampleBook(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const render = resolveRenderState({ book, hintSet, inFlight, firstFetch, nowMs });
 
@@ -101,6 +123,14 @@ export function BrokerTabPanel({ data, live, isLive, streamOffline }: Props) {
       else next.add(key);
       return next;
     });
+
+  if (dataMode === 'demo') {
+    return (
+      <Box data-testid="broker-tab-panel" sx={{ mt: '4px' }}>
+        <DemoBrokerHoldings book={sampleBook} embedded />
+      </Box>
+    );
+  }
 
   // ---- Session still resolving: a cold skeleton, never a premature prompt or claim -------------
   if (!auth.ready) {

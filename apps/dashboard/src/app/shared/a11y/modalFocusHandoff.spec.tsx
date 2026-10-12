@@ -266,21 +266,50 @@ describe('installModalFocusHandoff — focus is never inside the aria-hidden bac
 describe('the seam is installed for the real app', () => {
   // `import.meta.glob` (the repo's source-scan idiom — see `theme/focus-visible.spec.tsx`) rather
   // than a raw path import, which `@nx/enforce-module-boundaries` rejects.
-  const SOURCES = import.meta.glob(['/src/main.tsx', '/src/app/shared/theme/theme.ts'], {
-    query: '?raw',
-    import: 'default',
-    eager: true,
-  }) as Record<string, string>;
+  const SOURCES = import.meta.glob(
+    [
+      '/src/main.tsx',
+      '/src/prebootstrap.ts',
+      '/src/mountApp.tsx',
+      '/src/app/shared/theme/theme.ts',
+    ],
+    {
+      query: '?raw',
+      import: 'default',
+      eager: true,
+    },
+  ) as Record<string, string>;
 
   it('the scan is not vacuous', () => {
     expect(Object.keys(SOURCES).sort()).toEqual([
       '/src/app/shared/theme/theme.ts',
       '/src/main.tsx',
+      '/src/mountApp.tsx',
+      '/src/prebootstrap.ts',
     ]);
   });
 
-  it('main.tsx installs the handoff before rendering', () => {
-    expect(SOURCES['/src/main.tsx']).toContain('installModalFocusHandoff()');
+  it('main initializes the workspace before dynamically mounting the app', () => {
+    const source = SOURCES['/src/main.tsx'];
+    const prebootstrapImport = source.indexOf("from './prebootstrap'");
+    const initialize = source.indexOf('initializeDemoWorkspace()');
+    const mountImport = source.indexOf("await import('./mountApp')");
+    const mountCall = source.indexOf('mountApp()');
+    expect(prebootstrapImport).toBeGreaterThanOrEqual(0);
+    expect(initialize).toBeGreaterThan(prebootstrapImport);
+    expect(mountImport).toBeGreaterThan(initialize);
+    expect(mountCall).toBeGreaterThan(mountImport);
+    expect(SOURCES['/src/prebootstrap.ts']).toContain("from '@convexa/api'");
+  });
+
+  it('mountApp installs the handoff before createRoot and render', () => {
+    const source = SOURCES['/src/mountApp.tsx'];
+    const install = source.indexOf('installModalFocusHandoff()');
+    const createRoot = source.indexOf('ReactDOM.createRoot(');
+    const render = source.indexOf('root.render(');
+    expect(install).toBeGreaterThanOrEqual(0);
+    expect(createRoot).toBeGreaterThan(install);
+    expect(render).toBeGreaterThan(createRoot);
   });
 
   it('the theme stands FocusTrap’s mis-ordered restore down (the other half of the pair)', () => {

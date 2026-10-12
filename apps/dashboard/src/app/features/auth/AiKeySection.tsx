@@ -7,6 +7,7 @@ import { typographyTokens } from '@/shared/theme/tokens';
 import {
   AuthError,
   BYO_PROVIDERS,
+  dataMode,
   disconnectGrok,
   getAiKeyStatus,
   GROK_OAUTH_START,
@@ -79,7 +80,7 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
   }, []);
 
   useEffect(() => {
-    if (!auth.authenticated) {
+    if (dataMode === 'demo' || !auth.authenticated) {
       setStatus(null);
       return;
     }
@@ -203,6 +204,16 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
     },
     [auth],
   );
+
+  if (dataMode === 'demo') {
+    return (
+      <Section embedded={embedded}>
+        <Alert severity="info" sx={{ mt: 1 }} data-testid="settings-ai-key-demo-unavailable">
+          AI connections are unavailable in this demo. No key is needed.
+        </Alert>
+      </Section>
+    );
+  }
 
   if (!auth.authenticated) {
     return (

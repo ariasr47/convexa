@@ -1,0 +1,3 @@
+# Keep raw local command output without adding noisy logs to the portfolio source.
+*.log
+dashboard-resolved-baseline.json

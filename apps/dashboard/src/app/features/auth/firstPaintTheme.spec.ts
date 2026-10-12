@@ -5,8 +5,10 @@
  * tokens so the duplicate cannot drift.
  */
 import { palette } from '@/shared/theme/tokens';
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { createServer } from 'vite';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { applyPaintMode, THEME_PAINT_KEY } from './firstPaintTheme';
 import { UIPREFS_KEY, UIPREFS_LEGACY_KEY } from './localPrefs';
@@ -31,6 +33,35 @@ function dashboardRoot(): string {
   throw new Error('dashboard root not found from ' + process.cwd());
 }
 const stylesCss = readFileSync(resolve(dashboardRoot(), 'src', 'styles.css'), 'utf-8');
+async function generatedBootstrap(mode: 'demo' | 'live' = 'live') {
+  const previous = process.env.VITE_DATA_MODE;
+  process.env.VITE_DATA_MODE = mode;
+  const server = await createServer({
+    configFile: resolve(dashboardRoot(), 'vite.config.mts'),
+    root: dashboardRoot(),
+    mode: 'production',
+    appType: 'custom',
+    server: { host: '127.0.0.1', port: 0 },
+  });
+  try {
+    await server.listen();
+    const html = await server.transformIndexHtml('/', indexHtml);
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+    const script = parsed.querySelector('script[src*="convexa-bootstrap-"]');
+    const src = script?.getAttribute('src');
+    if (!script || !src) throw new Error('missing external blocking bootstrap script');
+    const address = server.httpServer?.address();
+    if (!address || typeof address === 'string') throw new Error('missing Vite server address');
+    const response = await fetch(`http://127.0.0.1:${address.port}${src}`);
+    if (!response.ok) throw new Error(`bootstrap request failed: ${response.status}`);
+    expect(response.headers.get('content-type')).toContain('javascript');
+    return { html, script, src, body: await response.text() };
+  } finally {
+    await server.close();
+    if (previous == null) delete process.env.VITE_DATA_MODE;
+    else process.env.VITE_DATA_MODE = previous;
+  }
+}
 
 const INK = palette.dark.background.default;
 const PAPER = palette.light.background.default;
@@ -59,21 +90,27 @@ describe('index.html blocking script is pinned to the module', () => {
     expect(m[1]).toBe(INK);
   });
 
-  it('a non-module script runs BEFORE the React bundle and names the same keys + canvases', () => {
-    const blocking = indexHtml.match(/<script>([\s\S]*?)<\/script>/);
-    if (!blocking)
-      throw new Error('index.html must carry a blocking (no type=module) first-paint script');
-    const body = blocking[1];
+  it('a Vite-generated blocking bootstrap runs BEFORE the React bundle and names the same keys + canvases', async () => {
+    const { html, script, src, body } = await generatedBootstrap('live');
+    expect(script.hasAttribute('type')).toBe(false);
+    expect(script.hasAttribute('async')).toBe(false);
+    expect(script.hasAttribute('defer')).toBe(false);
+    expect(script.textContent).toBe('');
+    const hash = createHash('sha256').update(body).digest('hex').slice(0, 16);
+    expect(src).toBe(`/assets/convexa-bootstrap-${hash}.js`);
+    expect((await generatedBootstrap('demo')).src).not.toBe(src);
+    expect(html).not.toContain('__CONVEXA_BOOT__');
     expect(body).toContain(THEME_PAINT_KEY);
     expect(body).toContain(UIPREFS_KEY);
     expect(body).toContain(UIPREFS_LEGACY_KEY);
     expect(body).toContain(INK);
     expect(body).toContain(PAPER);
     expect(body).toContain('data-theme');
-    const blockingIdx = indexHtml.indexOf('<script>');
-    const moduleIdx = indexHtml.indexOf('type="module"');
-    expect(blockingIdx).toBeGreaterThan(-1);
-    expect(blockingIdx).toBeLessThan(moduleIdx);
+    expect(body).toContain('__CONVEXA_BOOT__');
+    const blockingIdx = html.indexOf(script.outerHTML);
+    expect(blockingIdx).toBeGreaterThan(html.indexOf('<meta name="theme-color"'));
+    expect(blockingIdx).toBeLessThan(html.indexOf('</head>'));
+    expect(html).toContain('type="module"');
   });
 });
 
@@ -93,27 +130,26 @@ describe('index.html blocking script actually paints (jsdom eval)', () => {
     vi.unstubAllGlobals();
   });
 
-  function runBoot(): void {
-    const blocking = indexHtml.match(/<script>([\s\S]*?)<\/script>/);
-    if (!blocking) throw new Error('missing blocking script');
+  async function runBoot(mode: 'demo' | 'live' = 'live'): Promise<void> {
+    const { body } = await generatedBootstrap(mode);
     // The boot IIFE is first-paint code; eval is the only way to exercise the duplicate.
-    eval(blocking[1]);
+    eval(body);
   }
 
-  it('light uiprefs → data-theme=light and the paper theme-color', () => {
+  it('light uiprefs → data-theme=light and the paper theme-color', async () => {
     localStorage.setItem(UIPREFS_KEY, JSON.stringify({ schema_version: 1, theme: 'light' }));
-    runBoot();
+    await runBoot();
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
     expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(PAPER);
   });
 
-  it('no storage → stays dark (does not rewrite the static meta to light)', () => {
-    runBoot();
+  it('no storage → stays dark (does not rewrite the static meta to light)', async () => {
+    await runBoot();
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(INK);
   });
 
-  it('system + prefers-color-scheme: light → light', () => {
+  it('system + prefers-color-scheme: light → light', async () => {
     vi.stubGlobal(
       'matchMedia',
       vi.fn((q: string) => ({
@@ -128,8 +164,16 @@ describe('index.html blocking script actually paints (jsdom eval)', () => {
       })),
     );
     localStorage.setItem(UIPREFS_KEY, JSON.stringify({ theme: 'system' }));
-    runBoot();
+    await runBoot();
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+  });
+
+  it('demo first paint reads the demo namespace and ignores conflicting live preferences', async () => {
+    localStorage.setItem('convexa.demo.v1.convexa.uiprefs.v1', JSON.stringify({ theme: 'light' }));
+    localStorage.setItem('convexa.uiprefs.v1', JSON.stringify({ theme: 'dark' }));
+    await runBoot('demo');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    expect(localStorage.getItem('convexa.theme-paint')).toBeNull();
   });
 });
 

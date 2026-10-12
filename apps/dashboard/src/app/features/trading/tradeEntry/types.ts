@@ -6,6 +6,7 @@ import type { Trigger } from '@/features/trading/orders/types';
 import type { InstrumentKind, LegSide } from '@/features/trading/positions/leg';
 import type { LegInput } from '@/features/trading/positions/usePortfolio';
 import type { OptionRight } from '@convexa/api';
+import { dataMode, demoNowMs } from '@convexa/api';
 
 /** Fill mode — how the entry price is decided. Local dialog state only (no store / lifecycle). */
 export type FillMode = 'manual' | 'market' | 'limit';
@@ -118,26 +119,51 @@ export interface OrderEntrySubmit extends SubmitBase, OrderContract {
 }
 
 /** D3 default: min(now + 7 days, contract expiration), as a YYYY-MM-DD local date. */
-export function defaultGoodTil(expiration: string, now: Date = new Date()): string {
-  const plus7 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
-  const y = plus7.getFullYear();
-  const m = String(plus7.getMonth() + 1).padStart(2, '0');
-  const d = String(plus7.getDate()).padStart(2, '0');
+export function defaultGoodTil(
+  expiration: string,
+  now: Date = new Date(dataMode === 'demo' ? demoNowMs() : Date.now()),
+): string {
+  const y0 = dataMode === 'demo' ? now.getUTCFullYear() : now.getFullYear();
+  const m0 = dataMode === 'demo' ? now.getUTCMonth() : now.getMonth();
+  const d0 = dataMode === 'demo' ? now.getUTCDate() : now.getDate();
+  const plus7 = dataMode === 'demo' ? new Date(Date.UTC(y0, m0, d0 + 7)) : new Date(y0, m0, d0 + 7);
+  const y = dataMode === 'demo' ? plus7.getUTCFullYear() : plus7.getFullYear();
+  const m = String((dataMode === 'demo' ? plus7.getUTCMonth() : plus7.getMonth()) + 1).padStart(
+    2,
+    '0',
+  );
+  const d = String(dataMode === 'demo' ? plus7.getUTCDate() : plus7.getDate()).padStart(2, '0');
   const iso = `${y}-${m}-${d}`;
   return expiration && iso > expiration ? expiration : iso;
 }
 
 /** Local YYYY-MM-DD for "today" (the good-til lower bound). */
-export function todayIso(now: Date = new Date()): string {
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
+export function todayIso(
+  now: Date = new Date(dataMode === 'demo' ? demoNowMs() : Date.now()),
+): string {
+  const y = dataMode === 'demo' ? now.getUTCFullYear() : now.getFullYear();
+  const m = String((dataMode === 'demo' ? now.getUTCMonth() : now.getMonth()) + 1).padStart(2, '0');
+  const d = String(dataMode === 'demo' ? now.getUTCDate() : now.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
 
 /** End-of-day ISO instant for a YYYY-MM-DD good-til date (the durable `expires_at`). */
 export function goodTilToExpiresAt(date: string): string {
   const [y, m, d] = date.split('-').map(Number);
+  if (dataMode === 'demo') {
+    const target = Date.UTC(y, m - 1, d, 23, 59, 59, 999);
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      timeZoneName: 'shortOffset',
+      hour: '2-digit',
+    }).formatToParts(target);
+    const raw = parts.find((part) => part.type === 'timeZoneName')?.value ?? 'GMT-5';
+    const match = raw.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+    const offset = match
+      ? (match[1] === '+' ? 1 : -1) * (Number(match[2]) * 60 + Number(match[3] ?? 0))
+      : -300;
+    return new Date(target - offset * 60_000).toISOString();
+  }
   return new Date(y, m - 1, d, 23, 59, 59, 999).toISOString();
 }
 

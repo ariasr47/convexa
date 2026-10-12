@@ -75,6 +75,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
 
   const [rec, setRec] = useState<RecResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [requestFailed, setRequestFailed] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
 
   // Last request shape, so Retry repeats it verbatim (same persona / override).
@@ -154,6 +155,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
   useEffect(() => {
     setRec(null);
     setLoading(false);
+    setRequestFailed(false);
     setStatusReady(false);
     return refreshStatus();
   }, [ticker, refreshStatus]);
@@ -174,6 +176,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
       const personaName = reqOpts.personaName ?? o.personaName;
       lastReq.current = { ...reqOpts, personaId, personaName };
       setLoading(true);
+      setRequestFailed(false);
       try {
         const openPositions = o.openPositions?.();
         const res = await requestRecommendation(ticker, {
@@ -192,8 +195,10 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
           ...(openPositions ? { open_positions: openPositions } : {}),
         });
         setRec(res);
+        setRequestFailed(false);
         applyGating(res.gate, res.cap);
       } catch (err) {
+        setRequestFailed(true);
         // user-accounts (D6f): an AUTH-class outcome (403 auth_required / 503 auth_unavailable) is the
         // OUTERMOST gate — rethrow so the caller's auth gate shows the sign-in / "couldn't reach" prompt
         // and NEVER ai-rec's `unavailable`/cooldown/cap. Reset loading first so the panel re-renders the
@@ -274,6 +279,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
     // the pinned artifact
     rec,
     loading,
+    requestFailed,
     stale,
     // actions
     request,

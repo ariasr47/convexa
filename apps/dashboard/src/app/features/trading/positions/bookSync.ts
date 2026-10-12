@@ -2,11 +2,12 @@
  * Multi-device book sync — GET/PUT /api/book when signed in.
  * Local localStorage remains the working cache; server is latest-wins by updated_at.
  */
-import { getBook, putBook } from '@convexa/api';
+import { dataMode, getBook, putBook } from '@convexa/api';
 import { exportBookBlob, importBookBlobIfNewer, localBookTouchAt } from './store';
 
 /** Pull server book after login; adopt if newer/nonempty. */
 export async function pullServerBook(): Promise<void> {
+  if (dataMode === 'demo') return;
   try {
     const env = await getBook();
     if (!env.blob || typeof env.blob !== 'object') return;
@@ -20,6 +21,7 @@ export async function pullServerBook(): Promise<void> {
 
 /** Push local book after a durable write (debounced by store). */
 export async function pushLocalBook(): Promise<void> {
+  if (dataMode === 'demo') return;
   try {
     const blob = exportBookBlob();
     const updated_at = localBookTouchAt() || Date.now() / 1000;

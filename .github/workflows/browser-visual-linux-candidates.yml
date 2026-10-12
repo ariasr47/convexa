@@ -24,20 +24,89 @@ jobs:
         with:
           ref: ${{ inputs.source_revision }}
           persist-credentials: false
-          fetch-depth: 1
+          fetch-depth: 0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version-file: .nvmrc
           cache: npm
+      # The failed source predates its authorization. Restore only the receipt and
+      # hash-bound evidence from the dispatch ref; build exactly source_revision.
+      - name: Restore source-bound authorization evidence
+        env:
+          AUTHORIZATION_PATH: ${{ inputs.authorization_path }}
+          AUTHORIZATION_REVISION: ${{ github.sha }}
+          EXPECTED_SOURCE_REVISION: ${{ inputs.source_revision }}
+        run: node tools/restore-visual-authorization.mjs
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      - name: Build live production dashboard for visual review
+        run: npx nx run @convexa/dashboard:build:production
+        env:
+          NODE_ENV: production
+          VITE_DATA_MODE: live
       - name: Generate authorized Linux candidates
-        run: npm run browser:visual:update -- --authorization "${{ inputs.authorization_path }}"
+        run: npm run browser:visual:update -- --authorization "$AUTHORIZATION_PATH"
+        env:
+          AUTHORIZATION_PATH: ${{ inputs.authorization_path }}
+          BROWSER_QUALITY_PREBUILD_STATUS: pass
+          CI: true
+          NODE_ENV: production
+          VITE_DATA_MODE: live
+      - name: Resolve authorized source revision
+        env:
+          AUTHORIZATION_PATH: ${{ inputs.authorization_path }}
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import path from "node:path";
+            const relative = process.env.AUTHORIZATION_PATH;
+            if (typeof relative !== "string" || relative.includes("\\") || path.isAbsolute(relative) ||
+                !relative.startsWith("apps/dashboard-e2e/visual-review/authorizations/")) {
+              throw new Error("invalid authorization path");
+            }
+            const root = process.cwd();
+            const file = path.resolve(root, relative);
+            if (!file.startsWith(`${root}${path.sep}`)) throw new Error("authorization path escapes repository");
+            const authorization = JSON.parse(fs.readFileSync(file, "utf8"));
+            if (!/^[a-f0-9]{40}$/.test(authorization.source_revision ?? "")) {
+              throw new Error("invalid authorization source revision");
+            }
+            fs.appendFileSync(process.env.GITHUB_ENV, `BROWSER_QUALITY_SOURCE_REVISION=${authorization.source_revision}\n`);
+          '
+      - name: Compare Linux candidates (run 1)
+        run: |
+          status=0
+          npm run browser:visual || status=$?
+          mkdir -p apps/dashboard-e2e/test-output/visual-review-stability/run-1
+          cp -a apps/dashboard-e2e/test-output/playwright/visual/. apps/dashboard-e2e/test-output/visual-review-stability/run-1/
+          exit "$status"
+        env:
+          BROWSER_QUALITY_PREBUILD_STATUS: pass
+          BROWSER_QUALITY_RUN_ID: linux-candidate-${{ github.run_id }}-${{ github.run_attempt }}-stability-1
+          CI: true
+          NODE_ENV: production
+          VITE_DATA_MODE: live
+      - name: Compare Linux candidates (run 2)
+        run: |
+          status=0
+          npm run browser:visual || status=$?
+          mkdir -p apps/dashboard-e2e/test-output/visual-review-stability/run-2
+          cp -a apps/dashboard-e2e/test-output/playwright/visual/. apps/dashboard-e2e/test-output/visual-review-stability/run-2/
+          exit "$status"
+        env:
+          BROWSER_QUALITY_PREBUILD_STATUS: pass
+          BROWSER_QUALITY_RUN_ID: linux-candidate-${{ github.run_id }}-${{ github.run_attempt }}-stability-2
+          CI: true
+          NODE_ENV: production
+          VITE_DATA_MODE: live
       - name: Upload Linux candidate set
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: browser-visual-linux-candidates
           path: |
             apps/dashboard-e2e/src/quality/snapshots/linux/**/*.png
             apps/dashboard-e2e/visual-review/candidate-sets/*.json
+            apps/dashboard-e2e/test-output/visual-review-stability/run-1/**
+            apps/dashboard-e2e/test-output/visual-review-stability/run-2/**
           if-no-files-found: error

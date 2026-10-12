@@ -9,7 +9,7 @@
  * would break per-account isolation, AC-F2).
  */
 import { resolveDurable } from '@/shared/lib/durable/resolveDurable';
-import type { ThemePref } from '@convexa/api';
+import { dataMode, demoStorageKey, type ThemePref } from '@convexa/api';
 import { SETTINGS_DEFAULTS } from './copy';
 
 const KEY = 'convexa.uiprefs.v1';
@@ -29,22 +29,58 @@ const empty = (): PersistShape => ({
 });
 
 let memory: PersistShape | null = null;
+let faulted = false;
 
 function read(): PersistShape {
   if (memory) return memory;
   try {
-    const raw = resolveDurable(KEY, LEGACY_KEY);
-    memory = raw ? { ...empty(), ...(JSON.parse(raw) as PersistShape) } : empty();
+    const raw =
+      dataMode === 'demo'
+        ? localStorage.getItem(demoStorageKey(KEY))
+        : resolveDurable(demoStorageKey(KEY), demoStorageKey(LEGACY_KEY));
+    if (raw == null) {
+      memory = empty();
+      faulted = false;
+    } else {
+      const parsed: unknown = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+        throw new Error('malformed local preferences');
+      const value = parsed as Record<string, unknown>;
+      if (
+        ('schema_version' in value && value.schema_version !== SCHEMA_VERSION) ||
+        ('theme' in value &&
+          value.theme !== 'dark' &&
+          value.theme !== 'light' &&
+          value.theme !== 'system') ||
+        ('default_ticker' in value &&
+          value.default_ticker !== null &&
+          typeof value.default_ticker !== 'string')
+      )
+        throw new Error('malformed local preferences');
+      memory = {
+        ...empty(),
+        ...(value.schema_version === undefined
+          ? {}
+          : { schema_version: value.schema_version as number }),
+        ...(value.theme === undefined ? {} : { theme: value.theme as ThemePref }),
+        ...(value.default_ticker === undefined
+          ? {}
+          : { default_ticker: value.default_ticker as string | null }),
+      };
+      faulted = false;
+    }
   } catch {
     memory = empty();
+    faulted = true;
   }
   return memory;
 }
 
 function write(s: PersistShape) {
   memory = s;
+  if (faulted) return;
   try {
-    localStorage.setItem(KEY, JSON.stringify(s));
+    localStorage.setItem(demoStorageKey(KEY), JSON.stringify(s));
   } catch {
     /* in-memory only */
   }
@@ -67,6 +103,7 @@ export function saveLocalDefaultTicker(t: string | null) {
 /** Test seam — reset the in-memory cache (the persisted layer is cleared by the test's localStorage). */
 export function __resetLocalPrefs() {
   memory = null;
+  faulted = false;
 }
 
 export const UIPREFS_KEY = KEY;

@@ -1,5 +1,7 @@
 import createClient from 'openapi-fetch';
 import type { paths } from '../generated/schema';
+import { dataMode } from './demo/mode';
+import { demoFetch } from './demo/transport';
 
 /** The one ordinary-HTTP transport for the public API facade. */
 export const http = createClient<paths>({
@@ -9,6 +11,7 @@ export const http = createClient<paths>({
   credentials: 'same-origin',
   // Preserve the facade's observable fetch seam while openapi-fetch owns request typing.
   fetch: async (request) => {
+    if (dataMode === 'demo') return demoFetch(request);
     const headers: Record<string, string> = {};
     request.headers.forEach((value, key) => {
       headers[key] = value;

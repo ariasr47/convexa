@@ -1,0 +1,29 @@
+{
+  "recorded_at": "2026-10-08T06:16:00.813Z",
+  "reviewer": "codex-independent-linux-visual-review",
+  "source_revision": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
+  "acceptance_validation": {
+    "command": "node apps/dashboard-e2e/tools/validate-acceptance.mjs --acceptance apps/dashboard-e2e/visual-review/acceptances/44894ccd5fa8e8e986c66bd3e6c4841d.json",
+    "native_exit": 0,
+    "output": "[acceptance-valid] 44894ccd5fa8e8e986c66bd3e6c4841d — externally authored decision verified"
+  },
+  "stability_validation": {
+    "entrypoint": ".spire/tmp/record-linux-stability.mjs",
+    "validator": "apps/dashboard-e2e/tools/lib/visual-review.mjs#validateStability",
+    "native_exit": 0,
+    "output": {
+      "state": "stability_clean",
+      "runIds": [
+        "linux-candidate-37735626254-1-stability-1",
+        "linux-candidate-37735626254-1-stability-2"
+      ],
+      "images": 6,
+      "attachmentsVerified": 12,
+      "rawSourcePatchBytesVerified": 422050
+    }
+  },
+  "supplemental_check_correction": {
+    "first_native_exit": 1,
+    "reason": "Windows worktree manifest CRLF byte hash differs from Linux checkout. Verified exact Git blob at source S instead; content is identical, no manifest or receipt rewritten."
+  }
+}

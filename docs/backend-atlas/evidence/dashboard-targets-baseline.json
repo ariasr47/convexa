@@ -1,0 +1,130 @@
+{
+  "sourceRevision": "8932fc1176543eff3fa826de6924e12ec52f3310",
+  "command": "npm exec --no -- nx show project @convexa/dashboard --json",
+  "exitCode": 0,
+  "project": "@convexa/dashboard",
+  "root": "apps/dashboard",
+  "targets": {
+    "build": {
+      "cache": true,
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "production",
+        "^production"
+      ],
+      "outputs": [
+        "{projectRoot}/dist"
+      ],
+      "metadata": {
+        "technologies": [
+          "vite"
+        ],
+        "description": "Run Vite build",
+        "help": {
+          "command": "npx vite build --help",
+          "example": {
+            "options": {
+              "sourcemap": true,
+              "manifest": "manifest.json"
+            }
+          }
+        }
+      },
+      "syncGenerators": [
+        "@nx/js:typescript-sync"
+      ],
+      "executor": "nx:run-commands",
+      "defaultConfiguration": "production",
+      "options": {
+        "cwd": "apps/dashboard",
+        "command": "vite build"
+      },
+      "configurations": {
+        "production": {
+          "command": "vite build --mode production && node ../../tools/archive-sourcemaps.mjs && node ../../tools/precompress-dashboard.mjs"
+        },
+        "development": {
+          "command": "vite build --mode development"
+        }
+      },
+      "parallelism": true
+    },
+    "test": {
+      "cache": true,
+      "inputs": [
+        "default",
+        "^production",
+        {
+          "externalDependencies": [
+            "vitest"
+          ]
+        }
+      ],
+      "outputs": [
+        "{projectRoot}/test-output/vitest/coverage"
+      ],
+      "metadata": {
+        "technologies": [
+          "vitest"
+        ],
+        "description": "Run Vitest tests",
+        "help": {
+          "command": "npx vitest --help",
+          "example": {
+            "options": {
+              "bail": 1,
+              "coverage": true
+            }
+          }
+        }
+      },
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        "^build"
+      ],
+      "options": {
+        "cwd": "apps/dashboard",
+        "command": "vitest"
+      },
+      "configurations": {},
+      "parallelism": true
+    },
+    "typecheck": {
+      "cache": true,
+      "inputs": [
+        "production",
+        "^production"
+      ],
+      "metadata": {
+        "technologies": [
+          "typescript",
+          "typescript"
+        ],
+        "description": "Runs type-checking for the project.",
+        "help": {
+          "command": "npx tsc --build --help",
+          "example": {
+            "args": [
+              "--force"
+            ]
+          }
+        }
+      },
+      "dependsOn": [
+        "^build"
+      ],
+      "syncGenerators": [
+        "@nx/js:typescript-sync"
+      ],
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/dashboard",
+        "command": "tsc --build --emitDeclarationOnly"
+      },
+      "configurations": {},
+      "parallelism": true
+    }
+  }
+}

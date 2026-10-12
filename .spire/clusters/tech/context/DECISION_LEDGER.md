@@ -134,6 +134,12 @@ feature (3 instances within it). **Re-assess at the next vendor-SDK integration*
 be exactly it.
 
 ## Watch list (keys logged, not yet at threshold)
+- `demo-live-boundaries-are-disjoint`: 1 binding decision (`portfolio-demo-platform`, active VERIFY).
+  Demo composition, transports and browser keys stay isolated; unsupported operations refuse locally.
+- `public-demo-is-authored-synthetic`: 1 binding decision (`portfolio-demo-platform`, active VERIFY).
+  Public samples are authored independently of owner records; display and exports retain sample provenance.
+- `static-preview-does-not-migrate-backend`: 1 binding decision (`portfolio-demo-platform`, active VERIFY).
+  Static Pages preview scope excludes Railway migration and production data; no backend execution is implied.
 - _(`route-growth-repins-api-artifact-oracle` and `a11y-gate-scans-both-schemes-and-overlays` GRADUATED
   2026-09-24, each with 2 binding features. See Promoted canon above.)_
 - `vendor-absence-is-a-named-state`: 1 binding (no-vendor-production-posture, 2026-09-24). A data source
@@ -1245,3 +1251,7 @@ be exactly it.
 | `vendor-absence-is-a-named-state` | no-vendor-production-posture | C | A data source that is absent by decision, such as a cancelled vendor, is a NAMED state and not a fault. The process makes zero contact with it (`MARKET_DATA_MODE=paused`: no warmer, sweep, socket or REST; boot needs no key). Every consumer gets one typed reply (`503` with `code: "market_data_paused"`), and the UI names it calmly ("Market data is paused.", info tone). There is never a transient-failure message, a Retry, or a retry loop. Owner plan A 2026-09-23; `llm_error` for this case was a GATE Q FAIL (AC-3) | yes |
 | `route-growth-repins-api-artifact-oracle` | no-vendor-production-posture | B | Instance: B5's `AppErrorBody.code` plus the scan and health fields, and amendment 1's POST summary, each regenerated the OpenAPI artifacts through `npm run api:contract:generate`. Each re-pinned the capacity artifact-oracle hashes (`apps/api/src/capacity/identity.rs` and the fixture manifest) in the same commit, with a dated comment (`9a5748e2`, `117b7c72`) | yes |
 | `a11y-gate-scans-both-schemes-and-overlays` | no-vendor-production-posture | Q | Instance: the new paused-desk state got its own a11y scans in both schemes at 393 and 1280 (A11Y-25..28, 24 → 28 scans, zero waivers). The new light 1280 `/ticker` scan found a pre-existing failure, the light top-nav active link at 3.23:1, which was fixed in `6b60407a` rather than waived | yes |
+
+| `demo-live-boundaries-are-disjoint` | portfolio-demo-platform | C | Public demo selection occurs before network/store/first-paint composition; every transport and current/legacy browser key is isolated, and an unsupported operation refuses locally without paid fallback. | yes |
+| `public-demo-is-authored-synthetic` | portfolio-demo-platform | C | Public sample fixtures have independent synthetic provenance; captured owner broker/account fixtures never enter a demo build, synthetic frames never claim genuine live delivery, and exports retain scenario origin. | yes |
+| `static-preview-does-not-migrate-backend` | portfolio-demo-platform | C | This feature deploys only its static Pages preview; the existing Railway migration hook and production data remain outside authorization. A preview/local result is not evidence of backend runtime execution. | yes |

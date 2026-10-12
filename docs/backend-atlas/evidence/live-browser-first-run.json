@@ -1,0 +1,45 @@
+{
+  "scope": "First local live browser-quality run on uncommitted portfolio-demo implementation",
+  "observedAt": "2026-10-08T04:00:04.9350494Z",
+  "nativeExit": 1,
+  "command": "VITE_DATA_MODE=live npm run browser:quality",
+  "log": ".spire/tmp/portfolio-live-browser-quality.log",
+  "gates": {
+    "visual": {
+      "selected": 6,
+      "executed": 6,
+      "passed": 4,
+      "failed": 2,
+      "status": "fail",
+      "runId": "462f3612-c4a4-4d1a-b420-7c2396321771",
+      "sourceRevision": "b45c5f56d6a689009bdedae085f4fbc0d1a77ff4"
+    },
+    "chromium": {
+      "selected": 128,
+      "executed": 128,
+      "passed": 128,
+      "failed": 0,
+      "status": "pass",
+      "runId": "462f3612-c4a4-4d1a-b420-7c2396321771",
+      "sourceRevision": "b45c5f56d6a689009bdedae085f4fbc0d1a77ff4"
+    },
+    "accessibility": {
+      "selected": 35,
+      "executed": 35,
+      "passed": 33,
+      "failed": 2,
+      "status": "fail",
+      "runId": "462f3612-c4a4-4d1a-b420-7c2396321771",
+      "sourceRevision": "b45c5f56d6a689009bdedae085f4fbc0d1a77ff4"
+    },
+    "compatibility": {
+      "selected": 15,
+      "executed": 15,
+      "passed": 12,
+      "failed": 3,
+      "status": "fail",
+      "runId": "462f3612-c4a4-4d1a-b420-7c2396321771",
+      "sourceRevision": "b45c5f56d6a689009bdedae085f4fbc0d1a77ff4"
+    }
+  }
+}

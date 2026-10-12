@@ -2,6 +2,7 @@
  * Durable client store for alert rules + recent events (localStorage).
  * Server does not own alerts yet — multi-device sync is a later slice.
  */
+import { demoStorageKey } from '@convexa/api';
 import {
   ALERTS_KEY,
   ALERTS_MAX_EVENTS,
@@ -68,7 +69,7 @@ function persist(state: AlertsState) {
   // in-memory update and the notify() below still happen, so the current session is not wedged.
   if (!readFaulted) {
     try {
-      localStorage.setItem(ALERTS_KEY, JSON.stringify(state));
+      localStorage.setItem(demoStorageKey(ALERTS_KEY), JSON.stringify(state));
     } catch {
       /* quota / private mode — keep memory only */
     }
@@ -79,7 +80,7 @@ function persist(state: AlertsState) {
 export function readAlerts(): AlertsState {
   if (memory) return memory;
   try {
-    const raw = localStorage.getItem(ALERTS_KEY);
+    const raw = localStorage.getItem(demoStorageKey(ALERTS_KEY));
     if (!raw) {
       memory = empty();
       return memory;

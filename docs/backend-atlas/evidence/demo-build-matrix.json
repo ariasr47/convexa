@@ -1,0 +1,157 @@
+{
+  "scope": "Local production matrix on the frozen worktree after the explicit help activation repair, before final source commit. Every step is cache-enabled; status records the observed miss or hit, without interpreting a mode switch as a cold build. The repaired LIVE artifact may already be cached by its focused browser verification. No cache was cleared or forced off. Native exits verified; Nx task identities read independently from its local history database. This is not hosted or CI evidence.",
+  "productionEnvironment": "NODE_ENV=production pinned in Nx production configuration",
+  "timingContext": "The initial demo build overlapped the repository format check. These are observed wall times, not an isolated performance comparison; Nx reported 6.8 seconds for that build target.",
+  "steps": [
+    {
+      "label": "activation-matrix-demo-initial",
+      "mode": "demo",
+      "buildWallSeconds": 24.1205477,
+      "nativeBuildExit": 0,
+      "receipt": {
+        "mode": "demo",
+        "scenarioId": "portfolio-2026-10-07-v1"
+      },
+      "routes": {
+        "version": 1,
+        "include": [
+          "/*"
+        ],
+        "exclude": [
+          "/*"
+        ]
+      },
+      "publicDigest": "38b28d7f1fe2be1139ad1196c70d718e6f6bc1ea021685c7f2f24b101569dd56",
+      "privateDigest": "522951206e34ba385a1347347d9efccad4316f5e40db61dff822595ad9882dd0",
+      "publicFileCount": 199,
+      "privateFileCount": 47,
+      "hash": "103667181284566249",
+      "status": "success",
+      "code": 0,
+      "start": 1791443719079,
+      "end": 1791443725717
+    },
+    {
+      "label": "activation-matrix-demo-hit",
+      "mode": "demo",
+      "buildWallSeconds": 5.9061708,
+      "nativeBuildExit": 0,
+      "receipt": {
+        "mode": "demo",
+        "scenarioId": "portfolio-2026-10-07-v1"
+      },
+      "routes": {
+        "version": 1,
+        "include": [
+          "/*"
+        ],
+        "exclude": [
+          "/*"
+        ]
+      },
+      "publicDigest": "38b28d7f1fe2be1139ad1196c70d718e6f6bc1ea021685c7f2f24b101569dd56",
+      "privateDigest": "522951206e34ba385a1347347d9efccad4316f5e40db61dff822595ad9882dd0",
+      "publicFileCount": 199,
+      "privateFileCount": 47,
+      "hash": "103667181284566249",
+      "status": "local-cache",
+      "code": 0,
+      "start": 1791443731785,
+      "end": 1791443731970
+    },
+    {
+      "label": "activation-matrix-live-switch",
+      "mode": "live",
+      "buildWallSeconds": 6.2104163,
+      "nativeBuildExit": 0,
+      "receipt": {
+        "mode": "live",
+        "scenarioId": null
+      },
+      "routes": {
+        "version": 1,
+        "include": [
+          "/api/*"
+        ],
+        "exclude": []
+      },
+      "publicDigest": "404320aa2fa1ffc1199343bd7dbc31cd0bd1395beea89e447ee4fe961eb7ceca",
+      "privateDigest": "522951206e34ba385a1347347d9efccad4316f5e40db61dff822595ad9882dd0",
+      "publicFileCount": 199,
+      "privateFileCount": 47,
+      "hash": "10649328654748830058",
+      "status": "local-cache",
+      "code": 0,
+      "start": 1791443739265,
+      "end": 1791443739489
+    },
+    {
+      "label": "activation-matrix-demo-restore",
+      "mode": "demo",
+      "buildWallSeconds": 6.2488567,
+      "nativeBuildExit": 0,
+      "receipt": {
+        "mode": "demo",
+        "scenarioId": "portfolio-2026-10-07-v1"
+      },
+      "routes": {
+        "version": 1,
+        "include": [
+          "/*"
+        ],
+        "exclude": [
+          "/*"
+        ]
+      },
+      "publicDigest": "38b28d7f1fe2be1139ad1196c70d718e6f6bc1ea021685c7f2f24b101569dd56",
+      "privateDigest": "522951206e34ba385a1347347d9efccad4316f5e40db61dff822595ad9882dd0",
+      "publicFileCount": 199,
+      "privateFileCount": 47,
+      "hash": "103667181284566249",
+      "status": "local-cache",
+      "code": 0,
+      "start": 1791443746600,
+      "end": 1791443746808
+    }
+  ],
+  "seedAssets": [
+    {
+      "file": "assets/aapl.seed-CPbzu2f5.json",
+      "sha256": "136dd5c82e3b5c1f94a7a14bc529db16f2c98f1b22679d91f88b6e945f668b41"
+    },
+    {
+      "file": "assets/msft.seed-BXt_-qhk.json",
+      "sha256": "c3f179986f0571a1c68590da3bb8bb5ba997ffc48de932e7451c7528fecfe8ff"
+    },
+    {
+      "file": "assets/nvda.seed-4pNkQQcJ.json",
+      "sha256": "0b176728cd2ae59613f94700a5b77d69afb6fbc650ac91bc2f982bee20bd1a8d"
+    },
+    {
+      "file": "assets/qqq.seed-Cq4kOYsO.json",
+      "sha256": "f4c7d5935a6479d3f44743fb8dd6fa9941462e1412dbcac697b5353e6b0304fa"
+    },
+    {
+      "file": "assets/spy.seed-DipWTJ8X.json",
+      "sha256": "b4faca800b03bb76e17889dca39afe839a03372428db464b8a41218af77042f8"
+    },
+    {
+      "file": "assets/tsla.seed-DoGBGmbo.json",
+      "sha256": "a5ca48f057abecdc21857a4112ad55888547252eccf99a50c5ba74cc016a18e8"
+    }
+  ],
+  "assertions": {
+    "modeSeparatedTaskHashes": true,
+    "demoByteIdenticalAfterLiveRestore": true,
+    "privateMapsRestored": true,
+    "sixCanonicalSeedsIdenticalAcrossModes": true,
+    "noPublicMapsDeclarationsOrBuildInfo": true
+  },
+  "earlierUnchangedGuardEvidence": {
+    "receiptSourceRevision": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
+    "invalidModeRejectedBeforeNx": {
+      "exitCode": 2
+    },
+    "note": "The build-mode guard is unchanged and was not rerun by this matrix; its earlier native result retains that scope."
+  }
+}

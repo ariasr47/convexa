@@ -1,0 +1,54 @@
+{
+  "source_revision": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
+  "baseline_revision": "8932fc1176543eff3fa826de6924e12ec52f3310",
+  "git_diff_argv": [
+    "diff",
+    "--no-ext-diff",
+    "--no-textconv",
+    "--binary",
+    "--full-index",
+    "8932fc1176543eff3fa826de6924e12ec52f3310",
+    "219d73a67b6f7a284172afaa3fc24b1b850e3319",
+    "--",
+    "apps/dashboard",
+    "libs/api",
+    "apps/dashboard-e2e",
+    ":(exclude)apps/dashboard-e2e/visual-review/**",
+    ":(exclude)apps/dashboard-e2e/src/quality/snapshots/**"
+  ],
+  "source_diff_bytes": 422050,
+  "source_diff_sha256": "16a9d640de6320d847dc3d20264c096f49ea0c8c5ee10c1924813ea853d10c7b",
+  "candidate_receipt_sha256": "5ec830133daaa2d12678edd56a0207b4b05a6b954dccc63b8442f4c03238125f",
+  "prior_refs": [
+    {
+      "scenario_id": "landing",
+      "current_sha256": "a869a171559a3fe5e04917324acf4a2f4670d21fce3e7f4bf59168e0f5c756ea",
+      "candidate_sha256": "a869a171559a3fe5e04917324acf4a2f4670d21fce3e7f4bf59168e0f5c756ea"
+    },
+    {
+      "scenario_id": "ticker-desktop",
+      "current_sha256": "5b10208026b62fc8fa86230dc443bf674184fc73dec99bec0f0565b7fb5d914c",
+      "candidate_sha256": "e6e349644c56754be53e27dd366e6b00eac2e670c2b90d1d4751a31df22c7c5e"
+    },
+    {
+      "scenario_id": "ticker-offline-mobile",
+      "current_sha256": "05ec3e4c98ec2216fa958dd4e6e1ef34179e136ff109b069d080f9ff3aba8806",
+      "candidate_sha256": "ba238097ae20e42932a0dbbaf8c42ad60d1a0e9cd7f2952a99a07856abef54d5"
+    },
+    {
+      "scenario_id": "positions-dense",
+      "current_sha256": "d7609f61da0624ed79c9c4e3b580ea291af6e355c406a16e31d7773c9675f687",
+      "candidate_sha256": "d7609f61da0624ed79c9c4e3b580ea291af6e355c406a16e31d7773c9675f687"
+    },
+    {
+      "scenario_id": "scanner-dense",
+      "current_sha256": "09d6edba6ccaff27c5fbc88b4fd46dc5985755c735ce0752c96ab3b08aff2e26",
+      "candidate_sha256": "09d6edba6ccaff27c5fbc88b4fd46dc5985755c735ce0752c96ab3b08aff2e26"
+    },
+    {
+      "scenario_id": "ai-recommendation",
+      "current_sha256": "1aa03cd82b712c913989dadcaa19e5f5f00e70fac253deb100fa5e80556139e4",
+      "candidate_sha256": "1aa03cd82b712c913989dadcaa19e5f5f00e70fac253deb100fa5e80556139e4"
+    }
+  ]
+}

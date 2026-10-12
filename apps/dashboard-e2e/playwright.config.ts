@@ -17,15 +17,14 @@ import { sharedConfig } from './playwright.shared.config';
  * two colour schemes. Adding WebKit/Firefox is a separate decision with its own failures to triage —
  * mixing "migrate" with "widen coverage" makes it impossible to tell a port bug from a real one.
  *
- * The webServer block replaces `cypress.config.ts`'s `webServerCommands.default`; `serve-static`
- * (the built app) is the CI counterpart, matching the previous `ciWebServerCommand`.
+ * The shared webServer block serves the built app over local HTTPS in CI and keeps Vite HTTP
+ * for development. Server readiness and browser navigation inherit the same shared origin.
  */
 
-const PORT = Number(process.env['BROWSER_QUALITY_PORT'] ?? 4200);
-const baseURL = process.env['BASE_URL'] || `http://localhost:${PORT}`;
+const shared = sharedConfig('chromium');
 
 const config = {
-  ...sharedConfig('chromium'),
+  ...shared,
   testDir: './src/e2e',
   testMatch: ['curvature-v2.spec.ts', 'navigation.spec.ts'],
   reporter: [
@@ -42,11 +41,9 @@ const config = {
   // The unit suite runs on the same machine; e2e already gets its own CI step so the browser does
   // not contend with the vitest workers (that contention flaked the unit tests under Cypress).
   use: {
-    ...sharedConfig('chromium').use,
-    baseURL,
-    // The trace viewer is the main practical win of this migration for CI triage: a failed run
-    // carries DOM snapshots, network and console rather than just a stack.
-    trace: 'on-first-retry',
+    ...shared.use,
+    // Preserve the failing attempt itself; a passing retry cannot explain the original failure.
+    trace: 'retain-on-failure',
   },
 
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],

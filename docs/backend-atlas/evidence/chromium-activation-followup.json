@@ -1,0 +1,158 @@
+{
+  "baseline_revision": "2211d829e9315077ca26fedd5a6441580be08c1c",
+  "status": "native_mixed_input_close_repaired_locally_fresh_linux_verification_required",
+  "host_platform": "win32",
+  "scope": "AccessibleHelp.tsx and the existing AC35/U32 helper; no new retained test group, popup, gesture delay, readiness delay, tolerance change or snapshot update.",
+  "linux_counterevidence": {
+    "run_id": "37737797873",
+    "summary": ".spire/tmp/ci-observation-2211d829/chromium/summary.json",
+    "archive_sha256": "44d291f1a7422b46c9c6d8baa09c7d80f80b6bfe892112ad9a9bde6a05f11f66",
+    "passed": 120,
+    "failed": 8,
+    "flaky": 0,
+    "failed_tests": "All four AC35 and all four U32 widths; first attempts and retries failed.",
+    "failure": "After native help.tap(), aria-describedby is null; the help retains its title fallback. Assertion at curvature-v2.spec.ts:535 in baseline2211.",
+    "retained_trace_findings": [
+      "393px AC35 trace11-2: tap dispatch71592.666–71975.409ms; at72128.232ms its correct tooltip _r_39_ is already exiting (opacity0, scale0.75/0.5625), with no aria-describedby on the trigger.",
+      "834px AC35 trace13-2: Trend completed tap/Escape/Tab/blur successfully, then Straddle tap106723.089–106906.815ms; its tooltip _r_3p_ is exiting at106924.100ms. This is not confined to initial page readiness.",
+      "393px U32 trace22-2: off-exchange tap202293.443–202678.847ms; its tooltip _r_46_ is exiting at202757.170ms.",
+      "The latter two traces reuse the same cached trigger DOM node before/input/after/failure (snapshot5/node821 and snapshot5/node869). This contradicts wholesale remount as an explanation but does not prove no detach/reinsert.",
+      "These observed closes precede MUI's1500ms touch-leave delay. The traces have no native event stream that identifies mouseleave versus blur. No test Escape occurs for the failed trigger."
+    ],
+    "environment_comparison": "Linux and local use Playwright1.62.1, Chromium151.0.7922.34 revision1234, hasTouchtrue, isMobilefalse, deviceScaleFactor1, light scheme, en-US. CI served LIVE via HTTPS localhost4210 with ignoreHTTPSErrors; current local probes use HTTPS localhost4251 with the same setting. The earlier local eight-case receipt used HTTP. Linux served the same baseline ui-vcLzamzH.js and mui-CkNSlttA.js as the preserved baseline LIVE snapshot.",
+    "local_https_cpu4_probe": {
+      "report": ".spire/tmp/chromium-touch-2211-cpu4.json",
+      "selected": 1,
+      "passed": 1,
+      "native_exit": 0,
+      "meaning": "HTTPS and slower CPU alone did not reproduce the Linux close on Windows."
+    }
+  },
+  "native_mixed_input_red": {
+    "artifact": ".spire/tmp/chromium-touch-repaired-live-dist",
+    "report": ".spire/tmp/chromium-touch-2211-mixed.json",
+    "events": ".spire/tmp/chromium-touch-2211-mixed-events.json",
+    "probe_source": ".spire/tmp/chromium-touch-2211-probe/diagnostic.spec.ts",
+    "sequence": "Native locator.tap → visible described tooltip → native locator.hover → page.mouse.move(0,0) → require the same help to remain described.",
+    "native_exit": 1,
+    "failed": 1,
+    "retries": 0,
+    "trusted_touch_start_ms": 1086.5,
+    "trusted_touch_end_ms": 1090.5,
+    "click_ms": 1096.6,
+    "tooltip_open_ms": 1102.5,
+    "native_mouseout_to_div_ms": 1215.9,
+    "description_removed_and_exit_started_ms": 1221.4,
+    "focus_remained_on": "About Trend",
+    "target_node_id": 21,
+    "instrumentation": "Passive native capture listeners and DOM MutationObserver only; no timer monkeypatch or paused Playwright clock.",
+    "conclusion": "Reproduces a consistent mouse-exit close mechanism, compatible with the Linux visible state. It does not establish the original Linux event identity."
+  },
+  "mechanism_and_repair": {
+    "mui_source": "node_modules/@mui/material/Tooltip/Tooltip.js:332–360,414–432,511–525; node_modules/@mui/utils/useTimeout/useTimeout.js:21",
+    "mechanism": "MUI mouseover honors ignoreNonTouchEvents; mouseleave does not. Mouseleave and touchend share leaveTimer. A mouseleave can replace the1500ms touchend timeout with the default0ms hover-leave timeout.",
+    "repair": "Completed click/tap sets explicit activation. While activated, disableHoverListener removes trigger and interactive-tooltip hover listeners so later compatibility mouseleave cannot replace the touch-leave timer. onClose also ignores a mouseleave already queued before activation committed. Other close callbacks reset activation and open state, restoring ordinary hover behavior.",
+    "timer_boundary": "The queued-mouseleave guard retains visibility but cannot restore a touchend timer already replaced before listeners were suspended. The native observed post-activation sequence retains natural timeout dismissal; pre-commit timer replacement is not claimed universally impossible or restored.",
+    "preserved": "Same MUI Tooltip, content, aria-labels, describeChild, enterTouchDelay0, stopPropagation on click/focus, styles and layout. Blur, Escape and MUI touchend dismissal remain active. No separate click-away listener or timer added.",
+    "desktop_click_semantics": "Completed mouse or keyboard-generated click also activates retention; pure hover remains transient. Genuine dismissal restores hover listeners."
+  },
+  "repaired_artifact": {
+    "source_binding": "Baseline2211 plus the uncommitted owned files identified below; this repair is not present in baseline2211.",
+    "help_source_sha256": "a04bd78f67917a75e1606672f22c23dd4c378c978c252c92e1c5d2c83e987f11",
+    "curvature_spec_sha256": "06d26c1b42420d4939c54f0a5f25cf692f31d4969ca242adea99da4e93d536e0",
+    "snapshot": ".spire/tmp/chromium-activation-live-dist",
+    "mode": "live",
+    "file_count": 199,
+    "manifest": ".spire/tmp/chromium-activation-live-manifest.json",
+    "manifest_sha256": "73bb34924127ca903a69aa050f37438f3ccce8a703db3eca919caf391a521b1c",
+    "ui_asset": "assets/ui-2q3TwgbZ.js",
+    "ui_asset_sha256": "8c1cb2abe957da6a1a96833f0b80183f7b7cca06ce8ceb5ea595edd330f4e982",
+    "build_command": "node tools/build-dashboard.mjs --mode=live (NX_DAEMON=false NX_NO_CLOUD=true VITE_DATA_MODE=live)",
+    "build_log": ".spire/tmp/chromium-activation-live-build.log",
+    "nx_cache": "0/1",
+    "native_build_exit": 0
+  },
+  "verification": [
+    {
+      "kind": "native_mixed_input_red_to_green_and_dismissal_review",
+      "config": ".spire/tmp/chromium-activation-diagnostic.config.ts",
+      "report": ".spire/tmp/chromium-activation-diagnostic.json",
+      "native_exit": 1,
+      "passed": 3,
+      "failed": 1,
+      "retries": 0,
+      "passing_checks": [
+        "The exact previously failing completed native tap → hover → pointer-exit sequence retains aria-describedby.",
+        "Ordinary native tap + mixed pointer exit retains its tooltip, then existing touchend dismisses it: touchend772.6ms; mouseout915.0ms; description removed2284.8ms =1512.2ms after touchend.",
+        "Hover-only exit dismisses; completed desktop click opens; Escape closes; hover entry/exit works again after dismissal."
+      ],
+      "failed_probe": "Supplementary raw-CDP40ms case did not deliver any About-button input event and never inserted a tooltip; it only scrolled before fixing coordinates. Preserved as a probe failure. Corrected actionability and rerun separately below; no product change between runs."
+    },
+    {
+      "kind": "native_40ms_gesture_touch_away_escape_blur",
+      "report": ".spire/tmp/chromium-activation-40ms-actionable.json",
+      "events": ".spire/tmp/chromium-activation-40ms-actionable-events.json",
+      "native_exit": 0,
+      "passed": 1,
+      "failed": 0,
+      "retries": 0,
+      "probe_correction": "Native help.tap({trial:true}) establishes actionability before reading coordinates; raw CDP then dispatches touchstart, requested40ms gesture duration, touchend.",
+      "requested_touch_hold_ms": 40,
+      "observed_trusted_touch_duration_ms": 82.9,
+      "result": "Tooltip opens. Native touch at viewport2,2 triggers focusout and dismisses it. Subsequent native taps independently open before Escape and blur dismissal."
+    },
+    {
+      "kind": "retained_AC35_U32_cases_with_native_mixed_input",
+      "config": ".spire/tmp/chromium-activation-scoped.config.ts",
+      "report": ".spire/tmp/chromium-activation-scoped.json",
+      "log": ".spire/tmp/chromium-activation-scoped.log",
+      "native_exit": 0,
+      "selected": 8,
+      "passed": 8,
+      "failed": 0,
+      "flaky": 0,
+      "retries": 0,
+      "duration_seconds": 59.4,
+      "site_width_pairs": 44,
+      "checks": "Native tap; trigger-associated tooltip; native hover then mouse exit retains content; Escape; native Shift+Tab/Tab focus; blur. Four AC35 and seven U32 sites at393/834/900/1280. No duplicated permanent suite."
+    },
+    {
+      "kind": "closed_layout_comparison",
+      "baseline_report": ".spire/tmp/chromium-touch-layout-repaired.json",
+      "repaired_report": ".spire/tmp/chromium-activation-diagnostic.json",
+      "identical_values": {
+        "label": "About Trend",
+        "width": 26,
+        "height": 26,
+        "padding": "4px",
+        "fontSize": "18px",
+        "color": "rgb(255, 255, 255)"
+      },
+      "scope": "One measured closed trigger at1280px; source styling and markup are unchanged."
+    },
+    {
+      "kind": "dashboard_typecheck",
+      "command": "node node_modules/nx/dist/bin/nx.js run @convexa/dashboard:typecheck",
+      "log": ".spire/tmp/chromium-activation-dashboard-typecheck.log",
+      "native_exit": 0
+    },
+    {
+      "kind": "full_e2e_typecheck_after_root_G1_edit",
+      "command": "node node_modules/typescript/bin/tsc --noEmit --project apps/dashboard-e2e/tsconfig.json",
+      "log": ".spire/tmp/chromium-activation-e2e-typecheck.log",
+      "native_exit": 0
+    },
+    {
+      "kind": "owned_source_format_and_whitespace",
+      "commands": "Prettier --check AccessibleHelp.tsx curvature-v2.spec.ts; git diff --check for those files",
+      "native_exit": 0,
+      "line_endings": "LF"
+    }
+  ],
+  "remaining_limits": [
+    "Fresh exact-source Linux CI and independent QA remain necessary. Windows green does not reverse the eight Linux failures on2211.",
+    "Neither the original219d synthetic first-failure event nor the2211 Linux native close event has been identified directly. The latter traces show a real premature close, not proof of mouseleave specifically.",
+    "The pre-commit shared-timer replacement edge described above remains a limitation; no extra timer or synthetic-only workaround was added.",
+    "Previous evidence and all earlier LIVE/DEMO snapshots are preserved. No commit or push performed by this lane."
+  ]
+}

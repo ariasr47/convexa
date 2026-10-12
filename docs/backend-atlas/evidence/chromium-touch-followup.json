@@ -1,0 +1,142 @@
+{
+  "baseline_revision": "219d73a67b6f7a284172afaa3fc24b1b850e3319",
+  "repair_source_scope": "The original artifact is from the baseline; repaired checks observe the uncommitted worktree after the focused AccessibleHelp and gesture-test changes. Snapshot paths and native receipts identify each artifact; this is not a claim that the repair existed in the baseline commit.",
+  "host_platform": "win32",
+  "status": "native_touch_repaired_original_linux_flake_unresolved",
+  "build": {
+    "index_sha256": "e079bea9a587881c8b92881b632be376d3c680e8662e1ac20063800eaa2521f8",
+    "cache": "1/1 Nx cache hit",
+    "snapshot": ".spire/tmp/chromium-touch-live-dist",
+    "mode": "live",
+    "native_exit": 0,
+    "log": ".spire/tmp/chromium-touch-live-build.log"
+  },
+  "original_ac35": {
+    "retries": 0,
+    "passed": 4,
+    "report": ".spire/tmp/chromium-touch-original.json",
+    "failed": 0,
+    "flaky": 0,
+    "note": "Original synthetic helper; Linux first-attempt flake not reproduced on Windows.",
+    "native_exit": 0
+  },
+  "native_atomic_tap": {
+    "retries": 0,
+    "first_failure": "market-context @ 393px: tap reveals content",
+    "trusted_touch_duration_ms": 3.6,
+    "report": ".spire/tmp/chromium-touch-native.json",
+    "failed": 1,
+    "native_exit": 1
+  },
+  "native_40ms_touch": {
+    "retries": 0,
+    "target": "About Trend",
+    "report": ".spire/tmp/chromium-touch-timers.json",
+    "viewport_height": 852,
+    "tooltip_ever_inserted": false,
+    "requested_hold_ms": 40,
+    "event_log": ".spire/tmp/chromium-touch-timers-events.json",
+    "tooltip_enter_timer": {
+      "id": 10,
+      "delay_ms": 0,
+      "cleared_ms": 889.4000000357628,
+      "callback_fired": false,
+      "scheduled_ms": 809.1000000238419
+    },
+    "touch_y": 831.203125,
+    "trusted_touch_duration_ms": 80.5,
+    "failed": 1,
+    "native_exit": 1
+  },
+  "limitations": [
+    "The failed Linux attempt has no trace; original synthetic-flake cause cannot be retrospectively established.",
+    "The original synthetic AC35 cases passed locally on Windows; this is not a Linux stability-clean receipt.",
+    "A distinct native touch defect was reproduced without timer instrumentation and then traced to cancellation of MUI zero-delay touch-enter before callback.",
+    "Full e2e typecheck initially found an unused demo expiryDates constant; root removed it and final full e2e typecheck passed."
+  ],
+  "changes": [
+    "AccessibleHelp controls the existing Tooltip via onOpen/onClose and explicit completed-click opening; labels, stopPropagation and styling remain unchanged.",
+    "AC35 and U32 use native locator.tap with actionability and scrolling; keyboard returns by Shift+Tab and Tab. Assertions bind to the triggering help aria-describedby.",
+    "Chromium trace policy retains the first failing attempt."
+  ],
+  "verification": [
+    {
+      "kind": "production_live_repair_build",
+      "cache": "0/1",
+      "native_exit": 0,
+      "log": ".spire/tmp/chromium-touch-repair-build.log",
+      "snapshot": ".spire/tmp/chromium-touch-repaired-live-dist"
+    },
+    {
+      "passed": 8,
+      "native_exit": 0,
+      "failed": 0,
+      "kind": "native_ac35_u32",
+      "report": ".spire/tmp/chromium-touch-final.json",
+      "retries": 0,
+      "flaky": 0,
+      "site_width_pairs": 44
+    },
+    {
+      "kind": "dashboard_nx_typecheck",
+      "native_exit": 0,
+      "log": ".spire/tmp/chromium-touch-typecheck.log"
+    },
+    {
+      "kind": "full_e2e_typecheck",
+      "native_exit": 0,
+      "log": ".spire/tmp/chromium-touch-e2e-typecheck-final.log"
+    },
+    {
+      "original_report": ".spire/tmp/chromium-touch-layout-original.json",
+      "shape": {
+        "label": "About Trend",
+        "width": 26,
+        "height": 26,
+        "padding": "4px",
+        "fontSize": "18px",
+        "color": "rgb(255, 255, 255)",
+        "widgetWidth": 482,
+        "widgetHeight": 322
+      },
+      "repaired_native_exit": 0,
+      "layout_identical": true,
+      "kind": "original_and_repaired_hover_escape_closed_layout",
+      "repaired_report": ".spire/tmp/chromium-touch-layout-repaired.json",
+      "original_native_exit": 0
+    },
+    {
+      "format_native_exit": 0,
+      "cr_bytes": 0,
+      "kind": "scoped_format_diff_and_lf",
+      "diff_native_exit": 0
+    }
+  ],
+  "earlier_focused_repair_run": {
+    "failed": 4,
+    "report": ".spire/tmp/chromium-touch-repaired.json",
+    "native_exit": 1,
+    "cause": "Native keyboard navigation briefly exposes another Expand tooltip; global tooltip locator was ambiguous. Final helper asserts own aria-describedby tooltip.",
+    "passed": 4
+  },
+  "changed_sources": [
+    {
+      "sha256": "effdac94319830b554753d7bad3ac4fd86965b3282d3db9db55bd257a2c12630",
+      "file": "apps/dashboard/src/app/shared/ui/AccessibleHelp.tsx"
+    },
+    {
+      "sha256": "c29b3d17bd818c29a8c4dcaf864a37c34a225488eff29d8d7befaf7d891cbcf2",
+      "file": "apps/dashboard-e2e/src/e2e/curvature-v2.spec.ts"
+    },
+    {
+      "sha256": "a24d75f58ecead394e1bea07aeff46b66cfdbaaec913093266171375aeea2890",
+      "file": "apps/dashboard-e2e/playwright.config.ts"
+    }
+  ],
+  "repaired_artifact": {
+    "index_sha256": "5ab2cff1a2c1adf209f4d72dc94d94ac76ce9a66bb64093b5a79d5537207ea6e",
+    "snapshot": ".spire/tmp/chromium-touch-repaired-live-dist",
+    "note": "Built from current worktree with the AccessibleHelp repair; source_revision identifies the base commit, not a committed repair.",
+    "mode": "live"
+  }
+}

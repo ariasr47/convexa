@@ -1,0 +1,32 @@
+{
+  "preview": "https://bf7f65f4.convexa.pages.dev",
+  "revision": "3c08d71978745962a1dadfeb8ea9038e96769438",
+  "timeUtc": "2026-10-08T05:23:29Z",
+  "modeReceipt": {
+    "status": 200,
+    "body": {
+      "mode": "demo",
+      "scenarioId": "portfolio-2026-10-07-v1"
+    }
+  },
+  "landing": {
+    "httpStatus": 200,
+    "rootDescendantCount": 0,
+    "bodyText": "",
+    "csp": "default-src 'self'; ...; script-src 'self'; connect-src 'self'",
+    "consoleError": "Executing inline script violates the following Content Security Policy directive 'script-src 'self''",
+    "pageError": "Missing Convexa build bootstrap; refusing network or storage access"
+  },
+  "g6": {
+    "verdict": "FAIL",
+    "failedAt": "landing before route matrix",
+    "directRoutesCompleted": 0,
+    "hardRefreshesCompleted": 0,
+    "forbiddenEgressCount": null
+  },
+  "localVsHostedIndex": {
+    "localSha256": "56472E23E599BC899814F60E137813B1924BDFF1CDE369DB53C7A71392E74FD1",
+    "hostedSha256": "66CB7FAFC5958B7A7F01711BED0D9EB0A826180810F73E404C953EEE8EC605BE",
+    "difference": "CRLF to LF only; asset references and mode=demo match"
+  }
+}

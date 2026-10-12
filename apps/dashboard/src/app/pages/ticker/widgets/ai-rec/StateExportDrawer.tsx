@@ -8,7 +8,7 @@
  */
 import { useSettings } from '@/features/auth/useSettings';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
-import { fetchRecExport, RecExport, RiskInputs } from '@convexa/api';
+import { dataMode, fetchRecExport, RecExport, RiskInputs, scenarioProvenance } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -86,6 +86,7 @@ export function StateExportDrawer({
   open,
   ticker,
   personaId,
+  sampleFingerprint,
   onClose,
   /** AC-65: with a rec on screen the risk section is labelled AS-SENT; with none on screen it is
    *  labelled AS-NEXT. Never both, never unlabelled. */
@@ -102,6 +103,8 @@ export function StateExportDrawer({
   open: boolean;
   ticker: string;
   personaId: string | null;
+  /** Demo-only identity for the selected authored ticker projection. */
+  sampleFingerprint?: string | null;
   onClose: () => void;
   hasRecOnScreen?: boolean;
   asSentCandidates?: RecExport['context']['candidates'] | null;
@@ -114,6 +117,7 @@ export function StateExportDrawer({
   // stored block via a local signature (SPEC §2.4(a)) — never a raw-value display, never a re-fetch.
   const currentRiskInputs = useSettings().riskInputs;
   const supersededDrawer = riskInputsSuperseded(asSentRiskInputs, currentRiskInputs);
+  const provenance = dataMode === 'demo' ? scenarioProvenance() : null;
 
   // Fetch the export each time the drawer opens (or the read-persona changes). No in-app LLM call.
   useEffect(() => {
@@ -121,7 +125,10 @@ export function StateExportDrawer({
     let cancelled = false;
     setState('loading');
     setData(null);
-    fetchRecExport(ticker, { personaId })
+    fetchRecExport(ticker, {
+      personaId,
+      ...(dataMode === 'demo' && sampleFingerprint ? { sampleFingerprint } : {}),
+    })
       .then((d) => {
         if (!cancelled) {
           setData(d);
@@ -134,7 +141,7 @@ export function StateExportDrawer({
     return () => {
       cancelled = true;
     };
-  }, [open, ticker, personaId]);
+  }, [open, ticker, personaId, sampleFingerprint]);
 
   const copy = (text: string) => {
     navigator.clipboard?.writeText(text);
@@ -142,7 +149,14 @@ export function StateExportDrawer({
   };
   const allText = data
     ? [
-        `# ${EXPORT_HEADER(ticker)}`,
+        dataMode === 'demo' ? `# Sample analysis export · ${ticker}` : `# ${EXPORT_HEADER(ticker)}`,
+        ...(provenance
+          ? [
+              `Scenario: ${provenance.scenarioId}`,
+              `As of: ${provenance.asOf}`,
+              'Sample analysis · authored for this scenario',
+            ]
+          : []),
         data.egress_note,
         '\n## Computed snapshot (context)\n' + sectionText(data.context),
         '\n## Candidate contracts\n' + candidatesLine(data.context.candidates),
@@ -173,7 +187,7 @@ export function StateExportDrawer({
       <Stack spacing={2}>
         <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography sx={{ fontWeight: 600, fontSize: 15, color: 'text.primary' }}>
-            {EXPORT_HEADER(ticker)}
+            {dataMode === 'demo' ? `Sample analysis export · ${ticker}` : EXPORT_HEADER(ticker)}
           </Typography>
           <IconButton
             size="small"
