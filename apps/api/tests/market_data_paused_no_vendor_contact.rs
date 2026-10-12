@@ -117,8 +117,11 @@ async fn paused_boot_and_every_b2_route_open_zero_vendor_connections() {
     // Every B2 route (SPEC §2, B2 enumeration): the ticker family, the dedicated candidate
     // selector, the tracked-contract lookup, both stream routes, and the two recommendation
     // routes that render a fresh bundle. `/api/scan` is deliberately absent — it is the
-    // persisted-state carve-out (AC-4), not a B2 route.
+    // persisted-state carve-out (AC-4), not a B2 route. `/api/price/{ticker}` is here because its
+    // cold-cache miss falls through to the vendor stock snapshot (`AppState::quick_live_price`);
+    // this state's price cache is empty, so the request takes exactly that path.
     let requests: &[(&str, &str)] = &[
+        ("GET", "/api/price/SPY"),
         ("GET", "/api/ticker/SPY"),
         ("GET", "/api/ticker/SPY/progressive"),
         ("GET", "/api/candidates/SPY"),

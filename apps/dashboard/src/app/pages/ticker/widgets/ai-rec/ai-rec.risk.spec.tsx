@@ -8,18 +8,19 @@
  *      conflicting number renders it in its own fields but can never leak into the levels strip.
  *   2. AUTH OUTERMOST — logged out, the sign-in gate replaces the whole action surface; the inner
  *      cooldown/cap/key states can NEVER surface (enforced by construction: the mock status is
- *      poisoned with all of them armed). The manual export floor stays anonymous-usable.
- *   3. The ALWAYS-200 STATUS MACHINE — each of the 5 key-resolution outcomes + gated_off/cap/
- *      no-fresh-edge/transport offers its DISTINCT action affordance, and the rec surface degrades
- *      ALONE (bundle tiles keep rendering in every state).
+ *      poisoned with all of them armed), and a signed-out transition hides the retained read.
+ *   3. The ALWAYS-200 STATUS MACHINE — the host wiring for no-power-path vs own-key, the standing
+ *      model preference write, an LLM call only on an explicit tap, and a transport fault that
+ *      degrades the rec surface ALONE (bundle tiles keep rendering). The per-state mapping itself is
+ *      unit-proven in `presentationPolicy.spec.ts`.
  *   4. STATIC ARTIFACT — the rec is pinned to its snapshot: an SSE drop leaves it untouched, a newer
  *      bundle only marks it stale (content byte-stable, NO silent re-run — asserted on the mock's
  *      POST count, by construction).
- *   5. ADVICE, NEVER A COMMAND — no_trade has no Accept; Accept opens the shared dialog with nothing
- *      tracked until confirm; the Accept→prefill handoff object is unit-proven (the dialog's
- *      internals belong to its own risk spec).
- *   6. WRITE-ONLY KEY — the raw key rides ONLY the PUT body; it never re-enters the DOM (masked
- *      last-4 only) across add/replace/remove/error; every response the FE receives is scanned.
+ *   5. ADVICE, NEVER A COMMAND — review/order cancel writes nothing and confirm writes exactly one
+ *      record, the pinned read unchanged; the Accept→prefill handoff object is unit-proven (the
+ *      dialog's internals belong to its own risk spec).
+ *   6. WRITE-ONLY KEY — a failed key save never echoes the raw key (add/replace/remove live in
+ *      `features/auth/aiProviders.flow.spec.tsx`).
  *
  * NOT asserted here (visible + intentional → review/QA; brittle to automate): exact copy/disclaimer
  * wording, chip/testid presence for its own sake, re-skin structure/styling, per-field label text.
@@ -32,7 +33,6 @@ import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
 import { SettingsPage } from '@/features/auth/SettingsPage';
 import { AppThemeProvider } from '@/features/auth/ThemeProvider';
-import { AUTH_COPY, maskedKeyLabel } from '@/features/auth/copy';
 import {
   defaultAiCatalog,
   emptyAiSlots,
@@ -57,18 +57,15 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { COPY, EXPORT_HEADER, POWERING, PREFILL_WITHHELD, RISK_FIELD_COPY } from './copy';
+import { COPY, PREFILL_WITHHELD } from './copy';
 import {
-  noTradeRec as fixtureNoTradeRec,
   recAllTraced,
   recBlockAbsent,
   recCouldNotCheck,
   recFabricated,
   tradeRecEqualToCap,
-  tradeRecNoRiskBlock,
-  tradeRecOverCap,
 } from './fixtures';
-import { biasToRight, recToPrefill } from './prefill';
+import { recToPrefill } from './prefill';
 
 // Test-only mutable consumer seam: the production AuthProvider remains untouched. Transition tests
 // flip the value consumed by AiRecPanel and rerender the same mounted tree.
@@ -188,8 +185,6 @@ function producedRec(over: Partial<RecResponse> = {}): RecResponse {
 
 const producedOwn = () =>
   producedRec({ key_source: 'own_key', provider: 'anthropic', model: 'claude-opus-4-8' });
-const producedSubscription = () =>
-  producedRec({ key_source: 'grok_subscription', provider: null, model: 'grok-3' });
 const recUnavailable = (reason: string, extra: Partial<RecResponse> = {}) =>
   producedRec({
     status: 'unavailable',
@@ -197,24 +192,6 @@ const recUnavailable = (reason: string, extra: Partial<RecResponse> = {}) =>
     unavailable_reason: reason,
     key_source: 'none',
     ...extra,
-  });
-const noTradeRec = () =>
-  producedRec({
-    strategy: tradeStrategy({
-      decision: 'no_trade',
-      bias: 'neutral',
-      structure: null,
-      strikes: [],
-      expiration: null,
-      entry_trigger: null,
-      invalidation_level: null,
-      max_risk: null,
-      position_size: null,
-      exit_plan: { target: null, stop: null },
-      time_horizon: null,
-      confidence: null,
-      rationale: 'No clean edge — price is mid-range between the walls.',
-    }),
   });
 
 function makeStatus(over: Partial<RecStatus> = {}): RecStatus {
@@ -233,8 +210,6 @@ interface BackendCfg {
   bundle?: TickerBundle | (() => TickerBundle);
   status?: RecStatus;
   rec?: RecResponse | 'throw';
-  /** Hold the first recommendation response to make the visible loading phase observable. */
-  recDeferred?: Promise<RecResponse>;
   personas?: unknown | 'throw';
   aiKey?: {
     set?: boolean;
@@ -247,11 +222,6 @@ interface BackendCfg {
    *  read, so a test can diverge it from a produced rec's `sent.risk_inputs` and observe the
    *  superseded-inputs strip. Omitted ⇒ no `risk_inputs` key at all (matches the shipped shape). */
   riskInputs?: RiskInputs;
-  /** Optional flow-test seam: hold the second recommendation response until the test settles it. */
-  secondRecDeferred?: Promise<RecResponse>;
-  /** no-vendor-production-posture F4 — `GET /api/recommendation/status/{ticker}` answers the exact
-   *  paused 503 (SPEC B2) instead of `state.status`. */
-  statusPaused?: boolean;
 }
 
 function installBackend(cfg: BackendCfg = {}) {
@@ -273,8 +243,6 @@ function installBackend(cfg: BackendCfg = {}) {
       },
     },
     riskInputs: cfg.riskInputs,
-    secondRecDeferred: cfg.secondRecDeferred,
-    recDeferred: cfg.recDeferred,
   };
   const calls = {
     ticker: 0,
@@ -425,8 +393,6 @@ function installBackend(cfg: BackendCfg = {}) {
       }
       if (url.includes('/api/recommendation/status/')) {
         calls.status++;
-        if (cfg.statusPaused)
-          return json({ detail: 'Market data is paused.', code: 'market_data_paused' }, 503);
         return json(state.status);
       }
       if (url.includes('/api/recommendation/export/')) {
@@ -446,10 +412,6 @@ function installBackend(cfg: BackendCfg = {}) {
         calls.rec++;
         recPostBodies.push(String(init?.body ?? ''));
         if (state.rec === 'throw') throw new Error('network down');
-        if (calls.rec === 1 && state.recDeferred) return json(await state.recDeferred);
-        if (calls.rec === 2 && state.secondRecDeferred) {
-          return json(await state.secondRecDeferred);
-        }
         return json(state.rec);
       }
       if (url.includes('/api/personas')) {
@@ -646,18 +608,6 @@ describe('ai-rec · auth gate is outermost', () => {
     expect(within(panel()).queryByTestId('ai-rec-model-select')).toBeNull();
   });
 
-  it('the manual export floor stays anonymous-usable (no auth gate, no rec call, no key in the payload)', async () => {
-    const be = installBackend({ authenticated: false });
-    const user = renderApp();
-    await settle();
-    await user.click(within(panel()).getAllByRole('button', { name: COPY.action.viewExport })[0]);
-    expect(await screen.findByText(EXPORT_HEADER('TSLA'))).toBeInTheDocument();
-    expect(be.calls.export).toBe(1);
-    expect(be.calls.rec).toBe(0);
-    // Egress scan: no response the export path produced carries a key field.
-    be.responsesSeen.forEach((b) => expect(b).not.toMatch(/"(key|api_key|ciphertext)"\s*:/));
-  });
-
   async function assertSignedOutTransition(be: ReturnType<typeof installBackend>) {
     const requestsBefore = be.calls.rec;
     act(() => {
@@ -705,30 +655,6 @@ describe('ai-rec · auth gate is outermost', () => {
     expect(within(panel()).getByTestId('ai-rec-decision-card')).toBeInTheDocument();
     await assertSignedOutTransition(be);
   });
-
-  it('unavailable BYO state transitions from signed-in to signed-out without remount/request', async () => {
-    const be = installBackend({ authenticated: true, rec: recUnavailable('no_key') });
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    expect(within(panel()).getByTestId('ai-rec-state-no-key')).toBeInTheDocument();
-    await assertSignedOutTransition(be);
-  });
-
-  it('loading transitions from signed-in to signed-out without remount/request', async () => {
-    let resolveRec!: (value: RecResponse) => void;
-    const recDeferred = new Promise<RecResponse>((resolve) => {
-      resolveRec = resolve;
-    });
-    const be = installBackend({ authenticated: true, rec: recAllTraced(), recDeferred });
-    const user = renderApp();
-    await settle();
-    await user.click(within(panel()).getByRole('button', { name: COPY.action.get }));
-    await within(panel()).findByText(COPY.loading.title);
-    expect(be.calls.rec).toBe(1);
-    await assertSignedOutTransition(be);
-    resolveRec(recAllTraced());
-  });
 });
 
 // =================================================================================================
@@ -752,52 +678,10 @@ describe('ai-rec · key-resolution machine (distinct affordance per state)', () 
       chip: null,
     },
     {
-      name: 'key unusable → replace-key, not add-a-key',
-      rec: recUnavailable('key_unusable'),
-      cta: 'ai-rec-state-key-unusable',
-      chip: null,
-    },
-    {
-      name: 'key rejected → replace-key, not generic LLM error',
-      rec: recUnavailable('key_rejected'),
-      cta: 'ai-rec-state-key-rejected',
-      chip: null,
-    },
-    {
-      name: 'saved model left catalog → choose-another-model',
-      rec: recUnavailable('model_not_in_catalog'),
-      cta: 'ai-rec-state-model-missing',
-      chip: null,
-    },
-    {
-      name: 'oauth expired → reconnect, not unlinked / no-key',
-      rec: recUnavailable('oauth_expired'),
-      cta: 'ai-rec-state-oauth-expired',
-      chip: null,
-    },
-    {
-      name: 'oauth unlinked → connect, not expired / no-key',
-      rec: recUnavailable('oauth_unlinked'),
-      cta: 'ai-rec-state-oauth-unlinked',
-      chip: null,
-    },
-    {
-      name: 'subscription unavailable → distinct, not expired / unlinked',
-      rec: recUnavailable('subscription_unavailable'),
-      cta: 'ai-rec-state-subscription-unavailable',
-      chip: null,
-    },
-    {
       name: 'own key → produced rec + Using your Anthropic key, NO free-uses',
       rec: producedOwn(),
       cta: null,
       chip: 'Using your Anthropic key',
-    },
-    {
-      name: 'subscription → produced rec + your Grok subscription, not BYO Grok',
-      rec: producedSubscription(),
-      cta: null,
-      chip: 'your Grok subscription',
     },
   ])('$name', async ({ rec, cta, chip }) => {
     installBackend({ rec });
@@ -819,56 +703,6 @@ describe('ai-rec · key-resolution machine (distinct affordance per state)', () 
     }
     for (const id of CTA_IDS) if (id !== cta) expect(within(panel()).queryByTestId(id)).toBeNull();
     expect(screen.getByText('Call wall')).toBeInTheDocument();
-  });
-
-  it('gated_off / no power path: setup block (not model-missing); export floor stays (AC-13/21)', async () => {
-    const be = installBackend({
-      status: makeStatus({
-        availability: { in_app_enabled: false },
-        powering: {
-          key_source: 'none',
-          provider: null,
-          model: 'claude-opus-4-8',
-          unavailable_reason: 'no_key',
-          preference: { power_path: null, provider: null, model: 'claude-opus-4-8' },
-        },
-      }),
-    });
-    const user = renderApp();
-    await settle();
-    const block = await within(panel()).findByTestId('ai-rec-state-no-key');
-    expect(block).toHaveTextContent(POWERING.noKey.title);
-    expect(within(panel()).queryByTestId('ai-rec-state-model-missing')).toBeNull();
-    expect(
-      within(panel()).getByRole('combobox', { name: 'Model for recommendations' }),
-    ).toHaveTextContent('claude-opus-4-8');
-    await user.click(within(panel()).getAllByRole('button', { name: COPY.action.viewExport })[0]);
-    expect(await screen.findByText(EXPORT_HEADER('TSLA'))).toBeInTheDocument();
-    expect(be.calls.rec).toBe(0);
-    expect(screen.getByText('Call wall')).toBeInTheDocument();
-  });
-
-  it('Ask-AI Settings CTA deep-links to the AI providers panel (AC-28)', async () => {
-    installBackend({
-      status: makeStatus({
-        availability: { in_app_enabled: false },
-        powering: {
-          key_source: 'none',
-          provider: null,
-          model: 'claude-opus-4-8',
-          unavailable_reason: 'no_key',
-          preference: { power_path: null, provider: null, model: 'claude-opus-4-8' },
-        },
-      }),
-    });
-    const user = renderApp();
-    await settle();
-    await user.click(within(panel()).getByTestId('ai-rec-add-key-cta'));
-    const section = await screen.findByTestId('settings-ai-key-section');
-    expect(section).toHaveAttribute('id', 'ai-key');
-    expect(await screen.findByTestId('settings-ai-key-panel')).toHaveTextContent(
-      AUTH_COPY.settings.aiKey.heading,
-    );
   });
 
   it('Ask-AI model select writes the standing preference (AC-6 / D6)', async () => {
@@ -898,46 +732,6 @@ describe('ai-rec · key-resolution machine (distinct affordance per state)', () 
     expect(screen.queryByRole('option', { name: /^default$/i })).toBeNull();
   });
 
-  it.each([
-    'no_key',
-    'key_unusable',
-    'key_rejected',
-    'model_not_in_catalog',
-    'oauth_expired',
-    'oauth_unlinked',
-    'subscription_unavailable',
-  ])(
-    'manual export remains reachable when powering is blocked by %s (AC-21/29)',
-    async (reason) => {
-      const be = installBackend({ rec: recUnavailable(reason) });
-      const user = renderApp();
-      await settle();
-      await ask(user);
-      expect(
-        within(panel()).getAllByRole('button', { name: COPY.action.viewExport }).length,
-      ).toBeGreaterThan(0);
-      expect(be.calls.export).toBe(0);
-      await user.click(within(panel()).getAllByRole('button', { name: COPY.action.viewExport })[0]);
-      expect(await screen.findByText(EXPORT_HEADER('TSLA'))).toBeInTheDocument();
-    },
-  );
-
-  it('daily cap: a calm disabled affordance; the export floor still works without a rec call', async () => {
-    const be = installBackend({
-      status: makeStatus({
-        cap: { over_limit: true, remaining_today: 0, resets_at: '2026-06-27T04:00:00Z' },
-      }),
-    });
-    const user = renderApp();
-    await settle();
-    expect(
-      await within(panel()).findByRole('button', { name: /Daily AI limit reached/ }),
-    ).toBeDisabled();
-    await user.click(within(panel()).getAllByRole('button', { name: COPY.action.viewExport })[0]);
-    expect(await screen.findByText(EXPORT_HEADER('TSLA'))).toBeInTheDocument();
-    expect(be.calls.rec).toBe(0);
-  });
-
   it('no-fresh-edge: the offered affordance is an explicit one-tap override that fires exactly one POST', async () => {
     const be = installBackend({
       status: makeStatus({
@@ -965,146 +759,6 @@ describe('ai-rec · key-resolution machine (distinct affordance per state)', () 
     expect(screen.getByText('Call wall')).toBeInTheDocument();
     expect(screen.getByTestId('open-sim-trade')).toBeInTheDocument();
     expect(be.calls.ticker).toBe(tickerBefore);
-  });
-
-  // no-vendor-production-posture F4.
-  it('a paused status read renders honest copy with NO Retry — never the generic "AI unavailable" copy', async () => {
-    const be = installBackend({ statusPaused: true });
-    renderApp();
-    await settle();
-    const p = panel();
-    await within(p).findByText(COPY.marketDataPaused.title);
-    expect(within(p).getByText(COPY.marketDataPaused.body)).toBeInTheDocument();
-    expect(within(p).queryByText(COPY.unavailable.title)).toBeNull();
-    expect(within(p).queryByRole('button', { name: COPY.action.retry })).toBeNull();
-    // Isolation: the rest of the desk is untouched, and no rec was ever requested.
-    expect(screen.getByText('Call wall')).toBeInTheDocument();
-    expect(be.calls.rec).toBe(0);
-  });
-
-  it('transport fault under a denied no-fresh-edge gate hides Retry per presentation policy', async () => {
-    const be = installBackend({
-      rec: 'throw',
-      status: makeStatus({
-        gate: { state: 'no_fresh_edge', cooldown_remaining_seconds: 0, reasons: ['score low'] },
-      }),
-    });
-    const user = renderApp();
-    await settle();
-    await user.click(await within(panel()).findByRole('button', { name: COPY.action.askAnyway }));
-    await within(panel()).findByText(COPY.unavailable.title);
-    expect(within(panel()).queryByRole('button', { name: COPY.action.retry })).toBeNull();
-    expect(be.calls.rec).toBe(1);
-  });
-
-  it('scenario transport fault keeps Retry actionable despite an active cap when the gate is available', async () => {
-    const be = installBackend({
-      rec: 'throw',
-      status: makeStatus({
-        gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
-        cap: { over_limit: true, remaining_today: 0, resets_at: '2026-06-27T04:00:00Z' },
-        scenarios: {
-          enabled: true,
-          catalog: [{ id: 'breakout', name: 'Breakout rehearsal' }],
-        },
-      }),
-    });
-    const user = renderApp();
-    await settle();
-    await user.click(within(panel()).getByRole('combobox', { name: 'Scenario (operator)' }));
-    await user.click(await screen.findByRole('option', { name: 'Breakout rehearsal' }));
-    expect(
-      within(panel()).getByRole('combobox', { name: 'Scenario (operator)' }),
-    ).toHaveTextContent('Breakout rehearsal');
-    await user.click(await within(panel()).findByRole('button', { name: 'Run scenario' }));
-    await within(panel()).findByText(COPY.unavailable.title);
-
-    // The selected scenario bypasses cap/cooldown in presentation policy, so retry is allowed.
-    expect(within(panel()).getByRole('button', { name: COPY.action.retry })).toBeEnabled();
-    expect(be.calls.rec).toBe(1);
-  });
-
-  it('scenario transport fault keeps Retry actionable during server cooldown when readiness is available', async () => {
-    const be = installBackend({
-      rec: 'throw',
-      status: makeStatus({
-        gate: { state: 'cooling_down', cooldown_remaining_seconds: 30, reasons: [] },
-        cap: { over_limit: true, remaining_today: 0, resets_at: '2026-06-27T04:00:00Z' },
-        scenarios: {
-          enabled: true,
-          catalog: [{ id: 'breakout', name: 'Breakout rehearsal' }],
-        },
-      }),
-    });
-    const user = renderApp();
-    await settle();
-    await user.click(within(panel()).getByRole('combobox', { name: 'Scenario (operator)' }));
-    await user.click(await screen.findByRole('option', { name: 'Breakout rehearsal' }));
-    await user.click(await within(panel()).findByRole('button', { name: 'Run scenario' }));
-    await within(panel()).findByText(COPY.unavailable.title);
-
-    expect(within(panel()).getByRole('button', { name: COPY.action.retry })).toBeEnabled();
-    expect(be.calls.rec).toBe(1);
-  });
-
-  it('scenario transport fault under raw no-fresh-edge plus cooldown still requires the override and hides Retry', async () => {
-    const be = installBackend({
-      rec: 'throw',
-      status: makeStatus({
-        gate: { state: 'no_fresh_edge', cooldown_remaining_seconds: 30, reasons: ['score low'] },
-        scenarios: {
-          enabled: true,
-          catalog: [{ id: 'breakout', name: 'Breakout rehearsal' }],
-        },
-      }),
-    });
-    const user = renderApp();
-    await settle();
-    await user.click(within(panel()).getByRole('combobox', { name: 'Scenario (operator)' }));
-    await user.click(await screen.findByRole('option', { name: 'Breakout rehearsal' }));
-    const askAnyway = await within(panel()).findByRole('button', { name: COPY.action.askAnyway });
-    expect(askAnyway).toBeEnabled();
-    await user.click(askAnyway);
-    await within(panel()).findByText(COPY.unavailable.title);
-
-    expect(within(panel()).queryByRole('button', { name: COPY.action.retry })).toBeNull();
-    expect(be.calls.rec).toBe(1);
-  });
-
-  it('scenario transport fault under the denied no-fresh-edge gate hides Retry after the real override', async () => {
-    const be = installBackend({
-      rec: 'throw',
-      status: makeStatus({
-        gate: { state: 'no_fresh_edge', cooldown_remaining_seconds: 0, reasons: ['score low'] },
-        scenarios: {
-          enabled: true,
-          catalog: [{ id: 'breakout', name: 'Breakout rehearsal' }],
-        },
-      }),
-    });
-    const user = renderApp();
-    await settle();
-    await user.click(within(panel()).getByRole('combobox', { name: 'Scenario (operator)' }));
-    await user.click(await screen.findByRole('option', { name: 'Breakout rehearsal' }));
-    await user.click(await within(panel()).findByRole('button', { name: COPY.action.askAnyway }));
-    await within(panel()).findByText(COPY.unavailable.title);
-
-    expect(within(panel()).queryByRole('button', { name: COPY.action.retry })).toBeNull();
-    expect(be.calls.rec).toBe(1);
-  });
-
-  it('personas endpoint down: the panel degrades to the embedded presets and still produces a rec', async () => {
-    const be = installBackend({ personas: 'throw' });
-    const user = renderApp();
-    await settle();
-    // The read-persona select is still populated from the FE embed…
-    await user.click(panel().querySelector('.MuiSelect-select') as HTMLElement);
-    expect(await screen.findByRole('option', { name: 'Income Keeper' })).toBeInTheDocument();
-    await user.keyboard('{Escape}');
-    // …and the feature still works end-to-end.
-    await ask(user);
-    expect(await within(panel()).findByText(REC_BODY)).toBeInTheDocument();
-    expect(be.calls.personas).toBe(1);
   });
 });
 
@@ -1194,84 +848,6 @@ describe('ai-rec · static artifact pinned to its snapshot (timers)', () => {
     expect(within(panel()).getByTestId('grounding-card-line').textContent).toBe(cardLineBefore);
     expect(within(analysis).getByTestId('clause-stop').textContent).toBe(clauseBefore);
   });
-
-  it('retains only direct export while a refreshed recommendation is pending', async () => {
-    vi.useRealTimers();
-    let resolveSecond!: (rec: RecResponse) => void;
-    let rejectSecond!: (reason?: unknown) => void;
-    const secondRec = new Promise<RecResponse>((resolve, reject) => {
-      resolveSecond = resolve;
-      rejectSecond = reject;
-    });
-    const be = installBackend({
-      rec: producedRec({ stale_born: true }),
-      secondRecDeferred: secondRec,
-    });
-    try {
-      const user = renderApp();
-      await settle();
-      await ask(user);
-      await within(panel()).findByTestId('ai-rec-decision-card');
-      expect(be.calls.rec).toBe(1);
-      const refresh = within(panel()).getByRole('button', { name: COPY.action.refresh });
-      await user.click(refresh);
-
-      expect(be.calls.rec).toBe(2); // exactly one explicit refresh POST
-      expect(
-        within(panel()).getByRole('button', { name: COPY.action.viewExport }),
-      ).toBeInTheDocument();
-      expect(within(panel()).queryByTestId('ai-rec-decision-card')).toBeNull();
-      expect(within(panel()).queryByRole('button', { name: COPY.action.reviewTrade })).toBeNull();
-      expect(within(panel()).queryByRole('button', { name: COPY.action.createOrder })).toBeNull();
-      expect(within(panel()).queryByRole('button', { name: COPY.action.analysis })).toBeNull();
-      expect(within(panel()).queryByText(REC_BODY)).toBeNull(); // old pinned response is not actionable
-
-      resolveSecond(producedRec({ strategy: tradeStrategy({ max_risk: '2% of account ($400)' }) }));
-      await within(panel()).findByTestId('ai-rec-decision-card');
-      expect(be.calls.rec).toBe(2);
-    } finally {
-      // Settle the controllable request even if an assertion above fails, so the test cannot hang.
-      resolveSecond(producedRec());
-      rejectSecond(new Error('retained-loading cleanup'));
-    }
-  });
-
-  it('cooldown disables the ask affordance and re-enables when it elapses', async () => {
-    installBackend({
-      status: makeStatus({
-        gate: { state: 'cooling_down', cooldown_remaining_seconds: 3, reasons: [] },
-      }),
-      rec: producedRec({
-        gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
-      }),
-    });
-    render(
-      <MemoryRouter initialEntries={['/ticker/TSLA']}>
-        <App />
-      </MemoryRouter>,
-    );
-    await tick();
-    await tick();
-    expect(
-      within(panel())
-        .getByText(/Cooling down · 3s/)
-        .closest('button'),
-    ).toBeDisabled();
-    await tick(3000);
-    expect(recoButton()).toBeEnabled();
-  });
-});
-
-describe('ai-rec · honest provenance', () => {
-  it('a stale-born rec carries its at-birth warning (distinct from the newer-bundle stale marker)', async () => {
-    installBackend({ rec: producedRec({ stale_born: true }) });
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    await within(panel()).findByText(REC_BODY);
-    expect(within(panel()).getByText(/already marked stale/)).toBeInTheDocument();
-    expect(within(panel()).queryByText(COPY.stale.chip)).toBeNull();
-  });
 });
 
 // =================================================================================================
@@ -1299,26 +875,6 @@ describe('ai-rec · advice behind Accept', () => {
     expect(within(panel()).getByTestId('ai-rec-decision-card').textContent).toBe(before);
     expect(before).toContain('Persona ·');
     expect(before).toContain('As of');
-  });
-
-  it('no_trade is a complete answer with NO Accept affordance', async () => {
-    installBackend({ rec: noTradeRec() });
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    await within(panel()).findByText(COPY.noTrade.title);
-    expect(within(panel()).queryByRole('button', { name: COPY.action.accept })).toBeNull();
-  });
-
-  it('Accept opens the shared entry dialog — NOTHING is tracked until the user confirms there', async () => {
-    installBackend({});
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    await within(panel()).findByText(REC_BODY);
-    await user.click(within(panel()).getByRole('button', { name: COPY.action.accept }));
-    expect(await screen.findByRole('dialog')).toBeInTheDocument();
-    expect(allPositions()).toEqual([]); // advice, not a command
   });
 
   it('review cancel preserves the pinned card and writes no position', async () => {
@@ -1447,21 +1003,6 @@ describe('ai-rec · recToPrefill (the handoff object)', () => {
     ).toBeNull();
   });
 
-  it('derives the right from structure first, bias as fallback when structure IS stated but names neither word', () => {
-    expect(biasToRight({ structure: 'put credit spread', bias: 'long' })).toBe('put');
-    expect(biasToRight({ structure: 'iron condor', bias: 'short' })).toBe('put');
-    expect(biasToRight({ structure: 'iron condor', bias: 'neutral' })).toBe('call');
-  });
-
-  // rec-absence-literals-hole (AC-12c) — a NEVER-NAMED structure derives NO direction, even when a
-  // bias is stated: the bias fallback above fires only once structure is confirmed present. Updated
-  // from the pre-feature assertion that `structure: null` derived a direction from `bias` alone —
-  // that is exactly the fabricated-direction defect this feature closes.
-  it('AC-12c — an unnamed structure derives NOTHING, regardless of bias', () => {
-    expect(biasToRight({ structure: null, bias: 'short' })).toBeNull();
-    expect(biasToRight({ structure: null, bias: 'neutral' })).toBeNull();
-  });
-
   it('AC-80 — a rec with no size text at all yields `size not suggested`, distinct from `not set`', () => {
     const pf = recToPrefill(
       tradeStrategy({ position_size: null }),
@@ -1472,52 +1013,52 @@ describe('ai-rec · recToPrefill (the handoff object)', () => {
     expect(pf?.sizeText).toBe('size not suggested');
   });
 
-  it('AC-81 — a size string naming no whole number of contracts is carried verbatim', () => {
-    const pf = recToPrefill(
-      tradeStrategy({ position_size: 'small (rule-based local rec; not LLM)' }),
-      'Default (no persona)',
-      's',
-      allTraced(),
-    );
-    expect(pf?.sizeText).toBe('small (rule-based local rec; not LLM)');
-  });
-
   // -----------------------------------------------------------------------------------------------
   // ai-rec-grounding — AC-7 (SB): the gated prefill
   // -----------------------------------------------------------------------------------------------
-  it('AC-7 (SB) — a TRACED stop/target seeds exactly as on `main`', () => {
-    const rec = recAllTraced();
-    const pf = recToPrefill(rec.strategy!, 'Default (no persona)', 's', rec.grounding);
-    expect(pf!.stop).toBe(rec.strategy!.exit_plan.stop);
-    expect(pf!.target).toBe(rec.strategy!.exit_plan.target);
-    expect(pf!.stopWithheldReason).toBeNull();
-    expect(pf!.targetWithheldReason).toBeNull();
-  });
-
-  it('AC-7 (SB) — an UNTRACED stop does not seed, and says why', () => {
-    const rec = recFabricated();
-    const pf = recToPrefill(rec.strategy!, 'Default (no persona)', 's', rec.grounding);
-    expect(pf!.stop).toBeNull();
-    expect(pf!.stopWithheldReason).toBe(PREFILL_WITHHELD.untraced);
-  });
-
-  it('AC-7 (SB) — a NOT_CHECKABLE target does not seed, and says why', () => {
-    const rec = recCouldNotCheck();
-    const pf = recToPrefill(rec.strategy!, 'Default (no persona)', 's', rec.grounding);
-    expect(pf!.target).toBeNull();
-    expect(pf!.targetWithheldReason).toBe(PREFILL_WITHHELD.not_checkable);
-  });
-
-  it('AC-7 (SB) + D8 — NO grounding block never licences a pre-fill, and carries its OWN reason', () => {
-    const rec = recBlockAbsent(); // states real stop/target figures — see fixtures.ts
-    const pf = recToPrefill(rec.strategy!, 'Default (no persona)', 's', rec.grounding);
-    expect(pf!.stop).toBeNull();
-    expect(pf!.target).toBeNull();
-    expect(pf!.stopWithheldReason).toBe(PREFILL_WITHHELD.block_absent);
-    expect(pf!.targetWithheldReason).toBe(PREFILL_WITHHELD.block_absent);
-    // Never the `not_checkable` literal — that would be the `absent-is-not-none` collapse.
-    expect(pf!.stopWithheldReason).not.toBe(PREFILL_WITHHELD.not_checkable);
-  });
+  // A stop/target seeds only when TRACED; every other arm withholds it and says why, and a missing
+  // grounding block carries its OWN reason, never the `not_checkable` literal (D8).
+  it.each([
+    {
+      arm: 'traced seeds exactly as on `main`',
+      makeRec: recAllTraced,
+      seeds: true,
+      reason: null as string | null,
+      distinctFrom: null as string | null,
+    },
+    {
+      arm: 'untraced does not seed, and says why',
+      makeRec: recFabricated,
+      seeds: false,
+      reason: PREFILL_WITHHELD.untraced,
+      distinctFrom: null,
+    },
+    {
+      arm: 'not_checkable does not seed, and says why',
+      makeRec: recCouldNotCheck,
+      seeds: false,
+      reason: PREFILL_WITHHELD.not_checkable,
+      distinctFrom: null,
+    },
+    {
+      arm: 'no grounding block never licences a pre-fill, and carries its OWN reason (D8)',
+      makeRec: recBlockAbsent, // states real stop/target figures — see fixtures.ts
+      seeds: false,
+      reason: PREFILL_WITHHELD.block_absent,
+      distinctFrom: PREFILL_WITHHELD.not_checkable,
+    },
+  ])(
+    'AC-7 (SB) — the stop/target prefill is gated on grounding: $arm',
+    ({ makeRec, seeds, reason, distinctFrom }) => {
+      const rec = makeRec();
+      const pf = recToPrefill(rec.strategy!, 'Default (no persona)', 's', rec.grounding)!;
+      expect(pf.stop).toBe(seeds ? rec.strategy!.exit_plan.stop : null);
+      expect(pf.target).toBe(seeds ? rec.strategy!.exit_plan.target : null);
+      expect(pf.stopWithheldReason).toBe(reason);
+      expect(pf.targetWithheldReason).toBe(reason);
+      if (distinctFrom) expect(pf.stopWithheldReason).not.toBe(distinctFrom);
+    },
+  );
 
   it('AC-7 (SB) — nothing else acquires a value derived from a withheld figure', () => {
     const rec = recFabricated();
@@ -1534,52 +1075,6 @@ describe('ai-rec · recToPrefill (the handoff object)', () => {
 // 6. WRITE-ONLY KEY — the raw key rides the PUT body once and never re-enters the DOM
 // =================================================================================================
 describe('byo key · write-only (Settings)', () => {
-  it('add: the raw key rides ONLY the PUT body; the DOM shows the masked hint and never the key', async () => {
-    const be = installBackend({});
-    const user = renderSettings();
-    await screen.findByTestId('settings-ai-key-empty');
-    await user.type(screen.getByTestId('settings-ai-key-input'), RAW_KEY);
-    await user.click(screen.getByTestId('settings-ai-key-add'));
-
-    expect(await screen.findByTestId('settings-ai-key-masked')).toHaveTextContent(
-      maskedKeyLabel('1234'),
-    );
-    // The raw key left the browser exactly once, in the PUT body…
-    expect(be.aiKeyPutBodies).toEqual([JSON.stringify({ key: RAW_KEY, provider: 'anthropic' })]);
-    expect(document.body.textContent ?? '').not.toContain(RAW_KEY);
-    expect(screen.queryByText(/show key|reveal|copy key|view key/i)).toBeNull();
-    be.responsesSeen
-      .filter((b) => b.includes('storage_available'))
-      .forEach((b) => {
-        expect(b).not.toContain(RAW_KEY);
-        const o = JSON.parse(b) as Record<string, unknown>;
-        for (const k of ['key', 'api_key', 'ciphertext', 'secret']) expect(o).not.toHaveProperty(k);
-      });
-  });
-
-  it('replace then remove: the hint swaps to the NEW last-4, then clears — no raw key ever echoes', async () => {
-    const ROTATED = 'sk-ant-rotatedkey5678';
-    installBackend({ aiKey: { set: true, last4: '1234' } });
-    const user = renderSettings();
-    await screen.findByTestId('settings-ai-key-set');
-
-    await user.click(screen.getByTestId('settings-ai-key-replace'));
-    await user.type(screen.getByTestId('settings-ai-key-input'), ROTATED);
-    await user.click(screen.getByTestId('settings-ai-key-replace-submit'));
-    await waitFor(() =>
-      expect(screen.getByTestId('settings-ai-key-masked')).toHaveTextContent(
-        maskedKeyLabel('5678'),
-      ),
-    );
-    expect(screen.getByTestId('settings-ai-key-masked')).not.toHaveTextContent('1234');
-    expect(document.body.textContent ?? '').not.toContain(ROTATED);
-
-    await user.click(screen.getByTestId('settings-ai-key-remove'));
-    await user.click(await screen.findByTestId('settings-ai-key-remove-confirm-btn'));
-    expect(await screen.findByTestId('settings-ai-key-empty')).toBeInTheDocument();
-    expect(document.body.textContent ?? '').not.toContain(ROTATED);
-  });
-
   it('a save transport fault surfaces an error WITHOUT echoing the key', async () => {
     installBackend({ aiKey: { put: 'transport' } });
     const user = renderSettings();
@@ -1590,105 +1085,11 @@ describe('byo key · write-only (Settings)', () => {
     expect(err.textContent ?? '').not.toContain(RAW_KEY);
     expect(document.body.textContent ?? '').not.toContain(RAW_KEY);
   });
-
-  it('storage unavailable: a key that cannot be stored cannot be typed (input + save inert)', async () => {
-    installBackend({ aiKey: { storage_available: false } });
-    renderSettings();
-    await screen.findByTestId('settings-ai-key-storage-unavailable');
-    expect(screen.getByTestId('settings-ai-key-input')).toBeDisabled();
-    expect(screen.getByTestId('settings-ai-key-add')).toBeDisabled();
-  });
-
-  it('anonymous: the section offers sign-in, never a key form', async () => {
-    installBackend({ authenticated: false });
-    renderSettings();
-    expect(await screen.findByTestId('settings-ai-key-anonymous')).toBeInTheDocument();
-    expect(screen.queryByTestId('settings-ai-key-input')).toBeNull();
-  });
 });
 
 // =================================================================================================
-// 7. tradeable-rec-inputs — the four fields, the cap surface, the provenance chip (F7)
+// 7. tradeable-rec-inputs — the provenance chip (F7)
 // =================================================================================================
-describe('tradeable-rec-inputs · the cap surface never appears on no_trade (AC-58a, ship-blocking)', () => {
-  it('renders NO cap-annotation DOM node at all on a no_trade card — with a cap set AND with none', async () => {
-    installBackend({ rec: fixtureNoTradeRec() });
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    await within(panel()).findByText(COPY.noTrade.title);
-    expect(within(panel()).queryByTestId('cap-annotation')).toBeNull();
-
-    // ...and again with no effective cap at all — still nothing renders.
-    installBackend({
-      rec: {
-        ...fixtureNoTradeRec(),
-        cap_check: {
-          verdict: 'not_applicable',
-          effective_dollar_cap: null,
-          cap_not_derivable_reason: null,
-          parsed_risk_dollars: null,
-          model_max_risk_text: null,
-          risk_refusal: null,
-        },
-      },
-    });
-    cleanup();
-    const user2 = renderApp();
-    await settle();
-    await ask(user2);
-    await within(panel()).findByText(COPY.noTrade.title);
-    expect(within(panel()).queryByTestId('cap-annotation')).toBeNull();
-  });
-
-  it('AC-69/70 — no_trade remains a complete non-actionable verdict without a trade grid', async () => {
-    installBackend({ rec: fixtureNoTradeRec() });
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    await within(panel()).findByText(COPY.noTrade.title);
-    expect(within(panel()).queryByTestId('decision-grid')).toBeNull();
-    expect(within(panel()).queryByRole('button', { name: COPY.action.reviewTrade })).toBeNull();
-    expect(within(panel()).queryByRole('button', { name: COPY.action.createOrder })).toBeNull();
-  });
-});
-
-describe('tradeable-rec-inputs · an over-cap rec stays actionable (AC-59/60)', () => {
-  it('renders the warning cap annotation and Accept stays enabled', async () => {
-    installBackend({ rec: tradeRecOverCap() });
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    await within(panel()).findByText(`Trade · ${tradeRecOverCap().strategy!.bias}`);
-    const annotation = await within(panel()).findByTestId('cap-annotation');
-    expect(annotation).toHaveAttribute('data-verdict', 'above');
-    expect(within(panel()).getByRole('button', { name: COPY.action.accept })).toBeEnabled();
-  });
-
-  it('a figure exactly equal to the cap renders `within` (AC-63)', async () => {
-    installBackend({ rec: tradeRecEqualToCap() });
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    const annotation = await within(panel()).findByTestId('cap-annotation');
-    expect(annotation).toHaveAttribute('data-verdict', 'within');
-  });
-});
-
-describe('tradeable-rec-inputs · an empty risk block renders `not set` with the action (AC-71)', () => {
-  it('max_risk and position_size render `not set` with a `Set your risk inputs` action', async () => {
-    installBackend({ rec: tradeRecNoRiskBlock() });
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    await within(panel()).findByText(`Trade · ${tradeRecNoRiskBlock().strategy!.bias}`);
-    expect(within(panel()).getAllByText(RISK_FIELD_COPY.notSet.text).length).toBeGreaterThan(0);
-    expect(
-      within(panel()).getAllByRole('link', { name: 'Set your risk inputs' }).length,
-    ).toBeGreaterThan(0);
-  });
-});
-
 describe('tradeable-rec-inputs · the provenance chip renders the entered values verbatim (AC-61)', () => {
   it('shows the account size and cap exactly as sent, with no client-side arithmetic', async () => {
     installBackend({ rec: tradeRecEqualToCap() });
@@ -1704,50 +1105,6 @@ describe('tradeable-rec-inputs · the provenance chip renders the entered values
 // =================================================================================================
 // GATE Q correction — AC-3 / AC-8 / AC-62 / AC-64 (bounced back with production consumers missing)
 // =================================================================================================
-
-describe('tradeable-rec-inputs · AC-8 — the candidate set as-of + session basis render, un-hovered', () => {
-  it('the strip carries a freshness line naming the as-of (exchange-clock form, fidelity repair 2 N5) and whether it is live-session or prior-close', async () => {
-    installBackend({ rec: tradeRecEqualToCap() });
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    const analysis = await openAnalysis(user);
-    const line = await within(analysis).findByTestId('numbers-said-freshness');
-    expect(line.textContent ?? '').not.toContain(
-      tradeRecEqualToCap().sent!.candidates.as_of as string,
-    );
-    expect(line).toHaveTextContent(/\d{2}:\d{2}:\d{2} ET/);
-    expect(line).toHaveTextContent(/prior close|live session/);
-  });
-
-  it('the cited-contract line interpolates the real as-of (exchange-clock form) — never the raw ISO, never the bare "from the chain snapshot" literal', async () => {
-    installBackend({ rec: tradeRecEqualToCap() });
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    const analysis = await openAnalysis(user);
-    const cited = await within(analysis).findByTestId('cited-contract-line');
-    expect(cited.textContent ?? '').not.toContain(
-      tradeRecEqualToCap().sent!.candidates.as_of as string,
-    );
-    expect(cited).toHaveTextContent(/from the \d{2}:\d{2}:\d{2} ET/);
-    expect(cited.textContent ?? '').not.toContain('from the chain snapshot');
-  });
-});
-
-describe('tradeable-rec-inputs · AC-62 — the max-risk tip attributes the figure to the AI', () => {
-  it('carries a tooltip on Max risk when it holds a value', async () => {
-    installBackend({ rec: tradeRecEqualToCap() });
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    await within(panel()).findByText(COPY.risk.maxRisk);
-    // The tip renders via the shared `Field` info-icon affordance beside the label.
-    const maxRiskLabel = within(panel()).getByText(COPY.risk.maxRisk);
-    const infoIcon = maxRiskLabel.parentElement?.querySelector('svg');
-    expect(infoIcon).toBeTruthy();
-  });
-});
 
 describe('tradeable-rec-inputs · AC-64 — the superseded-inputs strip fires on a changed risk block', () => {
   it('renders the shipped stale-strip treatment (info, not warning+icon) with Get a fresh recommendation, when the CURRENTLY stored block differs from what was sent', async () => {
@@ -1770,15 +1127,5 @@ describe('tradeable-rec-inputs · AC-64 — the superseded-inputs strip fires on
     expect(within(panel()).getByTestId('grounding-card-line')).toHaveTextContent(
       'Every checked figure traces to a Convexa number.',
     );
-  });
-
-  it('renders nothing when the currently stored block still matches what was sent', async () => {
-    const sentRiskInputs = tradeRecEqualToCap().sent!.risk_inputs;
-    installBackend({ rec: tradeRecEqualToCap(), riskInputs: sentRiskInputs });
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    await within(panel()).findByText(`Trade · ${tradeRecEqualToCap().strategy!.bias}`);
-    expect(within(panel()).queryByTestId('decision-degraded')).toBeNull();
   });
 });

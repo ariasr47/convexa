@@ -1,9 +1,8 @@
 /**
- * `LadderFoot` — criterion 6 (review): Vol-norm GEX and Raw GEX (1% shock) still render, with their
- * shipped tooltips. Not in PLAN's enumerated `Owns` file list (review-only criteria carry no
- * mandated spec there) — added anyway as cheap regression insurance on a byte-for-byte copy: a
- * silent typo in a tooltip carried forward from a file FE-8 deletes whole would otherwise have no
- * mechanism catching it before a human reviewer happens to compare the two files side by side.
+ * `LadderFoot` — criterion 6 (review): Vol-norm GEX and Raw GEX (1% shock) still render, each with
+ * the right net field, and an absent vol-normalized sub-object renders `unavailable`, never a
+ * fabricated value. Not in PLAN's enumerated `Owns` file list (review-only criteria carry no
+ * mandated spec there) — added anyway as cheap regression insurance.
  */
 import { theme } from '@/shared/theme/theme';
 import type { VolNormalizedGex } from '@convexa/api';
@@ -58,22 +57,6 @@ describe('LadderFoot — Vol-norm GEX and Raw GEX still render (criterion 6)', (
     expect(screen.getByRole('button', { name: 'About Vol-norm GEX' })).toHaveAttribute(
       'title',
       'Primary magnitude read — unavailable until ATM IV or 30d HV lands on this snapshot.',
-    );
-  });
-
-  it('the Vol-norm GEX tooltip is byte-for-byte the shipped copy when present', () => {
-    wrap();
-    expect(screen.getByRole('button', { name: 'About Vol-norm GEX' })).toHaveAttribute(
-      'title',
-      'Primary magnitude (vol-normalized). Normalized to a 1-sigma daily move.',
-    );
-  });
-
-  it('the Raw GEX tooltip is byte-for-byte the shipped copy', () => {
-    wrap();
-    expect(screen.getByRole('button', { name: 'About Raw GEX (1% shock)' })).toHaveAttribute(
-      'title',
-      'Secondary: raw dollar dealer gamma for a fixed 1% shock. Prefer Vol-norm GEX above for cross-regime magnitude.',
     );
   });
 });

@@ -164,7 +164,7 @@ export function FlowRibbonsLab() {
           style={{
             display: 'block',
             width: '100%',
-            borderRadius: '12px', // style= prop (not sx=), already literal px — string form closes radius-scale.spec.ts's blind spot
+            borderRadius: '12px', // style= prop (not sx=), already literal px
             border: '1px solid rgba(138,155,180,0.28)',
           }}
         />

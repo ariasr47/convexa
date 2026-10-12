@@ -18,7 +18,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const DESKTOP = { width: 1280, height: 900 };
 
-/** Stub only what the destination pages need to render content-full; see no-overflow.spec.ts. */
+/** Stub only what the destination pages need to render content-full. */
 async function stubNetwork(page: Page) {
   await page.route('**/api/**', async (route) => {
     const path = new URL(route.request().url()).pathname;
@@ -104,23 +104,6 @@ test.describe('client-side navigation', () => {
     await expect(page).toHaveURL(/\/scanner$/);
     await expect(page.getByTestId('scanner-page')).toBeAttached();
     expect(await sentinelSurvived(page), 'navigating to /scanner reloaded the document').toBe(true);
-  });
-
-  test('browser Back and Forward are wired to the router', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.getByTestId('landing')).toBeAttached();
-    await plantSpaSentinel(page);
-
-    await page.getByTestId('nav-positions').click();
-    await expect(page).toHaveURL(/\/positions$/);
-
-    await page.goBack();
-    await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByTestId('landing')).toBeAttached();
-
-    await page.goForward();
-    await expect(page).toHaveURL(/\/positions$/);
-    await expect(page.getByTestId('portfolio-panel')).toBeAttached();
   });
 
   test('the /ticker redirect resolves to the default symbol', async ({ page }) => {

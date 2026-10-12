@@ -147,8 +147,8 @@ TEMPLATE = """<!DOCTYPE html>
 <style>
   /* Curvature Terminal tokens (redesign-stage-1 §4.4) — values single-sourced from
      apps/dashboard/src/app/shared/theme/tokens.ts (ink/panel/phosphor/steel/gammaAmber/signal);
-     the generator cannot import TypeScript, so the literals are carried here and PINNED by
-     shared/theme/blog-tokens.spec.ts (change tokens.ts -> the spec forces a regeneration).
+     the generator cannot import TypeScript, so the literals are carried here by hand
+     (change tokens.ts -> update these literals and re-run this script).
      Fonts: the app's self-hosted same-origin faces (/fonts/..., OFL 1.1) — never a CDN. */
   @font-face {{ font-family:'IBM Plex Sans'; font-style:normal; font-display:swap; font-weight:400;
     src:url('/fonts/ibm-plex-sans/ibm-plex-sans-latin-400-normal.woff2') format('woff2'); }}

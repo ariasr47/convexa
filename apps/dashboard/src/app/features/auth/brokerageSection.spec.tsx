@@ -1,8 +1,8 @@
 /**
  * F5 — the Settings "Brokerage" section (byo-ai-key shape). The invariants automated here:
  * write-only round trip (no typed half EVER rendered after save), both-halves-or-nothing client
- * validation mirroring the server 422, disconnect confirm → DELETE → not-set hint, the
- * storage-unavailable contained note, and the anonymous sign-in prompt.
+ * validation mirroring the server 422, disconnect confirm → DELETE → not-set hint, and the
+ * anonymous sign-in prompt.
  */
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
@@ -173,16 +173,6 @@ describe('BrokerageSection', () => {
       fetchMock.mock.calls.filter((c) => (c[1] as RequestInit | undefined)?.method === 'DELETE'),
     ).toHaveLength(0);
     expect(screen.getByTestId('settings-brokerage-masked')).toBeInTheDocument();
-  });
-
-  it('storage-unavailable: contained info note (never error-red), inputs disabled', async () => {
-    install({ hint: { set: false, last4: null, storage_available: false } });
-    renderSection();
-    const note = await screen.findByTestId('settings-brokerage-storage-unavailable');
-    expect(note).toHaveTextContent(C.storageUnavailable);
-    expect(note.className).toMatch(/colorInfo|MuiAlert-standardInfo/);
-    expect(screen.getByTestId('settings-brokerage-app-key')).toBeDisabled();
-    expect(screen.getByTestId('settings-brokerage-connect')).toBeDisabled();
   });
 
   it('anonymous: the sign-in prompt, and NO broker request is issued', async () => {

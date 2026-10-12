@@ -112,6 +112,8 @@ pub struct AuthError {
     pub status: u16,
     pub code: &'static str,
     pub message: String,
+    /// Seconds for a `Retry-After` header; only a throttled login sets it.
+    pub retry_after_secs: Option<u64>,
 }
 
 impl AuthError {
@@ -125,6 +127,7 @@ fn email_taken() -> AuthError {
         status: 409,
         code: "email_taken",
         message: "An account with that email already exists.".into(),
+        retry_after_secs: None,
     }
 }
 pub fn validation(msg: impl Into<String>) -> AuthError {
@@ -132,6 +135,7 @@ pub fn validation(msg: impl Into<String>) -> AuthError {
         status: 422,
         code: "validation",
         message: msg.into(),
+        retry_after_secs: None,
     }
 }
 fn bad_credentials() -> AuthError {
@@ -139,6 +143,7 @@ fn bad_credentials() -> AuthError {
         status: 401,
         code: "bad_credentials",
         message: "Incorrect email or password.".into(),
+        retry_after_secs: None,
     }
 }
 pub fn auth_required() -> AuthError {
@@ -146,6 +151,7 @@ pub fn auth_required() -> AuthError {
         status: 403,
         code: "auth_required",
         message: "Sign in to do this.".into(),
+        retry_after_secs: None,
     }
 }
 pub fn settings_auth_required() -> AuthError {
@@ -153,6 +159,7 @@ pub fn settings_auth_required() -> AuthError {
         status: 401,
         code: "auth_required",
         message: "Sign in to access settings.".into(),
+        retry_after_secs: None,
     }
 }
 fn signups_closed() -> AuthError {
@@ -160,6 +167,15 @@ fn signups_closed() -> AuthError {
         status: 403,
         code: "signups_closed",
         message: "New sign-ups are closed right now.".into(),
+        retry_after_secs: None,
+    }
+}
+fn rate_limited(retry_after_secs: u64) -> AuthError {
+    AuthError {
+        status: 429,
+        code: "rate_limited",
+        message: format!("Too many sign-in attempts. Try again in {retry_after_secs} seconds."),
+        retry_after_secs: Some(retry_after_secs),
     }
 }
 fn auth_unavailable() -> AuthError {
@@ -167,6 +183,7 @@ fn auth_unavailable() -> AuthError {
         status: 503,
         code: "auth_unavailable",
         message: "Sign-in is temporarily unavailable.".into(),
+        retry_after_secs: None,
     }
 }
 fn google_unavailable() -> AuthError {
@@ -174,6 +191,7 @@ fn google_unavailable() -> AuthError {
         status: 409,
         code: "google_unavailable",
         message: "Google sign-in is not configured on this server.".into(),
+        retry_after_secs: None,
     }
 }
 fn grok_unavailable() -> AuthError {
@@ -181,6 +199,7 @@ fn grok_unavailable() -> AuthError {
         status: 409,
         code: "grok_unavailable",
         message: "Grok subscription connect is not available on this server.".into(),
+        retry_after_secs: None,
     }
 }
 
@@ -209,6 +228,8 @@ pub struct AuthService {
     /// Best-effort: drop broker book cache when credential rotates/deletes.
     broker_cache_invalidator: Option<BrokerCacheInvalidator>,
     google_exchange_override: Option<GoogleExchangeOverride>,
+    /// Shared by every clone of the service, so the limit holds across handlers.
+    login_throttle: Arc<super::throttle::LoginThrottle>,
 }
 
 type GoogleExchangeOverride = Arc<
@@ -232,6 +253,7 @@ impl AuthService {
             demo_seed_email: None,
             broker_cache_invalidator: None,
             google_exchange_override: None,
+            login_throttle: Arc::new(super::throttle::LoginThrottle::default()),
         }
     }
 
@@ -476,11 +498,15 @@ impl AuthService {
         if password.is_empty() {
             return Err(validation("Enter your password."));
         }
+        if let Err(wait) = self.login_throttle.begin(email, now_secs()) {
+            return Err(rate_limited(wait));
+        }
         let user = self.store.get_user_by_email(email).ok().flatten();
         let stored = user.as_ref().and_then(|u| u.password_hash.as_deref());
         if !passwords::verify_password(password, stored) {
             return Err(bad_credentials());
         }
+        self.login_throttle.succeed(email);
         let user = user.unwrap();
         let _ = self.store.mark_login(&user.id, now_secs());
         let sid = self.new_session(&user.id)?;
@@ -1139,6 +1165,82 @@ mod tests {
         let s = svc(false);
         let err = s.signup("a@b.co", "password1", None).unwrap_err();
         assert_eq!(err.code, "signups_closed");
+    }
+
+    /// Rewrite the stored session behind `sid` so its deadlines sit `idle_offset` /
+    /// `absolute_offset` seconds from the same clock `resolve_session` reads.
+    fn set_session_deadlines(s: &AuthService, sid: &str, idle_offset: f64, absolute_offset: f64) {
+        let user_id = s.store.get_session(sid).unwrap().unwrap().user_id;
+        let now = now_secs();
+        s.store
+            .create_session(&SessionRecord {
+                id: sid.into(),
+                user_id,
+                created_at: now - 7200.0,
+                expires_at: now + idle_offset,
+                absolute_expires_at: now + absolute_offset,
+                revoked: false,
+            })
+            .unwrap();
+    }
+
+    #[test]
+    fn repeated_wrong_passwords_slow_the_account_down_even_for_the_right_password() {
+        let s = svc(true);
+        s.signup("victim@b.co", "password1", None).unwrap();
+        s.signup("bystander@b.co", "password1", None).unwrap();
+        for _ in 0..super::super::throttle::FREE_ATTEMPTS {
+            assert_eq!(
+                s.login("victim@b.co", "wrong-guess").unwrap_err().code,
+                "bad_credentials"
+            );
+        }
+        // Refused before the password is checked, so a correct guess cannot get through either.
+        let refused = s.login("victim@b.co", "password1").unwrap_err();
+        assert_eq!((refused.status, refused.code), (429, "rate_limited"));
+        assert!(
+            matches!(refused.retry_after_secs, Some(1..=60)),
+            "{refused:?}"
+        );
+        assert!(
+            s.login("bystander@b.co", "password1").is_ok(),
+            "other accounts unaffected"
+        );
+    }
+
+    #[test]
+    fn session_is_rejected_after_its_idle_deadline() {
+        let s = svc(true);
+        let (_, sid) = s.signup("idle@b.co", "password1", None).unwrap();
+        let cookie = s.signed_cookie_value(&sid);
+        // The absolute deadline stays an hour out, so only the idle check can reject.
+        for (idle_offset, accepted, case) in [
+            (-60.0, false, "idle deadline passed"),
+            (60.0, true, "inside the idle window"),
+        ] {
+            set_session_deadlines(&s, &sid, idle_offset, 3600.0);
+            let resolved = s.resolve_session(Some(&cookie));
+            assert_eq!(resolved.user.is_some(), accepted, "{case}");
+            assert_eq!(resolved.session_id.is_some(), accepted, "{case}");
+        }
+    }
+
+    #[test]
+    fn session_is_rejected_after_its_absolute_deadline() {
+        let s = svc(true);
+        let (_, sid) = s.signup("absolute@b.co", "password1", None).unwrap();
+        let cookie = s.signed_cookie_value(&sid);
+        // The idle window stays an hour out, so only the absolute check can reject: a session
+        // kept busy forever must still end at its absolute deadline.
+        for (absolute_offset, accepted, case) in [
+            (-60.0, false, "absolute deadline passed"),
+            (60.0, true, "before the absolute deadline"),
+        ] {
+            set_session_deadlines(&s, &sid, 3600.0, absolute_offset);
+            let resolved = s.resolve_session(Some(&cookie));
+            assert_eq!(resolved.user.is_some(), accepted, "{case}");
+            assert_eq!(resolved.session_id.is_some(), accepted, "{case}");
+        }
     }
 
     fn signed_user(s: &AuthService) -> UserRecord {

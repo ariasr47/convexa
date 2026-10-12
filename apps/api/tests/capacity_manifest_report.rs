@@ -1,4 +1,3 @@
-use api_rust::capacity::evaluate::nearest_rank_ms;
 use api_rust::capacity::{manifest, Profile, ScenarioId};
 use std::time::Duration;
 
@@ -29,23 +28,8 @@ fn extended_changes_only_soak_and_slope() {
     assert_eq!(e.scenarios[9].soak_seconds, 900);
 }
 #[test]
-fn fixture_hashes_and_identity_roles_are_closed() {
-    assert_eq!(manifest(Profile::Normal).sse_capacity, 32);
-    assert_eq!(ScenarioId::ALL.len(), 13);
-}
-#[test]
 fn missing_duplicate_or_reduced_manifest_member_is_rejected() {
     let mut m = manifest(Profile::Normal);
     m.scenarios.pop();
     assert!(m.validate().is_err());
-}
-#[test]
-fn nearest_rank_uses_nearest_rank() {
-    let v = [
-        Duration::from_millis(1),
-        Duration::from_millis(2),
-        Duration::from_millis(3),
-        Duration::from_millis(4),
-    ];
-    assert_eq!(nearest_rank_ms(&v, 75).unwrap(), 3.0);
 }

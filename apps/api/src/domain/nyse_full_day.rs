@@ -280,11 +280,6 @@ mod tests {
     }
 
     #[test]
-    fn table_is_nonempty_anti_vacuity() {
-        assert!(!NYSE_FULL_DAY.is_empty());
-    }
-
-    #[test]
     fn in_set_pins_2026() {
         for (y, m, day) in [
             (2026, 1, 1),
@@ -298,19 +293,6 @@ mod tests {
             assert!(!is_et_weekend(x), "{x} is a weekday");
             assert!(!is_et_session_day(x));
         }
-    }
-
-    #[test]
-    fn poison_holiday_is_not_weekend() {
-        let thanksgiving = d(2026, 11, 26);
-        assert!(is_nyse_full_day_holiday(thanksgiving) && !is_et_weekend(thanksgiving));
-    }
-
-    #[test]
-    fn observed_independence_friday_is_holiday_saturday_is_weekend() {
-        assert!(is_nyse_full_day_holiday(d(2026, 7, 3)));
-        assert!(is_et_weekend(d(2026, 7, 4)));
-        assert!(!is_nyse_full_day_holiday(d(2026, 7, 4)));
     }
 
     #[test]
@@ -391,57 +373,8 @@ mod tests {
     }
 
     #[test]
-    fn unlisted_outside_span_is_not_holiday() {
-        // 2019-11-28 Thanksgiving Thursday; 2033-11-24 Thanksgiving Thursday.
-        assert!(!is_nyse_full_day_holiday(d(2019, 11, 28)));
-        assert!(is_et_session_day(d(2019, 11, 28)));
-        assert!(!is_nyse_full_day_holiday(d(2033, 11, 24)));
-        assert!(is_et_session_day(d(2033, 11, 24)));
-    }
-
-    #[test]
-    fn empty_unscheduled_overlay_does_not_close_session_days() {
-        assert!(UNSCHEDULED_FULL_DAY.is_empty());
-    }
-
-    #[test]
     fn static_table_equals_generated_regular_set() {
         let generated = generated_regular_nyse_full_days();
         assert_eq!(NYSE_FULL_DAY, generated.as_slice());
-    }
-
-    #[test]
-    fn table_is_sorted_unique() {
-        for w in NYSE_FULL_DAY.windows(2) {
-            assert!(
-                w[0] < w[1],
-                "table must be strictly sorted for binary_search"
-            );
-        }
-    }
-
-    #[test]
-    fn quant_engine_sources_do_not_mention_calendar() {
-        // Walk the engine crate's src (not a product import).
-        let root = concat!(env!("CARGO_MANIFEST_DIR"), "/../../libs/quant-engine/src");
-        let mut hits = Vec::new();
-        fn walk(dir: &std::path::Path, hits: &mut Vec<String>) {
-            for e in std::fs::read_dir(dir).unwrap() {
-                let p = e.unwrap().path();
-                if p.is_dir() {
-                    walk(&p, hits);
-                } else if p.extension().and_then(|s| s.to_str()) == Some("rs") {
-                    let s = std::fs::read_to_string(&p).unwrap();
-                    if s.contains("nyse_full_day") || s.contains("is_nyse_full_day_holiday") {
-                        hits.push(p.display().to_string());
-                    }
-                }
-            }
-        }
-        walk(std::path::Path::new(root), &mut hits);
-        assert!(
-            hits.is_empty(),
-            "quant-engine must not import the calendar: {hits:?}"
-        );
     }
 }

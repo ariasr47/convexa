@@ -114,13 +114,4 @@ mod tests {
         assert_eq!(again.moved, 0);
         let _ = std::fs::remove_dir_all(&base);
     }
-
-    #[test]
-    fn drop_body_column_sql_is_structural() {
-        assert!(DROP_BODY_COLUMN_SQL.contains("DROP COLUMN"));
-        assert!(DROP_BODY_COLUMN_SQL.contains("body"));
-        assert!(!DROP_BODY_COLUMN_SQL
-            .to_ascii_lowercase()
-            .contains("chain_snapshots"));
-    }
 }

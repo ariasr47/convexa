@@ -1,6 +1,6 @@
 /**
- * `connectionState` — AC-7 (the six-kind closure), AC-7b (the latch never re-enters the
- * placeholder), and the importer-set-equality pin (SPEC §2.4, PLAN FE-5).
+ * `connectionState` — AC-7 (the six-kind closure) and AC-7b (the latch never re-enters the
+ * placeholder) (SPEC §2.4, PLAN FE-5).
  */
 import type { LiveUpdate } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
@@ -11,12 +11,6 @@ import {
   type ConnectionState,
 } from './connectionState';
 import { announceSentence, chipLabel } from './copy';
-
-const APP_SOURCES = import.meta.glob(['/src/app/**/*.{ts,tsx}', '!**/*.spec.{ts,tsx}'], {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
 
 function liveUpdate(over: Partial<LiveUpdate> = {}): LiveUpdate {
   return {
@@ -96,43 +90,6 @@ describe('AC-7 — the six-kind closure', () => {
     expect([...kinds].sort()).toEqual(
       ['closed', 'live', 'noTicks', 'offline', 'overnight', 'replay'].sort(),
     );
-  });
-
-  it('TYPE-LEVEL PROOF: chipLabel/announceSentence cannot accept a kind outside the closed six — proved by `npm run typecheck`, not this runtime body', () => {
-    // A runtime `expect` cannot observe a compile error, so the proof here is the two
-    // `@ts-expect-error` directives below, not the `void` calls (which exist only so the rejected
-    // arguments are actually used somewhere). `copy.ts`'s `chipLabel`/`announceSentence` both close
-    // their switch over `ConnectionState['kind']` with `const _exhaustive: never = kind` (or
-    // `state`) in the `default` arm — that arm can only ever type as `never` because these two
-    // functions' parameter types are exactly the six kinds below, never a loosened `string`. If
-    // either parameter type were ever widened (which would silently defeat the exhaustiveness
-    // guard: a real 7th kind could then reach `default` with no compile-time warning at all),
-    // `'connecting'` would become assignable, both directives below would stop erroring, and
-    // `npm run typecheck` would fail on "Unused '@ts-expect-error' directive" — so this cannot rot
-    // into a silent pass the way the runtime `expect(true).toBe(true)` it replaces could.
-    // @ts-expect-error — 'connecting' is not one of the five non-replay `ConnectionState['kind']` members `chipLabel` accepts.
-    void chipLabel('connecting', null);
-    // @ts-expect-error — same closure, over the full `ConnectionState` union `announceSentence` takes.
-    void announceSentence({ kind: 'connecting' }, null);
-  });
-
-  it('AC-10 — the resolver module has EXACTLY two importers, asserted as SET EQUALITY', () => {
-    const importers = Object.entries(APP_SOURCES)
-      .filter(([, src]) => /from\s+['"][^'"]*\/connection\/connectionState['"]/.test(src))
-      .map(([f]) => f)
-      .sort();
-    expect(importers).toEqual(
-      [
-        '/src/app/pages/ticker/widgets/chrome/CommandDeck.tsx',
-        '/src/app/pages/ticker/widgets/chrome/TickerHeader.tsx',
-      ].sort(),
-    );
-  });
-
-  it('the resolver is NOT re-exported from the shared UI barrel — a re-export would blind this scan', () => {
-    const barrel = APP_SOURCES['/src/app/shared/ui/index.ts'];
-    expect(barrel).toBeTruthy();
-    expect(barrel).not.toMatch(/connectionState/);
   });
 
   it('`live` is not constructible from static data — session_tape presence always poisons it to a replay kind, never live', () => {

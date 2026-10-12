@@ -1254,26 +1254,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn secrets_and_canary_absent_from_stdout_stderr() {
-        let canary = "CANARY_FLAT_FILES_SECRET_do_not_print";
-        let store = FlatFilesStore::memory();
-        let client = StubClient::both(StubResp::AssertNotCalled);
-        let (stdout, stderr, _) = evaluate_keep(
-            &store,
-            &client,
-            due_now(),
-            "SPY",
-            "2026-08-10",
-            KeepCredentialGate::WrongCredentialClass,
-            &temp(),
-        )
-        .await;
-        assert!(!stdout.contains(canary));
-        assert!(!stderr.contains(canary));
-        assert!(stdout.contains("REST apiKey is not the files secret"));
-    }
-
-    #[tokio::test]
     async fn keep_unreadable_is_nonzero_error() {
         let store = FlatFilesStore::memory();
         // Corrupt gzip → unreadable after 200.

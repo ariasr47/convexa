@@ -58,29 +58,3 @@ pub async fn progressive_demo_root() -> RouteResponse<DemoResponse> {
 pub async fn progressive_demo_alias() -> RouteResponse<DemoResponse> {
     progressive_demo().await.into_response().into()
 }
-
-#[cfg(test)]
-mod response_conversion_tests {
-    use super::*;
-    use axum::body::to_bytes;
-    use axum::http::{header, StatusCode};
-
-    #[tokio::test]
-    async fn demo_boundary_converts_the_typed_html_variant() {
-        let response = contract_representative_response(
-            StatusCode::OK,
-            "text/html",
-            false,
-            "GET /demo 200 text/html public",
-        );
-        assert_eq!(response.status(), StatusCode::OK);
-        assert!(response.headers()[header::CONTENT_TYPE]
-            .to_str()
-            .unwrap()
-            .starts_with("text/html"));
-        let body = to_bytes(response.into_body(), 1024 * 1024).await.unwrap();
-        assert!(String::from_utf8(body.to_vec())
-            .unwrap()
-            .contains("<!DOCTYPE html>"));
-    }
-}

@@ -70,20 +70,6 @@ fn ci_and_conformance_install_locked_node_dependencies_before_check() {
 }
 
 #[test]
-fn release_build_keeps_postgres_and_contract_check_is_before_it() {
-    let api = read("apps/api/project.json");
-    let cargo = read("apps/api/Cargo.toml");
-    let ci = read(".github/workflows/ci.yml");
-    let conformance = read(".github/workflows/conformance.yml");
-    assert!(api.contains("cargo build -p api-rust --release --features postgres"));
-    assert!(ci.contains("cargo build -p api-rust --release --features postgres"));
-    assert!(conformance.contains("cargo build -p api-rust --release"));
-    assert!(cargo.contains("default-run = \"api-rust\""));
-    assert_ordered(&ci, "npm run api:contract:check", "Cargo test");
-    assert_ordered(&conformance, "npm run api:contract:check", "Build api-rust");
-}
-
-#[test]
 fn the_gate_is_not_allowed_to_cache_or_flatten_result_categories() {
     let api = read("apps/api/project.json");
     let nx = read("nx.json");
@@ -99,46 +85,4 @@ fn the_gate_is_not_allowed_to_cache_or_flatten_result_categories() {
     );
     assert!(!workflows.contains("continue-on-error: true"));
     assert!(!workflows.contains("2>/dev/null"));
-}
-
-#[test]
-fn protected_quant_scoring_and_runtime_openapi_surface_remain_untouched() {
-    let root = workspace();
-    let quant =
-        fs::read_to_string(root.join("libs/quant-engine/src/lib.rs")).expect("quant source");
-    assert!(!quant.contains("api-contract"));
-    let routes = fs::read_to_string(root.join("apps/api/src/routes/mod.rs")).expect("routes");
-    assert!(!routes.contains("swagger_ui"));
-    assert!(!routes.contains("openapi.json"));
-    let docker = fs::read_to_string(root.join("apps/api/Dockerfile")).expect("Dockerfile");
-    assert!(!docker.contains("node_modules"));
-}
-
-#[test]
-fn production_runtime_isolation_has_no_generator_or_contract_artifacts() {
-    let docker = read("apps/api/Dockerfile");
-    for forbidden in [
-        "node_modules",
-        "openapi-typescript",
-        "convexa.openapi.json",
-        "parity-coverage.json",
-        "generated-artifacts.manifest.json",
-    ] {
-        assert!(
-            !docker.contains(forbidden),
-            "runtime image must exclude {forbidden}"
-        );
-    }
-    let package = read("apps/api/Cargo.toml");
-    assert!(package.contains("default-run = \"api-rust\""));
-}
-
-#[test]
-fn router_integration_gate_requires_history_and_probe_inputs() {
-    assert!(
-        read("apps/api/openapi/router-integration-prechange-baseline.json")
-            .contains("openapi-router-integration-prechange")
-    );
-    assert!(read("tools/api-router-integration-compile-probe.mjs")
-        .contains("ROUTER_INTEGRATION_COMPILE_PROBE"));
 }

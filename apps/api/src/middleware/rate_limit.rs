@@ -8,7 +8,7 @@
 
 use axum::body::Body;
 use axum::extract::State;
-use axum::http::{Request, StatusCode};
+use axum::http::{header, Method, Request, StatusCode};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
@@ -29,46 +29,63 @@ struct WindowCounter {
 /// Process-local IP → request counts in the current minute window.
 #[derive(Debug)]
 pub struct RateLimiter {
-    /// Max requests per IP per 60s. 0 = disabled.
+    /// Max requests per IP per 60s on expensive data routes. 0 = disabled.
     pub max_per_min: u32,
+    /// Max sign-in and sign-up POSTs per IP per 60s (`AUTH_RATE_LIMIT_PER_MIN`). 0 = disabled.
+    /// The client IP comes from a header a caller can set, so this only stops naive scripts; the
+    /// per-account throttle in the auth service is the guard an attacker cannot rotate around.
+    pub auth_max_per_min: u32,
     inner: Mutex<HashMap<String, WindowCounter>>,
+    auth_inner: Mutex<HashMap<String, WindowCounter>>,
+}
+
+/// Count one request for `key`; `Err(seconds)` until the current window ends once `max` is spent.
+fn charge(map: &Mutex<HashMap<String, WindowCounter>>, max: u32, key: &str) -> Result<(), u64> {
+    if max == 0 {
+        return Ok(());
+    }
+    let mut guard = match map.lock() {
+        Ok(g) => g,
+        Err(poisoned) => poisoned.into_inner(),
+    };
+    let now = Instant::now();
+    // Occasional prune so the map cannot grow without bound under rotating IPs.
+    if guard.len() > 10_000 {
+        guard.retain(|_, v| now.duration_since(v.window_start) < WINDOW * 2);
+    }
+    let entry = guard.entry(key.to_string()).or_insert(WindowCounter {
+        window_start: now,
+        count: 0,
+    });
+    if now.duration_since(entry.window_start) >= WINDOW {
+        entry.window_start = now;
+        entry.count = 0;
+    }
+    if entry.count >= max {
+        let left = WINDOW.saturating_sub(now.duration_since(entry.window_start));
+        return Err(left.as_secs_f64().ceil().max(1.0) as u64);
+    }
+    entry.count += 1;
+    Ok(())
 }
 
 impl RateLimiter {
     pub fn new(max_per_min: u32) -> Self {
+        Self::with_auth_budget(max_per_min, 0)
+    }
+
+    pub fn with_auth_budget(max_per_min: u32, auth_max_per_min: u32) -> Self {
         Self {
             max_per_min,
+            auth_max_per_min,
             inner: Mutex::new(HashMap::new()),
+            auth_inner: Mutex::new(HashMap::new()),
         }
     }
 
     /// Returns true if the request is allowed.
     pub fn check(&self, key: &str) -> bool {
-        if self.max_per_min == 0 {
-            return true;
-        }
-        let mut guard = match self.inner.lock() {
-            Ok(g) => g,
-            Err(poisoned) => poisoned.into_inner(),
-        };
-        let now = Instant::now();
-        // Occasional prune so the map cannot grow without bound under rotating IPs.
-        if guard.len() > 10_000 {
-            guard.retain(|_, v| now.duration_since(v.window_start) < WINDOW * 2);
-        }
-        let entry = guard.entry(key.to_string()).or_insert(WindowCounter {
-            window_start: now,
-            count: 0,
-        });
-        if now.duration_since(entry.window_start) >= WINDOW {
-            entry.window_start = now;
-            entry.count = 0;
-        }
-        if entry.count >= self.max_per_min {
-            return false;
-        }
-        entry.count += 1;
-        true
+        charge(&self.inner, self.max_per_min, key).is_ok()
     }
 }
 
@@ -111,11 +128,34 @@ fn is_expensive(path: &str) -> bool {
         || path.starts_with("/api/prices")
 }
 
+/// Credential-bearing POSTs that get their own per-IP budget.
+fn is_sign_in(method: &Method, path: &str) -> bool {
+    method == Method::POST && (path == "/api/auth/login" || path == "/api/auth/signup")
+}
+
 pub async fn rate_limit_middleware(
     State(limiter): State<std::sync::Arc<RateLimiter>>,
     req: Request<Body>,
     next: Next,
 ) -> Response {
+    if is_sign_in(req.method(), req.uri().path()) {
+        let key = client_key(&req);
+        if let Err(wait) = charge(&limiter.auth_inner, limiter.auth_max_per_min, &key) {
+            warn!(ip = %key, limit = limiter.auth_max_per_min, "sign-in rate limit exceeded");
+            let mut res = (
+                StatusCode::TOO_MANY_REQUESTS,
+                Json(json!({
+                    "error": "rate_limited",
+                    "message": format!("Too many sign-in attempts. Try again in {wait} seconds."),
+                })),
+            )
+                .into_response();
+            res.headers_mut()
+                .insert(header::RETRY_AFTER, header::HeaderValue::from(wait));
+            return res;
+        }
+        return next.run(req).await;
+    }
     if limiter.max_per_min == 0 {
         return next.run(req).await;
     }

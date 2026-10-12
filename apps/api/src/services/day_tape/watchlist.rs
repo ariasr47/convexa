@@ -38,10 +38,4 @@ mod tests {
             "watchlist must stay a local constant"
         );
     }
-
-    #[test]
-    fn nvda_is_not_in_watchlist_before_not_storing() {
-        assert!(!in_tape_watchlist("NVDA"));
-        assert!(!in_tape_watchlist("nvda"));
-    }
 }

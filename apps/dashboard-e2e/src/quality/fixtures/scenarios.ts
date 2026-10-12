@@ -462,6 +462,9 @@ export const journeys = [
   base('dense-scanner', '/scanner', 'authenticated', { width: 393, height: 852 }, 'dark', [
     { selector: '[data-testid="scanner-page"]' },
   ]),
+  base('ai-recommendation', '/ticker/SPY', 'authenticated', { width: 393, height: 852 }, 'light', [
+    { selector: '[data-testid="widget-bento"]' },
+  ]),
 ];
 export const accessibilityScenarios = [
   base('A11Y-1', '/', 'anonymous', { width: 1280, height: 900 }, 'dark', [
@@ -679,32 +682,4 @@ export const accessibilityScenarios = [
       { selector: '[role="alert"]' },
     ],
   ),
-];
-export const visualScenarios = [
-  base('landing', '/', 'anonymous', { width: 393, height: 852 }, 'dark', [
-    { selector: '[data-testid="landing"]' },
-  ]),
-  base('ticker-desktop', '/ticker/SPY', 'anonymous', { width: 1280, height: 900 }, 'dark', [
-    { selector: '[data-testid="widget-bento"]' },
-  ]),
-  {
-    ...base(
-      'ticker-offline-mobile',
-      '/ticker/SPY',
-      'anonymous',
-      { width: 393, height: 852 },
-      'light',
-      [{ selector: '[data-testid="widget-bento"]' }],
-    ),
-    stream: 'payload-gap' as const,
-  },
-  base('positions-dense', '/positions', 'authenticated', { width: 393, height: 852 }, 'dark', [
-    { selector: '[data-testid="positions-cards"]' },
-  ]),
-  base('scanner-dense', '/scanner', 'authenticated', { width: 900, height: 900 }, 'light', [
-    { selector: '[data-testid="scan-table"]' },
-  ]),
-  base('ai-recommendation', '/ticker/SPY', 'authenticated', { width: 393, height: 852 }, 'light', [
-    { selector: '[data-testid="widget-bento"]' },
-  ]),
 ];

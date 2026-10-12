@@ -4,7 +4,7 @@
  * who-am-I / signup / login / logout / settings / the gated-action outcomes + the trader bundle/SSE.
  *
  * It is mutable per-test: `setSession(...)` flips who-am-I (anonymous ↔ identity-X ↔ identity-Y),
- * `setGoogle(bool)` flips the config flag, `failSession()` simulates a who-am-I transport fault, and
+ * `failSession()` simulates a who-am-I transport fault, and
  * the auth-write handlers can be told to 409/422/401/503 to drive every error state.
  */
 import type {
@@ -119,9 +119,7 @@ function normalizeAiKeyState(partial?: Partial<AiKeyBackendState>): AiKeyBackend
 export interface AuthBackendState {
   session: SessionStatus;
   sessionFails: boolean; // who-am-I transport fault ⇒ FE degrades to anonymous
-  // GATE Z m-1 (AC-A5) — `signups_closed`: the owner-lockdown refusal a submitted sign-up gets
-  // while sign-ups are closed (distinct from `auth_unavailable`, a transient fault).
-  signup: 'ok' | 'email_taken' | 'validation' | 'auth_unavailable' | 'signups_closed';
+  signup: 'ok' | 'email_taken' | 'validation' | 'auth_unavailable';
   login: 'ok' | 'bad_credentials' | 'validation' | 'auth_unavailable';
   settingsWrite: 'ok' | 'auth_required' | 'auth_unavailable' | 'validation';
   // The gated-action server outcomes (ai-rec POST / a hypothetical positions write).
@@ -174,7 +172,6 @@ export interface AuthBackend {
     display_name?: string | null;
   }): void;
   setAnonymous(): void;
-  setGoogle(available: boolean): void;
   failSession(): void;
   healSession(): void;
   /** byo-ai-key — flip how the next rec POST resolves the key (the a–e state machine). */
@@ -568,14 +565,6 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
         }
         if (state.signup === 'auth_unavailable')
           return authErr('auth_unavailable', 'auth down', 503);
-        // GATE Z m-1 (AC-A5) — the owner-lockdown refusal, 403, matching what QA observed against
-        // the live backend (`POST /api/auth/signup` → 403 `signups_closed`).
-        if (state.signup === 'signups_closed')
-          return authErr(
-            'signups_closed',
-            'New sign-ups are closed while Convexa is in private testing.',
-            403,
-          );
         const sess = userSession(
           'u-new',
           body.email,
@@ -1071,9 +1060,6 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
     },
     setAnonymous() {
       state.session = anonSession(state.session.google_available);
-    },
-    setGoogle(available) {
-      state.session = { ...state.session, google_available: available };
     },
     failSession() {
       state.sessionFails = true;

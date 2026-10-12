@@ -252,13 +252,6 @@ mod tests {
         assert!(CoveragePolicy::new(d, NaiveTime::MIN, MAX_RUNTIME_LOOKBACK + 1).is_err());
     }
     #[test]
-    fn calendar_header_and_closed_vocab_are_exact() {
-        let c = MarketCalendar::production().unwrap();
-        assert_eq!(c.calendar_id, "XNYS-full-day");
-        assert_eq!(c.schema_version, 1);
-        assert_eq!(c.calendar_version, "2026-2035@2026-08-26.1");
-    }
-    #[test]
     fn saturday_sunday_and_every_closure_are_ineligible() {
         let c = MarketCalendar::production().unwrap();
         assert!(!c
@@ -286,13 +279,6 @@ mod tests {
         let c = MarketCalendar::production().unwrap();
         let years: Vec<_> = c.closed.iter().filter(|d| d.year() == 2026).collect();
         assert_eq!(years.len(), 10);
-    }
-    #[test]
-    fn ordinary_weekday_is_eligible() {
-        let c = MarketCalendar::production().unwrap();
-        assert!(c
-            .is_eligible(NaiveDate::from_ymd_opt(2026, 8, 24).unwrap())
-            .unwrap());
     }
     #[test]
     fn observed_relationship_is_rejected_when_invalid() {

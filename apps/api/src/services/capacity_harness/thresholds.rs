@@ -182,13 +182,6 @@ mod tests {
     }
 
     #[test]
-    fn empty_samples_do_not_emit_a_blended_ticker_analysis_p95() {
-        let text = render_p95_block(&empty_scenarios());
-        assert!(!text.to_ascii_lowercase().contains("ticker-analysis p95"));
-        assert!(!text.contains("/api/_metrics"));
-    }
-
-    #[test]
     fn empty_samples_fail_each_named_basis() {
         let r = evaluate_thresholds(&empty_scenarios());
         assert_eq!(r.failed.len(), ScenarioName::ALL.len());

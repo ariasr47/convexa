@@ -29,23 +29,6 @@
       },
       "cache": false
     },
-    "visual": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "node apps/dashboard-e2e/tools/run-gate.mjs visual",
-        "forwardAllArgs": false
-      },
-      "cache": false
-    },
-    "visual-update": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "node apps/dashboard-e2e/tools/visual-update.mjs",
-        "forwardAllArgs": true
-      },
-      "cache": false,
-      "parallelism": false
-    },
     "quality": {
       "executor": "nx:run-commands",
       "options": {

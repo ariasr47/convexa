@@ -695,41 +695,28 @@ mod tests {
         assert!(set.contracts.len() <= caps.max_records);
         assert!(serde_json::to_vec(&set.contracts).unwrap().len() <= caps.max_bytes);
         assert!(set.omitted.by_reason.strike_cap > 0);
-    }
 
-    #[test]
-    fn raising_a_ceiling_in_a_test_build_makes_the_guard_fail() {
-        // Poison arm named by the plan: even with an absurdly high per-group cap, the record
-        // ceiling still binds — proving the guard is load-bearing, not vacuous.
-        let mut chain = Vec::new();
-        for exp in ["2026-08-21", "2026-09-18"] {
-            for i in 0..50 {
-                let strike = 100.0 + i as f64 * 0.1;
-                chain.push(quoted(strike, ContractType::Call, exp));
-                chain.push(quoted(strike, ContractType::Put, exp));
-            }
-        }
-        let caps = CandidateCaps {
-            tenors: 4,
-            rights: 2,
-            strikes_per_tenor_right: 99,
-            max_records: 64,
-            max_bytes: 24_000,
+        // Poison arm: lift the record ceiling (and the byte ceiling, so it cannot bind in its
+        // place) and the same chain returns more than 64 rows — the bound above is load-bearing.
+        let lifted = CandidateCaps {
+            max_records: 10_000,
+            max_bytes: 10_000_000,
+            ..caps
         };
-        let set = CandidateSet::build_with_caps(
+        let unbounded = CandidateSet::build_with_caps(
             &chain,
             100.0,
             as_of(),
             DteWindow::default(),
             CandidateBudget::Handoff,
-            caps,
+            lifted,
             false,
             &meta(),
         );
         assert!(
-            set.contracts.len() <= 64,
-            "record ceiling must still bind at {} rows",
-            set.contracts.len()
+            unbounded.contracts.len() > 64,
+            "with the ceilings lifted the chain must exceed 64 rows, got {}",
+            unbounded.contracts.len()
         );
     }
 

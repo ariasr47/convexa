@@ -765,6 +765,12 @@ const RESPONSE_CONVERSION_SOURCES: &[(&str, &str, u16, bool)] = &[
         false,
     ),
     (
+        "POST /api/auth/login 429 application/json public",
+        "application/json",
+        429,
+        false,
+    ),
+    (
         "POST /api/auth/login 503 application/json public",
         "application/json",
         503,
@@ -846,6 +852,12 @@ const RESPONSE_CONVERSION_SOURCES: &[(&str, &str, u16, bool)] = &[
         "POST /api/auth/signup 422 application/json public",
         "application/json",
         422,
+        false,
+    ),
+    (
+        "POST /api/auth/signup 429 application/json public",
+        "application/json",
+        429,
         false,
     ),
     (

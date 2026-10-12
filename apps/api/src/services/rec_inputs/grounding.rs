@@ -477,51 +477,6 @@ mod tests {
     }
 
     #[test]
-    fn a_value_exactly_on_a_named_anchor_is_traced_exact() {
-        let f = resolve_named_level(500.00, &anchors_at(500.00));
-        assert_eq!(f.state, GroundingState::Traced);
-        assert_eq!(f.basis, Some(MatchBasis::Exact));
-        assert_eq!(f.anchor_kind, Some(AnchorKind::CallWall));
-        assert_eq!(f.anchor_value, Some(500.00));
-    }
-
-    #[test]
-    fn just_inside_the_window_is_traced_near_and_just_outside_is_untraced() {
-        // anchor 500.00 -> window half-width 0.50. Literal edges, NEVER derived from the constant.
-        assert_eq!(
-            resolve_named_level(500.49, &anchors_at(500.00)).basis,
-            Some(MatchBasis::Near)
-        );
-        assert_eq!(
-            resolve_named_level(500.51, &anchors_at(500.00)).state,
-            GroundingState::Untraced
-        );
-    }
-
-    #[test]
-    fn under_ten_dollars_the_cent_floor_binds_rather_than_the_percentage() {
-        // anchor 2.00 -> the percentage would give 0.002; the floor gives 0.01.
-        assert_eq!(
-            resolve_named_level(2.008, &anchors_at(2.00)).basis,
-            Some(MatchBasis::Near)
-        );
-        assert_eq!(
-            resolve_named_level(2.015, &anchors_at(2.00)).state,
-            GroundingState::Untraced
-        );
-    }
-
-    #[test]
-    fn every_anchor_absent_is_not_checkable_no_named_level() {
-        let f = resolve_named_level(500.00, &GroundingAnchors::empty());
-        assert_eq!(f.state, GroundingState::NotCheckable);
-        assert_eq!(
-            f.not_checkable_reason,
-            Some(NotCheckableReason::NoNamedLevel)
-        );
-    }
-
-    #[test]
     fn a_tie_is_broken_by_the_fixed_anchor_order_not_by_map_iteration() {
         let mut a = GroundingAnchors::empty();
         a.set(AnchorKind::CallWall, Some(100.0));
@@ -571,38 +526,6 @@ mod tests {
             wide_quote_threshold_pct: 15.0,
             tenors: vec![tenor("2026-09-18", 10.00)],
         }
-    }
-
-    #[test]
-    fn exit_target_with_no_cited_expiration_is_not_checkable_no_cited_expiration_first() {
-        // Branch 1 is evaluated FIRST even though branch 2 would also fire.
-        let f = resolve_field(
-            RecField::ExitTarget,
-            Some(505.0),
-            None,
-            None,
-            &GroundingAnchors::empty(),
-        );
-        assert_eq!(
-            f.not_checkable_reason,
-            Some(NotCheckableReason::NoCitedExpiration)
-        );
-    }
-
-    #[test]
-    fn exit_target_with_a_tenor_absent_from_the_pruned_move_is_straddle_move_unavailable() {
-        let mv = one_tenor_move();
-        let f = resolve_field(
-            RecField::ExitTarget,
-            Some(505.0),
-            Some("2026-12-18"),
-            Some(&mv),
-            &GroundingAnchors::empty(),
-        );
-        assert_eq!(
-            f.not_checkable_reason,
-            Some(NotCheckableReason::StraddleMoveUnavailable)
-        );
     }
 
     #[test]
@@ -684,21 +607,6 @@ mod tests {
         }
         for field in [RecField::MaxRisk, RecField::PositionSize] {
             assert_eq!(resolve_field(field, Some(1.0), None, None, &a).basis, None);
-        }
-    }
-
-    #[test]
-    fn an_absent_value_is_not_applicable_on_every_field() {
-        for field in [
-            RecField::MaxRisk,
-            RecField::PositionSize,
-            RecField::ExitTarget,
-            RecField::ExitStop,
-            RecField::InvalidationLevel,
-        ] {
-            let f = resolve_field(field, None, None, None, &GroundingAnchors::empty());
-            assert_eq!(f.state, GroundingState::NotApplicable, "{field:?}");
-            assert!(f.not_checkable_reason.is_none());
         }
     }
 

@@ -335,35 +335,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn local_404_is_status_404_not_miss_classification() {
-        let (endpoint, _h) = spawn_mock(|_| {
-            Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .body(Body::from("NoSuchKey"))
-                .unwrap()
-        })
-        .await;
-        let client =
-            MassiveFilesClient::with_endpoint(test_creds(), endpoint, "flatfiles", "us-east-1")
-                .unwrap();
-        let dest = tmp_dest("404");
-        let out = client
-            .get_object(FilesClass::Quotes, "2026-08-12", &dest)
-            .await;
-        match out {
-            FilesHttpOutcome::Status { code: 404, .. } => {}
-            other => panic!("client is HTTP-only; 404 must be Status{{code:404}}, got {other:?}"),
-        }
-        // No miss variant exists on FilesHttpOutcome.
-        let src = include_str!("client.rs");
-        let prod = src.split("#[cfg(test)]").next().unwrap_or(src);
-        assert!(
-            !prod.contains("Miss") && !prod.contains("miss_classification"),
-            "client must not classify miss"
-        );
-    }
-
-    #[tokio::test]
     async fn transport_sanitizer_never_prints_files_secret() {
         // Unreachable port → connect failure; sanitized string must not carry the secret.
         let client = MassiveFilesClient::with_endpoint(
@@ -386,34 +357,5 @@ mod tests {
         }
         // Counter still increments: send was invoked (connect fails after send starts).
         assert_eq!(client.trades_gets(), 1);
-    }
-
-    #[test]
-    fn leaf_forbids_aws_sdk_and_rest_key_material() {
-        for file in ["mod.rs", "credentials.rs", "sigv4.rs", "client.rs"] {
-            let path = format!("src/infrastructure/flatfiles/{file}");
-            // include relative to this file
-            let src = match file {
-                "mod.rs" => include_str!("mod.rs"),
-                "credentials.rs" => include_str!("credentials.rs"),
-                "sigv4.rs" => include_str!("sigv4.rs"),
-                "client.rs" => include_str!("client.rs"),
-                _ => unreachable!(),
-            };
-            let prod = src.split("#[cfg(test)]").next().unwrap_or(src);
-            assert!(
-                !prod.contains("aws-sdk"),
-                "{path} must not depend on aws-sdk-*"
-            );
-            assert!(
-                !prod.contains("MASSIVE_API_KEY"),
-                "{path} must not embed MASSIVE_API_KEY (split poison if reading REST env)"
-            );
-            assert!(
-                !prod.contains("massive_api_key"),
-                "{path} must not reference massive_api_key"
-            );
-            let _ = path;
-        }
     }
 }

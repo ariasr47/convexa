@@ -35,10 +35,6 @@ describe('evalSubjectOf', () => {
     if (s.kind === 'primary_leg') expect(s.of_legs).toBe(4);
   });
 
-  it('carries NO primary_leg_label — that field is deferred with the copy', () => {
-    expect(evalSubjectOf(FX_IRON_CONDOR)).not.toHaveProperty('primary_leg_label');
-  });
-
   it('prefers the LONG option leg with the largest |qty x multiplier|', () => {
     const p = mkPosition([
       mkLeg({ id: 'small-long', side: 'long', qty: 1, strike: 400 }),

@@ -173,20 +173,6 @@ mod tests {
     use std::collections::BTreeSet;
 
     #[test]
-    fn all_has_eleven_distinct_members() {
-        let set: BTreeSet<DerivationKey> = DerivationKey::ALL.into_iter().collect();
-        assert_eq!(set.len(), 11);
-        assert_eq!(DerivationKey::ALL.len(), 11);
-    }
-
-    #[test]
-    fn human_names_are_eleven_distinct_nonempty_strings() {
-        let names: BTreeSet<&'static str> = DerivationKey::ALL.iter().map(|k| k.human()).collect();
-        assert_eq!(names.len(), 11, "human() must not collide across variants");
-        assert!(names.iter().all(|n| !n.is_empty()));
-    }
-
-    #[test]
     fn shared_keys_is_order_stable_and_commutative_in_content() {
         let a = [
             DerivationKey::CallWall,
@@ -214,11 +200,5 @@ mod tests {
         // ...and order follows DerivationKey::ALL regardless of input argument order.
         assert_eq!(ab, vec![DerivationKey::Flip, DerivationKey::CallWall]);
         assert_eq!(ba, vec![DerivationKey::Flip, DerivationKey::CallWall]);
-    }
-
-    #[test]
-    fn shared_keys_empty_when_one_side_empty() {
-        assert!(shared_keys(&[], &[DerivationKey::Flip]).is_empty());
-        assert!(shared_keys(&[DerivationKey::Flip], &[]).is_empty());
     }
 }

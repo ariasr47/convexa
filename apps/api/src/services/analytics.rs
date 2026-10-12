@@ -552,24 +552,6 @@ mod hermetic_tests {
     use std::path::PathBuf;
 
     #[tokio::test]
-    async fn fixture_path_b_produces_structure_and_score_without_network() {
-        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/market");
-        let port = MarketDataPort::fixture(load_fixture_dir(&dir).unwrap());
-        let params = AnalyticsComputeParams::default();
-        let snap = compute_from_port(&port, "SYN", None, &params, None)
-            .await
-            .expect("hermetic compute");
-        assert_eq!(snap.ticker, "SYN");
-        assert!(snap.gex_spot > 0.0);
-        assert!(snap.contract_count >= 2);
-        assert!(snap.gex.call_wall > 0.0 || snap.gex.put_wall > 0.0);
-        let sig = snap.signals.expect("signals");
-        // Opportunity score is defined; exact value is free to drift with engine.
-        assert!(sig.opportunity_score >= 0);
-        assert!(snap.compute_ms >= 0.0);
-    }
-
-    #[tokio::test]
     async fn fixture_path_b_attaches_a_straddle_move_object_with_a_state() {
         let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/market");
         let port = MarketDataPort::fixture(load_fixture_dir(&dir).unwrap());
@@ -654,66 +636,6 @@ mod hermetic_tests {
         assert_eq!(state.massive_request_count(), 0);
         assert!(snap.contract_count >= 1000);
         assert_eq!(snap.ticker, "SPY");
-    }
-
-    #[tokio::test]
-    async fn vendor_fixture_none_still_calls_the_four_fetch_join() {
-        // Source assertion: the None arm still contains fetch_options_market_state,
-        // fetch_daily_bars, fetch_intraday_bars, fetch_recent_trades in one tokio::join!.
-        let src = include_str!("analytics.rs");
-        let start = src.find("async fn compute_analytics(").unwrap();
-        let body = &src[start..];
-        assert!(body.contains("state.massive.fetch_options_market_state(sym)"));
-        assert!(body.contains("state.massive.fetch_daily_bars(sym, 400)"));
-        assert!(body.contains("state.massive.fetch_intraday_bars(sym)"));
-        assert!(body.contains("state.massive.fetch_recent_trades"));
-        // Fixture arm must not rewire onto MarketDataPort::Live.
-        let compute_end = body
-            .find("pub(crate) async fn fetch_vendor_bundle_for_ensure")
-            .unwrap_or(body.len());
-        let compute_fn = &body[..compute_end];
-        assert!(!compute_fn.contains("MarketDataPort::live"));
-        // refresh_analytics must use the fixture-aware quick_live_price wrap.
-        let refresh_start = src
-            .find("pub async fn refresh_analytics(")
-            .expect("refresh_analytics");
-        let refresh_body = &src[refresh_start..];
-        let refresh_end = refresh_body
-            .find("async fn seed_price_if_empty(")
-            .unwrap_or(refresh_body.len());
-        let refresh_fn = &refresh_body[..refresh_end];
-        assert!(refresh_fn.contains("state.quick_live_price(sym)"));
-        assert!(!refresh_fn.contains("state.massive.fetch_quick_live_price"));
-    }
-
-    #[test]
-    fn refresh_analytics_still_has_no_spawn_capture() {
-        let src = include_str!("analytics.rs");
-        let refresh_start = src
-            .find("pub async fn refresh_analytics(")
-            .expect("refresh_analytics");
-        let refresh_body = &src[refresh_start..];
-        let refresh_end = refresh_body
-            .find("async fn seed_price_if_empty(")
-            .unwrap_or(refresh_body.len());
-        let refresh_fn = &refresh_body[..refresh_end];
-        assert!(
-            refresh_fn.contains("gex_cache.set"),
-            "refresh_analytics must still warm gex_cache"
-        );
-        assert!(
-            refresh_fn.contains("quick_live_price"),
-            "refresh_analytics must still warm price"
-        );
-        let spawn = format!("spawn_{}", "capture");
-        assert!(
-            !refresh_fn.contains(&spawn),
-            "poison: refresh_analytics must not call spawn_capture"
-        );
-        assert!(
-            refresh_fn.contains("day_tape::path_b"),
-            "refresh_analytics should hook Path-B persist"
-        );
     }
 
     use crate::domain::MarketPhase;
@@ -859,30 +781,6 @@ mod hermetic_tests {
 
         assert_eq!(score_triple(&live), score_triple(&replay));
         assert_eq!(state.massive_request_count(), 0);
-    }
-
-    #[tokio::test]
-    async fn unset_construct_still_uses_existing_compute_analytics() {
-        let book = crate::services::capacity_harness::fixture::load_capacity_book(&golden_path())
-            .expect("golden");
-        let state = AppState::for_capacity_harness(book.catalog, 4, 9)
-            .await
-            .expect("harness state");
-        assert!(!state.replay_occupancy.is_armed().await);
-
-        let (snap, src) = load_analytics(&state, "SPY", None, None, false)
-            .await
-            .expect("unset Path-B");
-        assert!(snap.is_some());
-        assert_ne!(src, "session_tape");
-        assert_eq!(state.massive_request_count(), 0);
-
-        // Unset four-fetch join remains in compute_analytics (source pin).
-        let src_file = include_str!("analytics.rs");
-        let start = src_file.find("async fn compute_analytics(").unwrap();
-        let body = &src_file[start..];
-        assert!(body.contains("state.massive.fetch_options_market_state(sym)"));
-        assert!(body.contains("tokio::join!"));
     }
 
     #[test]

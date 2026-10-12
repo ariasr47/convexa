@@ -183,15 +183,6 @@ mod tests {
     }
 
     #[test]
-    fn serialized_bytes_contain_no_apikey_or_url_query() {
-        let bytes = serialize_capture(&to_wire(&sample_bundle())).unwrap();
-        let s = String::from_utf8_lossy(&bytes).to_ascii_lowercase();
-        assert!(!s.contains("apikey"));
-        assert!(!s.contains("api_key"));
-        assert!(!s.contains("https://"));
-    }
-
-    #[test]
     fn as_of_wire_preserves_fractional_seconds() {
         let as_of = DateTime::<Utc>::from_timestamp(0, 1).unwrap();
         let mut bundle = sample_bundle();
@@ -221,6 +212,7 @@ mod tests {
         let reserialized = serialize_capture(&back).unwrap();
         let s = String::from_utf8_lossy(&reserialized).to_ascii_lowercase();
         assert!(!s.contains("apikey"));
+        assert!(!s.contains("api_key"));
         assert!(!s.contains("secret"));
         assert!(!s.contains("https://"));
     }

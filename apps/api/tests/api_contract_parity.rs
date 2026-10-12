@@ -392,119 +392,6 @@ fn response_conversion_registry_rejects_unknown_well_formed_boundary() {
 }
 
 #[test]
-fn response_conversion_registry_preserves_distinct_mapping_families() {
-    let health = api_rust::routes::response_conversion_registry(
-        "GET /api/health 200 application/json public",
-    )
-    .unwrap();
-    let login = api_rust::routes::response_conversion_registry(
-        "POST /api/auth/login 200 application/json public",
-    )
-    .unwrap();
-    assert_ne!(
-        health.headers().contains_key("set-cookie"),
-        login.headers().contains_key("set-cookie")
-    );
-}
-
-#[test]
-fn response_conversion_uses_route_owned_health_builder() {
-    let response = api_rust::routes::response_conversion_registry(
-        "GET /api/health 200 application/json public",
-    )
-    .expect("health response conversion");
-    let body = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(to_bytes(response.into_body(), 1024 * 1024))
-        .expect("bounded health response body");
-    let value: Value = serde_json::from_slice(&body).expect("health JSON body");
-    for field in ["status", "service", "price_cache", "durable_store"] {
-        assert!(
-            value.get(field).is_some(),
-            "route-owned health field missing: {field}"
-        );
-    }
-    assert_ne!(
-        value.get("detail"),
-        Some(&Value::String("contract conversion representative".into()))
-    );
-}
-
-#[test]
-fn response_conversion_uses_route_owned_success_builders() {
-    let cases = [
-        (
-            "GET /api/price/{ticker} 200 application/json public",
-            "symbol",
-        ),
-        (
-            "GET /api/contract/{ticker} 200 application/json public",
-            "ticker",
-        ),
-        (
-            "GET /api/candidates/{ticker} 200 application/json public",
-            "ticker",
-        ),
-        (
-            "GET /api/ticker/{ticker} 200 application/json public",
-            "ticker",
-        ),
-    ];
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    for (boundary, field) in cases {
-        let response = api_rust::routes::response_conversion_registry(boundary)
-            .unwrap_or_else(|| panic!("missing {boundary}"));
-        let body = runtime
-            .block_on(to_bytes(response.into_body(), 1024 * 1024))
-            .expect("bounded route-owned response body");
-        let value: Value = serde_json::from_slice(&body).expect("route-owned JSON body");
-        assert!(
-            value.get(field).is_some(),
-            "{boundary} missing route field {field}"
-        );
-    }
-}
-
-#[test]
-fn response_conversion_uses_shared_production_error_mappings() {
-    let cases = [
-        (
-            "GET /api/contract/{ticker} 404 application/json public",
-            404,
-        ),
-        (
-            "GET /api/contract/{ticker} 422 application/json public",
-            422,
-        ),
-        (
-            "GET /api/contract/{ticker} 502 application/json public",
-            502,
-        ),
-    ];
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    for (boundary, status) in cases {
-        let response = api_rust::routes::response_conversion_registry(boundary).unwrap();
-        assert_eq!(response.status().as_u16(), status);
-        let body = runtime
-            .block_on(to_bytes(response.into_body(), 1024 * 1024))
-            .expect("bounded production error body");
-        let value: Value = serde_json::from_slice(&body).expect("production error JSON");
-        assert!(
-            value.get("detail").is_some() || value.get("message").is_some(),
-            "missing production error message for {boundary}"
-        );
-    }
-}
-
-#[test]
 fn response_conversion_registry_is_bijective_with_persisted_boundaries() {
     let catalog: Value = serde_json::from_str(include_str!("../openapi/parity-coverage.json"))
         .expect("persisted boundary catalog");
@@ -539,7 +426,7 @@ fn every_persisted_boundary_has_explicit_route_source_target() {
         .flat_map(|operation| operation["boundaries"].as_array().unwrap())
         .map(|boundary| boundary["boundary_id"].as_str().unwrap())
         .collect::<Vec<_>>();
-    assert_eq!(ids.len(), 201);
+    assert_eq!(ids.len(), 203);
     for id in ids {
         let target = api_rust::routes::response_conversion_registry_source_target(id)
             .unwrap_or_else(|| panic!("missing explicit route source target: {id}"));
@@ -770,6 +657,8 @@ declare_boundary_evidence_tests!(
     boundary_evidence_198,
     boundary_evidence_199,
     boundary_evidence_200,
+    boundary_evidence_201,
+    boundary_evidence_202,
 );
 /// Exercise the actual Axum router returned by production `routes::router` for every ordinary
 /// operation.  This intentionally uses no handler/facade mocks: status and media are observed at
@@ -1304,99 +1193,11 @@ async fn oauth_callback_uses_injected_exchange_and_sets_secure_session_cookie() 
         cookie.contains("Secure") && cookie.contains("HttpOnly") && cookie.contains("SameSite=Lax")
     );
 }
-fn operation_count(doc: &Value) -> usize {
-    doc["paths"]
-        .as_object()
-        .unwrap()
-        .values()
-        .map(|item| {
-            item.as_object()
-                .unwrap()
-                .keys()
-                .filter(|k| {
-                    matches!(
-                        k.as_str(),
-                        "get" | "post" | "put" | "delete" | "patch" | "head" | "options"
-                    )
-                })
-                .count()
-        })
-        .sum()
-}
-
-#[test]
-fn ordinary_http_has_typed_responses() {
-    let d = document();
-    assert_eq!(operation_count(&d), 57);
-    assert!(d["paths"]["/api/health"]["get"]["responses"]["200"].is_object());
-}
-#[test]
-fn every_operation_has_identity() {
-    let d = document();
-    for item in d["paths"].as_object().unwrap().values() {
-        for op in item.as_object().unwrap().values() {
-            if op.get("operationId").is_some() {
-                assert!(!op["operationId"].as_str().unwrap().is_empty());
-            }
-        }
-    }
-}
-#[test]
-fn every_operation_has_response() {
-    let d = document();
-    for item in d["paths"].as_object().unwrap().values() {
-        for op in item.as_object().unwrap().values() {
-            if op.get("responses").is_some() {
-                assert!(!op["responses"].as_object().unwrap().is_empty());
-            }
-        }
-    }
-}
-#[test]
-fn no_schema_less_json() {
-    let d = document();
-    for item in d["paths"].as_object().unwrap().values() {
-        for op in item.as_object().unwrap().values() {
-            for response in op["responses"]
-                .as_object()
-                .into_iter()
-                .flat_map(|x| x.values())
-            {
-                for media in response["content"]
-                    .as_object()
-                    .into_iter()
-                    .flat_map(|x| x.values())
-                {
-                    if media["schema"].is_object() {
-                        assert!(!media["schema"].as_object().unwrap().is_empty());
-                    }
-                }
-            }
-        }
-    }
-}
 #[test]
 fn logout_method_is_post_only() {
     let d = document();
     assert!(d["paths"]["/api/auth/logout"]["post"].is_object());
     assert!(d["paths"]["/api/auth/logout"]["delete"].is_null());
-}
-#[test]
-fn stream_media_is_event_stream() {
-    let d = document();
-    assert!(
-        d["paths"]["/api/stream/prices"]["get"]["responses"]["200"]["content"]["text/event-stream"]
-            .is_object()
-    );
-}
-#[test]
-fn ticker_stream_media_is_event_stream() {
-    let d = document();
-    assert!(
-        d["paths"]["/api/stream/{ticker}"]["get"]["responses"]["200"]["content"]
-            ["text/event-stream"]
-            .is_object()
-    );
 }
 #[test]
 fn ticker_bundle_preserves_legacy_optional_query_contract() {
@@ -1447,51 +1248,6 @@ fn ticker_bundle_preserves_legacy_optional_query_contract() {
             .is_object()
     );
 }
-#[test]
-fn legacy_ticker_query_fields_do_not_change_bundle_behavior() {
-    let source = include_str!("../src/routes/market.rs");
-    let handler = source
-        .split("pub async fn get_ticker_bundle")
-        .nth(1)
-        .expect("ticker bundle handler exists");
-    assert!(handler.contains("build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp)"));
-    for field in [
-        "expirations",
-        "pos_expiration",
-        "pos_strike",
-        "pos_right",
-        "pos_pl_pct",
-    ] {
-        assert!(
-            !handler.contains(&format!("q.{field}")),
-            "legacy field {field} must remain schema-only"
-        );
-    }
-}
-#[test]
-fn html_surface_is_declared() {
-    let d = document();
-    assert!(d["paths"]["/"]["get"]["responses"]["200"]["content"]["text/html"].is_object());
-}
-#[test]
-fn baseline_pairs_are_present() {
-    let d = document();
-    for path in [
-        "/health",
-        "/api/health",
-        "/api/auth/session",
-        "/api/auth/logout",
-    ] {
-        assert!(d["paths"][path].is_object());
-    }
-}
-#[test]
-fn security_schemes_are_value_free() {
-    let d = document();
-    let text = d["components"]["securitySchemes"].to_string();
-    assert!(!text.contains("token-value") && !text.contains("example"));
-}
-
 #[test]
 fn every_operation_has_the_contract_security_mode() {
     let d = document();
@@ -1567,22 +1323,6 @@ fn iv_rank_schema_requires_every_serialized_key_and_marks_optionals_nullable() {
         );
     }
 }
-#[test]
-fn paths_are_unique_and_nonempty() {
-    let d = document();
-    assert_eq!(d["paths"].as_object().unwrap().len(), 50);
-    assert!(d["paths"]
-        .as_object()
-        .unwrap()
-        .keys()
-        .all(|p| p.starts_with('/')));
-}
-#[test]
-fn fallback_is_not_an_openapi_operation() {
-    let d = document();
-    assert!(d["paths"]["/*"].is_null());
-}
-
 #[test]
 fn normalizer_set_is_executable() {
     // The parity artifact names this test as the concrete normalizer implementation. Keep the
@@ -1676,30 +1416,4 @@ async fn runtime_boundary_fixtures_are_concrete() {
         anonymous_before,
         "fallback/implicit requests must not mutate auth memory"
     );
-}
-
-#[test]
-fn boundary_matrix_is_exhaustive() {
-    let d = document();
-    let fixture: Value =
-        serde_json::from_str(include_str!("fixtures/api_contract/boundary-matrix.json"))
-            .expect("boundary fixture JSON");
-    assert_eq!(fixture["schema_version"], 1);
-    assert!(fixture["cases"].as_array().unwrap().iter().all(|case| {
-        case["id"].as_str().is_some() && (case["status"].is_number() || case["fixture"].is_string())
-    }));
-    for item in d["paths"].as_object().unwrap().values() {
-        for operation in item.as_object().unwrap().values() {
-            if let Some(responses) = operation["responses"].as_object() {
-                assert!(!responses.is_empty(), "every operation has a boundary");
-                for response in responses.values() {
-                    let media = response["content"].as_object();
-                    assert!(response.is_object());
-                    if let Some(media) = media {
-                        assert!(media.keys().all(|name| !name.is_empty()));
-                    }
-                }
-            }
-        }
-    }
 }

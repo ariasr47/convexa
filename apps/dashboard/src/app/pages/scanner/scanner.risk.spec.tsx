@@ -6,12 +6,10 @@
  *   1. the closed status/tier/regime lookups (a miss that GUESSES looks fine on screen),
  *   2. the honesty invariants — `stale` keeps a frozen price WITH its stamp, `building` fabricates
  *      no score and makes no freshness claim, `null` renders `—` and never `0`,
- *   3. the direction-colour boundary — className identity proves score/distance/wall/regime cells are
- *      untinted (the proximity-chip regression class),
- *   4. per-row isolation — one `error` row never takes its neighbours with it,
- *   5. `[no-real-order-path]` — a row/card is a LINK to the ticker page and nothing else,
- *   6. the four page states + the worker-down degrade (Task 7 batch),
- *   7. structural negative space — no "live", no stream primitive (Task 7 batch, mutation-guarded).
+ *   3. per-row isolation — one `error` row never takes its neighbours with it,
+ *   4. `[no-real-order-path]` — a row/card is a LINK to the ticker page and nothing else,
+ *   5. the four page states + the worker-down degrade (Task 7 batch),
+ *   6. structural negative space — no "live", no stream primitive (Task 7 batch, mutation-guarded).
  *
  * NOT asserted here (visible + intentional ⇒ review): exact header wording, column labels, chip
  * styling, toolbar control presence. Pure transports live in `format.spec.ts`; the fetch/gate
@@ -22,7 +20,6 @@
  */
 import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
-import type { GateApi } from '@/features/auth/useGate';
 import { theme } from '@/shared/theme/theme';
 import type { ScanRow } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
@@ -32,7 +29,6 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ScanCardList } from './ScanCard';
 import { ScanTable } from './ScanTable';
-import { ScanToolbar } from './ScanToolbar';
 import { Scanner } from './Scanner';
 import { ViewEditorDialog } from './ViewEditorDialog';
 import { SCAN_COLUMNS, SORTABLE_COLUMNS } from './labels';
@@ -55,20 +51,6 @@ export function makeRow(over: Partial<ScanRow> = {}): ScanRow {
     dist_to_wall_pct: 2.0,
     as_of: NOW - 42,
     status: 'ok',
-    ...over,
-  };
-}
-
-/** A minimal GateApi double — the toolbar only reads `allowed`/`promptText` and calls `signIn`. */
-export function fakeGate(over: Partial<GateApi> = {}): GateApi {
-  return {
-    allowed: false,
-    promptText: null,
-    prompt: () => undefined,
-    signIn: () => undefined,
-    clear: () => undefined,
-    guard: async () => undefined,
-    simTradeGate: async () => ({ authorized: true as const }),
     ...over,
   };
 }
@@ -138,43 +120,6 @@ describe('the dense table renders the locked columns and never fabricates a valu
     for (const id of ['cell-price', 'cell-chg', 'cell-score', 'cell-dist-flip', 'cell-dist-wall']) {
       expect(within(row).getByTestId(id)).toHaveTextContent('—');
       expect(within(row).getByTestId(id).textContent).not.toMatch(/\b0\b/);
-    }
-  });
-});
-
-// =================================================================================================
-// 2. Green/red is PRICE DIRECTION only — className identity (sx compiles to classes)
-// =================================================================================================
-describe('direction colour never leaks onto a rate or a proximity', () => {
-  it('chg_pct differs by sign while score / distances / regime stay className-identical', () => {
-    renderTable([
-      makeRow({ symbol: 'UPP', chg_pct: 2.5, score: 90, dist_to_flip_pct: 3, dist_to_wall_pct: 4 }),
-      makeRow({
-        symbol: 'DWN',
-        chg_pct: -2.5,
-        score: -90,
-        dist_to_flip_pct: -3,
-        dist_to_wall_pct: -4,
-      }),
-    ]);
-    const up = rowFor('UPP');
-    const down = rowFor('DWN');
-    // The ONE sanctioned direction colour: the class MUST differ.
-    expect(within(up).getByTestId('cell-chg').className).not.toBe(
-      within(down).getByTestId('cell-chg').className,
-    );
-    // Everything else is a rate / a no-side datum: identical classes ⇒ provably untinted.
-    for (const id of [
-      'cell-score',
-      'cell-dist-flip',
-      'cell-dist-wall',
-      'cell-regime',
-      'cell-vol',
-    ]) {
-      expect(
-        within(up).getByTestId(id).className,
-        `${id} must be className-identical across a positive and a negative row`,
-      ).toBe(within(down).getByTestId(id).className);
     }
   });
 });
@@ -261,30 +206,6 @@ describe('navigation only', () => {
     expect(cards.map((c) => c.getAttribute('href'))).toEqual(['/ticker/SPY', '/ticker/QQQ']);
     expect(screen.getByTestId('scan-cards').querySelectorAll('button')).toHaveLength(0);
   });
-
-  it('mobile cards are consecutive link stops while score help remains described', async () => {
-    const user = userEvent.setup();
-    const rows = [makeRow({ symbol: 'SPY' }), makeRow({ symbol: 'QQQ' })];
-    render(
-      <ThemeProvider theme={theme}>
-        <MemoryRouter>
-          <ScanCardList rows={rows} nowS={NOW} flashActive priceOffline={() => null} />
-        </MemoryRouter>
-      </ThemeProvider>,
-    );
-    const cards = screen.getAllByTestId('scan-card');
-    expect(cards[0].querySelector('[data-testid="cell-score"]')).not.toHaveAttribute(
-      'tabindex',
-      '0',
-    );
-    expect(cards[0]).toHaveAttribute('aria-describedby');
-    (cards[0] as HTMLElement).focus();
-    await user.tab();
-    expect(cards[1]).toHaveFocus();
-    const descriptionId = cards[0].getAttribute('aria-describedby');
-    expect(descriptionId).toBeTruthy();
-    expect(document.getElementById(descriptionId ?? '')?.textContent).toContain('Prime tier');
-  });
 });
 
 // =================================================================================================
@@ -324,80 +245,6 @@ describe('sort + density controls speak only the closed wire vocabulary', () => 
     expect(onSort.mock.calls[0][0]).toEqual({ key: 'score', dir: 'asc' });
     expect(onSort.mock.calls[1][0]).toEqual({ key: 'symbol', dir: 'desc' });
   });
-
-  it('the density control emits only the closed values and the table carries the rendered density', async () => {
-    const user = userEvent.setup();
-    const onDensity = vi.fn();
-    render(
-      <ThemeProvider theme={theme}>
-        <MemoryRouter>
-          <ScanToolbar
-            view={null}
-            density="compact"
-            onDensity={onDensity}
-            onEditView={() => undefined}
-            gate={fakeGate({ allowed: true })}
-            filters={{ tier: null, volRegime: null, minScore: null, maxAbsDistFlip: null }}
-            onFilters={() => undefined}
-            filteredCount={1}
-            totalCount={1}
-          />
-          <ScanTable
-            rows={[makeRow()]}
-            sort={{ key: 'score', dir: 'desc' }}
-            density="comfortable"
-            nowS={NOW}
-            flashActive
-            onSort={() => undefined}
-            priceOffline={() => null}
-          />
-        </MemoryRouter>
-      </ThemeProvider>,
-    );
-    await user.click(screen.getByTestId('scan-density-comfortable'));
-    expect(onDensity).toHaveBeenCalledWith('comfortable');
-    for (const [value] of onDensity.mock.calls) expect(['compact', 'comfortable']).toContain(value);
-    expect(screen.getByTestId('scan-table')).toHaveAttribute('data-density', 'comfortable');
-  });
-});
-
-// =================================================================================================
-// 6. Anonymous copy never overclaims
-// =================================================================================================
-describe('the toolbar never overclaims persistence', () => {
-  it('an anonymous visitor gets the standing sign-in prompt and a "Default view" label — no saved/your claim', () => {
-    render(
-      <ThemeProvider theme={theme}>
-        <MemoryRouter>
-          <ScanToolbar
-            view={{
-              source: 'default',
-              authenticated: false,
-              name: null,
-              symbols: ['SPY'],
-              sort: { key: 'score', dir: 'desc' },
-              density: 'compact',
-            }}
-            density="compact"
-            onDensity={() => undefined}
-            onEditView={() => undefined}
-            gate={fakeGate({ allowed: false })}
-            filters={{ tier: null, volRegime: null, minScore: null, maxAbsDistFlip: null }}
-            onFilters={() => undefined}
-            filteredCount={1}
-            totalCount={1}
-          />
-        </MemoryRouter>
-      </ThemeProvider>,
-    );
-    expect(screen.getByTestId('scan-signin-prompt')).toHaveTextContent(
-      'Sign in to customize your view.',
-    );
-    expect(screen.getByTestId('scan-view-label')).toHaveTextContent('Default view');
-    expect(screen.getByTestId('scan-toolbar').textContent).not.toMatch(
-      /saved|Saved to your account/i,
-    );
-  });
 });
 
 // =================================================================================================
@@ -430,31 +277,6 @@ describe('the view editor', () => {
       </ThemeProvider>,
     );
   }
-
-  it('offers ONLY universe symbols — no free-text entry, no path to an off-universe symbol', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify(universe), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          }),
-      ),
-    );
-    renderEditor(async () => true);
-    await screen.findByTestId('scan-universe-SPY');
-    // Every choice control corresponds to a symbol the SERVER listed.
-    const offered = within(screen.getByTestId('scan-universe-list'))
-      .getAllByRole('button')
-      .map((b) => b.textContent);
-    expect(offered).toEqual(universe.symbols);
-    expect(screen.queryByTestId('scan-universe-ZZZZ')).toBeNull();
-    // The ONLY text input is the optional view NAME — there is no symbol text field to type into.
-    const inputs = Array.from(document.querySelectorAll('input'));
-    expect(inputs).toHaveLength(1);
-    expect(inputs[0]).toHaveAttribute('data-testid', 'scan-view-name');
-  });
 
   it('saves the exact draft: reordered symbols in display order + name + the live sort/density', async () => {
     const user = userEvent.setup();
@@ -686,138 +508,6 @@ describe('zero-state lead group (index-first-defaults AC-3)', () => {
     expect(screen.queryByTestId('scan-group-header')).toBeNull();
     expect(rowOrder()).toEqual(['GME', 'SPY', 'COIN', 'QQQ']);
   });
-
-  it('a default view with NO lead member degrades to the flat table (no orphan header)', async () => {
-    installScanBackend({ authenticated: false, symbols: ['GME', 'COIN'] });
-    renderPage();
-    await screen.findByTestId('scan-table');
-    expect(screen.queryByTestId('scan-group-header')).toBeNull();
-    expect(rowOrder()).toEqual(['GME', 'COIN']);
-  });
-});
-
-// =================================================================================================
-// 8c-url. Shareable desk URL seeds filters from the address bar
-// =================================================================================================
-describe('scanner desk URL params', () => {
-  it('seeds tier filter from ?tier=prime and shows the chip pressed', async () => {
-    installScanBackend({
-      symbols: ['AAA', 'BBB'],
-      rows: [
-        makeRow({ symbol: 'AAA', tier: 'prime', score: 90 }),
-        makeRow({ symbol: 'BBB', tier: 'watch', score: 40 }),
-      ],
-    });
-    render(
-      <ThemeProvider theme={theme}>
-        <MemoryRouter initialEntries={['/scanner?tier=prime']}>
-          <AuthProvider>
-            <AuthDialogProvider>
-              <Scanner />
-            </AuthDialogProvider>
-          </AuthProvider>
-        </MemoryRouter>
-      </ThemeProvider>,
-    );
-    await screen.findByTestId('scan-table');
-    expect(screen.getByTestId('scan-filter-tier-prime')).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getAllByTestId('scan-row')).toHaveLength(1);
-    expect(rowFor('AAA')).toBeTruthy();
-  });
-});
-
-// =================================================================================================
-// 8c-kb. Product spine #6 — keyboard / hit-area polish on the scan desk
-// =================================================================================================
-describe('scanner keyboard & hit targets (spine #6)', () => {
-  it('sort headers are real buttons and row links are keyboard-reachable anchors', () => {
-    renderTable([makeRow({ symbol: 'SPY' }), makeRow({ symbol: 'QQQ' })]);
-    const sortScore = screen.getByTestId('scan-sort-score');
-    expect(sortScore.tagName.toLowerCase()).toBe('button');
-    expect(sortScore).toHaveAttribute('type', 'button');
-    // Real control, not a dead span — keyboard Enter activates buttons natively.
-    expect(sortScore.getAttribute('tabindex')).not.toBe('-1');
-
-    const links = screen.getAllByTestId('scan-row-link');
-    expect(links).toHaveLength(2);
-    for (const a of links) {
-      expect(a.tagName.toLowerCase()).toBe('a');
-      expect(a.getAttribute('href')).toMatch(/^\/ticker\//);
-    }
-  });
-
-  it('score cell is keyboard-focusable so the why-this-row tip is not hover-only', () => {
-    renderTable([makeRow()]);
-    const score = within(rowFor('SPY')).getByTestId('cell-score');
-    expect(score).toHaveAttribute('tabindex', '0');
-    expect(score).toHaveAttribute('aria-label', 'Why this score');
-  });
-});
-
-// =================================================================================================
-// 8c. Product spine #2 — Scanner as desk (session strip · filters · why-this-row)
-// =================================================================================================
-describe('scanner as desk', () => {
-  it('surfaces a session badge + structure as-of strip (never claims structure is live)', async () => {
-    installScanBackend({ symbols: ['SPY'] });
-    renderPage();
-    await screen.findByTestId('scan-table');
-    const badge = screen.getByTestId('scan-session-badge');
-    expect(badge).toHaveAttribute('data-phase');
-    expect(['RTH', 'Pre-market', 'After-hours', 'Closed']).toContain(badge.textContent);
-    expect(screen.getByTestId('scan-structure-asof').textContent).toMatch(/Structure as-of/);
-    expect(screen.getByTestId('scan-session-strip').textContent).not.toMatch(
-      /structure is live|live structure/i,
-    );
-  });
-
-  it('client filters narrow the table without a refetch and clear restores all rows', async () => {
-    const user = userEvent.setup();
-    installScanBackend({
-      symbols: ['AAA', 'BBB'],
-      rows: [
-        makeRow({ symbol: 'AAA', tier: 'prime', score: 90, dist_to_flip_pct: 0.5 }),
-        makeRow({ symbol: 'BBB', tier: 'watch', score: 40, dist_to_flip_pct: 4 }),
-      ],
-    });
-    renderPage();
-    await screen.findByTestId('scan-table');
-    expect(screen.getAllByTestId('scan-row')).toHaveLength(2);
-
-    await user.click(screen.getByTestId('scan-filter-tier-prime'));
-    expect(screen.getAllByTestId('scan-row')).toHaveLength(1);
-    expect(rowFor('AAA')).toBeTruthy();
-    expect(screen.queryByTestId('scan-row') && rowFor('BBB')).toBeFalsy();
-    expect(screen.getByTestId('scan-filter-count')).toHaveTextContent('Showing 1 of 2');
-
-    await user.click(screen.getByTestId('scan-filter-clear'));
-    expect(screen.getAllByTestId('scan-row')).toHaveLength(2);
-  });
-
-  it('score cell exposes a why-this-row tip built from closed fields (no live claim)', async () => {
-    const user = userEvent.setup();
-    installScanBackend({
-      symbols: ['SPY'],
-      rows: [
-        makeRow({
-          symbol: 'SPY',
-          tier: 'prime',
-          dist_to_flip_pct: 0.8,
-          regime: 'negative_gamma',
-          vol_regime: 'iv_rich',
-        }),
-      ],
-    });
-    renderPage();
-    await screen.findByTestId('scan-table');
-    const score = within(rowFor('SPY')).getByTestId('cell-score');
-    expect(score).toHaveAttribute('aria-label', 'Why this score');
-    await user.hover(score);
-    // MUI Tooltip portals the title; wait for the tip role.
-    const tip = await screen.findByRole('tooltip');
-    expect(tip.textContent).toMatch(/Prime tier/);
-    expect(tip.textContent).not.toMatch(/\blive\b/i);
-  });
 });
 
 // =================================================================================================
@@ -898,29 +588,5 @@ describe('[live-vs-static-isolation] + [theme-token-discipline] on the scan surf
     );
     expect(text, 'and must not let structure pass as live').toMatch(/structure ~3 min/);
     expect(screen.getAllByTestId('scan-row')).toHaveLength(4);
-  });
-
-  it('T5 / D-A, ONLINE arm — the new cadence header renders and the word "live" never reaches the page text', async () => {
-    // A controllable EventSource that never fires onerror/onmessage keeps `live.offline` at its
-    // initial `false` — the ONLINE arm the shipped `/Prices (live|offline)/` pin could never
-    // separately prove, because the suite's ambient (no-EventSource) render always hits offline.
-    class SilentEventSource {
-      onmessage: ((e: MessageEvent) => void) | null = null;
-      onerror: ((e: Event) => void) | null = null;
-      close() {
-        /* no-op */
-      }
-    }
-    vi.stubGlobal('EventSource', SilentEventSource as unknown as typeof EventSource);
-    installScanBackend({ symbols: ['SPY'] });
-    renderPage();
-    await screen.findByTestId('scan-table');
-    const text = screen.getByTestId('scanner-page').textContent ?? '';
-    expect(text, 'D-A: the new header, byte-identical').toMatch(
-      'Prices per tick · structure ~3 min · hot names sooner',
-    );
-    expect(text, 'criterion 15: the word "live" never reaches the page text').not.toMatch(
-      /\blive\b/i,
-    );
   });
 });

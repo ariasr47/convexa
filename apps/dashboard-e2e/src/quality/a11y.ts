@@ -29,12 +29,14 @@ export function validateWaivers(waivers: unknown): Waiver[] {
     if (!w || typeof w !== 'object') throw new Error('invalid waiver');
     const value = w as Waiver;
     if (
+      typeof value.waiver_id !== 'string' ||
       !ID.test(value.waiver_id) ||
       ids.has(value.waiver_id) ||
       !['axe_false_positive', 'third_party_uncontrolled'].includes(value.type) ||
       !value.scan_id ||
       !value.rule_id ||
       !value.target_selector ||
+      value.target_selector.trim() === '*' ||
       !value.evidence ||
       !value.rationale ||
       !value.owner ||

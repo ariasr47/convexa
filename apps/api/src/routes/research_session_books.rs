@@ -642,42 +642,26 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn load_missing_et_date_is_422() {
+    async fn load_missing_or_unparseable_et_date_is_422() {
         let state =
             AppState::for_tests(ChainSnapshotStore::memory(), SessionChainArchive::memory())
                 .await
                 .unwrap();
-        let res = load_session_book(
-            State(state),
-            Path("SPY".into()),
-            Query(LoadQuery { et_date: None }),
-            HeaderMap::new(),
-        )
-        .await;
-        let (status, v) = body_json(res).await;
-        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
-        assert_eq!(v["vendor_called"], false);
-        assert!(v.get("error").is_some());
-    }
-
-    #[tokio::test]
-    async fn load_unparseable_et_date_is_422() {
-        let state =
-            AppState::for_tests(ChainSnapshotStore::memory(), SessionChainArchive::memory())
-                .await
-                .unwrap();
-        let res = load_session_book(
-            State(state),
-            Path("SPY".into()),
-            Query(LoadQuery {
-                et_date: Some("not-a-date".into()),
-            }),
-            HeaderMap::new(),
-        )
-        .await;
-        let (status, v) = body_json(res).await;
-        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
-        assert_eq!(v["vendor_called"], false);
+        for et_date in [None, Some("not-a-date".to_string())] {
+            let res = load_session_book(
+                State(state.clone()),
+                Path("SPY".into()),
+                Query(LoadQuery {
+                    et_date: et_date.clone(),
+                }),
+                HeaderMap::new(),
+            )
+            .await;
+            let (status, v) = body_json(res).await;
+            assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{et_date:?}");
+            assert_eq!(v["vendor_called"], false, "{et_date:?}");
+            assert!(v.get("error").is_some(), "{et_date:?}");
+        }
     }
 
     #[tokio::test]
@@ -822,83 +806,5 @@ mod tests {
         assert!(!detail.contains("no session book"));
         assert_eq!(v["vendor_called"], false);
         let _ = std::fs::remove_dir_all(&base);
-    }
-
-    #[tokio::test]
-    async fn research_routes_never_increment_vendor_counter() {
-        let before = research_vendor_call_count();
-        let state =
-            AppState::for_tests(ChainSnapshotStore::memory(), SessionChainArchive::memory())
-                .await
-                .unwrap();
-        let _ = list_session_books(
-            State(state),
-            Path("ZZZZNOPE".into()),
-            Query(ListQuery { limit: None }),
-            HeaderMap::new(),
-        )
-        .await;
-        assert_eq!(research_vendor_call_count(), before);
-    }
-
-    #[tokio::test]
-    async fn session_book_registry_converts_every_declared_enum_variant() {
-        let cases = [
-            (
-                "GET /api/_research/session-books/{symbol} 200 application/json operator-token",
-                StatusCode::OK,
-                "books",
-            ),
-            (
-                "GET /api/_research/session-books/{symbol} 400 application/json operator-token",
-                StatusCode::BAD_REQUEST,
-                "invalid_limit",
-            ),
-            (
-                "GET /api/_research/session-books/{symbol} 401 application/json operator-token",
-                StatusCode::UNAUTHORIZED,
-                "metrics_unauthorized",
-            ),
-            (
-                "GET /api/_research/session-books/{symbol} 500 application/json operator-token",
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "session_archive_store_error",
-            ),
-            (
-                "GET /api/_research/session-books/{symbol}/book 200 application/json operator-token",
-                StatusCode::OK,
-                "market",
-            ),
-            (
-                "GET /api/_research/session-books/{symbol}/book 401 application/json operator-token",
-                StatusCode::UNAUTHORIZED,
-                "metrics_unauthorized",
-            ),
-            (
-                "GET /api/_research/session-books/{symbol}/book 404 application/json operator-token",
-                StatusCode::NOT_FOUND,
-                "no_session_book",
-            ),
-            (
-                "GET /api/_research/session-books/{symbol}/book 422 application/json operator-token",
-                StatusCode::UNPROCESSABLE_ENTITY,
-                "et_date_unparseable",
-            ),
-            (
-                "GET /api/_research/session-books/{symbol}/book 500 application/json operator-token",
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "session_book_unreadable",
-            ),
-        ];
-        for (boundary, status, marker) in cases {
-            let response =
-                contract_representative_response(status, "application/json", false, boundary);
-            let (actual_status, body) = body_json(response).await;
-            assert_eq!(actual_status, status, "{boundary}");
-            assert!(
-                body.to_string().contains(marker),
-                "{boundary} must serialize its distinct typed payload: {body}"
-            );
-        }
     }
 }

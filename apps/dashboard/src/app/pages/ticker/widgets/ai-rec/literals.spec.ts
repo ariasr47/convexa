@@ -1,5 +1,5 @@
 import { typographyTokens } from '@/shared/theme/tokens';
-import type { GroundingField, GroundingState } from '@convexa/api';
+import type { Grounding, GroundingField, GroundingState } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import {
   ANCHOR_LABEL_FALLBACK,
@@ -15,11 +15,15 @@ import {
 import {
   noTradeRec,
   recAllTraced,
+  recBlockAbsent,
+  recCouldNotCheck,
+  recFabricated,
+  recLocalRules,
+  recLocalRulesNothingCheckable,
   recOffSet,
   recRightUndetermined,
+  recSomeTraced,
   tradeRecEqualToCap,
-  tradeRecNoRiskBlock,
-  tradeRecOverCap,
 } from './fixtures';
 import {
   anchorLabel,
@@ -27,7 +31,9 @@ import {
   capRefusalLine,
   capSurface,
   cardGroundingLine,
+  type CardLine,
   citedLine,
+  type FieldLiteral,
   fieldLiteral,
   figureClause,
   liquidityLine,
@@ -38,107 +44,86 @@ import {
 } from './literals';
 
 describe('fieldLiteral — AC-69/70/71/72/72a', () => {
-  it('no_trade renders `dash` regardless of the value (checked FIRST)', () => {
-    expect(fieldLiteral({ decision: 'no_trade', value: 300, reason: null })).toEqual({
-      kind: 'dash',
-    });
-    expect(fieldLiteral({ decision: 'no_trade', value: null, reason: null })).toEqual({
-      kind: 'dash',
-    });
-  });
-
-  it('a real numeric value renders as `value`', () => {
-    expect(fieldLiteral({ decision: 'trade', value: 12, reason: null })).toEqual({
-      kind: 'value',
-      text: '12',
-    });
-  });
-
-  it('a real string value renders as `value`', () => {
-    expect(fieldLiteral({ decision: 'trade', value: '$300', reason: null })).toEqual({
-      kind: 'value',
-      text: '$300',
-    });
-  });
-
-  it('null/undefined/NaN/0/"" never render as a value', () => {
-    for (const v of [null, undefined, NaN, 0, '']) {
-      const r = fieldLiteral({ decision: 'trade', value: v, reason: null });
-      expect(r.kind).not.toBe('value');
-    }
-  });
-
-  it('a `not_given` reason renders `not_given`', () => {
-    expect(
-      fieldLiteral({
-        decision: 'trade',
-        value: null,
-        reason: { reason: 'not_given', missing_input: null },
-      }),
-    ).toEqual({ kind: 'not_given' });
-  });
-
-  it('an `unavailable` reason with `missing_input: risk_block` renders `not_set`', () => {
-    expect(
-      fieldLiteral({
-        decision: 'trade',
-        value: null,
-        reason: { reason: 'unavailable', missing_input: 'risk_block' },
-      }),
-    ).toEqual({ kind: 'not_set' });
-  });
-
-  it('AC-72a — an `unavailable` reason with any other missing input renders `unavailable`, never `not_set`', () => {
-    for (const missing of ['candidate_quotes', 'straddle_move'] as const) {
-      expect(
-        fieldLiteral({
+  it('maps each decision/value/reason to exactly one closed literal; no_trade wins first and absence is never a value', () => {
+    const rows: ReadonlyArray<[string, Parameters<typeof fieldLiteral>[0], FieldLiteral]> = [
+      [
+        'no_trade with a value → dash (checked FIRST)',
+        { decision: 'no_trade', value: 300, reason: null },
+        { kind: 'dash' },
+      ],
+      [
+        'no_trade without a value → dash',
+        { decision: 'no_trade', value: null, reason: null },
+        { kind: 'dash' },
+      ],
+      [
+        'a real numeric value → value',
+        { decision: 'trade', value: 12, reason: null },
+        { kind: 'value', text: '12' },
+      ],
+      [
+        'a real string value → value',
+        { decision: 'trade', value: '$300', reason: null },
+        { kind: 'value', text: '$300' },
+      ],
+      [
+        'a `not_given` reason → not_given',
+        { decision: 'trade', value: null, reason: { reason: 'not_given', missing_input: null } },
+        { kind: 'not_given' },
+      ],
+      [
+        'an `unavailable` reason with `missing_input: risk_block` → not_set',
+        {
           decision: 'trade',
           value: null,
-          reason: { reason: 'unavailable', missing_input: missing },
-        }),
-      ).toEqual({ kind: 'unavailable' });
+          reason: { reason: 'unavailable', missing_input: 'risk_block' },
+        },
+        { kind: 'not_set' },
+      ],
+      [
+        'AC-72a — `unavailable` with candidate_quotes → unavailable, never not_set',
+        {
+          decision: 'trade',
+          value: null,
+          reason: { reason: 'unavailable', missing_input: 'candidate_quotes' },
+        },
+        { kind: 'unavailable' },
+      ],
+      [
+        'AC-72a — `unavailable` with straddle_move → unavailable, never not_set',
+        {
+          decision: 'trade',
+          value: null,
+          reason: { reason: 'unavailable', missing_input: 'straddle_move' },
+        },
+        { kind: 'unavailable' },
+      ],
+      [
+        'no value and no reason → unavailable (never a guess)',
+        { decision: 'trade', value: undefined, reason: undefined },
+        { kind: 'unavailable' },
+      ],
+    ];
+    for (const [name, args, want] of rows) expect(fieldLiteral(args), name).toEqual(want);
+    for (const v of [null, undefined, NaN, 0, '']) {
+      const r = fieldLiteral({ decision: 'trade', value: v, reason: null });
+      expect(r.kind, String(v)).not.toBe('value');
     }
-  });
-
-  it('no value and no reason renders `unavailable` (never a guess)', () => {
-    expect(fieldLiteral({ decision: 'trade', value: undefined, reason: undefined })).toEqual({
-      kind: 'unavailable',
-    });
   });
 });
 
 describe('capSurface — AC-56/57/58/58a/63', () => {
-  it('not_applicable ⇒ none (the no_trade card renders NO cap surface at all)', () => {
-    expect(capSurface('not_applicable')).toEqual({ kind: 'none' });
-  });
-  it('no_cap ⇒ no_cap', () => {
-    expect(capSurface('no_cap')).toEqual({ kind: 'no_cap' });
-  });
-  it('within ⇒ comparison{within:true}; equality is within (AC-63)', () => {
-    expect(capSurface('within')).toEqual({ kind: 'comparison', within: true });
-  });
-  it('above ⇒ comparison{within:false}', () => {
-    expect(capSurface('above')).toEqual({ kind: 'comparison', within: false });
-  });
-  it('not_checkable ⇒ not_checkable, never a pass by default', () => {
-    expect(capSurface('not_checkable')).toEqual({ kind: 'not_checkable' });
-  });
-  it('an unknown/absent token renders nothing, never a guess', () => {
-    expect(capSurface(undefined)).toEqual({ kind: 'none' });
-    expect(capSurface(null)).toEqual({ kind: 'none' });
-  });
-
-  it('fixture wiring: no_trade rec resolves to none; equal-to-cap resolves to within; over-cap resolves to above', () => {
-    expect(capSurface(noTradeRec().cap_check!.verdict)).toEqual({ kind: 'none' });
-    expect(capSurface(tradeRecEqualToCap().cap_check!.verdict)).toEqual({
-      kind: 'comparison',
-      within: true,
-    });
-    expect(capSurface(tradeRecOverCap().cap_check!.verdict)).toEqual({
-      kind: 'comparison',
-      within: false,
-    });
-    expect(capSurface(tradeRecNoRiskBlock().cap_check!.verdict)).toEqual({ kind: 'no_cap' });
+  it('maps each cap verdict token to its own surface; unknown or absent renders nothing, never a guess', () => {
+    const rows: ReadonlyArray<[Parameters<typeof capSurface>[0], ReturnType<typeof capSurface>]> = [
+      ['not_applicable', { kind: 'none' }], // the no_trade card renders NO cap surface at all
+      ['no_cap', { kind: 'no_cap' }],
+      ['within', { kind: 'comparison', within: true }], // equality is within (AC-63)
+      ['above', { kind: 'comparison', within: false }],
+      ['not_checkable', { kind: 'not_checkable' }], // never a pass by default
+      [undefined, { kind: 'none' }],
+      [null, { kind: 'none' }],
+    ];
+    for (const [verdict, want] of rows) expect(capSurface(verdict), String(verdict)).toEqual(want);
   });
 });
 
@@ -148,15 +133,16 @@ describe('citedLine — AC-73/74/75/76/77', () => {
     expect(line.kind).toBe('right_undetermined');
     if (line.kind === 'right_undetermined') expect(line.legs).toHaveLength(2);
   });
-  it('an off-set cite renders off_set', () => {
-    expect(citedLine(recOffSet().cited_contract).kind).toBe('off_set');
-  });
-  it('a `none` cite (no_trade) renders none', () => {
-    expect(citedLine(noTradeRec().cited_contract).kind).toBe('none');
-  });
-  it('an absent cited_contract degrades to none, never a throw', () => {
-    expect(citedLine(undefined)).toEqual({ kind: 'none' });
-    expect(citedLine(null)).toEqual({ kind: 'none' });
+  it('an off-set cite renders off_set; a `none` cite (no_trade) or an absent one renders none, never a throw', () => {
+    const rows: ReadonlyArray<
+      [string, Parameters<typeof citedLine>[0], ReturnType<typeof citedLine>]
+    > = [
+      ['off-set cite', recOffSet().cited_contract, { kind: 'off_set' }],
+      ['`none` cite (no_trade)', noTradeRec().cited_contract, { kind: 'none' }],
+      ['absent (undefined)', undefined, { kind: 'none' }],
+      ['absent (null)', null, { kind: 'none' }],
+    ];
+    for (const [name, cited, want] of rows) expect(citedLine(cited), name).toEqual(want);
   });
   it('a quoted cited contract carries its strike/right/expiration', () => {
     const line = citedLine({
@@ -330,11 +316,6 @@ describe('liquidityLine — AC-4/66', () => {
     expect(line).toContain('5 omitted (outside band)');
   });
 
-  it('renders identically on a no_trade verdict (AC-66) — the strip is verdict-independent', () => {
-    const line = liquidityLine(noTradeRec().sent!.candidates);
-    expect(line).toMatch(/candidates across/);
-  });
-
   it('a null envelope degrades to unavailable, never a throw', () => {
     expect(liquidityLine(null)).toMatch(/unavailable/);
     expect(liquidityLine(undefined)).toMatch(/unavailable/);
@@ -389,21 +370,16 @@ describe('citedLine — AC-8 as-of interpolation (GATE Q correction)', () => {
 describe('riskInputsSignature / riskInputsSuperseded — AC-64 (GATE Q correction)', () => {
   const set = tradeRecEqualToCap().sent!.risk_inputs;
 
-  it('two structurally-identical blocks produce the same signature', () => {
-    expect(riskInputsSignature(set)).toBe(riskInputsSignature({ ...set }));
-  });
-  it('a changed account size changes the signature', () => {
-    expect(riskInputsSignature(set)).not.toBe(
-      riskInputsSignature({ ...set, account_size: 75_000 }),
-    );
-  });
-  it('a changed cap value or unit changes the signature', () => {
-    expect(riskInputsSignature(set)).not.toBe(
-      riskInputsSignature({ ...set, per_trade_cap: { value: 2, unit: 'percent' } }),
-    );
-    expect(riskInputsSignature(set)).not.toBe(
-      riskInputsSignature({ ...set, per_trade_cap: { value: 1, unit: 'usd' } }),
-    );
+  it('the signature changes iff account size, cap value or cap unit changes', () => {
+    const rows: ReadonlyArray<[string, Parameters<typeof riskInputsSignature>[0], boolean]> = [
+      ['a structurally-identical block', { ...set }, true],
+      ['a changed account size', { ...set, account_size: 75_000 }, false],
+      ['a changed cap value', { ...set, per_trade_cap: { value: 2, unit: 'percent' } }, false],
+      ['a changed cap unit', { ...set, per_trade_cap: { value: 1, unit: 'usd' } }, false],
+    ];
+    for (const [name, other, same] of rows) {
+      expect(riskInputsSignature(other) === riskInputsSignature(set), name).toBe(same);
+    }
   });
   it('riskInputsSuperseded is false when either side is unknown — never a false positive', () => {
     expect(riskInputsSuperseded(set, null)).toBe(false);
@@ -621,6 +597,51 @@ describe('ai-rec-grounding · closed lookups', () => {
     expect(new Set(Object.values(CAP_REFUSAL_SENTENCE)).size).toBe(3);
   });
 
+  it('AC-15/17/18/20/27/29 — cardGroundingLine maps every card member, and a missing block, to its own closed line and register', () => {
+    // `quiet` vs `warning` is the register: only the unhappy members carry the warning icon (AC-20).
+    const rows: ReadonlyArray<[string, Grounding | null | undefined, CardLine]> = [
+      [
+        'all_traced',
+        recAllTraced().grounding,
+        { kind: 'quiet', text: GROUNDING_CARD.all_traced, tip: expect.any(String) },
+      ],
+      // AC-17 — the server's integers, 3 of 4, never a client count of the fields.
+      [
+        'some_traced 3/4',
+        recSomeTraced().grounding,
+        { kind: 'quiet', text: someTracedLine(3, 4), tip: expect.any(String) },
+      ],
+      [
+        'none_traced',
+        recFabricated().grounding,
+        { kind: 'warning', text: GROUNDING_CARD.none_traced, tip: expect.any(String) },
+      ],
+      [
+        'could_not_check',
+        recCouldNotCheck().grounding,
+        { kind: 'warning', text: GROUNDING_CARD.could_not_check, tip: expect.any(String) },
+      ],
+      [
+        'local_rules',
+        recLocalRules().grounding,
+        { kind: 'quiet', text: GROUNDING_CARD.local_rules, tip: expect.any(String) },
+      ],
+      [
+        'not_applicable',
+        recLocalRulesNothingCheckable().grounding,
+        { kind: 'quiet', text: GROUNDING_CARD.not_applicable, tip: expect.any(String) },
+      ],
+      // AC-27/AC-29 — no block reached the browser: its OWN line, never could_not_check, never nothing.
+      [
+        'missing block (key deleted)',
+        recBlockAbsent().grounding,
+        { kind: 'warning', text: GROUNDING_BLOCK_ABSENT, tip: null },
+      ],
+      ['missing block (null)', null, { kind: 'warning', text: GROUNDING_BLOCK_ABSENT, tip: null }],
+    ];
+    for (const [name, g, want] of rows) expect(cardGroundingLine(g), name).toEqual(want);
+  });
+
   it('AC-16 (SB) — poisoning a per-field token changes no count and no card member', () => {
     const g = recAllTraced().grounding!;
     const poisoned = {
@@ -669,25 +690,9 @@ describe('registerSx — F12, DESIGN_SYSTEM Amendment 2026-08-13, D3 (the type r
   const MONO = typographyTokens.monoFontFamily;
   const SANS = typographyTokens.fontFamily;
 
-  it('POSITIVE — a `traced` figure is mono, an `untraced` figure is sans (asserted at rendered scope by ai-rec.grounding.spec.tsx)', () => {
+  it('POSITIVE — a `traced` figure is mono, an `untraced` figure is sans (asserted at rendered scope by DecisionCard.spec.tsx)', () => {
     expect(registerSx('traced')).toEqual({ fontFamily: MONO });
     expect(registerSx('untraced')).toEqual({ fontFamily: SANS });
-  });
-
-  it('`not_checkable` is its OWN named arm — a value that exists but was never checked is still NOT traced, and must NOT inherit the mono register', () => {
-    // Asserted as its own case, never folded into `untraced` (a different fact) and never left to a
-    // wildcard that would silently default to `traced`'s mono register.
-    expect(registerSx('not_checkable')).toEqual({ fontFamily: SANS });
-    expect(registerSx('not_checkable')).not.toEqual(registerSx('traced'));
-  });
-
-  it('`not_applicable` — never actually renders a value (vacuous), but is named explicitly and stays out of the mono register', () => {
-    expect(registerSx('not_applicable')).toEqual({ fontFamily: SANS });
-  });
-
-  it('an absent grounding state (no data reached this value) defaults SAFE — never mono', () => {
-    expect(registerSx(undefined)).toEqual({ fontFamily: SANS });
-    expect(registerSx(null)).toEqual({ fontFamily: SANS });
   });
 
   it('EVERY non-traced member is pairwise identical to each other and distinct from `traced` — the exhaustive set has exactly two outcomes', () => {
@@ -696,6 +701,7 @@ describe('registerSx — F12, DESIGN_SYSTEM Amendment 2026-08-13, D3 (the type r
       registerSx('not_checkable'),
       registerSx('not_applicable'),
       registerSx(undefined),
+      registerSx(null),
     ];
     for (const r of nonTraced) expect(r).toEqual({ fontFamily: SANS });
     expect(registerSx('traced')).not.toEqual({ fontFamily: SANS });

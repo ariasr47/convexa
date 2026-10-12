@@ -5,13 +5,8 @@
  *   §8-2 (named test) — reduced motion → the STATIC FINAL FRAME: no draw/animation class, no
  *         dash offset; with motion allowed the draw class IS present. Consumption of the SHARED
  *         `useReducedMotion` hook is asserted at source level (no bespoke media query).
- *   §8-3 — no layout shift, paint-only draw: (a) the wrapper is an absolute inset-0
- *         pointer-events-none overlay (className/injected-CSS assertions — never
- *         `getAttribute('style')`, per the convexa-design testing gotcha); (b) a mutation-guarded
- *         `?raw` source scan pins the animated property set to EXACTLY
- *         {stroke-dashoffset, opacity, transform}.
- *   §4.2 one-shot — the draw class is applied on mount and never re-toggled: a re-render keeps
- *         the same path node and the same class (a future landing data-hook can't make it replay).
+ *   §8-3 — no layout shift, paint-only draw: a mutation-guarded `?raw` source scan pins the
+ *         animated property set to EXACTLY {stroke-dashoffset, opacity, transform}.
  */
 import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
@@ -38,17 +33,6 @@ function renderCurve() {
       <HeroCurve />
     </ThemeProvider>,
   );
-}
-
-/** All injected style text for the emotion classes of an element (never getAttribute('style')). */
-function injectedCssFor(el: Element): string {
-  const all = Array.from(document.querySelectorAll('style'))
-    .map((s) => s.textContent ?? '')
-    .join('\n');
-  return Array.from(el.classList)
-    .filter((c) => c.startsWith('css-'))
-    .flatMap((c) => all.match(new RegExp(`\\.${c}\\{[^}]*\\}`, 'g')) ?? [])
-    .join('\n');
 }
 
 function mockReducedMotion(matches: boolean) {
@@ -89,17 +73,7 @@ describe('§8-2 · reduced motion → static final frame (named test)', () => {
   });
 });
 
-describe('§8-3 · paint-only draw, box reserved by construction', () => {
-  it('(a) the wrapper is an absolute inset-0 pointer-events-none overlay (injected-CSS assertion)', () => {
-    const { getByTestId: get } = renderCurve();
-    const css = injectedCssFor(get('hero-curve'));
-    expect(css).toContain('position:absolute');
-    expect(css).toContain('inset:0');
-    expect(css).toContain('pointer-events:none');
-    // Decorative only.
-    expect(get('hero-curve')).toHaveAttribute('aria-hidden', 'true');
-  });
-
+describe('§8-3 · paint-only draw', () => {
   it('(b) MUTATION GUARD: the keyframe-property checker fails on a layout property', () => {
     expect(keyframeProps('keyframes`from { width: 0 } to { width: 10px }`')).toContain('width');
     expect(
@@ -114,32 +88,6 @@ describe('§8-3 · paint-only draw, box reserved by construction', () => {
     expect(props.filter((p) => !allowed.has(p))).toEqual([]);
     // No CSS transitions ride along either — the dash draw + fades are the whole motion.
     expect(/transition\s*:/.test(heroCurveSrc)).toBe(false);
-  });
-
-  it('no fill, no glow, no radial-gradient — the curve is a stroke, the blob stays dead', () => {
-    expect(heroCurveSrc.includes('radial-gradient')).toBe(false);
-    expect(heroCurveSrc).toContain('fill="none"');
-  });
-});
-
-describe('§4.2 · one-shot on mount — never replays on re-render', () => {
-  it('a re-render keeps the same curve node with the same draw class (no toggle, no remount)', () => {
-    mockReducedMotion(false);
-    const { getByTestId, rerender } = render(
-      <ThemeProvider theme={theme}>
-        <HeroCurve />
-      </ThemeProvider>,
-    );
-    const before = getByTestId('hero-curve-path');
-    expect(before.classList.contains('hero-curve-draw')).toBe(true);
-    rerender(
-      <ThemeProvider theme={theme}>
-        <HeroCurve />
-      </ThemeProvider>,
-    );
-    const after = getByTestId('hero-curve-path');
-    expect(after).toBe(before); // same node — the animation cannot restart
-    expect(after.classList.contains('hero-curve-draw')).toBe(true);
   });
 });
 

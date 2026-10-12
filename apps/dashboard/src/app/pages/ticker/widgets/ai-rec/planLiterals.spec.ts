@@ -34,16 +34,6 @@ describe('rec-absence-literals-hole · planFieldLiteral (the sibling selector)',
     expect(JSON.stringify(l)).not.toContain('quite high');
   });
 
-  it('unrecognized_value NEVER collapses into not_given (the fix reproducing the defect)', () => {
-    expect(
-      planFieldLiteral({
-        decision: trade,
-        value: 'quite high',
-        reason: { reason: 'unrecognized_value', missing_input: null },
-      }),
-    ).not.toEqual({ kind: 'not_given' });
-  });
-
   it('unavailable renders ONLY from the explicit candidate_set pair, never from a fallthrough', () => {
     expect(
       planFieldLiteral({

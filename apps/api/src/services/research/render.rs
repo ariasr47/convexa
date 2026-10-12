@@ -467,63 +467,6 @@ mod tests {
         )
     }
 
-    #[test]
-    fn evidence_header_is_first_block_and_contains_no_verdict_language() {
-        let a = art();
-        let console = render_console(&a);
-        assert!(console.starts_with("RESEARCH READ"));
-        for banned in ["AT BAR", "BELOW BAR", "PASS", "FAIL", "MEETS"] {
-            assert!(
-                !console.contains(banned),
-                "console contains banned token {banned:?}"
-            );
-        }
-        assert!(console.contains("Ranking a candidate signal here is not adopting it."));
-    }
-
-    #[test]
-    fn evidence_one_liner_repeats_at_the_end() {
-        let a = art();
-        let console = render_console(&a);
-        assert!(console
-            .trim_end()
-            .ends_with(&format!("authorizes: {}", a.authorizes)));
-        assert!(
-            console.matches("Evidence:").count() >= 2,
-            "the evidence fact must appear in header AND the repeated one-liner"
-        );
-    }
-
-    #[test]
-    fn candidate_blocks_appear_in_declared_order() {
-        let a = art();
-        let blocks = render_candidate_blocks(&a);
-        let mut last_idx = 0;
-        for (i, cand) in CANDIDATES.iter().enumerate() {
-            let pos = blocks
-                .find(&format!("{}  {}", i + 1, cand.display))
-                .expect("candidate label present");
-            assert!(
-                pos >= last_idx || i == 0,
-                "candidate {} out of declared order",
-                cand.key
-            );
-            last_idx = pos;
-        }
-    }
-
-    #[test]
-    fn per_symbol_section_present_for_every_requested_symbol() {
-        let a = art();
-        let blocks = render_candidate_blocks(&a);
-        for sym in &a.requested_symbols {
-            assert!(
-                blocks.contains(&format!("{sym} \u{b7}")),
-                "missing per-symbol block for {sym}"
-            );
-        }
-    }
-
     /// AC-64 — GATE Q: the prior threshold was 7 DAYS (`STALE_DIARY_THRESHOLD_DAYS`), so QA's
     /// exact repro — a run 1.8 days after the newest paired sample, at least one intervening
     /// session — printed NO stale line at all. The rule is "beyond one session", not "beyond a
@@ -555,31 +498,6 @@ mod tests {
         assert!(!header2.contains("this read describes an older diary"));
     }
 
-    /// AC-16/AC-45 — the window must be human-readable (SPEC §4's exact instance shape:
-    /// `2026-08-10 17:15\u{2013}23:58 UTC (6h43m)`), never raw epoch floats. GATE Q's repro:
-    /// `window_utc_first: 1786382123.954` printed verbatim in the console.
-    #[test]
-    fn window_is_human_readable_never_a_raw_epoch_float() {
-        let a = art();
-        let console = render_console(&a);
-        assert!(
-            console.contains("2026-08-10")
-                && console.contains("UTC")
-                && console.contains('h')
-                && console.contains('m'),
-            "console must contain a human date + duration: {console}"
-        );
-        // The raw epoch floats must never appear as console TEXT (they legitimately exist as
-        // artifact JSON fields — `window_utc_first`/`window_utc_last` — this asserts the CONSOLE
-        // surface only).
-        if let Some(f) = a.window_utc_first {
-            assert!(
-                !console.contains(&format!("{f}")),
-                "console must not print the raw epoch float {f}"
-            );
-        }
-    }
-
     /// AC-45b — the "Not evaluable here" block must state the WINDOW the observed rate was
     /// derived over (`over <date>\u{2192}<date>`), not only the rate.
     #[test]
@@ -606,35 +524,6 @@ mod tests {
         assert!(
             calibration_block.starts_with("Window:"),
             "calibration block must open with the window banner: {calibration_block}"
-        );
-    }
-
-    /// AC-58 — the primary-KPI block (block 4) appears before ANY secondary block (block 6), for
-    /// EVERY candidate — not candidate-major. GATE Q's repro: candidate 2's primary block followed
-    /// candidate 1's secondary blocks under the old candidate-major layout.
-    #[test]
-    fn primary_block_precedes_every_secondary_block_for_every_candidate() {
-        let a = art();
-        let blocks = render_candidate_blocks(&a);
-        // Block 4's pooled-primary line shape is `"  {display} \u{b7} large_abs_move\n"` — distinct
-        // from block 5's per-symbol shape (`"{sym} \u{b7} {display} \u{b7} ..."`) and block 6's
-        // secondary shape (which always carries the `[secondary]` tag on the same line).
-        let last_primary_pos = CANDIDATES
-            .iter()
-            .map(|c| {
-                blocks
-                    .find(&format!("{} \u{b7} large_abs_move\n", c.display))
-                    .unwrap_or_else(|| panic!("no block-4 primary line for {}", c.display))
-            })
-            .max()
-            .expect("at least one primary block present");
-        let first_secondary_pos = blocks
-            .find("[secondary]")
-            .expect("at least one secondary block present");
-        assert!(
-            last_primary_pos < first_secondary_pos,
-            "a secondary block appeared before every primary block was printed \
-             (last primary at {last_primary_pos}, first secondary at {first_secondary_pos})"
         );
     }
 

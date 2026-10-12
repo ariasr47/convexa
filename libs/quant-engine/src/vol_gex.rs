@@ -149,49 +149,80 @@ mod tests {
         HvPercent::try_from_percent(p)
     }
 
+    /// Basis choice (ATM IV over HV, HV fallback, unavailable), sign and zero
+    /// preservation, and decimal-not-percent scaling. The percent-shaped 45.0
+    /// refusal itself is pinned in `vol_units.rs` `rejects_percent_passed_as_decimal`.
     #[test]
-    fn prefers_atm_iv_over_hv() {
-        let v = vol_normalize_gex(100.0, 60.0, -40.0, 100.0, iv(0.20), hv(30.0)).unwrap();
-        assert_eq!(v.vol_basis, VolNormBasis::AtmIv);
-        assert!((v.net_gex - 500.0).abs() < 0.01); // 100 / 0.2
-        assert!((v.vol_used - 0.20).abs() < 1e-9);
-    }
-
-    #[test]
-    fn falls_back_to_hv_when_atm_missing() {
-        let v = vol_normalize_gex(100.0, 60.0, -40.0, 100.0, None, hv(25.0)).unwrap();
-        assert_eq!(v.vol_basis, VolNormBasis::Hv30d);
-        // 100 / 0.25 = 400
-        assert!((v.net_gex - 400.0).abs() < 0.01);
-    }
-
-    #[test]
-    fn unavailable_when_no_vol() {
-        assert!(vol_normalize_gex(100.0, 60.0, -40.0, 100.0, None, None).is_none());
-        // Percent-shaped 45.0 cannot become IvDecimal — constructor rejects.
-        assert!(iv(45.0).is_none());
-        assert!(vol_normalize_gex(100.0, 60.0, -40.0, 100.0, iv(45.0), None).is_none());
-    }
-
-    #[test]
-    fn preserves_sign() {
-        let v = vol_normalize_gex(-200.0, 50.0, -250.0, 300.0, iv(0.25), None).unwrap();
-        assert!(v.net_gex < 0.0);
-        assert!((v.net_gex - (-800.0)).abs() < 0.01);
-    }
-
-    #[test]
-    fn zero_gex_stays_zero() {
-        let v = vol_normalize_gex(0.0, 0.0, 0.0, 0.0, iv(0.2), None).unwrap();
-        assert_eq!(v.net_gex, 0.0);
-    }
-
-    #[test]
-    fn footgun_percent_as_decimal_does_not_silently_scale() {
-        // If someone "fixed" vol-norm by passing wire atm_iv (45) as f64, typed API refuses.
-        assert!(IvDecimal::try_from_decimal(45.0).is_none());
-        let ok = vol_normalize_gex(100.0, 0.0, 0.0, 100.0, iv(0.45), None).unwrap();
-        // Correct: 100 / 0.45 ≈ 222.22 — NOT 100/45 ≈ 2.22
-        assert!((ok.net_gex - 222.22).abs() < 0.02);
+    fn vol_normalize_gex_picks_basis_and_divides_by_decimal_vol() {
+        type Expect = Option<(VolNormBasis, f64, f64, f64)>; // basis, net_gex, tolerance, vol_used
+        #[allow(clippy::type_complexity)]
+        let cases: [(
+            &str,
+            (f64, f64, f64, f64),
+            Option<IvDecimal>,
+            Option<HvPercent>,
+            Expect,
+        ); 6] = [
+            (
+                "prefers ATM IV over HV: 100 / 0.2",
+                (100.0, 60.0, -40.0, 100.0),
+                iv(0.20),
+                hv(30.0),
+                Some((VolNormBasis::AtmIv, 500.0, 0.01, 0.20)),
+            ),
+            (
+                "falls back to HV when ATM IV missing: 100 / 0.25",
+                (100.0, 60.0, -40.0, 100.0),
+                None,
+                hv(25.0),
+                Some((VolNormBasis::Hv30d, 400.0, 0.01, 0.25)),
+            ),
+            (
+                "unavailable when no vol",
+                (100.0, 60.0, -40.0, 100.0),
+                None,
+                None,
+                None,
+            ),
+            (
+                "preserves sign: -200 / 0.25",
+                (-200.0, 50.0, -250.0, 300.0),
+                iv(0.25),
+                None,
+                Some((VolNormBasis::AtmIv, -800.0, 0.01, 0.25)),
+            ),
+            (
+                "zero GEX stays exactly zero",
+                (0.0, 0.0, 0.0, 0.0),
+                iv(0.2),
+                None,
+                Some((VolNormBasis::AtmIv, 0.0, 0.0, 0.2)),
+            ),
+            (
+                // Correct: 100 / 0.45 ≈ 222.22 — NOT 100/45 ≈ 2.22
+                "decimal IV scales by 1/0.45, not 1/45",
+                (100.0, 0.0, 0.0, 100.0),
+                iv(0.45),
+                None,
+                Some((VolNormBasis::AtmIv, 222.22, 0.02, 0.45)),
+            ),
+        ];
+        for (name, (net, call, put, total), atm_iv, hv_30d, expect) in cases {
+            let got = vol_normalize_gex(net, call, put, total, atm_iv, hv_30d);
+            match expect {
+                None => assert!(got.is_none(), "{name}: expected unavailable, got {got:?}"),
+                Some((basis, want_net, tol, want_vol)) => {
+                    let v = got.unwrap_or_else(|| panic!("{name}: expected Some"));
+                    assert_eq!(v.vol_basis, basis, "{name}");
+                    assert!(
+                        (v.net_gex - want_net).abs() <= tol,
+                        "{name}: net_gex {} vs {want_net}",
+                        v.net_gex
+                    );
+                    assert_eq!(v.net_gex < 0.0, want_net < 0.0, "{name}: sign");
+                    assert!((v.vol_used - want_vol).abs() < 1e-9, "{name}: vol_used");
+                }
+            }
+        }
     }
 }

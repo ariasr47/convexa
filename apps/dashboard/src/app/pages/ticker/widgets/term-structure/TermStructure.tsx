@@ -54,7 +54,7 @@ function TenorCell({ dte, atmIv, intensity }: { dte: number; atmIv: number; inte
       >
         {atmIv.toFixed(1)}
       </Typography>
-      {/* 11px chip/label floor (convexa-design rule 7, `type-floor.spec.tsx`) — the design's own SVG
+      {/* 11px chip/label floor (convexa-design rule 7) — the design's own SVG
           tenor label is 10px raw canvas/SVG text, not bound by this app's MUI chip/label floor. */}
       <Typography
         variant="caption"

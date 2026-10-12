@@ -602,7 +602,9 @@ export type AuthErrorCode =
   | 'google_unavailable'
   /** Owner lockdown (2026-08-06): registration is closed. A POLICY refusal, not a fault — the FE
    *  must not fold it into `auth_unavailable`, which claims a transient problem. */
-  | 'signups_closed';
+  | 'signups_closed'
+  /** 429: too many sign-in attempts for this account or address. Its `message` names the wait. */
+  | 'rate_limited';
 
 export function isAuthErrorCode(value: unknown): value is AuthErrorCode {
   return (
@@ -612,7 +614,8 @@ export function isAuthErrorCode(value: unknown): value is AuthErrorCode {
     value === 'auth_required' ||
     value === 'auth_unavailable' ||
     value === 'google_unavailable' ||
-    value === 'signups_closed'
+    value === 'signups_closed' ||
+    value === 'rate_limited'
   );
 }
 

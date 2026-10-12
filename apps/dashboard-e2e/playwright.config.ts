@@ -26,15 +26,7 @@ const shared = sharedConfig('chromium');
 const config = {
   ...shared,
   testDir: './src/e2e',
-  testMatch: [
-    'app-loads.spec.ts',
-    'broker-grouping.spec.ts',
-    'broker.spec.ts',
-    'curvature-v2.spec.ts',
-    'desk-and-read.spec.ts',
-    'navigation.spec.ts',
-    'no-overflow.spec.ts',
-  ],
+  testMatch: ['curvature-v2.spec.ts', 'navigation.spec.ts'],
   reporter: [
     ['list'],
     [

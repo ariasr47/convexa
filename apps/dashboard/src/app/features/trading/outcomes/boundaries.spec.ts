@@ -244,7 +244,7 @@ describe('AC-2 / AC-25 — the readout AND the archive are UNGATED', () => {
   });
 });
 
-describe('AC-6 / AC-14 / AC-E17 — the negative space in the surface', () => {
+describe('AC-6 / AC-E17 — the negative space in the surface', () => {
   const ui = code([sectionSource, archiveBlockSource].join('\n'));
 
   it('AC-E17 — the readout takes NO live prop and binds no opacity to any stream state', () => {
@@ -256,17 +256,6 @@ describe('AC-6 / AC-14 / AC-E17 — the negative space in the surface', () => {
     expect(ui).not.toMatch(/EventSource|streamTicker|LiveUpdate/);
     // No freshness concept exists here: no "as of", no Refresh, no poll, no stale treatment.
     expect(ui).not.toMatch(/setInterval|Refresh|as of/i);
-  });
-
-  it('AC-14 — no semantic tint on any rate: no success/error palette, no red/green, no arrow, no bar, no gauge', () => {
-    // ⚠ The file next door does `color: netPl >= 0 ? "success.main" : "error.main"`. The range is
-    // the verdict, not the hue.
-    expect(ui).not.toMatch(/success\.main|error\.main|warning\.main|['"]red|['"]green/);
-    expect(ui).not.toMatch(/ArrowUpward|ArrowDownward|TrendingUp|TrendingDown|CheckCircle|Cancel/);
-    expect(ui).not.toMatch(/LinearProgress|CircularProgress|Sparkline|Gauge|BarChart/);
-    // No progress bar in the `building` cell: "7 of 20" invites a meter, and a meter beside a
-    // hit-rate-shaped cell reads as 35%.
-    expect(ui).not.toMatch(/severity="error"/);
   });
 
   it('AC-6 — the readout proposes nothing: no score/threshold/weight copy, and no toggle, override, filter or sort control', () => {

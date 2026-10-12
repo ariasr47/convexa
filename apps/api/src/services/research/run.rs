@@ -254,24 +254,67 @@ mod tests {
         assert!(run.console.starts_with("RESEARCH READ"));
     }
 
+    /// Every way of reaching zero paired rows fails with its own cause (never an empty artifact),
+    /// and the error names the next command to run.
     #[test]
-    fn zero_samples_and_zero_outcomes_names_no_samples_loaded() {
-        let mut inputs = base_inputs();
-        inputs.samples = vec![];
-        inputs.outcomes = vec![];
-        let err = run_lab(inputs).unwrap_err();
-        match err {
-            LabError::NoPairedRows {
-                cause,
-                n_samples,
-                n_outcomes,
-                ..
-            } => {
-                assert_eq!(cause, NoPairCause::NoSamplesLoaded);
-                assert_eq!(n_samples, 0);
-                assert_eq!(n_outcomes, 0);
+    fn zero_paired_rows_fails_naming_its_cause() {
+        fn no_samples_and_no_outcomes(i: &mut LabInputs) {
+            i.samples = vec![];
+            i.outcomes = vec![];
+        }
+        fn samples_but_no_outcomes(i: &mut LabInputs) {
+            i.outcomes = vec![];
+        }
+        // Outcomes exist at a horizon that IS present (so HorizonHasNoOutcomes doesn't fire
+        // first) yet no sample keys match: move every outcome's as_of so nothing pairs.
+        fn no_overlap_at_horizon(i: &mut LabInputs) {
+            for o in &mut i.outcomes {
+                o.as_of += 999_999.0;
             }
-            other => panic!("expected NoPairedRows, got {other:?}"),
+        }
+        // (case, mutation, expected cause, expected (n_samples, n_outcomes) where pinned)
+        let cases: [(
+            &str,
+            fn(&mut LabInputs),
+            NoPairCause,
+            Option<(usize, usize)>,
+        ); 3] = [
+            (
+                "zero samples and zero outcomes",
+                no_samples_and_no_outcomes,
+                NoPairCause::NoSamplesLoaded,
+                Some((0, 0)),
+            ),
+            (
+                "samples present, no outcomes",
+                samples_but_no_outcomes,
+                NoPairCause::NoOutcomesLoaded,
+                None,
+            ),
+            (
+                "zero overlap at horizon",
+                no_overlap_at_horizon,
+                NoPairCause::NoOverlapAtHorizon,
+                None,
+            ),
+        ];
+        for (name, mutate, expected, counts) in cases {
+            let mut inputs = base_inputs();
+            mutate(&mut inputs);
+            match run_lab(inputs).unwrap_err() {
+                LabError::NoPairedRows {
+                    cause,
+                    n_samples,
+                    n_outcomes,
+                    ..
+                } => {
+                    assert_eq!(cause, expected, "{name}");
+                    if let Some(want) = counts {
+                        assert_eq!((n_samples, n_outcomes), want, "{name}");
+                    }
+                }
+                other => panic!("{name}: expected NoPairedRows, got {other:?}"),
+            }
         }
         // Display carries the exact next command.
         let msg = format!(
@@ -284,38 +327,6 @@ mod tests {
             }
         );
         assert!(msg.contains("join-outcomes"));
-    }
-
-    #[test]
-    fn samples_present_but_no_outcomes_names_no_outcomes_loaded() {
-        let mut inputs = base_inputs();
-        inputs.outcomes = vec![];
-        let err = run_lab(inputs).unwrap_err();
-        assert!(matches!(
-            err,
-            LabError::NoPairedRows {
-                cause: NoPairCause::NoOutcomesLoaded,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn zero_overlap_at_horizon_names_no_overlap() {
-        let mut inputs = base_inputs();
-        // Outcomes exist but at a horizon that IS present (so HorizonHasNoOutcomes doesn't fire
-        // first) yet no sample keys match — mutate every outcome's as_of so nothing pairs.
-        for o in &mut inputs.outcomes {
-            o.as_of += 999_999.0;
-        }
-        let err = run_lab(inputs).unwrap_err();
-        assert!(matches!(
-            err,
-            LabError::NoPairedRows {
-                cause: NoPairCause::NoOverlapAtHorizon,
-                ..
-            }
-        ));
     }
 
     #[test]

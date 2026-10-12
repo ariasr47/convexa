@@ -102,6 +102,12 @@ for (const scenario of journeys) {
       await expect(cards.nth(1)).toBeFocused();
       await cards.nth(1).press('Enter');
       await expect(page).toHaveURL(/\/ticker\/(QQQ|NVDA)$/);
+    } else if (scenario.id === 'ai-recommendation') {
+      // The AI-recommendation open flow, kept when the visual gate retired (owner, 2026-10-08).
+      await page.getByRole('button', { name: 'Analyze current snapshot' }).click();
+      await expect(page.getByTestId('ai-rec-decision-card')).toBeVisible();
+      await page.getByRole('button', { name: 'Full analysis & data' }).click();
+      await expect(page.getByRole('dialog', { name: /Full analysis & data/ })).toBeVisible();
     }
     expect(requestState.unexpected, 'strict fixture rejected unexpected traffic').toEqual([]);
   });

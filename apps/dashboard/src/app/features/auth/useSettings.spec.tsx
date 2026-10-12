@@ -39,24 +39,48 @@ afterEach(() => {
   __resetLocalPrefs();
 });
 
-describe('useSettings — server-wins when signed in (AC-F1)', () => {
-  it('reflects the server settings value over any client-local store', async () => {
-    // A client-local persona/theme exist, but the signed-in server value must win.
-    saveActiveId('income_keeper');
-    saveLocalTheme('light');
-    backend = installAuthBackend({
-      session: userSession('u-1', 'a@x.com', {
-        active_persona_id: 'steady_swinger',
-        default_ticker: 'NVDA',
-        theme: 'light',
-      }),
-    });
-    const { result } = renderHook(() => useSettings(), { wrapper });
-    await waitFor(() => expect(result.current.serverBacked).toBe(true));
-    expect(result.current.effective.personaId).toBe('steady_swinger'); // server, not the local income_keeper
-    expect(result.current.effective.defaultTicker).toBe('NVDA');
-    expect(result.current.effective.theme).toBe('light');
-  });
+describe('useSettings — server-wins when signed in, per account (AC-F1/F2)', () => {
+  it.each([
+    {
+      case: 'a client-local persona and theme',
+      localTheme: 'light',
+      userId: 'u-1',
+      email: 'a@x.com',
+      persona: 'steady_swinger',
+      ticker: 'NVDA',
+      theme: 'light',
+    },
+    {
+      // Account X left a local pref; signing in as Y returns Y own value — X must not leak.
+      case: "account X's leftover local persona (signed in as Y)",
+      localTheme: null,
+      userId: 'u-Y',
+      email: 'y@x.com',
+      persona: 'steady_swinger',
+      ticker: 'MSFT',
+      theme: 'dark',
+    },
+  ] as const)(
+    'reflects the server value over $case and never writes the local value back',
+    async ({ localTheme, userId, email, persona, ticker, theme }) => {
+      saveActiveId('income_keeper'); // a leftover client-local value the server must override
+      if (localTheme) saveLocalTheme(localTheme);
+      backend = installAuthBackend({
+        session: userSession(userId, email, {
+          active_persona_id: persona,
+          default_ticker: ticker,
+          theme,
+        }),
+      });
+      const { result } = renderHook(() => useSettings(), { wrapper });
+      await waitFor(() => expect(result.current.serverBacked).toBe(true));
+      expect(result.current.effective.personaId).toBe(persona); // server, not the local income_keeper
+      expect(result.current.effective.defaultTicker).toBe(ticker);
+      expect(result.current.effective.theme).toBe(theme);
+      // The local income_keeper is NOT written back to the server.
+      expect(backend.calls.settingsPut).toBe(0);
+    },
+  );
 
   it('writes a pref through to the server and carries the saved value (AC-F1)', async () => {
     backend = installAuthBackend({
@@ -115,26 +139,6 @@ describe('useSettings — anonymous uses client-local, no server pref (AC-F3/A3)
     });
     expect(backend.calls.settingsPut).toBe(0); // anonymous never hits the server
     await waitFor(() => expect(result.current.effective.theme).toBe('system'));
-  });
-});
-
-describe('useSettings — per-account isolation (AC-F2)', () => {
-  it('shows account Y own value, never account X (FE does not overwrite server from local)', async () => {
-    // Account X had a local pref; signing in as Y returns Y own (default) value — X must not leak.
-    saveActiveId('income_keeper'); // a leftover local value from a prior anonymous session
-    backend = installAuthBackend({
-      session: userSession('u-Y', 'y@x.com', {
-        active_persona_id: 'steady_swinger',
-        default_ticker: 'MSFT',
-        theme: 'dark',
-      }),
-    });
-    const { result } = renderHook(() => useSettings(), { wrapper });
-    await waitFor(() => expect(result.current.serverBacked).toBe(true));
-    expect(result.current.effective.personaId).toBe('steady_swinger'); // Y server value
-    expect(result.current.effective.defaultTicker).toBe('MSFT');
-    // The local income_keeper is NOT applied and is NOT written back to the server.
-    expect(backend.calls.settingsPut).toBe(0);
   });
 });
 

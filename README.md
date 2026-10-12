@@ -135,6 +135,7 @@ Then open [http://localhost:4200](http://localhost:4200). This path needs the li
 ### Test / lint / format / build
 
 ```bash
+npm run verify           # before a push: affected lint, typecheck and test (+ tool specs if tools changed)
 npm test                 # unit tests (dashboard, @convexa/api, cargo)
 npm run typecheck        # required — Vitest does not typecheck
 npm run lint
@@ -146,6 +147,9 @@ npm run graph
 ```
 
 These repository-wide checks include Rust contract generation/tests; frontend-only demo builds use `npm run build:dashboard:demo`.
+
+Optional pre-push hook (affected lint and typecheck, under a minute): `git config core.hooksPath tools/hooks`.
+CI (`.github/workflows/ci.yml`) is manual: run it from the Actions tab when you want the full set.
 
 ---
 

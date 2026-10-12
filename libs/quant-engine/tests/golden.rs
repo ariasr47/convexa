@@ -195,10 +195,16 @@ fn assert_opt_aggregate(name: &str, got: Option<f64>, exp: Option<f64>, tol: &Pa
     }
 }
 
-fn run_fixture(path: &std::path::Path) {
+/// Runs one fixture against `process_gex_profile` and returns its `(as_of, parity mode)`
+/// so the caller can check the canonical set without parsing the file a second time.
+fn run_fixture(path: &std::path::Path) -> (String, Option<String>) {
     let raw = fs::read_to_string(path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
     let fix: GoldenFixture =
         serde_json::from_str(&raw).unwrap_or_else(|e| panic!("parse {}: {e}", path.display()));
+    let meta = (
+        fix.as_of.clone(),
+        fix.parity.as_ref().and_then(|p| p.mode.clone()),
+    );
 
     let as_of: DateTime<Utc> = fix
         .as_of
@@ -354,47 +360,50 @@ fn run_fixture(path: &std::path::Path) {
             );
         }
     }
+    meta
 }
 
-#[test]
-fn golden_fixtures_if_present() {
-    let paths = load_golden_paths();
-    if paths.is_empty() {
-        eprintln!("quant-engine golden: no tests/fixtures/gex_*.json yet — skipping parity checks");
-        return;
-    }
-    for p in &paths {
-        eprintln!("golden: {}", p.file_name().unwrap().to_string_lossy());
-        run_fixture(p);
-    }
-}
+/// Canonical exact-parity set, captured with one fixed `as_of` (see the module docs).
+const CANONICAL_EXACT_SET: [&str; 3] = ["gex_SPY.json", "gex_QQQ.json", "gex_NVDA.json"];
 
-/// Canonical exact-parity set must exist and share one as_of.
+/// Every `gex_*.json` fixture matches its reference, each run exactly once. The canonical
+/// SPY/QQQ/NVDA set is required: a missing file, a non-exact parity mode or a split
+/// `as_of` fails the test instead of skipping it.
 #[test]
-fn exact_parity_set_spy_qqq_nvda() {
-    let names = ["gex_SPY.json", "gex_QQQ.json", "gex_NVDA.json"];
-    let mut as_ofs = Vec::new();
-    for name in names {
-        let path = fixtures_dir().join(name);
-        if !path.is_file() {
-            eprintln!("exact-parity fixture missing: {name} (run capture_gex_fixtures.py)");
-            // Soft-skip when not yet captured in a fresh clone.
-            return;
-        }
-        let raw = fs::read_to_string(&path).unwrap();
-        let fix: GoldenFixture = serde_json::from_str(&raw).unwrap();
-        assert_eq!(
-            fix.parity.as_ref().and_then(|p| p.mode.as_deref()),
-            Some("exact"),
-            "{name} should declare parity.mode=exact"
+fn golden_fixtures_match_reference_and_canonical_exact_set_is_required() {
+    let dir = fixtures_dir();
+    for name in CANONICAL_EXACT_SET {
+        assert!(
+            dir.join(name).is_file(),
+            "canonical exact-parity fixture missing: {name} in {} (run capture_gex_fixtures.py)",
+            dir.display()
         );
-        as_ofs.push(fix.as_of.clone());
-        run_fixture(&path);
     }
+
+    let mut canonical: Vec<(&str, String)> = Vec::new();
+    for p in load_golden_paths() {
+        let file_name = p.file_name().unwrap().to_string_lossy().into_owned();
+        eprintln!("golden: {file_name}");
+        let (as_of, mode) = run_fixture(&p);
+        if let Some(name) = CANONICAL_EXACT_SET.iter().find(|n| **n == file_name) {
+            assert_eq!(
+                mode.as_deref(),
+                Some("exact"),
+                "{name} should declare parity.mode=exact"
+            );
+            canonical.push((*name, as_of));
+        }
+    }
+
+    assert_eq!(
+        canonical.len(),
+        CANONICAL_EXACT_SET.len(),
+        "every canonical fixture must be discovered and run: ran {canonical:?}"
+    );
     // All three captured at the same fixed clock.
     assert!(
-        as_ofs.iter().all(|a| a == &as_ofs[0]),
-        "SPY/QQQ/NVDA as_of must match for exact parity set: {as_ofs:?}"
+        canonical.iter().all(|(_, a)| a == &canonical[0].1),
+        "SPY/QQQ/NVDA as_of must match for exact parity set: {canonical:?}"
     );
 }
 

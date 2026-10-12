@@ -448,62 +448,105 @@ mod tests {
         code == ExitCode::SUCCESS
     }
 
+    /// Non-fault gates (weekend, not elapsed, no tape on a past weekday, not in watchlist)
+    /// exit 0 and say "not a coverage miss"; none is mislabelled as pre-store or an error.
     #[tokio::test]
-    async fn weekend_exits_0_with_not_a_coverage_miss() {
-        let store = SessionDayTape::memory();
-        // Quiet-day mint so store is enabled with a container path available;
-        // weekend gate fires before identity.
+    async fn non_fault_gates_exit_0_with_not_a_coverage_miss() {
+        struct Case {
+            name: &'static str,
+            disabled_store: bool,
+            symbol: &'static str,
+            et_date: &'static str,
+            stdout_has: &'static [&'static str],
+            stdout_lacks: &'static [&'static str],
+            stderr_has: &'static [&'static str],
+        }
         let now = et_hm(2026, 8, 10, 12, 0); // Monday
-        let (stdout, stderr, code) =
-            evaluate_cli(&store, now, Some("SPY"), Some("2026-08-15")).await; // Saturday
-        assert!(exit_success(code), "weekend must be exit 0, got {code:?}");
-        assert!(stderr.contains("[RUNNING] session-day-tape"));
-        assert!(stdout.contains("session day tape ineligible weekend: SPY on 2026-08-15"));
-        assert!(stdout.contains(NOT_COVERAGE_MISS));
-        assert!(stdout.contains("Evidence:    local"));
-        assert!(stdout.contains("Command:     session-day-tape"));
-        assert!(stdout.contains("local audit is not production coverage"));
-        assert!(!stdout.contains("[NOT DUE]"));
-        assert!(!stdout.contains("[FAIL]"));
-        assert!(!stdout.contains("not expected before storing"));
-    }
-
-    #[tokio::test]
-    async fn not_elapsed_exits_0_with_not_a_coverage_miss() {
-        let store = SessionDayTape::memory();
-        let now = et_hm(2026, 8, 10, 12, 0);
-        let (stdout, _stderr, code) =
-            evaluate_cli(&store, now, Some("SPY"), Some("2026-08-11")).await;
-        assert!(exit_success(code));
-        assert!(stdout.contains("session day tape not elapsed: SPY on 2026-08-11"));
-        assert!(stdout.contains(NOT_COVERAGE_MISS));
-        assert!(stdout.contains("Evidence:    local"));
-    }
-
-    #[tokio::test]
-    async fn no_identity_named_past_weekday_exits_0_not_pre_store() {
-        let store = SessionDayTape::memory();
-        let now = et_hm(2026, 8, 10, 12, 0);
-        let (stdout, _stderr, code) =
-            evaluate_cli(&store, now, Some("SPY"), Some("2026-08-03")).await; // past Monday
-        assert!(exit_success(code));
-        assert!(stdout.contains("no session day tape for SPY on 2026-08-03"));
-        assert!(stdout.contains(NOT_COVERAGE_MISS));
-        assert!(!stdout.contains("not expected before storing"));
-        assert!(!stdout.contains("NotExpectedPreStore"));
-    }
-
-    #[tokio::test]
-    async fn not_in_watchlist_exits_0_without_requiring_root() {
-        let store = SessionDayTape::disabled();
-        let now = et_hm(2026, 8, 10, 12, 0);
-        let (stdout, _stderr, code) =
-            evaluate_cli(&store, now, Some("NVDA"), Some("2020-01-02")).await;
-        assert!(exit_success(code));
-        assert!(stdout.contains("not in tape watchlist: NVDA"));
-        assert!(stdout.contains(NOT_COVERAGE_MISS));
-        assert!(stdout.contains("Evidence:    local"));
-        assert!(!stdout.contains("[ERROR]"));
+        let cases = [
+            Case {
+                // Saturday; the weekend gate fires before identity.
+                name: "weekend",
+                disabled_store: false,
+                symbol: "SPY",
+                et_date: "2026-08-15",
+                stdout_has: &[
+                    "session day tape ineligible weekend: SPY on 2026-08-15",
+                    "Evidence:    local",
+                    "Command:     session-day-tape",
+                    "local audit is not production coverage",
+                ],
+                stdout_lacks: &["[NOT DUE]", "[FAIL]", "not expected before storing"],
+                stderr_has: &["[RUNNING] session-day-tape"],
+            },
+            Case {
+                name: "not elapsed",
+                disabled_store: false,
+                symbol: "SPY",
+                et_date: "2026-08-11",
+                stdout_has: &[
+                    "session day tape not elapsed: SPY on 2026-08-11",
+                    "Evidence:    local",
+                ],
+                stdout_lacks: &[],
+                stderr_has: &[],
+            },
+            Case {
+                // Past Monday with no container.
+                name: "no identity",
+                disabled_store: false,
+                symbol: "SPY",
+                et_date: "2026-08-03",
+                stdout_has: &["no session day tape for SPY on 2026-08-03"],
+                stdout_lacks: &["not expected before storing", "NotExpectedPreStore"],
+                stderr_has: &[],
+            },
+            Case {
+                // Watchlist gate answers without requiring a tape root.
+                name: "not in watchlist",
+                disabled_store: true,
+                symbol: "NVDA",
+                et_date: "2020-01-02",
+                stdout_has: &["not in tape watchlist: NVDA", "Evidence:    local"],
+                stdout_lacks: &["[ERROR]"],
+                stderr_has: &[],
+            },
+        ];
+        for c in cases {
+            let store = if c.disabled_store {
+                SessionDayTape::disabled()
+            } else {
+                SessionDayTape::memory()
+            };
+            let (stdout, stderr, code) =
+                evaluate_cli(&store, now, Some(c.symbol), Some(c.et_date)).await;
+            assert!(
+                exit_success(code),
+                "{}: must be exit 0, got {code:?}",
+                c.name
+            );
+            assert!(
+                stdout.contains(NOT_COVERAGE_MISS),
+                "{}: missing not-a-coverage-miss line",
+                c.name
+            );
+            for needle in c.stdout_has {
+                assert!(stdout.contains(needle), "{}: missing `{needle}`", c.name);
+            }
+            for needle in c.stdout_lacks {
+                assert!(
+                    !stdout.contains(needle),
+                    "{}: must not contain `{needle}`",
+                    c.name
+                );
+            }
+            for needle in c.stderr_has {
+                assert!(
+                    stderr.contains(needle),
+                    "{}: stderr missing `{needle}`",
+                    c.name
+                );
+            }
+        }
     }
 
     #[tokio::test]

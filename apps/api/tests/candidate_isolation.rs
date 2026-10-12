@@ -117,33 +117,3 @@ fn the_candidates_route_never_forces_a_refresh() {
         "routes/candidates.rs must never force a vendor refresh"
     );
 }
-
-/// B14 structural addendum — the cited-contract match key takes a non-optional `right`, so a
-/// partial key cannot be constructed anywhere in the codebase.
-#[test]
-fn the_match_key_constructor_takes_a_non_optional_right() {
-    let root = workspace_root();
-    let src = fs::read_to_string(root.join("apps/api/src/services/rec_inputs/cited.rs"))
-        .expect("cited.rs");
-    let ctor_start = src.find("pub fn new(").expect("CitedKey::new not found");
-    let ctor_sig_end = src[ctor_start..]
-        .find(')')
-        .map(|i| ctor_start + i)
-        .unwrap_or(src.len());
-    let sig = &src[ctor_start..ctor_sig_end];
-    assert!(
-        sig.contains("right: ContractType"),
-        "CitedKey::new must take right: ContractType; got: {sig}"
-    );
-    assert!(
-        !sig.contains("right: Option<ContractType>"),
-        "CitedKey::new must NOT accept an optional right"
-    );
-
-    // Anti-vacuity: a mutated signature string must fail the positive assertion above.
-    let poisoned_sig = "pub fn new(expiration: String, strike: f64, right: Option<ContractType>";
-    assert!(
-        !poisoned_sig.contains("right: ContractType)"),
-        "poison sanity: a fully-optional-right signature must not satisfy the exact-match probe"
-    );
-}

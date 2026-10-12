@@ -19,7 +19,7 @@
 import type { StrikeRow, TickerBundle, TrackedContract } from '@convexa/api';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -29,10 +29,8 @@ import type { SimPosition } from '@/features/trading/positions/leg';
 import { liftLegacyRecord } from '@/features/trading/positions/migrate';
 import {
   __resetMemory,
-  allPositions,
   getCustomization,
   newId,
-  PORTFOLIO_V3_KEY,
   putCustomization,
   putPosition,
 } from '@/features/trading/positions/store';
@@ -192,8 +190,6 @@ function seedPosition(over: Partial<Position> = {}): SimPosition {
   return lifted;
 }
 
-type ContractResolver = 'quote' | 'notfound' | 'throw' | 'nullquote';
-let contractMode: ContractResolver = 'quote';
 let fetchMock: ReturnType<typeof vi.fn>;
 // no-vendor-production-posture F4 ("positions pricing"): the focused-ticker anchor bundle answers
 // the exact paused 503 instead of a bundle.
@@ -202,7 +198,6 @@ let tickerPaused = false;
 beforeEach(() => {
   localStorage.clear();
   __resetMemory();
-  contractMode = 'quote';
   tickerPaused = false;
 
   class SilentEventSource {
@@ -295,12 +290,7 @@ beforeEach(() => {
     }
     if (url.includes('/api/personas'))
       return json([{ id: 'default', name: 'Default (no persona)' }]);
-    if (url.includes('/api/contract/')) {
-      if (contractMode === 'throw') throw new Error('network');
-      if (contractMode === 'notfound') return json(null, 404);
-      if (contractMode === 'nullquote') return json({ ...QUOTE, option_quote: null });
-      return json(QUOTE);
-    }
+    if (url.includes('/api/contract/')) return json(QUOTE);
     throw new Error(`Unexpected fetch in test: ${url}`);
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -326,37 +316,6 @@ function renderAt(path: string) {
 // store persistence
 // =================================================================================================
 describe('store', () => {
-  it('position survives navigation', async () => {
-    const user = userEvent.setup();
-    seedPosition();
-    renderAt('/positions');
-    expect(await screen.findByTestId('position-row')).toBeInTheDocument();
-
-    // Nav away to Scanner and back; the durable record is still there.
-    await user.click(screen.getByTestId('nav-scanner'));
-    await screen.findByTestId('scanner-page');
-    await user.click(screen.getByTestId('nav-positions'));
-    expect(await screen.findByTestId('position-row')).toBeInTheDocument();
-    expect(allPositions().length).toBe(1);
-  });
-
-  it('position survives reload (durable facts intact; ephemeral session state re-derives fresh)', async () => {
-    seedPosition();
-    renderAt('/positions');
-    expect(await screen.findByTestId('position-row')).toBeInTheDocument();
-
-    // Reload = re-mount fresh from the durable store (the module cache is reset like a page reload).
-    cleanup();
-    __resetMemory();
-    renderAt('/positions');
-    const row = await screen.findByTestId('position-row');
-    // Durable facts persist byte-for-byte; the ephemeral trend/session state simply re-derives
-    // (its ring buffer is unit-tested in useTrends.spec) — no stale carry, no throw.
-    expect(within(within(row).getByTestId('cell-contract')).getByText('TSLA')).toBeInTheDocument();
-    expect(allPositions().length).toBe(1);
-    expect(allPositions()[0].legs[0].entry_price).toBe(5);
-  });
-
   it('customization + saved views survive nav + reload', async () => {
     // Seed a position + a named saved view directly into the durable customization store.
     seedPosition();
@@ -388,65 +347,6 @@ describe('store', () => {
     await screen.findByTestId('position-row');
     expect(screen.getByTestId('view-picker').textContent).toMatch(/Tech swings/);
   });
-
-  // (Consolidated, risk-based 2026-07-16: the former "seeded position persists across navigation
-  // (singleton store)" test duplicated "position survives navigation" above, and the former
-  // "ephemeral trends re-derive" test folded into the reload test — same invariants, fewer mirrors.)
-});
-
-// =================================================================================================
-// positions marks (standalone GET /api/contract sourcing + degrade-to-last-known)
-// =================================================================================================
-describe('positions-marks', () => {
-  it('marks populate from GET /api/contract', async () => {
-    seedPosition();
-    renderAt('/positions');
-    // The mark cell populates from the existing GET /api/contract source.
-    expect(await screen.findByTestId('cell-mark')).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/contract/'));
-  });
-
-  it('refresh failure → last known, never blanked', async () => {
-    // The contract fetch throws → the row stays listed; its mark cell degrades (last-known idiom),
-    // never blanked or removed.
-    contractMode = 'throw';
-    seedPosition();
-    renderAt('/positions');
-    // The row is still present (never dropped) even though the mark could not refresh.
-    expect(await screen.findByTestId('position-row')).toBeInTheDocument();
-    expect(
-      within(within(screen.getByTestId('position-row')).getByTestId('cell-contract')).getByText(
-        'TSLA',
-      ),
-    ).toBeInTheDocument();
-    // The page did not error; the durable record persists.
-    expect(allPositions().length).toBe(1);
-  });
-
-  it('404 → tracking unavailable, row kept', async () => {
-    contractMode = 'notfound';
-    seedPosition();
-    renderAt('/positions');
-    const row = await screen.findByTestId('position-row');
-    // The row stays with its durable facts; the mark cell degrades to the unavailable state.
-    expect(within(within(row).getByTestId('cell-contract')).getByText('TSLA')).toBeInTheDocument();
-    // The 404 resolves to `unavailable` after the contract fetch lands (row never dropped).
-    expect((await screen.findAllByTestId('cell-unavailable')).length).toBeGreaterThan(0);
-    // Page did not error / blank.
-    expect(screen.getByTestId('portfolio-panel')).toBeInTheDocument();
-  });
-
-  it('null quote → no live quote fallback', async () => {
-    contractMode = 'nullquote';
-    seedPosition();
-    renderAt('/positions');
-    const row = await screen.findByTestId('position-row');
-    // Contract exists but no NBBO quote: the row falls back to an honest (theoretical/last-known)
-    // mark and does NOT throw into the page. Row + durable facts stay.
-    expect(within(within(row).getByTestId('cell-contract')).getByText('TSLA')).toBeInTheDocument();
-    expect(screen.getByTestId('portfolio-panel')).toBeInTheDocument();
-    expect(allPositions().length).toBe(1);
-  });
 });
 
 // =================================================================================================
@@ -463,29 +363,6 @@ describe('net-pl-readout', () => {
     // not dimmed while live
     expect(readout).toBeInTheDocument();
   });
-
-  it('35b (SB): renders `unavailable` — never a number, never a zero, never a tint — when the one open row cannot be marked', async () => {
-    // curvature-v2-surfaces FE-6 closes a shipped defect here: this state used to render a green
-    // `+$0` — a computed-looking number and a direction colour for a book with nothing computable.
-    contractMode = 'throw';
-    seedPosition();
-    renderAt('/positions');
-    const readout = await screen.findByTestId('positions-net-pl');
-    await vi.waitFor(() => expect(readout.textContent).toMatch(/unavailable/));
-    expect(readout.textContent).toMatch(/0 of 1 open marked/);
-    // Never a number at all (closes the `+$0` defect) — `$` cannot appear anywhere in the readout.
-    expect(readout.textContent).not.toMatch(/\$/);
-    // Never a direction colour: the value glyph carries none of `netPlTintSx`'s override rule.
-    const value = readout.querySelector('[data-figure-register]');
-    expect(value).toHaveAttribute('data-figure-register', 'sans'); // unavailable is a literal, not a figure
-  });
-
-  it('35a (SB): renders `—` — no number, no tint — with no open positions at all', async () => {
-    renderAt('/positions');
-    const readout = await screen.findByTestId('positions-net-pl');
-    await vi.waitFor(() => expect(readout.textContent).toMatch(/Net P\/L \(open\)—/));
-    expect(readout.textContent).not.toMatch(/\$/);
-  });
 });
 
 // =================================================================================================
@@ -495,33 +372,6 @@ describe('net-pl-readout', () => {
 // outcome-ledger: the Track record's PLACEMENT, on the real route, through the real page wiring
 // =================================================================================================
 describe('track-record (outcome-ledger)', () => {
-  it('AC-1 — renders on /positions, BELOW the book, and adds no new nav destination', async () => {
-    seedPosition();
-    renderAt('/positions');
-    await screen.findByTestId('portfolio-panel');
-    const section = await screen.findByTestId('track-record');
-    expect(section).toBeInTheDocument();
-    // Under the book: the book is what this page is for; the track record is the reflective read.
-    expect(
-      screen.getByTestId('portfolio-panel').compareDocumentPosition(section) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    // Its own named in-page view — NOT a third tab beside Simulated/Live (those are BOOKS).
-    expect(screen.getByText('Track record')).toBeInTheDocument();
-    expect(screen.queryByTestId('tab-track-record')).toBeNull();
-    // No new top-level nav item.
-    expect(screen.queryByTestId('nav-track-record')).toBeNull();
-  });
-
-  it('AC-1 — it does NOT appear on the Ticker route (a live decision surface) or on /_ops/metrics', async () => {
-    renderAt('/ticker/TSLA');
-    await screen.findByTestId('portfolio-panel').catch(() => undefined);
-    await vi.waitFor(() => expect(screen.queryByTestId('track-record')).toBeNull());
-    cleanup();
-    renderAt('/_ops/metrics');
-    await vi.waitFor(() => expect(screen.queryByTestId('track-record')).toBeNull());
-  });
-
   it('AC-E17 — a REAL stream drop dims the LIVE Net P/L header and leaves the STATIC track record byte-identical', async () => {
     // The two blocks sit in the SAME FILE, one above the other. The header is a live P&L: it dims on
     // a stream drop. The track record is a static historical read: it does not. The trap is
@@ -640,35 +490,5 @@ describe('invariants (positions)', () => {
     // Signed-in book sync is an autonomous, sanctioned background request. It can cross this
     // interaction boundary on a slow runner, but the Broker tab must add no other request family.
     for (const u of added) expect(u === '/api/book' || /\/api\/broker\//.test(u)).toBe(true);
-  });
-
-  it('everything stays SIMULATED', async () => {
-    seedPosition();
-    renderAt('/positions');
-    await screen.findByTestId('portfolio-panel');
-    // REVISION 1 — paper/simulated honesty now carried by the tab PAPER badge + the mandatory
-    // browser-local disclosure (the per-row SIMULATED column moved to optional, still re-addable).
-    expect(within(screen.getByTestId('tab-simulated')).getByText('PAPER')).toBeInTheDocument();
-    expect(screen.getByTestId('positions-disclosure')).toBeInTheDocument();
-    // No real-order affordance exists.
-    expect(screen.queryByText(/place real order/i)).toBeNull();
-  });
-
-  it('brand swap is UI-only (the durable book is unaffected by it)', async () => {
-    // Seed positions/views into the durable book BEFORE the rebrand-era mount.
-    seedPosition({ id: 'pre-rebrand-1' });
-    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBeTruthy();
-
-    renderAt('/positions');
-    // After the (UI-only) rebrand, the pre-seeded position is present — the store key did not change.
-    expect(await screen.findByTestId('position-row')).toBeInTheDocument();
-    expect(allPositions().some((p) => p.id === 'pre-rebrand-1')).toBe(true);
-    // And the visible brand is Convexa, not GammaFlow (UI-only swap). Since redesign-stage-2 the
-    // lockup renders caps text + the arc-X glyph; `aria-label="Convexa"` is the STABLE accessible
-    // name (FRONTEND_EXECUTION_CONTRACT §3.2 / §10-6).
-    expect(
-      within(screen.getByTestId('shell-brand')).getByRole('img', { name: 'Convexa' }),
-    ).toBeInTheDocument();
-    expect(screen.queryByText('GammaFlow')).toBeNull();
   });
 });

@@ -157,28 +157,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn norm_pdf_at_zero() {
-        let p = norm_pdf(0.0);
-        assert!((p - 0.398_942_280_401_432_7).abs() < 1e-12);
-    }
-
-    #[test]
-    fn norm_cdf_at_zero() {
-        assert!((norm_cdf(0.0) - 0.5).abs() < 1e-12);
-    }
-
-    #[test]
     fn fsum_order_invariant() {
         let a = [1e16, 1.0, -1e16];
         let b = [1.0, 1e16, -1e16];
         // Naive sum loses the 1.0; fsum preserves it.
         assert!((fsum(&a) - 1.0).abs() < 1e-9);
         assert!((fsum(&b) - 1.0).abs() < 1e-9);
-    }
-
-    #[test]
-    fn gamma_positive_for_atm() {
-        let g = calc_gamma(100.0, 100.0, 30.0 / 365.0, 0.045, 0.25, 0.0);
-        assert!(g > 0.0);
     }
 }

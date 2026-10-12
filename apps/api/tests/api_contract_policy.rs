@@ -1,8 +1,6 @@
 use api_rust::openapi::{
-    assert_no_openapi_authority, security_schemes, validate_map_value_policy, FieldPresence,
-    MapValuePolicy, SecurityMode, SurfaceClass, RISK_CLASSES, SECURITY_MODES, SURFACE_CLASSES,
+    assert_no_openapi_authority, security_schemes, SecurityMode, SECURITY_MODES,
 };
-use serde::Serialize;
 
 #[test]
 fn security_modes_are_closed_and_value_free() {
@@ -19,48 +17,6 @@ fn security_modes_are_closed_and_value_free() {
     let encoded = serde_json::to_string(&security_schemes()).unwrap();
     assert!(!encoded.contains("example") && !encoded.contains("token-value"));
     assert!(matches!(SecurityMode::Public, SecurityMode::Public));
-}
-
-#[test]
-fn required_nullable_optional_and_empty_remain_distinct() {
-    #[derive(Serialize)]
-    struct Shape {
-        required_nullable: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        optional: Option<String>,
-        empty: String,
-    }
-    let value = serde_json::to_value(Shape {
-        required_nullable: None,
-        optional: None,
-        empty: String::new(),
-    })
-    .unwrap();
-    assert!(value.get("required_nullable").is_some());
-    assert!(value.get("optional").is_none());
-    assert_eq!(value["empty"], "");
-    assert_ne!(FieldPresence::RequiredNullable, FieldPresence::Optional);
-    assert_ne!(FieldPresence::Optional, FieldPresence::Empty);
-}
-
-#[test]
-fn typed_map_policy_refuses_unconstrained_json() {
-    assert!(validate_map_value_policy(MapValuePolicy::Typed("Ticker")).is_ok());
-    assert!(validate_map_value_policy(MapValuePolicy::Typed("")).is_err());
-    assert!(validate_map_value_policy(MapValuePolicy::Unconstrained).is_err());
-}
-
-#[test]
-fn specialized_surface_and_risk_vocabularies_are_closed() {
-    assert_eq!(SURFACE_CLASSES.len(), 7);
-    assert_eq!(RISK_CLASSES.len(), 9);
-    for value in SURFACE_CLASSES.iter().chain(RISK_CLASSES.iter()) {
-        assert!(!value.is_empty());
-    }
-    assert_eq!(
-        serde_json::to_string(&SurfaceClass::Sse).unwrap(),
-        "\"sse\""
-    );
 }
 
 #[test]

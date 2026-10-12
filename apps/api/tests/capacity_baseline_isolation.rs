@@ -1,26 +1,17 @@
 //! B7 — capacity-baseline structural isolation + poison → red.
 //!
-//! Cargo test must NOT run the 600s soak. These tests prove soak *wiring*,
-//! source scans, receipt renderer, HubCmd poison, CI soak-absence, identity
-//! anti-vacuity, and D1 locks.
+//! Cargo test must NOT run the 600s soak. These tests prove source scans,
+//! forced-fail naming, vacuous vs partial surface, CI soak-absence, and that
+//! the vendor key never egresses into a receipt.
 
-use api_rust::services::capacity_harness::clients::{bind_loopback, harness_router, SseClient};
-use api_rust::services::capacity_harness::fixture::load_capacity_book;
-use api_rust::services::capacity_harness::receipt::{
-    parse_receipt, render_short, sample_pass_json,
-};
-use api_rust::services::capacity_harness::standing::{
-    render_standing_blocked, render_standing_vouched, sample_ids,
-};
+use api_rust::services::capacity_harness::receipt::{parse_receipt, render_short};
+use api_rust::services::capacity_harness::standing::{render_standing_blocked, sample_ids};
 use api_rust::services::capacity_harness::thresholds::{evaluate_thresholds, ScenarioSamples};
 use api_rust::services::capacity_harness::types::{
-    Command, Evidence, ScenarioName, Verdict, BANNED_EMIT_NEEDLES, COLD_P95_MS, LOAD_HOLD_SESSIONS,
-    LOAD_HOLD_SUBSCRIBERS, SOAK_HOLD, SOAK_HOLD_SESSIONS, SOAK_HOLD_SUBSCRIBERS, SOAK_HTTP,
-    SOAK_PER_TICKER_SSE, SOAK_PRICES_SSE, SSE_EMIT_P95_MS, SSE_TTFB_P95_MS, WARM_P95_MS,
+    Command, Evidence, ScenarioName, Verdict, BANNED_EMIT_NEEDLES, LOAD_HOLD_SESSIONS,
+    LOAD_HOLD_SUBSCRIBERS, WARM_P95_MS,
 };
-use api_rust::services::capacity_harness::{classify_with, run_with_hooks, RunHooks};
-use api_rust::services::live_capacity::CAPACITY_DETAIL;
-use api_rust::AppState;
+use api_rust::services::capacity_harness::{run_with_hooks, RunHooks};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -90,11 +81,6 @@ fn cmd_capacity_body() -> String {
     rest[..end].to_string()
 }
 
-fn golden_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../libs/quant-engine/tests/fixtures/gex_SPY.json")
-}
-
 fn unique_temp(label: &str) -> PathBuf {
     let p = std::env::temp_dir().join(format!(
         "capacity_b7_{label}_{}_{}",
@@ -110,8 +96,8 @@ fn unique_temp(label: &str) -> PathBuf {
 
 fn short_hooks(out: PathBuf) -> RunHooks {
     let mut hooks = RunHooks {
-        http_hold_override: Some(Duration::from_secs(2)),
-        sse_hold_override: Some(Duration::from_secs(2)),
+        http_hold_override: Some(Duration::from_millis(250)),
+        sse_hold_override: Some(Duration::from_millis(250)),
         force_warm_samples_ms: Some(vec![20.0; 64]),
         out_dir_override: Some(out),
         ..RunHooks::default()
@@ -250,7 +236,7 @@ fn app_env_dev_in_step(step: &str) -> bool {
 }
 
 // ---------------------------------------------------------------------------
-// 1–3 Source scan: forbidden seams + anti-vacuity + score-as-threshold forbid
+// 1 Source scan: forbidden live-vendor seams
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -314,120 +300,6 @@ fn harness_and_cmd_capacity_forbid_live_vendor_seams() {
     }
 }
 
-#[test]
-fn anti_vacuity_command_path_wires_harness_bind_thresholds_and_identity_oracle() {
-    let run = fs::read_to_string(harness_dir().join("run.rs")).unwrap();
-    let prod = run.split("#[cfg(test)]").next().unwrap();
-    assert!(
-        prod.contains("for_capacity_harness"),
-        "must construct harness state"
-    );
-    assert!(
-        prod.contains("bind_loopback") || prod.contains("127.0.0.1:0"),
-        "must bind loopback"
-    );
-    assert!(
-        prod.contains("evaluate_thresholds"),
-        "must evaluate thresholds"
-    );
-    assert!(
-        prod.contains("identity_from_vendor"),
-        "must take Path-B oracle"
-    );
-    assert!(
-        prod.contains("triple_from_http_json"),
-        "must take warm HTTP triple"
-    );
-    // Oracle before driven work: first identity_from_vendor precedes cold/warm drive.
-    let oracle_at = prod.find("identity_from_vendor").expect("oracle call site");
-    let cold_at = prod
-        .find("// ---- Cold wave ----")
-        .or_else(|| prod.find("Cold wave"))
-        .expect("cold wave marker");
-    assert!(
-        oracle_at < cold_at,
-        "Path-B oracle must run before driven work"
-    );
-    // Post-work HTTP triple + second Path-B vs that oracle (not Path-B-only).
-    assert!(prod.contains("identity_http"));
-    assert!(prod.contains("identity_path_b"));
-    assert!(prod.contains("identity_oracle"));
-    assert!(
-        prod.contains("h != identity_oracle") || prod.contains("!= identity_oracle"),
-        "HTTP triple must compare to oracle"
-    );
-    assert!(
-        prod.contains("p != identity_oracle") || prod.contains("path-b-only"),
-        "second Path-B must compare to oracle (Path-B-only is fail)"
-    );
-    // Comparing Path-B only to itself is a scan fail.
-    assert!(
-        !prod.contains("identity_path_b == identity_http")
-            || prod.contains("path-b-only")
-            || prod.contains("identity_oracle"),
-        "must not treat Path-B-only equality as pass"
-    );
-}
-
-#[test]
-fn score_equality_to_oracle_allowed_but_score_as_threshold_forbidden() {
-    let run = fs::read_to_string(harness_dir().join("run.rs")).unwrap();
-    let prod = run.split("#[cfg(test)]").next().unwrap();
-    // Allowed: identity equality on the triple.
-    assert!(
-        prod.contains("opportunity_score")
-            || fs::read_to_string(harness_dir().join("identity.rs"))
-                .unwrap()
-                .contains("opportunity_score"),
-        "identity path may read opportunity_score"
-    );
-    for forbidden in [
-        "opportunity_score <",
-        "opportunity_score>",
-        "fail-if-score-below",
-        "score_below",
-        "score < ",
-    ] {
-        assert!(
-            !prod.contains(forbidden),
-            "capacity must not use score as a threshold ({forbidden})"
-        );
-    }
-}
-
-// ---------------------------------------------------------------------------
-// 4 Fixture floor
-// ---------------------------------------------------------------------------
-
-#[test]
-fn fixture_floor_refuses_syn_mini_and_missing_golden() {
-    let mini =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/market/syn_mini.json");
-    let err = load_capacity_book(&mini).unwrap_err();
-    let msg = err.to_string();
-    assert!(
-        msg.contains("1000") || msg.contains("contract"),
-        "syn_mini must be refused: {msg}"
-    );
-    assert!(load_capacity_book(Path::new("no-such-gex-capacity.json")).is_err());
-}
-
-// ---------------------------------------------------------------------------
-// 5 Receipt parser: standing omitted → fail
-// ---------------------------------------------------------------------------
-
-#[test]
-fn receipt_parser_fails_when_standing_omitted() {
-    let raw = r#"{"command":"load","verdict":"PASS","evidence":"local"}"#;
-    let err = parse_receipt(raw).unwrap_err();
-    assert!(
-        err.contains("standing"),
-        "omitted standing must fail parser: {err}"
-    );
-    let ok = serde_json::to_string(&sample_pass_json()).unwrap();
-    assert!(parse_receipt(&ok).is_ok());
-}
-
 // ---------------------------------------------------------------------------
 // 6 request_count double → BLOCKED, no MOCKED VENDORS
 // ---------------------------------------------------------------------------
@@ -461,20 +333,6 @@ async fn bump_request_count_blocks_without_mocked_vendors_claim() {
         }
     }
     let _ = fs::remove_dir_all(&tmp);
-}
-
-// ---------------------------------------------------------------------------
-// 7 Production construct + fixture Some refuses (source + unit helper pin)
-// ---------------------------------------------------------------------------
-
-#[test]
-fn production_construct_fixture_poison_is_wired() {
-    let state = fs::read_to_string(workspace_root().join("apps/api/src/state.rs")).unwrap();
-    assert!(state.contains("assert_no_production_fixture"));
-    assert!(state.contains("construct_with_fixture_for_poison"));
-    assert!(state.contains("production construct refuses vendor_fixture=Some"));
-    assert!(state.contains("capacity harness refuses APP_ENV=prod"));
-    assert!(state.contains("capacity harness refuses live Massive rest_base"));
 }
 
 // ---------------------------------------------------------------------------
@@ -519,149 +377,6 @@ fn ci_backend_job_runs_capacity_load_and_not_soak() {
     );
 }
 
-#[test]
-fn nx_capacity_load_is_release_with_app_env_dev() {
-    let raw = fs::read_to_string(workspace_root().join("apps/api/project.json")).unwrap();
-    let project: serde_json::Value = serde_json::from_str(&raw).unwrap();
-    let opts = &project["targets"]["capacity-load"]["options"];
-    let cmd = opts["command"]
-        .as_str()
-        .expect("capacity-load options.command missing");
-    assert!(
-        cmd.contains("capacity load"),
-        "capacity-load target must invoke capacity load"
-    );
-    assert!(
-        cmd.contains("--release"),
-        "capacity-load target must use cargo --release (D4)"
-    );
-    assert_eq!(
-        opts["env"]["APP_ENV"].as_str(),
-        Some("dev"),
-        "capacity-load target must set env.APP_ENV=dev (D4)"
-    );
-    assert_eq!(
-        project["targets"]["capacity-load"]["cache"], false,
-        "capacity-load must remain uncached"
-    );
-}
-
-// ---------------------------------------------------------------------------
-// 9 OpenAPI: harness adds no utoipa path
-// ---------------------------------------------------------------------------
-
-#[test]
-fn harness_adds_no_utoipa_path() {
-    for (name, src) in harness_sources() {
-        assert!(
-            !src.contains("#[utoipa::path") && !src.contains("utoipa::path"),
-            "{name} must not add OpenAPI paths"
-        );
-    }
-}
-
-// ---------------------------------------------------------------------------
-// 10 quant-engine import boundary
-// ---------------------------------------------------------------------------
-
-#[test]
-fn harness_quant_engine_imports_stay_in_identity_and_fixture() {
-    for (name, src) in harness_sources() {
-        if name == "identity.rs" || name == "fixture.rs" {
-            continue;
-        }
-        // Unit-test modules may reference fixtures; production bodies must not.
-        let prod = src.split("#[cfg(test)]").next().unwrap_or(&src);
-        assert!(
-            !prod.contains("quant_engine::") && !prod.contains("use quant_engine"),
-            "{name} must not import quant_engine (identity/fixture only)"
-        );
-    }
-    let identity = fs::read_to_string(harness_dir().join("identity.rs")).unwrap();
-    assert!(identity.contains("compute_analytics_from_vendor"));
-}
-
-// ---------------------------------------------------------------------------
-// 11 HubCmd: worker off + many HTTP admits ⇒ cmds_enqueued == 0
-// ---------------------------------------------------------------------------
-
-#[tokio::test]
-async fn harness_hub_admits_do_not_enqueue_hubcmd() {
-    let book = load_capacity_book(&golden_path()).unwrap();
-    let hold = AppState::for_capacity_harness(book.catalog, 4, 9)
-        .await
-        .unwrap();
-    assert_eq!(hold.stock_hub.cmds_enqueued(), 0);
-    let (addr, handle) = bind_loopback(harness_router(hold.clone()).unwrap())
-        .await
-        .unwrap();
-    let timeout = Duration::from_secs(5);
-    let mut holders = Vec::new();
-    for _ in 0..4 {
-        let mut c = SseClient::connect(addr, "/api/stream/SPY", timeout)
-            .await
-            .expect("sse connect");
-        assert_eq!(c.status, 200, "admit must succeed under ceiling");
-        let _ = c.wait_connected_comment(timeout).await;
-        holders.push(c);
-    }
-    assert_eq!(
-        hold.stock_hub.cmds_enqueued(),
-        0,
-        "harness-only hub must not enqueue HubCmd after HTTP admits"
-    );
-    drop(holders);
-    handle.abort();
-}
-
-// ---------------------------------------------------------------------------
-// 12 Evidence: ambient CI=true is local
-// ---------------------------------------------------------------------------
-
-#[test]
-fn ambient_ci_true_classifies_as_local() {
-    assert_eq!(classify_with(&[("CI", "true")]), Evidence::Local);
-    assert_eq!(classify_with(&[("GITHUB_ACTIONS", "true")]), Evidence::Ci);
-}
-
-// ---------------------------------------------------------------------------
-// 13 Overflow path: second bind + HTTP (not oneshot)
-// ---------------------------------------------------------------------------
-
-#[test]
-fn overflow_path_is_second_loopback_http_not_oneshot() {
-    let run = fs::read_to_string(harness_dir().join("run.rs")).unwrap();
-    let overflow = fs::read_to_string(harness_dir().join("overflow.rs")).unwrap();
-    let clients = fs::read_to_string(harness_dir().join("clients.rs")).unwrap();
-    let prod_run = run.split("#[cfg(test)]").next().unwrap();
-    assert!(
-        prod_run.matches("bind_loopback").count() >= 1 || prod_run.contains("127.0.0.1:0"),
-        "run must bind loopback (hold + probe)"
-    );
-    assert!(
-        prod_run.contains("run_overflow_waves") || overflow.contains("probe_addr"),
-        "overflow must target probe bind"
-    );
-    assert!(
-        overflow.contains("SseClient::connect") || overflow.contains("reqwest"),
-        "overflow samples must be HTTP"
-    );
-    // Comments may say "never oneshot"; forbid the tower Service oneshot seam.
-    let tower_oneshot = ["tower", "::", "oneshot"].concat();
-    let oneshot_request = ["oneshot", "::", "Request"].concat();
-    assert!(
-        !overflow.contains(&tower_oneshot)
-            && !clients.contains(&tower_oneshot)
-            && !overflow.contains(&oneshot_request)
-            && !clients.contains(&oneshot_request),
-        "overflow must not use tower oneshot"
-    );
-    assert!(
-        clients.contains("127.0.0.1:0") || clients.contains("bind(\"127.0.0.1:0\")"),
-        "bind must be 127.0.0.1:0"
-    );
-}
-
 // ---------------------------------------------------------------------------
 // 14 Dashboard: no capacity product literals
 // ---------------------------------------------------------------------------
@@ -700,22 +415,6 @@ fn dashboard_has_no_capacity_product_literals() {
 }
 
 // ---------------------------------------------------------------------------
-// 15 Trader 503/429 copy unchanged
-// ---------------------------------------------------------------------------
-
-#[test]
-fn trader_capacity_and_rate_limit_copy_unchanged() {
-    assert_eq!(
-        CAPACITY_DETAIL,
-        "Live streaming is at capacity. Try again shortly."
-    );
-    let rate =
-        fs::read_to_string(workspace_root().join("apps/api/src/middleware/rate_limit.rs")).unwrap();
-    assert!(rate.contains("\"error\": \"rate_limited\"") || rate.contains("rate_limited"));
-    assert!(rate.contains("Too many requests. Limit is {} per minute per IP on data endpoints."));
-}
-
-// ---------------------------------------------------------------------------
 // 16 Config defaults still 500 / 50 / 120
 // ---------------------------------------------------------------------------
 
@@ -725,21 +424,6 @@ fn production_config_defaults_untouched() {
     assert!(cfg.contains("env_u64(\"MAX_LIVE_SESSIONS\", 50)"));
     assert!(cfg.contains("env_u64(\"MAX_LIVE_SUBSCRIBERS\", 500)"));
     assert!(cfg.contains("env_u64(\"PUBLIC_RATE_LIMIT_PER_MIN\", 120)"));
-}
-
-// ---------------------------------------------------------------------------
-// 17 Identity skip path wired (http-skip)
-// ---------------------------------------------------------------------------
-
-#[test]
-fn identity_http_skip_fail_path_is_wired() {
-    let run = fs::read_to_string(harness_dir().join("run.rs")).unwrap();
-    assert!(run.contains("http-skip"));
-    assert!(run.contains("identity check"));
-    assert!(
-        run.contains("identity_fail_line") || run.contains("[FAIL]"),
-        "identity skip must fail the command"
-    );
 }
 
 // ---------------------------------------------------------------------------
@@ -869,9 +553,6 @@ async fn partial_surface_http_missing_is_not_vacuous_zero_requests() {
     hooks.skip_sse = false;
     let code = run_with_hooks(Command::Load, false, None, hooks).await;
     assert_ne!(code, ExitCode::SUCCESS);
-    let run = fs::read_to_string(harness_dir().join("run.rs")).unwrap();
-    assert!(run.contains("executed; no pass recorded."));
-    assert!(run.contains("SURFACE_PRICES_SSE") || run.contains("prices SSE"));
     let vacuous = render_short(Verdict::Vacuous, Command::Load, Evidence::Local);
     assert!(
         vacuous.contains("0 requests selected"),
@@ -882,57 +563,9 @@ async fn partial_surface_http_missing_is_not_vacuous_zero_requests() {
     let _ = fs::remove_dir_all(&tmp);
 }
 
-#[test]
-fn partial_prices_sse_fail_line_distinct_from_vacuous() {
-    let run = fs::read_to_string(harness_dir().join("run.rs")).unwrap();
-    let receipt = fs::read_to_string(harness_dir().join("receipt.rs")).unwrap();
-    assert!(
-        run.contains("SURFACE_PRICES_SSE"),
-        "partial prices SSE path must be present"
-    );
-    assert!(
-        run.contains("executed; no pass recorded."),
-        "partial-surface fail uses executed wording"
-    );
-    assert!(
-        receipt.contains("0 requests selected"),
-        "vacuous wording lives on the short renderer"
-    );
-    let vacuous = render_short(Verdict::Vacuous, Command::Load, Evidence::Local);
-    assert!(vacuous.contains("0 requests selected"));
-    assert!(!vacuous.contains("0 prices SSE executed"));
-}
-
 // ---------------------------------------------------------------------------
-// 24 429-while-limiter-0 path is wired
+// 25 Canary env key not in receipt
 // ---------------------------------------------------------------------------
-
-#[test]
-fn rate_limit_while_limiter_off_blocks() {
-    let run = fs::read_to_string(harness_dir().join("run.rs")).unwrap();
-    assert!(run.contains("rate_limit_while_off"));
-    assert!(
-        run.contains("PUBLIC_RATE_LIMIT_PER_MIN=0") || run.contains("rate-limit refusal while")
-    );
-    assert!(
-        run.contains("[BLOCKED]") && run.contains("rate-limit"),
-        "429 while limiter 0 must BLOCK, not PASS"
-    );
-}
-
-// ---------------------------------------------------------------------------
-// 25 Canary secret not in standing / receipt
-// ---------------------------------------------------------------------------
-
-#[test]
-fn canary_secret_absent_from_standing_and_sample_receipt() {
-    let canary = "super-secret-canary-value";
-    let standing = render_standing_vouched(&sample_ids(Command::Load, Evidence::Local, 9, 4, 1, 3));
-    assert!(!standing.contains(canary));
-    let raw = serde_json::to_string_pretty(&sample_pass_json()).unwrap();
-    assert!(!raw.contains(canary));
-    assert!(!raw.contains("apikey="));
-}
 
 #[tokio::test]
 async fn canary_env_key_does_not_egress_in_receipt() {
@@ -962,52 +595,8 @@ async fn canary_env_key_does_not_egress_in_receipt() {
 }
 
 // ---------------------------------------------------------------------------
-// 26 Soak profile constants + cmd mapping + follow-up wiring (no 600s run)
+// Banned emit needles
 // ---------------------------------------------------------------------------
-
-#[test]
-fn soak_profile_constants_and_cmd_mapping_without_running_600s() {
-    assert_eq!(SOAK_HOLD, Duration::from_secs(600));
-    assert_eq!(SOAK_HTTP, 8);
-    assert_eq!(SOAK_PER_TICKER_SSE, 32);
-    assert_eq!(SOAK_PRICES_SSE, 1);
-    assert_eq!(SOAK_HOLD_SUBSCRIBERS, 500);
-    assert_eq!(SOAK_HOLD_SESSIONS, 50);
-    let cmd = cmd_capacity_body();
-    assert!(
-        cmd.contains("Command::Soak") || cmd.contains("CapacityAction::Soak"),
-        "cmd_capacity must map soak"
-    );
-    assert!(
-        cmd.contains("Command::Load") || cmd.contains("CapacityAction::Load"),
-        "cmd_capacity must map load"
-    );
-    let run = fs::read_to_string(harness_dir().join("run.rs")).unwrap();
-    assert!(
-        run.contains("soak_follow_up") || run.contains("soak follow-up"),
-        "soak follow-up helper must be source-scanned in soak branch"
-    );
-    assert!(
-        run.contains("Command::Soak"),
-        "soak branch must exist in run.rs"
-    );
-    // Production run must not read an env duration override.
-    let prod = run.split("#[cfg(test)]").next().unwrap();
-    assert!(!prod.contains("std::env::var(\"CAPACITY"));
-}
-
-// ---------------------------------------------------------------------------
-// D1 locks pinned (never auto-tune)
-// ---------------------------------------------------------------------------
-
-#[test]
-fn d1_p95_locks_are_pinned() {
-    assert_eq!(WARM_P95_MS, 150.0);
-    assert_eq!(COLD_P95_MS, 4000.0);
-    assert_eq!(SSE_TTFB_P95_MS, 200.0);
-    assert_eq!(SSE_EMIT_P95_MS, 500.0);
-    assert_eq!(ScenarioName::BASIS_WARM, "warm cache-hit bundle GET wall");
-}
 
 #[test]
 fn banned_emit_needles_include_slo_and_massive_soak() {

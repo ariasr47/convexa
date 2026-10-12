@@ -10,6 +10,7 @@ mod passwords;
 pub mod risk;
 mod service;
 mod store;
+mod throttle;
 
 pub use cookies::COOKIE_NAME;
 pub use risk::{

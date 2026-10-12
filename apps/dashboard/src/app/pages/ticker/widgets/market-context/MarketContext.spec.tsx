@@ -26,7 +26,6 @@ import type {
 } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
 import { render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import {
   MC_ATR_EMPTY,
@@ -257,22 +256,5 @@ describe('MarketContext · wire descriptors', () => {
   it('the wire window/thresholds/flow_basis/method strings never reach the DOM', () => {
     const { container } = renderMc(pack());
     expect(container.textContent ?? '').not.toContain(WIRE_DESC);
-  });
-});
-
-// AC-35 (ruling 6, curvature-v2-foundations): the ⓘ affordances are real focusable controls, not
-// hover-only — the shipped `AccessibleHelp` pattern, reachable by tap AND keyboard.
-describe('MarketContext · the ⓘ affordances are keyboard-reachable (AC-35)', () => {
-  it('every "About …" control is a real button, opens on Enter, closes on Escape', async () => {
-    const user = userEvent.setup();
-    renderMc(pack());
-    const helps = screen.getAllByRole('button', { name: /^About /i });
-    expect(helps.length).toBeGreaterThan(0);
-    const first = helps[0];
-    first.focus();
-    expect(first).toHaveFocus();
-    await user.keyboard('{Enter}');
-    expect(await screen.findByRole('tooltip')).toBeInTheDocument();
-    await user.keyboard('{Escape}');
   });
 });

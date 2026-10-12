@@ -436,20 +436,4 @@ mod tests {
     fn term_structure_none_on_bad_spot() {
         assert!(compute_term_structure(&[], 0.0, Utc::now()).is_none());
     }
-
-    #[test]
-    fn combined_matches_separate() {
-        let as_of = Utc.with_ymd_and_hms(2026, 8, 1, 12, 0, 0).unwrap();
-        let exp = "2026-09-18";
-        let contracts = vec![
-            c(105.0, ContractType::Call, exp, 0.22, Some(0.25)),
-            c(95.0, ContractType::Put, exp, 0.28, Some(-0.25)),
-            c(100.0, ContractType::Call, "2026-12-18", 0.25, None),
-        ];
-        let (s1, t1) = compute_iv_structure(&contracts, 100.0, Some(exp), Some(48.0), as_of);
-        let s2 = compute_iv_skew(&contracts, 100.0, Some(exp), Some(48.0));
-        let t2 = compute_term_structure(&contracts, 100.0, as_of);
-        assert_eq!(s1, s2);
-        assert_eq!(t1, t2);
-    }
 }

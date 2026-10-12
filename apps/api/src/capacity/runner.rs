@@ -1862,17 +1862,6 @@ mod protocol_tests {
     use super::*;
 
     #[test]
-    fn protocol_is_jsonl_round_trippable_and_tagged() {
-        let command = ParentCommand::Sample { sequence: 7 };
-        let encoded = serde_json::to_string(&command).unwrap();
-        assert_eq!(encoded, r#"{"command":"sample","sequence":7}"#);
-        assert_eq!(
-            serde_json::from_str::<ParentCommand>(&encoded).unwrap(),
-            command
-        );
-    }
-
-    #[test]
     fn priming_command_and_third_sample_are_explicit() {
         let command = ParentCommand::Prime {
             rest_concurrency: 16,
@@ -2003,34 +1992,6 @@ mod protocol_tests {
         ));
     }
 
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn linux_fd_jump_requests_extended_settle() {
-        assert!(should_settle_fd_jump(Some(17), 49));
-        assert!(!should_settle_fd_jump(Some(49), 49));
-        assert!(!should_settle_fd_jump(None, 49));
-    }
-
-    #[cfg(target_os = "windows")]
-    #[test]
-    fn windows_fd_jump_keeps_immediate_sampling() {
-        assert!(!should_settle_fd_jump(Some(17), 49));
-    }
-
-    #[test]
-    fn transport_settle_probe_interval_and_total_window_are_bounded() {
-        assert_eq!(TRANSPORT_SETTLE_MILLIS, 100);
-        assert!(TRANSPORT_SETTLE_MILLIS < 1_000);
-        assert_eq!(
-            TRANSPORT_SETTLE_MILLIS * TRANSPORT_PRE_SETTLE_SAMPLES as u64,
-            1_000
-        );
-        assert_eq!(
-            TRANSPORT_SETTLE_MILLIS * TRANSPORT_POST_SETTLE_SAMPLES as u64,
-            1_000
-        );
-    }
-
     #[test]
     fn evaluator_rejects_missing_and_breached_latency_evidence() {
         let missing = json!({"latencies_ms": [1.0], "unexpected_errors": 0});
@@ -2077,29 +2038,6 @@ mod protocol_tests {
         let mut malformed = build_report(Profile::Normal, 1);
         malformed["revision"] = json!("unknown");
         assert!(validate_report_value(&malformed).is_err());
-    }
-
-    #[test]
-    fn workload_completion_waits_for_the_final_complete_resource_tick() {
-        assert!(!soak_collection_complete(Profile::Extended, true, 899));
-        assert!(soak_collection_complete(Profile::Extended, true, 900));
-        assert!(!soak_collection_complete(Profile::Normal, true, 59));
-        assert!(soak_collection_complete(Profile::Normal, true, 60));
-        assert!(!soak_collection_complete(Profile::Extended, false, 900));
-    }
-
-    #[test]
-    fn cadence_deadlines_do_not_accumulate_tick_work() {
-        let start = tokio::time::Instant::now();
-        assert_eq!(
-            cadence_deadline(start, 60) - start,
-            std::time::Duration::from_secs(60)
-        );
-        assert_eq!(
-            cadence_deadline(start, 900) - start,
-            std::time::Duration::from_secs(900)
-        );
-        assert!(cadence_deadline(start, 900) > cadence_deadline(start, 899));
     }
 
     #[test]

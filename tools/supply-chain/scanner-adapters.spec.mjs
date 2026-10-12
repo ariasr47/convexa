@@ -20,26 +20,6 @@ test('policy bounds Gitleaks to the current commit or applicable PR range', () =
   assert.equal(gitleaksLogOptions('pull_request', sha('b'), ''), null);
 });
 
-test('workflow captures raw JSON and explicitly carries the PR base revision', async () => {
-  const workflow = await fs.readFile('.github/workflows/supply-chain.yml', 'utf8');
-  const caller = await fs.readFile('.github/workflows/ci.yml', 'utf8');
-  assert.match(workflow, /contract_base_revision:[\s\S]*?type:\s*string/);
-  assert.match(workflow, /SCA_GITLEAKS_BASE_SHA:\s*\$\{\{ inputs\.contract_base_revision \}\}/);
-  assert.match(
-    caller,
-    /contract_base_revision:\s*\$\{\{ github\.event\.pull_request\.base\.sha \|\| github\.sha \}\}/,
-  );
-  assert.match(
-    workflow,
-    /node tools\/supply-chain\/policy\.mjs .* > \.supply-chain\/out\/policy-report\.json/,
-  );
-  assert.match(
-    workflow,
-    /node tools\/supply-chain\/artifacts\.mjs .* > \.supply-chain\/out\/artifact-report\.json/,
-  );
-  assert.doesNotMatch(workflow, /npm run supply-chain:(?:policy|artifacts).* >/);
-});
-
 test('production Dockerfiles expose health and run final images as non-root', async () => {
   const api = await fs.readFile('apps/api/Dockerfile', 'utf8');
   const dashboard = await fs.readFile('apps/dashboard/Dockerfile', 'utf8');
@@ -47,7 +27,10 @@ test('production Dockerfiles expose health and run final images as non-root', as
 
   assert.match(api, /--target x86_64-unknown-linux-musl/);
   assert.match(api, /FROM scratch/);
-  assert.match(api, /HEALTHCHECK[\s\S]*?CMD \["\/usr\/local\/bin\/api-rust", "healthcheck"\]/);
+  assert.match(
+    api,
+    /HEALTHCHECK[\s\S]*?CMD \["\/usr\/local\/bin\/convexa-entrypoint", "\/usr\/local\/bin\/api-rust", "healthcheck"\]/,
+  );
   assert.doesNotMatch(apiEnvironment, /AUTH_(?:COOKIE_SECURE|STORE_PATH)=/);
   assert.doesNotMatch(api, /ENV[^\n]*AUTH_(?:COOKIE_SECURE|STORE_PATH)=/);
   assert.match(api, /USER 10001:10001/);

@@ -370,7 +370,7 @@ pub fn axis_a_label(a: AxisA) -> &'static str {
     }
 }
 
-#[allow(dead_code)] // exhaustive-match tripwire; called from tests
+#[allow(dead_code)] // exhaustive-match tripwire
 pub fn axis_b_path_a_label(a: AxisBPathA) -> &'static str {
     match a {
         AxisBPathA::EmptyWhileStoring => "empty_while_storing",
@@ -379,7 +379,7 @@ pub fn axis_b_path_a_label(a: AxisBPathA) -> &'static str {
     }
 }
 
-#[allow(dead_code)] // exhaustive-match tripwire; called from tests
+#[allow(dead_code)] // exhaustive-match tripwire
 pub fn axis_b_path_b_label(a: AxisBPathB) -> &'static str {
     match a {
         AxisBPathB::PathBNotCapturing => "path_b_not_capturing",
@@ -389,7 +389,7 @@ pub fn axis_b_path_b_label(a: AxisBPathB) -> &'static str {
     }
 }
 
-#[allow(dead_code)] // exhaustive-match tripwire; called from tests
+#[allow(dead_code)] // exhaustive-match tripwire
 pub fn axis_c_label(a: AxisC) -> &'static str {
     match a {
         AxisC::Partial => "partial",
@@ -455,13 +455,6 @@ mod tests {
         // Leftover container on D still inspects as ineligible holiday.
         let leftover = derive_axis_a("SPY", "2026-11-26", now, true, true, false);
         assert_eq!(leftover, AxisA::IneligibleHoliday);
-    }
-
-    #[test]
-    fn saturday_stays_ineligible_weekend() {
-        let now = et_hm(2026, 8, 10, 12, 0);
-        let a = derive_axis_a("SPY", "2026-08-15", now, true, false, false);
-        assert_eq!(a, AxisA::IneligibleWeekend);
     }
 
     #[test]
@@ -631,52 +624,6 @@ mod tests {
         let late = NaiveTime::from_hms_opt(10, 0, 0).unwrap();
         let c2 = derive_axis_c(Some(late), None, now, "2026-08-10");
         assert_eq!(c2, Some(AxisC::Partial));
-    }
-
-    #[test]
-    fn occupancy_match_is_exhaustive_per_axis_no_complete_rth_arm() {
-        // Production body only — skip this tests module (avoids self-token hits).
-        let src = include_str!("occupancy.rs");
-        let prod = src.split("#[cfg(test)]").next().unwrap_or(src);
-        let live = format!("{}Massive", "Live");
-        let complete = format!("complete_{}", "rth");
-        assert!(!prod.contains(&live));
-        assert!(!prod.contains(&complete));
-        assert!(!prod.contains(&format!("Complete{}", "Rth")));
-        // Coverage cell tokens must not appear as tape occupancy arms.
-        assert!(!prod.contains(&format!("AxisA::{}", "Present")));
-        assert!(!prod.contains(&format!("AxisA::{}", "Missing")));
-        // Touch every arm so a new variant fails compile without a match update.
-        for a in [
-            AxisA::NotInWatchlist,
-            AxisA::NotStoring,
-            AxisA::IneligibleWeekend,
-            AxisA::IneligibleHoliday,
-            AxisA::NotElapsed,
-            AxisA::NotExpectedPreStore,
-            AxisA::NoIdentity,
-            AxisA::Unreadable,
-            AxisA::StoringReady,
-        ] {
-            let _ = axis_a_label(a);
-        }
-        for a in [
-            AxisBPathA::EmptyWhileStoring,
-            AxisBPathA::Occupied,
-            AxisBPathA::Recording,
-        ] {
-            let _ = axis_b_path_a_label(a);
-        }
-        for a in [
-            AxisBPathB::PathBNotCapturing,
-            AxisBPathB::EmptyWhileStoring,
-            AxisBPathB::Occupied,
-            AxisBPathB::Recording,
-        ] {
-            let _ = axis_b_path_b_label(a);
-        }
-        let _ = axis_c_label(AxisC::Partial);
-        let _ = axis_c_label(AxisC::ThroughWindow);
     }
 
     #[test]

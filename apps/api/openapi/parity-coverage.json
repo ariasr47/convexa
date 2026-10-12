@@ -1810,6 +1810,38 @@
       "test": "boundary_evidence_059"
     },
     {
+      "boundary_id": "POST /api/auth/login 429 application/json public",
+      "case_id": "POST /api/auth/login 429 application/json public",
+      "command": "cargo test -p api-rust --test api_contract_parity -- --nocapture",
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "expected_response": {
+        "body_category": "json",
+        "body_meaning": "json",
+        "body_valid": true,
+        "header_names": ["retry-after"],
+        "header_value_policies": {
+          "retry-after": "exact:30"
+        },
+        "media_type": "application/json",
+        "security_mode": "public",
+        "status": 429
+      },
+      "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
+      "id": "parity:POST:/api/auth/login:429",
+      "mode": "response-conversion",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_060",
+      "production_path": "IntoResponse",
+      "request_fixture": "POST /api/auth/login 429:production-response-variant",
+      "setup_fixture": "route-owned-response-constructor",
+      "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
+      "target": "apps/api/tests/api_contract_parity.rs",
+      "test": "boundary_evidence_060"
+    },
+    {
       "boundary_id": "POST /api/auth/login 503 application/json public",
       "case_id": "POST /api/auth/login 503 application/json public",
       "command": "cargo test -p api-rust --test api_contract_parity -- --nocapture",
@@ -1831,13 +1863,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/auth/login:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_060",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_061",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/auth/login 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_060"
+      "test": "boundary_evidence_061"
     },
     {
       "boundary_id": "POST /api/auth/logout 200 application/json optional-session",
@@ -1863,13 +1895,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/auth/logout:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_061",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_062",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/auth/logout 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_061"
+      "test": "boundary_evidence_062"
     },
     {
       "boundary_id": "GET /api/auth/session 200 application/json optional-session",
@@ -1893,13 +1925,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/auth/session:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_062",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_063",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/auth/session 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_062"
+      "test": "boundary_evidence_063"
     },
     {
       "boundary_id": "GET /api/auth/settings 200 application/json session",
@@ -1923,13 +1955,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/auth/settings:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_063",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_064",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/auth/settings 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_063"
+      "test": "boundary_evidence_064"
     },
     {
       "boundary_id": "GET /api/auth/settings 401 application/json session",
@@ -1953,13 +1985,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/auth/settings:401",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_064",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_065",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/auth/settings 401:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_064"
+      "test": "boundary_evidence_065"
     },
     {
       "boundary_id": "GET /api/auth/settings 503 application/json session",
@@ -1983,13 +2015,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/auth/settings:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_065",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_066",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/auth/settings 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_065"
+      "test": "boundary_evidence_066"
     },
     {
       "boundary_id": "PUT /api/auth/settings 200 application/json session",
@@ -2013,13 +2045,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/auth/settings:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_066",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_067",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/auth/settings 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_066"
+      "test": "boundary_evidence_067"
     },
     {
       "boundary_id": "PUT /api/auth/settings 401 application/json session",
@@ -2043,13 +2075,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/auth/settings:401",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_067",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_068",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/auth/settings 401:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_067"
+      "test": "boundary_evidence_068"
     },
     {
       "boundary_id": "PUT /api/auth/settings 422 application/json session",
@@ -2073,13 +2105,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/auth/settings:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_068",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_069",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/auth/settings 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_068"
+      "test": "boundary_evidence_069"
     },
     {
       "boundary_id": "PUT /api/auth/settings 503 application/json session",
@@ -2103,13 +2135,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/auth/settings:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_069",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_070",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/auth/settings 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_069"
+      "test": "boundary_evidence_070"
     },
     {
       "boundary_id": "POST /api/auth/signup 200 application/json public",
@@ -2135,13 +2167,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/auth/signup:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_070",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_071",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/auth/signup 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_070"
+      "test": "boundary_evidence_071"
     },
     {
       "boundary_id": "POST /api/auth/signup 403 application/json public",
@@ -2165,13 +2197,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/auth/signup:403",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_071",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_072",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/auth/signup 403:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_071"
+      "test": "boundary_evidence_072"
     },
     {
       "boundary_id": "POST /api/auth/signup 409 application/json public",
@@ -2195,13 +2227,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/auth/signup:409",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_072",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_073",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/auth/signup 409:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_072"
+      "test": "boundary_evidence_073"
     },
     {
       "boundary_id": "POST /api/auth/signup 422 application/json public",
@@ -2225,13 +2257,45 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/auth/signup:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_073",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_074",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/auth/signup 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_073"
+      "test": "boundary_evidence_074"
+    },
+    {
+      "boundary_id": "POST /api/auth/signup 429 application/json public",
+      "case_id": "POST /api/auth/signup 429 application/json public",
+      "command": "cargo test -p api-rust --test api_contract_parity -- --nocapture",
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "expected_response": {
+        "body_category": "json",
+        "body_meaning": "json",
+        "body_valid": true,
+        "header_names": ["retry-after"],
+        "header_value_policies": {
+          "retry-after": "exact:30"
+        },
+        "media_type": "application/json",
+        "security_mode": "public",
+        "status": 429
+      },
+      "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
+      "id": "parity:POST:/api/auth/signup:429",
+      "mode": "response-conversion",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_075",
+      "production_path": "IntoResponse",
+      "request_fixture": "POST /api/auth/signup 429:production-response-variant",
+      "setup_fixture": "route-owned-response-constructor",
+      "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
+      "target": "apps/api/tests/api_contract_parity.rs",
+      "test": "boundary_evidence_075"
     },
     {
       "boundary_id": "POST /api/auth/signup 503 application/json public",
@@ -2255,13 +2319,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/auth/signup:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_074",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_076",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/auth/signup 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/auth.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_074"
+      "test": "boundary_evidence_076"
     },
     {
       "boundary_id": "GET /api/book 200 application/json session",
@@ -2285,13 +2349,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/book:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_075",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_077",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/book 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/book.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_075"
+      "test": "boundary_evidence_077"
     },
     {
       "boundary_id": "GET /api/book 403 application/json session",
@@ -2315,13 +2379,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/book:403",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_076",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_078",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/book 403:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/book.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_076"
+      "test": "boundary_evidence_078"
     },
     {
       "boundary_id": "GET /api/book 503 application/json session",
@@ -2345,13 +2409,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/book:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_077",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_079",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/book 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/book.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_077"
+      "test": "boundary_evidence_079"
     },
     {
       "boundary_id": "PUT /api/book 200 application/json session",
@@ -2375,13 +2439,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/book:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_078",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_080",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/book 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/book.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_078"
+      "test": "boundary_evidence_080"
     },
     {
       "boundary_id": "PUT /api/book 400 application/json session",
@@ -2405,13 +2469,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/book:400",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_079",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_081",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/book 400:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/book.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_079"
+      "test": "boundary_evidence_081"
     },
     {
       "boundary_id": "PUT /api/book 403 application/json session",
@@ -2435,13 +2499,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/book:403",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_080",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_082",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/book 403:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/book.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_080"
+      "test": "boundary_evidence_082"
     },
     {
       "boundary_id": "PUT /api/book 422 text/plain session",
@@ -2465,13 +2529,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/book:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_081",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_083",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/book 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/book.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_081"
+      "test": "boundary_evidence_083"
     },
     {
       "boundary_id": "PUT /api/book 503 application/json session",
@@ -2495,13 +2559,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/book:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_082",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_084",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/book 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/book.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_082"
+      "test": "boundary_evidence_084"
     },
     {
       "boundary_id": "GET /api/broker/book 200 application/json session",
@@ -2525,13 +2589,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/broker/book:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_083",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_085",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/broker/book 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/broker.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_083"
+      "test": "boundary_evidence_085"
     },
     {
       "boundary_id": "GET /api/broker/book 403 application/json session",
@@ -2555,13 +2619,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/broker/book:403",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_084",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_086",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/broker/book 403:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/broker.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_084"
+      "test": "boundary_evidence_086"
     },
     {
       "boundary_id": "POST /api/broker/book/refresh 200 application/json session",
@@ -2585,13 +2649,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/broker/book/refresh:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_085",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_087",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/broker/book/refresh 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/broker.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_085"
+      "test": "boundary_evidence_087"
     },
     {
       "boundary_id": "POST /api/broker/book/refresh 403 application/json session",
@@ -2615,13 +2679,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/broker/book/refresh:403",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_086",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_088",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/broker/book/refresh 403:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/broker.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_086"
+      "test": "boundary_evidence_088"
     },
     {
       "boundary_id": "DELETE /api/broker/credential 200 application/json session",
@@ -2645,13 +2709,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:DELETE:/api/broker/credential:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_087",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_089",
       "production_path": "IntoResponse",
       "request_fixture": "DELETE /api/broker/credential 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/broker.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_087"
+      "test": "boundary_evidence_089"
     },
     {
       "boundary_id": "DELETE /api/broker/credential 403 application/json session",
@@ -2675,13 +2739,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:DELETE:/api/broker/credential:403",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_088",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_090",
       "production_path": "IntoResponse",
       "request_fixture": "DELETE /api/broker/credential 403:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/broker.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_088"
+      "test": "boundary_evidence_090"
     },
     {
       "boundary_id": "DELETE /api/broker/credential 422 application/json session",
@@ -2705,13 +2769,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:DELETE:/api/broker/credential:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_089",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_091",
       "production_path": "IntoResponse",
       "request_fixture": "DELETE /api/broker/credential 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/broker.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_089"
+      "test": "boundary_evidence_091"
     },
     {
       "boundary_id": "GET /api/broker/credential 200 application/json session",
@@ -2735,13 +2799,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/broker/credential:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_090",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_092",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/broker/credential 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/broker.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_090"
+      "test": "boundary_evidence_092"
     },
     {
       "boundary_id": "GET /api/broker/credential 403 application/json session",
@@ -2765,13 +2829,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/broker/credential:403",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_091",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_093",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/broker/credential 403:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/broker.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_091"
+      "test": "boundary_evidence_093"
     },
     {
       "boundary_id": "GET /api/broker/credential 422 application/json session",
@@ -2795,13 +2859,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/broker/credential:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_092",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_094",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/broker/credential 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/broker.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_092"
+      "test": "boundary_evidence_094"
     },
     {
       "boundary_id": "PUT /api/broker/credential 200 application/json session",
@@ -2825,13 +2889,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/broker/credential:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_093",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_095",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/broker/credential 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/broker.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_093"
+      "test": "boundary_evidence_095"
     },
     {
       "boundary_id": "PUT /api/broker/credential 403 application/json session",
@@ -2855,13 +2919,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/broker/credential:403",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_094",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_096",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/broker/credential 403:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/broker.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_094"
+      "test": "boundary_evidence_096"
     },
     {
       "boundary_id": "PUT /api/broker/credential 422 application/json session",
@@ -2885,13 +2949,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/broker/credential:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_095",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_097",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/broker/credential 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/broker.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_095"
+      "test": "boundary_evidence_097"
     },
     {
       "boundary_id": "GET /api/candidates/{ticker} 200 application/json public",
@@ -2915,13 +2979,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/candidates/{ticker}:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_096",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_098",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/candidates/{ticker} 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/candidates.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_096"
+      "test": "boundary_evidence_098"
     },
     {
       "boundary_id": "GET /api/candidates/{ticker} 404 application/json public",
@@ -2945,13 +3009,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/candidates/{ticker}:404",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_097",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_099",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/candidates/{ticker} 404:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/candidates.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_097"
+      "test": "boundary_evidence_099"
     },
     {
       "boundary_id": "GET /api/candidates/{ticker} 422 application/json public",
@@ -2975,13 +3039,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/candidates/{ticker}:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_098",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_100",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/candidates/{ticker} 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/candidates.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_098"
+      "test": "boundary_evidence_100"
     },
     {
       "boundary_id": "GET /api/candidates/{ticker} 500 application/json public",
@@ -3005,13 +3069,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/candidates/{ticker}:500",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_099",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_101",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/candidates/{ticker} 500:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/candidates.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_099"
+      "test": "boundary_evidence_101"
     },
     {
       "boundary_id": "GET /api/candidates/{ticker} 502 application/json public",
@@ -3035,13 +3099,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/candidates/{ticker}:502",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_100",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_102",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/candidates/{ticker} 502:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/candidates.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_100"
+      "test": "boundary_evidence_102"
     },
     {
       "boundary_id": "GET /api/candidates/{ticker} 503 application/json public",
@@ -3065,13 +3129,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/candidates/{ticker}:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_101",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_103",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/candidates/{ticker} 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/candidates.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_101"
+      "test": "boundary_evidence_103"
     },
     {
       "boundary_id": "GET /api/contract/{ticker} 200 application/json public",
@@ -3095,13 +3159,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/contract/{ticker}:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_102",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_104",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/contract/{ticker} 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/contract.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_102"
+      "test": "boundary_evidence_104"
     },
     {
       "boundary_id": "GET /api/contract/{ticker} 400 text/plain public",
@@ -3125,13 +3189,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/contract/{ticker}:400",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_103",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_105",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/contract/{ticker} 400:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/contract.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_103"
+      "test": "boundary_evidence_105"
     },
     {
       "boundary_id": "GET /api/contract/{ticker} 404 application/json public",
@@ -3155,13 +3219,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/contract/{ticker}:404",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_104",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_106",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/contract/{ticker} 404:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/contract.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_104"
+      "test": "boundary_evidence_106"
     },
     {
       "boundary_id": "GET /api/contract/{ticker} 422 application/json public",
@@ -3185,13 +3249,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/contract/{ticker}:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_105",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_107",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/contract/{ticker} 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/contract.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_105"
+      "test": "boundary_evidence_107"
     },
     {
       "boundary_id": "GET /api/contract/{ticker} 500 application/json public",
@@ -3215,13 +3279,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/contract/{ticker}:500",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_106",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_108",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/contract/{ticker} 500:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/contract.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_106"
+      "test": "boundary_evidence_108"
     },
     {
       "boundary_id": "GET /api/contract/{ticker} 502 application/json public",
@@ -3245,13 +3309,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/contract/{ticker}:502",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_107",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_109",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/contract/{ticker} 502:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/contract.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_107"
+      "test": "boundary_evidence_109"
     },
     {
       "boundary_id": "GET /api/contract/{ticker} 503 application/json public",
@@ -3275,13 +3339,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/contract/{ticker}:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_108",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_110",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/contract/{ticker} 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/contract.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_108"
+      "test": "boundary_evidence_110"
     },
     {
       "boundary_id": "GET /api/health 200 application/json public",
@@ -3305,13 +3369,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/health:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_109",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_111",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/health 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/health.rs::contract_representative_response_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_109"
+      "test": "boundary_evidence_111"
     },
     {
       "boundary_id": "GET /api/market-data 200 application/json public",
@@ -3335,13 +3399,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/market-data:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_110",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_112",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/market-data 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_110"
+      "test": "boundary_evidence_112"
     },
     {
       "boundary_id": "GET /api/market-data 404 application/json public",
@@ -3365,13 +3429,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/market-data:404",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_111",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_113",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/market-data 404:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_111"
+      "test": "boundary_evidence_113"
     },
     {
       "boundary_id": "GET /api/market-data 422 application/json public",
@@ -3395,13 +3459,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/market-data:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_112",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_114",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/market-data 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_112"
+      "test": "boundary_evidence_114"
     },
     {
       "boundary_id": "GET /api/market-data 500 application/json public",
@@ -3425,13 +3489,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/market-data:500",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_113",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_115",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/market-data 500:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_113"
+      "test": "boundary_evidence_115"
     },
     {
       "boundary_id": "GET /api/market-data 502 application/json public",
@@ -3455,13 +3519,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/market-data:502",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_114",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_116",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/market-data 502:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_114"
+      "test": "boundary_evidence_116"
     },
     {
       "boundary_id": "GET /api/market-data 503 application/json public",
@@ -3485,13 +3549,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/market-data:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_115",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_117",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/market-data 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_115"
+      "test": "boundary_evidence_117"
     },
     {
       "boundary_id": "GET /api/personas 200 application/json public",
@@ -3515,13 +3579,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/personas:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_116",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_118",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/personas 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_116"
+      "test": "boundary_evidence_118"
     },
     {
       "boundary_id": "POST /api/positions/sim-trade/gate 200 application/json session",
@@ -3545,13 +3609,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/positions/sim-trade/gate:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_117",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_119",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/positions/sim-trade/gate 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_117"
+      "test": "boundary_evidence_119"
     },
     {
       "boundary_id": "POST /api/positions/sim-trade/gate 403 application/json session",
@@ -3575,13 +3639,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/positions/sim-trade/gate:403",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_118",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_120",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/positions/sim-trade/gate 403:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_118"
+      "test": "boundary_evidence_120"
     },
     {
       "boundary_id": "GET /api/price/{ticker} 200 application/json public",
@@ -3605,13 +3669,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/price/{ticker}:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_119",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_121",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/price/{ticker} 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/price.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_119"
+      "test": "boundary_evidence_121"
     },
     {
       "boundary_id": "GET /api/price/{ticker} 404 application/json public",
@@ -3635,13 +3699,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/price/{ticker}:404",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_120",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_122",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/price/{ticker} 404:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/price.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_120"
+      "test": "boundary_evidence_122"
     },
     {
       "boundary_id": "GET /api/price/{ticker} 422 application/json public",
@@ -3665,13 +3729,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/price/{ticker}:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_121",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_123",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/price/{ticker} 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/price.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_121"
+      "test": "boundary_evidence_123"
     },
     {
       "boundary_id": "GET /api/price/{ticker} 500 application/json public",
@@ -3695,13 +3759,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/price/{ticker}:500",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_122",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_124",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/price/{ticker} 500:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/price.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_122"
+      "test": "boundary_evidence_124"
     },
     {
       "boundary_id": "GET /api/price/{ticker} 502 application/json public",
@@ -3725,13 +3789,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/price/{ticker}:502",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_123",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_125",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/price/{ticker} 502:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/price.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_123"
+      "test": "boundary_evidence_125"
     },
     {
       "boundary_id": "GET /api/price/{ticker} 503 application/json public",
@@ -3755,13 +3819,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/price/{ticker}:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_124",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_126",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/price/{ticker} 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/price.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_124"
+      "test": "boundary_evidence_126"
     },
     {
       "boundary_id": "GET /api/prices 200 application/json public",
@@ -3785,13 +3849,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/prices:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_125",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_127",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/prices 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/price.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_125"
+      "test": "boundary_evidence_127"
     },
     {
       "boundary_id": "GET /api/prices 400 text/plain public",
@@ -3815,13 +3879,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/prices:400",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_126",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_128",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/prices 400:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/price.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_126"
+      "test": "boundary_evidence_128"
     },
     {
       "boundary_id": "GET /api/prices 404 application/json public",
@@ -3845,13 +3909,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/prices:404",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_127",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_129",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/prices 404:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/price.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_127"
+      "test": "boundary_evidence_129"
     },
     {
       "boundary_id": "GET /api/prices 422 application/json public",
@@ -3875,13 +3939,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/prices:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_128",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_130",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/prices 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/price.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_128"
+      "test": "boundary_evidence_130"
     },
     {
       "boundary_id": "GET /api/prices 500 application/json public",
@@ -3905,13 +3969,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/prices:500",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_129",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_131",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/prices 500:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/price.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_129"
+      "test": "boundary_evidence_131"
     },
     {
       "boundary_id": "GET /api/prices 502 application/json public",
@@ -3935,13 +3999,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/prices:502",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_130",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_132",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/prices 502:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/price.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_130"
+      "test": "boundary_evidence_132"
     },
     {
       "boundary_id": "GET /api/prices 503 application/json public",
@@ -3965,13 +4029,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/prices:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_131",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_133",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/prices 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/price.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_131"
+      "test": "boundary_evidence_133"
     },
     {
       "boundary_id": "POST /api/recommendation/{ticker} 200 application/json session",
@@ -3995,13 +4059,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/recommendation/{ticker}:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_132",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_134",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/recommendation/{ticker} 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_132"
+      "test": "boundary_evidence_134"
     },
     {
       "boundary_id": "POST /api/recommendation/{ticker} 403 application/json session",
@@ -4025,13 +4089,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/recommendation/{ticker}:403",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_133",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_135",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/recommendation/{ticker} 403:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_133"
+      "test": "boundary_evidence_135"
     },
     {
       "boundary_id": "POST /api/recommendation/{ticker} 404 application/json session",
@@ -4055,13 +4119,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/recommendation/{ticker}:404",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_134",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_136",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/recommendation/{ticker} 404:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_134"
+      "test": "boundary_evidence_136"
     },
     {
       "boundary_id": "POST /api/recommendation/{ticker} 422 application/json session",
@@ -4085,13 +4149,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/recommendation/{ticker}:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_135",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_137",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/recommendation/{ticker} 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_135"
+      "test": "boundary_evidence_137"
     },
     {
       "boundary_id": "POST /api/recommendation/{ticker} 502 application/json session",
@@ -4115,13 +4179,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/recommendation/{ticker}:502",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_136",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_138",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/recommendation/{ticker} 502:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_136"
+      "test": "boundary_evidence_138"
     },
     {
       "boundary_id": "POST /api/recommendation/{ticker} 503 application/json session",
@@ -4145,13 +4209,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:POST:/api/recommendation/{ticker}:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_137",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_139",
       "production_path": "IntoResponse",
       "request_fixture": "POST /api/recommendation/{ticker} 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_137"
+      "test": "boundary_evidence_139"
     },
     {
       "boundary_id": "GET /api/recommendation/export/{ticker} 200 application/json optional-session",
@@ -4175,13 +4239,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/recommendation/export/{ticker}:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_138",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_140",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/recommendation/export/{ticker} 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_138"
+      "test": "boundary_evidence_140"
     },
     {
       "boundary_id": "GET /api/recommendation/export/{ticker} 403 application/json optional-session",
@@ -4205,13 +4269,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/recommendation/export/{ticker}:403",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_139",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_141",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/recommendation/export/{ticker} 403:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_139"
+      "test": "boundary_evidence_141"
     },
     {
       "boundary_id": "GET /api/recommendation/export/{ticker} 404 application/json optional-session",
@@ -4235,13 +4299,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/recommendation/export/{ticker}:404",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_140",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_142",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/recommendation/export/{ticker} 404:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_140"
+      "test": "boundary_evidence_142"
     },
     {
       "boundary_id": "GET /api/recommendation/export/{ticker} 422 application/json optional-session",
@@ -4265,13 +4329,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/recommendation/export/{ticker}:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_141",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_143",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/recommendation/export/{ticker} 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_141"
+      "test": "boundary_evidence_143"
     },
     {
       "boundary_id": "GET /api/recommendation/export/{ticker} 500 application/json optional-session",
@@ -4295,13 +4359,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/recommendation/export/{ticker}:500",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_142",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_144",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/recommendation/export/{ticker} 500:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_142"
+      "test": "boundary_evidence_144"
     },
     {
       "boundary_id": "GET /api/recommendation/export/{ticker} 502 application/json optional-session",
@@ -4325,13 +4389,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/recommendation/export/{ticker}:502",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_143",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_145",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/recommendation/export/{ticker} 502:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_143"
+      "test": "boundary_evidence_145"
     },
     {
       "boundary_id": "GET /api/recommendation/export/{ticker} 503 application/json optional-session",
@@ -4355,13 +4419,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/recommendation/export/{ticker}:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_144",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_146",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/recommendation/export/{ticker} 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_144"
+      "test": "boundary_evidence_146"
     },
     {
       "boundary_id": "GET /api/recommendation/status/{ticker} 200 application/json optional-session",
@@ -4385,13 +4449,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/recommendation/status/{ticker}:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_145",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_147",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/recommendation/status/{ticker} 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_145"
+      "test": "boundary_evidence_147"
     },
     {
       "boundary_id": "GET /api/recommendation/status/{ticker} 403 application/json optional-session",
@@ -4415,13 +4479,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/recommendation/status/{ticker}:403",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_146",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_148",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/recommendation/status/{ticker} 403:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_146"
+      "test": "boundary_evidence_148"
     },
     {
       "boundary_id": "GET /api/recommendation/status/{ticker} 404 application/json optional-session",
@@ -4445,13 +4509,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/recommendation/status/{ticker}:404",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_147",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_149",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/recommendation/status/{ticker} 404:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_147"
+      "test": "boundary_evidence_149"
     },
     {
       "boundary_id": "GET /api/recommendation/status/{ticker} 422 application/json optional-session",
@@ -4475,13 +4539,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/recommendation/status/{ticker}:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_148",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_150",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/recommendation/status/{ticker} 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_148"
+      "test": "boundary_evidence_150"
     },
     {
       "boundary_id": "GET /api/recommendation/status/{ticker} 500 application/json optional-session",
@@ -4505,13 +4569,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/recommendation/status/{ticker}:500",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_149",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_151",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/recommendation/status/{ticker} 500:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_149"
+      "test": "boundary_evidence_151"
     },
     {
       "boundary_id": "GET /api/recommendation/status/{ticker} 502 application/json optional-session",
@@ -4535,13 +4599,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/recommendation/status/{ticker}:502",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_150",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_152",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/recommendation/status/{ticker} 502:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_150"
+      "test": "boundary_evidence_152"
     },
     {
       "boundary_id": "GET /api/recommendation/status/{ticker} 503 application/json optional-session",
@@ -4565,13 +4629,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/recommendation/status/{ticker}:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_151",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_153",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/recommendation/status/{ticker} 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/recommendation.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_151"
+      "test": "boundary_evidence_153"
     },
     {
       "boundary_id": "GET /api/scan 200 application/json optional-session",
@@ -4595,13 +4659,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/scan:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_152",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_154",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/scan 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/scan.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_152"
+      "test": "boundary_evidence_154"
     },
     {
       "boundary_id": "GET /api/scan/{symbol}/history 200 application/json public",
@@ -4625,13 +4689,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/scan/{symbol}/history:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_153",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_155",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/scan/{symbol}/history 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/scan.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_153"
+      "test": "boundary_evidence_155"
     },
     {
       "boundary_id": "GET /api/scan/all 200 application/json optional-session",
@@ -4655,13 +4719,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/scan/all:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_154",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_156",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/scan/all 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/scan.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_154"
+      "test": "boundary_evidence_156"
     },
     {
       "boundary_id": "GET /api/scan/universe 200 application/json public",
@@ -4685,13 +4749,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/scan/universe:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_155",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_157",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/scan/universe 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/scan.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_155"
+      "test": "boundary_evidence_157"
     },
     {
       "boundary_id": "GET /api/scan/view 200 application/json optional-session",
@@ -4715,13 +4779,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/scan/view:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_156",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_158",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/scan/view 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/scan.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_156"
+      "test": "boundary_evidence_158"
     },
     {
       "boundary_id": "PUT /api/scan/view 200 application/json session",
@@ -4745,13 +4809,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/scan/view:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_157",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_159",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/scan/view 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/scan.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_157"
+      "test": "boundary_evidence_159"
     },
     {
       "boundary_id": "PUT /api/scan/view 401 application/json session",
@@ -4775,13 +4839,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/scan/view:401",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_158",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_160",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/scan/view 401:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/scan.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_158"
+      "test": "boundary_evidence_160"
     },
     {
       "boundary_id": "PUT /api/scan/view 403 application/json session",
@@ -4805,13 +4869,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/scan/view:403",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_159",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_161",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/scan/view 403:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/scan.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_159"
+      "test": "boundary_evidence_161"
     },
     {
       "boundary_id": "PUT /api/scan/view 409 application/json session",
@@ -4835,13 +4899,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/scan/view:409",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_160",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_162",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/scan/view 409:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/scan.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_160"
+      "test": "boundary_evidence_162"
     },
     {
       "boundary_id": "PUT /api/scan/view 422 application/json session",
@@ -4865,13 +4929,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/scan/view:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_161",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_163",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/scan/view 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/scan.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_161"
+      "test": "boundary_evidence_163"
     },
     {
       "boundary_id": "PUT /api/scan/view 503 application/json session",
@@ -4895,13 +4959,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:PUT:/api/scan/view:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_162",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_164",
       "production_path": "IntoResponse",
       "request_fixture": "PUT /api/scan/view 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/scan.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_162"
+      "test": "boundary_evidence_164"
     },
     {
       "boundary_id": "GET /api/signals 200 application/json public",
@@ -4925,13 +4989,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/signals:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_163",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_165",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/signals 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_163"
+      "test": "boundary_evidence_165"
     },
     {
       "boundary_id": "GET /api/signals 404 application/json public",
@@ -4955,13 +5019,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/signals:404",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_164",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_166",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/signals 404:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_164"
+      "test": "boundary_evidence_166"
     },
     {
       "boundary_id": "GET /api/signals 422 application/json public",
@@ -4985,13 +5049,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/signals:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_165",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_167",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/signals 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_165"
+      "test": "boundary_evidence_167"
     },
     {
       "boundary_id": "GET /api/signals 500 application/json public",
@@ -5015,13 +5079,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/signals:500",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_166",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_168",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/signals 500:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_166"
+      "test": "boundary_evidence_168"
     },
     {
       "boundary_id": "GET /api/signals 502 application/json public",
@@ -5045,13 +5109,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/signals:502",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_167",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_169",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/signals 502:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_167"
+      "test": "boundary_evidence_169"
     },
     {
       "boundary_id": "GET /api/signals 503 application/json public",
@@ -5075,13 +5139,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/signals:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_168",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_170",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/signals 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_168"
+      "test": "boundary_evidence_170"
     },
     {
       "boundary_id": "GET /api/stream/{ticker} 200 text/event-stream public",
@@ -5107,13 +5171,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/stream/{ticker}:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_169",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_171",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/stream/{ticker} 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_169"
+      "test": "boundary_evidence_171"
     },
     {
       "boundary_id": "GET /api/stream/{ticker} 404 application/json public",
@@ -5137,13 +5201,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/stream/{ticker}:404",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_170",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_172",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/stream/{ticker} 404:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_170"
+      "test": "boundary_evidence_172"
     },
     {
       "boundary_id": "GET /api/stream/{ticker} 422 application/json public",
@@ -5167,13 +5231,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/stream/{ticker}:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_171",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_173",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/stream/{ticker} 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_171"
+      "test": "boundary_evidence_173"
     },
     {
       "boundary_id": "GET /api/stream/{ticker} 500 application/json public",
@@ -5197,13 +5261,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/stream/{ticker}:500",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_172",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_174",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/stream/{ticker} 500:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_172"
+      "test": "boundary_evidence_174"
     },
     {
       "boundary_id": "GET /api/stream/{ticker} 502 application/json public",
@@ -5227,13 +5291,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/stream/{ticker}:502",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_173",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_175",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/stream/{ticker} 502:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_173"
+      "test": "boundary_evidence_175"
     },
     {
       "boundary_id": "GET /api/stream/{ticker} 503 application/json public",
@@ -5259,13 +5323,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/stream/{ticker}:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_174",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_176",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/stream/{ticker} 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_174"
+      "test": "boundary_evidence_176"
     },
     {
       "boundary_id": "GET /api/stream/prices 200 text/event-stream public",
@@ -5291,13 +5355,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/stream/prices:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_175",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_177",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/stream/prices 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_175"
+      "test": "boundary_evidence_177"
     },
     {
       "boundary_id": "GET /api/stream/prices 404 application/json public",
@@ -5321,13 +5385,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/stream/prices:404",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_176",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_178",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/stream/prices 404:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_176"
+      "test": "boundary_evidence_178"
     },
     {
       "boundary_id": "GET /api/stream/prices 422 application/json public",
@@ -5351,13 +5415,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/stream/prices:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_177",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_179",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/stream/prices 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_177"
+      "test": "boundary_evidence_179"
     },
     {
       "boundary_id": "GET /api/stream/prices 500 application/json public",
@@ -5381,13 +5445,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/stream/prices:500",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_178",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_180",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/stream/prices 500:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_178"
+      "test": "boundary_evidence_180"
     },
     {
       "boundary_id": "GET /api/stream/prices 502 application/json public",
@@ -5411,13 +5475,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/stream/prices:502",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_179",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_181",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/stream/prices 502:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_179"
+      "test": "boundary_evidence_181"
     },
     {
       "boundary_id": "GET /api/stream/prices 503 application/json public",
@@ -5443,13 +5507,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/stream/prices:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_180",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_182",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/stream/prices 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_180"
+      "test": "boundary_evidence_182"
     },
     {
       "boundary_id": "GET /api/strike-profile 200 application/json public",
@@ -5473,13 +5537,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/strike-profile:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_181",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_183",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/strike-profile 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_181"
+      "test": "boundary_evidence_183"
     },
     {
       "boundary_id": "GET /api/strike-profile 404 application/json public",
@@ -5503,13 +5567,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/strike-profile:404",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_182",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_184",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/strike-profile 404:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_182"
+      "test": "boundary_evidence_184"
     },
     {
       "boundary_id": "GET /api/strike-profile 422 application/json public",
@@ -5533,13 +5597,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/strike-profile:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_183",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_185",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/strike-profile 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_183"
+      "test": "boundary_evidence_185"
     },
     {
       "boundary_id": "GET /api/strike-profile 500 application/json public",
@@ -5563,13 +5627,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/strike-profile:500",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_184",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_186",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/strike-profile 500:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_184"
+      "test": "boundary_evidence_186"
     },
     {
       "boundary_id": "GET /api/strike-profile 502 application/json public",
@@ -5593,13 +5657,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/strike-profile:502",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_185",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_187",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/strike-profile 502:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_185"
+      "test": "boundary_evidence_187"
     },
     {
       "boundary_id": "GET /api/strike-profile 503 application/json public",
@@ -5623,13 +5687,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/strike-profile:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_186",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_188",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/strike-profile 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/market.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_186"
+      "test": "boundary_evidence_188"
     },
     {
       "boundary_id": "GET /api/ticker/{ticker} 200 application/json public",
@@ -5653,13 +5717,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/ticker/{ticker}:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_187",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_189",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/ticker/{ticker} 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/ticker.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_187"
+      "test": "boundary_evidence_189"
     },
     {
       "boundary_id": "GET /api/ticker/{ticker} 404 application/json public",
@@ -5683,13 +5747,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/ticker/{ticker}:404",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_188",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_190",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/ticker/{ticker} 404:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/ticker.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_188"
+      "test": "boundary_evidence_190"
     },
     {
       "boundary_id": "GET /api/ticker/{ticker} 422 application/json public",
@@ -5713,13 +5777,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/ticker/{ticker}:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_189",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_191",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/ticker/{ticker} 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/ticker.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_189"
+      "test": "boundary_evidence_191"
     },
     {
       "boundary_id": "GET /api/ticker/{ticker} 500 application/json public",
@@ -5743,13 +5807,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/ticker/{ticker}:500",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_190",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_192",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/ticker/{ticker} 500:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/ticker.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_190"
+      "test": "boundary_evidence_192"
     },
     {
       "boundary_id": "GET /api/ticker/{ticker} 502 application/json public",
@@ -5773,13 +5837,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/ticker/{ticker}:502",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_191",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_193",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/ticker/{ticker} 502:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/ticker.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_191"
+      "test": "boundary_evidence_193"
     },
     {
       "boundary_id": "GET /api/ticker/{ticker} 503 application/json public",
@@ -5803,13 +5867,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/ticker/{ticker}:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_192",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_194",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/ticker/{ticker} 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/ticker.rs::contract_representative_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_192"
+      "test": "boundary_evidence_194"
     },
     {
       "boundary_id": "GET /api/ticker/{ticker}/progressive 200 text/event-stream public",
@@ -5836,13 +5900,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/ticker/{ticker}/progressive:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_193",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_195",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/ticker/{ticker}/progressive 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_193"
+      "test": "boundary_evidence_195"
     },
     {
       "boundary_id": "GET /api/ticker/{ticker}/progressive 404 application/json public",
@@ -5866,13 +5930,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/ticker/{ticker}/progressive:404",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_194",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_196",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/ticker/{ticker}/progressive 404:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_194"
+      "test": "boundary_evidence_196"
     },
     {
       "boundary_id": "GET /api/ticker/{ticker}/progressive 422 application/json public",
@@ -5896,13 +5960,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/ticker/{ticker}/progressive:422",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_195",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_197",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/ticker/{ticker}/progressive 422:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_195"
+      "test": "boundary_evidence_197"
     },
     {
       "boundary_id": "GET /api/ticker/{ticker}/progressive 500 application/json public",
@@ -5926,13 +5990,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/ticker/{ticker}/progressive:500",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_196",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_198",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/ticker/{ticker}/progressive 500:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_196"
+      "test": "boundary_evidence_198"
     },
     {
       "boundary_id": "GET /api/ticker/{ticker}/progressive 502 application/json public",
@@ -5956,13 +6020,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/ticker/{ticker}/progressive:502",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_197",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_199",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/ticker/{ticker}/progressive 502:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_197"
+      "test": "boundary_evidence_199"
     },
     {
       "boundary_id": "GET /api/ticker/{ticker}/progressive 503 application/json public",
@@ -5986,13 +6050,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/api/ticker/{ticker}/progressive:503",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_198",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_200",
       "production_path": "IntoResponse",
       "request_fixture": "GET /api/ticker/{ticker}/progressive 503:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/stream.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_198"
+      "test": "boundary_evidence_200"
     },
     {
       "boundary_id": "GET /demo 200 text/html public",
@@ -6016,13 +6080,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/demo:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_199",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_201",
       "production_path": "IntoResponse",
       "request_fixture": "GET /demo 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/demo.rs::contract_representative_response",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_199"
+      "test": "boundary_evidence_201"
     },
     {
       "boundary_id": "GET /health 200 application/json public",
@@ -6046,13 +6110,13 @@
       "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
       "id": "parity:GET:/health:200",
       "mode": "response-conversion",
-      "persisted_signature_id": "boundary-evidence:boundary_evidence_200",
+      "persisted_signature_id": "boundary-evidence:boundary_evidence_202",
       "production_path": "IntoResponse",
       "request_fixture": "GET /health 200:production-response-variant",
       "setup_fixture": "route-owned-response-constructor",
       "source_registry_target": "apps/api/src/routes/health.rs::contract_representative_response_for",
       "target": "apps/api/tests/api_contract_parity.rs",
-      "test": "boundary_evidence_200"
+      "test": "boundary_evidence_202"
     },
     {
       "case_id": "GET /:anonymous",
@@ -13744,6 +13808,21 @@
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
+          "boundary_id": "POST /api/auth/login 429 application/json public",
+          "case_id": "POST /api/auth/login 429 application/json public",
+          "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
+          "header_names": ["retry-after"],
+          "http_case_id": "POST /api/auth/login",
+          "media_type": "application/json",
+          "normalizers": ["wire-boundary-normalizer"],
+          "response_conversion_evidence": "parity:POST:/api/auth/login:429",
+          "risk_classes": ["declared-error-json"],
+          "security_mode": "public",
+          "status": "429",
+          "test": "boundary_evidence_060"
+        },
+        {
+          "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
           "boundary_id": "POST /api/auth/login 503 application/json public",
           "case_id": "POST /api/auth/login 503 application/json public",
           "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
@@ -13755,7 +13834,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "503",
-          "test": "boundary_evidence_060"
+          "test": "boundary_evidence_061"
         }
       ],
       "key": "POST /api/auth/login",
@@ -13779,7 +13858,7 @@
           "risk_classes": ["success-json", "cookie-set-or-clear"],
           "security_mode": "optional-session",
           "status": "200",
-          "test": "boundary_evidence_061"
+          "test": "boundary_evidence_062"
         }
       ],
       "key": "POST /api/auth/logout",
@@ -13803,7 +13882,7 @@
           "risk_classes": ["success-json", "null-absent-empty"],
           "security_mode": "optional-session",
           "status": "200",
-          "test": "boundary_evidence_062"
+          "test": "boundary_evidence_063"
         }
       ],
       "key": "GET /api/auth/session",
@@ -13827,7 +13906,7 @@
           "risk_classes": ["success-json", "null-absent-empty"],
           "security_mode": "session",
           "status": "200",
-          "test": "boundary_evidence_063"
+          "test": "boundary_evidence_064"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -13842,7 +13921,7 @@
           "risk_classes": ["declared-error-json", "auth-denial", "null-absent-empty"],
           "security_mode": "session",
           "status": "401",
-          "test": "boundary_evidence_064"
+          "test": "boundary_evidence_065"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -13857,7 +13936,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "session",
           "status": "503",
-          "test": "boundary_evidence_065"
+          "test": "boundary_evidence_066"
         }
       ],
       "key": "GET /api/auth/settings",
@@ -13881,7 +13960,7 @@
           "risk_classes": ["success-json", "null-absent-empty"],
           "security_mode": "session",
           "status": "200",
-          "test": "boundary_evidence_066"
+          "test": "boundary_evidence_067"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -13896,7 +13975,7 @@
           "risk_classes": ["declared-error-json", "auth-denial", "null-absent-empty"],
           "security_mode": "session",
           "status": "401",
-          "test": "boundary_evidence_067"
+          "test": "boundary_evidence_068"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -13911,7 +13990,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "session",
           "status": "422",
-          "test": "boundary_evidence_068"
+          "test": "boundary_evidence_069"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -13926,7 +14005,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "session",
           "status": "503",
-          "test": "boundary_evidence_069"
+          "test": "boundary_evidence_070"
         }
       ],
       "key": "PUT /api/auth/settings",
@@ -13950,7 +14029,7 @@
           "risk_classes": ["success-json", "cookie-set-or-clear"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_070"
+          "test": "boundary_evidence_071"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -13965,7 +14044,7 @@
           "risk_classes": ["declared-error-json", "auth-denial"],
           "security_mode": "public",
           "status": "403",
-          "test": "boundary_evidence_071"
+          "test": "boundary_evidence_072"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -13980,7 +14059,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "409",
-          "test": "boundary_evidence_072"
+          "test": "boundary_evidence_073"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -13995,7 +14074,22 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "422",
-          "test": "boundary_evidence_073"
+          "test": "boundary_evidence_074"
+        },
+        {
+          "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
+          "boundary_id": "POST /api/auth/signup 429 application/json public",
+          "case_id": "POST /api/auth/signup 429 application/json public",
+          "fixture": "apps/api/tests/fixtures/api_contract/boundary-evidence.json",
+          "header_names": ["retry-after"],
+          "http_case_id": "POST /api/auth/signup",
+          "media_type": "application/json",
+          "normalizers": ["wire-boundary-normalizer"],
+          "response_conversion_evidence": "parity:POST:/api/auth/signup:429",
+          "risk_classes": ["declared-error-json"],
+          "security_mode": "public",
+          "status": "429",
+          "test": "boundary_evidence_075"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14010,7 +14104,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "503",
-          "test": "boundary_evidence_074"
+          "test": "boundary_evidence_076"
         }
       ],
       "key": "POST /api/auth/signup",
@@ -14034,7 +14128,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "session",
           "status": "200",
-          "test": "boundary_evidence_075"
+          "test": "boundary_evidence_077"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14049,7 +14143,7 @@
           "risk_classes": ["declared-error-json", "auth-denial"],
           "security_mode": "session",
           "status": "403",
-          "test": "boundary_evidence_076"
+          "test": "boundary_evidence_078"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14064,7 +14158,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "session",
           "status": "503",
-          "test": "boundary_evidence_077"
+          "test": "boundary_evidence_079"
         }
       ],
       "key": "GET /api/book",
@@ -14088,7 +14182,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "session",
           "status": "200",
-          "test": "boundary_evidence_078"
+          "test": "boundary_evidence_080"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14103,7 +14197,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "session",
           "status": "400",
-          "test": "boundary_evidence_079"
+          "test": "boundary_evidence_081"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14118,7 +14212,7 @@
           "risk_classes": ["declared-error-json", "auth-denial"],
           "security_mode": "session",
           "status": "403",
-          "test": "boundary_evidence_080"
+          "test": "boundary_evidence_082"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14133,7 +14227,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "session",
           "status": "422",
-          "test": "boundary_evidence_081"
+          "test": "boundary_evidence_083"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14148,7 +14242,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "session",
           "status": "503",
-          "test": "boundary_evidence_082"
+          "test": "boundary_evidence_084"
         }
       ],
       "key": "PUT /api/book",
@@ -14172,7 +14266,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "session",
           "status": "200",
-          "test": "boundary_evidence_083"
+          "test": "boundary_evidence_085"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14187,7 +14281,7 @@
           "risk_classes": ["declared-error-json", "auth-denial"],
           "security_mode": "session",
           "status": "403",
-          "test": "boundary_evidence_084"
+          "test": "boundary_evidence_086"
         }
       ],
       "key": "GET /api/broker/book",
@@ -14211,7 +14305,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "session",
           "status": "200",
-          "test": "boundary_evidence_085"
+          "test": "boundary_evidence_087"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14226,7 +14320,7 @@
           "risk_classes": ["declared-error-json", "auth-denial"],
           "security_mode": "session",
           "status": "403",
-          "test": "boundary_evidence_086"
+          "test": "boundary_evidence_088"
         }
       ],
       "key": "POST /api/broker/book/refresh",
@@ -14250,7 +14344,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "session",
           "status": "200",
-          "test": "boundary_evidence_087"
+          "test": "boundary_evidence_089"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14265,7 +14359,7 @@
           "risk_classes": ["declared-error-json", "auth-denial"],
           "security_mode": "session",
           "status": "403",
-          "test": "boundary_evidence_088"
+          "test": "boundary_evidence_090"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14280,7 +14374,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "session",
           "status": "422",
-          "test": "boundary_evidence_089"
+          "test": "boundary_evidence_091"
         }
       ],
       "key": "DELETE /api/broker/credential",
@@ -14304,7 +14398,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "session",
           "status": "200",
-          "test": "boundary_evidence_090"
+          "test": "boundary_evidence_092"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14319,7 +14413,7 @@
           "risk_classes": ["declared-error-json", "auth-denial"],
           "security_mode": "session",
           "status": "403",
-          "test": "boundary_evidence_091"
+          "test": "boundary_evidence_093"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14334,7 +14428,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "session",
           "status": "422",
-          "test": "boundary_evidence_092"
+          "test": "boundary_evidence_094"
         }
       ],
       "key": "GET /api/broker/credential",
@@ -14358,7 +14452,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "session",
           "status": "200",
-          "test": "boundary_evidence_093"
+          "test": "boundary_evidence_095"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14373,7 +14467,7 @@
           "risk_classes": ["declared-error-json", "auth-denial"],
           "security_mode": "session",
           "status": "403",
-          "test": "boundary_evidence_094"
+          "test": "boundary_evidence_096"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14388,7 +14482,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "session",
           "status": "422",
-          "test": "boundary_evidence_095"
+          "test": "boundary_evidence_097"
         }
       ],
       "key": "PUT /api/broker/credential",
@@ -14412,7 +14506,7 @@
           "risk_classes": ["success-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_096"
+          "test": "boundary_evidence_098"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14427,7 +14521,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "404",
-          "test": "boundary_evidence_097"
+          "test": "boundary_evidence_099"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14442,7 +14536,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "422",
-          "test": "boundary_evidence_098"
+          "test": "boundary_evidence_100"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14457,7 +14551,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "500",
-          "test": "boundary_evidence_099"
+          "test": "boundary_evidence_101"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14472,7 +14566,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "502",
-          "test": "boundary_evidence_100"
+          "test": "boundary_evidence_102"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14487,7 +14581,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "503",
-          "test": "boundary_evidence_101"
+          "test": "boundary_evidence_103"
         }
       ],
       "key": "GET /api/candidates/{ticker}",
@@ -14511,7 +14605,7 @@
           "risk_classes": ["success-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_102"
+          "test": "boundary_evidence_104"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14526,7 +14620,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "400",
-          "test": "boundary_evidence_103"
+          "test": "boundary_evidence_105"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14541,7 +14635,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "404",
-          "test": "boundary_evidence_104"
+          "test": "boundary_evidence_106"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14556,7 +14650,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "422",
-          "test": "boundary_evidence_105"
+          "test": "boundary_evidence_107"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14571,7 +14665,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "500",
-          "test": "boundary_evidence_106"
+          "test": "boundary_evidence_108"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14586,7 +14680,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "502",
-          "test": "boundary_evidence_107"
+          "test": "boundary_evidence_109"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14601,7 +14695,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "503",
-          "test": "boundary_evidence_108"
+          "test": "boundary_evidence_110"
         }
       ],
       "key": "GET /api/contract/{ticker}",
@@ -14625,7 +14719,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_109"
+          "test": "boundary_evidence_111"
         }
       ],
       "key": "GET /api/health",
@@ -14649,7 +14743,7 @@
           "risk_classes": ["success-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_110"
+          "test": "boundary_evidence_112"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14664,7 +14758,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "404",
-          "test": "boundary_evidence_111"
+          "test": "boundary_evidence_113"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14679,7 +14773,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "422",
-          "test": "boundary_evidence_112"
+          "test": "boundary_evidence_114"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14694,7 +14788,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "500",
-          "test": "boundary_evidence_113"
+          "test": "boundary_evidence_115"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14709,7 +14803,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "502",
-          "test": "boundary_evidence_114"
+          "test": "boundary_evidence_116"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14724,7 +14818,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "503",
-          "test": "boundary_evidence_115"
+          "test": "boundary_evidence_117"
         }
       ],
       "key": "GET /api/market-data",
@@ -14748,7 +14842,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_116"
+          "test": "boundary_evidence_118"
         }
       ],
       "key": "GET /api/personas",
@@ -14772,7 +14866,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "session",
           "status": "200",
-          "test": "boundary_evidence_117"
+          "test": "boundary_evidence_119"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14787,7 +14881,7 @@
           "risk_classes": ["declared-error-json", "auth-denial"],
           "security_mode": "session",
           "status": "403",
-          "test": "boundary_evidence_118"
+          "test": "boundary_evidence_120"
         }
       ],
       "key": "POST /api/positions/sim-trade/gate",
@@ -14811,7 +14905,7 @@
           "risk_classes": ["success-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_119"
+          "test": "boundary_evidence_121"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14826,7 +14920,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "404",
-          "test": "boundary_evidence_120"
+          "test": "boundary_evidence_122"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14841,7 +14935,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "422",
-          "test": "boundary_evidence_121"
+          "test": "boundary_evidence_123"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14856,7 +14950,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "500",
-          "test": "boundary_evidence_122"
+          "test": "boundary_evidence_124"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14871,7 +14965,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "502",
-          "test": "boundary_evidence_123"
+          "test": "boundary_evidence_125"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14886,7 +14980,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "503",
-          "test": "boundary_evidence_124"
+          "test": "boundary_evidence_126"
         }
       ],
       "key": "GET /api/price/{ticker}",
@@ -14910,7 +15004,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_125"
+          "test": "boundary_evidence_127"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -14925,7 +15019,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "400",
-          "test": "boundary_evidence_126"
+          "test": "boundary_evidence_128"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14940,7 +15034,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "404",
-          "test": "boundary_evidence_127"
+          "test": "boundary_evidence_129"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14955,7 +15049,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "422",
-          "test": "boundary_evidence_128"
+          "test": "boundary_evidence_130"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14970,7 +15064,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "500",
-          "test": "boundary_evidence_129"
+          "test": "boundary_evidence_131"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -14985,7 +15079,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "502",
-          "test": "boundary_evidence_130"
+          "test": "boundary_evidence_132"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15000,7 +15094,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "503",
-          "test": "boundary_evidence_131"
+          "test": "boundary_evidence_133"
         }
       ],
       "key": "GET /api/prices",
@@ -15024,7 +15118,7 @@
           "risk_classes": ["success-json", "null-absent-empty"],
           "security_mode": "session",
           "status": "200",
-          "test": "boundary_evidence_132"
+          "test": "boundary_evidence_134"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -15039,7 +15133,7 @@
           "risk_classes": ["declared-error-json", "auth-denial", "null-absent-empty"],
           "security_mode": "session",
           "status": "403",
-          "test": "boundary_evidence_133"
+          "test": "boundary_evidence_135"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -15054,7 +15148,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "session",
           "status": "404",
-          "test": "boundary_evidence_134"
+          "test": "boundary_evidence_136"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -15069,7 +15163,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "session",
           "status": "422",
-          "test": "boundary_evidence_135"
+          "test": "boundary_evidence_137"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -15084,7 +15178,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "session",
           "status": "502",
-          "test": "boundary_evidence_136"
+          "test": "boundary_evidence_138"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -15099,7 +15193,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "session",
           "status": "503",
-          "test": "boundary_evidence_137"
+          "test": "boundary_evidence_139"
         }
       ],
       "key": "POST /api/recommendation/{ticker}",
@@ -15123,7 +15217,7 @@
           "risk_classes": ["success-json", "null-absent-empty"],
           "security_mode": "optional-session",
           "status": "200",
-          "test": "boundary_evidence_138"
+          "test": "boundary_evidence_140"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -15138,7 +15232,7 @@
           "risk_classes": ["declared-error-json", "auth-denial", "null-absent-empty"],
           "security_mode": "optional-session",
           "status": "403",
-          "test": "boundary_evidence_139"
+          "test": "boundary_evidence_141"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15153,7 +15247,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "optional-session",
           "status": "404",
-          "test": "boundary_evidence_140"
+          "test": "boundary_evidence_142"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15168,7 +15262,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "optional-session",
           "status": "422",
-          "test": "boundary_evidence_141"
+          "test": "boundary_evidence_143"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15183,7 +15277,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "optional-session",
           "status": "500",
-          "test": "boundary_evidence_142"
+          "test": "boundary_evidence_144"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15198,7 +15292,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "optional-session",
           "status": "502",
-          "test": "boundary_evidence_143"
+          "test": "boundary_evidence_145"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15213,7 +15307,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "optional-session",
           "status": "503",
-          "test": "boundary_evidence_144"
+          "test": "boundary_evidence_146"
         }
       ],
       "key": "GET /api/recommendation/export/{ticker}",
@@ -15237,7 +15331,7 @@
           "risk_classes": ["success-json", "null-absent-empty"],
           "security_mode": "optional-session",
           "status": "200",
-          "test": "boundary_evidence_145"
+          "test": "boundary_evidence_147"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/WireError\"}",
@@ -15252,7 +15346,7 @@
           "risk_classes": ["declared-error-json", "auth-denial", "null-absent-empty"],
           "security_mode": "optional-session",
           "status": "403",
-          "test": "boundary_evidence_146"
+          "test": "boundary_evidence_148"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15267,7 +15361,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "optional-session",
           "status": "404",
-          "test": "boundary_evidence_147"
+          "test": "boundary_evidence_149"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15282,7 +15376,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "optional-session",
           "status": "422",
-          "test": "boundary_evidence_148"
+          "test": "boundary_evidence_150"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15297,7 +15391,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "optional-session",
           "status": "500",
-          "test": "boundary_evidence_149"
+          "test": "boundary_evidence_151"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15312,7 +15406,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "optional-session",
           "status": "502",
-          "test": "boundary_evidence_150"
+          "test": "boundary_evidence_152"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15327,7 +15421,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "optional-session",
           "status": "503",
-          "test": "boundary_evidence_151"
+          "test": "boundary_evidence_153"
         }
       ],
       "key": "GET /api/recommendation/status/{ticker}",
@@ -15351,7 +15445,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "optional-session",
           "status": "200",
-          "test": "boundary_evidence_152"
+          "test": "boundary_evidence_154"
         }
       ],
       "key": "GET /api/scan",
@@ -15375,7 +15469,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_153"
+          "test": "boundary_evidence_155"
         }
       ],
       "key": "GET /api/scan/{symbol}/history",
@@ -15399,7 +15493,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "optional-session",
           "status": "200",
-          "test": "boundary_evidence_154"
+          "test": "boundary_evidence_156"
         }
       ],
       "key": "GET /api/scan/all",
@@ -15423,7 +15517,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_155"
+          "test": "boundary_evidence_157"
         }
       ],
       "key": "GET /api/scan/universe",
@@ -15447,7 +15541,7 @@
           "risk_classes": ["success-json", "null-absent-empty"],
           "security_mode": "optional-session",
           "status": "200",
-          "test": "boundary_evidence_156"
+          "test": "boundary_evidence_158"
         }
       ],
       "key": "GET /api/scan/view",
@@ -15471,7 +15565,7 @@
           "risk_classes": ["success-json", "null-absent-empty"],
           "security_mode": "session",
           "status": "200",
-          "test": "boundary_evidence_157"
+          "test": "boundary_evidence_159"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AuthErrorBody\"}",
@@ -15486,7 +15580,7 @@
           "risk_classes": ["declared-error-json", "auth-denial", "null-absent-empty"],
           "security_mode": "session",
           "status": "401",
-          "test": "boundary_evidence_158"
+          "test": "boundary_evidence_160"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AuthErrorBody\"}",
@@ -15501,7 +15595,7 @@
           "risk_classes": ["declared-error-json", "auth-denial", "null-absent-empty"],
           "security_mode": "session",
           "status": "403",
-          "test": "boundary_evidence_159"
+          "test": "boundary_evidence_161"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AuthErrorBody\"}",
@@ -15516,7 +15610,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "session",
           "status": "409",
-          "test": "boundary_evidence_160"
+          "test": "boundary_evidence_162"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/DetailBody\"}",
@@ -15531,7 +15625,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "session",
           "status": "422",
-          "test": "boundary_evidence_161"
+          "test": "boundary_evidence_163"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/DetailBody\"}",
@@ -15546,7 +15640,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "session",
           "status": "503",
-          "test": "boundary_evidence_162"
+          "test": "boundary_evidence_164"
         }
       ],
       "key": "PUT /api/scan/view",
@@ -15570,7 +15664,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_163"
+          "test": "boundary_evidence_165"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15585,7 +15679,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "404",
-          "test": "boundary_evidence_164"
+          "test": "boundary_evidence_166"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15600,7 +15694,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "422",
-          "test": "boundary_evidence_165"
+          "test": "boundary_evidence_167"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15615,7 +15709,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "500",
-          "test": "boundary_evidence_166"
+          "test": "boundary_evidence_168"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15630,7 +15724,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "502",
-          "test": "boundary_evidence_167"
+          "test": "boundary_evidence_169"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15645,7 +15739,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "503",
-          "test": "boundary_evidence_168"
+          "test": "boundary_evidence_170"
         }
       ],
       "key": "GET /api/signals",
@@ -15669,7 +15763,7 @@
           "risk_classes": ["sse-stream", "null-absent-empty"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_169"
+          "test": "boundary_evidence_171"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15684,7 +15778,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "404",
-          "test": "boundary_evidence_170"
+          "test": "boundary_evidence_172"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15699,7 +15793,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "422",
-          "test": "boundary_evidence_171"
+          "test": "boundary_evidence_173"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15714,7 +15808,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "500",
-          "test": "boundary_evidence_172"
+          "test": "boundary_evidence_174"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15729,7 +15823,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "502",
-          "test": "boundary_evidence_173"
+          "test": "boundary_evidence_175"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15744,7 +15838,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "503",
-          "test": "boundary_evidence_174"
+          "test": "boundary_evidence_176"
         }
       ],
       "key": "GET /api/stream/{ticker}",
@@ -15768,7 +15862,7 @@
           "risk_classes": ["sse-stream", "null-absent-empty"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_175"
+          "test": "boundary_evidence_177"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15783,7 +15877,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "404",
-          "test": "boundary_evidence_176"
+          "test": "boundary_evidence_178"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15798,7 +15892,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "422",
-          "test": "boundary_evidence_177"
+          "test": "boundary_evidence_179"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15813,7 +15907,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "500",
-          "test": "boundary_evidence_178"
+          "test": "boundary_evidence_180"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15828,7 +15922,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "502",
-          "test": "boundary_evidence_179"
+          "test": "boundary_evidence_181"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15843,7 +15937,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "503",
-          "test": "boundary_evidence_180"
+          "test": "boundary_evidence_182"
         }
       ],
       "key": "GET /api/stream/prices",
@@ -15867,7 +15961,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_181"
+          "test": "boundary_evidence_183"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15882,7 +15976,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "404",
-          "test": "boundary_evidence_182"
+          "test": "boundary_evidence_184"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15897,7 +15991,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "422",
-          "test": "boundary_evidence_183"
+          "test": "boundary_evidence_185"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15912,7 +16006,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "500",
-          "test": "boundary_evidence_184"
+          "test": "boundary_evidence_186"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15927,7 +16021,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "502",
-          "test": "boundary_evidence_185"
+          "test": "boundary_evidence_187"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15942,7 +16036,7 @@
           "risk_classes": ["declared-error-json"],
           "security_mode": "public",
           "status": "503",
-          "test": "boundary_evidence_186"
+          "test": "boundary_evidence_188"
         }
       ],
       "key": "GET /api/strike-profile",
@@ -15966,7 +16060,7 @@
           "risk_classes": ["success-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_187"
+          "test": "boundary_evidence_189"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15981,7 +16075,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "404",
-          "test": "boundary_evidence_188"
+          "test": "boundary_evidence_190"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -15996,7 +16090,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "422",
-          "test": "boundary_evidence_189"
+          "test": "boundary_evidence_191"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -16011,7 +16105,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "500",
-          "test": "boundary_evidence_190"
+          "test": "boundary_evidence_192"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -16026,7 +16120,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "502",
-          "test": "boundary_evidence_191"
+          "test": "boundary_evidence_193"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -16041,7 +16135,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "503",
-          "test": "boundary_evidence_192"
+          "test": "boundary_evidence_194"
         }
       ],
       "key": "GET /api/ticker/{ticker}",
@@ -16065,7 +16159,7 @@
           "risk_classes": ["sse-stream", "null-absent-empty"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_193"
+          "test": "boundary_evidence_195"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -16080,7 +16174,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "404",
-          "test": "boundary_evidence_194"
+          "test": "boundary_evidence_196"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -16095,7 +16189,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "422",
-          "test": "boundary_evidence_195"
+          "test": "boundary_evidence_197"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -16110,7 +16204,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "500",
-          "test": "boundary_evidence_196"
+          "test": "boundary_evidence_198"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -16125,7 +16219,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "502",
-          "test": "boundary_evidence_197"
+          "test": "boundary_evidence_199"
         },
         {
           "body_schema_signature": "{\"$ref\":\"#/components/schemas/AppErrorBody\"}",
@@ -16140,7 +16234,7 @@
           "risk_classes": ["declared-error-json", "null-absent-empty"],
           "security_mode": "public",
           "status": "503",
-          "test": "boundary_evidence_198"
+          "test": "boundary_evidence_200"
         }
       ],
       "key": "GET /api/ticker/{ticker}/progressive",
@@ -16164,7 +16258,7 @@
           "risk_classes": ["html-or-empty-body"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_199"
+          "test": "boundary_evidence_201"
         }
       ],
       "key": "GET /demo",
@@ -16188,7 +16282,7 @@
           "risk_classes": ["success-json"],
           "security_mode": "public",
           "status": "200",
-          "test": "boundary_evidence_200"
+          "test": "boundary_evidence_202"
         }
       ],
       "key": "GET /health",
@@ -16234,6 +16328,6 @@
   "schema_version": 2,
   "source": {
     "openapi": "apps/api/openapi/convexa.openapi.json",
-    "sha256": "b0e1348bb9492f9a86afc0dfd730ddf5d452bc47dd3b1e0944c256a9834db911"
+    "sha256": "0db8ac36517b86ea499fa2ead7744cf9fa2d1c853cd0146cb0a32d33f625c776"
   }
 }

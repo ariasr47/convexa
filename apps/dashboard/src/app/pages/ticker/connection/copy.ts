@@ -67,8 +67,7 @@ const TONE_BY_KIND: Record<
 /**
  * Pure chip CONTENT (never JSX) — tone/text/tip/dot/pulse/warnIcon for a resolved `ConnectionState`.
  * `ConnectionChip.tsx` renders this; test files may call it directly without mounting React, which
- * is what lets the pre-existing session-tape fixture tests (`day-replay-mock-adapter.spec.tsx`,
- * `CommandDeck.spec.tsx`) migrate off the deleted `TickerHeader.connectionChip()` with a small diff.
+ * is what let the pre-existing session-tape fixture tests (e.g. `CommandDeck.spec.tsx`) migrate off the deleted `TickerHeader.connectionChip()` with a small diff.
  */
 export interface ChipContent {
   tone: 'info' | 'warning' | 'neutral';

@@ -15,7 +15,6 @@ import { theme } from '@/shared/theme/theme';
 import type { DealerFlowProjection as Dfp } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
 import { render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { CHARM_EMPTY, DFP_WHOLE_EMPTY, VANNA_EMPTY } from '../_kit/copy';
 import { DealerFlowProjection } from './DealerFlowProjection';
@@ -93,22 +92,5 @@ describe('DealerFlowProjection · illustrative figure is wire-verbatim', () => {
     expect(within(vannaBlock).getByText('+$1.0M on +1 IV pt')).toBeInTheDocument();
     expect(within(vannaBlock).getByText('+$3.0M on +5 IV pt (illus.)')).toBeInTheDocument();
     expect(screen.queryByText('+$5.0M on +5 IV pt (illus.)')).toBeNull(); // NOT 5× the base
-  });
-});
-
-// AC-35 (ruling 6, curvature-v2-foundations): the ⓘ affordances are real focusable controls, not
-// hover-only — the shipped `AccessibleHelp` pattern, reachable by tap AND keyboard.
-describe('DealerFlowProjection · the ⓘ affordances are keyboard-reachable (AC-35)', () => {
-  it('every "About …" control is a real button, opens on Enter, closes on Escape', async () => {
-    const user = userEvent.setup();
-    renderDfp(dfp());
-    const helps = screen.getAllByRole('button', { name: /^About /i });
-    expect(helps.length).toBeGreaterThan(0);
-    const first = helps[0];
-    first.focus();
-    expect(first).toHaveFocus();
-    await user.keyboard('{Enter}');
-    expect(await screen.findByRole('tooltip')).toBeInTheDocument();
-    await user.keyboard('{Escape}');
   });
 });

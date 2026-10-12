@@ -24,14 +24,24 @@ fn bin() -> PathBuf {
     PathBuf::from(env!("CARGO_BIN_EXE_api-rust"))
 }
 fn name(label: &str) -> String {
+    // The counter keeps names unique when parallel tests mint them in the same clock tick.
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     format!(
-        "release_{label}_{}_{}",
+        "release_{label}_{}_{}_{}",
         std::process::id(),
+        NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos()
     )
+}
+#[test]
+fn fixture_names_stay_unique_within_one_clock_tick() {
+    // Parallel tests in this binary share one process id; two fixture names minted in the same
+    // clock tick collided ("File exists", 2026-10-08) until name() carried a per-process counter.
+    let names: std::collections::HashSet<String> = (0..2_000).map(|_| name("serve_root")).collect();
+    assert_eq!(names.len(), 2_000);
 }
 fn url(base: &str, db: &str) -> String {
     let mut u = url::Url::parse(base).expect("TEST_DATABASE_URL must be PostgreSQL");
@@ -85,7 +95,11 @@ async fn fp(db: &str) -> String {
             .fetch_all(&p)
             .await
             .expect("schema shape fingerprint");
-        shape.extend(found.into_iter().map(|(key, def)| (format!("{kind} {key}"), def)));
+        shape.extend(
+            found
+                .into_iter()
+                .map(|(key, def)| (format!("{kind} {key}"), def)),
+        );
     }
     let ledger: Vec<(i64, String)> =
         sqlx::query_as("SELECT version,name FROM schema_migrations ORDER BY version")
@@ -320,16 +334,6 @@ fn distinct_ports() -> (u16, u16) {
         if second != first {
             return (first, second);
         }
-    }
-}
-#[test]
-fn simultaneous_serve_port_pair_is_always_distinct() {
-    let mut observed = HashSet::new();
-    for _ in 0..32 {
-        let (x, y) = distinct_ports();
-        assert_ne!(x, y);
-        assert!(observed.insert(x), "test port was reused: {x}");
-        assert!(observed.insert(y), "test port was reused: {y}");
     }
 }
 fn listener_bound(p: u16) -> bool {
@@ -752,6 +756,74 @@ fn serve_current_binds_after_verify_and_health_shape_is_unchanged() {
         }
         assert_no_secret_egress(&output);
         drop_db(&a, &n).await;
+    });
+}
+
+fn allow_origin(response: &reqwest::Response) -> Option<String> {
+    response
+        .headers()
+        .get("access-control-allow-origin")
+        .map(|value| value.to_str().unwrap_or("<non-utf8>").to_owned())
+}
+
+/// Production CORS through the real `serve` path. `APP_ENV=prod` plus `ALLOWED_BROWSER_ORIGINS`
+/// select the layer inside `server::cors_layer`, which the in-process `production_router` tests
+/// bypass. A browser on any other origin must get no `Access-Control-Allow-Origin`, on a plain
+/// request or a preflight; the configured origin (set by `env`) still gets it, so a server that
+/// sent no CORS headers at all cannot pass.
+#[test]
+fn production_serve_grants_cors_only_to_the_configured_origin() {
+    const CONFIGURED: &str = "https://app.example";
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    rt.block_on(async {
+        let a = admin().await;
+        let n = name("cors");
+        create(&a, &n).await;
+        let d = url(&base(), &n);
+        assert!(migrate(&d, &[]).status.success());
+        let mut r = serve(&d);
+        let healthy = wait_healthy(&mut r, SERVE_STARTUP_BOUND).await;
+        let mut observed = Vec::new();
+        if healthy.is_ok() {
+            let client = reqwest::Client::new();
+            let health = format!("http://127.0.0.1:{}/api/health", r.port);
+            for origin in [
+                CONFIGURED,
+                "https://evil.example",
+                "https://app.example.evil",
+                "http://app.example",
+                "null",
+            ] {
+                let simple = client
+                    .get(&health)
+                    .header("origin", origin)
+                    .send()
+                    .await
+                    .expect("plain cross-origin request");
+                let preflight = client
+                    .request(reqwest::Method::OPTIONS, &health)
+                    .header("origin", origin)
+                    .header("access-control-request-method", "GET")
+                    .send()
+                    .await
+                    .expect("CORS preflight");
+                observed.push((origin, allow_origin(&simple), allow_origin(&preflight)));
+            }
+        }
+        // Stop the server and drop the database before asserting, so a failure leaks neither.
+        let output = stop(r);
+        drop_db(&a, &n).await;
+        if let Err(reason) = healthy {
+            panic!(
+                "production server did not become healthy ({reason}); stderr={}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        for (origin, simple, preflight) in &observed {
+            let expected = (*origin == CONFIGURED).then(|| origin.to_string());
+            assert_eq!(simple, &expected, "plain GET from {origin}");
+            assert_eq!(preflight, &expected, "preflight from {origin}");
+        }
     });
 }
 

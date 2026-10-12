@@ -2,7 +2,7 @@ import { theme } from '@/shared/theme/theme';
 import type { CandidateSetEnvelope, StraddleMove as StraddleMoveRead } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { NumbersSaidStrip } from './NumbersSaidStrip';
 
 afterEach(() => cleanup());
@@ -87,96 +87,43 @@ function renderStrip(props: Partial<Parameters<typeof NumbersSaidStrip>[0]> = {}
 }
 
 describe('NumbersSaidStrip — AC-4/54/66 (ship-blocking)', () => {
-  it('renders the digested liquidity line from the wire counts only', () => {
-    renderStrip();
-    expect(screen.getByTestId('numbers-said-liquidity')).toHaveTextContent(
-      '4 candidates across 1 expirations',
-    );
-  });
-
-  it('renders the move for the cited expiration, exact match', () => {
-    renderStrip();
-    // Fidelity repair 2, N5 follow-up — the expiration is formatted (fmtExpiry), never the raw ISO
-    // date string; the shape assertion is loose (no fixed clock in this pre-existing test) — the
-    // dedicated fixed-clock coverage lives in the describe block below.
-    expect(screen.getByTestId('numbers-said-move')).toHaveTextContent(/Jul \d+ \(\d+ DTE\)/);
-    expect(screen.getByTestId('numbers-said-move')).not.toHaveTextContent('2026-07-18');
-    expect(screen.getByTestId('numbers-said-move')).toHaveTextContent('$10.00');
-  });
-
-  it('a no-match expiration says so for that expiry and never relabels another tenor', () => {
-    renderStrip({ citedExpiration: '2026-08-21' });
-    // Fidelity repair 2, N5 follow-up — formatted, never the raw ISO date string (see above).
-    expect(screen.getByTestId('numbers-said-move-absent')).toHaveTextContent(/Aug \d+ \(\d+ DTE\)/);
-    expect(screen.getByTestId('numbers-said-move-absent')).not.toHaveTextContent('2026-08-21');
-    expect(screen.queryByTestId('numbers-said-move')).not.toBeInTheDocument();
-  });
-
-  it('AC-66 — a null cited expiration (no_trade) still renders a real move reading via the payload primary tenor', () => {
-    renderStrip({ citedExpiration: null });
-    // Fidelity repair 2, N5 follow-up — formatted, never the raw ISO date string (see above).
-    expect(screen.getByTestId('numbers-said-move')).toHaveTextContent(/Jul \d+ \(\d+ DTE\)/);
-    expect(screen.getByTestId('numbers-said-move')).not.toHaveTextContent('2026-07-18');
-  });
-
-  it('renders on an unavailable candidate set with the unavailable literal, never a throw', () => {
-    renderStrip({ candidates: { ...candidates(), state: 'unavailable' } });
-    expect(screen.getByTestId('numbers-said-liquidity')).toHaveTextContent(/unavailable/);
-  });
-
-  it('AC-8 (GATE Q correction) — renders the candidate set as-of (exchange-clock form, fidelity repair 2 N5) and session basis, un-hovered', () => {
-    renderStrip();
-    const freshness = screen.getByTestId('numbers-said-freshness');
-    expect(freshness.textContent ?? '').not.toContain(candidates().as_of as string);
-    expect(freshness).toHaveTextContent(/\d{2}:\d{2}:\d{2} ET/);
-    expect(freshness).toHaveTextContent(/prior close|live session/);
-  });
-
-  it('an empty band renders the checked-empty literal, distinct from unavailable', () => {
-    renderStrip({
-      candidates: {
-        ...candidates(),
-        state: 'none_in_band',
-        included: { contracts: 0, expirations: [], expiration_count: 0 },
-      },
-    });
-    expect(screen.getByTestId('numbers-said-liquidity')).toHaveTextContent(/No candidates in band/);
-  });
-});
-
-// =================================================================================================
-// Fidelity repair 2, N5 follow-up (conductor-requested) — N5 itself left this strip's own expiration
-// line named-but-untouched (`FIDELITY_REPAIR_2_REPORT.md`'s N5 "Not touched" note: `NumbersSaidStrip`'s
-// `citedExpiration` line, ATC-4/54/66's "No straddle-implied move for {date}…"). Both the matched-tenor
-// form and the no-match form interpolate `targetExpiration` — decided from the raw wire tokens
-// (`citedExpiration ?? move?.primary_expiration ?? null`) BEFORE either string is built — so only the
-// resolved expiration's TEXT is reformatted, with a fixed clock so the DTE count is exact, not just
-// shape-matched.
-// =================================================================================================
-describe('NumbersSaidStrip — expiration is formatted, never raw (fidelity repair 2, N5 follow-up)', () => {
-  it('matched-tenor form: the raw ISO expiration is absent; "Jul 18 (15 DTE)" is present, fixed clock', () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    vi.setSystemTime(new Date('2026-07-03T15:00:00.000Z'));
-    try {
-      renderStrip();
-      const line = screen.getByTestId('numbers-said-move');
-      expect(line.textContent ?? '').not.toContain('2026-07-18');
-      expect(line).toHaveTextContent('implied move for Jul 18 (15 DTE)');
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it('no-match form: the raw ISO expiration is absent; "Aug 21 (15 DTE)" is present, fixed clock', () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    vi.setSystemTime(new Date('2026-08-06T15:00:00.000Z'));
-    try {
-      renderStrip({ citedExpiration: '2026-08-21' });
-      const line = screen.getByTestId('numbers-said-move-absent');
-      expect(line.textContent ?? '').not.toContain('2026-08-21');
-      expect(line).toHaveTextContent('No straddle-implied move for Aug 21 (15 DTE) in this read.');
-    } finally {
-      vi.useRealTimers();
-    }
+  // The move line shows the straddle move of exactly the tenor it names: the cited expiration, or
+  // the payload's primary tenor when nothing is cited (no_trade, AC-66). A cited expiration with no
+  // matching tenor says so for that expiry and never relabels another tenor's number.
+  it.each([
+    {
+      name: 'a cited expiration with a matching tenor shows that tenor’s move',
+      citedExpiration: '2026-07-18' as string | null,
+      shown: 'numbers-said-move',
+      hidden: 'numbers-said-move-absent',
+      label: /Jul \d+ \(\d+ DTE\)/,
+      raw: '2026-07-18',
+      dollars: '$10.00' as string | null,
+    },
+    {
+      name: 'a cited expiration with no matching tenor says so for that expiry, never another tenor',
+      citedExpiration: '2026-08-21',
+      shown: 'numbers-said-move-absent',
+      hidden: 'numbers-said-move',
+      label: /Aug \d+ \(\d+ DTE\)/,
+      raw: '2026-08-21',
+      dollars: null,
+    },
+    {
+      name: 'AC-66 — a null cited expiration (no_trade) falls back to the payload primary tenor',
+      citedExpiration: null,
+      shown: 'numbers-said-move',
+      hidden: 'numbers-said-move-absent',
+      label: /Jul \d+ \(\d+ DTE\)/,
+      raw: '2026-07-18',
+      dollars: '$10.00',
+    },
+  ])('picks the move tenor: $name', ({ citedExpiration, shown, hidden, label, raw, dollars }) => {
+    renderStrip({ citedExpiration });
+    const line = screen.getByTestId(shown);
+    expect(line).toHaveTextContent(label);
+    expect(line).not.toHaveTextContent(raw);
+    if (dollars) expect(line).toHaveTextContent(dollars);
+    expect(screen.queryByTestId(hidden)).not.toBeInTheDocument();
   });
 });

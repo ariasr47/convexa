@@ -119,6 +119,10 @@ export function AuthDialog({
         case 'bad_credentials':
           // NON-ENUMERATING — fixed copy, identical for wrong-email and wrong-password.
           return { form: AUTH_COPY.login.badCredentials };
+        case 'rate_limited':
+          // The server's message names the wait ("Try again in 58 seconds."). Not the
+          // `unavailable` default, which would claim a fault and invite an immediate retry.
+          return { form: err.message };
         case 'validation': {
           const v = validationFieldCopy(err.message);
           return { [v.field]: v.copy };

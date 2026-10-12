@@ -16,13 +16,9 @@
  * and importing (rather than duplicating) is what makes "reopen sign-ups" a one-string edit at
  * that one site instead of three surfaces quietly drifting apart (SPEC §8).
  *
- * Cut from the design source, and kept cut by a build-breaking mechanism, not by this file's
- * silence (SPEC §4's cut table; F13 owns the source-half `?raw` scan, this feature's own
- * rendered-half is `landing-structure.spec.tsx`'s §7-item-17 describe block): the three.js
+ * Cut from the design source (SPEC §4's cut table): the three.js
  * caption, the `structure as-of 42s` chip + live dot, `rendered from the desk's own bundle`,
- * `7d → 90d tenors`, the CTA band's radial gradient wash (`landing-structure.spec.tsx`'s own
- * earned negative-space scan bans the hyphenated CSS function from this folder's source text,
- * this sentence included — hence "radial gradient", not the compound spelling), the whole "desk
+ * `7d → 90d tenors`, the CTA band's radial gradient wash, the whole "desk
  * right now" strip, and the brokerage-connect footnote. None of those strings live in this file.
  */
 import { AUTH_COPY } from '@/features/auth/copy'; // ALLOWED by the deny-list: strings, no transport.

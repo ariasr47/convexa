@@ -1,19 +1,16 @@
 /**
  * `/methodology` render-level tests (SPEC §7; PLAN.md F10 — "Spec cases (7)").
  *
- * The seven cases named in the plan, and nothing else (V-5's baseline count pins F10 at exactly
- * 7 net-new cases): (1) ten sections in order; (2) every section `id` resolves to a rendered
- * element (AC-M1 deep link); (3) the on-this-page index has exactly ten entries whose hrefs
- * equal the section ids; (4) the score section states the two-stage clamp and the score's
- * honest scope (AC-M2a, AC-M3); (5) the vocabulary table has exactly `NOT_A_NUMBER.length` rows,
+ * Cases kept from the plan's seven (numbers are the plan's; 1, 4 and 7 were retired in the
+ * 2026-10 lean-tests trim as section-order and copy pins): (2) every section `id` resolves to a
+ * rendered element (AC-M1 deep link); (3) the on-this-page index has exactly ten entries whose
+ * hrefs equal the section ids; (5) the vocabulary table has exactly `NOT_A_NUMBER.length` rows,
  * each literal cell resolved Plex Sans (AC-M4, rule 24); (6) every anchor on the page resolves
- * to a route in `app.tsx`'s table or a static document under `public/` (§7 item 11, AC-M5); (7)
- * the page mentions no persona, flows or operator screen (AC-M5b).
+ * to a route in `app.tsx`'s table or a static document under `public/` (§7 item 11, AC-M5).
  *
- * What is deliberately NOT here (`copy.spec.ts`'s job, at the data layer, same content):
- * the ten ids/headings themselves, the block-level discriminated union's shape, the vocabulary
- * set-equality against `NOT_A_NUMBER`, the three quoted deltas landing byte-exact, and the nine
- * retired v1 fragments' absence. Byte-for-byte provenance against
+ * What is deliberately NOT here (`copy.spec.ts`'s job, at the data layer, same content): the
+ * vocabulary set-equality against `NOT_A_NUMBER` and the no-persona/flows/operator-screen rule
+ * (AC-M5b). Byte-for-byte provenance against
  * `design/src/screens/methodology.mjs` (AC-C1a) and the score table's `Max` column against
  * `libs/quant-engine/src/signals.rs` (AC-M2) are PLAN.md F13's structural spec, homed outside
  * `pages/**`, not duplicated here.
@@ -109,13 +106,6 @@ function workspaceRoot(): string {
 }
 
 describe('MethodologyPage (/methodology) — SPEC §7, PLAN F10', () => {
-  it('1. renders all ten sections, in METHOD_COPY.sections order (AC-M1)', () => {
-    renderPage();
-    const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
-    expect(METHOD_COPY.sections).toHaveLength(10);
-    expect(headings).toEqual(METHOD_COPY.sections.map((s) => s.h));
-  });
-
   it('2. every section id resolves to a rendered element on the page (AC-M1 deep link)', () => {
     renderPage();
     for (const section of METHOD_COPY.sections) {
@@ -131,15 +121,6 @@ describe('MethodologyPage (/methodology) — SPEC §7, PLAN F10', () => {
     expect(links.map((a) => a.getAttribute('href'))).toEqual(
       METHOD_COPY.sections.map((s) => `/methodology#${s.id}`),
     );
-  });
-
-  it("4. the score section states the two-stage clamp and the score's honest scope (AC-M2a, AC-M3)", () => {
-    renderPage();
-    const text = document.getElementById('score-and-tier')?.textContent ?? '';
-    expect(text).toMatch(/capped twice/);
-    expect(text).toMatch(/no score ever exceeds 100/);
-    expect(text).toMatch(/does not consume vol-normalized GEX/);
-    expect(text).toMatch(/IV-rank band/);
   });
 
   it('5. the vocabulary table has exactly NOT_A_NUMBER.length rows, each literal cell resolved Plex Sans (AC-M4, rule 24)', () => {
@@ -183,12 +164,6 @@ describe('MethodologyPage (/methodology) — SPEC §7, PLAN F10', () => {
       const resolves = routePaths.has(path) || existsSync(staticDoc);
       expect(resolves, `dead link: ${href}`).toBe(true);
     }
-  });
-
-  it('7. names no persona, flows or operator screen (AC-M5b)', () => {
-    const { container } = renderPage();
-    const text = (container.textContent ?? '').toLowerCase();
-    expect(text).not.toMatch(/persona screen|flows screen|operator screen/);
   });
 
   it('8. issues no non-auth fetch and opens no EventSource on mount (GATE Z m-12, SPEC §7 item 4)', () => {

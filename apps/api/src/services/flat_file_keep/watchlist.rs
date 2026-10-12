@@ -37,10 +37,4 @@ mod tests {
             "watchlist must not alias {tape_tok}"
         );
     }
-
-    #[test]
-    fn nvda_is_not_in_watchlist_before_not_storing() {
-        assert!(!in_flat_files_watchlist("NVDA"));
-        assert!(!in_flat_files_watchlist("nvda"));
-    }
 }

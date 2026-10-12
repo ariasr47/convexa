@@ -219,29 +219,6 @@ mod tests {
     }
 
     #[test]
-    fn bootstraps_compatibility_info_and_accepts_a_route() {
-        let operation = utoipa::openapi::path::OperationBuilder::new()
-            .operation_id(Some("test_operation"))
-            .build();
-        let package = package_from_metadata::<(), _, _>(
-            "test_handler",
-            "/test".to_owned(),
-            vec![HttpMethod::Get],
-            operation,
-            Vec::new(),
-            test_handler,
-        )
-        .expect("package");
-        let router = ContractRouter::<()>::new().route(package).expect("route");
-        let (_, openapi) = router.split_for_parts();
-        assert_eq!(openapi.info.title, "utoipa-axum");
-        assert!(openapi
-            .paths
-            .get_path_operation("/test", HttpMethod::Get)
-            .is_some());
-    }
-
-    #[test]
     fn empty_metadata_methods_fail_before_graph_mutation() {
         let operation = utoipa::openapi::path::OperationBuilder::new().build();
         let result = package_from_metadata::<(), _, _>(

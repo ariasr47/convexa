@@ -3,7 +3,7 @@
  * the inline Landing footer so it is standalone, testable, and reusable across full pages.
  *
  * Chrome ONLY: owns no feature data, makes no fetch, opens no SSE. The page-body ↔ footer seam is
- * the shared ArcDivider (redesign-stage-2 §5.2 seam #1 — a named seam pin in arc.spec.ts), then the
+ * the shared ArcDivider (redesign-stage-2 §5.2 seam #1), then the
  * ConvexaMark wordmark and the simulated/paper honesty disclaimer (`[no-real-order-path]`). Content
  * constrained to the same `lg` column as the rest of the page.
  */

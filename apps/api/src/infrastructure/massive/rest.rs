@@ -782,6 +782,435 @@ mod tests {
         assert!(!diagnostic.contains(canary));
         assert!(!diagnostic.to_ascii_lowercase().contains("apikey="));
     }
+
+    // -----------------------------------------------------------------------
+    // Vendor parsers (batch 101): option-chain row normalizer, ATM IV, fast
+    // stock snapshot. Fixtures are hand-written vendor JSON; expected values
+    // are read off the fixture, not captured from a run.
+    // -----------------------------------------------------------------------
+
+    use super::{
+        compute_atm_iv_at, normalize_contract, parse_fast_snapshot, ChainPage, RawOptionRow,
+    };
+    use chrono::NaiveDate;
+    use quant_engine::{Contract, ContractType, Greeks};
+    use serde_json::{json, Value};
+
+    fn raw_row(v: Value) -> RawOptionRow {
+        serde_json::from_value(v).expect("fixture must deserialize as a Massive option row")
+    }
+
+    /// One Massive `/v3/snapshot/options` page: a fully priced call, a put using the
+    /// Polygon-style quote keys and an ISO-timestamp expiry, an unpriced row (no vendor
+    /// gamma), and a malformed row with no strike.
+    fn chain_page_fixture() -> Value {
+        json!({
+            "results": [
+                {
+                    "details": {"strike_price": 450.0, "contract_type": "call", "expiration_date": "2026-10-16"},
+                    "greeks": {"delta": 0.52, "gamma": 0.031, "theta": -0.21, "vega": 0.18},
+                    "day": {"volume": 1200.0},
+                    "open_interest": 3400.0,
+                    "implied_volatility": 0.235,
+                    "last_quote": {"bid": 5.10, "ask": 5.30},
+                    "underlying_asset": {"price": 449.5, "last_updated": 1_760_000_000_000_000_000_i64}
+                },
+                {
+                    "details": {"strike_price": 440.0, "contract_type": "PUT", "expiration_date": "2026-10-16T20:00:00Z"},
+                    "greeks": {"delta": -0.31, "gamma": 0.022, "theta": -0.17, "vega": 0.15},
+                    "open_interest": 2100.0,
+                    "implied_volatility": 0.262,
+                    "last_quote": {"p": 2.40, "P": 2.55}
+                },
+                {
+                    "details": {"strike_price": 500.0, "contract_type": "call", "expiration_date": "2026-10-16"},
+                    "greeks": {"delta": 0.05},
+                    "day": {"volume": 40.0},
+                    "open_interest": 900.0,
+                    "implied_volatility": 0.41
+                },
+                {
+                    "details": {"contract_type": "call", "expiration_date": "2026-10-16"},
+                    "greeks": {"delta": 0.5, "gamma": 0.03, "theta": -0.2, "vega": 0.2},
+                    "open_interest": 7777.0,
+                    "implied_volatility": 0.25,
+                    "last_quote": {"bid": 1.0, "ask": 1.1}
+                }
+            ],
+            "next_url": null
+        })
+    }
+
+    /// A fully priced row with the given identity fields and quote block.
+    fn priced_row(contract_type: &str, expiration: &str, last_quote: Value) -> RawOptionRow {
+        raw_row(json!({
+            "details": {"strike_price": 100.0, "contract_type": contract_type, "expiration_date": expiration},
+            "greeks": {"delta": 0.5, "gamma": 0.02, "theta": -0.1, "vega": 0.1},
+            "open_interest": 10.0,
+            "implied_volatility": 0.3,
+            "last_quote": last_quote
+        }))
+    }
+
+    #[test]
+    fn chain_page_keeps_valid_rows_in_vendor_order_and_drops_the_row_without_a_strike() {
+        let page: ChainPage =
+            serde_json::from_value(chain_page_fixture()).expect("fixture page deserializes");
+        let kept: Vec<(f64, ContractType, f64)> = page
+            .results
+            .unwrap_or_default()
+            .iter()
+            .filter_map(normalize_contract)
+            .map(|c| (c.strike_price, c.contract_type, c.open_interest))
+            .collect();
+        // Row 4 (OI 7777, no strike) must vanish rather than surface as strike 0.
+        assert_eq!(
+            kept,
+            vec![
+                (450.0, ContractType::Call, 3400.0),
+                (440.0, ContractType::Put, 2100.0),
+                (500.0, ContractType::Call, 900.0),
+            ]
+        );
+    }
+
+    #[test]
+    fn normalize_contract_maps_a_fully_priced_vendor_row_field_for_field() {
+        let row = raw_row(chain_page_fixture()["results"][0].clone());
+        assert_eq!(
+            normalize_contract(&row),
+            Some(Contract {
+                strike_price: 450.0,
+                contract_type: ContractType::Call,
+                open_interest: 3400.0,
+                expiration_date: "2026-10-16".into(),
+                implied_volatility: 0.235,
+                greeks: Some(Greeks {
+                    gamma: Some(0.031),
+                    delta: Some(0.52),
+                    theta: Some(-0.21),
+                    vega: Some(0.18),
+                }),
+                volume: Some(1200.0),
+                bid: Some(5.10),
+                ask: Some(5.30),
+            })
+        );
+    }
+
+    #[test]
+    fn normalize_contract_without_vendor_gamma_keeps_oi_and_volume_but_zeroes_iv_and_all_greeks() {
+        // Unpriced row: vendor sent delta 0.05 and IV 0.41 but no gamma.
+        let row = raw_row(chain_page_fixture()["results"][2].clone());
+        assert_eq!(
+            normalize_contract(&row),
+            Some(Contract {
+                strike_price: 500.0,
+                contract_type: ContractType::Call,
+                open_interest: 900.0,
+                expiration_date: "2026-10-16".into(),
+                implied_volatility: 0.0,
+                greeks: Some(Greeks {
+                    gamma: None,
+                    delta: None,
+                    theta: None,
+                    vega: None,
+                }),
+                volume: Some(40.0),
+                bid: None,
+                ask: None,
+            })
+        );
+    }
+
+    #[test]
+    fn normalize_contract_type_is_case_insensitive_and_accepts_single_letter_codes() {
+        let cases = [
+            ("call", ContractType::Call),
+            ("CALL", ContractType::Call),
+            ("c", ContractType::Call),
+            ("C", ContractType::Call),
+            ("put", ContractType::Put),
+            ("PUT", ContractType::Put),
+            ("p", ContractType::Put),
+            ("P", ContractType::Put),
+        ];
+        for (raw, want) in cases {
+            let got = normalize_contract(&priced_row(raw, "2026-10-16", json!(null)))
+                .map(|c| c.contract_type);
+            assert_eq!(got, Some(want), "contract_type {raw:?}");
+        }
+    }
+
+    #[test]
+    fn normalize_contract_truncates_an_iso_timestamp_expiry_to_its_date() {
+        let c = normalize_contract(&priced_row("put", "2026-10-16T20:00:00Z", json!(null)))
+            .expect("row normalizes");
+        assert_eq!(c.expiration_date, "2026-10-16");
+    }
+
+    #[test]
+    fn normalize_contract_quote_prefers_bid_ask_keys_then_polygon_keys_and_drops_non_positive_sides(
+    ) {
+        let cases: [(&str, Value, (Option<f64>, Option<f64>)); 7] = [
+            (
+                "bid/ask keys",
+                json!({"bid": 1.25, "ask": 1.35}),
+                (Some(1.25), Some(1.35)),
+            ),
+            (
+                "polygon p/P keys",
+                json!({"p": 1.25, "P": 1.35}),
+                (Some(1.25), Some(1.35)),
+            ),
+            (
+                "named keys win over p/P",
+                json!({"bid": 1.25, "ask": 1.35, "p": 9.0, "P": 9.5}),
+                (Some(1.25), Some(1.35)),
+            ),
+            (
+                "zero bid is no bid",
+                json!({"bid": 0.0, "ask": 0.05}),
+                (None, Some(0.05)),
+            ),
+            (
+                "negative and zero sides",
+                json!({"bid": -1.0, "ask": 0.0}),
+                (None, None),
+            ),
+            ("empty quote block", json!({}), (None, None)),
+            ("no quote block", json!(null), (None, None)),
+        ];
+        for (label, quote, want) in cases {
+            let c = normalize_contract(&priced_row("call", "2026-10-16", quote)).expect(label);
+            assert_eq!((c.bid, c.ask), want, "{label}");
+        }
+    }
+
+    #[test]
+    fn normalize_contract_rejects_rows_missing_or_malformed_identity_fields() {
+        let cases = [
+            ("no details", json!({"open_interest": 10.0})),
+            (
+                "no strike",
+                json!({"details": {"contract_type": "call", "expiration_date": "2026-10-16"}}),
+            ),
+            (
+                "zero strike",
+                json!({"details": {"strike_price": 0.0, "contract_type": "call", "expiration_date": "2026-10-16"}}),
+            ),
+            (
+                "negative strike",
+                json!({"details": {"strike_price": -5.0, "contract_type": "call", "expiration_date": "2026-10-16"}}),
+            ),
+            (
+                "no type",
+                json!({"details": {"strike_price": 100.0, "expiration_date": "2026-10-16"}}),
+            ),
+            (
+                "unknown type",
+                json!({"details": {"strike_price": 100.0, "contract_type": "straddle", "expiration_date": "2026-10-16"}}),
+            ),
+            (
+                "no expiry",
+                json!({"details": {"strike_price": 100.0, "contract_type": "call"}}),
+            ),
+            (
+                "short expiry",
+                json!({"details": {"strike_price": 100.0, "contract_type": "call", "expiration_date": "2026-10"}}),
+            ),
+        ];
+        for (label, row) in cases {
+            assert_eq!(normalize_contract(&raw_row(row)), None, "{label}");
+        }
+    }
+
+    fn chain_contract(
+        strike: f64,
+        contract_type: ContractType,
+        expiration: &str,
+        iv: f64,
+    ) -> Contract {
+        Contract {
+            strike_price: strike,
+            contract_type,
+            open_interest: 100.0,
+            expiration_date: expiration.into(),
+            implied_volatility: iv,
+            greeks: None,
+            volume: None,
+            bid: None,
+            ask: None,
+        }
+    }
+
+    /// Three tenors; IVs are dyadic so the call+put average is exact.
+    /// ATM (strike 100, spot 101) averages: 10-03 -> 0.875, 10-09 -> 0.3125, 10-16 -> 0.5625.
+    fn atm_chain() -> Vec<Contract> {
+        use ContractType::{Call, Put};
+        vec![
+            chain_contract(100.0, Call, "2026-10-03", 0.875),
+            chain_contract(100.0, Put, "2026-10-03", 0.875),
+            chain_contract(95.0, Call, "2026-10-09", 0.5),
+            chain_contract(100.0, Call, "2026-10-09", 0.25),
+            chain_contract(100.0, Put, "2026-10-09", 0.375),
+            chain_contract(105.0, Put, "2026-10-09", 0.5),
+            chain_contract(100.0, Call, "2026-10-16", 0.5),
+            chain_contract(100.0, Put, "2026-10-16", 0.625),
+        ]
+    }
+
+    fn day(y: i32, m: u32, d: u32) -> NaiveDate {
+        NaiveDate::from_ymd_opt(y, m, d).expect("valid date")
+    }
+
+    #[test]
+    fn compute_atm_iv_uses_nearest_tenor_at_least_7_dte_else_the_farthest_tenor() {
+        let chain = atm_chain();
+        let cases = [
+            // 10-03 is 2 DTE (too near); 10-09 is the nearest eligible at 8 DTE.
+            (
+                day(2026, 10, 1),
+                (0.3125, Some("2026-10-09".to_string()), Some(8.0)),
+            ),
+            // Exactly 7 DTE is eligible.
+            (
+                day(2026, 10, 2),
+                (0.3125, Some("2026-10-09".to_string()), Some(7.0)),
+            ),
+            // 10-09 is now 6 DTE -> next tenor 10-16 at 13 DTE.
+            (
+                day(2026, 10, 3),
+                (0.5625, Some("2026-10-16".to_string()), Some(13.0)),
+            ),
+            // Nothing reaches 7 DTE -> fall back to the farthest tenor (10-16, 4 DTE).
+            (
+                day(2026, 10, 12),
+                (0.5625, Some("2026-10-16".to_string()), Some(4.0)),
+            ),
+        ];
+        for (today, want) in cases {
+            assert_eq!(
+                compute_atm_iv_at(&chain, 101.0, today),
+                want,
+                "today {today}"
+            );
+        }
+    }
+
+    #[test]
+    fn compute_atm_iv_ignores_unpriced_contracts_when_picking_the_atm_strike() {
+        let mut chain = atm_chain();
+        // Strike 101 sits exactly at spot but has no IV; it must not become the ATM strike.
+        chain.push(chain_contract(101.0, ContractType::Call, "2026-10-09", 0.0));
+        assert_eq!(
+            compute_atm_iv_at(&chain, 101.0, day(2026, 10, 1)),
+            (0.3125, Some("2026-10-09".to_string()), Some(8.0))
+        );
+    }
+
+    #[test]
+    fn compute_atm_iv_without_spot_or_contracts_is_zero_with_no_tenor() {
+        let today = day(2026, 10, 1);
+        assert_eq!(
+            compute_atm_iv_at(&atm_chain(), 0.0, today),
+            (0.0, None, None)
+        );
+        assert_eq!(compute_atm_iv_at(&[], 101.0, today), (0.0, None, None));
+    }
+
+    #[test]
+    fn parse_fast_snapshot_reads_symbol_price_change_and_timestamp() {
+        let row = json!({
+            "ticker": "spy",
+            "todaysChangePerc": 0.85,
+            "updated": 1_760_000_000_000_000_000_i64,
+            "lastTrade": {"p": 450.12, "t": 1_759_999_999_000_000_000_i64},
+            "min": {"c": 450.0},
+            "day": {"c": 449.0},
+            "prevDay": {"c": 446.33}
+        });
+        let s = parse_fast_snapshot(&row).expect("row with a ticker parses");
+        assert_eq!(
+            (s.symbol.as_str(), s.price, s.chg_pct, s.as_of_ns),
+            ("SPY", Some(450.12), Some(0.85), 1_760_000_000_000_000_000)
+        );
+    }
+
+    #[test]
+    fn parse_fast_snapshot_price_falls_back_last_trade_then_minute_then_day_then_prev_close() {
+        let cases = [
+            (
+                json!({"ticker": "X", "lastTrade": {"p": 10.0}, "min": {"c": 20.0}, "day": {"c": 30.0}, "prevDay": {"c": 40.0}}),
+                Some(10.0),
+            ),
+            (
+                json!({"ticker": "X", "min": {"c": 20.0}, "day": {"c": 30.0}, "prevDay": {"c": 40.0}}),
+                Some(20.0),
+            ),
+            (
+                json!({"ticker": "X", "day": {"c": 30.0}, "prevDay": {"c": 40.0}}),
+                Some(30.0),
+            ),
+            (json!({"ticker": "X", "prevDay": {"c": 40.0}}), Some(40.0)),
+            (json!({"ticker": "X", "prevDay": {"c": 0.0}}), None),
+            (json!({"ticker": "X"}), None),
+        ];
+        for (row, want) in cases {
+            let s = parse_fast_snapshot(&row).expect("row with a ticker parses");
+            assert_eq!(s.price, want, "row {row}");
+        }
+    }
+
+    #[test]
+    fn parse_fast_snapshot_change_pct_prefers_camel_case_key_and_accepts_snake_case() {
+        let cases = [
+            (
+                json!({"ticker": "X", "todaysChangePerc": 2.0, "todays_change_percent": 3.0}),
+                Some(2.0),
+            ),
+            (
+                json!({"ticker": "X", "todays_change_percent": -1.5}),
+                Some(-1.5),
+            ),
+            (json!({"ticker": "X"}), None),
+        ];
+        for (row, want) in cases {
+            let s = parse_fast_snapshot(&row).expect("row with a ticker parses");
+            assert_eq!(s.chg_pct, want, "row {row}");
+        }
+    }
+
+    #[test]
+    fn parse_fast_snapshot_as_of_falls_back_to_last_trade_time_then_zero() {
+        let cases = [
+            (
+                json!({"ticker": "X", "updated": 5_i64, "lastTrade": {"t": 7_i64}}),
+                5,
+            ),
+            (json!({"ticker": "X", "lastTrade": {"t": 7_i64}}), 7),
+            (json!({"ticker": "X"}), 0),
+        ];
+        for (row, want) in cases {
+            let s = parse_fast_snapshot(&row).expect("row with a ticker parses");
+            assert_eq!(s.as_of_ns, want, "row {row}");
+        }
+    }
+
+    #[test]
+    fn parse_fast_snapshot_without_a_usable_ticker_is_dropped() {
+        let cases = [
+            ("missing", json!({"lastTrade": {"p": 10.0}})),
+            ("empty", json!({"ticker": "", "lastTrade": {"p": 10.0}})),
+            (
+                "not a string",
+                json!({"ticker": 123, "lastTrade": {"p": 10.0}}),
+            ),
+        ];
+        for (label, row) in cases {
+            assert!(parse_fast_snapshot(&row).is_none(), "{label}");
+        }
+    }
 }
 
 /// §7.1/§7.2 pre-commit measurement (tradeable-rec-inputs B18). Counts taken off the RAW vendor
@@ -1026,10 +1455,19 @@ fn normalize_contract(row: &RawOptionRow) -> Option<Contract> {
 
 /// ATM IV: nearest tenor ≥ 7 DTE (Python MIN_DTE), avg call+put IV at strike nearest spot.
 fn compute_atm_iv(contracts: &[Contract], spot: f64) -> (f64, Option<String>, Option<f64>) {
+    compute_atm_iv_at(contracts, spot, Utc::now().date_naive())
+}
+
+/// [`compute_atm_iv`] with the "today" anchor injected, so DTE (and therefore the tenor
+/// choice) is deterministic under test. Production always passes the wall-clock UTC date.
+fn compute_atm_iv_at(
+    contracts: &[Contract],
+    spot: f64,
+    today: chrono::NaiveDate,
+) -> (f64, Option<String>, Option<f64>) {
     if spot <= 0.0 || contracts.is_empty() {
         return (0.0, None, None);
     }
-    let today = Utc::now().date_naive();
     let mut by_exp: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
     for c in contracts {
         let exp = c.expiration_key().to_string();

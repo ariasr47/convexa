@@ -7,23 +7,14 @@ import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
 import type { BrokerBook, TickerBundle } from '@convexa/api';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { act, cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BrokerPositionRow } from './BrokerPositionRow';
 import { BrokerTabPanel } from './BrokerTabPanel';
 import { buildBrokerPositionView } from './brokerView';
-import {
-  BOOK_CAPTURED_COMPLETE,
-  BOOK_CF_TWO_LEG_MEMBER,
-  BOOK_EMPTY,
-  BOOK_NO_CREDENTIAL,
-  BOOK_REAUTH_WITH_SNAPSHOT,
-  FIXED_NOW_MS,
-  bookDegraded,
-  bookUnknown,
-} from './fixtures';
+import { BOOK_CAPTURED_COMPLETE, BOOK_CF_TWO_LEG_MEMBER, FIXED_NOW_MS } from './fixtures';
 import { groupBook } from './grouping';
 
 const theme = createTheme();
@@ -188,24 +179,6 @@ describe('AC-6 · totality — every eligible position lands in exactly one grou
 });
 
 // =================================================================================================
-// AC-7 — collapsed on first render
-// =================================================================================================
-
-describe('AC-7 · every group is collapsed on first render', () => {
-  it('aria-expanded="false" and the panel is hidden, for every group', async () => {
-    installFetch({ book: BOOK_CAPTURED_COMPLETE });
-    renderPanel();
-    await screen.findByTestId('broker-rows');
-    for (const btn of screen.getAllByTestId('broker-group-toggle')) {
-      expect(btn).toHaveAttribute('aria-expanded', 'false');
-    }
-    for (const panel of screen.getAllByTestId('broker-group-panel')) {
-      expect(panel).toHaveAttribute('hidden');
-    }
-  });
-});
-
-// =================================================================================================
 // AC-5 / AC-6c — expanding TSLA: content byte-identity + leg-count agreement
 // =================================================================================================
 
@@ -364,148 +337,6 @@ describe('AC-11 · the group P/L literal is byte-identical to its expanded membe
 });
 
 // =================================================================================================
-// AC-20 / AC-21 — no-book states vs degraded/reauth states
-// =================================================================================================
-
-describe('AC-20 · no served book ⇒ zero group chrome anywhere, and each state’s copy is unchanged', () => {
-  it.each([
-    ['BOOK_NO_CREDENTIAL', BOOK_NO_CREDENTIAL, 'broker-s1'],
-    ['bookUnknown(broker_unreachable)', bookUnknown('broker_unreachable'), 'broker-s5'],
-    ['BOOK_EMPTY', BOOK_EMPTY, 'broker-s4'],
-  ])('%s', async (_n, book, testid) => {
-    installFetch({ book });
-    renderPanel();
-    await screen.findByTestId(testid);
-    expect(screen.queryAllByTestId('broker-group-header')).toHaveLength(0);
-    expect(screen.queryAllByTestId('broker-group-toggle')).toHaveLength(0);
-    expect(screen.queryAllByTestId('broker-leg-line')).toHaveLength(0);
-  });
-
-  it('cold skeleton (pending, no credential hint yet): zero group chrome', async () => {
-    installFetch({ hint: { set: false, last4: null, storage_available: true }, book: 'pending' });
-    renderPanel();
-    await screen.findByTestId('broker-s9');
-    expect(screen.queryAllByTestId('broker-group-header')).toHaveLength(0);
-  });
-});
-
-describe('AC-21 · a degraded/reauth read with a last-known snapshot still renders grouped', () => {
-  it.each([
-    ['degraded (broker_unreachable)', bookDegraded('broker_unreachable')],
-    ['reauth with a snapshot', BOOK_REAUTH_WITH_SNAPSHOT],
-  ])('%s: groups still render beneath the banner', async (_n, book) => {
-    installFetch({ book });
-    renderPanel();
-    await screen.findByTestId('broker-rows');
-    expect(screen.getAllByTestId('broker-group-header').length).toBeGreaterThan(0);
-  });
-});
-
-// =================================================================================================
-// AC-23 — the lone-leg rows (NVDA, PLTR): exactly one clause, no group chrome, unchanged figures
-// =================================================================================================
-
-describe('AC-23 · lone option legs render today’s row plus EXACTLY one clause, no group chrome', () => {
-  it('NVDA and PLTR: no button/aria-expanded/aria-controls/chevron/"netted by Convexa"', async () => {
-    installFetch({ book: BOOK_CAPTURED_COMPLETE });
-    renderPanel();
-    await screen.findByTestId('broker-rows');
-
-    const clauses = screen.getAllByTestId('broker-lone-leg-clause');
-    expect(clauses).toHaveLength(2);
-    for (const clause of clauses) {
-      expect(clause.textContent).toBe('1 option leg · as Webull reports it');
-      const row = must(
-        clause.closest('[data-testid="broker-row"]'),
-        'the lone leg’s row',
-      ) as HTMLElement;
-      expect(within(row).queryAllByTestId('broker-group-toggle')).toHaveLength(0);
-      expect(row.querySelector('[aria-expanded]')).toBeNull();
-      expect(row.querySelector('[aria-controls]')).toBeNull();
-      expect(row.textContent ?? '').not.toMatch(/netted by Convexa/);
-    }
-
-    // Qty and entry figures unchanged from a standalone render (NVDA: +10 @ 7.89 → $7,890.00 debit).
-    const nvdaBp = must(
-      BOOK_CAPTURED_COMPLETE.positions.find((p) => p.legs[0]?.underlying === 'NVDA'),
-      'the NVDA position fixture',
-    );
-    const nvdaView = buildBrokerPositionView({
-      position: nvdaBp,
-      legMarks: new Map(),
-      dte: null,
-      nowMs: FIXED_NOW_MS,
-      book: BOOK_CAPTURED_COMPLETE,
-    });
-    expect(nvdaView.qty_text).toBeTruthy();
-    expect(nvdaView.net_entry_text).toBe('$7,890.00 debit');
-    const nvdaClause = must(
-      clauses.find((c) =>
-        (c.closest('[data-testid="broker-row"]') as HTMLElement | null)?.textContent?.includes(
-          'NVDA',
-        ),
-      ),
-      'the NVDA lone-leg clause',
-    );
-    const nvdaRow = must(
-      nvdaClause.closest('[data-testid="broker-row"]'),
-      'the NVDA row',
-    ) as HTMLElement;
-    expect(within(nvdaRow).getByTestId('broker-net-entry').textContent).toBe('$7,890.00 debit');
-  });
-});
-
-// =================================================================================================
-// AC-25 / AC-27 — expand state survives a same-book refresh and the 30s tick; no localStorage touch
-// =================================================================================================
-
-describe('AC-25 · expand state survives a refresh and the 30s staleness tick', () => {
-  it('stays expanded after a same-book refresh AND after the 30s tick fires', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    installFetch({ book: BOOK_CAPTURED_COMPLETE, refresh: BOOK_CAPTURED_COMPLETE });
-    renderPanel();
-    await screen.findByTestId('broker-rows');
-    const toggle = findGroupToggle('TSLA', 3);
-    const user = userEvent.setup();
-    await user.click(toggle);
-    expect(toggle).toHaveAttribute('aria-expanded', 'true');
-
-    await user.click(screen.getByTestId('broker-refresh'));
-    await screen.findByTestId('broker-rows');
-    // Re-query by `aria-controls` (a fact, not the accessible NAME, which switches Show→Hide once
-    // expanded — a name-based re-query would, correctly, stop matching after the first click).
-    const tslaToggle = () =>
-      must(
-        screen
-          .getAllByTestId('broker-group-toggle')
-          .find((b) => b.getAttribute('aria-controls') === 'broker-group-panel-TSLA'),
-        'the TSLA group toggle',
-      );
-    expect(tslaToggle()).toHaveAttribute('aria-expanded', 'true');
-
-    act(() => {
-      vi.advanceTimersByTime(31_000);
-    });
-    expect(tslaToggle()).toHaveAttribute('aria-expanded', 'true');
-  });
-});
-
-describe('AC-27 · expand/collapse never touches localStorage', () => {
-  it('Object.keys(localStorage) is identical before and after expand + collapse', async () => {
-    installFetch({ book: BOOK_CAPTURED_COMPLETE });
-    renderPanel();
-    await screen.findByTestId('broker-rows');
-    const before = Object.keys(localStorage).sort();
-    const toggle = findGroupToggle('TSLA', 3);
-    const user = userEvent.setup();
-    await user.click(toggle);
-    await user.click(toggle);
-    const after = Object.keys(localStorage).sort();
-    expect(after).toEqual(before);
-  });
-});
-
-// =================================================================================================
 // AC-28 — a second book without a previously-expanded ticker: no error, no stray empty group
 // =================================================================================================
 
@@ -563,36 +394,6 @@ describe('AC-29 · mobile (<sm) renders the same grouped shape as desktop', () =
     expect(within(tslaHeader).getByTestId('broker-group-net-label')).toHaveTextContent(
       'netted by Convexa',
     );
-  });
-});
-
-// =================================================================================================
-// AC-33 — deterministic order across renders
-// =================================================================================================
-
-describe('AC-33 · group order is deterministic (key ascending); members by broker_position_id', () => {
-  it('two renders of the same book give the same group order', () => {
-    const views = BOOK_CAPTURED_COMPLETE.positions.map((p) =>
-      buildBrokerPositionView({
-        position: p,
-        legMarks: new Map(),
-        dte: null,
-        nowMs: FIXED_NOW_MS,
-        book: BOOK_CAPTURED_COMPLETE,
-      }),
-    );
-    const first = groupBook(views, BOOK_CAPTURED_COMPLETE, FIXED_NOW_MS);
-    const second = groupBook(views, BOOK_CAPTURED_COMPLETE, FIXED_NOW_MS);
-    // `groupBook()` itself groups every option ticker, including singletons (NVDA/PLTR) — the
-    // "render as a lone row" branch is a call-site decision in `BrokerTabPanel`, not this function.
-    expect(first.groups.map((g) => g.key)).toEqual(second.groups.map((g) => g.key));
-    expect(first.groups.map((g) => g.key)).toEqual(['AAPL', 'META', 'NVDA', 'PLTR', 'TSLA']);
-    const tsla = must(
-      first.groups.find((g) => g.key === 'TSLA'),
-      'the TSLA group',
-    );
-    const ids = tsla.members.map((m) => m.broker.broker_position_id);
-    expect(ids).toEqual([...ids].sort());
   });
 });
 

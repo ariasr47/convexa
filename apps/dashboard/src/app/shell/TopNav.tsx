@@ -131,7 +131,7 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
             // `xs` tightened from 1.5→1 (curvature-v2-foundations AC-40, measured): signed-OUT at
             // 393px the row carries brand + the N5 search-icon affordance + BOTH "Log in"/"Sign up"
             // + the hamburger simultaneously — a combination no prior overflow test exercised (every
-            // existing `no-overflow.spec.ts` check ran signed-in, where AccountControl renders one
+            // existing overflow check ran signed-in, where AccountControl renders one
             // narrower avatar control instead of two buttons). Measured real overflow: scrollWidth
             // 410 vs innerWidth 393 (17px), reproduced live and fixed here plus the two `size="small"`
             // trims below (24px reclaimed total) — never touching `AccountControl` (its buttons are

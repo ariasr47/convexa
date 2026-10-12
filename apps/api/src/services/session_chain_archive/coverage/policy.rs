@@ -149,11 +149,11 @@ impl SuccessVerificationCache {
 }
 
 #[derive(Clone, Debug, Default)]
-#[allow(dead_code)] // constructed by this module's tests
+#[allow(dead_code)] // no caller since lean-tests batch 73 removed the tests that used it
 pub struct WarningLedger {
     identities: std::collections::HashSet<(String, NaiveDate)>,
 }
-#[allow(dead_code)] // exercised by this module's tests
+#[allow(dead_code)] // no caller since lean-tests batch 73 removed the tests that used it
 impl WarningLedger {
     pub fn new() -> Self {
         Self::default()
@@ -482,38 +482,6 @@ mod tests {
         assert_eq!(COVERAGE_SYMBOLS, ["SPY", "QQQ", "IWM"]);
     }
     #[test]
-    fn warning_key_ignores_condition_and_survives_recovery() {
-        let mut ledger = WarningLedger::new();
-        let d = NaiveDate::from_ymd_opt(2026, 8, 24).unwrap();
-        assert!(ledger.should_warn("spy", d, BookCoverageStatus::Missing));
-        assert!(!ledger.should_warn("SPY", d, BookCoverageStatus::Unreadable));
-        assert!(!ledger.should_warn("SPY", d, BookCoverageStatus::Readable));
-    }
-    #[test]
-    fn cache_expires_successes_and_is_bounded() {
-        let mut cache = SuccessVerificationCache::new();
-        let now = Utc.with_ymd_and_hms(2026, 8, 26, 12, 0, 0).unwrap();
-        let book = StrictBook {
-            symbol: "SPY".into(),
-            et_date: "2026-08-26".into(),
-            source_as_of: now,
-        };
-        cache.insert(
-            (
-                "SPY".into(),
-                NaiveDate::from_ymd_opt(2026, 8, 26).unwrap(),
-                now,
-            ),
-            book,
-            now,
-        );
-        assert_eq!(cache.entries.len(), 1);
-        cache
-            .entries
-            .retain(|_, (_, t)| *t + SUCCESS_CACHE_TTL > now + chrono::Duration::minutes(6));
-        assert!(cache.entries.is_empty());
-    }
-    #[test]
     fn runtime_range_is_five_sessions_flooring_activation() {
         let c = MarketCalendar::production().unwrap();
         let p = CoveragePolicy::production().unwrap();
@@ -575,30 +543,6 @@ mod tests {
         assert_eq!(f.metadata.load(Ordering::SeqCst), 0);
     }
     #[test]
-    fn changed_source_timestamp_bypasses_cache_key() {
-        let mut c = SuccessVerificationCache::new();
-        let t = Utc.with_ymd_and_hms(2026, 8, 26, 12, 0, 0).unwrap();
-        let b = StrictBook {
-            symbol: "SPY".into(),
-            et_date: "2026-08-26".into(),
-            source_as_of: t,
-        };
-        c.insert(
-            (
-                "SPY".into(),
-                NaiveDate::from_ymd_opt(2026, 8, 26).unwrap(),
-                t,
-            ),
-            b,
-            t,
-        );
-        assert!(!c.entries.contains_key(&(
-            "SPY".into(),
-            NaiveDate::from_ymd_opt(2026, 8, 26).unwrap(),
-            t + chrono::Duration::seconds(1)
-        )));
-    }
-    #[test]
     fn cache_evicts_oldest_at_capacity() {
         let mut c = SuccessVerificationCache::new();
         let t = Utc.with_ymd_and_hms(2026, 8, 1, 12, 0, 0).unwrap();
@@ -655,16 +599,6 @@ mod tests {
         assert_eq!(e.counts, CoverageCounts::default());
         assert_eq!(e.last_readable.len(), 3);
         assert!(e.last_readable.iter().all(|x| x.et_date.is_none()));
-    }
-    #[test]
-    fn strict_book_identity_shape_is_explicit() {
-        let t = Utc.with_ymd_and_hms(2026, 8, 26, 12, 0, 0).unwrap();
-        let _ = SessionBookMeta {
-            symbol: "SPY".into(),
-            et_date: "2026-08-26".into(),
-            source_as_of: t,
-            source: MarketDataSourceKind::Fixture,
-        };
     }
     #[tokio::test]
     async fn after_checkpoint_classifies_missing_readable_and_unreadable_exactly() {

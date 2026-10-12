@@ -33,19 +33,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "b0e1348bb9492f9a86afc0dfd730ddf5d452bc47dd3b1e0944c256a9834db911",
+        "0db8ac36517b86ea499fa2ead7744cf9fa2d1c853cd0146cb0a32d33f625c776",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "cd7fc2284c7b094ed5f2d4d306b46359bcd2e63ad3886141e88c405270877382",
+        "f896b4b7149e6777f0d00133f7c11b5dfbcf5eaf5594bf25420dce90c2be24d9",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "8e94e92fd5101555f8a45692d0e9418698d319600d2f02dfeaf4a184cce4310e",
+        "23525237c3ee3ba8d04825aba2f87ea23095c0efc7fe8dc0b63c40d91f62f07a",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "4d66a1fa96a5050c0f16eec4a1001ff2bd393d283da1e665ef1834d24a3cb46f",
+        "0886aa4be25c8e93e801a363bd25dc2b1fad317df9509d730ebf31e25516dcb3",
     ),
 ];
 
@@ -176,6 +176,12 @@ fn apply_fixed_sse_clock(event: &mut Value, input: &Value) -> Result<()> {
         .with_timezone(&chrono::Utc);
     event["ts"] = fixed_timestamp;
     event["market_session"] = crate::routes::market_session_at(fixed_utc).into();
+    // `tick_age_s` is wall-clock now minus the tick's wall second (routes/stream.rs `tick_age`), so a
+    // tick and its frame that straddle a second boundary read 1 instead of 0. Under the fixed clock
+    // they share one instant; a larger age is real staleness and is left to fail the comparison.
+    if matches!(event.get("tick_age_s").and_then(Value::as_i64), Some(0 | 1)) {
+        event["tick_age_s"] = 0.into();
+    }
     Ok(())
 }
 
@@ -476,11 +482,23 @@ mod tests {
     }
 
     #[test]
-    fn revision_is_immutable() {
-        assert_eq!(REFERENCE_REVISION.len(), 40);
-    }
-    #[test]
-    fn generated_inventory_encoding_is_stable() {
-        assert_eq!(sha256(&inventory_bytes(&expected_inventory())).len(), 64);
+    fn fixed_sse_clock_pins_a_same_second_tick_age_and_keeps_real_staleness() {
+        let input = json!({
+            "first_data_timestamp": 1_787_620_168_000_i64,
+            "fixed_utc": "2026-08-24T00:00:00Z"
+        });
+        // A tick and its frame that straddle a wall-clock second read 1 (the byte-identity flake
+        // seen 2026-10-08); under the fixed clock they share one instant. A real age stays.
+        for (age, pinned) in [
+            (json!(0), json!(0)),
+            (json!(1), json!(0)),
+            (json!(5), json!(5)),
+            (Value::Null, Value::Null),
+        ] {
+            let mut event =
+                json!({"ts": 1, "market_session": "premarket", "tick_age_s": age.clone()});
+            apply_fixed_sse_clock(&mut event, &input).expect("fixed clock should apply");
+            assert_eq!(event["tick_age_s"], pinned, "tick_age_s {age}");
+        }
     }
 }

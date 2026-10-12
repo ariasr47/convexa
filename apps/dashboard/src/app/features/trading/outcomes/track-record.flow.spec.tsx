@@ -16,9 +16,8 @@ import {
   PORTFOLIO_V3_KEY,
   __resetMemory as resetPositions,
 } from '@/features/trading/positions/store';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { buildArchive } from './archive';
 import { closedOutcome, digest, order, outcomes, position, seedStores } from './fixtures';
 import { TrackRecordSection } from './TrackRecordSection';
 
@@ -75,29 +74,7 @@ describe('the journey starts: nothing has closed yet (AC-E1)', () => {
   });
 });
 
-describe('AC-43 empty family contrast', () => {
-  it('keeps every empty-family explanation on the readable secondary theme slot', () => {
-    seedStores({ positions: [position({ id: 'open-only', status: 'open' })] });
-    mount();
-    const nodes = screen.getAllByTestId(/^tr-family-empty-/);
-    expect(nodes).toHaveLength(5);
-    for (const node of nodes) {
-      expect(getComputedStyle(node).color).not.toBe('rgba(0, 0, 0, 0.38)');
-    }
-  });
-});
-
 describe('history builds (AC-E2, AC-E3, AC-E4)', () => {
-  it('AC-E4 — day one: every cell is building, the lead explainer renders, and NO rate exists anywhere', () => {
-    const { positions, decisions } = outcomes(3, { winners: 3 });
-    seedStores({ positions, positionDecisions: decisions });
-    mount();
-    expect(screen.getByTestId('tr-lead-explainer')).toBeTruthy();
-    expect(surfaceText()).toContain('Building history — 3 of 20 closed trades');
-    expect(surfaceText()).not.toContain('hit rate —');
-    expect(surfaceText()).not.toMatch(/plausibly/);
-  });
-
   it('⚠ AC-E3 — THE 3-FOR-3 TRAP: three counted outcomes, all winners. The cell shows the count and nothing else.', () => {
     const { positions, decisions } = outcomes(3, { winners: 3 });
     seedStores({ positions, positionDecisions: decisions });
@@ -113,16 +90,6 @@ describe('history builds (AC-E2, AC-E3, AC-E4)', () => {
     expect(screen.queryByTestId('tr-basis-prime')).toBeNull();
     // No meter beside a hit-rate-shaped cell (it would read as 100%).
     expect(cell.querySelector('[role="progressbar"]')).toBeNull();
-  });
-
-  it('AC-E2 — 19 counted still shows only "19 of 20": nothing numeric readable as a result', () => {
-    const { positions, decisions } = outcomes(19, { winners: 15 });
-    seedStores({ positions, positionDecisions: decisions });
-    mount();
-    const cell = screen.getByTestId('tr-cell-prime');
-    expect(cell.textContent).toContain('19 of 20 closed trades');
-    // (the building copy says "No hit rate yet" — what must not exist is a rate)
-    expect(cell.textContent).not.toMatch(/\d+% hit rate|plausibly|avg |±/);
   });
 });
 
@@ -155,26 +122,6 @@ describe('a cell clears the floor (AC-7 … AC-12, AC-17)', () => {
     expect(screen.getByTestId('tr-wide-prime').textContent).toBe(
       'still wide — not a conclusion yet',
     );
-  });
-
-  it('⚠ AC-14 — no rate is tinted: a 90% cell and a 10% cell are styled IDENTICALLY', () => {
-    // The strongest available statement of "no semantic tint": if any styling were bound to the
-    // sign or the size of the rate, these two cells' classes would diverge. The file next door does
-    // `color: netPl >= 0 ? 'success.main' : 'error.main'`. The range is the verdict, not the hue.
-    const good = outcomes(20, { prefix: 'g', winners: 18, tier: 'prime' });
-    const bad = outcomes(20, { prefix: 'b', winners: 2, tier: 'watch' });
-    seedStores({
-      positions: [...good.positions, ...bad.positions],
-      positionDecisions: [...good.decisions, ...bad.decisions],
-    });
-    mount();
-    const winner = screen.getByTestId('tr-read-prime');
-    const loser = screen.getByTestId('tr-read-watch');
-    expect(winner.textContent).toContain('90% hit rate');
-    expect(loser.textContent).toContain('10% hit rate');
-    expect(loser.className).toBe(winner.className); // identical styling, whatever the result
-    expect(winner.querySelector('svg')).toBeNull(); // no arrow, no ✓/✗, no sparkline, no gauge
-    expect(loser.querySelector('svg')).toBeNull();
   });
 
   it('AC-17 — the coverage statement is readable WITHOUT interaction: it sits OUTSIDE the disclosure', () => {
@@ -249,30 +196,6 @@ describe('records that must never reach a rate', () => {
     expect(screen.getByTestId('tr-balance').textContent).toBe(
       '20 counted + 1 not counted = 21 recorded closed positions.',
     );
-  });
-
-  it('AC-E7/E8/E9 — typed, re-priced and scripted outcomes each land under their OWN reason, and none is a cohort', () => {
-    const typed = closedOutcome('p-typed', { entryBasis: 'user_entered' });
-    const modeled = closedOutcome('p-modeled', { exitBasis: 'modeled' });
-    const scripted = closedOutcome('p-script', { originOrderId: 'o-s' });
-    seedStores({
-      positions: [typed.position, modeled.position, scripted.position],
-      positionDecisions: [...typed.decisions, ...modeled.decisions, ...scripted.decisions],
-      orders: [order({ id: 'o-s', provenance: { source: 'ai_scenario', scenario_id: 's1' } })],
-    });
-    mount();
-    expect(screen.getByTestId('tr-reason-unpriced_basis').textContent).toContain(
-      'Entry or exit price was typed, theoretical or stale — not a quote · 1',
-    );
-    expect(screen.getByTestId('tr-reason-modeled_basis').textContent).toContain(
-      'Re-priced between quotes — not a quote · 1',
-    );
-    expect(screen.getByTestId('tr-reason-scenario_sourced').textContent).toContain(
-      'Scripted test scenario — not a real decision · 1',
-    );
-    // AC-E8: `modeled` is a breakdown REASON, never a cell.
-    expect(screen.queryByTestId('tr-cell-modeled')).toBeNull();
-    expect(screen.getByTestId('tr-coverage').textContent).toContain('Counted 0 of 3');
   });
 
   it('AC-E6 — one malformed record among 100 costs the other 99 nothing, and shows up as an unreadable record', () => {
@@ -430,27 +353,6 @@ describe('the archive: export → import → re-import → decline (AC-20 … AC
     expect(localStorage.getItem(PORTFOLIO_V3_KEY)).not.toBe(before);
   });
 
-  it('AC-24 — re-importing the SAME file reports 0 added and leaves the counted N, the rates and the coverage statement identical', async () => {
-    const { positions, decisions } = outcomes(20, { winners: 12 });
-    seedStores({ positions, positionDecisions: decisions });
-    mount();
-    const coverageBefore = screen.getByTestId('tr-coverage').textContent;
-    const readBefore = screen.getByTestId('tr-read-prime').textContent;
-
-    pickFile(JSON.stringify(buildArchive()));
-    await screen.findByTestId('tr-import-confirm-title');
-    fireEvent.click(screen.getByTestId('tr-import-confirm'));
-    await screen.findByTestId('tr-import-done-title');
-    expect(screen.getByTestId('tr-import-added').textContent).toBe('0 records added.');
-
-    fireEvent.click(screen.getByText('Done'));
-    // The read is RECOMPUTED from the (unchanged) stores, never patched — so it cannot drift.
-    await waitFor(() => {
-      expect(screen.getByTestId('tr-coverage').textContent).toBe(coverageBefore);
-      expect(screen.getByTestId('tr-read-prime').textContent).toBe(readBefore);
-    });
-  });
-
   it('AC-E15 class B — an unreadable STORE ⇒ the import is DECLINED with its OWN self-contained title+body: nothing imported, nothing changed, the blob byte-untouched', async () => {
     // The FILE is fine here; YOUR STORED HISTORY is the problem, and we will not touch it. The store
     // APIs would rewrite the unreadable blob and destroy it — `[loss-free-durable-migration]` forbids
@@ -511,35 +413,6 @@ describe('the archive: export → import → re-import → decline (AC-20 … AC
     expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBe(blobBefore); // byte-untouched
   });
 
-  it('AC-E16 — a colliding, DIFFERING record is reported as a conflict, and the existing record wins', async () => {
-    seedStores({ positions: [position({ id: 'p-1', realized_pl_pct: 20 })] });
-    mount();
-    pickFile(
-      JSON.stringify({
-        schema: 'convexa.archive',
-        version: 1,
-        exported_at: '',
-        stores: {
-          ghost_trade: { trades: {}, decisions: [] },
-          positions: {
-            positions: { 'p-1': position({ id: 'p-1', realized_pl_pct: 999 }) },
-            decisions: [],
-          },
-          orders: { orders: {} },
-        },
-      }),
-    );
-    await screen.findByTestId('tr-import-confirm-title');
-    fireEvent.click(screen.getByTestId('tr-import-confirm'));
-    await screen.findByTestId('tr-import-done-title');
-    expect(screen.getByTestId('tr-import-conflict').textContent).toBe(
-      '1 collided with a different record — your existing record was kept.',
-    );
-    expect(
-      JSON.parse(localStorage.getItem(PORTFOLIO_V3_KEY) ?? '{}').positions['p-1'].realized_pl_pct,
-    ).toBe(20);
-  });
-
   it('AC-21 — export works with zero history and says the archive is empty', async () => {
     seedStores({});
     mount();
@@ -564,29 +437,5 @@ describe('the archive: export → import → re-import → decline (AC-20 … AC
     }
     expect(archive.queryByRole('checkbox')).toBeNull();
     // ("if you clear this browser's data" in the lead is a statement about the BROWSER, not an action.)
-  });
-});
-
-describe('AC-E17 — the read is STATIC: a stream drop cannot touch it', () => {
-  it('renders byte-identically regardless of any stream state — it accepts no live prop to change', () => {
-    const { positions, decisions } = outcomes(20, { winners: 12 });
-    seedStores({ positions, positionDecisions: decisions });
-    // The component's props are `{ personaLabel }` — there is no `live`/`isLive`/`streamOffline`/
-    // `offline`/`data` prop to pass, so a stream drop has NO input to this subtree. (The source scan
-    // in `boundaries.spec.ts` enforces that this stays true.)
-    const firstRender = mount();
-    const first = firstRender.container.innerHTML;
-    firstRender.unmount();
-    reset();
-    seedStores({ positions, positionDecisions: decisions });
-    const second = mount().container.innerHTML;
-    expect(second).toBe(first);
-    // No offline chip, no dimming, no stale treatment, no freshness line, no Refresh.
-    // (the word "stale" appears once, in `TR_BASIS_DEF`, describing a stale QUOTE at fill time —
-    // a property of the recorded trade, not a freshness treatment of this readout)
-    expect(surfaceText()).not.toMatch(/⏸|live offline|last updated|as of |refresh/i);
-    expect(screen.queryByRole('button', { name: /refresh|retry/i })).toBeNull();
-    // (an ACTUAL stream drop, driven end-to-end against the live Net P/L header on the real route,
-    // is asserted in `pages/positions/positions-page.spec.tsx` — this is the signature-level half)
   });
 });

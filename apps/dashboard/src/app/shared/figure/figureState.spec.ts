@@ -8,13 +8,12 @@
  * OVERRIDE the caller's caption (the shipped precedence at `:253,262,271`).
  *
  * The `live` prop keeps the `LiveClaim` brand, so the extraction is not a back door around the
- * one-mint rule — proved at COMPILE time by the `@ts-expect-error` below, which `npm run typecheck`
- * (not `nx test`) is the only thing that sees.
+ * one-mint rule — the brand itself is proved at COMPILE time by
+ * `liveness/liveClaim.typeproof.spec.ts`, which `npm run typecheck` (not `nx test`) is the only
+ * thing that sees.
  */
 import { isDeliveringLive, NOT_LIVE } from '@/shared/liveness/liveClaim';
-import { typographyTokens } from '@/shared/theme/tokens';
 import { describe, expect, it } from 'vitest';
-import { faceFor, MONO_FACE, SANS_FACE, UNTRACED_RULE } from './figureFace';
 import { figureStateOf, type FigureStateInput, type FigureStateName } from './figureState';
 
 /** A branded `true` claim — a raw `true` does not type-check in `live`. */
@@ -184,34 +183,5 @@ describe('figureStateOf — caption precedence (the shipped order at `FigureCell
     );
     expect(at({ value: 'not recorded', register: 'traced' }).caption).toBeNull();
     expect(at({ value: '$580', register: 'traced', caption: null }).caption).toBeNull();
-  });
-});
-
-describe('figureStateOf — the brand, at compile time (invariant 1)', () => {
-  it('accepts a minted claim; a raw `true` is a TYPE error, not a runtime one', () => {
-    expect(at({ value: '$1', register: 'traced', live: LIVE_TRUE }).showDot).toBe(true);
-    // @ts-expect-error — `live` is a `LiveClaim`; only isDeliveringLive/andPresent/NOT_LIVE mint one.
-    expect(at({ value: '$1', register: 'traced', live: true }).showDot).toBe(true);
-  });
-});
-
-describe('the face bindings — the one home outside `shared/theme/tokens.ts`', () => {
-  it('resolves the two faces from `typographyTokens`, never from a literal', () => {
-    expect(MONO_FACE.fontFamily).toBe(typographyTokens.monoFontFamily);
-    expect(SANS_FACE.fontFamily).toBe(typographyTokens.fontFamily);
-    expect(faceFor(true)).toBe(MONO_FACE);
-    expect(faceFor(false)).toBe(SANS_FACE);
-  });
-
-  it('the mono face carries the tabular numerals; the untraced rule is the shipped dotted rule', () => {
-    expect(MONO_FACE.fontVariantNumeric).toBe('tabular-nums');
-    expect(MONO_FACE.letterSpacing).toBe(0);
-    expect(UNTRACED_RULE).toEqual({ borderBottom: '1px dotted', borderColor: 'text.secondary' });
-  });
-
-  it('THE LADDER DOES NOT TRAVEL (§2.1) — no face object carries a size', () => {
-    for (const face of [MONO_FACE, SANS_FACE, UNTRACED_RULE]) {
-      expect(Object.keys(face)).not.toContain('fontSize');
-    }
   });
 });

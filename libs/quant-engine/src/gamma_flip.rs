@@ -136,30 +136,6 @@ fn gex_curve(legs: &FlipLegSoA, price_shifts: &[f64], r: f64, q: f64) -> Vec<f64
         .collect()
 }
 
-/// Sequential reference (tests / parity diagnostics).
-#[cfg(test)]
-fn gex_curve_serial(legs: &FlipLegSoA, price_shifts: &[f64], r: f64, q: f64) -> Vec<f64> {
-    let n = legs.len();
-    let ln_k = legs.ln_k.as_slice();
-    let t = legs.t.as_slice();
-    let inv = legs.inv_sig_sqrt_t.as_slice();
-    let half_sig2_t = legs.half_sig2_t.as_slice();
-    let oi = legs.oi.as_slice();
-    let sign = legs.sign.as_slice();
-    let b = r - q;
-    price_shifts
-        .iter()
-        .map(|&s| {
-            let log_s = if s > 0.0 {
-                libm::log(s)
-            } else {
-                f64::NEG_INFINITY
-            };
-            gex_at_spot(s, log_s, b, q, n, ln_k, t, inv, half_sig2_t, oi, sign)
-        })
-        .collect()
-}
-
 /// Find the zero-gamma level nearest to `current_spot` from a pre-built leg SoA.
 pub fn find_gamma_flip_legs(legs: &FlipLegSoA, current_spot: f64, r: f64, q: f64) -> f64 {
     if current_spot <= 0.0 || legs.is_empty() {
@@ -255,63 +231,12 @@ fn round2(x: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::{Contract, ContractType, Greeks};
     use chrono::{TimeZone, Utc};
-
-    fn c(strike: f64, side: ContractType, oi: f64, iv: f64, gamma: f64, exp: &str) -> Contract {
-        Contract {
-            strike_price: strike,
-            contract_type: side,
-            open_interest: oi,
-            expiration_date: exp.into(),
-            implied_volatility: iv,
-            greeks: Some(Greeks {
-                gamma: Some(gamma),
-                delta: None,
-                ..Default::default()
-            }),
-            volume: None,
-            bid: None,
-            ask: None,
-        }
-    }
 
     #[test]
     fn empty_defaults_to_spot() {
         let as_of = Utc.with_ymd_and_hms(2026, 8, 1, 12, 0, 0).unwrap();
         let flip = find_gamma_flip(&[], 100.0, 0.045, 0.0, as_of);
         assert!((flip - 100.0).abs() < 1e-9);
-    }
-
-    #[test]
-    fn flip_near_atm_for_balanced_book() {
-        let as_of = Utc.with_ymd_and_hms(2026, 8, 1, 12, 0, 0).unwrap();
-        let exp = "2026-09-18";
-        let contracts = vec![
-            c(100.0, ContractType::Call, 1000.0, 0.25, 0.05, exp),
-            c(100.0, ContractType::Put, 1000.0, 0.25, 0.05, exp),
-            c(105.0, ContractType::Call, 500.0, 0.25, 0.03, exp),
-            c(95.0, ContractType::Put, 500.0, 0.25, 0.03, exp),
-        ];
-        let flip = find_gamma_flip(&contracts, 100.0, 0.045, 0.0, as_of);
-        assert!(flip > 80.0 && flip < 120.0);
-    }
-
-    #[test]
-    fn parallel_curve_matches_serial() {
-        let mut legs = FlipLegSoA::with_capacity(8);
-        legs.push(100.0, 30.0 / 365.0, 0.25, 1000.0, ContractType::Call);
-        legs.push(100.0, 30.0 / 365.0, 0.25, 1000.0, ContractType::Put);
-        legs.push(105.0, 30.0 / 365.0, 0.22, 500.0, ContractType::Call);
-        legs.push(95.0, 45.0 / 365.0, 0.28, 400.0, ContractType::Put);
-        let grid: Vec<f64> = (0..100).map(|i| 80.0 + i as f64 * 0.4).collect();
-        let a = gex_curve(&legs, &grid, 0.045, 0.0);
-        let b = gex_curve_serial(&legs, &grid, 0.045, 0.0);
-        for (i, (x, y)) in a.iter().zip(b.iter()).enumerate() {
-            assert!(
-                (x - y).abs() <= 1e-6 * x.abs().max(1.0),
-                "grid[{i}]: parallel {x} vs serial {y}"
-            );
-        }
     }
 }

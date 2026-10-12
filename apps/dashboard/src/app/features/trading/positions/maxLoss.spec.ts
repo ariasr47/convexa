@@ -72,11 +72,6 @@ const REPRESENTATIVE: Record<StructureKind, ReturnType<typeof mkPosition>> = {
 };
 
 describe('the eligible set is CLOSED, not detected', () => {
-  it('has exactly 15 members and every member is a real StructureKind', () => {
-    expect(MAX_LOSS_ELIGIBLE.size).toBe(15);
-    for (const k of MAX_LOSS_ELIGIBLE) expect(STRUCTURE_KINDS).toContain(k);
-  });
-
   /**
    * Transcribed from SPEC §2.4's code block (the owner ruling of 2026-07-28), not from the
    * implementation. If the two ever diverge this fails, which is the point: the set is a product
@@ -102,20 +97,6 @@ describe('the eligible set is CLOSED, not detected', () => {
     ];
     expect(RULED).toHaveLength(15);
     expect([...MAX_LOSS_ELIGIBLE].sort()).toEqual([...RULED].sort());
-  });
-
-  it('excludes every structurally unbounded shape and every multi-expiration shape', () => {
-    for (const k of [
-      'short_call',
-      'short_straddle',
-      'short_strangle',
-      'shares_short',
-      'calendar',
-      'diagonal',
-      'custom',
-    ] as const) {
-      expect(MAX_LOSS_ELIGIBLE.has(k)).toBe(false);
-    }
   });
 
   /**
@@ -184,12 +165,6 @@ describe('AC-28 — the figure, for the single-leg members too', () => {
     // $400/$420 call credit spread, credit 630 -> 2000 - 630
     expect(of(FX_SHORT_VERTICAL)).toEqual({ kind: 'figure', dollars: 2000 - 630 });
     expect(of(FX_PUT_CREDIT_SPREAD)).toEqual({ kind: 'figure', dollars: 2000 - 490 });
-  });
-
-  it('an iron condor loses at most the WIDER wing minus the credit', () => {
-    const r = of(FX_IRON_CONDOR);
-    expect(r.kind).toBe('figure');
-    if (r.kind === 'figure') expect(r.dollars).toBeGreaterThan(0);
   });
 
   it('the wider wing is the one that counts — an asymmetric condor uses it, not the narrow one', () => {

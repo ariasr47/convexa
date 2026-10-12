@@ -14,8 +14,7 @@
  * independently of the result axis.
  *
  * Both switches below carry a `never` default arm, so a sixteenth request state or a seventh result
- * state is a COMPILE ERROR at this mapping, never a silent fall-through to `idle` — see
- * `readLayout.spec.ts` for the compile-time proof and its mutation record.
+ * state is a COMPILE ERROR at this mapping, never a silent fall-through to `idle`.
  */
 import type { AiRecRequestState, AiRecResultState } from './presentationPolicy';
 
@@ -31,8 +30,7 @@ export interface ReadLayout {
 }
 
 /**
- * Exported ONLY so `readLayout.spec.ts` can exercise the SAME never-arm technique this module's
- * own default arms call — proving, at the call site, that widening `AiRecRequestState` by one
+ * The never-arm guard this module's own default arms call: widening `AiRecRequestState` by one
  * member is a compile error wherever this guard is used (liveClaim.typeproof.spec.ts precedent).
  */
 export function assertNeverRequestState(value: never): never {

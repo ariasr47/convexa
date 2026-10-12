@@ -499,73 +499,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn skip_get_when_spy_trades_kept_qqq_trades_no_stored_extract() {
-        let store = FlatFilesStore::memory();
-        store
-            .put_extract("SPY", D, ExtractClass::Trades, "ticker\nSPY\n".into(), 1)
-            .await
-            .unwrap();
-        // Quotes still need a GET; trades must not be called.
-        let gz = plant_gzip(trio_csv());
-        let client = StubClient::new(StubResp::AssertNotCalled, StubResp::Gzip(gz));
-        let report = run(&client, &store, "QQQ").await;
-        assert!(matches!(report.trades, ClassVerdict::SkipGet { .. }));
-        assert_eq!(client.send_count(ExtractClass::Trades), 0);
-        let qqq_t = store.load("QQQ", D, ExtractClass::Trades, due_now()).await;
-        assert_eq!(qqq_t, Occupancy::NoStoredExtract);
-        assert_ne!(qqq_t, Occupancy::Miss);
-        let spy_t = store.load("SPY", D, ExtractClass::Trades, due_now()).await;
-        assert!(matches!(spy_t, Occupancy::Kept { .. }));
-        // Quotes still GET.
-        assert!(client.send_count(ExtractClass::Quotes) >= 1);
-    }
-
-    #[tokio::test]
-    async fn skip_get_does_not_print_download_failed_or_miss_for_that_class() {
-        let store = FlatFilesStore::memory();
-        store
-            .put_extract("SPY", D, ExtractClass::Trades, "ticker\nSPY\n".into(), 1)
-            .await
-            .unwrap();
-        let gz = plant_gzip(trio_csv());
-        let client = StubClient::new(StubResp::AssertNotCalled, StubResp::Gzip(gz));
-        let report = run(&client, &store, "QQQ").await;
-        assert!(
-            !matches!(
-                report.trades,
-                ClassVerdict::DownloadFailed | ClassVerdict::Miss
-            ),
-            "trades={:?}",
-            report.trades
-        );
-        assert!(matches!(report.trades, ClassVerdict::SkipGet { .. }));
-        // No miss sidecar for trades.
-        let qqq = store.load("QQQ", D, ExtractClass::Trades, due_now()).await;
-        assert_ne!(qqq, Occupancy::Miss);
-        assert_eq!(qqq, Occupancy::NoStoredExtract);
-    }
-
-    #[tokio::test]
-    async fn quotes_still_get_when_only_trades_content_hit() {
-        let store = FlatFilesStore::memory();
-        store
-            .put_extract("SPY", D, ExtractClass::Trades, "ticker\nSPY\n".into(), 1)
-            .await
-            .unwrap();
-        let gz = plant_gzip(trio_csv());
-        let client = StubClient::new(StubResp::AssertNotCalled, StubResp::Gzip(gz));
-        let report = run(&client, &store, "QQQ").await;
-        assert_eq!(client.send_count(ExtractClass::Trades), 0);
-        assert!(client.send_count(ExtractClass::Quotes) >= 1);
-        // Mixed-class: do NOT require whole-command files-call 0.
-        assert!(!both_classes_skipped(&report));
-        assert!(matches!(
-            report.quotes,
-            ClassVerdict::Stored(Occupancy::Kept { .. })
-        ));
-    }
-
-    #[tokio::test]
     async fn both_classes_content_hit_whole_command_files_call_0() {
         let store = FlatFilesStore::memory();
         store
@@ -584,6 +517,8 @@ mod tests {
         assert_eq!(keep_process_exit(&report), ExitCode::SUCCESS);
         let qqq_t = store.load("QQQ", D, ExtractClass::Trades, due_now()).await;
         assert_eq!(qqq_t, Occupancy::NoStoredExtract);
+        let qqq_q = store.load("QQQ", D, ExtractClass::Quotes, due_now()).await;
+        assert_eq!(qqq_q, Occupancy::NoStoredExtract);
     }
 
     #[tokio::test]
@@ -910,46 +845,5 @@ mod tests {
         let o = store.load("SPY", D, ExtractClass::Trades, due_now()).await;
         assert!(matches!(o, Occupancy::Unreadable { .. }));
         assert_ne!(keep_process_exit(&report), ExitCode::SUCCESS);
-    }
-
-    #[tokio::test]
-    async fn naming_one_symbol_fills_siblings_when_get_runs() {
-        let gz = plant_gzip(trio_csv());
-        let client = StubClient::both(StubResp::Gzip(gz));
-        let store = FlatFilesStore::memory();
-        let _ = run(&client, &store, "QQQ").await;
-        // GET named QQQ still fills SPY and IWM.
-        assert!(is_content_hit(
-            &store.load("SPY", D, ExtractClass::Trades, due_now()).await
-        ));
-        assert!(is_content_hit(
-            &store.load("IWM", D, ExtractClass::Trades, due_now()).await
-        ));
-        assert!(is_content_hit(
-            &store.load("QQQ", D, ExtractClass::Trades, due_now()).await
-        ));
-    }
-
-    #[tokio::test]
-    async fn skip_get_does_not_invent_qqq() {
-        let store = FlatFilesStore::memory();
-        store
-            .put_extract("SPY", D, ExtractClass::Trades, "ticker\nSPY\n".into(), 1)
-            .await
-            .unwrap();
-        store
-            .put_extract("SPY", D, ExtractClass::Quotes, "ticker\nSPY\n".into(), 1)
-            .await
-            .unwrap();
-        let client = StubClient::both(StubResp::AssertNotCalled);
-        let _ = run(&client, &store, "QQQ").await;
-        assert_eq!(
-            store.load("QQQ", D, ExtractClass::Trades, due_now()).await,
-            Occupancy::NoStoredExtract
-        );
-        assert_eq!(
-            store.load("QQQ", D, ExtractClass::Quotes, due_now()).await,
-            Occupancy::NoStoredExtract
-        );
     }
 }

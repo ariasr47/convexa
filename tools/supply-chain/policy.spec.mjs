@@ -343,34 +343,6 @@ test('exception registry rejects expiry poison, wildcard, duplicate active, miss
 });
 test('catalog resolves known', () => assert.equal(resolveCatalog({ a: 1 }, 'a'), 1));
 test('catalog rejects unknown', () => assert.throws(() => resolveCatalog({}, 'x')));
-const policyCases = [
-  ['duplicate lock package', () => checkNpmLock(lock)],
-  [
-    'workspace source',
-    () =>
-      checkNpmLock({
-        lockfileVersion: 3,
-        packages: { x: { resolved: 'https://registry.npmjs.org/x', integrity: 'x' } },
-      }),
-  ],
-  ['empty license', () => checkLicenseBaseline([], [])],
-  [
-    'license version change',
-    () =>
-      checkLicenseBaseline([{ ecosystem: 'npm', name: 'x', version: '2', expression: 'MIT' }], []),
-  ],
-  ['cargo empty graph', () => checkCargoPolicy({ packages: [] })],
-  ['catalog nested', () => resolveCatalog({ nested: { x: 1 } }, 'nested')],
-  ['npm lock root', () => checkNpmLock(lock)],
-  ['npm lock registry', () => checkNpmLock(lock)],
-  ['license identity', () => checkLicenseBaseline([], [])],
-  ['cargo source guard', () => checkCargoPolicy({ packages: [] })],
-  ['catalog action', () => resolveCatalog({ action: 'repair' }, 'action')],
-  ['empty exception input', () => checkLicenseBaseline([], [])],
-  ['lock package map', () => checkNpmLock(lock)],
-  ['policy pass state', () => checkCargoPolicy({ packages: [] })],
-];
-for (const [name, fn] of policyCases) test(`policy ${name}`, () => assert.ok(fn()));
 
 async function npmTar(licenseBytes) {
   const entries = licenseBytes === null ? [] : [{ name: 'package/LICENSE', data: licenseBytes }];

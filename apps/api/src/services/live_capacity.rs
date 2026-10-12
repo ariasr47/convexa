@@ -221,27 +221,106 @@ impl LiveCapacity {
 mod tests {
     use super::*;
 
-    #[test]
-    fn zero_means_off() {
-        let cap = LiveCapacity::new(0, 0);
-        let a = cap.try_admit(0, 1).expect("off");
-        let b = cap.try_admit(10_000, 10_000).expect("still off");
-        assert_eq!(cap.subscriber_count(), 2);
-        drop(a);
-        drop(b);
-        assert_eq!(cap.subscriber_count(), 0);
+    struct AdmitCase {
+        case: &'static str,
+        max_sessions: usize,
+        max_subscribers: usize,
+        /// Admitted (hub symbols, new symbols) first; every one must succeed.
+        held: &'static [(usize, usize)],
+        /// The (hub symbols, new symbols) admit under test.
+        probe: (usize, usize),
+        want: Result<(), LiveCapacityKind>,
     }
 
     #[test]
-    fn subscriber_ceiling_refuses_the_next_client() {
-        let cap = LiveCapacity::new(0, 2);
-        let _a = cap.try_admit(0, 0).unwrap();
-        let _b = cap.try_admit(0, 0).unwrap();
-        assert_eq!(
-            cap.try_admit(0, 0).unwrap_err(),
-            LiveCapacityKind::Subscribers
-        );
-        assert_eq!(cap.subscriber_count(), 2);
+    fn try_admit_checks_the_subscriber_ceiling_then_the_new_ticker_session_ceiling() {
+        use super::LiveCapacityKind::{Sessions, Subscribers};
+        let cases = [
+            AdmitCase {
+                case: "zero means off",
+                max_sessions: 0,
+                max_subscribers: 0,
+                held: &[(0, 1)],
+                probe: (10_000, 10_000),
+                want: Ok(()),
+            },
+            AdmitCase {
+                case: "subscriber ceiling refuses the next client",
+                max_sessions: 0,
+                max_subscribers: 2,
+                held: &[(0, 0), (0, 0)],
+                probe: (0, 0),
+                want: Err(Subscribers),
+            },
+            AdmitCase {
+                case: "joining an existing ticker at the session ceiling is allowed",
+                max_sessions: 2,
+                max_subscribers: 0,
+                held: &[],
+                probe: (2, 0),
+                want: Ok(()),
+            },
+            AdmitCase {
+                case: "opening a new ticker at the session ceiling is refused",
+                max_sessions: 2,
+                max_subscribers: 0,
+                held: &[(2, 0)],
+                probe: (2, 1),
+                want: Err(Sessions),
+            },
+            AdmitCase {
+                case: "a batch of new symbols counts in full against the session ceiling",
+                max_sessions: 5,
+                max_subscribers: 0,
+                held: &[],
+                probe: (4, 2),
+                want: Err(Sessions),
+            },
+            AdmitCase {
+                case: "a batch that lands exactly on the session ceiling is admitted",
+                max_sessions: 5,
+                max_subscribers: 0,
+                held: &[],
+                probe: (4, 1),
+                want: Ok(()),
+            },
+            AdmitCase {
+                case: "subscribers are checked before sessions",
+                max_sessions: 1,
+                max_subscribers: 1,
+                held: &[(0, 1)],
+                probe: (1, 1),
+                want: Err(Subscribers),
+            },
+        ];
+        for c in cases {
+            let cap = LiveCapacity::new(c.max_sessions, c.max_subscribers);
+            let held: Vec<SubscriberGuard> = c
+                .held
+                .iter()
+                .map(|&(hub, new)| {
+                    cap.try_admit(hub, new).unwrap_or_else(|k| {
+                        panic!("{}: admit ({hub}, {new}) refused: {k:?}", c.case)
+                    })
+                })
+                .collect();
+            let got = cap.try_admit(c.probe.0, c.probe.1);
+            assert_eq!(
+                got.as_ref().map(|_| ()).map_err(|k| *k),
+                c.want,
+                "{}",
+                c.case
+            );
+            assert_eq!(
+                cap.subscriber_count(),
+                c.held.len() + usize::from(c.want.is_ok()),
+                "{}: a refused admit takes no slot",
+                c.case
+            );
+            drop(got);
+            drop(held);
+            assert_eq!(cap.subscriber_count(), 0, "{}: every slot released", c.case);
+        }
     }
 
     #[test]
@@ -251,32 +330,6 @@ mod tests {
         assert!(cap.try_admit(0, 0).is_err());
         drop(g);
         assert!(cap.try_admit(0, 0).is_ok());
-    }
-
-    #[test]
-    fn session_ceiling_only_when_opening_a_new_ticker() {
-        let cap = LiveCapacity::new(2, 0);
-        // hub already at 2; joining an existing ticker (new=0) is allowed.
-        let _join = cap.try_admit(2, 0).expect("join existing");
-        assert_eq!(cap.try_admit(2, 1).unwrap_err(), LiveCapacityKind::Sessions);
-    }
-
-    #[test]
-    fn session_ceiling_counts_a_batch_of_new_symbols() {
-        let cap = LiveCapacity::new(5, 0);
-        assert_eq!(cap.try_admit(4, 2).unwrap_err(), LiveCapacityKind::Sessions);
-        assert!(cap.try_admit(4, 1).is_ok());
-    }
-
-    #[test]
-    fn subscribers_checked_before_sessions() {
-        let cap = LiveCapacity::new(1, 1);
-        let _g = cap.try_admit(0, 1).unwrap();
-        // full on subscribers even though a new session would also fail
-        assert_eq!(
-            cap.try_admit(1, 1).unwrap_err(),
-            LiveCapacityKind::Subscribers
-        );
     }
 
     #[test]
@@ -290,12 +343,5 @@ mod tests {
         drop(task);
         assert_eq!(probe.snapshot().active_requests, 0);
         assert_eq!(probe.snapshot().active_sse_tasks, 0);
-    }
-
-    #[test]
-    fn disabled_probe_is_zero_allocation_observation() {
-        let probe = LifecycleProbe::disabled();
-        let _guard = probe.subscriber();
-        assert_eq!(probe.snapshot().active_subscribers, 0);
     }
 }

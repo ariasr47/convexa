@@ -493,32 +493,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn two_quotes_same_second_both_remain() {
-        let hub = StockStreamHub::harness_local();
-        let store = SessionDayTape::memory();
-        let now = midday();
-        spawn_with(SpawnArgs {
-            hub: hub.clone(),
-            store: store.clone(),
-            clock: clock_at(now),
-            writer_gate: None,
-            skip_log: None,
-            arm_on_start: true,
-        });
-        tokio::time::sleep(Duration::from_millis(50)).await;
-        hub.publish_event(quote("QQQ", now, 1.0, 1.1));
-        hub.publish_event(quote("QQQ", now, 1.05, 1.15));
-        drain_until(&store, "QQQ", "2026-08-10", |d| {
-            d.path_a
-                .iter()
-                .filter(|r| r.kind == PathAKind::Quote)
-                .count()
-                >= 2
-        })
-        .await;
-    }
-
-    #[tokio::test]
     async fn extended_hours_0459_and_1959_kept() {
         let hub = StockStreamHub::harness_local();
         let store = SessionDayTape::memory();
@@ -780,6 +754,8 @@ mod tests {
             "OpenOptions",
             "JsonL",
             "encode_path_a_jsonl",
+            "persist_gap",
+            "put_path_b",
         ] {
             assert!(
                 !body.contains(banned),

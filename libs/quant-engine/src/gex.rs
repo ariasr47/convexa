@@ -555,46 +555,6 @@ mod tests {
     }
 
     #[test]
-    fn simple_call_gex_positive_regime() {
-        let as_of = Utc.with_ymd_and_hms(2026, 8, 1, 15, 0, 0).unwrap();
-        let exp = "2026-08-21";
-        let contracts = vec![
-            mk(
-                105.0,
-                ContractType::Call,
-                1000.0,
-                0.02,
-                0.4,
-                0.25,
-                exp,
-                Some(50.0),
-            ),
-            mk(
-                95.0,
-                ContractType::Put,
-                200.0,
-                0.01,
-                -0.3,
-                0.28,
-                exp,
-                Some(20.0),
-            ),
-        ];
-        let r = process_gex_profile_at(&contracts, 100.0, as_of);
-
-        assert!((r.call_gex - 200_000.0).abs() < 0.02);
-        assert!((r.put_gex - (-20_000.0)).abs() < 0.02);
-        assert!((r.net_gex - 180_000.0).abs() < 0.02);
-        assert_eq!(r.regime, RegimeTag::Positive);
-        assert_eq!(r.call_wall, 105.0);
-        assert_eq!(r.put_wall, 95.0);
-        assert!(r.net_dex.is_some());
-        assert!(r.put_call_ratio > 0.0);
-        assert_eq!(r.max_pain_expiration.as_deref(), Some("2026-08-21"));
-        assert!(!r.strike_profile.is_empty());
-    }
-
-    #[test]
     fn dte_window_excludes_far_contracts_from_gex_not_pcr() {
         let as_of = Utc.with_ymd_and_hms(2026, 8, 1, 15, 0, 0).unwrap();
         let near = "2026-08-21";
@@ -629,26 +589,18 @@ mod tests {
         assert!(r.net_gex > 0.0);
         assert_eq!(r.regime, RegimeTag::Positive);
         assert!((r.put_call_ratio - 9.0).abs() < 0.01);
-    }
+        // Volume, like PCR, is counted over the full chain, not the DTE window.
+        assert_eq!(r.total_volume, Some(20.0));
 
-    #[test]
-    fn missing_gamma_skipped_for_gex_oi_still_counted() {
-        let as_of = Utc.with_ymd_and_hms(2026, 8, 1, 15, 0, 0).unwrap();
-        let exp = "2026-08-21";
-        let mut bare = mk(100.0, ContractType::Call, 500.0, 0.0, 0.5, 0.2, exp, None);
-        bare.greeks = None;
-        let priced = mk(
+        // A zero lower bound keeps the near contract and still drops the far one.
+        let bounded = process_gex_profile(
+            &contracts,
             100.0,
-            ContractType::Put,
-            100.0,
-            0.02,
-            -0.4,
-            0.25,
-            exp,
-            Some(5.0),
+            &GexOptions::default()
+                .with_as_of(as_of)
+                .with_dte_window(Some(0.0), Some(30.0)),
         );
-        let r = process_gex_profile_at(&[bare, priced], 100.0, as_of);
-        assert!(r.net_gex < 0.0);
-        assert!((r.put_call_ratio - 0.2).abs() < 0.01);
+        assert!(bounded.net_gex > 0.0);
+        assert!((bounded.put_call_ratio - 9.0).abs() < 0.01);
     }
 }

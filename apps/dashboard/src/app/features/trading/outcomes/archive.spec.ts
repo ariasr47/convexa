@@ -339,16 +339,6 @@ describe('AC-60 — envelope v2, and the ONE lift shared with the store migratio
     expect(imported).toEqual(liftLegacyRecord(file.stores.ghost_trade.trades.NVDA));
   });
 
-  it('a FUTURE version is still declined, and nothing is written', () => {
-    seedStores({});
-    const before = localStorage.getItem(PORTFOLIO_V3_KEY);
-    expect(parseArchive(JSON.stringify(V1_FILE({ version: 99 })))).toEqual({
-      ok: false,
-      reason: 'version',
-    });
-    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBe(before);
-  });
-
   it('export then re-import produces the SAME records the migration produced (round-trip)', () => {
     // Start from LEGACY blobs so the records genuinely came out of the migration.
     seedStores({

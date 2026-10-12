@@ -56,8 +56,12 @@ fn sanitize_banned_scan(text: &str) -> String {
 #[tokio::test]
 async fn hermetic_capacity_load_passes_under_sixty_seconds() {
     let tmp = unique_temp();
+    // Short holds (the in-process load run itself is unchanged): CI's release `capacity load` step
+    // keeps the full production 20 + 5 s holds and their incomplete-run check.
     let mut hooks = RunHooks {
         out_dir_override: Some(tmp.clone()),
+        http_hold_override: Some(Duration::from_secs(2)),
+        sse_hold_override: Some(Duration::from_secs(2)),
         ..RunHooks::default()
     };
     if cfg!(debug_assertions) {

@@ -61,9 +61,9 @@ const runtime = () => {
 const gateCounts: Record<string, number> = {
   // (curvature-v2-foundations FE-10) 52 → 75: matches `manifest.json`'s `full_chromium.inventory_id`
   // bump to `curvature-v2-foundations-75-v1` (`tools/lib/manifest.mjs` enforces the same number).
-  // (curvature-v2-desk-and-read FE-12) 75 → 86: FE-12 registered `desk-and-read.spec.ts` (6 new
+  // (curvature-v2-desk-and-read FE-12) 75 → 86: FE-12 registered the desk-and-read spec (6 new
   // Chromium tests: criterion 45's two, the criteria 20/22 evidence pair, criterion 52's two) and
-  // added 5 new criterion-50 read-strip-rail tests to `no-overflow.spec.ts` (393 dark/light, 834,
+  // added 5 new criterion-50 read-strip-rail tests to the overflow spec (393 dark/light, 834,
   // 900, 1280) — the first net-new e2e tests this phase's own lanes have added to the registered six
   // (FE-1 through FE-11 only edited/re-pointed existing ones); bump to
   // `curvature-v2-desk-and-read-86-v1` (`tools/lib/manifest.mjs` enforces the same number).
@@ -80,21 +80,21 @@ const gateCounts: Record<string, number> = {
   // `curvature-v2-surfaces-100-v1` (`tools/lib/manifest.mjs` enforces the same number).
   // (curvature-v2-surfaces GATE Z repair pass 2, finding 3) 100 → 103: the coarse-pointer floor
   // widened to `input`/`[role="combobox"]` (`theme.ts`), hard-asserted on 3 new
-  // `no-overflow.spec.ts` tests (Settings risk-inputs account-size/cap-value, Settings
+  // overflow tests (Settings risk-inputs account-size/cap-value, Settings
   // ticker/persona, the alerts composer Symbol/Kind controls); bump to
   // `curvature-v2-surfaces-103-v1` (`tools/lib/manifest.mjs` enforces the same number).
   // (curvature-v2-surfaces GATE Z repair pass 3, criterion 66 second clause) 103 → 105:
   // `TrackRecordSection.tsx`'s `<summary>` on `/positions` (touched this phase, `bdc992d8`) FIXED
-  // to meet the coarse-pointer floor, 2 new `no-overflow.spec.ts` tests (393 coarse + 1280 fine,
+  // to meet the coarse-pointer floor, 2 new overflow tests (393 coarse + 1280 fine,
   // desktop-unmoved); bump to `curvature-v2-surfaces-105-v1` (`tools/lib/manifest.mjs` enforces the
   // same number).
   // (curvature-v2-surfaces GATE Z repair pass 4, QA pass 3 Medium finding) 105 → 108: the pass-3
   // fix's `display: flex` removed the `<summary>`'s native disclosure `::marker`; pass 4 reaches
   // 44px with `line-height` instead, leaving `display: list-item` intact. 3 new
-  // `no-overflow.spec.ts` tests (393 coarse, 393 fine, 1280 fine); bump to
+  // overflow tests (393 coarse, 393 fine, 1280 fine); bump to
   // `curvature-v2-surfaces-108-v1` (`tools/lib/manifest.mjs` enforces the same number).
   // (curvature-v2-landing-and-site F15) 108 → 126: three new public routes (/blog, /methodology,
-  // an unmatched path) × six `ROUTES` loops in `no-overflow.spec.ts` = 18 net-new Chromium tests;
+  // an unmatched path) × six `ROUTES` loops in the overflow spec = 18 net-new Chromium tests;
   // bump to `curvature-v2-landing-and-site-126-v1` (`tools/lib/manifest.mjs` enforces the same
   // number). Accessibility 16 → 19: one new axe scan per new surface (AC-G1), scans 9 → 12, held
   // against the unchanged 7 behaviors (12 + 7 = 19).
@@ -103,7 +103,7 @@ const gateCounts: Record<string, number> = {
   // degraded wall) in dark AND light at 393, the 404 additionally at 1280 (unchanged), and the
   // open sign-in dialog counted as a surface too, both schemes at 393. Scans 12 → 24, held
   // against the unchanged 7 behaviors (24 + 7 = 31). Chromium was unchanged at 126 by THIS
-  // repair — it does not touch `no-overflow.spec.ts`.
+  // repair — it does not touch the overflow spec.
   // (curvature-v2-landing-and-site GATE Z I-1) Chromium 126 → 128: one e2e case in
   // `navigation.spec.ts` ("client-side navigation") covers both the TOC click and the fresh deep
   // link past `index.html`'s `<base href="/">` (AC-M6/AC-M1) — jsdom implements no `<base>`
@@ -112,26 +112,20 @@ const gateCounts: Record<string, number> = {
   // ticker-desk panel (F2) — scanned at both breakpoints (393/1280) and both color schemes. Scans
   // 24 → 28, held against the unchanged 7 behaviors (28 + 7 = 35). Chromium/compatibility/visual
   // are untouched by this feature (no new browser:chromium/compat/visual case).
-  chromium: 128,
-  compatibility: 15,
+  // (lean-tests batch 22, owner-approved 2026-10-08) Chromium 128 → 35: the overflow spec
+  // retired (93 cases) — matches `manifest.json`'s `lean-tests-batch-22-35-v1` inventory
+  // (`tools/lib/manifest.mjs` enforces the same number). The pixel visual gate (6 scenarios) was
+  // retired in the same batch, so it has no count here and the reporter keeps no visual branch.
+  // (lean-tests batch 36, owner-approved 2026-10-08) Chromium 35 → 20: four duplicate specs
+  // retired (15 cases) — matches `manifest.json`'s `lean-tests-batch-36-20-v1` inventory.
+  // (lean-tests batch 81, owner-approved 2026-10-09) Chromium 20 → 13: seven structure/duplicate
+  // cases retired — matches `manifest.json`'s `lean-tests-batch-81-13-v1` inventory.
+  // (lean-tests batch 104) Compatibility 15 → 18: the AI-recommendation open flow is the sixth
+  // journey × three engines — matches `manifest.json`'s compatibility.journeys.
+  chromium: 13,
+  compatibility: 18,
   accessibility: 35,
-  visual: 6,
 };
-export type VisualAttachmentRole = 'expected' | 'actual' | 'diff' | undefined;
-export function visualAttachmentRole(attachment: {
-  name?: string;
-  path?: string;
-}): VisualAttachmentRole {
-  const value = [attachment.name, attachment.path ? path.basename(attachment.path) : undefined]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-  if (!value) return undefined;
-  if (/(^|[-_. ])expected([-. _]|$)/.test(value)) return 'expected';
-  if (/(^|[-_. ])actual([-. _]|$)/.test(value)) return 'actual';
-  if (/(^|[-_. ])diff([-. _]|$)/.test(value)) return 'diff';
-  return undefined;
-}
 const atomicWrite = (file: string, value: unknown) => {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const temporary = `${file}.${process.pid}.${crypto.randomBytes(6).toString('hex')}.tmp`;
@@ -150,7 +144,7 @@ const atomicWrite = (file: string, value: unknown) => {
 };
 
 export class QualityReporter implements Reporter {
-  private gate: 'chromium' | 'compatibility' | 'accessibility' | 'visual' = 'chromium';
+  private gate: 'chromium' | 'compatibility' | 'accessibility' = 'chromium';
   private output = 'apps/dashboard-e2e/test-output/playwright/chromium/summary.json';
   private selected = 0;
   private records = new Map<string, Record<string, unknown>>();
@@ -188,8 +182,6 @@ export class QualityReporter implements Reporter {
     // Retries share an outcome, but every attempt needs its own attachment filenames.
     const attempt = this.attemptSequence++;
     const attachmentPaths: string[] = [];
-    let actualArtifact: { path: string; sha256: string } | undefined;
-    let diffArtifact: { path: string; sha256: string } | undefined;
     for (const [index, attachment] of result.attachments.entries()) {
       const sourcePath = attachment.path && fs.existsSync(attachment.path) ? attachment.path : null;
       const body = attachment.body;
@@ -210,9 +202,6 @@ export class QualityReporter implements Reporter {
       const artifact = { path: relative(destination), sha256: sha256(destination) };
       this.artifacts.push(artifact);
       attachmentPaths.push(artifact.path);
-      const role = visualAttachmentRole(attachment);
-      if (role === 'actual') actualArtifact = artifact;
-      if (role === 'diff') diffArtifact = artifact;
       if (this.gate === 'accessibility' && attachment.name === 'axe-findings.json') {
         const source = sourcePath ? fs.readFileSync(sourcePath, 'utf8') : body?.toString('utf8');
         if (!source) throw new Error('axe findings attachment must have a readable body');
@@ -256,19 +245,7 @@ export class QualityReporter implements Reporter {
             retry: result.retry,
             artifact_paths: attachmentPaths,
           };
-    if (this.gate === 'visual') {
-      const expected = `apps/dashboard-e2e/src/quality/snapshots/${process.platform}/chromium/${identifier}.png`;
-      const expectedFile = path.join(ROOT, expected);
-      Object.assign(record, {
-        scenario_id: identifier,
-        expected_path: fs.existsSync(expectedFile) ? expected : null,
-        expected_sha256: fs.existsSync(expectedFile) ? sha256(expectedFile) : null,
-        actual_path: actualArtifact?.path ?? null,
-        actual_sha256: actualArtifact?.sha256 ?? null,
-        diff_path: diffArtifact?.path ?? null,
-        diff_sha256: diffArtifact?.sha256 ?? null,
-      });
-    } else if (this.gate === 'compatibility')
+    if (this.gate === 'compatibility')
       Object.assign(record, { journey_id: identifier, engine: record.project });
     else if (this.gate === 'accessibility')
       Object.assign(
@@ -289,14 +266,6 @@ export class QualityReporter implements Reporter {
     latest.artifact_paths = [
       ...new Set([...(previous.artifact_paths as string[]), ...attachmentPaths]),
     ];
-    if (this.gate === 'visual' && latest === record) {
-      for (const role of ['actual', 'diff']) {
-        if (latest[`${role}_path`] === null) {
-          latest[`${role}_path`] = previous[`${role}_path`];
-          latest[`${role}_sha256`] = previous[`${role}_sha256`];
-        }
-      }
-    }
     this.records.set(key, latest);
   }
 
@@ -346,7 +315,6 @@ export class QualityReporter implements Reporter {
         behaviors: records.filter((x) => String(x.identity).includes('A11Y-B')),
         findings: this.findings,
       });
-    else summary.scenarios = records;
     const output = path.resolve(
       this.output.startsWith('apps/') ? ROOT : this.configRoot,
       this.output,
@@ -361,17 +329,6 @@ export class QualityReporter implements Reporter {
         `[FAIL] ${this.gate} — ${flaky} test(s) passed only after retry; no stability-clean pass recorded. Open: ${this.output}`,
       );
       return;
-    }
-    if (this.gate === 'visual') {
-      const failedScenarios = records.filter((record) => record.status === 'failed');
-      if (failedScenarios.length > 0) {
-        for (const record of failedScenarios) {
-          console.log(
-            `[FAIL] visual — ${String(record.scenario_id)}: the approved baseline differs. Review expected, actual, and diff images. Open: ${this.output}`,
-          );
-        }
-        return;
-      }
     }
     console.log(`[FAIL] ${this.gate} — ${failed} failed. Open: ${this.output}`);
   }

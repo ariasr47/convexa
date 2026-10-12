@@ -835,15 +835,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn memory_roundtrip() {
-        let store = ScanStore::memory();
-        store.upsert_row(sample_row("spy", 80.0)).await;
-        let rows = store.read_rows(Some(&["SPY".into()])).await;
-        assert_eq!(rows.len(), 1);
-        assert_eq!(rows[0].symbol, "SPY");
-    }
-
-    #[tokio::test]
     async fn ensure_rows_if_absent_does_not_clobber_ok() {
         let store = ScanStore::memory();
         store.upsert_row(sample_row("SPY", 80.0)).await;
@@ -1095,38 +1086,47 @@ mod tests {
     // ---- GATE PLAN B19: should_warn_missing_drivers (AC-42) -----------------------------------
 
     #[test]
-    fn ok_row_with_score_and_no_drivers_should_warn() {
-        let row = sample_row("SPY", 60.0); // status "ok", score_drivers: None
-        assert!(should_warn_missing_drivers(&row));
-    }
-
-    #[test]
-    fn ok_row_with_score_and_drivers_should_not_warn() {
-        let mut row = sample_row("SPY", 60.0);
-        row.score_drivers = Some(ScanScoreDrivers {
+    fn only_an_ok_scored_row_without_drivers_warns() {
+        let drivers = ScanScoreDrivers {
             proximity: 10,
             vol: 10,
             setups: 10,
             transition: 0,
             dark_pool: 0,
             total: 30,
-        });
-        assert!(!should_warn_missing_drivers(&row));
-    }
-
-    #[test]
-    fn non_ok_status_never_warns_even_with_score_and_no_drivers() {
-        let mut row = sample_row("SPY", 60.0);
-        row.status = "error".into();
-        assert!(!should_warn_missing_drivers(&row));
-        row.status = "building".into();
-        assert!(!should_warn_missing_drivers(&row));
-    }
-
-    #[test]
-    fn ok_row_with_no_score_never_warns() {
-        let mut row = sample_row("SPY", 60.0);
-        row.score = None;
-        assert!(!should_warn_missing_drivers(&row));
+        };
+        // (label, status, score, score_drivers, should_warn)
+        let cases: &[(&str, &str, Option<f64>, Option<ScanScoreDrivers>, bool)] = &[
+            ("ok + score + no drivers", "ok", Some(60.0), None, true),
+            (
+                "ok + score + drivers",
+                "ok",
+                Some(60.0),
+                Some(drivers),
+                false,
+            ),
+            (
+                "error + score + no drivers",
+                "error",
+                Some(60.0),
+                None,
+                false,
+            ),
+            (
+                "building + score + no drivers",
+                "building",
+                Some(60.0),
+                None,
+                false,
+            ),
+            ("ok + no score", "ok", None, None, false),
+        ];
+        for (label, status, score, score_drivers, expected) in cases {
+            let mut row = sample_row("SPY", 60.0);
+            row.status = (*status).into();
+            row.score = *score;
+            row.score_drivers = score_drivers.clone();
+            assert_eq!(should_warn_missing_drivers(&row), *expected, "{label}");
+        }
     }
 }

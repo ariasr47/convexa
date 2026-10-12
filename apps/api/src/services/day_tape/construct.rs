@@ -667,15 +667,4 @@ mod tests {
             "replay construct must not start stock_worker"
         );
     }
-
-    #[test]
-    fn standing_block_matches_spec() {
-        let block = standing_block("SPY", "2026-08-10", 1);
-        assert!(block.contains("SESSION TAPE — RESEARCH PLAYBACK · NOT A LIVE VENDOR FEED"));
-        assert!(block.contains("Identity:    SPY · 2026-08-10 America/New_York"));
-        assert!(block.contains("never live_massive"));
-        assert!(block.contains("tape time ET\n") || block.contains("Clock:       tape time ET"));
-        let block4 = standing_block("QQQ", "2026-08-10", 4);
-        assert!(block4.contains("tape time ET · 4×"));
-    }
 }

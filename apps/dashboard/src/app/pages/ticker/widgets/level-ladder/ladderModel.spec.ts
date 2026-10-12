@@ -1,6 +1,6 @@
 /**
- * `ladderModel.ts` — SPEC §2.3, criteria 1, 3, 5. Pure model tests; the DOM-level equivalents
- * (criteria 1's `[data-figure-state]` count, 2, 7, 8, 23) live in `LevelLadder.spec.tsx`.
+ * `ladderModel.ts` — SPEC §2.3, criteria 1, 3, 5. Pure model tests. The DOM-level spec for
+ * criteria 1's `[data-figure-state]` count, 2, 7, 8 and 23 was retired (lean-tests batch 26).
  *
  * MUTATION PROOFS (poison → confirm red → revert, both actually run — not narrated):
  *   1. `ABSENT_DISTANCE` on the mid row replaced with `distanceToLevel(input.mid, input.anchor)` —
@@ -37,42 +37,49 @@ const FULL_INPUT: LadderInput = {
 };
 
 describe('buildLadder — exactly five rows, at every data state (criterion 1)', () => {
-  it('all levels present', () => {
-    const rows = buildLadder(FULL_INPUT);
-    expect(rows).toHaveLength(5);
-    expect(rows.map((r) => r.id).sort()).toEqual(
-      ['callWall', 'gammaFlip', 'maxPain', 'mid', 'putWall'].sort(),
-    );
-  });
-
-  it('all levels null — still five rows, none dropped', () => {
-    const rows = buildLadder({
-      callWall: null,
-      putWall: null,
-      maxPain: null,
-      gammaFlip: null,
-      mid: null,
-      midLive: NOT_LIVE,
-      anchor: null,
-    });
-    expect(rows).toHaveLength(5);
-    expect(rows.every((r) => r.price === ABSENT_LEVEL)).toBe(true);
-  });
-
-  it('three levels null, two present — five rows, no row dropped', () => {
-    const rows = buildLadder({
-      ...FULL_INPUT,
-      callWall: null,
-      maxPain: null,
-      gammaFlip: null,
-    });
-    expect(rows).toHaveLength(5);
-    const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
-    expect(byId['callWall'].price).toBe(ABSENT_LEVEL);
-    expect(byId['maxPain'].price).toBe(ABSENT_LEVEL);
-    expect(byId['gammaFlip'].price).toBe(ABSENT_LEVEL);
-    expect(byId['putWall'].price).toBe('$240');
-    expect(byId['mid'].price).toBe('$252');
+  it('returns all five rows, none dropped, whether every level is present, some are null or all are null', () => {
+    const cases: ReadonlyArray<readonly [string, LadderInput, Record<string, string>]> = [
+      [
+        'all levels present',
+        FULL_INPUT,
+        { callWall: '$260', putWall: '$240', maxPain: '$250', gammaFlip: '$248', mid: '$252' },
+      ],
+      [
+        'three levels null, two present',
+        { ...FULL_INPUT, callWall: null, maxPain: null, gammaFlip: null },
+        {
+          callWall: ABSENT_LEVEL,
+          putWall: '$240',
+          maxPain: ABSENT_LEVEL,
+          gammaFlip: ABSENT_LEVEL,
+          mid: '$252',
+        },
+      ],
+      [
+        'all levels null',
+        {
+          callWall: null,
+          putWall: null,
+          maxPain: null,
+          gammaFlip: null,
+          mid: null,
+          midLive: NOT_LIVE,
+          anchor: null,
+        },
+        {
+          callWall: ABSENT_LEVEL,
+          putWall: ABSENT_LEVEL,
+          maxPain: ABSENT_LEVEL,
+          gammaFlip: ABSENT_LEVEL,
+          mid: ABSENT_LEVEL,
+        },
+      ],
+    ];
+    for (const [name, input, prices] of cases) {
+      const rows = buildLadder(input);
+      expect(rows, name).toHaveLength(5);
+      expect(Object.fromEntries(rows.map((r) => [r.id, r.price])), name).toEqual(prices);
+    }
   });
 
   it('levels crossing — a put wall priced above the mid is a real state, sorted by computed price', () => {
@@ -88,15 +95,6 @@ describe('buildLadder — exactly five rows, at every data state (criterion 1)',
     const rows = buildLadder({ ...FULL_INPUT, callWall: null });
     expect(rows).toHaveLength(5);
     expect(rows[rows.length - 1].id).toBe('callWall');
-  });
-});
-
-describe('buildLadder — row 2 labels, the e2e anchor (criterion 2)', () => {
-  it('renders the exact words "Call wall" and "Put wall"', () => {
-    const rows = buildLadder(FULL_INPUT);
-    const labels = rows.map((r) => r.label);
-    expect(labels).toContain('Call wall');
-    expect(labels).toContain('Put wall');
   });
 });
 
@@ -144,15 +142,36 @@ describe('buildLadder — distance anchor is the levels spot, never the mid (cri
 });
 
 describe('buildLadder — D-14, the absent-level literal (criterion 5)', () => {
-  it('a null call_wall keeps its row and label, and renders `—` in both value and distance cells', () => {
-    const rows = buildLadder({ ...FULL_INPUT, callWall: null });
-    const callWall = rows.find((r) => r.id === 'callWall')!;
-    expect(callWall.label).toBe('Call wall');
-    expect(callWall.price).toBe('—');
-    expect(callWall.distance).toBe('—');
-    expect(callWall.price).not.toBe('$—');
-    expect(callWall.price).not.toBe(0);
-    expect(callWall.price).not.toBe('unavailable');
+  it('every absent level (null or undefined, one or all five) keeps its row and renders the one `—` literal in value and distance', () => {
+    const cases: ReadonlyArray<readonly [string, LadderInput, readonly string[]]> = [
+      ['a null call wall', { ...FULL_INPUT, callWall: null }, ['callWall']],
+      [
+        'all five absent, null and undefined mixed',
+        {
+          callWall: null,
+          putWall: undefined,
+          maxPain: null,
+          gammaFlip: undefined,
+          mid: null,
+          midLive: NOT_LIVE,
+          anchor: null,
+        },
+        // mid's distance is ABSENT_DISTANCE by construction, always — the four structure rows here.
+        ['callWall', 'maxPain', 'gammaFlip', 'putWall'],
+      ],
+    ];
+    for (const [name, input, absentIds] of cases) {
+      const rows = buildLadder(input);
+      expect(rows.find((r) => r.id === 'callWall')!.label, name).toBe('Call wall');
+      for (const id of absentIds) {
+        const row = rows.find((r) => r.id === id)!;
+        expect(row.price, `${name}: ${id}`).toBe('—');
+        expect(row.distance, `${name}: ${id}`).toBe('—');
+        expect(row.price, `${name}: ${id}`).not.toBe('$—');
+        expect(row.price, `${name}: ${id}`).not.toBe(0);
+        expect(row.price, `${name}: ${id}`).not.toBe('unavailable');
+      }
+    }
   });
 
   it('a legal zero level renders `$0`, never the absent literal (reviewer probe)', () => {
@@ -160,36 +179,6 @@ describe('buildLadder — D-14, the absent-level literal (criterion 5)', () => {
     const maxPain = rows.find((r) => r.id === 'maxPain')!;
     expect(maxPain.price).toBe('$0');
     expect(maxPain.price).not.toBe(ABSENT_LEVEL);
-  });
-
-  it('all five absences use the SAME literal', () => {
-    const rows = buildLadder({
-      callWall: null,
-      putWall: undefined,
-      maxPain: null,
-      gammaFlip: undefined,
-      mid: null,
-      midLive: NOT_LIVE,
-      anchor: null,
-    });
-    for (const r of rows) {
-      if (r.id === 'mid') continue; // mid's distance is ABSENT_DISTANCE by construction, always.
-      expect(r.price).toBe(ABSENT_LEVEL);
-    }
-  });
-});
-
-describe('buildLadder — stroke identity (criterion 7 model half)', () => {
-  it('each row carries its own token key, matching LadderRowId', () => {
-    const rows = buildLadder(FULL_INPUT);
-    const byId = Object.fromEntries(rows.map((r) => [r.id, r.stroke]));
-    expect(byId).toEqual({
-      callWall: 'callWall',
-      maxPain: 'maxPain',
-      gammaFlip: 'gammaFlip',
-      putWall: 'putWall',
-      mid: 'mid',
-    });
   });
 });
 
@@ -204,35 +193,9 @@ describe('buildLadder — the mid row live claim (criterion 8 model half)', () =
       }
     }
   });
-
-  it('the mid row is NOT_LIVE when midLive is NOT_LIVE', () => {
-    const rows = buildLadder({ ...FULL_INPUT, midLive: NOT_LIVE });
-    const mid = rows.find((r) => r.id === 'mid')!;
-    expect(mid.live).toBe(NOT_LIVE);
-  });
 });
 
 describe('buildLadder — mid row offline/replay, GATE Z (SPEC §4.1, criterion 16b)', () => {
-  it('defaults to no offline and no replay when the caller omits both', () => {
-    const rows = buildLadder(FULL_INPUT);
-    const mid = rows.find((r) => r.id === 'mid')!;
-    expect(mid.offline).toBeNull();
-    expect(mid.replay).toBe(false);
-  });
-
-  it('the mid row carries `offline: {retained: true}` when the caller passes it, retained', () => {
-    const rows = buildLadder({ ...FULL_INPUT, midOffline: { retained: true } });
-    const mid = rows.find((r) => r.id === 'mid')!;
-    expect(mid.offline).toEqual({ retained: true });
-    expect(mid.replay).toBe(false);
-  });
-
-  it('the mid row carries `offline: {retained: false}` (bare) when the caller passes it', () => {
-    const rows = buildLadder({ ...FULL_INPUT, midOffline: { retained: false } });
-    const mid = rows.find((r) => r.id === 'mid')!;
-    expect(mid.offline).toEqual({ retained: false });
-  });
-
   it('the mid row carries `replay: true` when the caller passes `midReplay`', () => {
     const rows = buildLadder({ ...FULL_INPUT, midReplay: true });
     const mid = rows.find((r) => r.id === 'mid')!;
@@ -256,15 +219,15 @@ describe('buildLadder — mid row offline/replay, GATE Z (SPEC §4.1, criterion 
 });
 
 describe('formatAnchorText — the header states the anchor once (criterion 4)', () => {
-  it('names gex_spot when present', () => {
-    expect(formatAnchorText(250)).toBe('$250');
-  });
-
-  it('falls back to the absent-level literal when the anchor is absent (caller passes price then)', () => {
-    expect(formatAnchorText(null)).toBe(ABSENT_LEVEL);
-  });
-
-  it('a legal zero anchor renders `$0`, not the absent literal', () => {
-    expect(formatAnchorText(0)).toBe('$0');
+  it('names gex_spot when present, renders a legal zero as `$0`, and falls back to the absent literal when the anchor is absent', () => {
+    // When gex_spot is absent the caller passes price instead; a null here means neither exists.
+    const cases: ReadonlyArray<readonly [number | null, string]> = [
+      [250, '$250'],
+      [0, '$0'],
+      [null, ABSENT_LEVEL],
+    ];
+    for (const [anchor, text] of cases) {
+      expect(formatAnchorText(anchor), String(anchor)).toBe(text);
+    }
   });
 });

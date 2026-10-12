@@ -131,20 +131,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn capture_when_store_disabled_logs_capture_not_storing() {
-        let store = ChainSnapshotStore::disabled();
-        capture_into(
-            &store,
-            &SessionChainArchive::disabled(),
-            bundle_at(1),
-            Duration::from_secs(1_209_600),
-            48,
-        )
-        .await
-        .unwrap();
-    }
-
-    #[tokio::test]
     async fn successful_ring_append_archives_session_identity() {
         let ring = ChainSnapshotStore::memory();
         let archive = SessionChainArchive::memory();
@@ -166,6 +152,52 @@ mod tests {
             .unwrap();
         assert_eq!(ring.list("TSLA", None).await.unwrap().len(), 1);
         assert!(archive.list("TSLA", None).await.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn prune_failure_neither_fails_capture_nor_skips_archive_write() {
+        // A real filesystem ring with a real I/O fault in prune: plant a DIRECTORY named like the
+        // oldest snapshot. `max_per = 1` makes prune remove it first; prune renames it to a
+        // tombstone and then `remove_file` on a directory fails. Append never touches it (its
+        // identity ns differs), so only the prune step faults.
+        let root = std::env::temp_dir().join(format!(
+            "convexa-capture-prune-fault-{}-{}",
+            std::process::id(),
+            Utc::now().timestamp_nanos_opt().unwrap_or(0)
+        ));
+        let ring = ChainSnapshotStore::open_filesystem(&root).await.unwrap();
+        let symbol_dir = root.join(hex::encode("TSLA"));
+        std::fs::create_dir_all(symbol_dir.join("snapshot-1-live.bin")).unwrap();
+        let archive = SessionChainArchive::memory();
+        let as_of = Utc.with_ymd_and_hms(2024, 6, 3, 17, 0, 0).single().unwrap();
+
+        let result = capture_into(
+            &ring,
+            &archive,
+            fixture_probe_bundle("TSLA", as_of),
+            // ~80y so age-pruning stays out of it; the count cap alone drives the removal.
+            Duration::from_secs(80 * 365 * 24 * 3600),
+            1,
+        )
+        .await;
+
+        let prune_faulted = std::fs::read_dir(&symbol_dir)
+            .unwrap()
+            .flatten()
+            .any(|e| e.file_name().to_string_lossy().starts_with(".tombstone-"));
+        let et = et_date_from_as_of(as_of).unwrap();
+        let archived = archive.load("TSLA", &et).await.unwrap().is_some();
+        let _ = std::fs::remove_dir_all(&root);
+
+        assert!(
+            prune_faulted,
+            "precondition: prune must have failed mid-removal (tombstone left behind)"
+        );
+        assert!(
+            result.is_ok() && archived,
+            "a prune failure must neither fail capture (got {result:?}) nor skip the session-archive \
+             write (archived: {archived})"
+        );
     }
 
     #[tokio::test]

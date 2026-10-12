@@ -3,23 +3,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { CHILDREN, aggregateStatus, validateChildCatalog } from './lib/aggregate.mjs';
+import { CHILDREN, aggregateStatus } from './lib/aggregate.mjs';
 import {
   buildQualityReceipt,
-  prepareQualityDashboard,
   prepareThenSpawnQualityChildren,
   spawnQualityChildren,
   validateChildEvidence,
 } from './run-quality.mjs';
-test('aggregate freezes exactly four ordered children and distinct ports', () => {
-  assert.equal(CHILDREN.length, 4);
-  assert.deepEqual(
-    CHILDREN.map((x) => x.port),
-    [4210, 4211, 4212, 4213],
-  );
-  assert.doesNotThrow(() => validateChildCatalog());
-  assert.throws(() => validateChildCatalog([...CHILDREN, { target: 'visual-update', port: 4214 }]));
-});
 test('aggregate status preserves incomplete over failure over pass', () => {
   assert.equal(aggregateStatus([{ exit_code: 0, status: 'pass' }]), 'pass');
   assert.equal(aggregateStatus([{ exit_code: 1, status: 'fail' }]), 'fail');
@@ -48,10 +38,10 @@ test('aggregate completes one canonical dashboard build before starting all preb
     },
   });
   assert.deepEqual(events, ['build:start', 'build:close', 'children:start']);
-  assert.equal((await Promise.all(childPromises)).length, 4);
+  assert.equal((await Promise.all(childPromises)).length, 3);
 });
 
-test('a failed dashboard build still launches all four children once with fail-closed status', async () => {
+test('a failed dashboard build still launches all three children once with fail-closed status', async () => {
   let optionsSeen;
   const childPromises = await prepareThenSpawnQualityChildren({
     runId: 'run-prebuild-failure',
@@ -65,78 +55,7 @@ test('a failed dashboard build still launches all four children once with fail-c
     },
   });
   assert.equal(optionsSeen.prebuildStatus, 'fail');
-  assert.equal((await Promise.all(childPromises)).length, 4);
-});
-
-test('dashboard preparation is one shell-free production build with isolated Nx state', async () => {
-  const calls = [];
-  const result = await prepareQualityDashboard({
-    platform: 'linux',
-    cwd: 'C:/workspace',
-    env: { NX_INVOCATION_ROOT_PID: 'aggregate-parent', QUALITY_TEST_MARKER: 'preserved' },
-    runId: 'run-prebuild-command',
-    spawnCommandFn: async (command, args, options) => {
-      calls.push({ command, args, options });
-      return { exit_code: 0, error: null };
-    },
-  });
-  assert.deepEqual(result, { exit_code: 0, error: null });
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].command, 'npm');
-  assert.deepEqual(calls[0].args, [
-    'exec',
-    '--',
-    'nx',
-    'run',
-    '@convexa/dashboard:build:production',
-    '--skip-nx-cache',
-  ]);
-  assert.equal(calls[0].options.cwd, 'C:/workspace');
-  assert.equal(calls[0].options.env.NX_DAEMON, 'false');
-  assert.equal(calls[0].options.env.QUALITY_TEST_MARKER, 'preserved');
-  assert.equal(calls[0].options.env.NX_INVOCATION_ROOT_PID, undefined);
-  assert.match(
-    calls[0].options.env.NX_WORKSPACE_DATA_DIRECTORY.replaceAll('\\', '/'),
-    /\/\.nx\/workspace-data\/browser-quality\/[a-f0-9]{64}$/,
-  );
-});
-
-test('aggregate bounds only child Playwright workers and preserves the exact environment', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'browser-quality-workers-'));
-  const fixture = path.join(dir, 'npm-cli-fixture.mjs');
-  fs.writeFileSync(
-    fixture,
-    `import fs from 'node:fs'; fs.writeFileSync(${JSON.stringify(path.join(dir, 'env.json'))}, JSON.stringify({ workers: process.env.BROWSER_QUALITY_WORKERS, marker: process.env.QUALITY_TEST_MARKER, prebuild: process.env.BROWSER_QUALITY_PREBUILD_STATUS })); process.exit(0);`,
-  );
-  await Promise.all(
-    spawnQualityChildren({
-      platform: 'win32',
-      execPath: process.execPath,
-      npmCliPath: fixture,
-      cwd: dir,
-      env: { QUALITY_TEST_MARKER: 'preserved' },
-      runId: 'run-worker-test',
-      source: 'a'.repeat(40),
-      prebuildStatus: 'pass',
-    }),
-  );
-  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'env.json'), 'utf8')), {
-    workers: '1',
-    marker: 'preserved',
-    prebuild: 'pass',
-  });
-});
-
-test('prebuilt child servers are read-only and failed preparation is rejected before Playwright', () => {
-  const sharedConfig = fs.readFileSync(
-    new URL('../playwright.shared.config.ts', import.meta.url),
-    'utf8',
-  );
-  const runGate = fs.readFileSync(new URL('./run-gate.mjs', import.meta.url), 'utf8');
-  assert.match(sharedConfig, /BROWSER_QUALITY_PREBUILD_STATUS/);
-  assert.match(sharedConfig, /serve-dist\.mjs apps\/dashboard\/dist/);
-  assert.match(runGate, /BROWSER_QUALITY_PREBUILD_STATUS === 'fail'/);
-  assert.match(runGate, /browser quality dashboard prebuild failed/);
+  assert.equal((await Promise.all(childPromises)).length, 3);
 });
 
 test('child evidence validates identity, status and artifact hash after settlement', () => {
@@ -168,7 +87,7 @@ test('child evidence validates identity, status and artifact hash after settleme
   for (const mutation of [
     { ...base, run_id: 'wrong' },
     { ...base, source_revision: 'c'.repeat(40) },
-    { ...base, gate: 'visual' },
+    { ...base, gate: 'compatibility' },
     { ...base, status: 'fail' },
   ]) {
     const result = validateChildEvidence({
@@ -251,7 +170,7 @@ test('Windows aggregate uses real shell-free child launches and preserves spawn 
   const fixture = path.join(dir, 'npm-cli-fixture.mjs');
   fs.writeFileSync(
     fixture,
-    `import fs from 'node:fs';\nconst target = process.argv.find((x) => x.startsWith('dashboard-e2e:'));\nconst childRoot = process.env.NX_INVOCATION_ROOT_PID ?? String(process.pid);\nfs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ target, port: process.env.BROWSER_QUALITY_PORT, childRoot, workspaceData: process.env.NX_WORKSPACE_DATA_DIRECTORY, runId: process.env.BROWSER_QUALITY_RUN_ID, marker: process.env.QUALITY_TEST_MARKER, workers: process.env.BROWSER_QUALITY_WORKERS }) + '\\n');\nprocess.exit(target.endsWith(':visual') ? 7 : 0);\n`,
+    `import fs from 'node:fs';\nconst target = process.argv.find((x) => x.startsWith('dashboard-e2e:'));\nconst childRoot = process.env.NX_INVOCATION_ROOT_PID ?? String(process.pid);\nfs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ target, port: process.env.BROWSER_QUALITY_PORT, childRoot, workspaceData: process.env.NX_WORKSPACE_DATA_DIRECTORY, runId: process.env.BROWSER_QUALITY_RUN_ID, marker: process.env.QUALITY_TEST_MARKER, workers: process.env.BROWSER_QUALITY_WORKERS }) + '\\n');\nprocess.exit(target.endsWith(':a11y') ? 7 : 0);\n`,
   );
 
   const results = await Promise.all(
@@ -270,8 +189,7 @@ test('Windows aggregate uses real shell-free child launches and preserves spawn 
     [
       ['dashboard-e2e:e2e', 0, 1],
       ['dashboard-e2e:compat', 0, 1],
-      ['dashboard-e2e:a11y', 0, 1],
-      ['dashboard-e2e:visual', 7, 1],
+      ['dashboard-e2e:a11y', 7, 1],
     ],
   );
   const logged = new Map(
@@ -282,14 +200,13 @@ test('Windows aggregate uses real shell-free child launches and preserves spawn 
       .map((line) => JSON.parse(line))
       .map((entry) => [entry.target, entry]),
   );
-  assert.equal(logged.size, 4);
+  assert.equal(logged.size, 3);
   assert.deepEqual(Object.fromEntries([...logged].map(([target, entry]) => [target, entry.port])), {
     'dashboard-e2e:e2e': '4210',
     'dashboard-e2e:compat': '4211',
     'dashboard-e2e:a11y': '4212',
-    'dashboard-e2e:visual': '4213',
   });
-  assert.equal(new Set([...logged.values()].map((entry) => entry.workspaceData)).size, 4);
+  assert.equal(new Set([...logged.values()].map((entry) => entry.workspaceData)).size, 3);
   for (const entry of logged.values()) {
     assert.notEqual(entry.childRoot, 'aggregate-parent');
     assert.match(entry.childRoot, /^\d+$/);
@@ -313,7 +230,7 @@ test('Windows aggregate uses real shell-free child launches and preserves spawn 
       source: 'b'.repeat(40),
     }),
   );
-  assert.equal(spawnErrors.length, 4);
+  assert.equal(spawnErrors.length, 3);
   for (const result of spawnErrors) {
     assert.equal(result.invocation_count, 1);
     assert.equal(result.status, 'incomplete');

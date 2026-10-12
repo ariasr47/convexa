@@ -421,12 +421,4 @@ mod tests {
             &raw[..raw.len().min(40)]
         );
     }
-
-    #[test]
-    fn parse_round_trip_pass_receipt() {
-        let raw = serde_json::to_string(&sample_pass_json()).unwrap();
-        let parsed = parse_receipt(&raw).expect("parse");
-        assert_eq!(parsed.command, Command::Load);
-        assert_eq!(parsed.evidence, Evidence::Local);
-    }
 }

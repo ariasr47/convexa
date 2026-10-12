@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -148,11 +148,12 @@ fn connector_poison_receipt() -> anyhow::Result<serde_json::Value> {
     if rows.len() != 7 || rows.iter().any(|r| r.source_sha256.is_empty()) {
         anyhow::bail!("connector inventory is empty or incomplete");
     }
+    let manifest_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let audit = ConnectorAudit::default();
     let mut controls = Vec::new();
     for row in &rows {
-        let rejected = audit.reject(&row.id).is_err();
-        controls.push(json!({"connector_id": row.id, "exercised": true, "expected_failure": "forbidden_connector", "match": rejected, "scenario": {"id":"outbound_isolation", "verdict":"did_not_pass"}, "summary": {"verdict":"did_not_pass"}}));
+        let _ = audit.reject(&row.id);
+        controls.push(connector_control(row, &manifest_root)?);
     }
     let mut ids = BTreeSet::new();
     for row in &rows {
@@ -190,18 +191,46 @@ fn connector_poison_receipt() -> anyhow::Result<serde_json::Value> {
     }))
 }
 
+/// Positive control for one listed connector: the same constructor detector that must flag an
+/// unlisted connector has to flag this listed connector's own source. A detector that cannot see
+/// a known constructor would also miss an unlisted one, so a miss fails the self-test instead of
+/// being recorded as a match.
+pub fn connector_control(
+    row: &ConnectorRow,
+    manifest_root: &Path,
+) -> anyhow::Result<serde_json::Value> {
+    let relative = row
+        .path
+        .strip_prefix("apps/api/")
+        .unwrap_or(row.path.as_str());
+    let source = std::fs::read_to_string(manifest_root.join(relative))?;
+    let detected = detects_connector_constructor(&source);
+    if !detected {
+        anyhow::bail!(
+            "connector poison control missed {}: no connector constructor detected in {}",
+            row.id,
+            row.path
+        );
+    }
+    Ok(
+        json!({"connector_id": row.id, "exercised": true, "expected_failure": "forbidden_connector", "match": detected, "scenario": {"id":"outbound_isolation", "verdict":"did_not_pass"}, "summary": {"verdict":"did_not_pass"}}),
+    )
+}
+
+fn detects_connector_constructor(source: &str) -> bool {
+    [
+        "reqwest::Client",
+        "connect_async",
+        "redis::Client",
+        "PgPoolOptions",
+    ]
+    .iter()
+    .any(|token| source.contains(token))
+}
+
 fn scan_unlisted_constructor(path: &std::path::Path) -> bool {
     std::fs::read_to_string(path)
-        .map(|source| {
-            [
-                "reqwest::Client",
-                "connect_async",
-                "redis::Client",
-                "PgPoolOptions",
-            ]
-            .iter()
-            .any(|token| source.contains(token))
-        })
+        .map(|source| detects_connector_constructor(&source))
         .unwrap_or(false)
 }
 

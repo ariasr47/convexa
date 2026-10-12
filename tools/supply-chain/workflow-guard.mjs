@@ -56,15 +56,17 @@ export function auditAutomation({ workflows, dockerfiles, dependabot, pins }) {
     for (const line of text.split(/\r?\n/)) {
       const selector =
         line.match(/^FROM\s+([^\s]+)/i)?.[1] ?? line.match(/^#\s*syntax=([^\s]+)/i)?.[1];
+      if (selector === 'scratch') continue; // Docker's reserved empty image: nothing to pull or pin
       if (selector && !digestImage.test(selector)) errors.push(`${file}:mutable-image`);
       else if (selector && !pins?.images?.includes(selector))
         errors.push(`${file}:unapproved-image-pin`);
     }
   const supply = workflows['.github/workflows/supply-chain.yml'] ?? '';
   const ci = workflows['.github/workflows/ci.yml'] ?? '';
+  // Manual mode (owner ruling 2026-10-08): supply-chain runs only through workflow_call (from CI)
+  // and workflow_dispatch; a push, schedule or pull_request trigger is refused.
   if (
-    !/push:[\s\S]*branches:\s*\[main\]/.test(supply) ||
-    !/schedule:/.test(supply) ||
+    /^ {2}(?:push|schedule|pull_request):/m.test(supply) ||
     !/workflow_dispatch:[\s\S]*options:\s*\[policy, artifacts\]/.test(supply)
   )
     errors.push('supply-chain:event-matrix');

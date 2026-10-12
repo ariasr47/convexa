@@ -23,12 +23,6 @@ test('invalid and unresolved base identities block', () => {
   assert.equal(validateCandidateBase('bad').state, 'blocked');
   assert.equal(validateCandidateBase('f'.repeat(40)).state, 'blocked');
 });
-test('current HEAD cannot self-vouch while foundation bytes are unaccepted', () => {
-  const head = spawnSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout.trim();
-  const result = validateCandidateBase(head);
-  assert.equal(result.state, 'blocked');
-  assert.equal(result.reason_code, 'base-missing-supply-chain-foundation');
-});
 test('candidate revision identity is domain-separated and sensitive to every input', () => {
   const value = candidateRevisionId('a'.repeat(40), 'b'.repeat(64), 'c'.repeat(64));
   assert.match(value, /^[a-f0-9]{64}$/);
@@ -127,6 +121,25 @@ async function fixture() {
   }).stdout.trim();
   return { root, baseSha };
 }
+test('a base commit missing a supply-chain foundation file is blocked', async (t) => {
+  const { root, baseSha } = await fixture();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  assert.equal(validateCandidateBase(baseSha, { root }).state, 'pass');
+  spawnSync('git', ['rm', '-q', '.supply-chain/tools.json'], { cwd: root });
+  spawnSync(
+    'git',
+    ['-c', 'user.name=test', '-c', 'user.email=test@example.test', 'commit', '-m', 'drop'],
+    { cwd: root },
+  );
+  const head = spawnSync('git', ['rev-parse', 'HEAD'], {
+    cwd: root,
+    encoding: 'utf8',
+  }).stdout.trim();
+  const result = validateCandidateBase(head, { root });
+  assert.equal(result.state, 'blocked');
+  assert.equal(result.reason_code, 'base-missing-supply-chain-foundation');
+  assert.equal(result.missing_count, 1);
+});
 test('command catalog rejects missing checks and shell interpolation', () => {
   const catalog = { commands: [] };
   assert.equal(validateCommandCatalog(catalog).valid, false);

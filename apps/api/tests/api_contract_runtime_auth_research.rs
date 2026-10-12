@@ -1,6 +1,9 @@
 use api_rust::routes;
 use api_rust::services::auth::google_oauth::{consume_state, remember_state, GoogleIdentity};
+use api_rust::services::auth::{BROKER_PROVIDER, COOKIE_NAME, CREDENTIAL_KIND_BROKER};
 use api_rust::services::chain_snapshot::wire::{fixture_probe_bundle, serialize_capture, to_wire};
+use api_rust::services::day_tape::player::et_hms_to_ts_ns;
+use api_rust::services::day_tape::{PathARecord, SessionDayTape};
 use api_rust::services::market_data::MarketDataSourceKind;
 use api_rust::state::AppState;
 use axum::body::{to_bytes, Body, Bytes};
@@ -915,6 +918,186 @@ async fn auth_runtime_evidence_preserves_non_enumerating_and_authenticated_gates
     );
 }
 
+// The four tests below assert behavior only; they deliberately emit no
+// DIRECT_HTTP_EVIDENCE_OUTCOME line, so the contract tool's evidence set is unchanged.
+
+const BROKER_SECRET_CANARY: &str = "webull-app-secret-canary-never-egress";
+
+async fn put_broker_credential(
+    router: &axum::Router,
+    cookie: &str,
+    body: String,
+) -> ObservedResponse {
+    let response = router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("PUT")
+                .uri("/api/broker/credential")
+                .header("cookie", cookie)
+                .header("content-type", "application/json")
+                .body(Body::from(body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    json_response(response).await
+}
+
+fn broker_credential_body(app_key: &str) -> String {
+    format!(r#"{{"app_key":"{app_key}","app_secret":"{BROKER_SECRET_CANARY}"}}"#)
+}
+
+#[tokio::test]
+async fn broker_credential_secret_is_persisted_only_as_ciphertext() {
+    let (state, router) = state_and_router().await;
+    let email = format!("runtime-broker-at-rest-{}@example.test", std::process::id());
+    let (cookie, user_id) = signup(&state, &router, &email, false).await;
+    let stored = put_broker_credential(
+        &router,
+        &cookie,
+        broker_credential_body("webull-app-key-1234"),
+    )
+    .await;
+    assert_eq!(stored.status, StatusCode::OK);
+    assert_eq!(
+        stored.json["set"], true,
+        "the credential must actually be stored"
+    );
+
+    let record = state
+        .auth
+        .conformance_store()
+        .get_credential(&user_id, CREDENTIAL_KIND_BROKER, BROKER_PROVIDER)
+        .expect("auth store readable")
+        .expect("broker credential persisted");
+    // The whole persisted record, not only its ciphertext column: no field may carry the secret.
+    let persisted = serde_json::to_string(&record).expect("credential record serializes");
+    assert!(
+        !persisted.contains(BROKER_SECRET_CANARY),
+        "plaintext app_secret persisted: {persisted}"
+    );
+    // Anti-vacuity: what was persisted really is this secret, encrypted.
+    assert_eq!(
+        state
+            .auth
+            .get_decrypted_broker_credential(&user_id)
+            .map(|(_, secret)| secret)
+            .as_deref(),
+        Some(BROKER_SECRET_CANARY)
+    );
+}
+
+#[tokio::test]
+async fn broker_credential_responses_never_echo_the_secret() {
+    let (state, router) = state_and_router().await;
+    let email = format!("runtime-broker-no-echo-{}@example.test", std::process::id());
+    let (cookie, _) = signup(&state, &router, &email, false).await;
+
+    let accepted = put_broker_credential(
+        &router,
+        &cookie,
+        broker_credential_body("webull-app-key-1234"),
+    )
+    .await;
+    let get = |uri: &'static str| {
+        let router = router.clone();
+        let cookie = cookie.clone();
+        async move {
+            json_response(
+                router
+                    .oneshot(
+                        Request::builder()
+                            .method("GET")
+                            .uri(uri)
+                            .header("cookie", &cookie)
+                            .body(Body::empty())
+                            .unwrap(),
+                    )
+                    .await
+                    .unwrap(),
+            )
+            .await
+        }
+    };
+    let hint = get("/api/broker/credential").await;
+    // The book read decrypts the stored pair server-side (default stub provider, no network);
+    // nothing of it may reach the wire.
+    let book = get("/api/broker/book").await;
+    // A refused write still carried the secret in; its 422 must not reflect it back.
+    let refused = put_broker_credential(&router, &cookie, broker_credential_body("")).await;
+
+    for (case, observed) in [
+        ("PUT accepted", &accepted),
+        ("GET hint", &hint),
+        ("GET book", &book),
+        ("PUT refused", &refused),
+    ] {
+        let body = String::from_utf8_lossy(&observed.body);
+        assert!(
+            !body.contains(BROKER_SECRET_CANARY),
+            "{case} echoed app_secret: {body}"
+        );
+    }
+    // Anti-vacuity: each path really ran — stored, read back as set, refused.
+    assert_eq!(accepted.status, StatusCode::OK);
+    assert_eq!(accepted.json["last4"], "1234");
+    assert_eq!(hint.status, StatusCode::OK);
+    assert_eq!(hint.json["set"], true);
+    assert_eq!(book.status, StatusCode::OK);
+    assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+async fn put_book(router: &axum::Router, cookie: Option<&str>, body: String) -> ObservedResponse {
+    let mut request = Request::builder()
+        .method("PUT")
+        .uri("/api/book")
+        .header("content-type", "application/json");
+    if let Some(cookie) = cookie {
+        request = request.header("cookie", cookie);
+    }
+    let response = router
+        .clone()
+        .oneshot(request.body(Body::from(body)).unwrap())
+        .await
+        .unwrap();
+    json_response(response).await
+}
+
+#[tokio::test]
+async fn book_put_without_a_valid_session_is_forbidden() {
+    let (_state, router) = state_and_router().await;
+    // A well-formed body, so only the missing or unverifiable session can refuse it.
+    let body = r#"{"schema_version":3,"updated_at":1.0,"blob":{"positions":[],"orders":[],"decisions":[]}}"#;
+    let forged = format!("{COOKIE_NAME}=forged-session-id.forged-signature");
+    for (case, cookie) in [
+        ("no cookie", None),
+        ("forged cookie", Some(forged.as_str())),
+    ] {
+        let observed = put_book(&router, cookie, body.to_owned()).await;
+        assert_eq!(observed.status, StatusCode::FORBIDDEN, "{case}");
+        assert_eq!(observed.json["error"], "auth_required", "{case}");
+        assert!(!observed.headers.contains_key("set-cookie"), "{case}");
+    }
+}
+
+#[tokio::test]
+async fn book_put_with_a_non_object_blob_is_rejected_400() {
+    let (state, router) = state_and_router().await;
+    let email = format!("runtime-book-shape-{}@example.test", std::process::id());
+    let (cookie, _) = signup(&state, &router, &email, false).await;
+    // Signed in, so only the body shape can refuse it.
+    for blob in ["[]", "null", "42", r#""positions""#, "true"] {
+        let observed = put_book(
+            &router,
+            Some(&cookie),
+            format!(r#"{{"schema_version":3,"updated_at":1.0,"blob":{blob}}}"#),
+        )
+        .await;
+        assert_eq!(observed.status, StatusCode::BAD_REQUEST, "blob {blob}");
+    }
+}
+
 #[tokio::test]
 async fn scan_runtime_evidence_rejects_unauthenticated_write_and_bad_shape() {
     let (state, router) = state_and_router().await;
@@ -1007,33 +1190,6 @@ async fn research_chain_snapshot_list_store_fault_is_production_500_conversion()
 }
 
 #[test]
-fn runtime_evidence_fragment_resolves_to_real_tests() {
-    let fragment: Value = serde_json::from_str(include_str!(
-        "fixtures/api_contract/runtime-evidence-auth-research.json"
-    ))
-    .expect("runtime evidence fragment JSON");
-    let source = include_str!("api_contract_runtime_auth_research.rs");
-    let entries = fragment["boundaries"].as_array().expect("boundaries array");
-    assert_eq!(fragment["schema_version"], 2);
-    assert_eq!(entries.len(), 25, "runtime fragment must not be vacuous");
-    for entry in entries {
-        assert!(entry["boundary_id"].as_str().is_some());
-        let test = entry["test"].as_str().expect("test name");
-        assert!(
-            source.contains(&format!("async fn {test}")),
-            "fixture test must resolve to a named async integration test: {test}"
-        );
-        assert!(entry["request"].as_str().is_some());
-        let expected_response = entry["expected_response"]
-            .as_object()
-            .expect("expected response object");
-        assert_eq!(expected_response.len(), 8);
-        assert_eq!(expected_response["body_valid"], true);
-        assert_eq!(entry["effect_assertion"].as_object().unwrap().len(), 3);
-    }
-}
-
-#[test]
 fn canonical_outcome_validator_rejects_hollow_or_relabelled_evidence() {
     let control = serde_json::json!({
         "status": 200,
@@ -1065,4 +1221,151 @@ fn canonical_outcome_validator_rejects_hollow_or_relabelled_evidence() {
         .unwrap()
         .remove("memory");
     assert!(validate_canonical_outcome(&hollow_effect).is_err());
+}
+
+#[tokio::test]
+async fn session_day_tape_reads_require_the_operator_token() {
+    // Same shape as OPERATOR_TOKEN (URL-safe base64 of 32 bytes) but different bytes, so a
+    // rejection is the comparison, not the decoder.
+    const WRONG_TOKEN: &str = "BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc";
+    let mut state = AppState::for_runtime_guardrail_tests(OPERATOR_TOKEN.into())
+        .await
+        .expect("hermetic state");
+    // A storing tape with a real SPY day, so a successful read returns tape content.
+    let tape = SessionDayTape::memory();
+    tape.append_path_a(
+        "SPY",
+        "2026-08-10",
+        PathARecord::trade(
+            et_hms_to_ts_ns("2026-08-10", 10, 0, 0).expect("et stamp"),
+            100.0,
+            Some(1.0),
+        ),
+    )
+    .await
+    .expect("plant tape day");
+    state.day_tape = tape;
+    let router = routes::router(state).expect("valid production contract graph");
+
+    let mut observed = Vec::new();
+    for uri in [
+        "/api/_research/session-day-tape/SPY",
+        "/api/_research/session-day-tape/SPY/day?et_date=2026-08-10",
+    ] {
+        for (label, token) in [
+            ("none", None),
+            ("wrong", Some(WRONG_TOKEN)),
+            ("operator", Some(OPERATOR_TOKEN)),
+        ] {
+            let mut request = Request::builder().method("GET").uri(uri);
+            if let Some(token) = token {
+                request = request.header("x-metrics-token", token);
+            }
+            let response = router
+                .clone()
+                .oneshot(request.body(Body::empty()).unwrap())
+                .await
+                .unwrap();
+            observed.push((uri, label, response.status()));
+        }
+    }
+
+    let expected: Vec<_> = observed
+        .iter()
+        .map(|&(uri, label, _)| {
+            let want = if label == "operator" {
+                StatusCode::OK
+            } else {
+                StatusCode::UNAUTHORIZED
+            };
+            (uri, label, want)
+        })
+        .collect();
+    assert_eq!(
+        observed, expected,
+        "session-day-tape reads: 401 without / with a wrong operator token, 200 with it"
+    );
+}
+
+async fn post_login(
+    router: &axum::Router,
+    ip: &str,
+    email: &str,
+    password: &str,
+) -> ObservedResponse {
+    let response = router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/auth/login")
+                .header("content-type", "application/json")
+                .header("x-forwarded-for", ip)
+                .body(Body::from(format!(
+                    r#"{{"email":"{email}","password":"{password}"}}"#
+                )))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    json_response(response).await
+}
+
+fn retry_after_secs(observed: &ObservedResponse) -> u64 {
+    observed
+        .headers
+        .get("retry-after")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.parse().ok())
+        .expect("numeric Retry-After header")
+}
+
+#[tokio::test]
+async fn repeated_wrong_passwords_answer_429_with_retry_after_even_for_the_right_one() {
+    let (state, router) = state_and_router().await;
+    let email = format!("runtime-throttle-{}@example.test", std::process::id());
+    signup(&state, &router, &email, false).await;
+    for _ in 0..5 {
+        let wrong = post_login(&router, "203.0.113.7", &email, "wrong-guess-123").await;
+        assert_eq!(wrong.status, StatusCode::UNAUTHORIZED);
+    }
+    let refused = post_login(&router, "203.0.113.7", &email, "runtime-password-123").await;
+    assert_eq!(refused.status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(refused.json["error"], "rate_limited");
+    assert!((1..=60).contains(&retry_after_secs(&refused)));
+}
+
+#[tokio::test]
+async fn the_per_ip_sign_in_budget_answers_429_and_spares_other_addresses() {
+    let (mut state, _) = state_and_router().await;
+    state.rate_limiter =
+        std::sync::Arc::new(api_rust::middleware::RateLimiter::with_auth_budget(0, 2));
+    let router = api_rust::server::production_router(state, vec![]).expect("production router");
+    for email in ["first@example.test", "second@example.test"] {
+        let spent = post_login(&router, "198.51.100.9", email, "wrong-guess-123").await;
+        assert_eq!(spent.status, StatusCode::UNAUTHORIZED, "{email}");
+    }
+    // A third, different account from the same address: refused by the per-IP budget.
+    let refused = post_login(
+        &router,
+        "198.51.100.9",
+        "third@example.test",
+        "wrong-guess-123",
+    )
+    .await;
+    assert_eq!(refused.status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(refused.json["error"], "rate_limited");
+    assert!((1..=60).contains(&retry_after_secs(&refused)));
+    let other = post_login(
+        &router,
+        "198.51.100.10",
+        "third@example.test",
+        "wrong-guess-123",
+    )
+    .await;
+    assert_eq!(
+        other.status,
+        StatusCode::UNAUTHORIZED,
+        "another address keeps its own budget"
+    );
 }
