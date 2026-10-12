@@ -49,7 +49,13 @@ if (!changed.some((file) => rustScope.test(file))) {
 }
 
 console.log(`[verify] base ${base}; ${changed.length} changed file(s)`);
-let status = run('npx', nxArgs, { NX_NO_CLOUD: 'true' });
+// The API contract gate compiles the dashboard against libs/api's built declarations and, by design,
+// writes nothing itself (apps/api/tests/api_contract_gate_isolation.rs). Build them first, as CI does,
+// so a change to libs/api is never checked against stale declarations.
+let status = run('npx', ['tsc', '-p', 'libs/api/tsconfig.lib.json', '--pretty', 'false']);
+// No .env: run tests the way CI does. A developer .env (real AI keys, live settings) changes what
+// hermetic tests see; five recommendation key-resolution tests failed locally for that reason alone.
+status = run('npx', nxArgs, { NX_NO_CLOUD: 'true', NX_LOAD_DOT_ENV_FILES: 'false' }) || status;
 
 const toolScope =
   /^(tools\/|functions\/|apps\/dashboard-e2e\/tools\/|\.github\/|\.supply-chain\/|package(-lock)?\.json$)/;

@@ -426,7 +426,7 @@ fn every_persisted_boundary_has_explicit_route_source_target() {
         .flat_map(|operation| operation["boundaries"].as_array().unwrap())
         .map(|boundary| boundary["boundary_id"].as_str().unwrap())
         .collect::<Vec<_>>();
-    assert_eq!(ids.len(), 201);
+    assert_eq!(ids.len(), 203);
     for id in ids {
         let target = api_rust::routes::response_conversion_registry_source_target(id)
             .unwrap_or_else(|| panic!("missing explicit route source target: {id}"));
@@ -657,6 +657,8 @@ declare_boundary_evidence_tests!(
     boundary_evidence_198,
     boundary_evidence_199,
     boundary_evidence_200,
+    boundary_evidence_201,
+    boundary_evidence_202,
 );
 /// Exercise the actual Axum router returned by production `routes::router` for every ordinary
 /// operation.  This intentionally uses no handler/facade mocks: status and media are observed at

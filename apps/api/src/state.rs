@@ -588,7 +588,14 @@ impl AppState {
             "auth: google_available (needs GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI)"
         );
 
-        let rate_limiter = Arc::new(RateLimiter::new(config.public_rate_limit_per_min));
+        let rate_limiter = Arc::new(RateLimiter::with_auth_budget(
+            config.public_rate_limit_per_min,
+            config.auth_rate_limit_per_min,
+        ));
+        info!(
+            limit = config.auth_rate_limit_per_min,
+            "sign-in rate limit: per-IP per minute on login and sign-up"
+        );
         if config.public_rate_limit_per_min > 0 {
             info!(
                 limit = config.public_rate_limit_per_min,
@@ -1075,6 +1082,7 @@ pub(crate) fn test_stub_config() -> Config {
         iv_store_path: PathBuf::from("data/iv_timeseries.json"),
         database_url: None,
         public_rate_limit_per_min: 0,
+        auth_rate_limit_per_min: 0,
         metrics_secret_token: None,
         chain_snapshot_max_age_secs: 1_209_600,
         chain_snapshot_max_per_symbol: 48,
@@ -1610,6 +1618,7 @@ mod tests {
             iv_store_path: PathBuf::from("data/iv_timeseries.json"),
             database_url: None,
             public_rate_limit_per_min: 0,
+            auth_rate_limit_per_min: 0,
             metrics_secret_token: None,
             chain_snapshot_max_age_secs: 1_209_600,
             chain_snapshot_max_per_symbol: 48,

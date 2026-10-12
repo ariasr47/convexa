@@ -76,6 +76,7 @@ fn dummy_config(store: PathBuf) -> api_rust::Config {
         iv_store_path: PathBuf::from("data/iv_timeseries.json"),
         database_url: None,
         public_rate_limit_per_min: 0,
+        auth_rate_limit_per_min: 0,
         metrics_secret_token: None,
         chain_snapshot_max_age_secs: 1_209_600,
         chain_snapshot_max_per_symbol: 48,

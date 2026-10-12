@@ -33,19 +33,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "b0e1348bb9492f9a86afc0dfd730ddf5d452bc47dd3b1e0944c256a9834db911",
+        "0db8ac36517b86ea499fa2ead7744cf9fa2d1c853cd0146cb0a32d33f625c776",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "cd7fc2284c7b094ed5f2d4d306b46359bcd2e63ad3886141e88c405270877382",
+        "f896b4b7149e6777f0d00133f7c11b5dfbcf5eaf5594bf25420dce90c2be24d9",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "8e94e92fd5101555f8a45692d0e9418698d319600d2f02dfeaf4a184cce4310e",
+        "23525237c3ee3ba8d04825aba2f87ea23095c0efc7fe8dc0b63c40d91f62f07a",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "4d66a1fa96a5050c0f16eec4a1001ff2bd393d283da1e665ef1834d24a3cb46f",
+        "0886aa4be25c8e93e801a363bd25dc2b1fad317df9509d730ebf31e25516dcb3",
     ),
 ];
 

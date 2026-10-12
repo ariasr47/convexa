@@ -303,6 +303,9 @@ pub enum SignupResponse {
     Conflict(crate::openapi::WireError),
     #[response(status = 422, content_type = "application/json")]
     Validation(crate::openapi::WireError),
+    /// Per-IP sign-in budget (middleware).
+    #[response(status = 429, headers(("Retry-After" = String)), content_type = "application/json")]
+    TooManyRequests(crate::openapi::WireError),
     #[response(status = 503, content_type = "application/json")]
     Unavailable(crate::openapi::WireError),
 }
@@ -316,6 +319,9 @@ pub enum LoginResponse {
     Unauthorized(crate::openapi::WireError),
     #[response(status = 422, content_type = "application/json")]
     Validation(crate::openapi::WireError),
+    /// Account throttle after repeated failures, or the per-IP sign-in budget (middleware).
+    #[response(status = 429, headers(("Retry-After" = String)), content_type = "application/json")]
+    TooManyRequests(crate::openapi::WireError),
     #[response(status = 503, content_type = "application/json")]
     Unavailable(crate::openapi::WireError),
 }
@@ -473,11 +479,23 @@ impl IntoResponse for SignupResponse {
             Self::Validation(body) => {
                 (StatusCode::UNPROCESSABLE_ENTITY, Json(body)).into_response()
             }
+            Self::TooManyRequests(body) => too_many_requests(body),
             Self::Unavailable(body) => {
                 (StatusCode::SERVICE_UNAVAILABLE, Json(body)).into_response()
             }
         }
     }
+}
+
+/// Contract representative only: the persisted header policy for Retry-After is `exact:30`
+/// (tools/api-contract.mjs). At runtime the value is the real wait, 1 to 60 seconds.
+fn too_many_requests(body: crate::openapi::WireError) -> Response {
+    (
+        StatusCode::TOO_MANY_REQUESTS,
+        [(header::RETRY_AFTER, HeaderValue::from_static("30"))],
+        Json(body),
+    )
+        .into_response()
 }
 
 impl IntoResponse for LoginResponse {
@@ -488,6 +506,7 @@ impl IntoResponse for LoginResponse {
             Self::Validation(body) => {
                 (StatusCode::UNPROCESSABLE_ENTITY, Json(body)).into_response()
             }
+            Self::TooManyRequests(body) => too_many_requests(body),
             Self::Unavailable(body) => {
                 (StatusCode::SERVICE_UNAVAILABLE, Json(body)).into_response()
             }
@@ -691,6 +710,9 @@ pub(crate) fn contract_representative_response(boundary_id: &str) -> Option<Resp
         "POST /api/auth/signup 422 application/json public" => {
             SignupResponse::Validation(rejected()).into_response()
         }
+        "POST /api/auth/signup 429 application/json public" => {
+            SignupResponse::TooManyRequests(rejected()).into_response()
+        }
         "POST /api/auth/signup 503 application/json public" => {
             SignupResponse::Unavailable(rejected()).into_response()
         }
@@ -703,6 +725,9 @@ pub(crate) fn contract_representative_response(boundary_id: &str) -> Option<Resp
         }
         "POST /api/auth/login 422 application/json public" => {
             LoginResponse::Validation(rejected()).into_response()
+        }
+        "POST /api/auth/login 429 application/json public" => {
+            LoginResponse::TooManyRequests(rejected()).into_response()
         }
         "POST /api/auth/login 503 application/json public" => {
             LoginResponse::Unavailable(rejected()).into_response()
@@ -787,12 +812,14 @@ fn closed_byo_provider(raw: Option<&str>) -> Result<&'static str, AuthErr> {
             status: 422,
             code: "validation",
             message: "provider is required.".into(),
+            retry_after_secs: None,
         });
     };
     crate::services::llm_catalog::parse_byo_provider(p).ok_or_else(|| AuthErr {
         status: 422,
         code: "validation",
         message: "provider must be anthropic, openai, xai, or gemini.".into(),
+        retry_after_secs: None,
     })
 }
 
@@ -832,7 +859,12 @@ fn clear_session_cookie(secure: bool) -> HeaderValue {
 
 fn auth_err(e: AuthErr) -> Response {
     let status = StatusCode::from_u16(e.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-    (status, Json(e.envelope())).into_response()
+    let mut res = (status, Json(e.envelope())).into_response();
+    if let Some(secs) = e.retry_after_secs {
+        res.headers_mut()
+            .insert(header::RETRY_AFTER, header::HeaderValue::from(secs));
+    }
+    res
 }
 
 #[cfg(test)]
@@ -1002,6 +1034,7 @@ async fn put_settings_http(
             status: 422,
             code: "validation",
             message: "ai_model cannot be cleared; send a catalog id or omit the field.".into(),
+            retry_after_secs: None,
         });
     }
     let patch = SettingsPatch {
@@ -1095,6 +1128,7 @@ async fn put_ai_key_http(
             status: 422,
             code: "validation",
             message: "Enter a valid API key.".into(),
+            retry_after_secs: None,
         });
     }
     let provider = match closed_byo_provider(body.provider.as_deref()) {

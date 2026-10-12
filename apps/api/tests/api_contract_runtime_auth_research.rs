@@ -1286,3 +1286,86 @@ async fn session_day_tape_reads_require_the_operator_token() {
         "session-day-tape reads: 401 without / with a wrong operator token, 200 with it"
     );
 }
+
+async fn post_login(
+    router: &axum::Router,
+    ip: &str,
+    email: &str,
+    password: &str,
+) -> ObservedResponse {
+    let response = router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/auth/login")
+                .header("content-type", "application/json")
+                .header("x-forwarded-for", ip)
+                .body(Body::from(format!(
+                    r#"{{"email":"{email}","password":"{password}"}}"#
+                )))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    json_response(response).await
+}
+
+fn retry_after_secs(observed: &ObservedResponse) -> u64 {
+    observed
+        .headers
+        .get("retry-after")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.parse().ok())
+        .expect("numeric Retry-After header")
+}
+
+#[tokio::test]
+async fn repeated_wrong_passwords_answer_429_with_retry_after_even_for_the_right_one() {
+    let (state, router) = state_and_router().await;
+    let email = format!("runtime-throttle-{}@example.test", std::process::id());
+    signup(&state, &router, &email, false).await;
+    for _ in 0..5 {
+        let wrong = post_login(&router, "203.0.113.7", &email, "wrong-guess-123").await;
+        assert_eq!(wrong.status, StatusCode::UNAUTHORIZED);
+    }
+    let refused = post_login(&router, "203.0.113.7", &email, "runtime-password-123").await;
+    assert_eq!(refused.status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(refused.json["error"], "rate_limited");
+    assert!((1..=60).contains(&retry_after_secs(&refused)));
+}
+
+#[tokio::test]
+async fn the_per_ip_sign_in_budget_answers_429_and_spares_other_addresses() {
+    let (mut state, _) = state_and_router().await;
+    state.rate_limiter =
+        std::sync::Arc::new(api_rust::middleware::RateLimiter::with_auth_budget(0, 2));
+    let router = api_rust::server::production_router(state, vec![]).expect("production router");
+    for email in ["first@example.test", "second@example.test"] {
+        let spent = post_login(&router, "198.51.100.9", email, "wrong-guess-123").await;
+        assert_eq!(spent.status, StatusCode::UNAUTHORIZED, "{email}");
+    }
+    // A third, different account from the same address: refused by the per-IP budget.
+    let refused = post_login(
+        &router,
+        "198.51.100.9",
+        "third@example.test",
+        "wrong-guess-123",
+    )
+    .await;
+    assert_eq!(refused.status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(refused.json["error"], "rate_limited");
+    assert!((1..=60).contains(&retry_after_secs(&refused)));
+    let other = post_login(
+        &router,
+        "198.51.100.10",
+        "third@example.test",
+        "wrong-guess-123",
+    )
+    .await;
+    assert_eq!(
+        other.status,
+        StatusCode::UNAUTHORIZED,
+        "another address keeps its own budget"
+    );
+}

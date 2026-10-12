@@ -80,6 +80,8 @@ pub struct Config {
     pub database_url: Option<String>,
     /// Per-IP requests/minute on expensive public routes. `0` = disabled.
     pub public_rate_limit_per_min: u32,
+    /// Sign-in and sign-up POSTs per IP per minute (`AUTH_RATE_LIMIT_PER_MIN`, default 20; 0 = off).
+    pub auth_rate_limit_per_min: u32,
     /// When set, `GET /api/_metrics` requires `Authorization: Bearer <token>` (or `X-Metrics-Token`).
     pub metrics_secret_token: Option<String>,
     /// Dual retention: drop snapshots older than this (default 14 days).
@@ -393,6 +395,8 @@ impl Config {
         // set PUBLIC_RATE_LIMIT_PER_MIN=0 to disable for load tests.
         let public_rate_limit_per_min =
             env_u64("PUBLIC_RATE_LIMIT_PER_MIN", 120).min(u64::from(u32::MAX)) as u32;
+        let auth_rate_limit_per_min =
+            env_u64("AUTH_RATE_LIMIT_PER_MIN", 20).min(u64::from(u32::MAX)) as u32;
         let metrics_secret_token = env::var("METRICS_SECRET_TOKEN")
             .ok()
             .map(|s| s.trim().to_string())
@@ -477,6 +481,7 @@ impl Config {
             iv_store_path,
             database_url,
             public_rate_limit_per_min,
+            auth_rate_limit_per_min,
             metrics_secret_token,
             chain_snapshot_max_age_secs,
             chain_snapshot_max_per_symbol,
