@@ -6,17 +6,13 @@ import { FreshPositioning } from './FreshPositioning';
 
 afterEach(() => cleanup());
 
-describe('FreshPositioning empty contrast', () => {
-  it.each(['dark', 'light'] as const)(
-    '%s uses readable secondary ink at full opacity',
-    (scheme) => {
-      render(
-        <ThemeProvider theme={themeForPref(scheme)}>
-          <FreshPositioning chainVolOiRatio={null} volOiThreshold={1} unusualStrikes={[]} />
-        </ThemeProvider>,
-      );
-      const node = screen.getByText('Vol/OI unavailable this cycle.');
-      expect(node.className).toContain('MuiTypography');
-    },
-  );
+describe('FreshPositioning empty read', () => {
+  it('a null Vol/OI ratio says the read is unavailable this cycle', () => {
+    render(
+      <ThemeProvider theme={themeForPref('dark')}>
+        <FreshPositioning chainVolOiRatio={null} volOiThreshold={1} unusualStrikes={[]} />
+      </ThemeProvider>,
+    );
+    expect(screen.getByText('Vol/OI unavailable this cycle.')).toBeInTheDocument();
+  });
 });

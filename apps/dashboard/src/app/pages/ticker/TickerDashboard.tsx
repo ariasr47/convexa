@@ -387,8 +387,8 @@ function ColdLoadSkeleton() {
 
 /**
  * Board zone label — visual hierarchy only (product spine #3).
- * Renders as `<p>`, never a heading: widget titles remain the only h2s on the page
- * (`ticker-semantics.spec.tsx`). Full-row span so the two-column bento cannot sandwich
+ * Renders as `<p>`, never a heading: widget titles remain the only h2s on the page.
+ * Full-row span so the two-column bento cannot sandwich
  * a label beside a widget.
  */
 function BoardZoneLabel({
@@ -960,9 +960,8 @@ export function TickerDashboard() {
                     authority the hero repair used). Two grid children only, exactly like the design's
                     markup: the AI read wide on the left, and a `side` column stacking Live tape /
                     Position brief / Sim orders on the right. Below 1000 the container collapses to one
-                    column, so DOM order alone decides the stack: read → tape → position → orders,
-                    matching `ticker-hierarchy.spec.tsx`'s existing order guards (none of them pin AI
-                    relative to tape/brief/orders — only tape-before-brief, which this preserves). The
+                    column, so DOM order alone decides the stack: read → tape → position → orders
+                    (tape before brief, as before). The
                     outer `containerType` lives on a plain wrapper (never the styled grid element
                     itself — an element cannot query the container IT establishes). */}
                 <Box
@@ -1158,7 +1157,7 @@ export function TickerDashboard() {
                           `IvRank` is unmounted from the band — it is not in the design's
                           enumerated ctx-grid card list (`desk.mjs:395-421`) and it repeats the
                           read strip's `IV rank` cell (one fact, one place). The component and its
-                          own unit spec (`iv-rank/IvRank.spec.tsx`) stay — this is an unmount, not a
+                          spec stay (it covers only `ivRankStripFigure`) — this is an unmount, not a
                           deletion; `quiet-band.register.spec.tsx` scans the source file by path and
                           is correctly unaffected. See `TICKER_FIDELITY_REPAIR_REPORT.md` (Pass 2,
                           change 8) for the e2e/unit assertion edits this required. */}

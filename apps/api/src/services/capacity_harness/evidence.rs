@@ -26,19 +26,15 @@ pub fn classify_with(vars: &[(&str, &str)]) -> Evidence {
     }
 }
 
-/// Classify from the live process environment.
+/// Classify from the live process environment: [`classify_with`]'s rule applied to a snapshot of
+/// the process env, so the rule exists exactly once. Non-UTF-8 entries are skipped, matching the
+/// old `std::env::var(..).ok()` behaviour of treating them as unset.
 pub fn classify_evidence() -> Evidence {
-    fn env_truthy(name: &str) -> bool {
-        std::env::var(name)
-            .ok()
-            .map(|v| truthy_value(&v))
-            .unwrap_or(false)
-    }
-    if env_truthy("GITHUB_ACTIONS") || env_truthy("CONVEXA_CAPACITY_CI_STEP") {
-        Evidence::Ci
-    } else {
-        Evidence::Local
-    }
+    let env: Vec<(String, String)> = std::env::vars_os()
+        .filter_map(|(k, v)| Some((k.into_string().ok()?, v.into_string().ok()?)))
+        .collect();
+    let vars: Vec<(&str, &str)> = env.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
+    classify_with(&vars)
 }
 
 #[cfg(test)]
@@ -46,37 +42,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn ambient_ci_true_without_github_actions_is_local() {
-        assert_eq!(classify_with(&[("CI", "true")]), Evidence::Local);
-    }
-
-    #[test]
-    fn github_actions_true_is_ci() {
-        assert_eq!(classify_with(&[("GITHUB_ACTIONS", "true")]), Evidence::Ci);
-    }
-
-    #[test]
-    fn capacity_ci_step_truthy_is_ci() {
-        assert_eq!(
-            classify_with(&[("CONVEXA_CAPACITY_CI_STEP", "1")]),
-            Evidence::Ci
-        );
-    }
-
-    #[test]
-    fn empty_vars_is_local() {
-        assert_eq!(classify_with(&[]), Evidence::Local);
-    }
-
-    #[test]
-    fn falsey_github_actions_stays_local() {
-        assert_eq!(
-            classify_with(&[("GITHUB_ACTIONS", "false"), ("CI", "true")]),
-            Evidence::Local
-        );
-        assert_eq!(
-            classify_with(&[("GITHUB_ACTIONS", "0"), ("CONVEXA_CAPACITY_CI_STEP", "")]),
-            Evidence::Local
-        );
+    fn only_truthy_github_actions_or_capacity_ci_step_classifies_as_ci() {
+        let cases: &[(&[(&str, &str)], Evidence)] = &[
+            (&[("CI", "true")], Evidence::Local),
+            (&[("GITHUB_ACTIONS", "true")], Evidence::Ci),
+            (&[("CONVEXA_CAPACITY_CI_STEP", "1")], Evidence::Ci),
+            (&[], Evidence::Local),
+            (
+                &[("GITHUB_ACTIONS", "false"), ("CI", "true")],
+                Evidence::Local,
+            ),
+            (
+                &[("GITHUB_ACTIONS", "0"), ("CONVEXA_CAPACITY_CI_STEP", "")],
+                Evidence::Local,
+            ),
+        ];
+        for (vars, expected) in cases {
+            assert_eq!(classify_with(vars), *expected, "vars: {vars:?}");
+        }
     }
 }

@@ -15,23 +15,21 @@ function artifact(root) {
     sha256: crypto.createHash('sha256').update('fixture').digest('hex'),
   };
 }
-function base(root) {
-  const scenarios = [
-    'landing',
-    'ticker-desktop',
-    'ticker-offline-mobile',
-    'positions-dense',
-    'scanner-dense',
-    'ai-recommendation',
-  ];
+// (lean-tests batch 22) The shared fixture was a visual-gate summary; the visual gate is retired,
+// so the fixture is now the Chromium summary. Derived from the real manifest, not a frozen literal
+// — the count/id move together with it (curvature-v2-foundations FE-10 bumped
+// `pre-feature-52-v1`/52 → `curvature-v2-foundations-75-v1`/75; this fixture must track whatever
+// the manifest says next time it moves too).
+function base(root, manifest = loadManifest()) {
+  const chromiumCount = manifest.full_chromium.tests.length;
   return {
     schema_version: 1,
-    gate: 'visual',
+    gate: 'chromium',
     run_id: 'run-1',
     source_revision: 'a'.repeat(40),
-    selected: 6,
-    executed: 6,
-    passed: 6,
+    selected: chromiumCount,
+    executed: chromiumCount,
+    passed: chromiumCount,
     failed: 0,
     flaky: 0,
     not_run: 0,
@@ -40,46 +38,6 @@ function base(root) {
     browser_revision: '1234',
     host_platform: process.platform,
     artifacts: [artifact(root)],
-    scenarios: scenarios.map((scenario_id) => ({
-      identity: ['chromium', 'visual.spec.ts', scenario_id],
-      file: 'apps/dashboard-e2e/src/quality/visual.spec.ts',
-      project: 'chromium',
-      status: 'passed',
-      retry: 0,
-      artifact_paths: [],
-      scenario_id,
-      expected_path: null,
-      expected_sha256: null,
-      actual_path: null,
-      actual_sha256: null,
-      diff_path: null,
-      diff_sha256: null,
-    })),
-  };
-}
-
-test('strict visual summary validates arithmetic, inventory and file hash', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'summary-'));
-  const summary = base(root);
-  assert.doesNotThrow(() => validateSummary(summary, { root, manifest: loadManifest() }));
-});
-test('Chromium summary accepts scalar inventory identity and project fields', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'summary-'));
-  // Derived from the real manifest, not a frozen literal — the count/id move together with it
-  // (curvature-v2-foundations FE-10 bumped `pre-feature-52-v1`/52 → `curvature-v2-foundations-75-
-  // v1`/75; this fixture must track whatever the manifest says next time it moves too).
-  const manifest = loadManifest();
-  const chromiumCount = manifest.full_chromium.tests.length;
-  const common = {
-    ...base(root),
-    gate: 'chromium',
-    selected: chromiumCount,
-    executed: chromiumCount,
-    passed: chromiumCount,
-  };
-  delete common.scenarios;
-  const summary = {
-    ...common,
     inventory_id: manifest.full_chromium.inventory_id,
     project: 'chromium',
     tests: manifest.full_chromium.tests.map((record) => ({
@@ -92,38 +50,19 @@ test('Chromium summary accepts scalar inventory identity and project fields', ()
       artifact_paths: [],
     })),
   };
+}
+
+test('Chromium summary accepts scalar inventory identity and project fields', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'summary-'));
+  const manifest = loadManifest();
+  const summary = base(root, manifest);
   assert.doesNotThrow(() => validateSummary(summary, { root, manifest }));
 });
 test('summary rejects exact-count and identity mutations', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'summary-'));
   const manifest = loadManifest();
-  // Derived from the real manifest, not a frozen literal — the count/id move together with it
-  // (curvature-v2-foundations FE-10 bumped `pre-feature-52-v1`/52 → `curvature-v2-foundations-75-
-  // v1`/75; this fixture must track whatever the manifest says next time it moves too).
-  const chromiumCount = manifest.full_chromium.tests.length;
-  const common = {
-    ...base(root),
-    gate: 'chromium',
-    selected: chromiumCount,
-    executed: chromiumCount,
-    passed: chromiumCount,
-  };
-  delete common.scenarios;
-  const records = manifest.full_chromium.tests.map((record) => ({
-    test_id: record.test_id,
-    file: record.file,
-    title_path: record.title_path,
-    project: 'chromium',
-    status: 'passed',
-    retries: 0,
-    artifact_paths: [],
-  }));
-  const summary = {
-    ...common,
-    inventory_id: manifest.full_chromium.inventory_id,
-    project: 'chromium',
-    tests: records,
-  };
+  const summary = base(root, manifest);
+  const records = summary.tests;
   const options = { root, manifest };
   assert.throws(() => validateSummary({ ...summary, selected: 51 }, options));
   assert.throws(() =>
@@ -158,7 +97,7 @@ test('summary rejects flaky or not-run pass', () => {
   const summary = base(root);
   assert.throws(() =>
     validateSummary(
-      { ...summary, flaky: 1, passed: 5, executed: 6 },
+      { ...summary, flaky: 1, passed: summary.passed - 1 },
       { root, manifest: loadManifest() },
     ),
   );

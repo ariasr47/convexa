@@ -6,9 +6,8 @@
  * artboard prints this sample distance as `−0.81%` (`landing.mjs:88`) and `−0.8%` (`landing.mjs:65`),
  * and the first is not what the shipped formatter produces from those constants. The projection is a
  * MIRROR of `pages/ticker/widgets/_kit/distanceToLevel.ts`'s `distancePercentOnly` — no ticker file may
- * be edited by this feature, and a page may not import a sibling page — and the two are pinned EQUAL by
- * `curvature-v2-landing-samples.structural.spec.ts` (SPEC §7 item 14). Poison a constant there and the
- * rendered string must move.
+ * be edited by this feature, and a page may not import a sibling page — keep the two equal by hand
+ * (SPEC §7 item 14).
  *
  * No ring gauge (SPEC §2 — no ring-gauge component exists in `apps/dashboard`, and inventing one for
  * the acquisition page only is a second illustration under the canon's one-hero-instrument limit) and

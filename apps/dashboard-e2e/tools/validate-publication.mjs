@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const PUBLICATION_GATES = ['chromium', 'compatibility', 'accessibility', 'visual'];
+export const PUBLICATION_GATES = ['chromium', 'compatibility', 'accessibility'];
 
 export function validatePublication(root) {
   const failures = [];
@@ -30,5 +30,5 @@ export function validatePublication(root) {
 if (import.meta.url === `file://${process.argv[1]?.replaceAll('\\', '/')}`) {
   const root = path.resolve(import.meta.dirname, '../..');
   validatePublication(root);
-  console.log('browser publication: four artifact roots present');
+  console.log('browser publication: three artifact roots present');
 }

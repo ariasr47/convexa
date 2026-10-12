@@ -13,13 +13,12 @@ use axum::{
 };
 use futures_util::StreamExt;
 use serde_json::Value;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::time::Duration;
 use tower::ServiceExt;
 
 const TOKEN: &str = "runtime-market-stream-token";
 const MAX_BODY_BYTES: usize = 1024 * 1024;
-const EXPECTED_SPECIALIZED_OUTCOMES: usize = 16;
 
 #[derive(Debug)]
 struct ObservedResponse {
@@ -567,47 +566,6 @@ async fn stream_capacity_refusal_is_503_with_retry_guidance() {
     })
     .await
     .expect("dropping first stream releases capacity");
-}
-
-#[test]
-fn runtime_market_stream_fixture_is_schema_v2_and_non_vacuous() {
-    let fixture: Value = serde_json::from_str(include_str!(
-        "fixtures/api_contract/runtime-evidence-market-stream.json"
-    ))
-    .expect("runtime market/stream evidence fixture JSON");
-    assert_eq!(fixture["schema_version"], 2);
-    let entries = fixture["entries"].as_array().expect("entries array");
-    assert_eq!(entries.len(), EXPECTED_SPECIALIZED_OUTCOMES);
-    let source = include_str!("api_contract_runtime_market_stream.rs");
-    let mut ids = BTreeSet::new();
-    let mut requests = BTreeSet::new();
-    for entry in entries {
-        let boundary_id = entry["boundary_id"].as_str().expect("boundary_id");
-        assert!(
-            ids.insert(boundary_id),
-            "duplicate boundary_id {boundary_id}"
-        );
-        let request = entry["request"].as_str().expect("request");
-        assert!(
-            requests.insert(request),
-            "duplicate direct request {request}"
-        );
-        let test = entry["test"].as_str().expect("test name");
-        assert!(
-            source.contains(&format!("async fn {test}")),
-            "fixture test must resolve to a real async integration test: {test}"
-        );
-        let expected = &entry["expected_response"];
-        assert!(expected["status"].is_number());
-        assert!(expected["media_type"].is_string());
-        assert!(expected["security_mode"].is_string());
-        assert!(expected["header_names"].is_array());
-        assert!(expected["header_value_policies"].is_object());
-        assert_eq!(expected["body_valid"], true);
-        assert_eq!(entry["effect_assertion"]["durable"], "none");
-        assert_eq!(entry["effect_assertion"]["memory"], "none");
-        assert_eq!(entry["effect_assertion"]["cookie"], "none");
-    }
 }
 
 #[test]

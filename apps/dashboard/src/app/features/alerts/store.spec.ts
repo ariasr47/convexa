@@ -107,12 +107,6 @@ describe('52 (SB) — an unreadable blob degrades to empty WITHOUT overwriting t
     // the overwrite the mutation proof targets (per PLAN's own reviewer probe).
     expect(localStorage.getItem(ALERTS_KEY)).toBe(corrupt);
   });
-
-  it('the page can still render its own empty state from the degraded read (no throw reaches a caller)', () => {
-    localStorage.setItem(ALERTS_KEY, 'not json at all');
-    expect(listRules()).toEqual([]);
-    expect(listEvents()).toEqual([]);
-  });
 });
 
 describe('N-5 / case (c) — the latch is per-session and never auto-clears', () => {

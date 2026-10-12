@@ -257,6 +257,34 @@ mod tests {
     }
 
     #[test]
+    fn pair_rows_pairs_only_outcomes_of_the_requested_horizon() {
+        // The slice fixture is all-"1d", so nothing else exercises the horizon filter. Two
+        // outcomes share one sample key and differ only in horizon (and a tell-tale return);
+        // the "5d" one comes first so a first-match-only bug cannot pass by accident.
+        let samples = slice_0810_samples();
+        let base = slice_0810_outcomes()[0].clone();
+        let mut five_day = base.clone();
+        five_day.horizon = "5d".into();
+        five_day.ret_simple = Some(0.05);
+        let mut one_day = base;
+        one_day.horizon = "1d".into();
+        one_day.ret_simple = Some(0.01);
+
+        let pairing = pair_rows(&samples, &[five_day, one_day], "1d");
+
+        let paired: Vec<(&str, Option<f64>)> = pairing
+            .rows
+            .iter()
+            .map(|r| (r.horizon.as_str(), r.ret_simple))
+            .collect();
+        assert_eq!(
+            paired,
+            vec![("1d", Some(0.01))],
+            "only the requested horizon's outcome may pair; other horizons are ignored"
+        );
+    }
+
+    #[test]
     fn session_dates_of_is_the_single_definition() {
         let samples = slice_0810_samples();
         let outcomes = slice_0810_outcomes();

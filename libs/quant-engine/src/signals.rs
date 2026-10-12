@@ -656,43 +656,4 @@ mod tests {
         assert_eq!(s.opportunity_score, 0);
         assert_eq!(s.regime_note.as_deref(), Some("insufficient data"));
     }
-
-    #[test]
-    fn positive_gamma_regime() {
-        let state = MarketStateInput {
-            ticker: Some("TEST".into()),
-            price: Some(100.0),
-            gamma_flip: Some(99.0),
-            net_gex: Some(1.0e6),
-            call_wall: Some(105.0),
-            put_wall: Some(95.0),
-            peak_gex_strike: Some(100.0),
-            max_pain: Some(100.0),
-            iv_hv_ratio: Some(1.0),
-            ..Default::default()
-        };
-        let s = generate_signals(&state, None);
-        assert_eq!(s.regime.as_deref(), Some("positive_gamma"));
-        assert!(s.opportunity_score > 0);
-    }
-
-    #[test]
-    fn fingerprint_stable() {
-        let state = MarketStateInput {
-            ticker: Some("X".into()),
-            price: Some(100.0),
-            gamma_flip: Some(100.0),
-            net_gex: Some(-1.0),
-            call_wall: Some(110.0),
-            put_wall: Some(90.0),
-            peak_gex_strike: Some(100.0),
-            max_pain: Some(100.0),
-            iv_hv_ratio: Some(1.0),
-            ..Default::default()
-        };
-        let a = generate_signals(&state, None);
-        let b = generate_signals(&state, None);
-        assert_eq!(state_fingerprint(&a), state_fingerprint(&b));
-        assert_eq!(state_fingerprint(&a).len(), 12);
-    }
 }

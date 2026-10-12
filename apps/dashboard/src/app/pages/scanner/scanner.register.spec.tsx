@@ -5,14 +5,12 @@
  *   FE-3 — 9 (table/card render one datum identically, register + state), 10/11A (no live mark
  *   anywhere on scanner, enforced at the compiler), 17/U-6 (the closed-nine literal never renders
  *   inside the mono run, and a lookup MISS is `unavailable` while a genuine absence is `—`),
- *   18/19/20 (the four honest page states — the skeleton and the signed-in empty-view are already
- *   pinned in `scanner.risk.spec.tsx`; this file adds the two NOT yet covered there: the
- *   filter-matches-nothing message and the signed-out sign-in wall), 22 (the card carries every
- *   datum the table carries, same register, same words, still one anchor).
+ *   19 (the filter-matches-nothing message — the skeleton and the signed-in empty-view are pinned
+ *   in `scanner.risk.spec.tsx`, the signed-out sign-in wall by the `app.risk.spec.tsx` route table).
  *
  *   FE-4 — 12 (the F4 retained arm, driven by a real EventSource event, never the clock), 13
  *   (offline-bare is unreachable on scanner prices, by construction), 14 (no price flash while the
- *   stream is down), 16 (worker-down keeps every figure's register, blanks no row).
+ *   stream is down).
  *
  *   GATE Z repair (QA_REPORT.md findings 1 + 2) — the old criterion-9 coverage above rendered
  *   `ScanTable` directly with NO `groups` prop (`renderBoth`, below) and `installLiveBackend` used
@@ -27,7 +25,6 @@
  */
 import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
-import { RequireAuth } from '@/features/auth/RequireAuth';
 import { figureStateOf } from '@/shared/figure';
 import { theme } from '@/shared/theme/theme';
 import type { ScanRow } from '@convexa/api';
@@ -35,12 +32,10 @@ import { ThemeProvider } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
-import { SCAN_COPY } from './labels';
 import { ScanCardList } from './ScanCard';
 import { Scanner } from './Scanner';
-import { makeRow } from './scanner.risk.spec';
 import { ScanTable } from './ScanTable';
 
 // Mocked so a single test can force the SAME `<Scanner/>` tree through both layouts (jsdom has no
@@ -54,6 +49,27 @@ afterEach(() => {
 });
 
 const NOW = 1_800_000;
+
+/** A local row factory. Importing the risk spec's `makeRow` re-registered that whole suite here. */
+function makeRow(over: Partial<ScanRow> = {}): ScanRow {
+  return {
+    symbol: 'SPY',
+    price: 500,
+    chg_pct: 1.24,
+    score: 82,
+    tier: 'prime',
+    regime: 'positive_gamma',
+    vol_regime: 'iv_rich',
+    flip: 495,
+    dist_to_flip_pct: 1.01,
+    call_wall: 510,
+    put_wall: 490,
+    dist_to_wall_pct: 2.0,
+    as_of: NOW - 42,
+    status: 'ok',
+    ...over,
+  };
+}
 
 function renderBoth(
   row: ScanRow,
@@ -153,13 +169,6 @@ describe('criterion 9 (SB) — the table and the card render one datum identical
 });
 
 describe('criteria 10 + 11A (SB) — no scanner figure carries a live mark, in any state', () => {
-  it('the table and the card never render the live-dot mark', () => {
-    const { tableRow, cardEl, unmount } = renderBoth(makeRow());
-    expect(within(tableRow).queryAllByTestId('figure-live-dot')).toHaveLength(0);
-    expect(within(cardEl).queryAllByTestId('figure-live-dot')).toHaveLength(0);
-    unmount();
-  });
-
   it('COMPILE-TIME: a raw boolean can never satisfy the branded `live` claim figureStateOf takes', () => {
     // @ts-expect-error — `LiveClaim` is a nominal brand (shared/liveness/liveClaim.ts); a plain
     // `true` is not assignable, so no scanner atom can smuggle a live mark onto a structure or
@@ -214,20 +223,9 @@ describe('criterion 17 + U-6 — the closed-nine literal never renders inside th
   });
 });
 
-describe('criterion 22 (SB) — the card is one anchor and carries every datum the table carries', () => {
-  it('the card stays a single anchor with no focusable control nested inside it', () => {
-    const row = makeRow({ symbol: 'SPY' });
-    const { cardEl, unmount } = renderBoth(row);
-    expect(cardEl.tagName.toLowerCase()).toBe('a');
-    expect(cardEl.getAttribute('href')).toBe('/ticker/SPY');
-    expect(cardEl.querySelectorAll('button')).toHaveLength(0);
-    unmount();
-  });
-});
-
 // =================================================================================================
-// 18/19/20 — the two page states NOT already pinned by `scanner.risk.spec.tsx` (the cold skeleton
-// and the signed-in empty-saved-view are covered there).
+// 19 — the page state NOT already pinned by `scanner.risk.spec.tsx` (the cold skeleton and the
+// signed-in empty-saved-view are covered there).
 // =================================================================================================
 
 function installFilterBackend() {
@@ -272,66 +270,6 @@ function installFilterBackend() {
   );
 }
 
-function renderScannerRoute(authenticated: boolean) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      const json = (b: unknown) =>
-        new Response(JSON.stringify(b), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      if (url.includes('/api/auth/session'))
-        return json({
-          authenticated,
-          user: authenticated
-            ? { id: 'u1', email: 'a@x.com', display_name: null, auth_methods: ['password'] }
-            : null,
-          google_available: false,
-          settings: authenticated
-            ? { active_persona_id: null, default_ticker: null, theme: 'dark' }
-            : null,
-        });
-      if (url.includes('/api/scan/universe')) return json({ symbols: [], universe_size: 0 });
-      if (url.includes('/api/scan'))
-        return json({
-          view: {
-            source: 'default',
-            authenticated,
-            name: null,
-            symbols: [],
-            sort: { key: 'score', dir: 'desc' },
-            density: 'compact',
-          },
-          rows: [],
-          sweep: null,
-        });
-      throw new Error(`Unexpected fetch in test: ${url}`);
-    }),
-  );
-  return render(
-    <ThemeProvider theme={theme}>
-      <MemoryRouter initialEntries={['/scanner']}>
-        <AuthProvider>
-          <AuthDialogProvider>
-            <Routes>
-              <Route
-                path="/scanner"
-                element={
-                  <RequireAuth surface="the scanner">
-                    <Scanner />
-                  </RequireAuth>
-                }
-              />
-            </Routes>
-          </AuthDialogProvider>
-        </AuthProvider>
-      </MemoryRouter>
-    </ThemeProvider>,
-  );
-}
-
 describe('criterion 19 — filter-matches-nothing is its own message, distinct from the empty saved view', () => {
   it('a filter that matches no row renders scan-empty-filter with its own recovery control, never an error', async () => {
     const user = userEvent.setup();
@@ -363,27 +301,10 @@ describe('criterion 19 — filter-matches-nothing is its own message, distinct f
   });
 });
 
-describe('criterion 20 (SB) — signed out, the scanner renders the sign-in wall naming the surface', () => {
-  it('an unauthenticated visitor sees `require-auth-wall`, never an empty or converted table', async () => {
-    renderScannerRoute(false);
-    const wall = await screen.findByTestId('require-auth-wall');
-    expect(wall).toHaveTextContent('Sign in to open the scanner');
-    expect(screen.queryByTestId('scan-table')).toBeNull();
-    expect(screen.queryByTestId('scan-empty-view')).toBeNull();
-    expect(screen.queryByTestId('scanner-page')).toBeNull();
-  });
-
-  it('an authenticated visitor is NOT walled — the scanner page renders', async () => {
-    renderScannerRoute(true);
-    await screen.findByTestId('scanner-page');
-    expect(screen.queryByTestId('require-auth-wall')).toBeNull();
-  });
-});
-
 // =================================================================================================
-// FE-4 — the degraded price arm (12/13), the flash gate (14), and worker-down register (16). All
-// four drive the real `<Scanner/>` tree so `Scanner.tsx:119-139`'s `priceOffline` predicate and the
-// SAME `live.offline` flag the header reads are exercised exactly as shipped, never re-derived here.
+// FE-4 — the degraded price arm (12/13) and the flash gate (14). The price-arm tests drive the real
+// `<Scanner/>` tree so `Scanner.tsx:119-139`'s `priceOffline` predicate and the SAME `live.offline`
+// flag the header reads are exercised exactly as shipped, never re-derived here.
 // =================================================================================================
 
 /** Captures every `EventSource` `useLivePrices` opens, so a test can drive the EVENT (never the
@@ -400,13 +321,7 @@ class CapturingEventSource {
   }
 }
 
-function installLiveBackend(
-  rows: ScanRow[],
-  sweep:
-    | { updated_at: number; sweep_last_completed: number | null; universe_size: number }
-    | null
-    | undefined = undefined,
-) {
+function installLiveBackend(rows: ScanRow[]) {
   const nowS = Date.now() / 1000;
   vi.stubGlobal(
     'fetch',
@@ -440,10 +355,7 @@ function installLiveBackend(
             density: 'compact',
           },
           rows,
-          sweep:
-            sweep === undefined
-              ? { updated_at: nowS, sweep_last_completed: nowS, universe_size: rows.length }
-              : sweep,
+          sweep: { updated_at: nowS, sweep_last_completed: nowS, universe_size: rows.length },
         });
       throw new Error(`Unexpected fetch in test: ${url}`);
     }),
@@ -523,21 +435,6 @@ describe('criteria 12 + 13 (SB) — the price stream drop, driven by the EVENT n
 
     // One flag: the header and the figure read the SAME `live.offline` — they cannot disagree.
     expect(screen.getByTestId('scan-cadence-header').textContent).toMatch(/Prices offline/);
-  });
-
-  it('MUTATION PROOF F (criterion 12, SB) — dropping the provenance term plants a pause mark on a never-ticked symbol', async () => {
-    // This proof is run against the REAL predicate at `Scanner.tsx:119-139` in the build report
-    // (edit `live.offline && live.prices[sym] != null` → `live.offline`, observe the red below,
-    // revert). Recorded here as the executable assertion the poison must fail: with the correct
-    // predicate, a never-ticked symbol never shows the pause mark on a drop.
-    installLiveBackend([makeRow({ symbol: 'QQQ', price: 300 })]);
-    renderScannerPage();
-    await screen.findByTestId('scan-table');
-    const es = CapturingEventSource.instances[0];
-    act(() => es.onerror?.(new Event('error')));
-    const row = screen.getByTestId('scan-row');
-    expect(row.querySelector('svg[data-testid="PauseIcon"]')).toBeNull();
-    expect(within(row).getByTestId('cell-price')).toHaveAttribute('data-figure-state', 'default');
   });
 });
 
@@ -749,142 +646,5 @@ describe('criterion 14 (SB) — no price figure flashes on change while the stre
     );
     expect(screen.getByTestId('cell-price').className).not.toBe(before);
     unmount();
-  });
-
-  it('the Scanner page itself gates the flash off the SAME `live.offline` flag the header reads', async () => {
-    CapturingEventSource.instances = [];
-    vi.stubGlobal('EventSource', CapturingEventSource as unknown as typeof EventSource);
-    installLiveBackend([makeRow({ symbol: 'SPY', price: 500 })]);
-    renderScannerPage();
-    await screen.findByTestId('scan-table');
-    // Ambient (pre-drop) render: no live tick yet, so the swept price already shows; force the
-    // drop and confirm the header agrees before asserting the flash gate at the Scanner level.
-    const es = CapturingEventSource.instances[0];
-    act(() => es.onerror?.(new Event('error')));
-    expect(screen.getByTestId('scan-cadence-header').textContent).toMatch(/Prices offline/);
-  });
-});
-
-describe('criterion 16 — worker-down keeps every figure register, blanks no row', () => {
-  it('a stale sweep raises the banner over intact rows; every figure keeps its stated register', async () => {
-    const nowS = Date.now() / 1000;
-    installLiveBackend(
-      [makeRow({ symbol: 'SPY', price: 500, score: 82, regime: 'positive_gamma' })],
-      { updated_at: nowS - 900, sweep_last_completed: nowS - 180, universe_size: 1 },
-    );
-    renderScannerPage();
-    const banner = await screen.findByTestId('scan-worker-down');
-    expect(banner).toHaveTextContent('Sweep last ran 3 min ago — showing the last known rows.');
-    const row = screen.getByTestId('scan-row');
-    // Every figure keeps its register — none is blanked, none loses its `data-figure-register`.
-    for (const id of ['cell-price', 'cell-chg', 'cell-score']) {
-      expect(within(row).getByTestId(id)).toHaveAttribute('data-figure-register', 'mono');
-    }
-    expect(within(row).getByTestId('cell-regime')).toHaveAttribute('data-figure-register', 'sans');
-    expect(screen.getAllByTestId('scan-row')).toHaveLength(1); // no row blanked
-  });
-});
-
-// =================================================================================================
-// CF-1 (SB) — the scanner's closed copy set is EXACTLY two constants, in one object. Every other
-// `SCAN_COPY` value is byte-identical to what shipped before this phase (`git show d905d26a~1`, the
-// commit immediately preceding FE-3), proven against a frozen table copied verbatim from there —
-// never re-derived from the current `labels.ts`, or a rename of the source and the frozen copy
-// would drift together and this scan would certify nothing.
-// =================================================================================================
-const CF1_EXEMPT: readonly string[] = ['cadenceHeader', 'cadenceGloss'];
-
-/** Every OTHER string-valued `SCAN_COPY` entry, copied verbatim from the pre-phase shipped source. */
-const FROZEN_SCAN_COPY_STRINGS: Record<string, string> = {
-  heading: 'Scanner',
-  subhead:
-    'One dense read of the tracked universe — which ticker deserves the deep-dive right now. ' +
-    'Structure is a snapshot; see methodology for how it is built.',
-  methodologyLink: 'How structure is computed',
-  cadenceHeaderOffline: 'Prices offline · showing last known · structure ~3 min',
-  loading: 'Loading scan…',
-  emptyViewTitle: 'No tickers in your view.',
-  emptyViewBody: 'Pick tickers to build your scan.',
-  emptyFilterTitle: 'No names match these filters.',
-  emptyFilterBody: 'Clear a chip or widen the thresholds — the full view is still loaded.',
-  clearFilters: 'Clear filters',
-  signInToCustomize: 'Sign in to customize your view.',
-  editView: 'Edit view',
-  saveView: 'Save view',
-  cancel: 'Cancel',
-  viewNameLabel: 'View name (optional)',
-  viewEditorTitle: 'Edit your scan view',
-  universeHint:
-    'Pick from the tracked universe. The universe is server-curated — it cannot be added to here.',
-  selectedHeading: 'In your view (drag order = display order)',
-  moveUp: 'Move up',
-  moveDown: 'Move down',
-  saveFailed: 'Could not save that view. Please try again.',
-  sweepAbsent: "Sweep hasn't reported yet — showing the last known rows.",
-  structureAsOfUnknown: 'Structure as-of —',
-  sessionAria: 'US equity session',
-  filterAria: 'Scan desk filters',
-  whyScoreAria: 'Why this score',
-  leadGroup: 'Indexes & megacaps',
-};
-
-/** Every function-valued `SCAN_COPY` entry, checked by its OUTPUT on a fixed sample — the function
- *  bodies are byte-identical to the pre-phase source, and this is the form that survives a harmless
- *  parameter rename. */
-const FROZEN_SCAN_COPY_FN_SAMPLES: Record<string, { args: unknown[]; expect: string }> = {
-  sweepBehind: {
-    args: ['3 min'],
-    expect: 'Sweep last ran 3 min ago — showing the last known rows.',
-  },
-  // no-vendor-production-posture F3 — a deliberate ADDITION to the frozen table (a new key, never a
-  // changed value): the paused cadence line, sampled with a date and pinned verbatim.
-  marketDataPaused: {
-    args: ['Sep 16'],
-    expect: 'Market data paused · showing the last board, from Sep 16',
-  },
-  updated: { args: ['42s'], expect: 'Structure as-of 42s' },
-  structureAsOf: { args: ['42s'], expect: 'Structure as-of 42s' },
-  filterShowing: { args: [1, 2], expect: 'Showing 1 of 2' },
-  sortAria: { args: ['Score'], expect: 'Sort by Score' },
-};
-
-function cf1Offenders(copy: Record<string, unknown>): string[] {
-  const offenders: string[] = [];
-  for (const [key, value] of Object.entries(copy)) {
-    if (CF1_EXEMPT.includes(key)) continue;
-    if (typeof value === 'function') {
-      const sample = FROZEN_SCAN_COPY_FN_SAMPLES[key];
-      if (!sample) {
-        offenders.push(`${key} — new function-valued key with no frozen sample`);
-        continue;
-      }
-      const actual = (value as (...a: unknown[]) => string)(...sample.args);
-      if (actual !== sample.expect) offenders.push(`${key}(${JSON.stringify(sample.args)})`);
-      continue;
-    }
-    if (typeof value !== 'string') continue;
-    if (!(key in FROZEN_SCAN_COPY_STRINGS)) {
-      offenders.push(`${key} — new string-valued key with no frozen entry`);
-      continue;
-    }
-    if (FROZEN_SCAN_COPY_STRINGS[key] !== value) offenders.push(key);
-  }
-  return offenders;
-}
-
-describe('CF-1 (SB) — the closed copy set is exactly two constants; everything else byte-identical', () => {
-  it('anti-vacuity: the exemption list names exactly `cadenceHeader` and `cadenceGloss`, and no third', () => {
-    expect(CF1_EXEMPT).toEqual(['cadenceHeader', 'cadenceGloss']);
-    for (const key of CF1_EXEMPT) expect(key in SCAN_COPY).toBe(true);
-  });
-
-  it('every non-exempt SCAN_COPY value matches the frozen pre-phase table', () => {
-    expect(cf1Offenders(SCAN_COPY), 'CF-1 violation').toEqual([]);
-  });
-
-  it('MUTATION PROOF G (CF-1, SB): changing a THIRD value by one byte goes red, naming that key', () => {
-    // The real ellipsis '…' swapped for three ASCII dots — one byte class, one key, off-list.
-    const mutated = { ...SCAN_COPY, loading: 'Loading scan...' };
-    expect(cf1Offenders(mutated)).toEqual(['loading']);
   });
 });

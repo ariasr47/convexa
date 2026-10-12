@@ -77,7 +77,7 @@ pub fn field_reason(field: RecField, value_present: bool, p: InputPresence) -> O
 /// The SIX plan/conviction fields. A **separate** enum from `RecField` on purpose: `RecField` is a
 /// shared key whose other consumer (`grounding::resolve_field`) is an exhaustive match over an
 /// `Option<f64>` that none of these six can inhabit. Merging them would file a present structure as
-/// absent and would move the user-visible `n of m` pair. Pinned at 6 by a tally test.
+/// absent and would move the user-visible `n of m` pair.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecPlanField {
     Structure,
@@ -203,64 +203,86 @@ mod tests {
     }
 
     #[test]
-    fn a_present_value_has_no_reason() {
-        assert!(field_reason(RecField::MaxRisk, true, all_present()).is_none());
-    }
-
-    #[test]
-    fn a_null_field_with_every_input_present_is_not_given() {
-        let r = field_reason(RecField::MaxRisk, false, all_present()).unwrap();
-        assert_eq!(r.reason, ReasonKind::NotGiven);
-        assert!(r.missing_input.is_none());
-    }
-
-    #[test]
-    fn a_null_max_risk_with_no_risk_block_is_unavailable_naming_the_risk_block() {
-        let p = InputPresence {
+    fn field_reason_names_the_first_absent_dependency_in_declared_order() {
+        let not_given = Some(FieldReason {
+            reason: ReasonKind::NotGiven,
+            missing_input: None,
+        });
+        let unavailable = |m: MissingInput| {
+            Some(FieldReason {
+                reason: ReasonKind::Unavailable,
+                missing_input: Some(m),
+            })
+        };
+        let no_risk_block = InputPresence {
             risk_block: false,
             ..all_present()
         };
-        let r = field_reason(RecField::MaxRisk, false, p).unwrap();
-        assert_eq!(r.reason, ReasonKind::Unavailable);
-        assert_eq!(r.missing_input, Some(MissingInput::RiskBlock));
-    }
-
-    #[test]
-    fn position_size_with_both_dependencies_absent_names_the_risk_block_on_every_run() {
-        let p = InputPresence {
+        let risk_and_quotes_absent = InputPresence {
             risk_block: false,
             candidate_quotes: false,
             straddle_move: true,
         };
-        for _ in 0..100 {
-            let r = field_reason(RecField::PositionSize, false, p).unwrap();
-            assert_eq!(r.missing_input, Some(MissingInput::RiskBlock));
+        let none_present = InputPresence {
+            risk_block: false,
+            candidate_quotes: false,
+            straddle_move: false,
+        };
+        // (case, field, value present, assembled inputs, reason)
+        let cases = [
+            (
+                "a present value has no reason",
+                RecField::MaxRisk,
+                true,
+                all_present(),
+                None,
+            ),
+            (
+                "a null field with every input present is not_given",
+                RecField::MaxRisk,
+                false,
+                all_present(),
+                not_given,
+            ),
+            (
+                "a null max_risk with no risk block is unavailable naming the risk block",
+                RecField::MaxRisk,
+                false,
+                no_risk_block,
+                unavailable(MissingInput::RiskBlock),
+            ),
+            (
+                "position_size with both dependencies absent names the risk block",
+                RecField::PositionSize,
+                false,
+                risk_and_quotes_absent,
+                unavailable(MissingInput::RiskBlock),
+            ),
+            (
+                "exit_stop never reports a missing input",
+                RecField::ExitStop,
+                false,
+                none_present,
+                not_given,
+            ),
+            (
+                "invalidation_level never reports a missing input",
+                RecField::InvalidationLevel,
+                false,
+                none_present,
+                not_given,
+            ),
+            (
+                "invalidation_level is a first-class field: a present value has no reason",
+                RecField::InvalidationLevel,
+                true,
+                none_present,
+                None,
+            ),
+        ];
+        for (case, field, value_present, presence, want) in cases {
+            assert_eq!(field_reason(field, value_present, presence), want, "{case}");
         }
-    }
-
-    #[test]
-    fn exit_stop_never_reports_a_missing_input() {
-        let p = InputPresence {
-            risk_block: false,
-            candidate_quotes: false,
-            straddle_move: false,
-        };
-        let r = field_reason(RecField::ExitStop, false, p).unwrap();
-        assert_eq!(r.reason, ReasonKind::NotGiven);
-        assert!(r.missing_input.is_none());
-    }
-
-    #[test]
-    fn invalidation_level_is_a_first_class_field_and_never_reports_a_missing_input() {
-        let p = InputPresence {
-            risk_block: false,
-            candidate_quotes: false,
-            straddle_move: false,
-        };
-        let r = field_reason(RecField::InvalidationLevel, false, p).unwrap();
-        assert_eq!(r.reason, ReasonKind::NotGiven);
-        assert!(r.missing_input.is_none());
-        assert!(field_reason(RecField::InvalidationLevel, true, p).is_none());
     }
 
     // ---- rec-absence-literals-hole ------------------------------------------------------------
@@ -269,28 +291,6 @@ mod tests {
         PlanInputPresence {
             candidate_set: None,
         }
-    }
-
-    #[test]
-    fn the_two_field_enums_stay_disjoint_at_five_and_six() {
-        // A tally, not a spelling test: merging the two enums is the failure this pins (AC-32).
-        const REC_FIELDS: [RecField; 5] = [
-            RecField::MaxRisk,
-            RecField::PositionSize,
-            RecField::ExitTarget,
-            RecField::ExitStop,
-            RecField::InvalidationLevel,
-        ];
-        const PLAN_FIELDS: [RecPlanField; 6] = [
-            RecPlanField::Structure,
-            RecPlanField::Strikes,
-            RecPlanField::Expiration,
-            RecPlanField::EntryTrigger,
-            RecPlanField::TimeHorizon,
-            RecPlanField::Confidence,
-        ];
-        assert_eq!(REC_FIELDS.len(), 5);
-        assert_eq!(PLAN_FIELDS.len(), 6);
     }
 
     #[test]

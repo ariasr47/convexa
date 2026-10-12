@@ -13,8 +13,8 @@
  *      asserted here too (item 4).
  *   2. SOURCE-SCAN (`?raw`, mutation-tested) — no component may set `outline: 'none'` (or 0) without
  *      an in-file `:focus-visible` replacement. The `Widget.tsx` frame is the accounted case: it
- *      keeps `outline: 'none'` for ringless MOUSE selection and now carries its own
- *      `&:focus-visible` ring — asserted explicitly.
+ *      keeps `outline: 'none'` for ringless MOUSE selection and carries its own `&:focus-visible`
+ *      ring, so the same scan covers it.
  *
  * Testing gotcha honored: MUI `sx`/baseline styles compile into <style> tags — we assert on the
  * injected CSS TEXT (never `getAttribute('style')`).
@@ -24,7 +24,6 @@ import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import widgetSource from '@/shared/ui/Widget/Widget?raw';
 import { lightTheme, theme } from './theme';
 import { extrasFor } from './tokens';
 
@@ -114,11 +113,5 @@ describe('source scan — outline:none only with an in-file :focus-visible repla
 
   it('no component strips the focus outline without replacing it in the same file', () => {
     expect(outlineViolations(SOURCES)).toEqual([]);
-  });
-
-  it('the Widget frame stays the accounted case: outline none FOR MOUSE + its own &:focus-visible ring', () => {
-    expect(widgetSource).toMatch(OUTLINE_KILL);
-    expect(widgetSource).toContain("'&:focus-visible'");
-    expect(widgetSource).toContain('outlineOffset');
   });
 });

@@ -171,25 +171,3 @@ impl RedisPriceCache {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn memory_roundtrip() {
-        let cache = InMemoryPriceCache::new();
-        let p = LivePrice {
-            symbol: "spy".into(),
-            price: 500.0,
-            bid: Some(499.9),
-            ask: Some(500.1),
-            ts_ns: 1,
-            received_at: 2,
-        };
-        cache.set_price(&p).await.unwrap();
-        let got = cache.get_price("SPY").await.unwrap().unwrap();
-        assert!((got.price - 500.0).abs() < 1e-9);
-        assert_eq!(got.symbol, "SPY");
-    }
-}

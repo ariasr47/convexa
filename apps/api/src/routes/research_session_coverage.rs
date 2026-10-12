@@ -406,6 +406,12 @@ mod tests {
         assert_eq!(rows[0]["cell"], "missing");
         assert_eq!(rows[1]["symbol"], "QQQ");
         assert_eq!(rows[2]["symbol"], "IWM");
+        for row in rows {
+            assert!(row.get("detail").is_none());
+            assert!(row.get("unreadable_reason").is_none());
+            assert!(row.get("message").is_none());
+            assert!(row.get("last_readable").is_some());
+        }
         let holes = v["holes"].as_array().unwrap();
         assert_eq!(holes.len(), 3);
         for h in holes {
@@ -417,6 +423,8 @@ mod tests {
         assert!(v.get("market").is_none());
         assert!(v.get("contracts").is_none());
         assert!(v.get("daily_bars").is_none());
+        assert!(v.get("minutes").is_none());
+        assert!(v.get("trades").is_none());
     }
 
     #[tokio::test]
@@ -526,51 +534,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn coverage_envelope_has_no_market_contracts_or_reason_field() {
-        begin();
-        let state =
-            AppState::for_tests(ChainSnapshotStore::memory(), SessionChainArchive::memory())
-                .await
-                .unwrap();
-        let res = call(state, Some("2026-08-10"), HeaderMap::new()).await;
-        let (status, v) = body_json(res).await;
-        assert_eq!(status, StatusCode::OK, "{v}");
-        assert!(v.get("market").is_none());
-        assert!(v.get("contracts").is_none());
-        assert!(v.get("daily_bars").is_none());
-        assert!(v.get("minutes").is_none());
-        assert!(v.get("trades").is_none());
-        for row in v["rows"].as_array().unwrap() {
-            assert!(row.get("detail").is_none());
-            assert!(row.get("unreadable_reason").is_none());
-            assert!(row.get("message").is_none());
-            assert!(row.get("last_readable").is_some());
-        }
-        for hole in v["holes"].as_array().unwrap() {
-            assert!(hole.get("detail").is_none());
-            assert!(hole.get("message").is_none());
-        }
-    }
-
-    #[tokio::test]
-    async fn coverage_vendor_called_false_and_authorizes_nothing() {
-        begin();
-        let state =
-            AppState::for_tests(ChainSnapshotStore::memory(), SessionChainArchive::memory())
-                .await
-                .unwrap();
-        let res = call(state, Some("2026-08-11"), HeaderMap::new()).await;
-        let (status, v) = body_json(res).await;
-        assert_eq!(status, StatusCode::OK, "{v}");
-        // 2026-08-11 is a Tuesday; relative to "now" (after that date) it is due past → fail holes,
-        // or if somehow future, not_due. Either way vendor/authorizes are locked.
-        assert_eq!(v["vendor_called"], false);
-        assert_eq!(v["authorizes"], "nothing");
-        assert_eq!(v["command"], "archive-coverage");
-        assert_eq!(v["evidence"], "this process");
-    }
-
-    #[tokio::test]
     async fn coverage_seed_date_drops_spy_from_rows() {
         begin();
         let state =
@@ -633,16 +596,5 @@ mod tests {
             assert_eq!(row["cell"], "not yet due");
         }
         assert!(v["holes"].as_array().unwrap().is_empty());
-    }
-
-    #[test]
-    fn coverage_representative_200_has_required_fields() {
-        let res = contract_representative_response(
-            StatusCode::OK,
-            "application/json",
-            false,
-            "GET /api/_research/session-archive/coverage 200 application/json operator-token",
-        );
-        assert_eq!(res.status(), StatusCode::OK);
     }
 }

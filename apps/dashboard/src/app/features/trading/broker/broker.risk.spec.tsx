@@ -175,15 +175,24 @@ afterEach(() => {
 });
 
 // =================================================================================================
-// 2. Rendered negative space — READ-ONLY is ABSENCE, on EVERY arm (AC-15)
+// 2. Rendered negative space — READ-ONLY is ABSENCE, on EVERY arm (AC-15), and the rendered text
+//    never claims `live` (the §3 forbidden word, swept in the same render)
 // =================================================================================================
+
+const NEGATION = /a snapshot, never live/gi;
+
+/** Strip every allowed negation phrase, then any word-bounded `live` left is a violation. */
+function liveViolations(text: string): string[] {
+  const stripped = text.replace(NEGATION, '');
+  return stripped.match(/\blive\b/gi) ?? [];
+}
 
 describe('broker surface · zero order affordances on every wire arm', () => {
   const FORBIDDEN_TESTIDS = ['open-entry', 'pending-affordance', 'position-row'];
   const FORBIDDEN_BUTTONS = /^(close|trim|roll|add|cancel order|place|buy|sell|execute)$/i;
 
   it.each(ALL_ARMS)(
-    '%s: no order/trade/close/modify affordance — not even disabled',
+    '%s: no order/trade/close/modify affordance — not even disabled — and no rendered `live` claim',
     async (_label, book) => {
       install(book);
       renderPanel();
@@ -200,6 +209,9 @@ describe('broker surface · zero order affordances on every wire arm', () => {
       }
       // No "coming soon" order copy either — the out-of-scope list bans implying a path exists.
       expect(document.body.textContent).not.toMatch(/coming soon|place (an )?order/i);
+      // The forbidden freshness word: the RENDERED text never claims `live` (testids/routes exempt
+      // by construction).
+      expect(liveViolations(document.body.textContent ?? ''), _label).toHaveLength(0);
     },
   );
 });
@@ -207,14 +219,6 @@ describe('broker surface · zero order affordances on every wire arm', () => {
 // =================================================================================================
 // 3. Forbidden word — `live` only inside the negation phrase, trader-visible strings only
 // =================================================================================================
-
-const NEGATION = /a snapshot, never live/gi;
-
-/** Strip every allowed negation phrase, then any word-bounded `live` left is a violation. */
-function liveViolations(text: string): string[] {
-  const stripped = text.replace(NEGATION, '');
-  return stripped.match(/\blive\b/gi) ?? [];
-}
 
 /** Flatten BROKER_COPY (invoking formatters with dummy args) into its rendered strings. */
 function copyStrings(node: unknown): string[] {
@@ -238,20 +242,6 @@ describe('broker surface · the forbidden freshness word', () => {
       expect(liveViolations(s), s).toHaveLength(0);
     }
   });
-
-  it.each(ALL_ARMS)(
-    '%s: the RENDERED text never claims `live` (testids/routes exempt by construction)',
-    async (_label, book) => {
-      install(book);
-      renderPanel();
-      await screen.findByTestId('broker-tab-panel');
-      await vi.waitFor(() => {
-        expect(screen.queryByTestId('broker-s9')).toBeNull();
-      });
-      const rendered = document.body.textContent ?? '';
-      expect(liveViolations(rendered), _label).toHaveLength(0);
-    },
-  );
 });
 
 // =================================================================================================

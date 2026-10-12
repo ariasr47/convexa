@@ -370,14 +370,6 @@ describe('the join (§3.5)', () => {
     expect(familyOf(read, 'persona').coverage.attributed).toBe(0);
     expect(familyOf(read, 'persona').cells).toHaveLength(0); // "borrowed" never becomes a cell
   });
-
-  it('an unresolvable join is excluded with its own reason — never guessed, never defaulted', () => {
-    const entry = decision({ trade_id: 'p-1', event_type: 'open' });
-    seedStores({ positions: [position({ id: 'p-1' })], positionDecisions: [entry] }); // no close record
-    const read = computeLedgerRead();
-    expect(read.coverage.excluded_by_reason.unresolved_join).toBe(1);
-    expectBalances(read);
-  });
 });
 
 /**

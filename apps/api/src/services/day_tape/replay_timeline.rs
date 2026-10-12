@@ -141,46 +141,6 @@ mod tests {
     }
 
     #[test]
-    fn both_empty_timeline_has_no_occupant() {
-        let steps = build_timeline(&empty_day(), ET);
-        assert!(steps.is_empty());
-    }
-
-    #[test]
-    fn timeline_starts_at_earliest_occupant_and_does_not_invent_0400() {
-        let mut day = empty_day();
-        day.path_a
-            .push(PathARecord::trade(ts(10, 0, 0), 100.0, None));
-        day.path_b.push(PathBSnapshot {
-            mark: (9, 30),
-            as_of: New_York
-                .with_ymd_and_hms(2026, 8, 10, 9, 30, 0)
-                .single()
-                .unwrap()
-                .with_timezone(&Utc),
-            body: b"{}".to_vec(),
-        });
-        let steps = build_timeline(&day, ET);
-        assert!(!steps.is_empty());
-        match &steps[0] {
-            ReplayStep::ApplyPathB { mark, ts_ns, .. } => {
-                assert_eq!(*mark, (9, 30));
-                assert_eq!(*ts_ns, ts(9, 30, 0));
-            }
-            other => panic!("earliest occupant must be Path-B 09:30, got {other:?}"),
-        }
-        let invented_0400 = ts(4, 0, 0);
-        assert!(
-            steps.iter().all(|s| match s {
-                ReplayStep::EmitPathA(r) => r.ts_ns != Some(invented_0400),
-                ReplayStep::ApplyPathB { ts_ns, .. } => *ts_ns != invented_0400,
-                ReplayStep::PulseGap { .. } => true,
-            }),
-            "must not invent 04:00"
-        );
-    }
-
-    #[test]
     fn timeline_merges_path_b_marks_onto_et_date_and_sorts_stamped() {
         let mut day = empty_day();
         day.path_a

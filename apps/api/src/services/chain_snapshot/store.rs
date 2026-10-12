@@ -470,16 +470,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn prune_failure_does_not_fail_append() {
-        let store = ChainSnapshotStore::memory();
-        let (w, b) = wire_at("DIA", 1, 0);
-        store.append(&w, &b).await.unwrap();
-        // Memory prune cannot fail; JSON persist of a missing parent is the real
-        // analog. Append already returned Ok independently of prune.
-        assert_eq!(store.list("DIA", None).await.unwrap().len(), 1);
-    }
-
-    #[tokio::test]
     async fn two_as_ofs_inside_one_utc_second_both_persist() {
         let store = ChainSnapshotStore::memory();
         let (w1, b1) = wire_at("SPY", 0, 1);

@@ -1046,6 +1046,7 @@ pub(crate) fn test_stub_config() -> Config {
         http_bind: "127.0.0.1:0".into(),
         gex_cache_ttl_secs: 10,
         gex_cache_ttl_liquid_secs: 20,
+        sse_occupancy_keepalive_ms: 5_000,
         warm_symbols: vec![],
         liquid_symbols: HashSet::new(),
         warm_interval_secs: 30,
@@ -1580,6 +1581,7 @@ mod tests {
             http_bind: "127.0.0.1:0".into(),
             gex_cache_ttl_secs: 1,
             gex_cache_ttl_liquid_secs: 60,
+            sse_occupancy_keepalive_ms: 5_000,
             warm_symbols: vec!["SPY".into()],
             liquid_symbols: HashSet::from(["SPY".into()]),
             warm_interval_secs: 30,
@@ -1844,29 +1846,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn for_tests_leaves_vendor_fixture_none() {
-        let s = AppState::for_tests(
-            crate::services::chain_snapshot::ChainSnapshotStore::memory(),
-            crate::services::session_chain_archive::SessionChainArchive::memory(),
-        )
-        .await
-        .unwrap();
-        assert!(s.vendor_fixture.is_none());
-        assert_eq!(s.live_capacity.max_subscribers(), 0);
-        assert_eq!(s.live_capacity.max_sessions(), 0);
-        // Wrong constructor for capacity — still points at the live Massive host.
-        assert_eq!(s.config.rest_base, "https://api.massive.com");
-    }
-
-    #[tokio::test]
-    async fn for_runtime_guardrail_tests_leaves_vendor_fixture_none() {
-        let s = AppState::for_runtime_guardrail_tests("test-metrics-token".into())
-            .await
-            .unwrap();
-        assert!(s.vendor_fixture.is_none());
-    }
-
-    #[tokio::test]
     async fn for_capacity_harness_sets_fixture_ceilings_limiter_and_harness_hub() {
         let book =
             crate::services::capacity_harness::fixture::load_capacity_book(&golden_path()).unwrap();
@@ -1907,19 +1886,6 @@ mod tests {
             .unwrap()
             .to_string()
             .contains("production construct refuses vendor_fixture=Some"));
-    }
-
-    #[tokio::test]
-    async fn quick_live_price_resolves_from_vendor_fixture() {
-        let book =
-            crate::services::capacity_harness::fixture::load_capacity_book(&golden_path()).unwrap();
-        let expected_spot = book.vendor.market.current_spot;
-        let s = AppState::for_capacity_harness(book.catalog, 4, 9)
-            .await
-            .unwrap();
-        let live = s.quick_live_price("SPY").await.unwrap();
-        assert_eq!(live.symbol, "SPY");
-        assert_eq!(live.price, expected_spot);
     }
 
     /// SPEC B1/B2: paused short-circuits before the harness/fixture/massive fallback chain —

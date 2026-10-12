@@ -13,7 +13,10 @@
     "sharedGlobals": [
       "{workspaceRoot}/tsconfig.base.json",
       "{workspaceRoot}/vitest.workspace.ts",
-      "{workspaceRoot}/eslint.config.mjs"
+      "{workspaceRoot}/eslint.config.mjs",
+      {
+        "runtime": "node --version"
+      }
     ]
   },
   "plugins": [
@@ -89,7 +92,7 @@
     },
     "typecheck": {
       "dependsOn": ["^build"],
-      "inputs": ["production", "^production"],
+      "inputs": ["default", "^production"],
       "cache": true
     },
     "lint": {

@@ -6,21 +6,6 @@ import { describe, expect, it } from 'vitest';
 import { usePlTrends } from './useTrends';
 
 describe('usePlTrends', () => {
-  it('grows the series as P/L samples arrive (AC-9)', () => {
-    const { result } = renderHook(() => usePlTrends());
-    act(() => {
-      result.current.record('p1', 10);
-    });
-    act(() => {
-      result.current.record('p1', 20);
-    });
-    act(() => {
-      result.current.record('p1', 30);
-    });
-    expect(result.current.series('p1')).toHaveLength(3);
-    expect(result.current.series('p1').map((s) => s.pl)).toEqual([10, 20, 30]);
-  });
-
   it('anchors the session delta to the first observed P/L (AC-8)', () => {
     const { result } = renderHook(() => usePlTrends());
     act(() => {
@@ -45,20 +30,6 @@ describe('usePlTrends', () => {
     });
     const series = result.current.series('p1');
     expect(series.map((s) => s.pl)).toEqual([10, null, 12]);
-  });
-
-  it('collapses consecutive breaks into one gap marker', () => {
-    const { result } = renderHook(() => usePlTrends());
-    act(() => {
-      result.current.record('p1', 10);
-    });
-    act(() => {
-      result.current.recordBreak('p1');
-    });
-    act(() => {
-      result.current.recordBreak('p1');
-    });
-    expect(result.current.series('p1').filter((s) => s.pl == null)).toHaveLength(1);
   });
 
   it('keeps per-position series isolated', () => {

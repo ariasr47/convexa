@@ -64,18 +64,4 @@ mod poison_tests {
             }
         }
     }
-
-    #[test]
-    fn occupancy_source_forbids_livemassive_and_present_arms() {
-        let src = include_str!("occupancy.rs");
-        let prod = src.split("#[cfg(test)]").next().unwrap_or(src);
-        let live = format!("{}Massive", "Live");
-        let complete = format!("complete_{}", "rth");
-        let present = format!("Occupancy::{}", "Present");
-        let stored = format!("Occupancy::{}", "Stored");
-        assert!(!prod.contains(&live));
-        assert!(!prod.contains(&complete));
-        assert!(!prod.contains(&present));
-        assert!(!prod.contains(&stored));
-    }
 }

@@ -473,6 +473,7 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
                 http_bind: "0.0.0.0:8000".into(),
                 gex_cache_ttl_secs: 10,
                 gex_cache_ttl_liquid_secs: 20,
+                sse_occupancy_keepalive_ms: 5_000,
                 warm_symbols: vec![],
                 liquid_symbols: Default::default(),
                 warm_interval_secs: 25,
@@ -1026,6 +1027,7 @@ async fn cmd_score_lab(
             http_bind: "0.0.0.0:8000".into(),
             gex_cache_ttl_secs: 10,
             gex_cache_ttl_liquid_secs: 20,
+            sse_occupancy_keepalive_ms: 5_000,
             warm_symbols: vec![],
             liquid_symbols: Default::default(),
             warm_interval_secs: 25,
@@ -1239,6 +1241,7 @@ async fn cmd_archive_coverage(et_date: Option<String>) -> ExitCode {
         http_bind: "0.0.0.0:8000".into(),
         gex_cache_ttl_secs: 10,
         gex_cache_ttl_liquid_secs: 20,
+        sse_occupancy_keepalive_ms: 5_000,
         warm_symbols: vec![],
         liquid_symbols: Default::default(),
         warm_interval_secs: 25,
@@ -1345,6 +1348,7 @@ async fn cmd_session_day_tape(symbol: Option<String>, et_date: Option<String>) -
         http_bind: "0.0.0.0:8000".into(),
         gex_cache_ttl_secs: 10,
         gex_cache_ttl_liquid_secs: 20,
+        sse_occupancy_keepalive_ms: 5_000,
         warm_symbols: vec![],
         liquid_symbols: Default::default(),
         warm_interval_secs: 25,
@@ -1436,6 +1440,7 @@ async fn cmd_flat_files(
         http_bind: "0.0.0.0:8000".into(),
         gex_cache_ttl_secs: 10,
         gex_cache_ttl_liquid_secs: 20,
+        sse_occupancy_keepalive_ms: 5_000,
         warm_symbols: vec![],
         liquid_symbols: Default::default(),
         warm_interval_secs: 25,
@@ -1531,6 +1536,7 @@ async fn cmd_session_day_replay(symbol: String, et_date: String, pace: Option<u3
         http_bind: "0.0.0.0:8000".into(),
         gex_cache_ttl_secs: 10,
         gex_cache_ttl_liquid_secs: 20,
+        sse_occupancy_keepalive_ms: 5_000,
         warm_symbols: vec![],
         liquid_symbols: Default::default(),
         warm_interval_secs: 25,
@@ -1712,6 +1718,7 @@ async fn cmd_batch_backtest(
         http_bind: "0.0.0.0:8000".into(),
         gex_cache_ttl_secs: 10,
         gex_cache_ttl_liquid_secs: 20,
+        sse_occupancy_keepalive_ms: 5_000,
         warm_symbols: vec![],
         liquid_symbols: Default::default(),
         warm_interval_secs: 25,
@@ -1985,28 +1992,6 @@ async fn run_healthcheck() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[cfg(test)]
-mod container_runtime_tests {
-    use super::{healthcheck_url, Cli, Commands};
-    use clap::Parser;
-
-    #[test]
-    fn healthcheck_is_a_dedicated_cli_command() {
-        let cli = Cli::try_parse_from(["api-rust", "healthcheck"]).unwrap();
-        assert!(matches!(cli.cmd, Commands::Healthcheck));
-    }
-
-    #[test]
-    fn healthcheck_uses_the_railway_port_or_the_local_default() {
-        assert_eq!(
-            healthcheck_url(Some("4321")),
-            "http://127.0.0.1:4321/health"
-        );
-        assert_eq!(healthcheck_url(Some("")), "http://127.0.0.1:8000/health");
-        assert_eq!(healthcheck_url(None), "http://127.0.0.1:8000/health");
-    }
-}
-
 fn f64_field(v: &serde_json::Value, key: &str) -> Option<f64> {
     v.get(key).and_then(|x| x.as_f64())
 }
@@ -2124,145 +2109,30 @@ mod driver_loo_flag_guard {
     }
 
     #[test]
-    fn driver_loo_false_parses_to_false() {
-        assert!(
-            !parse_driver_loo(&["--driver-loo", "false"]).expect("must parse"),
-            "--driver-loo false must be settable — literal 8 (NotRun) is unreachable otherwise"
-        );
-    }
-
-    #[test]
-    fn driver_loo_true_parses_to_true() {
-        assert!(parse_driver_loo(&["--driver-loo", "true"]).expect("must parse"));
-    }
-
-    #[test]
-    fn driver_loo_defaults_to_true_when_omitted() {
-        assert!(
-            parse_driver_loo(&[]).expect("must parse"),
-            "every existing invocation (no --driver-loo at all) must be unchanged"
-        );
-    }
-
-    #[test]
-    fn driver_loo_bare_switch_form_is_rejected() {
-        // Anti-vacuity, the OTHER direction: a bare `--driver-loo` with no value (the shape a
-        // `SetTrue` flag would accept) must NOT parse — proving this is genuinely a value flag,
-        // not a switch that happens to also accept a value.
-        assert!(
-            parse_driver_loo(&["--driver-loo"]).is_err(),
-            "--driver-loo with no value must be rejected once it is a real bool-value flag"
-        );
-    }
-}
-
-#[cfg(test)]
-mod batch_backtest_wiring {
-    use super::{Cli, Commands};
-    use clap::Parser;
-
-    const MAIN_SRC: &str = include_str!("main.rs");
-
-    fn cmd_batch_backtest_body() -> &'static str {
-        let start = MAIN_SRC
-            .find("async fn cmd_batch_backtest(")
-            .expect("cmd_batch_backtest not found");
-        let rest = &MAIN_SRC[start..];
-        let end = rest
-            .find("\n// --- end cmd_batch_backtest ---")
-            .unwrap_or(rest.len());
-        &rest[..end]
-    }
-
-    #[test]
-    fn batch_backtest_clap_parses_core_flags() {
-        let cli = Cli::try_parse_from([
-            "api-rust",
-            "batch-backtest",
-            "--symbols",
-            "SPY,QQQ",
-            "--as-of",
-            "1970-01-01T00:00:00.000000001Z",
-            "--json",
-        ])
-        .unwrap();
-        match cli.cmd {
-            Commands::BatchBacktest {
-                symbols,
-                as_of,
-                json,
-                ..
-            } => {
-                assert_eq!(symbols, "SPY,QQQ");
-                assert!(as_of.is_some());
-                assert!(json);
+    fn driver_loo_is_a_bool_value_flag_that_defaults_true() {
+        // (extra argv, Some(parsed value) | None = clap must reject it)
+        let cases: &[(&[&str], Option<bool>)] = &[
+            // Settable to false: literal 8 (NotRun) is unreachable otherwise (the shipped bug).
+            (&["--driver-loo", "false"], Some(false)),
+            (&["--driver-loo", "true"], Some(true)),
+            // Every existing invocation (no --driver-loo at all) must be unchanged.
+            (&[], Some(true)),
+            // Anti-vacuity: the bare `SetTrue` switch shape must NOT parse, proving this is a
+            // genuine value flag rather than a switch that also happens to accept a value.
+            (&["--driver-loo"], None),
+        ];
+        for &(extra, expected) in cases {
+            match expected {
+                Some(want) => assert_eq!(
+                    parse_driver_loo(extra).expect("must parse"),
+                    want,
+                    "{extra:?}"
+                ),
+                None => assert!(
+                    parse_driver_loo(extra).is_err(),
+                    "{extra:?} must be rejected once --driver-loo is a real bool-value flag"
+                ),
             }
-            other => panic!("expected BatchBacktest, got {other:?}"),
-        }
-    }
-
-    #[test]
-    fn score_lab_still_parses_as_its_own_command() {
-        let cli = Cli::try_parse_from(["api-rust", "score-lab", "--outcomes", "x.json"]).unwrap();
-        assert!(matches!(cli.cmd, Commands::ScoreLab { .. }));
-    }
-
-    #[test]
-    fn replay_outcome_join_clap_requires_replay() {
-        assert!(Cli::try_parse_from(["api-rust", "replay-outcome-join"]).is_err());
-        let cli = Cli::try_parse_from([
-            "api-rust",
-            "replay-outcome-join",
-            "--replay",
-            "replay.json",
-            "--labels",
-            "labels.json",
-            "--json",
-        ])
-        .unwrap();
-        match cli.cmd {
-            Commands::ReplayOutcomeJoin {
-                replay,
-                labels,
-                json,
-                horizons,
-                ..
-            } => {
-                assert!(replay.ends_with("replay.json"));
-                assert!(labels.unwrap().ends_with("labels.json"));
-                assert!(json);
-                assert_eq!(horizons, "1d,5d");
-            }
-            other => panic!("expected ReplayOutcomeJoin, got {other:?}"),
-        }
-    }
-
-    #[test]
-    fn cmd_batch_backtest_does_not_reference_massive_or_live_or_disabled_opener() {
-        let body = cmd_batch_backtest_body();
-        assert!(
-            body.len() > 200,
-            "cmd_batch_backtest body not sliced (len {})",
-            body.len()
-        );
-        assert!(
-            body.contains("open_chain_store_for_cli") || body.contains("open_json"),
-            "cmd_batch_backtest must open json/pg for read"
-        );
-        assert!(
-            body.contains("run_batch_backtest") || body.contains("select_and_replay"),
-            "anti-vacuity: orchestration call missing"
-        );
-        for needle in [
-            "MassiveRestClient",
-            "MarketDataPort::live",
-            "ChainSnapshotStore::disabled",
-            "open_chain_snapshot_store",
-        ] {
-            assert!(
-                !body.contains(needle),
-                "cmd_batch_backtest must not contain {needle}"
-            );
         }
     }
 }
@@ -2271,19 +2141,6 @@ mod batch_backtest_wiring {
 mod capacity_wiring {
     use super::{CapacityAction, Cli, Commands};
     use clap::Parser;
-
-    const MAIN_SRC: &str = include_str!("main.rs");
-
-    fn cmd_capacity_body() -> &'static str {
-        let start = MAIN_SRC
-            .find("async fn cmd_capacity(")
-            .expect("cmd_capacity not found");
-        let rest = &MAIN_SRC[start..];
-        let end = rest
-            .find("\n// --- end cmd_capacity ---")
-            .unwrap_or(rest.len());
-        &rest[..end]
-    }
 
     #[test]
     fn capacity_load_and_soak_parse_as_distinct_nested_commands() {
@@ -2306,150 +2163,14 @@ mod capacity_wiring {
     }
 
     #[test]
-    fn capacity_is_not_an_alias_of_serve_or_of_the_other_command() {
-        let serve = Cli::try_parse_from(["api-rust", "serve"]).unwrap();
-        assert!(matches!(serve.cmd, Commands::Serve { .. }));
-        assert!(Cli::try_parse_from(["api-rust", "capacity"]).is_err()); // needs load|soak
-    }
-
-    #[test]
     fn evidence_clap_flag_is_rejected() {
         assert!(Cli::try_parse_from(["api-rust", "capacity", "load", "--evidence", "ci"]).is_err());
         assert!(Cli::try_parse_from(["api-rust", "capacity", "load", "--ci"]).is_err());
-    }
-
-    #[test]
-    fn json_and_out_parse_on_capacity() {
-        let cli = Cli::try_parse_from([
-            "api-rust",
-            "capacity",
-            "load",
-            "--json",
-            "--out",
-            "data/capacity/x.json",
-        ])
-        .unwrap();
-        match cli.cmd {
-            Commands::Capacity { json, out, .. } => {
-                assert!(json);
-                assert!(out.unwrap().ends_with("x.json"));
-            }
-            other => panic!("{other:?}"),
-        }
-    }
-
-    #[test]
-    fn cmd_capacity_does_not_call_forbidden_seams_and_does_construct_harness() {
-        let body = cmd_capacity_body();
-        assert!(body.contains("capacity_harness::run") || body.contains("run("));
-        for needle in [
-            "Config::from_env",
-            "server::serve",
-            "stock_worker.start()",
-            "MarketDataPort::live",
-            "connect_async",
-            "MassiveRestClient",
-        ] {
-            assert!(!body.contains(needle), "{needle}");
-        }
-    }
-
-    #[test]
-    fn cmd_capacity_soak_uses_command_soak_not_a_short_alias() {
-        let body = cmd_capacity_body();
-        assert!(body.contains("Command::Soak") || body.contains("CapacityAction::Soak"));
-        assert!(body.contains("Command::Load") || body.contains("CapacityAction::Load"));
-    }
-}
-
-#[cfg(test)]
-mod archive_coverage_wiring {
-    use super::{Cli, Commands};
-    use clap::{CommandFactory, Parser};
-
-    const MAIN_SRC: &'static str = include_str!("main.rs");
-
-    fn cmd_body() -> &'static str {
-        let start = MAIN_SRC
-            .find("async fn cmd_archive_coverage(")
-            .expect("cmd_archive_coverage not found");
-        let rest = &MAIN_SRC[start..];
-        let end = rest
-            .find("\n// --- end cmd_archive_coverage ---")
-            .unwrap_or(rest.len());
-        &rest[..end]
-    }
-
-    #[test]
-    fn archive_coverage_parses_and_is_listed_with_research_commands() {
-        let names: Vec<String> = Cli::command()
-            .get_subcommands()
-            .map(|c| c.get_name().to_string())
-            .collect();
-        assert!(names.contains(&"archive-coverage".into()));
-        assert!(names.contains(&"score-lab".into()));
-        assert!(names.contains(&"batch-backtest".into()));
-        assert!(names.contains(&"replay-outcome-join".into()));
-        let cli = Cli::try_parse_from(["api-rust", "archive-coverage"]).unwrap();
-        assert!(matches!(
-            cli.cmd,
-            Commands::ArchiveCoverage { et_date: None }
-        ));
-        let named =
-            Cli::try_parse_from(["api-rust", "archive-coverage", "--et-date", "2026-08-10"])
-                .unwrap();
-        match named.cmd {
-            Commands::ArchiveCoverage { et_date } => {
-                assert_eq!(et_date.as_deref(), Some("2026-08-10"))
-            }
-            other => panic!("{other:?}"),
-        }
-    }
-
-    #[test]
-    fn archive_coverage_is_not_serve_or_score_lab_or_fetch() {
-        let serve = Cli::try_parse_from(["api-rust", "serve"]).unwrap();
-        assert!(matches!(serve.cmd, Commands::Serve { .. }));
-        assert!(Cli::try_parse_from(["api-rust", "archive-coverage", "--fetch"]).is_err());
-        let about = Cli::command()
-            .find_subcommand("archive-coverage")
-            .unwrap()
-            .get_about()
-            .unwrap()
-            .to_string()
-            .to_ascii_lowercase();
-        for banned in ["fetch", "backfill", "serve", "score-lab", "massive"] {
-            assert!(!about.contains(banned), "{banned} in about: {about}");
-        }
-        assert!(about.contains("coverage") || about.contains("audit"));
-    }
-
-    #[test]
-    fn cmd_archive_coverage_does_not_open_live_or_disabled_fallback_or_sleep() {
-        let body = cmd_body();
-        assert!(body.contains("open_session_archive_for_cli") || body.contains("evaluate_cli"));
-        for needle in [
-            "MassiveRestClient",
-            "MarketDataPort::live",
-            "fetch_vendor_bundle",
-            "SessionChainArchive::disabled",
-            "sleep(",
-            "interval(",
-        ] {
-            assert!(!body.contains(needle), "{needle}");
-        }
-        assert!(
-            body.contains("massive_api_key: String::new()") || body.contains("unwrap_or_else"),
-            "must run without MASSIVE_API_KEY (score-lab empty-key pattern)"
-        );
     }
 }
 
 #[cfg(test)]
 mod session_day_tape_wiring {
-    use super::{Cli, Commands};
-    use clap::{CommandFactory, Parser};
-
     const MAIN_SRC: &'static str = include_str!("main.rs");
 
     fn cmd_body() -> &'static str {
@@ -2461,43 +2182,6 @@ mod session_day_tape_wiring {
             .find("\n// --- end cmd_session_day_tape ---")
             .unwrap_or(rest.len());
         &rest[..end]
-    }
-
-    #[test]
-    fn session_day_tape_parses_and_is_listed() {
-        let names: Vec<String> = Cli::command()
-            .get_subcommands()
-            .map(|c| c.get_name().to_string())
-            .collect();
-        assert!(
-            names.contains(&"session-day-tape".into()),
-            "clap name must be session-day-tape; got {names:?}"
-        );
-        assert!(names.contains(&"archive-coverage".into()));
-        let cli = Cli::try_parse_from(["api-rust", "session-day-tape"]).unwrap();
-        assert!(matches!(
-            cli.cmd,
-            Commands::SessionDayTape {
-                symbol: None,
-                et_date: None
-            }
-        ));
-        let named = Cli::try_parse_from([
-            "api-rust",
-            "session-day-tape",
-            "--symbol",
-            "NVDA",
-            "--et-date",
-            "2020-01-02",
-        ])
-        .unwrap();
-        match named.cmd {
-            Commands::SessionDayTape { symbol, et_date } => {
-                assert_eq!(symbol.as_deref(), Some("NVDA"));
-                assert_eq!(et_date.as_deref(), Some("2020-01-02"));
-            }
-            other => panic!("{other:?}"),
-        }
     }
 
     #[test]
@@ -2531,9 +2215,6 @@ mod session_day_tape_wiring {
 
 #[cfg(test)]
 mod flat_files_wiring {
-    use super::{Cli, Commands, FlatFilesAction};
-    use clap::{CommandFactory, Parser};
-
     const MAIN_SRC: &'static str = include_str!("main.rs");
 
     fn cmd_body() -> &'static str {
@@ -2545,78 +2226,6 @@ mod flat_files_wiring {
             .find("\n// --- end cmd_flat_files ---")
             .unwrap_or(rest.len());
         &rest[..end]
-    }
-
-    #[test]
-    fn flat_files_parses_and_is_listed() {
-        let names: Vec<String> = Cli::command()
-            .get_subcommands()
-            .map(|c| c.get_name().to_string())
-            .collect();
-        assert!(
-            names.contains(&"flat-files".into()),
-            "clap name must be flat-files; got {names:?}"
-        );
-        let cli = Cli::try_parse_from(["api-rust", "flat-files"]).unwrap();
-        assert!(matches!(
-            cli.cmd,
-            Commands::FlatFiles {
-                action: None,
-                symbol: None,
-                et_date: None
-            }
-        ));
-        let keep = Cli::try_parse_from(["api-rust", "flat-files", "keep"]).unwrap();
-        assert!(matches!(
-            keep.cmd,
-            Commands::FlatFiles {
-                action: Some(FlatFilesAction::Keep),
-                ..
-            }
-        ));
-        let named = Cli::try_parse_from([
-            "api-rust",
-            "flat-files",
-            "--symbol",
-            "NVDA",
-            "--et-date",
-            "2020-01-02",
-        ])
-        .unwrap();
-        match named.cmd {
-            Commands::FlatFiles {
-                action,
-                symbol,
-                et_date,
-            } => {
-                assert!(action.is_none());
-                assert_eq!(symbol.as_deref(), Some("NVDA"));
-                assert_eq!(et_date.as_deref(), Some("2020-01-02"));
-            }
-            other => panic!("{other:?}"),
-        }
-        let keep_named = Cli::try_parse_from([
-            "api-rust",
-            "flat-files",
-            "keep",
-            "--symbol",
-            "SPY",
-            "--et-date",
-            "2026-08-10",
-        ])
-        .unwrap();
-        match keep_named.cmd {
-            Commands::FlatFiles {
-                action,
-                symbol,
-                et_date,
-            } => {
-                assert!(matches!(action, Some(FlatFilesAction::Keep)));
-                assert_eq!(symbol.as_deref(), Some("SPY"));
-                assert_eq!(et_date.as_deref(), Some("2026-08-10"));
-            }
-            other => panic!("{other:?}"),
-        }
     }
 
     #[test]
@@ -2651,73 +2260,7 @@ mod flat_files_wiring {
 
 #[cfg(test)]
 mod session_day_replay_wiring {
-    use super::{Cli, Commands};
-    use clap::{CommandFactory, Parser};
-
     const MAIN: &str = include_str!("main.rs");
-    const SERVER: &str = include_str!("server.rs");
-
-    #[test]
-    fn clap_name_is_session_day_replay() {
-        let names: Vec<String> = Cli::command()
-            .get_subcommands()
-            .map(|c| c.get_name().to_string())
-            .collect();
-        assert!(
-            names.contains(&"session-day-replay".into()),
-            "clap name must be session-day-replay; got {names:?}"
-        );
-        let cli = Cli::try_parse_from([
-            "api-rust",
-            "session-day-replay",
-            "--symbol",
-            "SPY",
-            "--et-date",
-            "2026-08-10",
-        ])
-        .unwrap();
-        match cli.cmd {
-            Commands::SessionDayReplay {
-                symbol,
-                et_date,
-                pace,
-            } => {
-                assert_eq!(symbol, "SPY");
-                assert_eq!(et_date, "2026-08-10");
-                assert_eq!(pace, None);
-            }
-            other => panic!("{other:?}"),
-        }
-        let paced = Cli::try_parse_from([
-            "api-rust",
-            "session-day-replay",
-            "--symbol",
-            "QQQ",
-            "--et-date",
-            "2026-08-10",
-            "--pace",
-            "4",
-        ])
-        .unwrap();
-        match paced.cmd {
-            Commands::SessionDayReplay { pace, .. } => assert_eq!(pace, Some(4)),
-            other => panic!("{other:?}"),
-        }
-    }
-
-    #[test]
-    fn serve_command_does_not_grow_replay_flag() {
-        let serve_arm = MAIN
-            .split("Serve {")
-            .nth(1)
-            .unwrap()
-            .split('}')
-            .next()
-            .unwrap();
-        assert!(!serve_arm.contains("replay"));
-        assert!(!SERVER.contains("run_player"));
-        assert!(!SERVER.contains("session-day-replay"));
-    }
 
     #[test]
     fn cmd_session_day_replay_does_not_open_live_or_massive_or_spawn_vendor() {

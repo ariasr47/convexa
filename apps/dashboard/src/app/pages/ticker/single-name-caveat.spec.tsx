@@ -148,13 +148,6 @@ describe('single-name caveat (index-first-defaults AC-4/AC-5)', () => {
     expect(caveat).not.toHaveAttribute('role', 'alert');
   });
 
-  it('a universe MEMBER never carries the caption', async () => {
-    renderAt('/ticker/SPY');
-    await screen.findByText('Call wall');
-    await universeRead();
-    await waitFor(() => expect(screen.queryByTestId('single-name-caveat')).toBeNull());
-  });
-
   // ---------------------------------------------------------------------------------------------
   // Ticker fidelity repair, change 3 (F3) — the masthead's `Universe member · N tracked names` note
   // (`design/src/screens/desk.mjs:285`), the reciprocal of the caption above: the SAME universe
@@ -170,7 +163,7 @@ describe('single-name caveat (index-first-defaults AC-4/AC-5)', () => {
         'Universe member · 2 tracked names',
       ),
     );
-    // Isolation: the nonmember caption stays gone (already asserted above; restated for this note).
+    // Isolation: a universe member never carries the nonmember caption.
     expect(screen.queryByTestId('single-name-caveat')).toBeNull();
   });
 
@@ -182,22 +175,15 @@ describe('single-name caveat (index-first-defaults AC-4/AC-5)', () => {
     expect(screen.queryByTestId('quick-symbols-note')).toBeNull();
   });
 
-  it('F3: a FAILED universe read fabricates no count either — no "Universe member" note, no error surface', async () => {
-    universeMode = { kind: 'http-500' };
-    renderAt('/ticker/GME');
-    await screen.findByText('Call wall');
-    await universeRead();
-    await waitFor(() => expect(screen.queryByTestId('single-name-caveat')).toBeNull());
-    expect(screen.queryByTestId('quick-symbols-note')).toBeNull();
-  });
-
-  it('AC-5: a FAILED universe read renders NO caption and NO error surface (silent best-effort)', async () => {
+  it('AC-5: a FAILED universe read renders NO caption, NO fabricated "Universe member" count and NO error surface (silent best-effort)', async () => {
     universeMode = { kind: 'http-500' };
     renderAt('/ticker/GME');
     await screen.findByText('Call wall');
     await universeRead();
     // The page is fully healthy; the caption simply never appears — absence IS the degraded state.
     await waitFor(() => expect(screen.queryByTestId('single-name-caveat')).toBeNull());
+    // F3: the quick row's "Universe member · N tracked names" note fabricates no count either.
+    expect(screen.queryByTestId('quick-symbols-note')).toBeNull();
     expect(screen.queryByText(/universe/i)).toBeNull(); // no leaked error copy about the read
   });
 

@@ -24,10 +24,7 @@
  *   6. SERVER-WINS SETTINGS, NO BLEED — signed-in prefs come from the server (a leftover local pref
  *      is neither applied nor written back), anonymous falls back client-local, and switching the
  *      account switches the effective settings with zero residue (settings PUT stays at 0 throughout).
- *   7. GOOGLE PRESENT-BUT-DISABLED-WHEN-UNCONFIGURED — `google_available:false` ⇒ the control renders
- *      disabled and a click initiates NOTHING (no navigation, no fetch); the config-only flip
- *      false→true enables it with no rebuild (the test IS the flip, via a who-am-I re-read).
- *   8. TRADER PATH UNTOUCHED BY IDENTITY — the bundle fetch carries no auth header and no new query
+ *   7. TRADER PATH UNTOUCHED BY IDENTITY — the bundle fetch carries no auth header and no new query
  *      param whether anonymous (asserted in §1) or signed-in (asserted here).
  *
  * NOT asserted here (visible + intentional → review/QA; brittle to automate): exact copy (dialog
@@ -35,26 +32,25 @@
  * layout/styling, the Settings page structure. The ai-rec panel's own auth-outermost rendering is
  * owned by `pages/ticker/widgets/ai-rec/ai-rec.risk.spec.tsx`; the positions-side happy-path gated
  * write is also walked flow-level in `features/trading/positions/positions.risk.spec.tsx` — this file
- * owns the GATE MECHANICS (order / abort / degrade). Pure logic keeps its colocated unit specs
- * (`validation.spec.ts`, `useSettings.spec.tsx`).
+ * owns the GATE MECHANICS (order / abort / degrade). Pure logic keeps its colocated unit spec
+ * (`useSettings.spec.tsx`).
  *
  * Mocks ONLY the network boundary (`fetch` + `EventSource` via testBackend); never a live backend.
  */
 import App from '@/app';
 import { __resetMemory, allPositions } from '@/features/trading/positions/store';
 import { PositionsPage } from '@/pages/positions/PositionsPage';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthProvider, useAuth } from './AuthContext';
+import { AuthProvider } from './AuthContext';
 import { AuthDialog, type AuthMode } from './AuthDialog';
 import { AuthDialogProvider } from './AuthDialogProvider';
 import { SettingsPage } from './SettingsPage';
 import { AppThemeProvider } from './ThemeProvider';
-import { AUTH_COPY } from './copy';
 import { __resetLocalPrefs, saveLocalTheme } from './localPrefs';
 import {
   installAuthBackend,
@@ -262,8 +258,10 @@ describe('auth · session lifecycle', () => {
     // Sign UP from the wall.
     await user.click(within(prompt).getByTestId('require-auth-signin'));
     await user.click(await screen.findByTestId('auth-mode-switch')); // login → signup
-    await user.type(screen.getByTestId('auth-email'), 'new@user.com');
-    await user.type(screen.getByTestId('auth-password'), 'longenoughpw');
+    await user.click(screen.getByTestId('auth-email'));
+    await user.paste('new@user.com');
+    await user.click(screen.getByTestId('auth-password'));
+    await user.paste('longenoughpw');
     await user.click(screen.getByTestId('auth-submit'));
 
     // Signed in: the account control flips and the gated write now executes (the entry dialog opens).
@@ -316,9 +314,11 @@ function DialogHarness({ mode: initial }: { mode: AuthMode }) {
 
 async function submitLogin(user: ReturnType<typeof userEvent.setup>, email: string, pw: string) {
   await user.clear(screen.getByTestId('auth-email'));
-  await user.type(screen.getByTestId('auth-email'), email);
+  await user.click(screen.getByTestId('auth-email'));
+  await user.paste(email);
   await user.clear(screen.getByTestId('auth-password'));
-  await user.type(screen.getByTestId('auth-password'), pw);
+  await user.click(screen.getByTestId('auth-password'));
+  await user.paste(pw);
   await user.click(screen.getByTestId('auth-submit'));
 }
 
@@ -341,28 +341,6 @@ describe('auth · non-enumerating 401', () => {
     expect(unknownEmailErr).toBe(wrongPwErr); // ...and it is byte-identical across the two causes
     // Neither state may enumerate which credential was wrong.
     expect(wrongPwErr).not.toMatch(/no account|not found|email exists|wrong password/i);
-  });
-});
-
-// =================================================================================================
-// GATE Z m-1 (AC-A5) — a submitted sign-up while sign-ups are closed maps to the policy sentence,
-// never a transient-fault reading, and does not invite a retry.
-// =================================================================================================
-describe('auth · signups closed (AC-A5)', () => {
-  it('POST /api/auth/signup → 403 signups_closed maps to the SAME policy sentence the dialog shows before typing, not the transient-fault copy', async () => {
-    backend = installAuthBackend({ signup: 'signups_closed' });
-    const user = userEvent.setup();
-    render(<DialogHarness mode="signup" />);
-
-    await user.type(screen.getByTestId('auth-email'), 'new@user.com');
-    await user.type(screen.getByTestId('auth-password'), 'longenoughpw');
-    await user.click(screen.getByTestId('auth-submit'));
-
-    const error = await screen.findByTestId('auth-form-error');
-    expect(error).toHaveTextContent(AUTH_COPY.signup.signupsClosed);
-    // Never the transient "auth down, try again" reading — a closed door is not a fault.
-    expect(error.textContent).not.toBe(AUTH_COPY.signup.unavailable);
-    expect(backend.calls.signup).toBe(1);
   });
 });
 
@@ -439,64 +417,7 @@ describe('auth · server-wins settings, no bleed across identities', () => {
 });
 
 // =================================================================================================
-// 7. Google — present-but-disabled-when-unconfigured; the config flip IS the test
-// =================================================================================================
-
-/** The dialog + a who-am-I re-read trigger (a config flip lands via the next session read). */
-function GoogleHarness() {
-  const auth = useAuth();
-  return (
-    <>
-      <button onClick={() => auth.refresh()} data-testid="refresh-session">
-        refresh
-      </button>
-      <AuthDialog open mode="login" onClose={() => undefined} onModeChange={() => undefined} />
-    </>
-  );
-}
-
-describe('auth · Google control', () => {
-  it('google_available:false ⇒ disabled, and a click initiates NOTHING (no navigation, no fetch)', async () => {
-    backend = installAuthBackend(); // anonymous, google_available: false
-    render(
-      <AuthProvider>
-        <AppThemeProvider>
-          <GoogleHarness />
-        </AppThemeProvider>
-      </AuthProvider>,
-    );
-    const btn = await screen.findByTestId('google-button');
-    await waitFor(() => expect(btn).toBeDisabled());
-
-    const hrefBefore = window.location.href;
-    const fetchesBefore = calledUrls().length;
-    fireEvent.click(btn); // bypasses pointer-events so the inertness is proven on the element itself
-    // By construction: NOTHING was initiated — no OAuth navigation, no network call of any kind.
-    expect(window.location.href).toBe(hrefBefore);
-    expect(calledUrls().length).toBe(fetchesBefore);
-    expect(calledUrls().some((u) => u.includes('google'))).toBe(false);
-  });
-
-  it('config-only flip false→true (no rebuild): the next who-am-I read enables the control', async () => {
-    backend = installAuthBackend(); // starts unavailable
-    const user = userEvent.setup();
-    render(
-      <AuthProvider>
-        <AppThemeProvider>
-          <GoogleHarness />
-        </AppThemeProvider>
-      </AuthProvider>,
-    );
-    await waitFor(() => expect(screen.getByTestId('google-button')).toBeDisabled());
-
-    backend.setGoogle(true); // the deployment gains credentials — config, not code
-    await user.click(screen.getByTestId('refresh-session'));
-    await waitFor(() => expect(screen.getByTestId('google-button')).toBeEnabled());
-  });
-});
-
-// =================================================================================================
-// 8. Trader path untouched by identity — no auth header / new query param on the bundle (signed-in)
+// 7. Trader path untouched by identity — no auth header / new query param on the bundle (signed-in)
 // =================================================================================================
 describe('auth · bundle path carries no identity', () => {
   it('signed-in, getTicker is called with NO auth header and NO new query param', async () => {

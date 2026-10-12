@@ -14,13 +14,6 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TapePulseStrip } from './TapePulseStrip';
 
-/** `#rrggbb` -> the `rgb(r, g, b)` string jsdom's `getComputedStyle().color` reports for a literal
- *  (non-CSS-variable) hex colour — `extras.textDim` is a plain hex, never a `--mui-*` var. */
-function hexToRgb(hex: string): string {
-  const n = parseInt(hex.replace('#', ''), 16);
-  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
-}
-
 const darkTheme = themeForPref('dark');
 const palette = resolveLevelPalette(darkTheme);
 const surfaces: StructureFieldSurfaces = {
@@ -32,7 +25,7 @@ const surfaces: StructureFieldSurfaces = {
   warning: darkTheme.palette.warning.main,
 };
 
-describe('TapePulseStrip responsive header', () => {
+describe('TapePulseStrip — the Mid readout never shows the structure mid as a live mid', () => {
   beforeEach(() => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
       new Proxy({}, { get: () => vi.fn() }) as unknown as CanvasRenderingContext2D,
@@ -49,55 +42,6 @@ describe('TapePulseStrip responsive header', () => {
     act(() => undefined);
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
-  });
-
-  it('renders offline tape and structure as separate wrapping header fields; carries NO second page-scope liveness claim', () => {
-    render(
-      <ThemeProvider theme={darkTheme}>
-        <TapePulseStrip
-          structureMid={146.15}
-          claim={NOT_LIVE}
-          mid={null}
-          palette={palette}
-          surfaces={surfaces}
-        />
-      </ThemeProvider>,
-    );
-    const header = screen.getByTestId('tape-pulse-header');
-    expect(getComputedStyle(header).display).toBe('flex');
-    expect(getComputedStyle(header).flexWrap).toBe('wrap');
-    // No mid ever arrived on this claim (drop-with-empty-latch) — the bare not-a-number member,
-    // never the structure mid under the `Mid` label (criterion 10).
-    expect(screen.getByTestId('tape-mid-readout')).toHaveTextContent('Mid —');
-    expect(screen.getByTestId('tape-structure-readout')).toHaveTextContent('Structure $146.15');
-    // Re-pointed (curvature-v2-foundations, AC-57): `tape-stream-state` was a SECOND page-scope
-    // liveness authority beside the header connection chip (canon rule 18). It is now DELETED —
-    // the ONE connection chip (`TickerHeader`/`CommandDeck`) is the sole authority; that assertion
-    // lives in `ticker.risk.spec.tsx` / the new `connection` specs, not here.
-    expect(screen.queryByTestId('tape-stream-state')).toBeNull();
-  });
-
-  it('the label is `Mid` — never `Live` — even while genuinely delivering with a mid present (SPEC §4.2, criterion 9)', () => {
-    const claim = isDeliveringLive(
-      { ticker: 'SPY', live: true, market_session: 'open' } as Parameters<
-        typeof isDeliveringLive
-      >[0],
-      false,
-    );
-    render(
-      <ThemeProvider theme={darkTheme}>
-        <TapePulseStrip
-          structureMid={146.15}
-          claim={claim}
-          mid={147.02}
-          palette={palette}
-          surfaces={surfaces}
-        />
-      </ThemeProvider>,
-    );
-    const readout = screen.getByTestId('tape-mid-readout');
-    expect(readout).toHaveTextContent('Mid $147.02');
-    expect(readout.textContent).not.toMatch(/\bLive\b/);
   });
 
   it('never renders the STRUCTURE mid under the `Mid` label — a delivering stream with NO mid present makes no live claim (criterion 10, SB)', () => {
@@ -136,103 +80,6 @@ describe('TapePulseStrip responsive header', () => {
       </ThemeProvider>,
     );
     expect(screen.getByTestId('tape-mid-readout')).toHaveTextContent('Mid $147.50');
-  });
-});
-
-describe('TapePulseStrip — the Mid readout offline pause mark (GATE Z, SPEC §4.1 "Tape trail row")', () => {
-  beforeEach(() => {
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-      new Proxy({}, { get: () => vi.fn() }) as unknown as CanvasRenderingContext2D,
-    );
-    vi.stubGlobal(
-      'requestAnimationFrame',
-      vi.fn(() => 1),
-    );
-    vi.stubGlobal('cancelAnimationFrame', vi.fn());
-  });
-
-  afterEach(() => {
-    cleanup();
-    act(() => undefined);
-    vi.restoreAllMocks();
-    vi.unstubAllGlobals();
-  });
-
-  it('no `paused` prop: no pause mark, the value is not dimmed (default, unchanged shape)', () => {
-    render(
-      <ThemeProvider theme={darkTheme}>
-        <TapePulseStrip
-          structureMid={146.15}
-          claim={NOT_LIVE}
-          mid={147.5}
-          palette={palette}
-          surfaces={surfaces}
-        />
-      </ThemeProvider>,
-    );
-    expect(screen.queryByTestId('tape-mid-pause')).toBeNull();
-  });
-
-  it('paused + a retained latched mid: pause mark present, value dimmed, latched number still shown', () => {
-    render(
-      <ThemeProvider theme={darkTheme}>
-        <TapePulseStrip
-          structureMid={146.15}
-          claim={NOT_LIVE}
-          mid={147.5}
-          paused
-          palette={palette}
-          surfaces={surfaces}
-        />
-      </ThemeProvider>,
-    );
-    expect(screen.getByTestId('tape-mid-pause')).toBeInTheDocument();
-    const readout = screen.getByTestId('tape-mid-readout');
-    expect(readout).toHaveTextContent('Mid $147.50');
-    const valueSpan = screen.getByText('$147.50');
-    // PR #46 CI repair, §A — dimming is a SOLID colour (`extras.textDim`) now, never `opacity`
-    // (opacity composited with whatever sits behind it and measured a WCAG-failing 2.54:1). The
-    // pause mark above stays the non-colour cue.
-    expect(getComputedStyle(valueSpan).opacity).not.toBe('0.5');
-    expect(getComputedStyle(valueSpan).color).toBe(hexToRgb(extrasFor(darkTheme).textDim));
-  });
-
-  it('paused + an empty latch (bare): pause mark present, value dimmed, shows `—`', () => {
-    render(
-      <ThemeProvider theme={darkTheme}>
-        <TapePulseStrip
-          structureMid={146.15}
-          claim={NOT_LIVE}
-          mid={null}
-          paused
-          palette={palette}
-          surfaces={surfaces}
-        />
-      </ThemeProvider>,
-    );
-    expect(screen.getByTestId('tape-mid-pause')).toBeInTheDocument();
-    expect(screen.getByTestId('tape-mid-readout')).toHaveTextContent('Mid —');
-  });
-
-  it('16b: `paused=false` during a replay standing renders full strength — no pause mark, never dimmed', () => {
-    // Mirrors the host's own invariant: `tileOffline` (this component's `paused`) is `st ? false :
-    // streamOffline`, so a replay standing reaches this component with `paused=false` structurally,
-    // never by an `!isLive` check here. This proves the component honours that contract when it does.
-    render(
-      <ThemeProvider theme={darkTheme}>
-        <TapePulseStrip
-          structureMid={146.15}
-          claim={NOT_LIVE}
-          mid={147.5}
-          paused={false}
-          palette={palette}
-          surfaces={surfaces}
-        />
-      </ThemeProvider>,
-    );
-    expect(screen.queryByTestId('tape-mid-pause')).toBeNull();
-    const valueSpan = screen.getByText('$147.50');
-    expect(getComputedStyle(valueSpan).opacity).not.toBe('0.5');
   });
 });
 

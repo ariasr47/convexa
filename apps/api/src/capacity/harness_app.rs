@@ -168,27 +168,3 @@ fn fixture_iv_history() -> Vec<quant_engine::IvSample> {
         })
         .collect()
 }
-
-#[cfg(test)]
-mod tests {
-    use super::load_capacity_catalog;
-    use std::path::PathBuf;
-
-    #[test]
-    fn loader_supports_dedicated_and_legacy_fixture_roots() {
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let capacity = load_capacity_catalog(&root.join("tests/fixtures/capacity-baseline/v1"))
-            .expect("capacity corpus");
-        assert!(capacity.symbols().contains(&"SPY".to_owned()));
-        assert!(capacity.symbols().contains(&"COAL".to_owned()));
-        let legacy = load_capacity_catalog(&root.join("tests/fixtures/market"))
-            .expect("legacy market corpus");
-        assert!(legacy.symbols().contains(&"SYN".to_owned()));
-    }
-
-    #[test]
-    fn loader_rejects_invalid_fixture_root() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/does-not-exist");
-        assert!(load_capacity_catalog(&path).is_err());
-    }
-}

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  TRIO,
   chipTapGets,
   digestRetryGets,
   pageRetryGets,
@@ -9,10 +8,6 @@ import {
 } from './schedule';
 
 describe('schedule fan-out', () => {
-  it('TRIO is SPY QQQ IWM', () => {
-    expect(TRIO).toEqual(['SPY', 'QQQ', 'IWM']);
-  });
-
   it('pageRetryGets = list(selected)+coverage, never load', () => {
     expect(pageRetryGets('QQQ')).toEqual([{ kind: 'list', symbol: 'QQQ' }, { kind: 'coverage' }]);
     expect(pageRetryGets('SPY').some((g) => g.kind === 'load')).toBe(false);

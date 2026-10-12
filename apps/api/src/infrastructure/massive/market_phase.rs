@@ -39,23 +39,96 @@ mod tests {
     use super::*;
 
     #[test]
-    fn rth_uses_live() {
-        let (px, src) = resolve_gex_spot(MarketPhase::Rth, 100.0, Some(99.0), Some(98.0));
-        assert_eq!(px, 100.0);
-        assert_eq!(src, "live_snapshot");
-    }
-
-    #[test]
-    fn after_close_prefers_today() {
-        let (px, src) = resolve_gex_spot(MarketPhase::AfterClose, 100.0, Some(99.0), Some(98.0));
-        assert_eq!(px, 99.0);
-        assert_eq!(src, "today_close");
-    }
-
-    #[test]
-    fn closed_pre_prefers_prior() {
-        let (px, src) = resolve_gex_spot(MarketPhase::ClosedPre, 100.0, Some(99.0), Some(98.0));
-        assert_eq!(px, 98.0);
-        assert_eq!(src, "prior_close");
+    fn resolve_gex_spot_picks_live_in_rth_and_session_close_otherwise() {
+        use MarketPhase::{AfterClose, ClosedPre, Rth};
+        // (label, phase, live, today_close, prior_close, expected spot, expected source)
+        let cases: [(&str, MarketPhase, f64, Option<f64>, Option<f64>, f64, &str); 9] = [
+            (
+                "RTH uses the live print",
+                Rth,
+                100.0,
+                Some(99.0),
+                Some(98.0),
+                100.0,
+                "live_snapshot",
+            ),
+            (
+                "after close prefers today's close",
+                AfterClose,
+                100.0,
+                Some(99.0),
+                Some(98.0),
+                99.0,
+                "today_close",
+            ),
+            (
+                "closed pre prefers the prior close",
+                ClosedPre,
+                100.0,
+                Some(99.0),
+                Some(98.0),
+                98.0,
+                "prior_close",
+            ),
+            (
+                "after close without today's close falls back to the prior close",
+                AfterClose,
+                100.0,
+                None,
+                Some(98.0),
+                98.0,
+                "prior_close",
+            ),
+            (
+                "after close skips a non-positive today's close",
+                AfterClose,
+                100.0,
+                Some(0.0),
+                Some(98.0),
+                98.0,
+                "prior_close",
+            ),
+            (
+                "closed pre without a prior close falls back to today's close",
+                ClosedPre,
+                100.0,
+                Some(99.0),
+                None,
+                99.0,
+                "today_close",
+            ),
+            (
+                "after close with no closes falls back to live",
+                AfterClose,
+                100.0,
+                None,
+                None,
+                100.0,
+                "live_snapshot_fallback",
+            ),
+            (
+                "closed pre with no closes falls back to live",
+                ClosedPre,
+                100.0,
+                None,
+                None,
+                100.0,
+                "live_snapshot_fallback",
+            ),
+            (
+                "non-positive live short-circuits to live even after hours",
+                ClosedPre,
+                0.0,
+                Some(99.0),
+                Some(98.0),
+                0.0,
+                "live_snapshot",
+            ),
+        ];
+        for (label, phase, live, today, prior, want_px, want_src) in cases {
+            let (px, src) = resolve_gex_spot(phase, live, today, prior);
+            assert_eq!(px, want_px, "{label}: spot");
+            assert_eq!(src, want_src, "{label}: source");
+        }
     }
 }

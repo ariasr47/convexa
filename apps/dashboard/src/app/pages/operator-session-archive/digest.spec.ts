@@ -49,42 +49,4 @@ describe('projectDigest', () => {
     expect(dig).not.toHaveProperty('trades');
     expect(dig).not.toHaveProperty('contracts');
   });
-
-  it('fixture-empty arrays count 0 and cannot prove dump-capable', () => {
-    const seed = {
-      symbol: 'SPY',
-      et_date: '2020-01-02',
-      source_as_of: '2020-01-02T00:00:00Z',
-      source: 'fixture',
-      authorizes: 'nothing',
-      framing: 'RESEARCH READ — SESSION BOOK',
-      provenance: 'loaded from session archive · no vendor call',
-      license: 'Our research · not redistributed on a trader route.',
-      market: {
-        ticker: 'SPY',
-        synchronized_spot: 0,
-        current_spot: 0,
-        timestamp: 0,
-        atm_iv: 0,
-        atm_iv_expiration: null,
-        atm_iv_dte: null,
-        market_phase: 'rth',
-        contracts: [{ id: 'one' }],
-      },
-      daily_bars: [],
-      minutes: [],
-      trades: [],
-    };
-    const dig = projectDigest(seed);
-    expect(dig.contractsCount).toBe(1);
-    expect(dig.dailyBarsCount).toBe(0);
-    expect(dig.minutesCount).toBe(0);
-    expect(dig.tradesCount).toBe(0);
-    const dumpCapable =
-      dig.contractsCount > 0 &&
-      dig.dailyBarsCount > 0 &&
-      dig.minutesCount > 0 &&
-      dig.tradesCount > 0;
-    expect(dumpCapable).toBe(false);
-  });
 });

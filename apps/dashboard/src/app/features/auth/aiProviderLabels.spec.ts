@@ -7,7 +7,6 @@ import {
   ownKeyChip,
   pathLabel,
 } from './aiProviderLabels';
-import { AUTH_COPY } from './copy';
 
 const bootstrap = (over: Partial<AiProvidersBootstrap> = {}): AiProvidersBootstrap => ({
   storage_available: true,
@@ -88,42 +87,5 @@ describe('aiProviderLabels — closed lookups (AC-5/8/23)', () => {
         }),
       ).map((m) => m.id),
     ).toEqual(['grok-3-sub']);
-  });
-});
-
-describe('AI providers panel — theme / motion floor (AC-30)', () => {
-  const RAW = import.meta.glob('./AiKeySection.tsx', {
-    query: '?raw',
-    import: 'default',
-    eager: true,
-  });
-
-  it('AiKeySection has no hex literals and no new keyframes', () => {
-    const src = Object.values(RAW).join('\n');
-    expect(src.length).toBeGreaterThan(100);
-    expect(src).not.toMatch(/#[0-9A-Fa-f]{3,8}\b/);
-    expect(src).not.toMatch(/@keyframes/);
-    // Vacuity: the scan is looking at the panel source, not an empty string.
-    expect(src).toMatch(/settings-grok-card/);
-  });
-});
-
-describe('AI providers copy — banned product vocabulary (AC-19 / D7)', () => {
-  const banned = [/free/i, /Convexa Grok pool/i, /cheaper/i, /\bincluded\b/i];
-
-  function collect(value: unknown, out: string[]): void {
-    if (typeof value === 'string') out.push(value);
-    else if (typeof value === 'function') {
-      /* skip interpolators — they are not standing product copy */
-    } else if (value && typeof value === 'object') {
-      for (const v of Object.values(value as Record<string, unknown>)) collect(v, out);
-    }
-  }
-
-  it('Settings AI providers strings never say free / pool / cheaper / included', () => {
-    const strings: string[] = [];
-    collect(AUTH_COPY.settings.aiKey, strings);
-    const offenders = strings.filter((s) => banned.some((re) => re.test(s)));
-    expect(offenders).toEqual([]);
   });
 });

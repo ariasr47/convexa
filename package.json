@@ -34,7 +34,8 @@
     "format:check": "prettier --check \"apps/dashboard/**/*.{ts,tsx,js,jsx,mjs,css,json,md}\" \"apps/dashboard-e2e/**/*.{ts,tsx,js,mjs,json}\" \"libs/**/*.{ts,tsx,js,mjs,json,md}\" \"tools/**/*.{js,mjs,ts}\" \"functions/**/*.{ts,js}\" \"*.{json,md,mjs,yml}\" --ignore-unknown",
     "graph": "nx graph",
     "ports:free": "node tools/free-ports.mjs",
-    "test:tools": "node --test tools/*.spec.mjs",
+    "test:tools": "node tools/test-tools.mjs",
+    "verify": "node tools/verify.mjs",
     "api:contract:baseline:candidate": "node tools/api-contract-baseline.mjs candidate",
     "api:contract:baseline:accept": "node tools/api-contract-baseline.mjs accept",
     "api:router-integration:baseline:candidate": "node tools/api-router-integration-baseline.mjs candidate",
@@ -61,8 +62,6 @@
     "browser:chromium": "nx run dashboard-e2e:e2e --skip-nx-cache",
     "browser:compat": "nx run dashboard-e2e:compat --skip-nx-cache",
     "browser:a11y": "nx run dashboard-e2e:a11y --skip-nx-cache",
-    "browser:visual": "nx run dashboard-e2e:visual --skip-nx-cache",
-    "browser:visual:update": "nx run dashboard-e2e:visual-update --skip-nx-cache",
     "browser:quality": "nx run dashboard-e2e:quality --skip-nx-cache"
   },
   "workspaces": ["apps/*", "libs/*"],

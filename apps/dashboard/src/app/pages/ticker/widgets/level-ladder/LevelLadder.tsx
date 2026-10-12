@@ -61,8 +61,7 @@ function tickColor(id: LadderRowId, palette: LevelPalette): string {
 /**
  * The ladder's own stroke tick — a 14px horizontal line, the level's stroke, dashed for max pain
  * (repair task item 2; `design/src/components/ladder.mjs:13`). Dashed ticks paint via `borderTop`
- * (a solid `backgroundColor` bar cannot dash); `LevelLadder.spec.tsx`'s colour-identity assertions
- * are edited accordingly for the one dashed row — see that file's own note.
+ * (a solid `backgroundColor` bar cannot dash).
  */
 function LadderTick({ id, palette }: { id: LadderRowId; palette: LevelPalette }) {
   const color = tickColor(id, palette);

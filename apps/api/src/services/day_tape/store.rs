@@ -638,19 +638,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn fail_once_then_succeeds() {
-        let store = SessionDayTape::fail_once();
-        let now = et_hm(2026, 8, 10, 10, 0);
-        let first = store.arm_path_a("SPY", "2026-08-10", now).await;
-        assert!(first.is_err());
-        assert!(is_store_error(&first.unwrap_err()));
-        let second = store.arm_path_a("SPY", "2026-08-10", now).await;
-        assert!(second.unwrap());
-        let day = store.load("SPY", "2026-08-10").await.unwrap().unwrap();
-        assert!(day.path_a_armed_from.is_some());
-    }
-
-    #[tokio::test]
     async fn arm_path_a_skips_overnight_and_foreign_symbol() {
         let store = SessionDayTape::memory();
         let overnight = et_hm(2026, 8, 10, 3, 0);

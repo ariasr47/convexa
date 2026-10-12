@@ -23,47 +23,65 @@ function row(over: Partial<ScanRow> = {}): ScanRow {
 }
 
 describe('matchSymbols — P3 prefix-then-substring match on the symbol', () => {
-  it('prefix matches sort before substring-only matches', () => {
-    const rows = [row({ symbol: 'TSLA' }), row({ symbol: 'SPY' }), row({ symbol: 'SPX' })];
-    const result = matchSymbols(rows, 'sp');
-    expect(result.map((r) => r.symbol)).toEqual(['SPY', 'SPX']);
-  });
-
-  it('a substring-only match (not a prefix) still appears, after prefix matches', () => {
-    const rows = [row({ symbol: 'MSPY' }), row({ symbol: 'SPY' })];
-    const result = matchSymbols(rows, 'SP');
-    expect(result.map((r) => r.symbol)).toEqual(['SPY', 'MSPY']);
-  });
-
-  it('an empty query returns every row unfiltered', () => {
-    const rows = [row({ symbol: 'AAPL' }), row({ symbol: 'MSFT' })];
-    expect(matchSymbols(rows, '')).toHaveLength(2);
-    expect(matchSymbols(rows, '   ')).toHaveLength(2);
-  });
-
-  it('case-insensitive', () => {
-    const rows = [row({ symbol: 'AAPL' })];
-    expect(matchSymbols(rows, 'aa')).toHaveLength(1);
-  });
-
-  it('no match returns an empty array, never null/undefined', () => {
-    const rows = [row({ symbol: 'AAPL' })];
-    expect(matchSymbols(rows, 'ZZZZ')).toEqual([]);
+  it('ranks prefix matches before substring-only ones, case-insensitively; a blank query returns every row; no match is []', () => {
+    const cases: Array<{ name: string; symbols: string[]; query: string; expected: string[] }> = [
+      {
+        name: 'prefix matches sort before substring-only matches',
+        symbols: ['TSLA', 'SPY', 'SPX'],
+        query: 'sp',
+        expected: ['SPY', 'SPX'],
+      },
+      {
+        name: 'a substring-only match (not a prefix) still appears, after prefix matches',
+        symbols: ['MSPY', 'SPY'],
+        query: 'SP',
+        expected: ['SPY', 'MSPY'],
+      },
+      {
+        name: 'an empty query returns every row unfiltered',
+        symbols: ['AAPL', 'MSFT'],
+        query: '',
+        expected: ['AAPL', 'MSFT'],
+      },
+      {
+        name: 'a whitespace-only query returns every row unfiltered',
+        symbols: ['AAPL', 'MSFT'],
+        query: '   ',
+        expected: ['AAPL', 'MSFT'],
+      },
+      { name: 'case-insensitive', symbols: ['AAPL'], query: 'aa', expected: ['AAPL'] },
+      {
+        name: 'no match returns an empty array, never null/undefined',
+        symbols: ['AAPL'],
+        query: 'ZZZZ',
+        expected: [],
+      },
+    ];
+    for (const { name, symbols, query, expected } of cases) {
+      const rows = symbols.map((symbol) => row({ symbol }));
+      const result = matchSymbols(rows, query);
+      expect(Array.isArray(result), name).toBe(true);
+      const got = result.map((r) => r.symbol);
+      expect(got, name).toEqual(expected);
+    }
   });
 });
 
 describe('isPlausibleTicker — AC-31 the "Open anyway" gate', () => {
-  it('accepts 1-5 letters', () => {
-    expect(isPlausibleTicker('A')).toBe(true);
-    expect(isPlausibleTicker('AAPL')).toBe(true);
-    expect(isPlausibleTicker('ABCDE')).toBe(true);
-  });
-  it('rejects 6+ letters, digits, empty, and punctuation', () => {
-    expect(isPlausibleTicker('ABCDEF')).toBe(false);
-    expect(isPlausibleTicker('AAP1')).toBe(false);
-    expect(isPlausibleTicker('')).toBe(false);
-    expect(isPlausibleTicker('AA PL')).toBe(false);
-    expect(isPlausibleTicker('AA-PL')).toBe(false);
+  it('accepts 1-5 letters; rejects 6+ letters, digits, empty, and punctuation', () => {
+    const cases: Array<[string, boolean]> = [
+      ['A', true],
+      ['AAPL', true],
+      ['ABCDE', true],
+      ['ABCDEF', false],
+      ['AAP1', false],
+      ['', false],
+      ['AA PL', false],
+      ['AA-PL', false],
+    ];
+    for (const [query, expected] of cases) {
+      expect(isPlausibleTicker(query), JSON.stringify(query)).toBe(expected);
+    }
   });
 });
 
@@ -105,29 +123,19 @@ describe('paletteScoreCell — AC-29/AC-29b: the wire status vocabulary through 
 
   it(
     'GATE Q bounce finding 4 / [absent-is-not-none] — error with the wire epoch sentinel `as_of: 0` ' +
-      'never fabricates a freshness age (projection.rs: project_error clones project_building, which ' +
-      'sets as_of: 0.0 — a real `GET /api/scan` response, not a hypothetical fixture)',
+      'never fabricates a freshness age, at the fixture now AND a real wall-clock now (projection.rs: ' +
+      'project_error clones project_building, which sets as_of: 0.0 — a real `GET /api/scan` response, ' +
+      'not a hypothetical fixture)',
     () => {
-      const cell = paletteScoreCell(row({ status: 'error', score: null, as_of: 0 }), null, NOW_S);
-      expect(cell.text).toBe('unavailable');
-      // Before the fix this computed `NOW_S - 0` as a real elapsed age (e.g. "496824h ago" against a
-      // real epoch `now`) — an absent timestamp must render as a member of the closed not-a-number
-      // vocabulary (here: no freshness at all), never as a computed age.
-      expect(cell.freshness).toBeNull();
-    },
-  );
-
-  it(
-    'the same sentinel at a REAL wall-clock `now` (not the fixture NOW_S=2000) does not fabricate a ' +
-      "huge fake age — reproduces QA's exact observed defect shape",
-    () => {
-      const realNowS = Math.floor(Date.now() / 1000);
-      const cell = paletteScoreCell(
-        row({ status: 'error', score: null, as_of: 0 }),
-        null,
-        realNowS,
-      );
-      expect(cell.freshness).toBeNull();
+      // The real wall-clock `now` reproduces QA's exact observed defect shape: before the fix this
+      // computed `now - 0` as a real elapsed age (e.g. "496824h ago") — an absent timestamp must
+      // render as a member of the closed not-a-number vocabulary (here: no freshness at all), never
+      // as a computed age.
+      for (const nowS of [NOW_S, Math.floor(Date.now() / 1000)]) {
+        const cell = paletteScoreCell(row({ status: 'error', score: null, as_of: 0 }), null, nowS);
+        expect(cell.text, `now=${nowS}`).toBe('unavailable');
+        expect(cell.freshness, `now=${nowS}`).toBeNull();
+      }
     },
   );
 

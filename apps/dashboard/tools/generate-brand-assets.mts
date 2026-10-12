@@ -5,7 +5,7 @@
  *   node apps/dashboard/tools/generate-brand-assets.mts
  *
  * (Node ≥ 23 type-stripping runs the .mts + its .ts imports directly — no new dependency, no
- * build-step coupling; the COMMITTED binaries are the contract, verified by brand-assets.spec.ts.)
+ * build-step coupling; the COMMITTED binaries are the contract.)
  *
  * Emits into apps/dashboard/public/:
  *   - favicon.svg          — the arc-X monogram (ink rounded-square field, gammaAmber strokes)
@@ -206,7 +206,7 @@ body {
 try {
   mkdirSync(PUBLIC, { recursive: true });
 
-  // 1. favicon.svg — committed verbatim (hexes pinned to tokens by brand-assets.spec.ts).
+  // 1. favicon.svg — committed verbatim (its hexes are the token values).
   const faviconSvg = monogramSvg(true) + '\n';
   writeFileSync(join(PUBLIC, 'favicon.svg'), faviconSvg);
   console.log('wrote favicon.svg');

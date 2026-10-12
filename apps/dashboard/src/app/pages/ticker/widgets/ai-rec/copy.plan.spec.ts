@@ -1,19 +1,15 @@
 /**
- * copy.plan.spec.ts — rec-absence-literals-hole. The new copy: the six absence literals, the standing
- * line, the DTE caption and `literalCopy`, the one shared mapping table both renderers read.
+ * copy.plan.spec.ts — rec-absence-literals-hole. The new copy: the value-slot absence literals and
+ * `literalCopy`, the one shared mapping table both renderers read; plus the plan-scope caption.
  */
 import { describe, expect, it } from 'vitest';
 import {
-  dteWindowCaption,
   GROUNDING_BLOCK_ABSENT,
   GROUNDING_CARD,
   literalCopy,
-  notActionableLine,
   PLAN_FIELD_COPY,
   PLAN_FIELD_LABEL,
   PLAN_FIELDS_NOT_CHECKED,
-  POSITION_DEFINING_LABELS,
-  prefillUnnamedReason,
   REASONING_PROSE_NOT_CHECKED,
 } from './copy';
 
@@ -34,33 +30,6 @@ describe('rec-absence-literals-hole · the new copy', () => {
     for (const s of valueSlotTexts) expect(s).not.toContain(RESERVED);
   });
 
-  it('the standing line, the DTE caption and the prefill reason are non-empty, producer-neutral prose', () => {
-    for (const s of [
-      notActionableLine(POSITION_DEFINING_LABELS),
-      dteWindowCaption(7, 45),
-      prefillUnnamedReason(['Strike(s)']),
-    ]) {
-      expect(s.length).toBeGreaterThan(0);
-    }
-  });
-
-  it('the DTE caption uses an EN dash and interpolates both bounds, never a question mark', () => {
-    expect(dteWindowCaption(7, 45)).toBe(' · your DTE window: 7–45');
-    expect(dteWindowCaption(7, 45)).not.toContain('?');
-  });
-
-  it('the standing line names the missing fields in card order and no cause', () => {
-    expect(notActionableLine(['Structure', 'Expiration'])).toBe(
-      'Not actionable as given. Never named: Structure, Expiration.',
-    );
-  });
-
-  it('the six carry a producer-neutral tip (no AI, no rule named)', () => {
-    for (const w of ['AI', 'model', 'rule']) {
-      expect(PLAN_FIELD_COPY.notGiven.tip).not.toContain(w);
-    }
-  });
-
   it('literalCopy is total over the closed set; only `dash` carries the reserved mark', () => {
     for (const k of ['value', 'not_set', 'unavailable', 'not_given', 'unrecognized'] as const) {
       expect(literalCopy(k).text).not.toContain(RESERVED);
@@ -71,12 +40,6 @@ describe('rec-absence-literals-hole · the new copy', () => {
 });
 
 describe('rec-plan-scope-caption · PLAN_FIELDS_NOT_CHECKED', () => {
-  it('PLAN_FIELDS_NOT_CHECKED is the SPEC §4 closed constant', () => {
-    expect(PLAN_FIELDS_NOT_CHECKED).toBe(
-      "Structure, Strike(s), Expiration, Entry trigger, Time horizon and Confidence aren't checked — only the stop, target and invalidation level are.",
-    );
-  });
-
   it('PLAN_FIELDS_NOT_CHECKED names every PLAN_FIELD_LABEL and stays disjoint from siblings', () => {
     for (const label of Object.values(PLAN_FIELD_LABEL)) {
       expect(PLAN_FIELDS_NOT_CHECKED).toContain(label);

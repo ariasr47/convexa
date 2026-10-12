@@ -84,10 +84,10 @@ const refusedSx = {
  * takes the reduced-emphasis treatment above.
  *
  * The treatment is applied HERE, once, rather than at each of the consumer sites: every refused
- * control in the app already routes through this primitive (pinned by faulted.spec.tsx's
- * `data-refused` census), so one implementation is also the only place it can be forgotten. The
- * child must therefore be an `sx`-taking MUI element (`Box`/`Button`/`IconButton`/`MenuItem`) —
- * all five call sites are, and the site's own `sx` is MERGED with, never replaced by, this one.
+ * control in the app already routes through this primitive, so one implementation is also the
+ * only place it can be forgotten. The child must therefore be an `sx`-taking MUI element
+ * (`Box`/`Button`/`IconButton`/`MenuItem`) — all five call sites are, and the site's own `sx` is
+ * MERGED with, never replaced by, this one.
  */
 export function Refused({ when, children }: { when: boolean; children: ReactElement }) {
   if (!when) return children;

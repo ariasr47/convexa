@@ -26,7 +26,6 @@ import { BrokerTabPanel } from './BrokerTabPanel';
 import { BROKER_COPY, stampTime } from './copy';
 import {
   BOOK_EMPTY,
-  BOOK_NO_CREDENTIAL,
   BOOK_OK_FRESH,
   BOOK_OK_STALE,
   BOOK_REAUTH_NO_SNAPSHOT,
@@ -141,21 +140,6 @@ describe('BrokerTabPanel · the closed states', () => {
     await screen.findByTestId('broker-signin-prompt');
     const brokerCalls = fetchMock.mock.calls.filter((c) => String(c[0]).includes('/api/broker/'));
     expect(brokerCalls).toHaveLength(0);
-  });
-
-  it('S1 never-connected: heading, body, deep-link CTA to Settings #brokerage, sub-line', async () => {
-    installFetch({
-      hint: { set: false, last4: null, storage_available: true },
-      book: BOOK_NO_CREDENTIAL,
-    });
-    renderPanel();
-    const s1 = await screen.findByTestId('broker-s1');
-    expect(within(s1).getByText(BROKER_COPY.s1.heading)).toBeInTheDocument();
-    expect(within(s1).getByText(BROKER_COPY.s1.body)).toBeInTheDocument();
-    expect(within(s1).getByText(BROKER_COPY.s1.subline)).toBeInTheDocument();
-    const cta = within(s1).getByTestId('broker-connect-cta');
-    expect(cta).toHaveTextContent(BROKER_COPY.s1.cta);
-    expect(cta).toHaveAttribute('href', '/settings#brokerage');
   });
 
   it('S2 first-sync: credential stored + first fetch in flight ⇒ skeletons + the named copy, no numbers', async () => {

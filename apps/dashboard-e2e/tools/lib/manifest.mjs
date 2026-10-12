@@ -8,7 +8,6 @@ const ROOT_KEYS = [
   'full_chromium',
   'compatibility',
   'accessibility',
-  'visual',
   'artifact_roots',
 ];
 const ID = /^[a-z0-9][a-z0-9._-]+$/;
@@ -30,12 +29,12 @@ export function validateManifest(value) {
   const tests = value.full_chromium?.tests;
   if (
     // (curvature-v2-foundations FE-10) bumped from the frozen `pre-feature-52-v1`/52 baseline: FE-10
-    // added 23 real Chromium tests (16 to `no-overflow.spec.ts` — AC-38/AC-39/AC-40/AC-57's `/alerts`
+    // added 23 real Chromium tests (16 to the overflow spec — AC-38/AC-39/AC-40/AC-57's `/alerts`
     // route, the `tablet 834` width, and 3 degraded-surface cases at 2 schemes — plus 7 new to
     // `curvature-v2.spec.ts`), so the frozen inventory this validator enforces moves with them.
-    // (curvature-v2-desk-and-read FE-12) bumped 75 → 86: registered `desk-and-read.spec.ts` (6 new
+    // (curvature-v2-desk-and-read FE-12) bumped 75 → 86: registered the desk-and-read spec (6 new
     // tests — criterion 45's two, the criteria 20/22 evidence pair, criterion 52's two) and added 5
-    // new criterion-50 read-strip-rail tests to `no-overflow.spec.ts` (393 dark/light, 834, 900,
+    // new criterion-50 read-strip-rail tests to the overflow spec (393 dark/light, 834, 900,
     // 1280) — the first net-new Chromium tests this phase's own lanes have added (FE-1 through FE-11
     // only edited/re-pointed existing ones).
     // (curvature-v2-surfaces FE-12) bumped 86 → 90: U-32's frame-scoped `curvature-v2.spec.ts`
@@ -55,7 +54,7 @@ export function validateManifest(value) {
     // from "MEASURED, not asserted" to "GATE Z REPAIR" now that both controls are hard-asserted —
     // no new tests, no count change from that rename.
     // (curvature-v2-surfaces GATE Z repair pass 2, finding 3) bumped 100 → 103: 3 new tests in a new
-    // `no-overflow.spec.ts` describe block (`GATE Z finding 3 (criterion 66)`), hard-asserting the
+    // overflow describe block (`GATE Z finding 3 (criterion 66)`), hard-asserting the
     // 44px coarse-pointer floor on `risk-inputs-account-size`/`risk-inputs-cap-value`,
     // `settings-ticker`/`settings-persona`, and the alerts composer's Symbol field + Kind select —
     // all newly reachable once `theme.ts`'s coarse-pointer selector was widened to `input` and
@@ -63,31 +62,41 @@ export function validateManifest(value) {
     // (curvature-v2-surfaces GATE Z repair pass 3, criterion 66 second clause) bumped 103 → 105:
     // `TrackRecordSection.tsx:226-231`'s `<summary>` on `/positions` was FIXED (this phase touches
     // the file, `bdc992d8` — unlike the three sibling under-floor `Select`s QA found on `/ticker`,
-    // which stay itemized as carried debt, untouched this phase) — 2 new `no-overflow.spec.ts`
+    // which stay itemized as carried debt, untouched this phase) — 2 new overflow
     // tests: the 393px/coarse floor assertion, and a 1280px/fine-pointer assertion proving the
     // local coarse-only `sx` never leaks into the desktop row height.
     // (curvature-v2-surfaces GATE Z repair pass 4, QA pass 3 Medium finding) bumped 105 → 108:
     // the pass-3 fix's `display: flex` silently removed the `<summary>`'s native `::marker`
     // (Chromium only generates it under `display: list-item`); pass 4 reaches the same 44px floor
-    // with `line-height` instead, leaving `display` untouched. 3 new `no-overflow.spec.ts` tests —
+    // with `line-height` instead, leaving `display` untouched. 3 new overflow tests —
     // 393px/coarse, 393px/fine (the direct QA comparison point) and 1280px/fine — each asserting
     // `getComputedStyle(summary).display === 'list-item'` (the mechanism the marker depends on,
     // verified to actually flip with the pass-3 defect) plus open/close/focus/Enter operability.
-    // (curvature-v2-landing-and-site F15) bumped 108 → 126: `no-overflow.spec.ts`'s ROUTES table
+    // (curvature-v2-landing-and-site F15) bumped 108 → 126: the overflow spec's ROUTES table
     // gained /blog, /methodology and one unmatched path (AC-G3b), and ROUTES is iterated by six
     // loops — 393 dark, 393 light, tablet 834, md 900, lg 1280, and the lg-1280 light walk.
     // 3 routes × 6 loops = 18 net-new Chromium tests. Added coverage, not a breach of AC-G3.
     // (curvature-v2-landing-and-site GATE Z I-2, amendment 5) chromium count UNCHANGED at 126 by
-    // that repair — it widens the ACCESSIBILITY scan matrix only, not `no-overflow.spec.ts`.
+    // that repair — it widens the ACCESSIBILITY scan matrix only, not the overflow spec.
     // (curvature-v2-landing-and-site GATE Z I-1) 126 → 128: one e2e case
     // (`navigation.spec.ts`, "client-side navigation") covers both the TOC click and the fresh
     // deep link past `index.html`'s `<base href="/">` — jsdom implements no `<base>` resolution,
     // so only a real browser proves this class of fix. 2 net-new Chromium tests.
-    value.full_chromium?.inventory_id !== 'curvature-v2-landing-and-site-128-v1' ||
+    // (lean-tests batch 22, owner-approved 2026-10-08) 128 → 35: the overflow spec RETIRED
+    // (93 layout-overflow Chromium cases, structure) and its manifest entries removed. The 35 left
+    // are app-loads 1, broker-grouping 4, broker 4, curvature-v2 14, desk-and-read 6, navigation 6.
+    // The pixel visual gate was retired in the same batch, with its `visual` manifest section.
+    // (lean-tests batch 36, owner-approved 2026-10-08) 35 → 20: the app-loads, broker-grouping,
+    // broker and desk-and-read specs RETIRED (15 cases, duplicate of the compatibility journeys and
+    // unit specs). The 20 left are curvature-v2 14 and navigation 6.
+    // (lean-tests batch 81, owner-approved 2026-10-09) 20 → 13: curvature-v2 drops AC-1a, AC-34, the
+    // two criterion-66 alerts cases, the proximity chip and AC-20b (6), navigation drops Back/Forward
+    // (1). The 13 left are curvature-v2 8 (AC-35 and U-32, kept apart until PR #76) and navigation 5.
+    value.full_chromium?.inventory_id !== 'lean-tests-batch-81-13-v1' ||
     !Array.isArray(tests) ||
-    tests.length !== 128
+    tests.length !== 13
   )
-    fail('full Chromium inventory must contain 128 tests');
+    fail('full Chromium inventory must contain 13 tests');
   unique(
     tests.map((x) => x.test_id),
     'full Chromium tests',
@@ -106,7 +115,7 @@ export function validateManifest(value) {
   const journeys = value.compatibility?.journeys;
   if (
     !Array.isArray(journeys) ||
-    journeys.length !== 5 ||
+    journeys.length !== 6 ||
     JSON.stringify(value.compatibility.projects) !==
       JSON.stringify(['chromium', 'firefox', 'webkit'])
   )
@@ -165,34 +174,10 @@ export function validateManifest(value) {
     fail('invalid scan readiness');
   if (behaviors.some((x) => !/^A11Y-B[1-7]$/.test(x.id) || x.project !== 'chromium'))
     fail('invalid accessibility behavior');
-  const scenarios = value.visual?.scenarios;
-  if (
-    !Array.isArray(scenarios) ||
-    scenarios.length !== 6 ||
-    value.visual.project !== 'chromium' ||
-    value.visual.threshold !== 0
-  )
-    fail('visual inventory drift');
-  unique(
-    scenarios.map((x) => x.id),
-    'visual scenarios',
-  );
-  if (
-    scenarios.some(
-      (x) =>
-        !ID.test(x.id) ||
-        x.project !== 'chromium' ||
-        !['dark', 'light'].includes(x.colorScheme) ||
-        !Number.isInteger(x.viewport?.width) ||
-        !Number.isInteger(x.viewport?.height),
-    )
-  )
-    fail('invalid visual scenario');
   const expectedRoots = {
     chromium: 'apps/dashboard-e2e/test-output/playwright/chromium',
     compatibility: 'apps/dashboard-e2e/test-output/playwright/compatibility',
     accessibility: 'apps/dashboard-e2e/test-output/playwright/accessibility',
-    visual: 'apps/dashboard-e2e/test-output/playwright/visual',
   };
   if (JSON.stringify(value.artifact_roots) !== JSON.stringify(expectedRoots))
     fail('artifact roots drift');

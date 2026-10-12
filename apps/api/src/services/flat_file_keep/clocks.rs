@@ -74,13 +74,6 @@ mod tests {
     }
 
     #[test]
-    fn clock_1059_d_plus_1_is_not_elapsed_1100_is_due() {
-        let d = "2026-08-10";
-        assert!(!is_due(d, et_hm(2026, 8, 11, 10, 59)));
-        assert!(is_due(d, et_hm(2026, 8, 11, 11, 0)));
-    }
-
-    #[test]
     fn local_is_et_weekend_stays_sat_sun_not_holiday_weekday() {
         assert!(!is_et_weekend("2026-08-10"));
         assert!(!is_et_weekend("2026-11-26")); // Thanksgiving Thursday

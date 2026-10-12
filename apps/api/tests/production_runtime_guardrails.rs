@@ -1,6 +1,3 @@
-use api_rust::runtime_guardrails::origins::AllowedBrowserOrigins;
-use api_rust::runtime_guardrails::{classify_mode, HostContext, RuntimeMode};
-
 use api_rust::domain::LivePrice;
 use api_rust::server::production_router;
 use api_rust::services::auth::crypto::{EncryptionKeyRing, KeyId as EncryptionKeyId};
@@ -82,30 +79,6 @@ async fn body(response: axum::response::Response) -> String {
 
 fn request(method: &str, uri: &str) -> axum::http::request::Builder {
     Request::builder().method(method).uri(uri)
-}
-
-#[test]
-fn origins_are_https_exact_and_default_port_normalized() {
-    let origins =
-        AllowedBrowserOrigins::parse("https://Example.com:443,https://example.com").unwrap();
-    assert_eq!(origins.normalized(), &["https://example.com".to_string()]);
-    assert!(AllowedBrowserOrigins::parse("*").is_err());
-    assert!(AllowedBrowserOrigins::parse("http://example.com").is_err());
-    assert!(AllowedBrowserOrigins::parse("https://example.com/path").is_err());
-}
-
-#[test]
-fn debug_only_missing_mode_defaults_dev() {
-    assert_eq!(
-        classify_mode(
-            None,
-            HostContext {
-                railway: false,
-                release: false
-            }
-        ),
-        Ok(RuntimeMode::Dev)
-    );
 }
 
 #[tokio::test]

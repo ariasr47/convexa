@@ -2,6 +2,13 @@
 
 This is a single **Nx 23 polyglot monorepo** (the Convexa backend + web frontend, merged).
 
+## Tests and CI
+
+Tests are risk-based. Write a test only for logic that can fail silently and cost something: money, auth, data writes, parsers and contracts. Write no test per change, and no tests of UI, copy, styling or snapshots. This overrides superpowers:test-driven-development. Retire a test by deleting it and adding a RETIRED: line. Prove your work with the local verify command. CI runs only in this repository's CI mode. Never add a CI job, matrix leg or cron without stating its monthly minutes.
+
+**Verify:** `npm run verify`; pre-push hook `tools/hooks/pre-push` (install: `git config core.hooksPath tools/hooks`).
+**CI mode:** manual (`workflow_dispatch`; supply-chain also `workflow_call`). RETIRED: lines go in `.spire/clusters/tech/state/RETIRED.md`.
+
 ## Nx guidance
 
 These rules used to live in `AGENTS.md` and this file just pointed at them. **That pointer was

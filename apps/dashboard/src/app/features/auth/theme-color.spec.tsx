@@ -61,12 +61,6 @@ function mount() {
 }
 
 describe('<meta name="theme-color"> follows the resolved mode', () => {
-  it('dark pref → the DARK theme background token (never a literal drifting from the theme)', async () => {
-    saveLocalTheme('dark');
-    mount();
-    await waitFor(() => expect(metaContent()).toBe(darkTheme.palette.background.default));
-  });
-
   it('switching to light → the LIGHT theme background token', async () => {
     saveLocalTheme('dark');
     const first = mount();

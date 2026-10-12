@@ -19,8 +19,8 @@
  * picture (Landing.tsx), in the accessibility tree.
  *
  * The `<radialGradient>` below is the camelCase SVG ELEMENT — distinct from the hyphenated CSS
- * function of the same family that `landing-structure.spec.tsx` scans for and bans from the DOM
- * layer; a faithful port stays inside that ban without narrowing it. The CTA band's matching CSS
+ * function of the same family, which the landing's DOM layer does not use; a faithful port keeps
+ * it that way. The CTA band's matching CSS
  * glow wash (`landing.mjs:116`) is DROPPED here too, not re-admitted.
  *
  * Tokens only — every colour is a palette slot resolved in `sx`. Every design-source CSS custom
@@ -55,10 +55,9 @@
  * bare string there is emitted VERBATIM as invalid CSS (e.g. `fill:primary.main`) and silently
  * drops to the SVG initial value (`fill:black` / `stroke:none`) — an invisible wireframe and a
  * black spot dot, passing every DOM-presence assertion while failing to render. Confirmed against
- * this folder's own shipped precedent: `HeroCurve.tsx:88,95` and `shared/ui/ArcDivider.spec.tsx`
- * use the callback form exclusively; there is no bare dot-path `fill`/`stroke` anywhere else in the
- * app. `GammaSurfaceHero.spec.tsx`'s "resolved paint, not a broken theme path" block proves this
- * both ways (mutation-tested: reintroducing a bare string turns the guard red).
+ * this folder's own shipped precedent: `HeroCurve.tsx:88,95`
+ * uses the callback form exclusively; there is no bare dot-path `fill`/`stroke` anywhere else in the
+ * app.
  */
 import Box from '@mui/material/Box';
 

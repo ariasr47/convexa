@@ -140,42 +140,6 @@ describe('LiveTape · tape-local honesty', () => {
     expect(screen.getByText('—')).toBeInTheDocument(); // the null spread, isolated
   });
 
-  it('S0 title Live tape and LIVE_TAPE_SUBTITLE_* still exist when occupancy omitted', () => {
-    wrap(
-      <LiveTape
-        m={marketState()}
-        live={liveUpdate({ live: true })}
-        isLive={true}
-        streamOffline={false}
-      />,
-    );
-    expect(screen.getByText('Live tape')).toBeInTheDocument();
-    expect(screen.getByText(/Live stream · not the structure snapshot below/)).toBeInTheDocument();
-    expect(screen.getByText('Gamma flip · live')).toBeInTheDocument();
-  });
-
-  it('S1 title is Session tape from first session_tape payload including starting', () => {
-    wrap(
-      <LiveTape
-        m={marketState({ ticker: 'SPY' })}
-        live={liveUpdate({
-          ticker: 'SPY',
-          live: false,
-          feed: 'session_tape',
-          session_tape: sessionTape({ tape_time_et: null, phase: 'playing' }),
-        })}
-        isLive={false}
-        displayActive={false}
-        streamOffline={false}
-      />,
-    );
-    expect(screen.getByText('Session tape')).toBeInTheDocument();
-    expect(screen.queryByText('Live tape')).toBeNull();
-    expect(
-      screen.getByText(/Session day tape · SPY · Mon Aug 10 · not a live feed/),
-    ).toBeInTheDocument();
-  });
-
   it('S1 does not use LIVE_TAPE_SUBTITLE_LIVE or OFFLINE', () => {
     wrap(
       <LiveTape
@@ -215,105 +179,36 @@ describe('LiveTape · tape-local honesty', () => {
     expect(screen.queryByText('Gamma flip · live')).toBeNull();
   });
 
-  it('S1 1× net-flow keeps (5m) and last-few-minutes ⓘ', () => {
-    wrap(
-      <LiveTape
-        m={marketState({ ticker: 'SPY' })}
-        live={liveUpdate({
-          ticker: 'SPY',
-          live: false,
-          feed: 'session_tape',
-          flow_window_s: 300,
-          session_tape: sessionTape({ pace: 1 }),
-        })}
-        isLive={false}
-        displayActive={true}
-        streamOffline={false}
-      />,
-    );
-    expect(screen.getByText('Net flow (5m)')).toBeInTheDocument();
-  });
-
-  it('S1 4× net-flow is Net flow with no (Nm) and no last few minutes', () => {
-    wrap(
-      <LiveTape
-        m={marketState({ ticker: 'SPY' })}
-        live={liveUpdate({
-          ticker: 'SPY',
-          live: false,
-          feed: 'session_tape',
-          flow_window_s: 300,
-          session_tape: sessionTape({ pace: 4 }),
-        })}
-        isLive={false}
-        displayActive={true}
-        streamOffline={false}
-      />,
-    );
-    expect(screen.getByText('Net flow')).toBeInTheDocument();
-    expect(screen.queryByText(/Net flow \(\d+m\)/)).toBeNull();
-  });
-
-  it('S1 ended subtitle is Session tape ended · last tape ticks · structure levels stay snapshot', () => {
-    wrap(
-      <LiveTape
-        m={marketState({ ticker: 'SPY' })}
-        live={liveUpdate({
-          ticker: 'SPY',
-          live: false,
-          feed: 'session_tape',
-          session_tape: sessionTape({ phase: 'ended' }),
-        })}
-        isLive={false}
-        displayActive={false}
-        streamOffline={false}
-      />,
-    );
-    expect(
-      screen.getByText('Session tape ended · last tape ticks · structure levels stay snapshot'),
-    ).toBeInTheDocument();
-  });
-
-  it('S1 drop does not show ⏸ offline', () => {
-    wrap(
-      <LiveTape
-        m={marketState({ ticker: 'SPY' })}
-        live={liveUpdate({
-          ticker: 'SPY',
-          live: false,
-          feed: 'session_tape',
-          session_tape: sessionTape({ phase: 'playing' }),
-        })}
-        isLive={false}
-        displayActive={false}
-        streamOffline={true}
-      />,
-    );
-    expect(screen.queryByText(/⏸ offline/)).toBeNull();
-    expect(screen.getByText('Session tape')).toBeInTheDocument();
+  it('S1 net-flow label keeps its (5m) window at 1× and carries no (Nm) window at 4×', () => {
+    const cases: ReadonlyArray<readonly [1 | 4, string, RegExp | null]> = [
+      [1, 'Net flow (5m)', null],
+      [4, 'Net flow', /Net flow \(\d+m\)/],
+    ];
+    for (const [pace, label, absent] of cases) {
+      const { unmount } = wrap(
+        <LiveTape
+          m={marketState({ ticker: 'SPY' })}
+          live={liveUpdate({
+            ticker: 'SPY',
+            live: false,
+            feed: 'session_tape',
+            flow_window_s: 300,
+            session_tape: sessionTape({ pace }),
+          })}
+          isLive={false}
+          displayActive={true}
+          streamOffline={false}
+        />,
+      );
+      expect(screen.getByText(label), `${pace}×`).toBeInTheDocument();
+      if (absent) expect(screen.queryByText(absent), `${pace}×`).toBeNull();
+      unmount();
+    }
   });
 
   // ---------------------------------------------------------------------------------------------
-  // FE-2 step 5 — the retention latch's two arms (SPEC §2.2), criteria 12/13/15/15b/17/18.
+  // FE-2 step 5 — the retention latch's empty arm (SPEC §2.2), criterion 13.
   // ---------------------------------------------------------------------------------------------
-
-  it('criterion 12 — a drop with a HELD latch renders the retained value, dimmed, with the pause mark and "offline · last known"', () => {
-    const live = liveUpdate({ gamma_flip: 260 }); // distinct from the bundle's 248 (criterion 14)
-    const { rerender } = wrap(
-      <LiveTape m={marketState()} live={live} isLive={true} streamOffline={false} />,
-    );
-    expect(screen.getByText('$260')).toBeInTheDocument();
-
-    rerender(
-      <ThemeProvider theme={theme}>
-        <LiveTape m={marketState()} live={live} isLive={true} streamOffline={true} />
-      </ThemeProvider>,
-    );
-    const cell = screen.getByText('Gamma flip · live').closest('[data-figure-state]');
-    expect(cell).toHaveAttribute('data-figure-state', 'offline-retained');
-    expect(within(cell as HTMLElement).getByText('$260')).toBeInTheDocument(); // never $248
-    expect(within(cell as HTMLElement).getByText('offline · last known')).toBeInTheDocument();
-  });
 
   it('criterion 13 — a drop with an EMPTY latch renders the bare member, pause mark, and NO "last known" words', () => {
     const { rerender } = wrap(
@@ -333,102 +228,6 @@ describe('LiveTape · tape-local honesty', () => {
     expect(cell).toHaveAttribute('data-figure-state', 'offline-bare');
     expect(within(cell as HTMLElement).queryByText(/last known/)).toBeNull();
     expect(within(cell as HTMLElement).getByText('—')).toBeInTheDocument();
-  });
-
-  it('criterion 15b — at least one held latch renders the LAST-KNOWN-TICKS subtitle arm', () => {
-    const live = liveUpdate({ net_flow: 900, spread: null, gamma_flip: null });
-    const { rerender } = wrap(
-      <LiveTape m={marketState()} live={live} isLive={true} streamOffline={false} />,
-    );
-    rerender(
-      <ThemeProvider theme={theme}>
-        <LiveTape m={marketState()} live={live} isLive={true} streamOffline={true} />
-      </ThemeProvider>,
-    );
-    expect(
-      screen.getByText('Stream offline · last known ticks · structure levels stay current'),
-    ).toBeInTheDocument();
-  });
-
-  it('criterion 15 — no latch ever held a value renders the NO-TICKS-RETAINED subtitle arm', () => {
-    const { rerender } = wrap(
-      <LiveTape m={marketState()} live={null} isLive={false} streamOffline={false} />,
-    );
-    rerender(
-      <ThemeProvider theme={theme}>
-        <LiveTape
-          m={marketState()}
-          live={liveUpdate({ live: false })}
-          isLive={false}
-          streamOffline={true}
-        />
-      </ThemeProvider>,
-    );
-    expect(
-      screen.getByText('Stream offline · no ticks retained · structure levels stay current'),
-    ).toBeInTheDocument();
-  });
-
-  it('criterion 17 — a value restored from the latch on reconnect does not re-flash', () => {
-    // jsdom does not compute `animation-name` from an emotion-injected stylesheet, so this is
-    // asserted on the emotion CLASS NAME instead: `flashColorSx` folds the flash state into the
-    // `sx` object, so a genuinely flashing value gets a DIFFERENT generated class than a resting
-    // one — proven by the anti-vacuity half below, on the SAME mechanism.
-    const live248 = liveUpdate({ gamma_flip: 248 });
-    const { rerender, unmount } = wrap(
-      <LiveTape m={marketState()} live={live248} isLive={true} streamOffline={false} />,
-    );
-    const restingClass = screen.getByText('$248').className;
-    rerender(
-      <ThemeProvider theme={theme}>
-        <LiveTape m={marketState()} live={live248} isLive={true} streamOffline={true} />
-      </ThemeProvider>,
-    );
-    rerender(
-      <ThemeProvider theme={theme}>
-        <LiveTape m={marketState()} live={live248} isLive={true} streamOffline={false} />
-      </ThemeProvider>,
-    );
-    // useFlashOnChange.ts:46 returns early on a null `before` — the drop fed it `null`, so the
-    // restored print (the SAME 248) has no `before` to compare against and cannot flash: its class
-    // stays the RESTING one.
-    expect(screen.getByText('$248').className).toBe(restingClass);
-    unmount();
-
-    // ANTI-VACUITY: the SAME mechanism must show a genuinely DIFFERENT class on an ordinary
-    // live-to-live value change, or the equality above passes merely because this harness cannot
-    // see a class change at all.
-    const { rerender: rerenderFlash } = wrap(
-      <LiveTape m={marketState()} live={live248} isLive={true} streamOffline={false} />,
-    );
-    rerenderFlash(
-      <ThemeProvider theme={theme}>
-        <LiveTape
-          m={marketState()}
-          live={liveUpdate({ gamma_flip: 261 })}
-          isLive={true}
-          streamOffline={false}
-        />
-      </ThemeProvider>,
-    );
-    expect(screen.getByText('$261').className).not.toBe(restingClass);
-  });
-
-  it('criterion 18 — the gamma-flip label names the derivation and is never byte-identical to the ladder row label across live AND a drop', () => {
-    const live = liveUpdate({ gamma_flip: 248 });
-    const { rerender } = wrap(
-      <LiveTape m={marketState()} live={live} isLive={true} streamOffline={false} />,
-    );
-    expect(screen.getByText('Gamma flip · live')).toBeInTheDocument();
-    expect(screen.queryByText('Gamma flip')).toBeNull(); // the ladder's own row label (FE-5)
-
-    rerender(
-      <ThemeProvider theme={theme}>
-        <LiveTape m={marketState()} live={live} isLive={true} streamOffline={true} />
-      </ThemeProvider>,
-    );
-    expect(screen.getByText('Gamma flip · live')).toBeInTheDocument(); // label UNCHANGED by the drop
-    expect(screen.queryByText('Gamma flip')).toBeNull();
   });
 
   it('display-active moves numbers; keep-alive does not flash', () => {

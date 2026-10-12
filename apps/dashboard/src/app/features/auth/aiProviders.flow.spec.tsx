@@ -64,18 +64,6 @@ describe('AI providers · Settings matrix + Ask-AI agreement', () => {
     );
   });
 
-  it('present-but-unavailable Grok card has no Connect CTA (AC-27)', async () => {
-    installAuthBackend({
-      session: userSession('u-1', 'a@x.com'),
-    });
-    renderAt('/settings');
-    expect(await screen.findByTestId('settings-grok-unavailable')).toBeInTheDocument();
-    expect(screen.queryByTestId('settings-grok-connect')).toBeNull();
-    expect(screen.getByTestId('settings-grok-unavailable').textContent ?? '').not.toMatch(
-      /Convexa Grok pool|free|cheaper|included/i,
-    );
-  });
-
   it('oauth_expired vs oauth_unlinked vs subscription_unavailable stay distinct (AC-14/15)', async () => {
     const C = AUTH_COPY.settings.aiKey;
     const cases = [
@@ -147,7 +135,8 @@ describe('AI providers · Settings matrix + Ask-AI agreement', () => {
         provider === 'anthropic' ? 'settings-ai-key-input' : `settings-ai-key-input-${provider}`;
       const addId =
         provider === 'anthropic' ? 'settings-ai-key-add' : `settings-ai-key-add-${provider}`;
-      await user.type(screen.getByTestId(inputId), RAW[provider]);
+      await user.click(screen.getByTestId(inputId));
+      await user.paste(RAW[provider]);
       await user.click(screen.getByTestId(addId));
       const last4 = RAW[provider].slice(-4);
       await waitFor(() =>
@@ -177,7 +166,8 @@ describe('AI providers · Settings matrix + Ask-AI agreement', () => {
     await user.click(screen.getByTestId('settings-ai-key-tab-openai'));
     await user.click(screen.getByTestId('settings-ai-key-replace-openai'));
     const rotated = 'sk-openai-rotated-9999';
-    await user.type(screen.getByTestId('settings-ai-key-input-openai'), rotated);
+    await user.click(screen.getByTestId('settings-ai-key-input-openai'));
+    await user.paste(rotated);
     await user.click(screen.getByTestId('settings-ai-key-replace-submit-openai'));
     await waitFor(() =>
       expect(screen.getByTestId('settings-ai-key-masked-openai')).toHaveTextContent(
@@ -259,35 +249,6 @@ describe('AI providers · Settings matrix + Ask-AI agreement', () => {
     await user.click(select);
     await user.click(await screen.findByRole('option', { name: /claude-sonnet-4-5/ }));
     await waitFor(() => expect(be.state.aiKey.preference.model).toBe('claude-sonnet-4-5'));
-  });
-
-  it('first-visit named model is visible while still unpowered (AC-7 / AC-13)', async () => {
-    installAuthBackend({ session: userSession('u-1', 'a@x.com') });
-    renderAt('/settings');
-    const select = await screen.findByRole('combobox', {
-      name: AUTH_COPY.settings.aiKey.modelHeading,
-    });
-    expect(select).toHaveTextContent('claude-opus-4-8');
-    expect(screen.getByTestId('settings-ai-model-unpowered')).toBeInTheDocument();
-  });
-
-  it('storage unavailable is info, not error-red, and inputs are disabled (AC-18)', async () => {
-    installAuthBackend({
-      session: userSession('u-1', 'a@x.com'),
-      aiKey: {
-        storage_available: false,
-        put: 'ok',
-        slots: emptyAiSlots(),
-        grok: { available: false, connected: false, unavailable_reason: null },
-        preference: { power_path: null, provider: null, model: 'claude-opus-4-8' },
-        catalog: defaultAiCatalog(),
-      },
-    });
-    renderAt('/settings');
-    expect(await screen.findByTestId('settings-ai-key-storage-unavailable')).toBeInTheDocument();
-    expect(screen.getByTestId('settings-ai-key-input')).toBeDisabled();
-    expect(screen.getByTestId('settings-ai-key-add')).toBeDisabled();
-    expect(screen.queryByRole('alert', { name: /error/i })).toBeNull();
   });
 
   it('Settings + Ask-AI powering copy never says free / pool / cheaper / included (AC-19)', () => {

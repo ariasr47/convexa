@@ -50,23 +50,6 @@ describe('AC-N1/AC-N2/AC-N3/AC-N5 — the 404 composition inside the shell', () 
     expect(screen.getByTestId('site-footer')).toBeInTheDocument();
   });
 
-  it('the headline is the page h1 (outline starts at level 1 — AC-G1 has zero waivers)', async () => {
-    const { container } = renderAt('/nope');
-    await screen.findByTestId('not-found-page');
-    const h1s = container.querySelectorAll('h1');
-    expect(h1s).toHaveLength(1);
-    expect(h1s[0].textContent).toBe('Nothing at this address.');
-  });
-
-  it('both actions resolve: primary → /ticker, secondary → /', async () => {
-    renderAt('/nope');
-    await screen.findByTestId('not-found-page');
-    expect(screen.getByTestId('not-found-primary')).toHaveAttribute('href', '/ticker');
-    expect(screen.getByTestId('not-found-primary')).toHaveTextContent('Open the Ticker →');
-    expect(screen.getByTestId('not-found-secondary')).toHaveAttribute('href', '/');
-    expect(screen.getByTestId('not-found-secondary')).toHaveTextContent('Home');
-  });
-
   it('AC-N5 — a retired address renders the 404, never a redirect', async () => {
     renderAt('/dashboard');
     expect(await screen.findByTestId('not-found-page')).toBeInTheDocument();

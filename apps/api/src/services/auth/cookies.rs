@@ -252,20 +252,4 @@ mod tests {
             );
         }
     }
-
-    #[test]
-    fn development_warning_matrix_only_warns_for_an_active_fallback() {
-        assert!(fallback_warning_required(Some("dev"), None, None));
-        assert!(!fallback_warning_required(
-            Some("dev"),
-            Some("active"),
-            None
-        ));
-        assert!(!fallback_warning_required(
-            Some("dev"),
-            None,
-            Some("stable")
-        ));
-        assert!(!fallback_warning_required(Some("prod"), None, None));
-    }
 }

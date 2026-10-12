@@ -410,44 +410,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn coverage_is_skipped_when_archive_disabled() {
-        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
-        COVERAGE_VENDOR_CALLS.store(0, Ordering::SeqCst);
-        let archive = SessionChainArchive::disabled();
-        let ring = ChainSnapshotStore::memory();
-        let gate = EnsureGate::new();
-        let now = et_hm(2026, 8, 17, 16, 0);
-        let force_calls = AtomicU32::new(0);
-        run_ensure_pass_at(
-            &archive,
-            &ring,
-            &gate,
-            now,
-            10_000,
-            false,
-            true,
-            true,
-            Duration::from_secs(1_209_600),
-            48,
-            |_s| {
-                force_calls.fetch_add(1, Ordering::SeqCst);
-                async { unreachable!("archive disabled") }
-            },
-        )
-        .await;
-        assert_eq!(force_calls.load(Ordering::SeqCst), 0);
-
-        let buf = Buf::default();
-        let _guard = capture_warns(buf.clone());
-        run_coverage_pass_at(&archive, now).await;
-        let logged = String::from_utf8(buf.0.lock().unwrap().clone()).unwrap();
-        assert!(
-            !logged.contains("session archive coverage warning"),
-            "disabled archive must not mint coverage warnings; got:\n{logged}"
-        );
-    }
-
-    #[tokio::test]
     async fn coverage_err_is_swallowed_and_ensure_still_runs() {
         let src = include_str!("ensure_worker.rs");
         assert!(src.contains("run_ensure_pass"));

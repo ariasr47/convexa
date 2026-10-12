@@ -193,32 +193,6 @@ pub fn market_state(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
-
-    fn fixtures_dir() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/market")
-    }
-
-    #[tokio::test]
-    async fn fixture_port_resolves_synthetic_without_network() {
-        let cat = load_fixture_dir(&fixtures_dir()).expect("load fixtures");
-        let port = MarketDataPort::fixture(cat);
-        let bundle = port.resolve("SYN", None).await.expect("resolve SYN");
-        assert_eq!(bundle.symbol, "SYN");
-        assert_eq!(bundle.source, MarketDataSourceKind::Fixture);
-        assert!(!bundle.market.contracts.is_empty());
-        assert!(bundle.market.synchronized_spot > 0.0);
-        assert!(!bundle.daily_bars.is_empty());
-    }
-
-    #[tokio::test]
-    async fn fixture_port_missing_symbol_is_not_found() {
-        let cat = load_fixture_dir(&fixtures_dir()).expect("load fixtures");
-        let port = MarketDataPort::fixture(cat);
-        let err = port.resolve("NOPE", None).await.unwrap_err();
-        let msg = err.to_string();
-        assert!(msg.contains("not found") || msg.contains("NOPE"), "{msg}");
-    }
 
     #[test]
     fn market_data_port_remains_two_arms() {

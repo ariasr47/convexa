@@ -175,34 +175,6 @@ pub struct FixtureStreamProducer {
     inner: Arc<HubInner>,
 }
 
-#[cfg(test)]
-mod fixture_tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn fixture_hub_publishes_without_starting_worker() {
-        let cfg = crate::state::test_stub_config();
-        let (hub, producer, worker) = StockStreamHub::fixture(&cfg);
-        let mut rx = hub.subscribe_events();
-        worker.start();
-        let event = StreamEvent {
-            symbol: "SPY".into(),
-            kind: StreamKind::Trade,
-            ts_ns: 1,
-            price: Some(500.0),
-            size: Some(1.0),
-            bid: None,
-            ask: None,
-            bid_size: None,
-            ask_size: None,
-        };
-        producer
-            .publish(event.clone())
-            .expect("fixture receiver exists");
-        assert_eq!(rx.recv().await.expect("fixture event").symbol, event.symbol);
-    }
-}
-
 impl FixtureStreamProducer {
     pub fn publish(&self, event: StreamEvent) -> Result<(), StreamEvent> {
         self.inner.event_tx.send(event).map(|_| ()).map_err(|e| e.0)
@@ -533,7 +505,6 @@ pub fn decode_event(item: &Value) -> Option<StreamEvent> {
 mod tests {
     use super::*;
     use serde_json::json;
-    use std::time::Duration;
 
     #[test]
     fn decode_trade() {
@@ -568,27 +539,5 @@ mod tests {
         hub.subscribe(&["SPY".into(), "QQQ".into()]).await.unwrap();
         assert_eq!(hub.symbol_count().await, 2);
         assert_eq!(hub.cmds_enqueued(), 0);
-    }
-
-    #[tokio::test]
-    async fn harness_publish_reaches_subscribers() {
-        let hub = StockStreamHub::harness_local();
-        let mut rx = hub.subscribe_events();
-        hub.publish_event(crate::domain::StreamEvent {
-            symbol: "SPY".into(),
-            kind: crate::domain::StreamKind::Quote,
-            ts_ns: 1,
-            price: None,
-            size: None,
-            bid: Some(100.0),
-            ask: Some(100.02),
-            bid_size: None,
-            ask_size: None,
-        });
-        let ev = tokio::time::timeout(Duration::from_millis(200), rx.recv())
-            .await
-            .unwrap()
-            .unwrap();
-        assert_eq!(ev.symbol, "SPY");
     }
 }

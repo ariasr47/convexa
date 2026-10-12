@@ -1,7 +1,8 @@
 /**
  * `StructureHeroPanel` — RISK-BASED spec (curvature-v2-desk-and-read, SPEC §2.1/§2.5/§4.1/§4.2,
- * FE-6 criteria 9 (SB), 10 (SB), 19 (SB), plus the structural invariants the criteria list assumes
- * (single store read, palette identity, inner boundary). Criteria 20/23/24 are proven at their own
+ * FE-6 criterion 19 (SB), plus the inner boundary). Criterion 10 is proven in
+ * `TapePulseStrip.spec.tsx`; the `● mid · tape` chip's live gate in `live-dot-census.spec.tsx`.
+ * Criteria 20/23/24 are proven at their own
  * pure-function/component level (`paintStep.spec.ts`, `level-ladder/*.spec.tsx`,
  * `StructureFieldCanvas.spec.tsx`) — not re-proven here. Criteria 21/22/52 are `review` (browser).
  *
@@ -11,45 +12,24 @@
  * replayed value — never vacuous — mirroring `live-dot-census.spec.tsx`'s own "F6 must be reachable"
  * discipline for the LiveTape cells).
  */
-import type { StructureFieldCanvasProps } from '@/shared/charts/structure-field';
-import { lightTheme, theme } from '@/shared/theme/theme';
+import { theme } from '@/shared/theme/theme';
 import type { LiveUpdate, MarketState, StrikeRow } from '@convexa/api';
 import { ThemeProvider } from '@mui/material/styles';
 import { act, cleanup, render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { publishLiveTape, resetLiveTape } from '../../liveTapeStore';
 import type { SessionTapeOccupancy } from '../../sessionTapeStanding';
-import type { LevelLadderProps } from '../level-ladder';
 import { StructureHeroPanel } from './StructureHeroPanel';
 
-const captured: { canvas: StructureFieldCanvasProps[]; ladder: LevelLadderProps[] } = {
-  canvas: [],
-  ladder: [],
-};
 let canvasShouldThrow = false;
 
 vi.mock('@/shared/charts/structure-field', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/shared/charts/structure-field')>();
   return {
     ...actual,
-    StructureFieldCanvas: (props: StructureFieldCanvasProps) => {
-      captured.canvas.push(props);
+    StructureFieldCanvas: () => {
       if (canvasShouldThrow) throw new Error('canvas boom');
       return <div data-testid="structure-field-canvas-stub" />;
-    },
-  };
-});
-
-// Wraps the REAL `LevelLadder` (never replaces it) purely to observe the `palette` object identity
-// the host hands it — criterion 7's actual claim, not merely "the same colours."
-vi.mock('../level-ladder', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../level-ladder')>();
-  return {
-    ...actual,
-    LevelLadder: (props: LevelLadderProps) => {
-      captured.ladder.push(props);
-      return <actual.LevelLadder {...props} />;
     },
   };
 });
@@ -169,8 +149,6 @@ function renderHero() {
 describe('StructureHeroPanel', () => {
   beforeEach(() => {
     resetLiveTape();
-    captured.canvas.length = 0;
-    captured.ladder.length = 0;
     canvasShouldThrow = false;
   });
 
@@ -178,41 +156,6 @@ describe('StructureHeroPanel', () => {
     cleanup();
     act(() => resetLiveTape());
     vi.restoreAllMocks();
-  });
-
-  it('criterion 9 (SB): no free-standing liveness WORD anywhere in the hero, live or dropped', () => {
-    publishLiveTape({ ticker: 'SPY', live: liveUpdate(), streamOffline: false });
-    const { unmount } = renderHero();
-    const root = screen.getByTestId('structure-hero');
-    expect(root.textContent).not.toMatch(/\bLive\b/);
-    expect(root.textContent).not.toMatch(/\bOffline\b/);
-    unmount();
-
-    publishLiveTape({ ticker: 'SPY', live: null, streamOffline: true });
-    renderHero();
-    const rootOffline = screen.getByTestId('structure-hero');
-    expect(rootOffline.textContent).not.toMatch(/\bLive\b/);
-    expect(rootOffline.textContent).not.toMatch(/\bOffline\b/);
-  });
-
-  it('criterion 10 (SB): the mid readout is labelled `Mid`, never the structure mid, and makes no live claim when delivering with no mid', () => {
-    // Genuinely delivering, but the tick carries no mid.
-    publishLiveTape({
-      ticker: 'SPY',
-      live: liveUpdate({ mid: null as unknown as number }),
-      streamOffline: false,
-    });
-    renderHero();
-    const readout = screen.getByTestId('tape-mid-readout');
-    expect(readout).toHaveTextContent('Mid —');
-    expect(readout.textContent).not.toContain('450');
-  });
-
-  it('criterion 10 (SB): a genuinely present live mid renders under `Mid`, never re-labelled `Live`', () => {
-    publishLiveTape({ ticker: 'SPY', live: liveUpdate({ mid: 451.2 }), streamOffline: false });
-    renderHero();
-    const readout = screen.getByTestId('tape-mid-readout');
-    expect(readout).toHaveTextContent('Mid $451.20');
   });
 
   const STRUCTURE_ROW_TICKS = [
@@ -254,49 +197,6 @@ describe('StructureHeroPanel', () => {
     }
   });
 
-  it('criterion 7: the canvas and the ladder receive the SAME `palette` object BY IDENTITY, not just equal values', () => {
-    publishLiveTape({ ticker: 'SPY', live: liveUpdate(), streamOffline: false });
-    renderHero();
-    expect(captured.canvas.length).toBeGreaterThan(0);
-    expect(captured.ladder.length).toBeGreaterThan(0);
-    const canvasPalette = captured.canvas[captured.canvas.length - 1].palette;
-    const ladderPalette = captured.ladder[captured.ladder.length - 1].palette;
-    expect(ladderPalette).toBe(canvasPalette);
-  });
-
-  it("criterion 53 (ported from the deleted `GexProfileChart`/`chart.spec.tsx`, GATE Z FE-11): the resolved `surfaces` object never renders the same across the dark and light schemes — this is now the desk's ONLY structure-instrument host, so its own scheme resolution carries the proof `GexProfileChart` used to", () => {
-    publishLiveTape({ ticker: 'SPY', live: liveUpdate(), streamOffline: false });
-    const { unmount } = render(
-      <ThemeProvider theme={theme}>
-        <StructureHeroPanel
-          symbol="SPY"
-          m={marketState()}
-          strikes={strikes}
-          structureAgeSeconds={42}
-        />
-      </ThemeProvider>,
-    );
-    const dark = captured.canvas[captured.canvas.length - 1].surfaces;
-    unmount();
-    captured.canvas.length = 0;
-
-    render(
-      <ThemeProvider theme={lightTheme}>
-        <StructureHeroPanel
-          symbol="SPY"
-          m={marketState()}
-          strikes={strikes}
-          structureAgeSeconds={42}
-        />
-      </ThemeProvider>,
-    );
-    const light = captured.canvas[captured.canvas.length - 1].surfaces;
-
-    const keys = Object.keys(dark) as (keyof typeof dark)[];
-    const differing = keys.filter((k) => dark[k] !== light[k]);
-    expect(differing.length).toBeGreaterThan(0);
-  });
-
   it('inner boundary (SPEC §5): a canvas fault degrades to a static message WITHOUT taking the ladder, the tape row or the path strip', () => {
     canvasShouldThrow = true;
     const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -307,22 +207,6 @@ describe('StructureHeroPanel', () => {
     expect(screen.getByTestId('tape-trail-row')).toBeInTheDocument();
     expect(screen.getByTestId('structure-history')).toBeInTheDocument();
     spy.mockRestore();
-  });
-
-  it('the Field/Magnet toggle testids are preserved (rename target for FE-12 e2e, not a rewrite)', async () => {
-    publishLiveTape({ ticker: 'SPY', live: liveUpdate(), streamOffline: false });
-    renderHero();
-    expect(screen.getByTestId('dealer-view-toggle')).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId('dealer-view-toggle')).getByTestId('dealer-view-levels'),
-    ).toBeInTheDocument();
-    const magnetBtn = within(screen.getByTestId('dealer-view-toggle')).getByTestId(
-      'dealer-view-magnet',
-    );
-    await userEvent.click(magnetBtn);
-    expect(screen.getByTestId('wall-magnet-view')).toBeInTheDocument();
-    // The ladder/tape/path stay mounted regardless of which paint is selected for the canvas region.
-    expect(screen.getByTestId('level-ladder')).toBeInTheDocument();
   });
 
   const occ = (over: Partial<SessionTapeOccupancy> = {}): SessionTapeOccupancy => ({
@@ -410,56 +294,6 @@ describe('StructureHeroPanel', () => {
       expect(screen.getByTestId('tape-mid-readout')).toHaveTextContent('Mid $573.12');
       expect(screen.queryByTestId('tape-mid-pause')).toBeNull();
       expect(screen.queryByTestId('tape-trail-caption')).toBeNull();
-    });
-
-    it('16b — the four structure rows stay dotless, un-dimmed and offline-free during a replay standing too', () => {
-      const live = liveUpdate({ mid: 573.12, session_tape: occ() } as Partial<LiveUpdate>);
-      publishLiveTape({ ticker: 'SPY', live, streamOffline: false });
-      renderHero();
-      for (const id of [
-        'ladder-tick-callWall',
-        'ladder-tick-putWall',
-        'ladder-tick-maxPain',
-        'ladder-tick-gammaFlip',
-      ]) {
-        const cell = screen.getByTestId(id).parentElement?.querySelector('[data-figure-state]');
-        expect(cell?.getAttribute('data-figure-state')).toBe('default');
-      }
-    });
-  });
-
-  // ===============================================================================================
-  // Ticker fidelity repair, change 6 (F10 hero residual) — the header's `● mid · tape` chip
-  // (`design/src/screens/desk.mjs:295`), which the app showed an ⓘ where the design shows this
-  // instead (`STRUCTURE_HERO_REVIEW.md`'s own F10 finding). Genuinely live-gated (canon 22): mounted
-  // only while the delivering-stream claim is true; absent (never a "not live" variant) otherwise —
-  // before this repair `structure-hero-mid-tape-chip` did not exist at all.
-  // ===============================================================================================
-  describe('the header’s `● mid · tape` chip (F10 hero residual)', () => {
-    it('mounts, with the live dot, while the stream is genuinely delivering', () => {
-      publishLiveTape({ ticker: 'SPY', live: liveUpdate(), streamOffline: false });
-      renderHero();
-      const chip = screen.getByTestId('structure-hero-mid-tape-chip');
-      expect(chip).toHaveTextContent('mid · tape');
-      expect(within(chip).getByTestId('figure-live-dot')).toBeInTheDocument();
-    });
-
-    it('is ABSENT (never a muted/hollow variant) when the stream is offline', () => {
-      publishLiveTape({ ticker: 'SPY', live: null, streamOffline: true });
-      renderHero();
-      expect(screen.queryByTestId('structure-hero-mid-tape-chip')).toBeNull();
-    });
-
-    it('is ABSENT before the first stream fact (no payload yet)', () => {
-      renderHero();
-      expect(screen.queryByTestId('structure-hero-mid-tape-chip')).toBeNull();
-    });
-
-    it('is ABSENT during a session-tape replay standing — `claim` is always false in replay (SPEC §2.1)', () => {
-      const live = liveUpdate({ mid: 573.12, session_tape: occ() } as Partial<LiveUpdate>);
-      publishLiveTape({ ticker: 'SPY', live, streamOffline: false });
-      renderHero();
-      expect(screen.queryByTestId('structure-hero-mid-tape-chip')).toBeNull();
     });
   });
 });

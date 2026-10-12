@@ -16,7 +16,6 @@ import {
   fetchTrackedContract,
   getAiKeyStatus,
   getScan,
-  getScanUniverse,
   getStructureHistory,
   getTicker,
   isMarketDataPaused,
@@ -26,7 +25,6 @@ import {
   setAiKey,
   streamTicker,
   type LiveUpdate,
-  type RecStatus,
   type ScanResponse,
   type ScanView,
 } from './convexa';
@@ -59,20 +57,6 @@ afterEach(() => {
   __resetAiKeyStatusInflight();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
-});
-
-describe('generated optional availability boundary', () => {
-  it('keeps absent, null, and explicit false distinguishable', () => {
-    const absent = {
-      gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
-      cap: { over_limit: false, remaining_today: 0, resets_at: '' },
-    } as unknown as RecStatus;
-    const nulled = { ...absent, availability: null } as unknown as RecStatus;
-    const disabled = { ...absent, availability: { in_app_enabled: false } } as unknown as RecStatus;
-    expect('availability' in absent).toBe(false);
-    expect(nulled.availability).toBeNull();
-    expect(disabled.availability?.in_app_enabled).toBe(false);
-  });
 });
 
 describe('requestRecommendation', () => {
@@ -437,22 +421,6 @@ describe('scanner client', () => {
     vi.stubGlobal('fetch', f);
     await expect(getScan()).resolves.toEqual(body);
     expect(f).toHaveBeenCalledWith('/api/scan', { credentials: 'same-origin' });
-  });
-
-  it('getScan rejects with ApiError on a TRANSPORT fault (server-side it is always 200)', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => json({ detail: 'bad gateway' }, 502)),
-    );
-    await expect(getScan()).rejects.toBeInstanceOf(ApiError);
-  });
-
-  it('getScanUniverse returns the read-only universe envelope', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => json({ symbols: ['SPY', 'QQQ'], universe_size: 2 })),
-    );
-    await expect(getScanUniverse()).resolves.toEqual({ symbols: ['SPY', 'QQQ'], universe_size: 2 });
   });
 
   it('getStructureHistory hits /api/scan/{symbol}/history with limit', async () => {

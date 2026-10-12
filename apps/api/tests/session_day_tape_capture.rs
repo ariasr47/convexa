@@ -1,8 +1,8 @@
 //! Hermetic gate for session-day-tape-capture (PLAN B7 / SPEC §7).
 //!
 //! One injected Monday-clock pass: Path-A append + Path-B marks + write-fail
-//! isolation + writer-full gap + occupancy distinctions + coverage hole stay
-//! missing + score/tier/fingerprint identity. Desk paths stay Ok when tape fails.
+//! isolation + writer-full gap + occupancy distinctions + no session-archive
+//! write + score/tier/fingerprint identity. Desk paths stay Ok when tape fails.
 
 use api_rust::domain::{StreamEvent, StreamKind};
 use api_rust::infrastructure::massive::ws::StockStreamHub;
@@ -18,7 +18,7 @@ use api_rust::services::day_tape::{
 };
 use api_rust::services::market_data::{load_fixture_dir, MarketDataPort};
 use api_rust::services::session_chain_archive::{
-    derive as coverage_derive, ensure_one, EnsureOutcome, SessionChainArchive, ENSURE_SYMBOLS,
+    ensure_one, EnsureOutcome, SessionChainArchive, ENSURE_SYMBOLS,
 };
 use api_rust::state::AppState;
 use chrono::{DateTime, NaiveTime, TimeZone, Utc};
@@ -431,34 +431,30 @@ async fn hermetic_monday_path_a_path_b_gaps_coverage_score() {
         .iter()
         .any(|c| c.contains("not expected before storing")));
 
-    // --- AC-53–55: capturing/loading tape does not flip coverage missing ---
-    let archive = SessionChainArchive::memory();
-    let cov_before = coverage_derive(&archive, evening, et)
-        .await
-        .expect("coverage");
-    assert!(
-        cov_before.missing >= 1 || !cov_before.due,
-        "fixture Monday after close should be due with missing cells, got present={} missing={} due={}",
-        cov_before.present,
-        cov_before.missing,
-        cov_before.due
-    );
-    let missing_before = cov_before.missing;
-    // Load tape (already did) and persist more Path-B — coverage must not mint a present book.
+    // --- AC-53–55: tape capture never writes the session archive the capturing state holds ---
+    // `state` carries a live (memory) session archive and ring: the stores any capture / ensure /
+    // archive call made from this state would write. Every Path-B persist in this pass (the four
+    // SPY marks above and the QQQ mark here) ran through it.
     persist_at(
         &state,
         &fixture_probe_bundle("QQQ", et_hm(2026, 8, 10, 11, 0)),
         et_hm(2026, 8, 10, 11, 0),
     )
     .await;
-    let cov_after = coverage_derive(&archive, evening, et)
-        .await
-        .expect("coverage");
-    assert_eq!(
-        cov_after.missing, missing_before,
-        "tape capture must not flip coverage missing→present"
+    let qqq = store.load("QQQ", et).await.unwrap().expect("QQQ day");
+    assert!(
+        qqq.path_b.iter().any(|s| s.mark == (11, 0)),
+        "precondition: the QQQ Path-B persist must have landed in the tape"
     );
-    assert_eq!(cov_after.present, cov_before.present);
+    let mut archived = Vec::new();
+    for sym in ENSURE_SYMBOLS {
+        archived.extend(state.session_archive.list(sym, None).await.unwrap());
+    }
+    assert!(
+        archived.is_empty(),
+        "tape capture must not write the session archive; found {} row(s)",
+        archived.len()
+    );
     assert_eq!(ENSURE_SYMBOLS, &["SPY", "QQQ", "IWM"]);
 
     // --- AC-43: score/tier/fingerprint byte-identical capture on vs off / succeed vs fail ---

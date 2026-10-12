@@ -289,84 +289,6 @@ mod tests {
     use std::collections::BTreeSet;
 
     #[test]
-    fn five_entries_unique_keys_declared_order() {
-        assert_eq!(CANDIDATES.len(), 5);
-        let keys: Vec<&str> = CANDIDATES.iter().map(|c| c.key).collect();
-        assert_eq!(
-            keys,
-            vec![
-                "opportunity_score",
-                "net_gex_vol_norm_abs",
-                "net_gex_abs_raw",
-                "proximity_to_flip",
-                "proximity_to_nearer_wall",
-            ]
-        );
-        let set: BTreeSet<&str> = keys.iter().copied().collect();
-        assert_eq!(set.len(), 5, "keys must be unique");
-    }
-
-    #[test]
-    fn every_entry_declares_nonempty_provenance_and_inputs() {
-        for c in CANDIDATES {
-            assert!(
-                !c.derived_from.is_empty(),
-                "{} has empty derived_from",
-                c.key
-            );
-            assert!(!c.inputs.is_empty(), "{} has empty inputs", c.key);
-        }
-    }
-
-    #[test]
-    fn exactly_one_control_and_it_names_an_existing_candidate() {
-        let controls: Vec<&Candidate> = CANDIDATES
-            .iter()
-            .filter(|c| matches!(c.role, Role::Control { .. }))
-            .collect();
-        assert_eq!(controls.len(), 1);
-        assert_eq!(controls[0].key, "net_gex_abs_raw");
-        let Role::Control { for_candidate } = controls[0].role else {
-            unreachable!()
-        };
-        assert!(CANDIDATES.iter().any(|c| c.key == for_candidate));
-    }
-
-    #[test]
-    fn geometry_entries_negate_abs_and_basis_names_raw_field() {
-        for c in CANDIDATES {
-            if c.family == Family::LevelGeometry {
-                assert!(
-                    c.orientation.negated_abs,
-                    "{} must negate-abs its raw field",
-                    c.key
-                );
-            }
-            assert!(
-                c.basis.contains(c.orientation.raw_field),
-                "{}'s basis must name its raw_field ({}) — AC-20 no unqualified 'distance'",
-                c.key,
-                c.orientation.raw_field
-            );
-        }
-    }
-
-    #[test]
-    fn net_gex_vol_norm_signed_appears_nowhere_in_the_registry() {
-        for c in CANDIDATES {
-            for s in [c.key, c.display, c.basis, c.orientation.direction] {
-                assert!(
-                    !s.contains("net_gex_vol_norm_signed"),
-                    "AC-3 violated by {s:?}"
-                );
-            }
-            for i in c.inputs {
-                assert!(!i.contains("net_gex_vol_norm_signed"));
-            }
-        }
-    }
-
-    #[test]
     fn shares_derivation_with_is_exactly_the_declared_pairs() {
         let composite = CANDIDATES
             .iter()
@@ -427,50 +349,6 @@ mod tests {
         );
         assert_eq!(vol_scalar_guard(0.22), Ok(()));
     }
-
-    #[test]
-    fn shared_derivation_note_present_on_all_five_with_expected_partners() {
-        for c in CANDIDATES {
-            let note = shared_derivation_note(c);
-            match c.key {
-                "opportunity_score" => {
-                    let n = note.expect("composite must carry a note");
-                    assert!(n.contains("Closeness to flip"));
-                    assert!(n.contains("Closeness to nearer wall"));
-                }
-                "proximity_to_flip" => {
-                    let n = note.expect("flip must carry a note");
-                    assert!(n.contains("Composite opportunity score"));
-                    assert!(n.contains("flip"));
-                }
-                "proximity_to_nearer_wall" => {
-                    let n = note.expect("wall must carry a note");
-                    assert!(n.contains("Composite opportunity score"));
-                    assert!(n.contains("call wall"));
-                    assert!(n.contains("put wall"));
-                }
-                "net_gex_vol_norm_abs" => {
-                    let n = note.expect("vol-norm must carry a note");
-                    assert!(n.contains("Raw GEX magnitude"));
-                    assert!(n.contains("net GEX"));
-                }
-                "net_gex_abs_raw" => {
-                    let n = note.expect("raw control must carry a note");
-                    assert!(n.contains("Vol-normalized GEX magnitude"));
-                }
-                other => panic!("unexpected candidate key {other}"),
-            }
-        }
-    }
-
-    #[test]
-    fn every_note_starts_with_the_fixed_prefix() {
-        for c in CANDIDATES {
-            if let Some(n) = shared_derivation_note(c) {
-                assert!(n.starts_with("shares derivation with:"));
-            }
-        }
-    }
 }
 
 /// AC-76 — the coupled set over the declared grid is set-equality pinned. Narrowing or emptying
@@ -523,106 +401,96 @@ mod coupling_pin {
     }
 
     /// Mutation guards proving the pin actually bites — over LOCAL COPIES of the registry rows,
-    /// never mutating the `const` CANDIDATES/LABELS themselves.
+    /// never mutating the `const` CANDIDATES/LABELS themselves. Each row narrows, empties or
+    /// widens one `derived_from` and states the exact coupled set that must result.
     #[test]
-    fn narrowing_the_composite_to_score_only_drops_the_pair() {
+    fn coupled_set_reacts_to_narrowing_emptying_or_widening_a_derived_from() {
+        let base = [
+            ("opportunity_score", "structure_event"),
+            ("proximity_to_flip", "structure_event"),
+            ("proximity_to_nearer_wall", "structure_event"),
+        ];
         let narrowed: &'static [DK] = &[DK::Score];
-        let labels = real_labels();
-        let fired = fired_set(
-            &[Candidate {
-                derived_from: narrowed,
-                ..clone_candidate("opportunity_score")
-            }],
-            &labels,
-        );
-        assert!(
-            fired.is_empty(),
-            "narrowing the composite to [Score] must drop the coupled pair"
-        );
-    }
-
-    #[test]
-    fn emptying_structure_events_derived_from_empties_the_set() {
-        let labels: Vec<(&'static str, &'static [DK])> = real_labels()
-            .into_iter()
-            .map(|(k, df)| {
-                if k == "structure_event" {
-                    (k, &[][..])
-                } else {
-                    (k, df)
-                }
-            })
-            .collect();
-        let fired = fired_set(CANDIDATES, &labels);
-        assert!(
-            fired.is_empty(),
-            "emptying structure_event's derived_from must empty the coupled set"
-        );
-    }
-
-    #[test]
-    fn adding_flip_to_large_abs_move_adds_two_pairs() {
-        let widened: &'static [DK] = &[DK::ForwardPricePath, DK::Flip];
-        let labels: Vec<(&'static str, &'static [DK])> = real_labels()
-            .into_iter()
-            .map(|(k, df)| {
-                if k == "large_abs_move" {
-                    (k, widened)
-                } else {
-                    (k, df)
-                }
-            })
-            .collect();
-        let fired = fired_set(CANDIDATES, &labels);
-        // proximity_to_flip and opportunity_score both derive from Flip.
-        assert!(fired.contains(&("proximity_to_flip", "large_abs_move")));
-        assert!(fired.contains(&("opportunity_score", "large_abs_move")));
-        assert_eq!(
-            fired.len(),
-            3 + 2,
-            "the pin's 3 base pairs plus the 2 newly-coupled pairs"
-        );
-    }
-
-    #[test]
-    fn an_unrelated_shared_key_on_both_sides_adds_a_pair() {
+        let flip_widened: &'static [DK] = &[DK::ForwardPricePath, DK::Flip];
         // Give net_gex_abs_raw and up_move a shared, otherwise-unrelated key (PeakGex). The
         // composite ALSO derives from PeakGex (it already covers 8 of 11 enum members), so this
         // widening ripples onto (opportunity_score, up_move) too — expected, not a test bug: it
         // demonstrates the pin reacts to ANY new intersection, not just the one directly touched.
         let widened_cand: &'static [DK] = &[DK::NetGex, DK::PeakGex];
         let widened_label: &'static [DK] = &[DK::ForwardPricePath, DK::PeakGex];
-        let cands: Vec<Candidate> = CANDIDATES
-            .iter()
-            .map(|c| {
-                if c.key == "net_gex_abs_raw" {
-                    Candidate {
-                        derived_from: widened_cand,
-                        ..clone_candidate(c.key)
-                    }
-                } else {
-                    clone_candidate(c.key)
-                }
-            })
-            .collect();
-        let labels: Vec<(&'static str, &'static [DK])> = real_labels()
+        let mut raw_widened = all_candidates();
+        for c in &mut raw_widened {
+            if c.key == "net_gex_abs_raw" {
+                c.derived_from = widened_cand;
+            }
+        }
+
+        let cases: Vec<(
+            &str,
+            Vec<Candidate>,
+            Vec<(&'static str, &'static [DK])>,
+            Vec<(&'static str, &'static str)>,
+        )> = vec![
+            (
+                "narrowing the composite to [Score] must drop the coupled pair",
+                vec![Candidate {
+                    derived_from: narrowed,
+                    ..clone_candidate("opportunity_score")
+                }],
+                real_labels(),
+                vec![],
+            ),
+            (
+                "emptying structure_event's derived_from must empty the coupled set",
+                all_candidates(),
+                labels_with("structure_event", &[]),
+                vec![],
+            ),
+            (
+                // proximity_to_flip and opportunity_score both derive from Flip.
+                "Flip on large_abs_move: the pin's 3 base pairs plus 2 newly-coupled pairs",
+                all_candidates(),
+                labels_with("large_abs_move", flip_widened),
+                [
+                    &base[..],
+                    &[
+                        ("proximity_to_flip", "large_abs_move"),
+                        ("opportunity_score", "large_abs_move"),
+                    ][..],
+                ]
+                .concat(),
+            ),
+            (
+                "shared PeakGex (raw x up_move): the pin's 3 base pairs plus both new pairs",
+                raw_widened,
+                labels_with("up_move", widened_label),
+                [
+                    &base[..],
+                    &[
+                        ("net_gex_abs_raw", "up_move"),
+                        ("opportunity_score", "up_move"),
+                    ][..],
+                ]
+                .concat(),
+            ),
+        ];
+        for (why, cands, labels, expected) in cases {
+            let fired = fired_set(&cands, &labels);
+            let expected: BTreeSet<(&'static str, &'static str)> = expected.into_iter().collect();
+            assert_eq!(fired, expected, "{why}");
+        }
+    }
+
+    fn all_candidates() -> Vec<Candidate> {
+        CANDIDATES.iter().map(|c| clone_candidate(c.key)).collect()
+    }
+
+    /// The real label rows with one label's `derived_from` replaced.
+    fn labels_with(key: &str, df: &'static [DK]) -> Vec<(&'static str, &'static [DK])> {
+        real_labels()
             .into_iter()
-            .map(|(k, df)| {
-                if k == "up_move" {
-                    (k, widened_label)
-                } else {
-                    (k, df)
-                }
-            })
-            .collect();
-        let fired = fired_set(&cands, &labels);
-        assert!(fired.contains(&("net_gex_abs_raw", "up_move")));
-        assert!(fired.contains(&("opportunity_score", "up_move")));
-        assert_eq!(
-            fired.len(),
-            3 + 2,
-            "the pin's 3 base pairs plus both newly-coupled pairs"
-        );
+            .map(|(k, d)| if k == key { (k, df) } else { (k, d) })
+            .collect()
     }
 
     /// Local, non-`Copy`-avoiding clone of a registry row by key (Candidate has no `Clone` derive

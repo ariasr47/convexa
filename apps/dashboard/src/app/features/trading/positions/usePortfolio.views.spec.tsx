@@ -8,18 +8,24 @@
  *   2. per-contract ISOLATION — one contract's 404 marks only the legs that reference it;
  *   3. `live-vs-static-isolation` — an SSE drop leaves a last-known number PRESENT, never blanked;
  *   4. all-or-nothing withholding, and the excluded-but-COUNTED subtotal.
+ *   5. the realized P/L `closePosition` WRITES — sign, stored multiplier and quantity, exact.
  *
  * Mocks ONLY the network boundary (`@convexa/api`'s `fetchTrackedContract`) — never the store, never the
  * derivation, never a live backend.
  */
 import type { LiveUpdate, TickerBundle, TrackedContract } from '@convexa/api';
-import { act, cleanup, render } from '@testing-library/react';
+import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { deriveGroups } from './derive';
-import type { SimPosition } from './leg';
+import { SIM_POSITION_SCHEMA_VERSION, type Leg, type SimPosition } from './leg';
 import { liftLegacyRecord } from './migrate';
-import { PORTFOLIO_V2_KEY, PORTFOLIO_V3_KEY, __resetMemory, putPosition } from './store';
+import {
+  PORTFOLIO_V2_KEY,
+  PORTFOLIO_V3_KEY,
+  __resetMemory,
+  getPosition,
+  putPosition,
+} from './store';
 import type { Position } from './types';
 import { usePortfolio } from './usePortfolio';
 
@@ -207,24 +213,6 @@ describe('usePortfolio · the resolver fan-out', () => {
 });
 
 describe('usePortfolio · degraded states (live-vs-static-isolation)', () => {
-  it('AC-39/AC-40 — a withheld row is EXCLUDED from the subtotal and COUNTED, never summed as zero', async () => {
-    fetchSpy.mockImplementation(async (_t, q) => (q.strike === 440 ? null : quote()));
-    putPosition(pos({ id: 'ok', strike: 400, entry_mark: 4 }));
-    putPosition(pos({ id: 'gone', strike: 440 }));
-    await mount({ live: liveUpdate() });
-
-    const [group] = deriveGroups(pf.views, {
-      filter: { ticker: null, status: ['open'], structure: null, expiry: null },
-      sortKey: 'pl_dollar',
-      sortDir: 'desc',
-      group: 'none',
-    });
-    expect(group.excludedCount).toBe(1);
-    const ok = pf.views.find((v) => v.position.id === 'ok');
-    expect(group.subtotal).toBeCloseTo(ok?.pl_dollar as number, 6); // the withheld row adds NOTHING
-    expect(group.subtotal).not.toBe(0);
-  });
-
   it('AC-38 — an SSE drop leaves a last-known number PRESENT and dimmable, never blanked', async () => {
     putPosition(pos());
     const { rerender } = await mount({ live: liveUpdate(), isLive: true });
@@ -360,5 +348,94 @@ describe('usePortfolio · openPosition — ONE code path for one leg and for six
     });
     const pending = pf.positions.find((p) => (p.legs ?? []).length === 2);
     expect(pending?.status).toBe('pending'); // still resting — NEVER filled off an undefined number
+  });
+});
+
+describe('usePortfolio · closePosition writes the exact realized P/L (fully priced)', () => {
+  // Every leg is priced off its own snapshot mid: `live` is null, so the ladder never models a move
+  // and each leg's mark IS the mid below (`model/mark.ts` step 4). Keyed `${strike}|${right}`.
+  const MIDS: Record<string, number> = { '380|put': 3, '360|put': 1.25, '420|call': 5.5 };
+
+  function leg(over: Partial<Leg>): Leg {
+    return {
+      id: 'leg',
+      kind: 'option',
+      ticker: 'TSLA',
+      side: 'long',
+      qty: 1,
+      multiplier: 100,
+      entry_price: 1,
+      entry_basis: 'user_entered',
+      expiration: '2026-08-21',
+      strike: 400,
+      right: 'call',
+      ...over,
+    };
+  }
+
+  function open(id: string, legs: Leg[]): SimPosition {
+    return {
+      id,
+      legs,
+      opened_time: '2026-06-12T15:32:00Z',
+      status: 'open',
+      entry_mode: 'manual',
+      schema_version: SIM_POSITION_SCHEMA_VERSION,
+    };
+  }
+
+  /** Mount, wait until the position's projection is priced, close it, return the stored record. */
+  async function closeFullyPriced(p: SimPosition) {
+    fetchSpy.mockImplementation(async (_t, q) => {
+      const mid = MIDS[`${q.strike}|${q.right}`];
+      return quote({
+        strike: q.strike as number,
+        right: q.right as TrackedContract['right'],
+        option_quote: { bid: mid, ask: mid, mid },
+      });
+    });
+    putPosition(p);
+    await mount();
+    await waitFor(() =>
+      expect(pf.views.find((v) => v.position.id === p.id)?.pl_dollar).not.toBeNull(),
+    );
+    act(() => pf.closePosition(p.id));
+    const closed = getPosition(p.id);
+    return {
+      status: closed?.status,
+      realized_pl_dollar: closed?.realized_pl_dollar,
+      realized_pl_pct: closed?.realized_pl_pct,
+    };
+  }
+
+  it('a 2-lot put credit spread nets each leg by its side, multiplier and qty: +$150, +30% of the $500 credit', async () => {
+    // short 380P @5.00 → 3.00: −1 × (3.00 − 5.00) × 100 × 2 = +400
+    // long  360P @2.50 → 1.25: +1 × (1.25 − 2.50) × 100 × 2 = −250
+    // net entry = −1000 + 500 = −500 (credit) → pct = 150 / |−500| × 100 = 30
+    const written = await closeFullyPriced(
+      open('pcs', [
+        leg({ id: 'pcs-short', side: 'short', right: 'put', strike: 380, qty: 2, entry_price: 5 }),
+        leg({ id: 'pcs-long', side: 'long', right: 'put', strike: 360, qty: 2, entry_price: 2.5 }),
+      ]),
+    );
+    expect(written).toEqual({ status: 'closed', realized_pl_dollar: 150, realized_pl_pct: 30 });
+  });
+
+  it('a losing SHORT on an ADJUSTED contract is written negative at its STORED multiplier (10), never ×100', async () => {
+    // short 420C ×3 @4.00 → 5.50, multiplier 10: −1 × (5.50 − 4.00) × 10 × 3 = −45
+    // net entry = −4 × 10 × 3 = −120 (credit) → pct = −45 / 120 × 100 = −37.5
+    const written = await closeFullyPriced(
+      open('adj', [
+        leg({
+          id: 'adj-short',
+          side: 'short',
+          strike: 420,
+          qty: 3,
+          multiplier: 10,
+          entry_price: 4,
+        }),
+      ]),
+    );
+    expect(written).toEqual({ status: 'closed', realized_pl_dollar: -45, realized_pl_pct: -37.5 });
   });
 });

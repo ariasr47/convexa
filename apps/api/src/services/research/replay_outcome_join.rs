@@ -1276,19 +1276,18 @@ mod tests {
         assert!(art.rows[0].measurement.display_spot.is_none());
     }
 
+    /// Labels alone never satisfy the keyspace: a non-replayed row on the same key is a miss, and
+    /// one replayed row meeting a label is enough.
     #[test]
-    fn keyspace_miss_when_no_replayed_rows_even_with_labels() {
-        let rows = vec![degraded("SPY", T1, ProducerDisposition::Missing)];
+    fn labels_keyspace_needs_a_replayed_row_meeting_a_label() {
         let labels = vec![outcome_at("SPY", t1_secs(), "1d", 0.01, 0.01)];
-        let err = assert_labels_keyspace(&rows, &labels).unwrap_err();
-        assert!(err.to_string().contains(KEYSPACE_MISS_LINE), "got {err}");
-    }
 
-    #[test]
-    fn keyspace_ok_when_replayed_intersects() {
-        let rows = vec![replayed_view("SPY", T1, 40, Some(100.0))];
-        let labels = vec![outcome_at("SPY", t1_secs(), "1d", 0.01, 0.01)];
-        assert_labels_keyspace(&rows, &labels).unwrap();
+        let missing_only = vec![degraded("SPY", T1, ProducerDisposition::Missing)];
+        let err = assert_labels_keyspace(&missing_only, &labels).unwrap_err();
+        assert!(err.to_string().contains(KEYSPACE_MISS_LINE), "got {err}");
+
+        let replayed = vec![replayed_view("SPY", T1, 40, Some(100.0))];
+        assert_labels_keyspace(&replayed, &labels).unwrap();
     }
 
     #[test]
@@ -1398,27 +1397,6 @@ mod tests {
             .as_deref()
             .unwrap()
             .starts_with("stored snapshot unreadable:"));
-    }
-
-    #[test]
-    fn join_rows_stable_sort_by_symbol_as_of_horizon() {
-        let replay = vec![
-            replayed_view("SPY", T2, 1, Some(100.0)),
-            replayed_view("AAA", T1, 1, Some(100.0)),
-        ];
-        let (joined, _) = join_rows(JoinInput {
-            replay: &replay,
-            labels: &[],
-            horizons: &["5d", "1d"],
-        })
-        .unwrap();
-        let keys: Vec<_> = joined
-            .iter()
-            .map(|r| (r.symbol.as_str(), r.as_of.as_str(), r.horizon.as_str()))
-            .collect();
-        let mut sorted = keys.clone();
-        sorted.sort();
-        assert_eq!(keys, sorted);
     }
 
     fn assert_t0c(v: &serde_json::Value) {

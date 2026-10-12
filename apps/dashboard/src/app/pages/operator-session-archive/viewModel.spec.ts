@@ -18,15 +18,6 @@ const spyRows: BookRow[] = [
   },
 ];
 
-const qqqRows: BookRow[] = [
-  {
-    symbol: 'QQQ',
-    et_date: '2024-06-04',
-    source: 'live_massive',
-    source_as_of: '2024-06-04T20:00:00Z',
-  },
-];
-
 const matrix: CoverageMatrix = {
   framing: 'RESEARCH READ — SESSION ARCHIVE COVERAGE',
   command: 'archive-coverage',
@@ -211,25 +202,6 @@ describe('viewModel class splits', () => {
     }
   });
 
-  it('chip-follow re-entry is not AC-30 restore', () => {
-    let s = unlockedWithSpyList();
-    s = reduceArchive(s, { type: 'CHIP_SWITCH', symbol: 'QQQ' });
-    s = reduceArchive(s, {
-      type: 'LIST_RESULT',
-      arm: { kind: 'Ready', json: {} },
-      rows: qqqRows,
-    });
-    s = reduceArchive(s, { type: 'CHIP_SWITCH', symbol: 'SPY' });
-    expect(s.books.kind).toBe('loading');
-    s = reduceArchive(s, {
-      type: 'LIST_RESULT',
-      arm: { kind: 'Unclassified5xx' },
-      sameChipRetry: false,
-    });
-    expect(s.books.kind).toBe('offline');
-    expect(staleChip(s)).toBe(false);
-  });
-
   it('coverage unclassified always AC-38 — prior matrix not kept', () => {
     let s = unlockedWithSpyList();
     expect(s.coverage.kind).toBe('ready');
@@ -412,9 +384,5 @@ describe('viewModel class splits', () => {
     });
     expect(s.standing.kind).toBe('not-storing');
     expect(s.digest.kind).toBe('hidden');
-  });
-
-  it('default selected is SPY', () => {
-    expect(initialArchiveState().selected).toBe('SPY');
   });
 });

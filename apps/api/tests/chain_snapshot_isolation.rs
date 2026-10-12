@@ -1,36 +1,10 @@
 //! Structural isolation + warmer exclusion (SPEC §2.3 / AC-28 / B9).
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 fn workspace_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
-}
-
-fn rust_files(dir: &Path) -> Vec<(String, String)> {
-    let mut out = Vec::new();
-    let mut stack = vec![dir.to_path_buf()];
-    while let Some(d) = stack.pop() {
-        let Ok(entries) = fs::read_dir(&d) else {
-            continue;
-        };
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_dir() {
-                stack.push(path);
-            } else if path.extension().and_then(|e| e.to_str()) == Some("rs") {
-                if let Ok(src) = fs::read_to_string(&path) {
-                    let rel = path
-                        .strip_prefix(dir)
-                        .unwrap_or(&path)
-                        .to_string_lossy()
-                        .replace('\\', "/");
-                    out.push((rel, src));
-                }
-            }
-        }
-    }
-    out
 }
 
 fn slice_fn<'a>(src: &'a str, sig: &str) -> &'a str {
@@ -50,33 +24,27 @@ fn slice_fn<'a>(src: &'a str, sig: &str) -> &'a str {
 }
 
 #[test]
-fn signals_quant_engine_and_score_path_do_not_import_chain_snapshot() {
-    let root = workspace_root();
-    let quant = rust_files(&root.join("libs/quant-engine/src"));
-    assert!(!quant.is_empty(), "quant-engine scan empty");
-    for (name, src) in &quant {
+fn compute_analytics_from_vendor_touches_no_capture_archive_tape_or_flat_file_keep() {
+    let analytics =
+        fs::read_to_string(workspace_root().join("apps/api/src/services/analytics.rs")).unwrap();
+    let from_vendor = slice_fn(&analytics, "pub async fn compute_analytics_from_vendor");
+    for needle in [
+        "spawn_capture",
+        "chain_snapshot",
+        "session_chain_archive",
+        "day_tape",
+        "flat_file_keep",
+        "flatfiles",
+    ] {
         assert!(
-            !src.contains("chain_snapshot"),
-            "{name} imports chain_snapshot — score path must stay a one-way leaf"
+            !from_vendor.contains(needle),
+            "compute_analytics_from_vendor must not reference `{needle}` — score path stays a one-way leaf"
         );
     }
-    let signals = fs::read_to_string(root.join("libs/quant-engine/src/signals.rs")).unwrap();
-    assert!(!signals.contains("chain_snapshot"));
-    let analytics = fs::read_to_string(root.join("apps/api/src/services/analytics.rs")).unwrap();
-    // analytics may spawn capture from load_* only; compute_analytics_from_vendor must not.
-    let from_vendor = slice_fn(&analytics, "pub async fn compute_analytics_from_vendor");
-    assert!(
-        !from_vendor.contains("spawn_capture"),
-        "compute_analytics_from_vendor must not capture"
-    );
-    assert!(
-        !from_vendor.contains("chain_snapshot"),
-        "compute_analytics_from_vendor must not import capture"
-    );
 }
 
 #[test]
-fn spawn_capture_not_referenced_from_warmer_or_refresh_analytics() {
+fn warmer_refresh_and_compute_analytics_do_not_spawn_capture() {
     let root = workspace_root();
     let warmer = fs::read_to_string(root.join("apps/api/src/services/warmer.rs")).unwrap();
     assert!(!warmer.contains("spawn_capture"));
@@ -87,6 +55,11 @@ fn spawn_capture_not_referenced_from_warmer_or_refresh_analytics() {
     assert!(
         !refresh.contains("spawn_capture"),
         "refresh_analytics must not spawn capture (warmer exclusion)"
+    );
+    let compute = slice_fn(&analytics, "async fn compute_analytics(");
+    assert!(
+        !compute.contains("spawn_capture"),
+        "compute_analytics must return VendorBundle without capturing (warmer shares this fn)"
     );
 
     let loc = slice_fn(&analytics, "pub async fn load_or_compute");
@@ -120,15 +93,4 @@ fn trader_routes_do_not_mount_research_chain_snapshots_under_ticker_or_scan() {
     let scan = fs::read_to_string(root.join("apps/api/src/routes/scan.rs")).unwrap();
     assert!(!scan.contains("chain-snapshots"));
     assert!(!scan.contains("_research"));
-}
-
-#[test]
-fn compute_analytics_does_not_spawn_capture() {
-    let root = workspace_root();
-    let analytics = fs::read_to_string(root.join("apps/api/src/services/analytics.rs")).unwrap();
-    let compute = slice_fn(&analytics, "async fn compute_analytics(");
-    assert!(
-        !compute.contains("spawn_capture"),
-        "compute_analytics must return VendorBundle without capturing (warmer shares this fn)"
-    );
 }

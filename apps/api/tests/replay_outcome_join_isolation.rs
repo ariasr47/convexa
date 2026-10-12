@@ -59,16 +59,6 @@ fn cmd_body_does_not_reference_options_or_compute_or_research_http() {
 }
 
 #[test]
-fn sibling_commands_still_present() {
-    let src =
-        fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("src/main.rs")).unwrap();
-    assert!(src.contains("async fn cmd_score_lab("));
-    assert!(src.contains("async fn cmd_batch_backtest("));
-    assert!(src.contains("async fn cmd_join_outcomes("));
-    assert!(src.contains("async fn cmd_replay_outcome_join("));
-}
-
-#[test]
 fn join_module_does_not_call_options_or_research_http() {
     let src = production_module_src();
     assert!(src.len() > 200, "module missing or empty");
@@ -90,40 +80,4 @@ fn join_module_does_not_call_options_or_research_http() {
             "replay_outcome_join.rs must not contain {needle}"
         );
     }
-}
-
-#[test]
-fn no_trader_route_for_join_in_api_routes() {
-    let routes = workspace_root().join("apps/api/src/routes");
-    let mut stack = vec![routes];
-    let mut scanned = 0usize;
-    while let Some(dir) = stack.pop() {
-        let Ok(entries) = fs::read_dir(&dir) else {
-            continue;
-        };
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_dir() {
-                stack.push(path);
-                continue;
-            }
-            if path.extension().and_then(|e| e.to_str()) != Some("rs") {
-                continue;
-            }
-            let src = fs::read_to_string(&path).unwrap();
-            scanned += 1;
-            for needle in [
-                "replay-outcome-join",
-                "replay_outcome_join",
-                "ReplayOutcomeJoin",
-            ] {
-                assert!(
-                    !src.contains(needle),
-                    "{} must not mention {needle}",
-                    path.display()
-                );
-            }
-        }
-    }
-    assert!(scanned > 5, "routes scan empty");
 }

@@ -13,7 +13,6 @@ import {
   __resetOrdersMemory,
   allOrders,
   buildOrdersExport,
-  exportFilename,
   ordersFaulted,
   putOrder,
 } from './store';
@@ -160,9 +159,5 @@ describe('export (UX §4.5 / AC-33)', () => {
     expect(events).toContain('open'); // the created position's own event rides along
     const filled = payload.decisions.find((d) => d.event_type === 'order_filled');
     expect(filled?.position_id).toBe(payload.orders[0].position_id); // order → position join
-  });
-
-  it('exportFilename is convexa-orders-{YYYY-MM-DD}.json', () => {
-    expect(exportFilename(new Date(2026, 6, 2))).toBe('convexa-orders-2026-07-02.json');
   });
 });

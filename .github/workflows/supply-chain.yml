@@ -1,3 +1,6 @@
+# CI mode (2026-10-08): manual. Reason: cost. Restore: push: [main], schedule: "17 3 * * 1".
+# Runs only when called from ci.yml (~6 min a run, counted there) or dispatched (~14 min a run);
+# ubuntu-24.04, billed 1:1, so raw minutes equal Linux-equivalent minutes.
 name: Supply-chain evidence
 
 on:
@@ -20,10 +23,6 @@ on:
         description: Closed evidence path inherited from the caller
         required: true
         type: string
-  push:
-    branches: [main]
-  schedule:
-    - cron: "17 3 * * 1"
   workflow_dispatch:
     inputs:
       path:
@@ -44,6 +43,7 @@ concurrency:
 jobs:
   identity:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     outputs:
       event: ${{ steps.identity.outputs.event }}
       path: ${{ steps.identity.outputs.path }}
@@ -83,6 +83,7 @@ jobs:
   policy:
     needs: identity
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -114,6 +115,7 @@ jobs:
   capabilities:
     needs: identity
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -141,6 +143,7 @@ jobs:
     needs: identity
     if: needs.identity.outputs.path == 'artifacts'
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -176,6 +179,7 @@ jobs:
     needs: [identity, policy, capabilities, artifacts]
     if: always()
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:

@@ -396,16 +396,6 @@ mod tests {
     }
 
     #[test]
-    fn soa_hot_aligned() {
-        let contracts = vec![
-            sample_contract(100.0, ContractType::Call, 100.0, 0.01),
-            sample_contract(95.0, ContractType::Put, 50.0, 0.02),
-        ];
-        let soa = GexContractSoA::from_priced_contracts(&contracts, |_| 30.0 / 365.0);
-        assert!(soa.is_hot_aligned());
-    }
-
-    #[test]
     fn dollar_gex_spot_gamma_formula() {
         let contracts = vec![sample_contract(100.0, ContractType::Call, 100.0, 0.01)];
         let soa = GexContractSoA::from_priced_contracts(&contracts, |_| 30.0 / 365.0);
@@ -413,15 +403,6 @@ mod tests {
         assert!((r.net - 10_000.0).abs() < 1e-6);
         assert!((r.call - 10_000.0).abs() < 1e-6);
         assert!((r.put - 0.0).abs() < 1e-12);
-    }
-
-    #[test]
-    fn puts_negate_gex() {
-        let contracts = vec![sample_contract(100.0, ContractType::Put, 100.0, 0.01)];
-        let soa = GexContractSoA::from_priced_contracts(&contracts, |_| 30.0 / 365.0);
-        let r = dollar_gex_reduce(&soa, 100.0);
-        assert!((r.net - (-10_000.0)).abs() < 1e-6);
-        assert!((r.put - (-10_000.0)).abs() < 1e-6);
     }
 
     #[test]

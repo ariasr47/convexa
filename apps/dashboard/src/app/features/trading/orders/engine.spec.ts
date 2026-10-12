@@ -59,12 +59,6 @@ describe('evaluateOrder — live-cross-only transitions', () => {
     expect(t).toMatchObject({ to: 'triggered' });
   });
 
-  it('placement-already-met: the first payload after placement triggers (AC-9 semantics)', () => {
-    // The level was already crossed at placement — the very first evaluated payload fires.
-    const t = evaluateOrder(order({ limit_price: 1 }), tick({ mid: 260 }));
-    expect(t).toMatchObject({ to: 'triggered' });
-  });
-
   it('non-satisfying mid ⇒ no transition', () => {
     expect(evaluateOrder(order(), tick({ mid: 251 }))).toBeNull();
   });

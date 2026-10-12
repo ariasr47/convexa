@@ -39,7 +39,7 @@ export const ABSENT_DISTANCE: NotANumber = '—';
 export interface LadderRow {
   id: LadderRowId;
   /** The exact words, unchanged from the grid this replaces (criterion 2) — the e2e readiness
-   *  anchor `no-overflow.spec.ts:398` keys on `Call wall`. */
+   *  anchor in `curvature-v2.spec.ts` keys on `Call wall`. */
   label: 'Call wall' | 'Mid' | 'Max pain' | 'Gamma flip' | 'Put wall';
   price: string | NotANumber;
   /**

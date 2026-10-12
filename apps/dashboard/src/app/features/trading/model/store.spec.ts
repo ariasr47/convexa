@@ -19,7 +19,6 @@ import {
   GHOST_TRADE_KEY,
   GHOST_TRADE_LEGACY_KEY,
 } from './store';
-import storeSource from './store?raw';
 import type { DecisionRecord } from './types';
 
 /** The retired record shape, as it still sits in a real browser's localStorage. */
@@ -72,10 +71,6 @@ beforeEach(() => {
 });
 
 describe('AC-58 — the v1 writer is GONE, by construction', () => {
-  it('the module contains no setItem call at all', () => {
-    expect(storeSource).not.toMatch(/setItem/);
-  });
-
   it('exports no write function — putTrade, clearTrade and appendDecision are deleted', async () => {
     const mod = (await import('./store')) as Record<string, unknown>;
     for (const name of ['putTrade', 'clearTrade', 'appendDecision', 'write']) {

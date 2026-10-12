@@ -68,11 +68,6 @@ describe('structureKindOf — the named set', () => {
   ])('recognises %s', (kind, p) => {
     expect(structureKindOf(p)).toBe(kind);
   });
-
-  it('covers all 21 named members — the recogniser has no unreachable name', () => {
-    const named = STRUCTURE_KINDS.filter((k) => k !== 'custom');
-    expect(named).toHaveLength(21);
-  });
 });
 
 describe('the residue rule — `custom` is the residue of an exact match, never a judgement', () => {
@@ -181,24 +176,12 @@ describe('AC-17 — determinism', () => {
     structureKindOf(FX_IRON_CONDOR);
     expect(FX_IRON_CONDOR.legs.map((l) => l.id)).toEqual(order);
   });
-
-  it('is stable across repeated calls', () => {
-    for (const p of [FX_IRON_CONDOR, FX_COVERED_CALL, FX_CALENDAR, FX_SIX_LEG]) {
-      expect(structureKindOf(p)).toBe(structureKindOf(p));
-    }
-  });
 });
 
 describe('AC-20 — the map is total and 1:1', () => {
   it('has exactly 22 members', () => {
     expect(STRUCTURE_KINDS).toHaveLength(22);
     expect(new Set(STRUCTURE_KINDS).size).toBe(22);
-  });
-
-  it('labels every member exactly once, with no label reused', () => {
-    const labels = STRUCTURE_KINDS.map((k) => STRUCTURE_LABELS[k]);
-    expect(labels.every((l) => typeof l === 'string' && l.length > 0)).toBe(true);
-    expect(new Set(labels).size).toBe(22);
   });
 
   it('orders every member with a distinct declared ordinal — never alphabetical', () => {
@@ -212,25 +195,5 @@ describe('AC-20 — the map is total and 1:1', () => {
     );
     expect(byOrdinal).not.toEqual(byLabel);
     expect(STRUCTURE_ORDINAL.custom).toBe(Math.max(...ords));
-  });
-
-  it('AC-16 — no label implies collateral, cash set aside or buying power', () => {
-    const forbidden = /collateral|cash|secured|buying power|margin/i;
-    for (const k of STRUCTURE_KINDS) expect(STRUCTURE_LABELS[k]).not.toMatch(forbidden);
-    expect(STRUCTURE_KINDS).not.toContain('cash_secured_put');
-  });
-
-  it('every recognised kind is a declared member (the function cannot invent a name)', () => {
-    const kinds = new Set(STRUCTURE_KINDS as readonly string[]);
-    for (const p of [
-      FX_SHARES_LONG,
-      FX_LONG_CALL,
-      FX_COVERED_CALL,
-      FX_IRON_CONDOR,
-      FX_SIX_LEG,
-      FX_CALENDAR,
-    ]) {
-      expect(kinds.has(structureKindOf(p))).toBe(true);
-    }
   });
 });

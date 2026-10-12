@@ -1,7 +1,11 @@
 import type { RecCap } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import { noTradeRec, recAllTraced } from './fixtures';
-import { deriveAiRecPresentation, type PresentationInput } from './presentationPolicy';
+import {
+  type AiRecRequestState,
+  deriveAiRecPresentation,
+  type PresentationInput,
+} from './presentationPolicy';
 
 const cap: RecCap = { over_limit: false, remaining_today: 1, resets_at: '' };
 const base = (): PresentationInput => ({
@@ -60,74 +64,54 @@ describe('deriveAiRecPresentation', () => {
     expect(v.actions.settings).toBe(false);
     expect(v.actions.signIn).toBe(true);
   });
-  it('missing own key', () => {
-    const rec = {
-      ...recAllTraced(),
-      status: 'unavailable' as const,
-      strategy: null,
-      unavailable_reason: 'no_key',
-    };
-    const v = deriveAiRecPresentation(input({ rec }));
-    expect(v.requestState).toBe('missing_key');
-    expect(v.actions.settings).toBe(true);
-  });
-  it('key unusable is distinct from no_key', () => {
-    const rec = {
-      ...recAllTraced(),
-      status: 'unavailable' as const,
-      strategy: null,
-      unavailable_reason: 'key_unusable',
-    };
-    expect(deriveAiRecPresentation(input({ rec })).requestState).toBe('key_unusable');
-  });
-  it('key rejected is distinct from unusable', () => {
-    const rec = {
-      ...recAllTraced(),
-      status: 'unavailable' as const,
-      strategy: null,
-      unavailable_reason: 'key_rejected',
-    };
-    expect(deriveAiRecPresentation(input({ rec })).requestState).toBe('key_rejected');
-  });
-  it('model not in catalog is distinct from no_key', () => {
-    const rec = {
-      ...recAllTraced(),
-      status: 'unavailable' as const,
-      strategy: null,
-      unavailable_reason: 'model_not_in_catalog',
-    };
-    expect(deriveAiRecPresentation(input({ rec })).requestState).toBe('model_not_in_catalog');
-  });
-  it('oauth expired / unlinked / subscription unavailable stay distinct', () => {
-    const rec = (reason: string) => ({
+  it('each key/powering failure reason maps to its own distinct requestState; a retired reason is not a powering CTA', () => {
+    const unavailable = (reason: string) => ({
       ...recAllTraced(),
       status: 'unavailable' as const,
       strategy: null,
       unavailable_reason: reason,
     });
-    expect(deriveAiRecPresentation(input({ rec: rec('oauth_expired') })).requestState).toBe(
-      'oauth_expired',
+    const rows: ReadonlyArray<[string, Partial<PresentationInput>, AiRecRequestState]> = [
+      ['missing own key', { rec: unavailable('no_key') }, 'missing_key'],
+      [
+        'key unusable is distinct from no_key',
+        { rec: unavailable('key_unusable') },
+        'key_unusable',
+      ],
+      [
+        'key rejected is distinct from unusable',
+        { rec: unavailable('key_rejected') },
+        'key_rejected',
+      ],
+      [
+        'model not in catalog is distinct from no_key',
+        { rec: unavailable('model_not_in_catalog') },
+        'model_not_in_catalog',
+      ],
+      ['oauth expired', { rec: unavailable('oauth_expired') }, 'oauth_expired'],
+      ['oauth unlinked', { rec: unavailable('oauth_unlinked') }, 'oauth_unlinked'],
+      [
+        'subscription unavailable',
+        { rec: unavailable('subscription_unavailable') },
+        'subscription_unavailable',
+      ],
+      [
+        'status powering reason drives idle setup before an ask',
+        { poweringReason: 'no_key' },
+        'missing_key',
+      ],
+      [
+        'retired free-uses over_limit is not a powering CTA',
+        { rec: unavailable('over_limit') },
+        'unavailable',
+      ],
+    ];
+    for (const [name, overrides, requestState] of rows) {
+      expect(deriveAiRecPresentation(input(overrides)).requestState, name).toBe(requestState);
+    }
+    expect(deriveAiRecPresentation(input({ rec: unavailable('no_key') })).actions.settings).toBe(
+      true,
     );
-    expect(deriveAiRecPresentation(input({ rec: rec('oauth_unlinked') })).requestState).toBe(
-      'oauth_unlinked',
-    );
-    expect(
-      deriveAiRecPresentation(input({ rec: rec('subscription_unavailable') })).requestState,
-    ).toBe('subscription_unavailable');
-  });
-  it('status powering reason drives idle setup before an ask', () => {
-    expect(deriveAiRecPresentation(input({ poweringReason: 'no_key' })).requestState).toBe(
-      'missing_key',
-    );
-  });
-  it('retired free-uses unavailable_reason is not a powering CTA', () => {
-    const rec = {
-      ...recAllTraced(),
-      status: 'unavailable' as const,
-      strategy: null,
-      unavailable_reason: 'over_limit',
-    };
-    expect(deriveAiRecPresentation(input({ rec })).requestState).toBe('unavailable');
   });
   it('deployment key gate', () => {
     expect(deriveAiRecPresentation(input({ inAppEnabled: false })).requestState).toBe(

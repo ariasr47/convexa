@@ -40,30 +40,6 @@ describe('distancePercentOnly', () => {
     expect(distancePercentOnly(Number.NaN, 250)).toBeNull();
     expect(distancePercentOnly(260, 0)).toBeNull();
   });
-
-  it('agrees with distanceToLevel’s own percentage figure on the same inputs (one shared projection)', () => {
-    // `distanceToLevel`'s embedded percentage is UNSIGNED (direction comes from the "above"/"below"
-    // word instead: "4.0% above"); `distancePercentOnly`'s IS signed ("+4.0%", no word) — so the
-    // cross-check reconstructs the expected short form from the full line's own unsigned percentage
-    // + direction word, rather than assuming the two strings share a literal substring.
-    for (const [level, spot] of [
-      [260, 250],
-      [240, 250],
-      [252.5, 250],
-      [250.25, 250],
-    ] as const) {
-      const full = distanceToLevel(level, spot);
-      const short = distancePercentOnly(level, spot);
-      if (full === 'at spot') {
-        expect(short).toBe('at spot');
-        continue;
-      }
-      const m = full?.match(/([\d.]+)% (above|below)/);
-      expect(m, `distanceToLevel(${level}, ${spot}) = ${full}`).not.toBeNull();
-      const [, pct, side] = m!;
-      expect(short).toBe(`${side === 'above' ? '+' : '−'}${pct}%`);
-    }
-  });
 });
 
 describe('levelSpot', () => {

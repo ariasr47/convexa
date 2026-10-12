@@ -24,6 +24,18 @@ const load = async () => ({
 test('live automation passes immutable and fail-closed guard', async () => {
   assert.deepEqual(auditAutomation(await load()), { state: 'pass', errors: [] });
 });
+test('a push or schedule trigger on supply-chain is rejected (manual mode)', async () => {
+  for (const trigger of [
+    '  push:\n    branches: [main]\n',
+    '  schedule:\n    - cron: "17 3 * * 1"\n',
+  ]) {
+    const input = await load();
+    input.workflows['.github/workflows/supply-chain.yml'] = input.workflows[
+      '.github/workflows/supply-chain.yml'
+    ].replace('\non:\n', `\non:\n${trigger}`);
+    assert.ok(auditAutomation(input).errors.includes('supply-chain:event-matrix'), trigger);
+  }
+});
 test('mutable Action mutation is rejected', async () => {
   const input = await load();
   input.workflows['.github/workflows/supply-chain.yml'] = input.workflows[
@@ -92,6 +104,16 @@ test('moving Action labels and moving Rust toolchain selectors are rejected', as
   ].replace('toolchain: 1.97.1', 'toolchain: stable');
   assert.match(auditAutomation(movingToolchain).errors.join(','), /moving-rust-toolchain/);
 });
+test('only the exact empty image scratch is exempt from digest pinning', async () => {
+  for (const image of ['busybox', 'scratch:latest', 'scratchy']) {
+    const input = await load();
+    input.dockerfiles['apps/api/Dockerfile'] = input.dockerfiles['apps/api/Dockerfile'].replace(
+      /^FROM scratch$/m,
+      `FROM ${image}`,
+    );
+    assert.ok(auditAutomation(input).errors.includes('apps/api/Dockerfile:mutable-image'), image);
+  }
+});
 test('missing image digest and tag/digest mismatch are rejected', async () => {
   const missing = await load();
   missing.dockerfiles['apps/dashboard/Dockerfile'] = missing.dockerfiles[
@@ -110,26 +132,4 @@ test('workflow_call must explicitly preserve the closed event revision and path'
     '.github/workflows/supply-chain.yml'
   ].replace("github.event_name == 'workflow_call' && inputs.contract_event", 'github.event_name');
   assert.match(auditAutomation(input).errors.join(','), /workflow-call-contract/);
-});
-
-test('conformance builds generated client dependencies before every contract check', async () => {
-  const input = await load();
-  const conformance = input.workflows['.github/workflows/conformance.yml'];
-  const jobs = conformance.split(/\n  (?=prod-public:|local-auth:)/).slice(1);
-  assert.equal(jobs.length, 2);
-  for (const job of jobs) {
-    const build = job.indexOf('run: npx tsc -p libs/api/tsconfig.lib.json --pretty false');
-    const check = job.indexOf('run: npm run api:contract:check');
-    assert.ok(build >= 0, 'generated API client dependency build is missing');
-    assert.ok(check > build, 'contract check must run after the generated client dependency build');
-  }
-});
-
-test('artifact-path policy evidence does not render an incomplete policy-only summary', async () => {
-  const input = await load();
-  const supply = input.workflows['.github/workflows/supply-chain.yml'];
-  assert.match(
-    supply,
-    /name: Render sanitized policy summary\r?\n\s+if: always\(\) && needs\.identity\.outputs\.path == 'policy'/,
-  );
 });

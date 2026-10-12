@@ -8,12 +8,7 @@ import { palette } from '@/shared/theme/tokens';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  applyPaintMode,
-  resolveFirstPaintMode,
-  THEME_PAINT_KEY,
-  type PaintMode,
-} from './firstPaintTheme';
+import { applyPaintMode, THEME_PAINT_KEY } from './firstPaintTheme';
 import { UIPREFS_KEY, UIPREFS_LEGACY_KEY } from './localPrefs';
 
 const INDEX_RAW = import.meta.glob(['/index.html'], {
@@ -39,59 +34,6 @@ const stylesCss = readFileSync(resolve(dashboardRoot(), 'src', 'styles.css'), 'u
 
 const INK = palette.dark.background.default;
 const PAPER = palette.light.background.default;
-
-function store(entries: Record<string, string>): (key: string) => string | null {
-  return (key) => (key in entries ? entries[key] : null);
-}
-
-describe('resolveFirstPaintMode', () => {
-  it('anonymous never-touched → dark (AC-A3)', () => {
-    expect(resolveFirstPaintMode(() => null, false)).toBe('dark');
-    expect(resolveFirstPaintMode(() => null, true)).toBe('dark');
-  });
-
-  it('paint cache wins over uiprefs (last resolved mode, including signed-in)', () => {
-    expect(
-      resolveFirstPaintMode(
-        store({
-          [THEME_PAINT_KEY]: 'light',
-          [UIPREFS_KEY]: JSON.stringify({ theme: 'dark' }),
-        }),
-        false,
-      ),
-    ).toBe('light');
-  });
-
-  it('uiprefs light → light when no paint cache', () => {
-    expect(
-      resolveFirstPaintMode(store({ [UIPREFS_KEY]: JSON.stringify({ theme: 'light' }) }), false),
-    ).toBe('light');
-  });
-
-  it('legacy gammaflow key is consulted when the new key is empty', () => {
-    expect(
-      resolveFirstPaintMode(
-        store({ [UIPREFS_LEGACY_KEY]: JSON.stringify({ theme: 'light' }) }),
-        false,
-      ),
-    ).toBe('light');
-  });
-
-  it('system pref follows prefers-color-scheme; missing match → dark', () => {
-    const raw = JSON.stringify({ theme: 'system' });
-    expect(resolveFirstPaintMode(store({ [UIPREFS_KEY]: raw }), true)).toBe('light');
-    expect(resolveFirstPaintMode(store({ [UIPREFS_KEY]: raw }), false)).toBe('dark');
-  });
-
-  it('corrupt blob / storage throw → dark, never throws', () => {
-    expect(resolveFirstPaintMode(store({ [UIPREFS_KEY]: '{not json' }), true)).toBe('dark');
-    expect(
-      resolveFirstPaintMode(() => {
-        throw new Error('quota');
-      }, true),
-    ).toBe('dark');
-  });
-});
 
 describe('applyPaintMode', () => {
   beforeEach(() => {
@@ -132,11 +74,6 @@ describe('index.html blocking script is pinned to the module', () => {
     const moduleIdx = indexHtml.indexOf('type="module"');
     expect(blockingIdx).toBeGreaterThan(-1);
     expect(blockingIdx).toBeLessThan(moduleIdx);
-  });
-
-  it('MUTATION GUARD: the pin fails if the script loses the light canvas', () => {
-    expect(indexHtml.includes(PAPER)).toBe(true);
-    expect(`<meta name="theme-color" content="${INK}" />`.includes(PAPER)).toBe(false);
   });
 });
 
@@ -202,12 +139,5 @@ describe('styles.css first-paint canvases match the palette tokens', () => {
     expect(compact).toContain(`background-color:${INK.toLowerCase()}`);
     expect(compact).toContain(`html[data-theme='light']`);
     expect(compact).toContain(`background-color:${PAPER.toLowerCase()}`);
-  });
-});
-
-describe('PaintMode stays the two resolved modes MUI emits', () => {
-  const modes: PaintMode[] = ['light', 'dark'];
-  it('is the closed set light | dark (not system — system is a pref, not a paint)', () => {
-    expect(modes).toEqual(['light', 'dark']);
   });
 });

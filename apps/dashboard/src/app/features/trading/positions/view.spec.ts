@@ -70,108 +70,71 @@ describe('buildPositionView', () => {
     expect(v.unavailable).toBe(true);
   });
 
-  it('the single-leg structure line is BYTE-IDENTICAL to the shipped descriptor', () => {
-    const v = buildPositionView({
-      position: FX_LONG_CALL,
-      legMarks: allMarks(FX_LONG_CALL, 14),
-      dte: 30,
-    });
-    expect(v.structure_line).toBe('$400 Call');
-  });
-
-  it('AC-37 — an over-long strike list collapses in the STRING, first-and-last, with the leg count', () => {
-    const v = buildPositionView({
-      position: FX_IRON_CONDOR,
-      legMarks: allMarks(FX_IRON_CONDOR, 3),
-      dte: 30,
-    });
-    expect(v.structure_line_collapsed).toMatch(/\$380…\$460/);
-    expect(v.structure_line_collapsed).toContain('(4 legs)');
-    expect(v.structure_line_collapsed).not.toContain('...');
-    // the full list stays reachable for the tooltip AND the disclosure
-    expect(v.structure_line_full).toContain('$400');
-    expect(v.structure_line_full).toContain('$440');
-  });
-
-  it('AC-37 — a short strike list does NOT collapse: every strike stays in the cell form', () => {
-    const v = buildPositionView({
-      position: FX_CALL_DEBIT_SPREAD,
-      legMarks: allMarks(FX_CALL_DEBIT_SPREAD, 9),
-      dte: 30,
-    });
-    expect(v.structure_line_collapsed).toContain('$400');
-    expect(v.structure_line_collapsed).toContain('$420');
-    expect(v.structure_line_collapsed).not.toContain(ELLIPSIS);
-    expect(v.structure_line_full).toBe(v.structure_line);
-    expect(STRUCTURE_LINE_MAX_STRIKES).toBe(3);
-  });
-
   /**
    * RULED 2026-07-28 (GATE Z bounce #2, SPEC §4 *The `contract` cell*) — the CELL form drops the
-   * structure WORD for a multi-leg position because the `Structure` chip already carries it. These
-   * assert the DEDUPLICATION itself (a silent regression would quietly re-spend the 1280 headroom
-   * the bounce was raised over) and, just as importantly, that the untouched cases are untouched.
+   * structure WORD for a multi-leg position because the `Structure` chip already carries it (a
+   * silent regression would quietly re-spend the 1280 headroom the bounce was raised over), and
+   * AC-37 collapses a strike list longer than `STRUCTURE_LINE_MAX_STRIKES` IN THE STRING,
+   * first-and-last with the leg count. Single-leg, covered-call and shares-only cells are
+   * BYTE-IDENTICAL to the shipped descriptor. The full line keeps the noun and every strike: it is
+   * the tooltip.
    */
-  describe('the collapsed line drops the structure word for a MULTI-LEG position', () => {
-    it('a vertical reads the leg facts alone — the noun lives on the chip and in the tooltip', () => {
-      const v = buildPositionView({
+  it('the structure line, its collapsed cell form and its full tooltip form, per structure', () => {
+    expect(STRUCTURE_LINE_MAX_STRIKES).toBe(3);
+    const rows: ReadonlyArray<{
+      position: Parameters<typeof buildPositionView>[0]['position'];
+      full: string;
+      collapsed: string;
+      noun: string | null;
+    }> = [
+      // single leg — the shipped descriptor; there was never a noun to drop
+      { position: FX_LONG_CALL, full: '$400 Call', collapsed: '$400 Call', noun: null },
+      // vertical — 2 strikes, under the boundary: no collapse, only the noun goes
+      {
         position: FX_CALL_DEBIT_SPREAD,
-        legMarks: allMarks(FX_CALL_DEBIT_SPREAD, 9),
-        dte: 30,
-      });
-      expect(v.structure_line_collapsed).toBe('$400/$420 Call');
-      expect(v.structure_line_collapsed).not.toMatch(/vertical/i);
-      // the word is not LOST — it is on the chip (`structure_label`) and in the tooltip.
-      expect(v.structure_line_full).toContain('vertical');
-      expect(v.structure_label).toBe(STRUCTURE_LABELS[v.structure]);
-    });
-
-    it('a condor carries strikes and a leg count, never the word `condor`', () => {
-      const v = buildPositionView({
+        full: '$400/$420 Call vertical',
+        collapsed: '$400/$420 Call',
+        noun: 'vertical',
+      },
+      // condor — 4 strikes, over the boundary: first…last with the leg count, no noun, no right
+      {
         position: FX_IRON_CONDOR,
-        legMarks: allMarks(FX_IRON_CONDOR, 3),
-        dte: 30,
-      });
-      expect(v.structure_line_collapsed).toBe('$380…$460 (4 legs)');
-      expect(v.structure_line_full).toContain('condor');
-    });
-
-    it('a calendar keeps its two expiries — the EXPIRIES are facts, only the noun goes', () => {
-      const v = buildPositionView({
-        position: FX_CALENDAR,
-        legMarks: allMarks(FX_CALENDAR, 13),
-        dte: 30,
-      });
-      expect(v.structure_line_collapsed).toContain('→');
-      expect(v.structure_line_collapsed).not.toMatch(/calendar/i);
-      expect(v.structure_line_full).toContain('calendar');
-    });
-
-    it('single-leg, covered call and shares-only cells are BYTE-IDENTICAL to shipped', () => {
-      const single = buildPositionView({
-        position: FX_LONG_CALL,
-        legMarks: allMarks(FX_LONG_CALL, 14),
-        dte: 30,
-      });
-      expect(single.structure_line_collapsed).toBe('$400 Call');
-      expect(single.structure_line_collapsed).toBe(single.structure_line_full);
-
-      const covered = buildPositionView({
+        full: '$380/$400/$440/$460 condor',
+        collapsed: `$380${ELLIPSIS}$460 (4 legs)`,
+        noun: 'condor',
+      },
+      // covered call — shares-plus-the-option, not a strike list
+      {
         position: FX_COVERED_CALL,
-        legMarks: allMarks(FX_COVERED_CALL, 4),
-        dte: 30,
-      });
-      expect(covered.structure_line_collapsed).toBe('100 sh + $420 Call');
-      expect(covered.structure_line_collapsed).toBe(covered.structure_line_full);
-
-      const shares = buildPositionView({
-        position: FX_SHARES_LONG,
-        legMarks: new Map(),
-        dte: null,
-      });
-      expect(shares.structure_line_collapsed).toBe('100 shares');
-      expect(shares.structure_line_collapsed).toBe(shares.structure_line_full);
-    });
+        full: '100 sh + $420 Call',
+        collapsed: '100 sh + $420 Call',
+        noun: null,
+      },
+      // shares only — reads in shares
+      { position: FX_SHARES_LONG, full: '100 shares', collapsed: '100 shares', noun: null },
+      // custom (unrecognised shape) — a plain leg count, no diagnosis, no warning register
+      { position: FX_RATIO_1X2, full: '2 legs', collapsed: '2 legs', noun: null },
+      // calendar — the two EXPIRIES are facts and stay; only the noun goes
+      {
+        position: FX_CALENDAR,
+        full: '$400 Call calendar · Aug 21 → Sep 18',
+        collapsed: '$400 Call · Aug 21 → Sep 18',
+        noun: 'calendar',
+      },
+    ];
+    for (const { position, full, collapsed, noun } of rows) {
+      const v = buildPositionView({ position, legMarks: new Map(), dte: null });
+      expect(v.structure_line).toBe(full);
+      expect(v.structure_line_full).toBe(full);
+      expect(v.structure_line_collapsed).toBe(collapsed);
+      expect(v.structure_line_collapsed).not.toContain('...');
+      // the noun is not LOST — it is on the chip (`structure_label`) and in the tooltip
+      expect(v.structure_label).toBe(STRUCTURE_LABELS[v.structure]);
+      if (noun) {
+        expect(v.structure_line_collapsed).not.toMatch(new RegExp(noun, 'i'));
+        expect(v.structure_line_full).toContain(noun);
+      }
+    }
   });
 
   it('a multi-expiry structure carries its expiries in the line and reports the NEAREST separately', () => {
@@ -348,19 +311,6 @@ describe('live-vs-static isolation, at the projection', () => {
     expect(live.max_loss).toEqual({ kind: 'withheld', reason: 'unbounded' });
     expect(dead.max_loss).toEqual(live.max_loss);
   });
-
-  it('frozen ORs up from the legs onto the view', () => {
-    const [a, b] = FX_CALL_DEBIT_SPREAD.legs;
-    const v = buildPositionView({
-      position: FX_CALL_DEBIT_SPREAD,
-      legMarks: new Map([
-        [a.id, mr(9, 'snapshot', false)],
-        [b.id, mr(4, 'snapshot', true)],
-      ]),
-      dte: 30,
-    });
-    expect(v.frozen).toBe(true);
-  });
 });
 
 describe('pl_pct branch selection, through the projection', () => {
@@ -389,30 +339,5 @@ describe('pl_pct branch selection, through the projection', () => {
       expect(v.pl_pct.value).toBeGreaterThan(0);
       expect(v.pl_pct.basis).toBe('net_credit');
     }
-  });
-});
-
-describe('the structure line, per structure', () => {
-  const lineOf = (p: Parameters<typeof buildPositionView>[0]['position']) =>
-    buildPositionView({ position: p, legMarks: new Map(), dte: null }).structure_line;
-
-  it('a vertical names its two strikes, its right and the word vertical', () => {
-    expect(lineOf(FX_CALL_DEBIT_SPREAD)).toBe('$400/$420 Call vertical');
-  });
-
-  it('a covered call reads shares-plus-the-option, not a strike list', () => {
-    expect(lineOf(FX_COVERED_CALL)).toBe('100 sh + $420 Call');
-  });
-
-  it('a shares-only position reads in shares', () => {
-    expect(lineOf(FX_SHARES_LONG)).toBe('100 shares');
-  });
-
-  it('an unrecognised shape reads as a plain leg count — no diagnosis, no warning register', () => {
-    expect(lineOf(FX_RATIO_1X2)).toBe('2 legs');
-  });
-
-  it('an iron condor lists its four strikes with the noun', () => {
-    expect(lineOf(FX_IRON_CONDOR)).toBe('$380/$400/$440/$460 condor');
   });
 });

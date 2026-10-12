@@ -14,7 +14,6 @@ import {
   defaultCustomization,
   normalizeViewConfig,
   OPTIONAL_COLUMNS,
-  TABLE_HEADER_LABELS,
 } from './defaults';
 import { STALE_SAVED_VIEW_CUSTOMIZATION } from './fixtures';
 import { FIGMA_COLUMNS, visibleColumnsFor } from './PositionsView';
@@ -56,37 +55,6 @@ describe('configEqual (drives the unsaved-changes dot)', () => {
 });
 
 describe('the max_loss column (AC-82, Q6 ruling)', () => {
-  it('is labelled — the label map is the key universe, so an unlabelled key fails the build', () => {
-    expect(COLUMN_LABELS.max_loss).toBe('Max loss');
-  });
-
-  it('is in DEFAULT_COLUMNS and NOT in OPTIONAL_COLUMNS — the partition has no duplicate', () => {
-    expect(DEFAULT_COLUMNS).toContain('max_loss');
-    expect(OPTIONAL_COLUMNS).not.toContain('max_loss');
-  });
-
-  it('sits between trend and expiry, matching the left-to-right scan order', () => {
-    const i = DEFAULT_COLUMNS.indexOf('max_loss');
-    expect(DEFAULT_COLUMNS[i - 1]).toBe('trend');
-    expect(DEFAULT_COLUMNS[i + 1]).toBe('expiry');
-  });
-
-  it('has no TABLE_HEADER_LABELS override — the header copy and the menu copy are the same two words', () => {
-    expect(TABLE_HEADER_LABELS.max_loss).toBeUndefined();
-  });
-
-  it('is in FIGMA_COLUMNS — the fit was measured and RULED at `lg` and above (AC-82)', () => {
-    // The table renders `FIGMA_COLUMNS` directly and IGNORES the persisted `working.columns`, so
-    // THIS list is the one line that makes the column visible. The phase-2 deferral is now lifted
-    // DELIBERATELY: the column fits at 1280px/1440px in both densities and both schemes, and the
-    // GATE Z ruling of 2026-07-28 puts it at `lg`+ only, gated on the RENDERED set.
-    expect(FIGMA_COLUMNS).toContain('max_loss');
-  });
-
-  it('FIGMA_COLUMNS and DEFAULT_COLUMNS now agree EXACTLY — no pending key remains', () => {
-    expect(FIGMA_COLUMNS).toEqual(DEFAULT_COLUMNS);
-  });
-
   it('AC-82 — the breakpoint gate binds the RENDERED set, never what is STORED', () => {
     // A viewport must never change what is stored. `DEFAULT_COLUMNS` (which seeds every saved
     // view's `columns`) is identical at both breakpoints; only the rendered set narrows.
@@ -96,21 +64,6 @@ describe('the max_loss column (AC-82, Q6 ruling)', () => {
     // …and the gate is derived from ONE list, so the two can never drift apart.
     expect(visibleColumnsFor(true)).toEqual(FIGMA_COLUMNS);
     expect(defaultConfig().columns).toEqual(DEFAULT_COLUMNS);
-  });
-});
-
-describe('the structure axis replaces the strategy axis', () => {
-  it('renames the column, sort and group keys', () => {
-    expect(COLUMN_LABELS.structure).toBe('Structure');
-    expect(COLUMN_LABELS).not.toHaveProperty('strategy');
-    expect(defaultConfig().filter).toHaveProperty('structure');
-    expect(defaultConfig().filter).not.toHaveProperty('strategy');
-  });
-
-  it('AC-34 — the entry column header reads Net entry and the word Cost is gone', () => {
-    expect(TABLE_HEADER_LABELS.entry).toBe('Net entry');
-    expect(Object.values(COLUMN_LABELS).join(' ')).not.toMatch(/\bCost\b/);
-    expect(Object.values(TABLE_HEADER_LABELS).join(' ')).not.toMatch(/\bCost\b/);
   });
 });
 
