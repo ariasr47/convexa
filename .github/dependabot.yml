@@ -1,10 +1,16 @@
+# Version updates (2026-10-13): off. Reason: the project is frozen as a portfolio piece and CI runs
+# only on dispatch, so a bump PR gets no checks and would be merged blind. A limit of 0 stops
+# version-update PRs for each ecosystem (GitHub: "temporarily disable version updates for a package
+# manager by setting this option to zero"); security-update PRs are outside this limit but need
+# Dependabot security updates on in the repo settings, which are off. Restore: limit 5 on each entry.
+# The grouping proposal from PR #55 is kept at tag archive/ci-dependabot-group-majors.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: "/"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     commit-message:
       prefix: "deps/npm"
     labels: ["dependencies", "ecosystem:npm", "owner:security"]
@@ -31,7 +37,7 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     commit-message:
       prefix: "deps/cargo"
     labels: ["dependencies", "ecosystem:cargo", "owner:security"]
@@ -54,7 +60,7 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     commit-message:
       prefix: "deps/actions"
     labels: ["dependencies", "ecosystem:actions", "owner:build"]
@@ -68,7 +74,7 @@ updates:
     directory: "/apps/api"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     commit-message:
       prefix: "deps/docker-api"
     labels: ["dependencies", "ecosystem:docker", "owner:build"]
@@ -78,7 +84,7 @@ updates:
     directory: "/apps/dashboard"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     commit-message:
       prefix: "deps/docker-dashboard"
     labels: ["dependencies", "ecosystem:docker", "owner:build"]
