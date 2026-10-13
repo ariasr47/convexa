@@ -25,7 +25,7 @@ import {
 import { NoteInlines } from '../Inlines';
 import { useNoteContext } from '../noteContext';
 import type { Dated, ScenarioName, Uncertainty, ValuationBlock } from '../types';
-import { downText, Eyebrow, MONO, Panel, PANEL_SX, upText, YourCall } from '../ui';
+import { Eyebrow, MONO, Panel, PANEL_SX, YourCall } from '../ui';
 
 const NAMES: ScenarioName[] = ['bear', 'base', 'bull'];
 const TITLE: Record<ScenarioName, string> = { bear: 'Bear', base: 'Base', bull: 'Bull' };
@@ -59,7 +59,7 @@ const at = (v: number, max: number) => `${Math.min(100, Math.max(0, (v / max) * 
 export function Signed({ value }: { value: number }) {
   return (
     <Box component="span" sx={{ whiteSpace: 'nowrap' }}>
-      <Box component="span" sx={(t) => ({ color: value >= 0 ? upText(t) : downText(t) })}>
+      <Box component="span" sx={{ color: 'text.primary' }}>
         {arrow(value)}
       </Box>{' '}
       <Box component="span" sx={MONO}>

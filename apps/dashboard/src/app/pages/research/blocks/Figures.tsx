@@ -3,8 +3,10 @@ import Box from '@mui/material/Box';
 import { alpha } from '@mui/material/styles';
 import { formatAsOf, labelWithAsOf } from '../format';
 import { NoteInlines } from '../Inlines';
-import type { Direction, NoteBlock } from '../types';
-import { downText, Eyebrow, MONO, Panel, upText } from '../ui';
+import { useNoteContext } from '../noteContext';
+import { firstSource, type NoteSource } from '../provenance';
+import type { Direction, NoteBlock, NoteInline } from '../types';
+import { Eyebrow, MONO, Panel, SourceChip } from '../ui';
 
 type Of<T extends NoteBlock['type']> = Extract<NoteBlock, { type: T }>;
 
@@ -91,18 +93,13 @@ export function TldrBlock({ block }: { block: Of<'tldr'> }) {
   );
 }
 
-/** A delta pill: the direction is the arrow and the hue together, never the hue alone. */
+/** A delta pill. A company figure's direction is its arrow; green and red stay reserved for money
+ *  moving (P&L, flow, gamma sign), so a company fact is never tinted (canon, 2026-10-13). */
 export function DeltaPill({ dir, children }: { dir: Direction; children: string }) {
   return (
     <Box
       component="span"
       sx={(t) => {
-        const [fill, text] =
-          dir === 'up'
-            ? [t.palette.success.main, upText(t)]
-            : dir === 'down'
-              ? [t.palette.error.main, downText(t)]
-              : [t.palette.text.secondary, t.palette.text.secondary];
         return {
           ...MONO,
           alignSelf: 'flex-start',
@@ -113,8 +110,8 @@ export function DeltaPill({ dir, children }: { dir: Direction; children: string 
           borderRadius: '10px',
           fontSize: 12,
           fontWeight: 500,
-          color: text,
-          bgcolor: alpha(fill, 0.14),
+          color: dir === 'flat' ? t.palette.text.secondary : t.palette.text.primary,
+          bgcolor: alpha(t.palette.text.secondary, 0.16),
         };
       }}
     >
@@ -124,6 +121,7 @@ export function DeltaPill({ dir, children }: { dir: Direction; children: string 
 }
 
 export function MetricsBlock({ block }: { block: Of<'metrics'> }) {
+  const { sources } = useNoteContext();
   return (
     <Box
       sx={{
@@ -146,8 +144,15 @@ export function MetricsBlock({ block }: { block: Of<'metrics'> }) {
               <NoteInlines nodes={item.note} />
             </Box>
           )}
+          <MetricSource note={item.note} sources={sources} />
         </Panel>
       ))}
     </Box>
   );
+}
+
+/** The figure's first cited source, as a chip under it (none when the figure cites nothing). */
+function MetricSource({ note, sources }: { note: NoteInline[]; sources: NoteSource[] }) {
+  const source = firstSource(note, sources);
+  return source ? <SourceChip source={source} /> : null;
 }

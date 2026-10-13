@@ -9,7 +9,7 @@ import { alpha } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { NoteBlock } from '../types';
-import { downText, MONO, upText } from '../ui';
+import { MONO } from '../ui';
 
 type Of<T extends NoteBlock['type']> = Extract<NoteBlock, { type: T }>;
 
@@ -481,19 +481,18 @@ export function BridgeBlock({ block }: { block: Of<'bridge'> }) {
             >
               <Box
                 component="span"
-                sx={(t) => ({
+                sx={{
                   ...MONO,
                   fontSize: 12,
                   textAlign: 'center',
                   mb: 0.5,
-                  color: b.isTotal ? 'text.primary' : b.value >= 0 ? upText(t) : downText(t),
-                })}
+                  color: b.isTotal || b.value >= 0 ? 'text.primary' : 'text.secondary',
+                }}
               >
                 {b.isTotal ? fmt(b.value) : `${b.value >= 0 ? '+' : '−'}${fmt(Math.abs(b.value))}`}
               </Box>
               <Box
                 sx={(t) => {
-                  const tone = b.value >= 0 ? t.palette.success.main : t.palette.error.main;
                   return {
                     height: Math.max(2, ((b.to - b.from) / max) * H),
                     mb: `${(b.from / max) * H}px`,
@@ -501,7 +500,11 @@ export function BridgeBlock({ block }: { block: Of<'bridge'> }) {
                     boxSizing: 'border-box',
                     ...(b.isTotal
                       ? { bgcolor: last ? 'text.primary' : 'text.secondary' }
-                      : { bgcolor: alpha(tone, 0.32), border: `1px solid ${alpha(tone, 0.6)}` }),
+                      : // A step up is filled, a step down is an outline: the sign reads by shape and
+                        // by its label, never by hue (a bridge is a company fact, not money moving).
+                        b.value >= 0
+                        ? { bgcolor: alpha(t.palette.text.secondary, 0.55) }
+                        : { border: `1.5px solid ${alpha(t.palette.text.secondary, 0.85)}` }),
                   };
                 }}
               />

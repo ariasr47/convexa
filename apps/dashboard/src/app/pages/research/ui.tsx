@@ -10,6 +10,7 @@ import type { SxProps, Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
 import type { ElementType, ReactNode } from 'react';
 import { formatShortDate } from './format';
+import { type NoteSource, sourceChip } from './provenance';
 import type { Freshness } from './types';
 
 export const DISPLAY = {
@@ -17,9 +18,6 @@ export const DISPLAY = {
   fontStretch: typographyTokens.displayFontStretch,
 } as const;
 export const MONO = MONO_FACE;
-
-/** Direction as text (words, figures, arrows): the shared text-grade helpers. */
-export { downText, upText } from '@/shared/theme/tokens';
 
 export const PANEL_SX = {
   bgcolor: 'background.paper',
@@ -224,6 +222,47 @@ export function FreshnessLine({
         {STATE_WORD[freshness.state]}
       </Box>
       {detail && <span>· {detail}</span>}
+    </Box>
+  );
+}
+
+/** Where a figure came from, one tap from the source. A primary source (a filing, or a document the
+ *  company published) has a solid border; anything else is dotted. On a touch screen the tap target
+ *  grows past the chip without changing its look. */
+export function SourceChip({ source }: { source: NoteSource }) {
+  const chip = sourceChip(source);
+  return (
+    <Box
+      component="a"
+      href={chip.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={source.label}
+      sx={(t) => ({
+        ...MONO,
+        position: 'relative',
+        alignSelf: 'flex-start',
+        display: 'inline-flex',
+        alignItems: 'center',
+        height: 22,
+        px: 1,
+        borderRadius: '999px',
+        border: `1px ${chip.primary ? 'solid' : 'dotted'} ${alpha(t.palette.text.secondary, chip.primary ? 0.3 : 0.55)}`,
+        fontSize: 11,
+        color: chip.primary ? 'text.primary' : 'text.secondary',
+        textDecoration: 'none',
+        whiteSpace: 'nowrap',
+        transition: 'border-color 160ms ease-out, background-color 160ms ease-out',
+        '&:hover': {
+          borderColor: alpha(t.palette.text.secondary, 0.55),
+          bgcolor: alpha(t.palette.text.primary, 0.05),
+        },
+        '@media (pointer: coarse)': {
+          '&::after': { content: '""', position: 'absolute', inset: '-11px -4px' },
+        },
+      })}
+    >
+      {chip.text}
     </Box>
   );
 }

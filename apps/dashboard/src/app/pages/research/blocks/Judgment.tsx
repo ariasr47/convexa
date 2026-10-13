@@ -5,7 +5,7 @@ import type { Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
 import { NoteInlines } from '../Inlines';
 import type { NoteBlock } from '../types';
-import { downText, HEAD_ROW_SX, MONO, Panel, PANEL_SX, upText, YourCall } from '../ui';
+import { HEAD_ROW_SX, MONO, Panel, PANEL_SX, YourCall } from '../ui';
 
 type Of<T extends NoteBlock['type']> = Extract<NoteBlock, { type: T }>;
 
@@ -118,17 +118,24 @@ export function VariantBlock({ block }: { block: Of<'variant'> }) {
   );
 }
 
-const STATUS: Record<
-  'ok' | 'watch' | 'broken',
-  { word: string; tone: (t: Theme) => string; text: (t: Theme) => string }
-> = {
-  ok: { word: '✓ On track', tone: (t) => t.palette.success.main, text: upText },
+// A status is a glyph, a word and a weight, never a hue: green and red are reserved for money moving
+// (canon Banned: green/red on status chips). Broken is the loudest, as a solid fill.
+const STATUS: Record<'ok' | 'watch' | 'broken', { word: string; sx: (t: Theme) => object }> = {
+  ok: {
+    word: '✓ On track',
+    sx: (t) => ({
+      color: t.palette.text.primary,
+      boxShadow: `inset 0 0 0 1px ${alpha(t.palette.text.secondary, 0.45)}`,
+    }),
+  },
   watch: {
     word: '! Watch',
-    tone: (t) => t.palette.text.primary,
-    text: (t) => t.palette.text.primary,
+    sx: (t) => ({ color: t.palette.text.primary, bgcolor: alpha(t.palette.text.secondary, 0.18) }),
   },
-  broken: { word: '✕ Broken', tone: (t) => t.palette.error.main, text: downText },
+  broken: {
+    word: '✕ Broken',
+    sx: (t) => ({ color: t.palette.background.default, bgcolor: t.palette.text.primary }),
+  },
 };
 
 export function StatusPill({ status }: { status: 'ok' | 'watch' | 'broken' }) {
@@ -143,11 +150,7 @@ export function StatusPill({ status }: { status: 'ok' | 'watch' | 'broken' }) {
         fontSize: 12,
         fontWeight: 600,
         whiteSpace: 'nowrap',
-        color: STATUS[status].text(t),
-        bgcolor: alpha(
-          status === 'watch' ? t.palette.text.secondary : STATUS[status].tone(t),
-          status === 'watch' ? 0.18 : 0.12,
-        ),
+        ...STATUS[status].sx(t),
       })}
     >
       {STATUS[status].word}
@@ -251,20 +254,17 @@ function CaseSide({ side, items }: { side: 'for' | 'against'; items: Of<'case'>[
         <Box
           component="span"
           aria-hidden
-          sx={(t) => {
-            const tone = isFor ? t.palette.success.main : t.palette.error.main;
-            return {
-              width: 28,
-              height: 28,
-              borderRadius: '50%',
-              bgcolor: alpha(tone, 0.14),
-              color: isFor ? upText(t) : downText(t),
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 13,
-            };
-          }}
+          sx={(t) => ({
+            width: 28,
+            height: 28,
+            borderRadius: '50%',
+            bgcolor: alpha(t.palette.text.secondary, 0.16),
+            color: 'text.primary',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 13,
+          })}
         >
           {isFor ? '▲' : '▼'}
         </Box>
@@ -286,13 +286,17 @@ function CaseSide({ side, items }: { side: 'for' | 'against'; items: Of<'case'>[
           <Box
             component="span"
             aria-hidden
-            sx={{
+            sx={(t) => ({
               width: 8,
               height: 8,
               mt: '8px',
               borderRadius: '50%',
-              bgcolor: isFor ? 'success.main' : 'error.main',
-            }}
+              boxSizing: 'border-box',
+              // For is a filled dot, against a ring: the side reads by shape, never by hue.
+              ...(isFor
+                ? { bgcolor: 'text.primary' }
+                : { border: `1.5px solid ${t.palette.text.secondary}` }),
+            })}
           />
           <span>
             <Box component="span" sx={strong}>

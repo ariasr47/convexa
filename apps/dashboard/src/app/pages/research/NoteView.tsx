@@ -672,7 +672,7 @@ export function NoteView({
   const active = useActiveSection(ids);
   let partNumber = 0;
   return (
-    <NoteContext.Provider value={{ today, freshness: f, valuation }}>
+    <NoteContext.Provider value={{ today, freshness: f, valuation, sources: note.sources }}>
       <Box
         component="article"
         aria-labelledby="note-title"
