@@ -20,10 +20,12 @@ import Box from '@mui/material/Box';
  *  `pages/scanner/ScanCard.tsx` — no shared util exists yet, so this follows that convention). */
 const visuallyHidden = {
   position: 'absolute',
-  width: 1,
-  height: 1,
+  // '1px' strings: in MUI sx a bare width/height <= 1 is a percentage (1 -> '100%') and a bare
+  // margin is spacing units (-1 -> -8px), which made this hidden label a full-width box.
+  width: '1px',
+  height: '1px',
   p: 0,
-  m: -1,
+  m: '-1px',
   overflow: 'hidden',
   clip: 'rect(0 0 0 0)',
   whiteSpace: 'nowrap',
