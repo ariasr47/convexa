@@ -96,6 +96,8 @@ fn dummy_config(store: PathBuf) -> api_rust::Config {
         max_live_subscribers: 0,
         workspace_root: PathBuf::from("."),
         market_data_mode: api_rust::config::MarketDataMode::Live,
+        public_data: api_rust::config::PublicDataMode::Off,
+        sec_user_agent: None,
     }
 }
 

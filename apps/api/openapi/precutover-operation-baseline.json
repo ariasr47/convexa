@@ -16,7 +16,7 @@
       "npm run api:contract:baseline:candidate -- --source-revision e1e0be78ccf90922bee411c7dc1e5471940dbce5 --out .tmp/api-contract-baseline-candidate.json"
     ],
     "captured_at_utc": "2026-08-22T15:14:08.503Z",
-    "operation_count": 57
+    "operation_count": 60
   },
   "operations": [
     {
@@ -178,6 +178,18 @@
     {
       "method": "GET",
       "path": "/api/prices"
+    },
+    {
+      "method": "GET",
+      "path": "/api/public-data/filings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/public-data/markets"
+    },
+    {
+      "method": "GET",
+      "path": "/api/public-data/tickers/{ticker}"
     },
     {
       "method": "POST",

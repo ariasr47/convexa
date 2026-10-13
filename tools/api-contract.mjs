@@ -208,6 +208,7 @@ function preferredHttpStatus(key, operation) {
   const has = (status) => statuses.includes(status);
   const [method, path] = key.split(' ');
   if (has(409) && /google\/start/.test(path)) return 409;
+  if (has(200) && path.startsWith('/api/public-data/')) return 200;
   if (has(307)) return 307;
   if (has(400) && path.includes('/contract/')) return 400;
   if (has(404) && path.includes('/market-data')) return 404;
@@ -561,8 +562,8 @@ function baseline() {
   if (
     value.schema_version !== 1 ||
     value.baseline_id !== 'api-contract-generation-precutover' ||
-    pairs.length !== 57 ||
-    new Set(keys).size !== 57 ||
+    pairs.length !== 60 ||
+    new Set(keys).size !== 60 ||
     !/^[0-9a-f]{40}$/i.test(value.source?.revision ?? '') ||
     !/^[0-9a-f]{64}$/i.test(value.source?.router_sha256 ?? '') ||
     value.capture?.parser !== 'rust-axum-route-registration-v1' ||
@@ -1244,6 +1245,7 @@ function routeSourceModule(path) {
   if (path.startsWith('/api/contract')) return 'apps/api/src/routes/contract.rs';
   if (path.startsWith('/api/price')) return 'apps/api/src/routes/price.rs';
   if (path.startsWith('/api/prices')) return 'apps/api/src/routes/price.rs';
+  if (path.startsWith('/api/public-data')) return 'apps/api/src/routes/public_data.rs';
   if (
     path.startsWith('/api/market-data') ||
     path.startsWith('/api/signals') ||
@@ -1277,6 +1279,9 @@ function routeResponseType(path) {
   if (path.startsWith('/api/contract')) return 'ContractResponse';
   if (path.startsWith('/api/price')) return 'PriceHttpResponse';
   if (path.startsWith('/api/prices')) return 'PricesHttpResponse';
+  if (path === '/api/public-data/markets') return 'PublicMarketsResponse';
+  if (path === '/api/public-data/filings') return 'PublicFilingsResponse';
+  if (path.startsWith('/api/public-data/tickers')) return 'PublicTickerResponse';
   if (path.startsWith('/api/ticker')) return 'TickerResponse';
   if (path.startsWith('/api/stream')) return 'StreamResponse';
   if (path.startsWith('/api/recommendation')) return 'RecommendationResponse';
@@ -1315,6 +1320,8 @@ function sourceRegistryTarget(path) {
     return 'apps/api/src/routes/stream.rs::contract_representative_response';
   if (path.startsWith('/api/price') || path === '/api/prices')
     return 'apps/api/src/routes/price.rs::contract_representative_for';
+  if (path.startsWith('/api/public-data/'))
+    return 'apps/api/src/routes/public_data.rs::contract_representative_for';
   if (path.startsWith('/api/contract'))
     return 'apps/api/src/routes/contract.rs::contract_representative_for';
   if (path.startsWith('/api/candidates'))
@@ -2028,7 +2035,7 @@ function install(bytes) {
     throw error;
   }
 }
-export function validateRegistrationPairs(source, expectedCount = 57) {
+export function validateRegistrationPairs(source, expectedCount = 60) {
   const records = [
     ...source.matchAll(/(?:contract_route|add)!\(\s*([A-Za-z0-9_:]+)\s*,\s*([A-Za-z0-9_:]+)\s*\)/g),
   ]

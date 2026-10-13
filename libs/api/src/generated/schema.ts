@@ -584,6 +584,57 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/public-data/filings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Recent SEC filings for a list of tickers. */
+    get: operations['get_public_filings'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/public-data/markets': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Treasury yields and futures positioning. */
+    get: operations['get_public_markets'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/public-data/tickers/{ticker}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Short data, insider activity, headline facts and recent filings for one ticker. */
+    get: operations['get_public_ticker'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/recommendation/export/{ticker}': {
     parameters: {
       query?: never;
@@ -1274,6 +1325,12 @@ export interface components {
       /** Format: double */
       off_exchange_price: number;
     };
+    DatedValueWire: {
+      /** @description YYYY-MM-DD */
+      as_of: string;
+      /** Format: double */
+      value: number;
+    };
     DealerFlowCharmWire: {
       /** Format: int32 */
       horizon_days: number;
@@ -1344,6 +1401,44 @@ export interface components {
       source: string;
       state: string;
     };
+    /**
+     * @description One reported XBRL value. `concept` is a stable key (Revenue, GrossProfit,
+     *     OperatingIncomeLoss, NetIncomeLoss, EarningsPerShareDiluted,
+     *     CashAndCashEquivalentsAtCarryingValue); `prior_*` is the same concept's previous period of the
+     *     same length (or the previous balance-sheet date).
+     */
+    FactWire: {
+      concept: string;
+      label: string;
+      period_end: string;
+      prior_period_end: string | null;
+      /** Format: double */
+      prior_value: number | null;
+      unit: string;
+      /** Format: double */
+      value: number;
+    };
+    /**
+     * @description What a filing is about, from its form type and 8-K items.
+     * @enum {string}
+     */
+    FilingKind: 'results' | 'periodic' | 'financing' | 'ownership' | 'other';
+    /** @description One SEC filing. `url` is the filing's primary document on the SEC archive. */
+    FilingWire: {
+      accession: string;
+      /** @description Ten-digit, zero-padded SEC CIK. */
+      cik: string;
+      description: string | null;
+      /** @description YYYY-MM-DD */
+      filed: string;
+      form: string;
+      /** @description 8-K item numbers, e.g. "2.02". */
+      items: string[];
+      kind: components['schemas']['FilingKind'];
+      report_date: string | null;
+      ticker: string;
+      url: string;
+    };
     FlatFilesErrorBody: {
       detail: string;
       error: string;
@@ -1402,6 +1497,23 @@ export interface components {
       composition?: null | components['schemas']['DivergenceCompositionWire'];
       flow_basis: string;
       location?: null | components['schemas']['DivergenceLocationWire'];
+    };
+    FuturesMarketWire: {
+      asset_managers: components['schemas']['PositionGroupWire'];
+      /** @description CFTC contract market code. */
+      code: string;
+      exchange: string;
+      leveraged_funds: components['schemas']['PositionGroupWire'];
+      name: string;
+    };
+    /** @description CFTC Traders in Financial Futures positioning for index and Treasury futures. */
+    FuturesWire: {
+      /** @description RFC 3339 UTC: when this server fetched the data. */
+      fetched_at: string;
+      markets: components['schemas']['FuturesMarketWire'][];
+      /** @description YYYY-MM-DD of the newest weekly report. */
+      report_date: string;
+      source: string;
     };
     GexProfileShapeWire: {
       /** Format: double */
@@ -1515,6 +1627,30 @@ export interface components {
       service: string;
       status: string;
       warm: components['schemas']['HealthWarm'];
+    };
+    /**
+     * @description Form 4 open-market activity over the last `window_days`: `sales`/`buys` count transactions
+     *     coded S/P, `planned` counts those in filings marked as made under a Rule 10b5-1 plan.
+     */
+    InsidersWire: {
+      /** Format: int32 */
+      buys: number;
+      detail: string | null;
+      /** Format: int32 */
+      filings: number;
+      /** @description YYYY-MM-DD of the newest Form 4 in the window. */
+      latest: string | null;
+      /** Format: int32 */
+      planned: number;
+      /** Format: int32 */
+      sales: number;
+      /** Format: double */
+      shares_bought: number;
+      /** Format: double */
+      shares_sold: number;
+      state: components['schemas']['PublicDataState'];
+      /** Format: int32 */
+      window_days: number;
     };
     IvRankReadWire: {
       advisory_note: string;
@@ -1974,6 +2110,14 @@ export interface components {
       /** Format: double */
       value: number;
     };
+    /** @description One of the latest two 10-Q/10-K/20-F/40-F filings and the headline facts it reported. */
+    PeriodicFilingWire: {
+      accession: string;
+      facts: components['schemas']['FactWire'][];
+      filed: string;
+      form: string;
+      period_end: string | null;
+    };
     PersonaWire: {
       builtin: boolean;
       dte_pref?: string | null;
@@ -1985,6 +2129,29 @@ export interface components {
       risk?: string | null;
       /** Format: int32 */
       version: number;
+    };
+    /**
+     * @description Net position (long minus short, contracts) of one trader group, ranked against three years of
+     *     weekly reports. `position_in_range` = (net − min) / (max − min), 0.5 when the range is flat.
+     */
+    PositionGroupWire: {
+      /** Format: int64 */
+      max_3y: number;
+      /** Format: int64 */
+      median_3y: number;
+      /** Format: int64 */
+      min_3y: number;
+      /** Format: int64 */
+      net: number;
+      /** Format: double */
+      position_in_range: number;
+      /** Format: int64 */
+      week_change: number;
+      /**
+       * Format: int32
+       * @description Weekly reports in the three-year window.
+       */
+      weeks: number;
     };
     PriceWire: {
       /** Format: double */
@@ -2006,6 +2173,61 @@ export interface components {
       prices: {
         [key: string]: components['schemas']['PriceWire'];
       };
+    };
+    /**
+     * @description How an answer, or one part of it, came to be.
+     * @enum {string}
+     */
+    PublicDataState: 'live' | 'off' | 'not_configured' | 'unavailable';
+    /**
+     * @description `GET /api/public-data/filings`: filings of the last 90 days for the named tickers, newest
+     *     first (insider Forms 3, 4, 5 and 144 excluded). `missing` lists tickers SEC does not know.
+     */
+    PublicFilingsWire: {
+      /** @description RFC 3339 UTC: when the oldest of the filing lists used was fetched. */
+      checked_at: string | null;
+      detail: string | null;
+      filings: components['schemas']['FilingWire'][];
+      missing: string[];
+      state: components['schemas']['PublicDataState'];
+    };
+    /** @description `GET /api/public-data/markets`. Each part is null when its source failed with nothing cached. */
+    PublicMarketsWire: {
+      detail: string | null;
+      futures: null | components['schemas']['FuturesWire'];
+      rates: null | components['schemas']['RatesWire'];
+      state: components['schemas']['PublicDataState'];
+    };
+    /**
+     * @description `GET /api/public-data/tickers/{ticker}`. FINRA parts are null when FINRA has nothing for the
+     *     ticker or failed with nothing cached; SEC parts carry their own state.
+     */
+    PublicTickerWire: {
+      detail: string | null;
+      filings: components['schemas']['FilingWire'][];
+      filings_detail: string | null;
+      filings_state: components['schemas']['PublicDataState'];
+      insiders: null | components['schemas']['InsidersWire'];
+      periodic: components['schemas']['PeriodicFilingWire'][];
+      shares_outstanding: null | components['schemas']['DatedValueWire'];
+      short_interest: null | components['schemas']['ShortInterestWire'];
+      short_volume: null | components['schemas']['ShortVolumeWire'];
+      state: components['schemas']['PublicDataState'];
+      ticker: string;
+    };
+    /**
+     * @description Treasury yields. `latest` is the newest day with a 10-year yield; `year_ago` the last such day
+     *     on or before one year earlier; `daily` every published day of the last 400, oldest first.
+     */
+    RatesWire: {
+      /** @description YYYY-MM-DD of `latest`. */
+      as_of: string;
+      daily: components['schemas']['YieldPointWire'][];
+      /** @description RFC 3339 UTC: when this server fetched the data. */
+      fetched_at: string;
+      latest: components['schemas']['YieldPointWire'];
+      source: string;
+      year_ago: null | components['schemas']['YieldPointWire'];
     };
     /** @enum {string} */
     RecBiasSchema: 'long' | 'short' | 'neutral' | 'volatility';
@@ -2423,6 +2645,45 @@ export interface components {
       per_trade_cap?: null | components['schemas']['PerTradeCapBody'];
       theme?: string | null;
     };
+    SettlementPointWire: {
+      /** @description YYYY-MM-DD */
+      settlement_date: string;
+      /** Format: double */
+      shares_short: number;
+    };
+    /**
+     * @description FINRA consolidated short interest at the latest settlement, with the last 12 settlements
+     *     (oldest first, the latest included).
+     */
+    ShortInterestWire: {
+      /** Format: double */
+      average_daily_volume: number | null;
+      /** Format: double */
+      change_percent: number | null;
+      /** Format: double */
+      days_to_cover: number | null;
+      history: components['schemas']['SettlementPointWire'][];
+      settlement_date: string;
+      /** Format: double */
+      shares_short: number;
+    };
+    /**
+     * @description FINRA daily short-sale volume on the latest day found; `ratio` = short / total (0..1);
+     *     `avg_ratio` = mean daily ratio over `days` (at most 20 trading days).
+     */
+    ShortVolumeWire: {
+      /** Format: double */
+      avg_ratio: number;
+      date: string;
+      /** Format: int32 */
+      days: number;
+      /** Format: double */
+      ratio: number;
+      /** Format: double */
+      short_volume: number;
+      /** Format: double */
+      total_volume: number;
+    };
     SignupBody: {
       display_name?: string | null;
       email: string;
@@ -2806,6 +3067,26 @@ export interface components {
     WireError: {
       error: string;
       message: string;
+    };
+    /** @description One day of constant-maturity Treasury yields, in percent. Null where not published. */
+    YieldPointWire: {
+      /** @description YYYY-MM-DD */
+      date: string;
+      /**
+       * Format: double
+       * @description 10-year TIPS (real) yield.
+       */
+      real10y: number | null;
+      /** Format: double */
+      t10y: number | null;
+      /** Format: double */
+      t2y: number | null;
+      /** Format: double */
+      t30y: number | null;
+      /** Format: double */
+      t3m: number | null;
+      /** Format: double */
+      t5y: number | null;
     };
   };
   responses: never;
@@ -4403,6 +4684,159 @@ export interface operations {
         };
         content: {
           'text/plain': components['schemas']['WireError'];
+        };
+      };
+      /** @description not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AppErrorBody'];
+        };
+      };
+      /** @description validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AppErrorBody'];
+        };
+      };
+      /** @description internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AppErrorBody'];
+        };
+      };
+      /** @description upstream provider failed */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AppErrorBody'];
+        };
+      };
+      /** @description service unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AppErrorBody'];
+        };
+      };
+    };
+  };
+  get_public_filings: {
+    parameters: {
+      query?: {
+        /** @description Comma-separated tickers, at most 30 (A-Z, '.', '-'). Absent: an empty list. */
+        tickers?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PublicFilingsWire'];
+        };
+      };
+      /** @description not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AppErrorBody'];
+        };
+      };
+      /** @description validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AppErrorBody'];
+        };
+      };
+      /** @description internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AppErrorBody'];
+        };
+      };
+      /** @description upstream provider failed */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AppErrorBody'];
+        };
+      };
+      /** @description service unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AppErrorBody'];
+        };
+      };
+    };
+  };
+  get_public_markets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PublicMarketsWire'];
+        };
+      };
+    };
+  };
+  get_public_ticker: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Ticker symbol (A-Z, '.', '-') */
+        ticker: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PublicTickerWire'];
         };
       };
       /** @description not found */

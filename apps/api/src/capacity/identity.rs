@@ -26,26 +26,31 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // `schema.ts`/`parity-coverage.json`/manifest descendants) — still zero new operations and zero
 // schema-shape changes, so `precutover-operation-baseline.json` again stays pinned to its prior
 // hash.
+//
+// Re-pinned for `public-data` (2026-10-13): three new public operations
+// (`GET /api/public-data/markets`, `/filings`, `/tickers/{ticker}`) grow the operation baseline
+// 57→60 (hand-appended, as the 52→57 growth was) and add their wire schemas, so all five
+// artifacts move (ledger `route-growth-repins-api-artifact-oracle`).
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
-        "b92b276e1deb2e7b7113f350a65fd22d504dc0d7a88e247d50c371871302dec1",
+        "8607f825d4d90e36223dd1177b56f9c2213fed124f779aafcb76d3a2e1775434",
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "0db8ac36517b86ea499fa2ead7744cf9fa2d1c853cd0146cb0a32d33f625c776",
+        "1d9e58922b2431732434eca4f7af6277421049f97f59bc419b3f5c380213db2e",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "f896b4b7149e6777f0d00133f7c11b5dfbcf5eaf5594bf25420dce90c2be24d9",
+        "d7be2c8bc87f3a11b8bf3ef860e5f5991e11cf0a04e7c1cb081380fdcb252769",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "23525237c3ee3ba8d04825aba2f87ea23095c0efc7fe8dc0b63c40d91f62f07a",
+        "e08ac4fc8af7ef93e37e2a3d8201e8185344e7bfdaaab4cbb0868b9b3df17375",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "0886aa4be25c8e93e801a363bd25dc2b1fad317df9509d730ebf31e25516dcb3",
+        "a73b22b493f2402296d860f71707e52f5d6013be057350879feb647326c338d1",
     ),
 ];
 

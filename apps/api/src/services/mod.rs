@@ -15,6 +15,7 @@ pub mod llm;
 pub mod llm_catalog;
 pub mod market_data;
 pub mod price_stream;
+pub mod public_data;
 pub mod rec_inputs;
 pub mod recommendation;
 pub mod research;

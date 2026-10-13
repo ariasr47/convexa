@@ -13,6 +13,7 @@ mod demo;
 mod health;
 pub(crate) mod market;
 mod price;
+mod public_data;
 mod recommendation;
 mod research_chain_snapshots;
 mod research_flat_files;
@@ -129,6 +130,18 @@ pub fn contract_router() -> Result<ContractRouter<AppState>, ContractGraphError>
         candidates::__path_get_candidates
     );
     add!(market::get_personas, market::__path_get_personas);
+    add!(
+        public_data::get_public_markets,
+        public_data::__path_get_public_markets
+    );
+    add!(
+        public_data::get_public_filings,
+        public_data::__path_get_public_filings
+    );
+    add!(
+        public_data::get_public_ticker,
+        public_data::__path_get_public_ticker
+    );
     add!(auth::session_status, auth::__path_session_status);
     add!(auth::signup, auth::__path_signup);
     add!(auth::login, auth::__path_login);
@@ -303,6 +316,11 @@ pub fn response_conversion_registry(boundary_id: &str) -> Option<Response> {
             "/api/price/{ticker}" | "/api/prices" => {
                 Some(price::contract_representative_for(status, boundary_id))
             }
+            "/api/public-data/markets"
+            | "/api/public-data/filings"
+            | "/api/public-data/tickers/{ticker}" => Some(
+                public_data::contract_representative_for(status, boundary_id),
+            ),
             "/api/contract/{ticker}" => {
                 Some(contract::contract_representative_for(status, boundary_id))
             }
@@ -357,6 +375,11 @@ pub fn response_conversion_registry_source_target(boundary_id: &str) -> Option<&
         "/api/book" => "apps/api/src/routes/book.rs::contract_representative_response",
         "/api/price/{ticker}" | "/api/prices" => {
             "apps/api/src/routes/price.rs::contract_representative_for"
+        }
+        "/api/public-data/markets"
+        | "/api/public-data/filings"
+        | "/api/public-data/tickers/{ticker}" => {
+            "apps/api/src/routes/public_data.rs::contract_representative_for"
         }
         "/api/contract/{ticker}" => "apps/api/src/routes/contract.rs::contract_representative_for",
         "/api/candidates/{ticker}" => {
@@ -1209,6 +1232,84 @@ const RESPONSE_CONVERSION_SOURCES: &[(&str, &str, u16, bool)] = &[
         false,
     ),
     (
+        "GET /api/public-data/filings 200 application/json public",
+        "application/json",
+        200,
+        false,
+    ),
+    (
+        "GET /api/public-data/filings 404 application/json public",
+        "application/json",
+        404,
+        false,
+    ),
+    (
+        "GET /api/public-data/filings 422 application/json public",
+        "application/json",
+        422,
+        false,
+    ),
+    (
+        "GET /api/public-data/filings 500 application/json public",
+        "application/json",
+        500,
+        false,
+    ),
+    (
+        "GET /api/public-data/filings 502 application/json public",
+        "application/json",
+        502,
+        false,
+    ),
+    (
+        "GET /api/public-data/filings 503 application/json public",
+        "application/json",
+        503,
+        false,
+    ),
+    (
+        "GET /api/public-data/markets 200 application/json public",
+        "application/json",
+        200,
+        false,
+    ),
+    (
+        "GET /api/public-data/tickers/{ticker} 200 application/json public",
+        "application/json",
+        200,
+        false,
+    ),
+    (
+        "GET /api/public-data/tickers/{ticker} 404 application/json public",
+        "application/json",
+        404,
+        false,
+    ),
+    (
+        "GET /api/public-data/tickers/{ticker} 422 application/json public",
+        "application/json",
+        422,
+        false,
+    ),
+    (
+        "GET /api/public-data/tickers/{ticker} 500 application/json public",
+        "application/json",
+        500,
+        false,
+    ),
+    (
+        "GET /api/public-data/tickers/{ticker} 502 application/json public",
+        "application/json",
+        502,
+        false,
+    ),
+    (
+        "GET /api/public-data/tickers/{ticker} 503 application/json public",
+        "application/json",
+        503,
+        false,
+    ),
+    (
         "POST /api/recommendation/{ticker} 200 application/json session",
         "application/json",
         200,
@@ -1761,6 +1862,24 @@ fn register_route_schemas(mut document: OpenApi) -> OpenApi {
     schema!(market::PersonaWire);
     schema!(price::PriceWire);
     schema!(price::PricesWire);
+    schema!(public_data::PublicDataState);
+    schema!(public_data::FilingKind);
+    schema!(public_data::PublicMarketsWire);
+    schema!(public_data::RatesWire);
+    schema!(public_data::YieldPointWire);
+    schema!(public_data::FuturesWire);
+    schema!(public_data::FuturesMarketWire);
+    schema!(public_data::PositionGroupWire);
+    schema!(public_data::PublicFilingsWire);
+    schema!(public_data::FilingWire);
+    schema!(public_data::PublicTickerWire);
+    schema!(public_data::ShortInterestWire);
+    schema!(public_data::SettlementPointWire);
+    schema!(public_data::ShortVolumeWire);
+    schema!(public_data::InsidersWire);
+    schema!(public_data::DatedValueWire);
+    schema!(public_data::PeriodicFilingWire);
+    schema!(public_data::FactWire);
     schema!(recommendation::RecommendationBody);
     schema!(recommendation::OpenPositionsBody);
     schema!(recommendation::OpenPositionsUnderlyingBody);

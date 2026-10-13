@@ -1299,6 +1299,20 @@
         "required": ["off_exchange_price", "coincides_with", "level"],
         "type": "object"
       },
+      "DatedValueWire": {
+        "properties": {
+          "as_of": {
+            "description": "YYYY-MM-DD",
+            "type": "string"
+          },
+          "value": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": ["value", "as_of"],
+        "type": "object"
+      },
       "DealerFlowCharmWire": {
         "properties": {
           "horizon_days": {
@@ -1496,6 +1510,103 @@
           }
         },
         "required": ["source", "state"],
+        "type": "object"
+      },
+      "FactWire": {
+        "description": "One reported XBRL value. `concept` is a stable key (Revenue, GrossProfit,\nOperatingIncomeLoss, NetIncomeLoss, EarningsPerShareDiluted,\nCashAndCashEquivalentsAtCarryingValue); `prior_*` is the same concept's previous period of the\nsame length (or the previous balance-sheet date).",
+        "properties": {
+          "concept": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "period_end": {
+            "type": "string"
+          },
+          "prior_period_end": {
+            "type": ["string", "null"]
+          },
+          "prior_value": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "unit": {
+            "type": "string"
+          },
+          "value": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "concept",
+          "label",
+          "value",
+          "unit",
+          "period_end",
+          "prior_value",
+          "prior_period_end"
+        ],
+        "type": "object"
+      },
+      "FilingKind": {
+        "description": "What a filing is about, from its form type and 8-K items.",
+        "enum": ["results", "periodic", "financing", "ownership", "other"],
+        "type": "string"
+      },
+      "FilingWire": {
+        "description": "One SEC filing. `url` is the filing's primary document on the SEC archive.",
+        "properties": {
+          "accession": {
+            "type": "string"
+          },
+          "cik": {
+            "description": "Ten-digit, zero-padded SEC CIK.",
+            "type": "string"
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "filed": {
+            "description": "YYYY-MM-DD",
+            "type": "string"
+          },
+          "form": {
+            "type": "string"
+          },
+          "items": {
+            "description": "8-K item numbers, e.g. \"2.02\".",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FilingKind"
+          },
+          "report_date": {
+            "type": ["string", "null"]
+          },
+          "ticker": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticker",
+          "cik",
+          "accession",
+          "form",
+          "items",
+          "filed",
+          "report_date",
+          "description",
+          "url",
+          "kind"
+        ],
         "type": "object"
       },
       "FlatFilesErrorBody": {
@@ -1725,6 +1836,52 @@
           }
         },
         "required": ["flow_basis"],
+        "type": "object"
+      },
+      "FuturesMarketWire": {
+        "properties": {
+          "asset_managers": {
+            "$ref": "#/components/schemas/PositionGroupWire"
+          },
+          "code": {
+            "description": "CFTC contract market code.",
+            "type": "string"
+          },
+          "exchange": {
+            "type": "string"
+          },
+          "leveraged_funds": {
+            "$ref": "#/components/schemas/PositionGroupWire"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["code", "name", "exchange", "asset_managers", "leveraged_funds"],
+        "type": "object"
+      },
+      "FuturesWire": {
+        "description": "CFTC Traders in Financial Futures positioning for index and Treasury futures.",
+        "properties": {
+          "fetched_at": {
+            "description": "RFC 3339 UTC: when this server fetched the data.",
+            "type": "string"
+          },
+          "markets": {
+            "items": {
+              "$ref": "#/components/schemas/FuturesMarketWire"
+            },
+            "type": "array"
+          },
+          "report_date": {
+            "description": "YYYY-MM-DD of the newest weekly report.",
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": ["source", "report_date", "fetched_at", "markets"],
         "type": "object"
       },
       "GexProfileShapeWire": {
@@ -2096,6 +2253,67 @@
           "warm",
           "gex_cache",
           "market_data"
+        ],
+        "type": "object"
+      },
+      "InsidersWire": {
+        "description": "Form 4 open-market activity over the last `window_days`: `sales`/`buys` count transactions\ncoded S/P, `planned` counts those in filings marked as made under a Rule 10b5-1 plan.",
+        "properties": {
+          "buys": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "detail": {
+            "type": ["string", "null"]
+          },
+          "filings": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "latest": {
+            "description": "YYYY-MM-DD of the newest Form 4 in the window.",
+            "type": ["string", "null"]
+          },
+          "planned": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sales": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "shares_bought": {
+            "format": "double",
+            "type": "number"
+          },
+          "shares_sold": {
+            "format": "double",
+            "type": "number"
+          },
+          "state": {
+            "$ref": "#/components/schemas/PublicDataState"
+          },
+          "window_days": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "state",
+          "detail",
+          "window_days",
+          "filings",
+          "sales",
+          "buys",
+          "shares_sold",
+          "shares_bought",
+          "planned",
+          "latest"
         ],
         "type": "object"
       },
@@ -3517,6 +3735,31 @@
         "required": ["value", "unit"],
         "type": "object"
       },
+      "PeriodicFilingWire": {
+        "description": "One of the latest two 10-Q/10-K/20-F/40-F filings and the headline facts it reported.",
+        "properties": {
+          "accession": {
+            "type": "string"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/FactWire"
+            },
+            "type": "array"
+          },
+          "filed": {
+            "type": "string"
+          },
+          "form": {
+            "type": "string"
+          },
+          "period_end": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["accession", "form", "filed", "period_end", "facts"],
+        "type": "object"
+      },
       "PersonaWire": {
         "properties": {
           "builtin": {
@@ -3549,6 +3792,51 @@
           }
         },
         "required": ["id", "name", "builtin", "version"],
+        "type": "object"
+      },
+      "PositionGroupWire": {
+        "description": "Net position (long minus short, contracts) of one trader group, ranked against three years of\nweekly reports. `position_in_range` = (net − min) / (max − min), 0.5 when the range is flat.",
+        "properties": {
+          "max_3y": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "median_3y": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "min_3y": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "net": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "position_in_range": {
+            "format": "double",
+            "type": "number"
+          },
+          "week_change": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "weeks": {
+            "description": "Weekly reports in the three-year window.",
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "net",
+          "week_change",
+          "min_3y",
+          "max_3y",
+          "median_3y",
+          "position_in_range",
+          "weeks"
+        ],
         "type": "object"
       },
       "PriceWire": {
@@ -3605,6 +3893,196 @@
           }
         },
         "required": ["prices", "missing", "cache"],
+        "type": "object"
+      },
+      "PublicDataState": {
+        "description": "How an answer, or one part of it, came to be.",
+        "enum": ["live", "off", "not_configured", "unavailable"],
+        "type": "string"
+      },
+      "PublicFilingsWire": {
+        "description": "`GET /api/public-data/filings`: filings of the last 90 days for the named tickers, newest\nfirst (insider Forms 3, 4, 5 and 144 excluded). `missing` lists tickers SEC does not know.",
+        "properties": {
+          "checked_at": {
+            "description": "RFC 3339 UTC: when the oldest of the filing lists used was fetched.",
+            "type": ["string", "null"]
+          },
+          "detail": {
+            "type": ["string", "null"]
+          },
+          "filings": {
+            "items": {
+              "$ref": "#/components/schemas/FilingWire"
+            },
+            "type": "array"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "state": {
+            "$ref": "#/components/schemas/PublicDataState"
+          }
+        },
+        "required": ["state", "detail", "checked_at", "filings", "missing"],
+        "type": "object"
+      },
+      "PublicMarketsWire": {
+        "description": "`GET /api/public-data/markets`. Each part is null when its source failed with nothing cached.",
+        "properties": {
+          "detail": {
+            "type": ["string", "null"]
+          },
+          "futures": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FuturesWire"
+              }
+            ]
+          },
+          "rates": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RatesWire"
+              }
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/PublicDataState"
+          }
+        },
+        "required": ["state", "detail", "rates", "futures"],
+        "type": "object"
+      },
+      "PublicTickerWire": {
+        "description": "`GET /api/public-data/tickers/{ticker}`. FINRA parts are null when FINRA has nothing for the\nticker or failed with nothing cached; SEC parts carry their own state.",
+        "properties": {
+          "detail": {
+            "type": ["string", "null"]
+          },
+          "filings": {
+            "items": {
+              "$ref": "#/components/schemas/FilingWire"
+            },
+            "type": "array"
+          },
+          "filings_detail": {
+            "type": ["string", "null"]
+          },
+          "filings_state": {
+            "$ref": "#/components/schemas/PublicDataState"
+          },
+          "insiders": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/InsidersWire"
+              }
+            ]
+          },
+          "periodic": {
+            "items": {
+              "$ref": "#/components/schemas/PeriodicFilingWire"
+            },
+            "type": "array"
+          },
+          "shares_outstanding": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DatedValueWire"
+              }
+            ]
+          },
+          "short_interest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShortInterestWire"
+              }
+            ]
+          },
+          "short_volume": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShortVolumeWire"
+              }
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/PublicDataState"
+          },
+          "ticker": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticker",
+          "state",
+          "detail",
+          "short_interest",
+          "short_volume",
+          "insiders",
+          "shares_outstanding",
+          "periodic",
+          "filings",
+          "filings_state",
+          "filings_detail"
+        ],
+        "type": "object"
+      },
+      "RatesWire": {
+        "description": "Treasury yields. `latest` is the newest day with a 10-year yield; `year_ago` the last such day\non or before one year earlier; `daily` every published day of the last 400, oldest first.",
+        "properties": {
+          "as_of": {
+            "description": "YYYY-MM-DD of `latest`.",
+            "type": "string"
+          },
+          "daily": {
+            "items": {
+              "$ref": "#/components/schemas/YieldPointWire"
+            },
+            "type": "array"
+          },
+          "fetched_at": {
+            "description": "RFC 3339 UTC: when this server fetched the data.",
+            "type": "string"
+          },
+          "latest": {
+            "$ref": "#/components/schemas/YieldPointWire"
+          },
+          "source": {
+            "type": "string"
+          },
+          "year_ago": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/YieldPointWire"
+              }
+            ]
+          }
+        },
+        "required": ["source", "as_of", "fetched_at", "latest", "year_ago", "daily"],
         "type": "object"
       },
       "RecBiasSchema": {
@@ -5054,6 +5532,90 @@
         },
         "type": "object"
       },
+      "SettlementPointWire": {
+        "properties": {
+          "settlement_date": {
+            "description": "YYYY-MM-DD",
+            "type": "string"
+          },
+          "shares_short": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": ["settlement_date", "shares_short"],
+        "type": "object"
+      },
+      "ShortInterestWire": {
+        "description": "FINRA consolidated short interest at the latest settlement, with the last 12 settlements\n(oldest first, the latest included).",
+        "properties": {
+          "average_daily_volume": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "change_percent": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "days_to_cover": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/SettlementPointWire"
+            },
+            "type": "array"
+          },
+          "settlement_date": {
+            "type": "string"
+          },
+          "shares_short": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "settlement_date",
+          "shares_short",
+          "days_to_cover",
+          "change_percent",
+          "average_daily_volume",
+          "history"
+        ],
+        "type": "object"
+      },
+      "ShortVolumeWire": {
+        "description": "FINRA daily short-sale volume on the latest day found; `ratio` = short / total (0..1);\n`avg_ratio` = mean daily ratio over `days` (at most 20 trading days).",
+        "properties": {
+          "avg_ratio": {
+            "format": "double",
+            "type": "number"
+          },
+          "date": {
+            "type": "string"
+          },
+          "days": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "ratio": {
+            "format": "double",
+            "type": "number"
+          },
+          "short_volume": {
+            "format": "double",
+            "type": "number"
+          },
+          "total_volume": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": ["date", "short_volume", "total_volume", "ratio", "avg_ratio", "days"],
+        "type": "object"
+      },
       "SignupBody": {
         "properties": {
           "display_name": {
@@ -6242,6 +6804,42 @@
           }
         },
         "required": ["error", "message"],
+        "type": "object"
+      },
+      "YieldPointWire": {
+        "description": "One day of constant-maturity Treasury yields, in percent. Null where not published.",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD",
+            "type": "string"
+          },
+          "real10y": {
+            "description": "10-year TIPS (real) yield.",
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "t10y": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "t2y": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "t30y": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "t3m": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "t5y": {
+            "format": "double",
+            "type": ["number", "null"]
+          }
+        },
+        "required": ["date", "t3m", "t2y", "t5y", "t10y", "t30y", "real10y"],
         "type": "object"
       }
     },
@@ -8602,6 +9200,191 @@
         },
         "security": [],
         "summary": "`GET /api/prices?symbols=SPY,QQQ` — batch warm read; missing symbols listed separately.",
+        "x-convexa-security": "public",
+        "x-convexa-surface": "json"
+      }
+    },
+    "/api/public-data/filings": {
+      "get": {
+        "operationId": "get_public_filings",
+        "parameters": [
+          {
+            "description": "Comma-separated tickers, at most 30 (A-Z, '.', '-'). Absent: an empty list.",
+            "in": "query",
+            "name": "tickers",
+            "required": false,
+            "schema": {
+              "type": ["string", "null"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicFilingsWire"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppErrorBody"
+                }
+              }
+            },
+            "description": "not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppErrorBody"
+                }
+              }
+            },
+            "description": "validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppErrorBody"
+                }
+              }
+            },
+            "description": "internal server error"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppErrorBody"
+                }
+              }
+            },
+            "description": "upstream provider failed"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppErrorBody"
+                }
+              }
+            },
+            "description": "service unavailable"
+          }
+        },
+        "security": [],
+        "summary": "Recent SEC filings for a list of tickers.",
+        "x-convexa-security": "public",
+        "x-convexa-surface": "json"
+      }
+    },
+    "/api/public-data/markets": {
+      "get": {
+        "operationId": "get_public_markets",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicMarketsWire"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [],
+        "summary": "Treasury yields and futures positioning.",
+        "x-convexa-security": "public",
+        "x-convexa-surface": "json"
+      }
+    },
+    "/api/public-data/tickers/{ticker}": {
+      "get": {
+        "operationId": "get_public_ticker",
+        "parameters": [
+          {
+            "description": "Ticker symbol (A-Z, '.', '-')",
+            "in": "path",
+            "name": "ticker",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicTickerWire"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppErrorBody"
+                }
+              }
+            },
+            "description": "not found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppErrorBody"
+                }
+              }
+            },
+            "description": "validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppErrorBody"
+                }
+              }
+            },
+            "description": "internal server error"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppErrorBody"
+                }
+              }
+            },
+            "description": "upstream provider failed"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppErrorBody"
+                }
+              }
+            },
+            "description": "service unavailable"
+          }
+        },
+        "security": [],
+        "summary": "Short data, insider activity, headline facts and recent filings for one ticker.",
         "x-convexa-security": "public",
         "x-convexa-surface": "json"
       }

@@ -2581,7 +2581,7 @@
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/RecommendationBody"
+        "$ref": "#/components/schemas/PublicFilingsWire"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -2592,15 +2592,15 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "POST /api/recommendation/{ticker}",
-      "security_mode": "session",
+      "operation": "GET /api/public-data/filings",
+      "security_mode": "public",
       "status": "200"
     },
     "boundary_evidence_135": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/WireError"
+        "$ref": "#/components/schemas/AppErrorBody"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -2611,15 +2611,15 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "POST /api/recommendation/{ticker}",
-      "security_mode": "session",
-      "status": "403"
+      "operation": "GET /api/public-data/filings",
+      "security_mode": "public",
+      "status": "404"
     },
     "boundary_evidence_136": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/WireError"
+        "$ref": "#/components/schemas/AppErrorBody"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -2630,15 +2630,15 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "POST /api/recommendation/{ticker}",
-      "security_mode": "session",
-      "status": "404"
+      "operation": "GET /api/public-data/filings",
+      "security_mode": "public",
+      "status": "422"
     },
     "boundary_evidence_137": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/WireError"
+        "$ref": "#/components/schemas/AppErrorBody"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -2649,15 +2649,15 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "POST /api/recommendation/{ticker}",
-      "security_mode": "session",
-      "status": "422"
+      "operation": "GET /api/public-data/filings",
+      "security_mode": "public",
+      "status": "500"
     },
     "boundary_evidence_138": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/WireError"
+        "$ref": "#/components/schemas/AppErrorBody"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -2668,15 +2668,15 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "POST /api/recommendation/{ticker}",
-      "security_mode": "session",
+      "operation": "GET /api/public-data/filings",
+      "security_mode": "public",
       "status": "502"
     },
     "boundary_evidence_139": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/WireError"
+        "$ref": "#/components/schemas/AppErrorBody"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -2687,15 +2687,15 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "POST /api/recommendation/{ticker}",
-      "security_mode": "session",
+      "operation": "GET /api/public-data/filings",
+      "security_mode": "public",
       "status": "503"
     },
     "boundary_evidence_140": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/RecommendationBody"
+        "$ref": "#/components/schemas/PublicMarketsWire"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -2706,15 +2706,15 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
+      "operation": "GET /api/public-data/markets",
+      "security_mode": "public",
       "status": "200"
     },
     "boundary_evidence_141": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
-        "$ref": "#/components/schemas/WireError"
+        "$ref": "#/components/schemas/PublicTickerWire"
       },
       "body_valid": true,
       "effect_assertion": {
@@ -2725,9 +2725,9 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
-      "status": "403"
+      "operation": "GET /api/public-data/tickers/{ticker}",
+      "security_mode": "public",
+      "status": "200"
     },
     "boundary_evidence_142": {
       "body_category": "json",
@@ -2744,8 +2744,8 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
-      "operation": "GET /api/recommendation/export/{ticker}",
-      "security_mode": "optional-session",
+      "operation": "GET /api/public-data/tickers/{ticker}",
+      "security_mode": "public",
       "status": "404"
     },
     "boundary_evidence_143": {
@@ -2763,11 +2763,258 @@
       "header_names": [],
       "header_value_policies": {},
       "media_type": "application/json",
+      "operation": "GET /api/public-data/tickers/{ticker}",
+      "security_mode": "public",
+      "status": "422"
+    },
+    "boundary_evidence_144": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/public-data/tickers/{ticker}",
+      "security_mode": "public",
+      "status": "500"
+    },
+    "boundary_evidence_145": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/public-data/tickers/{ticker}",
+      "security_mode": "public",
+      "status": "502"
+    },
+    "boundary_evidence_146": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/public-data/tickers/{ticker}",
+      "security_mode": "public",
+      "status": "503"
+    },
+    "boundary_evidence_147": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/RecommendationBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "POST /api/recommendation/{ticker}",
+      "security_mode": "session",
+      "status": "200"
+    },
+    "boundary_evidence_148": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/WireError"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "POST /api/recommendation/{ticker}",
+      "security_mode": "session",
+      "status": "403"
+    },
+    "boundary_evidence_149": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/WireError"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "POST /api/recommendation/{ticker}",
+      "security_mode": "session",
+      "status": "404"
+    },
+    "boundary_evidence_150": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/WireError"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "POST /api/recommendation/{ticker}",
+      "security_mode": "session",
+      "status": "422"
+    },
+    "boundary_evidence_151": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/WireError"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "POST /api/recommendation/{ticker}",
+      "security_mode": "session",
+      "status": "502"
+    },
+    "boundary_evidence_152": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/WireError"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "POST /api/recommendation/{ticker}",
+      "security_mode": "session",
+      "status": "503"
+    },
+    "boundary_evidence_153": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/RecommendationBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/recommendation/export/{ticker}",
+      "security_mode": "optional-session",
+      "status": "200"
+    },
+    "boundary_evidence_154": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/WireError"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/recommendation/export/{ticker}",
+      "security_mode": "optional-session",
+      "status": "403"
+    },
+    "boundary_evidence_155": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
+      "operation": "GET /api/recommendation/export/{ticker}",
+      "security_mode": "optional-session",
+      "status": "404"
+    },
+    "boundary_evidence_156": {
+      "body_category": "json",
+      "body_meaning": "json",
+      "body_schema": {
+        "$ref": "#/components/schemas/AppErrorBody"
+      },
+      "body_valid": true,
+      "effect_assertion": {
+        "cookie": "none",
+        "durable": "none",
+        "memory": "none"
+      },
+      "header_names": [],
+      "header_value_policies": {},
+      "media_type": "application/json",
       "operation": "GET /api/recommendation/export/{ticker}",
       "security_mode": "optional-session",
       "status": "422"
     },
-    "boundary_evidence_144": {
+    "boundary_evidence_157": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2786,7 +3033,7 @@
       "security_mode": "optional-session",
       "status": "500"
     },
-    "boundary_evidence_145": {
+    "boundary_evidence_158": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2805,7 +3052,7 @@
       "security_mode": "optional-session",
       "status": "502"
     },
-    "boundary_evidence_146": {
+    "boundary_evidence_159": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2824,7 +3071,7 @@
       "security_mode": "optional-session",
       "status": "503"
     },
-    "boundary_evidence_147": {
+    "boundary_evidence_160": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2843,7 +3090,7 @@
       "security_mode": "optional-session",
       "status": "200"
     },
-    "boundary_evidence_148": {
+    "boundary_evidence_161": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2862,7 +3109,7 @@
       "security_mode": "optional-session",
       "status": "403"
     },
-    "boundary_evidence_149": {
+    "boundary_evidence_162": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2881,7 +3128,7 @@
       "security_mode": "optional-session",
       "status": "404"
     },
-    "boundary_evidence_150": {
+    "boundary_evidence_163": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2900,7 +3147,7 @@
       "security_mode": "optional-session",
       "status": "422"
     },
-    "boundary_evidence_151": {
+    "boundary_evidence_164": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2919,7 +3166,7 @@
       "security_mode": "optional-session",
       "status": "500"
     },
-    "boundary_evidence_152": {
+    "boundary_evidence_165": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2938,7 +3185,7 @@
       "security_mode": "optional-session",
       "status": "502"
     },
-    "boundary_evidence_153": {
+    "boundary_evidence_166": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2957,7 +3204,7 @@
       "security_mode": "optional-session",
       "status": "503"
     },
-    "boundary_evidence_154": {
+    "boundary_evidence_167": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2976,7 +3223,7 @@
       "security_mode": "optional-session",
       "status": "200"
     },
-    "boundary_evidence_155": {
+    "boundary_evidence_168": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -2995,7 +3242,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_156": {
+    "boundary_evidence_169": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3014,7 +3261,7 @@
       "security_mode": "optional-session",
       "status": "200"
     },
-    "boundary_evidence_157": {
+    "boundary_evidence_170": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3033,7 +3280,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_158": {
+    "boundary_evidence_171": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3052,7 +3299,7 @@
       "security_mode": "optional-session",
       "status": "200"
     },
-    "boundary_evidence_159": {
+    "boundary_evidence_172": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3071,7 +3318,7 @@
       "security_mode": "session",
       "status": "200"
     },
-    "boundary_evidence_160": {
+    "boundary_evidence_173": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3090,7 +3337,7 @@
       "security_mode": "session",
       "status": "401"
     },
-    "boundary_evidence_161": {
+    "boundary_evidence_174": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3109,7 +3356,7 @@
       "security_mode": "session",
       "status": "403"
     },
-    "boundary_evidence_162": {
+    "boundary_evidence_175": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3128,7 +3375,7 @@
       "security_mode": "session",
       "status": "409"
     },
-    "boundary_evidence_163": {
+    "boundary_evidence_176": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3147,7 +3394,7 @@
       "security_mode": "session",
       "status": "422"
     },
-    "boundary_evidence_164": {
+    "boundary_evidence_177": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3166,7 +3413,7 @@
       "security_mode": "session",
       "status": "503"
     },
-    "boundary_evidence_165": {
+    "boundary_evidence_178": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3185,7 +3432,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_166": {
+    "boundary_evidence_179": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3204,7 +3451,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_167": {
+    "boundary_evidence_180": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3223,7 +3470,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_168": {
+    "boundary_evidence_181": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3242,7 +3489,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_169": {
+    "boundary_evidence_182": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3261,7 +3508,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_170": {
+    "boundary_evidence_183": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3280,7 +3527,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_171": {
+    "boundary_evidence_184": {
       "body_category": "sse",
       "body_meaning": "sse",
       "body_schema": {
@@ -3303,7 +3550,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_172": {
+    "boundary_evidence_185": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3322,7 +3569,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_173": {
+    "boundary_evidence_186": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3341,7 +3588,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_174": {
+    "boundary_evidence_187": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3360,7 +3607,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_175": {
+    "boundary_evidence_188": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3379,7 +3626,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_176": {
+    "boundary_evidence_189": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3402,7 +3649,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_177": {
+    "boundary_evidence_190": {
       "body_category": "sse",
       "body_meaning": "sse",
       "body_schema": {
@@ -3425,7 +3672,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_178": {
+    "boundary_evidence_191": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3444,7 +3691,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_179": {
+    "boundary_evidence_192": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3463,7 +3710,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_180": {
+    "boundary_evidence_193": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3482,7 +3729,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_181": {
+    "boundary_evidence_194": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3501,7 +3748,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_182": {
+    "boundary_evidence_195": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3524,7 +3771,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_183": {
+    "boundary_evidence_196": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3543,7 +3790,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_184": {
+    "boundary_evidence_197": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3562,7 +3809,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_185": {
+    "boundary_evidence_198": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3581,7 +3828,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_186": {
+    "boundary_evidence_199": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3600,7 +3847,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_187": {
+    "boundary_evidence_200": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3619,7 +3866,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_188": {
+    "boundary_evidence_201": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3638,7 +3885,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_189": {
+    "boundary_evidence_202": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3657,7 +3904,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_190": {
+    "boundary_evidence_203": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3676,7 +3923,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_191": {
+    "boundary_evidence_204": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3695,7 +3942,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_192": {
+    "boundary_evidence_205": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3714,7 +3961,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_193": {
+    "boundary_evidence_206": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3733,7 +3980,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_194": {
+    "boundary_evidence_207": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3752,7 +3999,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_195": {
+    "boundary_evidence_208": {
       "body_category": "sse",
       "body_meaning": "sse",
       "body_schema": {
@@ -3777,7 +4024,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_196": {
+    "boundary_evidence_209": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3796,7 +4043,7 @@
       "security_mode": "public",
       "status": "404"
     },
-    "boundary_evidence_197": {
+    "boundary_evidence_210": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3815,7 +4062,7 @@
       "security_mode": "public",
       "status": "422"
     },
-    "boundary_evidence_198": {
+    "boundary_evidence_211": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3834,7 +4081,7 @@
       "security_mode": "public",
       "status": "500"
     },
-    "boundary_evidence_199": {
+    "boundary_evidence_212": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3853,7 +4100,7 @@
       "security_mode": "public",
       "status": "502"
     },
-    "boundary_evidence_200": {
+    "boundary_evidence_213": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {
@@ -3872,7 +4119,7 @@
       "security_mode": "public",
       "status": "503"
     },
-    "boundary_evidence_201": {
+    "boundary_evidence_214": {
       "body_category": "html",
       "body_meaning": "text",
       "body_schema": {
@@ -3891,7 +4138,7 @@
       "security_mode": "public",
       "status": "200"
     },
-    "boundary_evidence_202": {
+    "boundary_evidence_215": {
       "body_category": "json",
       "body_meaning": "json",
       "body_schema": {

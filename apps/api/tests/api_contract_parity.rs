@@ -426,7 +426,7 @@ fn every_persisted_boundary_has_explicit_route_source_target() {
         .flat_map(|operation| operation["boundaries"].as_array().unwrap())
         .map(|boundary| boundary["boundary_id"].as_str().unwrap())
         .collect::<Vec<_>>();
-    assert_eq!(ids.len(), 203);
+    assert_eq!(ids.len(), 216);
     for id in ids {
         let target = api_rust::routes::response_conversion_registry_source_target(id)
             .unwrap_or_else(|| panic!("missing explicit route source target: {id}"));
@@ -659,6 +659,19 @@ declare_boundary_evidence_tests!(
     boundary_evidence_200,
     boundary_evidence_201,
     boundary_evidence_202,
+    boundary_evidence_203,
+    boundary_evidence_204,
+    boundary_evidence_205,
+    boundary_evidence_206,
+    boundary_evidence_207,
+    boundary_evidence_208,
+    boundary_evidence_209,
+    boundary_evidence_210,
+    boundary_evidence_211,
+    boundary_evidence_212,
+    boundary_evidence_213,
+    boundary_evidence_214,
+    boundary_evidence_215,
 );
 /// Exercise the actual Axum router returned by production `routes::router` for every ordinary
 /// operation.  This intentionally uses no handler/facade mocks: status and media are observed at
@@ -994,7 +1007,7 @@ async fn http_parity_harness_observes_all_operations() {
         }
     }
     assert!(
-        observed == 57,
+        observed == 60,
         "every material HTTP scenario must be exercised"
     );
     let resolved_after = state.auth.resolve_session(Some(session_value));

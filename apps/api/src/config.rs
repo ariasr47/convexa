@@ -119,6 +119,65 @@ pub struct Config {
     pub workspace_root: PathBuf,
     /// `live` (default) or `paused`. Read once at boot; no runtime toggle (SPEC B1).
     pub market_data_mode: MarketDataMode,
+    /// `PUBLIC_DATA`: `on` (default) or `off`. Off ⇒ the public-data routes never contact
+    /// FRED, CFTC, FINRA or SEC EDGAR and answer 200 with state `off`.
+    pub public_data: PublicDataMode,
+    /// `SEC_USER_AGENT`: the identifying User-Agent SEC EDGAR requires (owner-supplied, never
+    /// logged). `None` ⇒ the EDGAR-backed parts answer state `not_configured`.
+    pub sec_user_agent: Option<SecUserAgent>,
+}
+
+/// `PUBLIC_DATA`: `on` (default) or `off`. Read once at boot.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PublicDataMode {
+    On,
+    Off,
+}
+
+impl PublicDataMode {
+    pub fn is_on(self) -> bool {
+        matches!(self, Self::On)
+    }
+
+    fn from_env() -> Result<Self, AppError> {
+        Self::from_raw(env::var("PUBLIC_DATA").ok().as_deref())
+    }
+
+    /// Env-free core of [`from_env`]. `None` = unset (default `on`).
+    fn from_raw(raw: Option<&str>) -> Result<Self, AppError> {
+        match raw {
+            None => Ok(Self::On),
+            Some(v) if v.trim().eq_ignore_ascii_case("on") => Ok(Self::On),
+            Some(v) if v.trim().eq_ignore_ascii_case("off") => Ok(Self::Off),
+            Some(v) => Err(AppError::Config(format!(
+                "PUBLIC_DATA must be 'on' or 'off', got {v:?}"
+            ))),
+        }
+    }
+}
+
+/// The SEC EDGAR User-Agent. It identifies the owner (it carries a contact address), so its
+/// `Debug` form is redacted: a `{config:?}` in a log line must never print it.
+#[derive(Clone, PartialEq, Eq)]
+pub struct SecUserAgent(String);
+
+impl SecUserAgent {
+    /// Trimmed value; empty ⇒ `None`.
+    pub fn from_raw(raw: Option<&str>) -> Option<Self> {
+        raw.map(str::trim)
+            .filter(|v| !v.is_empty())
+            .map(|v| Self(v.to_string()))
+    }
+
+    pub fn expose(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Debug for SecUserAgent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("SecUserAgent(<redacted>)")
+    }
 }
 
 /// `MARKET_DATA_MODE`: `live` (default, unchanged behaviour, `MASSIVE_API_KEY` required) or
@@ -221,6 +280,8 @@ impl Config {
     pub fn from_env() -> AppResult<Self> {
         // Read once, before MASSIVE_API_KEY, so paused boots never require the vendor key.
         let market_data_mode = MarketDataMode::from_env()?;
+        let public_data = PublicDataMode::from_env()?;
+        let sec_user_agent = SecUserAgent::from_raw(env::var("SEC_USER_AGENT").ok().as_deref());
         let massive_api_key = if market_data_mode.is_live() {
             let key = env::var("MASSIVE_API_KEY").map_err(|_| {
                 AppError::Config("MASSIVE_API_KEY is not set (check apps/api/.env)".into())
@@ -501,6 +562,8 @@ impl Config {
             max_live_subscribers,
             workspace_root,
             market_data_mode,
+            public_data,
+            sec_user_agent,
         })
     }
 

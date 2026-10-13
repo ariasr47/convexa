@@ -1179,6 +1179,8 @@ mod tests {
             max_live_subscribers: 0,
             workspace_root: PathBuf::from("."),
             market_data_mode: crate::config::MarketDataMode::Live,
+            public_data: crate::config::PublicDataMode::Off,
+            sec_user_agent: None,
         }
     }
 

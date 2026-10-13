@@ -19,6 +19,7 @@ use crate::services::flight::GexFlight;
 use crate::services::iv_store::IvStore;
 use crate::services::live_capacity::{LifecycleProbe, LiveCapacity};
 use crate::services::market_data::MarketDataPort;
+use crate::services::public_data::PublicDataService;
 use crate::services::scanner::{load_universe, ScanStore, UniverseConfig};
 #[cfg(feature = "postgres")]
 use crate::services::session_chain_archive::body_store::FsBodyStore;
@@ -306,6 +307,8 @@ pub struct AppState {
     pub archive_coverage: ArchiveCoverageRuntime,
     /// `None` in production `construct`. `Some` only on `for_capacity_harness` / probe constructor.
     pub vendor_fixture: Option<Arc<crate::services::market_data::FixtureCatalog>>,
+    /// Public market and filing data (FRED, CFTC, FINRA, SEC EDGAR), cached server-side.
+    pub public_data: PublicDataService,
     /// Shared Postgres pool when durable stores are postgres-backed (book sync, etc.).
     #[cfg(feature = "postgres")]
     pub pg: Option<crate::db::postgres::Pg>,
@@ -604,6 +607,16 @@ impl AppState {
         } else {
             info!("public rate limit: disabled (PUBLIC_RATE_LIMIT_PER_MIN=0)");
         }
+        // Presence only: the SEC User-Agent carries the owner's contact and is never logged.
+        info!(
+            public_data = if config.public_data.is_on() {
+                "on"
+            } else {
+                "off"
+            },
+            sec_user_agent_set = config.sec_user_agent.is_some(),
+            "public data: FRED/CFTC/FINRA, SEC EDGAR when SEC_USER_AGENT is set"
+        );
 
         let chain_snapshots = open_chain_snapshot_store(&config, {
             #[cfg(feature = "postgres")]
@@ -646,6 +659,7 @@ impl AppState {
         let flat_files = open_flat_files_store(&config);
 
         let archive_coverage = ArchiveCoverageRuntime::production()?;
+        let public_data = PublicDataService::new(&config)?;
         let state = Self {
             config: Arc::new(config),
             prices,
@@ -673,6 +687,7 @@ impl AppState {
             ensure_gate: Arc::new(EnsureGate::new()),
             archive_coverage,
             vendor_fixture: None,
+            public_data,
             #[cfg(feature = "postgres")]
             pg,
         };
@@ -752,6 +767,7 @@ impl AppState {
             Utc::now().timestamp_nanos_opt().unwrap_or(0)
         ));
         let (stock_hub, stock_worker) = StockStreamHub::dormant(&test_stub_config());
+        let public_data = PublicDataService::new(&config)?;
         Ok(Self {
             config: Arc::new(config),
             prices,
@@ -779,6 +795,7 @@ impl AppState {
             ensure_gate: Arc::new(EnsureGate::new()),
             archive_coverage: ArchiveCoverageRuntime::production()?,
             vendor_fixture: None,
+            public_data,
             #[cfg(feature = "postgres")]
             pg: None,
         })
@@ -875,6 +892,7 @@ impl AppState {
         let (_unused_hub, stock_worker) = StockStreamHub::dormant(&config);
         let stock_worker = Arc::new(StockStreamWorkerStarter::new(stock_worker));
         // Intentionally never call stock_worker.start().
+        let public_data = PublicDataService::new(&config)?;
         Ok(Self {
             config: Arc::new(config),
             prices,
@@ -902,6 +920,7 @@ impl AppState {
             ensure_wake: EnsureWake::default(),
             ensure_gate: Arc::new(EnsureGate::new()),
             vendor_fixture: Some(catalog),
+            public_data,
             #[cfg(feature = "postgres")]
             pg: None,
         })
@@ -963,6 +982,7 @@ impl AppState {
         let (_unused_hub, stock_worker) = StockStreamHub::dormant(&config);
         let stock_worker = Arc::new(StockStreamWorkerStarter::new(stock_worker));
         // Intentionally never call stock_worker.start()
+        let public_data = PublicDataService::new(&config)?;
         Ok(Self {
             config: Arc::new(config),
             prices,
@@ -990,6 +1010,7 @@ impl AppState {
             ensure_wake: EnsureWake::default(),
             ensure_gate: Arc::new(EnsureGate::new()),
             vendor_fixture: None,
+            public_data,
             #[cfg(feature = "postgres")]
             pg: None,
         })
@@ -1102,6 +1123,8 @@ pub(crate) fn test_stub_config() -> Config {
         max_live_subscribers: 0,
         workspace_root: PathBuf::from("."),
         market_data_mode: crate::config::MarketDataMode::Live,
+        public_data: crate::config::PublicDataMode::Off,
+        sec_user_agent: None,
     }
 }
 
@@ -1638,6 +1661,8 @@ mod tests {
             max_live_subscribers: 0,
             workspace_root: PathBuf::from("."),
             market_data_mode: crate::config::MarketDataMode::Live,
+            public_data: crate::config::PublicDataMode::Off,
+            sec_user_agent: None,
         }
     }
 

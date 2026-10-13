@@ -50,6 +50,34 @@
         "samples": "array",
         "basis": "string"
       }
+    },
+    {
+      "id": "public_data_markets_envelope",
+      "method": "GET",
+      "path": "/api/public-data/markets",
+      "expect_status": 200,
+      "required": {
+        "state": "string"
+      }
+    },
+    {
+      "id": "public_data_filings_envelope",
+      "method": "GET",
+      "path": "/api/public-data/filings",
+      "expect_status": 200,
+      "required": {
+        "state": "string"
+      }
+    },
+    {
+      "id": "public_data_ticker_envelope",
+      "method": "GET",
+      "path": "/api/public-data/tickers/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "expect_status": 200,
+      "required": {
+        "state": "string"
+      }
     }
   ]
 }

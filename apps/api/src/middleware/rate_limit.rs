@@ -126,6 +126,7 @@ fn is_expensive(path: &str) -> bool {
         || path.starts_with("/api/contract")
         || path.starts_with("/api/price")
         || path.starts_with("/api/prices")
+        || path.starts_with("/api/public-data")
 }
 
 /// Credential-bearing POSTs that get their own per-IP budget.
