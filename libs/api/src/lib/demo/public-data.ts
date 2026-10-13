@@ -11,7 +11,7 @@ import type {
 
 /**
  * Demo answers for the public-data endpoints. Every figure here is authored for the demo — none
- * was fetched from FRED, CFTC, FINRA or SEC — and every answer says so in `detail` and `source`.
+ * was fetched from the U.S. Treasury, CFTC, FINRA or SEC — and every answer says so in `detail` and `source`.
  * Nothing in this module makes a request.
  */
 
@@ -153,7 +153,7 @@ export function demoPublicMarkets(): PublicMarkets {
     state: 'live',
     detail: SAMPLE,
     rates: {
-      source: 'Demo sample (shaped like Federal Reserve H.15 via FRED)',
+      source: 'Demo sample (shaped like U.S. Treasury daily par and real yield curves)',
       as_of: latest.date,
       fetched_at: DEMO_TIME,
       latest,

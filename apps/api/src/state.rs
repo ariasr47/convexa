@@ -307,7 +307,7 @@ pub struct AppState {
     pub archive_coverage: ArchiveCoverageRuntime,
     /// `None` in production `construct`. `Some` only on `for_capacity_harness` / probe constructor.
     pub vendor_fixture: Option<Arc<crate::services::market_data::FixtureCatalog>>,
-    /// Public market and filing data (FRED, CFTC, FINRA, SEC EDGAR), cached server-side.
+    /// Public market and filing data (Treasury, CFTC, FINRA, SEC EDGAR), cached server-side.
     pub public_data: PublicDataService,
     /// Shared Postgres pool when durable stores are postgres-backed (book sync, etc.).
     #[cfg(feature = "postgres")]
@@ -615,7 +615,7 @@ impl AppState {
                 "off"
             },
             sec_user_agent_set = config.sec_user_agent.is_some(),
-            "public data: FRED/CFTC/FINRA, SEC EDGAR when SEC_USER_AGENT is set"
+            "public data: Treasury/CFTC/FINRA, SEC EDGAR when SEC_USER_AGENT is set"
         );
 
         let chain_snapshots = open_chain_snapshot_store(&config, {

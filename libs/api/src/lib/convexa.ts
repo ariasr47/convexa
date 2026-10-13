@@ -2219,7 +2219,7 @@ export async function fetchPersonas(): Promise<PersonaDefinition[]> {
   return list;
 }
 
-// ---- Public data (FRED H.15 yields, CFTC TFF positioning, FINRA short data, SEC EDGAR) ---------
+// ---- Public data (Treasury yield curves, CFTC TFF positioning, FINRA short data, SEC EDGAR) ---
 // Read-only, anonymous, cached server-side. Every answer is 200 with a `state`
 // (`live` | `off` | `not_configured` | `unavailable`) and a human `detail`; a failing source
 // degrades to its last cached copy (with `detail` saying so) or to null parts — it never rejects.
@@ -2245,7 +2245,7 @@ export type PublicDatedValue = components['schemas']['DatedValueWire'];
 export type PublicPeriodicFiling = components['schemas']['PeriodicFilingWire'];
 export type PublicFact = components['schemas']['FactWire'];
 
-/** GET /api/public-data/markets — Treasury yields (H.15 via FRED) and CFTC futures positioning. */
+/** GET /api/public-data/markets — U.S. Treasury par/real yields and CFTC futures positioning. */
 export async function getPublicMarkets(): Promise<PublicMarkets> {
   const result = await http.GET('/api/public-data/markets');
   return dataOf(result, 'Public market data unavailable');

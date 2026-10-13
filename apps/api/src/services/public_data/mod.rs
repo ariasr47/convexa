@@ -1,4 +1,4 @@
-//! Public market and filing data from keyless public sources — FRED (H.15 yields), CFTC
+//! Public market and filing data from keyless public sources — U.S. Treasury (yield curves), CFTC
 //! (Traders in Financial Futures), FINRA (daily short volume, short interest) and SEC EDGAR
 //! (filings, Form 4, XBRL facts). Read-only, cached server-side, and never fatal: every answer
 //! carries a state, and a failing source degrades to its last good copy or to `unavailable`.
@@ -10,7 +10,7 @@ pub(crate) mod cftc;
 pub(crate) mod edgar;
 pub(crate) mod fetch;
 pub(crate) mod finra;
-pub(crate) mod fred;
+pub(crate) mod treasury;
 pub mod types;
 
 pub use types::*;
@@ -34,7 +34,7 @@ const MAX_TICKER_LEN: usize = 10;
 
 const HOUR: Duration = Duration::from_secs(3600);
 /// A source that fails is not asked again for this long. A hung source costs the request that
-/// asks it the full 20 s timeout (observed with FRED), so retries stay rare; the cached copies
+/// asks it the full 20 s timeout (observed live), so retries stay rare; the cached copies
 /// live for hours, so serving them a little longer costs nothing.
 const RETRY_AFTER_FAILURE: Duration = Duration::from_secs(600);
 const SEC_SPACING: Duration = Duration::from_millis(200);
@@ -172,7 +172,7 @@ impl PublicDataService {
             };
         }
         let (rates, futures) = tokio::join!(self.rates_lookup(), self.futures_lookup());
-        let notes: Vec<String> = [rates.note(fred::SOURCE), futures.note(cftc::SOURCE)]
+        let notes: Vec<String> = [rates.note(treasury::SOURCE), futures.note(cftc::SOURCE)]
             .into_iter()
             .flatten()
             .collect();
@@ -197,22 +197,44 @@ impl PublicDataService {
         }
     }
 
+    /// Both Treasury curves for every calendar year the 400-day window touches. The current
+    /// year's files must answer (else: last good copy, or unavailable); an earlier year's file
+    /// that fails only shortens `daily`.
     async fn rates_lookup(&self) -> Lookup<RatesSeries> {
         let http = &self.inner.http;
         self.inner
             .rates
             .get((), || async move {
-                let body = required(
-                    fred::SOURCE,
-                    http.get(fred::SOURCE, fred::CSV_URL, fred::MAX_BYTES, &[])
-                        .await?,
-                )?;
-                let text = String::from_utf8(body)
-                    .map_err(|_| FetchError::new(fred::SOURCE, "CSV is not UTF-8"))?;
-                let points = fred::parse_csv(&text)
-                    .map_err(|e| FetchError::new(fred::SOURCE, format!("parse: {e}")))?;
-                fred::build(&points)
-                    .ok_or_else(|| FetchError::new(fred::SOURCE, "no 10-year observations"))
+                let today = Utc::now()
+                    .with_timezone(&chrono_tz::America::New_York)
+                    .date_naive();
+                let years = treasury::years_for(today);
+                let current = years[0];
+                let requests = years.iter().flat_map(|&year| {
+                    [treasury::Curve::Nominal, treasury::Curve::Real].map(move |c| (year, c))
+                });
+                let answers =
+                    futures_util::future::join_all(requests.map(|(year, curve)| async move {
+                        (year, curve, curve_file(http, curve, year).await)
+                    }))
+                    .await;
+                let mut nominal = Vec::new();
+                let mut real = Vec::new();
+                for (year, curve, answer) in answers {
+                    match answer {
+                        Ok(rows) if curve == treasury::Curve::Nominal => nominal.push(rows),
+                        Ok(rows) => real.push(rows),
+                        Err(error) if year == current => return Err(error),
+                        Err(error) => tracing::warn!(
+                            source = error.source,
+                            kind = %error.kind,
+                            year,
+                            "earlier Treasury year unavailable; using the years that answered"
+                        ),
+                    }
+                }
+                treasury::build(&treasury::merge(&nominal, &real))
+                    .ok_or_else(|| FetchError::new(treasury::SOURCE, "no 10-year observations"))
             })
             .await
     }
@@ -683,6 +705,27 @@ impl SecPart {
             answered,
         }
     }
+}
+
+/// One Treasury curve file for one year (an empty body parses as no rows).
+async fn curve_file(
+    http: &Http,
+    curve: treasury::Curve,
+    year: i32,
+) -> Result<treasury::CurveRows, FetchError> {
+    let body = http
+        .get(
+            treasury::SOURCE,
+            &treasury::csv_url(curve, year),
+            treasury::MAX_BYTES,
+            &[],
+        )
+        .await?
+        .unwrap_or_default();
+    let text = String::from_utf8(body)
+        .map_err(|_| FetchError::new(treasury::SOURCE, "CSV is not UTF-8"))?;
+    treasury::parse_csv(curve, &text)
+        .map_err(|e| FetchError::new(treasury::SOURCE, format!("parse: {e}")))
 }
 
 fn required(source: &'static str, body: Option<Vec<u8>>) -> Result<Vec<u8>, FetchError> {

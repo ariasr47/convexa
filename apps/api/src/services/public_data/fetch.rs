@@ -5,7 +5,7 @@ use crate::error::{AppError, AppResult};
 use std::io::Read;
 use std::time::{Duration, Instant};
 
-/// Identifies this service to FRED, CFTC and FINRA.
+/// Identifies this service to the U.S. Treasury, CFTC and FINRA.
 pub(crate) const PUBLIC_USER_AGENT: &str = "convexa-api-rust/0.1 (public-data)";
 pub(crate) const REQUEST_TIMEOUT: Duration = Duration::from_secs(20);
 

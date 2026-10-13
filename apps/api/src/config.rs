@@ -120,7 +120,7 @@ pub struct Config {
     /// `live` (default) or `paused`. Read once at boot; no runtime toggle (SPEC B1).
     pub market_data_mode: MarketDataMode,
     /// `PUBLIC_DATA`: `on` (default) or `off`. Off ⇒ the public-data routes never contact
-    /// FRED, CFTC, FINRA or SEC EDGAR and answer 200 with state `off`.
+    /// the U.S. Treasury, CFTC, FINRA or SEC EDGAR and answer 200 with state `off`.
     pub public_data: PublicDataMode,
     /// `SEC_USER_AGENT`: the identifying User-Agent SEC EDGAR requires (owner-supplied, never
     /// logged). `None` ⇒ the EDGAR-backed parts answer state `not_configured`.

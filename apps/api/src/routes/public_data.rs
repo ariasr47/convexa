@@ -7,7 +7,7 @@
 
 use crate::error::AppError;
 use crate::services::public_data::{
-    self as service, cftc, fred, normalize_ticker, parse_ticker_list, DataState,
+    self as service, cftc, normalize_ticker, parse_ticker_list, treasury, DataState,
 };
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
@@ -187,7 +187,7 @@ impl From<service::Markets> for PublicMarketsWire {
             state: m.state.into(),
             detail: m.detail,
             rates: m.rates.map(|r| RatesWire {
-                source: fred::SOURCE_LABEL.into(),
+                source: treasury::SOURCE_LABEL.into(),
                 as_of: day(r.as_of),
                 fetched_at: instant(r.fetched_at),
                 latest: (&r.series.latest).into(),
@@ -589,7 +589,7 @@ fn representative_markets() -> PublicMarketsWire {
         state: PublicDataState::Live,
         detail: None,
         rates: Some(RatesWire {
-            source: fred::SOURCE_LABEL.into(),
+            source: treasury::SOURCE_LABEL.into(),
             as_of: "2026-10-09".into(),
             fetched_at: "2026-10-13T07:00:00Z".into(),
             latest: point.clone(),
