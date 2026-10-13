@@ -18,6 +18,7 @@ import {
 } from './catalog';
 import { computeIndicators } from './indicators';
 import { dataMode, demoStorageKey } from './mode';
+import { demoPublicData } from './public-data';
 import { canSimulatePaperAction, initializeDemoWorkspace } from './workspace';
 
 const json = (body: unknown, status = 200) =>
@@ -544,6 +545,8 @@ const supportedPath = (method: string, pathname: string): boolean => {
     ['POST', /^\/api\/recommendation\/[A-Z]+$/i],
     ['GET', /^\/api\/recommendation\/(status|export)\/[A-Z]+$/i],
     ['GET', /^\/api\/personas$/],
+    ['GET', /^\/api\/public-data\/(?:markets|filings)$/],
+    ['GET', /^\/api\/public-data\/tickers\/[^/]+$/],
     ['GET', /^\/api\/broker\/credential$/],
     ['PUT', /^\/api\/broker\/credential$/],
     ['DELETE', /^\/api\/broker\/credential$/],
@@ -979,6 +982,10 @@ export async function demoFetch(request: Request): Promise<Response> {
       'demo_unavailable',
       'This method and path are not part of the local demo contract.',
     );
+
+  const publicData = demoPublicData(pathname, url.searchParams);
+  if (publicData)
+    return publicData.ok ? json(publicData.body) : refused('demo_unsupported', publicData.detail);
 
   const tickerMatch = pathname.match(/^\/api\/(?:ticker|contract|candidates)\/([A-Z]+)$/i);
   if (

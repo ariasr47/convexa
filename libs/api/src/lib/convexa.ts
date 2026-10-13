@@ -2218,3 +2218,55 @@ export async function fetchPersonas(): Promise<PersonaDefinition[]> {
     throw new ApiError('Malformed personas payload', 200);
   return list;
 }
+
+// ---- Public data (FRED H.15 yields, CFTC TFF positioning, FINRA short data, SEC EDGAR) ---------
+// Read-only, anonymous, cached server-side. Every answer is 200 with a `state`
+// (`live` | `off` | `not_configured` | `unavailable`) and a human `detail`; a failing source
+// degrades to its last cached copy (with `detail` saying so) or to null parts — it never rejects.
+// These functions reject only on a transport fault, or 422 for a malformed ticker list/symbol.
+// Dates are YYYY-MM-DD; `fetched_at` / `checked_at` are RFC 3339 UTC.
+
+export type PublicDataState = components['schemas']['PublicDataState'];
+export type PublicFilingKind = components['schemas']['FilingKind'];
+export type PublicMarkets = components['schemas']['PublicMarketsWire'];
+export type PublicRates = components['schemas']['RatesWire'];
+export type PublicYieldPoint = components['schemas']['YieldPointWire'];
+export type PublicFutures = components['schemas']['FuturesWire'];
+export type PublicFuturesMarket = components['schemas']['FuturesMarketWire'];
+export type PublicPositionGroup = components['schemas']['PositionGroupWire'];
+export type PublicFilings = components['schemas']['PublicFilingsWire'];
+export type PublicFiling = components['schemas']['FilingWire'];
+export type PublicTicker = components['schemas']['PublicTickerWire'];
+export type PublicShortInterest = components['schemas']['ShortInterestWire'];
+export type PublicSettlementPoint = components['schemas']['SettlementPointWire'];
+export type PublicShortVolume = components['schemas']['ShortVolumeWire'];
+export type PublicInsiders = components['schemas']['InsidersWire'];
+export type PublicDatedValue = components['schemas']['DatedValueWire'];
+export type PublicPeriodicFiling = components['schemas']['PeriodicFilingWire'];
+export type PublicFact = components['schemas']['FactWire'];
+
+/** GET /api/public-data/markets — Treasury yields (H.15 via FRED) and CFTC futures positioning. */
+export async function getPublicMarkets(): Promise<PublicMarkets> {
+  const result = await http.GET('/api/public-data/markets');
+  return dataOf(result, 'Public market data unavailable');
+}
+
+/** GET /api/public-data/filings?tickers=… — SEC filings of the last 90 days for up to 30 tickers,
+ *  newest first. Tickers are trimmed, uppercased and de-duplicated here; more than 30 is a 422.
+ *  An empty list asks for nothing and answers an empty list. */
+export async function getPublicFilings(tickers: string[]): Promise<PublicFilings> {
+  const list = [...new Set(tickers.map((t) => t.trim().toUpperCase()).filter(Boolean))];
+  const result = await http.GET('/api/public-data/filings', {
+    params: { query: { tickers: list.length ? list.join(',') : undefined } },
+  });
+  return dataOf(result, 'Filings unavailable');
+}
+
+/** GET /api/public-data/tickers/{ticker} — short interest, short volume, Form 4 insider activity,
+ *  headline XBRL facts and recent filings for one ticker. */
+export async function getPublicTicker(ticker: string): Promise<PublicTicker> {
+  const result = await http.GET('/api/public-data/tickers/{ticker}', {
+    params: { path: { ticker: ticker.trim().toUpperCase() } },
+  });
+  return dataOf(result, 'Ticker public data unavailable');
+}
