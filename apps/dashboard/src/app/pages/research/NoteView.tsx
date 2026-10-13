@@ -649,18 +649,22 @@ export function NoteView({
   note,
   kind,
   latest,
+  filed = [],
 }: {
   note: ResearchNote;
   /** "Initiation · first note", "Update", … */
   kind: string;
   /** The ticker's newest note when this one is older; null when this is the newest. */
   latest: { slug: string; date: string } | null;
+  /** Results and quarterly filings made since the note that it doesn't cite: each makes it due. */
+  filed?: { date: string; label: string }[];
 }) {
   const today = useMemo(() => localToday(), []);
   const f = freshnessOf(note.aging, {
     today,
     superseded: latest !== null,
     notFollowingSince: note.notFollowingSince,
+    filed,
   });
   const blocks = allBlocks(note);
   const valuation =

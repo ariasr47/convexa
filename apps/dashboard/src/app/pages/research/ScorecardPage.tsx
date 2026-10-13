@@ -55,7 +55,14 @@ export function ScorecardPage() {
 
   return (
     <ResearchColumn>
-      <Box sx={{ display: 'grid', gap: 4, pt: { xs: 1, md: 2 } }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr)',
+          gap: 4,
+          pt: { xs: 1, md: 2 },
+        }}
+      >
         <ResearchTabs />
         <Box sx={{ display: 'grid', gap: 1.5 }}>
           <Box
@@ -281,8 +288,8 @@ function ForecastList({ title, hint, rows }: { title: string; hint: string; rows
         aria-live="polite"
         sx={{
           position: 'absolute',
-          width: 1,
-          height: 1,
+          width: '1px',
+          height: '1px',
           overflow: 'hidden',
           clip: 'rect(0 0 0 0)',
         }}

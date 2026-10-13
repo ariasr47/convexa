@@ -87,6 +87,12 @@ const ResearchIndexPage = lazy(() =>
 const ScorecardPage = lazy(() =>
   import('@/pages/research/ScorecardPage').then((m) => ({ default: m.ScorecardPage })),
 );
+const MarketsPage = lazy(() =>
+  import('@/pages/research/MarketsPage').then((m) => ({ default: m.MarketsPage })),
+);
+const FilingsPage = lazy(() =>
+  import('@/pages/research/FilingsPage').then((m) => ({ default: m.FilingsPage })),
+);
 const PositionsPage = lazy(() =>
   import('@/pages/positions/PositionsPage').then((m) => ({ default: m.PositionsPage })),
 );
@@ -232,6 +238,8 @@ export function AppRoutes() {
         <Route path="/ticker/:symbol/research/:slug" element={lazyRoute(<ResearchRoute />)} />
         {/* Research index — every ticker with published notes; public in both modes. */}
         <Route path="/research" element={lazyRoute(<ResearchIndexPage />)} />
+        <Route path="/research/markets" element={lazyRoute(<MarketsPage />)} />
+        <Route path="/research/filings" element={lazyRoute(<FilingsPage />)} />
         <Route path="/research/scorecard" element={lazyRoute(<ScorecardPage />)} />
         {/* OWNER LOCKDOWN 2026-08-06 — private testing. Positions + Scanner are behind a sign-in
             wall; Landing, /ticker/*, /blog and /settings stay PUBLIC by owner decision. The wall is

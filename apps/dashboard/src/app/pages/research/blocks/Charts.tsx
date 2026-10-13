@@ -7,9 +7,9 @@ import Box from '@mui/material/Box';
 import type { Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { useLayoutEffect, useRef, useState } from 'react';
 import type { NoteBlock } from '../types';
 import { MONO } from '../ui';
+import { useWidth } from '../useWidth';
 
 type Of<T extends NoteBlock['type']> = Extract<NoteBlock, { type: T }>;
 
@@ -28,23 +28,6 @@ function niceStep(max: number) {
 
 const HATCH = (t: Theme) =>
   `repeating-linear-gradient(135deg, ${alpha(t.palette.text.secondary, 0.7)} 0 6px, ${alpha(t.palette.text.secondary, 0.28)} 6px 12px)`;
-
-/** An element's rendered width: measured before the first paint, then tracked as it resizes. */
-function useWidth<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
-  const [width, setWidth] = useState(0);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    // ResizeObserver reports only while the page paints; measure now so the first frame is right.
-    setWidth(el.getBoundingClientRect().width);
-    if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-  return [ref, width] as const;
-}
 
 function Caption({ children }: { children: React.ReactNode }) {
   return (

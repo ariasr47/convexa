@@ -12,9 +12,13 @@ import Link from '@mui/material/Link';
 import Skeleton from '@mui/material/Skeleton';
 import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
+import { researchIndex } from 'virtual:convexa-research';
+import { filedSince } from './filings';
 import { formatNoteDate } from './format';
+import { NotePublicPanels } from './NotePublicPanels';
 import { useTickerNotes } from './notesData';
 import { NoteView } from './NoteView';
+import { usePublicTicker } from './publicData';
 import type { ResearchNote } from './types';
 import { Panel, StateDot } from './ui';
 
@@ -175,6 +179,8 @@ function OtherNotes({
 export function NotesView({ symbol, slug }: { symbol: string; slug?: string }) {
   const ticker = symbol.toUpperCase();
   const { state, retry } = useTickerNotes(ticker);
+  const pub = usePublicTicker(ticker);
+  const summary = researchIndex.find((r) => r.ticker === ticker)?.latest ?? null;
   return (
     <ResearchColumn>
       <TickerTabs ticker={ticker} />
@@ -232,11 +238,18 @@ export function NotesView({ symbol, slug }: { symbol: string; slug?: string }) {
             );
           const isLatest = shown === notes[0];
           const isFirst = shown === notes[notes.length - 1];
+          // Only the newest note reads today's filings and positioning; an older one is superseded.
+          const accessions = isLatest ? (summary?.accessions ?? []) : [];
+          const filed =
+            isLatest && pub.data
+              ? filedSince(pub.data.filings, { date: shown.date, accessions })
+              : [];
           return (
             <>
               <NoteView
                 key={shown.slug}
                 note={shown}
+                filed={filed}
                 kind={
                   isFirst
                     ? notes.length === 1
@@ -246,6 +259,15 @@ export function NotesView({ symbol, slug }: { symbol: string; slug?: string }) {
                 }
                 latest={isLatest ? null : { slug: notes[0].slug, date: notes[0].date }}
               />
+              {isLatest && (
+                <Box sx={{ mt: { xs: 4, md: 6 } }}>
+                  <NotePublicPanels
+                    ticker={ticker}
+                    read={pub}
+                    note={{ date: shown.date, accessions, aging: shown.aging }}
+                  />
+                </Box>
+              )}
               <OtherNotes notes={notes} shown={shown} ticker={ticker} />
             </>
           );

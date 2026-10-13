@@ -20,11 +20,15 @@ import {
 } from 'virtual:convexa-research';
 import { DeltaPill } from './blocks/Figures';
 import { PriceValueStrip } from './blocks/Valuation';
+import { filedSince } from './filings';
 import { formatNoteDate, labelWithAsOf, STANCE_LABEL, UNCERTAINTY_LABEL } from './format';
 import { RESEARCH_DISCLAIMER, ResearchColumn } from './NotesView';
+import { usePublicFilings } from './publicData';
 import { ResearchTabs } from './ResearchTabs';
 import type { Freshness, NoteStance, ResearchTickerSummary } from './types';
 import { DISPLAY, Eyebrow, FreshnessLine, MONO, Panel, PANEL_SX, Pill, YourCall } from './ui';
+
+const TICKERS = researchIndex.map((r) => r.ticker);
 
 const SAMPLE_SYMBOLS = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'NVDA', 'TSLA'];
 
@@ -331,13 +335,24 @@ export function ResearchIndexPage() {
   const [query, setQuery] = useState('');
   const [stance, setStance] = useState<StanceFilter>('all');
   const [fresh, setFresh] = useState<FreshFilter>('any');
+  // Filings since each note make it due too; without them (API off or down) dates alone decide.
+  const filings = usePublicFilings(TICKERS).data?.filings ?? null;
   const rows: Row[] = useMemo(
     () =>
       researchIndex.map((r) => ({
         ...r,
-        f: freshnessOf(r.latest.aging, { today, notFollowingSince: r.latest.notFollowingSince }),
+        f: freshnessOf(r.latest.aging, {
+          today,
+          notFollowingSince: r.latest.notFollowingSince,
+          filed: filings
+            ? filedSince(
+                filings.filter((x) => x.ticker === r.ticker),
+                r.latest,
+              )
+            : [],
+        }),
       })),
-    [today],
+    [today, filings],
   );
   const shown = rows.filter(
     (r) =>
@@ -375,7 +390,14 @@ export function ResearchIndexPage() {
 
   return (
     <ResearchColumn>
-      <Box sx={{ display: 'grid', gap: 4, pt: { xs: 1, md: 2 } }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr)',
+          gap: 4,
+          pt: { xs: 1, md: 2 },
+        }}
+      >
         <ResearchTabs />
         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '16px 32px' }}>
           <Box sx={{ flex: '999 1 480px', display: 'grid', gap: 1.25 }}>
@@ -413,8 +435,8 @@ export function ResearchIndexPage() {
                 htmlFor="research-find"
                 sx={{
                   position: 'absolute',
-                  width: 1,
-                  height: 1,
+                  width: '1px',
+                  height: '1px',
                   overflow: 'hidden',
                   clip: 'rect(0 0 0 0)',
                 }}
