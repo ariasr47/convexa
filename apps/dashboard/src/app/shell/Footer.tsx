@@ -27,6 +27,16 @@ export function Footer() {
           <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', rowGap: 0.5 }}>
             <Link
               component={RouterLink}
+              to="/research"
+              variant="caption"
+              underline="hover"
+              sx={{ color: 'text.secondary', width: 'fit-content' }}
+              data-testid="footer-research-link"
+            >
+              Research notes
+            </Link>
+            <Link
+              component={RouterLink}
               to="/methodology"
               variant="caption"
               underline="hover"

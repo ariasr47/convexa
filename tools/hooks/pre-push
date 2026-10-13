@@ -2,5 +2,7 @@
 # Pre-push: Nx lint and typecheck for the projects affected since the merge base with origin/main.
 # Install once per clone: git config core.hooksPath tools/hooks. Skip once: git push --no-verify.
 # The fuller local check (adds the affected tests) is `npm run verify`; CI runs everything on dispatch.
+# Research notes first: milliseconds, and a bad note would otherwise only fail the Pages build.
+node tools/research-notes/check.mjs || exit 1
 base=$(git merge-base HEAD origin/main 2>/dev/null || git rev-parse HEAD~1)
 NX_NO_CLOUD=true exec npx nx affected -t lint typecheck --base="$base"

@@ -72,6 +72,12 @@ const TechnicalAnalysisView = lazy(() =>
 const ResearchView = lazy(() =>
   import('@/pages/ticker/research/ResearchView').then((m) => ({ default: m.ResearchView })),
 );
+const NotesView = lazy(() =>
+  import('@/pages/research/NotesView').then((m) => ({ default: m.NotesView })),
+);
+const ResearchIndexPage = lazy(() =>
+  import('@/pages/research/ResearchIndexPage').then((m) => ({ default: m.ResearchIndexPage })),
+);
 const PositionsPage = lazy(() =>
   import('@/pages/positions/PositionsPage').then((m) => ({ default: m.PositionsPage })),
 );
@@ -143,9 +149,11 @@ function TechnicalAnalysisRoute() {
   return <TechnicalAnalysisView symbol={symbol} />;
 }
 
+/** Demo builds keep the authored sample note (its figures match the demo scenario); live builds show
+ *  the owner's published notes from research/<TICKER>/*.md, which need no market data. */
 function ResearchRoute() {
   const { symbol = '' } = useParams();
-  return <ResearchView symbol={symbol} />;
+  return dataMode === 'demo' ? <ResearchView symbol={symbol} /> : <NotesView symbol={symbol} />;
 }
 
 /** The route table only (ARCHITECTURE §1.2). Must render UNDER a Router + the auth/theme providers
@@ -196,6 +204,8 @@ export function AppRoutes() {
           element={lazyRoute(<TechnicalAnalysisRoute />)}
         />
         <Route path="/ticker/:symbol/research" element={lazyRoute(<ResearchRoute />)} />
+        {/* Research index — every ticker with published notes; public in both modes. */}
+        <Route path="/research" element={lazyRoute(<ResearchIndexPage />)} />
         {/* OWNER LOCKDOWN 2026-08-06 — private testing. Positions + Scanner are behind a sign-in
             wall; Landing, /ticker/*, /blog and /settings stay PUBLIC by owner decision. The wall is
             UX only — /api/scan* and the positions write gate refuse signed-out callers server-side

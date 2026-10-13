@@ -17,6 +17,7 @@
     "build:prod": "npm run build",
     "build:dashboard": "node tools/build-dashboard.mjs",
     "build:dashboard:demo": "node tools/build-dashboard.mjs --mode=demo",
+    "research:check": "node tools/research-notes/check.mjs",
     "build:api": "nx build api --configuration=production",
     "analyze:dashboard": "node tools/analyze-dashboard.mjs",
     "check:bundle": "node tools/check-dashboard-bundle.mjs",

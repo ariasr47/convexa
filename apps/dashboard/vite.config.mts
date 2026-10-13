@@ -5,6 +5,9 @@ import path from 'node:path';
 import { visualizer } from 'rollup-plugin-visualizer';
 import type { PluginOption } from 'vite';
 import { defineConfig } from 'vite';
+// Build tooling, not app source: the config loads the research-notes plugin at build time only.
+// eslint-disable-next-line @nx/enforce-module-boundaries
+import { convexaResearch } from '../../tools/research-notes/vite-plugin.mjs';
 
 /** Set ANALYZE=1 for a production build that writes dist/stats.html (treemap). */
 const analyze = process.env.ANALYZE === '1' || process.env.ANALYZE === 'true';
@@ -26,6 +29,8 @@ export default defineConfig(({ mode }) => {
 
   const plugins: PluginOption[] = [
     react(),
+    // research/<TICKER>/*.md → `virtual:convexa-research` (the owner's notes; works with data paused).
+    convexaResearch({ researchDir: path.resolve(import.meta.dirname, '../../research') }),
     {
       name: 'convexa-build-bootstrap',
       configResolved(config) {

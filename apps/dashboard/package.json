@@ -9,19 +9,30 @@
         "inputs": [
           "production",
           "^production",
-          { "env": "VITE_DATA_MODE" },
-          { "env": "ANALYZE" },
-          { "runtime": "node --version" },
+          {
+            "env": "VITE_DATA_MODE"
+          },
+          {
+            "env": "ANALYZE"
+          },
+          {
+            "runtime": "node --version"
+          },
           "{workspaceRoot}/tools/build-dashboard.mjs",
           "{workspaceRoot}/tools/write-dashboard-routes.mjs",
           "{workspaceRoot}/tools/archive-sourcemaps.mjs",
-          "{workspaceRoot}/tools/precompress-dashboard.mjs"
+          "{workspaceRoot}/tools/precompress-dashboard.mjs",
+          "{workspaceRoot}/research/**/*",
+          "{workspaceRoot}/tools/research-notes/notes.mjs",
+          "{workspaceRoot}/tools/research-notes/vite-plugin.mjs"
         ],
         "outputs": ["{projectRoot}/dist", "{projectRoot}/sourcemaps-private/current"],
         "configurations": {
           "production": {
             "command": "vite build --mode production && node ../../tools/write-dashboard-routes.mjs && node ../../tools/archive-sourcemaps.mjs && node ../../tools/precompress-dashboard.mjs",
-            "env": { "NODE_ENV": "production" }
+            "env": {
+              "NODE_ENV": "production"
+            }
           },
           "development": {
             "command": "vite build --mode development"
