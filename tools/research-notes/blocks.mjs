@@ -413,6 +413,18 @@ export function parseTypedBlock(name, args, lines, ctx, openLine) {
           source: plain(r, 3),
           outcome,
           brier: p !== null && hit !== null ? Math.round((p - hit) ** 2 * 1000) / 1000 : null,
+          // The row as Markdown, for the Scorecard's copy action. An unset probability is `___`, which
+          // the checker refuses, so a pasted row can't be pushed until it carries a probability.
+          row: [
+            r.cells[0] ?? '',
+            rawP || '___',
+            r.cells[2] ?? '',
+            r.cells[3] ?? '',
+            r.cells[4] ?? '',
+          ]
+            .map((c) => c.trim())
+            .filter((c, i) => i < 4 || c)
+            .join(' | '),
         };
       });
       block = { type: 'forecasts', items };

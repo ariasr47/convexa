@@ -10,8 +10,9 @@ import { addDays, daysBetween } from './dates.mjs';
 export const PRICE_STALE_DAYS = 30;
 
 /**
- * @typedef {{ kind: 'catalyst' | 'kill' | 'forecast' | 'price', label: string, whenLabel: string,
- *   date: string }} AgingEvent  `date` is the day the event counts from (the end of its window)
+ * @typedef {{ kind: 'catalyst' | 'kill' | 'forecast' | 'price' | 'filing', label: string,
+ *   whenLabel: string, date: string }} AgingEvent  `date` is the day the event counts from (the end of
+ *   its window; for a filing, the day it was filed)
  * @typedef {{ state: 'current' | 'due' | 'superseded' | 'archived', since: string | null,
  *   passed: AgingEvent[], next: AgingEvent | null, priceAgeDays: number | null,
  *   priceStale: boolean }} Freshness
@@ -20,10 +21,16 @@ export const PRICE_STALE_DAYS = 30;
 /**
  * @param {{ priceAsOf: string | null, events: { kind: 'catalyst' | 'kill' | 'forecast', label: string,
  *   when: { end: string | null, label: string }, resolved: boolean }[] }} aging
- * @param {{ today: string, superseded?: boolean, notFollowingSince?: string | null }} options
+ * @param {{ today: string, superseded?: boolean, notFollowingSince?: string | null,
+ *   filed?: { date: string, label: string }[] }} options  `filed`: results and periodic filings made
+ *   since the note was written (from EDGAR, through the API). Each one passes the day it was filed: new
+ *   figures exist that the note hasn't read.
  * @returns {Freshness}
  */
-export function freshness(aging, { today, superseded = false, notFollowingSince = null }) {
+export function freshness(
+  aging,
+  { today, superseded = false, notFollowingSince = null, filed = [] },
+) {
   /** @type {AgingEvent[]} */
   const passed = [];
   /** @type {AgingEvent[]} */
@@ -33,6 +40,10 @@ export function freshness(aging, { today, superseded = false, notFollowingSince 
     const event = { kind: e.kind, label: e.label, whenLabel: e.when.label, date: e.when.end };
     // An event counts once its window has fully passed: the day after it ends.
     (today > e.when.end ? passed : ahead).push(event);
+  }
+  for (const f of filed) {
+    if (f.date > today) continue;
+    passed.push({ kind: 'filing', label: f.label, whenLabel: '', date: f.date });
   }
   let priceAgeDays = null;
   if (aging.priceAsOf) {

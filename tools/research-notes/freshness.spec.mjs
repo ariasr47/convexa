@@ -104,3 +104,16 @@ test('upcoming: open, unresolved catalysts inside the horizon, soonest first', (
     ['Lock-up release'],
   );
 });
+
+test('freshness: a filing made since the note makes it due the day it lands, not before', () => {
+  const filed = [{ date: '2026-10-13', label: '8-K results' }];
+  const before = freshness(aging, { today: '2026-10-12', filed });
+  assert.equal(before.state, 'current');
+  const on = freshness(aging, { today: '2026-10-13', filed });
+  assert.equal(on.state, 'due');
+  assert.equal(on.since, '2026-10-13');
+  assert.deepEqual(
+    on.passed.map((e) => [e.kind, e.label]),
+    [['filing', '8-K results']],
+  );
+});

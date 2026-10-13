@@ -72,6 +72,7 @@ function assertResolvedBuildIdentity(project) {
     '{workspaceRoot}/tools/research-notes/dates.mjs',
     '{workspaceRoot}/tools/research-notes/freshness.mjs',
     '{workspaceRoot}/tools/research-notes/notes.mjs',
+    '{workspaceRoot}/tools/research-notes/scoring.mjs',
     '{workspaceRoot}/tools/research-notes/valuation.mjs',
     '{workspaceRoot}/tools/research-notes/vite-plugin.mjs',
   ]);

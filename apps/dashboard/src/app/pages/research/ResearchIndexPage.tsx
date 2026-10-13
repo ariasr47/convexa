@@ -22,6 +22,7 @@ import { DeltaPill } from './blocks/Figures';
 import { PriceValueStrip } from './blocks/Valuation';
 import { formatNoteDate, labelWithAsOf, STANCE_LABEL, UNCERTAINTY_LABEL } from './format';
 import { RESEARCH_DISCLAIMER, ResearchColumn } from './NotesView';
+import { ResearchTabs } from './ResearchTabs';
 import type { Freshness, NoteStance, ResearchTickerSummary } from './types';
 import { DISPLAY, Eyebrow, FreshnessLine, MONO, Panel, PANEL_SX, Pill, YourCall } from './ui';
 
@@ -374,7 +375,8 @@ export function ResearchIndexPage() {
 
   return (
     <ResearchColumn>
-      <Box sx={{ display: 'grid', gap: 4, pt: { xs: 2, md: 4 } }}>
+      <Box sx={{ display: 'grid', gap: 4, pt: { xs: 1, md: 2 } }}>
+        <ResearchTabs />
         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '16px 32px' }}>
           <Box sx={{ flex: '999 1 480px', display: 'grid', gap: 1.25 }}>
             <Box

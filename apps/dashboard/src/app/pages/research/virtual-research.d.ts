@@ -4,6 +4,7 @@ declare module 'virtual:convexa-research' {
     Aging,
     AgingEvent,
     Freshness,
+    LedgerScore,
     ResearchTickerSummary,
     Upcoming,
   } from '@/pages/research/types';
@@ -15,8 +16,19 @@ declare module 'virtual:convexa-research' {
   /** When a note stops being current, and why (tools/research-notes/freshness.mjs). */
   export function freshness(
     aging: Aging,
-    options: { today: string; superseded?: boolean; notFollowingSince?: string | null },
+    options: {
+      today: string;
+      superseded?: boolean;
+      notFollowingSince?: string | null;
+      /** Results and periodic filings since the note was written; each makes it due the day filed. */
+      filed?: { date: string; label: string }[];
+    },
   ): Freshness;
+  /** Brier score and calibration over the forecasts that carried a probability and resolved. */
+  export function scoreForecasts(
+    forecasts: { p: number | null; outcome: 'yes' | 'no' | 'void' | null }[],
+    options?: { bins?: number },
+  ): LedgerScore;
   /** Open, unresolved catalysts starting within `horizonDays`, soonest first. */
   export function upcoming(events: AgingEvent[], today: string, horizonDays: number): Upcoming[];
   /** Today in the reader's time zone, YYYY-MM-DD. */

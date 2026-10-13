@@ -84,6 +84,9 @@ const NotesView = lazy(() =>
 const ResearchIndexPage = lazy(() =>
   import('@/pages/research/ResearchIndexPage').then((m) => ({ default: m.ResearchIndexPage })),
 );
+const ScorecardPage = lazy(() =>
+  import('@/pages/research/ScorecardPage').then((m) => ({ default: m.ScorecardPage })),
+);
 const PositionsPage = lazy(() =>
   import('@/pages/positions/PositionsPage').then((m) => ({ default: m.PositionsPage })),
 );
@@ -229,6 +232,7 @@ export function AppRoutes() {
         <Route path="/ticker/:symbol/research/:slug" element={lazyRoute(<ResearchRoute />)} />
         {/* Research index — every ticker with published notes; public in both modes. */}
         <Route path="/research" element={lazyRoute(<ResearchIndexPage />)} />
+        <Route path="/research/scorecard" element={lazyRoute(<ScorecardPage />)} />
         {/* OWNER LOCKDOWN 2026-08-06 — private testing. Positions + Scanner are behind a sign-in
             wall; Landing, /ticker/*, /blog and /settings stay PUBLIC by owner decision. The wall is
             UX only — /api/scan* and the positions write gate refuse signed-out callers server-side

@@ -292,12 +292,36 @@ export type ResearchTickerSummary = {
       baseVsPrice: number;
     } | null;
     aging: Aging;
+    /** The latest note's forecast ledger, for the Scorecard. `row` is the Markdown row to copy, with
+     *  `___` where no probability is set. */
+    forecasts: LedgerForecast[];
+    /** SEC accession numbers the note cites (0001045810-26-000073). */
+    accessions: string[];
   };
+};
+
+export type LedgerForecast = {
+  claim: string;
+  row: string;
+  p: number | null;
+  resolveBy: { label: string; end: string | null };
+  outcome: 'yes' | 'no' | 'void' | null;
+};
+
+/** `tools/research-notes/scoring.mjs`, re-exported through the virtual module. */
+export type LedgerScore = {
+  total: number;
+  open: number;
+  withProbability: number;
+  resolved: number;
+  scored: number;
+  brier: number | null;
+  bins: { lo: number; hi: number; n: number; meanP: number; hitRate: number }[];
 };
 
 /** `tools/research-notes/freshness.mjs`, re-exported through the virtual module. */
 export type AgingMark = {
-  kind: 'catalyst' | 'kill' | 'forecast' | 'price';
+  kind: 'catalyst' | 'kill' | 'forecast' | 'price' | 'filing';
   label: string;
   whenLabel: string;
   date: string;

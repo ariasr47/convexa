@@ -905,9 +905,29 @@ export function summarize(notes) {
           baseVsPrice: valuation.result.scenarios.base.vsPrice,
         },
         aging: latest.aging,
+        forecasts: (blocksOf(latest, 'forecasts')[0]?.items ?? []).map((f) => ({
+          claim: plainText(f.claim),
+          row: f.row,
+          p: f.p,
+          resolveBy: { label: f.resolveBy.label, end: f.resolveBy.end },
+          outcome: f.outcome,
+        })),
+        accessions: secAccessions(latest.sources),
       },
     };
   });
+}
+
+/** The SEC accession numbers a note cites (0001045810-26-000073), read from its source links, so the
+ *  Filings view can tell a filing the note already uses from one that arrived after it. */
+function secAccessions(sources) {
+  const out = new Set();
+  for (const s of sources) {
+    if (!/sec\.gov|filings|edgar/i.test(s.href)) continue;
+    const m = s.href.match(/(?<!\d)(\d{10})-?(\d{2})-?(\d{6})(?!\d)/);
+    if (m) out.add(`${m[1]}-${m[2]}-${m[3]}`);
+  }
+  return [...out];
 }
 
 /** @param {NoteError[]} errors */

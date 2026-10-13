@@ -16,6 +16,9 @@ import { formatErrors, loadNotes, summarize } from './notes.mjs';
 const FRESHNESS = fileURLToPath(new URL('./freshness.mjs', import.meta.url))
   .split(path.sep)
   .join('/');
+const SCORING = fileURLToPath(new URL('./scoring.mjs', import.meta.url))
+  .split(path.sep)
+  .join('/');
 
 const VIRTUAL_ID = 'virtual:convexa-research';
 const RESOLVED_ID = `\0${VIRTUAL_ID}`;
@@ -75,6 +78,7 @@ export function convexaResearch({ researchDir }) {
         `const urls = ${JSON.stringify(urls)};`,
         `export function researchUrl(ticker) { return Object.hasOwn(urls, ticker) ? urls[ticker] : null; }`,
         `export { freshness, upcoming, localToday } from ${JSON.stringify(FRESHNESS)};`,
+        `export { scoreForecasts } from ${JSON.stringify(SCORING)};`,
       ].join('\n');
     },
     configureServer(server) {
