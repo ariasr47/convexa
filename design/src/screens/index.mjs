@@ -16,6 +16,8 @@ import { BLOG_CSS, blogBody, labBody } from './blog.mjs';
 import { DIALOGS_CSS, authBody, notFoundBody, operatorBody, orderDetailBody, personaBody, tradeEntryBody, viewEditorBody, whatsSentBody } from './dialogs.mjs';
 import { LIB_CSS, libraryBody } from './library-page.mjs';
 import { componentsBody } from './components-sheet.mjs';
+import { SHEET_CSS, sourceMapBody, stateMatrixBody } from './v4/data-sheets.mjs';
+import { HYBRID_CSS, hybridDeskBody } from './v4/hybrid-desk.mjs';
 
 const s = (title, group, desc, body, css = '', extra = {}) => ({ title, group, desc, body, css, ...extra });
 
@@ -45,4 +47,9 @@ export const screens = {
   operator: s('Operator', 'Dialogs & gates', 'Metrics and the research archive, off the trader shell.', (o) => operatorBody(o), DIALOGS_CSS),
   library: s('Library · tokens, components, states', 'System', 'Every token and component with its states and markup, plus the React mapping.', (o) => libraryBody(o), LIB_CSS),
   'components-sheet': s('Components sheet', 'System', 'The condensed component and motion sheet from the canvas.', () => componentsBody()),
+  // ---- v4 (2026-10-13) ----
+  'v4-source-map': s('Source map', 'v4 · Data states', 'Every widget on every screen: what it needs, its free or paid source, its delay, build status and its state on the hybrid site.', (o) => sourceMapBody(o), SHEET_CSS),
+  'v4-state-matrix': s('State matrix', 'v4 · Data states', 'Nine widget families in all fourteen data states, desktop widths.', (o) => stateMatrixBody(o), SHEET_CSS),
+  'v4-state-matrix-phone': s('State matrix · phone', 'v4 · Data states', 'The same matrix at phone widths: sheets for the AI read and dialogs, 44px controls.', (o) => stateMatrixBody({ ...o, phone: true }), SHEET_CSS),
+  'v4-hybrid-desk': s('Hybrid desk · NVDA', 'v4 · Data states', 'Public data live, options panels honestly not live, with a toggle to a labelled sample.', (o) => hybridDeskBody(o), HYBRID_CSS),
 };

@@ -63,7 +63,7 @@ function parse(str, bg) {
 }
 const hex = ([r, g, b]) => '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase();
 
-export function libraryBody({ minHeight = 5400, standalone = false } = {}) {
+export function libraryBody({ minHeight = 5400, standalone = false, dataStates = 'full' } = {}) {
   const C = tokens.color;
   const inkD = parse(C.dark.ink, [0, 0, 0]), inkL = parse(C.light.ink, [255, 255, 255]);
   const rows = [
@@ -187,6 +187,9 @@ SPY_RISK.map(riskField)` });
     ['chrome', 'Chrome', 'Panels, widget frames, navigation and the masthead.', byGroup('Chrome') + nav],
     ['overlays', 'Overlays', 'Dialogs, drawers, the sheet, strips, tooltips, toasts, empty states, the command palette.', byGroup('Overlays') + palette],
     ['patterns', 'Patterns', 'The honesty vocabulary and the connection chip states.', honesty],
+    ['data-states', 'Data states', dataStates === 'full'
+      ? 'v4: the state tag and nine widget families, each in all fourteen data states (live, delayed, stale, loading, empty, error, unavailable, not configured, off, paused, not live, sample, demo, locked). The same records draw the State matrix boards.'
+      : 'v4: the state tag in every state. The nine widget families in all fourteen states are drawn on the State matrix boards (page “v4 · Data states”) and in full on the site library.', dataStates === 'full' ? byGroup('Data states') : registry.filter((e) => e.group === 'Data states').slice(0, 1).map(componentDemo).join('')],
     ['motion', 'Motion', 'Kept and new signals, all gated; durations from tokens.json.', motion],
     ['react', 'React mapping', 'Where each primitive lands in apps/dashboard and what changes — the first rows come from each component’s spec.', mapping],
   ];

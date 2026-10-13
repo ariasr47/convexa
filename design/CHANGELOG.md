@@ -38,3 +38,21 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
 - **Rival authority ruled A** — `docs/design/DESIGN_SYSTEM.md` stubbed to a pointer (canon · `tokens.ts` ·
   `site/library.html`); the only rule it still quotes is the positions-legs `success`/`error` scope, which
   now also lives in the canon's Banned table.
+
+## 2026-10-13 · v4 wave 1 — data states
+
+- **The hybrid site gets a vocabulary.** Fourteen data states (live, delayed, stale, loading, empty,
+  error, unavailable, not configured, off, paused, not live, sample, demo, locked) plus Computed and the
+  genuine stream, each a word and a glyph (`components/data-states.mjs`, records in
+  `data/states.mjs`). Not live means the paid options feed is missing; paused keeps its meaning.
+- **Nine widget families in every state** (figure cell, chart, table, feed, AI read, positioning card,
+  tape, form, dialog) render from data, in the library (full on the site, summarised on the canvas
+  Library board) and on two State matrix boards (desktop, phone).
+- **Source map** (`data/hybrid.mjs`): every widget on every screen with what it needs, source, delay,
+  build status in docs/public-data/CANDIDATES.md's words, and its hybrid-site state.
+- **Hybrid desk (NVDA):** public panels first, options panels second, with both honest options drawn:
+  explain (off state) and a labelled sample (dashed, hatched, dated). Page legend "On this page".
+- **Shared fixes to canon** (every v2 board regenerates): `nav()` has five links (rule 19);
+  `.cell.offline` dims with `textDim`, not opacity (2026-09-09 amendment); tokens.json mirrors
+  `textDim`, `textInfo`, `textUp`, `textDown` and `hatch` (= `hatchAlt`), checked by verify-tokens.
+- Findings and canon proposals: `design/REVIEW-2026-10-13.md`. Supersedes nothing above; v2 boards stay.

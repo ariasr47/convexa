@@ -19,6 +19,10 @@
     {
       "id": "page-5",
       "name": "System"
+    },
+    {
+      "id": "v4-data",
+      "name": "v4 · Data states"
     }
   ],
   "artboards": [
@@ -341,7 +345,7 @@
       "x": 0,
       "y": 0,
       "w": 1440,
-      "h": 5400,
+      "h": 5900,
       "page": "page-5"
     },
     {
@@ -371,6 +375,62 @@
       "w": 1440,
       "h": 2960,
       "page": "page-5"
+    },
+    {
+      "file": "V4SourceMap.dc.html",
+      "title": "v4 · Source map: where every number comes from",
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 5600,
+      "page": "v4-data"
+    },
+    {
+      "file": "V4HybridDesk.dc.html",
+      "title": "v4 · Hybrid desk · NVDA · not-live panels explained",
+      "x": 2040,
+      "y": 0,
+      "w": 1440,
+      "h": 3400,
+      "page": "v4-data",
+      "expand": "fill"
+    },
+    {
+      "file": "V4HybridDeskSample.dc.html",
+      "title": "v4 · Hybrid desk · NVDA · sample illustrations on",
+      "x": 3600,
+      "y": 0,
+      "w": 1440,
+      "h": 3400,
+      "page": "v4-data",
+      "expand": "fill"
+    },
+    {
+      "file": "V4HybridDesk390.dc.html",
+      "title": "v4 · Hybrid desk · NVDA · phone",
+      "x": 5160,
+      "y": 0,
+      "w": 390,
+      "h": 5200,
+      "page": "v4-data"
+    },
+    {
+      "file": "V4StateMatrix.dc.html",
+      "title": "v4 · State matrix · 9 families × 14 states",
+      "x": 0,
+      "y": 6100,
+      "w": 3220,
+      "h": 4200,
+      "page": "v4-data"
+    },
+    {
+      "file": "V4StateMatrix390.dc.html",
+      "title": "v4 · State matrix · phone widths",
+      "x": 3340,
+      "y": 6100,
+      "w": 3740,
+      "h": 4700,
+      "page": "v4-data"
     }
   ],
   "annotations": [
@@ -407,12 +467,68 @@
       "text": "Every overlay and gate in the product: sign-in and the private-testing wall, the one shared sim trade-entry dialog in both variants (with the six binding disclosures verbatim), the egress drawer, persona editing, order detail in both coverage states, the scan view editor, route fallback, 404, and the two operator surfaces."
     },
     {
+      "id": "note-v4-data",
+      "x": 0,
+      "y": -520,
+      "w": 900,
+      "page": "v4-data",
+      "text": "v4 · Data states (2026-10-13). The hybrid site: live where free public data reaches, honestly not live where the paid options feed is needed. Source map → state matrix → the NVDA desk in both honest options (explain, or a labelled sample). Every board names the review findings it resolves (design/REVIEW-2026-10-13.md). Figures are illustrative design values."
+    },
+    {
       "id": "note-system",
       "x": 0,
       "y": -150,
       "w": 560,
       "page": "page-5",
       "text": "The library is generated from tokens/tokens.json and src/components — every state shown there is a registered state. The light renders prove the scheme is a token swap, not a second layout."
+    },
+    {
+      "id": "find-V4SourceMap",
+      "x": 0,
+      "y": -230,
+      "w": 640,
+      "page": "v4-data",
+      "text": "v4 · Source map: where every number comes from. Resolves X-01, X-02, X-03, X-08, DS-01–DS-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4HybridDesk",
+      "x": 2040,
+      "y": -230,
+      "w": 640,
+      "page": "v4-data",
+      "text": "v4 · Hybrid desk · NVDA · not-live panels explained. Resolves X-01, X-03, X-05, X-06, TKR-01–TKR-07. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4HybridDeskSample",
+      "x": 3600,
+      "y": -230,
+      "w": 640,
+      "page": "v4-data",
+      "text": "v4 · Hybrid desk · NVDA · sample illustrations on. Resolves X-10, TKR-02, TKR-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4HybridDesk390",
+      "x": 5160,
+      "y": -230,
+      "w": 390,
+      "page": "v4-data",
+      "text": "v4 · Hybrid desk · NVDA · phone. Resolves X-12, TKR-06, TKR-08. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4StateMatrix",
+      "x": 0,
+      "y": 5870,
+      "w": 640,
+      "page": "v4-data",
+      "text": "v4 · State matrix · 9 families × 14 states. Resolves X-01, X-02, X-09, X-10, DS-05–DS-08. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4StateMatrix390",
+      "x": 3340,
+      "y": 5870,
+      "w": 640,
+      "page": "v4-data",
+      "text": "v4 · State matrix · phone widths. Resolves X-12, DS-05–DS-08. Findings: design/REVIEW-2026-10-13.md."
     }
   ],
   "launch": {

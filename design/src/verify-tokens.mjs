@@ -20,6 +20,13 @@ const [successDark, successLight] = seq('success');
 const [errorDark, errorLight] = seq('error');
 const [raisedDark, raisedLight] = seq('panelRaised');
 const [textAmberLight] = seq('textAmber');
+// Text-grade tokens that landed in tokens.ts after v2 (2026-09-09 textDim/textInfo, 2026-10-13
+// textUp/textDown) plus the hatch stripe. They are mirrors, not additions: v4 boards draw with them.
+const [textDimDark, textDimLight] = seq('textDim');
+const [textInfoDark, textInfoLight] = seq('textInfo');
+const [textUpDark, textUpLight] = seq('textUp');
+const [textDownDark, textDownLight] = seq('textDown');
+const [hatchDark, hatchLight] = seq('hatchAlt');
 
 // [design key, mode, expected from tokens.ts, label]
 const checks = [
@@ -29,6 +36,11 @@ const checks = [
   ['ink', 'light', consts.paper, 'paper'], ['phosphor', 'light', consts.inkText, 'inkText'], ['amber', 'light', consts.amberDeep, 'amberDeep'], ['amberText', 'light', textAmberLight, 'extrasLight.textAmber'],
   ['signal', 'light', consts.lightInfo, 'lightInfo'], ['warn', 'light', consts.lightWarning, 'lightWarning'], ['steel', 'light', consts.lightSecondary, 'lightSecondary'],
   ['up', 'light', successLight, 'palette.light.success'], ['down', 'light', errorLight, 'palette.light.error'], ['raised', 'light', raisedLight, 'extrasLight.panelRaised'],
+  ['textDim', 'dark', textDimDark, 'extras.textDim'], ['textDim', 'light', textDimLight, 'extrasLight.textDim'],
+  ['textInfo', 'dark', textInfoDark, 'extras.textInfo'], ['textInfo', 'light', textInfoLight, 'extrasLight.textInfo'],
+  ['textUp', 'dark', textUpDark, 'extras.textUp'], ['textUp', 'light', textUpLight, 'extrasLight.textUp'],
+  ['textDown', 'dark', textDownDark, 'extras.textDown'], ['textDown', 'light', textDownLight, 'extrasLight.textDown'],
+  ['hatch', 'dark', hatchDark, 'extras.hatchAlt'], ['hatch', 'light', hatchLight, 'extrasLight.hatchAlt'],
 ];
 
 // ---------------------------------------------------------------------------------------------

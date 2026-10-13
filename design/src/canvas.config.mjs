@@ -6,6 +6,7 @@ export const pages = [
   { id: 'page-3', name: 'Site' },
   { id: 'page-4', name: 'Dialogs & gates' },
   { id: 'page-5', name: 'System' },
+  { id: 'v4-data', name: 'v4 · Data states' },
 ];
 
 // { name, screen, page, w, h, title, opts?, expand?, interactive? }
@@ -48,10 +49,18 @@ export const artboards = [
   { name: 'NotFound', screen: 'not-found', page: 'page-4', w: 1440, h: 640, title: 'Route fallback + 404' },
   { name: 'Operator', screen: 'operator', page: 'page-4', w: 1440, h: 1080, title: 'Operator · metrics + research' },
 
-  { name: 'Library', screen: 'library', page: 'page-5', w: 1440, h: 5400, title: 'Library · tokens, components, states, React mapping' },
+  { name: 'Library', screen: 'library', page: 'page-5', w: 1440, h: 5900, title: 'Library · tokens, components, states, React mapping', opts: { dataStates: 'summary' } },
   { name: 'Components', screen: 'components-sheet', page: 'page-5', w: 1440, h: 2720, title: 'Components & motion sheet' },
   { name: 'DeskLight', screen: 'desk', page: 'page-5', w: 1440, h: 2300, title: 'Desk · light scheme (interactive)', opts: { scheme: 'light' } },
   { name: 'LandingLight', screen: 'landing', page: 'page-5', w: 1440, h: 2960, title: 'Landing · light scheme', opts: { scheme: 'light' } },
+
+  // ---- v4 · Data states (wave 1, 2026-10-13) ----
+  { name: 'V4SourceMap', screen: 'v4-source-map', page: 'v4-data', x: 0, y: 0, w: 1920, h: 5600, title: 'v4 · Source map: where every number comes from', findings: 'X-01, X-02, X-03, X-08, DS-01–DS-04' },
+  { name: 'V4HybridDesk', screen: 'v4-hybrid-desk', page: 'v4-data', x: 2040, y: 0, w: 1440, h: 3400, title: 'v4 · Hybrid desk · NVDA · not-live panels explained', expand: 'fill', findings: 'X-01, X-03, X-05, X-06, TKR-01–TKR-07' },
+  { name: 'V4HybridDeskSample', screen: 'v4-hybrid-desk', page: 'v4-data', x: 3600, y: 0, w: 1440, h: 3400, title: 'v4 · Hybrid desk · NVDA · sample illustrations on', opts: { sample: true }, expand: 'fill', findings: 'X-10, TKR-02, TKR-04' },
+  { name: 'V4HybridDesk390', screen: 'v4-hybrid-desk', page: 'v4-data', x: 5160, y: 0, w: 390, h: 5200, title: 'v4 · Hybrid desk · NVDA · phone', findings: 'X-12, TKR-06, TKR-08' },
+  { name: 'V4StateMatrix', screen: 'v4-state-matrix', page: 'v4-data', x: 0, y: 6100, w: 3220, h: 4200, title: 'v4 · State matrix · 9 families × 14 states', findings: 'X-01, X-02, X-09, X-10, DS-05–DS-08' },
+  { name: 'V4StateMatrix390', screen: 'v4-state-matrix-phone', page: 'v4-data', x: 3340, y: 6100, w: 3740, h: 4700, title: 'v4 · State matrix · phone widths', findings: 'X-12, DS-05–DS-08' },
 ];
 
 export const annotations = [
@@ -59,15 +68,19 @@ export const annotations = [
   { id: 'note-resp', page: 'page-2', w: 620, text: 'Same source, five widths. Every frame here renders the identical page body through one set of media and container queries — nothing is redrawn by hand. The phone desk docks the AI read as a bottom sheet; tables become cards under 1000px; the settings rail becomes tabs under 900px.' },
   { id: 'note-site', page: 'page-3', w: 520, text: 'Site surfaces at 1440. Copy is grounded in the product (69-name universe, ~60s desk cadence, ~3-min scanner sweep, 7–45 DTE, simulated book, BYO key); all prices, P/L, scores and timestamps are sample values.' },
   { id: 'note-dialogs', page: 'page-4', w: 520, text: 'Every overlay and gate in the product: sign-in and the private-testing wall, the one shared sim trade-entry dialog in both variants (with the six binding disclosures verbatim), the egress drawer, persona editing, order detail in both coverage states, the scan view editor, route fallback, 404, and the two operator surfaces.' },
+  { id: 'note-v4-data', page: 'v4-data', x: 0, y: -520, w: 900, text: 'v4 · Data states (2026-10-13). The hybrid site: live where free public data reaches, honestly not live where the paid options feed is needed. Source map → state matrix → the NVDA desk in both honest options (explain, or a labelled sample). Every board names the review findings it resolves (design/REVIEW-2026-10-13.md). Figures are illustrative design values.' },
   { id: 'note-system', page: 'page-5', w: 560, text: 'The library is generated from tokens/tokens.json and src/components — every state shown there is a registered state. The light renders prove the scheme is a token swap, not a second layout.' },
 ];
 
-/** Row-flow layout per page: 120px between frames, 140px between rows, wrap at 6400px. */
+/** Row-flow layout per page: 120px between frames, 140px between rows, wrap at 6400px. An artboard
+ *  that carries its own x/y (the v4 pages, which leave room above each row for its findings note)
+ *  keeps them. */
 export function layout() {
   const placed = [];
   for (const p of pages) {
     let x = 0, y = 0, rowH = 0;
     for (const a of artboards.filter((b) => b.page === p.id)) {
+      if (a.x !== undefined && a.y !== undefined) { placed.push({ ...a }); continue; }
       if (x > 0 && x + a.w > 6400) { x = 0; y += rowH + 140; rowH = 0; }
       placed.push({ ...a, x, y });
       x += a.w + 120;
@@ -85,7 +98,11 @@ export function canvasJson() {
       ...(screen === 'desk' ? { is_interactive: true } : {}),
       ...(expand ? { expand } : {}),
     })),
-    annotations: annotations.map((n) => ({ id: n.id, x: 0, y: -150, w: n.w, page: n.page, text: n.text })),
+    annotations: [
+      ...annotations.map((n) => ({ id: n.id, x: n.x ?? 0, y: n.y ?? -150, w: n.w, page: n.page, text: n.text })),
+      // v4: one findings note above every v4 board, naming the review IDs it resolves.
+      ...layout().filter((a) => a.findings).map((a) => ({ id: `find-${a.name}`, x: a.x, y: a.y - 230, w: Math.min(a.w, 640), page: a.page, text: `${a.title}. Resolves ${a.findings}. Findings: design/REVIEW-2026-10-13.md.` })),
+    ],
     launch: { view: 'canvas', page: 'page-1' },
   };
 }
