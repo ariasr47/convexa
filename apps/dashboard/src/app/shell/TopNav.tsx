@@ -55,17 +55,29 @@ function warmNav(to: string) {
   else if (to.startsWith('/positions')) void prefetchPositionsRoute();
 }
 
-// (v2) Product spine, narrowed to FOUR links (canon rule 19, curvature-v2-foundations): Scanner,
-// Ticker, Positions, Alerts. Lab and Blog move to the footer — AC-23.
-// Active-route rules: Scanner `/scanner*`; Ticker `/ticker*`; Positions `/positions*`; etc.
+// (v2) Product spine (canon rule 19, curvature-v2-foundations): Scanner, Ticker, Research,
+// Positions, Alerts. Research joined 2026-10-12 (rule 19 amendment): it is the production site's
+// working surface while market data is paused. Lab and Blog move to the footer — AC-23.
+// Active-route rules: Scanner `/scanner*`; Ticker `/ticker*` except a ticker's research tab, which
+// lights Research with `/research*`; Positions `/positions*`; etc.
 // Deliberately NO operator entry (`/_ops/metrics` and `/_ops/research` are URL-only) — AC-23b.
+const isTickerResearch = (p: string) => /^\/ticker\/[^/]+\/research(\/|$)/.test(p);
 const NAV: NavEntry[] = [
   {
     label: 'Scanner',
     to: '/scanner',
     active: (p) => p === '/scanner' || p.startsWith('/scanner/'),
   },
-  { label: 'Ticker', to: '/ticker', active: (p) => p.startsWith('/ticker') },
+  {
+    label: 'Ticker',
+    to: '/ticker',
+    active: (p) => p.startsWith('/ticker') && !isTickerResearch(p),
+  },
+  {
+    label: 'Research',
+    to: '/research',
+    active: (p) => p === '/research' || p.startsWith('/research/') || isTickerResearch(p),
+  },
   {
     label: 'Positions',
     to: '/positions',

@@ -15,10 +15,12 @@ export interface PaletteCommand {
   gated?: boolean;
 }
 
-/** The four product surfaces (canon rule 19) — exactly these, nothing else. */
+/** The five product surfaces (canon rule 19, amended 2026-10-12 for Research) — exactly these,
+ *  nothing else. Research is last so the four older surfaces keep their palette positions. */
 export const PALETTE_COMMANDS: readonly PaletteCommand[] = [
   { id: 'surface-scanner', label: 'Scanner', to: '/scanner' },
   { id: 'surface-ticker', label: 'Ticker', to: '/ticker' },
   { id: 'surface-positions', label: 'Positions', to: '/positions' },
   { id: 'surface-alerts', label: 'Alerts', to: '/alerts' },
+  { id: 'surface-research', label: 'Research', to: '/research' },
 ] as const;
