@@ -68,7 +68,7 @@ import {
 import { netEntryCost, type Leg, type SimPosition } from '@/features/trading/positions/leg';
 import { STRUCTURE_LABELS, structureKindOf } from '@/features/trading/positions/structure';
 import type { LegInput } from '@/features/trading/positions/usePortfolio';
-import { extrasFor } from '@/shared/theme/tokens';
+import { downText, extrasFor, upText } from '@/shared/theme/tokens';
 import { fetchTrackedContract } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import Alert from '@mui/material/Alert';
@@ -501,7 +501,7 @@ export function TradeEntryDialog({
                 title={SIMULATED_TIP}
                 sx={(t) => ({
                   bgcolor: alpha(t.palette.success.main, 0.18),
-                  color: 'success.main',
+                  color: upText(t),
                   fontWeight: 700,
                   letterSpacing: '0.04em',
                 })}
@@ -899,7 +899,7 @@ export function TradeEntryDialog({
                   Select a contract to see the fill.
                 </Typography>
               ) : fillState === 'error' ? (
-                <Typography variant="body2" color="error">
+                <Typography variant="body2" sx={{ color: downText }}>
                   Couldn't load the chain for entry — try again.
                 </Typography>
               ) : effectiveMode === 'manual' ? (
@@ -932,7 +932,7 @@ export function TradeEntryDialog({
                 </>
               ) : effectiveMode === 'market' ? (
                 fillState === 'no_resolvable' ? (
-                  <Typography variant="body2" color="error">
+                  <Typography variant="body2" sx={{ color: downText }}>
                     No quote or theoretical mark available for this contract — a market order can't
                     fill. Try Manual price, or pick another contract.
                   </Typography>

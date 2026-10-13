@@ -16,7 +16,7 @@
  * not-connected with no ghost book; that behavior is the server's, exercised by the broker
  * integration suite.
  */
-import { typographyTokens } from '@/shared/theme/tokens';
+import { downText, typographyTokens } from '@/shared/theme/tokens';
 import {
   AuthError,
   dataMode,
@@ -229,6 +229,7 @@ export function BrokerageSection({ embedded = false }: { embedded?: boolean } = 
             <Button
               size="small"
               color="error"
+              sx={{ color: downText }}
               data-testid="settings-brokerage-disconnect"
               onClick={() => setDisconnectConfirm(true)}
             >
@@ -255,6 +256,7 @@ export function BrokerageSection({ embedded = false }: { embedded?: boolean } = 
                   <Button
                     size="small"
                     color="error"
+                    sx={{ color: downText }}
                     disabled={submitting}
                     data-testid="settings-brokerage-disconnect-confirm-btn"
                     onClick={() => void doDisconnect()}

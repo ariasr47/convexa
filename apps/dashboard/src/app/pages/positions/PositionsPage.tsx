@@ -30,6 +30,7 @@ import { allPositions } from '@/features/trading/positions/store';
 import { usePortfolio } from '@/features/trading/positions/usePortfolio';
 import { FigureCell } from '@/pages/ticker/widgets/_kit/FigureCell';
 import { isDeliveringLive } from '@/shared/liveness/liveClaim';
+import { downText, upText } from '@/shared/theme/tokens';
 import { PanelContainer } from '@/shared/ui/PanelContainer';
 import {
   dataMode,
@@ -59,7 +60,7 @@ function netPlTintSx(tint: NetPlTint) {
   if (!tint) return {};
   return {
     '& [data-figure-register="mono"]': {
-      color: tint === 'positive' ? 'success.main' : 'error.main',
+      color: tint === 'positive' ? upText : downText,
     },
   };
 }

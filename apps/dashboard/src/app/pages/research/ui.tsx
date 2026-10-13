@@ -18,10 +18,8 @@ export const DISPLAY = {
 } as const;
 export const MONO = MONO_FACE;
 
-/** Direction as text (words, figures, arrows): the text-grade hues, AA on every surface and tint.
- *  Bars, dots and tints keep `success.main` / `error.main`. */
-export const upText = (t: Theme) => extrasFor(t).textUp;
-export const downText = (t: Theme) => extrasFor(t).textDown;
+/** Direction as text (words, figures, arrows): the shared text-grade helpers. */
+export { downText, upText } from '@/shared/theme/tokens';
 
 export const PANEL_SX = {
   bgcolor: 'background.paper',

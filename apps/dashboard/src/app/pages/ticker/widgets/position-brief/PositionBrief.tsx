@@ -16,7 +16,7 @@
 import { MARK_BASIS_META } from '@/features/trading/model/mark';
 import { money, pct } from '@/features/trading/positions/labels';
 import type { PositionView } from '@/features/trading/positions/view';
-import { extrasFor } from '@/shared/theme/tokens';
+import { downText, extrasFor, upText } from '@/shared/theme/tokens';
 import { Refused } from '@/shared/ui/Refused';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -198,8 +198,7 @@ function SingleBrief({ view }: { view: PositionView }) {
   const pl = view.pl_dollar;
   const plPct = view.pl_pct.kind === 'value' ? view.pl_pct.value : null;
   const dimmed = view.frozen || view.mark.basis === 'last_known';
-  const plColor =
-    pl == null || !Number.isFinite(pl) ? 'text.primary' : pl >= 0 ? 'success.main' : 'error.main';
+  const plColor = pl == null || !Number.isFinite(pl) ? 'text.primary' : pl >= 0 ? upText : downText;
 
   return (
     <Box

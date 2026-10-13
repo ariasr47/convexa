@@ -3,7 +3,7 @@
  * Preferred Grok subscription card + per-provider BYO matrix + named model control.
  * Write-only keys: drafts live only in local state and are CLEARED on success. No reveal/show/copy.
  */
-import { typographyTokens } from '@/shared/theme/tokens';
+import { downText, typographyTokens } from '@/shared/theme/tokens';
 import {
   AuthError,
   BYO_PROVIDERS,
@@ -561,6 +561,7 @@ function GrokCard({
             <Button
               size="small"
               color="error"
+              sx={{ color: downText }}
               disabled={disabled}
               data-testid="settings-grok-disconnect"
               onClick={onDisconnect}
@@ -680,6 +681,7 @@ function ProviderRow({
             <Button
               size="small"
               color="error"
+              sx={{ color: downText }}
               disabled={busy || disabled}
               data-testid={
                 provider === 'anthropic'
@@ -720,6 +722,7 @@ function ProviderRow({
               <Button
                 size="small"
                 color="error"
+                sx={{ color: downText }}
                 disabled={busy}
                 data-testid={
                   provider === 'anthropic'

@@ -28,6 +28,7 @@
  * treatment are the identical facts the row renders.
  */
 import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
+import { downText, upText } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useId, useState } from 'react';
@@ -63,8 +64,7 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
   const panelId = useId();
   const isTerminal = p.status === 'closed' || p.status === 'cancelled';
   const isOpen = p.status === 'open';
-  const plColor =
-    view.pl_dollar == null ? 'text.primary' : view.pl_dollar >= 0 ? 'success.main' : 'error.main';
+  const plColor = view.pl_dollar == null ? 'text.primary' : view.pl_dollar >= 0 ? upText : downText;
 
   // The BIG P/L block and the Mark footer value read the SAME text/state the row's `cell-pl` and
   // `cell-mark` render, from the shared helpers `PositionRow` exports — the table and this card can

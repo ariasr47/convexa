@@ -6,7 +6,7 @@
  */
 import { SIMULATED_TIP } from '@/features/trading/positions/labels';
 import { MONO_FACE } from '@/shared/figure';
-import { extrasFor } from '@/shared/theme/tokens';
+import { extrasFor, upText } from '@/shared/theme/tokens';
 import CloseIcon from '@mui/icons-material/Close';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -106,7 +106,7 @@ export function OrderDetailDialog({ order: o, onClose, onViewPosition }: Props) 
                   title={SIMULATED_TIP}
                   sx={(t) => ({
                     bgcolor: alpha(t.palette.success.main, 0.18),
-                    color: 'success.main',
+                    color: upText(t),
                     fontWeight: 700,
                     letterSpacing: '0.04em',
                   })}

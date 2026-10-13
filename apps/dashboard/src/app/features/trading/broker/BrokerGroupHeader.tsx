@@ -16,6 +16,7 @@
  */
 import { money } from '@/features/trading/positions/labels';
 import { faceFor, figureStateOf, MONO_FACE, PauseMark } from '@/shared/figure';
+import { downText, upText } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
@@ -217,7 +218,7 @@ function GroupPl({
             ...faceFor(mono),
             fontWeight: 700,
             fontSize: '0.95rem',
-            color: group.pl_dollar >= 0 ? 'success.main' : 'error.main',
+            color: group.pl_dollar >= 0 ? upText : downText,
           }}
         >
           {money(group.pl_dollar)}

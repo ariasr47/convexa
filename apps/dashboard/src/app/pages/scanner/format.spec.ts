@@ -4,6 +4,7 @@
  * `building` row that grows a fabricated freshness claim, a sort that floats `null`s to the top, a
  * direction colour that leaks onto a rate. None of that is visible in a screenshot review.
  */
+import { downText, upText } from '@/shared/theme/tokens';
 import type { ScanRow, SweepHeartbeat } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import {
@@ -141,10 +142,10 @@ describe('closed lookups (never re-derived, never guessed)', () => {
 });
 
 describe('direction colour is bound to chg_pct alone', () => {
-  it('resolves success/error by sign and neutral for a missing value', () => {
-    expect(directionColor(1.2)).toBe('success.main');
-    expect(directionColor(0)).toBe('success.main');
-    expect(directionColor(-0.4)).toBe('error.main');
+  it('resolves the text-grade up/down hue by sign and neutral for a missing value', () => {
+    expect(directionColor(1.2)).toBe(upText);
+    expect(directionColor(0)).toBe(upText);
+    expect(directionColor(-0.4)).toBe(downText);
     expect(directionColor(null)).toBe('text.primary');
     expect(directionColor(Number.NaN)).toBe('text.primary');
   });

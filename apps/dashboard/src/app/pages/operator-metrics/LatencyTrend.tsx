@@ -4,7 +4,7 @@
  * (never stitched), stale-repeats are visually distinct, headroom unknown is "unknown" (never a
  * number), no thresholds / red zones. Controls re-derive from stored polls — no extra network call.
  */
-import { chartCategorical } from '@/shared/theme/tokens';
+import { chartCategorical, upText } from '@/shared/theme/tokens';
 import DownloadIcon from '@mui/icons-material/Download';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import PauseIcon from '@mui/icons-material/Pause';
@@ -331,7 +331,7 @@ export function LatencyTrend({ trend }: { trend: Trend }) {
             </Typography>
           )}
           {lastExport != null && (
-            <Typography variant="caption" sx={{ color: 'success.main' }}>
+            <Typography variant="caption" sx={{ color: upText }}>
               Exported the current trend ({lastExport} samples). Saved to your machine — no server
               state created.
             </Typography>

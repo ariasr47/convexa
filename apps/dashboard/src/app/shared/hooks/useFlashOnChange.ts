@@ -12,6 +12,7 @@
  * the animation. Returns `null` when not flashing.
  */
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import { downText, upText } from '@/shared/theme/tokens';
 import type { Theme } from '@mui/material/styles';
 import { useEffect, useRef, useState } from 'react';
 
@@ -75,17 +76,17 @@ export function flashColorSx(flash: FlashState | null) {
       '0%': {
         color:
           flash.tone === 'up'
-            ? theme.palette.success.main
+            ? upText(theme)
             : flash.tone === 'down'
-              ? theme.palette.error.main
+              ? downText(theme)
               : theme.palette.info.main,
       },
       '60%': {
         color:
           flash.tone === 'up'
-            ? theme.palette.success.main
+            ? upText(theme)
             : flash.tone === 'down'
-              ? theme.palette.error.main
+              ? downText(theme)
               : theme.palette.info.main,
       },
       '100%': { color: 'inherit' },

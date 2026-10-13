@@ -28,6 +28,7 @@
  */
 import { MARK_BASIS_META } from '@/features/trading/model/mark';
 import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
+import { downText, upText } from '@/shared/theme/tokens';
 import { dataMode, demoNowMs } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -298,8 +299,7 @@ export function cellContent(
   const p = view.position;
   const [leg0] = p.legs;
   const isTerminal = p.status === 'closed' || p.status === 'cancelled';
-  const plColor =
-    view.pl_dollar == null ? 'text.primary' : view.pl_dollar >= 0 ? 'success.main' : 'error.main';
+  const plColor = view.pl_dollar == null ? 'text.primary' : view.pl_dollar >= 0 ? upText : downText;
 
   switch (col) {
     case 'simulated':
@@ -844,10 +844,7 @@ export function ClosedSummary({ view }: { view: PositionView }) {
       : 0;
   const r$ = p.realized_pl_dollar ?? 0;
   return (
-    <Typography
-      variant="body2"
-      sx={{ color: r$ >= 0 ? theme.palette.success.main : theme.palette.error.main }}
-    >
+    <Typography variant="body2" sx={{ color: r$ >= 0 ? upText(theme) : downText(theme) }}>
       Closed · realized {money(r$)} ({pct(p.realized_pl_pct ?? 0)}) · held{' '}
       {held < 60 ? `${held}m` : `${Math.floor(held / 60)}h ${held % 60}m`}
     </Typography>

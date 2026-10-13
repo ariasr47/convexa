@@ -9,6 +9,7 @@
  * Token-only styling; the Watching pulse is reduced-motion-guarded via the CSS media query.
  */
 import { MONO_FACE } from '@/shared/figure';
+import { upText } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -89,7 +90,7 @@ function StatusChip({ order }: { order: SimOrder }) {
         sx={(t) => ({
           fontWeight: 600,
           ...(success
-            ? { color: 'success.main', borderColor: alpha(t.palette.success.main, 0.5) }
+            ? { color: upText(t), borderColor: alpha(t.palette.success.main, 0.5) }
             : terminal
               ? { color: 'text.secondary' }
               : {}),

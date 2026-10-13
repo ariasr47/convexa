@@ -10,7 +10,7 @@
  * accessibility tree — plus the sign-in line. Nothing is written to any durable client store.
  */
 import { faceFor } from '@/shared/figure';
-import { extrasFor } from '@/shared/theme/tokens';
+import { downText, extrasFor } from '@/shared/theme/tokens';
 import type { CapUnit } from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -187,9 +187,8 @@ export function RiskInputsSection() {
             {accountError && (
               <Typography
                 variant="caption"
-                color="error"
                 data-testid="risk-inputs-account-error"
-                sx={{ display: 'block', mt: 0.25 }}
+                sx={{ display: 'block', mt: 0.25, color: downText }}
               >
                 {accountError}
               </Typography>
@@ -264,9 +263,8 @@ export function RiskInputsSection() {
             {capError && (
               <Typography
                 variant="caption"
-                color="error"
                 data-testid="risk-inputs-cap-error"
-                sx={{ display: 'block', mt: 0.25 }}
+                sx={{ display: 'block', mt: 0.25, color: downText }}
               >
                 {capError}
               </Typography>

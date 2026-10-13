@@ -19,6 +19,7 @@
  */
 import { money } from '@/features/trading/positions/labels';
 import { faceFor, figureStateOf, MONO_FACE, PauseMark, SANS_FACE } from '@/shared/figure';
+import { downText, upText } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
@@ -143,7 +144,7 @@ export function ModeledPl({
             ...faceFor(mono),
             fontWeight: 700,
             fontSize: '0.95rem',
-            color: view.pl_dollar >= 0 ? 'success.main' : 'error.main',
+            color: view.pl_dollar >= 0 ? upText : downText,
           }}
         >
           {money(view.pl_dollar)}

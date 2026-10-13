@@ -13,7 +13,7 @@
  * map. `cellContent` (incl. the offline-dim live cells) is reused as-is.
  */
 import { PauseMark } from '@/shared/figure';
-import { extrasFor } from '@/shared/theme/tokens';
+import { downText, extrasFor, upText } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
@@ -244,7 +244,7 @@ function subtotalNode(group: DerivedGroup) {
         component="span"
         sx={{
           fontWeight: 600,
-          color: group.subtotal >= 0 ? 'success.main' : 'error.main',
+          color: group.subtotal >= 0 ? upText : downText,
           fontVariantNumeric: 'tabular-nums',
         }}
       >

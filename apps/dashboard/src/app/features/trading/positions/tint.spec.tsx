@@ -3,7 +3,8 @@
  * invariant 6). The scoped canon lives in `.spire/clusters/tech/context/DESIGN_SYSTEM.md` (Banned table,
  * green/red row, amended 2026-09-03) and is quoted verbatim in the `docs/design/DESIGN_SYSTEM.md` stub.
  *
- * THE RULE: `success.main` / `error.main` appear on this surface in exactly FIVE places, all of them
+ * THE RULE: the direction hues (`success.main` / `error.main`, and as text the text-grade `upText` /
+ * `downText`, 2026-10-13) appear on this surface in exactly FIVE places, all of them
  * SIGNED DOLLAR DIRECTION — the `pl` cell, the `pl_pct` cell, the group subtotal, the sparkline
  * stroke, and the `ClosedSummary` realized figure. Nothing else is ever tinted.
  *
@@ -38,7 +39,7 @@ describe('tint discipline — token discipline (AC-81)', () => {
    * or P&L datum, and it predates this feature. AC-78 scopes the ban to the row/card data surface.
    * Exempted BY LINE CONTENT (not by file) so the rest of that file stays covered.
    */
-  const EXEMPT = /PAPER badge|color: 'success\.main',$|palette\.success\.main\}66/;
+  const EXEMPT = /PAPER badge|color: 'success\.main',$|color: upText,$|palette\.success\.main\}66/;
 
   it('success/error are selected ONLY by a sign comparison — never by a leg or structure attribute', () => {
     const offenders: string[] = [];
@@ -47,7 +48,8 @@ describe('tint discipline — token discipline (AC-81)', () => {
       for (const line of src.split('\n')) {
         const code = line.trim();
         if (code.startsWith('*') || code.startsWith('//')) continue; // prose cannot offend
-        if (!/success\.main|error\.main/.test(code)) continue;
+        if (code.startsWith('import ')) continue; // naming a helper selects nothing
+        if (!/success\.main|error\.main|\bupText\b|\bdownText\b/.test(code)) continue;
         if (DIRECTION_BRANCH.test(code)) {
           carriers += 1;
           continue;

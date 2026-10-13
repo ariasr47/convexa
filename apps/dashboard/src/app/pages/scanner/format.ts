@@ -8,6 +8,7 @@
  * NOT a freshness claim, so rendering "Structure as-of 3s" off it would be a fabricated age claim
  * on a row that has never been computed.
  */
+import { downText, upText } from '@/shared/theme/tokens';
 import type { ScanRow, ScanSortKey, ScanViewSort, SweepHeartbeat } from '@convexa/api';
 import { dataMode } from '@convexa/api';
 import { isIndexMegacap, SCAN_COPY, SESSION_LABEL, type MarketSessionPhase } from './labels';
@@ -266,9 +267,11 @@ export function updatedText(row: Pick<ScanRow, 'status' | 'as_of'>, nowS: number
  * neutral token — a tinted rate/proximity manufactures a verdict the datum cannot support, and is
  * the exact class the Stage-3 sweep caught on a proximity chip.
  */
-export function directionColor(chg: number | null | undefined): string {
+export function directionColor(
+  chg: number | null | undefined,
+): string | ((theme: { palette: { mode: string } }) => string) {
   if (chg == null || !Number.isFinite(chg)) return 'text.primary';
-  return chg >= 0 ? 'success.main' : 'error.main';
+  return chg >= 0 ? upText : downText;
 }
 
 const SORT_VALUE: Record<ScanSortKey, (r: ScanRow) => number | string | null> = {

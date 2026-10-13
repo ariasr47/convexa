@@ -280,6 +280,12 @@ export const extrasFor = (theme: {
   palette: { mode: string };
 }): Record<keyof typeof extras, string> => (theme.palette.mode === 'light' ? extrasLight : extras);
 
+/** Direction as TEXT (P&L, change, signed figures), mode-correct and AA on every surface: use as an
+ *  `sx` colour, e.g. `color: pl >= 0 ? upText : downText`. Fills, strokes and tints keep
+ *  `success.main` / `error.main` (2026-10-13 Amendments rows). */
+export const upText = (theme: { palette: { mode: string } }) => extrasFor(theme).textUp;
+export const downText = (theme: { palette: { mode: string } }) => extrasFor(theme).textDown;
+
 // `brandGradient` was DELETED at redesign-stage-3 (§5.1): the skill bans the gradient-brand
 // vocabulary ("the gradient mark is dead") and both consumers (the account avatar + the Sign-up
 // pill) were rebound to flat `primary.main` + `primary.contrastText` — which also fixed their
