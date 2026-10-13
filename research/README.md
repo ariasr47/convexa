@@ -16,7 +16,8 @@ The rules behind the format (why each part exists, freshness, how to update) are
    **Update:** `npm run research:new <TICKER>` writes `research/<TICKER>/<today>-update.md` from the
    latest note: facts blanked to `___`, sections flagged `re-confirm`, judgments at their old values, and
    a `since` block listing the old calls.
-2. Write the note. `npm run research:check -- --values <TICKER>` prints what the valuation computes.
+2. Write the note. `npm run research:check -- --values <TICKER>` prints what the valuation computes;
+   add `--only <TICKER>` to judge that ticker's folder alone while other drafts are half-written.
 3. `npm run research:check` (the pre-push hook runs it too) must pass.
 4. Commit and push. Cloudflare Pages rebuilds the site.
 

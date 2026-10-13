@@ -4,19 +4,31 @@
 // Cloudflare build would fail on it. It never reads the clock: freshness is the reader's browser's job
 // and `research:due`'s, so a push can't fail just because a day went by.
 //
-// `--values <TICKER>` also prints what the ticker's latest valuation computes.
+// `--values <TICKER>` also prints what the ticker's latest valuation computes. `--only <TICKER>` judges
+// that ticker's folder alone, for drafting several notes at once; the pre-push hook never passes it.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { formatErrors, loadNotes } from './notes.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const { notes, errors } = loadNotes(path.join(root, 'research'), root);
+const at0 = process.argv.indexOf('--only');
+const only = at0 === -1 ? null : (process.argv[at0 + 1] ?? '').toUpperCase();
+const loaded = loadNotes(path.join(root, 'research'), root);
+const notes = only ? loaded.notes.filter((n) => n.ticker === only) : loaded.notes;
+const errors = only
+  ? loaded.errors.filter((e) => e.path.startsWith(`research/${only}/`))
+  : loaded.errors;
 if (errors.length) {
   console.error(`research: ${errors.length} problem(s)\n${formatErrors(errors)}`);
   process.exit(1);
 }
 const tickers = new Set(notes.map((n) => n.ticker)).size;
-console.log(`research: ${notes.length} note(s) across ${tickers} ticker(s), all valid`);
+console.log(
+  `research: ${notes.length} note(s) across ${tickers} ticker(s), all valid` +
+    (only
+      ? ` (only ${only}; ${loaded.errors.length - errors.length} problem(s) elsewhere ignored)`
+      : ''),
+);
 
 const at = process.argv.indexOf('--values');
 if (at !== -1) {
