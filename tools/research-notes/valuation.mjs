@@ -16,6 +16,7 @@ const HIGH_GROWTH_YEARS = 5;
 /** Scenario inputs: unit, whether required, and whether the column is a judgment the author owns. */
 const COLUMNS = {
   rev_y1: { unit: 'money', required: false },
+  reinvest_y1: { unit: 'money', required: false },
   growth: { unit: 'pct', required: true },
   margin_y1: { unit: 'pct', required: false },
   margin_target: { unit: 'pct', required: true },
@@ -36,6 +37,7 @@ const GLOBAL_KEYS = [
   'margin_now',
   'nol',
   'tax',
+  'terminal_tax',
   'terminal_growth',
   'terminal_wacc',
   'terminal_roc',
@@ -60,6 +62,7 @@ const REQUIRED_KEYS = [
 ];
 /** Global inputs a sensitivity grid may vary, beside the scenario columns. */
 const SENSITIVE_GLOBALS = {
+  terminal_tax: 'pct',
   terminal_growth: 'pct',
   terminal_wacc: 'pct',
   terminal_roc: 'pct',
@@ -151,7 +154,12 @@ export function runScenario(g, s) {
       taxable = ebit - used;
     } else nol -= ebit;
     const nopat = ebit - taxable * g.tax;
-    const reinvestment = Math.max(0, next - revenue) / s.sales_to_capital;
+    // Year 1 may state its reinvestment outright: a price-driven jump in revenue (a memory upcycle)
+    // needs far less capital than the sales-to-capital ratio would charge for it.
+    const reinvestment =
+      t === 1 && s.reinvest_y1 != null
+        ? s.reinvest_y1
+        : Math.max(0, next - revenue) / s.sales_to_capital;
     const wacc =
       t <= HIGH_GROWTH_YEARS
         ? s.wacc
@@ -163,7 +171,7 @@ export function runScenario(g, s) {
   }
   const terminalRevenue = revenue * (1 + g.terminalGrowth);
   const terminalEbit = terminalRevenue * s.margin_target;
-  const terminalNopat = terminalEbit > 0 ? terminalEbit * (1 - g.tax) : terminalEbit;
+  const terminalNopat = terminalEbit > 0 ? terminalEbit * (1 - g.terminalTax) : terminalEbit;
   const reinvestmentRate = g.terminalGrowth / g.terminalRoc;
   const terminalValue =
     (terminalNopat * (1 - reinvestmentRate)) / (g.terminalWacc - g.terminalGrowth);
@@ -220,6 +228,8 @@ export function computeValuation(g) {
       value: round2(r.value),
       goingConcern: round2(r.goingConcern),
       vsPrice: vs(r.value, price),
+      // Enterprise value in $M, before the zero floor on equity: says how far below net debt it fell.
+      ev: Math.round(r.ev),
     };
   }
   let weighted = null;
@@ -254,6 +264,10 @@ export function computeValuation(g) {
   }
   const base = g.scenarios.find((s) => s.name === 'base').inputs;
   const solved = impliedGrowth(g, base, price);
+  // Whether faster growth adds value at base inputs: it does only when new capital earns more than
+  // it costs. When it doesn't, "no growth rate reaches the price" must not read as "grow faster".
+  const growthAddsValue =
+    runScenario(g, { ...base, growth: base.growth + 0.1 }).ev > runScenario(g, base).ev;
   const marketCap = price * g.shares;
   const ev = marketCap - g.netCash;
   const nopatNow =
@@ -268,6 +282,7 @@ export function computeValuation(g) {
     implied: {
       growth: solved.growth === null ? null : round2(solved.growth * 100),
       bound: solved.bound,
+      growthAddsValue,
       growthYears: base.rev_y1 == null ? 'years 1–5' : 'years 2–5',
       marketCap: round2(marketCap),
       ev: round2(ev),
@@ -281,10 +296,10 @@ export function computeValuation(g) {
 // The ```valuation block
 
 /**
- * @typedef {{ rev_y1: number | null, growth: number, margin_y1: number | null, margin_target: number,
+ * @typedef {{ rev_y1: number | null, reinvest_y1: number | null, growth: number, margin_y1: number | null, margin_target: number,
  *   sales_to_capital: number, wacc: number, p_fail: number, distress: number }} ScenarioInputs
  * @typedef {{ price: { value: number, asOf: string }, shares: number, netCash: number, revenue: number,
- *   marginNow: number, nol: number, tax: number, terminalGrowth: number, terminalWacc: number,
+ *   marginNow: number, nol: number, tax: number, terminalTax: number, terminalGrowth: number, terminalWacc: number,
  *   terminalRoc: number, rocFollowsWacc: boolean, marginYear: number, odds: number[] | null,
  *   scenarios: { name: string, inputs: ScenarioInputs }[], sensitivity: any }} ValuationInputs
  */
@@ -307,6 +322,7 @@ function parseAxis(text, fail) {
     return null;
   }
   const globalField = {
+    terminal_tax: 'terminalTax',
     terminal_growth: 'terminalGrowth',
     terminal_wacc: 'terminalWacc',
     terminal_roc: 'terminalRoc',
@@ -415,6 +431,7 @@ export function parseValuationBlock(lines, fail, inline) {
   const marginNow = dated('margin_now', 'pct');
   const nol = fields.nol ? dated('nol', 'money') : null;
   const tax = plain('tax', 'pct');
+  const terminalTax = fields.terminal_tax ? plain('terminal_tax', 'pct') : tax;
   const terminalGrowth = plain('terminal_growth', 'pct');
   const terminalWacc = plain('terminal_wacc', 'pct');
   const terminalRoc = fields.terminal_roc ? plain('terminal_roc', 'pct') : terminalWacc;
@@ -426,6 +443,12 @@ export function parseValuationBlock(lines, fail, inline) {
   if (nol) need(nol.value >= 0, fields.nol.line, '"nol" can\'t be negative.');
   if (tax !== null)
     need(tax >= 0 && tax < 1, fields.tax.line, '"tax" must be from 0% to under 100%.');
+  if (fields.terminal_tax && terminalTax !== null)
+    need(
+      terminalTax >= 0 && terminalTax < 1,
+      fields.terminal_tax.line,
+      '"terminal_tax" must be from 0% to under 100%.',
+    );
   if (terminalGrowth !== null && terminalWacc !== null)
     need(
       terminalWacc > terminalGrowth,
@@ -627,6 +650,7 @@ export function parseValuationBlock(lines, fail, inline) {
     marginNow: marginNow.value,
     nol: nol?.value ?? 0,
     tax,
+    terminalTax,
     terminalGrowth,
     terminalWacc,
     terminalRoc,
@@ -639,6 +663,7 @@ export function parseValuationBlock(lines, fail, inline) {
   const result = computeValuation(inputs);
   /** Judgments the author owns, compared note to note (a change needs a `moves` row). */
   const judgments = {
+    terminal_tax: fields.terminal_tax ? terminalTax : null,
     terminal_growth: terminalGrowth,
     terminal_wacc: terminalWacc,
     terminal_roc: fields.terminal_roc ? terminalRoc : null,
@@ -659,6 +684,7 @@ export function parseValuationBlock(lines, fail, inline) {
     marginNow,
     nol,
     tax,
+    terminalTax,
     terminalGrowth,
     terminalWacc,
     terminalRoc,

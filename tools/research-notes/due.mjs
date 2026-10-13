@@ -52,9 +52,11 @@ else {
     );
 }
 ahead.sort((a, b) => a.date.localeCompare(b.date) || a.ticker.localeCompare(b.ticker));
-if (ahead.length) {
-  console.log('\nComing due');
-  for (const r of ahead) {
+const all = process.argv.includes('--all');
+const shown = all ? ahead : ahead.slice(0, 12);
+if (shown.length) {
+  console.log(`\nComing due${all ? '' : ' (next 12; --all for every date)'}`);
+  for (const r of shown) {
     const window = r.whenLabel && r.whenLabel !== formatDay(r.date) ? ` (${r.whenLabel})` : '';
     console.log(`  ${formatDay(r.date).padEnd(13)} ${r.ticker.padEnd(6)} ${r.label}${window}`);
   }

@@ -536,7 +536,7 @@ function collectLinks(value, out = []) {
 const BLANK_RE = /_{3,}/;
 const RULE_ONLY_RE = /^\s*_{3,}\s*$/;
 const WORDS_PER_MINUTE = 230;
-const PCT_JUDGMENT_RE = /(growth|margin_y1|margin_target|wacc|p_fail|terminal_roc)$/;
+const PCT_JUDGMENT_RE = /(growth|margin_y1|margin_target|wacc|p_fail|terminal_roc|terminal_tax)$/;
 
 /**
  * Parse one note. `relPath` is its repo-relative path (research/NVDA/2026-10-12-x.md), used for the

@@ -41,6 +41,7 @@ const CHANGELOG_KINDS = [
 ];
 /** Judgments a `moves` row may name, beside `<scenario>.<input>`. */
 export const JUDGMENT_KEYS = [
+  'terminal_tax',
   'terminal_growth',
   'terminal_wacc',
   'terminal_roc',
@@ -51,7 +52,7 @@ export const JUDGMENT_KEYS = [
   'target',
 ];
 const SCENARIO_JUDGMENT_RE =
-  /^(bear|base|bull)\.(rev_y1|growth|margin_y1|margin_target|sales_to_capital|wacc|p_fail|distress)$/;
+  /^(bear|base|bull)\.(rev_y1|reinvest_y1|growth|margin_y1|margin_target|sales_to_capital|wacc|p_fail|distress)$/;
 
 /** `"Caption"` → Caption; anything else → null. */
 function caption(args) {

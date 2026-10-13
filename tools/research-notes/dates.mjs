@@ -76,7 +76,7 @@ export function parseWhen(raw, { allowOngoing = false } = {}) {
   const text = raw.trim();
   const bad = {
     error:
-      `Write the date as 2026-10-14, 2026-11, 2026-Q4, 2027, 2026-11-05..2026-11-16 or ` +
+      `Write the date as 2026-10-14, 2026-11, 2026-Q4, 2027, 2026-11-05..2026-11-16, 2027-07..2027-12 or ` +
       `"by 2026-11-10"${allowOngoing ? ' (or "ongoing")' : ''}; got ${JSON.stringify(text)}.`,
   };
   if (/^ongoing$/i.test(text)) {
@@ -114,6 +114,19 @@ export function parseWhen(raw, { allowOngoing = false } = {}) {
     return {
       when: { text, kind: 'window', start, end, approx: true, label: windowLabel(start, end) },
     };
+  }
+  const months = /^(\d{4})-(\d{2})\s*\.\.\s*(\d{4})-(\d{2})$/.exec(text);
+  if (months) {
+    const [y1, m1, y2, m2] = months.slice(1).map(Number);
+    if (m1 < 1 || m1 > 12 || m2 < 1 || m2 > 12) return bad;
+    const start = iso(y1, m1, 1);
+    const end = iso(y2, m2, lastDay(y2, m2));
+    if (end < start) return { error: `The window ${JSON.stringify(text)} ends before it starts.` };
+    const label =
+      y1 === y2
+        ? `${MONTH_NAMES[m1 - 1]}–${MONTH_NAMES[m2 - 1]} ${y1}`
+        : `${MONTH_NAMES[m1 - 1]} ${y1}–${MONTH_NAMES[m2 - 1]} ${y2}`;
+    return { when: { text, kind: 'window', start, end, approx: true, label } };
   }
   const month = /^(\d{4})-(\d{2})$/.exec(text);
   if (month) {

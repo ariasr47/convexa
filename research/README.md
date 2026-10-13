@@ -20,7 +20,7 @@ The rules behind the format (why each part exists, freshness, how to update) are
 3. `npm run research:check` (the pre-push hook runs it too) must pass.
 4. Commit and push. Cloudflare Pages rebuilds the site.
 
-`npm run research:due` lists every note's next review date. Files starting with `_` are ignored, which
+`npm run research:due` lists what is due now and the next dates that will age a note (`-- --all` for every date). Files starting with `_` are ignored, which
 suits drafts.
 
 **Never edit an old note's analysis.** A real update is a new dated note. Edit in place only to record a
@@ -29,22 +29,22 @@ error; each such edit sets `updated:` and adds a `changelog` line.
 
 ## Front matter
 
-| Field                 | Required | Example                                    | Notes                                                    |
-| --------------------- | -------- | ------------------------------------------ | -------------------------------------------------------- |
-| `ticker`              | yes      | `CBRS`                                     | Must match the folder name                               |
-| `date`                | yes      | `2026-10-12`                               | When the note was written; also the thesis-review date   |
-| `title`               | yes      | `A $25B backlog on a $0.9B year.`          | The headline                                             |
-| `company`             | no       | `Cerebras Systems`                         | Shown beside the ticker                                  |
-| `about`               | no       | `Nasdaq · AI inference chips and cloud`    | One line under the company name                          |
-| `stance`              | no       | `watching`                                 | Yours. `bullish`, `bearish`, `neutral` or `watching`     |
-| `target`              | no       | `150`                                      | Yours. Dollars per share; needs `target_date`            |
-| `target_date`         | no       | `2027-06-30`                               | When the target applies                                  |
-| `position`            | no       | `none`                                     | Yours. Disclosed in the header                           |
-| `horizon`             | no       | `mid-2028`                                 | Free text                                                |
-| `tags`                | no       | `AI chips, IPO 2026`                       | Comma-separated                                          |
-| `summary`             | no       | `One or two sentences.`                    | Defaults to the first paragraph                          |
-| `updated`             | no       | `2026-10-20`                               | Set when an outcome or correction is recorded            |
-| `not_following_since` | no       | `2027-01-05`                               | Archives the ticker: no more review prompts              |
+| Field                 | Required | Example                                 | Notes                                                  |
+| --------------------- | -------- | --------------------------------------- | ------------------------------------------------------ |
+| `ticker`              | yes      | `CBRS`                                  | Must match the folder name                             |
+| `date`                | yes      | `2026-10-12`                            | When the note was written; also the thesis-review date |
+| `title`               | yes      | `A $25B backlog on a $0.9B year.`       | The headline                                           |
+| `company`             | no       | `Cerebras Systems`                      | Shown beside the ticker                                |
+| `about`               | no       | `Nasdaq · AI inference chips and cloud` | One line under the company name                        |
+| `stance`              | no       | `watching`                              | Yours. `bullish`, `bearish`, `neutral` or `watching`   |
+| `target`              | no       | `150`                                   | Yours. Dollars per share; needs `target_date`          |
+| `target_date`         | no       | `2027-06-30`                            | When the target applies                                |
+| `position`            | no       | `none`                                  | Yours. Disclosed in the header                         |
+| `horizon`             | no       | `mid-2028`                              | Free text                                              |
+| `tags`                | no       | `AI chips, IPO 2026`                    | Comma-separated                                        |
+| `summary`             | no       | `One or two sentences.`                 | Defaults to the first paragraph                        |
+| `updated`             | no       | `2026-10-20`                            | Set when an outcome or correction is recorded          |
+| `not_following_since` | no       | `2027-01-05`                            | Archives the ticker: no more review prompts            |
 
 Any other field is an error.
 
@@ -73,36 +73,37 @@ value fails the check.
 A fenced block named on its opening line becomes a visual. Each row is cells separated by `|`. Text
 cells take **bold**, _italic_, links and `[n]` source references. Write `\|` for a literal pipe.
 
-| Block                  | Row format                                                                  | Renders                                     |
-| ---------------------- | --------------------------------------------------------------------------- | ------------------------------------------- |
-| `strip`                | `label \| value @ as-of \| sub`                                              | The header strip of figures                 |
-| `tldr`                 | `figure \| sentence` (1–4 rows)                                              | The 30-second summary                       |
-| `metrics`              | `label \| value @ as-of \| delta \| up/down/flat \| note [n]`                | Figure tiles                                |
-| `chart bar "Caption"`  | `label \| number \| approx/guide (optional) \| shown text (optional)`        | A column chart; the last plain bar is lit   |
-| `split "Caption"`      | `label \| number \| detail (optional)`                                       | One bar cut into shares of its total        |
-| `compare "Caption"`    | `label \| number \| shown text \| emph (optional)`                           | Horizontal bars on one scale                |
-| `bridge "Caption"`     | `label \| number`: first and last rows are totals, the rest signed steps     | A walk from one total to another            |
-| `units "Caption"`      | `total \| unit` (one row)                                                    | The total drawn as blocks of the unit       |
-| `implied`              | (no rows)                                                                   | What the price implies, from `valuation`    |
-| `variant`              | `driver \| what the price implies \| your view \| what settles it`           | Your view against the price's               |
-| `scorecard`            | `pillar \| metric \| latest \| ok/watch/broken \| kill criterion`            | The thesis scorecard                        |
-| `moat`                 | `source \| evidence/unproven/none \| why`                                    | The moat check                              |
-| `case`                 | `+ headline \| detail` or `- headline \| detail`                             | Case for vs the strongest case against      |
-| `premortem`            | `story \| kill criterion it maps to (#n)`                                    | The pre-mortem                              |
-| `valuation`            | see below                                                                   | Football field, scenarios, odds, sensitivity |
-| `catalysts`            | `date \| event \| detail \| confirmed/expected/target \| outcome (optional)` | The dated timeline                          |
-| `kill`                 | `#n \| trigger \| threshold \| source \| check by \| then \| outcome (opt.)` | Kill criteria                               |
-| `forecasts`            | `claim \| probability (0–1, blank = yours to set) \| resolve by \| source \| yes/no/void (opt.)` | The forecast ledger, Brier-scored |
-| `changelog`            | `date \| initiation/outcome/revision/roll-forward/correction \| text`        | The change log                              |
-| `sources`              | `n \| title \| https://…`                                                   | Numbered sources for `[n]` references       |
-| `since`                | `catalyst/forecast/kill/pillar \| the old call \| what happened`             | Update notes: the old calls, scored first   |
-| `moves`                | `input \| old → new \| trigger \| why`                                       | Update notes: every judgment that moved     |
+| Block                 | Row format                                                                                       | Renders                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| `strip`               | `label \| value @ as-of \| sub`                                                                  | The header strip of figures                                           |
+| `tldr`                | `figure \| sentence` (1–4 rows)                                                                  | The 30-second summary                                                 |
+| `metrics`             | `label \| value @ as-of \| delta \| up/down/flat \| note [n]`                                    | Figure tiles                                                          |
+| `chart bar "Caption"` | `label \| number \| approx/guide (optional) \| shown text (optional)`                            | A column chart (negatives hang below zero); the last plain bar is lit |
+| `split "Caption"`     | `label \| number \| detail (optional)`                                                           | One bar cut into shares of its total                                  |
+| `compare "Caption"`   | `label \| number \| shown text \| emph (optional)`                                               | Horizontal bars on one scale                                          |
+| `bridge "Caption"`    | `label \| number`: first and last rows are totals, the rest signed steps                         | A walk from one total to another                                      |
+| `units "Caption"`     | `total \| unit` (one row)                                                                        | The total drawn as blocks of the unit                                 |
+| `implied`             | (no rows)                                                                                        | What the price implies, from `valuation`                              |
+| `variant`             | `driver \| what the price implies \| your view \| what settles it`                               | Your view against the price's                                         |
+| `scorecard`           | `pillar \| metric \| latest \| ok/watch/broken \| kill criterion`                                | The thesis scorecard                                                  |
+| `moat`                | `source \| evidence/unproven/none \| why`                                                        | The moat check                                                        |
+| `case`                | `+ headline \| detail` or `- headline \| detail`                                                 | Case for vs the strongest case against                                |
+| `premortem`           | `story \| kill criterion it maps to (#n)`                                                        | The pre-mortem                                                        |
+| `valuation`           | see below                                                                                        | Football field, scenarios, odds, sensitivity                          |
+| `catalysts`           | `date \| event \| detail \| confirmed/expected/target \| outcome (optional)`                     | The dated timeline                                                    |
+| `kill`                | `#n \| trigger \| threshold \| source \| check by \| then \| outcome (opt.)`                     | Kill criteria                                                         |
+| `forecasts`           | `claim \| probability (0–1, blank = yours to set) \| resolve by \| source \| yes/no/void (opt.)` | The forecast ledger, Brier-scored                                     |
+| `changelog`           | `date \| initiation/outcome/revision/roll-forward/correction \| text`                            | The change log                                                        |
+| `sources`             | `n \| title \| https://…`                                                                        | Numbered sources for `[n]` references                                 |
+| `since`               | `catalyst/forecast/kill/pillar \| the old call \| what happened`                                 | Update notes: the old calls, scored first                             |
+| `moves`               | `input \| old → new \| trigger \| why`                                                           | Update notes: every judgment that moved                               |
 
 Plain Markdown still works: paragraphs, lists, tables, `> quotes`, **bold**, _italic_, `code`, links
 (`https://`, `http://` or `/` only), and `---` rules. Images and raw HTML are not supported.
 
 **Dates** in `catalysts`, `kill` and `forecasts`: `2026-10-14`, `2026-11` (a month), `2026-Q4`, `2027`,
-`2026-11-05..2026-11-16` (a window), `by 2026-11-10`, or `ongoing` (kill criteria only). An approximate
+`2026-11-05..2026-11-16` or `2027-07..2027-12` (a window), `by 2026-11-10`, or `ongoing` (kill criteria
+only). An approximate
 date counts from the end of its window. A row with an outcome no longer ages the note.
 
 ### The valuation block
@@ -139,10 +140,13 @@ Money is in **$ millions**, shares in **millions**, `price` and `distress` in **
   `revenue` (year 0); year 1 is `rev_y1` when given, then it grows at `growth` through year 5 and fades
   linearly to `terminal_growth` by year 10. The operating margin moves in a straight line from
   `margin_y1` (or `margin_now` at year 0) to `margin_target` by `margin_year`, then holds. Taxes apply to
-  profit after losses carried forward (`nol:` sets a starting balance). Reinvestment is new revenue ÷
-  `sales_to_capital`; a falling revenue releases no capital. The cost of capital is `wacc` through year
+  profit after losses carried forward (`nol:` sets a starting balance); `terminal_tax` (default `tax`)
+  applies from year 11. Reinvestment is new revenue ÷ `sales_to_capital`; a falling revenue releases no
+  capital. Year 1 can state its reinvestment outright with `reinvest_y1` ($M, e.g. guided capex less
+  depreciation): a jump that comes from prices rather than capacity needs far less capital than the
+  ratio would charge. The cost of capital is `wacc` through year
   5, then moves to `terminal_wacc` by year 10. The terminal value reinvests `terminal_growth ÷
-  terminal_roc` of profit (`terminal_roc` defaults to `terminal_wacc`: no excess returns forever).
+terminal_roc` of profit (`terminal_roc` defaults to `terminal_wacc`: no excess returns forever).
 - **Value per share** = (enterprise value + `net_cash`) ÷ `shares`, floored at zero, then weighted for
   failure: going-concern value × (1 − `p_fail`) + `distress` × `p_fail`.
 - **Yours, so optional:** `odds` (bear/base/bull in twentieths, summing to 20) adds a weighted value.
@@ -152,9 +156,9 @@ Money is in **$ millions**, shares in **millions**, `price` and `distress` in **
   growth the price implies (the base case solved for `growth`); and the share of the price that
   today's profit supports. `implied` renders the last two.
 - `method`, `price`, `shares`, `net_cash`, `revenue`, `margin_now`, `tax`, `terminal_growth`,
-  `terminal_wacc` and the three scenario rows are required. `rev_y1`, `margin_y1`, `margin_year`
-  (default 5), `nol`, `terminal_roc`, `traded`, `third_party`, `sensitivity`, `odds`, `why`,
-  `uncertainty` and `uncertainty_why` are optional.
+  `terminal_wacc` and the three scenario rows are required. The columns `rev_y1`, `reinvest_y1` and
+  `margin_y1`, and the fields `margin_year` (default 5), `nol`, `terminal_tax`, `terminal_roc`, `traded`,
+  `third_party`, `sensitivity`, `odds`, `why`, `uncertainty` and `uncertainty_why` are optional.
 
 ## What the check refuses
 
@@ -165,5 +169,5 @@ Money is in **$ millions**, shares in **millions**, `price` and `distress` in **
 - A `___` blank, or a `<!-- re-confirm … -->` flag still in place. After re-reading a carried section,
   replace its flag with `<!-- carried from 2026-10-12; re-confirmed 2026-11-18 -->`.
 - A judgment that differs from the ticker's previous note with no `moves` row: any scenario input,
-  `terminal_growth`, `terminal_wacc`, `terminal_roc`, `margin_year`, `odds`, `uncertainty`, `stance` or
-  `target`. Name it as written: `base.margin_target`, `odds`, `stance`.
+  `terminal_tax`, `terminal_growth`, `terminal_wacc`, `terminal_roc`, `margin_year`, `odds`,
+  `uncertainty`, `stance` or `target`. Name it as written: `base.margin_target`, `odds`, `stance`.

@@ -14,6 +14,7 @@ const flat = {
   marginNow: 0.1,
   nol: 0,
   tax: 0,
+  terminalTax: 0,
   terminalGrowth: 0,
   terminalWacc: 0.1,
   terminalRoc: 0.1,
@@ -24,6 +25,7 @@ const flat = {
 };
 const scenario = {
   rev_y1: null,
+  reinvest_y1: null,
   growth: 0,
   margin_y1: null,
   margin_target: 0.1,
@@ -49,7 +51,15 @@ test('worked cases: perpetuity, failure weighting, carried-forward losses, the g
 
   // 20% tax, 30 of losses carried forward: years 1–3 untaxed (10 each), then 8 a year; terminal 8/0.1.
   // PV = 10 × 2.48685 + 8 × (6.14457 − 2.48685) + 80 / 1.1^10 = 84.97 → $8.50 a share.
-  near(runScenario({ ...flat, tax: 0.2, nol: 30 }, scenario).value, 8.5, 2);
+  near(runScenario({ ...flat, tax: 0.2, terminalTax: 0.2, nol: 30 }, scenario).value, 8.5, 2);
+
+  // A stated year-1 reinvestment replaces the sales-to-capital charge: 10 of profit less 10
+  // reinvested in year 1, then the same perpetuity: 100 − 10 / 1.1 = 90.91 → $9.09 a share.
+  near(runScenario(flat, { ...scenario, reinvest_y1: 10 }).value, 9.0909, 4);
+
+  // A terminal tax rate of its own: 10 a year untaxed for ten years, then 8 forever.
+  // 10 × 6.14457 + 80 / 1.1^10 = 92.29 → $9.23 a share.
+  near(runScenario({ ...flat, terminalTax: 0.2 }, scenario).value, 9.2289, 4);
 
   // 10% for five years, then a straight fade to the 0% terminal rate: 8, 6, 4, 2, 0.
   const grown = runScenario(flat, { ...scenario, growth: 0.1 });
@@ -68,6 +78,7 @@ test('computeValuation: values against the price, odds-weighted value, and the p
   };
   const out = computeValuation(inputs);
   near(out.scenarios.base.value, 10);
+  near(out.scenarios.base.ev, 100); // enterprise value in $M, before the per-share split
   near(out.scenarios.base.vsPrice, 25); // $10 against an $8 price
   near(out.scenarios.bear.value, 5);
   near(out.scenarios.bull.value, 15);
@@ -82,4 +93,17 @@ test('computeValuation: values against the price, odds-weighted value, and the p
   near(runScenario(flat, { ...light, growth: solved.growth }).value, 12, 2);
   // A price no growth in range can reach says which side it fell off.
   assert.deepEqual(impliedGrowth(flat, light, 1e9), { growth: null, bound: 'above' });
+
+  // Growth adds value only when new capital earns more than it costs: 30% on capital against a
+  // 10% cost does; 5% (a 10% margin on 0.5 of revenue per dollar invested) destroys it.
+  const growing = (s) =>
+    computeValuation({
+      ...flat,
+      scenarios: ['bear', 'base', 'bull'].map((name) => ({ name, inputs: s })),
+    });
+  assert.equal(growing({ ...light, growth: 0.1 }).implied.growthAddsValue, true);
+  assert.equal(
+    growing({ ...scenario, sales_to_capital: 0.5, growth: 0.1 }).implied.growthAddsValue,
+    false,
+  );
 });
