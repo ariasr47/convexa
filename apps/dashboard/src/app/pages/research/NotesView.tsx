@@ -128,17 +128,7 @@ export function NotesView({ symbol }: { symbol: string }) {
   });
 
   return (
-    <Stack
-      spacing={2.5}
-      sx={{
-        minWidth: 0,
-        maxWidth: 1160,
-        mx: 'auto',
-        px: { xs: 2, sm: 3 },
-        py: { xs: 2, md: 4 },
-        pb: 'max(2rem, env(safe-area-inset-bottom))',
-      }}
-    >
+    <Stack spacing={2.5} sx={{ minWidth: 0 }}>
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
         <Typography component="h1" variant="h5">
           {ticker} research

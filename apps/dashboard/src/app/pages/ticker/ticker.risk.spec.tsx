@@ -472,10 +472,6 @@ describe('Ticker · market data paused (no-vendor-production-posture F2/F2b)', (
       'href',
       '/methodology',
     );
-    expect(screen.getByRole('link', { name: 'See an illustrative sample →' })).toHaveAttribute(
-      'href',
-      '/#landing-sample-field',
-    );
 
     const tickerCalls = () =>
       fetchMock.mock.calls.filter((c) => String(c[0]).includes('/api/ticker/')).length;

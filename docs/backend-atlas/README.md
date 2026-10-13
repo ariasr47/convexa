@@ -34,7 +34,7 @@ $env:VITE_DATA_MODE = 'demo'
 npm run build:dashboard
 ```
 
-Use `live` to build the live dashboard. When the variable is unset, the wrapper defaults to live, except for the configured Cloudflare Pages feature branch (`CF_PAGES=1` and `CF_PAGES_BRANCH=codex/portfolio-demo-platform`), which defaults to demo. Invalid explicit values fail before Nx starts. Mode enters the build identity, so switching modes requires another build. Both modes use the production optimization target.
+Use `live` to build the live dashboard. When the variable is unset, the wrapper defaults to live, except for the Cloudflare Pages `staging` branch (`CF_PAGES=1` and `CF_PAGES_BRANCH=staging`), which defaults to demo and serves the hosted demo at `staging.convexa.pages.dev`. Invalid explicit values fail before Nx starts. Mode enters the build identity, so switching modes requires another build. Both modes use the production optimization target.
 
 For ordinary local builds, clear the variable to restore the live default:
 

@@ -15,9 +15,12 @@ import type { AlertKind, AlertRule, LevelRef } from '@/features/alerts/types';
 import { useAlerts } from '@/features/alerts/useAlerts';
 import { NOT_RECORDED } from '@/shared/copy/notANumber';
 import { faceFor } from '@/shared/figure';
+import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { extrasFor } from '@/shared/theme/tokens';
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
+import PauseCircleOutlinedIcon from '@mui/icons-material/PauseCircleOutlined';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import FormControl from '@mui/material/FormControl';
@@ -240,6 +243,7 @@ function RuleSummary({ rule }: { rule: AlertRule }) {
 export function AlertsPage() {
   const a = useAlerts();
   const faulted = alertsReadFaulted();
+  const marketDataMode = useMarketDataMode();
   const [symbol, setSymbol] = useState('SPY');
   const [kind, setKind] = useState<AlertKind>('score_gate');
   const [level, setLevel] = useState<LevelRef>('gamma_flip');
@@ -320,6 +324,13 @@ export function AlertsPage() {
       </Stack>
 
       {faulted && <AlertsFaultedBanner />}
+      {/* Rules evaluate on structure snapshots, and none arrive while the server runs paused. */}
+      {marketDataMode === 'paused' && (
+        <Alert severity="info" icon={<PauseCircleOutlinedIcon />} role="status" sx={{ mb: 3 }}>
+          Live market data is off, so no rule can fire right now. Rules you add stay saved in this
+          browser.
+        </Alert>
+      )}
 
       {/* Two columns at ≥ laptop (1100px, `theme.ts:93`) — design/src/screens/alerts.mjs:6,
           `minmax(0,5fr) minmax(0,7fr)`: the New rule composer beside Rules + Fired. One column

@@ -24,6 +24,7 @@ vi.mock('@convexa/api', () => ({
   resumeDemoPlayback: resumeDemoPlaybackMock,
   resetDemoWorkspace: resetDemoWorkspaceMock,
   getScan: getScanMock,
+  getMarketDataMode: () => Promise.resolve('live'),
 }));
 
 describe('AppShell · keyboard skip link (spine #6)', () => {

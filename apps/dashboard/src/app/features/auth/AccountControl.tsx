@@ -20,6 +20,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
 import { AVATAR_SX, avatarInitial } from './avatar';
+import { SIGNUPS_OPEN } from './signups';
 
 export function AccountControl() {
   const auth = useAuth();
@@ -49,28 +50,30 @@ export function AccountControl() {
         >
           Log in
         </Button>
-        <Button
-          size="small"
-          variant="contained"
-          disableElevation
-          onClick={() => openAuth({ mode: 'signup' })}
-          data-testid="account-signup"
-          sx={{
-            whiteSpace: 'nowrap',
-            borderRadius: 999,
-            px: 2,
-            transition: 'transform 180ms ease, box-shadow 180ms ease, filter 180ms ease',
-            '&:hover': {
-              transform: 'translateY(-1px)',
-              filter: 'brightness(1.06)',
-              // Hover glow stays a mode-aware primary tint (an accent on the brand action).
-              boxShadow: (theme) => `0 8px 22px -8px ${alpha(theme.palette.primary.main, 0.6)}`,
-            },
-            '@media (prefers-reduced-motion: reduce)': { '&:hover': { transform: 'none' } },
-          }}
-        >
-          Sign up
-        </Button>
+        {SIGNUPS_OPEN && (
+          <Button
+            size="small"
+            variant="contained"
+            disableElevation
+            onClick={() => openAuth({ mode: 'signup' })}
+            data-testid="account-signup"
+            sx={{
+              whiteSpace: 'nowrap',
+              borderRadius: 999,
+              px: 2,
+              transition: 'transform 180ms ease, box-shadow 180ms ease, filter 180ms ease',
+              '&:hover': {
+                transform: 'translateY(-1px)',
+                filter: 'brightness(1.06)',
+                // Hover glow stays a mode-aware primary tint (an accent on the brand action).
+                boxShadow: (theme) => `0 8px 22px -8px ${alpha(theme.palette.primary.main, 0.6)}`,
+              },
+              '@media (prefers-reduced-motion: reduce)': { '&:hover': { transform: 'none' } },
+            }}
+          >
+            Sign up
+          </Button>
+        )}
       </Stack>
     );
   }

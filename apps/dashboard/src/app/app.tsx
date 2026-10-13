@@ -45,6 +45,7 @@ import { AppThemeProvider } from '@/features/auth/ThemeProvider';
 import { useSettings } from '@/features/auth/useSettings';
 import { Landing } from '@/pages/landing/Landing';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
+import { PageColumn } from '@/shared/ui/PageColumn';
 import { RouteFallback } from '@/shared/ui/RouteFallback';
 import { AppShell } from '@/shell/AppShell';
 import { dataMode } from '@convexa/api';
@@ -71,6 +72,11 @@ const TechnicalAnalysisView = lazy(() =>
 );
 const ResearchView = lazy(() =>
   import('@/pages/ticker/research/ResearchView').then((m) => ({ default: m.ResearchView })),
+);
+const TechnicalAnalysisOff = lazy(() =>
+  import('@/pages/ticker/technical-analysis/TechnicalAnalysisOff').then((m) => ({
+    default: m.TechnicalAnalysisOff,
+  })),
 );
 const NotesView = lazy(() =>
   import('@/pages/research/NotesView').then((m) => ({ default: m.NotesView })),
@@ -144,16 +150,29 @@ function DefaultTickerRedirect() {
   return <Navigate to={`/ticker/${encodeURIComponent(effective.defaultTicker)}`} replace />;
 }
 
+/** Indicators need daily bars: demo builds have sample bars; the live build has no bar feed. */
 function TechnicalAnalysisRoute() {
   const { symbol = '' } = useParams();
-  return <TechnicalAnalysisView symbol={symbol} />;
+  return (
+    <PageColumn>
+      {dataMode === 'demo' ? (
+        <TechnicalAnalysisView symbol={symbol} />
+      ) : (
+        <TechnicalAnalysisOff symbol={symbol} />
+      )}
+    </PageColumn>
+  );
 }
 
 /** Demo builds keep the authored sample note (its figures match the demo scenario); live builds show
  *  the owner's published notes from research/<TICKER>/*.md, which need no market data. */
 function ResearchRoute() {
   const { symbol = '' } = useParams();
-  return dataMode === 'demo' ? <ResearchView symbol={symbol} /> : <NotesView symbol={symbol} />;
+  return (
+    <PageColumn>
+      {dataMode === 'demo' ? <ResearchView symbol={symbol} /> : <NotesView symbol={symbol} />}
+    </PageColumn>
+  );
 }
 
 /** The route table only (ARCHITECTURE §1.2). Must render UNDER a Router + the auth/theme providers

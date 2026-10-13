@@ -241,7 +241,7 @@ describe('auth · server gate precedes the local write', () => {
 // 3. Session lifecycle — signup → persist across remount → logout → gated actions RE-GATE
 // =================================================================================================
 describe('auth · session lifecycle', () => {
-  it('anonymous ⇒ prompt; signup ⇒ write unlocked; remount ⇒ persists; logout ⇒ anonymous + re-gates', async () => {
+  it('anonymous ⇒ prompt; sign-in ⇒ write unlocked; remount ⇒ persists; logout ⇒ anonymous + re-gates', async () => {
     backend = installAuthBackend(); // anonymous start (= how a stale/expired cookie resolves)
     const user = userEvent.setup();
     let view = mountApp('/positions');
@@ -255,10 +255,10 @@ describe('auth · session lifecycle', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(backend.calls.simTradeGate).toBe(0);
 
-    // Sign UP from the wall.
+    // Sign IN from the wall. (Sign-ups are closed in the UI — features/auth/signups.ts — so the
+    // lifecycle starts from an existing account; the fake backend accepts any login by default.)
     await user.click(within(prompt).getByTestId('require-auth-signin'));
-    await user.click(await screen.findByTestId('auth-mode-switch')); // login → signup
-    await user.click(screen.getByTestId('auth-email'));
+    await user.click(await screen.findByTestId('auth-email'));
     await user.paste('new@user.com');
     await user.click(screen.getByTestId('auth-password'));
     await user.paste('longenoughpw');

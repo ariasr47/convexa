@@ -1238,6 +1238,21 @@ export async function getScanView(): Promise<ScanView> {
   return dataOf(result, 'View read failed');
 }
 
+export type MarketDataMode = 'live' | 'paused' | 'unknown';
+
+/** The server's market-data mode from GET /api/health (`MARKET_DATA_MODE`, read once at boot), so the
+ *  UI can say site-wide that live data is off. `unknown` when the read fails; demo builds never call
+ *  the server and always answer `unknown`. */
+export async function getMarketDataMode(): Promise<MarketDataMode> {
+  if (dataMode === 'demo') return 'unknown';
+  try {
+    const mode = (await http.GET('/api/health')).data?.market_data;
+    return mode === 'live' || mode === 'paused' ? mode : 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
 /** PUT /api/scan/view — the ONE server-gated, state-bearing scanner action
  *  (`[server-side-gate-enforcement]`). Signed-in ⇒ 200 echoing the SAVED view (server-wins).
  *  Signed-out ⇒ a REAL 403 `auth_required` even if the FE guard is bypassed/absent, and NOTHING is

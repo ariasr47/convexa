@@ -27,6 +27,7 @@ import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette/CommandPalette';
 import { Footer } from './Footer';
+import { MarketDataNotice } from './MarketDataNotice';
 import { TopNav } from './TopNav';
 
 export function AppShell() {
@@ -161,6 +162,7 @@ export function AppShell() {
           </Stack>
         </Box>
       )}
+      {dataMode === 'live' && <MarketDataNotice />}
       <TopNav onOpenPalette={() => setPaletteOpen(true)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       {/* The active in-shell page renders here, inside the app's ONE `<main>` landmark (Stage 0

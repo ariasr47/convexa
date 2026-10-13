@@ -31,6 +31,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { AUTH_COPY } from './copy';
 import { GoogleButton } from './GoogleButton';
+import { SIGNUPS_OPEN } from './signups';
 import { isLikelyEmail, validationFieldCopy } from './validation';
 
 export type AuthMode = 'login' | 'signup';
@@ -343,27 +344,30 @@ export function AuthDialog({
             <Divider flexItem>or</Divider>
             <GoogleButton available={auth.googleAvailable} />
 
-            <Link
-              component="button"
-              type="button"
-              onClick={() => onModeChange(mode === 'signup' ? 'login' : 'signup')}
-              data-testid="auth-mode-switch"
-              // GATE Z I-2 (AC-G1, color-contrast, serious — surfaced by amendment 5's new
-              // open-dialog scan): `MuiLink`'s theme default (`theme.ts`) is `color: 'info.main'`
-              // — the FILL-grade info blue, only measured to the ≥3:1 UI-component floor; as this
-              // link's own small (<18px) TEXT it measured 4.43:1 in dark mode, under the 4.5:1
-              // text floor (QA's independent axe sweep flagged the same element as pre-existing).
-              // `extras.textInfo` is the TEXT-GRADE counterpart this codebase already ships for
-              // exactly this split (`tokens.ts`, mirroring `textAmber`) — this is its fourth
-              // consumer, not a new token.
-              sx={{
-                alignSelf: 'center',
-                fontWeight: 600,
-                color: (theme) => extrasFor(theme).textInfo,
-              }}
-            >
-              {mode === 'signup' ? AUTH_COPY.signup.switch : AUTH_COPY.login.switch}
-            </Link>
+            {/* With sign-ups closed there is no way into the sign-up form from here (signups.ts). */}
+            {(SIGNUPS_OPEN || mode === 'signup') && (
+              <Link
+                component="button"
+                type="button"
+                onClick={() => onModeChange(mode === 'signup' ? 'login' : 'signup')}
+                data-testid="auth-mode-switch"
+                // GATE Z I-2 (AC-G1, color-contrast, serious — surfaced by amendment 5's new
+                // open-dialog scan): `MuiLink`'s theme default (`theme.ts`) is `color: 'info.main'`
+                // — the FILL-grade info blue, only measured to the ≥3:1 UI-component floor; as this
+                // link's own small (<18px) TEXT it measured 4.43:1 in dark mode, under the 4.5:1
+                // text floor (QA's independent axe sweep flagged the same element as pre-existing).
+                // `extras.textInfo` is the TEXT-GRADE counterpart this codebase already ships for
+                // exactly this split (`tokens.ts`, mirroring `textAmber`) — this is its fourth
+                // consumer, not a new token.
+                sx={{
+                  alignSelf: 'center',
+                  fontWeight: 600,
+                  color: (theme) => extrasFor(theme).textInfo,
+                }}
+              >
+                {mode === 'signup' ? AUTH_COPY.signup.switch : AUTH_COPY.login.switch}
+              </Link>
+            )}
           </Stack>
         </Box>
       </DialogContent>

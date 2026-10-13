@@ -67,6 +67,7 @@ import { useTheme, type Theme } from '@mui/material/styles';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 
+import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { elevationFor, extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
@@ -860,14 +861,23 @@ export function TickerDashboard() {
             >
               How the desk reads structure →
             </Link>
+            {/* Production keeps research and links to the hosted all-sample demo (staging). */}
             <Link
               component={RouterLink}
-              to="/#landing-sample-field"
+              to={`/ticker/${encodeURIComponent(ticker.toUpperCase())}/research`}
               variant="body2"
               underline="always"
               sx={{ color: (theme) => extrasFor(theme).textInfo }}
             >
-              See an illustrative sample →
+              Read {ticker.toUpperCase()} research →
+            </Link>
+            <Link
+              href={STAGING_DEMO_URL}
+              variant="body2"
+              underline="always"
+              sx={{ color: (theme) => extrasFor(theme).textInfo }}
+            >
+              Try the full demo →
             </Link>
           </Stack>
         </Alert>

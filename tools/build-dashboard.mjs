@@ -12,8 +12,9 @@ if (explicit !== undefined && explicit !== 'demo' && explicit !== 'live') {
   process.exit(2);
 }
 const requested = process.argv.find((arg) => arg.startsWith('--mode='))?.slice('--mode='.length);
-const branchDefault =
-  process.env.CF_PAGES === '1' && process.env.CF_PAGES_BRANCH === 'codex/portfolio-demo-platform';
+// Staging: Cloudflare Pages builds the `staging` branch as the all-sample demo
+// (staging.convexa.pages.dev); production (`main`) and every other branch build live.
+const branchDefault = process.env.CF_PAGES === '1' && process.env.CF_PAGES_BRANCH === 'staging';
 const dataMode = requested ?? explicit ?? (branchDefault ? 'demo' : 'live');
 if (dataMode !== 'demo' && dataMode !== 'live') {
   console.error(
