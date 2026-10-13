@@ -1,165 +1,190 @@
 /**
- * The ticker's Research tab in live mode: the owner's published notes for this symbol, newest first.
- * Notes come from research/<TICKER>/*.md at build time, so this tab works while market data is
- * paused. (Demo mode keeps the authored sample note in `ticker/research/ResearchView.tsx`, whose
- * figures match the demo scenario.)
+ * The ticker's Research tab in live mode: the newest note in full, and every earlier note one click
+ * away at its own address (`/ticker/<T>/research/<file-name>`), where it reads as superseded. Notes
+ * come from research/<TICKER>/*.md at build time, so this tab works while market data is paused.
+ * (Demo mode keeps the authored sample note in `ticker/research/ResearchView.tsx`, whose figures match
+ * the demo scenario.)
  */
-import { extrasFor } from '@/shared/theme/tokens';
-import { TintChip } from '@/shared/ui/TintChip';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import Link from '@mui/material/Link';
 import Skeleton from '@mui/material/Skeleton';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
-import { NoteBody } from './NoteBody';
-import { formatNoteDate, STANCE_LABEL, STANCE_TONE, useTickerNotes } from './notesData';
+import { formatNoteDate } from './format';
+import { useTickerNotes } from './notesData';
+import { NoteView } from './NoteView';
 import type { ResearchNote } from './types';
+import { Panel, StateDot } from './ui';
 
-export const RESEARCH_DISCLAIMER = 'Personal research notes. Not financial advice.';
+export { RESEARCH_DISCLAIMER } from './NoteView';
 
-export function NoteMeta({
-  note,
-}: {
-  note: Pick<ResearchNote, 'date' | 'updated' | 'horizon' | 'stance' | 'tags'>;
-}) {
+/** The research column: wider than the standard page column, for the rail, the note and the sidebar. */
+export function ResearchColumn({ children }: { children: React.ReactNode }) {
   return (
     <Box
-      sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 1.5, rowGap: 0.75 }}
+      sx={{
+        minWidth: 0,
+        maxWidth: 1240,
+        mx: 'auto',
+        px: { xs: 2, sm: 3 },
+        pt: { xs: 1, md: 1.5 },
+        pb: 'max(4rem, env(safe-area-inset-bottom))',
+      }}
     >
-      <Typography variant="caption" color="text.secondary">
-        {formatNoteDate(note.date)}
-        {note.updated && note.updated !== note.date && ` · updated ${formatNoteDate(note.updated)}`}
-        {note.horizon && ` · horizon ${note.horizon}`}
-      </Typography>
-      {note.stance && (
-        <TintChip tone={STANCE_TONE[note.stance]} label={STANCE_LABEL[note.stance]} />
-      )}
-      {note.tags.map((tag) => (
-        <TintChip key={tag} tone="neutral" label={tag} />
-      ))}
+      {children}
     </Box>
   );
 }
 
-function Sources({ sources }: { sources: ResearchNote['sources'] }) {
-  if (!sources.length) return null;
+function TickerTabs({ ticker }: { ticker: string }) {
+  const base = `/ticker/${encodeURIComponent(ticker)}`;
+  const tab = (to: string, label: string, current = false) => (
+    <Box
+      component={RouterLink}
+      to={to}
+      aria-current={current ? 'page' : undefined}
+      sx={{
+        px: 1.5,
+        py: 1.75,
+        textDecoration: 'none',
+        fontSize: 13,
+        fontWeight: current ? 600 : 500,
+        letterSpacing: '0.04em',
+        textTransform: 'uppercase',
+        whiteSpace: 'nowrap',
+        color: current ? 'text.primary' : 'text.secondary',
+        boxShadow: (t) => (current ? `inset 0 -2px 0 ${t.palette.text.primary}` : 'none'),
+        '&:hover': { color: 'text.primary' },
+      }}
+    >
+      {label}
+    </Box>
+  );
   return (
-    <Box>
-      <Typography component="h3" variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
-        Sources
-      </Typography>
-      <Box component="ol" sx={{ pl: 3, my: 0, display: 'grid', gap: 0.5 }}>
-        {sources.map((source) => (
-          <Typography component="li" variant="body2" key={source.href}>
-            <Link href={source.href} target="_blank" rel="noopener noreferrer">
-              {source.label}
-            </Link>
-          </Typography>
-        ))}
-      </Box>
-    </Box>
-  );
-}
-
-function NoteCard({ note, latest }: { note: ResearchNote; latest: boolean }) {
-  const body = (
-    <Stack spacing={2}>
-      <NoteBody blocks={note.blocks} />
-      <Sources sources={note.sources} />
-    </Stack>
-  );
-  if (latest)
-    return (
-      <Card
-        variant="outlined"
-        component="article"
-        id={`note-${note.slug}`}
-        sx={{ borderTop: 2, borderTopColor: 'primary.main' }}
+    <Box
+      component="nav"
+      aria-label={`${ticker} pages`}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
+        borderBottom: 1,
+        borderColor: 'divider',
+        mb: { xs: 2.5, md: 4 },
+        overflowX: 'auto',
+      }}
+    >
+      {tab(base, 'Overview')}
+      {tab(`${base}/technical-analysis`, 'Technical')}
+      {tab(`${base}/research`, 'Research', true)}
+      <Box sx={{ flex: 1 }} />
+      <Link
+        component={RouterLink}
+        to="/research"
+        sx={{ fontSize: 13, whiteSpace: 'nowrap', pl: 1.5 }}
       >
-        <CardContent>
-          <Stack spacing={2}>
-            <Stack spacing={1}>
-              <Typography variant="h5" component="h2">
-                {note.title}
-              </Typography>
-              <NoteMeta note={note} />
-            </Stack>
-            {body}
-          </Stack>
-        </CardContent>
-      </Card>
-    );
+        All research
+      </Link>
+    </Box>
+  );
+}
+
+function OtherNotes({
+  notes,
+  shown,
+  ticker,
+}: {
+  notes: ResearchNote[];
+  shown: ResearchNote;
+  ticker: string;
+}) {
+  const others = notes.filter((n) => n.slug !== shown.slug);
+  if (!others.length) return null;
   return (
-    <Card variant="outlined" component="article" id={`note-${note.slug}`}>
+    <Box
+      component="section"
+      aria-labelledby="other-notes"
+      sx={{ display: 'grid', gap: 1.5, mt: 6 }}
+    >
       <Box
-        component="details"
-        sx={{ '&[open] > summary': { borderBottom: 1, borderColor: 'divider' } }}
+        component="h2"
+        id="other-notes"
+        sx={{
+          m: 0,
+          fontSize: 13,
+          fontWeight: 600,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          color: 'text.secondary',
+        }}
       >
-        <Box
-          component="summary"
-          sx={{ cursor: 'pointer', px: 2, py: 1.5, minHeight: 44, display: 'grid', gap: 0.75 }}
-        >
-          <Typography
-            component="h2"
-            variant="subtitle1"
-            sx={{ display: 'inline', fontWeight: 600 }}
-          >
-            {note.title}
-          </Typography>
-          <NoteMeta note={note} />
-        </Box>
-        <CardContent>{body}</CardContent>
+        {shown === notes[0] ? 'Earlier notes' : 'Other notes on this ticker'}
       </Box>
-    </Card>
+      <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid', gap: 1 }}>
+        {others.map((n) => {
+          const latest = n === notes[0];
+          return (
+            <li key={n.slug}>
+              <Panel
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  gap: '6px 14px',
+                  py: 1.5,
+                }}
+              >
+                <StateDot state={latest ? 'current' : 'superseded'} />
+                <Link
+                  component={RouterLink}
+                  to={
+                    latest
+                      ? `/ticker/${encodeURIComponent(ticker)}/research`
+                      : `/ticker/${encodeURIComponent(ticker)}/research/${encodeURIComponent(n.slug)}`
+                  }
+                  sx={{ fontWeight: 600, flex: '1 1 260px', minWidth: 0 }}
+                >
+                  {n.title}
+                </Link>
+                <Box
+                  component="span"
+                  sx={(t) => ({
+                    fontSize: 12,
+                    color: 'text.secondary',
+                    bgcolor: alpha(t.palette.text.secondary, 0.12),
+                    px: 1,
+                    borderRadius: '999px',
+                  })}
+                >
+                  {latest ? 'Latest' : 'Superseded'}
+                </Box>
+                <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
+                  {formatNoteDate(n.date)}
+                </Box>
+              </Panel>
+            </li>
+          );
+        })}
+      </Box>
+    </Box>
   );
 }
 
-export function NotesView({ symbol }: { symbol: string }) {
+export function NotesView({ symbol, slug }: { symbol: string; slug?: string }) {
   const ticker = symbol.toUpperCase();
   const { state, retry } = useTickerNotes(ticker);
-  const navSx = (theme: Parameters<typeof extrasFor>[0]) => ({
-    minHeight: 44,
-    color: extrasFor(theme).textAmber,
-  });
-
   return (
-    <Stack spacing={2.5} sx={{ minWidth: 0 }}>
-      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Typography component="h1" variant="h5">
-          {ticker} research
-        </Typography>
-        <Box sx={{ flex: 1 }} />
-        <Button
-          component={RouterLink}
-          to={`/ticker/${encodeURIComponent(ticker)}`}
-          size="small"
-          sx={navSx}
-        >
-          Overview
-        </Button>
-        <Button
-          component={RouterLink}
-          to={`/ticker/${encodeURIComponent(ticker)}/technical-analysis`}
-          size="small"
-          sx={navSx}
-        >
-          Technical analysis
-        </Button>
-        <Button component={RouterLink} to="/research" size="small" sx={navSx}>
-          All research
-        </Button>
-      </Box>
+    <ResearchColumn>
+      <TickerTabs ticker={ticker} />
 
       {state.phase === 'loading' && (
-        <Stack spacing={2} aria-label={`Loading ${ticker} research`}>
-          <Skeleton variant="rounded" height={120} />
-          <Skeleton variant="rounded" height={260} />
-        </Stack>
+        <Box sx={{ display: 'grid', gap: 2 }} aria-label={`Loading ${ticker} research`}>
+          <Skeleton variant="rounded" height={140} />
+          <Skeleton variant="rounded" height={180} />
+          <Skeleton variant="rounded" height={420} />
+        </Box>
       )}
 
       {state.phase === 'error' && (
@@ -176,46 +201,55 @@ export function NotesView({ symbol }: { symbol: string }) {
       )}
 
       {state.phase === 'none' && (
-        <Card variant="outlined">
-          <CardContent>
-            <Stack spacing={1.5} sx={{ alignItems: 'flex-start' }}>
-              <Typography component="h2" variant="subtitle1" sx={{ fontWeight: 600 }}>
-                No research on {ticker} yet.
-              </Typography>
-              <Typography color="text.secondary">
-                Notes appear here once they're written. The research index lists every ticker that
-                has them.
-              </Typography>
-              <Button component={RouterLink} to="/research" variant="outlined" size="small">
-                See all research
-              </Button>
-            </Stack>
-          </CardContent>
-        </Card>
+        <Panel sx={{ display: 'grid', gap: 1.5, justifyItems: 'start', p: 3 }}>
+          <Box component="h1" sx={{ m: 0, fontSize: 18, fontWeight: 600 }}>
+            No research on {ticker} yet.
+          </Box>
+          <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
+            Notes appear here once they're written. The research index lists every ticker that has
+            them.
+          </Box>
+          <Button component={RouterLink} to="/research" variant="outlined" size="small">
+            See all research
+          </Button>
+        </Panel>
       )}
 
-      {state.phase === 'ready' && (
-        <>
-          <Typography variant="body2" color="text.secondary">
-            {state.notes.length === 1 ? '1 note' : `${state.notes.length} notes`}, newest first
-          </Typography>
-          <NoteCard note={state.notes[0]} latest />
-          {state.notes.length > 1 && (
-            <Stack spacing={1.5}>
-              <Typography component="h2" variant="overline" color="text.secondary">
-                Earlier notes
-              </Typography>
-              {state.notes.slice(1).map((note) => (
-                <NoteCard note={note} latest={false} key={note.slug} />
-              ))}
-            </Stack>
-          )}
-        </>
-      )}
-
-      <Typography variant="caption" color="text.secondary">
-        {RESEARCH_DISCLAIMER}
-      </Typography>
-    </Stack>
+      {state.phase === 'ready' &&
+        (() => {
+          const notes = state.notes;
+          const shown = slug ? notes.find((n) => n.slug === slug) : notes[0];
+          if (!shown)
+            return (
+              <Panel sx={{ display: 'grid', gap: 1.5, justifyItems: 'start', p: 3 }}>
+                <Box component="h1" sx={{ m: 0, fontSize: 18, fontWeight: 600 }}>
+                  No {ticker} note named “{slug}”.
+                </Box>
+                <Link component={RouterLink} to={`/ticker/${encodeURIComponent(ticker)}/research`}>
+                  Read the latest {ticker} note →
+                </Link>
+              </Panel>
+            );
+          const isLatest = shown === notes[0];
+          const isFirst = shown === notes[notes.length - 1];
+          return (
+            <>
+              <NoteView
+                key={shown.slug}
+                note={shown}
+                kind={
+                  isFirst
+                    ? notes.length === 1
+                      ? 'Initiation · first note'
+                      : 'Initiation'
+                    : 'Update'
+                }
+                latest={isLatest ? null : { slug: notes[0].slug, date: notes[0].date }}
+              />
+              <OtherNotes notes={notes} shown={shown} ticker={ticker} />
+            </>
+          );
+        })()}
+    </ResearchColumn>
   );
 }

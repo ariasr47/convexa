@@ -165,13 +165,16 @@ function TechnicalAnalysisRoute() {
 }
 
 /** Demo builds keep the authored sample note (its figures match the demo scenario); live builds show
- *  the owner's published notes from research/<TICKER>/*.md, which need no market data. */
+ *  the owner's published notes from research/<TICKER>/*.md, which need no market data. A note's file
+ *  name in the path (`/research/<slug>`) opens an earlier note. */
 function ResearchRoute() {
-  const { symbol = '' } = useParams();
-  return (
+  const { symbol = '', slug } = useParams();
+  return dataMode === 'demo' ? (
     <PageColumn>
-      {dataMode === 'demo' ? <ResearchView symbol={symbol} /> : <NotesView symbol={symbol} />}
+      <ResearchView symbol={symbol} />
     </PageColumn>
+  ) : (
+    <NotesView symbol={symbol} slug={slug} />
   );
 }
 
@@ -223,6 +226,7 @@ export function AppRoutes() {
           element={lazyRoute(<TechnicalAnalysisRoute />)}
         />
         <Route path="/ticker/:symbol/research" element={lazyRoute(<ResearchRoute />)} />
+        <Route path="/ticker/:symbol/research/:slug" element={lazyRoute(<ResearchRoute />)} />
         {/* Research index — every ticker with published notes; public in both modes. */}
         <Route path="/research" element={lazyRoute(<ResearchIndexPage />)} />
         {/* OWNER LOCKDOWN 2026-08-06 — private testing. Positions + Scanner are behind a sign-in
