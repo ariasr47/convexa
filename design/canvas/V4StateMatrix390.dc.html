@@ -177,6 +177,22 @@
   .claim { font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 112.5%; font-weight: 600; font-size: 18px; line-height: 1.25; text-wrap: balance; margin: 0; }
   .sub { font-size: 12.5px; color: var(--steel); margin: 2px 0 0; line-height: 1.45; }
   .srcline { font-size: 11.5px; color: var(--steel); margin: 0; }
+  .hd-p { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; container-type: inline-size; }
+  .hd-p.is-sample { border-style: dashed; border-color: var(--steel-2); background-image: repeating-linear-gradient(135deg, transparent 0 10px, var(--hatch) 10px 20px); }
+  .hd-p .ph { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .hd-p .ph h3 { margin: 0; font-size: 14px; font-weight: 600; flex: 1 1 auto; min-width: 0; }
+  .hd-fig { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border-radius: 10px; overflow: hidden; }
+  .hd-fig > div { background: var(--ink-2); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .hd-fig .v { font: 500 18px/1.2 'IBM Plex Mono', monospace; }
+  .hd-list { display: flex; flex-direction: column; }
+  .hd-list > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .smap { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .smap th { position: sticky; top: 0; background: var(--ink); text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); padding: 10px 10px; border-bottom: 1px solid var(--line-2); }
+  .smap td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.45; color: var(--steel); }
+  .smap td.w { color: var(--phosphor); }
+  .smap td.w b { display: block; font-weight: 600; }
+  .smap tr.grp td { padding: 22px 10px 8px; border-bottom: 1px solid var(--line-2); color: var(--phosphor); font-family: 'Archivo', sans-serif; font-stretch: 112.5%; font-weight: 700; font-size: 17px; }
+  .smap td .stagwrap { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
   @media (max-width: 1099px) { .v4n-search { display: none; } .v4n-icon.search { display: inline-flex; } }
   @media (max-width: 899px) { .v4n-links { display: none; } .v4n-icon.menu { display: inline-flex; } .v4n-in { gap: 8px; } }
   @media (max-width: 767px) { .only-wide { display: none !important; } }
@@ -189,13 +205,6 @@
   .sheet .trace { margin: 10px 0 0; font: 400 12px 'IBM Plex Mono', monospace; color: var(--steel); }
   .legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px 24px; }
   .legend > div { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); }
-  .smap { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-  .smap th { position: sticky; top: 0; background: var(--ink); text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); padding: 10px 10px; border-bottom: 1px solid var(--line-2); }
-  .smap td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.45; color: var(--steel); }
-  .smap td.w { color: var(--phosphor); }
-  .smap td.w b { display: block; font-weight: 600; }
-  .smap tr.grp td { padding: 22px 10px 8px; border-bottom: 1px solid var(--line-2); color: var(--phosphor); font-family: 'Archivo', sans-serif; font-stretch: 112.5%; font-weight: 700; font-size: 17px; }
-  .smap td .stagwrap { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
   .tally { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
   .tally > span { display: inline-flex; align-items: center; gap: 8px; font: 500 13px 'IBM Plex Mono', monospace; }
   .mx-grid { display: grid; gap: 16px; align-items: start; }

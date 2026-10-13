@@ -18,6 +18,9 @@ import { LIB_CSS, libraryBody } from './library-page.mjs';
 import { componentsBody } from './components-sheet.mjs';
 import { SHEET_CSS, sourceMapBody, stateMatrixBody } from './v4/data-sheets.mjs';
 import { HYBRID_CSS, hybridDeskBody } from './v4/hybrid-desk.mjs';
+import { TOOLS_CSS, roadmapBody, toolSheetBody } from './v4/tools-sheets.mjs';
+import { RESEARCH_CSS, filingsBody, marketsBody, scorecardBody, tickerResearchBody } from './v4/research.mjs';
+import { TOOLS } from '../data/tools.mjs';
 
 const s = (title, group, desc, body, css = '', extra = {}) => ({ title, group, desc, body, css, ...extra });
 
@@ -52,4 +55,10 @@ export const screens = {
   'v4-state-matrix': s('State matrix', 'v4 · Data states', 'Nine widget families in all fourteen data states, desktop widths.', (o) => stateMatrixBody(o), SHEET_CSS),
   'v4-state-matrix-phone': s('State matrix · phone', 'v4 · Data states', 'The same matrix at phone widths: sheets for the AI read and dialogs, 44px controls.', (o) => stateMatrixBody({ ...o, phone: true }), SHEET_CSS),
   'v4-hybrid-desk': s('Hybrid desk · NVDA', 'v4 · Data states', 'Public data live, options panels honestly not live, with a toggle to a labelled sample.', (o) => hybridDeskBody(o), HYBRID_CSS),
+  'v4-roadmap': s('Roadmap · tools from public data', 'v4 · Tools from public data', 'Every row of docs/public-data/CANDIDATES.md with source, delay, status and what it unlocks.', (o) => roadmapBody(o), SHEET_CSS + TOOLS_CSS),
+  'v4-markets': s('Markets', 'v4 · Tools from public data', 'Rates, liquidity, the release calendar and futures positioning, from public sources.', (o) => marketsBody(o), HYBRID_CSS + RESEARCH_CSS),
+  'v4-filings': s('Filings', 'v4 · Tools from public data', 'The SEC feed for followed companies, with the filing detail and reported figures.', (o) => filingsBody(o), HYBRID_CSS + RESEARCH_CSS),
+  'v4-scorecard': s('Scorecard', 'v4 · Tools from public data', 'Forecast ledger and calibration, with the signal track record blocked on a price source.', (o) => scorecardBody(o), HYBRID_CSS + RESEARCH_CSS),
+  'v4-ticker-research': s('Ticker research · NVDA', 'v4 · Tools from public data', 'A note’s header, its figures checked against the filing, and every public-data panel for the ticker.', (o) => tickerResearchBody(o), HYBRID_CSS + RESEARCH_CSS),
+  ...Object.fromEntries(TOOLS.map((t) => [`v4-tool-${t.key}`, s(`Tool · ${t.name}`, 'v4 · Tools from public data', `${t.unlocks}. Status: ${t.status}.`, (o) => toolSheetBody({ ...o, tool: t.key }), SHEET_CSS + TOOLS_CSS + HYBRID_CSS)])),
 };

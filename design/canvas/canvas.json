@@ -23,6 +23,10 @@
     {
       "id": "v4-data",
       "name": "v4 · Data states"
+    },
+    {
+      "id": "v4-tools",
+      "name": "v4 · Tools from public data"
     }
   ],
   "artboards": [
@@ -431,6 +435,136 @@
       "w": 3740,
       "h": 4700,
       "page": "v4-data"
+    },
+    {
+      "file": "V4Roadmap.dc.html",
+      "title": "v4 · Roadmap: everything Convexa can build without the paid feed",
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 3600,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4Markets.dc.html",
+      "title": "v4 · Markets · rates, liquidity, calendar, positioning (built + build)",
+      "x": 2040,
+      "y": 0,
+      "w": 1440,
+      "h": 3300,
+      "page": "v4-tools",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Filings.dc.html",
+      "title": "v4 · Filings · the SEC feed and filing detail (switch)",
+      "x": 3600,
+      "y": 0,
+      "w": 1440,
+      "h": 1900,
+      "page": "v4-tools",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Scorecard.dc.html",
+      "title": "v4 · Scorecard · forecasts live, signal track record blocked",
+      "x": 5160,
+      "y": 0,
+      "w": 1440,
+      "h": 2000,
+      "page": "v4-tools",
+      "expand": "fill"
+    },
+    {
+      "file": "V4TickerResearch.dc.html",
+      "title": "v4 · Ticker research · NVDA · every public panel",
+      "x": 6720,
+      "y": 0,
+      "w": 1440,
+      "h": 2700,
+      "page": "v4-tools",
+      "expand": "fill"
+    },
+    {
+      "file": "V4ToolLiquidity.dc.html",
+      "title": "v4 · Tool · Liquidity panel · build",
+      "x": 0,
+      "y": 4000,
+      "w": 1440,
+      "h": 2800,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4ToolCalendar.dc.html",
+      "title": "v4 · Tool · Macro calendar · build",
+      "x": 1560,
+      "y": 4000,
+      "w": 1440,
+      "h": 2800,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4ToolOtc.dc.html",
+      "title": "v4 · Tool · Off-exchange volume (weekly) · build / verify",
+      "x": 3120,
+      "y": 4000,
+      "w": 1440,
+      "h": 2800,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4ToolClusters.dc.html",
+      "title": "v4 · Tool · Insider clusters · build",
+      "x": 4680,
+      "y": 4000,
+      "w": 1440,
+      "h": 2800,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4ToolHolders.dc.html",
+      "title": "v4 · Tool · Fund holdings (13F) · build",
+      "x": 6240,
+      "y": 4000,
+      "w": 1440,
+      "h": 2800,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4ToolXbrl.dc.html",
+      "title": "v4 · Tool · Note figures from XBRL · build",
+      "x": 0,
+      "y": 7300,
+      "w": 1440,
+      "h": 2800,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4ToolPeers.dc.html",
+      "title": "v4 · Tool · Peer table · build",
+      "x": 1560,
+      "y": 7300,
+      "w": 1440,
+      "h": 2800,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4ToolTa.dc.html",
+      "title": "v4 · Tool · Technical analysis · blocked",
+      "x": 3120,
+      "y": 7300,
+      "w": 1440,
+      "h": 3000,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4ToolSignals.dc.html",
+      "title": "v4 · Tool · Signal track record · blocked",
+      "x": 4680,
+      "y": 7300,
+      "w": 1440,
+      "h": 2800,
+      "page": "v4-tools"
     }
   ],
   "annotations": [
@@ -473,6 +607,14 @@
       "w": 900,
       "page": "v4-data",
       "text": "v4 · Data states (2026-10-13). The hybrid site: live where free public data reaches, honestly not live where the paid options feed is needed. Source map → state matrix → the NVDA desk in both honest options (explain, or a labelled sample). Every board names the review findings it resolves (design/REVIEW-2026-10-13.md). Figures are illustrative design values."
+    },
+    {
+      "id": "note-v4-tools",
+      "x": 0,
+      "y": -520,
+      "w": 900,
+      "page": "v4-tools",
+      "text": "v4 · Tools from public data (2026-10-13). Source of truth: docs/public-data/CANDIDATES.md and its status words (live · switch · build · verify · blocked). Top row: the roadmap and the built research pages, re-sourced and joined by the new tools. Rows below: one sheet per priority tool with desktop, phone and every state. Blocked tools draw their design target with illustrative values; the gate is open question Q-1."
     },
     {
       "id": "note-system",
@@ -529,6 +671,118 @@
       "w": 640,
       "page": "v4-data",
       "text": "v4 · State matrix · phone widths. Resolves X-12, DS-05–DS-08. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Roadmap",
+      "x": 0,
+      "y": -230,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Roadmap: everything Convexa can build without the paid feed. Resolves TL-13, Q-1, Q-2, Q-3. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Markets",
+      "x": 2040,
+      "y": -230,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Markets · rates, liquidity, calendar, positioning (built + build). Resolves X-08, TL-01, TL-03, TL-14. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Filings",
+      "x": 3600,
+      "y": -230,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Filings · the SEC feed and filing detail (switch). Resolves X-13, DS-02, TL-15. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Scorecard",
+      "x": 5160,
+      "y": -230,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Scorecard · forecasts live, signal track record blocked. Resolves TL-12, TL-16. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4TickerResearch",
+      "x": 6720,
+      "y": -230,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Ticker research · NVDA · every public panel. Resolves TL-05–TL-11, TL-17. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolLiquidity",
+      "x": 0,
+      "y": 3770,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Liquidity panel · build. Resolves TL-01, TL-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolCalendar",
+      "x": 1560,
+      "y": 3770,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Macro calendar · build. Resolves TL-03, TL-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolOtc",
+      "x": 3120,
+      "y": 3770,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Off-exchange volume (weekly) · build / verify. Resolves TL-05, TKR-07. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolClusters",
+      "x": 4680,
+      "y": 3770,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Insider clusters · build. Resolves TL-06. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolHolders",
+      "x": 6240,
+      "y": 3770,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Fund holdings (13F) · build. Resolves TL-07. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolXbrl",
+      "x": 0,
+      "y": 7070,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Note figures from XBRL · build. Resolves TL-08, TL-09. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolPeers",
+      "x": 1560,
+      "y": 7070,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Peer table · build. Resolves TL-10. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolTa",
+      "x": 3120,
+      "y": 7070,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Technical analysis · blocked. Resolves TL-11, TKR-05, DS-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolSignals",
+      "x": 4680,
+      "y": 7070,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Signal track record · blocked. Resolves TL-12. Findings: design/REVIEW-2026-10-13.md."
     }
   ],
   "launch": {

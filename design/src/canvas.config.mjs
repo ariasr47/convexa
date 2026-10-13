@@ -7,6 +7,7 @@ export const pages = [
   { id: 'page-4', name: 'Dialogs & gates' },
   { id: 'page-5', name: 'System' },
   { id: 'v4-data', name: 'v4 · Data states' },
+  { id: 'v4-tools', name: 'v4 · Tools from public data' },
 ];
 
 // { name, screen, page, w, h, title, opts?, expand?, interactive? }
@@ -61,6 +62,22 @@ export const artboards = [
   { name: 'V4HybridDesk390', screen: 'v4-hybrid-desk', page: 'v4-data', x: 5160, y: 0, w: 390, h: 5200, title: 'v4 · Hybrid desk · NVDA · phone', findings: 'X-12, TKR-06, TKR-08' },
   { name: 'V4StateMatrix', screen: 'v4-state-matrix', page: 'v4-data', x: 0, y: 6100, w: 3220, h: 4200, title: 'v4 · State matrix · 9 families × 14 states', findings: 'X-01, X-02, X-09, X-10, DS-05–DS-08' },
   { name: 'V4StateMatrix390', screen: 'v4-state-matrix-phone', page: 'v4-data', x: 3340, y: 6100, w: 3740, h: 4700, title: 'v4 · State matrix · phone widths', findings: 'X-12, DS-05–DS-08' },
+
+  // ---- v4 · Tools from public data (wave 2, 2026-10-13) ----
+  { name: 'V4Roadmap', screen: 'v4-roadmap', page: 'v4-tools', x: 0, y: 0, w: 1920, h: 3600, title: 'v4 · Roadmap: everything Convexa can build without the paid feed', findings: 'TL-13, Q-1, Q-2, Q-3' },
+  { name: 'V4Markets', screen: 'v4-markets', page: 'v4-tools', x: 2040, y: 0, w: 1440, h: 3300, title: 'v4 · Markets · rates, liquidity, calendar, positioning (built + build)', expand: 'fill', findings: 'X-08, TL-01, TL-03, TL-14' },
+  { name: 'V4Filings', screen: 'v4-filings', page: 'v4-tools', x: 3600, y: 0, w: 1440, h: 1900, title: 'v4 · Filings · the SEC feed and filing detail (switch)', expand: 'fill', findings: 'X-13, DS-02, TL-15' },
+  { name: 'V4Scorecard', screen: 'v4-scorecard', page: 'v4-tools', x: 5160, y: 0, w: 1440, h: 2000, title: 'v4 · Scorecard · forecasts live, signal track record blocked', expand: 'fill', findings: 'TL-12, TL-16' },
+  { name: 'V4TickerResearch', screen: 'v4-ticker-research', page: 'v4-tools', x: 6720, y: 0, w: 1440, h: 2700, title: 'v4 · Ticker research · NVDA · every public panel', expand: 'fill', findings: 'TL-05–TL-11, TL-17' },
+  { name: 'V4ToolLiquidity', screen: 'v4-tool-liquidity', page: 'v4-tools', x: 0, y: 4000, w: 1440, h: 2800, title: 'v4 · Tool · Liquidity panel · build', findings: 'TL-01, TL-02' },
+  { name: 'V4ToolCalendar', screen: 'v4-tool-calendar', page: 'v4-tools', x: 1560, y: 4000, w: 1440, h: 2800, title: 'v4 · Tool · Macro calendar · build', findings: 'TL-03, TL-04' },
+  { name: 'V4ToolOtc', screen: 'v4-tool-otc', page: 'v4-tools', x: 3120, y: 4000, w: 1440, h: 2800, title: 'v4 · Tool · Off-exchange volume (weekly) · build / verify', findings: 'TL-05, TKR-07' },
+  { name: 'V4ToolClusters', screen: 'v4-tool-clusters', page: 'v4-tools', x: 4680, y: 4000, w: 1440, h: 2800, title: 'v4 · Tool · Insider clusters · build', findings: 'TL-06' },
+  { name: 'V4ToolHolders', screen: 'v4-tool-holders', page: 'v4-tools', x: 6240, y: 4000, w: 1440, h: 2800, title: 'v4 · Tool · Fund holdings (13F) · build', findings: 'TL-07' },
+  { name: 'V4ToolXbrl', screen: 'v4-tool-xbrl', page: 'v4-tools', x: 0, y: 7300, w: 1440, h: 2800, title: 'v4 · Tool · Note figures from XBRL · build', findings: 'TL-08, TL-09' },
+  { name: 'V4ToolPeers', screen: 'v4-tool-peers', page: 'v4-tools', x: 1560, y: 7300, w: 1440, h: 2800, title: 'v4 · Tool · Peer table · build', findings: 'TL-10' },
+  { name: 'V4ToolTa', screen: 'v4-tool-ta', page: 'v4-tools', x: 3120, y: 7300, w: 1440, h: 3000, title: 'v4 · Tool · Technical analysis · blocked', findings: 'TL-11, TKR-05, DS-03' },
+  { name: 'V4ToolSignals', screen: 'v4-tool-signals', page: 'v4-tools', x: 4680, y: 7300, w: 1440, h: 2800, title: 'v4 · Tool · Signal track record · blocked', findings: 'TL-12' },
 ];
 
 export const annotations = [
@@ -69,6 +86,7 @@ export const annotations = [
   { id: 'note-site', page: 'page-3', w: 520, text: 'Site surfaces at 1440. Copy is grounded in the product (69-name universe, ~60s desk cadence, ~3-min scanner sweep, 7–45 DTE, simulated book, BYO key); all prices, P/L, scores and timestamps are sample values.' },
   { id: 'note-dialogs', page: 'page-4', w: 520, text: 'Every overlay and gate in the product: sign-in and the private-testing wall, the one shared sim trade-entry dialog in both variants (with the six binding disclosures verbatim), the egress drawer, persona editing, order detail in both coverage states, the scan view editor, route fallback, 404, and the two operator surfaces.' },
   { id: 'note-v4-data', page: 'v4-data', x: 0, y: -520, w: 900, text: 'v4 · Data states (2026-10-13). The hybrid site: live where free public data reaches, honestly not live where the paid options feed is needed. Source map → state matrix → the NVDA desk in both honest options (explain, or a labelled sample). Every board names the review findings it resolves (design/REVIEW-2026-10-13.md). Figures are illustrative design values.' },
+  { id: 'note-v4-tools', page: 'v4-tools', x: 0, y: -520, w: 900, text: 'v4 · Tools from public data (2026-10-13). Source of truth: docs/public-data/CANDIDATES.md and its status words (live · switch · build · verify · blocked). Top row: the roadmap and the built research pages, re-sourced and joined by the new tools. Rows below: one sheet per priority tool with desktop, phone and every state. Blocked tools draw their design target with illustrative values; the gate is open question Q-1.' },
   { id: 'note-system', page: 'page-5', w: 560, text: 'The library is generated from tokens/tokens.json and src/components — every state shown there is a registered state. The light renders prove the scheme is a token swap, not a second layout.' },
 ];
 

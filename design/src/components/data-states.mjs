@@ -103,6 +103,7 @@ function block(b) {
     case 'na': return `<div class="dna"><span class="caps">Does not apply</span><span class="dline">${a}</span></div>`;
     case 'pause': return `<span style="display: inline-flex; gap: 6px; align-items: center;">${icon('pause', 12)}<span class="dline">${a}</span></span>`;
     case 'progress': return `<span aria-hidden="true" style="display: block; height: 3px; width: 46%; border-radius: 2px; background: var(--amber);"></span><span class="dline" role="status">${a}</span>`;
+    case 'html': return a;
     case 'kv': return `<div style="display: flex; justify-content: space-between; font-size: 12px;"><span class="steel">${a}</span><span class="steel">${c}</span></div>`;
     default: return '';
   }

@@ -56,3 +56,19 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
   `.cell.offline` dims with `textDim`, not opacity (2026-09-09 amendment); tokens.json mirrors
   `textDim`, `textInfo`, `textUp`, `textDown` and `hatch` (= `hatchAlt`), checked by verify-tokens.
 - Findings and canon proposals: `design/REVIEW-2026-10-13.md`. Supersedes nothing above; v2 boards stay.
+
+## 2026-10-13 · v4 wave 2 — tools from public data
+
+- **Source of truth:** docs/public-data/CANDIDATES.md and its status words (live · switch · build ·
+  verify · blocked). The roadmap board lists every row with source, delay, status and what it unlocks.
+- **Nine priority tools designed** with desktop, phone and all fourteen states: liquidity panel, macro
+  calendar (events on Markets, review triggers on notes), FINRA weekly off-exchange volume (the free
+  stand-in the desk's not-live blocks panel now points to), insider clusters, 13F holdings, note
+  figures filled from XBRL, peer tables, technical analysis and the signal track record. The last two
+  are blocked on a price source licensed for public display; their sheets draw the design target with
+  illustrative values and the honest blocked state.
+- **Built tools redrawn as v4 pages:** Markets (re-sourced to the U.S. Treasury; liquidity and calendar
+  added), Filings (missing tickers shown; one primary action), Scorecard (signal track record as a
+  blocked panel with a labelled sample), ticker research (six public positioning sources, XBRL check).
+- No buy/sell language: every signal-like output is described as research.
+
