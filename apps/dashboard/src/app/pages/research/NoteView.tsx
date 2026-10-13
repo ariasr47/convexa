@@ -429,6 +429,12 @@ function Rail({ note, active }: { note: ResearchNote; active: string }) {
   );
 }
 
+/** "The verdict" → "Verdict": chips are short, so the article goes. */
+const chipLabel = (title: string | null) => {
+  const t = (title ?? 'Notes').replace(/^The /, '');
+  return t.charAt(0).toUpperCase() + t.slice(1);
+};
+
 /** Below md the rail becomes a sticky row of part chips. */
 function PartChips({ note, active }: { note: ResearchNote; active: string }) {
   const activePart = note.parts.findIndex((p) => p.sections.some((s) => s.id === active));
@@ -478,7 +484,7 @@ function PartChips({ note, active }: { note: ResearchNote; active: string }) {
                   : { bgcolor: alpha(t.palette.text.secondary, 0.16), color: 'text.secondary' }),
               })}
             >
-              {(p.title ?? 'Notes').replace(/^The /, '')}
+              {chipLabel(p.title)}
             </Box>
           ) : null,
         )}

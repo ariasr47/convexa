@@ -1,7 +1,7 @@
 /** Figure blocks: the header strip, the 30-second summary, and dated figure tiles. */
 import Box from '@mui/material/Box';
 import { alpha } from '@mui/material/styles';
-import { formatAsOf } from '../format';
+import { formatAsOf, labelWithAsOf } from '../format';
 import { NoteInlines } from '../Inlines';
 import type { Direction, NoteBlock } from '../types';
 import { Eyebrow, MONO, Panel } from '../ui';
@@ -134,7 +134,7 @@ export function MetricsBlock({ block }: { block: Of<'metrics'> }) {
       {block.items.map((item) => (
         <Panel key={item.label} sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
           <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
-            {item.label} · {formatAsOf(item.asOf)}
+            {labelWithAsOf(item.label, item.asOf)}
           </Box>
           <Box component="span" sx={{ ...MONO, fontSize: 26, fontWeight: 500, lineHeight: 1.1 }}>
             {item.value}

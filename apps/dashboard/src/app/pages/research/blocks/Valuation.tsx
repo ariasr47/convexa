@@ -288,7 +288,7 @@ export function PriceValueStrip({
                 position: 'absolute',
                 top: crowded ? 62 : 46,
                 left: `${bp}%`,
-                transform: 'translateX(-50%)',
+                transform: bp < 8 ? 'none' : bp > 92 ? 'translateX(-100%)' : 'translateX(-50%)',
                 fontSize: 11,
                 color: 'text.primary',
                 whiteSpace: 'nowrap',
@@ -728,6 +728,12 @@ function ScenarioCard({
       <Box component="span" sx={{ fontSize: 13, color: 'text.secondary', lineHeight: 1.5 }}>
         <NoteInlines nodes={story} />
       </Box>
+      {r.goingConcern === 0 && (
+        <Box component="span" sx={{ fontSize: 12, lineHeight: 1.5 }}>
+          The enterprise value ({millions(r.ev)}) is below net debt of {millions(-v.netCash.value)},
+          so nothing is left for shareholders in this case.
+        </Box>
+      )}
       <Box
         sx={{
           display: 'flex',
@@ -862,6 +868,7 @@ function baseInput(v: ValuationBlock, key: string): number | null {
     Record<string, number | null> | undefined;
   if (base && key in base) return base[key];
   const globals: Record<string, number> = {
+    terminal_tax: v.terminalTax,
     terminal_growth: v.terminalGrowth,
     terminal_wacc: v.terminalWacc,
     terminal_roc: v.terminalRoc,
@@ -964,6 +971,7 @@ function Sensitivity({ v, stale }: { v: ValuationBlock; stale: boolean }) {
 function Assumptions({ v }: { v: ValuationBlock }) {
   const keys = [
     'rev_y1',
+    'reinvest_y1',
     'growth',
     'margin_y1',
     'margin_target',
@@ -974,7 +982,7 @@ function Assumptions({ v }: { v: ValuationBlock }) {
   ] as const;
   const show = (key: (typeof keys)[number], value: number | null) => {
     if (value === null) return '—';
-    if (key === 'rev_y1') return millions(value);
+    if (key === 'rev_y1' || key === 'reinvest_y1') return millions(value);
     if (key === 'distress') return money(value);
     if (key === 'sales_to_capital') return value.toFixed(2);
     return rate(value);
@@ -1074,6 +1082,14 @@ function Assumptions({ v }: { v: ValuationBlock }) {
             <Box component="span" sx={MONO}>
               {rate(v.tax)}
             </Box>{' '}
+            {v.terminalTax !== v.tax && (
+              <>
+                · terminal tax{' '}
+                <Box component="span" sx={MONO}>
+                  {rate(v.terminalTax)}
+                </Box>{' '}
+              </>
+            )}
             · terminal growth{' '}
             <Box component="span" sx={MONO}>
               {rate(v.terminalGrowth)}
@@ -1096,11 +1112,12 @@ function Assumptions({ v }: { v: ValuationBlock }) {
           A 10-year free-cash-flow model. Revenue grows at the scenario's rate through year 5 (year
           1 is set directly when given), then fades to the terminal rate by year 10. The operating
           margin moves in a straight line to its target, then holds. Taxes apply after losses
-          carried forward; reinvestment is new revenue divided by sales-to-capital. The cost of
-          capital moves to its terminal level over years 6–10. Value per share is the enterprise
-          value plus net cash, over diluted shares, then weighted by the chance of failure against
-          the value in distress. Every output on this page is computed from these inputs when the
-          site builds.
+          carried forward; reinvestment is new revenue divided by sales-to-capital, except that year
+          1 can state its own (a jump that comes from prices, not capacity, needs less capital). The
+          cost of capital moves to its terminal level over years 6–10. Value per share is the
+          enterprise value plus net cash, over diluted shares, then weighted by the chance of
+          failure against the value in distress. Every output on this page is computed from these
+          inputs when the site builds.
         </Box>
       </Box>
     </Box>
@@ -1222,9 +1239,11 @@ export function ImpliedBlockView() {
             />
           ) : (
             <Box component="span" sx={{ fontSize: 13, fontWeight: 600 }}>
-              {i.bound === 'above'
-                ? 'No growth rate up to 300% a year reaches this price.'
-                : 'Even shrinking 50% a year leaves the base case above this price.'}
+              {!i.growthAddsValue
+                ? 'No growth rate reaches this price. At base inputs new capital earns less than it costs, so faster growth lowers the value instead of raising it.'
+                : i.bound === 'above'
+                  ? 'No growth rate up to 300% a year reaches this price.'
+                  : 'Even shrinking 50% a year leaves the base case above this price.'}
             </Box>
           )}
         </Box>

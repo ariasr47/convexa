@@ -20,6 +20,11 @@ export function formatAsOf(asOf: string): string {
   return /^\d{4}-\d{2}-\d{2}$/.test(asOf) ? formatShortDate(asOf) : asOf;
 }
 
+/** A figure's label with its as-of, unless the label already names its period ("Revenue · Q2"). */
+export function labelWithAsOf(label: string, asOf: string): string {
+  return label.includes(' · ') ? label : `${label} · ${formatAsOf(asOf)}`;
+}
+
 /** Dollars per share: whole dollars from $100, cents below. */
 export function money(value: number): string {
   const abs = Math.abs(value);
@@ -96,6 +101,7 @@ export const UNCERTAINTY_LEVEL: Record<Uncertainty, number> = {
 /** Input keys as a reader reads them. */
 export const INPUT_LABEL: Record<string, string> = {
   rev_y1: 'Year-1 revenue',
+  reinvest_y1: 'Year-1 reinvestment',
   growth: 'Revenue growth',
   margin_y1: 'Year-1 margin',
   margin_target: 'Target margin',
@@ -107,5 +113,6 @@ export const INPUT_LABEL: Record<string, string> = {
   terminal_wacc: 'Terminal cost of capital',
   terminal_roc: 'Terminal return on capital',
   tax: 'Tax rate',
+  terminal_tax: 'Terminal tax rate',
   margin_year: 'Margin reached in year',
 };

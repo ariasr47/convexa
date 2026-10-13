@@ -20,7 +20,7 @@ import {
 } from 'virtual:convexa-research';
 import { DeltaPill } from './blocks/Figures';
 import { PriceValueStrip } from './blocks/Valuation';
-import { formatAsOf, formatNoteDate, STANCE_LABEL, UNCERTAINTY_LABEL } from './format';
+import { formatNoteDate, labelWithAsOf, STANCE_LABEL, UNCERTAINTY_LABEL } from './format';
 import { RESEARCH_DISCLAIMER, ResearchColumn } from './NotesView';
 import type { Freshness, NoteStance, ResearchTickerSummary } from './types';
 import { DISPLAY, Eyebrow, FreshnessLine, MONO, Panel, PANEL_SX, Pill, YourCall } from './ui';
@@ -227,7 +227,7 @@ function TickerCard({ row, today }: { row: Row; today: string }) {
               sx={{ display: 'grid', gap: 0.25, alignContent: 'start', minWidth: 0 }}
             >
               <Box component="span" sx={{ fontSize: 11, color: 'text.secondary', lineHeight: 1.3 }}>
-                {m.label} · {formatAsOf(m.asOf)}
+                {labelWithAsOf(m.label, m.asOf)}
               </Box>
               <Box
                 component="span"

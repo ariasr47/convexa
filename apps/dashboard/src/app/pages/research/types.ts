@@ -32,6 +32,7 @@ export type ScenarioName = 'bear' | 'base' | 'bull';
 
 export type ScenarioInputs = {
   rev_y1: number | null;
+  reinvest_y1: number | null;
   growth: number;
   margin_y1: number | null;
   margin_target: number;
@@ -54,6 +55,7 @@ export type ValuationBlock = {
   marginNow: Dated;
   nol: Dated | null;
   tax: number;
+  terminalTax: number;
   terminalGrowth: number;
   terminalWacc: number;
   terminalRoc: number;
@@ -69,7 +71,10 @@ export type ValuationBlock = {
   traded: { lo: number; hi: number; when: When } | null;
   thirdParty: { value: number; asOf: string; label: string } | null;
   result: {
-    scenarios: Record<ScenarioName, { value: number; goingConcern: number; vsPrice: number }>;
+    scenarios: Record<
+      ScenarioName,
+      { value: number; goingConcern: number; vsPrice: number; ev: number }
+    >;
     weighted: { value: number; vsPrice: number } | null;
     sensitivity: {
       row: { key: string; labels: string[] };
@@ -80,6 +85,8 @@ export type ValuationBlock = {
     implied: {
       growth: number | null;
       bound: 'above' | 'below' | null;
+      /** Faster growth adds value at base inputs (new capital earns more than it costs). */
+      growthAddsValue: boolean;
       growthYears: string;
       marketCap: number;
       ev: number;

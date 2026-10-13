@@ -49,12 +49,20 @@ const FIGURE_SX = {
 
 export function ChartBlock({ block }: { block: Of<'chart'> }) {
   const H = 200;
-  const max = Math.max(...block.bars.map((b) => b.value), 0);
-  const step = niceStep(max);
-  const top = Math.max(step, Math.ceil(max / step) * step);
-  const ticks = Array.from({ length: Math.round(top / step) }, (_, i) => (i + 1) * step);
-  // Bars scale to H less headroom for the value printed above the tallest one.
-  const scale = (H - 20) / top;
+  const values = block.bars.map((b) => b.value);
+  const maxV = Math.max(...values, 0);
+  const minV = Math.min(...values, 0);
+  const step = niceStep(maxV - minV);
+  const top = maxV > 0 ? Math.ceil(maxV / step) * step : 0;
+  const bottom = minV < 0 ? Math.floor(minV / step) * step : 0;
+  // Headroom for the value printed above the tallest bar (and below the deepest negative one).
+  const below = minV < 0 ? 18 : 0;
+  const scale = (H - 20 - below) / Math.max(step, top - bottom);
+  // Long or many labels wrap onto two lines under their bar.
+  const AXIS = block.bars.some((b) => b.label.length > 7) && block.bars.length > 6 ? 36 : 24;
+  const zero = AXIS + below + -bottom * scale;
+  const ticks: number[] = [];
+  for (let v = bottom; v <= top + step / 2; v += step) if (Math.abs(v) > step / 1000) ticks.push(v);
   const hasApprox = block.bars.some((b) => b.kind === 'approx');
   const hasGuide = block.bars.some((b) => b.kind === 'guide');
   const label = `${block.caption}: ${block.bars
@@ -87,7 +95,11 @@ export function ChartBlock({ block }: { block: Of<'chart'> }) {
           )}
         </Box>
       </Box>
-      <Box role="img" aria-label={label} sx={{ position: 'relative', height: H + 24, minWidth: 0 }}>
+      <Box
+        role="img"
+        aria-label={label}
+        sx={{ position: 'relative', height: H + AXIS, minWidth: 0 }}
+      >
         {ticks.map((v) => (
           <Box
             key={v}
@@ -95,7 +107,7 @@ export function ChartBlock({ block }: { block: Of<'chart'> }) {
               position: 'absolute',
               left: 0,
               right: 0,
-              bottom: 24 + v * scale,
+              bottom: zero + v * scale,
               borderTop: `1px dashed ${alpha(t.palette.text.secondary, 0.14)}`,
             })}
           >
@@ -116,19 +128,28 @@ export function ChartBlock({ block }: { block: Of<'chart'> }) {
             </Box>
           </Box>
         ))}
+        {/* The zero line. */}
         <Box
           sx={(t) => ({
             position: 'absolute',
-            inset: '0 0 24px 44px',
-            display: 'flex',
-            alignItems: 'flex-end',
-            gap: { xs: 0.75, sm: 1.75 },
-            borderBottom: `1px solid ${alpha(t.palette.text.secondary, 0.3)}`,
-            pb: 0,
+            left: 44,
+            right: 0,
+            bottom: zero,
+            borderTop: `1px solid ${alpha(t.palette.text.secondary, 0.3)}`,
           })}
+        />
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: '0 0 0 44px',
+            display: 'flex',
+            gap: { xs: 0.75, sm: 1.75 },
+          }}
         >
           {block.bars.map((b, i) => {
             const latest = i === block.latest;
+            const h = Math.max(2, Math.abs(b.value) * scale);
+            const negative = b.value < 0;
             return (
               <Box
                 key={i}
@@ -136,18 +157,17 @@ export function ChartBlock({ block }: { block: Of<'chart'> }) {
                   flex: 1,
                   minWidth: 0,
                   height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'flex-end',
-                  alignItems: 'center',
-                  gap: 0.5,
                   position: 'relative',
+                  display: 'flex',
+                  justifyContent: 'center',
                 }}
               >
                 <Box
                   component="span"
                   sx={{
                     ...MONO,
+                    position: 'absolute',
+                    bottom: negative ? zero - h - 16 : zero + h + 4,
                     fontSize: { xs: 9, sm: 11 },
                     color: latest || b.kind === 'guide' ? 'text.primary' : 'text.secondary',
                     whiteSpace: 'nowrap',
@@ -157,10 +177,12 @@ export function ChartBlock({ block }: { block: Of<'chart'> }) {
                 </Box>
                 <Box
                   sx={(t) => ({
+                    position: 'absolute',
+                    bottom: negative ? zero - h : zero,
                     width: '100%',
                     maxWidth: 64,
-                    height: Math.max(2, b.value * scale),
-                    borderRadius: '6px 6px 2px 2px',
+                    height: h,
+                    borderRadius: negative ? '2px 2px 6px 6px' : '6px 6px 2px 2px',
                     boxSizing: 'border-box',
                     ...(b.kind === 'guide'
                       ? { border: `1.5px dashed ${alpha(t.palette.text.primary, 0.65)}` }
@@ -174,10 +196,15 @@ export function ChartBlock({ block }: { block: Of<'chart'> }) {
                   sx={{
                     ...MONO,
                     position: 'absolute',
-                    bottom: -22,
-                    fontSize: { xs: 9, sm: 11 },
+                    bottom: 2,
+                    fontSize: block.bars.length > 8 ? 9 : { xs: 9, sm: 11 },
                     color: 'text.secondary',
-                    whiteSpace: 'nowrap',
+                    whiteSpace: AXIS > 24 ? 'normal' : 'nowrap',
+                    textAlign: 'center',
+                    lineHeight: 1.15,
+                    left: 0,
+                    right: 0,
+                    overflowWrap: 'normal',
                   }}
                 >
                   {b.label}
