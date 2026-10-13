@@ -84,7 +84,7 @@ before changing any view.
 | A kill criterion fired, the price left the bear-to-bull range, the business changed shape, or 4+ quarters since the last full note | A fresh full note from the blank template (`research:new <TICKER> --fresh`). Read the old note only after drafting, then compare: when the thesis broke, its framing is what failed |
 | No longer following the stock | `not_following_since: <date>` |
 
-### Tooling (planned, not built)
+### Tooling
 
 - `npm run research:new <TICKER>` builds the next note from the latest one: every fact replaced by `___`, analysis
   sections flagged `<!-- re-confirm: carried from <date> -->`, judgments at their old values, and a `since` block
@@ -94,6 +94,7 @@ before changing any view.
   differs from the previous note without a `moves` line.
 - `npm run research:due` lists due notes by date.
 
-The canvas's Freshness board shows each state as it renders.
+Format reference: [`research/README.md`](../../research/README.md). The canvas's Freshness board shows each
+state as it renders.
 
 Personal research, not financial advice.

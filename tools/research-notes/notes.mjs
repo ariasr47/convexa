@@ -10,6 +10,9 @@
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { BLOCK_NAMES, parseTypedBlock } from './blocks.mjs';
+import { formatDay, isCalendarDate } from './dates.mjs';
+import { parseNumber } from './valuation.mjs';
 
 /**
  * @typedef {{ type: 'text', text: string }
@@ -19,37 +22,53 @@ import path from 'node:path';
  *   | { type: 'link', href: string, children: Inline[] }} Inline
  * @typedef {{ children: Inline[], list?: ListBlock }} ListItem
  * @typedef {{ type: 'list', ordered: boolean, items: ListItem[] }} ListBlock
- * @typedef {{ type: 'heading', level: 2 | 3, children: Inline[] }
+ * @typedef {{ type: 'heading', level: 3, children: Inline[] }
  *   | { type: 'paragraph', children: Inline[] }
  *   | ListBlock
  *   | { type: 'quote', children: Block[] }
  *   | { type: 'codeblock', text: string }
  *   | { type: 'table', header: Inline[][], rows: Inline[][][] }
- *   | { type: 'rule' }} Block
+ *   | { type: 'rule' }
+ *   | { type: string, [key: string]: any }} Block  (the last: a named block, blocks.mjs)
+ * @typedef {{ n: number, id: string, label: string, title: Inline[],
+ *   carried: { from: string, reconfirmed: string } | null, blocks: Block[] }} Section
+ * @typedef {{ title: string | null, intro: Block[], sections: Section[] }} Part
  * @typedef {'bullish' | 'bearish' | 'neutral' | 'watching'} Stance
  * @typedef {{
  *   ticker: string, date: string, title: string, slug: string, path: string,
- *   stance: Stance | null, horizon: string | null, updated: string | null,
- *   tags: string[], summary: string, blocks: Block[], sources: { href: string, label: string }[]
+ *   company: string | null, about: string | null, stance: Stance | null,
+ *   target: number | null, targetDate: string | null, position: string | null,
+ *   horizon: string | null, updated: string | null, notFollowingSince: string | null,
+ *   tags: string[], summary: string, lead: Block[], parts: Part[],
+ *   sources: { n: number | null, href: string, label: string, host: string }[],
+ *   readMinutes: number, aging: Aging, judgments: Record<string, unknown>, moves: string[]
  * }} ResearchNote
+ * @typedef {{ priceAsOf: string | null, events: { kind: 'catalyst' | 'kill' | 'forecast',
+ *   label: string, when: import('./dates.mjs').When, resolved: boolean, status?: string }[] }} Aging
  * @typedef {{ path: string, line: number, message: string }} NoteError
  */
 
 export const TICKER_RE = /^[A-Z][A-Z0-9.-]{0,9}$/;
 const FILE_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*\.md$/;
-const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const STANCES = ['bullish', 'bearish', 'neutral', 'watching'];
-const KEYS = ['ticker', 'date', 'title', 'stance', 'horizon', 'tags', 'summary', 'updated'];
+const KEYS = [
+  'ticker',
+  'date',
+  'title',
+  'company',
+  'about',
+  'stance',
+  'target',
+  'target_date',
+  'position',
+  'horizon',
+  'tags',
+  'summary',
+  'updated',
+  'not_following_since',
+];
 const REQUIRED = ['ticker', 'date', 'title'];
 const SUMMARY_MAX = 240;
-
-function isCalendarDate(value) {
-  const m = DATE_RE.exec(value);
-  if (!m) return false;
-  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  const t = new Date(Date.UTC(y, mo - 1, d));
-  return t.getUTCFullYear() === y && t.getUTCMonth() === mo - 1 && t.getUTCDate() === d;
-}
 
 function unquote(value) {
   const v = value.trim();
@@ -263,47 +282,104 @@ function startsBlock(line, next) {
   );
 }
 
+const REF_RE = /\[(\d{1,3})\](?!\()/g;
+const CARRIED_RE =
+  /^<!--\s*carried from (\d{4}-\d{2}-\d{2})\s*;\s*re-confirmed (\d{4}-\d{2}-\d{2})\s*-->$/;
+
 /**
  * @param {string[]} lines
  * @param {number} firstLine 1-based line number of lines[0], for error messages
  * @param {(line: number, message: string) => void} fail
+ * @param {{ refs?: { n: number, line: number }[] }} [options] `refs` collects every `[n]` source reference
  * @returns {Block[]}
  */
-export function parseBlocks(lines, firstLine, fail) {
+export function parseBlocks(lines, firstLine, fail, options = {}) {
   /** @type {Block[]} */
   const blocks = [];
   let i = 0;
-  const inline = (text, at) => parseInline(text, (message) => fail(firstLine + at, message));
+  const refs = options.refs ?? [];
+  const inlineAt = (text, line) => {
+    for (const m of text.matchAll(REF_RE)) refs.push({ n: Number(m[1]), line });
+    return parseInline(text, (message) => fail(line, message));
+  };
+  const inline = (text, at) => inlineAt(text, firstLine + at);
   while (i < lines.length) {
     const line = lines[i];
     if (line.trim() === '') {
       i++;
       continue;
     }
-    const fence = /^ *```/.exec(line);
+    const fence = /^ *```\s*(.*)$/.exec(line);
     if (fence) {
       const close = lines.findIndex((l, j) => j > i && /^ *```\s*$/.test(l));
       if (close === -1) {
         fail(firstLine + i, 'Code block is never closed: add a line with just ```.');
         break;
       }
-      blocks.push({ type: 'codeblock', text: lines.slice(i + 1, close).join('\n') });
+      const info = fence[1].trim();
+      const name = /^[a-z]+/.exec(info)?.[0] ?? '';
+      if (!info) blocks.push({ type: 'codeblock', text: lines.slice(i + 1, close).join('\n') });
+      else if (!BLOCK_NAMES.includes(name))
+        fail(
+          firstLine + i,
+          `Unknown block "${info.split(/\s/)[0]}". Blocks: ${BLOCK_NAMES.join(', ')}; a plain code block has nothing after the backticks.`,
+        );
+      else {
+        const inner = lines
+          .slice(i + 1, close)
+          .map((text, j) => ({ text, line: firstLine + i + 1 + j }));
+        const block = parseTypedBlock(
+          name,
+          info.slice(name.length),
+          inner,
+          { fail, inline: inlineAt },
+          firstLine + i,
+        );
+        if (block) blocks.push({ ...block, line: firstLine + i });
+      }
       i = close + 1;
+      continue;
+    }
+    if (line.trimStart().startsWith('<!--')) {
+      const text = line.trim();
+      const carried = CARRIED_RE.exec(text);
+      if (/^<!--\s*re-confirm\b/i.test(text))
+        fail(
+          firstLine + i,
+          'This section is still flagged re-confirm. Re-read it against the new filings, then write ' +
+            '"<!-- carried from <date>; re-confirmed <today> -->", or rewrite the section and drop the flag.',
+        );
+      else if (carried && isCalendarDate(carried[1]) && isCalendarDate(carried[2]))
+        blocks.push({
+          type: 'carried',
+          from: carried[1],
+          reconfirmed: carried[2],
+          line: firstLine + i,
+        });
+      else
+        fail(
+          firstLine + i,
+          'Comments are only used to mark a carried section: "<!-- carried from 2026-10-12; re-confirmed 2026-11-18 -->".',
+        );
+      i++;
       continue;
     }
     const heading = HEADING_RE.exec(line);
     if (heading) {
-      if (heading[1].length === 1)
-        fail(
-          firstLine + i,
-          'Use the "title" field for the note title; start sections at "##" headings.',
-        );
-      else
+      const level = heading[1].length;
+      if (level === 1) blocks.push({ type: 'part', title: heading[2].trim(), line: firstLine + i });
+      else if (level === 2) {
+        const bar = heading[2].indexOf('|');
+        const label = (bar === -1 ? heading[2] : heading[2].slice(0, bar)).trim();
+        const takeaway = bar === -1 ? '' : heading[2].slice(bar + 1).trim();
+        if (!label) fail(firstLine + i, 'A section heading needs a label before "|".');
         blocks.push({
-          type: 'heading',
-          level: heading[1].length === 2 ? 2 : 3,
-          children: inline(heading[2], i),
+          type: 'section',
+          label: plainText(parseInline(label, () => {})),
+          title: inline(takeaway || label, i),
+          line: firstLine + i,
         });
+      } else blocks.push({ type: 'heading', level: 3, children: inline(heading[2], i) });
       i++;
       continue;
     }
@@ -319,7 +395,10 @@ export function parseBlocks(lines, firstLine, fail) {
         inner.push(lines[i].trimStart().replace(/^> ?/, ''));
         i++;
       }
-      blocks.push({ type: 'quote', children: parseBlocks(inner, firstLine + start, fail) });
+      blocks.push({
+        type: 'quote',
+        children: parseBlocks(inner, firstLine + start, fail, { refs }),
+      });
       continue;
     }
     if (line.trimStart().startsWith('|') && TABLE_SEP_RE.test(lines[i + 1] ?? '')) {
@@ -337,7 +416,7 @@ export function parseBlocks(lines, firstLine, fail) {
       continue;
     }
     if (LIST_RE.test(line)) {
-      const parsed = parseList(lines, i, firstLine, fail);
+      const parsed = parseList(lines, i, firstLine, fail, refs);
       blocks.push(parsed.list);
       i = parsed.next;
       continue;
@@ -357,7 +436,7 @@ export function parseBlocks(lines, firstLine, fail) {
  * A list starting at lines[start]. Items at the first item's indent belong to it; a marker indented
  * deeper starts a nested list on the previous item; indented plain lines continue that item.
  */
-function parseList(lines, start, firstLine, fail) {
+function parseList(lines, start, firstLine, fail, refs) {
   const first = LIST_RE.exec(lines[start]);
   const indent = first[1].length;
   const ordered = /\d/.test(first[2]);
@@ -368,11 +447,13 @@ function parseList(lines, start, firstLine, fail) {
   const close = () => {
     if (!cur) return;
     /** @type {ListItem} */
+    const at = firstLine + cur.line;
+    for (const m of cur.text.matchAll(REF_RE)) refs.push({ n: Number(m[1]), line: at });
     const item = {
-      children: parseInline(cur.text, (message) => fail(firstLine + cur.line, message)),
+      children: parseInline(cur.text, (message) => fail(at, message)),
     };
     if (cur.sub.length) {
-      const nested = parseBlocks(cur.sub, firstLine + cur.subStart, fail).find(
+      const nested = parseBlocks(cur.sub, firstLine + cur.subStart, fail, { refs }).find(
         (b) => b.type === 'list',
       );
       if (nested) item.list = nested;
@@ -424,39 +505,38 @@ function plainText(inlines) {
     .join('');
 }
 
-function collectLinks(blocks, out) {
-  const fromInlines = (inlines) => {
-    for (const n of inlines) {
-      if (n.type === 'link' && /^https?:/i.test(n.href)) {
-        if (!out.some((s) => s.href === n.href)) {
-          let label = plainText(n.children).trim();
-          if (!label || label === n.href) {
-            try {
-              label = new URL(n.href).hostname.replace(/^www\./, '');
-            } catch {
-              label = n.href;
-            }
-          }
-          out.push({ href: n.href, label });
-        }
-      }
-      if (n.type === 'strong' || n.type === 'em' || n.type === 'link') fromInlines(n.children);
-    }
-  };
-  const fromList = (list) => {
-    for (const item of list.items) {
-      fromInlines(item.children);
-      if (item.list) fromList(item.list);
-    }
-  };
-  for (const b of blocks) {
-    if (b.type === 'heading' || b.type === 'paragraph') fromInlines(b.children);
-    else if (b.type === 'list') fromList(b);
-    else if (b.type === 'quote') collectLinks(b.children, out);
-    else if (b.type === 'table') [b.header, ...b.rows].flat().forEach(fromInlines);
+/** Every external link anywhere in the note, deduplicated, labelled by its text or its host. */
+function collectLinks(value, out = []) {
+  if (Array.isArray(value)) {
+    for (const v of value) collectLinks(v, out);
+    return out;
   }
+  if (!value || typeof value !== 'object') return out;
+  if (value.type === 'link' && /^https?:/i.test(value.href)) {
+    if (!out.some((s) => s.href === value.href)) {
+      let host = value.href;
+      try {
+        host = new URL(value.href).hostname.replace(/^www\./, '');
+      } catch {
+        /* keep the href */
+      }
+      const text = plainText(value.children).trim();
+      out.push({
+        n: null,
+        href: value.href,
+        label: !text || text === value.href ? host : text,
+        host,
+      });
+    }
+  }
+  for (const v of Object.values(value)) if (v && typeof v === 'object') collectLinks(v, out);
   return out;
 }
+
+const BLANK_RE = /_{3,}/;
+const RULE_ONLY_RE = /^\s*_{3,}\s*$/;
+const WORDS_PER_MINUTE = 230;
+const PCT_JUDGMENT_RE = /(growth|margin_y1|margin_target|wacc|p_fail|terminal_roc)$/;
 
 /**
  * Parse one note. `relPath` is its repo-relative path (research/NVDA/2026-10-12-x.md), used for the
@@ -477,36 +557,160 @@ export function parseNote(source, relPath) {
   for (const key of REQUIRED)
     if (!fields[key]?.value) fail(fields[key]?.line ?? 1, `Missing required field "${key}".`);
 
-  const parts = relPath.split('/');
-  const folder = parts.at(-2) ?? '';
-  const file = parts.at(-1) ?? '';
+  const pathParts = relPath.split('/');
+  const folder = pathParts.at(-2) ?? '';
+  const file = pathParts.at(-1) ?? '';
   const ticker = fields.ticker?.value.toUpperCase() ?? '';
   if (fields.ticker?.value && !TICKER_RE.test(fields.ticker.value))
     fail(fields.ticker.line, `"ticker" must be an uppercase symbol like NVDA or BRK.B.`);
   else if (fields.ticker?.value && folder !== ticker)
     fail(fields.ticker.line, `"ticker: ${ticker}" doesn't match its folder research/${folder}/.`);
-  for (const key of ['date', 'updated'])
+  for (const key of ['date', 'updated', 'target_date', 'not_following_since'])
     if (fields[key]?.value && !isCalendarDate(fields[key].value))
       fail(fields[key].line, `"${key}" must be a real date written YYYY-MM-DD.`);
-  if (fields.updated?.value && fields.date?.value && fields.updated.value < fields.date.value)
-    fail(fields.updated.line, `"updated" is earlier than "date".`);
+  for (const key of ['updated', 'not_following_since'])
+    if (fields[key]?.value && fields.date?.value && fields[key].value < fields.date.value)
+      fail(fields[key].line, `"${key}" is earlier than "date".`);
   const stance = fields.stance?.value.toLowerCase() || null;
   if (stance && !STANCES.includes(stance))
     fail(fields.stance.line, `"stance" must be one of ${STANCES.join(', ')}.`);
+  let target = null;
+  if (fields.target?.value) {
+    target = parseNumber(fields.target.value);
+    if (target === null || target <= 0)
+      fail(fields.target.line, `"target" is a price in dollars, like 150.`);
+    if (!fields.target_date?.value)
+      fail(fields.target.line, `A "target" needs a "target_date": when it applies.`);
+  } else if (fields.target_date?.value)
+    fail(fields.target_date.line, `"target_date" goes with a "target".`);
   const tags = (fields.tags?.value ?? '')
     .replace(/^\[|\]$/g, '')
     .split(',')
     .map((t) => unquote(t).trim())
     .filter(Boolean);
 
-  const blocks = parseBlocks(lines.slice(bodyStart), bodyStart + 1, fail);
+  lines.forEach((line, i) => {
+    if (BLANK_RE.test(line) && !RULE_ONLY_RE.test(line))
+      fail(i + 1, 'A "___" blank is still waiting to be filled.');
+  });
+
+  /** @type {{ n: number, line: number }[]} */
+  const refs = [];
+  const blocks = parseBlocks(lines.slice(bodyStart), bodyStart + 1, fail, { refs });
   if (!blocks.length) fail(bodyStart, 'The note has no body.');
 
-  const firstParagraph = blocks.find((b) => b.type === 'paragraph');
+  // Lead, then parts (# headings), each holding sections (## headings), numbered across the note.
+  /** @type {Block[]} */
+  const lead = [];
+  /** @type {Part[]} */
+  const parts = [];
+  /** @type {Part | null} */
+  let part = null;
+  /** @type {Section | null} */
+  let section = null;
+  for (const b of blocks) {
+    if (b.type === 'part') {
+      part = { title: b.title, intro: [], sections: [] };
+      parts.push(part);
+      section = null;
+      continue;
+    }
+    if (b.type === 'section') {
+      if (!part) {
+        part = { title: null, intro: [], sections: [] };
+        parts.push(part);
+      }
+      const n = parts.reduce((sum, p) => sum + p.sections.length, 0) + 1;
+      section = { n, id: `s${n}`, label: b.label, title: b.title, carried: null, blocks: [] };
+      part.sections.push(section);
+      continue;
+    }
+    if (b.type === 'carried') {
+      if (!section || section.blocks.length)
+        fail(b.line, 'A carried-section mark goes on the line right under its ## heading.');
+      else section.carried = { from: b.from, reconfirmed: b.reconfirmed };
+      continue;
+    }
+    (section ? section.blocks : part ? part.intro : lead).push(b);
+  }
+
+  const all = [
+    ...lead,
+    ...parts.flatMap((p) => [...p.intro, ...p.sections.flatMap((s) => s.blocks)]),
+  ];
+  const ofType = (type) => all.filter((b) => b.type === type);
+  const valuations = ofType('valuation');
+  if (valuations.length > 1) fail(valuations[1].line, 'A note has one valuation block.');
+  const valuation = valuations[0] ?? null;
+  for (const b of ofType('implied'))
+    if (!valuation)
+      fail(b.line, 'The implied block draws from a valuation block; this note has none.');
+  const sourceBlocks = ofType('sources');
+  if (sourceBlocks.length > 1) fail(sourceBlocks[1].line, 'A note has one sources block.');
+  const numbered = new Set(sourceBlocks[0]?.items.map((s) => s.n) ?? []);
+  const reported = new Set();
+  for (const ref of refs) {
+    const key = `${ref.line}:${ref.n}`;
+    if (numbered.has(ref.n) || reported.has(key)) continue;
+    reported.add(key);
+    fail(
+      ref.line,
+      sourceBlocks.length
+        ? `[${ref.n}] has no row in the sources block.`
+        : `[${ref.n}] refers to a source, but the note has no sources block.`,
+    );
+  }
+
+  const firstParagraph =
+    lead.find((b) => b.type === 'paragraph') ?? all.find((b) => b.type === 'paragraph');
   let summary = fields.summary?.value || (firstParagraph ? plainText(firstParagraph.children) : '');
   if (summary.length > SUMMARY_MAX) summary = `${summary.slice(0, SUMMARY_MAX - 1).trimEnd()}…`;
 
+  /** @type {Aging['events']} */
+  const events = [];
+  const clip = (text) => (text.length > 90 ? `${text.slice(0, 89).trimEnd()}…` : text);
+  for (const b of all) {
+    if (b.type === 'catalysts')
+      for (const c of b.items)
+        events.push({
+          kind: 'catalyst',
+          label: c.event,
+          when: c.when,
+          resolved: c.outcome !== null,
+          status: c.status,
+        });
+    if (b.type === 'kill')
+      for (const k of b.items)
+        if (k.checkBy.kind !== 'ongoing')
+          events.push({
+            kind: 'kill',
+            label: `Kill criterion ${k.n}: ${k.trigger}`,
+            when: k.checkBy,
+            resolved: k.outcome !== null,
+          });
+    if (b.type === 'forecasts')
+      for (const f of b.items)
+        events.push({
+          kind: 'forecast',
+          label: clip(`Forecast: ${plainText(f.claim)}`),
+          when: f.resolveBy,
+          resolved: f.outcome !== null,
+        });
+  }
+
+  const judgments = { ...(valuation?.judgments ?? {}), stance, target };
+  if (valuation) delete valuation.judgments;
+  const moves = ofType('moves').flatMap((b) => b.items.map((m) => m.input));
+  const words = lines
+    .slice(bodyStart)
+    .join(' ')
+    .split(/\s+/)
+    .filter((w) => /[A-Za-z0-9]/.test(w)).length;
+
   if (errors.length) return { note: null, errors };
+  const sources = sourceBlocks[0]
+    ? sourceBlocks[0].items.map((s) => ({ n: s.n, href: s.url, label: s.title, host: s.host }))
+    : collectLinks([lead, parts]);
   return {
     note: {
       ticker,
@@ -514,13 +718,25 @@ export function parseNote(source, relPath) {
       title: fields.title.value,
       slug: file.replace(/\.md$/, ''),
       path: relPath,
+      company: fields.company?.value || null,
+      about: fields.about?.value || null,
       stance: /** @type {Stance | null} */ (stance),
+      target,
+      targetDate: target ? fields.target_date.value : null,
+      position: fields.position?.value || null,
       horizon: fields.horizon?.value || null,
       updated: fields.updated?.value || null,
+      notFollowingSince: fields.not_following_since?.value || null,
       tags,
       summary,
-      blocks,
-      sources: collectLinks(blocks, []),
+      lead,
+      parts,
+      sources,
+      readMinutes: Math.max(1, Math.round(words / WORDS_PER_MINUTE)),
+      aging: { priceAsOf: valuation?.price.asOf ?? null, events },
+      hasValuation: Boolean(valuation),
+      judgments,
+      moves,
     },
     errors,
   };
@@ -533,6 +749,52 @@ export function compareNotes(a, b) {
     (b.updated ?? '').localeCompare(a.updated ?? '') ||
     a.slug.localeCompare(b.slug)
   );
+}
+
+const formatJudgment = (key, value) => {
+  if (value === null || value === undefined) return 'unset';
+  if (typeof value === 'number' && PCT_JUDGMENT_RE.test(key))
+    return `${Math.round(value * 10000) / 100}%`;
+  return String(value);
+};
+
+/**
+ * A judgment (a scenario input, the terminal assumptions, odds, uncertainty, stance, target) that
+ * differs from the ticker's previous note needs a `moves` row naming it, so a view can't drift
+ * between notes without a stated trigger and reason (docs/research-method/README.md).
+ * @param {ResearchNote[]} notes
+ * @returns {NoteError[]}
+ */
+export function checkMoves(notes) {
+  /** @type {NoteError[]} */
+  const errors = [];
+  /** @type {Map<string, ResearchNote[]>} */
+  const byTicker = new Map();
+  for (const n of notes) byTicker.set(n.ticker, [...(byTicker.get(n.ticker) ?? []), n]);
+  for (const list of byTicker.values()) {
+    const oldestFirst = [...list].sort(compareNotes).reverse();
+    for (let i = 1; i < oldestFirst.length; i++) {
+      const prev = oldestFirst[i - 1];
+      const cur = oldestFirst[i];
+      const keys = new Set(['stance', 'target']);
+      if (prev.hasValuation && cur.hasValuation)
+        for (const k of [...Object.keys(prev.judgments), ...Object.keys(cur.judgments)])
+          keys.add(k);
+      for (const k of keys) {
+        const a = prev.judgments[k] ?? null;
+        const b = cur.judgments[k] ?? null;
+        if (JSON.stringify(a) === JSON.stringify(b) || cur.moves.includes(k)) continue;
+        errors.push({
+          path: cur.path,
+          line: 0,
+          message:
+            `"${k}" moved from ${formatJudgment(k, a)} to ${formatJudgment(k, b)} since ` +
+            `${prev.slug}.md with no moves row. Add one: ${k} | old → new | trigger | why.`,
+        });
+      }
+    }
+  }
+  return errors;
 }
 
 /**
@@ -584,11 +846,21 @@ export function loadNotes(researchDir, repoRoot = path.dirname(researchDir)) {
     }
   }
   notes.sort(compareNotes);
+  errors.push(...checkMoves(notes));
   return { notes, errors };
 }
 
+/** The note's blocks of one type, in reading order. */
+function blocksOf(note, type) {
+  return [
+    ...note.lead,
+    ...note.parts.flatMap((p) => [...p.intro, ...p.sections.flatMap((s) => s.blocks)]),
+  ].filter((b) => b.type === type);
+}
+
 /**
- * The per-ticker summary list the /research index renders, newest ticker first.
+ * The per-ticker list the /research index renders, newest ticker first: everything a card needs from
+ * the latest note, so the index never fetches a note.
  * @param {ResearchNote[]} notes sorted newest first
  */
 export function summarize(notes) {
@@ -597,6 +869,9 @@ export function summarize(notes) {
   for (const n of notes) byTicker.set(n.ticker, [...(byTicker.get(n.ticker) ?? []), n]);
   return [...byTicker.entries()].map(([ticker, list]) => {
     const latest = list[0];
+    const valuation = blocksOf(latest, 'valuation')[0] ?? null;
+    const chart = blocksOf(latest, 'chart')[0] ?? null;
+    const metrics = blocksOf(latest, 'metrics')[0] ?? null;
     return {
       ticker,
       count: list.length,
@@ -605,8 +880,31 @@ export function summarize(notes) {
         date: latest.date,
         updated: latest.updated,
         title: latest.title,
+        company: latest.company,
+        about: latest.about,
         stance: latest.stance,
         summary: latest.summary,
+        notFollowingSince: latest.notFollowingSince,
+        readMinutes: latest.readMinutes,
+        sourceCount: latest.sources.length,
+        uncertainty: valuation?.uncertainty ?? null,
+        chart: chart && { caption: chart.caption, bars: chart.bars, latest: chart.latest },
+        metrics: (metrics?.items ?? []).slice(0, 3).map((m) => ({
+          label: m.label,
+          value: m.value,
+          asOf: m.asOf,
+          delta: m.delta,
+          dir: m.dir,
+        })),
+        valuation: valuation && {
+          price: valuation.price,
+          values: Object.fromEntries(
+            Object.entries(valuation.result.scenarios).map(([k, v]) => [k, v.value]),
+          ),
+          weighted: valuation.result.weighted?.value ?? null,
+          baseVsPrice: valuation.result.scenarios.base.vsPrice,
+        },
+        aging: latest.aging,
       },
     };
   });
@@ -616,3 +914,5 @@ export function summarize(notes) {
 export function formatErrors(errors) {
   return errors.map((e) => `${e.path}${e.line ? `:${e.line}` : ''}  ${e.message}`).join('\n');
 }
+
+export { formatDay };

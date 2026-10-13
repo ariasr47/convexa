@@ -1,32 +1,142 @@
 ---
 ticker: XYZ
-date: 2026-01-31
-title: One line that states the view
-stance: watching
-horizon: 2–6 weeks
-tags: sector, catalyst
+date: ___
+title: ___
+company: ___
+about: ___
 ---
 
-Two or three sentences: what you think and why, in plain words. This paragraph becomes the summary on
-the research index unless you set `summary:`.
+___ Two or three sentences: what the company is, what the price assumes, and the one thing that decides it.
 
-## Thesis
+```strip
+Price | $___ @ ___ | ___
+Market cap | $___ @ ___ | ___
+```
 
-What has to be true, and why you believe it is.
+```tldr
+___ | ___
+___ | ___
+___ | ___
+```
 
-## Evidence
+# The verdict
 
-- A fact, with its source. [Company 10-Q](https://www.sec.gov/)
-- Another fact.
+## What the price implies | ___
 
-## Catalysts
+```implied
+```
 
-- 2026-02-20 · Earnings
+```variant
+___ | ___ | | ___
+```
 
-## Risks
+## Thesis scorecard | ___
 
-- What would hurt this view.
+```scorecard
+___ | ___ | ___ | watch | ___
+```
 
-## Invalidation
+# The evidence
 
-The specific thing that would make you drop the view.
+## Key numbers | ___
+
+```metrics
+___ | ___ @ ___ | ___ | flat | ___ [1]
+```
+
+## Revenue and earnings quality | ___
+
+```chart bar "___"
+___ | ___
+___ | ___
+```
+
+## Moat and competition | ___
+
+```moat
+Intangibles | unproven | ___
+Cost advantage | unproven | ___
+Switching costs | unproven | ___
+Network effects | unproven | ___
+Efficient scale | unproven | ___
+```
+
+# The debate
+
+## Case for and against | ___
+
+```case
++ ___ | ___
+- ___ | ___
+```
+
+## Pre-mortem | ___
+
+```premortem
+___ | #1
+```
+
+## Positioning and ownership | ___
+
+| Lens | Reading | Source |
+| --- | --- | --- |
+| Insider selling | ___ | ___ |
+| Short interest | ___ | ___ |
+
+# Valuation and what's next
+
+## Valuation | ___
+
+```valuation
+method: ___
+why: ___
+price: ___ @ ___
+shares: ___ @ ___
+net_cash: ___ @ ___
+revenue: ___ @ ___
+margin_now: ___ @ ___
+tax: 21%
+terminal_growth: ___
+terminal_wacc: ___
+uncertainty: ___
+uncertainty_why: ___
+
+scenario | growth | margin_target | sales_to_capital | wacc | p_fail | distress | story
+bear     | ___    | ___           | ___              | ___  | ___    | ___      | ___
+base     | ___    | ___           | ___              | ___  | ___    | ___      | ___
+bull     | ___    | ___           | ___              | ___  | ___    | ___      | ___
+
+sensitivity: margin_target ___ x wacc ___
+```
+
+## Catalysts | ___
+
+```catalysts
+___ | ___ | ___ | expected
+```
+
+## Kill criteria | Decided in advance, so a losing streak can't move the goalposts.
+
+```kill
+#1 | ___ | ___ | ___ | ___ | ___
+```
+
+## Forecasts | ___
+
+```forecasts
+___ | | ___ | ___
+```
+
+# The record
+
+## Change log | Every revision dated, with what moved and why.
+
+```changelog
+___ | initiation | First note.
+```
+
+## Sources | Filings first, press second.
+
+```sources
+1 | ___ | https://___
+```

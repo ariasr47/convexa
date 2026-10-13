@@ -68,7 +68,11 @@ function assertResolvedBuildIdentity(project) {
     '{workspaceRoot}/tools/archive-sourcemaps.mjs',
     '{workspaceRoot}/tools/precompress-dashboard.mjs',
     '{workspaceRoot}/research/**/*',
+    '{workspaceRoot}/tools/research-notes/blocks.mjs',
+    '{workspaceRoot}/tools/research-notes/dates.mjs',
+    '{workspaceRoot}/tools/research-notes/freshness.mjs',
     '{workspaceRoot}/tools/research-notes/notes.mjs',
+    '{workspaceRoot}/tools/research-notes/valuation.mjs',
     '{workspaceRoot}/tools/research-notes/vite-plugin.mjs',
   ]);
   assert.deepEqual(project.targets.build.outputs, [

@@ -1,14 +1,21 @@
 // Vite plugin: compiles research/<TICKER>/*.md (tools/research-notes/notes.mjs) into the dashboard.
 //
 // `import { researchIndex, researchUrl } from 'virtual:convexa-research'` gives the per-ticker summary
-// list and a URL for each ticker's full notes. In a build, each ticker's notes become one hashed JSON
+// list and a URL for each ticker's full notes. The same module re-exports `freshness`, `upcoming` and
+// `localToday` from ./freshness.mjs, so the reader's browser and `npm run research:due` run one
+// implementation of when a note stops being current. In a build, each ticker's notes become one hashed JSON
 // asset (assets/research-<TICKER>-<hash>.json), so note text stays out of the JS bundles and their
 // budgets. The dev server answers the same URLs live from disk. Any invalid note fails the build
 // (and shows Vite's error overlay in dev), so a malformed note can never deploy.
 
 import { createHash } from 'node:crypto';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { formatErrors, loadNotes, summarize } from './notes.mjs';
+
+const FRESHNESS = fileURLToPath(new URL('./freshness.mjs', import.meta.url))
+  .split(path.sep)
+  .join('/');
 
 const VIRTUAL_ID = 'virtual:convexa-research';
 const RESOLVED_ID = `\0${VIRTUAL_ID}`;
@@ -67,6 +74,7 @@ export function convexaResearch({ researchDir }) {
         `export const researchIndex = ${JSON.stringify(summarize(loaded.notes))};`,
         `const urls = ${JSON.stringify(urls)};`,
         `export function researchUrl(ticker) { return Object.hasOwn(urls, ticker) ? urls[ticker] : null; }`,
+        `export { freshness, upcoming, localToday } from ${JSON.stringify(FRESHNESS)};`,
       ].join('\n');
     },
     configureServer(server) {

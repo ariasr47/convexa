@@ -1,42 +1,169 @@
 # Research notes
 
-Ticker research published on the site: each note shows on its ticker's **Research** tab
-(`/ticker/<TICKER>/research`), and `/research` lists every ticker that has notes. Notes are plain
-Markdown files, compiled into the site at build time, so they work while live market data is off.
+Ticker research published on the site. Each ticker's latest note is the **Research** tab
+(`/ticker/<TICKER>/research`); older notes stay readable at `/ticker/<TICKER>/research/<file-name>`, and
+`/research` lists every ticker. Notes are Markdown files compiled into the site at build time, so they
+work while live market data is off. Every valuation figure is computed by the build from inputs the
+note states; nothing a reader sees as a result is typed by hand.
 
-## Add a note
+The rules behind the format (why each part exists, freshness, how to update) are in
+[`docs/research-method/README.md`](../docs/research-method/README.md).
 
-1. Copy [`_template.md`](_template.md) to `research/<TICKER>/<YYYY-MM-DD>-<short-name>.md`, for
-   example `research/NVDA/2026-10-12-supply-chain.md`. The folder is the uppercase ticker.
-2. Fill in the front matter and write the note.
-3. Check it: `npm run research:check` (the pre-push hook runs this too).
-4. Commit and push to `main`. Cloudflare Pages rebuilds the site with the new note.
+## Add or update a note
 
-Edit a note in place and set `updated:` when its view changes. Keep older notes: the Research tab
-shows the newest note open and earlier ones folded below it, so the history of a thesis stays visible.
-Files starting with `_` are ignored, which suits drafts.
+1. **New ticker:** `npm run research:new <TICKER> -- --fresh` writes
+   `research/<TICKER>/<today>-initiation.md` from [`_template.md`](_template.md).
+   **Update:** `npm run research:new <TICKER>` writes `research/<TICKER>/<today>-update.md` from the
+   latest note: facts blanked to `___`, sections flagged `re-confirm`, judgments at their old values, and
+   a `since` block listing the old calls.
+2. Write the note. `npm run research:check -- --values <TICKER>` prints what the valuation computes.
+3. `npm run research:check` (the pre-push hook runs it too) must pass.
+4. Commit and push. Cloudflare Pages rebuilds the site.
+
+`npm run research:due` lists every note's next review date. Files starting with `_` are ignored, which
+suits drafts.
+
+**Never edit an old note's analysis.** A real update is a new dated note. Edit in place only to record a
+catalyst's outcome, mark a forecast or kill criterion resolved, set `not_following_since`, or fix an
+error; each such edit sets `updated:` and adds a `changelog` line.
 
 ## Front matter
 
-| Field     | Required | Example                     | Notes                                           |
-| --------- | -------- | --------------------------- | ----------------------------------------------- |
-| `ticker`  | yes      | `NVDA`                      | Must match the folder name                      |
-| `date`    | yes      | `2026-10-12`                | When the note was written                       |
-| `title`   | yes      | `Supply still runs short`   | Shown as the note heading                       |
-| `stance`  | no       | `bullish`                   | `bullish`, `bearish`, `neutral` or `watching`   |
-| `horizon` | no       | `2–6 weeks`                 | Free text                                       |
-| `tags`    | no       | `semis, earnings`           | Comma-separated                                 |
-| `summary` | no       | `One or two sentences.`     | Shown on `/research`; defaults to the first paragraph |
-| `updated` | no       | `2026-10-20`                | Last meaningful revision; not before `date`     |
+| Field                 | Required | Example                                    | Notes                                                    |
+| --------------------- | -------- | ------------------------------------------ | -------------------------------------------------------- |
+| `ticker`              | yes      | `CBRS`                                     | Must match the folder name                               |
+| `date`                | yes      | `2026-10-12`                               | When the note was written; also the thesis-review date   |
+| `title`               | yes      | `A $25B backlog on a $0.9B year.`          | The headline                                             |
+| `company`             | no       | `Cerebras Systems`                         | Shown beside the ticker                                  |
+| `about`               | no       | `Nasdaq · AI inference chips and cloud`    | One line under the company name                          |
+| `stance`              | no       | `watching`                                 | Yours. `bullish`, `bearish`, `neutral` or `watching`     |
+| `target`              | no       | `150`                                      | Yours. Dollars per share; needs `target_date`            |
+| `target_date`         | no       | `2027-06-30`                               | When the target applies                                  |
+| `position`            | no       | `none`                                     | Yours. Disclosed in the header                           |
+| `horizon`             | no       | `mid-2028`                                 | Free text                                                |
+| `tags`                | no       | `AI chips, IPO 2026`                       | Comma-separated                                          |
+| `summary`             | no       | `One or two sentences.`                    | Defaults to the first paragraph                          |
+| `updated`             | no       | `2026-10-20`                               | Set when an outcome or correction is recorded            |
+| `not_following_since` | no       | `2027-01-05`                               | Archives the ticker: no more review prompts              |
 
-Any other field is an error, so a typo can't publish a half-labelled note.
+Any other field is an error.
 
-## Supported Markdown
+## Structure
 
-Paragraphs, `##` and `###` section headings (the title comes from front matter, so no `#`), bullet and
-numbered lists (nested by indenting two spaces), `> quotes`, tables, fenced code blocks, `---` rules,
-**bold**, _italic_, `code`, and links.
+A note opens with a short **lead** (a paragraph, then a `strip` and a `tldr` block), then up to five
+**parts**, each a `#` heading, each holding **sections**:
 
-Links must start with `https://`, `http://`, or `/` for a page on this site (for example
-`/ticker/NVDA`). Bare URLs become links too. Every external link is also listed under **Sources** at
-the end of the note. Images and raw HTML are not supported.
+```
+# The verdict
+## What the price implies | The price pays for growth almost no company has delivered.
+```
+
+Text after `|` is the section's one-line headline; before it, the label used in the side rail. Sections
+are numbered automatically. `###` headings work inside a section. The template has the standard five
+parts: The verdict · The evidence · The debate · Valuation and what's next · The record.
+
+## Every figure carries its date
+
+In `metrics` and `strip` rows, and for the valuation's `price`, `shares`, `net_cash`, `revenue` and
+`margin_now`, a value is written `value @ as-of`: `$209.9M @ Q2 2026`, `146.62 @ 2026-10-12`. An undated
+value fails the check.
+
+## Blocks
+
+A fenced block named on its opening line becomes a visual. Each row is cells separated by `|`. Text
+cells take **bold**, _italic_, links and `[n]` source references. Write `\|` for a literal pipe.
+
+| Block                  | Row format                                                                  | Renders                                     |
+| ---------------------- | --------------------------------------------------------------------------- | ------------------------------------------- |
+| `strip`                | `label \| value @ as-of \| sub`                                              | The header strip of figures                 |
+| `tldr`                 | `figure \| sentence` (1–4 rows)                                              | The 30-second summary                       |
+| `metrics`              | `label \| value @ as-of \| delta \| up/down/flat \| note [n]`                | Figure tiles                                |
+| `chart bar "Caption"`  | `label \| number \| approx/guide (optional) \| shown text (optional)`        | A column chart; the last plain bar is lit   |
+| `split "Caption"`      | `label \| number \| detail (optional)`                                       | One bar cut into shares of its total        |
+| `compare "Caption"`    | `label \| number \| shown text \| emph (optional)`                           | Horizontal bars on one scale                |
+| `bridge "Caption"`     | `label \| number`: first and last rows are totals, the rest signed steps     | A walk from one total to another            |
+| `units "Caption"`      | `total \| unit` (one row)                                                    | The total drawn as blocks of the unit       |
+| `implied`              | (no rows)                                                                   | What the price implies, from `valuation`    |
+| `variant`              | `driver \| what the price implies \| your view \| what settles it`           | Your view against the price's               |
+| `scorecard`            | `pillar \| metric \| latest \| ok/watch/broken \| kill criterion`            | The thesis scorecard                        |
+| `moat`                 | `source \| evidence/unproven/none \| why`                                    | The moat check                              |
+| `case`                 | `+ headline \| detail` or `- headline \| detail`                             | Case for vs the strongest case against      |
+| `premortem`            | `story \| kill criterion it maps to (#n)`                                    | The pre-mortem                              |
+| `valuation`            | see below                                                                   | Football field, scenarios, odds, sensitivity |
+| `catalysts`            | `date \| event \| detail \| confirmed/expected/target \| outcome (optional)` | The dated timeline                          |
+| `kill`                 | `#n \| trigger \| threshold \| source \| check by \| then \| outcome (opt.)` | Kill criteria                               |
+| `forecasts`            | `claim \| probability (0–1, blank = yours to set) \| resolve by \| source \| yes/no/void (opt.)` | The forecast ledger, Brier-scored |
+| `changelog`            | `date \| initiation/outcome/revision/roll-forward/correction \| text`        | The change log                              |
+| `sources`              | `n \| title \| https://…`                                                   | Numbered sources for `[n]` references       |
+| `since`                | `catalyst/forecast/kill/pillar \| the old call \| what happened`             | Update notes: the old calls, scored first   |
+| `moves`                | `input \| old → new \| trigger \| why`                                       | Update notes: every judgment that moved     |
+
+Plain Markdown still works: paragraphs, lists, tables, `> quotes`, **bold**, _italic_, `code`, links
+(`https://`, `http://` or `/` only), and `---` rules. Images and raw HTML are not supported.
+
+**Dates** in `catalysts`, `kill` and `forecasts`: `2026-10-14`, `2026-11` (a month), `2026-Q4`, `2027`,
+`2026-11-05..2026-11-16` (a window), `by 2026-11-10`, or `ongoing` (kill criteria only). An approximate
+date counts from the end of its window. A row with an outcome no longer ages the note.
+
+### The valuation block
+
+```valuation
+method: Narrative DCF with a failure probability
+why: Young and pre-profit, so earnings multiples don't apply.
+price: 146.62 @ 2026-10-12
+shares: 273.7 @ 2026-06-30
+net_cash: 7700 @ 2026-06-30
+revenue: 885 @ FY2026 guide
+margin_now: -16% @ Q2 2026
+tax: 21%
+terminal_growth: 3%
+terminal_wacc: 8.5%
+margin_year: 7
+uncertainty: very-high
+uncertainty_why: Pre-profit, three customers are 76% of revenue.
+
+scenario | rev_y1 | growth | margin_y1 | margin_target | sales_to_capital | wacc | p_fail | distress | story
+bear     | 2000   | 20%    | -10%      | 15%           | 1.2              | 12%  | 30%    | 10       | The backlog slips.
+base     | 2600   | 45%    | -5%       | 25%           | 1.5              | 11%  | 15%    | 15       | Converts on schedule.
+bull     | 3000   | 60%    | 0%        | 32%           | 1.8              | 10%  | 5%     | 20       | OpenAI exercises its option.
+
+sensitivity: margin_target 20%, 25%, 30% x wacc 10%, 11%, 12%
+odds: 5/11/4
+traded: 146 - 350 @ 2026-05-14..2026-10-12
+third_party: 288.67 @ 2026-10-12 | Wall Street average target (TipRanks)
+```
+
+Money is in **$ millions**, shares in **millions**, `price` and `distress` in **dollars per share**.
+
+- **The model** is a 10-year free-cash-flow DCF (Damodaran's story-to-numbers form). Revenue starts at
+  `revenue` (year 0); year 1 is `rev_y1` when given, then it grows at `growth` through year 5 and fades
+  linearly to `terminal_growth` by year 10. The operating margin moves in a straight line from
+  `margin_y1` (or `margin_now` at year 0) to `margin_target` by `margin_year`, then holds. Taxes apply to
+  profit after losses carried forward (`nol:` sets a starting balance). Reinvestment is new revenue ÷
+  `sales_to_capital`; a falling revenue releases no capital. The cost of capital is `wacc` through year
+  5, then moves to `terminal_wacc` by year 10. The terminal value reinvests `terminal_growth ÷
+  terminal_roc` of profit (`terminal_roc` defaults to `terminal_wacc`: no excess returns forever).
+- **Value per share** = (enterprise value + `net_cash`) ÷ `shares`, floored at zero, then weighted for
+  failure: going-concern value × (1 − `p_fail`) + `distress` × `p_fail`.
+- **Yours, so optional:** `odds` (bear/base/bull in twentieths, summing to 20) adds a weighted value.
+  Leave it out until you decide.
+- **The build computes:** the three scenario values, each against the dated price; the weighted value;
+  a sensitivity grid on the base case (`sensitivity:` names two inputs and three values each); the
+  growth the price implies (the base case solved for `growth`); and the share of the price that
+  today's profit supports. `implied` renders the last two.
+- `method`, `price`, `shares`, `net_cash`, `revenue`, `margin_now`, `tax`, `terminal_growth`,
+  `terminal_wacc` and the three scenario rows are required. `rev_y1`, `margin_y1`, `margin_year`
+  (default 5), `nol`, `terminal_roc`, `traded`, `third_party`, `sensitivity`, `odds`, `why`,
+  `uncertainty` and `uncertainty_why` are optional.
+
+## What the check refuses
+
+- Front matter: unknown or repeated fields, a bad date or stance, a `target` without `target_date`.
+- Links that aren't `https://`, `http://` or a same-site `/` path; a `[n]` with no matching `sources` row.
+- A block with the wrong number of cells, an unknown status word, a number that isn't one, an
+  undated figure, a `bridge` whose steps don't add up, `odds` that don't sum to 20.
+- A `___` blank, or a `<!-- re-confirm … -->` flag still in place. After re-reading a carried section,
+  replace its flag with `<!-- carried from 2026-10-12; re-confirmed 2026-11-18 -->`.
+- A judgment that differs from the ticker's previous note with no `moves` row: any scenario input,
+  `terminal_growth`, `terminal_wacc`, `terminal_roc`, `margin_year`, `odds`, `uncertainty`, `stance` or
+  `target`. Name it as written: `base.margin_target`, `odds`, `stance`.
