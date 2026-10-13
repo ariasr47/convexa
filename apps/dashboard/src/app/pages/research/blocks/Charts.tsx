@@ -6,8 +6,10 @@
 import Box from '@mui/material/Box';
 import type { Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { NoteBlock } from '../types';
-import { MONO } from '../ui';
+import { downText, MONO, upText } from '../ui';
 
 type Of<T extends NoteBlock['type']> = Extract<NoteBlock, { type: T }>;
 
@@ -26,6 +28,23 @@ function niceStep(max: number) {
 
 const HATCH = (t: Theme) =>
   `repeating-linear-gradient(135deg, ${alpha(t.palette.text.secondary, 0.7)} 0 6px, ${alpha(t.palette.text.secondary, 0.28)} 6px 12px)`;
+
+/** An element's rendered width: measured before the first paint, then tracked as it resizes. */
+function useWidth<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [width, setWidth] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // ResizeObserver reports only while the page paints; measure now so the first frame is right.
+    setWidth(el.getBoundingClientRect().width);
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, width] as const;
+}
 
 function Caption({ children }: { children: React.ReactNode }) {
   return (
@@ -65,6 +84,43 @@ export function ChartBlock({ block }: { block: Of<'chart'> }) {
   for (let v = bottom; v <= top + step / 2; v += step) if (Math.abs(v) > step / 1000) ticks.push(v);
   const hasApprox = block.bars.some((b) => b.kind === 'approx');
   const hasGuide = block.bars.some((b) => b.kind === 'guide');
+  // Labels must not collide. Each bar's labels take a width (mono runs about 0.62em a character); an
+  // end label wider than its bar aligns to the plot's edge instead of spilling past it. When two
+  // neighbours still overlap, every k-th bar keeps its labels, counted from the lit one so the latest is
+  // always labelled; the role="img" label below still states every bar.
+  const [plotRef, plotW] = useWidth<HTMLDivElement>();
+  const wide = useMediaQuery((t: Theme) => t.breakpoints.up('sm'));
+  const n = block.bars.length;
+  const valueFont = wide ? 11 : 9;
+  const axisFont = wide && n <= 8 ? 11 : 9;
+  const widths = block.bars.map((b) => {
+    const words = AXIS > 24 ? b.label.split(/\s+/) : [b.label];
+    const axisChars = Math.max(...words.map((w) => w.length));
+    return Math.max((b.shown || fmt(b.value)).length * valueFont, axisChars * axisFont) * 0.62 + 4;
+  });
+  const gapPx = wide ? 14 : 6;
+  const slot = plotW ? (plotW - gapPx * (n - 1)) / n : 0;
+  const pinned = (i: number) =>
+    plotW > 0 && widths[i] > slot ? (i === 0 ? 'left' : i === n - 1 ? 'right' : null) : null;
+  const centre = (i: number) =>
+    pinned(i) === 'left'
+      ? widths[i] / 2
+      : pinned(i) === 'right'
+        ? plotW - widths[i] / 2
+        : i * (slot + gapPx) + slot / 2;
+  const anchor = block.latest >= 0 ? block.latest : n - 1;
+  const keptAt = (k: number) =>
+    block.bars.map((_, i) => i).filter((i) => Math.abs(i - anchor) % k === 0);
+  let k = 1;
+  while (
+    plotW > 0 &&
+    k < n &&
+    keptAt(k).some(
+      (i, j, ks) => j > 0 && centre(i) - centre(ks[j - 1]) < (widths[i] + widths[ks[j - 1]]) / 2,
+    )
+  )
+    k++;
+  const labelled = (i: number) => (Math.abs(i - anchor) % k === 0 ? 'block' : 'none');
   const label = `${block.caption}: ${block.bars
     .map(
       (b) =>
@@ -139,6 +195,7 @@ export function ChartBlock({ block }: { block: Of<'chart'> }) {
           })}
         />
         <Box
+          ref={plotRef}
           sx={{
             position: 'absolute',
             inset: '0 0 0 44px',
@@ -168,6 +225,8 @@ export function ChartBlock({ block }: { block: Of<'chart'> }) {
                     ...MONO,
                     position: 'absolute',
                     bottom: negative ? zero - h - 16 : zero + h + 4,
+                    ...(pinned(i) && { [pinned(i) as string]: 0 }),
+                    display: labelled(i),
                     fontSize: { xs: 9, sm: 11 },
                     color: latest || b.kind === 'guide' ? 'text.primary' : 'text.secondary',
                     whiteSpace: 'nowrap',
@@ -197,10 +256,19 @@ export function ChartBlock({ block }: { block: Of<'chart'> }) {
                     ...MONO,
                     position: 'absolute',
                     bottom: 2,
+                    // Flex, so a label wider than its bar overflows evenly (or inward, when pinned);
+                    // plain text-align would push the overflow all to one side.
+                    display: labelled(i) === 'none' ? 'none' : 'flex',
+                    justifyContent:
+                      pinned(i) === 'left'
+                        ? 'flex-start'
+                        : pinned(i) === 'right'
+                          ? 'flex-end'
+                          : 'center',
                     fontSize: block.bars.length > 8 ? 9 : { xs: 9, sm: 11 },
                     color: 'text.secondary',
                     whiteSpace: AXIS > 24 ? 'normal' : 'nowrap',
-                    textAlign: 'center',
+                    textAlign: pinned(i) ?? 'center',
                     lineHeight: 1.15,
                     left: 0,
                     right: 0,
@@ -238,7 +306,9 @@ function Legend({ swatch, children }: { swatch: (t: Theme) => object; children: 
 
 /** Shares of one total: the first segment is the strongest tint, so order carries emphasis. */
 export function SplitBlock({ block }: { block: Of<'split'> }) {
-  const tints = [0.95, 0.6, 0.35, 0.2, 0.12, 0.08, 0.06, 0.05];
+  // The first segment is solid: its label is the page colour on the fill, and light mode's info blue
+  // at 0.95 measured 4.45:1 under that label (solid: 4.9:1).
+  const tints = [1, 0.6, 0.35, 0.2, 0.12, 0.08, 0.06, 0.05];
   return (
     <Box component="figure" sx={FIGURE_SX}>
       {block.caption && <Caption>{block.caption}</Caption>}
@@ -416,11 +486,7 @@ export function BridgeBlock({ block }: { block: Of<'bridge'> }) {
                   fontSize: 12,
                   textAlign: 'center',
                   mb: 0.5,
-                  color: b.isTotal
-                    ? 'text.primary'
-                    : b.value >= 0
-                      ? t.palette.success.main
-                      : t.palette.error.main,
+                  color: b.isTotal ? 'text.primary' : b.value >= 0 ? upText(t) : downText(t),
                 })}
               >
                 {b.isTotal ? fmt(b.value) : `${b.value >= 0 ? '+' : '−'}${fmt(Math.abs(b.value))}`}

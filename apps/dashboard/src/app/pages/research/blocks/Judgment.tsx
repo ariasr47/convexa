@@ -5,7 +5,7 @@ import type { Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
 import { NoteInlines } from '../Inlines';
 import type { NoteBlock } from '../types';
-import { HEAD_ROW_SX, MONO, Panel, PANEL_SX, YourCall } from '../ui';
+import { downText, HEAD_ROW_SX, MONO, Panel, PANEL_SX, upText, YourCall } from '../ui';
 
 type Of<T extends NoteBlock['type']> = Extract<NoteBlock, { type: T }>;
 
@@ -118,10 +118,17 @@ export function VariantBlock({ block }: { block: Of<'variant'> }) {
   );
 }
 
-const STATUS: Record<'ok' | 'watch' | 'broken', { word: string; tone: (t: Theme) => string }> = {
-  ok: { word: '✓ On track', tone: (t) => t.palette.success.main },
-  watch: { word: '! Watch', tone: (t) => t.palette.text.primary },
-  broken: { word: '✕ Broken', tone: (t) => t.palette.error.main },
+const STATUS: Record<
+  'ok' | 'watch' | 'broken',
+  { word: string; tone: (t: Theme) => string; text: (t: Theme) => string }
+> = {
+  ok: { word: '✓ On track', tone: (t) => t.palette.success.main, text: upText },
+  watch: {
+    word: '! Watch',
+    tone: (t) => t.palette.text.primary,
+    text: (t) => t.palette.text.primary,
+  },
+  broken: { word: '✕ Broken', tone: (t) => t.palette.error.main, text: downText },
 };
 
 export function StatusPill({ status }: { status: 'ok' | 'watch' | 'broken' }) {
@@ -136,7 +143,7 @@ export function StatusPill({ status }: { status: 'ok' | 'watch' | 'broken' }) {
         fontSize: 12,
         fontWeight: 600,
         whiteSpace: 'nowrap',
-        color: STATUS[status].tone(t),
+        color: STATUS[status].text(t),
         bgcolor: alpha(
           status === 'watch' ? t.palette.text.secondary : STATUS[status].tone(t),
           status === 'watch' ? 0.18 : 0.12,
@@ -251,7 +258,7 @@ function CaseSide({ side, items }: { side: 'for' | 'against'; items: Of<'case'>[
               height: 28,
               borderRadius: '50%',
               bgcolor: alpha(tone, 0.14),
-              color: tone,
+              color: isFor ? upText(t) : downText(t),
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

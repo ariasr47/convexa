@@ -197,6 +197,16 @@ export const extras = {
    * `action.selected` over panel 4.77:1 — the tighter floor, still clearing with margin).
    */
   textInfo: '#8CB0DE',
+  /**
+   * `textUp` / `textDown` — the TEXT-GRADE direction hues (2026-10-13 Amendments row), the same
+   * fill-vs-text split as `textAmber`/`textInfo`, for the research view's deltas, status words and
+   * signed arrows. Fills (bars, dots, tints) stay on `success.main`/`error.main`. Measured by script
+   * (WCAG 2 relative luminance): dark `textUp` is `success.main` itself, 5.70:1 at worst (on
+   * `alpha(success.main,0.14)` over `panelRaised`); dark `textDown` `#ff6b6b` 4.73:1 at worst on
+   * the same composite, where `error.main` measured 4.34:1.
+   */
+  textUp: '#2ecc71',
+  textDown: '#ff6b6b',
 } as const;
 
 /** Light-scheme counterparts, same keys. Raised panels sit a soft warm-grey above white paper;
@@ -254,6 +264,15 @@ export const extrasLight: Record<keyof typeof extras, string> = {
    * pair rather than left unverified.
    */
   textInfo: '#2F547D',
+  /**
+   * Light `textUp` / `textDown` — light `success.main` `#1e9e57` measured 2.91–3.45:1 as text on
+   * the four light surfaces and `error.main` `#d23b3b` 4.00–4.74:1, both under WCAG AA's 4.5:1.
+   * `#146F40` / `#B02B2B` are the smallest darkenings that clear every surface the research view
+   * paints them on: 4.55:1 at worst on their own `alpha(main,0.14)` tint over `panelRaised`,
+   * 5.25 / 5.49:1 plain on `panelRaised`.
+   */
+  textUp: '#146F40',
+  textDown: '#B02B2B',
 } as const;
 
 /** Resolve the mode-correct extras inside an `sx`/styled `theme` callback. */

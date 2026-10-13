@@ -1,6 +1,7 @@
 ---
 ticker: MU
 date: 2026-10-13
+updated: 2026-10-13
 title: Record margins on a cyclical chip. How long they last is the whole question.
 company: Micron Technology
 about: Nasdaq · Memory and storage chips: DRAM, HBM and NAND
@@ -100,14 +101,14 @@ Credit rating | BBB+ @ FQ4-26 | two upgrades in the quarter | up | At all three 
 
 ## Revenue and earnings quality | Revenue grew almost fivefold in a year, mostly from price, not volume.
 
-```chart bar "Quarterly revenue, $M"
+```chart bar "Quarterly revenue, $M (FQ4-26 had 14 weeks)"
 FQ2-25 | 8053
 FQ3-25 | 9301
 FQ4-25 | 11315
 FQ1-26 | 13643
 FQ2-26 | 23860
 FQ3-26 | 41456
-FQ4-26 | 54229 | | 54,229 (14 wks)
+FQ4-26 | 54229
 FQ1-27 guide | 61500 | guide | 61,500 ± 1,500
 ```
 
@@ -305,6 +306,7 @@ Micron's HBM revenue share is 20% or more for Q4 CY26. | | 2027-03 | Counterpoin
 
 ```changelog
 2026-10-13 | initiation | First note. Normalized DCF. Stance, target, scenario odds and forecast probabilities not set.
+2026-10-13 | correction | Revenue chart: a bar's long label moved into the caption so it fits a phone. No figure changed.
 ```
 
 ## Sources | Filings first, press second.

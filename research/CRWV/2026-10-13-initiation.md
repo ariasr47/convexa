@@ -1,6 +1,7 @@
 ---
 ticker: CRWV
 date: 2026-10-13
+updated: 2026-10-13
 title: A $104B backlog, built on $35B of debt.
 company: CoreWeave
 about: Nasdaq · GPU cloud for AI labs and big tech
@@ -77,7 +78,7 @@ Customer prepayments | $9.7B @ 2026-06-30 | deferred revenue | flat | Customers 
 
 ## Revenue | Revenue has more than doubled a year, and the guide implies Q4 near $4.6B.
 
-```chart bar "Quarterly revenue, $M"
+```chart bar "Quarterly revenue, $M (Q4 '26 is implied by the full-year guide, calc)"
 Q1 '25 | 982
 Q2 '25 | 1212
 Q3 '25 | 1365
@@ -85,7 +86,7 @@ Q4 '25 | 1572
 Q1 '26 | 2078
 Q2 '26 | 2575
 Q3 '26 | 3525 | guide | $3.45–3.60B
-Q4 '26 | 4622 | guide | ~$4.3–4.9B (calc)
+Q4 '26 | 4622 | guide | ~$4.3–4.9B
 ```
 
 - Q2 revenue rose 112% to $2,575M, at the top of guidance [1]. The FY2026 guide implies Q4 revenue of about $4.3–4.9B (calc: guide less H1 and the Q3 range) [3].
@@ -340,6 +341,7 @@ CRWV beats the Nasdaq-100 on total return from 2026-10-12 to 2027-03-31. | | 202
 
 ```changelog
 2026-10-13 | initiation | First note. Enterprise DCF with a distress probability. Stance, target, scenario odds and forecast probabilities not set.
+2026-10-13 | correction | Revenue chart: a bar's long label moved into the caption so it fits a phone. No figure changed.
 ```
 
 ## Sources | Filings first, press second.

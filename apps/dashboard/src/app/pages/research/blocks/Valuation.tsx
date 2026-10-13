@@ -25,7 +25,7 @@ import {
 import { NoteInlines } from '../Inlines';
 import { useNoteContext } from '../noteContext';
 import type { Dated, ScenarioName, Uncertainty, ValuationBlock } from '../types';
-import { Eyebrow, MONO, Panel, PANEL_SX, YourCall } from '../ui';
+import { downText, Eyebrow, MONO, Panel, PANEL_SX, upText, YourCall } from '../ui';
 
 const NAMES: ScenarioName[] = ['bear', 'base', 'bull'];
 const TITLE: Record<ScenarioName, string> = { bear: 'Bear', base: 'Base', bull: 'Bull' };
@@ -59,7 +59,7 @@ const at = (v: number, max: number) => `${Math.min(100, Math.max(0, (v / max) * 
 export function Signed({ value }: { value: number }) {
   return (
     <Box component="span" sx={{ whiteSpace: 'nowrap' }}>
-      <Box component="span" sx={{ color: value >= 0 ? 'success.main' : 'error.main' }}>
+      <Box component="span" sx={(t) => ({ color: value >= 0 ? upText(t) : downText(t) })}>
         {arrow(value)}
       </Box>{' '}
       <Box component="span" sx={MONO}>
@@ -153,6 +153,8 @@ export function PriceValueStrip({
   const hp = (hi / max) * 100;
   const bp = (values.base / max) * 100;
   const crowded = bp - lp < 18 || hp - bp < 18;
+  // A narrow range has no room for three labels on the strip at any width: use the phone's legend row.
+  const legendOnly = hp - lp < 30;
   const toBase = ((values.base - price.value) / price.value) * 100;
   const label =
     `Value range ${money(values.bear)} bear to ${money(values.bull)} bull, base ${money(values.base)}; ` +
@@ -182,7 +184,10 @@ export function PriceValueStrip({
         aria-label={label}
         sx={{
           position: 'relative',
-          height: { xs: compact ? H : 44, sm: H + (crowded && !compact ? 16 : 0) },
+          height: {
+            xs: compact ? H : 44,
+            sm: legendOnly && !compact ? 44 : H + (crowded && !compact ? 16 : 0),
+          },
         }}
       >
         <Box
@@ -269,7 +274,7 @@ export function PriceValueStrip({
               component="span"
               sx={{
                 ...MONO,
-                display: { xs: 'none', sm: 'block' },
+                display: legendOnly ? 'none' : { xs: 'none', sm: 'block' },
                 position: 'absolute',
                 top: 46,
                 left: `${lp}%`,
@@ -284,7 +289,7 @@ export function PriceValueStrip({
               component="span"
               sx={{
                 ...MONO,
-                display: { xs: 'none', sm: 'block' },
+                display: legendOnly ? 'none' : { xs: 'none', sm: 'block' },
                 position: 'absolute',
                 top: crowded ? 62 : 46,
                 left: `${bp}%`,
@@ -300,7 +305,7 @@ export function PriceValueStrip({
               component="span"
               sx={{
                 ...MONO,
-                display: { xs: 'none', sm: 'block' },
+                display: legendOnly ? 'none' : { xs: 'none', sm: 'block' },
                 position: 'absolute',
                 top: 46,
                 left: `${hp}%`,
@@ -319,7 +324,7 @@ export function PriceValueStrip({
         <Box
           aria-hidden
           sx={{
-            display: { xs: 'grid', sm: 'none' },
+            display: legendOnly ? 'grid' : { xs: 'grid', sm: 'none' },
             gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
             ...MONO,
             fontSize: 12,
@@ -478,6 +483,10 @@ function FootballField({ v, stale }: { v: ValuationBlock; stale: boolean }) {
     });
   const max = axisMax([...rows.flatMap((x) => [x.hi ?? 0, x.mark ?? 0]), v.price.value]);
   const ticks = [0.25, 0.5, 0.75].map((f) => f * max);
+  // A band's two end labels sit apart only when the band is wide enough for both on the narrowest
+  // axis (~260px on a phone; 10px mono is ~6.2px a character); otherwise one "lo–hi" label.
+  const apart = (lo: number, hi: number) =>
+    (hi - lo) / max >= ((money(lo) + money(hi)).length * 6.2 + 12) / 260;
   return (
     <Box
       component="figure"
@@ -568,7 +577,7 @@ function FootballField({ v, stale }: { v: ValuationBlock; stale: boolean }) {
                 })}
               />
             )}
-            {row.lo !== null && row.hi !== null && (row.hi - row.lo) / max < 0.16 ? (
+            {row.lo !== null && row.hi !== null && !apart(row.lo, row.hi) ? (
               <Box
                 component="span"
                 sx={{
@@ -602,7 +611,7 @@ function FootballField({ v, stale }: { v: ValuationBlock; stale: boolean }) {
                 </Box>
               )
             )}
-            {row.hi !== null && row.lo !== null && (row.hi - row.lo) / max >= 0.16 && (
+            {row.hi !== null && row.lo !== null && apart(row.lo, row.hi) && (
               <Box
                 component="span"
                 sx={{
@@ -950,7 +959,9 @@ function Sensitivity({ v, stale }: { v: ValuationBlock; stale: boolean }) {
               >
                 <span>{money(cell.value)}</span>
                 {!stale && (
-                  <Box component="span" sx={{ fontSize: 10, color: 'text.secondary' }}>
+                  // Primary, not secondary: on the deepest cell tint secondary measures 2.94:1 (dark),
+                  // primary 6.55:1. The smaller size carries the hierarchy.
+                  <Box component="span" sx={{ fontSize: 10, color: 'text.primary' }}>
                     {arrow(cell.vsPrice)}
                     {percent(cell.vsPrice)}
                   </Box>
@@ -1166,42 +1177,46 @@ export function ImpliedBlockView() {
           <Box
             role="img"
             aria-label={`Today's profit, capitalized, supports ${Math.round(i.steadyStateShare)}% of the price; future growth has to earn the other ${100 - Math.round(i.steadyStateShare)}%`}
+            sx={{ display: 'flex', height: 16, borderRadius: '6px', overflow: 'hidden' }}
+          >
+            <Box sx={{ width: `${Math.max(2, i.steadyStateShare)}%`, bgcolor: 'text.secondary' }} />
+            <Box sx={(t) => ({ flex: 1, bgcolor: alpha(t.palette.info.main, 0.5) })} />
+          </Box>
+          {/* The labels sit under the bar: inside a segment they clip whenever its share is small. */}
+          <Box
+            aria-hidden
             sx={{
               display: 'flex',
-              height: 24,
-              borderRadius: '6px',
-              overflow: 'hidden',
-              ...MONO,
-              fontSize: 11,
+              flexWrap: 'wrap',
+              columnGap: 2,
+              rowGap: 0.5,
+              fontSize: 12,
+              color: 'text.secondary',
             }}
           >
-            <Box
-              sx={{
-                width: `${Math.max(2, i.steadyStateShare)}%`,
-                bgcolor: 'text.secondary',
-                color: 'background.default',
-                display: 'flex',
-                alignItems: 'center',
-                pl: i.steadyStateShare > 18 ? 1 : 0,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-              }}
-            >
-              {i.steadyStateShare > 18 ? `today ${Math.round(i.steadyStateShare)}%` : ''}
-            </Box>
-            <Box
-              sx={(t) => ({
-                flex: 1,
-                bgcolor: alpha(t.palette.info.main, 0.5),
-                display: 'flex',
-                alignItems: 'center',
-                pl: 1,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-              })}
-            >
-              future growth {100 - Math.round(i.steadyStateShare)}%
-            </Box>
+            {[
+              { name: 'today', share: Math.round(i.steadyStateShare), fill: 'text.secondary' },
+              {
+                name: 'future growth',
+                share: 100 - Math.round(i.steadyStateShare),
+                fill: (t: Theme) => alpha(t.palette.info.main, 0.5),
+              },
+            ].map((s) => (
+              <Box
+                key={s.name}
+                component="span"
+                sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}
+              >
+                <Box
+                  component="span"
+                  sx={{ width: 10, height: 10, borderRadius: '2px', bgcolor: s.fill }}
+                />
+                {s.name}{' '}
+                <Box component="span" sx={{ ...MONO, color: 'text.primary' }}>
+                  {s.share}%
+                </Box>
+              </Box>
+            ))}
           </Box>
           <Box component="span" sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.5 }}>
             "Today" is current operating profit after tax, capitalized at the base cost of capital,

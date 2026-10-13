@@ -77,6 +77,11 @@ test('each bad input is refused with a message naming the problem', () => {
     ],
     ['bridge off', ok + fence('bridge', 'Core | 10', 'Charge | -2', 'GAAP | 9'), /doesn't add up/],
     [
+      'bar text too long for a phone',
+      ok + '```chart bar "Revenue"\nQ1 | 10\nQ2 | 12 | guide | 12 (results Oct 21)\n```\n',
+      /14 characters at most/,
+    ],
+    [
       'bad catalyst date',
       ok + fence('catalysts', 'soon | Results | Detail | expected'),
       /Write the date as/,

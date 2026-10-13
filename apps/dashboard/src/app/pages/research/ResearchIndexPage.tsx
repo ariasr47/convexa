@@ -56,7 +56,9 @@ function MiniChart({ chart }: { chart: NonNullable<ResearchTickerSummary['latest
   const max = Math.max(...chart.bars.map((b) => b.value), 1);
   const last = chart.bars[chart.latest];
   return (
-    <Box sx={{ display: 'grid', gap: 0.75 }}>
+    // One column that may shrink below the caption's width, so a long caption ellipsizes instead of
+    // widening the card past a phone screen.
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 0.75 }}>
       <Box
         sx={{
           display: 'flex',
@@ -233,8 +235,9 @@ function TickerCard({ row, today }: { row: Row; today: string }) {
                 component="span"
                 sx={{
                   ...MONO,
-                  fontSize: 17,
+                  fontSize: { xs: 15, sm: 17 },
                   fontWeight: 500,
+                  whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                 }}

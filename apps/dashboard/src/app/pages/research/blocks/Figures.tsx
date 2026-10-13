@@ -4,7 +4,7 @@ import { alpha } from '@mui/material/styles';
 import { formatAsOf, labelWithAsOf } from '../format';
 import { NoteInlines } from '../Inlines';
 import type { Direction, NoteBlock } from '../types';
-import { Eyebrow, MONO, Panel } from '../ui';
+import { downText, Eyebrow, MONO, Panel, upText } from '../ui';
 
 type Of<T extends NoteBlock['type']> = Extract<NoteBlock, { type: T }>;
 
@@ -97,23 +97,24 @@ export function DeltaPill({ dir, children }: { dir: Direction; children: string 
     <Box
       component="span"
       sx={(t) => {
-        const tone =
+        const [fill, text] =
           dir === 'up'
-            ? t.palette.success.main
+            ? [t.palette.success.main, upText(t)]
             : dir === 'down'
-              ? t.palette.error.main
-              : t.palette.text.secondary;
+              ? [t.palette.error.main, downText(t)]
+              : [t.palette.text.secondary, t.palette.text.secondary];
         return {
           ...MONO,
           alignSelf: 'flex-start',
           px: 1,
           py: '2px',
-          borderRadius: '999px',
+          // 10px rounds a one-line pill fully and keeps a wrapped one a soft box: a long delta wraps
+          // inside its tile instead of running into the next.
+          borderRadius: '10px',
           fontSize: 12,
           fontWeight: 500,
-          color: tone,
-          bgcolor: alpha(tone, 0.14),
-          whiteSpace: 'nowrap',
+          color: text,
+          bgcolor: alpha(fill, 0.14),
         };
       }}
     >

@@ -180,6 +180,12 @@ export function parseTypedBlock(name, args, lines, ctx, openLine) {
         cells(r, 2, 4, 'label | number | approx/guide | shown text');
         const kind = (r.cells[2] ?? '').toLowerCase();
         word(r, kind, ['', 'approx', 'guide'], 'The bar kind');
+        // The shown text sits above a bar that is ~30px wide on a phone: a figure, not a sentence.
+        need(
+          (r.cells[3] ?? '').length <= 14,
+          r.line,
+          `A bar's shown text is a short figure, 14 characters at most; put the rest in the caption or the prose. Got "${r.cells[3]}".`,
+        );
         return {
           label: plain(r, 0),
           value: number(r, r.cells[1] ?? '', 'The bar'),

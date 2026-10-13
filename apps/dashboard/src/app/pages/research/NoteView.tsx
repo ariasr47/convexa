@@ -372,16 +372,25 @@ function Rail({ note, active }: { note: ResearchNote; active: string }) {
                   },
                 })}
               >
+                {/* On the open row's selected fill, secondary measured 4.32:1 (dark): use primary. */}
                 <Box
                   component="span"
-                  sx={{ ...MONO, fontSize: 11, color: 'text.secondary', width: 16 }}
+                  sx={{
+                    ...MONO,
+                    fontSize: 11,
+                    color: open ? 'text.primary' : 'text.secondary',
+                    width: 16,
+                  }}
                 >
                   {pi + 1}
                 </Box>
                 <Box component="span" sx={{ flexGrow: 1 }}>
                   {part.title ?? 'Notes'}
                 </Box>
-                <Box component="span" sx={{ ...MONO, fontSize: 11, color: 'text.secondary' }}>
+                <Box
+                  component="span"
+                  sx={{ ...MONO, fontSize: 11, color: open ? 'text.primary' : 'text.secondary' }}
+                >
                   {part.sections.length}
                 </Box>
               </Box>
