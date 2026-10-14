@@ -254,3 +254,5 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
   fallback copy as live.
 - Checked: `tmp/final-render.mjs` on all 235 boards (exit 0 per group; no overflow, no text under 11px) and a
   label-collision scan (none left); build and verify-tokens exit 0; no NUL bytes.
+- **Published** to https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe as versions 11–12 (index + 332 changed boards;
+  the older pages changed through the shared footer and chart kit). The canvas page itself was not opened in a browser.
