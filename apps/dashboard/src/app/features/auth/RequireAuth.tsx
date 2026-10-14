@@ -12,11 +12,13 @@
  * Product spine: refuse VISIBLY (never silent redirect), say what unlocks, and leave a free path
  * into the public Ticker so the funnel does not dead-end.
  */
+import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
 import { RouteFallback } from '@/shared/ui/RouteFallback';
 import { dataMode } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Link from '@mui/material/Link';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -31,15 +33,19 @@ interface Props {
   children: ReactNode;
   /** What the user was trying to reach, for the copy — e.g. "the scanner". */
   surface: string;
+  /** The same screen on the staging demo, e.g. "/scanner". Sign-ups are closed, so a visitor who
+   *  can't sign in still gets to see it working (owner ruling 2026-10-14). */
+  demoPath?: string;
 }
 
 /** Spine-aware unlock copy keyed by the `surface` prop passed from the route table. */
-function wallCopy(surface: string): { unlocks: string; freePath: string } {
+function wallCopy(surface: string): { unlocks: string; freePath: string; demo: string } {
   if (surface.includes('scanner')) {
     return {
       unlocks:
         'See ranked dealer-gamma setups across the universe, then jump into any name for walls, flip, and flow.',
       freePath: 'Ticker analysis stays free — open any symbol without an account.',
+      demo: 'Want to see a scan? The demo account runs one, on sample data.',
     };
   }
   if (surface.includes('position')) {
@@ -47,15 +53,17 @@ function wallCopy(surface: string): { unlocks: string; freePath: string } {
       unlocks:
         'Track simulated positions, saved views, and P/L so you can practice the plan after you read the structure.',
       freePath: 'Ticker analysis stays free — open any symbol without an account.',
+      demo: 'Want to see a book? The demo account has one, on sample data.',
     };
   }
   return {
     unlocks: 'This area is limited to invited accounts while Convexa is in private testing.',
     freePath: 'Ticker analysis stays free without an account.',
+    demo: 'The demo account shows this screen on sample data.',
   };
 }
 
-export function RequireAuth({ children, surface }: Props) {
+export function RequireAuth({ children, surface, demoPath }: Props) {
   const { ready, authenticated, subsystemDegraded, refresh } = useAuth();
   const { openAuth } = useAuthDialog();
   const signInRef = useRef<HTMLButtonElement>(null);
@@ -136,6 +144,29 @@ export function RequireAuth({ children, surface }: Props) {
               Open free Ticker →
             </Button>
           </Stack>
+          {demoPath && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              data-testid="require-auth-demo"
+              sx={{ pt: 1.5, mt: 0.5, borderTop: 1, borderColor: 'divider', width: '100%' }}
+            >
+              {copy.demo}{' '}
+              <Link
+                href={`${STAGING_DEMO_URL}${demoPath}`}
+                underline="always"
+                sx={{
+                  color: (theme) => extrasFor(theme).textInfo,
+                  display: 'inline-flex',
+                  minHeight: 24,
+                  alignItems: 'center',
+                  fontWeight: 600,
+                }}
+              >
+                See it on the demo →
+              </Link>
+            </Typography>
+          )}
         </Stack>
       </Paper>
     </Box>

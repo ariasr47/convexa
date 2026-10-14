@@ -101,7 +101,7 @@ const OVERLAYS = {
     { status: 'partial', what: 'Reassessment on the demo: the request says source “broker_webull” and “Webull” in its basis though the holding is authored; designed as a demo source and a synthetic basis.' },
     { status: 'partial', what: 'Notifications: no ask before the browser prompt (the button calls requestPermission directly) and no way to turn them off from Convexa once granted; the button just re-asks.' },
     { status: 'partial', what: 'Delete view uses MUI color="error" (red); designed burnt orange with the word.' },
-    { status: 'todo', what: 'Account recovery and invitation acceptance: no reset endpoint, no token store, no email sender. The sign-in dialog has only log in / sign up today.' },
+    { status: 'todo', what: 'Account recovery and invitation acceptance: no reset endpoint, no token store, no email sender. The sign-in dialog has only log in / sign up today. Parked by owner (2026-10-14): the privacy page says to ask the owner.' },
   ],
   rulings: ['P-2', 'P-3', 'P-4', 'P-8', 'P-12', 'P-13', 'Amber spent', ENV],
   code: [`${D}features/trading/broker/reassess.tsx · BrokerTabPanel.tsx`, `${D}features/trading/outcomes/ArchiveBlock.tsx · copy.ts · archive.ts`, `${D}shared/ui/Widget/Widget.tsx`, `${D}features/trading/positions/CustomizationToolbar.tsx · labels.ts`, `${D}features/alerts/useAlerts.ts · pages/alerts/AlertsPage.tsx`, `${D}features/auth/AuthDialog.tsx · copy.ts · apps/api/src/routes/auth.rs`, 'design/src/screens/final/deep-overlays.mjs'],

@@ -1,7 +1,8 @@
 /**
  * `/research` — every ticker with published notes (live mode): what's coming up across all of them,
- * then one card per ticker with its headline, a revenue sketch, price against value, three figures,
- * the next catalyst and the note's freshness. Everything comes from the build's index; freshness and
+ * then one card per ticker with its headline, a revenue sketch, the next catalyst and the note's
+ * freshness (the metric row and price-vs-value strip live in the note's header, owner 2026-10-14).
+ * Everything comes from the build's index; freshness and
  * "coming up" are worked out in the reader's browser. In the demo build the per-ticker tabs carry
  * authored sample notes instead, so this page points at those.
  */
@@ -18,10 +19,8 @@ import {
   researchIndex,
   upcoming,
 } from 'virtual:convexa-research';
-import { DeltaPill } from './blocks/Figures';
-import { PriceValueStrip } from './blocks/Valuation';
 import { filedSince } from './filings';
-import { formatNoteDate, labelWithAsOf, STANCE_LABEL, UNCERTAINTY_LABEL } from './format';
+import { formatNoteDate, STANCE_LABEL, UNCERTAINTY_LABEL } from './format';
 import { RESEARCH_DISCLAIMER, ResearchColumn } from './NotesView';
 import { usePublicFilings } from './publicData';
 import { ResearchTabs } from './ResearchTabs';
@@ -206,77 +205,6 @@ function TickerCard({ row, today }: { row: Row; today: string }) {
         {n.title}
       </Box>
       {n.chart && <MiniChart chart={n.chart} />}
-      {n.valuation ? (
-        <Box sx={{ display: 'grid', gap: 0.5 }}>
-          <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
-            Price vs value range
-          </Box>
-          <PriceValueStrip
-            data={n.valuation}
-            uncertainty={null}
-            priceAgeDays={row.f.priceAgeDays}
-            priceStale={row.f.priceStale}
-            compact
-          />
-        </Box>
-      ) : (
-        <Box
-          sx={(t) => ({
-            display: 'flex',
-            justifyContent: 'space-between',
-            px: 1.25,
-            py: 1,
-            borderRadius: '8px',
-            border: `1px solid ${alpha(t.palette.text.secondary, 0.25)}`,
-            fontSize: 12,
-            color: 'text.secondary',
-          })}
-        >
-          <span>Price vs value range</span>
-          <span>no valuation yet</span>
-        </Box>
-      )}
-      {n.metrics.length > 0 && (
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: `repeat(${n.metrics.length}, minmax(0, 1fr))`,
-            gap: 1,
-            pt: 1.75,
-            borderTop: 1,
-            borderColor: 'divider',
-          }}
-        >
-          {n.metrics.map((m) => (
-            <Box
-              key={m.label}
-              sx={{ display: 'grid', gap: 0.25, alignContent: 'start', minWidth: 0 }}
-            >
-              <Box component="span" sx={{ fontSize: 11, color: 'text.secondary', lineHeight: 1.3 }}>
-                {labelWithAsOf(m.label, m.asOf)}
-              </Box>
-              <Box
-                component="span"
-                sx={{
-                  ...MONO,
-                  fontSize: { xs: 15, sm: 17 },
-                  fontWeight: 500,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {m.value}
-              </Box>
-              {m.delta && (
-                <Box sx={{ '& > span': { fontSize: 11 } }}>
-                  <DeltaPill dir={m.dir}>{m.delta}</DeltaPill>
-                </Box>
-              )}
-            </Box>
-          ))}
-        </Box>
-      )}
       {next && (
         <Box
           sx={(t) => ({

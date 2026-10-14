@@ -287,12 +287,18 @@ export function AppRoutes() {
         <Route
           path="/positions"
           element={
-            <RequireAuth surface="your positions">{lazyRoute(<PositionsPage />)}</RequireAuth>
+            <RequireAuth surface="your positions" demoPath="/positions">
+              {lazyRoute(<PositionsPage />)}
+            </RequireAuth>
           }
         />
         <Route
           path="/scanner"
-          element={<RequireAuth surface="the scanner">{lazyRoute(<Scanner />)}</RequireAuth>}
+          element={
+            <RequireAuth surface="the scanner" demoPath="/scanner">
+              {lazyRoute(<Scanner />)}
+            </RequireAuth>
+          }
         />
         {/* Blog — static index (zero data work); each card is a full-document anchor to the
             standalone article HTML in `public/blog/` (static files win over the SPA fallback). */}

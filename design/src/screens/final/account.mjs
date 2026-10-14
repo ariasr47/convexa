@@ -1,7 +1,7 @@
 // Final · Convexa v1 — the account group: Scanner, Positions, Alerts, Settings and the overlays.
 // Each row: the spec card, staging (the seed demo account), production (the portfolio site), phone,
 // light, states. Pages live in ./account-pages.mjs, overlays in ./account-dialogs.mjs.
-import { ACCT_CSS, alertsProduction, alertsStaging, positionsProduction, positionsStaging, positionsStates, scannerProduction, scannerStaging, scannerStates, settingsProduction, settingsStaging, settingsStates } from './account-pages.mjs';
+import { ACCT_CSS, alertsProduction, alertsStaging, positionsProduction, positionsStaging, positionsStates, scannerProduction, scannerProductionSignedIn, scannerStaging, scannerStates, settingsProduction, settingsStaging, settingsStates } from './account-pages.mjs';
 import { DLG_CSS, dialogsStates, orderDetailBody, personaBody, sheetsBody, signInBody, tradeEntryBody, viewEditorBody, whatsSentBody } from './account-dialogs.mjs';
 import { alertsFlowBody, alertsStates5Body } from '../v5/alerts-public.mjs';
 
@@ -20,7 +20,7 @@ export const ROWS = [
       route: '/scanner',
       job: 'One dense read of the tracked universe, ranked by dealer structure, so a trader knows which ticker deserves the deep-dive right now.',
       env: {
-        production: 'Not live first, signed in or not: every column reads the options chain, so the page explains what it would show, why it is off, and links to the same screen on the demo. No sign-in wall, because signing in would not make it work. Below, links to what is live without the feed.',
+        production: 'The private-testing wall for visitors: “Sign in to open the scanner”, sign-ups closed, a free path to a ticker desk and a link to the demo scan (owner ruling 2026-10-14). Signed in (the owner), Not live: every column reads the options chain, so the page explains what it would show, why it is off, and links to the same screen on the demo. Below, links to what is live without the feed.',
         staging: 'The sample scan on the Oct 7, 2026 scenario, signed in to the demo account: the six demo names, scores, tiers, flip distance and walls, in a dashed, hatched frame. Price change stays green/red text with ▲/▼ (P-5 rejected). No price flash.',
       },
       widgets: [
@@ -32,7 +32,8 @@ export const ROWS = [
         { name: 'Live on this site (links)', source: '/api/public-data/markets, /filings, /tickers/{t}', production: [['current', 'Updated'], ['delayed', 'Delayed by source'], ['notConfigured', 'Not set up']], staging: '—' },
       ],
       states: [
-        { tag: 'notLive', when: 'Production, every visitor: the explain panel, the table’s outline, “See it on the demo →”.' },
+        { tag: 'locked', when: 'Production visitor: the wall, the one way in, the demo link.' },
+        { tag: 'notLive', when: 'Production, signed in: the explain panel, the table’s outline, “See it on the demo →”.' },
         { tag: 'demo', when: 'Staging: the sample scan, chips dashed and “shaped like”.' },
         { tag: 'loading', when: 'Rows held at final height while the sweep answers.' },
         { tag: ['empty', 'No tickers'], when: 'The view holds no names: “Pick tickers to build your scan.” + Edit view.' },
@@ -42,8 +43,8 @@ export const ROWS = [
       ],
       phone: 'Header, legend and the explain panel stack; the outline table drops to four columns; “Live on this site” becomes one column of 44px link cards. Staging: the table becomes one card per name (symbol, price, ▲/▼ change, score bar, tier, flip and walls); the filter chips wrap and lift to 44px.',
       acceptance: [
-        'Production, signed out: /scanner shows the Not live panel, not a sign-in wall; zero requests to /api/scan*.',
-        'Production: “See it on the demo →” opens staging /scanner.',
+        'Production, signed out: the wall reads “Sign in to open the scanner”, says sign-ups are closed, and offers a free path to a ticker desk and “See it on the demo →”; zero requests to /api/scan*.',
+        'Production, signed in: the Not live panel, never an empty table; “See it on the demo →” opens staging /scanner.',
         'Staging: six rows (NVDA, SPY, QQQ, AAPL, MSFT, TSLA) at the scenario closes (SPY 690.62), in a dashed hatched frame with a Sample tag and the Oct 7 date.',
         'Staging: every change shows ▲ or ▼ before the figure as well as green/red text.',
         'The row preview opens from its button and from Enter on a focused row; hover alone never is the only way.',
@@ -52,19 +53,23 @@ export const ROWS = [
       built: [
         { status: 'shipped', what: 'Scan table, filters, view editor, row preview, empty, loading and sweep-behind states; the Not live and Paused board banners (labels.ts marketDataNotLive / marketDataPaused).' },
         { status: 'shipped', what: 'Staging scan through the demo transport, signed in (RequireAuth passes in demo mode).' },
-        { status: 'partial', what: 'Demo scan rows: real scenario prices, walls and flips, but every row returns score 70 and change +0.42% (transport.ts:1229-1242); the design draws per-name scores and the scenario’s own close-to-close change.' },
-        { status: 'todo', what: 'Production still wraps /scanner in RequireAuth (app.tsx:255-258): visitors meet “Sign in to open the scanner”. Final: no wall; the Not live explain panel with the demo link and the outline table.' },
+        { status: 'shipped', what: 'Demo scan scores per name: NVDA 81, SPY 74, QQQ 70, AAPL 63, MSFT 52, TSLA 47 (catalog/shared.ts SCORE_OFFSET, 2026-10-14).' },
+        { status: 'partial', what: 'Demo scan change: every row still returns +0.42% (transport.ts), not the scenario’s own close-to-close change.' },
+        { status: 'shipped', what: 'The production wall (RequireAuth, kept by owner ruling 2026-10-14) with “See it on the demo →” to staging /scanner (RequireAuth demoPath, 2026-10-14).' },
+        { status: 'partial', what: 'Wall copy: shipped says “Private testing — invited accounts only” and “Open free Ticker →”; the board says sign-ups are closed and “Open a ticker desk”.' },
+        { status: 'todo', what: 'Signed in on production: the Not live explain panel with the outline table (shipped: the board banner only).' },
         { status: 'todo', what: 'The “Live on this site” link cards and the On this page legend.' },
       ],
-      rulings: ['P-1', 'P-2', 'P-3', 'P-5 rejected', 'P-11', 'P-13', ...ENV],
+      rulings: ['P-1', 'P-2', 'P-3', 'P-5 rejected', 'P-11', 'P-13', ...ENV, 'Wall 2026-10-14'],
       code: ['apps/dashboard/src/app/pages/scanner/ (Scanner.tsx, ScanTable.tsx, ScanCard.tsx, ScanToolbar.tsx, labels.ts)', 'apps/dashboard/src/app/features/auth/RequireAuth.tsx', 'apps/dashboard/src/app/app.tsx:249-258', 'libs/api/src/lib/demo/transport.ts:1217-1260', 'design/src/screens/final/account-pages.mjs'],
     },
     boards: [
       { id: 'staging', title: 'Staging · demo account', w: 1440, h: 1142, body: (o) => scannerStaging(o) },
-      { id: 'production', title: 'Production · Not live', w: 1440, h: 977, body: (o) => scannerProduction(o) },
+      { id: 'production', title: 'Production · signed out', w: 1440, h: 977, body: (o) => scannerProduction(o) },
+      { id: 'production-signed-in', title: 'Production · signed in · Not live', w: 1440, h: 977, body: (o) => scannerProductionSignedIn(o) },
       { id: 'phone', title: 'Phone · production', w: 390, h: 1509, body: (o) => scannerProduction(o) },
       { id: 'staging-phone', title: 'Phone · staging', w: 390, h: 2091, body: (o) => scannerStaging(o) },
-      { id: 'light', title: 'Light · production', w: 1440, h: 977, body: (o) => scannerProduction(o), opts: LIGHT },
+      { id: 'light', title: 'Light · production, signed in', w: 1440, h: 977, body: (o) => scannerProductionSignedIn(o), opts: LIGHT },
       { id: 'states', title: 'States', w: 1440, h: 2113, body: (o) => scannerStates(o) },
     ],
   },
@@ -113,7 +118,8 @@ export const ROWS = [
       built: [
         { status: 'shipped', what: 'The book: capital at risk, Net P&L, table and cards, saved views, orders panel, track record, broker tab; the wall (RequireAuth) on production.' },
         { status: 'shipped', what: 'Demo seed (workspace.ts:203-505) and demo order frames, signed in to the demo account.' },
-        { status: 'partial', what: 'Wall copy: shipped says “Private testing — invited accounts only” and links “Open free Ticker →”; final adds the demo-book link.' },
+        { status: 'shipped', what: 'The wall’s “See it on the demo →” to staging /positions (RequireAuth demoPath, 2026-10-14).' },
+        { status: 'partial', what: 'Wall copy: shipped says “Private testing — invited accounts only” and “Open free Ticker →”; the board says sign-ups are closed and “Open a ticker desk”.' },
         { status: 'todo', what: 'A Sample mark tag on staging rows (the page lead still says “Live marks degrade gracefully”), and Not live marks for a signed-in production book.' },
       ],
       rulings: ['P-1', 'P-2', 'P-3', 'P-5 rejected', 'P-11', 'P-13', ...ENV],

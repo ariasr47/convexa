@@ -161,7 +161,7 @@ export const ROWS = [
       ],
       built: [
         { status: 'shipped', what: 'Canvas2D field on buildDemoField(), the WebGL2 twin and its renderer toggle, reduced motion, and a WebGL2 error panel (StructureFieldLab.tsx, StructureFieldWebGL.tsx).' },
-        { status: 'todo', what: 'Production Not live: today production draws the synthetic field, and “Use live SPY structure” calls the real ticker bundle, which needs the options feed.' },
+        { status: 'shipped', what: 'Production Not live: LabInstrumentNotLive with “Would show”, “Off because” and “See it on the demo →”; no canvas, no request (pages/lab/LabNotLive.tsx, 62336421).' },
         { status: 'partial', what: '“Use live SPY structure” already reaches the demo transport on staging; designed: rename it “Demo SPY chain” and show it on staging only.' },
         { status: 'todo', what: 'The sample frame, Sample tag and scenario date (today: MUI chips “Lab”, “Synthetic field”, “Canvas2D”); labels in an HTML layer at 11px; the table twin; the static drawing when no canvas starts.' },
         { status: 'partial', what: 'The synthetic model paints a signal-blue “TAPE LIVE” pill (demo model live: true) — designed: no live mark on sample data. The board draws the Lab row’s field (walls 560/580, flip 568.5, mid 573.12); buildDemoField centres on 512.4 (walls 500/530, flip 508.2) — either works if the copy follows the data.' },
@@ -214,7 +214,7 @@ export const ROWS = [
       ],
       built: [
         { status: 'shipped', what: 'A Canvas2D strip with a synthetic mid, a dashed structure baseline, print flashes and reduced motion (no flashes or glow) (demos/TapePulseLab.tsx).' },
-        { status: 'todo', what: 'Production Not live: today production draws the synthetic strip.' },
+        { status: 'shipped', what: 'Production Not live: LabInstrumentNotLive with “Would show”, “Off because” and “See it on the demo →”; no canvas, no request (pages/lab/LabNotLive.tsx, 62336421).' },
         { status: 'todo', what: 'The print lane (sign by position and ▲/▼), the time-based 5-minute buffer, the replay control, the clocks line, the table, the sample frame.' },
         { status: 'partial', what: 'Canvas colours are hard-coded dark literals (demos/labTokens.ts), so the light theme shows a dark block; designed: tokens (see the light board). The canvas has no role or label and no fallback.' },
       ],
@@ -263,7 +263,7 @@ export const ROWS = [
       ],
       built: [
         { status: 'shipped', what: 'A Canvas2D pin-range view with put, call and flip lines, a drifting spot and force arrows (demos/WallMagnetLab.tsx).' },
-        { status: 'todo', what: 'Production Not live: today production draws the synthetic view.' },
+        { status: 'shipped', what: 'Production Not live: LabInstrumentNotLive with “Would show”, “Off because” and “See it on the demo →”; no canvas, no request (pages/lab/LabNotLive.tsx, 62336421).' },
         { status: 'todo', what: 'The ruled form: one HTML price scale, zones by text and position, the side-aware note, signed distances, the table and the sample frame; the physics drift and force arrows go.' },
         { status: 'partial', what: 'Hard-coded dark literals (labTokens.ts): the light theme draws a dark block. The final form uses tokens (light board).' },
       ],
@@ -312,7 +312,7 @@ export const ROWS = [
       ],
       built: [
         { status: 'shipped', what: 'A Canvas2D heat ribbon over five tenors with a regime word, reduced motion (no wave, no glow) (demos/TermHeatLab.tsx).' },
-        { status: 'todo', what: 'Production Not live: today production draws the synthetic curve.' },
+        { status: 'shipped', what: 'Production Not live: LabInstrumentNotLive with “Would show”, “Off because” and “See it on the demo →”; no canvas, no request (pages/lab/LabNotLive.tsx, 62336421).' },
         { status: 'partial', what: 'Green and red carry the regime today; designed: one phosphor ramp, words and a signed gap (P-9, P-11).' },
         { status: 'todo', what: 'Fixed axis and scale, the Shape switch, keyboard readout, table, sample frame; tokens in place of the dark literals (light board).' },
       ],
@@ -361,7 +361,7 @@ export const ROWS = [
       ],
       built: [
         { status: 'shipped', what: 'A Canvas2D view of three scrolling waves labelled charm, vanna and net flow, with particles; reduced motion slows and flattens them (demos/FlowRibbonsLab.tsx).' },
-        { status: 'todo', what: 'Production Not live: today production draws the synthetic waves.' },
+        { status: 'shipped', what: 'Production Not live: LabInstrumentNotLive with “Would show”, “Off because” and “See it on the demo →”; no canvas, no request (pages/lab/LabNotLive.tsx, 62336421).' },
         { status: 'todo', what: 'The ruled form: a session-by-session projection with a band, signed end labels, legend, readout, table and the sample frame; the synthetic projection model itself (the shipped waves carry no values).' },
         { status: 'partial', what: 'Hard-coded dark literals (labTokens.ts); tokens in the final form (light board).' },
       ],

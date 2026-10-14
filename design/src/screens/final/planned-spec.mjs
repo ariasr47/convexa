@@ -38,7 +38,7 @@ export const LIQUIDITY_SPEC = {
     'Staging: zero requests to the Fed, Treasury or NY Fed; the frame is dashed and hatched.',
   ],
   built: [
-    { status: 'todo', what: 'Status: build. Free sources confirmed reachable (CANDIDATES.md); no fetcher, no wire field, no panel yet.' },
+    { status: 'todo', what: 'Status: build. Free sources confirmed reachable (CANDIDATES.md); no fetcher, no wire field, no panel yet. Parked by owner until the v5 chart system ships (2026-10-14).' },
     { status: 'shipped', what: 'The host page (/research/markets: Treasury curve, CFTC positioning) and its state words.' },
   ],
   rulings: ['P-1', ...CORE],
@@ -77,7 +77,7 @@ export const CALENDAR_SPEC = {
     'Staging: only the demo’s six names appear; no request leaves the browser.',
   ],
   built: [
-    { status: 'todo', what: 'Status: build. Macro calendar and results-date estimates (both “build” in CANDIDATES.md); no schedule fetcher yet.' },
+    { status: 'todo', what: 'Status: build. Macro calendar and results-date estimates (both “build” in CANDIDATES.md); no schedule fetcher yet. Parked by owner until the v5 chart system ships (2026-10-14).' },
     { status: 'partial', what: 'The notes’ own catalysts already drive “Coming up” on /research and the note’s “comes due” card (build time).' },
   ],
   rulings: [...CORE],
@@ -114,7 +114,7 @@ export const OTC_SPEC = {
     'FINRA’s attribution line from the existing short-data cards appears under the band.',
   ],
   built: [
-    { status: 'todo', what: 'Status: build / verify. Source reachable; FINRA’s public-display terms unchecked (open question Q-2).' },
+    { status: 'todo', what: 'Status: build / verify. Source reachable; FINRA’s public-display terms unchecked (open question Q-2). Parked by owner until the v5 chart system ships (2026-10-14).' },
     { status: 'shipped', what: 'The band’s neighbours: FINRA short interest and short-sale volume cards (live).' },
   ],
   rulings: ['P-1', ...CORE],
@@ -151,7 +151,7 @@ export const CLUSTERS_SPEC = {
     'With SEC_USER_AGENT unset the card says Not set up, not empty.',
   ],
   built: [
-    { status: 'todo', what: 'Status: build (after the switch). Needs per-transaction Form 4 rows; today’s wire only carries totals.' },
+    { status: 'todo', what: 'Status: build (after the switch). Needs per-transaction Form 4 rows; today’s wire only carries totals. Parked by owner until the v5 chart system ships (2026-10-14).' },
     { status: 'shipped', what: 'Insider trades card (90-day sales, buys, plan count) behind SEC_USER_AGENT: “switch”.' },
   ],
   rulings: [...CORE],
@@ -187,7 +187,7 @@ export const HOLDERS_SPEC = {
     'The subtitle says 13F covers long US-listed positions only.',
     'Holder names appear as filed (the board shows placeholders).',
   ],
-  built: [{ status: 'todo', what: 'Status: build. Per-filing 13F parsing not started; shares outstanding already switches on with SEC_USER_AGENT.' }],
+  built: [{ status: 'todo', what: 'Status: build. Per-filing 13F parsing not started; shares outstanding already switches on with SEC_USER_AGENT. Parked by owner until the v5 chart system ships (2026-10-14).' }],
   rulings: [...CORE],
   code: ['apps/api/src/services/public_data/edgar_13f.rs (new)', 'apps/api/src/routes/public_data.rs · PublicTickerWire.holders (new)', 'apps/dashboard/src/app/pages/research/NotePublicPanels.tsx'],
 };
@@ -222,7 +222,7 @@ export const XBRL_SPEC = {
     'Concepts with no standard tag say “Not tagged · cites the filing”, never a dash alone.',
   ],
   built: [
-    { status: 'todo', what: 'Status: build. Note figures carry no XBRL concept yet; no comparison exists.' },
+    { status: 'todo', what: 'Status: build. Note figures carry no XBRL concept yet; no comparison exists. Parked by owner until the v5 chart system ships (2026-10-14).' },
     { status: 'shipped', what: 'Reported figures in the Filings detail (FactWire, six concepts) behind SEC_USER_AGENT: “switch”.' },
   ],
   rulings: [...CORE],
@@ -255,7 +255,7 @@ export const PEERS_SPEC = {
     'The subtitle names the calendar quarter and the note explains fiscal-quarter mapping.',
     'Missing filers are named in the as-of line.',
   ],
-  built: [{ status: 'todo', what: 'Status: build. No frames fetcher; peer lists not in note front matter yet.' }],
+  built: [{ status: 'todo', what: 'Status: build. No frames fetcher; peer lists not in note front matter yet. Parked by owner until the v5 chart system ships (2026-10-14).' }],
   rulings: [...CORE],
   code: ['apps/api/src/services/public_data/xbrl_frames.rs (new)', 'apps/dashboard/src/app/pages/research/NotePublicPanels.tsx'],
 };
@@ -287,7 +287,7 @@ export const SIGNALS_SPEC = {
     'Production shows Not live with the reason and a link to the demo until both inputs exist.',
   ],
   built: [
-    { status: 'todo', what: 'Status: blocked. Needs daily prices licensed for public display; also needs setups, which need Massive in production.' },
+    { status: 'todo', what: 'Status: blocked. Needs daily prices licensed for public display; also needs setups, which need Massive in production. Parked by owner until the v5 chart system ships (2026-10-14).' },
     { status: 'shipped', what: 'The Not live panel on /research/scorecard (SignalsOff).' },
   ],
   rulings: ['P-1', 'P-3', ...CORE],
@@ -325,7 +325,7 @@ export const TA_SPEC = {
     'Realized volatility is labelled “not implied vol”.',
   ],
   built: [
-    { status: 'todo', what: 'Status: blocked (Convexa readings). Needs a daily price history licensed for public display (Twelve Data Venture the cheapest clear path, unconfirmed).' },
+    { status: 'todo', what: 'Status: blocked (Convexa readings). Needs a daily price history licensed for public display (Twelve Data Venture the cheapest clear path, unconfirmed). Parked by owner until the v5 chart system ships (2026-10-14).' },
     { status: 'shipped', what: 'TradingView’s chart, live (status live, adopted 2026-10-13); staging’s EMA 20/50, RSI 14, ADX 14, ATR 14 from sample bars.' },
   ],
   rulings: ['P-1', 'P-14', ...CORE],

@@ -117,7 +117,7 @@ const TECH = {
     { status: 'partial', what: 'The loading box is empty until TradingView draws; designed as words at the final size.' },
     { status: 'todo', what: 'The tab bar on this page (the live page has only links), the dotted ThirdPartyFrame fence (shipped: a literal rgba fence), the readings Not live panel, the unknown-listing line.' },
     { status: 'todo', what: 'The demo chart in the v5 system: one chart frame, neutral roles, RSI as its own panel.' },
-    { status: 'todo', what: 'Demo seed: NVDA (base 187, step 0.21) never closes down in 60 bars, so RSI 14 reads 100.0 and ADX 14 100. Re-author it (TSLA has only 3 down closes). These boards draw SPY.' },
+    { status: 'shipped', what: 'Demo seed re-authored: NVDA base 190.54 step 0.15 (RSI 14 92.91), TSLA base 456.91 step 0.34; last closes unchanged (nvda/tsla.seed.json, cb04915c). These boards draw SPY.' },
   ],
   rulings: ['P-2', 'P-8', 'P-9', 'P-10', 'P-13', 'P-14', 'Env 2026-10-14'],
   code: [`${D}pages/ticker/technical-analysis/{TechnicalAnalysisLive,TradingViewEmbed,TechnicalAnalysisView}.tsx · tradingView.ts`, `${D}app.tsx:164-174 (TechnicalAnalysisRoute)`, 'libs/api/src/lib/demo/{indicators,views}.ts · catalog/shared.ts', 'design/src/components/{tradingview,charts}.mjs · screens/final/ticker-tech.mjs'],

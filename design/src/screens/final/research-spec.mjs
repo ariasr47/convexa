@@ -42,7 +42,7 @@ export const INDEX_SPEC = {
     { status: 'partial', what: 'Mini chart is still a bespoke SVG with a 2px minimum and an ellipsized caption; final uses the shared Plot with the caption wrapping.' },
     { status: 'partial', what: 'Staging: the demo build replaces the cards with a DemoNotice panel (6 links) while the tab badges still count the 14 live notes and 77 forecasts.' },
     { status: 'todo', what: 'Freshness note when filings aren’t set up (today it silently falls back to dates).' },
-    { status: 'todo', what: 'Cards in this design drop the per-card metric row and price-vs-value strip (both live in the note header); shipped cards still carry them — owner to confirm.' },
+    { status: 'shipped', what: 'Cards drop the per-card metric row and price-vs-value strip; both live in the note header (owner ruling 2026-10-14; ResearchIndexPage.tsx TickerCard).' },
   ],
   rulings: ['P-2', 'P-3', 'P-8', 'P-9', 'P-10', 'P-11', 'P-13', 'Env 2026-10-14'],
   code: [`${R}/ResearchIndexPage.tsx (MiniChart :60-134)`, `${R}/ui.tsx (freshness words :183-227)`, `${R}/filings.ts`, 'tools/research-notes/freshness.mjs · notes.mjs', 'research/<TICKER>/2026-10-13-initiation.md', 'libs/api/src/lib/demo/catalog/shared.ts (sample notes)'],

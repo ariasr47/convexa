@@ -121,7 +121,7 @@ export const ROWS = [
       built: [
         { status: 'todo', what: 'The /privacy route and page.' },
         { status: 'shipped', what: 'The behaviour it describes: local-only signed-out data, encrypted AI and Webull keys, HttpOnly session cookie, TradingView’s privacy line, the “What’s sent” drawer, Reset demo data.' },
-        { status: 'todo', what: 'No self-serve account deletion exists (no endpoint in routes/auth.rs); the page says to ask the owner.' },
+        { status: 'todo', what: 'No self-serve account deletion exists (no endpoint in routes/auth.rs); the page says to ask the owner. Parked by owner (2026-10-14): the privacy page says to ask the owner.' },
         FOOTER_BUILT,
       ],
       rulings: ['P-2', 'P-4', 'P-13', 'P-14', 'Env 2026-10-14'],
