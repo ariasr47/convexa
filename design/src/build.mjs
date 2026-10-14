@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FONT_LINK, TOKENS_CSS, shell, tokens } from './lib.mjs';
 import { screens } from './screens/index.mjs';
-import { artboards, canvasJson } from './canvas.config.mjs';
+import { artboards, canvasJson, CANVAS_URL } from './canvas.config.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const CANVAS = join(here, '..', 'canvas');
@@ -17,7 +17,9 @@ mkdirSync(SITE, { recursive: true });
 
 const STATIC = 'class Component extends DCLogic {}';
 const propsAttr = (props) => JSON.stringify(props).replace(/&/g, '&amp;').replace(/'/g, '&#39;');
-const scriptTag = (props, code) => `<script data-dc-script data-props='${propsAttr(props || {})}'>\n${code || STATIC}\n</script>`;
+// type="text/x-dc": the canvas runtime reads the logic by `script[data-dc-script]` textContent; the type keeps the
+// browser from also executing it as a classic script inside the artboard frame (DCLogic is not a global there).
+const scriptTag = (props, code) => `<script type="text/x-dc" data-dc-script data-props='${propsAttr(props || {})}'>\n${code || STATIC}\n</script>`;
 
 // ---- 1. canvas ------------------------------------------------------------------------------
 const keep = new Set(artboards.map((a) => `${a.name}.dc.html`));
@@ -30,7 +32,7 @@ for (const a of artboards) {
   const props = scr.interactive ? scr.interactive.props({ width: a.w, height: a.h, ...(a.opts || {}) }) : { $preview: { width: a.w, height: a.h } };
   const code = scr.interactive ? scr.interactive.script : STATIC;
   if (!scr.interactive && /\{\{/.test(inner)) throw new Error(`${a.name}: static screen contains template holes`);
-  const html = shell(inner, { script: scriptTag(props, code), extraCss: scr.css || '' });
+  const html = shell(inner, { script: scriptTag(props, code), extraCss: scr.css || '', title: a.title });
   if (Buffer.from(html).includes(0)) throw new Error(`${a.name}: NUL byte`);
   writeFileSync(join(CANVAS, `${a.name}.dc.html`), html);
 }
@@ -124,6 +126,9 @@ for (const [slug, scr] of Object.entries(screens)) {
   let inner = scr.body({ minHeight: 0, standalone: true }).replace(/ data-scheme="dark"/g, '');
   let script = '', bar = siteBar(scr.title);
   if (scr.interactive) { inner = staticize(inner, deskVals); script = runtime(scr.interactive.script); bar = deskBar; }
+  // v5 frontier prototypes: the body is the designed fallback (what the canvas board shows); the site page
+  // adds the script that turns it into the working prototype (progressive enhancement).
+  if (scr.siteScript) script += `<script>\n${scr.siteScript}\n</script>`;
   else if (/\{\{/.test(inner)) throw new Error(`static page ${slug} still contains template holes`);
   writeFileSync(join(SITE, `${slug}.html`), page({ title: scr.title, inner, css: scr.css, desc: scr.desc, script, bar }));
   pages.push([slug, scr.title, scr.group, scr.desc]);
@@ -133,8 +138,8 @@ const groups = [...new Set(pages.map((p) => p[2]))];
 const indexInner = `<div style="min-height: 100vh; padding: 40px clamp(16px, 4vw, 56px) 80px; max-width: 1200px; margin: 0 auto;">
   <div class="caps" style="color: var(--amber-text);">Convexa · design</div>
   <h1 class="display" style="margin: 8px 0 0; font-size: clamp(28px, 3vw, 40px); letter-spacing: -0.02em;">Curvature Terminal v2</h1>
-  <p style="margin: 10px 0 0; max-width: 720px; font-size: 14.5px; color: var(--steel); line-height: 1.6;">Static renders of every screen in the redesign, generated from <span class="mono">design/src</span>. Each page is fluid — resize the window — and the corner toggle flips the scheme. The editable canvas with tweak chips lives in Claude Design; the same file is stored beside this site.</p>
-  <div style="display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap;"><a href="library.html" class="btn primary">Tokens, components &amp; library</a><a href="desk.html" class="btn secondary">Open the ticker desk</a><a href="../canvas/convexa-desk-redesign.html" class="btn ghost">Canvas file (view + export)</a><a href="https://claude.ai/code/artifact/82be651e-c9a1-4ad4-a672-886626f8cf73" class="btn ghost">Editable canvas ↗</a></div>
+  <p style="margin: 10px 0 0; max-width: 720px; font-size: 14.5px; color: var(--steel); line-height: 1.6;">Static renders of every screen in the redesign, generated from <span class="mono">design/src</span>. Each page is fluid — resize the window — and the corner toggle flips the scheme. The editable canvas lives in Claude Design, one file per board; the v4 single-file viewer is kept beside this site as history.</p>
+  <div style="display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap;"><a href="library.html" class="btn primary">Tokens, components &amp; library</a><a href="desk.html" class="btn secondary">Open the ticker desk</a><a href="${CANVAS_URL}" class="btn ghost">Editable canvas ↗</a><a href="../canvas/convexa-desk-redesign.html" class="btn ghost">v4 canvas file (frozen)</a></div>
   ${groups.map((g) => `<section style="margin-top: 36px;"><div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;"><span class="caps" style="color: var(--phosphor);">${g}</span><span style="flex: 1; height: 1px; background: var(--line);"></span></div><div class="grid-3">${pages.filter((p) => p[2] === g).map(([slug, title, , desc]) => `<a href="${slug}.html" class="panel" style="display: flex; flex-direction: column; gap: 6px; padding: 16px; text-decoration: none; color: inherit;"><span style="font-size: 14px; font-weight: 700;">${title}</span><span style="font-size: 12px; color: var(--steel); line-height: 1.5;">${desc}</span><span style="margin-top: auto; font-size: 12px; color: var(--signal); font-weight: 600;">Open →</span></a>`).join('')}</div></section>`).join('')}
   <p style="margin: 40px 0 0; font-size: 12px; color: var(--steel-2);">Sample values throughout. Regenerate with <span class="mono">node design/src/build.mjs</span>; verify tokens against the app with <span class="mono">node design/src/verify-tokens.mjs</span>.</p>
 </div>`;

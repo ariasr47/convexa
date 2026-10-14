@@ -1,0 +1,213 @@
+// Final · Convexa v1 — the ticker group: the desk (Overview), the Technical tab and the Research tab /
+// note view. Each row: spec card, staging (the demo account), production (no mocks), phone (production),
+// light (production) and states. Renderers live in ./ticker-desk.mjs, ./ticker-tech.mjs, ./ticker-note.mjs.
+// Facts in the specs were read from the shipped app on main (2026-10-14); file:line cites are on main.
+import { TK_CSS, deskProductionBody, deskStagingBody, deskStatesBoardBody } from './ticker-desk.mjs';
+import { TT_CSS, techProductionBody, techStagingBody, techStatesBody } from './ticker-tech.mjs';
+import { TN_CSS, noteProductionBody, noteStagingBody, noteStatesBoardBody } from './ticker-note.mjs';
+
+const D = 'apps/dashboard/src/app/';
+
+const DESK = {
+  title: 'Ticker desk',
+  route: '/ticker/:ticker · Overview',
+  job: 'Read one ticker’s dealer structure at a glance (where the walls and the flip sit, and whether dealer hedging damps or feeds moves) with the public data and research around it.',
+  env: {
+    production: 'NVDA as a signed-out visitor sees it. Live: TradingView’s daily chart, FINRA short interest and short-sale volume, the research-note card; SEC filings and insider trades say Not set up until SEC_USER_AGENT is set. The 12 panels that read the options chain show Not live, each with “See it on the demo →”. An “On this page” legend counts every state. No request reaches a Massive-backed endpoint.',
+    staging: 'SPY on the seed demo account (any of SPY, QQQ, AAPL, MSFT, NVDA, TSLA). The whole desk runs the Oct 7, 2026 scenario: structure field with the ladder, tape and structure path, read strip, the sample analysis, the seeded paper book and orders, the context band. Every frame dashed and hatched; every chip says “shaped like”. No sign-in anywhere.',
+  },
+  widgets: [
+    { name: 'Masthead, tabs, quick symbols', source: 'Route param; pins SPY · QQQ · NVDA + 8 recents (recentTickers/store.ts:13-14); demo: the six', production: 'Signed out · no price of Convexa’s own', staging: ['demo', 'Demo · sample data'] },
+    { name: 'On this page legend', source: 'Counted from the panels’ own states', production: ['computed', 'Counts'], staging: 'Not shown (one state)' },
+    { name: 'Daily chart', source: 'TradingView widget · US prices delayed by TradingView', production: 'thirdParty', staging: 'Not shown: masthead price is sample' },
+    { name: 'Structure field (gamma by strike) + level ladder', source: 'GET /api/ticker/{T} · options chain via Massive · 60 s poll', production: 'notLive', staging: 'sample' },
+    { name: 'Tape (mid, 5 min)', source: 'SSE /api/stream/{T} · Massive', production: 'notLive', staging: ['sample', 'Sample · replay'] },
+    { name: 'Score and structure path', source: 'GET /api/scan/{T}/history · 120 s poll', production: 'notLive', staging: 'sample' },
+    { name: 'Read strip (8 figures)', source: 'Ticker bundle · options chain', production: 'notLive', staging: 'sample' },
+    { name: 'AI read', source: 'GET /api/recommendation/status/{T}; POST on request · reader’s own key', production: 'notLive', staging: ['sample', 'Sample read'] },
+    { name: 'Paper positions, sim orders', source: 'Account workspace · option marks from the feed; demo: seeded book (demo/workspace.ts)', production: 'Not shown: account + option marks', staging: 'sample' },
+    { name: 'Context band (flow projection, term structure, straddle move, magnet, Vol/OI, off-exchange blocks, setups)', source: 'Ticker bundle · Massive', production: 'notLive', staging: 'sample' },
+    { name: 'Short interest', source: '/api/public-data/tickers/{T} · FINRA, twice a month, ~9 days late · cached 12 h', production: 'delayed', staging: 'Not on the demo desk' },
+    { name: 'Short-sale volume', source: 'Same · FINRA Reg SHO daily: latest + 20-day average · cached 72 h', production: 'current', staging: 'Not on the demo desk' },
+    { name: 'Recent filings, insider trades', source: 'Same · SEC EDGAR submissions (1 h), Form 4 (30 d) · needs SEC_USER_AGENT', production: 'notConfigured', staging: 'Not on the demo desk' },
+    { name: 'Research-note card', source: 'research/<T>/*.md compiled at build · freshness in the browser', production: 'Current · review by Oct 22', staging: 'Links to the sample note' },
+  ],
+  states: [
+    { tag: 'loading', when: 'Before the first answer: skeletons in the desk’s final shape; TradingView’s frame says “Loading TradingView’s chart…”.' },
+    { tag: 'current', when: 'Short-sale volume: FINRA’s latest daily file, with its date.' },
+    { tag: 'delayed', when: 'Short interest: settled Sep 30, published Oct 9; the tag says “Delayed · 9 days”.' },
+    { tag: 'thirdParty', when: 'TradingView’s daily chart on view (P-14), dotted frame.' },
+    { tag: 'notLive', when: 'Production, every panel that reads the options chain or the tape: what it would show, why it’s off, “See it on the demo →”. Levels show “—”, never a number.' },
+    { tag: 'notConfigured', when: 'Filings and insider trades until the operator sets SEC_USER_AGENT.' },
+    { tag: 'stale', when: 'A public source failed this cycle; the earlier copy dims with when it was fetched.' },
+    { tag: 'unavailable', when: 'FINRA or EDGAR down with nothing cached: unknown, not zero; asks again in 10 minutes.' },
+    { tag: 'error', when: 'Our /api/public-data request failed: cause + Try again; the chart and note card stay.' },
+    { tag: 'off', when: 'PUBLIC_DATA=off: the public zone collapses to one line.' },
+    { tag: 'locked', when: 'AI read, signed out, on a build with the feed (neither site today).' },
+    { tag: ['notConfigured', 'Add a key'], when: 'AI read, signed in without a provider key, same build.' },
+    { tag: 'sample', when: 'Staging, every options panel: dashed frame, hatch, Sample tag, Oct 7 scenario.' },
+    { tag: 'demo', when: 'Staging, always: the demo bar, “Signed in as the demo account”, Reset demo data.' },
+    { tag: ['empty', 'Not in the demo'], when: 'Staging, a symbol beyond the six: says so and offers the six.' },
+  ],
+  phone: 'One column at 390. Masthead, then the tabs and a full-width “Read the NVDA note” (44 px). Quick symbols scroll sideways; the legend wraps. TradingView’s frame drops to 420 px tall. The 12 Not live panels fold into one list with one “See them on the demo →”. Charts re-lay themselves out (short labels, minor ticks drop); text ≥ 11 px, targets ≥ 44 px. Staging stacks in reading order: field, ladder, tape, score, read strip (two columns), AI read, positions, orders, context.',
+  acceptance: [
+    'Production /ticker/NVDA: zero requests to /api/ticker, /api/stream, /api/recommendation or /api/scan in the network panel; zero console errors.',
+    'Production: each of the 12 options panels shows Not live, a “Would show” and an “Off because” line, and “See it on the demo →” to https://staging.convexa.pages.dev/ticker/NVDA.',
+    'Production: the legend’s counts equal the tags on the page (1 Updated, 1 Delayed by source, 2 Not set up, 1 Live · TradingView, 12 Not live while SEC_USER_AGENT is unset).',
+    'Production: no level, score or option price renders as a number; a dash stands in.',
+    'Staging /ticker/SPY: no request to /api or any third party; every chart frame is dashed with the hatch stripe and a “shaped like” chip; “Sign in”, “Log in” and “Sign up” appear nowhere.',
+    'Gamma sign: the zero line reads “+γ above · −γ below”, the readout and ladder carry +γ/−γ as text; no mark relies on green/red alone (P-11).',
+    'The selected quick symbol is outlined and bold, never amber (P-6); price change is green/red text with ▲/▼ (P-5).',
+    'Staging, /ticker/RKLB: “RKLB isn’t in the demo scenario” with the six symbols, not “HTTP 422”.',
+  ],
+  built: [
+    { status: 'shipped', what: 'The demo desk on the Oct 7 scenario: six symbols, the full widget order (TickerDashboard.tsx:735-1324), sample analysis “No trade — sit this one out” (demo/transport.ts:494-530), the seeded paper book.' },
+    { status: 'shipped', what: 'The 14 state words and the Not live copy (shared/dataState/vocabulary.ts:31-46, marketData.ts).' },
+    { status: 'partial', what: 'Production desk: one cold-start panel, “Options data isn’t live on this site.” with four links (TickerDashboard.tsx:848-903), after three calls that fail with 503 market_data_paused: GET /api/ticker/{T}, SSE /api/stream/{T}, GET /api/recommendation/status/{T}. Nothing else renders.' },
+    { status: 'todo', what: 'Production public zone on the desk: TradingView panel, FINRA short interest and short-sale volume, SEC filings and insider trades, the note card. Today these exist only on the Technical and Research pages.' },
+    { status: 'todo', what: 'Per-panel Not live frames, the “On this page” legend and “See it on the demo →” (no helper exists; demoSite.ts has only “Try the full demo →”).' },
+    { status: 'todo', what: 'The v5 chart forms on the desk (P-8–P-13): field labels as 11 px HTML with +γ/−γ text and a table twin, magnet copy that changes with the side of the flip, term structure as a line, a missing score as “—”.' },
+    { status: 'todo', what: 'Demo: a symbol outside the six shows “Couldn’t load X. HTTP 422”; designed as “isn’t in the demo”.' },
+    { status: 'partial', what: 'Tab names: “Technical analysis” on the desk, “Technical” on the note page; one name, “Technical”, everywhere.' },
+  ],
+  rulings: ['P-1', 'P-2', 'P-3', 'P-5', 'P-6', 'P-8', 'P-9', 'P-10', 'P-11', 'P-12', 'P-13', 'P-14', 'Env 2026-10-14'],
+  code: [`${D}pages/ticker/TickerDashboard.tsx`, `${D}pages/ticker/widgets/{structure-hero,level-ladder,read-strip,ai-rec,chrome}/`, `${D}features/trading/orders/`, `${D}pages/ticker/{useTickerBundle,useTickerStream,useStructureHistory}.ts`, `${D}shared/dataState/ · shared/lib/demoSite.ts`, 'libs/api/src/lib/demo/{transport,workspace}.ts · catalog/', 'apps/api/src/routes/public_data.rs · error.rs:171', 'design/src/screens/final/ticker-desk.mjs'],
+};
+
+const TECH = {
+  title: 'Technical tab',
+  route: '/ticker/:symbol/technical-analysis',
+  job: 'See one ticker’s daily trend (price with its 20- and 50-day averages and RSI 14) without Convexa claiming anything about prices it doesn’t own.',
+  env: {
+    production: 'TradingView’s advanced chart: daily, EMA 20 and 50, RSI 14, candles in TradingView’s colours, in a dotted frame named “NVDA daily chart” with “Chart by TradingView · US prices delayed” and the privacy line. It loads on view. Convexa’s own readings show Not live and link to the demo.',
+    staging: 'Convexa’s own chart from the demo’s 60 sample daily bars to Oct 7, 2026: close, EMA 20, EMA 50, then RSI 14 in its own panel, in a dashed, hatched frame, with the five readings (EMA 20, EMA 50, RSI 14, ADX 14, ATR 14). No TradingView request.',
+  },
+  widgets: [
+    { name: 'Masthead and tabs', source: 'Route param · static', production: 'Overview · Technical · Research', staging: ['demo', 'Demo · sample data'] },
+    { name: 'Daily chart', source: 'TradingView tv.js: interval D, America/New_York, MAExp 20 · MAExp 50 · RSI 14; symbol via tradingView.ts:61-72 (AMEX:/NASDAQ:/the note’s exchange)', production: 'thirdParty', staging: 'Not loaded' },
+    { name: 'Sample chart', source: 'demo/views.ts (60 bars) + demo/indicators.ts', production: 'Not shown', staging: [['sample', 'Sample series']] },
+    { name: 'Readings (EMA 20/50, RSI 14, ADX 14, ATR 14)', source: 'indicators.ts on daily bars · needs licensed bars live', production: 'notLive', staging: 'sample' },
+    { name: 'Research link', source: 'Build-time note index · shown only when a note exists', production: 'Read NVDA research →', staging: 'Read SPY research →' },
+  ],
+  states: [
+    { tag: 'loading', when: 'Mount until TradingView’s iframe appears: “Loading TradingView’s chart…” at the final size (620; 480 on a phone).' },
+    { tag: 'thirdParty', when: 'The frame is up. Convexa reads, stores and computes nothing from it.' },
+    { tag: ['error', 'Didn’t load'], when: 'Script error, or 12 s without the iframe: the info alert “TradingView’s chart didn’t load.” with “Open NVDA on TradingView →”; resets on a new symbol. Info styling: nothing of Convexa’s failed.' },
+    { tag: ['empty', 'Unknown listing'], when: 'A ticker outside the exchange map without a note: a line under the frame says TradingView picks the listing and links to its search.' },
+    { tag: 'notLive', when: 'Production readings: what they would be, why off, “See them on the demo →”.' },
+    { tag: 'sample', when: 'Staging chart and readings: “Sample series · not recorded market history”.' },
+    { tag: ['empty', 'Insufficient history'], when: 'Staging, a reading inside its warm-up: “Insufficient history · 12/28 bars”, never 0.' },
+    { tag: 'error', when: 'Staging, the sample bars failed: “The sample bars didn’t load.” + Retry demo.' },
+    { tag: ['empty', 'No sample'], when: 'Staging, a symbol beyond the six: “No sample data for this symbol.”' },
+  ],
+  phone: 'TradingView’s frame 480 px tall, its range bar dropped under 560 px of container; the readings panel follows the frame; links become 44 px targets. Staging: the chart re-lays itself out under 480 px (short end labels, minor ticks drop), readings in two columns.',
+  acceptance: [
+    'Production: the chart loads without a click (P-14); its frame is dotted; the chip reads “Chart by TradingView · US prices delayed”; the privacy line sits under it.',
+    'Production: block s3.tradingview.com; within 12 s the info alert replaces the frame, and changing the symbol resets it.',
+    'Production: no Convexa number appears on the page; readings show Not live with a link to /ticker/NVDA/technical-analysis on staging.',
+    'Staging: zero requests to TradingView or /api; the frame is dashed with the hatch stripe and “Sample series · not recorded market history”.',
+    'Staging SPY on Oct 7 shows EMA 20 686.84, EMA 50 681.70, RSI 14 91.2, ADX 14 60.8, ATR 14 12.94: the values indicators.ts computes on the 60 bars.',
+    'Chart roles: close phosphor, EMA 20 steel, EMA 50 chartContext2, each labelled at its line end; nothing green/red in Convexa’s chart (P-9).',
+  ],
+  built: [
+    { status: 'shipped', what: 'Live tab: TradingView config, symbol mapping, 620/480 heights, the blocked alert on script error, the chip and privacy copy, load on mount (TechnicalAnalysisLive.tsx:42-141, TradingViewEmbed.tsx).' },
+    { status: 'shipped', what: 'Demo view with the five indicators on 60 sample bars and its copy (TechnicalAnalysisView.tsx, demo/indicators.ts).' },
+    { status: 'partial', what: 'No timeout: a stalled script waits forever (only script.onerror, Embed:78). 12 s designed.' },
+    { status: 'partial', what: 'The loading box is empty until TradingView draws; designed as words at the final size.' },
+    { status: 'todo', what: 'The tab bar on this page (the live page has only links), the dotted ThirdPartyFrame fence (shipped: a literal rgba fence), the readings Not live panel, the unknown-listing line.' },
+    { status: 'todo', what: 'The demo chart in the v5 system: one chart frame, neutral roles, RSI as its own panel.' },
+    { status: 'todo', what: 'Demo seed: NVDA (base 187, step 0.21) never closes down in 60 bars, so RSI 14 reads 100.0 and ADX 14 100. Re-author it (TSLA has only 3 down closes). These boards draw SPY.' },
+  ],
+  rulings: ['P-2', 'P-8', 'P-9', 'P-10', 'P-13', 'P-14', 'Env 2026-10-14'],
+  code: [`${D}pages/ticker/technical-analysis/{TechnicalAnalysisLive,TradingViewEmbed,TechnicalAnalysisView}.tsx · tradingView.ts`, `${D}app.tsx:164-174 (TechnicalAnalysisRoute)`, 'libs/api/src/lib/demo/{indicators,views}.ts · catalog/shared.ts', 'design/src/components/{tradingview,charts}.mjs · screens/final/ticker-tech.mjs'],
+};
+
+const NOTE = {
+  title: 'Research tab · note',
+  route: '/ticker/:symbol/research · /ticker/:symbol/research/:slug',
+  job: 'Read the owner’s dated research on one company (what the price implies, the evidence, what would change the view) and know at a glance whether the note is still current.',
+  env: {
+    production: 'The owner’s real notes, compiled at build from research/<TICKER>/*.md (NVDA: 2026-10-13-initiation), freshness worked out in the reader’s browser, the v5 figures (revenue with the guide’s range, margin comparison, GAAP bridge, the value range with the base diamond as the one amber mark, catalysts on a time scale), and the live public panels: FINRA short interest and short-sale volume; SEC insider trades and “Filed since this note” Not set up until SEC_USER_AGENT.',
+    staging: 'The authored sample case for the symbol (NVDA: “NVDA higher-variation case”): thesis, evidence that cites sample bars, risks, invalidation, catalysts “Not curated”, and a sample close chart. Labelled “Sample research note · authored for this scenario”; side panels dashed and “shaped like”.',
+  },
+  widgets: [
+    { name: 'Note body and figures', source: 'research/<T>/*.md → tools/research-notes/vite-plugin.mjs → static JSON per ticker', production: 'The owner’s note, as written', staging: 'sample' },
+    { name: 'Freshness word and shape', source: 'tools/research-notes/freshness.mjs in the browser: catalysts, kill and forecast windows, price age, new filings', production: 'Current · review by Oct 22', staging: 'Never due (no catalysts)' },
+    { name: 'Price against the value range', source: 'The note’s valuation block, computed at build', production: ['computed', 'Computed at build'], staging: 'Not in the sample case' },
+    { name: 'Short interest', source: '/api/public-data/tickers/{T} · FINRA, 12 settlements · cached 12 h', production: 'delayed', staging: 'sample' },
+    { name: 'Short-sale volume', source: 'Same · Reg SHO daily: latest + 20-day average · cached 72 h', production: 'current', staging: 'Not shown' },
+    { name: 'Insider trades · 90 days', source: 'Same · SEC Form 4 · cached 30 days · needs SEC_USER_AGENT', production: 'notConfigured', staging: 'Not shown' },
+    { name: 'Filed since this note', source: 'Same · SEC submissions, checked hourly', production: 'notConfigured', staging: 'sample' },
+  ],
+  states: [
+    { tag: 'Current', when: 'Filled dot: nothing has come due; the line says by when and why (“review by Oct 22 (GTC Berlin)”).' },
+    { tag: 'Review due', when: 'Half dot + banner: a window passed, the price turned 30 days old, or a results filing landed that the note doesn’t cite.' },
+    { tag: 'Superseded', when: 'Ring: a newer note exists; the banner links to it.' },
+    { tag: 'Archived', when: 'Square: not following since a date.' },
+    { tag: ['stale', 'Price over 30 days'], when: 'The % to base and the price line hide; the reason sits in their place.' },
+    { tag: 'loading', when: 'Three skeletons at the final shape.' },
+    { tag: 'error', when: '“NVDA research couldn’t load (…).” + Try again.' },
+    { tag: ['empty', 'No note'], when: '“No research on RKLB yet.” + See all research.' },
+    { tag: ['empty', 'No such note'], when: '“No NVDA note named “q4-preview”.” + the latest.' },
+    { tag: 'delayed', when: 'Short interest, settled Sep 30, published Oct 9.' },
+    { tag: 'notConfigured', when: 'Insider trades and Filed since this note until SEC_USER_AGENT.' },
+    { tag: 'unavailable', when: 'FINRA or EDGAR down, nothing cached: unknown, not zero.' },
+    { tag: 'off', when: 'PUBLIC_DATA=off: one line where the panels were.' },
+    { tag: 'demo', when: 'Staging: the authored case, labelled at the top and on every figure.' },
+  ],
+  phone: 'One column: tabs (44 px), freshness, title, chips, the figure strip, the value range, TL;DR stacked, figures re-laid out under 480 px (short labels, bridge as rows), scorecard readings wrapping under each claim, then the side column (due dates, public panels) after the body. The section rail becomes a sideways strip of 44 px links.',
+  acceptance: [
+    'Freshness word and shape match freshness.mjs for the note’s dates: NVDA on Oct 14 reads “Current · review by Oct 22 (GTC Berlin)”.',
+    'With a price over 30 days old, the % to base and the price line are hidden and the reason is printed in their place.',
+    'One amber mark per value figure (the base diamond); company facts never green/red; ▲/▼ stay neutral.',
+    'A bridge whose totals go below zero draws them left of the zero line with signed labels (INTC, CRWV, META, SPCX, AMZN notes).',
+    'With SEC_USER_AGENT unset, insider trades and Filed since this note say “SEC filings aren’t set up on this site yet.”; the FINRA cards still show.',
+    'PUBLIC_DATA=off: one line replaces the panels (today they vanish).',
+    'An unknown slug shows “No NVDA note named “x”.” with a link to the latest note.',
+    'Staging: no request to /api/public-data; every figure dashed with the hatch stripe.',
+  ],
+  built: [
+    { status: 'shipped', what: 'Build-time notes, NotesView/NoteView, the four freshness words and their banners, no-note, unknown-slug and error copy (NotesView.tsx:188-262, ui.tsx:183-225, freshness.mjs:63-70).' },
+    { status: 'shipped', what: 'NotePublicPanels: short interest, short-sale volume, insider trades, Filed since this note, with the Not set up copy (NotePublicPanels.tsx:96-470).' },
+    { status: 'shipped', what: 'Demo ResearchView: the authored case per symbol, no public panels (ResearchView.tsx, demo/views.ts:66).' },
+    { status: 'partial', what: 'Note figures on the pre-v5 blocks: 9–10 px labels, guidance as its midpoint, bridges that break below zero in five notes, a value strip that fades at its ends.' },
+    { status: 'todo', what: 'PUBLIC_DATA=off returns null (NotePublicPanels.tsx:75); designed as one line.' },
+    { status: 'todo', what: 'Short interest with dates and units on its axis (RP-01); a short-sale volume history needs the API to return the daily series (today: latest + 20-day average).' },
+    { status: 'todo', what: 'Staging side panels “shaped like” FINRA and EDGAR (the demo shows none today).' },
+  ],
+  rulings: ['P-2', 'P-3', 'P-8', 'P-9', 'P-10', 'P-11', 'P-13', 'Amber spent', 'Env 2026-10-14'],
+  code: [`${D}app.tsx:180-189 (ResearchRoute)`, `${D}pages/research/{NotesView,NoteView,NotePublicPanels,ui}.tsx · notesData.ts · blocks/`, `${D}pages/ticker/research/ResearchView.tsx`, 'tools/research-notes/{vite-plugin,freshness,notes}.mjs', 'libs/api/src/lib/demo/views.ts · apps/api/src/routes/public_data.rs', 'design/src/screens/final/ticker-note.mjs'],
+};
+
+export const ROWS = [
+  {
+    key: 'desk', label: 'Ticker desk', css: TK_CSS, specH: 3528, spec: DESK,
+    boards: [
+      { id: 'staging', title: 'Staging · demo account', w: 1440, h: 2811, body: (o) => deskStagingBody(o) },
+      { id: 'production', title: 'Production', w: 1440, h: 2939, body: (o) => deskProductionBody(o) },
+      { id: 'phone', title: 'Phone · production', w: 390, h: 3532, body: (o) => deskProductionBody(o) },
+      { id: 'light', title: 'Light · production', w: 1440, h: 2939, body: (o) => deskProductionBody(o), opts: { scheme: 'light' } },
+      { id: 'states', title: 'States', w: 1440, h: 2813, body: (o) => deskStatesBoardBody(o) },
+    ],
+  },
+  {
+    key: 'technical', label: 'Technical tab', css: TK_CSS + TT_CSS, specH: 2369, spec: TECH,
+    boards: [
+      { id: 'staging', title: 'Staging · demo account', w: 1440, h: 1468, body: (o) => techStagingBody(o) },
+      { id: 'production', title: 'Production', w: 1440, h: 1254, body: (o) => techProductionBody(o) },
+      { id: 'phone', title: 'Phone · production', w: 390, h: 1741, body: (o) => techProductionBody(o) },
+      { id: 'light', title: 'Light · production', w: 1440, h: 1254, body: (o) => techProductionBody(o), opts: { scheme: 'light' } },
+      { id: 'states', title: 'States', w: 1440, h: 2276, body: (o) => techStatesBody(o) },
+    ],
+  },
+  {
+    key: 'note', label: 'Research tab · note', css: TK_CSS + TT_CSS + TN_CSS, specH: 2640, spec: NOTE,
+    boards: [
+      { id: 'staging', title: 'Staging · demo account', w: 1440, h: 1919, body: (o) => noteStagingBody(o) },
+      { id: 'production', title: 'Production', w: 1440, h: 4489, body: (o) => noteProductionBody(o) },
+      { id: 'phone', title: 'Phone · production', w: 390, h: 6956, body: (o) => noteProductionBody(o) },
+      { id: 'light', title: 'Light · production', w: 1440, h: 4489, body: (o) => noteProductionBody(o), opts: { scheme: 'light' } },
+      { id: 'states', title: 'States', w: 1440, h: 2487, body: (o) => noteStatesBoardBody(o) },
+    ],
+  },
+];

@@ -58,6 +58,7 @@ const V4_CSS = `
   .dfield.err .help { color: var(--phosphor); } .dfield.err .help .ico { color: var(--warn); }
   .dwarn { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 8px; background: var(--warn-tint); border: 1px solid var(--warn); }
   .dwarn > .ico { color: var(--warn); margin-top: 1px; }
+  .dwarn .dline { color: var(--phosphor); } /* v5: steel on the warn tint measured 4.25:1 in light */
   .ph .dfield .in, .ph .btn { min-height: 44px; }
   .v4n { position: sticky; top: 0; z-index: 20; background: var(--glass); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
   .v4n-in { height: 56px; display: flex; align-items: center; gap: 24px; }
@@ -136,7 +137,7 @@ export const TOKENS_CSS = `
   .mono { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
   .sans { font-family: 'IBM Plex Sans', system-ui, sans-serif; }
   .caps { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); line-height: 1.3; }
-  .steel { color: var(--steel); } .dim { color: var(--steel-2); } .amber { color: var(--amber-text); } .signal { color: var(--signal); } .up { color: var(--up); } .down { color: var(--down); } .warn { color: var(--warn); }
+  .steel { color: var(--steel); } .dim { color: var(--steel-2); } .amber { color: var(--amber-text); } .signal { color: var(--signal); } .up { color: var(--text-up); } .down { color: var(--text-down); } .warn { color: var(--warn); }
   .panel { background: var(--panel); background-image: var(--sheen); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--e1); min-width: 0; container-type: inline-size; }
   @container (max-width: 360px) { .cell .v { font-size: 17px; } }
   @container (max-width: 280px) { .cell .v { font-size: 15px; } .cell .s { font-size: 11px; } }
@@ -156,7 +157,7 @@ export const TOKENS_CSS = `
   .btn.disabled, .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; filter: none !important; }
   .btn.focus { outline: 2px solid var(--amber-text); outline-offset: 2px; }
   .chip { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 500; line-height: 1; white-space: nowrap; color: var(--steel); background: rgba(138,155,180,0.14); }
-  .chip.up { color: var(--up); background: var(--up-tint); } .chip.down { color: var(--down); background: var(--down-tint); }
+  .chip.up { color: var(--text-up); background: var(--up-tint); } .chip.down { color: var(--text-down); background: var(--down-tint); }
   .chip.live { color: var(--signal); background: var(--signal-tint); } .chip.warn { color: var(--warn); background: var(--warn-tint); }
   .chip.emph { color: var(--amber-text); background: var(--amber-tint); } .chip.outline { background: transparent; border: 1px solid var(--line-2); }
   .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
@@ -225,11 +226,12 @@ export const TOKENS_CSS = `
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 ${V4_CSS}`;
 
-export function shell(inner, { script = '', extraCss = '' } = {}) {
+export function shell(inner, { script = '', extraCss = '', title = '' } = {}) {
+  const t = title ? `\n  <title>${title.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</title>` : '';
   return `<!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8">${t}
   <script src="./support.js"></script>
 </head>
 <body>
@@ -591,7 +593,7 @@ export function backdrop(inner, { align = 'center', minHeight = 900, scheme = 'd
 export const STAGING_DEMO_URL = 'https://staging.convexa.pages.dev';
 export function v4Notice(mode = 'hybrid') {
   if (mode === 'none') return '';
-  if (mode === 'demo') return `<div role="status" aria-label="Demo status" class="v4-notice demo"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;">${icon('sample', 14)}<strong style="font-weight: 600;">Demo · sample data</strong><span class="steel">Authored scenario · October 7, 2026 · no market feed connected</span><span style="flex: 1;"></span><span class="steel">Demo visitor</span><button class="btn secondary sm" type="button">Reset Demo</button></div></div>`;
+  if (mode === 'demo') return `<div role="status" aria-label="Demo status" class="v4-notice demo"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;">${icon('sample', 14)}<strong style="font-weight: 600;">Demo · sample data</strong><span class="steel">Authored scenario · October 7, 2026 · no market feed connected</span><span style="flex: 1;"></span><span class="steel">Signed in as the demo account</span><button class="btn secondary sm" type="button">Reset demo data</button></div></div>`;
   if (mode === 'paused') return `<div role="status" aria-label="Market data status" class="v4-notice"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;">${icon('pause', 14)}<strong style="font-weight: 600;">Live market data is off.</strong><span class="steel">Prices, dealer structure and AI reads are paused. Daily charts come from TradingView, and research notes are current.</span><span style="flex: 1;"></span><a href="/research" class="t-info">Read research</a><a href="${STAGING_DEMO_URL}" class="t-info">Try the full demo →</a></div></div>`;
   return `<div role="status" aria-label="What is live on this site" class="v4-notice"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;">${icon('notlive', 14)}<strong style="font-weight: 600;">Options data isn't live on this site.</strong><span class="steel only-wide">Dealer structure, flow and AI reads need a paid options feed. Rates, positioning, short data, filings, research and TradingView’s daily charts are live.</span><span class="steel only-phone">Public data is.</span><span style="flex: 1;"></span><a href="/methodology#data" class="t-info" style="min-height: 24px; display: inline-flex; align-items: center;">What's live</a><a href="${STAGING_DEMO_URL}" class="t-info only-wide">See the full demo →</a></div></div>`;
 }
@@ -599,10 +601,10 @@ export function v4Nav({ active = '', signedIn = false, demo = false } = {}) {
   const items = [['scanner', 'Scanner', '/scanner'], ['ticker', 'Ticker', '/ticker/SPY'], ['research', 'Research', '/research'], ['positions', 'Positions', '/positions'], ['alerts', 'Alerts', '/alerts']];
   const links = items.map(([k, l, h]) => `<a href="${h}"${k === active ? ' aria-current="page"' : ''}>${l}</a>`).join('');
   const session = demo
-    ? `<a href="/settings" class="v4n-icon" style="display: inline-flex;" aria-label="Settings">${icon('gear', 20)}</a>`
+    ? `<a href="/settings" aria-label="Demo account settings" style="display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--steel); font-size: 13px;"><span class="only-wide">Demo account</span><span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--raised-2); color: var(--phosphor); font: 600 12px/1 'IBM Plex Sans', sans-serif;">D</span></a>`
     : signedIn
       ? `<a href="/settings" aria-label="Account settings" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--raised-2); color: var(--phosphor); font: 600 12px/1 'IBM Plex Sans', sans-serif; text-decoration: none;">R</a>`
-      : `<a href="/settings#account" class="v4n-signin">Sign in</a>`;
+      : `<a href="/settings#account" class="v4n-signin">Log in</a>`;
   return `<header class="v4n"><div class="wrap v4n-in">
     <a href="/" aria-label="Convexa home" style="display: inline-flex; text-decoration: none;">${wordmark(17)}</a>
     <nav aria-label="Primary" class="v4n-links">${links}</nav>
@@ -619,7 +621,7 @@ export function v4Tabs(active = 'Notes') {
   return `<nav aria-label="Research" class="v4-tabs"><div class="wrap tabs-in">${tabs.map(([n, h, c]) => `<a href="${h}"${n === active ? ' aria-current="page"' : ''}>${n}${c ? `<span class="cnt">${c}</span>` : ''}</a>`).join('')}</div></nav>`;
 }
 export function v4Footer() {
-  return `<footer class="v4-foot"><div class="wrap v4-foot-in">${wordmark(14)}<nav aria-label="Footer"><a href="/research">Research notes</a><a href="/methodology">How Convexa works</a><a href="/blog">Blog — how we read structure</a><a href="/lab">Lab — instrument demos</a><a href="/settings">Settings</a></nav><span style="flex: 1;"></span><p style="margin: 0; max-width: 560px; font-size: 12px; color: var(--steel);">Convexa is an analysis tool. Positions in the sim book are simulated (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.</p></div></footer>`;
+  return `<footer class="v4-foot"><div class="wrap v4-foot-in">${wordmark(14)}<nav aria-label="Footer"><a href="/research">Research notes</a><a href="/methodology">How Convexa works</a><a href="/blog">Blog — how we read structure</a><a href="/lab">Lab — instrument demos</a><a href="/settings">Settings</a><a href="/credits">Sources and credits</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav><span style="flex: 1;"></span><p style="margin: 0; max-width: 560px; font-size: 12px; color: var(--steel);">Convexa is an analysis tool. Positions in the sim book are simulated (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.</p></div></footer>`;
 }
 /** A v4 page: scheme wrapper + notice + nav (+ research tabs) + main + footer. */
 export function v4Page({ scheme = 'dark', minHeight = 0, notice = 'hybrid', active = '', tabs = '', signedIn = false, demo = false, main = '', footer = true, label = '' } = {}) {

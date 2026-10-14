@@ -6,6 +6,7 @@ import * as ladder from './ladder.mjs';
 import * as riskField from './risk-field.mjs';
 import { button, buttonSpec, buttonStates, field, fieldSpec, fieldStates, seg, segSpec, segStates, toggle, toggleSpec, checkbox, kbd } from './controls.mjs';
 import { tagSpec, tagStates, renderTag, familyEntries } from './data-states.mjs';
+import { chartEntries } from './charts.mjs';
 import { panel, widgetSpec, widgetStates, dialogSpec, dialogFrame, sheetPeek, stripSpec, warningStrip, infoStrip, refused, tooltip, toast, emptyState } from './surfaces.mjs';
 
 const entry = (spec, states, render, opts = {}) => ({ spec, states, render, ...opts });
@@ -25,6 +26,8 @@ export const registry = [
   // v4 (2026-10-13): the data-state vocabulary and nine widget families in all fourteen states.
   entry(tagSpec, tagStates, renderTag, { group: 'Data states' }),
   ...familyEntries.map((f) => entry(f.spec, f.states, f.render, { group: 'Data states' })),
+  // v5 (2026-10-13): the chart system — fifteen primitives, each in its variants and the seven data states.
+  ...chartEntries,
 ];
 
 export { chip, figureCell, ladder, riskField, button, field, seg, toggle, checkbox, kbd, panel, dialogFrame, sheetPeek, warningStrip, infoStrip, refused, tooltip, toast, emptyState };

@@ -27,6 +27,14 @@ import { APP_CSS, alertsBody as alertsV4Body, alertsStatesBody, positionsBody as
 import { NOTES_CSS, noteStatesBody, noteViewBody, researchIndexBody } from './v4/notes.mjs';
 import { COVERAGE_CSS, coverageBody } from './v4/coverage.mjs';
 import { technicalBody, technicalStatesBody } from './v4/technical.mjs';
+import { ALERTS5_CSS, alertsFlowBody, alertsPageBody, alertsStates5Body } from './v5/alerts-public.mjs';
+import { famMarketsBody, famNoteFiguresBody, famNoteValuationBody, famPanelsBody, famScorecardBody } from './v5/families-research.mjs';
+import { famDeskBody, famOtherBody } from './v5/families-desk.mjs';
+import { toolsBody } from './v5/tools-v5.mjs';
+import { TV5_CSS, tvFramingBody } from './v5/tv-v5.mjs';
+import { FRONTIER_CSS, f1Body, f1Script, f2Body, f2Script, f3Body, f3Script, frontierBody } from './v5/frontier.mjs';
+import { V5_CSS, auditBody, chartSystemBody, chartStatesBody, chartPhoneBody, thirdPartyBody } from './v5/system.mjs';
+import { finalScreens } from './final/index.mjs';
 import { DIALOGS, DOCS_CSS, blogBody as blogV4Body, dialogBody, dialogStatesBody, docsStatesBody, labBody as labV4Body, methodologyBody as methodologyV4Body, notFoundBody as notFoundV4Body, operatorBody as operatorV4Body, operatorStatesBody } from './v4/docs-dialogs.mjs';
 
 const s = (title, group, desc, body, css = '', extra = {}) => ({ title, group, desc, body, css, ...extra });
@@ -55,7 +63,7 @@ export const screens = {
   'view-editor': s('Scan view editor', 'Dialogs & gates', 'Universe picker with drag order.', (o) => viewEditorBody(o), DIALOGS_CSS),
   'not-found': s('Route fallback + 404', 'Dialogs & gates', 'Loading a route, and nothing at this address.', (o) => notFoundBody(o), DIALOGS_CSS),
   operator: s('Operator', 'Dialogs & gates', 'Metrics and the research archive, off the trader shell.', (o) => operatorBody(o), DIALOGS_CSS),
-  library: s('Library · tokens, components, states', 'System', 'Every token and component with its states and markup, plus the React mapping.', (o) => libraryBody(o), LIB_CSS),
+  library: s('Library · tokens, components, states', 'System', 'Every token and component with its states and markup, plus the React mapping.', (o) => libraryBody(o), LIB_CSS + V5_CSS),
   'components-sheet': s('Components sheet', 'System', 'The condensed component and motion sheet from the canvas.', () => componentsBody()),
   // ---- v4 (2026-10-13) ----
   'v4-source-map': s('Source map', 'v4 · Data states', 'Every widget on every screen: what it needs, its free or paid source, its delay, build status and its state on the hybrid site.', (o) => sourceMapBody(o), SHEET_CSS),
@@ -105,4 +113,35 @@ export const screens = {
     };
   })(),
   ...Object.fromEntries(TOOLS.map((t) => [`v4-tool-${t.key}`, s(`Tool · ${t.name}`, 'v4 · Tools from public data', `${t.unlocks}. Status: ${t.status}.`, (o) => toolSheetBody({ ...o, tool: t.key }), SHEET_CSS + TOOLS_CSS + HYBRID_CSS)])),
+  // ---- v5 (2026-10-13): charts — audit, system, families, tools, TradingView, frontier ----
+  ...(() => {
+    const g = 'v5 · Charts';
+    const V = HYBRID_CSS + RESEARCH_CSS + KIT_CSS + V5_CSS;
+    return {
+      'v5-audit': s('Charts · every chart, audited', g, 'Fifty-two app charts, twenty-one board marks and nine planned tools: the top ten upgrades, counts and what recurs.', (o) => auditBody(o), V),
+      'v5-system': s('Charts · one chart system', g, 'Rules from the canon, colour roles with measured contrast and validator verdicts, mark specs, every primitive and its React module.', (o) => chartSystemBody(o), V),
+      'v5-states': s('Charts · every state', g, 'Ready and the seven data states at final size, scrub and keyboard focus, primitive × state.', (o) => chartStatesBody(o), V),
+      'v5-phone': s('Charts · on a phone', g, 'Re-layout at 390: short labels, fewer ticks, one-column facets, the bridge as rows.', (o) => chartPhoneBody(o), V),
+      'v5-fam-note-figures': s('Families · note figures', g, 'Column chart, proportion, bridge (crossing zero), index mini chart, compare: before and after.', (o) => famNoteFiguresBody(o), V),
+      'v5-fam-note-valuation': s('Families · valuation', g, 'Price vs value, football field, odds, sensitivity, implied growth, catalysts: before and after.', (o) => famNoteValuationBody(o), V),
+      'v5-fam-markets': s('Families · Markets', g, 'Curve, decomposition, 2s10s, note-rate drift, CFTC positioning: before and after.', (o) => famMarketsBody(o), V),
+      'v5-fam-scorecard': s('Families · Scorecard and Filings', g, 'By month (counts what it draws), calibration with Wilson intervals, reported figures: before and after.', (o) => famScorecardBody(o), V),
+      'v5-fam-panels': s('Families · note panels', g, 'Short interest, short-sale volume (a gated design target), switched-off panels: before and after.', (o) => famPanelsBody(o), V),
+      'v5-fam-desk': s('Families · ticker desk', g, 'Structure field, magnet, ladder, term structure, straddle, tape, path, opportunity: before and after (sample, beside not live).', (o) => famDeskBody(o), V),
+      'v5-fam-other': s('Families · scanner, positions, operator, Lab', g, 'The smaller charts and what the rulings settled.', (o) => famOtherBody(o), V),
+      'v5-tools': s('Planned tools, charted', g, 'Liquidity, calendar, OTC, insider clusters, 13F, XBRL, peers, signal track record, TA.', (o) => toolsBody(o), V),
+      'v5-tv': s('TradingView, framed', g, 'The Technical tab, the desk’s price panel, the frame’s states, load on request, and where a frame belongs.', (o) => tvFramingBody(o), V + TV5_CSS),
+      'v5-frontier': s('Frontier · overview', g, 'Three prototypes chosen by value, their measured budgets, fallbacks and canon; what was considered and not built.', (o) => frontierBody(o), V + FRONTIER_CSS),
+      'v5-frontier-gamma': s('Frontier · F1 dealer-gamma surface (WebGL)', g, 'The landing hero in WebGL2, turned by hand; the static projection as its designed fallback.', (o) => f1Body(o), V + FRONTIER_CSS, { siteScript: f1Script() }),
+      'v5-frontier-curve': s('Frontier · F2 a year of the curve', g, 'Scrub every business day of the Treasury curve; FOMC decisions on the track.', (o) => f2Body(o), V + FRONTIER_CSS, { siteScript: f2Script() }),
+      'v5-frontier-calibration': s('Frontier · F3 calibration, explorable', g, 'Change the interval, merge bins, read the calls behind a dot.', (o) => f3Body(o), V + FRONTIER_CSS, { siteScript: f3Script() }),
+      // Q-5, ruled by the owner 2026-10-13: alerts on public data
+      'q5-alerts': s('Alerts on public data', 'Ruled · Q-5', 'Six alert kinds that work on the semi-live site, each with its source, delay and state word.', (o) => alertsPageBody(o), V + APP_CSS + ALERTS5_CSS),
+      'q5-alerts-flow': s('New alert · flow', 'Ruled · Q-5', 'Choose, set up, read back: the create-alert dialog (a bottom sheet on phones).', (o) => alertsFlowBody(o), V + APP_CSS + ALERTS5_CSS),
+      'q5-alerts-states': s('Alerts on public data · states', 'Ruled · Q-5', 'Every state of the page and the dialog.', (o) => alertsStates5Body(o), V + APP_CSS + ALERTS5_CSS),
+      'v5-third-party': s('Charts · ours and theirs', g, 'A Convexa chart beside TradingView’s frame: the eight deliberate differences and the frame’s two states.', (o) => thirdPartyBody(o), V),
+    };
+  })(),
+  // ---- Final · Convexa v1 (2026-10-14): every screen in its ruled state, with a spec card per row ----
+  ...finalScreens(s, HYBRID_CSS + RESEARCH_CSS + KIT_CSS + V5_CSS + APP_CSS + NOTES_CSS + DOCS_CSS + SHELL_CSS + ALERTS5_CSS + TV5_CSS + FRONTIER_CSS + TOOLS_CSS),
 };

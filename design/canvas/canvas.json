@@ -1,6 +1,10 @@
 {
   "pages": [
     {
+      "id": "final",
+      "name": "Final · Convexa v1"
+    },
+    {
       "id": "page-1",
       "name": "Ticker desk"
     },
@@ -39,9 +43,2294 @@
     {
       "id": "v4-coverage",
       "name": "v4 · Coverage"
+    },
+    {
+      "id": "v5-charts",
+      "name": "v5 · Charts · audit and system"
+    },
+    {
+      "id": "q5-alerts",
+      "name": "Ruled · Alerts on public data (Q-5)"
+    },
+    {
+      "id": "v5-families",
+      "name": "v5 · Chart families · before and after"
+    },
+    {
+      "id": "v5-frontier",
+      "name": "v5 · Frontier"
     }
   ],
   "artboards": [
+    {
+      "file": "FFoundationsSpec.dc.html",
+      "title": "Final · Foundations · spec",
+      "x": 0,
+      "y": 0,
+      "w": 760,
+      "h": 2127,
+      "page": "final"
+    },
+    {
+      "file": "FFoundationsStateMatrix.dc.html",
+      "title": "Final · Foundations · State vocabulary × families",
+      "x": 880,
+      "y": 0,
+      "w": 3220,
+      "h": 4043,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FFoundationsChartSystem.dc.html",
+      "title": "Final · Foundations · Chart system (P-8–P-13, ruled)",
+      "x": 4220,
+      "y": 0,
+      "w": 1440,
+      "h": 7433,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FFoundationsChartStates.dc.html",
+      "title": "Final · Foundations · Every chart, in every state",
+      "x": 5780,
+      "y": 0,
+      "w": 1440,
+      "h": 3681,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FFoundationsThirdParty.dc.html",
+      "title": "Final · Foundations · Ours, and theirs (P-8, P-14 load on view)",
+      "x": 7340,
+      "y": 0,
+      "w": 1440,
+      "h": 1803,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FShellSpec.dc.html",
+      "title": "Final · Global shell · spec",
+      "x": 0,
+      "y": 7793,
+      "w": 760,
+      "h": 2357,
+      "page": "final"
+    },
+    {
+      "file": "FShellStaging.dc.html",
+      "title": "Final · Global shell · Staging · demo account",
+      "x": 880,
+      "y": 7793,
+      "w": 1440,
+      "h": 940,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FShellProduction.dc.html",
+      "title": "Final · Global shell · Production",
+      "x": 2440,
+      "y": 7793,
+      "w": 1440,
+      "h": 934,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FShellPhone.dc.html",
+      "title": "Final · Global shell · Phone · production",
+      "x": 4000,
+      "y": 7793,
+      "w": 390,
+      "h": 920,
+      "page": "final"
+    },
+    {
+      "file": "FShellStagingPhone.dc.html",
+      "title": "Final · Global shell · Phone · staging",
+      "x": 4510,
+      "y": 7793,
+      "w": 390,
+      "h": 920,
+      "page": "final"
+    },
+    {
+      "file": "FShellLight.dc.html",
+      "title": "Final · Global shell · Light · production",
+      "x": 5020,
+      "y": 7793,
+      "w": 1440,
+      "h": 934,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FShellStates.dc.html",
+      "title": "Final · Global shell · States",
+      "x": 6580,
+      "y": 7793,
+      "w": 1440,
+      "h": 4017,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLandingSpec.dc.html",
+      "title": "Final · Landing · spec",
+      "x": 0,
+      "y": 12170,
+      "w": 760,
+      "h": 2213,
+      "page": "final"
+    },
+    {
+      "file": "FLandingStaging.dc.html",
+      "title": "Final · Landing · Staging · demo account",
+      "x": 880,
+      "y": 12170,
+      "w": 1440,
+      "h": 2972,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLandingProduction.dc.html",
+      "title": "Final · Landing · Production",
+      "x": 2440,
+      "y": 12170,
+      "w": 1440,
+      "h": 2960,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLandingPhone.dc.html",
+      "title": "Final · Landing · Phone · production",
+      "x": 4000,
+      "y": 12170,
+      "w": 390,
+      "h": 5627,
+      "page": "final"
+    },
+    {
+      "file": "FLandingLight.dc.html",
+      "title": "Final · Landing · Light · production",
+      "x": 4510,
+      "y": 12170,
+      "w": 1440,
+      "h": 2960,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLandingStates.dc.html",
+      "title": "Final · Landing · States",
+      "x": 6070,
+      "y": 12170,
+      "w": 1440,
+      "h": 2933,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FMethodologySpec.dc.html",
+      "title": "Final · Methodology · spec",
+      "x": 0,
+      "y": 18157,
+      "w": 760,
+      "h": 1688,
+      "page": "final"
+    },
+    {
+      "file": "FMethodologyProduction.dc.html",
+      "title": "Final · Methodology · Production",
+      "x": 880,
+      "y": 18157,
+      "w": 1440,
+      "h": 5426,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FMethodologyStaging.dc.html",
+      "title": "Final · Methodology · Staging · demo account",
+      "x": 2440,
+      "y": 18157,
+      "w": 1440,
+      "h": 4590,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FMethodologyPhone.dc.html",
+      "title": "Final · Methodology · Phone · production",
+      "x": 4000,
+      "y": 18157,
+      "w": 390,
+      "h": 7397,
+      "page": "final"
+    },
+    {
+      "file": "FMethodologyLight.dc.html",
+      "title": "Final · Methodology · Light · production",
+      "x": 4510,
+      "y": 18157,
+      "w": 1440,
+      "h": 5426,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FMethodologyStates.dc.html",
+      "title": "Final · Methodology · States",
+      "x": 6070,
+      "y": 18157,
+      "w": 1440,
+      "h": 1918,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FBlogSpec.dc.html",
+      "title": "Final · Blog · spec",
+      "x": 0,
+      "y": 25914,
+      "w": 760,
+      "h": 1374,
+      "page": "final"
+    },
+    {
+      "file": "FBlogIndex.dc.html",
+      "title": "Final · Blog · Index · production and staging (identical apart from the bar)",
+      "x": 880,
+      "y": 25914,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FBlogPost.dc.html",
+      "title": "Final · Blog · Post · production and staging (identical apart from the bar)",
+      "x": 2440,
+      "y": 25914,
+      "w": 1440,
+      "h": 2275,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FBlogPhone.dc.html",
+      "title": "Final · Blog · Phone · post",
+      "x": 4000,
+      "y": 25914,
+      "w": 390,
+      "h": 2952,
+      "page": "final"
+    },
+    {
+      "file": "FBlogLight.dc.html",
+      "title": "Final · Blog · Light · post",
+      "x": 4510,
+      "y": 25914,
+      "w": 1440,
+      "h": 2275,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FBlogStates.dc.html",
+      "title": "Final · Blog · States",
+      "x": 6070,
+      "y": 25914,
+      "w": 1440,
+      "h": 1463,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabSpec.dc.html",
+      "title": "Final · Lab · spec",
+      "x": 0,
+      "y": 29226,
+      "w": 760,
+      "h": 2371,
+      "page": "final"
+    },
+    {
+      "file": "FLabStaging.dc.html",
+      "title": "Final · Lab · Staging · demo account",
+      "x": 880,
+      "y": 29226,
+      "w": 1440,
+      "h": 1032,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabProduction.dc.html",
+      "title": "Final · Lab · Production",
+      "x": 2440,
+      "y": 29226,
+      "w": 1440,
+      "h": 1370,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabInstrument.dc.html",
+      "title": "Final · Lab · Staging · an instrument (Structure Field)",
+      "x": 4000,
+      "y": 29226,
+      "w": 1440,
+      "h": 1082,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabPhone.dc.html",
+      "title": "Final · Lab · Phone · production",
+      "x": 5560,
+      "y": 29226,
+      "w": 390,
+      "h": 2797,
+      "page": "final"
+    },
+    {
+      "file": "FLabLight.dc.html",
+      "title": "Final · Lab · Light · production",
+      "x": 6070,
+      "y": 29226,
+      "w": 1440,
+      "h": 1370,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabStates.dc.html",
+      "title": "Final · Lab · States",
+      "x": 7630,
+      "y": 29226,
+      "w": 1440,
+      "h": 1491,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabStructureFieldSpec.dc.html",
+      "title": "Final · Lab · Structure Field · spec",
+      "x": 0,
+      "y": 32383,
+      "w": 760,
+      "h": 2179,
+      "page": "final"
+    },
+    {
+      "file": "FLabStructureFieldStaging.dc.html",
+      "title": "Final · Lab · Structure Field · Staging · demo account",
+      "x": 880,
+      "y": 32383,
+      "w": 1440,
+      "h": 1394,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabStructureFieldProduction.dc.html",
+      "title": "Final · Lab · Structure Field · Production · Not live",
+      "x": 2440,
+      "y": 32383,
+      "w": 1440,
+      "h": 1179,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabStructureFieldPhone.dc.html",
+      "title": "Final · Lab · Structure Field · Phone · staging",
+      "x": 4000,
+      "y": 32383,
+      "w": 390,
+      "h": 2188,
+      "page": "final"
+    },
+    {
+      "file": "FLabStructureFieldStates.dc.html",
+      "title": "Final · Lab · Structure Field · States",
+      "x": 4510,
+      "y": 32383,
+      "w": 1440,
+      "h": 2447,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabTapePulseSpec.dc.html",
+      "title": "Final · Lab · Tape Pulse · spec",
+      "x": 0,
+      "y": 35190,
+      "w": 760,
+      "h": 1969,
+      "page": "final"
+    },
+    {
+      "file": "FLabTapePulseStaging.dc.html",
+      "title": "Final · Lab · Tape Pulse · Staging · demo account",
+      "x": 880,
+      "y": 35190,
+      "w": 1440,
+      "h": 1309,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabTapePulseProduction.dc.html",
+      "title": "Final · Lab · Tape Pulse · Production · Not live",
+      "x": 2440,
+      "y": 35190,
+      "w": 1440,
+      "h": 1139,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabTapePulsePhone.dc.html",
+      "title": "Final · Lab · Tape Pulse · Phone · staging",
+      "x": 4000,
+      "y": 35190,
+      "w": 390,
+      "h": 1972,
+      "page": "final"
+    },
+    {
+      "file": "FLabTapePulseLight.dc.html",
+      "title": "Final · Lab · Tape Pulse · Light · staging",
+      "x": 4510,
+      "y": 35190,
+      "w": 1440,
+      "h": 1309,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabTapePulseStates.dc.html",
+      "title": "Final · Lab · Tape Pulse · States",
+      "x": 6070,
+      "y": 35190,
+      "w": 1440,
+      "h": 2042,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabWallMagnetSpec.dc.html",
+      "title": "Final · Lab · Wall Magnet · spec",
+      "x": 0,
+      "y": 37592,
+      "w": 760,
+      "h": 1817,
+      "page": "final"
+    },
+    {
+      "file": "FLabWallMagnetStaging.dc.html",
+      "title": "Final · Lab · Wall Magnet · Staging · demo account",
+      "x": 880,
+      "y": 37592,
+      "w": 1440,
+      "h": 1260,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabWallMagnetProduction.dc.html",
+      "title": "Final · Lab · Wall Magnet · Production · Not live",
+      "x": 2440,
+      "y": 37592,
+      "w": 1440,
+      "h": 1099,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabWallMagnetPhone.dc.html",
+      "title": "Final · Lab · Wall Magnet · Phone · staging",
+      "x": 4000,
+      "y": 37592,
+      "w": 390,
+      "h": 2059,
+      "page": "final"
+    },
+    {
+      "file": "FLabWallMagnetLight.dc.html",
+      "title": "Final · Lab · Wall Magnet · Light · staging",
+      "x": 4510,
+      "y": 37592,
+      "w": 1440,
+      "h": 1260,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabWallMagnetStates.dc.html",
+      "title": "Final · Lab · Wall Magnet · States",
+      "x": 6070,
+      "y": 37592,
+      "w": 1440,
+      "h": 2145,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabTermHeatSpec.dc.html",
+      "title": "Final · Lab · Term Heat · spec",
+      "x": 0,
+      "y": 40097,
+      "w": 760,
+      "h": 1802,
+      "page": "final"
+    },
+    {
+      "file": "FLabTermHeatStaging.dc.html",
+      "title": "Final · Lab · Term Heat · Staging · demo account",
+      "x": 880,
+      "y": 40097,
+      "w": 1440,
+      "h": 1319,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabTermHeatProduction.dc.html",
+      "title": "Final · Lab · Term Heat · Production · Not live",
+      "x": 2440,
+      "y": 40097,
+      "w": 1440,
+      "h": 1119,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabTermHeatPhone.dc.html",
+      "title": "Final · Lab · Term Heat · Phone · staging",
+      "x": 4000,
+      "y": 40097,
+      "w": 390,
+      "h": 2114,
+      "page": "final"
+    },
+    {
+      "file": "FLabTermHeatLight.dc.html",
+      "title": "Final · Lab · Term Heat · Light · staging",
+      "x": 4510,
+      "y": 40097,
+      "w": 1440,
+      "h": 1319,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabTermHeatStates.dc.html",
+      "title": "Final · Lab · Term Heat · States",
+      "x": 6070,
+      "y": 40097,
+      "w": 1440,
+      "h": 2317,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabFlowRibbonsSpec.dc.html",
+      "title": "Final · Lab · Flow Ribbons · spec",
+      "x": 0,
+      "y": 42774,
+      "w": 760,
+      "h": 1751,
+      "page": "final"
+    },
+    {
+      "file": "FLabFlowRibbonsStaging.dc.html",
+      "title": "Final · Lab · Flow Ribbons · Staging · demo account",
+      "x": 880,
+      "y": 42774,
+      "w": 1440,
+      "h": 1303,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabFlowRibbonsProduction.dc.html",
+      "title": "Final · Lab · Flow Ribbons · Production · Not live",
+      "x": 2440,
+      "y": 42774,
+      "w": 1440,
+      "h": 1139,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabFlowRibbonsPhone.dc.html",
+      "title": "Final · Lab · Flow Ribbons · Phone · staging",
+      "x": 4000,
+      "y": 42774,
+      "w": 390,
+      "h": 1979,
+      "page": "final"
+    },
+    {
+      "file": "FLabFlowRibbonsLight.dc.html",
+      "title": "Final · Lab · Flow Ribbons · Light · staging",
+      "x": 4510,
+      "y": 42774,
+      "w": 1440,
+      "h": 1303,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FLabFlowRibbonsStates.dc.html",
+      "title": "Final · Lab · Flow Ribbons · States",
+      "x": 6070,
+      "y": 42774,
+      "w": 1440,
+      "h": 2375,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FNotFoundSpec.dc.html",
+      "title": "Final · 404 and route fallback · spec",
+      "x": 0,
+      "y": 45509,
+      "w": 760,
+      "h": 1443,
+      "page": "final"
+    },
+    {
+      "file": "FNotFoundBoth.dc.html",
+      "title": "Final · 404 and route fallback · Production and staging (identical apart from the bar)",
+      "x": 880,
+      "y": 45509,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FNotFoundPhone.dc.html",
+      "title": "Final · 404 and route fallback · Phone · production",
+      "x": 2440,
+      "y": 45509,
+      "w": 390,
+      "h": 967,
+      "page": "final"
+    },
+    {
+      "file": "FNotFoundLight.dc.html",
+      "title": "Final · 404 and route fallback · Light · production",
+      "x": 2950,
+      "y": 45509,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FNotFoundStates.dc.html",
+      "title": "Final · 404 and route fallback · States",
+      "x": 4510,
+      "y": 45509,
+      "w": 1440,
+      "h": 1304,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FCreditsSpec.dc.html",
+      "title": "Final · Data sources and credits · spec",
+      "x": 0,
+      "y": 47312,
+      "w": 760,
+      "h": 3291,
+      "page": "final"
+    },
+    {
+      "file": "FCreditsStaging.dc.html",
+      "title": "Final · Data sources and credits · Staging · demo account",
+      "x": 880,
+      "y": 47312,
+      "w": 1440,
+      "h": 4815,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FCreditsProduction.dc.html",
+      "title": "Final · Data sources and credits · Production",
+      "x": 2440,
+      "y": 47312,
+      "w": 1440,
+      "h": 4611,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FCreditsPhone.dc.html",
+      "title": "Final · Data sources and credits · Phone · production",
+      "x": 4000,
+      "y": 47312,
+      "w": 390,
+      "h": 6278,
+      "page": "final"
+    },
+    {
+      "file": "FCreditsLight.dc.html",
+      "title": "Final · Data sources and credits · Light · production",
+      "x": 4510,
+      "y": 47312,
+      "w": 1440,
+      "h": 4611,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FCreditsStates.dc.html",
+      "title": "Final · Data sources and credits · States",
+      "x": 6070,
+      "y": 47312,
+      "w": 1440,
+      "h": 2016,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPrivacySpec.dc.html",
+      "title": "Final · Privacy · spec",
+      "x": 0,
+      "y": 53950,
+      "w": 760,
+      "h": 2099,
+      "page": "final"
+    },
+    {
+      "file": "FPrivacyStaging.dc.html",
+      "title": "Final · Privacy · Staging · demo account",
+      "x": 880,
+      "y": 53950,
+      "w": 1440,
+      "h": 2204,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPrivacyProduction.dc.html",
+      "title": "Final · Privacy · Production",
+      "x": 2440,
+      "y": 53950,
+      "w": 1440,
+      "h": 3465,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPrivacyPhone.dc.html",
+      "title": "Final · Privacy · Phone · production",
+      "x": 4000,
+      "y": 53950,
+      "w": 390,
+      "h": 4877,
+      "page": "final"
+    },
+    {
+      "file": "FPrivacyLight.dc.html",
+      "title": "Final · Privacy · Light · production",
+      "x": 4510,
+      "y": 53950,
+      "w": 1440,
+      "h": 3465,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FTermsSpec.dc.html",
+      "title": "Final · Terms and disclaimer · spec",
+      "x": 0,
+      "y": 59187,
+      "w": 760,
+      "h": 1448,
+      "page": "final"
+    },
+    {
+      "file": "FTermsStaging.dc.html",
+      "title": "Final · Terms and disclaimer · Staging · demo account",
+      "x": 880,
+      "y": 59187,
+      "w": 1440,
+      "h": 2602,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FTermsProduction.dc.html",
+      "title": "Final · Terms and disclaimer · Production",
+      "x": 2440,
+      "y": 59187,
+      "w": 1440,
+      "h": 2444,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FTermsPhone.dc.html",
+      "title": "Final · Terms and disclaimer · Phone · production",
+      "x": 4000,
+      "y": 59187,
+      "w": 390,
+      "h": 3446,
+      "page": "final"
+    },
+    {
+      "file": "FTermsLight.dc.html",
+      "title": "Final · Terms and disclaimer · Light · production",
+      "x": 4510,
+      "y": 59187,
+      "w": 1440,
+      "h": 2444,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FOperatorSpec.dc.html",
+      "title": "Final · Operator · spec",
+      "x": 0,
+      "y": 62993,
+      "w": 760,
+      "h": 1738,
+      "page": "final"
+    },
+    {
+      "file": "FOperatorProduction.dc.html",
+      "title": "Final · Operator · Production · /_ops/metrics",
+      "x": 880,
+      "y": 62993,
+      "w": 1440,
+      "h": 943,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FOperatorArchive.dc.html",
+      "title": "Final · Operator · Production · /_ops/research",
+      "x": 2440,
+      "y": 62993,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FOperatorStaging.dc.html",
+      "title": "Final · Operator · Staging · both routes",
+      "x": 4000,
+      "y": 62993,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FOperatorPhone.dc.html",
+      "title": "Final · Operator · Phone · production metrics",
+      "x": 5560,
+      "y": 62993,
+      "w": 390,
+      "h": 1020,
+      "page": "final"
+    },
+    {
+      "file": "FOperatorLight.dc.html",
+      "title": "Final · Operator · Light · production metrics",
+      "x": 6070,
+      "y": 62993,
+      "w": 1440,
+      "h": 943,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FOperatorStates.dc.html",
+      "title": "Final · Operator · States",
+      "x": 7630,
+      "y": 62993,
+      "w": 1440,
+      "h": 1439,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FDeskSpec.dc.html",
+      "title": "Final · Ticker desk · spec",
+      "x": 0,
+      "y": 65091,
+      "w": 760,
+      "h": 3528,
+      "page": "final"
+    },
+    {
+      "file": "FDeskStaging.dc.html",
+      "title": "Final · Ticker desk · Staging · demo account",
+      "x": 880,
+      "y": 65091,
+      "w": 1440,
+      "h": 2827,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FDeskProduction.dc.html",
+      "title": "Final · Ticker desk · Production",
+      "x": 2440,
+      "y": 65091,
+      "w": 1440,
+      "h": 2939,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FDeskPhone.dc.html",
+      "title": "Final · Ticker desk · Phone · production",
+      "x": 4000,
+      "y": 65091,
+      "w": 390,
+      "h": 3532,
+      "page": "final"
+    },
+    {
+      "file": "FDeskLight.dc.html",
+      "title": "Final · Ticker desk · Light · production",
+      "x": 4510,
+      "y": 65091,
+      "w": 1440,
+      "h": 2939,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FDeskStates.dc.html",
+      "title": "Final · Ticker desk · States",
+      "x": 6070,
+      "y": 65091,
+      "w": 1440,
+      "h": 2813,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FAiReadSpec.dc.html",
+      "title": "Final · AI read · spec",
+      "x": 0,
+      "y": 68983,
+      "w": 760,
+      "h": 2697,
+      "page": "final"
+    },
+    {
+      "file": "FAiReadStaging.dc.html",
+      "title": "Final · AI read · Staging · full analysis drawer",
+      "x": 880,
+      "y": 68983,
+      "w": 1440,
+      "h": 1520,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FAiReadExport.dc.html",
+      "title": "Final · AI read · Staging · sample export drawer",
+      "x": 2440,
+      "y": 68983,
+      "w": 1440,
+      "h": 1040,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FAiReadPeek.dc.html",
+      "title": "Final · AI read · Phone · staging · peek row",
+      "x": 4000,
+      "y": 68983,
+      "w": 390,
+      "h": 920,
+      "page": "final"
+    },
+    {
+      "file": "FAiReadSheet.dc.html",
+      "title": "Final · AI read · Phone · staging · sheet open",
+      "x": 4510,
+      "y": 68983,
+      "w": 390,
+      "h": 1230,
+      "page": "final"
+    },
+    {
+      "file": "FAiReadProduction.dc.html",
+      "title": "Final · AI read · Production · Not live",
+      "x": 5020,
+      "y": 68983,
+      "w": 1440,
+      "h": 1250,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FAiReadStates.dc.html",
+      "title": "Final · AI read · States",
+      "x": 6580,
+      "y": 68983,
+      "w": 1440,
+      "h": 3328,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FTechnicalSpec.dc.html",
+      "title": "Final · Technical tab · spec",
+      "x": 0,
+      "y": 72671,
+      "w": 760,
+      "h": 2369,
+      "page": "final"
+    },
+    {
+      "file": "FTechnicalStaging.dc.html",
+      "title": "Final · Technical tab · Staging · demo account",
+      "x": 880,
+      "y": 72671,
+      "w": 1440,
+      "h": 1468,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FTechnicalProduction.dc.html",
+      "title": "Final · Technical tab · Production",
+      "x": 2440,
+      "y": 72671,
+      "w": 1440,
+      "h": 1254,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FTechnicalPhone.dc.html",
+      "title": "Final · Technical tab · Phone · production",
+      "x": 4000,
+      "y": 72671,
+      "w": 390,
+      "h": 1741,
+      "page": "final"
+    },
+    {
+      "file": "FTechnicalLight.dc.html",
+      "title": "Final · Technical tab · Light · production",
+      "x": 4510,
+      "y": 72671,
+      "w": 1440,
+      "h": 1254,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FTechnicalStates.dc.html",
+      "title": "Final · Technical tab · States",
+      "x": 6070,
+      "y": 72671,
+      "w": 1440,
+      "h": 2276,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FNoteSpec.dc.html",
+      "title": "Final · Research tab · note · spec",
+      "x": 0,
+      "y": 75400,
+      "w": 760,
+      "h": 2640,
+      "page": "final"
+    },
+    {
+      "file": "FNoteStaging.dc.html",
+      "title": "Final · Research tab · note · Staging · demo account",
+      "x": 880,
+      "y": 75400,
+      "w": 1440,
+      "h": 1919,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FNoteProduction.dc.html",
+      "title": "Final · Research tab · note · Production",
+      "x": 2440,
+      "y": 75400,
+      "w": 1440,
+      "h": 4505,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FNotePhone.dc.html",
+      "title": "Final · Research tab · note · Phone · production",
+      "x": 4000,
+      "y": 75400,
+      "w": 390,
+      "h": 6972,
+      "page": "final"
+    },
+    {
+      "file": "FNoteLight.dc.html",
+      "title": "Final · Research tab · note · Light · production",
+      "x": 4510,
+      "y": 75400,
+      "w": 1440,
+      "h": 4505,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FNoteStates.dc.html",
+      "title": "Final · Research tab · note · States",
+      "x": 6070,
+      "y": 75400,
+      "w": 1440,
+      "h": 2503,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchIndexSpec.dc.html",
+      "title": "Final · Research · Notes · spec",
+      "x": 0,
+      "y": 82732,
+      "w": 760,
+      "h": 2083,
+      "page": "final"
+    },
+    {
+      "file": "FResearchIndexStaging.dc.html",
+      "title": "Final · Research · Notes · Staging · demo account",
+      "x": 880,
+      "y": 82732,
+      "w": 1440,
+      "h": 1379,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchIndexProduction.dc.html",
+      "title": "Final · Research · Notes · Production",
+      "x": 2440,
+      "y": 82732,
+      "w": 1440,
+      "h": 2597,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchIndexPhone.dc.html",
+      "title": "Final · Research · Notes · Phone · production",
+      "x": 4000,
+      "y": 82732,
+      "w": 390,
+      "h": 6417,
+      "page": "final"
+    },
+    {
+      "file": "FResearchIndexLight.dc.html",
+      "title": "Final · Research · Notes · Light · production",
+      "x": 4510,
+      "y": 82732,
+      "w": 1440,
+      "h": 2597,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchIndexStates.dc.html",
+      "title": "Final · Research · Notes · States",
+      "x": 6070,
+      "y": 82732,
+      "w": 1440,
+      "h": 1407,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchMarketsSpec.dc.html",
+      "title": "Final · Research · Markets · spec",
+      "x": 0,
+      "y": 89509,
+      "w": 760,
+      "h": 2210,
+      "page": "final"
+    },
+    {
+      "file": "FResearchMarketsStaging.dc.html",
+      "title": "Final · Research · Markets · Staging · demo account",
+      "x": 880,
+      "y": 89509,
+      "w": 1440,
+      "h": 2657,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchMarketsProduction.dc.html",
+      "title": "Final · Research · Markets · Production",
+      "x": 2440,
+      "y": 89509,
+      "w": 1440,
+      "h": 2843,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchMarketsPhone.dc.html",
+      "title": "Final · Research · Markets · Phone · production",
+      "x": 4000,
+      "y": 89509,
+      "w": 390,
+      "h": 5659,
+      "page": "final"
+    },
+    {
+      "file": "FResearchMarketsLight.dc.html",
+      "title": "Final · Research · Markets · Light · production",
+      "x": 4510,
+      "y": 89509,
+      "w": 1440,
+      "h": 2843,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchMarketsStates.dc.html",
+      "title": "Final · Research · Markets · States",
+      "x": 6070,
+      "y": 89509,
+      "w": 1440,
+      "h": 2146,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchFilingsSpec.dc.html",
+      "title": "Final · Research · Filings · spec",
+      "x": 0,
+      "y": 95528,
+      "w": 760,
+      "h": 2187,
+      "page": "final"
+    },
+    {
+      "file": "FResearchFilingsStaging.dc.html",
+      "title": "Final · Research · Filings · Staging · demo account",
+      "x": 880,
+      "y": 95528,
+      "w": 1440,
+      "h": 1325,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchFilingsProduction.dc.html",
+      "title": "Final · Research · Filings · Production · today (Not set up)",
+      "x": 2440,
+      "y": 95528,
+      "w": 1440,
+      "h": 1218,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchFilingsProductionSetup.dc.html",
+      "title": "Final · Research · Filings · Production · once SEC_USER_AGENT is set",
+      "x": 4000,
+      "y": 95528,
+      "w": 1440,
+      "h": 1547,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchFilingsPhone.dc.html",
+      "title": "Final · Research · Filings · Phone · production (Not set up)",
+      "x": 5560,
+      "y": 95528,
+      "w": 390,
+      "h": 2132,
+      "page": "final"
+    },
+    {
+      "file": "FResearchFilingsLight.dc.html",
+      "title": "Final · Research · Filings · Light · production (Not set up)",
+      "x": 6070,
+      "y": 95528,
+      "w": 1440,
+      "h": 1218,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchFilingsStates.dc.html",
+      "title": "Final · Research · Filings · States",
+      "x": 7630,
+      "y": 95528,
+      "w": 1440,
+      "h": 1823,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchScorecardSpec.dc.html",
+      "title": "Final · Research · Scorecard · spec",
+      "x": 0,
+      "y": 98075,
+      "w": 760,
+      "h": 1964,
+      "page": "final"
+    },
+    {
+      "file": "FResearchScorecardStaging.dc.html",
+      "title": "Final · Research · Scorecard · Staging · demo account",
+      "x": 880,
+      "y": 98075,
+      "w": 1440,
+      "h": 1955,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchScorecardProduction.dc.html",
+      "title": "Final · Research · Scorecard · Production",
+      "x": 2440,
+      "y": 98075,
+      "w": 1440,
+      "h": 2050,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchScorecardPhone.dc.html",
+      "title": "Final · Research · Scorecard · Phone · production",
+      "x": 4000,
+      "y": 98075,
+      "w": 390,
+      "h": 4949,
+      "page": "final"
+    },
+    {
+      "file": "FResearchScorecardLight.dc.html",
+      "title": "Final · Research · Scorecard · Light · production",
+      "x": 4510,
+      "y": 98075,
+      "w": 1440,
+      "h": 2050,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FResearchScorecardStates.dc.html",
+      "title": "Final · Research · Scorecard · States",
+      "x": 6070,
+      "y": 98075,
+      "w": 1440,
+      "h": 1265,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FScannerSpec.dc.html",
+      "title": "Final · Scanner · spec",
+      "x": 0,
+      "y": 103384,
+      "w": 760,
+      "h": 2096,
+      "page": "final"
+    },
+    {
+      "file": "FScannerStaging.dc.html",
+      "title": "Final · Scanner · Staging · demo account",
+      "x": 880,
+      "y": 103384,
+      "w": 1440,
+      "h": 1142,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FScannerProduction.dc.html",
+      "title": "Final · Scanner · Production · Not live",
+      "x": 2440,
+      "y": 103384,
+      "w": 1440,
+      "h": 977,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FScannerPhone.dc.html",
+      "title": "Final · Scanner · Phone · production",
+      "x": 4000,
+      "y": 103384,
+      "w": 390,
+      "h": 1509,
+      "page": "final"
+    },
+    {
+      "file": "FScannerStagingPhone.dc.html",
+      "title": "Final · Scanner · Phone · staging",
+      "x": 4510,
+      "y": 103384,
+      "w": 390,
+      "h": 2091,
+      "page": "final"
+    },
+    {
+      "file": "FScannerLight.dc.html",
+      "title": "Final · Scanner · Light · production",
+      "x": 5020,
+      "y": 103384,
+      "w": 1440,
+      "h": 977,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FScannerStates.dc.html",
+      "title": "Final · Scanner · States",
+      "x": 6580,
+      "y": 103384,
+      "w": 1440,
+      "h": 2113,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPositionsSpec.dc.html",
+      "title": "Final · Positions · spec",
+      "x": 0,
+      "y": 105857,
+      "w": 760,
+      "h": 1987,
+      "page": "final"
+    },
+    {
+      "file": "FPositionsStaging.dc.html",
+      "title": "Final · Positions · Staging · demo account",
+      "x": 880,
+      "y": 105857,
+      "w": 1440,
+      "h": 1020,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPositionsProduction.dc.html",
+      "title": "Final · Positions · Production · signed out",
+      "x": 2440,
+      "y": 105857,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPositionsPhone.dc.html",
+      "title": "Final · Positions · Phone · production",
+      "x": 4000,
+      "y": 105857,
+      "w": 390,
+      "h": 959,
+      "page": "final"
+    },
+    {
+      "file": "FPositionsStagingPhone.dc.html",
+      "title": "Final · Positions · Phone · staging",
+      "x": 4510,
+      "y": 105857,
+      "w": 390,
+      "h": 1953,
+      "page": "final"
+    },
+    {
+      "file": "FPositionsLight.dc.html",
+      "title": "Final · Positions · Light · production",
+      "x": 5020,
+      "y": 105857,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPositionsStates.dc.html",
+      "title": "Final · Positions · States",
+      "x": 6580,
+      "y": 105857,
+      "w": 1440,
+      "h": 2115,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FAlertsSpec.dc.html",
+      "title": "Final · Alerts · spec",
+      "x": 0,
+      "y": 108332,
+      "w": 760,
+      "h": 2119,
+      "page": "final"
+    },
+    {
+      "file": "FAlertsStaging.dc.html",
+      "title": "Final · Alerts · Staging · demo account",
+      "x": 880,
+      "y": 108332,
+      "w": 1440,
+      "h": 2149,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FAlertsProduction.dc.html",
+      "title": "Final · Alerts · Production · public data",
+      "x": 2440,
+      "y": 108332,
+      "w": 1440,
+      "h": 2333,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FAlertsPhone.dc.html",
+      "title": "Final · Alerts · Phone · production",
+      "x": 4000,
+      "y": 108332,
+      "w": 390,
+      "h": 4055,
+      "page": "final"
+    },
+    {
+      "file": "FAlertsLight.dc.html",
+      "title": "Final · Alerts · Light · production",
+      "x": 4510,
+      "y": 108332,
+      "w": 1440,
+      "h": 2333,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FAlertsStates.dc.html",
+      "title": "Final · Alerts · States (Q-5)",
+      "x": 6070,
+      "y": 108332,
+      "w": 1440,
+      "h": 3537,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FSettingsSpec.dc.html",
+      "title": "Final · Settings · spec",
+      "x": 0,
+      "y": 112747,
+      "w": 760,
+      "h": 1893,
+      "page": "final"
+    },
+    {
+      "file": "FSettingsStaging.dc.html",
+      "title": "Final · Settings · Staging · demo account",
+      "x": 880,
+      "y": 112747,
+      "w": 1440,
+      "h": 1759,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FSettingsProduction.dc.html",
+      "title": "Final · Settings · Production · signed out",
+      "x": 2440,
+      "y": 112747,
+      "w": 1440,
+      "h": 1306,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FSettingsPhone.dc.html",
+      "title": "Final · Settings · Phone · production",
+      "x": 4000,
+      "y": 112747,
+      "w": 390,
+      "h": 1727,
+      "page": "final"
+    },
+    {
+      "file": "FSettingsLight.dc.html",
+      "title": "Final · Settings · Light · production",
+      "x": 4510,
+      "y": 112747,
+      "w": 1440,
+      "h": 1306,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FSettingsStates.dc.html",
+      "title": "Final · Settings · States",
+      "x": 6070,
+      "y": 112747,
+      "w": 1440,
+      "h": 1661,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FDialogsSpec.dc.html",
+      "title": "Final · Overlays · spec",
+      "x": 0,
+      "y": 115000,
+      "w": 760,
+      "h": 2012,
+      "page": "final"
+    },
+    {
+      "file": "FDialogsSignIn.dc.html",
+      "title": "Final · Overlays · Sign in · production only",
+      "x": 880,
+      "y": 115000,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FDialogsTradeEntry.dc.html",
+      "title": "Final · Overlays · Trade entry · staging",
+      "x": 2440,
+      "y": 115000,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FDialogsOrderDetail.dc.html",
+      "title": "Final · Overlays · Order detail · staging",
+      "x": 4000,
+      "y": 115000,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FDialogsPersona.dc.html",
+      "title": "Final · Overlays · Persona · staging",
+      "x": 5560,
+      "y": 115000,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FDialogsViewEditor.dc.html",
+      "title": "Final · Overlays · Scan view editor · staging",
+      "x": 7120,
+      "y": 115000,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FDialogsWhatsSent.dc.html",
+      "title": "Final · Overlays · What’s sent drawer · staging",
+      "x": 8680,
+      "y": 115000,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FDialogsAlertFlow.dc.html",
+      "title": "Final · Overlays · New alert · three steps (production words)",
+      "x": 10240,
+      "y": 115000,
+      "w": 1440,
+      "h": 1899,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FDialogsPhone.dc.html",
+      "title": "Final · Overlays · Phone · bottom sheets",
+      "x": 11800,
+      "y": 115000,
+      "w": 390,
+      "h": 5581,
+      "page": "final"
+    },
+    {
+      "file": "FDialogsStates.dc.html",
+      "title": "Final · Overlays · States",
+      "x": 12310,
+      "y": 115000,
+      "w": 1440,
+      "h": 2194,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FOverlaysSpec.dc.html",
+      "title": "Final · More overlays · spec",
+      "x": 0,
+      "y": 120941,
+      "w": 760,
+      "h": 2470,
+      "page": "final"
+    },
+    {
+      "file": "FOverlaysReassess.dc.html",
+      "title": "Final · More overlays · Reassessment request · staging",
+      "x": 880,
+      "y": 120941,
+      "w": 1440,
+      "h": 1000,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FOverlaysArchive.dc.html",
+      "title": "Final · More overlays · Import archive · staging",
+      "x": 2440,
+      "y": 120941,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FOverlaysExpand.dc.html",
+      "title": "Final · More overlays · Expanded widget · staging",
+      "x": 4000,
+      "y": 120941,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FOverlaysViews.dc.html",
+      "title": "Final · More overlays · Name this view · staging",
+      "x": 5560,
+      "y": 120941,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FOverlaysNotify.dc.html",
+      "title": "Final · More overlays · Browser notifications · production",
+      "x": 7120,
+      "y": 120941,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FOverlaysReset.dc.html",
+      "title": "Final · More overlays · Reset password · production (designed)",
+      "x": 8680,
+      "y": 120941,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FOverlaysResetPage.dc.html",
+      "title": "Final · More overlays · Set a new password · production (designed)",
+      "x": 10240,
+      "y": 120941,
+      "w": 1440,
+      "h": 920,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FOverlaysPhone.dc.html",
+      "title": "Final · More overlays · Phone · bottom sheets",
+      "x": 11800,
+      "y": 120941,
+      "w": 390,
+      "h": 4311,
+      "page": "final"
+    },
+    {
+      "file": "FOverlaysStates.dc.html",
+      "title": "Final · More overlays · States",
+      "x": 12310,
+      "y": 120941,
+      "w": 1440,
+      "h": 3037,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedLiquiditySpec.dc.html",
+      "title": "Final · Planned · Liquidity · spec",
+      "x": 0,
+      "y": 126512,
+      "w": 760,
+      "h": 1737,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedLiquidityStaging.dc.html",
+      "title": "Final · Planned · Liquidity · Staging · demo account",
+      "x": 880,
+      "y": 126512,
+      "w": 1440,
+      "h": 1412,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedLiquidityProduction.dc.html",
+      "title": "Final · Planned · Liquidity · Production · as it would ship",
+      "x": 2440,
+      "y": 126512,
+      "w": 1440,
+      "h": 1424,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedLiquidityPhone.dc.html",
+      "title": "Final · Planned · Liquidity · Phone · production",
+      "x": 4000,
+      "y": 126512,
+      "w": 390,
+      "h": 2215,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedLiquidityStates.dc.html",
+      "title": "Final · Planned · Liquidity · States",
+      "x": 4510,
+      "y": 126512,
+      "w": 1440,
+      "h": 1845,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedCalendarSpec.dc.html",
+      "title": "Final · Planned · Calendar · spec",
+      "x": 0,
+      "y": 129087,
+      "w": 760,
+      "h": 1659,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedCalendarStaging.dc.html",
+      "title": "Final · Planned · Calendar · Staging · demo account",
+      "x": 880,
+      "y": 129087,
+      "w": 1440,
+      "h": 1304,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedCalendarProduction.dc.html",
+      "title": "Final · Planned · Calendar · Production · as it would ship",
+      "x": 2440,
+      "y": 129087,
+      "w": 1440,
+      "h": 1645,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedCalendarPhone.dc.html",
+      "title": "Final · Planned · Calendar · Phone · production",
+      "x": 4000,
+      "y": 129087,
+      "w": 390,
+      "h": 3105,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedCalendarStates.dc.html",
+      "title": "Final · Planned · Calendar · States",
+      "x": 4510,
+      "y": 129087,
+      "w": 1440,
+      "h": 1546,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedOtcSpec.dc.html",
+      "title": "Final · Planned · Off-exchange volume · spec",
+      "x": 0,
+      "y": 132552,
+      "w": 760,
+      "h": 1539,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedOtcStaging.dc.html",
+      "title": "Final · Planned · Off-exchange volume · Staging · demo account",
+      "x": 880,
+      "y": 132552,
+      "w": 1440,
+      "h": 1256,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedOtcProduction.dc.html",
+      "title": "Final · Planned · Off-exchange volume · Production · as it would ship",
+      "x": 2440,
+      "y": 132552,
+      "w": 1440,
+      "h": 1286,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedOtcPhone.dc.html",
+      "title": "Final · Planned · Off-exchange volume · Phone · production",
+      "x": 4000,
+      "y": 132552,
+      "w": 390,
+      "h": 1814,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedOtcStates.dc.html",
+      "title": "Final · Planned · Off-exchange volume · States",
+      "x": 4510,
+      "y": 132552,
+      "w": 1440,
+      "h": 1803,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedClustersSpec.dc.html",
+      "title": "Final · Planned · Insider clusters · spec",
+      "x": 0,
+      "y": 134726,
+      "w": 760,
+      "h": 1541,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedClustersStaging.dc.html",
+      "title": "Final · Planned · Insider clusters · Staging · demo account",
+      "x": 880,
+      "y": 134726,
+      "w": 1440,
+      "h": 1240,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedClustersProduction.dc.html",
+      "title": "Final · Planned · Insider clusters · Production · as it would ship",
+      "x": 2440,
+      "y": 134726,
+      "w": 1440,
+      "h": 1270,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedClustersPhone.dc.html",
+      "title": "Final · Planned · Insider clusters · Phone · production",
+      "x": 4000,
+      "y": 134726,
+      "w": 390,
+      "h": 1808,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedClustersStates.dc.html",
+      "title": "Final · Planned · Insider clusters · States",
+      "x": 4510,
+      "y": 134726,
+      "w": 1440,
+      "h": 1464,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedHoldersSpec.dc.html",
+      "title": "Final · Planned · Fund holdings (13F) · spec",
+      "x": 0,
+      "y": 136894,
+      "w": 760,
+      "h": 1472,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedHoldersStaging.dc.html",
+      "title": "Final · Planned · Fund holdings (13F) · Staging · demo account",
+      "x": 880,
+      "y": 136894,
+      "w": 1440,
+      "h": 1276,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedHoldersProduction.dc.html",
+      "title": "Final · Planned · Fund holdings (13F) · Production · as it would ship",
+      "x": 2440,
+      "y": 136894,
+      "w": 1440,
+      "h": 1374,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedHoldersPhone.dc.html",
+      "title": "Final · Planned · Fund holdings (13F) · Phone · production",
+      "x": 4000,
+      "y": 136894,
+      "w": 390,
+      "h": 2026,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedHoldersStates.dc.html",
+      "title": "Final · Planned · Fund holdings (13F) · States",
+      "x": 4510,
+      "y": 136894,
+      "w": 1440,
+      "h": 1647,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedXbrlSpec.dc.html",
+      "title": "Final · Planned · Figures against the filing · spec",
+      "x": 0,
+      "y": 139280,
+      "w": 760,
+      "h": 1574,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedXbrlStaging.dc.html",
+      "title": "Final · Planned · Figures against the filing · Staging · demo account",
+      "x": 880,
+      "y": 139280,
+      "w": 1440,
+      "h": 1498,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedXbrlProduction.dc.html",
+      "title": "Final · Planned · Figures against the filing · Production · as it would ship",
+      "x": 2440,
+      "y": 139280,
+      "w": 1440,
+      "h": 1658,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedXbrlPhone.dc.html",
+      "title": "Final · Planned · Figures against the filing · Phone · production",
+      "x": 4000,
+      "y": 139280,
+      "w": 390,
+      "h": 2631,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedXbrlStates.dc.html",
+      "title": "Final · Planned · Figures against the filing · States",
+      "x": 4510,
+      "y": 139280,
+      "w": 1440,
+      "h": 1373,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedPeersSpec.dc.html",
+      "title": "Final · Planned · Peers · spec",
+      "x": 0,
+      "y": 142271,
+      "w": 760,
+      "h": 1321,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedPeersStaging.dc.html",
+      "title": "Final · Planned · Peers · Staging · demo account",
+      "x": 880,
+      "y": 142271,
+      "w": 1440,
+      "h": 1153,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedPeersProduction.dc.html",
+      "title": "Final · Planned · Peers · Production · as it would ship",
+      "x": 2440,
+      "y": 142271,
+      "w": 1440,
+      "h": 1183,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedPeersPhone.dc.html",
+      "title": "Final · Planned · Peers · Phone · production",
+      "x": 4000,
+      "y": 142271,
+      "w": 390,
+      "h": 1654,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedPeersStates.dc.html",
+      "title": "Final · Planned · Peers · States",
+      "x": 4510,
+      "y": 142271,
+      "w": 1440,
+      "h": 1250,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedSignalsSpec.dc.html",
+      "title": "Final · Planned · Signal track record · spec",
+      "x": 0,
+      "y": 144285,
+      "w": 760,
+      "h": 1369,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedSignalsStaging.dc.html",
+      "title": "Final · Planned · Signal track record · Staging · demo account",
+      "x": 880,
+      "y": 144285,
+      "w": 1440,
+      "h": 1165,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedSignalsProduction.dc.html",
+      "title": "Final · Planned · Signal track record · Production · design target (blocked)",
+      "x": 2440,
+      "y": 144285,
+      "w": 1440,
+      "h": 1195,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedSignalsPhone.dc.html",
+      "title": "Final · Planned · Signal track record · Phone · production design target",
+      "x": 4000,
+      "y": 144285,
+      "w": 390,
+      "h": 1602,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedSignalsStates.dc.html",
+      "title": "Final · Planned · Signal track record · States",
+      "x": 4510,
+      "y": 144285,
+      "w": 1440,
+      "h": 1562,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedTaSpec.dc.html",
+      "title": "Final · Planned · Technical readings · spec",
+      "x": 0,
+      "y": 146247,
+      "w": 760,
+      "h": 1638,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedTaStaging.dc.html",
+      "title": "Final · Planned · Technical readings · Staging · demo account",
+      "x": 880,
+      "y": 146247,
+      "w": 1440,
+      "h": 1841,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedTaProduction.dc.html",
+      "title": "Final · Planned · Technical readings · Production · design target (blocked)",
+      "x": 2440,
+      "y": 146247,
+      "w": 1440,
+      "h": 1467,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FPlannedTaPhone.dc.html",
+      "title": "Final · Planned · Technical readings · Phone · production design target",
+      "x": 4000,
+      "y": 146247,
+      "w": 390,
+      "h": 2561,
+      "page": "final"
+    },
+    {
+      "file": "FPlannedTaStates.dc.html",
+      "title": "Final · Planned · Technical readings · States",
+      "x": 4510,
+      "y": 146247,
+      "w": 1440,
+      "h": 1456,
+      "page": "final",
+      "expand": "fill"
+    },
     {
       "file": "Main.dc.html",
       "title": "Ticker desk · SPY (interactive · expand and resize the window)",
@@ -357,17 +2646,35 @@
     },
     {
       "file": "Library.dc.html",
-      "title": "Library · tokens, components, states, React mapping",
+      "title": "Library · 1 of 3 · tokens, type, controls, data",
       "x": 0,
       "y": 0,
       "w": 1440,
-      "h": 5900,
+      "h": 6240,
+      "page": "page-5"
+    },
+    {
+      "file": "LibraryB.dc.html",
+      "title": "Library · 2 of 3 · chrome, overlays, patterns, states, charts, motion",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 4750,
+      "page": "page-5"
+    },
+    {
+      "file": "LibraryC.dc.html",
+      "title": "Library · 3 of 3 · React mapping",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 3970,
       "page": "page-5"
     },
     {
       "file": "Components.dc.html",
       "title": "Components & motion sheet",
-      "x": 1560,
+      "x": 4680,
       "y": 0,
       "w": 1440,
       "h": 2720,
@@ -376,8 +2683,8 @@
     {
       "file": "DeskLight.dc.html",
       "title": "Desk · light scheme (interactive)",
-      "x": 3120,
-      "y": 0,
+      "x": 0,
+      "y": 6380,
       "w": 1440,
       "h": 2300,
       "page": "page-5",
@@ -386,8 +2693,8 @@
     {
       "file": "LandingLight.dc.html",
       "title": "Landing · light scheme",
-      "x": 4680,
-      "y": 0,
+      "x": 1560,
+      "y": 6380,
       "w": 1440,
       "h": 2960,
       "page": "page-5"
@@ -1480,9 +3787,338 @@
       "w": 1920,
       "h": 1890,
       "page": "v4-coverage"
+    },
+    {
+      "file": "V5Audit.dc.html",
+      "title": "v5 · Every chart, audited",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 2120,
+      "page": "v5-charts",
+      "expand": "fill"
+    },
+    {
+      "file": "V5ChartSystem.dc.html",
+      "title": "v5 · One chart system",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 7460,
+      "page": "v5-charts",
+      "expand": "fill"
+    },
+    {
+      "file": "V5ChartStates.dc.html",
+      "title": "v5 · Every chart, in every state",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 3710,
+      "page": "v5-charts",
+      "expand": "fill"
+    },
+    {
+      "file": "V5ChartPhone.dc.html",
+      "title": "v5 · Charts on a phone (390)",
+      "x": 4680,
+      "y": 0,
+      "w": 390,
+      "h": 2340,
+      "page": "v5-charts"
+    },
+    {
+      "file": "V5ThirdParty.dc.html",
+      "title": "v5 · Ours, and theirs",
+      "x": 5190,
+      "y": 0,
+      "w": 1440,
+      "h": 1830,
+      "page": "v5-charts",
+      "expand": "fill"
+    },
+    {
+      "file": "V5ChartSystemLight.dc.html",
+      "title": "v5 · One chart system · light",
+      "x": 6750,
+      "y": 0,
+      "w": 1440,
+      "h": 7460,
+      "page": "v5-charts",
+      "expand": "fill"
+    },
+    {
+      "file": "V5Alerts.dc.html",
+      "title": "Alerts on public data · desktop",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 2350,
+      "page": "q5-alerts",
+      "expand": "fill"
+    },
+    {
+      "file": "V5Alerts390.dc.html",
+      "title": "Alerts on public data · phone",
+      "x": 1560,
+      "y": 0,
+      "w": 390,
+      "h": 4000,
+      "page": "q5-alerts"
+    },
+    {
+      "file": "V5AlertsLight.dc.html",
+      "title": "Alerts on public data · light",
+      "x": 2070,
+      "y": 0,
+      "w": 1440,
+      "h": 2350,
+      "page": "q5-alerts",
+      "expand": "fill"
+    },
+    {
+      "file": "V5AlertsFlow.dc.html",
+      "title": "New alert · choose, set up, read back",
+      "x": 3630,
+      "y": 0,
+      "w": 1440,
+      "h": 1920,
+      "page": "q5-alerts",
+      "expand": "fill"
+    },
+    {
+      "file": "V5AlertsFlow390.dc.html",
+      "title": "New alert · phone (bottom sheets)",
+      "x": 5190,
+      "y": 0,
+      "w": 390,
+      "h": 5100,
+      "page": "q5-alerts"
+    },
+    {
+      "file": "V5AlertsStates.dc.html",
+      "title": "Alerts on public data · states",
+      "x": 5700,
+      "y": 0,
+      "w": 1440,
+      "h": 3560,
+      "page": "q5-alerts",
+      "expand": "fill"
+    },
+    {
+      "file": "V5FamNoteFigures.dc.html",
+      "title": "v5 · Note figures · before and after",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 3120,
+      "page": "v5-families",
+      "expand": "fill"
+    },
+    {
+      "file": "V5FamNoteValuation.dc.html",
+      "title": "v5 · Valuation · before and after",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 2650,
+      "page": "v5-families",
+      "expand": "fill"
+    },
+    {
+      "file": "V5FamMarkets.dc.html",
+      "title": "v5 · Markets · before and after",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 3230,
+      "page": "v5-families",
+      "expand": "fill"
+    },
+    {
+      "file": "V5FamScorecard.dc.html",
+      "title": "v5 · Scorecard and Filings · before and after",
+      "x": 4680,
+      "y": 0,
+      "w": 1440,
+      "h": 2080,
+      "page": "v5-families",
+      "expand": "fill"
+    },
+    {
+      "file": "V5FamPanels.dc.html",
+      "title": "v5 · Note panels · before and after",
+      "x": 6240,
+      "y": 0,
+      "w": 1440,
+      "h": 1770,
+      "page": "v5-families",
+      "expand": "fill"
+    },
+    {
+      "file": "V5FamDesk.dc.html",
+      "title": "v5 · Ticker desk · before and after",
+      "x": 0,
+      "y": 4000,
+      "w": 1440,
+      "h": 3720,
+      "page": "v5-families",
+      "expand": "fill"
+    },
+    {
+      "file": "V5FamOther.dc.html",
+      "title": "v5 · Scanner, positions, operator, Lab",
+      "x": 1560,
+      "y": 4000,
+      "w": 1440,
+      "h": 1360,
+      "page": "v5-families",
+      "expand": "fill"
+    },
+    {
+      "file": "V5Tools.dc.html",
+      "title": "v5 · Planned tools, charted",
+      "x": 3120,
+      "y": 4000,
+      "w": 1440,
+      "h": 5040,
+      "page": "v5-families",
+      "expand": "fill"
+    },
+    {
+      "file": "V5TvFraming.dc.html",
+      "title": "v5 · TradingView, framed",
+      "x": 4680,
+      "y": 4000,
+      "w": 1440,
+      "h": 3660,
+      "page": "v5-families",
+      "expand": "fill"
+    },
+    {
+      "file": "V5Tools390.dc.html",
+      "title": "v5 · Planned tools · phone",
+      "x": 6240,
+      "y": 4000,
+      "w": 390,
+      "h": 7140,
+      "page": "v5-families"
+    },
+    {
+      "file": "V5TvFraming390.dc.html",
+      "title": "v5 · TradingView · phone",
+      "x": 6750,
+      "y": 4000,
+      "w": 390,
+      "h": 6960,
+      "page": "v5-families"
+    },
+    {
+      "file": "V5FamNoteFigures390.dc.html",
+      "title": "v5 · Note figures · phone",
+      "x": 0,
+      "y": 11800,
+      "w": 390,
+      "h": 4770,
+      "page": "v5-families"
+    },
+    {
+      "file": "V5FamMarkets390.dc.html",
+      "title": "v5 · Markets · phone",
+      "x": 510,
+      "y": 11800,
+      "w": 390,
+      "h": 5370,
+      "page": "v5-families"
+    },
+    {
+      "file": "V5FamMarketsLight.dc.html",
+      "title": "v5 · Markets · light",
+      "x": 1020,
+      "y": 11800,
+      "w": 1440,
+      "h": 3230,
+      "page": "v5-families",
+      "expand": "fill"
+    },
+    {
+      "file": "V5FamScorecardLight.dc.html",
+      "title": "v5 · Scorecard · light",
+      "x": 2580,
+      "y": 11800,
+      "w": 1440,
+      "h": 2080,
+      "page": "v5-families",
+      "expand": "fill"
+    },
+    {
+      "file": "V5Frontier.dc.html",
+      "title": "v5 · The frontier · overview",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1370,
+      "page": "v5-frontier",
+      "expand": "fill"
+    },
+    {
+      "file": "V5FrontierGamma.dc.html",
+      "title": "v5 · F1 · Dealer-gamma surface (WebGL) · fallback shown",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 2610,
+      "page": "v5-frontier",
+      "expand": "fill"
+    },
+    {
+      "file": "V5FrontierCurve.dc.html",
+      "title": "v5 · F2 · A year of the curve · fallback shown",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 2460,
+      "page": "v5-frontier",
+      "expand": "fill"
+    },
+    {
+      "file": "V5FrontierCalib.dc.html",
+      "title": "v5 · F3 · Calibration, explorable · fallback shown",
+      "x": 4680,
+      "y": 0,
+      "w": 1440,
+      "h": 1880,
+      "page": "v5-frontier",
+      "expand": "fill"
+    },
+    {
+      "file": "V5FrontierCurve390.dc.html",
+      "title": "v5 · F2 · phone",
+      "x": 6240,
+      "y": 0,
+      "w": 390,
+      "h": 3570,
+      "page": "v5-frontier"
     }
   ],
   "annotations": [
+    {
+      "id": "note-final",
+      "x": 0,
+      "y": -460,
+      "w": 1100,
+      "page": "final",
+      "text": "Final · Convexa v1 (2026-10-14). The whole app in its ruled state, one row per screen: the spec card (purpose, every widget’s data source, production vs staging, every state in its words, phone, acceptance, build status, rulings, code), then staging (the demo account: signed in, all sample), production where it differs (no mocks; what needs the Massive options feed shows Not live), phone, light and states. Carries P-1–P-4, P-6, P-8–P-15 and the 2026-10-14 environment rulings. The earlier pages stay as history."
+    },
+    {
+      "id": "note-final-planned",
+      "x": 0,
+      "y": 125812,
+      "page": "final",
+      "text": "Planned · designed, not built — the public-data tools from docs/public-data/CANDIDATES.md",
+      "kind": "title1",
+      "maxW": 4000
+    },
     {
       "id": "note-tweaks",
       "x": 0,
@@ -1546,6 +4182,14 @@
       "w": 900,
       "page": "v4-research",
       "text": "v4 · Research refresh (2026-10-13). The note view with neutral directions supersedes the research canvas’s Main board (that canvas is left as it is); the index with its tabs; phone boards for Markets, Filings, Scorecard and ticker research; light boards for every research page and the state matrix; Markets in the demo build."
+    },
+    {
+      "id": "note-v5-charts",
+      "x": 0,
+      "y": -620,
+      "w": 900,
+      "page": "v5-charts",
+      "text": "v5 · Charts (2026-10-13). Wave 1 audits every chart in the app and on these boards (design/CHARTS-2026-10-13.md); wave 2 is one chart system: a frame that makes a claim and names its source, a plot with text at true size, labels on the data, a table twin, one tab stop, the seven data states. Values are illustrative; sources are the ones the app reads."
     },
     {
       "id": "note-system",
@@ -2474,10 +5118,266 @@
       "w": 640,
       "page": "v4-coverage",
       "text": "v4 · Coverage matrix · route × width × theme × states. Resolves coverage; gaps listed in the matrix. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "v5-V5Audit",
+      "x": 0,
+      "y": -260,
+      "w": 640,
+      "page": "v5-charts",
+      "text": "v5 · Every chart, audited. Wave 1: 82 entries, the top ten, what recurs. Long form: design/CHARTS-2026-10-13.md."
+    },
+    {
+      "id": "v5-V5ChartSystem",
+      "x": 1560,
+      "y": -260,
+      "w": 640,
+      "page": "v5-charts",
+      "text": "v5 · One chart system. Wave 2: rules, colour roles (validator results), mark specs, every primitive, the React module map. Resolves SYS-01."
+    },
+    {
+      "id": "v5-V5ChartStates",
+      "x": 3120,
+      "y": -260,
+      "w": 640,
+      "page": "v5-charts",
+      "text": "v5 · Every chart, in every state. Wave 2: ready + the seven data states at final size, scrub, keyboard focus, primitive × state. Resolves CH2, the silent nulls."
+    },
+    {
+      "id": "v5-V5ChartPhone",
+      "x": 4680,
+      "y": -260,
+      "w": 390,
+      "page": "v5-charts",
+      "text": "v5 · Charts on a phone (390). Wave 2: re-layout, never scale-down; text ≥ 11px; the bridge as rows, crossing zero."
+    },
+    {
+      "id": "v5-V5ThirdParty",
+      "x": 5190,
+      "y": -260,
+      "w": 640,
+      "page": "v5-charts",
+      "text": "v5 · Ours, and theirs. Wave 2: a Convexa chart beside TradingView’s frame; the eight deliberate differences. Resolves TT-01, DB-15."
+    },
+    {
+      "id": "v5-V5ChartSystemLight",
+      "x": 6750,
+      "y": -260,
+      "w": 640,
+      "page": "v5-charts",
+      "text": "v5 · One chart system · light. The same board in the light scheme: the roles are token swaps."
+    },
+    {
+      "id": "v5-V5Alerts",
+      "x": 0,
+      "y": -260,
+      "w": 640,
+      "page": "q5-alerts",
+      "text": "Alerts on public data · desktop. Q-5: six kinds, each naming its source and delay; SEC kinds Not set up until SEC_USER_AGENT; structure kinds Not live. P-1 legend, P-2 words."
+    },
+    {
+      "id": "v5-V5Alerts390",
+      "x": 1560,
+      "y": -260,
+      "w": 390,
+      "page": "q5-alerts",
+      "text": "Alerts on public data · phone. Q-5 at 390: rules as stacked rows, the kind table as cards, 44px targets."
+    },
+    {
+      "id": "v5-V5AlertsLight",
+      "x": 2070,
+      "y": -260,
+      "w": 640,
+      "page": "q5-alerts",
+      "text": "Alerts on public data · light. Q-5 in the light scheme."
+    },
+    {
+      "id": "v5-V5AlertsFlow",
+      "x": 3630,
+      "y": -260,
+      "w": 640,
+      "page": "q5-alerts",
+      "text": "New alert · choose, set up, read back. Q-5: the create-alert dialog in three steps, with three set-up variants and the saved result."
+    },
+    {
+      "id": "v5-V5AlertsFlow390",
+      "x": 5190,
+      "y": -260,
+      "w": 390,
+      "page": "q5-alerts",
+      "text": "New alert · phone (bottom sheets). Q-5 at 390: each step is a bottom sheet."
+    },
+    {
+      "id": "v5-V5AlertsStates",
+      "x": 5700,
+      "y": -260,
+      "w": 640,
+      "page": "q5-alerts",
+      "text": "Alerts on public data · states. Q-5: empty, not set up, source down, couldn’t load, off, fired, blocked, demo, and the dialog’s validation, duplicate, saving and failed save."
+    },
+    {
+      "id": "v5-V5FamNoteFigures",
+      "x": 0,
+      "y": -260,
+      "w": 640,
+      "page": "v5-families",
+      "text": "v5 · Note figures · before and after. Wave 3: RN-01–RN-05, RN-13. The bridge crosses zero; losses go below it; guidance as a whisker; filings on the event lane."
+    },
+    {
+      "id": "v5-V5FamNoteValuation",
+      "x": 1560,
+      "y": -260,
+      "w": 640,
+      "page": "v5-families",
+      "text": "v5 · Valuation · before and after. Wave 3: RN-06, RN-08–RN-12. Ranges solid to their ends; labels at their marks; the base diamond as the one amber mark."
+    },
+    {
+      "id": "v5-V5FamMarkets",
+      "x": 3120,
+      "y": -260,
+      "w": 640,
+      "page": "v5-families",
+      "text": "v5 · Markets · before and after. Wave 3: RM-02–RM-06. Claims per component, the inversion line, FOMC decisions, per-note drift, named medians and zero."
+    },
+    {
+      "id": "v5-V5FamScorecard",
+      "x": 4680,
+      "y": -260,
+      "w": 640,
+      "page": "v5-families",
+      "text": "v5 · Scorecard and Filings · before and after. Wave 3: RS-02–RS-04. Bars that sum to N; calibration with Wilson intervals and n; reported figures with change and an honest error."
+    },
+    {
+      "id": "v5-V5FamPanels",
+      "x": 6240,
+      "y": -260,
+      "w": 640,
+      "page": "v5-families",
+      "text": "v5 · Note panels · before and after. Wave 3: RP-01–RP-03. Shares and % of float on separate scales; short-sale volume as a gated target; the off state."
+    },
+    {
+      "id": "v5-V5FamDesk",
+      "x": 0,
+      "y": 3740,
+      "w": 640,
+      "page": "v5-families",
+      "text": "v5 · Ticker desk · before and after. Wave 3: TD-01–TD-12. Sample (the demo’s form) beside not live (production); gamma sign by position and text as well as hue."
+    },
+    {
+      "id": "v5-V5FamOther",
+      "x": 1560,
+      "y": 3740,
+      "w": 640,
+      "page": "v5-families",
+      "text": "v5 · Scanner, positions, operator, Lab. Wave 3: SC, PO, OP, LD, LB. P-5 is rejected, so the scanner change stays green/red text."
+    },
+    {
+      "id": "v5-V5Tools",
+      "x": 3120,
+      "y": 3740,
+      "w": 640,
+      "page": "v5-families",
+      "text": "v5 · Planned tools, charted. Wave 3: PT-01–PT-09 arrive designed: claim, form, source and delay, honest state."
+    },
+    {
+      "id": "v5-V5TvFraming",
+      "x": 4680,
+      "y": 3740,
+      "w": 640,
+      "page": "v5-families",
+      "text": "v5 · TradingView, framed. Wave 3: the Technical tab, the desk’s price panel, the frame’s states, load on request (P-14), and where a frame belongs."
+    },
+    {
+      "id": "v5-V5Tools390",
+      "x": 6240,
+      "y": 3740,
+      "w": 390,
+      "page": "v5-families",
+      "text": "v5 · Planned tools · phone. At 390."
+    },
+    {
+      "id": "v5-V5TvFraming390",
+      "x": 6750,
+      "y": 3740,
+      "w": 390,
+      "page": "v5-families",
+      "text": "v5 · TradingView · phone. At 390: the 480px frame, the table as stacked rows."
+    },
+    {
+      "id": "v5-V5FamNoteFigures390",
+      "x": 0,
+      "y": 11540,
+      "w": 390,
+      "page": "v5-families",
+      "text": "v5 · Note figures · phone. At 390: the bridge as rows, short labels, no scale-down."
+    },
+    {
+      "id": "v5-V5FamMarkets390",
+      "x": 510,
+      "y": 11540,
+      "w": 390,
+      "page": "v5-families",
+      "text": "v5 · Markets · phone. At 390: one-column facets, only the latest FOMC chip, the curve with leaders."
+    },
+    {
+      "id": "v5-V5FamMarketsLight",
+      "x": 1020,
+      "y": 11540,
+      "w": 640,
+      "page": "v5-families",
+      "text": "v5 · Markets · light. The Markets family in the light scheme."
+    },
+    {
+      "id": "v5-V5FamScorecardLight",
+      "x": 2580,
+      "y": 11540,
+      "w": 640,
+      "page": "v5-families",
+      "text": "v5 · Scorecard · light. Calibration and by-month in the light scheme."
+    },
+    {
+      "id": "v5-V5Frontier",
+      "x": 0,
+      "y": -260,
+      "w": 640,
+      "page": "v5-frontier",
+      "text": "v5 · The frontier · overview. Wave 4: three prototypes in design/site (v5-frontier-*.html) with measured budgets; what was considered and not built."
+    },
+    {
+      "id": "v5-V5FrontierGamma",
+      "x": 1560,
+      "y": -260,
+      "w": 640,
+      "page": "v5-frontier",
+      "text": "v5 · F1 · Dealer-gamma surface (WebGL) · fallback shown. F1 runs in design/site/v5-frontier-gamma.html. Here: the static projection it falls back to. Needs P-15."
+    },
+    {
+      "id": "v5-V5FrontierCurve",
+      "x": 3120,
+      "y": -260,
+      "w": 640,
+      "page": "v5-frontier",
+      "text": "v5 · F2 · A year of the curve · fallback shown. F2 runs in design/site/v5-frontier-curve.html. Here: today’s curve and the year in four curves."
+    },
+    {
+      "id": "v5-V5FrontierCalib",
+      "x": 4680,
+      "y": -260,
+      "w": 640,
+      "page": "v5-frontier",
+      "text": "v5 · F3 · Calibration, explorable · fallback shown. F3 runs in design/site/v5-frontier-calibration.html. Here: the 95% chart and the table."
+    },
+    {
+      "id": "v5-V5FrontierCurve390",
+      "x": 6240,
+      "y": -260,
+      "w": 390,
+      "page": "v5-frontier",
+      "text": "v5 · F2 · phone. F2 at 390."
     }
   ],
   "launch": {
     "view": "canvas",
-    "page": "page-1"
+    "page": "final"
   }
 }

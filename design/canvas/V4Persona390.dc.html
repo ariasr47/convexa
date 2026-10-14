@@ -1,7 +1,8 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <title>v4 · Persona · phone</title>
   <script src="./support.js"></script>
 </head>
 <body>
@@ -20,7 +21,7 @@
   .mono { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
   .sans { font-family: 'IBM Plex Sans', system-ui, sans-serif; }
   .caps { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); line-height: 1.3; }
-  .steel { color: var(--steel); } .dim { color: var(--steel-2); } .amber { color: var(--amber-text); } .signal { color: var(--signal); } .up { color: var(--up); } .down { color: var(--down); } .warn { color: var(--warn); }
+  .steel { color: var(--steel); } .dim { color: var(--steel-2); } .amber { color: var(--amber-text); } .signal { color: var(--signal); } .up { color: var(--text-up); } .down { color: var(--text-down); } .warn { color: var(--warn); }
   .panel { background: var(--panel); background-image: var(--sheen); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--e1); min-width: 0; container-type: inline-size; }
   @container (max-width: 360px) { .cell .v { font-size: 17px; } }
   @container (max-width: 280px) { .cell .v { font-size: 15px; } .cell .s { font-size: 11px; } }
@@ -40,7 +41,7 @@
   .btn.disabled, .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; filter: none !important; }
   .btn.focus { outline: 2px solid var(--amber-text); outline-offset: 2px; }
   .chip { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 500; line-height: 1; white-space: nowrap; color: var(--steel); background: rgba(138,155,180,0.14); }
-  .chip.up { color: var(--up); background: var(--up-tint); } .chip.down { color: var(--down); background: var(--down-tint); }
+  .chip.up { color: var(--text-up); background: var(--up-tint); } .chip.down { color: var(--text-down); background: var(--down-tint); }
   .chip.live { color: var(--signal); background: var(--signal-tint); } .chip.warn { color: var(--warn); background: var(--warn-tint); }
   .chip.emph { color: var(--amber-text); background: var(--amber-tint); } .chip.outline { background: transparent; border: 1px solid var(--line-2); }
   .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
@@ -151,6 +152,7 @@
   .dfield.err .help { color: var(--phosphor); } .dfield.err .help .ico { color: var(--warn); }
   .dwarn { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 8px; background: var(--warn-tint); border: 1px solid var(--warn); }
   .dwarn > .ico { color: var(--warn); margin-top: 1px; }
+  .dwarn .dline { color: var(--phosphor); } /* v5: steel on the warn tint measured 4.25:1 in light */
   .ph .dfield .in, .ph .btn { min-height: 44px; }
   .v4n { position: sticky; top: 0; z-index: 20; background: var(--glass); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
   .v4n-in { height: 56px; display: flex; align-items: center; gap: 24px; }
@@ -223,6 +225,10 @@
   .hd-tabs { display: flex; gap: 4px; }
   .hd-tabs a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: var(--steel); text-decoration: none; font-size: 13px; font-weight: 500; }
   .hd-tabs a[aria-current="page"] { background: var(--phosphor); color: var(--ink); font-weight: 600; }
+  /* v5 fix (2026-10-13): the generic .v4 link rule (specificity 0,4,2) repainted both tab states textInfo — the
+     current tab measured 1.76:1 on its phosphor pill. Same selector chain plus the tab, so the tab wins. */
+  .v4 .hd-tabs a:not(.btn):not(.prov):not(.v4n a) { color: var(--steel); }
+  .v4 .hd-tabs a[aria-current="page"]:not(.btn):not(.prov):not(.v4n a) { color: var(--ink); }
   .hd-syms { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
   .hd-syms a { display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--phosphor); text-decoration: none; flex: 0 0 auto; }
   .hd-syms a[aria-current="true"] { border-color: var(--phosphor); box-shadow: inset 0 0 0 1px var(--phosphor); }
@@ -386,12 +392,12 @@
     <div class="v4n-right">
       <button type="button" class="v4n-search" aria-keyshortcuts="Meta+K"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><span style="flex: 1; text-align: left;">Jump to a ticker or note</span><span class="kbd">⌘K</span></button>
       <button type="button" class="v4n-icon search" aria-label="Jump to a ticker or note"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></button>
-      <a href="/settings#account" class="v4n-signin">Sign in</a>
+      <a href="/settings#account" class="v4n-signin">Log in</a>
       <button type="button" class="v4n-icon menu" aria-label="Open navigation menu" aria-expanded="false"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
     </div>
   </div></header><div class="wrap" style="padding-top: 28px; display: flex; flex-direction: column; gap: 16px;"><span class="skel" style="height: 44px; width: 38%;"></span><span class="skel" style="height: 300px; width: 100%;"></span><span class="skel" style="height: 120px; width: 100%;"></span><span class="skel" style="height: 220px; width: 100%;"></span></div></div><div class="v4-over"><div class="v4dlg" role="dialog" aria-modal="true" aria-label="Customize persona"><div class="dh"><h2>Customize persona</h2><button class="btn ghost sm" type="button" aria-label="Close"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div><div class="db"><p class="dline" style="margin: 0;">Personas brief the AI read on your style. Reads need the options feed, which isn’t live on this site; your persona saves and waits.</p><label class="fld">Based on<span class="in">Balanced Swinger</span></label><div class="fld">Risk level<span class="seg4" role="group"><button type="button" aria-pressed="false">Conservative</button><button type="button" aria-pressed="true">Moderate</button><button type="button" aria-pressed="false">Aggressive</button></span></div><div class="fld">Lean<span class="seg4" role="group"><button type="button" aria-pressed="false">Lean exit or trim</button><button type="button" aria-pressed="true">Balanced</button><button type="button" aria-pressed="false">More open to add</button></span></div><label class="fld">Emphasis note<span class="in">Prefer defined-risk spreads around results.</span><span class="help">Adds framing emphasis only; it never changes the numbers.</span></label><label class="fld">Persona name<span class="in focus">Results-week swinger</span></label></div><div class="df"><span style="flex: 1;"></span><button class="btn ghost" type="button">Cancel</button><button class="btn primary" type="button">Save persona</button></div></div></div></div>
 </x-dc>
-<script data-dc-script data-props='{"$preview":{"width":390,"height":1100}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1100}}'>
 class Component extends DCLogic {}
 </script>
 </body>

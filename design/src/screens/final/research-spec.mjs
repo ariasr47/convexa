@@ -1,0 +1,183 @@
+// Final · Research — the four spec cards (Notes, Markets, Filings, Scorecard). Grounded in the shipped
+// app on main (apps/dashboard/src/app/pages/research/*, apps/api/src/services/public_data/*,
+// libs/api/src/lib/demo/public-data.ts) and the owner's notes in research/ as of Oct 14, 2026.
+const R = 'apps/dashboard/src/app/pages/research';
+
+export const INDEX_SPEC = {
+  title: 'Research · Notes',
+  route: '/research',
+  job: 'Find a followed ticker’s note fast, and see at a glance which notes are current, which are due for review and why.',
+  env: {
+    production: 'The owner’s 14 real notes (research/<TICKER>/*.md, all written Oct 13, 2026), built into the site. Freshness is worked out in the browser from each note’s dates and, when filings are set up, from SEC EDGAR. Nothing here needs Massive.',
+    staging: 'The demo account’s six authored sample notes (AAPL, MSFT, NVDA, QQQ, SPY, TSLA) drawn as cards in the same grid, dashed with the hatch stripe and a Sample note tag. The Notes tab counts 6. No catalysts, so “Coming up” teaches its empty state.',
+  },
+  widgets: [
+    { name: 'Research tabs', source: 'build-time note index; forecasts count', production: 'Notes 14 · Scorecard 77 open', staging: 'Notes 6 · Scorecard 34 open' },
+    { name: 'Find a ticker + filters', source: 'the note index (ticker, company, stance, freshness)', production: ['local', 'In the page'], staging: ['local', 'In the page'] },
+    { name: 'Coming up · next 10 weeks', source: 'every note’s catalysts block · up to 6 within 70 days', production: ['computed', 'From every note'], staging: ['empty', 'Nothing yet'] },
+    { name: 'Note card', source: 'note front matter + first chart block', production: ['current', 'Written Oct 13'], staging: ['sample', 'Sample note'] },
+    { name: 'Mini chart', source: 'the note’s first ```chart block (12 revenue, HOOD op. margin, MU gross margin)', production: ['current', 'From the note'], staging: 'sample' },
+    { name: 'Freshness word', source: 'tools/research-notes/freshness.mjs + /api/public-data/filings (SEC EDGAR, 1 h cache)', production: [['computed', 'Computed'], ['notConfigured', 'dates only until set up']], staging: 'demo' },
+  ],
+  states: [
+    { tag: ['computed', 'Current · review by …'], when: 'No catalyst, kill or forecast date has passed, the price is under 30 days old, and no uncited results/periodic filing landed.' },
+    { tag: ['computed', 'Review due · since …'], when: 'Any of the above passed (CBRS today: a lock-up tranche on Oct 14). Half-filled dot.' },
+    { tag: ['computed', 'Archived'], when: 'The note sets not_following_since. Square mark. No note does today.' },
+    { tag: 'empty', when: '“No ticker matches these filters.” with Clear filters; “No research published yet.” for an empty research/ folder.' },
+    { tag: 'notConfigured', when: 'Production while SEC_USER_AGENT is unset: freshness says it comes from the notes’ dates alone.' },
+    { tag: 'demo', when: 'Staging: the six sample notes as dashed cards; Coming up is empty.' },
+  ],
+  phone: 'One column of cards under 900px; filter chips wrap and grow to 44px targets; the mini chart keeps its 64px height and re-lays itself out (bars ≤ 18px, never scaled down); the caption wraps instead of ellipsizing; tabs scroll sideways as a rail.',
+  acceptance: [
+    'Production lists exactly the 14 tickers in research/, each with its note title, “Written Oct 13” and a freshness word with its date.',
+    'HOOD’s 2021–23 and MU’s FY2023 bars hang below a drawn zero line; no negative bar is drawn as a stub above it.',
+    'A guide or consensus bar is a dashed outline and the caption says “dashed = guide or consensus”.',
+    'Freshness reads by word and shape (full, half, square); removing colour loses nothing.',
+    'Typing “micro” leaves only MU; choosing Review due leaves only CBRS; clearing filters restores 14.',
+    'Staging shows six dashed cards with the Sample note tag, the Notes tab reads 6, and no “Sign in” appears.',
+  ],
+  built: [
+    { status: 'shipped', what: 'Index, search, stance and freshness filters, Coming up, cards, browser-side freshness (ResearchIndexPage.tsx).' },
+    { status: 'shipped', what: 'Mini chart on one scale that includes zero; losses hang below a zero line (58a6de05).' },
+    { status: 'partial', what: 'Mini chart is still a bespoke SVG with a 2px minimum and an ellipsized caption; final uses the shared Plot with the caption wrapping.' },
+    { status: 'partial', what: 'Staging: the demo build replaces the cards with a DemoNotice panel (6 links) while the tab badges still count the 14 live notes and 77 forecasts.' },
+    { status: 'todo', what: 'Freshness note when filings aren’t set up (today it silently falls back to dates).' },
+    { status: 'todo', what: 'Cards in this design drop the per-card metric row and price-vs-value strip (both live in the note header); shipped cards still carry them — owner to confirm.' },
+  ],
+  rulings: ['P-2', 'P-3', 'P-8', 'P-9', 'P-10', 'P-11', 'P-13', 'Env 2026-10-14'],
+  code: [`${R}/ResearchIndexPage.tsx (MiniChart :60-134)`, `${R}/ui.tsx (freshness words :183-227)`, `${R}/filings.ts`, 'tools/research-notes/freshness.mjs · notes.mjs', 'research/<TICKER>/2026-10-13-initiation.md', 'libs/api/src/lib/demo/catalog/shared.ts (sample notes)'],
+};
+
+export const MARKETS_SPEC = {
+  title: 'Research · Markets',
+  route: '/research/markets',
+  job: 'Show where rates and futures positioning stand, from the Treasury’s and the CFTC’s own data, and whether any note’s discount rate has drifted from today’s 10-year.',
+  env: {
+    production: 'LIVE. U.S. Treasury daily par and real yield curves (published after 3:30 PM ET on business days; cached 6 h) and CFTC Traders in Financial Futures (positions as of Tuesday, published Friday; cached 12 h). Everything Convexa derives is marked Computed. Nothing needs Massive.',
+    staging: 'The same page on the demo transport: a 400-day yield path ending Oct 7, 2026 and CFTC reports of Oct 6, all frames dashed with the hatch stripe, chips “Demo · shaped like U.S. Treasury data / CFTC data”. Drift lists the demo’s four single-name sample notes.',
+  },
+  widgets: [
+    { name: 'Rates today strip', source: 'Treasury par + real curves · daily', production: ['current', 'Updated · rates Oct 13'], staging: 'demo' },
+    { name: 'Treasury curve (now, 1M, 1Y ago)', source: 'Treasury par curve · daily', production: ['current', 'Updated Oct 13'], staging: 'demo' },
+    { name: 'What moved the 10-year', source: 'Treasury par + real curves · arithmetic by Convexa', production: 'computed', staging: 'demo' },
+    { name: '2s10s spread, one year', source: 'Treasury par curve · daily · FOMC events', production: 'computed', staging: 'demo' },
+    { name: 'Note-rate drift', source: 'each note’s valuation price date × the Treasury 10-year', production: 'computed', staging: 'demo' },
+    { name: 'Positioning by group (small multiples)', source: 'CFTC TFF · 10-year T-note · weekly, 3 years', production: ['delayed', 'Delayed by source · 3 days'], staging: 'demo' },
+    { name: 'Positioning range bars', source: 'CFTC TFF · 10-year T-note, E-mini S&amp;P 500, E-mini Nasdaq-100', production: ['delayed', 'Delayed by source · 3 days'], staging: 'demo' },
+  ],
+  states: [
+    { tag: 'loading', when: 'First paint: skeleton frames at final size, “Loading rates and positioning”.' },
+    { tag: 'current', when: 'Treasury answered today: “Updated · rates Oct 13”.' },
+    { tag: 'delayed', when: 'Always for CFTC: “Delayed by source · positioning as of Oct 6”.' },
+    { tag: 'stale', when: 'A source failed this cycle: the API’s detail line (“U.S. Treasury did not answer at 14:10 UTC; showing data fetched at 08:10 UTC”) and the tag turns Last good copy.' },
+    { tag: 'unavailable', when: 'One source down with no cached copy: its panels say so; the other source’s panels stay.' },
+    { tag: 'error', when: '“Rates and positioning didn’t load.” + cause + Try again.' },
+    { tag: 'off', when: 'PUBLIC_DATA=off: “Public data is switched off on this server.”' },
+    { tag: 'demo', when: 'Staging: dashed frames, no live tags, no stale line.' },
+  ],
+  phone: 'One column. The strip goes to two-up cells; each chart measures its container and under 480px takes short labels (“Now”, “1M ago”), drops minor ticks and minor FOMC chips, and narrows its right gutter; small multiples go to one column; range bars stack per contract. No text under 11px.',
+  acceptance: [
+    'The curve’s title states the year’s change at the front and the long end (a twist is never averaged into “rose” or “fell”).',
+    'The 2s10s chart draws a zero line named “Inverted below 0” and a hatched “Not published” gap for missing days.',
+    'The decomposition bars share one zero with signed labels; its title is chosen from all three values.',
+    'The CFTC range bars name the median tick, the 10th–90th band and the week’s change; zero is marked where a range crosses it.',
+    'With the Treasury down and no cache, positioning still renders, and vice versa.',
+    'Every frame’s foot carries its source chip and as-of; production chips are solid, staging chips dashed with “shaped like”.',
+  ],
+  built: [
+    { status: 'shipped', what: 'Live Treasury + CFTC through /api/public-data/markets; strip, curve, decomposition, 2s10s, note-rate drift (text), CFTC cards for 3 contracts (MarketsPage.tsx).' },
+    { status: 'partial', what: 'Charts are pre-v5: the curve title averages the change, 2s10s has no zero line and a band that is its own min–max, decomposition has no shared zero, the CFTC median tick is unexplained.' },
+    { status: 'partial', what: 'Rates tag reads “Updated” even when only a stale copy shows (Markets doesn’t use publicDataWord).' },
+    { status: 'todo', what: 'Note-rate drift as a chart (shipped: text only); positioning small multiples by trader group; FOMC event lane; table twins.' },
+  ],
+  rulings: ['P-1', 'P-2', 'P-8', 'P-9', 'P-10', 'P-11', 'P-12', 'P-13', 'Env 2026-10-14'],
+  code: [`${R}/MarketsPage.tsx`, `${R}/marketsMath.ts`, `${R}/publicData.ts`, 'apps/api/src/services/public_data/{treasury,cftc,mod}.rs', 'libs/api/src/lib/demo/public-data.ts:148-192', 'design/src/components/charts.mjs (curve, spreadPlot)'],
+};
+
+export const FILINGS_SPEC = {
+  title: 'Research · Filings',
+  route: '/research/filings',
+  job: 'Show what the followed companies filed with the SEC, which filings a note hasn’t read yet, and the reported figures that would update it.',
+  env: {
+    production: 'Today: Not set up. SEC_USER_AGENT is unset, so the API answers state not_configured and nothing is fetched; the page says so in reader’s words, keeps Expected (from the notes) and folds the operator hint away. Once set: SEC EDGAR submissions (1 h cache) and company facts (24 h) for all 14 tickers, 90 days, Forms 3/4/5/144 excluded.',
+    staging: 'Sample filings for MSFT, NVDA and TSLA (three each, “Demo sample filing”), each linked to the SEC browse page; sample 10-Q figures. SPY and QQQ are named as funds, AAPL as having no sample filings. Dashed chips, “shaped like SEC EDGAR”.',
+  },
+  widgets: [
+    { name: 'Expected · next six weeks', source: 'the notes’ results catalysts within 42 days', production: ['computed', 'From the notes'], staging: ['empty', 'Nothing yet'] },
+    { name: 'Kind filter (?kind=)', source: 'filing kinds: Results, Quarterly and annual, Deals and financing, Ownership, Other', production: [['notConfigured'], ['current', 'once set up']], staging: 'demo' },
+    { name: 'Feed · last 90 days', source: '/api/public-data/filings · SEC EDGAR submissions · 1 h', production: [['notConfigured'], ['current', 'once set up']], staging: 'demo' },
+    { name: 'Standing vs the note', source: 'filing date × note date × note’s citations', production: [['notConfigured'], ['computed', 'once set up']], staging: 'demo' },
+    { name: 'Filing detail + reported figures', source: '/api/public-data/tickers/{T} · XBRL company facts · 24 h', production: [['notConfigured'], ['current', 'once set up']], staging: 'demo' },
+  ],
+  states: [
+    { tag: 'notConfigured', when: 'Production today: “SEC filings aren’t set up on this site yet.” Reader copy, Would show / Covers / Meanwhile, a link to sample filings on the demo, and “For the site’s operator” folded.' },
+    { tag: 'loading', when: 'Skeleton “Loading filings” at final size.' },
+    { tag: 'current', when: '“Updated · checked 14:00 UTC”.' },
+    { tag: 'stale', when: 'EDGAR failed this cycle; last good copy with the time it was fetched.' },
+    { tag: 'empty', when: '“Nothing filed in the last 90 days.”; a kind with zero filings; a ticker EDGAR doesn’t list (named, not dropped); figures not yet (results 8-K).' },
+    { tag: 'error', when: '“Filings didn’t load.” + Try again; reported figures failing say Couldn’t load, never “not yet”.' },
+    { tag: 'off', when: 'PUBLIC_DATA=off.' },
+    { tag: 'demo', when: 'Staging sample filings.' },
+  ],
+  phone: 'One column. Feed rows become two lines (date | ticker, then description and standing); the form chip hides under 900px; the detail panel follows the feed (sticky only ≥ 900px); kind chips wrap at 44px; the operator hint stays folded.',
+  acceptance: [
+    'Production today shows the Not set up panel, the Expected section and no feed; the API’s operator detail string never appears unfolded.',
+    'With SEC_USER_AGENT set, filings appear within the hour and every row carries one standing: in note, new since the note, or not cited.',
+    'A results or periodic filing after a note’s date that the note doesn’t cite turns that note Review due on /research.',
+    'A ticker in the API’s missing list is named under the feed.',
+    'A failed company-facts request reads Couldn’t load with Try again.',
+    'Staging shows nine sample filings for MSFT, NVDA and TSLA, all chips dashed.',
+  ],
+  built: [
+    { status: 'shipped', what: 'Feed, kind filter in the URL, standing, detail with figures, Expected, Copy the draft command, keyboard j/k/o (FilingsPage.tsx).' },
+    { status: 'shipped', what: 'Not set up end to end: config.rs → SecAccess::Missing → state not_configured → “SEC filings aren’t set up yet.”' },
+    { status: 'partial', what: 'Not set up copy is operator-first and hides Expected; final leads with reader copy and folds the operator line.' },
+    { status: 'partial', what: 'Reported figures have no change column; a failed figures request reads “aren’t available yet” (an error shown as a not-yet).' },
+    { status: 'todo', what: 'The missing list (“Not an SEC filer”) is never rendered.' },
+    { status: 'todo', what: 'Production is not set up: the operator must set SEC_USER_AGENT.' },
+  ],
+  rulings: ['P-2', 'P-3', 'P-8', 'P-10', 'P-13', 'Env 2026-10-14'],
+  code: [`${R}/FilingsPage.tsx`, `${R}/filings.ts`, 'apps/api/src/services/public_data/edgar.rs', 'apps/api/src/services/public_data/mod.rs:84-95, 272-283', 'apps/api/src/routes/public_data.rs:551-559', 'libs/api/src/lib/demo/public-data.ts:198-284'],
+};
+
+export const SCORECARD_SPEC = {
+  title: 'Research · Scorecard',
+  route: '/research/scorecard',
+  job: 'Keep score of the calls in the notes, honestly: count what resolves, show how sure each confidence bin can be, and say plainly what can’t be graded on this site.',
+  env: {
+    production: 'Reads every note’s forecasts block at build time; no API. Today: 77 open forecasts, none with a probability, none resolved, so Brier is not set and Calibration shows its empty state. The signal track record needs daily closes with display rights, which this site doesn’t have: Not live, with Would show / Would need / Meanwhile and a link to the demo.',
+    staging: 'The demo’s sample notes’ forecasts with an authored scored history: past-due rows, probabilities set, the calibration chart with Wilson intervals and n, the by-month bars, and the signal track record graded on sample prices. Dashed frames throughout.',
+  },
+  widgets: [
+    { name: 'Ledger strip', source: 'forecasts blocks · scoreForecasts', production: 'computed', staging: 'demo' },
+    { name: 'Past due', source: 'forecast rows past their date with no outcome', production: ['empty', 'none today'], staging: 'demo' },
+    { name: 'Next two weeks', source: 'forecast rows due within 14 days · Copy row', production: ['computed', '16 rows'], staging: 'demo' },
+    { name: 'By month', source: 'open forecasts by resolve month, Oct 2026 – Jul 2027, then later', production: 'computed', staging: 'demo' },
+    { name: 'Calibration', source: 'resolved forecasts that carried a probability · ≥ 20 to draw', production: ['empty', '0 of 20'], staging: 'demo' },
+    { name: 'Signal track record', source: 'scanner setups × daily closes with display rights', production: ['notLive', 'Not live · price source'], staging: 'demo' },
+  ],
+  states: [
+    { tag: 'computed', when: 'Every number on the page is computed from the notes at build time.' },
+    { tag: 'empty', when: 'Calibration under 20 resolved (“0 of 20 so far”); Brier “not set”; “Nothing resolves in the next two weeks.”' },
+    { tag: ['computed', 'Past due'], when: 'A row’s date passed without yes / no / void: listed first with how to resolve it.' },
+    { tag: 'notLive', when: 'Signal track record in production: what it would show, what it would need, a link to the demo.' },
+    { tag: 'demo', when: 'Staging: sample forecasts, outcomes and grades.' },
+  ],
+  phone: 'One column: ledger cells two-up, Next two weeks rows on two lines with a 44px Copy row, by-month bars with one-letter months and the “Later” bar kept, calibration at full width with minor n labels dropped, the Not live panel last.',
+  acceptance: [
+    'Production: Open forecasts 77, With your probability 0, Resolved 0, Brier not set.',
+    'By month bars sum to 77 (41 by the end of November) and the title counts the same set the bars draw.',
+    'Calibration never draws a dot for a bin without its 95% interval and n; under 20 resolved it shows the empty state naming the metric.',
+    'The signal track record in production carries Not live, its three lines and “See it on the demo →”; it never shows a sample chart.',
+    'Copy row copies the row exactly as it sits in the note with ___ for the probability.',
+  ],
+  built: [
+    { status: 'shipped', what: 'Ledger, Past due, Next two weeks with Copy row, By month, Calibration (≥ 20), SignalsOff (ScorecardPage.tsx).' },
+    { status: 'partial', what: 'Calibration has no Wilson intervals; n only in the aria-label; dot size encodes n with no legend.' },
+    { status: 'partial', what: 'By month: one-letter months repeat (J, M, A); the pill says lowercase “off”, not the P-2 word Not live, and there is no link to the demo.' },
+    { status: 'partial', what: 'The demo build shows the same live forecasts (identical page); final staging shows the sample notes’ scored history.' },
+    { status: 'todo', what: 'Grading signals at all: needs a licensed daily price history.' },
+  ],
+  rulings: ['P-1', 'P-2', 'P-3', 'P-8', 'P-9', 'P-10', 'P-13', 'Env 2026-10-14'],
+  code: [`${R}/ScorecardPage.tsx (SignalsOff :650-723, ByMonth :404-508, Calibration :510-648)`, 'tools/research-notes (scoreForecasts)', 'research/<TICKER>/*.md forecasts blocks', 'design/src/data/charts.mjs (CALIB, wilson)'],
+};

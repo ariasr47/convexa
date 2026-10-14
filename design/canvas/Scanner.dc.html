@@ -1,7 +1,8 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <title>Scanner</title>
   <script src="./support.js"></script>
 </head>
 <body>
@@ -20,7 +21,7 @@
   .mono { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
   .sans { font-family: 'IBM Plex Sans', system-ui, sans-serif; }
   .caps { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); line-height: 1.3; }
-  .steel { color: var(--steel); } .dim { color: var(--steel-2); } .amber { color: var(--amber-text); } .signal { color: var(--signal); } .up { color: var(--up); } .down { color: var(--down); } .warn { color: var(--warn); }
+  .steel { color: var(--steel); } .dim { color: var(--steel-2); } .amber { color: var(--amber-text); } .signal { color: var(--signal); } .up { color: var(--text-up); } .down { color: var(--text-down); } .warn { color: var(--warn); }
   .panel { background: var(--panel); background-image: var(--sheen); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--e1); min-width: 0; container-type: inline-size; }
   @container (max-width: 360px) { .cell .v { font-size: 17px; } }
   @container (max-width: 280px) { .cell .v { font-size: 15px; } .cell .s { font-size: 11px; } }
@@ -40,7 +41,7 @@
   .btn.disabled, .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; filter: none !important; }
   .btn.focus { outline: 2px solid var(--amber-text); outline-offset: 2px; }
   .chip { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 500; line-height: 1; white-space: nowrap; color: var(--steel); background: rgba(138,155,180,0.14); }
-  .chip.up { color: var(--up); background: var(--up-tint); } .chip.down { color: var(--down); background: var(--down-tint); }
+  .chip.up { color: var(--text-up); background: var(--up-tint); } .chip.down { color: var(--text-down); background: var(--down-tint); }
   .chip.live { color: var(--signal); background: var(--signal-tint); } .chip.warn { color: var(--warn); background: var(--warn-tint); }
   .chip.emph { color: var(--amber-text); background: var(--amber-tint); } .chip.outline { background: transparent; border: 1px solid var(--line-2); }
   .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
@@ -151,6 +152,7 @@
   .dfield.err .help { color: var(--phosphor); } .dfield.err .help .ico { color: var(--warn); }
   .dwarn { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 8px; background: var(--warn-tint); border: 1px solid var(--warn); }
   .dwarn > .ico { color: var(--warn); margin-top: 1px; }
+  .dwarn .dline { color: var(--phosphor); } /* v5: steel on the warn tint measured 4.25:1 in light */
   .ph .dfield .in, .ph .btn { min-height: 44px; }
   .v4n { position: sticky; top: 0; z-index: 20; background: var(--glass); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
   .v4n-in { height: 56px; display: flex; align-items: center; gap: 24px; }
@@ -567,7 +569,7 @@
   </footer>
   </div>
 </x-dc>
-<script data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
 class Component extends DCLogic {}
 </script>
 </body>

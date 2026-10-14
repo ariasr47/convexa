@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en" data-scheme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Families · valuation · Convexa design</title>
+<meta name="description" content="Price vs value, football field, odds, sensitivity, implied growth, catalysts: before and after.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  .hd { padding-top: 24px; display: flex; flex-direction: column; gap: 24px; }
+  .hd-mast { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: flex-end; }
+  .hd-mast .who { flex: 999 1 520px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .hd-mast .act { flex: 1 1 300px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+  .hd-tabs { display: flex; gap: 4px; }
+  .hd-tabs a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: var(--steel); text-decoration: none; font-size: 13px; font-weight: 500; }
+  .hd-tabs a[aria-current="page"] { background: var(--phosphor); color: var(--ink); font-weight: 600; }
+  /* v5 fix (2026-10-13): the generic .v4 link rule (specificity 0,4,2) repainted both tab states textInfo — the
+     current tab measured 1.76:1 on its phosphor pill. Same selector chain plus the tab, so the tab wins. */
+  .v4 .hd-tabs a:not(.btn):not(.prov):not(.v4n a) { color: var(--steel); }
+  .v4 .hd-tabs a[aria-current="page"]:not(.btn):not(.prov):not(.v4n a) { color: var(--ink); }
+  .hd-syms { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  .hd-syms a { display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--phosphor); text-decoration: none; flex: 0 0 auto; }
+  .hd-syms a[aria-current="true"] { border-color: var(--phosphor); box-shadow: inset 0 0 0 1px var(--phosphor); }
+  .hd-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); }
+  .hd-legend .n { font: 500 12px 'IBM Plex Mono', monospace; color: var(--steel); }
+  .hd-seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 8px; background: var(--raised); border: 1px solid var(--line); }
+  .hd-seg button { min-height: 32px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; color: var(--steel); font: 600 12px 'IBM Plex Sans', sans-serif; cursor: pointer; }
+  .hd-seg button[aria-pressed="true"] { background: var(--panel); color: var(--phosphor); box-shadow: var(--e1); }
+  .hd-zone { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; padding-top: 8px; border-top: 1px solid var(--line-2); }
+  .hd-zone h2 { margin: 0; font-size: 24px; }
+  .hd-row { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: 16px; align-items: stretch; }
+  .hd-row.even { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+  .hd-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .hd-ctx { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .hd-ladder { display: flex; flex-direction: column; }
+  .hd-ladder > div { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); font-size: 12px; }
+  .hd-strip { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 1px; background: var(--line); border-radius: 10px; overflow: hidden; }
+  .hd-strip > div { background: var(--ink-2); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  @media (max-width: 1099px) { .hd-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hd-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 899px) { .hd-row, .hd-row.even { grid-template-columns: 1fr; } .hd-ctx { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 767px) { .hd-mast .act { align-items: stretch; } .hd-mast .act .btn { width: 100%; min-height: 44px; } .hd-tabs a { min-height: 44px; } .hd-syms a { height: 44px; } .hd-cards, .hd-ctx { grid-template-columns: 1fr; } .hd-zone h2 { font-size: 20px; } .hd-seg button { min-height: 40px; } .hd-p { padding: 16px; } }
+
+  .rs { padding-top: 32px; display: flex; flex-direction: column; gap: 28px; }
+  .rs-h { display: flex; flex-direction: column; gap: 10px; }
+  .rs-h h1 { margin: 0; font-size: clamp(32px, 3.4vw, 48px); letter-spacing: -0.02em; }
+  .rs-h .lead { margin: 0; max-width: 64ch; font-size: 16px; color: var(--steel); line-height: 1.55; text-wrap: pretty; }
+  .rs-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .rs-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .rs-strip > div { background: var(--panel); padding: 14px 18px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .rs-strip .v { font: 500 24px/1.2 'IBM Plex Mono', monospace; }
+  .rs-2 { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: 16px; align-items: stretch; }
+  .rs-2.half { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rs-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .rs-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 16px; }
+  .rs-feed > div { display: grid; grid-template-columns: 64px 56px 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 11px 16px; border-top: 1px solid var(--line); font-size: 13px; }
+  .rs-feed > div[aria-current="true"] { background: rgba(233,228,214,0.05); box-shadow: inset 2px 0 0 var(--phosphor); }
+  .rs-chipbar { display: flex; flex-wrap: wrap; gap: 8px; }
+  .rs-chipbar a { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--steel); text-decoration: none; font-size: 13px; }
+  .rs-chipbar a[aria-current="true"] { color: var(--ink); background: var(--phosphor); border-color: var(--phosphor); font-weight: 600; }
+  .rs-form { font: 600 11px 'IBM Plex Mono', monospace; padding: 2px 6px; border-radius: 5px; background: rgba(138,155,180,0.16); text-align: center; }
+  .fut { display: grid; grid-template-columns: 140px 150px minmax(0, 1fr); gap: 8px 16px; align-items: center; }
+  @container (max-width: 560px) { .fut { grid-template-columns: minmax(0, 1fr) auto; } .fut > :last-child { grid-column: 1 / -1; } }
+  .rs-note-head h1 { margin: 0; max-width: 32ch; font-size: clamp(26px, 2.6vw, 34px); line-height: 1.15; }
+  @media (max-width: 1099px) { .rs-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 899px) { .rs-2, .rs-2.half, .rs-3 { grid-template-columns: 1fr; } .rs-feed > div { grid-template-columns: 56px minmax(0, 1fr); } .rs-feed > div > :nth-child(2), .rs-feed > div > :nth-child(3) { display: none; } .rs-chipbar a { min-height: 44px; } }
+
+  .sb { padding: 48px 64px 64px; display: flex; flex-direction: column; gap: 28px; box-sizing: border-box; }
+  .sb h1 { margin: 0; font-size: 36px; letter-spacing: -0.02em; }
+  .sb .lead { margin: 6px 0 0; max-width: 96ch; font-size: 15px; color: var(--steel); line-height: 1.6; }
+  .sb .trace { margin: 8px 0 0; font: 400 12px 'IBM Plex Mono', monospace; color: var(--steel); }
+  .sb-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 24px; align-items: start; }
+  .sb-item { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .sb-cap { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+  .sb-cap b { font-family: 'Archivo', sans-serif; font-stretch: 112.5%; font-weight: 700; font-size: 17px; }
+  .sb-when { font-size: 12.5px; color: var(--steel); line-height: 1.5; margin: 0; }
+  .sb-frame { border: 1px solid var(--line); border-radius: 14px; background: var(--ink); padding: 16px; overflow: hidden; display: flex; flex-direction: column; gap: 12px; }
+  .sb-frame.wide { grid-column: 1 / -1; }
+  .v4dlg { width: min(560px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--e4); display: flex; flex-direction: column; overflow: hidden; color: var(--phosphor); }
+  .v4dlg.wide { width: min(760px, 100%); }
+  .v4dlg .dh { display: flex; align-items: center; gap: 8px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+  .v4dlg .dh h2 { margin: 0; font-size: 16px; font-weight: 700; flex: 1 1 auto; min-width: 0; }
+  .v4dlg .db { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+  .v4dlg .df { display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .v4dlg.drawer { width: min(520px, 100%); border-radius: 16px 0 0 16px; align-self: stretch; }
+  .v4-over { position: absolute; inset: 0; background: var(--scrim); display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .v4-over.right { justify-content: flex-end; align-items: stretch; padding: 0; }
+  .v4-behind { filter: blur(2px); opacity: 0.6; pointer-events: none; }
+  .fld { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; font-weight: 600; }
+  .fld .in { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--ink-2); font: 500 14px 'IBM Plex Sans', sans-serif; color: var(--phosphor); }
+  .fld .in.mono { font-family: 'IBM Plex Mono', monospace; }
+  .fld .in.focus { border-color: var(--amber-text); box-shadow: 0 0 0 3px var(--amber-tint); }
+  .fld .in.dis { border-style: dashed; color: var(--steel); background: transparent; }
+  .fld .help { font-size: 12px; font-weight: 400; color: var(--steel); line-height: 1.45; }
+  .fld .err { font-size: 12px; font-weight: 400; display: flex; gap: 6px; align-items: flex-start; }
+  .fld .err .ico { color: var(--warn); }
+  .seg4 { display: inline-flex; padding: 3px; gap: 2px; border-radius: 8px; background: var(--raised); border: 1px solid var(--line); flex-wrap: wrap; }
+  .seg4 button { min-height: 32px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; color: var(--steel); font: 600 12.5px 'IBM Plex Sans', sans-serif; display: inline-flex; align-items: center; gap: 6px; }
+  .seg4 button[aria-pressed="true"] { background: var(--panel); color: var(--phosphor); box-shadow: var(--e1); }
+  .seg4 button:disabled { color: var(--steel); opacity: 1; text-decoration: line-through; text-decoration-color: var(--steel-2); }
+  .sw { display: inline-flex; align-items: center; width: 40px; height: 24px; padding: 2px; border-radius: 999px; background: var(--raised-2); border: 1px solid var(--line-2); flex: 0 0 auto; }
+  .sw.on { justify-content: flex-end; background: rgba(233,228,214,0.18); }
+  .sw > span { width: 18px; height: 18px; border-radius: 50%; background: var(--steel); }
+  .sw.on > span { background: var(--phosphor); }
+  .pill-on { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--phosphor); background: var(--phosphor); color: var(--ink); font: 600 12.5px 'IBM Plex Sans', sans-serif; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--steel); font: 500 12.5px 'IBM Plex Sans', sans-serif; background: transparent; }
+  @media (max-width: 899px) { .sb { padding: 24px 16px 40px; } .sb-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 599px) { .v4-over { align-items: flex-end; padding: 0; } .v4-over.right { align-items: flex-end; } .v4dlg, .v4dlg.wide, .v4dlg.drawer { width: 100%; border-radius: 16px 16px 0 0; max-height: 92%; overflow: auto; } .v4dlg .df .btn { flex: 1 1 100%; min-height: 44px; } .seg4 button, .pill, .pill-on { min-height: 44px; } }
+
+  :root, [data-scheme="dark"] { --c-emph: var(--phosphor); --c-ctx: var(--steel); --c-ctx2: #606E82; --c-band: rgba(233,228,214,0.10); --c-grid: var(--line); --c-axis: var(--line-2); --c-edge: var(--steel-2); }
+  /* Re-declared here so var(--phosphor) etc. resolve against the light scheme on light boards, not the :root dark values. */
+  [data-scheme="light"] { --c-emph: var(--phosphor); --c-ctx: var(--steel); --c-ctx2: #7B899D; --c-band: rgba(23,32,43,0.07); --c-grid: var(--line); --c-axis: var(--line-2); --c-edge: var(--steel-2); }
+  .cf { position: relative; display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 18px 20px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; container-type: inline-size; }
+  .cf.k-third { border: 1px dotted var(--steel-2); }
+  .cf.k-sample { border: 1px dashed var(--steel-2); }
+  .cf.k-sample::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8px; border-radius: 11px 11px 0 0; background: repeating-linear-gradient(135deg, transparent 0 6px, var(--hatch) 6px 12px); pointer-events: none; }
+  .cf-h { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .cf-top { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 10px; }
+  .cf-claim { margin: 0; flex: 1 1 260px; min-width: 0; font: 600 15px/1.35 'IBM Plex Sans', sans-serif; color: var(--phosphor); text-wrap: balance; }
+  .cf-sub { margin: 0; font-size: 12px; line-height: 1.45; color: var(--steel); text-wrap: pretty; }
+  .cf-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 12px; color: var(--steel); }
+  .cf-asof { font: 400 11px/1.3 'IBM Plex Mono', monospace; color: var(--steel); }
+  .cf-tab > summary { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-info); list-style: none; }
+  .cf-tab > summary::-webkit-details-marker { display: none; }
+  .cf-tab > summary::before { content: '▸'; font-size: 11px; color: var(--steel); }
+  .cf-tab[open] > summary::before { content: '▾'; }
+  .cf-tw { margin-top: 8px; max-width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+  .cf-tw:focus-visible { outline: 2px solid var(--amber-text); outline-offset: 2px; }
+  .cf-tw table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  .cf-tw caption { text-align: left; padding: 8px 10px; font-size: 12px; color: var(--steel); }
+  .cf-tw th, .cf-tw td { padding: 6px 10px; text-align: right; border-top: 1px solid var(--line); white-space: nowrap; }
+  .cf-tw th:first-child, .cf-tw td:first-child { text-align: left; }
+  .cf-tw thead th { font-weight: 600; color: var(--steel); background: var(--ink-2); position: sticky; top: 0; }
+  .cf-tw td { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+  .cf-tw td.t { font-family: 'IBM Plex Sans', sans-serif; }
+  .cf-note { font-size: 12px; color: var(--steel); line-height: 1.45; margin: 0; text-wrap: pretty; }
+  .cf-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--steel); }
+  .cf-legend .k { display: inline-flex; align-items: center; gap: 6px; }
+  .cf-legend .k i { display: inline-block; width: 16px; height: 2px; border-radius: 1px; background: currentColor; }
+  .cf-legend .k i.band { height: 10px; width: 14px; border-radius: 2px; background: var(--c-band); border-top: 1px solid var(--c-edge); border-bottom: 1px solid var(--c-edge); }
+
+  .cx { position: relative; width: 100%; container-type: inline-size; }
+  .cx[tabindex]:focus-visible { outline: 2px solid var(--amber-text); outline-offset: 6px; border-radius: 4px; }
+  .cx .pa { position: absolute; left: var(--pl); right: var(--pr); top: var(--pt); bottom: var(--pb); }
+  .cx svg.ln { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .cx .yl { position: absolute; right: calc(100% + 8px); transform: translateY(-50%); font: 400 11px/1 'IBM Plex Mono', monospace; color: var(--steel); white-space: nowrap; }
+  .cx .yl.u { transform: translateY(-50%); }
+  .cx .xl { position: absolute; top: calc(100% + 8px); transform: translateX(-50%); font: 400 11px/1 'IBM Plex Mono', monospace; color: var(--steel); white-space: nowrap; }
+  .cx .xl.a0 { transform: none; } .cx .xl.a1 { transform: translateX(-100%); }
+  .cx .el { position: absolute; left: calc(100% + 10px); transform: translateY(-50%); display: flex; flex-direction: column; gap: 1px; font: 600 12px/1.15 'IBM Plex Sans', sans-serif; color: var(--phosphor); white-space: nowrap; }
+  .cx .el .v { font: 500 11px/1.1 'IBM Plex Mono', monospace; color: var(--steel); }
+  .cx .el.ctx { font-weight: 500; color: var(--steel); }
+  .cx .ldr { position: absolute; left: calc(100% + 2px); width: 6px; border-left: 1px solid var(--c-axis); border-top: 1px solid var(--c-axis); border-bottom: 1px solid var(--c-axis); pointer-events: none; }
+  .cx .pl { position: absolute; transform: translate(-50%, calc(-100% - 8px)); font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--phosphor); white-space: nowrap; }
+  .cx .pl.b { transform: translate(-50%, 8px); }
+  .cx .pl.pl-l { transform: translate(calc(-100% - 8px), -50%); }
+  .cx .pl.pl-r { transform: translate(8px, -50%); }
+  .cx .dot { position: absolute; width: 8px; height: 8px; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 2px var(--panel); }
+  .cx .dot.ring { background: var(--panel); border: 2px solid var(--c-emph); }
+  .cx .bar { position: absolute; transform: translateX(-50%); border-radius: 4px 4px 0 0; min-height: 1px; }
+  .cx .bar.neg { border-radius: 0 0 4px 4px; }
+  .cx .bar.hb { transform: translateY(-50%); border-radius: 0 4px 4px 0; }
+  .cx .bar.hb.neg { border-radius: 4px 0 0 4px; }
+  .cx .bar.out { background: transparent !important; border: 1.5px dashed var(--c-edge); box-sizing: border-box; }
+  .cx .bv { position: absolute; transform: translate(-50%, calc(-100% - 4px)); font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--phosphor); white-space: nowrap; }
+  .cx .bv.neg { transform: translate(-50%, 4px); }
+  .cx .evlane { position: absolute; right: calc(100% + 8px); top: calc(-1 * var(--pt) + 6px); font: 600 11px/1 'IBM Plex Sans', sans-serif; color: var(--steel); white-space: nowrap; }
+  .cx .ev { position: absolute; top: calc(-1 * var(--pt) + 2px); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 6px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--panel); font: 600 11px/1 'IBM Plex Sans', sans-serif; color: var(--phosphor); white-space: nowrap; }
+  .cx .ev.lane2 { top: calc(-1 * var(--pt) + 26px); }
+  .cx .ev.e0 { transform: translateX(-12px); } .cx .ev.e1 { transform: translateX(calc(-100% + 12px)); }
+  .cx .rg { position: absolute; top: 0; bottom: 0; background: var(--c-band); border-left: 1px solid var(--c-edge); border-right: 1px solid var(--c-edge); }
+  .cx .rgl { position: absolute; top: 4px; transform: translateX(-50%); font: 500 11px/1.2 'IBM Plex Sans', sans-serif; color: var(--steel); white-space: nowrap; }
+  .cx .gap { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, transparent 0 5px, var(--line) 5px 6px); }
+  .cx .gapl { position: absolute; bottom: 6px; transform: translateX(-50%); font: 400 11px/1.2 'IBM Plex Sans', sans-serif; color: var(--steel); white-space: nowrap; background: var(--panel); padding: 0 4px; }
+  .cx .wk { position: absolute; width: 0; border-left: 2px solid var(--c-edge); transform: translateX(-1px); }
+  .cx .wk::before, .cx .wk::after { content: ''; position: absolute; left: -6px; width: 10px; border-top: 2px solid var(--c-edge); }
+  .cx .wk::before { top: 0; } .cx .wk::after { bottom: 0; }
+  .cx .fb { position: absolute; transform: translateX(-50%); border-radius: 3px; box-sizing: border-box; min-height: 2px; }
+  .cx .fb.o { background: transparent !important; border: 1.5px solid var(--c-ctx); }
+  .cx .fbv { position: absolute; transform: translate(-50%, calc(-100% - 4px)); font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--phosphor); white-space: nowrap; }
+  .cx .fbv.b { transform: translate(-50%, 4px); }
+  .cx .dt { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 2px var(--panel); }
+  .cx .dt.o { background: var(--panel) !important; border: 2px solid var(--c-ctx); }
+  .cx .xh { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px solid var(--steel); pointer-events: none; }
+  .cx .ro { position: absolute; top: 0; min-width: 150px; padding: 8px 10px; border-radius: 8px; background: var(--raised); border: 1px solid var(--line-2); box-shadow: var(--e2); display: flex; flex-direction: column; gap: 4px; z-index: 2; pointer-events: none; }
+  .cx .ro .rh { font: 600 11px/1.2 'IBM Plex Sans', sans-serif; color: var(--steel); }
+  .cx .ro .rr { display: grid; grid-template-columns: 14px auto 1fr; align-items: center; gap: 6px; font-size: 12px; color: var(--steel); white-space: nowrap; }
+  .cx .ro .rr b { font: 600 13px/1.2 'IBM Plex Mono', monospace; color: var(--phosphor); }
+  .cx .ro .rr i { display: block; height: 2px; width: 12px; border-radius: 1px; }
+  .cx .fring { position: absolute; width: 14px; height: 14px; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid var(--amber-text); pointer-events: none; }
+  .cx .s { display: none; }
+  .cx .zl { position: absolute; left: 0; font: 500 11px/1 'IBM Plex Sans', sans-serif; color: var(--steel); transform: translateY(calc(-100% - 3px)); white-space: nowrap; }
+  @container (max-width: 480px) { .cx .pa { right: var(--prn); } .cx .l { display: none; } .cx .s { display: inline; } .cx .minor { display: none; } .cx .ev:not(.keep) { display: none; } .cx .ev.keep { top: calc(-1 * var(--pt) + 2px); } .cx .ro { min-width: 0; max-width: 42%; } .cx .ro .rr { white-space: normal; } }
+  @container (max-width: 480px) { .cf { padding: 14px 14px 12px; } .cf-claim { font-size: 14px; } }
+
+  .rbar { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .rbar .tr { position: relative; height: 26px; }
+  .rbar .tk { position: absolute; left: 0; right: 0; top: 11px; height: 4px; border-radius: 2px; background: var(--line); }
+  .rbar .rn { position: absolute; top: 7px; height: 12px; border-radius: 6px; background: var(--c-band); border: 1px solid var(--c-edge); box-sizing: border-box; }
+  .rbar .md { position: absolute; top: 5px; width: 2px; height: 16px; margin-left: -1px; background: var(--c-ctx); }
+  .rbar .nw { position: absolute; top: 2px; width: 4px; height: 22px; margin-left: -2px; border-radius: 2px; background: var(--c-emph); box-shadow: 0 0 0 2px var(--panel); }
+  .rbar .dm { position: absolute; top: 6px; width: 14px; height: 14px; margin-left: -7px; transform: rotate(45deg); background: var(--amber); box-shadow: 0 0 0 2px var(--panel); }
+  .rbar .lb { position: relative; height: 14px; font: 400 11px/14px 'IBM Plex Mono', monospace; color: var(--steel); }
+  .rbar .lb span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+  .rbar .lb span.a0 { transform: none; } .rbar .lb span.a1 { transform: translateX(-100%); } .rbar .lb span.r2 { top: 16px; }
+
+  .spk { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+  .spk svg { display: block; overflow: visible; }
+  .spk .v { font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--phosphor); }
+  .spk .sc { font-size: 11px; color: var(--steel); }
+
+  .smx { display: grid; grid-template-columns: repeat(var(--smc, 3), minmax(0, 1fr)); gap: 16px 20px; }
+  .smx .sm { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .smx .sm h4 { margin: 0; font: 600 12px/1.3 'IBM Plex Sans', sans-serif; color: var(--phosphor); }
+  .smx .sm .smv { font: 500 11px/1.2 'IBM Plex Mono', monospace; color: var(--steel); }
+  @container (max-width: 720px) { .smx { --smc: 2; } }
+  @container (max-width: 480px) { .smx { --smc: 1; } }
+
+  .cskel { position: absolute; inset: 0; border-radius: 6px; background: repeating-linear-gradient(0deg, transparent 0 calc(25% - 1px), var(--line) calc(25% - 1px) 25%); }
+  .cskel::after { content: ''; position: absolute; inset: 0; border-radius: 6px; background: linear-gradient(90deg, transparent, rgba(138,155,180,0.07), transparent); }
+  .cstate { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 8px; padding: 0 8px; }
+  .cstate .msg { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; max-width: 480px; padding: 12px 14px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); }
+  .cstate.warn .msg { border-left: 2px solid var(--warn); }
+  .cstate p { margin: 0; max-width: 460px; font-size: 13px; line-height: 1.5; color: var(--phosphor); text-wrap: pretty; }
+  .cstate .q { color: var(--steel); font-size: 12px; }
+  .cghost { position: absolute; inset: 0; }
+  .cghost svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  @media (prefers-reduced-motion: reduce) { .cx *, .cf * { transition: none !important; animation: none !important; } }
+
+  .tpf { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .tpf-h { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+  .tpf-name { margin: 0; font: 600 15px/1.35 'IBM Plex Sans', sans-serif; color: var(--phosphor); }
+  .tpf-fence { padding: 8px; border: 1px dotted var(--steel-2); border-radius: 14px; background: var(--ink-2); }
+  .tpf-fence .tvf { border-color: var(--line) !important; }
+  .tpf-note { margin: 0; max-width: 640px; font-size: 12px; line-height: 1.45; color: var(--steel); }
+  .tvf { height: var(--tvh); }
+  @media (max-width: 767px) { .tvf { height: var(--tvph); } }
+  .tvf[aria-busy="true"] { background: var(--panel); }
+
+  .v5s { padding: 48px 64px 64px; display: flex; flex-direction: column; gap: 36px; box-sizing: border-box; }
+  .v5s h1 { margin: 0; font-size: 40px; letter-spacing: -0.02em; text-wrap: balance; }
+  .v5s .lead { margin: 8px 0 0; max-width: 92ch; font-size: 15px; color: var(--steel); line-height: 1.6; text-wrap: pretty; }
+  .v5s .trace { margin: 10px 0 0; font: 400 12px 'IBM Plex Mono', monospace; color: var(--steel); }
+  .v5sec { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .v5sec > h2 { margin: 0; font-family: 'Archivo', sans-serif; font-stretch: 112.5%; font-weight: 700; font-size: 24px; letter-spacing: -0.01em; }
+  .v5sec > p.sl { margin: -8px 0 0; max-width: 92ch; font-size: 13.5px; color: var(--steel); line-height: 1.55; }
+  .v5g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+  .v5g3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+  .v5card { display: flex; flex-direction: column; gap: 8px; padding: 16px 18px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); min-width: 0; }
+  .v5card h3 { margin: 0; font-size: 15px; font-weight: 600; }
+  .v5card p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--steel); text-wrap: pretty; }
+  .v5card .k { font: 500 11px/1.4 'IBM Plex Mono', monospace; color: var(--steel); }
+  .v5tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .v5tbl th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); padding: 8px 10px; border-bottom: 1px solid var(--line-2); vertical-align: bottom; }
+  .v5tbl td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.45; color: var(--steel); }
+  .v5tbl td.p { color: var(--phosphor); font-weight: 600; }
+  .v5tbl td.m { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  .v5tw { max-width: 100%; overflow-x: auto; }
+  .sw2 { display: inline-flex; align-items: center; gap: 8px; }
+  .sw2 i { display: inline-block; width: 28px; height: 16px; border-radius: 4px; border: 1px solid var(--line-2); }
+  .pitem { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .pitem .ph { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
+  .pitem .ph b { font-family: 'Archivo', sans-serif; font-stretch: 112.5%; font-weight: 700; font-size: 17px; }
+  .pitem .ph .chip { font-size: 11px; }
+  .pitem .pc { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--steel); text-wrap: pretty; }
+  .pitem .stage { padding: 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--ink); display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .ba { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 20px; align-items: start; }
+  .ba > .b { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--ink-2); min-width: 0; }
+  .ba > .a { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .ba .b ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; line-height: 1.5; color: var(--steel); }
+  .ba .b ul li::marker { color: var(--steel-2); }
+  .ba .b code, .v5card code, .pc code { font: 400 11.5px 'IBM Plex Mono', monospace; color: var(--phosphor); }
+  .famrow { display: flex; flex-direction: column; gap: 12px; padding-top: 24px; border-top: 1px solid var(--line); }
+  .famrow > header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+  .famrow > header h3 { margin: 0; font-family: 'Archivo', sans-serif; font-stretch: 112.5%; font-weight: 700; font-size: 19px; }
+  .famrow > header .ids { font: 500 12px 'IBM Plex Mono', monospace; color: var(--steel); }
+  .vs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  .vs .note { display: flex; flex-direction: column; gap: 6px; }
+  .diffs { display: grid; grid-template-columns: 180px minmax(0, 1fr) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .diffs > div { padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 12.5px; line-height: 1.45; color: var(--steel); }
+  .diffs > div.h { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; background: var(--ink-2); }
+  .diffs > div.r { color: var(--phosphor); font-weight: 600; }
+  @media (max-width: 1099px) { .v5g3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 899px) { .v5s { padding: 28px 16px 40px; gap: 28px; } .v5s h1 { font-size: 28px; } .v5g2, .v5g3, .ba, .vs { grid-template-columns: minmax(0, 1fr); } .diffs { grid-template-columns: minmax(0, 1fr); } .diffs > div.h { display: none; } .diffs > div.r { border-bottom: none; padding-bottom: 2px; } }
+
+  [hidden] { display: none !important; }
+  .site-bar { position: fixed; right: 16px; bottom: 16px; z-index: 100; display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 999px; background: var(--raised); border: 1px solid var(--line-2); box-shadow: var(--e4); font-size: 12px; color: var(--steel); flex-wrap: wrap; max-width: calc(100vw - 32px); }
+  .site-bar a, .site-bar button, .site-bar select { height: 28px; border-radius: 999px; border: 1px solid transparent; background: transparent; color: var(--phosphor); font: 600 12px/1 'IBM Plex Sans', system-ui, sans-serif; padding: 0 10px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .site-bar a:hover, .site-bar button:hover { background: var(--raised-2); }
+  .site-bar select { background: var(--ink-2); border-color: var(--line-2); padding: 0 8px; }
+  .site-bar .lbl { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); padding-left: 6px; }
+  @media (max-width: 767px) { .site-bar { bottom: auto; top: 64px; right: 8px; left: 8px; max-width: none; } }
+</style>
+</head>
+<body>
+<div class="v4 v5" style="width: 100%; min-height: 0px; background: var(--ink); color: var(--phosphor);"><div class="v5s"><header><div class="caps" style="color: var(--steel);">Convexa design · v5 charts · 2026-10-13 · illustrative values</div><h1 class="display" style="margin-top: 6px;">Valuation, before and after</h1><p class="lead">Uncertainty drawn where it exists: ranges solid to their ends, labels at their marks, the base case as the one amber diamond, the weighted value named, open-ended values drawn open, and catalysts on a time scale.</p><p class="trace">Resolves RN-06, RN-08–RN-12</p></header><section class="famrow"><header><h3>Price against the value range</h3><span class="ids">RN-06 · PriceValueStrip · note header and index cards</span></header><div class="ba"><div class="b"><span class="caps">Before · as shipped · <span class="mono" style="text-transform: none; letter-spacing: 0;">blocks/Valuation.tsx:135-390</span></span><div aria-hidden="true" style="border-radius: 8px; background: var(--panel); border: 1px solid var(--line); padding: 10px 12px;"><svg viewBox="0 0 300 84" preserveAspectRatio="none" style="display: block; width: 100%; height: 84px;"><defs><linearGradient id="fadeB" x1="0" x2="1"><stop offset="0" stop-color="var(--signal)" stop-opacity="0"></stop><stop offset="0.5" stop-color="var(--signal)" stop-opacity="0.62"></stop><stop offset="1" stop-color="var(--signal)" stop-opacity="0"></stop></linearGradient></defs><rect x="60" y="34" width="180" height="16" fill="url(#fadeB)"></rect><rect x="139" y="34" width="12" height="12" transform="rotate(45 145 40)" fill="var(--amber)"></rect><line x1="128" x2="128" y1="14" y2="70" stroke="var(--phosphor)" stroke-width="2"></line><line x1="122" x2="122" y1="26" y2="58" stroke="var(--phosphor)" stroke-width="3"></line></svg></div><ul><li>The band fades to nothing at bear and bull, so it looks narrower than the range</li><li>The weighted mark and the price line are both primary-text verticals; the weighted one is unlabelled</li><li>Compact (index cards) shows no values; one amber diamond per card on the index</li></ul></div><div class="a"><span class="caps">After</span><figure class="cf" style="margin: 0;"><figcaption class="cf-h"><div class="cf-top"><h3 class="cf-claim">At $181.40 the price sits 7% below the base case of $196</h3></div><p class="cf-sub">Value per share · the note’s bear, base, bull and odds-weighted value · price from the note (Oct 9)</p></figcaption><div style="display: flex; flex-direction: column; gap: 6px;"><div style="position: relative; height: 22px; font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--phosphor);"><span style="position: absolute; left: 60.47%; transform: translateX(-50%); white-space: nowrap; ">Price $181.40 · Oct 9</span></div><div class="rbar" role="img" aria-label="Value range bear 132 to bull 248, base 196, weighted 188; price 181.4"><div class="tr" style="height: 40px;"><span class="tk" style="top: 18px;"></span><span class="rn" style="left: 44.00%; width: 38.67%; top: 10px; height: 20px;"></span><span class="dm" style="left: 65.33%; top: 13px;"></span><span style="position: absolute; top: 6px; height: 28px; left: 62.67%; border-left: 3px solid var(--c-ctx); margin-left: -1px;"></span><span data-mark="essential" style="position: absolute; top: -6px; bottom: -4px; left: 60.47%; border-left: 2px solid var(--phosphor);"></span></div><div class="lb" style="height: 30px;"><span style="left: 44.00%; top: 0px;">Bear $132</span><span style="left: 65.33%; top: 0px;">Base $196</span><span style="left: 62.67%; top: 15px;">Weighted $188</span><span style="left: 82.67%; top: 0px;">Bull $248</span></div><div class="lb"><span class="a0" style="left: 0.00%; color: var(--steel);">$0</span><span class="" style="left: 33.33%; color: var(--steel);">$100</span><span class="" style="left: 66.67%; color: var(--steel);">$200</span><span class="a1" style="left: 100.00%; color: var(--steel);">$300</span></div></div><p class="dline" style="margin: 0;">Price is −7.4% to base · the weighted value uses the note’s odds (bear 5, base 11, bull 4 of 20).</p></div><div class="cf-foot"><span class="prov">The note’s valuation</span><span class="cf-asof">Note of Oct 13, 2026</span></div></figure><div class="v5g2"><div class="pitem"><span class="caps">Stale price (over 30 days)</span><div style="display: flex; flex-direction: column; gap: 6px;"><div style="position: relative; height: 22px; font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--phosphor);"><span style="position: absolute; left: 60.47%; transform: translateX(-50%); white-space: nowrap; color: var(--steel);">Price $181.40 · Sep 4, 35 days old</span></div><div class="rbar" role="img" aria-label="Value range bear 132 to bull 248, base 196, weighted 188; price 181.4"><div class="tr" style="height: 40px;"><span class="tk" style="top: 18px;"></span><span class="rn" style="left: 44.00%; width: 38.67%; top: 10px; height: 20px;"></span><span class="dm" style="left: 65.33%; top: 13px;"></span><span style="position: absolute; top: 6px; height: 28px; left: 62.67%; border-left: 3px solid var(--c-ctx); margin-left: -1px;"></span><span data-mark="essential" style="position: absolute; top: -6px; bottom: -4px; left: 60.47%; border-left: 2px dashed var(--phosphor);"></span></div><div class="lb" style="height: 30px;"><span style="left: 44.00%; top: 0px;">Bear $132</span><span style="left: 65.33%; top: 0px;">Base $196</span><span style="left: 62.67%; top: 15px;">Weighted $188</span><span style="left: 82.67%; top: 0px;">Bull $248</span></div><div class="lb"><span class="a0" style="left: 0.00%; color: var(--steel);">$0</span><span class="" style="left: 33.33%; color: var(--steel);">$100</span><span class="" style="left: 66.67%; color: var(--steel);">$200</span><span class="a1" style="left: 100.00%; color: var(--steel);">$300</span></div></div><p class="dline" style="margin: 0;">% to base hidden: the price is 35 days old. It returns when the note is re-dated.</p></div></div><div class="pitem"><span class="caps">Index card (compact): outline diamond, values in text</span><div class="rbar" role="img" aria-label="Bear 132, base 196, bull 248; price 181.4"><div class="tr" style="height: 22px;"><span class="tk"></span><span class="rn" style="left: 44.00%; width: 38.67%;"></span><span style="position: absolute; top: 4px; left: 65.33%; width: 12px; height: 12px; margin-left: -6px; transform: rotate(45deg); border: 2px solid var(--phosphor); box-sizing: border-box; background: var(--panel);"></span><span style="position: absolute; top: 0; bottom: 0; left: 60.47%; border-left: 2px solid var(--phosphor);"></span></div><span class="dline">$132–$248 · base $196 · price $181.40</span></div></div></div></div></div></section><section class="famrow"><header><h3>Football field</h3><span class="ids">RN-08 · FootballField</span></header><div class="ba"><div class="b"><span class="caps">Before · as shipped · <span class="mono" style="text-transform: none; letter-spacing: 0;">blocks/Valuation.tsx:437-690</span></span><div aria-hidden="true" style="border-radius: 8px; background: var(--panel); border: 1px solid var(--line); padding: 10px 12px;"><svg viewBox="0 0 300 100" preserveAspectRatio="none" style="display: block; width: 100%; height: 100px;"><rect x="60" y="30" width="150" height="10" fill="var(--signal)" opacity="0.5"></rect><rect x="70" y="52" width="130" height="10" fill="var(--signal)" opacity="0.5"></rect><rect x="80" y="74" width="110" height="10" fill="var(--signal)" opacity="0.5"></rect><line x1="128" x2="128" y1="20" y2="94" stroke="var(--phosphor)"></line></svg></div><ul><li>10px end labels; no axis on phones</li><li>Faded ends understate each range</li><li>The dashed third-party marker is never explained</li></ul></div><div class="a"><span class="caps">After</span><figure class="cf" style="margin: 0;"><figcaption class="cf-h"><div class="cf-top"><h3 class="cf-claim">Every method puts value above the $181 price; the third party is the most generous</h3></div><p class="cf-sub">Value per share by method · $ · bar = range, tick = base case, dotted box = a third party’s figure, line = price $181.40 (the note’s, Oct 9)</p></figcaption><div style="display: flex; flex-direction: column; gap: 8px;"><div style="display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 14px; align-items: center;"><span style="font-size: 12.5px; color: var(--phosphor); font-weight: 600;">Scenario model</span><div style="position: relative; height: 30px;"><span style="position: absolute; top: 14px; left: 0; right: 0; height: 2px; background: var(--line);"></span><span data-mark="essential" style="position: absolute; top: 8px; height: 14px; left: 44.00%; width: 38.67%; border-radius: 3px; background: var(--c-band); border: 1.5px solid var(--c-edge); box-sizing: border-box;"></span><span style="position: absolute; top: 9px; right: calc(56.00% + 6px); font: 500 11px/12px 'IBM Plex Mono', monospace; color: var(--steel);">$132</span><span style="position: absolute; top: 9px; left: calc(82.67% + 6px); font: 500 11px/12px 'IBM Plex Mono', monospace; color: var(--steel);">$248</span><span style="position: absolute; top: 5px; left: 65.33%; width: 4px; height: 20px; margin-left: -2px; border-radius: 2px; background: var(--c-emph);"></span><span style="position: absolute; top: -4px; bottom: -4px; left: 60.47%; border-left: 2px solid var(--phosphor);"></span></div></div><div style="display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 14px; align-items: center;"><span style="font-size: 12.5px; color: var(--phosphor); font-weight: 600;">Sensitivity grid</span><div style="position: relative; height: 30px;"><span style="position: absolute; top: 14px; left: 0; right: 0; height: 2px; background: var(--line);"></span><span data-mark="essential" style="position: absolute; top: 8px; height: 14px; left: 50.33%; width: 27.34%; border-radius: 3px; background: var(--c-band); border: 1.5px solid var(--c-edge); box-sizing: border-box;"></span><span style="position: absolute; top: 9px; right: calc(49.67% + 6px); font: 500 11px/12px 'IBM Plex Mono', monospace; color: var(--steel);">$151</span><span style="position: absolute; top: 9px; left: calc(77.67% + 6px); font: 500 11px/12px 'IBM Plex Mono', monospace; color: var(--steel);">$233</span><span style="position: absolute; top: 5px; left: 65.33%; width: 4px; height: 20px; margin-left: -2px; border-radius: 2px; background: var(--c-emph);"></span><span style="position: absolute; top: -4px; bottom: -4px; left: 60.47%; border-left: 2px solid var(--phosphor);"></span></div></div><div style="display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 14px; align-items: center;"><span style="font-size: 12.5px; color: var(--steel);">Traded, 52 weeks</span><div style="position: relative; height: 30px;"><span style="position: absolute; top: 14px; left: 0; right: 0; height: 2px; background: var(--line);"></span><span data-mark="essential" style="position: absolute; top: 8px; height: 14px; left: 37.33%; width: 33.34%; border-radius: 3px; background: transparent; border: 1.5px solid var(--c-ctx); box-sizing: border-box;"></span><span style="position: absolute; top: 9px; right: calc(62.67% + 6px); font: 500 11px/12px 'IBM Plex Mono', monospace; color: var(--steel);">$112</span><span style="position: absolute; top: 9px; left: calc(70.67% + 6px); font: 500 11px/12px 'IBM Plex Mono', monospace; color: var(--steel);">$212</span><span style="position: absolute; top: -4px; bottom: -4px; left: 60.47%; border-left: 2px solid var(--phosphor);"></span></div></div><div style="display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 14px; align-items: center;"><span style="font-size: 12.5px; color: var(--steel);">A broker’s target</span><div style="position: relative; height: 30px;"><span style="position: absolute; top: 14px; left: 0; right: 0; height: 2px; background: var(--line);"></span><span style="position: absolute; top: 5px; left: 75.00%; width: 4px; height: 20px; margin-left: -2px; border-radius: 2px; background: transparent; border: 1.5px dotted var(--phosphor); width: 10px; margin-left: -5px; box-sizing: border-box;"></span><span style="position: absolute; top: 9px; left: calc(75.00% + 10px); font: 500 11px/12px 'IBM Plex Mono', monospace; color: var(--steel); white-space: nowrap;">$225</span><span style="position: absolute; top: -4px; bottom: -4px; left: 60.47%; border-left: 2px solid var(--phosphor);"></span></div></div><div style="display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 14px;"><span></span><div class="lb rbar" style="position: relative; height: 14px;"><span class="lb" style="position: relative; display: block; height: 14px;"><span class="a0" style="left: 0.00%;">$0</span><span class="" style="left: 33.33%;">$100</span><span class="" style="left: 66.67%;">$200</span><span class="a1" style="left: 100.00%;">$300</span></span></div></div></div><div class="cf-foot"><span class="prov">The note’s valuation · Oct 13</span><span class="cf-asof">Ranges solid to their ends: the edges are the range</span></div></figure></div></div></section><section class="famrow"><header><h3>Odds, sensitivity, implied growth</h3><span class="ids">RN-09 · RN-10 · RN-11</span></header><div class="ba"><div class="b"><span class="caps">Before · as shipped · <span class="mono" style="text-transform: none; letter-spacing: 0;">blocks/Valuation.tsx:784-1326</span></span><ul><li>Odds: each cell’s scenario by shade alone (minor: ordered, with a legend)</li><li>Sensitivity: ARIA cells without rows (invalid structure); 10px corner text</li><li>Implied: “45%+” drawn as exactly 45; negative growth as a 1% sliver</li></ul></div><div class="a"><span class="caps">After</span><figure class="cf" style="margin: 0;"><figcaption class="cf-h"><div class="cf-top"><h3 class="cf-claim">The note gives the base case better-than-even odds: 11 in 20</h3></div><p class="cf-sub">Scenario odds · twentieths</p></figcaption><div style="display: flex; flex-direction: column; gap: 6px;"><div style="display: grid; grid-template-columns: 5fr 11fr 4fr; gap: 3px; font-size: 12px;"><span>Bear · 5 of 20</span><span style="color: var(--phosphor); font-weight: 600;">Base · 11 of 20</span><span>Bull · 4 of 20</span></div><div role="img" aria-label="Odds: bear 5, base 11, bull 4 in 20" style="display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px;"><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-ctx2);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-ctx2);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-ctx2);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-ctx2);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-ctx2);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-emph);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-emph);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-emph);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-emph);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-emph);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-emph);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-emph);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-emph);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-emph);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-emph);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-emph);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-ctx);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-ctx);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-ctx);"></span><span data-mark="essential" style="height: 22px; border-radius: 3px; background: var(--c-ctx);"></span></div><span class="dline">Group labels above the cells, so no cell’s scenario rests on its shade.</span></div><div class="cf-foot"><span class="prov">The note</span><span class="cf-asof">Oct 13</span></div></figure><figure class="cf" style="margin: 0;"><figcaption class="cf-h"><div class="cf-top"><h3 class="cf-claim">Base value holds above the price across the grid</h3></div><p class="cf-sub">Sensitivity of the base value to the discount rate and terminal growth</p></figcaption><div class="cf-tw" role="region" aria-label="Sensitivity of the base value" tabindex="0"><table><caption>Base value per share, $ · rows: discount rate · columns: terminal growth · % vs the $181.40 price</caption><thead><tr><th scope="col">Discount rate</th><th scope="col">2.5%</th><th scope="col">3.0%</th><th scope="col">3.5%</th></tr></thead><tbody><tr><th scope="row" class="t">10.0%</th><td style="">171 <span style="color: var(--steel);">−6%</span></td><td style="">183 <span style="color: var(--steel);">+1%</span></td><td style="">196 <span style="color: var(--steel);">+8%</span></td></tr><tr><th scope="row" class="t">9.5%</th><td style="">182 <span style="color: var(--steel);">+0%</span></td><td style="outline: 2px solid var(--phosphor); outline-offset: -2px;">196 <span style="color: var(--steel);">+8%</span></td><td style="">211 <span style="color: var(--steel);">+16%</span></td></tr><tr><th scope="row" class="t">9.0%</th><td style="">194 <span style="color: var(--steel);">+7%</span></td><td style="">209 <span style="color: var(--steel);">+15%</span></td><td style="">233 <span style="color: var(--steel);">+28%</span></td></tr></tbody></table></div><div class="cf-foot"><span class="prov">The note’s model</span><span class="cf-asof">Oct 13</span></div></figure><figure class="cf" style="margin: 0;"><figcaption class="cf-h"><div class="cf-top"><h3 class="cf-claim">The price implies 21% a year of growth for a decade; few companies have done it</h3></div><p class="cf-sub">Revenue growth the price implies vs how often companies achieved it (base rates, 1950–2015) · % per year, 10 years</p></figcaption><div class="cx" tabindex="0" role="group" aria-roledescription="chart" aria-label="Implied growth 21% vs base rates" style="height: 200px; --pl: 180px; --pr: 96px; --prn: 72px; --pt: 4px; --pb: 26px;"><div class="pa"><span style="position: absolute; top: -4px; bottom: -4px; left: 16.67%; border-left: 1px solid var(--c-axis);"></span><span style="position: absolute; right: calc(100% + 12px); top: 10.00%; transform: translateY(-50%); width: 164px; text-align: right; font-size: 12.5px; line-height: 1.25; color: var(--phosphor); font-weight: 600;">Implied by the price</span><span style="position: absolute; right: calc(100% + 12px); top: 30.00%; transform: translateY(-50%); width: 164px; text-align: right; font-size: 12.5px; line-height: 1.25; color: var(--steel); font-weight: 400;">Top 1% of companies</span><span aria-hidden="true" style="position: absolute; left: calc(91.67% - 1px); top: 30.00%; transform: translateY(-50%); width: 0; height: 0; border-top: 9px solid transparent; border-bottom: 9px solid transparent; border-left: 10px solid var(--c-ctx);"></span><span style="position: absolute; right: calc(100% + 12px); top: 50.00%; transform: translateY(-50%); width: 164px; text-align: right; font-size: 12.5px; line-height: 1.25; color: var(--steel); font-weight: 400;">Top 10%</span><span style="position: absolute; right: calc(100% + 12px); top: 70.00%; transform: translateY(-50%); width: 164px; text-align: right; font-size: 12.5px; line-height: 1.25; color: var(--steel); font-weight: 400;">Median</span><span style="position: absolute; right: calc(100% + 12px); top: 90.00%; transform: translateY(-50%); width: 164px; text-align: right; font-size: 12.5px; line-height: 1.25; color: var(--steel); font-weight: 400;">A shrinking company</span><svg class="ln" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"></svg><span class="bar hb" data-mark="essential" style="top: 10.00%; left: 16.67%; width: 35.00%; height: 14px; background: var(--c-emph);"></span><span class="pl pl-r" style="left: 51.67%; top: 10.00%;">21%</span><span class="bar hb" data-mark="essential" style="top: 30.00%; left: 16.67%; width: 75.00%; height: 14px; background: var(--c-ctx);"></span><span class="pl pl-r" style="left: 91.67%; top: 30.00%;">45%+</span><span class="bar hb" data-mark="essential" style="top: 50.00%; left: 16.67%; width: 28.33%; height: 14px; background: var(--c-ctx);"></span><span class="pl pl-r" style="left: 45.00%; top: 50.00%;">17%</span><span class="bar hb" data-mark="essential" style="top: 70.00%; left: 16.67%; width: 10.00%; height: 14px; background: var(--c-ctx);"></span><span class="pl pl-r" style="left: 26.67%; top: 70.00%;">6%</span><span class="bar hb neg" data-mark="essential" style="top: 90.00%; left: 10.00%; width: 6.67%; height: 14px; background: var(--c-ctx);"></span><span class="pl pl-l" style="left: 10.00%; top: 90.00%;">−4%</span><span class="xl" style="left: 0.00%;">−10%</span><span class="xl" style="left: 16.67%;">0</span><span class="xl" style="left: 58.33%;">25%</span><span class="xl a1" style="left: 100.00%;">50%</span></div></div><p class="cf-note">“45%+” is open-ended (the arrow), not 45. Negative growth sits left of zero, not as a sliver. Base rates: Mauboussin (2016), real; the implied rate is nominal.</p><div class="cf-foot"><span class="prov">The note · Mauboussin 2016</span><span class="cf-asof">Note of Oct 13</span></div></figure></div></div></section><section class="famrow"><header><h3>Catalysts</h3><span class="ids">RN-12 · CatalystsBlock</span></header><div class="ba"><div class="b"><span class="caps">Before · as shipped · <span class="mono" style="text-transform: none; letter-spacing: 0;">blocks/Record.tsx:44-169</span></span><ul><li>A list not to scale in time (fine as a list; nothing shows how near “next” is)</li></ul></div><div class="a"><span class="caps">After</span><figure class="cf" style="margin: 0;"><figcaption class="cf-h"><div class="cf-top"><h3 class="cf-claim">Results land in about five weeks; the next CPI and FOMC come first</h3></div><p class="cf-sub">NVDA catalysts on a time scale · next 90 days from Oct 13, 2026</p></figcaption><div class="cx" tabindex="0" role="group" aria-roledescription="chart" aria-label="Catalysts in the next 90 days" style="height: 90px; --pl: 16px; --pr: 16px; --prn: 16px; --pt: 34px; --pb: 26px;"><div class="pa"><svg class="ln" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"><line x1="21.74" x2="21.74" y1="0" y2="1000" stroke="var(--c-axis)" vector-effect="non-scaling-stroke"></line><line x1="86.96" x2="86.96" y1="0" y2="1000" stroke="var(--c-axis)" vector-effect="non-scaling-stroke" class="minor"></line><line x1="184.78" x2="184.78" y1="0" y2="1000" stroke="var(--c-axis)" vector-effect="non-scaling-stroke" class="minor"></line><line x1="423.91" x2="423.91" y1="0" y2="1000" stroke="var(--c-axis)" vector-effect="non-scaling-stroke"></line><line x1="478.26" x2="478.26" y1="0" y2="1000" stroke="var(--c-axis)" vector-effect="non-scaling-stroke"></line><line x1="826.09" x2="826.09" y1="0" y2="1000" stroke="var(--c-axis)" vector-effect="non-scaling-stroke"></line></svg><span class="xl" style="left: 2.17%;">Oct 13</span><span class="xl" style="left: 34.78%;">+30 days</span><span class="xl" style="left: 67.39%;">+60 days</span><span class="xl a1" style="left: 100.00%;">+90 days</span><span class="ev keep e0" style="left: 2.17%;" title="Today">Today</span><span class="ev lane2 minor e0" style="left: 8.70%;" title="CPI">CPI</span><span class="ev minor" style="left: 18.48%;" title="FOMC">FOMC</span><span class="ev keep" style="left: 42.39%;" title="Results (expected)">Results (expected)</span><span class="ev lane2" style="left: 47.83%;" title="Short interest">Short interest</span><span class="ev" style="left: 82.61%;" title="10-Q due">10-Q due</span></div></div><div class="cf-foot"><span class="prov">The note’s catalysts · macro calendar</span><span class="cf-asof">Expected dates move when the company confirms</span></div></figure></div></div></section></div></div>
+<div class="site-bar" role="toolbar" aria-label="Design site controls"><a href="index.html">← All screens</a><span class="lbl">Families · valuation</span><button id="scheme-btn" type="button" onclick="toggleScheme()">Light scheme</button></div>
+<script>
+(function () {
+  var KEY = 'convexa-design-scheme';
+  function current() { try { return localStorage.getItem(KEY) || 'dark'; } catch (e) { return 'dark'; } }
+  function apply(s) { document.documentElement.setAttribute('data-scheme', s); if (window.deskSetProps) window.deskSetProps({ scheme: s }); var b = document.getElementById('scheme-btn'); if (b) b.textContent = s === 'dark' ? 'Light scheme' : 'Dark scheme'; }
+  window.toggleScheme = function () { var n = current() === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(KEY, n); } catch (e) {} apply(n); };
+  apply(current());
+})();
+</script>
+
+</body>
+</html>

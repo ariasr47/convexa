@@ -1,6 +1,9 @@
+import { readFileSync, existsSync } from 'node:fs';
+import { FINAL_NOTE, FINAL_PAGE, PLANNED_NOTE, finalArtboards } from './screens/final/index.mjs';
 // Canvas registry — which screens become artboards, at which widths, on which page. Positions are
 // computed (row flow per page), so adding a frame is one line.
 export const pages = [
+  FINAL_PAGE,
   { id: 'page-1', name: 'Ticker desk' },
   { id: 'page-2', name: 'Responsive' },
   { id: 'page-3', name: 'Site' },
@@ -11,6 +14,10 @@ export const pages = [
   { id: 'v4-app', name: 'v4 · App' },
   { id: 'v4-research', name: 'v4 · Research' },
   { id: 'v4-coverage', name: 'v4 · Coverage' },
+  { id: 'v5-charts', name: 'v5 · Charts · audit and system' },
+  { id: 'q5-alerts', name: 'Ruled · Alerts on public data (Q-5)' },
+  { id: 'v5-families', name: 'v5 · Chart families · before and after' },
+  { id: 'v5-frontier', name: 'v5 · Frontier' },
 ];
 
 // v4 frame heights, measured 2026-10-13 by rendering design/site at each board's own width in headless
@@ -18,7 +25,12 @@ export const pages = [
 // dialog height plus its margin. Replaces the first estimates, two of which clipped (source map, shell
 // states).
 const MEASURED = { V4Alerts: 1010, V4Alerts390: 1890, V4AlertsLight: 1010, V4AlertsStates: 1280, V4Blog: 740, V4Blog390: 950, V4BlogLight: 740, V4Coverage: 1890, V4DeskLight: 2990, V4DeskStates: 2690, V4Filings: 1290, V4Filings390: 2620, V4FilingsLight: 1290, V4HybridDesk: 2990, V4HybridDesk390: 4340, V4HybridDesk390Light: 4340, V4HybridDesk834: 4260, V4HybridDeskSample: 2990, V4Lab: 1110, V4Lab390: 2000, V4LabLight: 1110, V4Landing: 2400, V4Landing390: 4100, V4LandingLight: 2400, V4LandingStates: 1450, V4Markets: 3030, V4Markets390: 4910, V4Markets834: 3790, V4MarketsDemo: 3030, V4MarketsLight: 3030, V4Methodology: 1930, V4Methodology390: 2600, V4MethodologyLight: 1930, V4MethodologyStates: 1360, V4NotFound: 700, V4NotFound390: 900, V4NotFoundLight: 700, V4NoteStates: 1200, V4NoteView: 3520, V4NoteView390: 4740, V4NoteView390Light: 4740, V4NoteViewLight: 3520, V4Operator: 730, V4Operator390: 840, V4OperatorLight: 730, V4OperatorStates: 790, V4OrderDetail: 1000, V4OrderDetail390: 1100, V4OrderDetailLight: 1000, V4OrderDetailStates: 660, V4Persona: 1000, V4Persona390: 1100, V4PersonaLight: 1000, V4PersonaStates: 760, V4Positions: 1070, V4Positions390: 1910, V4PositionsLight: 1070, V4PositionsSignedOut: 710, V4PositionsStates: 1560, V4ResearchIndex: 1300, V4ResearchIndex390: 2030, V4ResearchIndexLight: 1300, V4Roadmap: 2400, V4Scanner: 1310, V4Scanner390: 1810, V4ScannerLight: 1310, V4ScannerStates: 1790, V4Scorecard: 1500, V4Scorecard390: 3130, V4ScorecardLight: 1500, V4Settings: 1650, V4Settings390: 2090, V4SettingsLight: 1650, V4SettingsSignedOut: 1320, V4SettingsStates: 1400, V4Shell: 760, V4Shell390: 844, V4ShellLight: 760, V4ShellStates: 2620, V4SignIn: 1000, V4SignIn390: 1000, V4SignInLight: 1000, V4SignInStates: 1330, V4SourceMap: 6450, V4StateMatrix: 4090, V4StateMatrix390: 4510, V4StateMatrixLight: 4090, V4Technical: 1270, V4Technical390: 1370, V4TechnicalLight: 1270, V4TechnicalStates: 1320, V4TickerResearch: 2230, V4TickerResearch390: 4290, V4TickerResearchLight: 2230, V4ToolCalendar: 2550, V4ToolClusters: 2270, V4ToolHolders: 2310, V4ToolLiquidity: 2370, V4ToolOtc: 2370, V4ToolPeers: 2440, V4ToolSignals: 2260, V4ToolTa: 3100, V4ToolXbrl: 2470, V4TradeEntry: 1100, V4TradeEntry390: 1300, V4TradeEntryLight: 1100, V4TradeEntryStates: 1400, V4ViewEditor: 1000, V4ViewEditor390: 1200, V4ViewEditorLight: 1000, V4ViewEditorStates: 840, V4WhatsSent: 1120, V4WhatsSent390: 1100, V4WhatsSentLight: 1120, V4WhatsSentStates: 1290 };
-const fitH = (name, h) => MEASURED[name] ?? h;
+// v5 frame heights, measured by rendering design/site at each board's width (main tree
+// tmp/canvas-v5/tools/measure.mjs): natural page height + 40px, rounded up to 10.
+const MEASURED_V5 = {V5Audit: 2120, V5ChartSystem: 7460, V5ChartStates: 3710, V5ChartPhone: 2340, V5ThirdParty: 1830, V5ChartSystemLight: 7460, V5FamNoteFigures: 3120, V5FamNoteValuation: 2650, V5FamMarkets: 3230, V5FamScorecard: 2080, V5FamPanels: 1770, V5FamDesk: 3720, V5FamOther: 1360, V5Tools: 5040, V5TvFraming: 3660, V5Tools390: 7140, V5TvFraming390: 6960, V5FamNoteFigures390: 4770, V5FamMarkets390: 5370, V5FamMarketsLight: 3230, V5FamScorecardLight: 2080, V5Frontier: 1370, V5FrontierGamma: 2610, V5FrontierCurve: 2460, V5FrontierCalib: 1880, V5FrontierCurve390: 3570, V5Alerts: 2350, V5Alerts390: 4000, V5AlertsLight: 2350, V5AlertsFlow: 1920, V5AlertsFlow390: 5100, V5AlertsStates: 3560};
+const fitH = (name, h) => MEASURED[name] ?? MEASURED_V5[name] ?? h;
+const FINAL_HEIGHTS_FILE = new URL('./screens/final/heights.json', import.meta.url);
+const FINAL_HEIGHTS = existsSync(FINAL_HEIGHTS_FILE) ? JSON.parse(readFileSync(FINAL_HEIGHTS_FILE, 'utf8')) : {};
 
 // { name, screen, page, w, h, title, opts?, expand?, interactive? }
 export const artboards = fitAll([
@@ -60,7 +72,10 @@ export const artboards = fitAll([
   { name: 'NotFound', screen: 'not-found', page: 'page-4', w: 1440, h: 640, title: 'Route fallback + 404' },
   { name: 'Operator', screen: 'operator', page: 'page-4', w: 1440, h: 1080, title: 'Operator · metrics + research' },
 
-  { name: 'Library', screen: 'library', page: 'page-5', w: 1440, h: 5900, title: 'Library · tokens, components, states, React mapping', opts: { dataStates: 'summary' } },
+  // v5: the canvas caps a frame at 8,000px; the library (14,460px measured, it was 5,900 and clipped) is three boards.
+  { name: 'Library', screen: 'library', page: 'page-5', w: 1440, h: 6240, title: 'Library · 1 of 3 · tokens, type, controls, data', opts: { dataStates: 'summary', charts: 'summary', part: 1 } },
+  { name: 'LibraryB', screen: 'library', page: 'page-5', w: 1440, h: 4750, title: 'Library · 2 of 3 · chrome, overlays, patterns, states, charts, motion', opts: { dataStates: 'summary', charts: 'summary', part: 2 } },
+  { name: 'LibraryC', screen: 'library', page: 'page-5', w: 1440, h: 3970, title: 'Library · 3 of 3 · React mapping', opts: { dataStates: 'summary', charts: 'summary', part: 3 } },
   { name: 'Components', screen: 'components-sheet', page: 'page-5', w: 1440, h: 2720, title: 'Components & motion sheet' },
   { name: 'DeskLight', screen: 'desk', page: 'page-5', w: 1440, h: 2300, title: 'Desk · light scheme (interactive)', opts: { scheme: 'light' } },
   { name: 'LandingLight', screen: 'landing', page: 'page-5', w: 1440, h: 2960, title: 'Landing · light scheme', opts: { scheme: 'light' } },
@@ -115,8 +130,69 @@ export const artboards = fitAll([
 
   // ---- v4 · Coverage (wave 5, 2026-10-13) ----
   { name: 'V4Coverage', screen: 'v4-coverage', page: 'v4-coverage', x: 0, y: 0, w: 1920, h: 2600, title: 'v4 · Coverage matrix · route × width × theme × states', findings: 'coverage; gaps listed in the matrix' },
+
+  // ---- v5 · Charts (2026-10-13): the audit and the chart system ----
+  ...v5Row('v5-charts', 0, [
+    ['V5Audit', 'v5-audit', 1440, 2300, 'v5 · Every chart, audited', {}, 'Wave 1: 82 entries, the top ten, what recurs. Long form: design/CHARTS-2026-10-13.md.'],
+    ['V5ChartSystem', 'v5-system', 1440, 6000, 'v5 · One chart system', {}, 'Wave 2: rules, colour roles (validator results), mark specs, every primitive, the React module map. Resolves SYS-01.'],
+    ['V5ChartStates', 'v5-states', 1440, 5200, 'v5 · Every chart, in every state', {}, 'Wave 2: ready + the seven data states at final size, scrub, keyboard focus, primitive × state. Resolves CH2, the silent nulls.'],
+    ['V5ChartPhone', 'v5-phone', 390, 2600, 'v5 · Charts on a phone (390)', {}, 'Wave 2: re-layout, never scale-down; text ≥ 11px; the bridge as rows, crossing zero.'],
+    ['V5ThirdParty', 'v5-third-party', 1440, 2400, 'v5 · Ours, and theirs', {}, 'Wave 2: a Convexa chart beside TradingView’s frame; the eight deliberate differences. Resolves TT-01, DB-15.'],
+    ['V5ChartSystemLight', 'v5-system', 1440, 6000, 'v5 · One chart system · light', { scheme: 'light' }, 'The same board in the light scheme: the roles are token swaps.'],
+  ]),
+
+  // ---- v5 wave 3 · chart families, before and after ----
+  ...v5Row('v5-families', 0, [
+    ['V5FamNoteFigures', 'v5-fam-note-figures', 1440, 5000, 'v5 · Note figures · before and after', {}, 'Wave 3: RN-01–RN-05, RN-13. The bridge crosses zero; losses go below it; guidance as a whisker; filings on the event lane.'],
+    ['V5FamNoteValuation', 'v5-fam-note-valuation', 1440, 4600, 'v5 · Valuation · before and after', {}, 'Wave 3: RN-06, RN-08–RN-12. Ranges solid to their ends; labels at their marks; the base diamond as the one amber mark.'],
+    ['V5FamMarkets', 'v5-fam-markets', 1440, 5200, 'v5 · Markets · before and after', {}, 'Wave 3: RM-02–RM-06. Claims per component, the inversion line, FOMC decisions, per-note drift, named medians and zero.'],
+    ['V5FamScorecard', 'v5-fam-scorecard', 1440, 3000, 'v5 · Scorecard and Filings · before and after', {}, 'Wave 3: RS-02–RS-04. Bars that sum to N; calibration with Wilson intervals and n; reported figures with change and an honest error.'],
+    ['V5FamPanels', 'v5-fam-panels', 1440, 2600, 'v5 · Note panels · before and after', {}, 'Wave 3: RP-01–RP-03. Shares and % of float on separate scales; short-sale volume as a gated target; the off state.'],
+  ]),
+  ...v5Row('v5-families', 4000, [
+    ['V5FamDesk', 'v5-fam-desk', 1440, 5000, 'v5 · Ticker desk · before and after', {}, 'Wave 3: TD-01–TD-12. Sample (the demo’s form) beside not live (production); gamma sign by position and text as well as hue.'],
+    ['V5FamOther', 'v5-fam-other', 1440, 2200, 'v5 · Scanner, positions, operator, Lab', {}, 'Wave 3: SC, PO, OP, LD, LB. P-5 is rejected, so the scanner change stays green/red text.'],
+    ['V5Tools', 'v5-tools', 1440, 7000, 'v5 · Planned tools, charted', {}, 'Wave 3: PT-01–PT-09 arrive designed: claim, form, source and delay, honest state.'],
+    ['V5TvFraming', 'v5-tv', 1440, 4000, 'v5 · TradingView, framed', {}, 'Wave 3: the Technical tab, the desk’s price panel, the frame’s states, load on request (P-14), and where a frame belongs.'],
+    ['V5Tools390', 'v5-tools', 390, 8000, 'v5 · Planned tools · phone', {}, 'At 390.'],
+    ['V5TvFraming390', 'v5-tv', 390, 7000, 'v5 · TradingView · phone', {}, 'At 390: the 480px frame, the table as stacked rows.'],
+  ]),
+  ...v5Row('v5-families', 11800, [
+    ['V5FamNoteFigures390', 'v5-fam-note-figures', 390, 6000, 'v5 · Note figures · phone', {}, 'At 390: the bridge as rows, short labels, no scale-down.'],
+    ['V5FamMarkets390', 'v5-fam-markets', 390, 6000, 'v5 · Markets · phone', {}, 'At 390: one-column facets, only the latest FOMC chip, the curve with leaders.'],
+    ['V5FamMarketsLight', 'v5-fam-markets', 1440, 5200, 'v5 · Markets · light', { scheme: 'light' }, 'The Markets family in the light scheme.'],
+    ['V5FamScorecardLight', 'v5-fam-scorecard', 1440, 3000, 'v5 · Scorecard · light', { scheme: 'light' }, 'Calibration and by-month in the light scheme.'],
+  ]),
+
+  // ---- v5 wave 4 · the frontier (the boards show each prototype's designed fallback; the site runs it) ----
+  ...v5Row('v5-frontier', 0, [
+    ['V5Frontier', 'v5-frontier', 1440, 2200, 'v5 · The frontier · overview', {}, 'Wave 4: three prototypes in design/site (v5-frontier-*.html) with measured budgets; what was considered and not built.'],
+    ['V5FrontierGamma', 'v5-frontier-gamma', 1440, 3000, 'v5 · F1 · Dealer-gamma surface (WebGL) · fallback shown', {}, 'F1 runs in design/site/v5-frontier-gamma.html. Here: the static projection it falls back to. Needs P-15.'],
+    ['V5FrontierCurve', 'v5-frontier-curve', 1440, 3000, 'v5 · F2 · A year of the curve · fallback shown', {}, 'F2 runs in design/site/v5-frontier-curve.html. Here: today’s curve and the year in four curves.'],
+    ['V5FrontierCalib', 'v5-frontier-calibration', 1440, 2600, 'v5 · F3 · Calibration, explorable · fallback shown', {}, 'F3 runs in design/site/v5-frontier-calibration.html. Here: the 95% chart and the table.'],
+    ['V5FrontierCurve390', 'v5-frontier-curve', 390, 4800, 'v5 · F2 · phone', {}, 'F2 at 390.'],
+  ]),
+
+  // ---- Q-5, ruled "design it now" by the owner (2026-10-13): alerts on public data ----
+  ...v5Row('q5-alerts', 0, [
+    ['V5Alerts', 'q5-alerts', 1440, 1800, 'Alerts on public data · desktop', {}, 'Q-5: six kinds, each naming its source and delay; SEC kinds Not set up until SEC_USER_AGENT; structure kinds Not live. P-1 legend, P-2 words.'],
+    ['V5Alerts390', 'q5-alerts', 390, 3600, 'Alerts on public data · phone', {}, 'Q-5 at 390: rules as stacked rows, the kind table as cards, 44px targets.'],
+    ['V5AlertsLight', 'q5-alerts', 1440, 1800, 'Alerts on public data · light', { scheme: 'light' }, 'Q-5 in the light scheme.'],
+    ['V5AlertsFlow', 'q5-alerts-flow', 1440, 2400, 'New alert · choose, set up, read back', {}, 'Q-5: the create-alert dialog in three steps, with three set-up variants and the saved result.'],
+    ['V5AlertsFlow390', 'q5-alerts-flow', 390, 5200, 'New alert · phone (bottom sheets)', {}, 'Q-5 at 390: each step is a bottom sheet.'],
+    ['V5AlertsStates', 'q5-alerts-states', 1440, 3000, 'Alerts on public data · states', {}, 'Q-5: empty, not set up, source down, couldn’t load, off, fired, blocked, demo, and the dialog’s validation, duplicate, saving and failed save.'],
+  ]),
+
+  // ---- Final · Convexa v1 (2026-10-14): one row per screen, heights measured into screens/final/heights.json ----
+  ...finalArtboards(FINAL_HEIGHTS),
 ]);
-function fitAll(list) { return list.map((a) => (a.name.startsWith('V4') ? { ...a, h: fitH(a.name, a.h) } : a)); }
+
+/** v5: a row of boards on one page at height y, 120px apart, each with its note 260px above. */
+function v5Row(page, y, rows) {
+  let x = 0;
+  return rows.map(([name, screen, w, h, title, opts, v5note]) => { const a = { name, screen, page, x, y, w, h, title, opts, v5note, ...(w >= 1280 ? { expand: 'fill' } : {}) }; x += w + 120; return a; });
+}
+function fitAll(list) { return list.map((a) => (a.name.startsWith('V4') || a.name.startsWith('V5') ? { ...a, h: fitH(a.name, a.h) } : a)); }
 
 /** v4 · App: one row per route — desktop 1440 dark, phone 390, light 1440, states — with room above
  *  each row for the findings notes. */
@@ -161,6 +237,8 @@ function appRows() {
 }
 
 export const annotations = [
+  FINAL_NOTE,
+  PLANNED_NOTE,
   { id: 'note-tweaks', page: 'page-1', w: 560, text: 'Ticker desk — the tweak chips switch readState (idle · loading · trade · no_trade · stale · cooldown · signed_out · no_key), live (pulses, particles, trail), scheme (dark · light) and the phone sheet (open · peek). Click “Analyze current snapshot” to run loading → trade; Field / Magnet switches the hero. Expand this frame and resize your window: the layout is fluid.' },
   { id: 'note-resp', page: 'page-2', w: 620, text: 'Same source, five widths. Every frame here renders the identical page body through one set of media and container queries — nothing is redrawn by hand. The phone desk docks the AI read as a bottom sheet; tables become cards under 1000px; the settings rail becomes tabs under 900px.' },
   { id: 'note-site', page: 'page-3', w: 520, text: 'Site surfaces at 1440. Copy is grounded in the product (69-name universe, ~60s desk cadence, ~3-min scanner sweep, 7–45 DTE, simulated book, BYO key); all prices, P/L, scores and timestamps are sample values.' },
@@ -169,6 +247,7 @@ export const annotations = [
   { id: 'note-v4-tools', page: 'v4-tools', x: 0, y: -520, w: 900, text: 'v4 · Tools from public data (2026-10-13). Source of truth: docs/public-data/CANDIDATES.md and its status words (live · switch · build · verify · blocked). Top row: the roadmap and the built research pages, re-sourced and joined by the new tools. Rows below: one sheet per priority tool with desktop, phone and every state. Blocked tools draw their design target with illustrative values; the gate is open question Q-1.' },
   { id: 'note-v4-app', page: 'v4-app', x: 0, y: -520, w: 900, text: 'v4 · App (2026-10-13). One row per route: desktop 1440 dark, phone 390, light 1440, then the route’s states board. The ticker desk’s desktop and phone boards are on v4 · Data states. Findings per route: design/REVIEW-2026-10-13.md (wave 3). Figures are illustrative design values.' },
   { id: 'note-v4-research', page: 'v4-research', x: 0, y: -520, w: 900, text: 'v4 · Research refresh (2026-10-13). The note view with neutral directions supersedes the research canvas’s Main board (that canvas is left as it is); the index with its tabs; phone boards for Markets, Filings, Scorecard and ticker research; light boards for every research page and the state matrix; Markets in the demo build.' },
+  { id: 'note-v5-charts', page: 'v5-charts', x: 0, y: -620, w: 900, text: 'v5 · Charts (2026-10-13). Wave 1 audits every chart in the app and on these boards (design/CHARTS-2026-10-13.md); wave 2 is one chart system: a frame that makes a claim and names its source, a plot with text at true size, labels on the data, a table twin, one tab stop, the seven data states. Values are illustrative; sources are the ones the app reads.' },
   { id: 'note-system', page: 'page-5', w: 560, text: 'The library is generated from tokens/tokens.json and src/components — every state shown there is a registered state. The light renders prove the scheme is a token swap, not a second layout.' },
 ];
 
@@ -199,10 +278,58 @@ export function canvasJson() {
       ...(expand ? { expand } : {}),
     })),
     annotations: [
-      ...annotations.map((n) => ({ id: n.id, x: n.x ?? 0, y: n.y ?? -150, w: n.w, page: n.page, text: n.text })),
+      ...annotations.map((n) => ({ id: n.id, x: n.x ?? 0, y: n.y ?? -150, ...(n.w ? { w: n.w } : {}), page: n.page, text: n.text, ...(n.kind ? { kind: n.kind } : {}), ...(n.maxW ? { maxW: n.maxW } : {}) })),
       // v4: one findings note above every v4 board, naming the review IDs it resolves.
       ...layout().filter((a) => a.findings).map((a) => ({ id: `find-${a.name}`, x: a.x, y: a.y - 230, w: Math.min(a.w, 640), page: a.page, text: `${a.title}. Resolves ${a.findings}. Findings: design/REVIEW-2026-10-13.md.` })),
+      // v5: one note above each board, saying which wave it belongs to and what it resolves.
+      ...layout().filter((a) => a.v5note).map((a) => ({ id: `v5-${a.name}`, x: a.x, y: a.y - 260, w: Math.min(a.w, 640), page: a.page, text: `${a.title}. ${a.v5note}` })),
     ],
-    launch: { view: 'canvas', page: 'page-1' },
+    launch: { view: 'canvas', page: FINAL_PAGE.id },
+  };
+}
+
+// ---- The editable canvas, from v5 on (2026-10-13) ---------------------------------------------
+// A canvas made from the Design artifact type keeps one file per board (`project/<name>.dc.html`) plus
+// the index `project/canvas.json` (format v3), so size is per file, not per page. The v2–v4 canvas
+// (artifact 82be651e, one self-contained 13.5 MB page) and the research canvas stay as history.
+export const CANVAS_URL = 'https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe';
+export const CANVAS_TITLE = 'Convexa design';
+// Written once when the index was first created on files; the type asks that it never change after.
+export const CREATED_ON_FILES = { v: 1, at: '2026-10-14T04:05:17Z' };
+
+/** The v3 index for the files-based canvas: boards keyed by file, `order` back to front, notes keyed by
+ *  id. Same pages, positions, titles and notes as canvasJson(). */
+export function canvasIndexV3() {
+  const legacy = canvasJson();
+  const boards = {};
+  for (const a of legacy.artboards) {
+    const { file, ...rest } = a;
+    boards[file] = rest;
+  }
+  const notes = {};
+  for (const n of legacy.annotations) {
+    const { id, ...rest } = n;
+    if (notes[id]) throw new Error(`duplicate note id ${id}`);
+    notes[id] = rest;
+  }
+  const ids = Object.keys(notes);
+  if (ids.length > 200) throw new Error(`canvas notes ${ids.length} > 200 (type limit)`);
+  if (legacy.pages.length > 40) throw new Error(`canvas pages ${legacy.pages.length} > 40 (type limit)`);
+  for (const id of [...ids, ...legacy.pages.map((p) => p.id)]) if (!/^[A-Za-z0-9_-]{1,40}$/.test(id)) throw new Error(`bad id ${id}`);
+  for (const [f, b] of Object.entries(boards)) {
+    if (!/^[A-Za-z0-9_][A-Za-z0-9_.-]*\.dc\.html$/.test(f)) throw new Error(`bad board file ${f}`);
+    if (b.w < 40 || b.w > 8000 || b.h < 40 || b.h > 8000) throw new Error(`${f}: frame ${b.w}x${b.h} outside 40–8000`);
+  }
+  return {
+    v: 3,
+    createdOnFiles: CREATED_ON_FILES,
+    title: CANVAS_TITLE,
+    launch: legacy.launch,
+    pages: legacy.pages,
+    boards,
+    // Back-to-front draw order. The entry board stays first even though the Final page now leads the page list.
+    order: ['Main.dc.html', ...legacy.artboards.map((a) => a.file).filter((f) => f !== 'Main.dc.html')],
+    notes,
+    designSystems: [],
   };
 }

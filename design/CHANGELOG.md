@@ -127,3 +127,132 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
 - **New state tag “Live · TradingView”** (dotted, like the third-party provenance chip). Supersedes the
   `[EOD PRICE SOURCE]` placeholders and the “blocked” Technical tab of waves 1–3.
 
+## 2026-10-13 · v5 wave 0 — the canvas moves to files
+
+- **New editable canvas, one file per board:** https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe, made
+  from the Design artifact type. Every v2 and v4 board and every note moves across unchanged in place,
+  title and page; `canvas.config.mjs` `canvasIndexV3()` writes the type's v3 index and
+  `src/emit-project.mjs` lays the built boards out as `project/*.dc.html` with publish batches.
+- **Why:** the v2–v4 canvas (82be651e) is one self-contained page holding every board, 13.48 MB against a
+  16 MB page limit. Measured: 5.78 MB of its 10.15 MB of board source is the same token stylesheet
+  repeated per board, and escaping each `<` as `\u003c` costs 0.54 MB. A cheaper escape would not have
+  lasted: the viewer's own Save re-escapes every `<`. On files, the limit is 16 MB per board.
+- **Kept as history, untouched:** 82be651e (v16) and the research canvas HxZArSCsbrjQCx8VBbYRw7. The v4
+  single-file viewer in `canvas/` is frozen.
+- **Board files:** each now names itself (`<title>`), declares `lang="en"`, and marks its logic script
+  `type="text/x-dc"` so the frame never runs it as a classic script. No board's markup changed.
+
+## 2026-10-13 · v5 wave 1 — every chart, audited
+
+- **82 entries audited** (52 app charts, 21 board-only marks, 9 planned tools) in
+  `design/CHARTS-2026-10-13.md`: each with the question it answers, its form, findings cited to the
+  review standard or the dataviz method, the upgrade, effort, risk and score. Board **V5Audit**.
+- **Four charts draw something false:** the bridge cannot go below zero (5 of 19 shipped bridges break),
+  the research index draws losses as 3px stubs, a missing opportunity score draws as 0, and a "5m" tape
+  trail holds about 1.7 s. One root cause sits under the rest (SYS-01): no shared chart layer.
+
+## 2026-10-13 · v5 wave 2 — one chart system
+
+- **`src/chart-kit.mjs`** succeeds `fluidChart()`: frame, plot (bars, bands, gaps, events, crosshair,
+  end labels with collision leaders), range bar, sparkline, small multiples, table twin, state bodies,
+  pinned `Intl` formatters. Same construction (stretched SVG strokes, HTML text at true size).
+- **`src/components/charts.mjs`**: fifteen primitives, each with its variants and the seven data states
+  (loading at final size, empty, error with cause, stale, not live, sample, demo) and a React mapping to
+  `apps/dashboard/src/app/shared/charts/`. They join the library as the "Charts" group (full on the site
+  library; the Library board shows the frame and points to the v5 page).
+- **Two proposed token roles** under `tokens.json → additions.proposed`: `chartContext2` (the older
+  comparison line; dark #606E82 / light #7B899D) and `chartBand` (the uncertainty wash). The dataviz
+  validator passes the neutral context ramp in both schemes; `verify-tokens.mjs` now checks each
+  proposed role's contrast floor and fails if tokens.ts lands a different value (mutation-tested).
+- **Rules drawn from the canon** (board V5ChartSystem): a claim needs data; neutral first, no
+  categorical palette on the trader path; green/red only when money moves and never alone (the pair
+  measures ΔE 4.3–4.7 under deuteranopia); amber only as the focus ring and the base diamond; the
+  register holds; the frame's border is its provenance. Canon proposals P-8 to P-13 in CHARTS.
+- **Boards:** V5ChartSystem (+light), V5ChartStates, V5ChartPhone (390), V5ThirdParty (ours vs
+  TradingView's frame: eight deliberate differences).
+- **Fixes found by measuring, on existing boards:** the TradingView illustration coloured its study
+  labels as text (2.82–3.57:1; now steel with line keys) and hard-coded a dark-scheme fence colour; the
+  ticker sub-tabs' current tab measured 1.76:1 (a generic link rule outranked it); light warning strips
+  measured 4.25:1; the Library board was 5,900px tall against 13,350px of content (now measured).
+
+## 2026-10-13 · Owner rulings on the v4 proposals (canon Amendments row of the same name)
+
+- **P-1, P-2, P-3, P-4, P-6 approved**; the boards already drew them. **TradingView keeps its candles.**
+- **P-5 rejected:** a ticker's price change stays green/red, as text through `textUp`/`textDown`, with ▲/▼.
+  Reverted: the V4Scanner change column (table and cards) is directional again; the shared `.up`/`.down`
+  text classes and the direction chips move from the fill hues to the text grades, which reaches the v2
+  desk masthead, the landing mini tickers, the scanner and positions text. Sparklines keep the direction
+  fill hues (they are marks). Supersedes the 2026-10-13 X-05 resolution; research company facts stay neutral.
+- **Q-5 designed (alerts on public data):** six kinds — results approaching, new filing, insider cluster,
+  positioning extreme, short interest change, note coming due — each naming its source and delay and
+  wearing a P-2 word; SEC-backed kinds save but say "Not set up" until SEC_USER_AGENT (Q-4, the owner);
+  structure kinds stay "Not live". The Alerts page with the P-1 "On this page" legend, the three-step
+  create-alert dialog (bottom sheets on phones), and every state. Boards V5Alerts (+390, light),
+  V5AlertsFlow (+390), V5AlertsStates. Q-2 is with the owner; Q-3 deferred.
+
+## 2026-10-13 · v5 wave 3 — every chart family, before and after
+
+- **Eleven family boards** (page "v5 · Chart families · before and after"): note figures, valuation,
+  Markets, Scorecard and Filings, note panels, the ticker desk, the smaller charts, the planned tools and
+  TradingView's framing, with phone and light variants. Each row pairs the shipped shape and its defects
+  (file:line) with the upgrade on the chart system. Summary per family in CHARTS-2026-10-13.md.
+- **Kit additions:** whiskers, floating bars with connectors (waterfalls that cross zero), dots and
+  segments, a labelled bar list with open-ended and negative bars, the before/after row; event chips
+  anchor inside the plot at its edges.
+- **TradingView:** placement decided screen by screen (Technical tab and the desk's price panel only);
+  loading words, a 12 s timeout, a per-symbol reset; proposal P-14 (load on request).
+- **Measure tool:** outlined marks are read by their border, wash-filled ranges by their edge.
+
+## 2026-10-13 · v5 wave 4 — the frontier
+
+- **Three prototypes in design/site**, each drawn first as its designed fallback (what the canvas boards
+  show): F1, the dealer-gamma surface in WebGL2 (no dependency, render on demand, orthographic, keyboard
+  probe, a runtime pixel-ratio ladder, context-loss recovery, the static projection as its fallback);
+  F2, a year of the Treasury curve by hand (scrubber, FOMC decisions on the track, the claim recomputed per
+  day, Play that steps a month under reduced motion); F3, calibration you can question (interval, bin
+  width, the calls behind a dot).
+- **Budgets measured, not assumed**: frame intervals, script time, draw calls, buffer size, idle frames,
+  context loss, Event Timing, gzip payload (CHARTS-2026-10-13.md, wave 4). F1 lands just over its frame
+  budget on a software rasteriser after the ladder (p95 17.0 ms) and is reported so.
+- **Canon proposals P-12 and P-15**; horizon charts, a step-through bridge and a price timeline
+  considered and not built, with reasons.
+
+## 2026-10-14 · Final · Convexa v1 — every screen in its ruled state
+
+- **New first page "Final · Convexa v1"** (owner request): 19 rows, 128 boards. Each row opens with a spec card
+  (purpose, every widget's data source, production vs staging, every state in its P-2 words, phone, acceptance,
+  built so far, rulings, code), then staging (the demo account), production (no mocks; Massive-dependent panels
+  Not live with "See it on the demo →"), phone, light, states. Rows: foundations; shell, landing, methodology,
+  blog, Lab, 404, operator; ticker desk, Technical, research note; research index, Markets, Filings, Scorecard;
+  scanner, positions, alerts, settings, dialogs. Source: `src/screens/final/`; brief: `FINAL-BRIEF.md`.
+- Carries P-1–P-4, P-6, P-8–P-15 (v5 rulings 2026-10-14) and the 2026-10-14 environment rulings. The earlier
+  pages stay as history; their demo boards now say "Signed in as the demo account" and the signed-out nav says
+  "Log in" (shared `lib.mjs`), and light chart boards take the light chart roles (shared `chart-kit.mjs` fix).
+- Checked: `tmp/final-render.mjs` on all 128 boards (no overflow, no text under 11px, exit 0 per group); build and
+  verify-tokens exit 0; no NUL bytes. **Published** to https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe as
+  versions 8–10 (index + 315 boards). The canvas page itself was not opened in a browser.
+
+## 2026-10-14 · Final · Convexa v1 — the missing screens (wave 2)
+
+- **20 new rows, 107 boards** (page now 39 rows, 235 boards), each placed beside the screen it belongs to:
+  Data sources and credits, Privacy, Terms and disclaimer (after 404; new routes, copy a draft for the owner);
+  the AI read in depth (after the desk: analysis drawer, export drawer, phone peek and sheet, 14 states);
+  the remaining overlays (after dialogs: broker reassess, track-record archive, expanded widget, name a view,
+  browser notifications, password reset as dialog and page, phone sheets); all five Lab instruments (after the
+  Lab index: Not live in production, Sample on staging); and a **Planned** section at the bottom under its own
+  title with the nine public-data tools (designed, not built). Placement: `after:` / `section: 'planned'` in
+  `src/screens/final/index.mjs`.
+- Shared fixes: the footer carries Sources and credits, Privacy and Terms (`lib.mjs` `v4Footer`); on charts
+  under 480px the probe readout wraps inside the plot and range bars take a second label row (`chart-kit.mjs`).
+- Consistency fixes: SPY levels on the scanner, alert and export boards now match the desk (705.00 / 686.80 /
+  672.50); the desk's level chips, levels line and implied-move labels, the note's catalysts and value-range
+  labels, the landing hero's axis ticks, and two planned charts no longer collide on a phone; the Lab index cards
+  carry the Sample tag and scenario date (P-3).
+- Gaps found (on the spec cards' "Built so far"): the demo seed's SPY levels (704.02 / 683.92 / 652.22) and the
+  Lab's synthetic field (walls 500/530) differ from the design; production draws the Lab's mocks; the demo AI read
+  skips the read sheet; no password reset, invitation, account deletion or trust routes exist; the API reports a
+  fallback copy as live.
+- Checked: `tmp/final-render.mjs` on all 235 boards (exit 0 per group; no overflow, no text under 11px) and a
+  label-collision scan (none left); build and verify-tokens exit 0; no NUL bytes.
+- **Published** to https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe as versions 11–12 (index + 332 changed boards;
+  the older pages changed through the shared footer and chart kit). The canvas page itself was not opened in a browser.

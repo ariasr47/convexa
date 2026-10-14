@@ -16,6 +16,10 @@
   .hd-tabs { display: flex; gap: 4px; }
   .hd-tabs a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; color: var(--steel); text-decoration: none; font-size: 13px; font-weight: 500; }
   .hd-tabs a[aria-current="page"] { background: var(--phosphor); color: var(--ink); font-weight: 600; }
+  /* v5 fix (2026-10-13): the generic .v4 link rule (specificity 0,4,2) repainted both tab states textInfo — the
+     current tab measured 1.76:1 on its phosphor pill. Same selector chain plus the tab, so the tab wins. */
+  .v4 .hd-tabs a:not(.btn):not(.prov):not(.v4n a) { color: var(--steel); }
+  .v4 .hd-tabs a[aria-current="page"]:not(.btn):not(.prov):not(.v4n a) { color: var(--ink); }
   .hd-syms { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
   .hd-syms a { display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--phosphor); text-decoration: none; flex: 0 0 auto; }
   .hd-syms a[aria-current="true"] { border-color: var(--phosphor); box-shadow: inset 0 0 0 1px var(--phosphor); }
@@ -188,7 +192,7 @@
     <div class="v4n-right">
       <button type="button" class="v4n-search" aria-keyshortcuts="Meta+K"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><span style="flex: 1; text-align: left;">Jump to a ticker or note</span><span class="kbd">⌘K</span></button>
       <button type="button" class="v4n-icon search" aria-label="Jump to a ticker or note"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></button>
-      <a href="/settings#account" class="v4n-signin">Sign in</a>
+      <a href="/settings#account" class="v4n-signin">Log in</a>
       <button type="button" class="v4n-icon menu" aria-label="Open navigation menu" aria-expanded="false"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
     </div>
   </div></header><div class="wrap" style="padding-top: 28px; display: flex; flex-direction: column; gap: 16px;"><span class="skel" style="height: 44px; width: 38%;"></span><span class="skel" style="height: 300px; width: 100%;"></span><span class="skel" style="height: 120px; width: 100%;"></span><span class="skel" style="height: 220px; width: 100%;"></span></div></div><div class="v4-over"><div class="v4dlg wide" role="dialog" aria-modal="true" aria-label="Open simulated position · NVDA"><div class="dh"><h2>Open simulated position · NVDA</h2><span class="stag k-solid">SIMULATED</span><button class="btn ghost sm" type="button" aria-label="Close"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div><div class="db"><div class="fld">Fill<span class="seg4" role="group"><button type="button" aria-pressed="true">Manual price</button><button type="button" aria-pressed="false" disabled>Market</button><button type="button" aria-pressed="false" disabled>Limit</button></span><span class="help">Market and Limit fill at a live quote, which needs the options feed. Manual price opens at your price: user-entered, not a market quote.</span></div>
