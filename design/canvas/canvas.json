@@ -51,6 +51,10 @@
     {
       "id": "v5-families",
       "name": "v5 · Chart families · before and after"
+    },
+    {
+      "id": "v5-frontier",
+      "name": "v5 · Frontier"
     }
   ],
   "artboards": [
@@ -1773,6 +1777,55 @@
       "h": 2080,
       "page": "v5-families",
       "expand": "fill"
+    },
+    {
+      "file": "V5Frontier.dc.html",
+      "title": "v5 · The frontier · overview",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1370,
+      "page": "v5-frontier",
+      "expand": "fill"
+    },
+    {
+      "file": "V5FrontierGamma.dc.html",
+      "title": "v5 · F1 · Dealer-gamma surface (WebGL) · fallback shown",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 2610,
+      "page": "v5-frontier",
+      "expand": "fill"
+    },
+    {
+      "file": "V5FrontierCurve.dc.html",
+      "title": "v5 · F2 · A year of the curve · fallback shown",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 2460,
+      "page": "v5-frontier",
+      "expand": "fill"
+    },
+    {
+      "file": "V5FrontierCalib.dc.html",
+      "title": "v5 · F3 · Calibration, explorable · fallback shown",
+      "x": 4680,
+      "y": 0,
+      "w": 1440,
+      "h": 1880,
+      "page": "v5-frontier",
+      "expand": "fill"
+    },
+    {
+      "file": "V5FrontierCurve390.dc.html",
+      "title": "v5 · F2 · phone",
+      "x": 6240,
+      "y": 0,
+      "w": 390,
+      "h": 3570,
+      "page": "v5-frontier"
     }
   ],
   "annotations": [
@@ -2991,6 +3044,46 @@
       "w": 640,
       "page": "v5-families",
       "text": "v5 · Scorecard · light. Calibration and by-month in the light scheme."
+    },
+    {
+      "id": "v5-V5Frontier",
+      "x": 0,
+      "y": -260,
+      "w": 640,
+      "page": "v5-frontier",
+      "text": "v5 · The frontier · overview. Wave 4: three prototypes in design/site (v5-frontier-*.html) with measured budgets; what was considered and not built."
+    },
+    {
+      "id": "v5-V5FrontierGamma",
+      "x": 1560,
+      "y": -260,
+      "w": 640,
+      "page": "v5-frontier",
+      "text": "v5 · F1 · Dealer-gamma surface (WebGL) · fallback shown. F1 runs in design/site/v5-frontier-gamma.html. Here: the static projection it falls back to. Needs P-15."
+    },
+    {
+      "id": "v5-V5FrontierCurve",
+      "x": 3120,
+      "y": -260,
+      "w": 640,
+      "page": "v5-frontier",
+      "text": "v5 · F2 · A year of the curve · fallback shown. F2 runs in design/site/v5-frontier-curve.html. Here: today’s curve and the year in four curves."
+    },
+    {
+      "id": "v5-V5FrontierCalib",
+      "x": 4680,
+      "y": -260,
+      "w": 640,
+      "page": "v5-frontier",
+      "text": "v5 · F3 · Calibration, explorable · fallback shown. F3 runs in design/site/v5-frontier-calibration.html. Here: the 95% chart and the table."
+    },
+    {
+      "id": "v5-V5FrontierCurve390",
+      "x": 6240,
+      "y": -260,
+      "w": 390,
+      "page": "v5-frontier",
+      "text": "v5 · F2 · phone. F2 at 390."
     }
   ],
   "launch": {
