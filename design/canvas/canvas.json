@@ -19,6 +19,26 @@
     {
       "id": "page-5",
       "name": "System"
+    },
+    {
+      "id": "v4-data",
+      "name": "v4 · Data states"
+    },
+    {
+      "id": "v4-tools",
+      "name": "v4 · Tools from public data"
+    },
+    {
+      "id": "v4-app",
+      "name": "v4 · App"
+    },
+    {
+      "id": "v4-research",
+      "name": "v4 · Research"
+    },
+    {
+      "id": "v4-coverage",
+      "name": "v4 · Coverage"
     }
   ],
   "artboards": [
@@ -341,7 +361,7 @@
       "x": 0,
       "y": 0,
       "w": 1440,
-      "h": 5400,
+      "h": 5900,
       "page": "page-5"
     },
     {
@@ -371,6 +391,1095 @@
       "w": 1440,
       "h": 2960,
       "page": "page-5"
+    },
+    {
+      "file": "V4SourceMap.dc.html",
+      "title": "v4 · Source map: where every number comes from",
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 6450,
+      "page": "v4-data"
+    },
+    {
+      "file": "V4HybridDesk.dc.html",
+      "title": "v4 · Hybrid desk · NVDA · not-live panels explained",
+      "x": 2040,
+      "y": 0,
+      "w": 1440,
+      "h": 2990,
+      "page": "v4-data",
+      "expand": "fill"
+    },
+    {
+      "file": "V4HybridDeskSample.dc.html",
+      "title": "v4 · Hybrid desk · NVDA · sample illustrations on",
+      "x": 3600,
+      "y": 0,
+      "w": 1440,
+      "h": 2990,
+      "page": "v4-data",
+      "expand": "fill"
+    },
+    {
+      "file": "V4HybridDesk390.dc.html",
+      "title": "v4 · Hybrid desk · NVDA · phone",
+      "x": 5160,
+      "y": 0,
+      "w": 390,
+      "h": 4340,
+      "page": "v4-data"
+    },
+    {
+      "file": "V4StateMatrix.dc.html",
+      "title": "v4 · State matrix · 9 families × 14 states",
+      "x": 0,
+      "y": 6760,
+      "w": 3220,
+      "h": 4090,
+      "page": "v4-data"
+    },
+    {
+      "file": "V4StateMatrix390.dc.html",
+      "title": "v4 · State matrix · phone widths",
+      "x": 3340,
+      "y": 6760,
+      "w": 3740,
+      "h": 4510,
+      "page": "v4-data"
+    },
+    {
+      "file": "V4HybridDesk834.dc.html",
+      "title": "v4 · Hybrid desk · 834 tablet",
+      "x": 5670,
+      "y": 0,
+      "w": 834,
+      "h": 4260,
+      "page": "v4-data"
+    },
+    {
+      "file": "V4HybridDesk390Light.dc.html",
+      "title": "v4 · Hybrid desk · phone · light",
+      "x": 6624,
+      "y": 0,
+      "w": 390,
+      "h": 4340,
+      "page": "v4-data"
+    },
+    {
+      "file": "V4Roadmap.dc.html",
+      "title": "v4 · Roadmap: everything Convexa can build without the paid feed",
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 2400,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4Markets.dc.html",
+      "title": "v4 · Markets · rates, liquidity, calendar, positioning (built + build)",
+      "x": 2040,
+      "y": 0,
+      "w": 1440,
+      "h": 3030,
+      "page": "v4-tools",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Filings.dc.html",
+      "title": "v4 · Filings · the SEC feed and filing detail (switch)",
+      "x": 3600,
+      "y": 0,
+      "w": 1440,
+      "h": 1290,
+      "page": "v4-tools",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Scorecard.dc.html",
+      "title": "v4 · Scorecard · forecasts live, signal track record blocked",
+      "x": 5160,
+      "y": 0,
+      "w": 1440,
+      "h": 1500,
+      "page": "v4-tools",
+      "expand": "fill"
+    },
+    {
+      "file": "V4TickerResearch.dc.html",
+      "title": "v4 · Ticker research · NVDA · every public panel",
+      "x": 6720,
+      "y": 0,
+      "w": 1440,
+      "h": 2230,
+      "page": "v4-tools",
+      "expand": "fill"
+    },
+    {
+      "file": "V4ToolLiquidity.dc.html",
+      "title": "v4 · Tool · Liquidity panel · build",
+      "x": 0,
+      "y": 4000,
+      "w": 1440,
+      "h": 2370,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4ToolCalendar.dc.html",
+      "title": "v4 · Tool · Macro calendar · build",
+      "x": 1560,
+      "y": 4000,
+      "w": 1440,
+      "h": 2550,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4ToolOtc.dc.html",
+      "title": "v4 · Tool · Off-exchange volume (weekly) · build / verify",
+      "x": 3120,
+      "y": 4000,
+      "w": 1440,
+      "h": 2370,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4ToolClusters.dc.html",
+      "title": "v4 · Tool · Insider clusters · build",
+      "x": 4680,
+      "y": 4000,
+      "w": 1440,
+      "h": 2270,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4ToolHolders.dc.html",
+      "title": "v4 · Tool · Fund holdings (13F) · build",
+      "x": 6240,
+      "y": 4000,
+      "w": 1440,
+      "h": 2310,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4ToolXbrl.dc.html",
+      "title": "v4 · Tool · Note figures from XBRL · build",
+      "x": 0,
+      "y": 7300,
+      "w": 1440,
+      "h": 2470,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4ToolPeers.dc.html",
+      "title": "v4 · Tool · Peer table · build",
+      "x": 1560,
+      "y": 7300,
+      "w": 1440,
+      "h": 2440,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4ToolTa.dc.html",
+      "title": "v4 · Tool · Technical analysis · blocked",
+      "x": 3120,
+      "y": 7300,
+      "w": 1440,
+      "h": 3100,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4ToolSignals.dc.html",
+      "title": "v4 · Tool · Signal track record · blocked",
+      "x": 4680,
+      "y": 7300,
+      "w": 1440,
+      "h": 2260,
+      "page": "v4-tools"
+    },
+    {
+      "file": "V4Shell.dc.html",
+      "title": "v4 · Global shell · desktop",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 760,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Shell390.dc.html",
+      "title": "v4 · Global shell · phone",
+      "x": 1560,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4ShellLight.dc.html",
+      "title": "v4 · Global shell · light",
+      "x": 2070,
+      "y": 0,
+      "w": 1440,
+      "h": 760,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4ShellStates.dc.html",
+      "title": "v4 · Global shell · states",
+      "x": 3630,
+      "y": 0,
+      "w": 1440,
+      "h": 2620,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4Landing.dc.html",
+      "title": "v4 · Landing · desktop",
+      "x": 0,
+      "y": 3040,
+      "w": 1440,
+      "h": 2400,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Landing390.dc.html",
+      "title": "v4 · Landing · phone",
+      "x": 1560,
+      "y": 3040,
+      "w": 390,
+      "h": 4100,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4LandingLight.dc.html",
+      "title": "v4 · Landing · light",
+      "x": 2070,
+      "y": 3040,
+      "w": 1440,
+      "h": 2400,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4LandingStates.dc.html",
+      "title": "v4 · Landing · states",
+      "x": 3630,
+      "y": 3040,
+      "w": 1440,
+      "h": 1450,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4DeskLight.dc.html",
+      "title": "v4 · Hybrid desk · light",
+      "x": 0,
+      "y": 7560,
+      "w": 1440,
+      "h": 2990,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4DeskStates.dc.html",
+      "title": "v4 · Ticker desk (desktop and phone on v4 · Data states) · states",
+      "x": 1560,
+      "y": 7560,
+      "w": 1440,
+      "h": 2690,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4Technical.dc.html",
+      "title": "v4 · Ticker · Technical tab (TradingView) · desktop",
+      "x": 0,
+      "y": 10970,
+      "w": 1440,
+      "h": 1270,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Technical390.dc.html",
+      "title": "v4 · Ticker · Technical tab (TradingView) · phone",
+      "x": 1560,
+      "y": 10970,
+      "w": 390,
+      "h": 1370,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4TechnicalLight.dc.html",
+      "title": "v4 · Ticker · Technical tab (TradingView) · light",
+      "x": 2070,
+      "y": 10970,
+      "w": 1440,
+      "h": 1270,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4TechnicalStates.dc.html",
+      "title": "v4 · Ticker · Technical tab (TradingView) · states",
+      "x": 3630,
+      "y": 10970,
+      "w": 1440,
+      "h": 1320,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4Scanner.dc.html",
+      "title": "v4 · Scanner · desktop",
+      "x": 0,
+      "y": 12760,
+      "w": 1440,
+      "h": 1310,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Scanner390.dc.html",
+      "title": "v4 · Scanner · phone",
+      "x": 1560,
+      "y": 12760,
+      "w": 390,
+      "h": 1810,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4ScannerLight.dc.html",
+      "title": "v4 · Scanner · light",
+      "x": 2070,
+      "y": 12760,
+      "w": 1440,
+      "h": 1310,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4ScannerStates.dc.html",
+      "title": "v4 · Scanner · states",
+      "x": 3630,
+      "y": 12760,
+      "w": 1440,
+      "h": 1790,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4Positions.dc.html",
+      "title": "v4 · Positions · desktop",
+      "x": 0,
+      "y": 14990,
+      "w": 1440,
+      "h": 1070,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Positions390.dc.html",
+      "title": "v4 · Positions · phone",
+      "x": 1560,
+      "y": 14990,
+      "w": 390,
+      "h": 1910,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4PositionsLight.dc.html",
+      "title": "v4 · Positions · light",
+      "x": 2070,
+      "y": 14990,
+      "w": 1440,
+      "h": 1070,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4PositionsSignedOut.dc.html",
+      "title": "v4 · Positions · signed out (wall)",
+      "x": 3630,
+      "y": 14990,
+      "w": 1440,
+      "h": 710,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4PositionsStates.dc.html",
+      "title": "v4 · Positions · states",
+      "x": 5190,
+      "y": 14990,
+      "w": 1440,
+      "h": 1560,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4Alerts.dc.html",
+      "title": "v4 · Alerts · desktop",
+      "x": 0,
+      "y": 17320,
+      "w": 1440,
+      "h": 1010,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Alerts390.dc.html",
+      "title": "v4 · Alerts · phone",
+      "x": 1560,
+      "y": 17320,
+      "w": 390,
+      "h": 1890,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4AlertsLight.dc.html",
+      "title": "v4 · Alerts · light",
+      "x": 2070,
+      "y": 17320,
+      "w": 1440,
+      "h": 1010,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4AlertsStates.dc.html",
+      "title": "v4 · Alerts · states",
+      "x": 3630,
+      "y": 17320,
+      "w": 1440,
+      "h": 1280,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4Settings.dc.html",
+      "title": "v4 · Settings · desktop",
+      "x": 0,
+      "y": 19630,
+      "w": 1440,
+      "h": 1650,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Settings390.dc.html",
+      "title": "v4 · Settings · phone",
+      "x": 1560,
+      "y": 19630,
+      "w": 390,
+      "h": 2090,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4SettingsLight.dc.html",
+      "title": "v4 · Settings · light",
+      "x": 2070,
+      "y": 19630,
+      "w": 1440,
+      "h": 1650,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4SettingsSignedOut.dc.html",
+      "title": "v4 · Settings · signed out",
+      "x": 3630,
+      "y": 19630,
+      "w": 1440,
+      "h": 1320,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4SettingsStates.dc.html",
+      "title": "v4 · Settings · states",
+      "x": 5190,
+      "y": 19630,
+      "w": 1440,
+      "h": 1400,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4Methodology.dc.html",
+      "title": "v4 · Methodology · desktop",
+      "x": 0,
+      "y": 22140,
+      "w": 1440,
+      "h": 1930,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Methodology390.dc.html",
+      "title": "v4 · Methodology · phone",
+      "x": 1560,
+      "y": 22140,
+      "w": 390,
+      "h": 2600,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4MethodologyLight.dc.html",
+      "title": "v4 · Methodology · light",
+      "x": 2070,
+      "y": 22140,
+      "w": 1440,
+      "h": 1930,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4MethodologyStates.dc.html",
+      "title": "v4 · Methodology · states",
+      "x": 3630,
+      "y": 22140,
+      "w": 1440,
+      "h": 1360,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4Blog.dc.html",
+      "title": "v4 · Blog · desktop",
+      "x": 0,
+      "y": 25160,
+      "w": 1440,
+      "h": 740,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Blog390.dc.html",
+      "title": "v4 · Blog · phone",
+      "x": 1560,
+      "y": 25160,
+      "w": 390,
+      "h": 950,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4BlogLight.dc.html",
+      "title": "v4 · Blog · light",
+      "x": 2070,
+      "y": 25160,
+      "w": 1440,
+      "h": 740,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Lab.dc.html",
+      "title": "v4 · Lab · desktop",
+      "x": 0,
+      "y": 26530,
+      "w": 1440,
+      "h": 1110,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Lab390.dc.html",
+      "title": "v4 · Lab · phone",
+      "x": 1560,
+      "y": 26530,
+      "w": 390,
+      "h": 2000,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4LabLight.dc.html",
+      "title": "v4 · Lab · light",
+      "x": 2070,
+      "y": 26530,
+      "w": 1440,
+      "h": 1110,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4NotFound.dc.html",
+      "title": "v4 · 404 and route fallback · desktop",
+      "x": 0,
+      "y": 28950,
+      "w": 1440,
+      "h": 700,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4NotFound390.dc.html",
+      "title": "v4 · 404 and route fallback · phone",
+      "x": 1560,
+      "y": 28950,
+      "w": 390,
+      "h": 900,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4NotFoundLight.dc.html",
+      "title": "v4 · 404 and route fallback · light",
+      "x": 2070,
+      "y": 28950,
+      "w": 1440,
+      "h": 700,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4SignIn.dc.html",
+      "title": "v4 · Sign in and the wall · desktop",
+      "x": 0,
+      "y": 30270,
+      "w": 1440,
+      "h": 1000,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4SignIn390.dc.html",
+      "title": "v4 · Sign in and the wall · phone",
+      "x": 1560,
+      "y": 30270,
+      "w": 390,
+      "h": 1000,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4SignInLight.dc.html",
+      "title": "v4 · Sign in and the wall · light",
+      "x": 2070,
+      "y": 30270,
+      "w": 1440,
+      "h": 1000,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4SignInStates.dc.html",
+      "title": "v4 · Sign in and the wall · states",
+      "x": 3630,
+      "y": 30270,
+      "w": 1440,
+      "h": 1330,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4TradeEntry.dc.html",
+      "title": "v4 · Trade entry · desktop",
+      "x": 0,
+      "y": 32020,
+      "w": 1440,
+      "h": 1100,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4TradeEntry390.dc.html",
+      "title": "v4 · Trade entry · phone",
+      "x": 1560,
+      "y": 32020,
+      "w": 390,
+      "h": 1300,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4TradeEntryLight.dc.html",
+      "title": "v4 · Trade entry · light",
+      "x": 2070,
+      "y": 32020,
+      "w": 1440,
+      "h": 1100,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4TradeEntryStates.dc.html",
+      "title": "v4 · Trade entry · states",
+      "x": 3630,
+      "y": 32020,
+      "w": 1440,
+      "h": 1400,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4OrderDetail.dc.html",
+      "title": "v4 · Order detail · desktop",
+      "x": 0,
+      "y": 33840,
+      "w": 1440,
+      "h": 1000,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4OrderDetail390.dc.html",
+      "title": "v4 · Order detail · phone",
+      "x": 1560,
+      "y": 33840,
+      "w": 390,
+      "h": 1100,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4OrderDetailLight.dc.html",
+      "title": "v4 · Order detail · light",
+      "x": 2070,
+      "y": 33840,
+      "w": 1440,
+      "h": 1000,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4OrderDetailStates.dc.html",
+      "title": "v4 · Order detail · states",
+      "x": 3630,
+      "y": 33840,
+      "w": 1440,
+      "h": 660,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4WhatsSent.dc.html",
+      "title": "v4 · What’s sent drawer · desktop",
+      "x": 0,
+      "y": 35360,
+      "w": 1440,
+      "h": 1120,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4WhatsSent390.dc.html",
+      "title": "v4 · What’s sent drawer · phone",
+      "x": 1560,
+      "y": 35360,
+      "w": 390,
+      "h": 1100,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4WhatsSentLight.dc.html",
+      "title": "v4 · What’s sent drawer · light",
+      "x": 2070,
+      "y": 35360,
+      "w": 1440,
+      "h": 1120,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4WhatsSentStates.dc.html",
+      "title": "v4 · What’s sent drawer · states",
+      "x": 3630,
+      "y": 35360,
+      "w": 1440,
+      "h": 1290,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4Persona.dc.html",
+      "title": "v4 · Persona · desktop",
+      "x": 0,
+      "y": 37070,
+      "w": 1440,
+      "h": 1000,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Persona390.dc.html",
+      "title": "v4 · Persona · phone",
+      "x": 1560,
+      "y": 37070,
+      "w": 390,
+      "h": 1100,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4PersonaLight.dc.html",
+      "title": "v4 · Persona · light",
+      "x": 2070,
+      "y": 37070,
+      "w": 1440,
+      "h": 1000,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4PersonaStates.dc.html",
+      "title": "v4 · Persona · states",
+      "x": 3630,
+      "y": 37070,
+      "w": 1440,
+      "h": 760,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4ViewEditor.dc.html",
+      "title": "v4 · Scan view editor · desktop",
+      "x": 0,
+      "y": 38590,
+      "w": 1440,
+      "h": 1000,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4ViewEditor390.dc.html",
+      "title": "v4 · Scan view editor · phone",
+      "x": 1560,
+      "y": 38590,
+      "w": 390,
+      "h": 1200,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4ViewEditorLight.dc.html",
+      "title": "v4 · Scan view editor · light",
+      "x": 2070,
+      "y": 38590,
+      "w": 1440,
+      "h": 1000,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4ViewEditorStates.dc.html",
+      "title": "v4 · Scan view editor · states",
+      "x": 3630,
+      "y": 38590,
+      "w": 1440,
+      "h": 840,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4Operator.dc.html",
+      "title": "v4 · Operator · desktop",
+      "x": 0,
+      "y": 40210,
+      "w": 1440,
+      "h": 730,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Operator390.dc.html",
+      "title": "v4 · Operator · phone",
+      "x": 1560,
+      "y": 40210,
+      "w": 390,
+      "h": 840,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4OperatorLight.dc.html",
+      "title": "v4 · Operator · light",
+      "x": 2070,
+      "y": 40210,
+      "w": 1440,
+      "h": 730,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4OperatorStates.dc.html",
+      "title": "v4 · Operator · states",
+      "x": 3630,
+      "y": 40210,
+      "w": 1440,
+      "h": 790,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4NoteView.dc.html",
+      "title": "v4 · Note view · NVDA · neutral directions (supersedes the research canvas Main board)",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 3520,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4NoteView390.dc.html",
+      "title": "v4 · Note view · phone",
+      "x": 1560,
+      "y": 0,
+      "w": 390,
+      "h": 4740,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4NoteViewLight.dc.html",
+      "title": "v4 · Note view · light",
+      "x": 2070,
+      "y": 0,
+      "w": 1440,
+      "h": 3520,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4NoteStates.dc.html",
+      "title": "v4 · Note view · states",
+      "x": 3630,
+      "y": 0,
+      "w": 1440,
+      "h": 1200,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4ResearchIndex.dc.html",
+      "title": "v4 · Research index with the tabs",
+      "x": 0,
+      "y": 5020,
+      "w": 1440,
+      "h": 1300,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4ResearchIndex390.dc.html",
+      "title": "v4 · Research index · phone",
+      "x": 1560,
+      "y": 5020,
+      "w": 390,
+      "h": 2030,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4ResearchIndexLight.dc.html",
+      "title": "v4 · Research index · light",
+      "x": 2070,
+      "y": 5020,
+      "w": 1440,
+      "h": 1300,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Markets390.dc.html",
+      "title": "v4 · Markets · phone",
+      "x": 0,
+      "y": 7840,
+      "w": 390,
+      "h": 4910,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4Filings390.dc.html",
+      "title": "v4 · Filings · phone",
+      "x": 510,
+      "y": 7840,
+      "w": 390,
+      "h": 2620,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4Scorecard390.dc.html",
+      "title": "v4 · Scorecard · phone",
+      "x": 1020,
+      "y": 7840,
+      "w": 390,
+      "h": 3130,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4TickerResearch390.dc.html",
+      "title": "v4 · Ticker research · phone",
+      "x": 1530,
+      "y": 7840,
+      "w": 390,
+      "h": 4290,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4MarketsLight.dc.html",
+      "title": "v4 · Markets · light",
+      "x": 2040,
+      "y": 7840,
+      "w": 1440,
+      "h": 3030,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4FilingsLight.dc.html",
+      "title": "v4 · Filings · light",
+      "x": 3600,
+      "y": 7840,
+      "w": 1440,
+      "h": 1290,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4ScorecardLight.dc.html",
+      "title": "v4 · Scorecard · light",
+      "x": 5160,
+      "y": 7840,
+      "w": 1440,
+      "h": 1500,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4TickerResearchLight.dc.html",
+      "title": "v4 · Ticker research · light",
+      "x": 6720,
+      "y": 7840,
+      "w": 1440,
+      "h": 2230,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4MarketsDemo.dc.html",
+      "title": "v4 · Markets · demo build (dashed chips)",
+      "x": 8280,
+      "y": 7840,
+      "w": 1440,
+      "h": 3030,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4StateMatrixLight.dc.html",
+      "title": "v4 · State matrix · light",
+      "x": 0,
+      "y": 14660,
+      "w": 3220,
+      "h": 4090,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4NoteView390Light.dc.html",
+      "title": "v4 · Note view · phone · light",
+      "x": 5190,
+      "y": 0,
+      "w": 390,
+      "h": 4740,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4Markets834.dc.html",
+      "title": "v4 · Markets · 834 tablet",
+      "x": 9840,
+      "y": 7840,
+      "w": 834,
+      "h": 3790,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4Coverage.dc.html",
+      "title": "v4 · Coverage matrix · route × width × theme × states",
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 1890,
+      "page": "v4-coverage"
     }
   ],
   "annotations": [
@@ -407,12 +1516,964 @@
       "text": "Every overlay and gate in the product: sign-in and the private-testing wall, the one shared sim trade-entry dialog in both variants (with the six binding disclosures verbatim), the egress drawer, persona editing, order detail in both coverage states, the scan view editor, route fallback, 404, and the two operator surfaces."
     },
     {
+      "id": "note-v4-data",
+      "x": 0,
+      "y": -520,
+      "w": 900,
+      "page": "v4-data",
+      "text": "v4 · Data states (2026-10-13). The hybrid site: live where free public data reaches, honestly not live where the paid options feed is needed. Source map → state matrix → the NVDA desk in both honest options (explain, or a labelled sample). Every board names the review findings it resolves (design/REVIEW-2026-10-13.md). Figures are illustrative design values."
+    },
+    {
+      "id": "note-v4-tools",
+      "x": 0,
+      "y": -520,
+      "w": 900,
+      "page": "v4-tools",
+      "text": "v4 · Tools from public data (2026-10-13). Source of truth: docs/public-data/CANDIDATES.md and its status words (live · switch · build · verify · blocked). Top row: the roadmap and the built research pages, re-sourced and joined by the new tools. Rows below: one sheet per priority tool with desktop, phone and every state. Blocked tools draw their design target with illustrative values; the gate is open question Q-1."
+    },
+    {
+      "id": "note-v4-app",
+      "x": 0,
+      "y": -520,
+      "w": 900,
+      "page": "v4-app",
+      "text": "v4 · App (2026-10-13). One row per route: desktop 1440 dark, phone 390, light 1440, then the route’s states board. The ticker desk’s desktop and phone boards are on v4 · Data states. Findings per route: design/REVIEW-2026-10-13.md (wave 3). Figures are illustrative design values."
+    },
+    {
+      "id": "note-v4-research",
+      "x": 0,
+      "y": -520,
+      "w": 900,
+      "page": "v4-research",
+      "text": "v4 · Research refresh (2026-10-13). The note view with neutral directions supersedes the research canvas’s Main board (that canvas is left as it is); the index with its tabs; phone boards for Markets, Filings, Scorecard and ticker research; light boards for every research page and the state matrix; Markets in the demo build."
+    },
+    {
       "id": "note-system",
       "x": 0,
       "y": -150,
       "w": 560,
       "page": "page-5",
       "text": "The library is generated from tokens/tokens.json and src/components — every state shown there is a registered state. The light renders prove the scheme is a token swap, not a second layout."
+    },
+    {
+      "id": "find-V4SourceMap",
+      "x": 0,
+      "y": -230,
+      "w": 640,
+      "page": "v4-data",
+      "text": "v4 · Source map: where every number comes from. Resolves X-01, X-02, X-03, X-08, DS-01–DS-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4HybridDesk",
+      "x": 2040,
+      "y": -230,
+      "w": 640,
+      "page": "v4-data",
+      "text": "v4 · Hybrid desk · NVDA · not-live panels explained. Resolves X-01, X-03, X-05, X-06, TKR-01–TKR-07. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4HybridDeskSample",
+      "x": 3600,
+      "y": -230,
+      "w": 640,
+      "page": "v4-data",
+      "text": "v4 · Hybrid desk · NVDA · sample illustrations on. Resolves X-10, TKR-02, TKR-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4HybridDesk390",
+      "x": 5160,
+      "y": -230,
+      "w": 390,
+      "page": "v4-data",
+      "text": "v4 · Hybrid desk · NVDA · phone. Resolves X-12, TKR-06, TKR-08. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4StateMatrix",
+      "x": 0,
+      "y": 6530,
+      "w": 640,
+      "page": "v4-data",
+      "text": "v4 · State matrix · 9 families × 14 states. Resolves X-01, X-02, X-09, X-10, DS-05–DS-08. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4StateMatrix390",
+      "x": 3340,
+      "y": 6530,
+      "w": 640,
+      "page": "v4-data",
+      "text": "v4 · State matrix · phone widths. Resolves X-12, DS-05–DS-08. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4HybridDesk834",
+      "x": 5670,
+      "y": -230,
+      "w": 640,
+      "page": "v4-data",
+      "text": "v4 · Hybrid desk · 834 tablet. Resolves TKR-08. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4HybridDesk390Light",
+      "x": 6624,
+      "y": -230,
+      "w": 390,
+      "page": "v4-data",
+      "text": "v4 · Hybrid desk · phone · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Roadmap",
+      "x": 0,
+      "y": -230,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Roadmap: everything Convexa can build without the paid feed. Resolves TL-13, Q-1, Q-2, Q-3. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Markets",
+      "x": 2040,
+      "y": -230,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Markets · rates, liquidity, calendar, positioning (built + build). Resolves X-08, TL-01, TL-03, TL-14. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Filings",
+      "x": 3600,
+      "y": -230,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Filings · the SEC feed and filing detail (switch). Resolves X-13, DS-02, TL-15. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Scorecard",
+      "x": 5160,
+      "y": -230,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Scorecard · forecasts live, signal track record blocked. Resolves TL-12, TL-16. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4TickerResearch",
+      "x": 6720,
+      "y": -230,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Ticker research · NVDA · every public panel. Resolves TL-05–TL-11, TL-17. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolLiquidity",
+      "x": 0,
+      "y": 3770,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Liquidity panel · build. Resolves TL-01, TL-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolCalendar",
+      "x": 1560,
+      "y": 3770,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Macro calendar · build. Resolves TL-03, TL-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolOtc",
+      "x": 3120,
+      "y": 3770,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Off-exchange volume (weekly) · build / verify. Resolves TL-05, TKR-07. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolClusters",
+      "x": 4680,
+      "y": 3770,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Insider clusters · build. Resolves TL-06. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolHolders",
+      "x": 6240,
+      "y": 3770,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Fund holdings (13F) · build. Resolves TL-07. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolXbrl",
+      "x": 0,
+      "y": 7070,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Note figures from XBRL · build. Resolves TL-08, TL-09. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolPeers",
+      "x": 1560,
+      "y": 7070,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Peer table · build. Resolves TL-10. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolTa",
+      "x": 3120,
+      "y": 7070,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Technical analysis · blocked. Resolves TL-11, TKR-05, DS-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ToolSignals",
+      "x": 4680,
+      "y": 7070,
+      "w": 640,
+      "page": "v4-tools",
+      "text": "v4 · Tool · Signal track record · blocked. Resolves TL-12. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Shell",
+      "x": 0,
+      "y": -230,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Global shell · desktop. Resolves X-01, SHL-01–SHL-05. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Shell390",
+      "x": 1560,
+      "y": -230,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Global shell · phone. Resolves X-01, SHL-01–SHL-05. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ShellLight",
+      "x": 2070,
+      "y": -230,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Global shell · light. Resolves X-01, SHL-01–SHL-05. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ShellStates",
+      "x": 3630,
+      "y": -230,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Global shell · states. Resolves X-01, SHL-01–SHL-05. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Landing",
+      "x": 0,
+      "y": 2810,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Landing · desktop. Resolves LND-01–LND-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Landing390",
+      "x": 1560,
+      "y": 2810,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Landing · phone. Resolves LND-01–LND-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4LandingLight",
+      "x": 2070,
+      "y": 2810,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Landing · light. Resolves LND-01–LND-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4LandingStates",
+      "x": 3630,
+      "y": 2810,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Landing · states. Resolves LND-01–LND-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4DeskLight",
+      "x": 0,
+      "y": 7330,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Hybrid desk · light. Resolves X-02, DS-02, DS-03, TKR-03, TKR-05. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4DeskStates",
+      "x": 1560,
+      "y": 7330,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Ticker desk (desktop and phone on v4 · Data states) · states. Resolves X-02, DS-02, DS-03, TKR-03, TKR-05. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Technical",
+      "x": 0,
+      "y": 10740,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Ticker · Technical tab (TradingView) · desktop. Resolves TKR-05, TL-11, P-7. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Technical390",
+      "x": 1560,
+      "y": 10740,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Ticker · Technical tab (TradingView) · phone. Resolves TKR-05, TL-11, P-7. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4TechnicalLight",
+      "x": 2070,
+      "y": 10740,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Ticker · Technical tab (TradingView) · light. Resolves TKR-05, TL-11, P-7. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4TechnicalStates",
+      "x": 3630,
+      "y": 10740,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Ticker · Technical tab (TradingView) · states. Resolves TKR-05, TL-11, P-7. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Scanner",
+      "x": 0,
+      "y": 12530,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Scanner · desktop. Resolves SCN-01–SCN-04, X-11. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Scanner390",
+      "x": 1560,
+      "y": 12530,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Scanner · phone. Resolves SCN-01–SCN-04, X-11. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ScannerLight",
+      "x": 2070,
+      "y": 12530,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Scanner · light. Resolves SCN-01–SCN-04, X-11. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ScannerStates",
+      "x": 3630,
+      "y": 12530,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Scanner · states. Resolves SCN-01–SCN-04, X-11. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Positions",
+      "x": 0,
+      "y": 14760,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Positions · desktop. Resolves POS-01–POS-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Positions390",
+      "x": 1560,
+      "y": 14760,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Positions · phone. Resolves POS-01–POS-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4PositionsLight",
+      "x": 2070,
+      "y": 14760,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Positions · light. Resolves POS-01–POS-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4PositionsSignedOut",
+      "x": 3630,
+      "y": 14760,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Positions · signed out (wall). Resolves POS-01–POS-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4PositionsStates",
+      "x": 5190,
+      "y": 14760,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Positions · states. Resolves POS-01–POS-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Alerts",
+      "x": 0,
+      "y": 17090,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Alerts · desktop. Resolves ALR-01–ALR-03, Q-5. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Alerts390",
+      "x": 1560,
+      "y": 17090,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Alerts · phone. Resolves ALR-01–ALR-03, Q-5. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4AlertsLight",
+      "x": 2070,
+      "y": 17090,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Alerts · light. Resolves ALR-01–ALR-03, Q-5. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4AlertsStates",
+      "x": 3630,
+      "y": 17090,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Alerts · states. Resolves ALR-01–ALR-03, Q-5. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Settings",
+      "x": 0,
+      "y": 19400,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Settings · desktop. Resolves SET-01–SET-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Settings390",
+      "x": 1560,
+      "y": 19400,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Settings · phone. Resolves SET-01–SET-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4SettingsLight",
+      "x": 2070,
+      "y": 19400,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Settings · light. Resolves SET-01–SET-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4SettingsSignedOut",
+      "x": 3630,
+      "y": 19400,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Settings · signed out. Resolves SET-01–SET-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4SettingsStates",
+      "x": 5190,
+      "y": 19400,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Settings · states. Resolves SET-01–SET-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Methodology",
+      "x": 0,
+      "y": 21910,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Methodology · desktop. Resolves DOC-01, DOC-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Methodology390",
+      "x": 1560,
+      "y": 21910,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Methodology · phone. Resolves DOC-01, DOC-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4MethodologyLight",
+      "x": 2070,
+      "y": 21910,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Methodology · light. Resolves DOC-01, DOC-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4MethodologyStates",
+      "x": 3630,
+      "y": 21910,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Methodology · states. Resolves DOC-01, DOC-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Blog",
+      "x": 0,
+      "y": 24930,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Blog · desktop. Resolves DOC-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Blog390",
+      "x": 1560,
+      "y": 24930,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Blog · phone. Resolves DOC-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4BlogLight",
+      "x": 2070,
+      "y": 24930,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Blog · light. Resolves DOC-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Lab",
+      "x": 0,
+      "y": 26300,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Lab · desktop. Resolves DOC-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Lab390",
+      "x": 1560,
+      "y": 26300,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Lab · phone. Resolves DOC-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4LabLight",
+      "x": 2070,
+      "y": 26300,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Lab · light. Resolves DOC-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4NotFound",
+      "x": 0,
+      "y": 28720,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · 404 and route fallback · desktop. Resolves DOC-04, DOC-05. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4NotFound390",
+      "x": 1560,
+      "y": 28720,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · 404 and route fallback · phone. Resolves DOC-04, DOC-05. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4NotFoundLight",
+      "x": 2070,
+      "y": 28720,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · 404 and route fallback · light. Resolves DOC-04, DOC-05. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4SignIn",
+      "x": 0,
+      "y": 30040,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Sign in and the wall · desktop. Resolves DLG-04, POS-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4SignIn390",
+      "x": 1560,
+      "y": 30040,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Sign in and the wall · phone. Resolves DLG-04, POS-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4SignInLight",
+      "x": 2070,
+      "y": 30040,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Sign in and the wall · light. Resolves DLG-04, POS-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4SignInStates",
+      "x": 3630,
+      "y": 30040,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Sign in and the wall · states. Resolves DLG-04, POS-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4TradeEntry",
+      "x": 0,
+      "y": 31790,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Trade entry · desktop. Resolves DLG-01. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4TradeEntry390",
+      "x": 1560,
+      "y": 31790,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Trade entry · phone. Resolves DLG-01. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4TradeEntryLight",
+      "x": 2070,
+      "y": 31790,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Trade entry · light. Resolves DLG-01. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4TradeEntryStates",
+      "x": 3630,
+      "y": 31790,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Trade entry · states. Resolves DLG-01. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4OrderDetail",
+      "x": 0,
+      "y": 33610,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Order detail · desktop. Resolves DLG-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4OrderDetail390",
+      "x": 1560,
+      "y": 33610,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Order detail · phone. Resolves DLG-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4OrderDetailLight",
+      "x": 2070,
+      "y": 33610,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Order detail · light. Resolves DLG-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4OrderDetailStates",
+      "x": 3630,
+      "y": 33610,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Order detail · states. Resolves DLG-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4WhatsSent",
+      "x": 0,
+      "y": 35130,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · What’s sent drawer · desktop. Resolves DLG-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4WhatsSent390",
+      "x": 1560,
+      "y": 35130,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · What’s sent drawer · phone. Resolves DLG-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4WhatsSentLight",
+      "x": 2070,
+      "y": 35130,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · What’s sent drawer · light. Resolves DLG-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4WhatsSentStates",
+      "x": 3630,
+      "y": 35130,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · What’s sent drawer · states. Resolves DLG-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Persona",
+      "x": 0,
+      "y": 36840,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Persona · desktop. Resolves DLG-05. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Persona390",
+      "x": 1560,
+      "y": 36840,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Persona · phone. Resolves DLG-05. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4PersonaLight",
+      "x": 2070,
+      "y": 36840,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Persona · light. Resolves DLG-05. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4PersonaStates",
+      "x": 3630,
+      "y": 36840,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Persona · states. Resolves DLG-05. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ViewEditor",
+      "x": 0,
+      "y": 38360,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Scan view editor · desktop. Resolves DLG-06. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ViewEditor390",
+      "x": 1560,
+      "y": 38360,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Scan view editor · phone. Resolves DLG-06. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ViewEditorLight",
+      "x": 2070,
+      "y": 38360,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Scan view editor · light. Resolves DLG-06. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ViewEditorStates",
+      "x": 3630,
+      "y": 38360,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Scan view editor · states. Resolves DLG-06. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Operator",
+      "x": 0,
+      "y": 39980,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Operator · desktop. Resolves OPS-01, OPS-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Operator390",
+      "x": 1560,
+      "y": 39980,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Operator · phone. Resolves OPS-01, OPS-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4OperatorLight",
+      "x": 2070,
+      "y": 39980,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Operator · light. Resolves OPS-01, OPS-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4OperatorStates",
+      "x": 3630,
+      "y": 39980,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Operator · states. Resolves OPS-01, OPS-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4NoteView",
+      "x": 0,
+      "y": -230,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Note view · NVDA · neutral directions (supersedes the research canvas Main board). Resolves RSH-01, RSH-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4NoteView390",
+      "x": 1560,
+      "y": -230,
+      "w": 390,
+      "page": "v4-research",
+      "text": "v4 · Note view · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4NoteViewLight",
+      "x": 2070,
+      "y": -230,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Note view · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4NoteStates",
+      "x": 3630,
+      "y": -230,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Note view · states. Resolves RSH-06. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ResearchIndex",
+      "x": 0,
+      "y": 4790,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Research index with the tabs. Resolves RSH-05. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ResearchIndex390",
+      "x": 1560,
+      "y": 4790,
+      "w": 390,
+      "page": "v4-research",
+      "text": "v4 · Research index · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ResearchIndexLight",
+      "x": 2070,
+      "y": 4790,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Research index · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Markets390",
+      "x": 0,
+      "y": 7610,
+      "w": 390,
+      "page": "v4-research",
+      "text": "v4 · Markets · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Filings390",
+      "x": 510,
+      "y": 7610,
+      "w": 390,
+      "page": "v4-research",
+      "text": "v4 · Filings · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Scorecard390",
+      "x": 1020,
+      "y": 7610,
+      "w": 390,
+      "page": "v4-research",
+      "text": "v4 · Scorecard · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4TickerResearch390",
+      "x": 1530,
+      "y": 7610,
+      "w": 390,
+      "page": "v4-research",
+      "text": "v4 · Ticker research · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4MarketsLight",
+      "x": 2040,
+      "y": 7610,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Markets · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4FilingsLight",
+      "x": 3600,
+      "y": 7610,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Filings · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ScorecardLight",
+      "x": 5160,
+      "y": 7610,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Scorecard · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4TickerResearchLight",
+      "x": 6720,
+      "y": 7610,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Ticker research · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4MarketsDemo",
+      "x": 8280,
+      "y": 7610,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Markets · demo build (dashed chips). Resolves X-09, TL-14. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4StateMatrixLight",
+      "x": 0,
+      "y": 14430,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · State matrix · light. Resolves RSH-04, DS-05–DS-08. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4NoteView390Light",
+      "x": 5190,
+      "y": -230,
+      "w": 390,
+      "page": "v4-research",
+      "text": "v4 · Note view · phone · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Markets834",
+      "x": 9840,
+      "y": 7610,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Markets · 834 tablet. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Coverage",
+      "x": 0,
+      "y": -230,
+      "w": 640,
+      "page": "v4-coverage",
+      "text": "v4 · Coverage matrix · route × width × theme × states. Resolves coverage; gaps listed in the matrix. Findings: design/REVIEW-2026-10-13.md."
     }
   ],
   "launch": {

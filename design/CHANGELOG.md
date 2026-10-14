@@ -38,3 +38,92 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
 - **Rival authority ruled A** — `docs/design/DESIGN_SYSTEM.md` stubbed to a pointer (canon · `tokens.ts` ·
   `site/library.html`); the only rule it still quotes is the positions-legs `success`/`error` scope, which
   now also lives in the canon's Banned table.
+
+## 2026-10-13 · v4 wave 1 — data states
+
+- **The hybrid site gets a vocabulary.** Fourteen data states (live, delayed, stale, loading, empty,
+  error, unavailable, not configured, off, paused, not live, sample, demo, locked) plus Computed and the
+  genuine stream, each a word and a glyph (`components/data-states.mjs`, records in
+  `data/states.mjs`). Not live means the paid options feed is missing; paused keeps its meaning.
+- **Nine widget families in every state** (figure cell, chart, table, feed, AI read, positioning card,
+  tape, form, dialog) render from data, in the library (full on the site, summarised on the canvas
+  Library board) and on two State matrix boards (desktop, phone).
+- **Source map** (`data/hybrid.mjs`): every widget on every screen with what it needs, source, delay,
+  build status in docs/public-data/CANDIDATES.md's words, and its hybrid-site state.
+- **Hybrid desk (NVDA):** public panels first, options panels second, with both honest options drawn:
+  explain (off state) and a labelled sample (dashed, hatched, dated). Page legend "On this page".
+- **Shared fixes to canon** (every v2 board regenerates): `nav()` has five links (rule 19);
+  `.cell.offline` dims with `textDim`, not opacity (2026-09-09 amendment); tokens.json mirrors
+  `textDim`, `textInfo`, `textUp`, `textDown` and `hatch` (= `hatchAlt`), checked by verify-tokens.
+- Findings and canon proposals: `design/REVIEW-2026-10-13.md`. Supersedes nothing above; v2 boards stay.
+
+## 2026-10-13 · v4 wave 2 — tools from public data
+
+- **Source of truth:** docs/public-data/CANDIDATES.md and its status words (live · switch · build ·
+  verify · blocked). The roadmap board lists every row with source, delay, status and what it unlocks.
+- **Nine priority tools designed** with desktop, phone and all fourteen states: liquidity panel, macro
+  calendar (events on Markets, review triggers on notes), FINRA weekly off-exchange volume (the free
+  stand-in the desk's not-live blocks panel now points to), insider clusters, 13F holdings, note
+  figures filled from XBRL, peer tables, technical analysis and the signal track record. The last two
+  are blocked on a price source licensed for public display; their sheets draw the design target with
+  illustrative values and the honest blocked state.
+- **Built tools redrawn as v4 pages:** Markets (re-sourced to the U.S. Treasury; liquidity and calendar
+  added), Filings (missing tickers shown; one primary action), Scorecard (signal track record as a
+  blocked panel with a labelled sample), ticker research (six public positioning sources, XBRL check).
+- No buy/sell language: every signal-like output is described as research.
+
+## 2026-10-13 · v4 wave 3 — every route
+
+- **Page “v4 · App”:** one row per route — desktop 1440 dark, phone 390, light 1440, and a states board —
+  for the shell (nav, data notice, ⌘K jump-to, footer), landing, scanner, positions (with the signed-out
+  wall), alerts, settings (with signed out), methodology, blog, lab, 404 and route fallback, the six
+  overlays (sign in and the wall, trade entry, order detail, what's sent, persona, scan view editor) and
+  the operator pages. The ticker desk adds a light board and a states board to wave 1's.
+- **Hybrid decisions drawn on every route:** “Sign in” everywhere and Settings in the footer; the
+  jump-to box lists tickers and notes by name because scores aren't live; the landing labels its hero a
+  sample and lists what is live; the scanner explains first, samples on request and keeps the last real
+  board as a dated archive; positions name each mark's basis; alerts gain release-date and new-filing
+  kinds (proposal Q-5); trade entry opens on Manual price; what's sent says nothing leaves; methodology
+  gains “What's live on this site”, the notice's link target.
+- **Amber spent once per view:** selected tiles, filters, toggles and the current symbol use phosphor
+  borders, checks and weight; the avatar is neutral.
+
+## 2026-10-13 · v4 wave 4 — research refresh
+
+- **Note view with neutral directions** (page “v4 · Research”): company deltas are text on a steel tint
+  with ▲/▼; the case for and against reads by glyph and filled dot vs ring; thesis status by glyph, word
+  and weight; bridge steps up filled, down outlined. Supersedes the research canvas's Main board, which
+  this work does not touch.
+- **Research index with the tabs**, phone boards for Markets, Filings, Scorecard and ticker research,
+  light boards for every research page and the state matrix, and Markets in the demo build.
+
+## 2026-10-13 · v4 wave 5 — coverage
+
+- **Coverage matrix** (page “v4 · Coverage”): route × width × theme × states, each cell naming its board,
+  checked against the registry at build time; 168 cells, 95 covered, 14 partial, 59 gaps (named), 0
+  missing references. Adds the desk at 834 and phone-light, the note view at phone-light, Markets at 834.
+
+## 2026-10-13 · v4 render fix (supersedes nothing; corrects waves 1–4)
+
+- **Charts render their text at true size.** `fluidChart()` draws lines in a stretched SVG with
+  non-scaling strokes and puts every label, tick and dot in HTML, so text stays 11px at any width;
+  under 480px of container it swaps to short labels and drops minor ticks. The landing's gamma surface
+  is drawn at three sizes and picked by container width. Matches the app's rule (useWidth.ts,
+  Charts.tsx): chart text ≥ 10px, 11 preferred, drawn at the real width rather than scaled.
+- **No horizontal overflow at any declared width** (Markets futures rows, the operator bar, the
+  calendar's review-trigger chips).
+- **Frame heights are measured**, not estimated, so no board clips its content.
+
+## 2026-10-13 · v4 — TradingView's chart adopted (REVIEW Q-1 resolved by the owner)
+
+- **The Technical tab shows TradingView's daily chart as TradingView's** (canon Amendments row
+  “Third-party embeds”): “NVDA daily chart”, a dotted chip “Chart by TradingView · US prices delayed”,
+  the frame with TradingView's own palette and attribution, the privacy note. Loading holds the final
+  size with a 1px border; a blocked loader shows the shipped info alert; demo keeps the sample bars;
+  the technical-rating gauge is not embedded. New route boards V4Technical (+390, light, states).
+- **The split stays visible:** a chart by TradingView (live, display-only) beside readings Convexa would
+  compute (blocked until Convexa has a feed licensed to it), on the desk and the TA tool sheet. The
+  desk shows no close of its own. The signal track record stays blocked.
+- **New state tag “Live · TradingView”** (dotted, like the third-party provenance chip). Supersedes the
+  `[EOD PRICE SOURCE]` placeholders and the “blocked” Technical tab of waves 1–3.
+

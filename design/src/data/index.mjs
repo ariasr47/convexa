@@ -63,3 +63,7 @@ export const ALERT_RULES = [
   ['QQQ', 'Level touch', 'price ≥ 490.00', 'armed · needs an open QQQ desk to evaluate', true, ''],
   ['TSLA', 'Tier change', 'any change', 'paused', false, ''],
 ];
+
+// v4 (2026-10-13): data states, the hybrid source map, the public-data roadmap and the NVDA desk.
+export * from './states.mjs';
+export * from './hybrid.mjs';

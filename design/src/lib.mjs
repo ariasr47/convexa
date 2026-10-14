@@ -12,6 +12,118 @@ function schemeBlock(mode) {
   const c = tokens.color[mode], e = tokens.elevation[mode];
   return Object.entries(c).map(([k, v]) => `${cssName(k)}: ${v};`).join(' ') + ` --e1: ${e.e1}; --e2: ${e.e2}; --e4: ${e.e4}; --sheen: ${tokens.sheen[mode]};`;
 }
+// v4 additions (2026-10-13): the data-state vocabulary, provenance and build-status chips, the sample
+// hatch, the data-state cell frame and the v4 chrome. Additive: nothing below restyles a v2 class.
+const V4_CSS = `
+  .stag { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 1; white-space: nowrap; color: var(--phosphor); flex: 0 0 auto; }
+  .stag .ico { width: 12px; height: 12px; }
+  .stag.lg { height: 28px; padding: 0 12px; font-size: 12px; } .stag.lg .ico { width: 14px; height: 14px; }
+  .stag.k-solid { border: 1px solid var(--line-2); } .stag.k-solid .ico { color: var(--steel); }
+  .stag.k-dashed { border: 1px dashed var(--steel-2); color: var(--steel); }
+  .stag.k-warn { border: 1px solid var(--warn); background: var(--warn-tint); } .stag.k-warn .ico { color: var(--warn); }
+  .stag.k-quiet { background: rgba(138,155,180,0.16); } .stag.k-quiet .ico { color: var(--steel); }
+  .stag.k-stream { background: var(--signal-tint); color: var(--text-info); } .stag.k-stream .sdot { width: 6px; height: 6px; border-radius: 50%; background: var(--signal); }
+  .prov { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line-2); font: 500 11px/1.2 'IBM Plex Mono', ui-monospace, monospace; color: var(--phosphor); text-decoration: none; white-space: nowrap; flex: 0 0 auto; }
+  a.prov:hover { border-color: var(--steel); text-decoration: none; color: var(--phosphor); }
+  .prov.dotted { border-style: dotted; border-color: var(--steel-2); color: var(--steel); }
+  .prov.dashed { border-style: dashed; border-color: var(--steel-2); color: var(--steel); }
+  .bstat { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--line-2); font: 600 11px/1 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: 0.04em; color: var(--phosphor); white-space: nowrap; flex: 0 0 auto; }
+  .bstat .ico { width: 12px; height: 12px; color: var(--steel); }
+  .bstat.s-blocked { border-style: dashed; color: var(--steel); }
+  .bstat.s-live { background: rgba(138,155,180,0.16); border-color: transparent; }
+  .hatch { background-image: repeating-linear-gradient(135deg, transparent 0 10px, var(--hatch) 10px 20px); }
+  .t-dim { color: var(--text-dim) !important; } .t-info { color: var(--text-info); } .t-up { color: var(--text-up); } .t-down { color: var(--text-down); }
+  .v4 a:not(.btn):not(.prov):not(.v4n a) { color: var(--text-info); }
+  .dcell { box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; overflow: hidden; color: var(--phosphor); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .dcell.is-sample { border-style: dashed; border-color: var(--steel-2); background-color: var(--panel); background-image: repeating-linear-gradient(135deg, transparent 0 10px, var(--hatch) 10px 20px); }
+  .dcell.sheet { border-radius: 16px 16px 0 0; padding-top: 8px; }
+  .dcell .handle { align-self: center; width: 36px; height: 4px; border-radius: 2px; background: var(--line-2); margin-bottom: 2px; }
+  .dcell .dhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 22px; }
+  .dcell .dtitle { font-size: 12px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dcell .dbody { display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-height: 0; }
+  .dcell .dfoot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .dline { font-size: 12px; color: var(--steel); line-height: 1.45; text-wrap: pretty; }
+  .dstrong { font-size: 13px; font-weight: 600; line-height: 1.4; text-wrap: pretty; }
+  .dnan { font-size: 15px; font-weight: 500; color: var(--steel); line-height: 1.6; }
+  .dval { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-weight: 500; line-height: 1.15; }
+  .dna { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 10px; border-radius: 8px; border: 1px dashed var(--line-2); }
+  .dop summary { cursor: pointer; min-height: 24px; display: flex; align-items: center; font-size: 11px; color: var(--steel); list-style: none; }
+  .dop summary::before { content: "▸"; margin-right: 6px; font-size: 10px; }
+  .drows { display: flex; flex-direction: column; }
+  .drows > div { display: grid; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); font-size: 12px; }
+  .dfield { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 500; }
+  .dfield .in { display: flex; align-items: center; height: 34px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--ink-2); font: 500 13px 'IBM Plex Mono', monospace; }
+  .dfield.err .in { border-color: var(--warn); } .dfield.dis .in { background: transparent; color: var(--steel); border-style: dashed; }
+  .dfield .help { font-size: 11px; font-weight: 400; color: var(--steel); display: inline-flex; gap: 4px; align-items: flex-start; }
+  .dfield.err .help { color: var(--phosphor); } .dfield.err .help .ico { color: var(--warn); }
+  .dwarn { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 8px; background: var(--warn-tint); border: 1px solid var(--warn); }
+  .dwarn > .ico { color: var(--warn); margin-top: 1px; }
+  .ph .dfield .in, .ph .btn { min-height: 44px; }
+  .v4n { position: sticky; top: 0; z-index: 20; background: var(--glass); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+  .v4n-in { height: 56px; display: flex; align-items: center; gap: 24px; }
+  .v4n-links { display: flex; gap: 4px; height: 56px; }
+  .v4n-links a { position: relative; display: inline-flex; align-items: center; padding: 0 10px; font-size: 13.5px; font-weight: 600; color: var(--steel); text-decoration: none; }
+  .v4n-links a[aria-current="page"] { color: var(--phosphor); }
+  .v4n-links a[aria-current="page"]::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 0; height: 2px; background: var(--amber); border-radius: 2px 2px 0 0; }
+  .v4n-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .v4n-search { display: inline-flex; align-items: center; gap: 10px; height: 34px; width: 260px; padding: 0 10px 0 12px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--ink-2); color: var(--steel); font: 500 13px 'IBM Plex Sans', sans-serif; }
+  .v4n-icon { display: none; width: 44px; height: 44px; align-items: center; justify-content: center; color: var(--phosphor); border: 0; background: transparent; border-radius: 8px; }
+  .v4n-signin { display: inline-flex; align-items: center; min-height: 44px; padding: 0 4px; font-size: 13.5px; font-weight: 600; color: var(--steel); text-decoration: none; }
+  .v4-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding-top: 8px; padding-bottom: 8px; font-size: 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .v4-notice.demo { border-bottom-style: dashed; border-bottom-color: var(--steel-2); }
+  .v4-notice .ico { color: var(--steel); }
+  .v4-tabs { border-bottom: 1px solid var(--line); }
+  .v4-tabs .tabs-in { display: flex; gap: 4px; height: 48px; align-items: stretch; overflow-x: auto; scrollbar-width: none; }
+  .v4-tabs a { display: inline-flex; align-items: center; gap: 8px; padding: 0 12px; color: var(--steel); text-decoration: none; font-weight: 500; font-size: 14px; white-space: nowrap; }
+  .v4-tabs a[aria-current="page"] { color: var(--phosphor); font-weight: 600; box-shadow: inset 0 -2px 0 var(--phosphor); }
+  .v4-tabs .cnt { font: 500 11px/1 'IBM Plex Mono', monospace; padding: 3px 6px; border-radius: 999px; background: rgba(138,155,180,0.16); color: var(--phosphor); }
+  .v4-foot { border-top: 1px solid var(--line); margin-top: 40px; }
+  .v4-foot-in { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; padding-top: 24px; padding-bottom: 32px; }
+  .v4-foot-in nav { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+  .v4-foot-in nav a { color: var(--steel); font-size: 13px; text-decoration: none; min-height: 24px; display: inline-flex; align-items: center; }
+  .claim { font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 112.5%; font-weight: 600; font-size: 18px; line-height: 1.25; text-wrap: balance; margin: 0; }
+  .sub { font-size: 12.5px; color: var(--steel); margin: 2px 0 0; line-height: 1.45; }
+  .srcline { font-size: 11.5px; color: var(--steel); margin: 0; }
+  .hd-p { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; container-type: inline-size; }
+  .hd-p.is-sample { border-style: dashed; border-color: var(--steel-2); background-image: repeating-linear-gradient(135deg, transparent 0 10px, var(--hatch) 10px 20px); }
+  .hd-p .ph { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .hd-p .ph h3 { margin: 0; font-size: 14px; font-weight: 600; flex: 1 1 auto; min-width: 0; }
+  .hd-fig { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border-radius: 10px; overflow: hidden; }
+  .hd-fig > div { background: var(--ink-2); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .hd-fig .v { font: 500 18px/1.2 'IBM Plex Mono', monospace; }
+  .hd-list { display: flex; flex-direction: column; }
+  .hd-list > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .smap { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .smap th { position: sticky; top: 0; background: var(--ink); text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); padding: 10px 10px; border-bottom: 1px solid var(--line-2); }
+  .smap td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.45; color: var(--steel); }
+  .smap td.w { color: var(--phosphor); }
+  .smap td.w b { display: block; font-weight: 600; }
+  .smap tr.grp td { padding: 22px 10px 8px; border-bottom: 1px solid var(--line-2); color: var(--phosphor); font-family: 'Archivo', sans-serif; font-stretch: 112.5%; font-weight: 700; font-size: 17px; }
+  .smap td .stagwrap { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+  .fc { position: relative; width: 100%; container-type: inline-size; }
+  .fc .pa { position: absolute; left: var(--pl); right: var(--pr); top: var(--pt); bottom: var(--pb); }
+  .fc svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .fc .yl { position: absolute; right: calc(100% + 8px); transform: translateY(-50%); font: 400 11px/1 'IBM Plex Mono', monospace; color: var(--steel); white-space: nowrap; }
+  .fc .xl { position: absolute; top: calc(100% + 8px); transform: translateX(-50%); font: 400 11px/1 'IBM Plex Mono', monospace; color: var(--steel); white-space: nowrap; }
+  .fc .pl { position: absolute; transform: translate(-50%, calc(-100% - 7px)); font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--phosphor); white-space: nowrap; }
+  .fc .el { position: absolute; left: calc(100% + 8px); transform: translateY(-50%); font: 600 12px/1.15 'IBM Plex Sans', sans-serif; white-space: nowrap; }
+  .fc .dot { position: absolute; width: 7px; height: 7px; border-radius: 50%; transform: translate(-50%, -50%); box-sizing: border-box; }
+  .fc .s { display: none; }
+  @container (max-width: 480px) { .fc .pa { right: var(--prn); } .fc .l { display: none; } .fc .s { display: inline; } .fc .minor { display: none; } }
+  .tvf { height: var(--tvh); }
+  @container (max-width: 560px) { .tvf { height: var(--tvph); } .tvf .tv-ranges { display: none; } }
+  .stag.k-dotted { border: 1px dotted var(--steel-2); } .stag.k-dotted .ico { color: var(--steel); }
+  .cq { container-type: inline-size; }
+  .cq .v-s, .cq .v-m { display: none; }
+  @container (max-width: 659px) { .cq .v-l { display: none; } .cq .v-m { display: block; } }
+  @container (max-width: 479px) { .cq .v-m { display: none; } .cq .v-s { display: block; } }
+  @media (max-width: 1099px) { .v4n-search { display: none; } .v4n-icon.search { display: inline-flex; } }
+  @media (max-width: 899px) { .v4n-links { display: none; } .v4n-icon.menu { display: inline-flex; } .v4n-in { gap: 8px; } }
+  @media (max-width: 767px) { .only-wide { display: none !important; } }
+  @media (min-width: 768px) { .only-phone { display: none !important; } }
+  @media (pointer: coarse) { .prov, .stag { min-height: 24px; } }
+`;
+
 export const TOKENS_CSS = `
   :root, [data-scheme="dark"] { ${schemeBlock('dark')} }
   [data-scheme="light"] { ${schemeBlock('light')} }
@@ -60,7 +172,7 @@ export const TOKENS_CSS = `
   .cell { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
   .cell .v { font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 500; line-height: 1.15; color: var(--phosphor); letter-spacing: -0.01em; }
   .cell .s { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--steel); line-height: 1.3; }
-  .cell.offline { opacity: 0.5; }
+  .cell.offline .v { color: var(--text-dim); }
   .is-live .flash-up { animation: flashUp 700ms ease-out 1; } .is-live .flash-down { animation: flashDown 700ms ease-out 1; }
   .ring { outline: 2px solid var(--amber-text); outline-offset: 2px; border-radius: 8px; }
   .kbd { display: inline-flex; align-items: center; height: 18px; padding: 0 5px; border-radius: 4px; border: 1px solid var(--line-2); font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--steel); background: var(--ink-2); }
@@ -111,7 +223,7 @@ export const TOKENS_CSS = `
   @keyframes drawIn { from { stroke-dashoffset: 1600; } to { stroke-dashoffset: 0; } }
   @keyframes spin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
-`;
+${V4_CSS}`;
 
 export function shell(inner, { script = '', extraCss = '' } = {}) {
   return `<!doctype html>
@@ -184,6 +296,15 @@ const P = {
   calendar: '<rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path>',
   up: '<path d="M12 19V5M5 12l7-7 7 7"></path>',
   down: '<path d="M12 5v14M19 12l-7 7-7-7"></path>',
+  // v4 data-state glyphs (one per state, so no state rides on hue alone)
+  notlive: '<circle cx="12" cy="12" r="8"></circle><path d="M6.6 6.6l10.8 10.8"></path>',
+  sample: '<rect x="4" y="4" width="16" height="16" rx="3" stroke-dasharray="3 3"></rect>',
+  sliders: '<path d="M4 8h9M17 8h3M4 16h3M11 16h9"></path><circle cx="15" cy="8" r="2"></circle><circle cx="9" cy="16" r="2"></circle>',
+  power: '<path d="M12 4v7"></path><path d="M7.5 7.5a7 7 0 1 0 9 0"></path>',
+  sigma: '<path d="M17 5H7l5 7-5 7h10"></path>',
+  doc: '<path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4M9 12h6M9 16h6"></path>',
+  wrench: '<path d="M14.5 6.5a4 4 0 0 0 5 5L12 19a2.1 2.1 0 0 1-3-3l7.5-7.5a4 4 0 0 0-2-2z"></path>',
+  keyboard: '<rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"></path>',
 };
 export function icon(name, size = 16, extra = '') {
   return `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${P[name] || ''}</svg>`;
@@ -198,8 +319,9 @@ export function wordmark(size = 18) {
 
 // ---- top nav (responsive: links → burger < 900, search → icon < 1100, clock hides < 700) --------
 export function nav({ active = 'ticker', signedIn = true, live = true } = {}) {
-  const items = [['scanner', 'Scanner'], ['ticker', 'Ticker'], ['positions', 'Positions'], ['alerts', 'Alerts']];
-  const links = items.map(([k, l]) => `<a href="#" class="${k === active ? 'on' : ''}">${l}</a>`).join('');
+  // Rule 19 (amended 2026-10-12): five product links, Research between Ticker and Positions.
+  const items = [['scanner', 'Scanner', '/scanner'], ['ticker', 'Ticker', '/ticker/SPY'], ['research', 'Research', '/research'], ['positions', 'Positions', '/positions'], ['alerts', 'Alerts', '/alerts']];
+  const links = items.map(([k, l, h]) => `<a href="${h}" class="${k === active ? 'on' : ''}"${k === active ? ' aria-current="page"' : ''}>${l}</a>`).join('');
   return `<header class="nav-bar">
     <div class="wrap nav-in">
       <a href="#" class="nav-burger" aria-label="Open navigation menu">${icon('menu', 20)}</a>
@@ -380,7 +502,7 @@ export function ring(score, { size = 44, stroke = 4, color = 'var(--amber)' } = 
 }
 
 // ---- 3D gamma surface (isometric wireframe: strike × tenor × net GEX) -----------------------
-export function gammaSurface({ width = 720, height = 440 } = {}) {
+export function gammaSurface({ width = 720, height = 440, id = 'gs' } = {}) {
   const rows = 9, cols = 21;
   const ox = width * 0.5, oy = height * 0.6;
   const sx = width / 34, sy = width / 62, sz = 78;
@@ -422,8 +544,8 @@ export function gammaSurface({ width = 720, height = 440 } = {}) {
   const [fx, fy] = proj(0, ((SPY.flip - 550) / 50) * (cols - 1));
   const [spx, spy] = proj(0, ((SPY.spot - 550) / 50) * (cols - 1));
   return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" style="display: block; width: 100%; height: auto; overflow: visible;" role="img" aria-label="Dealer gamma surface across strike and tenor">
-    <defs><radialGradient id="gs-glow" cx="50%" cy="60%" r="55%"><stop offset="0" stop-color="var(--amber)" stop-opacity="0.10"></stop><stop offset="1" stop-color="var(--amber)" stop-opacity="0"></stop></radialGradient></defs>
-    <rect width="${width}" height="${height}" fill="url(#gs-glow)"></rect>
+    <defs><radialGradient id="${id}-glow" cx="50%" cy="60%" r="55%"><stop offset="0" stop-color="var(--amber)" stop-opacity="0.10"></stop><stop offset="1" stop-color="var(--amber)" stop-opacity="0"></stop></radialGradient></defs>
+    <rect width="${width}" height="${height}" fill="url(#${id}-glow)"></rect>
     ${lines}${ridge(SPY.putWall, 'var(--down)', 1.5)}${ridge(SPY.callWall, 'var(--up)', 1.5)}${ridge(SPY.flip, 'var(--amber)', 2.25)}
     <circle cx="${spx.toFixed(1)}" cy="${spy.toFixed(1)}" r="5" fill="var(--signal)"></circle>
     <circle cx="${spx.toFixed(1)}" cy="${spy.toFixed(1)}" r="12" fill="var(--signal)" fill-opacity="0.18" class="beam"></circle>
@@ -461,4 +583,73 @@ export function backdrop(inner, { align = 'center', minHeight = 900, scheme = 'd
     <div style="position: absolute; inset: 0; background: var(--scrim);"></div>
     <div style="position: relative; min-height: ${minHeight}px; display: flex; align-items: ${align === 'right' ? 'stretch' : 'center'}; justify-content: ${align === 'right' ? 'flex-end' : 'center'}; padding: ${align === 'right' ? '0' : '24px'};">${inner}</div>
   </div>`;
+}
+
+// ---- v4 chrome (2026-10-13) ------------------------------------------------------------------
+// The shell every v4 screen wears: the site data notice (hybrid, demo, paused or none), the five-link
+// nav with the jump-to box, the Research tabs, and the footer with Settings reachable signed out.
+export const STAGING_DEMO_URL = 'https://staging.convexa.pages.dev';
+export function v4Notice(mode = 'hybrid') {
+  if (mode === 'none') return '';
+  if (mode === 'demo') return `<div role="status" aria-label="Demo status" class="v4-notice demo"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;">${icon('sample', 14)}<strong style="font-weight: 600;">Demo · sample data</strong><span class="steel">Authored scenario · October 7, 2026 · no market feed connected</span><span style="flex: 1;"></span><span class="steel">Demo visitor</span><button class="btn secondary sm" type="button">Reset Demo</button></div></div>`;
+  if (mode === 'paused') return `<div role="status" aria-label="Market data status" class="v4-notice"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;">${icon('pause', 14)}<strong style="font-weight: 600;">Live market data is off.</strong><span class="steel">Prices, dealer structure and AI reads are paused. Daily charts come from TradingView, and research notes are current.</span><span style="flex: 1;"></span><a href="/research" class="t-info">Read research</a><a href="${STAGING_DEMO_URL}" class="t-info">Try the full demo →</a></div></div>`;
+  return `<div role="status" aria-label="What is live on this site" class="v4-notice"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;">${icon('notlive', 14)}<strong style="font-weight: 600;">Options data isn't live on this site.</strong><span class="steel only-wide">Dealer structure, flow and AI reads need a paid options feed. Rates, positioning, short data, filings, research and TradingView’s daily charts are live.</span><span class="steel only-phone">Public data is.</span><span style="flex: 1;"></span><a href="/methodology#data" class="t-info" style="min-height: 24px; display: inline-flex; align-items: center;">What's live</a><a href="${STAGING_DEMO_URL}" class="t-info only-wide">See the full demo →</a></div></div>`;
+}
+export function v4Nav({ active = '', signedIn = false, demo = false } = {}) {
+  const items = [['scanner', 'Scanner', '/scanner'], ['ticker', 'Ticker', '/ticker/SPY'], ['research', 'Research', '/research'], ['positions', 'Positions', '/positions'], ['alerts', 'Alerts', '/alerts']];
+  const links = items.map(([k, l, h]) => `<a href="${h}"${k === active ? ' aria-current="page"' : ''}>${l}</a>`).join('');
+  const session = demo
+    ? `<a href="/settings" class="v4n-icon" style="display: inline-flex;" aria-label="Settings">${icon('gear', 20)}</a>`
+    : signedIn
+      ? `<a href="/settings" aria-label="Account settings" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--raised-2); color: var(--phosphor); font: 600 12px/1 'IBM Plex Sans', sans-serif; text-decoration: none;">R</a>`
+      : `<a href="/settings#account" class="v4n-signin">Sign in</a>`;
+  return `<header class="v4n"><div class="wrap v4n-in">
+    <a href="/" aria-label="Convexa home" style="display: inline-flex; text-decoration: none;">${wordmark(17)}</a>
+    <nav aria-label="Primary" class="v4n-links">${links}</nav>
+    <div class="v4n-right">
+      <button type="button" class="v4n-search" aria-keyshortcuts="Meta+K">${icon('search', 15)}<span style="flex: 1; text-align: left;">Jump to a ticker or note</span><span class="kbd">⌘K</span></button>
+      <button type="button" class="v4n-icon search" aria-label="Jump to a ticker or note">${icon('search', 20)}</button>
+      ${session}
+      <button type="button" class="v4n-icon menu" aria-label="Open navigation menu" aria-expanded="false">${icon('menu', 20)}</button>
+    </div>
+  </div></header>`;
+}
+export function v4Tabs(active = 'Notes') {
+  const tabs = [['Notes', '/research', '14'], ['Markets', '/research/markets', ''], ['Filings', '/research/filings', ''], ['Scorecard', '/research/scorecard', '77 open']];
+  return `<nav aria-label="Research" class="v4-tabs"><div class="wrap tabs-in">${tabs.map(([n, h, c]) => `<a href="${h}"${n === active ? ' aria-current="page"' : ''}>${n}${c ? `<span class="cnt">${c}</span>` : ''}</a>`).join('')}</div></nav>`;
+}
+export function v4Footer() {
+  return `<footer class="v4-foot"><div class="wrap v4-foot-in">${wordmark(14)}<nav aria-label="Footer"><a href="/research">Research notes</a><a href="/methodology">How Convexa works</a><a href="/blog">Blog — how we read structure</a><a href="/lab">Lab — instrument demos</a><a href="/settings">Settings</a></nav><span style="flex: 1;"></span><p style="margin: 0; max-width: 560px; font-size: 12px; color: var(--steel);">Convexa is an analysis tool. Positions in the sim book are simulated (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.</p></div></footer>`;
+}
+/** A v4 page: scheme wrapper + notice + nav (+ research tabs) + main + footer. */
+export function v4Page({ scheme = 'dark', minHeight = 0, notice = 'hybrid', active = '', tabs = '', signedIn = false, demo = false, main = '', footer = true, label = '' } = {}) {
+  return `<div class="v4" data-scheme="${scheme}" style="width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor);">
+    <a href="#main" class="btn secondary sm" style="position: absolute; left: -9999px;">Skip to main content</a>
+    ${v4Notice(demo ? 'demo' : notice)}
+    ${v4Nav({ active, signedIn, demo })}
+    ${tabs ? v4Tabs(tabs) : ''}
+    <main id="main"${label ? ` aria-label="${label}"` : ''}>${main}</main>
+    ${footer ? v4Footer() : ''}
+  </div>`;
+}
+
+// ---- v4 fluid chart (2026-10-13 render fix) -------------------------------------------------------
+// Lines live in a stretched SVG (non-scaling strokes); every label, tick and dot is HTML placed in %
+// of the plot area, so text renders at its true px size at any width (the app's useWidth rule: chart
+// text ≥ 10px, 11 preferred). Under 480px of container width the long labels swap for short ones,
+// minor ticks drop and the right gutter narrows.
+export function fluidChart({ height = 220, pl = 44, pr = 110, prn = 56, pt = 18, pb = 26, xmin = 0, xmax = 1, ymin = 0, ymax = 1, series = [], yTicks = [], xTicks = [], pointLabels = [], hlines = [], aria = '' } = {}) {
+  const X = (v) => (((v - xmin) / (xmax - xmin)) * 100).toFixed(2);
+  const Y = (v) => ((1 - (v - ymin) / (ymax - ymin)) * 100).toFixed(2);
+  const lab = (l) => (typeof l === 'string' ? l : `<span class="l">${l.long}</span><span class="s">${l.short}</span>`);
+  const grid = yTicks.map((t) => `<line x1="0" x2="1000" y1="${Y(t.v) * 10}" y2="${Y(t.v) * 10}" stroke="var(--line)" vector-effect="non-scaling-stroke"></line>`).join('');
+  const hl = hlines.map((h) => `<line x1="0" x2="1000" y1="${Y(h.v) * 10}" y2="${Y(h.v) * 10}" stroke="var(--steel-2)" stroke-dasharray="2 4" vector-effect="non-scaling-stroke"></line>`).join('');
+  const lines = series.map((s) => `<polyline points="${s.points.map(([x, y]) => `${X(x) * 10},${Y(y) * 10}`).join(' ')}" fill="none" stroke="${s.stroke || 'var(--phosphor)'}" stroke-width="${s.width || 2}" ${s.dash ? `stroke-dasharray="${s.dash}"` : ''} stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline>`).join('');
+  const dots = series.flatMap((s) => (s.dots ? s.points.map(([x, y]) => `<span class="dot" style="left: ${X(x)}%; top: ${Y(y)}%; background: ${s.dotFill || s.stroke || 'var(--phosphor)'};${s.hollow ? ' background: var(--panel); border: 1.5px solid ' + (s.stroke || 'var(--steel)') + ';' : ''}"></span>`) : [])).join('');
+  const ends = series.filter((s) => s.end).map((s) => { const [x, y] = s.points[s.points.length - 1]; return `<span class="el" style="top: ${Y(s.endY ?? y)}%; color: ${s.endColor || s.stroke || 'var(--phosphor)'};">${lab(s.end)}</span>`; }).join('');
+  const yl = yTicks.map((t) => `<span class="yl" style="top: ${Y(t.v)}%;">${t.label}</span>`).join('');
+  const xl = xTicks.map((t) => `<span class="xl${t.minor ? ' minor' : ''}" style="left: ${X(t.v)}%;">${lab(t.label)}</span>`).join('');
+  const hll = hlines.map((h) => `<span class="el" style="top: ${Y(h.v)}%; color: var(--steel); font-weight: 400; font-size: 11px;">${lab(h.label)}</span>`).join('');
+  const pls = pointLabels.map((p) => `<span class="pl${p.minor ? ' minor' : ''}" style="left: ${X(p.x)}%; top: ${Y(p.y)}%;${p.color ? ' color: ' + p.color + ';' : ''}">${p.text}</span>`).join('');
+  return `<div class="fc" role="img" aria-label="${aria}" style="height: ${height}px; --pl: ${pl}px; --pr: ${pr}px; --prn: ${prn}px; --pt: ${pt}px; --pb: ${pb}px;"><div class="pa"><svg viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">${grid}${hl}${lines}</svg>${dots}${yl}${xl}${pls}${ends}${hll}</div></div>`;
 }
