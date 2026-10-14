@@ -15,7 +15,7 @@ import type { ScanDensity, ScanRow, ScanViewSort } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { Fragment } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import type { PollDelta } from './format';
+import { nearerWall, type PollDelta } from './format';
 import {
   COLUMN_LABELS,
   regimeLookup,
@@ -206,9 +206,7 @@ function cellContent(
     case 'walls':
       return (
         <LevelDistCell
-          level={
-            row.dist_to_wall_pct != null && row.dist_to_wall_pct >= 0 ? row.call_wall : row.put_wall
-          }
+          level={nearerWall(row)}
           distPct={row.dist_to_wall_pct}
           testid="cell-dist-wall"
         />

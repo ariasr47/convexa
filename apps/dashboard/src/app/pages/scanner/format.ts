@@ -246,6 +246,21 @@ export function dash(value: number | null | undefined, format: (n: number) => st
   return value == null || !Number.isFinite(value) ? EM_DASH : format(value);
 }
 
+/**
+ * The wall that `dist_to_wall_pct` measures: the one nearer the price, by the API's own rule
+ * (apps/api/src/services/scanner/projection.rs `nearer_wall_dist`: nearer by absolute distance, a tie
+ * goes to the call wall). Picking it from the distance's sign got it backwards: the contract's sign is
+ * (price − wall) / price, so a call wall above the price comes out negative, and the cell named the
+ * put wall beside the call wall's distance. `null` when no wall or no price is known.
+ */
+export function nearerWall(row: Pick<ScanRow, 'price' | 'call_wall' | 'put_wall'>): number | null {
+  const { price, call_wall: call, put_wall: put } = row;
+  if (call == null) return put ?? null;
+  if (put == null) return call;
+  if (price == null || !(price > 0)) return null;
+  return Math.abs(price - call) <= Math.abs(price - put) ? call : put;
+}
+
 export const fmtPrice = (n: number) => n.toFixed(2);
 export const fmtScore = (n: number) => n.toFixed(0);
 /** Signed percent with a REAL minus sign (never a hyphen). Neutral by construction — the CALLER

@@ -20,6 +20,7 @@ import {
   fmtPrice,
   fmtSignedPct,
   marketSessionPhase,
+  nearerWall,
   partitionLeadGroup,
   relAge,
   sessionBadge,
@@ -412,5 +413,31 @@ describe('poll-to-poll deltas — structure change only', () => {
     expect(fmtDelta(3)).toBe('↑3');
     expect(fmtDelta(-1.25, 1)).toBe('↓1.3');
     expect(fmtDelta(0)).toBe('');
+  });
+});
+
+describe('nearerWall — the wall dist_to_wall_pct measures (the API contract)', () => {
+  // The contract's distance is (price − wall) / price, so a nearer CALL wall comes out negative; the
+  // label must still name the call wall. SPY on the demo scenario: 690.62, walls 704.02 / 652.22.
+  it.each([
+    [
+      'call wall nearer (distance negative)',
+      { price: 690.62, call_wall: 704.02, put_wall: 652.22 },
+      704.02,
+    ],
+    [
+      'put wall nearer (distance positive)',
+      { price: 660, call_wall: 704.02, put_wall: 652.22 },
+      652.22,
+    ],
+    [
+      'a tie goes to the call wall, as the API breaks it',
+      { price: 500, call_wall: 510, put_wall: 490 },
+      510,
+    ],
+    ['only one wall known', { price: 500, call_wall: null, put_wall: 490 }, 490],
+    ['no price, two walls: no claim', { price: null, call_wall: 510, put_wall: 490 }, null],
+  ] as const)('%s', (_, row, want) => {
+    expect(nearerWall(row)).toBe(want);
   });
 });

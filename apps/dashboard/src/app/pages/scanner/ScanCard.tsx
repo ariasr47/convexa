@@ -12,7 +12,7 @@ import type { ScanRow } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { useId } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import type { PollDelta } from './format';
+import { nearerWall, type PollDelta } from './format';
 import { regimeLookup, volLookup, whyThisRow } from './labels';
 import {
   ChgCell,
@@ -151,11 +151,7 @@ export function ScanCard({ row, nowS, flashActive, delta, priceOffline }: ScanCa
             Wall
           </Box>
           <LevelDistCell
-            level={
-              row.dist_to_wall_pct != null && row.dist_to_wall_pct >= 0
-                ? row.call_wall
-                : row.put_wall
-            }
+            level={nearerWall(row)}
             distPct={row.dist_to_wall_pct}
             testid="cell-dist-wall"
           />
