@@ -206,3 +206,48 @@ export function canvasJson() {
     launch: { view: 'canvas', page: 'page-1' },
   };
 }
+
+// ---- The editable canvas, from v5 on (2026-10-13) ---------------------------------------------
+// A canvas made from the Design artifact type keeps one file per board (`project/<name>.dc.html`) plus
+// the index `project/canvas.json` (format v3), so size is per file, not per page. The v2–v4 canvas
+// (artifact 82be651e, one self-contained 13.5 MB page) and the research canvas stay as history.
+export const CANVAS_URL = 'https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe';
+export const CANVAS_TITLE = 'Convexa design';
+// Written once when the index was first created on files; the type asks that it never change after.
+export const CREATED_ON_FILES = { v: 1, at: '2026-10-14T04:05:17Z' };
+
+/** The v3 index for the files-based canvas: boards keyed by file, `order` back to front, notes keyed by
+ *  id. Same pages, positions, titles and notes as canvasJson(). */
+export function canvasIndexV3() {
+  const legacy = canvasJson();
+  const boards = {};
+  for (const a of legacy.artboards) {
+    const { file, ...rest } = a;
+    boards[file] = rest;
+  }
+  const notes = {};
+  for (const n of legacy.annotations) {
+    const { id, ...rest } = n;
+    if (notes[id]) throw new Error(`duplicate note id ${id}`);
+    notes[id] = rest;
+  }
+  const ids = Object.keys(notes);
+  if (ids.length > 200) throw new Error(`canvas notes ${ids.length} > 200 (type limit)`);
+  if (legacy.pages.length > 40) throw new Error(`canvas pages ${legacy.pages.length} > 40 (type limit)`);
+  for (const id of [...ids, ...legacy.pages.map((p) => p.id)]) if (!/^[A-Za-z0-9_-]{1,40}$/.test(id)) throw new Error(`bad id ${id}`);
+  for (const [f, b] of Object.entries(boards)) {
+    if (!/^[A-Za-z0-9_][A-Za-z0-9_.-]*\.dc\.html$/.test(f)) throw new Error(`bad board file ${f}`);
+    if (b.w < 40 || b.w > 8000 || b.h < 40 || b.h > 8000) throw new Error(`${f}: frame ${b.w}x${b.h} outside 40–8000`);
+  }
+  return {
+    v: 3,
+    createdOnFiles: CREATED_ON_FILES,
+    title: CANVAS_TITLE,
+    launch: legacy.launch,
+    pages: legacy.pages,
+    boards,
+    order: legacy.artboards.map((a) => a.file),
+    notes,
+    designSystems: [],
+  };
+}

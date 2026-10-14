@@ -7,7 +7,8 @@ and declare their states, screen modules that compose those components over samp
 registry that says which screens render at which widths. A build regenerates everything else: the
 Claude Design canvas, the static site, the library page, `tokens.css` and `tokens.json`.
 
-Editable canvas (tweak chips, inline editing): https://claude.ai/code/artifact/82be651e-c9a1-4ad4-a672-886626f8cf73
+**Editable canvas from v5 on (2026-10-13): https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe** — one file per board (`project/<Name>.dc.html` + `project/canvas.json`), published by `node design/src/emit-project.mjs <out>` after a build.
+History, kept as it is: the v2–v4 single-page canvas https://claude.ai/code/artifact/82be651e-c9a1-4ad4-a672-886626f8cf73 (v16) and the research canvas https://claude.ai/artifact/HxZArSCsbrjQCx8VBbYRw7.
 
 ```
 design/
@@ -19,6 +20,7 @@ design/
     data/index.mjs        ← every sample number and string; change data here, not in screens
     canvas.config.mjs     ← which screens become artboards, at which widths, on which canvas page
     build.mjs             ← writes canvas/ and site/
+    emit-project.mjs      ← lays canvas/ out as the files-based canvas's project/ folder + publish batches
     verify-tokens.mjs     ← checks tokens.json against apps/dashboard tokens.ts; lists the additions
     seed.sh               ← seeds the canvas file from the artboards (needs the Claude Design helper)
   canvas/                 ← generated: *.dc.html artboards, canvas.json, convexa-desk-redesign.html (self-contained viewer)
@@ -49,8 +51,9 @@ design/
 | Another width or a light render of a screen | one line in `canvas.config.mjs` | build |
 | A colour, radius, breakpoint | `tokens/tokens.json` | build; then `verify-tokens.mjs` tells you what to change in `tokens.ts` |
 
-After a build, `DESIGN_HELPER=<folder with seed-canvas.mjs> zsh design/src/seed.sh` regenerates
-`canvas/convexa-desk-redesign.html` and republishing to the artifact URL updates the editable canvas.
+After a build, `node design/src/emit-project.mjs <out>` writes `<out>/project/` (the index and one file per board)
+and `<out>/batches.json`; publishing those files to the canvas URL above updates the editable canvas. The v4
+single-file viewer `canvas/convexa-desk-redesign.html` (made by `seed.sh`) is frozen at v4 and no longer regenerated.
 `canvas/` and `site/` are generated: do not hand-edit them.
 
 ## What the design is

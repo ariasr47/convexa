@@ -127,3 +127,17 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
 - **New state tag “Live · TradingView”** (dotted, like the third-party provenance chip). Supersedes the
   `[EOD PRICE SOURCE]` placeholders and the “blocked” Technical tab of waves 1–3.
 
+## 2026-10-13 · v5 wave 0 — the canvas moves to files
+
+- **New editable canvas, one file per board:** https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe, made
+  from the Design artifact type. Every v2 and v4 board and every note moves across unchanged in place,
+  title and page; `canvas.config.mjs` `canvasIndexV3()` writes the type's v3 index and
+  `src/emit-project.mjs` lays the built boards out as `project/*.dc.html` with publish batches.
+- **Why:** the v2–v4 canvas (82be651e) is one self-contained page holding every board, 13.48 MB against a
+  16 MB page limit. Measured: 5.78 MB of its 10.15 MB of board source is the same token stylesheet
+  repeated per board, and escaping each `<` as `\u003c` costs 0.54 MB. A cheaper escape would not have
+  lasted: the viewer's own Save re-escapes every `<`. On files, the limit is 16 MB per board.
+- **Kept as history, untouched:** 82be651e (v16) and the research canvas HxZArSCsbrjQCx8VBbYRw7. The v4
+  single-file viewer in `canvas/` is frozen.
+- **Board files:** each now names itself (`<title>`), declares `lang="en"`, and marks its logic script
+  `type="text/x-dc"` so the frame never runs it as a classic script. No board's markup changed.

@@ -225,11 +225,12 @@ export const TOKENS_CSS = `
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 ${V4_CSS}`;
 
-export function shell(inner, { script = '', extraCss = '' } = {}) {
+export function shell(inner, { script = '', extraCss = '', title = '' } = {}) {
+  const t = title ? `\n  <title>${title.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</title>` : '';
   return `<!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8">${t}
   <script src="./support.js"></script>
 </head>
 <body>
