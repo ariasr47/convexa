@@ -187,6 +187,17 @@ export function sampleContractQuote(
   };
 }
 
+/** Each symbol's score sits apart from the others' (one shared formula gave all six a 70 on the full
+ *  expiry set). Full-set scores: NVDA 81, SPY 74, QQQ 70, AAPL 63, MSFT 52, TSLA 47. */
+const SCORE_OFFSET: Record<SupportedDemoSymbol, number> = {
+  NVDA: 11,
+  SPY: 4,
+  QQQ: 0,
+  AAPL: -7,
+  MSFT: -18,
+  TSLA: -23,
+};
+
 export function makeScenario(
   symbol: SupportedDemoSymbol,
   base: number,
@@ -225,7 +236,7 @@ export function makeScenario(
       flip,
       distance: Number(((flip - spot) / spot).toFixed(4)),
       setup: mask === 4 ? 'November calendar context' : 'Balanced structure',
-      score: 42 + mask * 4,
+      score: 42 + mask * 4 + SCORE_OFFSET[symbol],
       fingerprint: `${symbol.toLowerCase()}-synthetic-variant-${mask}-v1`,
     };
   }

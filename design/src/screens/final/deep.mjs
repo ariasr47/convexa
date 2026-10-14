@@ -51,7 +51,7 @@ const AI_READ = {
   built: [
     { status: 'shipped', what: 'The read’s state machine: 15 request × 6 result states folded into ten body cases and three annexes (readLayout.ts, presentationPolicy.ts), the panel, AnalysisSurface (560 drawer), StateExportDrawer (420), ReadSheet with the peek row.' },
     { status: 'shipped', what: 'The demo read: an authored no_trade per expiry set (libs/api/src/lib/demo/transport.ts:494-530), status in_app_enabled false, the “Sample analysis export” header.' },
-    { status: 'partial', what: 'Demo panel is a plain block (AiRecPanel.tsx:262-357): heading “No trade — sit this one out”, the summary and the variant fingerprint as rationale. No Why / Re-engage / figures, no “Full analysis & data”, and no phone sheet (the demo branch returns before ReadSheet).' },
+    { status: 'shipped', what: 'Demo panel takes the live anatomy (2026-10-14): ReadSheet with its peek row, DecisionCard (Why, Re-engage), “Full analysis & data”, on the scenario clock; the summary leads with the variant (“Authored sample: SPY shows … authored score 74”).' },
     { status: 'partial', what: 'Demo export: every category is sent:false, so candidates, risk inputs and open positions read “Not sent — you haven’t set this.”, which is wrong for the demo; the glossary section carries the sample paragraph.' },
     { status: 'todo', what: 'Production Not live panel and the nothing-sent export; today CommandDeck doesn’t render while paused and the status call 503s (useAiRecommendation.ts:113-142).' },
     { status: 'todo', what: 'Copy alignment: “AI unavailable — try again” → “Couldn’t get a read” with a cause; “AI recommendation · T” → “AI read · T”; “—” → “·” in the no-trade verdict to match the desk.' },

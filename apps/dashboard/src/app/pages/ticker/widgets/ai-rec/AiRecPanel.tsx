@@ -18,7 +18,6 @@ import { Widget } from '@/shared/ui/Widget';
 import {
   dataMode,
   getAiKeyStatus,
-  scenarioProvenance,
   type AiProvidersBootstrap,
   type PersonaDefinition,
   type RecResponse,
@@ -260,97 +259,130 @@ export function AiRecPanel({
     ) : null;
 
   if (demo) {
-    const sampleRec = rec?.status === 'produced' ? rec : null;
-    const provenance = scenarioProvenance();
+    // The demo's authored sample read takes the live read's anatomy (owner, 2026-10-14: staging shows
+    // the whole product): the read sheet and its peek row, the decision card with Why and Re-engage,
+    // and the full-analysis drawer. The provenance lines above it say no model was called.
+    const sampleRec = rec?.status === 'produced' && rec.strategy ? rec : null;
+    const sampleStrategy = sampleRec?.strategy;
+    const sampleIsTrade = sampleStrategy?.decision === 'trade';
+    const sampleVerdict = sampleStrategy
+      ? sampleIsTrade
+        ? `Trade · ${sampleStrategy.bias}`
+        : COPY.noTrade.title
+      : null;
     return (
       <Box
         data-testid="ai-rec-panel"
         sx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}
       >
-        <Widget
-          id="ai-rec"
-          title={`Sample analysis · ${ticker}`}
-          actions={exportAction}
-          bodySx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}
-        >
-          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
-            {COPY.demo.provenance}
-            {provenance ? ` · ${provenance.asOf}` : ''}
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1.5 }}>
-            {COPY.demo.noModel}
-          </Typography>
-          {ai.requestFailed && sampleRec && (
-            <Alert
-              severity="info"
-              sx={{ mb: 1.5 }}
-              data-testid="sample-analysis-retained"
-              action={
-                <Button color="inherit" size="small" onClick={ai.retry}>
-                  {COPY.demo.retry}
-                </Button>
-              }
-            >
-              {COPY.demo.retainedError}
-            </Alert>
-          )}
-          {ai.requestFailed && !sampleRec && (
-            <Alert
-              severity="warning"
-              sx={{ mb: 1.5 }}
-              data-testid="sample-analysis-error"
-              action={
-                <Button color="inherit" size="small" onClick={ai.retry}>
-                  {COPY.demo.retry}
-                </Button>
-              }
-            >
-              {COPY.demo.coldError}
-            </Alert>
-          )}
-          {!ai.requestFailed && rec?.status === 'unavailable' && (
-            <Alert
-              severity="info"
-              sx={{ mb: 1.5 }}
-              data-testid="sample-analysis-unavailable"
-              action={
-                <Button color="inherit" size="small" onClick={ai.retry}>
-                  {COPY.demo.retry}
-                </Button>
-              }
-            >
-              Sample analysis is unavailable for this scenario.
-            </Alert>
-          )}
-          {sampleRec?.strategy && (
-            <Box data-testid="sample-analysis-result" sx={{ mb: 1.5 }}>
-              <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 700 }}>
-                {sampleRec.strategy.decision === 'no_trade'
-                  ? 'No trade — sit this one out'
-                  : sampleRec.strategy.structure}
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-                {sampleRec.strategy.summary}
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
-                {sampleRec.strategy.rationale}
-              </Typography>
-            </Box>
-          )}
-          {ai.loading && (
-            <Typography role="status" variant="caption" sx={{ display: 'block', mb: 1 }}>
-              Loading sample analysis…
-            </Typography>
-          )}
-          <Button
-            variant="contained"
-            size="small"
-            disabled={!bundle || ai.loading}
-            onClick={() => void ai.request({ personaId: null, personaName: 'Authored sample' })}
+        <ReadSheet verdict={sampleVerdict} isTrade={Boolean(sampleIsTrade)}>
+          <Widget
+            id="ai-rec"
+            title={`Sample analysis · ${ticker}`}
+            actions={exportAction}
+            bodySx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}
           >
-            {COPY.demo.action}
-          </Button>
-        </Widget>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
+              {/* The time is on the card's own "As of … ET" chip; no raw timestamp here. */}
+              {COPY.demo.provenance}
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{ color: 'text.secondary', display: 'block', mb: 1.5 }}
+            >
+              {COPY.demo.noModel}
+            </Typography>
+            {ai.requestFailed && sampleRec && (
+              <Alert
+                severity="info"
+                sx={{ mb: 1.5 }}
+                data-testid="sample-analysis-retained"
+                action={
+                  <Button color="inherit" size="small" onClick={ai.retry}>
+                    {COPY.demo.retry}
+                  </Button>
+                }
+              >
+                {COPY.demo.retainedError}
+              </Alert>
+            )}
+            {ai.requestFailed && !sampleRec && (
+              <Alert
+                severity="warning"
+                sx={{ mb: 1.5 }}
+                data-testid="sample-analysis-error"
+                action={
+                  <Button color="inherit" size="small" onClick={ai.retry}>
+                    {COPY.demo.retry}
+                  </Button>
+                }
+              >
+                {COPY.demo.coldError}
+              </Alert>
+            )}
+            {!ai.requestFailed && rec?.status === 'unavailable' && (
+              <Alert
+                severity="info"
+                sx={{ mb: 1.5 }}
+                data-testid="sample-analysis-unavailable"
+                action={
+                  <Button color="inherit" size="small" onClick={ai.retry}>
+                    {COPY.demo.retry}
+                  </Button>
+                }
+              >
+                Sample analysis is unavailable for this scenario.
+              </Alert>
+            )}
+            {sampleRec && !ai.loading && (
+              <Box data-testid="sample-analysis-result" sx={{ mb: 1.5 }}>
+                <DecisionCard
+                  rec={sampleRec}
+                  bundle={bundle}
+                  presentation={presentation}
+                  dataAge={dataAge}
+                  onReview={() => onAccept(sampleRec, sampleRec.persona.name)}
+                  onCreateOrder={
+                    presentation.actions.createOrder && onAct
+                      ? () => onAct(sampleRec, sampleRec.persona.name)
+                      : undefined
+                  }
+                  onAnalysis={() => setAnalysisOpen(true)}
+                  onRefresh={() =>
+                    void ai.request({ personaId: null, personaName: 'Authored sample' })
+                  }
+                  onDismiss={ai.dismiss}
+                />
+              </Box>
+            )}
+            {ai.loading && (
+              <Typography role="status" variant="caption" sx={{ display: 'block', mb: 1 }}>
+                Loading sample analysis…
+              </Typography>
+            )}
+            {/* Reads the sample for the expiry set now selected (each set has its own authored read). */}
+            <Button
+              variant={sampleRec ? 'outlined' : 'contained'}
+              size="small"
+              disabled={!bundle || ai.loading}
+              onClick={() => void ai.request({ personaId: null, personaName: 'Authored sample' })}
+              sx={{ alignSelf: 'flex-start' }}
+            >
+              {COPY.demo.action}
+            </Button>
+          </Widget>
+        </ReadSheet>
+        <AnalysisSurface
+          open={analysisOpen}
+          ticker={ticker}
+          rec={sampleRec}
+          bundle={bundle}
+          onClose={() => setAnalysisOpen(false)}
+          onViewExport={() => {
+            setAnalysisOpen(false);
+            onViewExport(null, bundle?.ai_eval.state_fingerprint ?? null);
+          }}
+        />
       </Box>
     );
   }

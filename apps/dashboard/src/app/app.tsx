@@ -47,6 +47,7 @@ import { useSettings } from '@/features/auth/useSettings';
 import { Landing } from '@/pages/landing/Landing';
 import { marketDataOff } from '@/shared/dataState/marketData';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
+import { STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
 import { PageColumn } from '@/shared/ui/PageColumn';
 import { RouteFallback } from '@/shared/ui/RouteFallback';
@@ -70,6 +71,9 @@ const TickerDashboard = lazy(() =>
 );
 const PublicDesk = lazy(() =>
   import('@/pages/ticker/public-desk/PublicDesk').then((m) => ({ default: m.PublicDesk })),
+);
+const DemoSymbolMissing = lazy(() =>
+  import('@/pages/ticker/DemoSymbolMissing').then((m) => ({ default: m.DemoSymbolMissing })),
 );
 const TechnicalAnalysisView = lazy(() =>
   import('@/pages/ticker/technical-analysis/TechnicalAnalysisView').then((m) => ({
@@ -174,10 +178,17 @@ function DefaultTickerRedirect() {
 /** The ticker desk. A live build whose options feed is off (/api/health says `not_live` or
  *  `paused`) mounts the public desk instead, which never calls the endpoints that need the feed;
  *  waiting for the health read is what keeps the full desk's requests from starting. Demo builds and
- *  a live feed (or an unknown answer) keep the full desk. */
+ *  a live feed (or an unknown answer) keep the full desk; on the demo, a symbol its scenario doesn't
+ *  cover says so instead of failing to load. */
 function TickerDeskRoute() {
+  const { ticker = '' } = useParams();
   const mode = useMarketDataMode();
-  if (dataMode === 'demo') return <TickerDashboard />;
+  if (dataMode === 'demo')
+    return (STAGING_DEMO_SYMBOLS as readonly string[]).includes(ticker.toUpperCase()) ? (
+      <TickerDashboard />
+    ) : (
+      <DemoSymbolMissing ticker={ticker} />
+    );
   if (mode === null) return <RouteFallback />;
   return marketDataOff(mode) ? (
     <PublicDesk feed={mode === 'paused' ? 'paused' : 'not_live'} />

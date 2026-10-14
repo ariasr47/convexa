@@ -172,7 +172,7 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
 
   await verifyVariant({
     key: '2026-10-09,2026-10-16,2026-11-20',
-    score: 70,
+    score: 74,
     setup: 'Balanced structure',
     fingerprint: 'spy-synthetic-variant-7-v1',
   });
@@ -187,7 +187,7 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
   await expect(basis).toHaveAttribute('data-selected-expiry-key', '2026-11-20');
   await verifyVariant({
     key: '2026-11-20',
-    score: 58,
+    score: 62,
     setup: 'November calendar context',
     fingerprint: 'spy-synthetic-variant-4-v1',
   });
@@ -217,7 +217,7 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
   await expect(basis).toHaveAttribute('data-selected-expiry-key', '2026-10-09,2026-11-20');
   await verifyVariant({
     key: '2026-10-09,2026-11-20',
-    score: 62,
+    score: 66,
     setup: 'Balanced structure',
     fingerprint: 'spy-synthetic-variant-5-v1',
   });
@@ -360,7 +360,8 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
   );
   await screenshot(page, 'research-phone-dark');
 
-  await page.getByRole('link', { name: 'Settings', exact: true }).click();
+  // The demo is signed in to its seed account: Settings opens from the account avatar.
+  await page.getByRole('link', { name: 'Account settings', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
   await expect(page.locator('input[type="email"]')).toHaveCount(0);
@@ -412,7 +413,8 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
   await expect(page.getByRole('switch', { name: 'SPY · Level touch' })).toBeChecked();
   await expect(page.getByText(/No snapshot has been evaluated yet this session/)).toBeVisible();
   await screenshot(page, 'alerts-desktop-light');
-  await page.getByRole('link', { name: 'Settings', exact: true }).click();
+  // The demo is signed in to its seed account: Settings opens from the account avatar.
+  await page.getByRole('link', { name: 'Account settings', exact: true }).click();
   await expect(page.getByTestId('settings-theme')).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({

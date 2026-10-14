@@ -68,7 +68,7 @@ const DESK = {
     { status: 'shipped', what: 'The 12 Not live panels with “Would show”, “Off because” and “See it on the demo →” (demoDeskUrl: the same symbol, or SPY’s desk for a symbol the demo lacks); one folded list on a phone; the “On this page” legend counted from the tags on the page.' },
     { status: 'partial', what: 'Short interest on the desk is the research card (figure and bar strip), not the titled v5 bar chart drawn here.' },
     { status: 'todo', what: 'The v5 chart forms on the desk (P-8–P-13): field labels as 11 px HTML with +γ/−γ text and a table twin, magnet copy that changes with the side of the flip, term structure as a line, a missing score as “—”.' },
-    { status: 'todo', what: 'Demo: a symbol outside the six shows “Couldn’t load X. HTTP 422”; designed as “isn’t in the demo”.' },
+    { status: 'shipped', what: 'Demo: a symbol outside the six says “X isn’t in the demo scenario.” and offers the six (pages/ticker/DemoSymbolMissing.tsx, 2026-10-14).' },
     { status: 'shipped', what: 'One tab name, “Technical”, on the desk and the public desk.' },
   ],
   rulings: ['P-1', 'P-2', 'P-3', 'P-5', 'P-6', 'P-8', 'P-9', 'P-10', 'P-11', 'P-12', 'P-13', 'P-14', 'Env 2026-10-14'],

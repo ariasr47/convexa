@@ -42,9 +42,7 @@ describe('AC-N1/AC-N2/AC-N3/AC-N5 — the 404 composition inside the shell', () 
     expect(screen.getByText('404')).toBeInTheDocument();
     expect(screen.getByText('Nothing at this address.')).toBeInTheDocument();
     expect(
-      screen.getByText(
-        'The desk is one symbol away. Ticker analysis is free; the rest is behind a sign-in.',
-      ),
+      screen.getByText('The address may be old or mistyped. The desk is one symbol away.'),
     ).toBeInTheDocument();
     expect(screen.getByTestId('app-shell')).toBeInTheDocument();
     expect(screen.getByTestId('site-footer')).toBeInTheDocument();

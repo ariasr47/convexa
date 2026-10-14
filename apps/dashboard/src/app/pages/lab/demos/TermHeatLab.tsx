@@ -148,7 +148,7 @@ export function TermHeatLab() {
   return (
     <LabShell
       title="Term Heat"
-      tagline="Cross-tenor IV as a heat ribbon: contango glows green, backwardation red. Candidate upgrade for the term-structure line chart — more terminal, still snapshot-honest."
+      tagline="Implied volatility across tenors as a heat ribbon, with the curve’s shape named in words above it: contango, backwardation or flat. A candidate for the term-structure card; synthetic data, snapshot clock."
       tickerCandidate="Term structure card"
       testId="lab-term-heat"
     >

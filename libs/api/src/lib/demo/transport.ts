@@ -512,7 +512,7 @@ function recommendation(
       exit_plan: { target: null, stop: null },
       strikes: [],
       structure: variant.setup,
-      summary: 'Authored sample analysis; not a model recommendation.',
+      summary: `Authored sample: ${symbol} shows ${variant.setup.toLowerCase()} with authored score ${variant.score}. Not a model recommendation.`,
       rationale: `Synthetic ${symbol} structure has ${variant.setup.toLowerCase()} with authored score ${variant.score}. This is scenario copy, not a forecast or executable instruction.`,
       key_points: [
         `Variant fingerprint: ${variant.fingerprint}.`,

@@ -6,7 +6,7 @@
 export const NOT_FOUND_COPY = {
   code: '404',
   headline: 'Nothing at this address.',
-  body: 'The desk is one symbol away. Ticker analysis is free; the rest is behind a sign-in.',
+  body: 'The address may be old or mistyped. The desk is one symbol away.',
   primary: 'Open the Ticker →',
   secondary: 'Home',
 } as const;
