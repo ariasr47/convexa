@@ -1,2 +1,312 @@
-// Final · Convexa v1 — rows for this group (see ./index.mjs for the row shape).
-export const ROWS = [];
+// Final · Convexa v1 — the account group: Scanner, Positions, Alerts, Settings and the overlays.
+// Each row: the spec card, staging (the seed demo account), production (the portfolio site), phone,
+// light, states. Pages live in ./account-pages.mjs, overlays in ./account-dialogs.mjs.
+import { ACCT_CSS, alertsProduction, alertsStaging, positionsProduction, positionsStaging, positionsStates, scannerProduction, scannerStaging, scannerStates, settingsProduction, settingsStaging, settingsStates } from './account-pages.mjs';
+import { DLG_CSS, dialogsStates, orderDetailBody, personaBody, sheetsBody, signInBody, tradeEntryBody, viewEditorBody, whatsSentBody } from './account-dialogs.mjs';
+import { alertsFlowBody, alertsStates5Body } from '../v5/alerts-public.mjs';
+
+const LIGHT = { scheme: 'light' };
+const ENV = ['Env 2026-10-14'];
+
+export const ROWS = [
+  // ---- Scanner -----------------------------------------------------------------------------------------
+  {
+    key: 'scanner',
+    label: 'Scanner',
+    css: ACCT_CSS,
+    specH: 2096,
+    spec: {
+      title: 'Scanner',
+      route: '/scanner',
+      job: 'One dense read of the tracked universe, ranked by dealer structure, so a trader knows which ticker deserves the deep-dive right now.',
+      env: {
+        production: 'Not live first, signed in or not: every column reads the options chain, so the page explains what it would show, why it is off, and links to the same screen on the demo. No sign-in wall, because signing in would not make it work. Below, links to what is live without the feed.',
+        staging: 'The sample scan on the Oct 7, 2026 scenario, signed in to the demo account: the six demo names, scores, tiers, flip distance and walls, in a dashed, hatched frame. Price change stays green/red text with ▲/▼ (P-5 rejected). No price flash.',
+      },
+      widgets: [
+        { name: 'Scan table (score, tier, regime, flip, walls)', source: '/api/scan · Massive options chain, swept ~3 min (hot names sooner)', production: 'notLive', staging: 'sample' },
+        { name: 'Price and change', source: 'Price stream (SSE) over the swept price; per tick', production: 'notLive', staging: ['sample', 'Sample tape'] },
+        { name: 'Session strip', source: 'Wall clock, America/New_York (no feed)', production: '—', staging: ['computed', 'RTH · scenario'] },
+        { name: 'Your view (names, order, filters)', source: '/api/scan/view (account) · demo: this browser', production: 'notLive', staging: 'local' },
+        { name: 'Row preview', source: 'The row’s own fields', production: 'notLive', staging: 'sample' },
+        { name: 'Live on this site (links)', source: '/api/public-data/markets, /filings, /tickers/{t}', production: [['current', 'Updated'], ['delayed', 'Delayed by source'], ['notConfigured', 'Not set up']], staging: '—' },
+      ],
+      states: [
+        { tag: 'notLive', when: 'Production, every visitor: the explain panel, the table’s outline, “See it on the demo →”.' },
+        { tag: 'demo', when: 'Staging: the sample scan, chips dashed and “shaped like”.' },
+        { tag: 'loading', when: 'Rows held at final height while the sweep answers.' },
+        { tag: ['empty', 'No tickers'], when: 'The view holds no names: “Pick tickers to build your scan.” + Edit view.' },
+        { tag: ['empty', 'Filtered out'], when: 'Filters exclude every row; one action clears them.' },
+        { tag: 'stale', when: 'Feed on but the sweep is late: rows stay, dimmed, with the age. Or the price stream dropped: “Prices offline · showing last known”.' },
+        { tag: 'error', when: 'Our request failed: the cause and Try again.' },
+      ],
+      phone: 'Header, legend and the explain panel stack; the outline table drops to four columns; “Live on this site” becomes one column of 44px link cards. Staging: the table becomes one card per name (symbol, price, ▲/▼ change, score bar, tier, flip and walls); the filter chips wrap and lift to 44px.',
+      acceptance: [
+        'Production, signed out: /scanner shows the Not live panel, not a sign-in wall; zero requests to /api/scan*.',
+        'Production: “See it on the demo →” opens staging /scanner.',
+        'Staging: six rows (NVDA, SPY, QQQ, AAPL, MSFT, TSLA) at the scenario closes (SPY 690.62), in a dashed hatched frame with a Sample tag and the Oct 7 date.',
+        'Staging: every change shows ▲ or ▼ before the figure as well as green/red text.',
+        'The row preview opens from its button and from Enter on a focused row; hover alone never is the only way.',
+        'Phone: no horizontal scroll at 390; every control ≥ 44px.',
+      ],
+      built: [
+        { status: 'shipped', what: 'Scan table, filters, view editor, row preview, empty, loading and sweep-behind states; the Not live and Paused board banners (labels.ts marketDataNotLive / marketDataPaused).' },
+        { status: 'shipped', what: 'Staging scan through the demo transport, signed in (RequireAuth passes in demo mode).' },
+        { status: 'partial', what: 'Demo scan rows: real scenario prices, walls and flips, but every row returns score 70 and change +0.42% (transport.ts:1229-1242); the design draws per-name scores and the scenario’s own close-to-close change.' },
+        { status: 'todo', what: 'Production still wraps /scanner in RequireAuth (app.tsx:255-258): visitors meet “Sign in to open the scanner”. Final: no wall; the Not live explain panel with the demo link and the outline table.' },
+        { status: 'todo', what: 'The “Live on this site” link cards and the On this page legend.' },
+      ],
+      rulings: ['P-1', 'P-2', 'P-3', 'P-5 rejected', 'P-11', 'P-13', ...ENV],
+      code: ['apps/dashboard/src/app/pages/scanner/ (Scanner.tsx, ScanTable.tsx, ScanCard.tsx, ScanToolbar.tsx, labels.ts)', 'apps/dashboard/src/app/features/auth/RequireAuth.tsx', 'apps/dashboard/src/app/app.tsx:249-258', 'libs/api/src/lib/demo/transport.ts:1217-1260', 'design/src/screens/final/account-pages.mjs'],
+    },
+    boards: [
+      { id: 'staging', title: 'Staging · demo account', w: 1440, h: 1142, body: (o) => scannerStaging(o) },
+      { id: 'production', title: 'Production · Not live', w: 1440, h: 977, body: (o) => scannerProduction(o) },
+      { id: 'phone', title: 'Phone · production', w: 390, h: 1509, body: (o) => scannerProduction(o) },
+      { id: 'staging-phone', title: 'Phone · staging', w: 390, h: 2091, body: (o) => scannerStaging(o) },
+      { id: 'light', title: 'Light · production', w: 1440, h: 977, body: (o) => scannerProduction(o), opts: LIGHT },
+      { id: 'states', title: 'States', w: 1440, h: 2113, body: (o) => scannerStates(o) },
+    ],
+  },
+
+  // ---- Positions ---------------------------------------------------------------------------------------
+  {
+    key: 'positions',
+    label: 'Positions',
+    css: ACCT_CSS,
+    specH: 1987,
+    spec: {
+      title: 'Positions',
+      route: '/positions',
+      job: 'The trader’s simulated book: what is open, what it is worth at its mark, what is waiting to fill, and how past decisions closed. Paper only.',
+      env: {
+        production: 'The private-testing wall for visitors: “Sign in to open your positions”, sign-ups closed, a free path to a ticker desk and a link to the demo book. Signed in (the owner), records and user-entered prices work; option marks say Not live.',
+        staging: 'The demo account’s seeded book: one open SPY Oct 16 690 C (long 1 at 3.00, trigger fill), one waiting SPY Nov 20 690 C limit 6.50, one closed QQQ Oct 9 630 C (+$48). Marks come from the sample chain and say so: 2.47 at 2:30 PM, −$53.',
+      },
+      widgets: [
+        { name: 'Capital at risk', source: 'Sum of open max loss, computed in the browser', production: 'locked', staging: 'computed' },
+        { name: 'Net P&L (open)', source: 'Positions × marks; marks from the ticker stream (live) or demo order frames', production: 'locked', staging: ['sample', 'Sample mark'] },
+        { name: 'Open positions table / cards', source: 'localStorage convexa.positions.v3 (+ account sync)', production: 'locked', staging: 'local' },
+        { name: 'Mark basis per row', source: 'Ticker stream (Massive) · demo: sampleContractMark', production: 'notLive', staging: 'sample' },
+        { name: 'Simulated orders', source: 'localStorage convexa.orders.v1; engine rides the ticker stream', production: ['notLive', 'Not evaluated'], staging: ['sample', 'Sample tape'] },
+        { name: 'Track record', source: 'Decision ledger in convexa.positions.v3', production: 'locked', staging: 'local' },
+        { name: 'Broker tab', source: '/api/broker/book (read-only Webull) · demo: one authored holding', production: ['notConfigured', 'Not connected'], staging: 'sample' },
+      ],
+      states: [
+        { tag: 'locked', when: 'Production visitor: the wall, the one way in, the demo link.' },
+        { tag: ['notLive', 'Mark not live'], when: 'Production, signed in: records persist; option marks need the feed; P&L from user-entered prices only.' },
+        { tag: 'sample', when: 'Staging: each mark names the sample chain and its scenario time.' },
+        { tag: 'empty', when: '“No simulated positions yet. Open one to start your book.”' },
+        { tag: 'error', when: 'The browser store is unreadable: recording pauses, nothing deleted, export first.' },
+        { tag: 'stale', when: 'Broker read failed: the last good read with its time.' },
+        { tag: 'paused', when: 'Staging: the demo couldn’t write storage, so the sample tape stops.' },
+        { tag: ['notConfigured', 'Not connected'], when: 'No broker key saved (production, signed in).' },
+      ],
+      phone: 'The three-figure strip stacks; the table becomes one card per position (contract, P&L with sign, basis tags, max loss, days left); orders and track record follow as full-width panels. The wall keeps its copy; its buttons stack at 44px.',
+      acceptance: [
+        'Production, signed out: the wall reads “Sign in to open your positions”, says sign-ups are closed, and offers Open a ticker desk and “See it on the demo →”. No “Sign up” or “Create an account” anywhere.',
+        'Staging: the open row reads SPY 690 C · Oct 16, entry 3.00, a Sample mark with its scenario time, and P&L with a − sign as well as red text.',
+        'Staging: Pending shows the SPY Nov 20 limit 6.50 order; History shows QQQ 630 C closed +$48.',
+        'Every mark names its basis; no mark cell is ever blank.',
+        'Reset demo data restores exactly the seed above.',
+      ],
+      built: [
+        { status: 'shipped', what: 'The book: capital at risk, Net P&L, table and cards, saved views, orders panel, track record, broker tab; the wall (RequireAuth) on production.' },
+        { status: 'shipped', what: 'Demo seed (workspace.ts:203-505) and demo order frames, signed in to the demo account.' },
+        { status: 'partial', what: 'Wall copy: shipped says “Private testing — invited accounts only” and links “Open free Ticker →”; final adds the demo-book link.' },
+        { status: 'todo', what: 'A Sample mark tag on staging rows (the page lead still says “Live marks degrade gracefully”), and Not live marks for a signed-in production book.' },
+      ],
+      rulings: ['P-1', 'P-2', 'P-3', 'P-5 rejected', 'P-11', 'P-13', ...ENV],
+      code: ['apps/dashboard/src/app/pages/positions/PositionsPage.tsx', 'apps/dashboard/src/app/features/trading/{positions,orders,broker}/', 'apps/dashboard/src/app/features/auth/RequireAuth.tsx', 'libs/api/src/lib/demo/workspace.ts', 'design/src/screens/final/account-pages.mjs'],
+    },
+    boards: [
+      { id: 'staging', title: 'Staging · demo account', w: 1440, h: 1020, body: (o) => positionsStaging(o) },
+      { id: 'production', title: 'Production · signed out', w: 1440, h: 920, body: (o) => positionsProduction(o) },
+      { id: 'phone', title: 'Phone · production', w: 390, h: 959, body: (o) => positionsProduction(o) },
+      { id: 'staging-phone', title: 'Phone · staging', w: 390, h: 1953, body: (o) => positionsStaging(o) },
+      { id: 'light', title: 'Light · production', w: 1440, h: 920, body: (o) => positionsProduction(o), opts: LIGHT },
+      { id: 'states', title: 'States', w: 1440, h: 2115, body: (o) => positionsStates(o) },
+    ],
+  },
+
+  // ---- Alerts ------------------------------------------------------------------------------------------
+  {
+    key: 'alerts',
+    label: 'Alerts',
+    css: ACCT_CSS,
+    specH: 2119,
+    spec: {
+      title: 'Alerts',
+      route: '/alerts',
+      job: 'Tell a reader when a public source publishes something about what they follow: a filing, an insider cluster, a results date, a positioning extreme, a short-interest change, a note coming due. Never what to do about it.',
+      env: {
+        production: 'The ruled Q-5 page. Public-data kinds are live, each with its source and delay. Filing and insider kinds save but say Not set up until the operator sets SEC_USER_AGENT. Structure kinds (score, tier, level touch) are Not live, with a link to the demo. Rules are kept in this browser for visitors.',
+        staging: 'The demo account’s alerts: the seeded SPY gamma-flip touch, plus one sample rule per public kind on the demo’s names. Every kind, structure included, checks the Oct 7 scenario; firings are part of the scenario, dashed and dated.',
+      },
+      widgets: [
+        { name: 'Your alerts (rules)', source: 'localStorage convexa.alerts.v1 (account when signed in)', production: 'local', staging: 'local' },
+        { name: 'Results approaching', source: 'Note catalysts + EDGAR filing cadence · daily 6:00 AM ET', production: 'current', staging: 'sample' },
+        { name: 'New filing · Insider cluster', source: 'SEC EDGAR (8-K/10-Q/10-K, Form 4) · hourly', production: 'notConfigured', staging: 'sample' },
+        { name: 'Positioning extreme', source: 'CFTC TFF · as of Tue, published Fri 3:30 PM ET', production: 'delayed', staging: 'sample' },
+        { name: 'Short interest change', source: 'FINRA · twice a month, ~1 week after settlement', production: 'delayed', staging: 'sample' },
+        { name: 'Note coming due', source: 'Convexa research notes · daily', production: 'computed', staging: 'sample' },
+        { name: 'Score, tier, level touch', source: 'Massive options chain (structure snapshots)', production: 'notLive', staging: 'sample' },
+        { name: 'Fired', source: 'Each rule’s own source, dated', production: [['current', 'Updated'], ['delayed', 'Delayed by source']], staging: ['sample', 'Sample firings'] },
+      ],
+      states: [
+        { tag: 'empty', when: 'No alerts yet: three suggestions that work today, none needing SEC access.' },
+        { tag: 'notConfigured', when: 'SEC kinds before SEC_USER_AGENT: saved, listed, reader sentence first, operator hint folded.' },
+        { tag: 'unavailable', when: 'The source didn’t answer its check: unknown, not quiet; nothing fires from an old report.' },
+        { tag: 'error', when: 'Couldn’t read your saved alerts; editing waits for a reload; nothing deleted.' },
+        { tag: 'off', when: 'Switched off on purpose: no checks, one switch back on.' },
+        { tag: ['current', 'Fired'], when: 'Says what the source published, its date, and where to read more.' },
+        { tag: ['notConfigured', 'Blocked here'], when: 'Browser notifications blocked; firings still list on the page.' },
+        { tag: 'notLive', when: 'Structure kinds on production, folded in the new-alert dialog and listed with a demo link.' },
+        { tag: 'demo', when: 'Staging: sample rules and sample firings.' },
+      ],
+      phone: 'One column: legend, the SEC strip, Your alerts (each rule stacks kind, subject, state, switch and Edit at 44px), Fired, then the kind reference as stacked rows. The new-alert steps are bottom sheets.',
+      acceptance: [
+        'Production: CFTC and FINRA rules show Delayed by source with their as-of dates; filing and insider rules show Not set up and still save.',
+        'Production: no structure kind can be chosen; its tile and the page panel say Not live and link to the demo.',
+        'Production: nothing fires from an SEC source while SEC_USER_AGENT is unset.',
+        'Staging: the SPY gamma-flip touch from the seed is listed; every rule and firing carries Sample and a dashed chip.',
+        'No firing text recommends an action; it reports what a source published.',
+      ],
+      built: [
+        { status: 'shipped', what: 'Alerts v1: structure kinds (level touch, tier change, score gate), local store, browser notification, the faulted banner and the Not live / Paused notice.' },
+        { status: 'shipped', what: 'Demo seed: one rule, level touch on SPY’s gamma flip (workspace.ts:506-518).' },
+        { status: 'todo', what: 'The six public-data kinds (Q-5), the On this page legend, the SEC strip, the kind reference, and server-side checks against /api/public-data/*.' },
+        { status: 'todo', what: 'Demo seed rules for the public kinds and a scenario firing.' },
+      ],
+      rulings: ['Q-5', 'P-1', 'P-2', 'P-3', 'P-9', 'P-13', ...ENV],
+      code: ['apps/dashboard/src/app/pages/alerts/AlertsPage.tsx', 'apps/dashboard/src/app/features/alerts/', 'apps/api/src/routes/public_data.rs', 'design/src/data/alerts.mjs', 'design/src/screens/v5/alerts-public.mjs'],
+    },
+    boards: [
+      { id: 'staging', title: 'Staging · demo account', w: 1440, h: 2149, body: (o) => alertsStaging(o) },
+      { id: 'production', title: 'Production · public data', w: 1440, h: 2333, body: (o) => alertsProduction(o) },
+      { id: 'phone', title: 'Phone · production', w: 390, h: 4055, body: (o) => alertsProduction(o) },
+      { id: 'light', title: 'Light · production', w: 1440, h: 2333, body: (o) => alertsProduction(o), opts: LIGHT },
+      { id: 'states', title: 'States (Q-5)', w: 1440, h: 3537, body: (o) => alertsStates5Body(o) },
+    ],
+  },
+
+  // ---- Settings ----------------------------------------------------------------------------------------
+  {
+    key: 'settings',
+    label: 'Settings',
+    css: ACCT_CSS,
+    specH: 1893,
+    spec: {
+      title: 'Settings',
+      route: '/settings',
+      job: 'Where a trader sets how Convexa looks and what it may assume about them: theme, default ticker, persona, risk inputs, AI provider and a read-only brokerage link.',
+      env: {
+        production: 'Signed out for visitors: the account panel offers Sign in (sign-ups closed); theme and default ticker work in this browser; risk inputs, AI providers and brokerage say what signing in unlocks.',
+        staging: 'Always the demo account: avatar “D”, “Demo account”, “Sample data. Your changes stay in this browser until you reset.” and an outlined Reset demo data button in place of sign-out. Risk inputs seeded at a $25,000 sample account and 2% per trade (cap $500). AI providers and brokerage are read-only samples.',
+      },
+      widgets: [
+        { name: 'Account', source: '/api/auth/session (demo: transport, DEMO_ACCOUNT)', production: 'locked', staging: 'demo' },
+        { name: 'Preferences (theme, default ticker, persona)', source: 'Account settings, or this browser when signed out', production: 'local', staging: 'local' },
+        { name: 'Risk inputs', source: 'Account settings · sent with each AI read', production: 'locked', staging: ['local', '$25,000 · 2%'] },
+        { name: 'AI providers', source: '/api/auth/ai-key (encrypted, write-only)', production: 'locked', staging: ['sample', 'Read-only'] },
+        { name: 'Brokerage', source: '/api/broker/credential · Webull, read-only', production: 'locked', staging: ['sample', 'Read-only'] },
+      ],
+      states: [
+        { tag: 'locked', when: 'Production visitor: what signing in unlocks; sign-ups closed.' },
+        { tag: 'demo', when: 'Staging: the demo account, Reset demo data.' },
+        { tag: ['error', 'Check the value'], when: 'Inline validation at the field.' },
+        { tag: ['notConfigured', 'Not set'], when: 'Signed in, no risk figures: reads show “not set”.' },
+        { tag: 'error', when: 'Couldn’t save that setting; edits kept; Try again.' },
+        { tag: 'unavailable', when: 'The account store is down: nothing was stored.' },
+        { tag: 'notLive', when: 'Production, signed in: the AI key saves and waits for the feed.' },
+        { tag: 'paused', when: 'Staging: demo settings unreadable; Reset demo data restores the seed.' },
+      ],
+      phone: 'The section rail becomes a horizontally scrolling row of 44px tabs; panels stack full width; the demo account panel lets Reset demo data drop below the name (200px floor); field pairs stack.',
+      acceptance: [
+        'Staging: the account panel shows “D”, “Demo account”, the sample sentence and an outlined Reset demo data; no Sign out, Sign in, Log in or Sign up anywhere.',
+        'Staging: risk inputs read $25,000 and 2%, effective cap $500, and survive a reload; Reset demo data restores them.',
+        'Staging: AI providers and brokerage accept no input and say why.',
+        'Production, signed out: changing the theme persists in this browser across a reload with no request to /api/auth/settings.',
+        'The egress sentence sits above both risk fields, never in a tooltip.',
+      ],
+      built: [
+        { status: 'shipped', what: 'Demo account panel, seeded risk inputs, read-only AI and brokerage samples (commit 30263978; SettingsPage.tsx:197-230, transport.ts:373-386).' },
+        { status: 'shipped', what: 'Signed-out and signed-in account panels, preferences, risk inputs with validation, AI providers, brokerage connect.' },
+        { status: 'todo', what: 'The section rail (deferred by owner ruling D-B; the page is one 760px column).' },
+        { status: 'todo', what: 'Status tags on each panel (Stored here, Sign in, Read-only sample).' },
+      ],
+      rulings: ['P-2', 'P-3', 'P-13', ...ENV],
+      code: ['apps/dashboard/src/app/features/auth/SettingsPage.tsx', 'apps/dashboard/src/app/features/auth/{RiskInputsSection,AiKeySection,BrokerageSection}.tsx', 'apps/dashboard/src/app/features/auth/copy.ts', 'libs/api/src/lib/demo/{mode,transport}.ts'],
+    },
+    boards: [
+      { id: 'staging', title: 'Staging · demo account', w: 1440, h: 1759, body: (o) => settingsStaging(o) },
+      { id: 'production', title: 'Production · signed out', w: 1440, h: 1306, body: (o) => settingsProduction(o) },
+      { id: 'phone', title: 'Phone · production', w: 390, h: 1727, body: (o) => settingsProduction(o) },
+      { id: 'light', title: 'Light · production', w: 1440, h: 1306, body: (o) => settingsProduction(o), opts: LIGHT },
+      { id: 'states', title: 'States', w: 1440, h: 1661, body: (o) => settingsStates(o) },
+    ],
+  },
+
+  // ---- Overlays ----------------------------------------------------------------------------------------
+  {
+    key: 'dialogs',
+    label: 'Overlays',
+    css: ACCT_CSS + DLG_CSS,
+    specH: 2012,
+    spec: {
+      title: 'Overlays',
+      route: 'dialogs, drawer and sheets on every route',
+      job: 'The decisions that happen over a page: signing in, opening a simulated position, reading an order, tuning the AI persona, editing the scan view, seeing exactly what an AI read sends, and setting up an alert.',
+      env: {
+        production: 'Sign in exists only here (sign-ups closed). Trade entry offers Manual price only; order detail says Not evaluated; what’s sent says nothing is sent; persona saves and waits. Each links to the demo where the feed is needed.',
+        staging: 'No sign in. Every overlay works on the sample chain and the demo account’s seed: Market, Limit and Manual fills, orders that trigger on the sample tape, a labelled sample export, saved persona and view in this browser.',
+      },
+      widgets: [
+        { name: 'Sign in', source: '/api/auth/login · SIGNUPS_OPEN = false', production: 'locked', staging: '— (none)' },
+        { name: 'Trade entry (position / order)', source: 'Option chain via ticker bundle · demo: sample chain', production: ['notLive', 'Manual only'], staging: 'sample' },
+        { name: 'Order detail', source: 'convexa.orders.v1 + order engine', production: ['notLive', 'Not evaluated'], staging: ['sample', 'Sample tape'] },
+        { name: 'Persona picker / customize', source: 'convexa.personas.v1 + /api/personas', production: 'local', staging: 'local' },
+        { name: 'Scan view editor', source: '/api/scan/universe, /api/scan/view', production: 'notLive', staging: 'local' },
+        { name: 'What’s sent drawer', source: 'The read’s request body (snapshot, candidates, risk, positions, persona)', production: 'notLive', staging: 'sample' },
+        { name: 'New alert (3 steps)', source: 'ALERT_KINDS · each kind’s public source', production: [['delayed', 'Delayed by source'], ['notConfigured', 'Not set up']], staging: 'sample' },
+      ],
+      states: [
+        { tag: 'locked', when: 'Production: sign in opens from a wall or the nav; sign-ups closed.' },
+        { tag: 'error', when: 'Wrong credentials; chain didn’t load; persona, view or alert save failed. Inline, input kept.' },
+        { tag: 'unavailable', when: 'Sign-in service or the tracked universe is down.' },
+        { tag: 'notLive', when: 'Production: fills, order triggers, AI export and the scan view need the feed.' },
+        { tag: ['notConfigured', 'Not set'], when: 'No risk inputs: the cap check reads “not set”.' },
+        { tag: 'computed', when: 'Cap check: max loss against the per-trade cap; over the cap warns and still allows.' },
+        { tag: 'demo', when: 'Staging: every overlay on the sample chain; the D8-1 disclosure above every order confirm.' },
+      ],
+      phone: 'Under 600px every dialog and the drawer become bottom sheets: full width, a grab handle, actions stacked at 44px, field grids at two columns, the page behind dimmed (one board shows all six; the alert steps are on the flow board).',
+      acceptance: [
+        'Staging: no sign-in dialog can open from any route; no “Sign in” text in any overlay.',
+        'Every trade-entry and order confirm shows SIMULATED and its binding disclosure (the position DISCLAIMER, or D8-1 for an order) above the confirm button.',
+        'Production: trade entry offers Manual price only, with the reason on the fill control.',
+        'The what’s-sent drawer on staging is titled “Sample analysis export · SPY” and copies the Sample label with the text.',
+        'Escape closes every overlay and returns focus to the control that opened it.',
+        'Phone: each overlay is a bottom sheet with 44px actions; no horizontal scroll at 390.',
+      ],
+      built: [
+        { status: 'shipped', what: 'AuthDialog (login only, sign-ups closed), TradeEntryDialog (position and order variants, D8 disclosures), OrderDetailDialog, PersonaPicker / PersonaCustomizeForm, ViewEditorDialog, StateExportDrawer (sample header in demo).' },
+        { status: 'partial', what: 'Production trade entry: Market and Limit gating on the live quote is shipped; the reason line on the control and a demo link are not.' },
+        { status: 'todo', what: 'New-alert flow for the public-data kinds (Q-5).' },
+        { status: 'todo', what: 'Demo links from production Not live overlays (what’s sent, order detail).' },
+      ],
+      rulings: ['P-1', 'P-2', 'P-3', 'P-13', 'Q-5', ...ENV],
+      code: ['apps/dashboard/src/app/features/auth/AuthDialog.tsx', 'apps/dashboard/src/app/features/trading/tradeEntry/TradeEntryDialogView.tsx', 'apps/dashboard/src/app/features/trading/orders/{OrderDetailDialog.tsx,copy.ts}', 'apps/dashboard/src/app/features/personas/components.tsx', 'apps/dashboard/src/app/pages/scanner/ViewEditorDialog.tsx', 'apps/dashboard/src/app/pages/ticker/widgets/ai-rec/StateExportDrawer.tsx'],
+    },
+    boards: [
+      { id: 'sign-in', title: 'Sign in · production only', w: 1440, h: 920, body: (o) => signInBody(o) },
+      { id: 'trade-entry', title: 'Trade entry · staging', w: 1440, h: 920, body: (o) => tradeEntryBody(o) },
+      { id: 'order-detail', title: 'Order detail · staging', w: 1440, h: 920, body: (o) => orderDetailBody(o) },
+      { id: 'persona', title: 'Persona · staging', w: 1440, h: 920, body: (o) => personaBody(o) },
+      { id: 'view-editor', title: 'Scan view editor · staging', w: 1440, h: 920, body: (o) => viewEditorBody(o) },
+      { id: 'whats-sent', title: 'What’s sent drawer · staging', w: 1440, h: 920, body: (o) => whatsSentBody(o) },
+      { id: 'alert-flow', title: 'New alert · three steps (production words)', w: 1440, h: 1899, body: (o) => alertsFlowBody(o) },
+      { id: 'phone', title: 'Phone · bottom sheets', w: 390, h: 5581, body: (o) => sheetsBody(o) },
+      { id: 'states', title: 'States', w: 1440, h: 2194, body: (o) => dialogsStates(o) },
+    ],
+  },
+];

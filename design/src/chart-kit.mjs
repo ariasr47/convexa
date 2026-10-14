@@ -23,7 +23,8 @@ const role = (k, mode) => (P[k] ? P[k][mode] : '');
 
 export const CHART_CSS = `
   :root, [data-scheme="dark"] { --c-emph: var(--phosphor); --c-ctx: var(--steel); --c-ctx2: ${role('chartContext2', 'dark')}; --c-band: ${role('chartBand', 'dark')}; --c-grid: var(--line); --c-axis: var(--line-2); --c-edge: var(--steel-2); }
-  [data-scheme="light"] { --c-ctx2: ${role('chartContext2', 'light')}; --c-band: ${role('chartBand', 'light')}; }
+  /* Re-declared here so var(--phosphor) etc. resolve against the light scheme on light boards, not the :root dark values. */
+  [data-scheme="light"] { --c-emph: var(--phosphor); --c-ctx: var(--steel); --c-ctx2: ${role('chartContext2', 'light')}; --c-band: ${role('chartBand', 'light')}; --c-grid: var(--line); --c-axis: var(--line-2); --c-edge: var(--steel-2); }
   .cf { position: relative; display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 18px 20px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; container-type: inline-size; }
   .cf.k-third { border: 1px dotted var(--steel-2); }
   .cf.k-sample { border: 1px dashed var(--steel-2); }
@@ -67,8 +68,8 @@ export const CHART_CSS = `
   .cx .ldr { position: absolute; left: calc(100% + 2px); width: 6px; border-left: 1px solid var(--c-axis); border-top: 1px solid var(--c-axis); border-bottom: 1px solid var(--c-axis); pointer-events: none; }
   .cx .pl { position: absolute; transform: translate(-50%, calc(-100% - 8px)); font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--phosphor); white-space: nowrap; }
   .cx .pl.b { transform: translate(-50%, 8px); }
-  .cx .pl.l { transform: translate(calc(-100% - 8px), -50%); }
-  .cx .pl.r { transform: translate(8px, -50%); }
+  .cx .pl.pl-l { transform: translate(calc(-100% - 8px), -50%); }
+  .cx .pl.pl-r { transform: translate(8px, -50%); }
   .cx .dot { position: absolute; width: 8px; height: 8px; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 2px var(--panel); }
   .cx .dot.ring { background: var(--panel); border: 2px solid var(--c-emph); }
   .cx .bar { position: absolute; transform: translateX(-50%); border-radius: 4px 4px 0 0; min-height: 1px; }
@@ -216,7 +217,7 @@ export function plot({ height = 220, pl = 46, pr = 120, prn = 64, pt = 18, pb = 
   for (const b of hbars) {
     const l = X(Math.min(b.v, 0)), r = X(Math.max(b.v, 0)); const neg = b.v < 0;
     html.push(`<span class="bar hb${neg ? ' neg' : ''}" data-mark="essential" style="top: ${f2(Y(b.y))}%; left: ${f2(l)}%; width: ${f2(Math.max(0.3, r - l))}%; height: ${hbarH}px; background: ${col(b.role)};"></span>`);
-    if (b.label) html.push(`<span class="pl ${neg ? 'l' : 'r'}" style="left: ${f2(neg ? l : r)}%; top: ${f2(Y(b.y))}%;">${lab(b.label)}</span>`);
+    if (b.label) html.push(`<span class="pl ${neg ? 'pl-l' : 'pl-r'}" style="left: ${f2(neg ? l : r)}%; top: ${f2(Y(b.y))}%;">${lab(b.label)}</span>`);
   }
   void xz;
   for (const w of whiskers) html.push(`<span class="wk" data-mark="essential" style="left: ${f2(X(w.x))}%; top: ${f2(Y(w.hi))}%; height: ${f2(Y(w.lo) - Y(w.hi))}%;${w.role ? ` border-color: ${col(w.role)};` : ''}"></span>`);

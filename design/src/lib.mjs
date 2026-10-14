@@ -604,7 +604,7 @@ export function v4Nav({ active = '', signedIn = false, demo = false } = {}) {
     ? `<a href="/settings" aria-label="Demo account settings" style="display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--steel); font-size: 13px;"><span class="only-wide">Demo account</span><span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--raised-2); color: var(--phosphor); font: 600 12px/1 'IBM Plex Sans', sans-serif;">D</span></a>`
     : signedIn
       ? `<a href="/settings" aria-label="Account settings" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--raised-2); color: var(--phosphor); font: 600 12px/1 'IBM Plex Sans', sans-serif; text-decoration: none;">R</a>`
-      : `<a href="/settings#account" class="v4n-signin">Sign in</a>`;
+      : `<a href="/settings#account" class="v4n-signin">Log in</a>`;
   return `<header class="v4n"><div class="wrap v4n-in">
     <a href="/" aria-label="Convexa home" style="display: inline-flex; text-decoration: none;">${wordmark(17)}</a>
     <nav aria-label="Primary" class="v4n-links">${links}</nav>
