@@ -417,18 +417,25 @@ export function CompareBlock({ block }: { block: Of<'compare'> }) {
   );
 }
 
-/** A walk from one total to another. Steps float at their running total; the sign is printed. */
+/** A walk from one total to another. Steps float at their running total; the sign is printed.
+ *  One scale spans the lowest and highest running totals and always includes zero, so a total or a
+ *  walk below zero is drawn below a zero line (design/CHARTS-2026-10-13.md RN-04: 5 of 19 bridges
+ *  cross zero; the old scale drew a negative total as a 2px stub and pushed dips off the chart). */
 export function BridgeBlock({ block }: { block: Of<'bridge'> }) {
   const H = 160;
   let running = block.steps[0].value;
   const bars = block.steps.map((s, i) => {
     const isTotal = i === 0 || i === block.steps.length - 1;
-    if (isTotal) return { ...s, isTotal, from: 0, to: s.value };
+    if (isTotal) return { ...s, isTotal, from: Math.min(0, s.value), to: Math.max(0, s.value) };
     const from = running;
     running += s.value;
     return { ...s, isTotal, from: Math.min(from, running), to: Math.max(from, running) };
   });
-  const max = Math.max(...bars.map((b) => b.to), 0) || 1;
+  const lo = Math.min(0, ...bars.map((b) => b.from));
+  const hi = Math.max(0, ...bars.map((b) => b.to));
+  const span = hi - lo || 1;
+  /** Pixels above the chart's floor for a value. */
+  const y = (v: number) => ((v - lo) / span) * H;
   const label = block.steps
     .map((s, i) =>
       i === 0 || i === block.steps.length - 1
@@ -448,8 +455,22 @@ export function BridgeBlock({ block }: { block: Of<'bridge'> }) {
           gap: 2,
           alignItems: 'end',
           height: H + 22,
+          position: 'relative',
         }}
       >
+        {lo < 0 && (
+          <Box
+            aria-hidden
+            sx={(t) => ({
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: `${y(0)}px`,
+              borderTop: `1px solid ${alpha(t.palette.text.secondary, 0.6)}`,
+              pointerEvents: 'none',
+            })}
+          />
+        )}
         {bars.map((b, i) => {
           const last = i === bars.length - 1;
           return (
@@ -477,8 +498,8 @@ export function BridgeBlock({ block }: { block: Of<'bridge'> }) {
               <Box
                 sx={(t) => {
                   return {
-                    height: Math.max(2, ((b.to - b.from) / max) * H),
-                    mb: `${(b.from / max) * H}px`,
+                    height: Math.max(2, y(b.to) - y(b.from)),
+                    mb: `${y(b.from)}px`,
                     borderRadius: b.isTotal ? '6px 6px 2px 2px' : '4px',
                     boxSizing: 'border-box',
                     ...(b.isTotal

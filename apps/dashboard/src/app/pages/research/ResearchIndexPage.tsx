@@ -58,7 +58,12 @@ const HATCH = (t: Theme) =>
   `repeating-linear-gradient(135deg, ${alpha(t.palette.text.secondary, 0.7)} 0 3px, ${alpha(t.palette.text.secondary, 0.28)} 3px 6px)`;
 
 function MiniChart({ chart }: { chart: NonNullable<ResearchTickerSummary['latest']['chart']> }) {
-  const max = Math.max(...chart.bars.map((b) => b.value), 1);
+  // One scale that includes zero, so a loss goes below a zero line instead of reading as a 3px stub
+  // that looks like zero (design/CHARTS-2026-10-13.md RN-13: HOOD's −90% margin, MU's loss).
+  const lo = Math.min(0, ...chart.bars.map((b) => b.value));
+  const hi = Math.max(0, ...chart.bars.map((b) => b.value));
+  const span = hi - lo || 1;
+  const y = (v: number) => ((v - lo) / span) * 56;
   const last = chart.bars[chart.latest];
   return (
     // One column that may shrink below the caption's width, so a long caption ellipsizes instead of
@@ -88,15 +93,29 @@ function MiniChart({ chart }: { chart: NonNullable<ResearchTickerSummary['latest
       <Box
         role="img"
         aria-label={`${chart.caption}: ${chart.bars.map((b) => `${b.label} ${b.shown || b.value}`).join(', ')}`}
-        sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.5, height: 56 }}
+        sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.5, height: 56, position: 'relative' }}
       >
+        {lo < 0 && (
+          <Box
+            aria-hidden
+            sx={(t) => ({
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: `${y(0)}px`,
+              borderTop: `1px solid ${alpha(t.palette.text.secondary, 0.6)}`,
+              pointerEvents: 'none',
+            })}
+          />
+        )}
         {chart.bars.map((b, i) => (
           <Box
             key={i}
             sx={(t) => ({
               flex: 1,
-              height: Math.max(3, Math.round((b.value / max) * 56)),
-              borderRadius: '3px 3px 1px 1px',
+              height: Math.max(2, Math.round(y(Math.max(0, b.value)) - y(Math.min(0, b.value)))),
+              mb: `${Math.round(y(Math.min(0, b.value)))}px`,
+              borderRadius: b.value < 0 ? '1px 1px 3px 3px' : '3px 3px 1px 1px',
               boxSizing: 'border-box',
               ...(b.kind === 'guide'
                 ? { border: `1.5px dashed ${alpha(t.palette.text.primary, 0.6)}` }
