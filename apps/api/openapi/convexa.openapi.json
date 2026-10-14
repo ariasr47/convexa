@@ -2210,7 +2210,7 @@
             "type": "string"
           },
           "market_data": {
-            "description": "`\"live\"` | `\"paused\"` (SPEC B3) — `MARKET_DATA_MODE`, read once at boot.",
+            "description": "`\"live\"` | `\"paused\"` | `\"not_live\"`: `MARKET_DATA_MODE`, read once at boot (SPEC B3).\nPaused with no vendor key reports `not_live` (no feed exists to resume; canon P-1).",
             "type": "string"
           },
           "metrics_auth": {
@@ -4016,6 +4016,13 @@
               }
             ]
           },
+          "short_interest_detail": {
+            "type": ["string", "null"]
+          },
+          "short_interest_state": {
+            "$ref": "#/components/schemas/PublicDataState",
+            "description": "`live` when FINRA answered, even with no report for this symbol (`short_interest` null);\n`unavailable` when it didn't and nothing is cached: an outage, not an empty fact."
+          },
           "short_volume": {
             "oneOf": [
               {
@@ -4025,6 +4032,13 @@
                 "$ref": "#/components/schemas/ShortVolumeWire"
               }
             ]
+          },
+          "short_volume_detail": {
+            "type": ["string", "null"]
+          },
+          "short_volume_state": {
+            "$ref": "#/components/schemas/PublicDataState",
+            "description": "As `short_interest_state`, for FINRA's daily short-sale volume files."
           },
           "state": {
             "$ref": "#/components/schemas/PublicDataState"
@@ -4038,7 +4052,11 @@
           "state",
           "detail",
           "short_interest",
+          "short_interest_state",
+          "short_interest_detail",
           "short_volume",
+          "short_volume_state",
+          "short_volume_detail",
           "insiders",
           "shares_outstanding",
           "periodic",
@@ -4940,7 +4958,7 @@
       "ScanEnvelope": {
         "properties": {
           "market_data": {
-            "description": "`\"live\"` | `\"paused\"` (SPEC B4) — `MARKET_DATA_MODE`, read once at boot.",
+            "description": "`\"live\"` | `\"paused\"` | `\"not_live\"` (SPEC B4): `MARKET_DATA_MODE`, read once at boot;\npaused with no vendor key reports `not_live` (canon P-1, as `/api/health`).",
             "type": "string"
           },
           "rows": {

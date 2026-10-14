@@ -222,6 +222,20 @@ impl MarketDataMode {
     }
 }
 
+impl Config {
+    /// What `/api/health` reports as `market_data` (canon 2026-10-13, P-1): `live`; `paused` when
+    /// the server is paused but holds a vendor key, so a feed exists and an operator stopped it;
+    /// `not_live` when it is paused with no vendor key, so there is no feed to resume. The key's
+    /// value is never exposed; only whether one is set.
+    pub fn market_data_state(&self) -> &'static str {
+        match self.market_data_mode {
+            MarketDataMode::Live => "live",
+            MarketDataMode::Paused if !self.massive_api_key.trim().is_empty() => "paused",
+            MarketDataMode::Paused => "not_live",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChainSnapshotBackend {
     Filesystem,

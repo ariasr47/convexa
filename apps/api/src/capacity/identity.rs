@@ -31,6 +31,12 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // (`GET /api/public-data/markets`, `/filings`, `/tickers/{ticker}`) grow the operation baseline
 // 57→60 (hand-appended, as the 52→57 growth was) and add their wire schemas, so all five
 // artifacts move (ledger `route-growth-repins-api-artifact-oracle`).
+//
+// Re-pinned for canon P-1/P-2 (2026-10-13): `PublicTickerWire` gains per-part FINRA states
+// (`short_interest_state`/`_detail`, `short_volume_state`/`_detail`) and the `market_data` doc
+// comments name `not_live`: additive schema growth, zero new operations, so
+// `precutover-operation-baseline.json` stays pinned to its prior hash and four artifacts move
+// (ledger `route-growth-repins-api-artifact-oracle`).
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -38,19 +44,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "1d9e58922b2431732434eca4f7af6277421049f97f59bc419b3f5c380213db2e",
+        "c5aefdbc24f7358c8ffd6c09c58918c214a29b4eda0d53b53d0687ca553e2d96",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "d7be2c8bc87f3a11b8bf3ef860e5f5991e11cf0a04e7c1cb081380fdcb252769",
+        "6045bfd1568cb426c0cc84ee883d475ba15a13603cbcf97013a5aa8706eba771",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "e08ac4fc8af7ef93e37e2a3d8201e8185344e7bfdaaab4cbb0868b9b3df17375",
+        "2b6d013518617f5e878c9c455b99c6b2f4740f4ccb7eaf9adc5d8b074277427b",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "a73b22b493f2402296d860f71707e52f5d6013be057350879feb647326c338d1",
+        "b78a3312fb63c35da7766cf9ece07de0f1afce29fdb26df846b0dfd52370abf3",
     ),
 ];
 

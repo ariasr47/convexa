@@ -350,7 +350,11 @@ impl PublicDataService {
                 state: DataState::Off,
                 detail: Some(OFF_DETAIL.into()),
                 short_interest: None,
+                short_interest_state: DataState::Off,
+                short_interest_detail: Some(OFF_DETAIL.into()),
                 short_volume: None,
+                short_volume_state: DataState::Off,
+                short_volume_detail: Some(OFF_DETAIL.into()),
                 insiders: None,
                 shares_outstanding: None,
                 periodic: Vec::new(),
@@ -365,6 +369,16 @@ impl PublicDataService {
             self.sec_part(ticker),
         );
         let answered = interest.answered || volume.answered || sec.answered;
+        let part_state = |answered: bool| {
+            if answered {
+                DataState::Live
+            } else {
+                DataState::Unavailable
+            }
+        };
+        let (interest_state, interest_detail) =
+            (part_state(interest.answered), interest.note.clone());
+        let (volume_state, volume_detail) = (part_state(volume.answered), volume.note.clone());
         let notes: Vec<String> = interest
             .note
             .into_iter()
@@ -380,7 +394,11 @@ impl PublicDataService {
             },
             detail: join(notes),
             short_interest: interest.value,
+            short_interest_state: interest_state,
+            short_interest_detail: interest_detail,
             short_volume: volume.value,
+            short_volume_state: volume_state,
+            short_volume_detail: volume_detail,
             insiders: sec.insiders,
             shares_outstanding: sec.shares_outstanding,
             periodic: sec.periodic,

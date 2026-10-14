@@ -306,7 +306,11 @@ export function demoPublicTicker(ticker: string): PublicTicker {
       state: 'unavailable',
       detail: `No demo sample is authored for ${ticker}.`,
       short_interest: null,
+      short_interest_state: 'unavailable',
+      short_interest_detail: `No demo sample is authored for ${ticker}.`,
       short_volume: null,
+      short_volume_state: 'unavailable',
+      short_volume_detail: `No demo sample is authored for ${ticker}.`,
       insiders: null,
       shares_outstanding: null,
       periodic: [],
@@ -327,6 +331,11 @@ export function demoPublicTicker(ticker: string): PublicTicker {
     ticker,
     state: 'live',
     detail: SAMPLE,
+    // Sample answers never carry a per-part note: the page-level demo label says what they are.
+    short_interest_state: 'live',
+    short_interest_detail: null,
+    short_volume_state: 'live',
+    short_volume_detail: null,
     short_interest: {
       settlement_date: latest.settlement_date,
       shares_short: latest.shares_short,

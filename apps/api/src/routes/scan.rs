@@ -82,7 +82,8 @@ pub struct ScanEnvelope {
     pub rows: Vec<ScanRowDto>,
     #[schema(required = true)]
     pub sweep: Option<SweepHeartbeatDto>,
-    /// `"live"` | `"paused"` (SPEC B4) — `MARKET_DATA_MODE`, read once at boot.
+    /// `"live"` | `"paused"` | `"not_live"` (SPEC B4): `MARKET_DATA_MODE`, read once at boot;
+    /// paused with no vendor key reports `not_live` (canon P-1, as `/api/health`).
     pub market_data: String,
 }
 
@@ -606,7 +607,7 @@ pub async fn get_scan(State(state): State<AppState>, headers: HeaderMap) -> Json
         view,
         rows,
         sweep,
-        market_data: state.config.market_data_mode.as_str().to_string(),
+        market_data: state.config.market_data_state().to_string(),
     })
 }
 
@@ -772,7 +773,7 @@ pub async fn get_scan_all(State(state): State<AppState>, headers: HeaderMap) -> 
         view,
         rows,
         sweep,
-        market_data: state.config.market_data_mode.as_str().to_string(),
+        market_data: state.config.market_data_state().to_string(),
     })
 }
 
@@ -919,10 +920,17 @@ mod response_conversion_tests {
 
         let mut cfg = (*state.config).clone();
         cfg.market_data_mode = crate::config::MarketDataMode::Paused;
-        state.config = std::sync::Arc::new(cfg);
+        cfg.massive_api_key = "configured-but-paused".into();
+        state.config = std::sync::Arc::new(cfg.clone());
         let Json(paused) = get_scan(State(state.clone()), HeaderMap::new()).await;
         assert_eq!(paused.market_data, "paused");
-        let Json(paused_all) = get_scan_all(State(state), HeaderMap::new()).await;
+        let Json(paused_all) = get_scan_all(State(state.clone()), HeaderMap::new()).await;
         assert_eq!(paused_all.market_data, "paused");
+
+        // P-1: no vendor key at all reads as not live, on the scan envelope as on /api/health.
+        cfg.massive_api_key = String::new();
+        state.config = std::sync::Arc::new(cfg);
+        let Json(not_live) = get_scan(State(state), HeaderMap::new()).await;
+        assert_eq!(not_live.market_data, "not_live");
     }
 }

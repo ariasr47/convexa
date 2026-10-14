@@ -36,7 +36,8 @@ pub struct HealthWire {
     pub metrics_auth: String,
     pub warm: HealthWarm,
     pub gex_cache: HealthCacheMetrics,
-    /// `"live"` | `"paused"` (SPEC B3) — `MARKET_DATA_MODE`, read once at boot.
+    /// `"live"` | `"paused"` | `"not_live"`: `MARKET_DATA_MODE`, read once at boot (SPEC B3).
+    /// Paused with no vendor key reports `not_live` (no feed exists to resume; canon P-1).
     pub market_data: String,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -603,7 +604,7 @@ pub async fn health(State(state): State<AppState>) -> Json<Value> {
             "concurrency": state.config.warm_concurrency,
         },
         "gex_cache": metrics,
-        "market_data": state.config.market_data_mode.as_str(),
+        "market_data": state.config.market_data_state(),
     }))
 }
 
@@ -964,14 +965,24 @@ mod wire_divergence_tests {
         cfg.scan_enabled = true;
         cfg.warm_enabled = true;
         cfg.market_data_mode = crate::config::MarketDataMode::Paused;
-        state.config = std::sync::Arc::new(cfg);
+        cfg.massive_api_key = "configured-but-paused".into();
+        state.config = std::sync::Arc::new(cfg.clone());
 
-        let axum::Json(body) = super::health(axum::extract::State(state)).await;
+        let axum::Json(body) = super::health(axum::extract::State(state.clone())).await;
         assert_eq!(body["market_data"], "paused");
         assert_eq!(body["warm"]["enabled"], false);
         assert_eq!(body["scanner"]["enabled"], false);
 
         let wire = super::health_wire_from_body(body);
         assert_eq!(wire.market_data, "paused");
+
+        // P-1: paused with no vendor key at all is "not_live" (no feed to resume), and still
+        // forces the warmer and scanner off.
+        cfg.massive_api_key = "  ".into();
+        state.config = std::sync::Arc::new(cfg);
+        let axum::Json(body) = super::health(axum::extract::State(state)).await;
+        assert_eq!(body["market_data"], "not_live");
+        assert_eq!(body["warm"]["enabled"], false);
+        assert_eq!(body["scanner"]["enabled"], false);
     }
 }

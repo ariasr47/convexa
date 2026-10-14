@@ -208,7 +208,14 @@ pub struct TickerReport {
     pub state: DataState,
     pub detail: Option<String>,
     pub short_interest: Option<ShortInterest>,
+    /// `Live` when FINRA answered (fresh or a cached copy), even with no report for the symbol;
+    /// `Unavailable` when it didn't and nothing is cached. Separates "no report" from an outage.
+    pub short_interest_state: DataState,
+    /// This part's own note: a stale copy or the failure, never another source's.
+    pub short_interest_detail: Option<String>,
     pub short_volume: Option<ShortVolume>,
+    pub short_volume_state: DataState,
+    pub short_volume_detail: Option<String>,
     pub insiders: Option<Insiders>,
     pub shares_outstanding: Option<DatedValue>,
     pub periodic: Vec<PeriodicFiling>,

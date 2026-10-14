@@ -386,8 +386,17 @@ pub struct PublicTickerWire {
     pub detail: Option<String>,
     #[schema(required = true)]
     pub short_interest: Option<ShortInterestWire>,
+    /// `live` when FINRA answered, even with no report for this symbol (`short_interest` null);
+    /// `unavailable` when it didn't and nothing is cached: an outage, not an empty fact.
+    pub short_interest_state: PublicDataState,
+    #[schema(required = true)]
+    pub short_interest_detail: Option<String>,
     #[schema(required = true)]
     pub short_volume: Option<ShortVolumeWire>,
+    /// As `short_interest_state`, for FINRA's daily short-sale volume files.
+    pub short_volume_state: PublicDataState,
+    #[schema(required = true)]
+    pub short_volume_detail: Option<String>,
     #[schema(required = true)]
     pub insiders: Option<InsidersWire>,
     #[schema(required = true)]
@@ -405,6 +414,10 @@ impl From<service::TickerReport> for PublicTickerWire {
             ticker: t.ticker,
             state: t.state.into(),
             detail: t.detail,
+            short_interest_state: t.short_interest_state.into(),
+            short_interest_detail: t.short_interest_detail,
+            short_volume_state: t.short_volume_state.into(),
+            short_volume_detail: t.short_volume_detail,
             short_interest: t.short_interest.map(|s| ShortInterestWire {
                 settlement_date: day(s.settlement_date),
                 shares_short: s.shares_short,
@@ -636,6 +649,10 @@ fn representative_ticker() -> PublicTickerWire {
         state: PublicDataState::Live,
         detail: None,
         short_interest: None,
+        short_interest_state: PublicDataState::Live,
+        short_interest_detail: None,
+        short_volume_state: PublicDataState::Live,
+        short_volume_detail: None,
         short_volume: Some(ShortVolumeWire {
             date: "2026-10-09".into(),
             short_volume: 17_868_373.8,

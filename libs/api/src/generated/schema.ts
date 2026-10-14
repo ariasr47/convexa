@@ -1616,7 +1616,10 @@ export interface components {
       durable_store: string;
       gex_cache: components['schemas']['HealthCacheMetrics'];
       gex_kernel: string;
-      /** @description `"live"` | `"paused"` (SPEC B3) — `MARKET_DATA_MODE`, read once at boot. */
+      /**
+       * @description `"live"` | `"paused"` | `"not_live"`: `MARKET_DATA_MODE`, read once at boot (SPEC B3).
+       *     Paused with no vendor key reports `not_live` (no feed exists to resume; canon P-1).
+       */
       market_data: string;
       metrics_auth: string;
       price_cache: string;
@@ -2211,7 +2214,16 @@ export interface components {
       periodic: components['schemas']['PeriodicFilingWire'][];
       shares_outstanding: null | components['schemas']['DatedValueWire'];
       short_interest: null | components['schemas']['ShortInterestWire'];
+      short_interest_detail: string | null;
+      /**
+       * @description `live` when FINRA answered, even with no report for this symbol (`short_interest` null);
+       *     `unavailable` when it didn't and nothing is cached: an outage, not an empty fact.
+       */
+      short_interest_state: components['schemas']['PublicDataState'];
       short_volume: null | components['schemas']['ShortVolumeWire'];
+      short_volume_detail: string | null;
+      /** @description As `short_interest_state`, for FINRA's daily short-sale volume files. */
+      short_volume_state: components['schemas']['PublicDataState'];
       state: components['schemas']['PublicDataState'];
       ticker: string;
     };
@@ -2462,7 +2474,10 @@ export interface components {
     /** @enum {string} */
     ScanDensitySchema: 'compact' | 'comfortable';
     ScanEnvelope: {
-      /** @description `"live"` | `"paused"` (SPEC B4) — `MARKET_DATA_MODE`, read once at boot. */
+      /**
+       * @description `"live"` | `"paused"` | `"not_live"` (SPEC B4): `MARKET_DATA_MODE`, read once at boot;
+       *     paused with no vendor key reports `not_live` (canon P-1, as `/api/health`).
+       */
       market_data: string;
       rows: components['schemas']['ScanRowDto'][];
       sweep: null | components['schemas']['SweepHeartbeatDto'];

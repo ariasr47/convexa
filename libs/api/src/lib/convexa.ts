@@ -1238,7 +1238,8 @@ export async function getScanView(): Promise<ScanView> {
   return dataOf(result, 'View read failed');
 }
 
-export type MarketDataMode = 'live' | 'paused' | 'unknown';
+/** `not_live`: paused with no vendor key, so no feed exists to resume (canon P-1, 2026-10-13). */
+export type MarketDataMode = 'live' | 'paused' | 'not_live' | 'unknown';
 
 /** The server's market-data mode from GET /api/health (`MARKET_DATA_MODE`, read once at boot), so the
  *  UI can say site-wide that live data is off. `unknown` when the read fails; demo builds never call
@@ -1247,7 +1248,7 @@ export async function getMarketDataMode(): Promise<MarketDataMode> {
   if (dataMode === 'demo') return 'unknown';
   try {
     const mode = (await http.GET('/api/health')).data?.market_data;
-    return mode === 'live' || mode === 'paused' ? mode : 'unknown';
+    return mode === 'live' || mode === 'paused' || mode === 'not_live' ? mode : 'unknown';
   } catch {
     return 'unknown';
   }
