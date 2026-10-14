@@ -10,6 +10,7 @@ export const pages = [
   { id: 'v4-tools', name: 'v4 · Tools from public data' },
   { id: 'v4-app', name: 'v4 · App' },
   { id: 'v4-research', name: 'v4 · Research' },
+  { id: 'v4-coverage', name: 'v4 · Coverage' },
 ];
 
 // { name, screen, page, w, h, title, opts?, expand?, interactive? }
@@ -100,6 +101,13 @@ export const artboards = [
   { name: 'V4TickerResearchLight', screen: 'v4-ticker-research', page: 'v4-research', x: 6720, y: 7840, w: 1440, h: 2700, title: 'v4 · Ticker research · light', opts: { scheme: 'light' }, expand: 'fill', findings: 'RSH-04' },
   { name: 'V4MarketsDemo', screen: 'v4-markets', page: 'v4-research', x: 8280, y: 7840, w: 1440, h: 3300, title: 'v4 · Markets · demo build (dashed chips)', opts: { demo: true }, expand: 'fill', findings: 'X-09, TL-14' },
   { name: 'V4StateMatrixLight', screen: 'v4-state-matrix', page: 'v4-research', x: 0, y: 14660, w: 3220, h: 4200, title: 'v4 · State matrix · light', opts: { scheme: 'light' }, findings: 'RSH-04, DS-05–DS-08' },
+  { name: 'V4NoteView390Light', screen: 'v4-note-view', page: 'v4-research', x: 5190, y: 0, w: 390, h: 6600, title: 'v4 · Note view · phone · light', opts: { scheme: 'light' }, findings: 'RSH-04' },
+  { name: 'V4Markets834', screen: 'v4-markets', page: 'v4-research', x: 9840, y: 7840, w: 834, h: 4600, title: 'v4 · Markets · 834 tablet', findings: 'RSH-03' },
+  { name: 'V4HybridDesk834', screen: 'v4-hybrid-desk', page: 'v4-data', x: 5670, y: 0, w: 834, h: 4400, title: 'v4 · Hybrid desk · 834 tablet', findings: 'TKR-08' },
+  { name: 'V4HybridDesk390Light', screen: 'v4-hybrid-desk', page: 'v4-data', x: 6624, y: 0, w: 390, h: 5200, title: 'v4 · Hybrid desk · phone · light', opts: { scheme: 'light' }, findings: 'RSH-04' },
+
+  // ---- v4 · Coverage (wave 5, 2026-10-13) ----
+  { name: 'V4Coverage', screen: 'v4-coverage', page: 'v4-coverage', x: 0, y: 0, w: 1920, h: 2600, title: 'v4 · Coverage matrix · route × width × theme × states', findings: 'coverage; gaps listed in the matrix' },
 ];
 
 /** v4 · App: one row per route — desktop 1440 dark, phone 390, light 1440, states — with room above

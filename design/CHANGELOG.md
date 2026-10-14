@@ -97,3 +97,9 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
 - **Research index with the tabs**, phone boards for Markets, Filings, Scorecard and ticker research,
   light boards for every research page and the state matrix, and Markets in the demo build.
 
+## 2026-10-13 · v4 wave 5 — coverage
+
+- **Coverage matrix** (page “v4 · Coverage”): route × width × theme × states, each cell naming its board,
+  checked against the registry at build time; 168 cells, 95 covered, 14 partial, 59 gaps (named), 0
+  missing references. Adds the desk at 834 and phone-light, the note view at phone-light, Markets at 834.
+

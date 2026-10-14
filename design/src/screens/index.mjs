@@ -25,6 +25,7 @@ import { KIT_CSS } from './v4/kit.mjs';
 import { SHELL_CSS, deskStatesBody as deskStatesV4Body, landingBody as landingV4Body, landingStatesBody, shellBody, shellPhoneBody, shellStatesBody } from './v4/shell-landing.mjs';
 import { APP_CSS, alertsBody as alertsV4Body, alertsStatesBody, positionsBody as positionsV4Body, positionsStatesBody, scannerBody as scannerV4Body, scannerStatesBody, settingsBody as settingsV4Body, settingsStatesBody } from './v4/app-pages.mjs';
 import { NOTES_CSS, noteStatesBody, noteViewBody, researchIndexBody } from './v4/notes.mjs';
+import { COVERAGE_CSS, coverageBody } from './v4/coverage.mjs';
 import { DIALOGS, DOCS_CSS, blogBody as blogV4Body, dialogBody, dialogStatesBody, docsStatesBody, labBody as labV4Body, methodologyBody as methodologyV4Body, notFoundBody as notFoundV4Body, operatorBody as operatorV4Body, operatorStatesBody } from './v4/docs-dialogs.mjs';
 
 const s = (title, group, desc, body, css = '', extra = {}) => ({ title, group, desc, body, css, ...extra });
@@ -96,6 +97,7 @@ export const screens = {
       'v4-note-view': s('Note view · NVDA', 'v4 · Research', 'The note with neutral directions: freshness, figures with sources, the case, thesis checks, the bridge, forecasts.', (o) => noteViewBody(o), V + NOTES_CSS),
       'v4-research-index': s('Research index', 'v4 · Research', 'Every ticker with notes, under the Research tabs.', (o) => researchIndexBody(o), V + NOTES_CSS),
       'v4-note-states': s('Note view · states', 'v4 · Research', 'Freshness, superseded, stale price, missing, failed, demo.', (o) => noteStatesBody(o), V + NOTES_CSS),
+      'v4-coverage': s('Coverage matrix', 'v4 · Coverage', 'Route × width × theme × states, each cell naming its board, gaps marked.', (o) => coverageBody(o), SHEET_CSS + COVERAGE_CSS),
       ...Object.fromEntries(Object.keys(DIALOGS).flatMap((k) => [[`v4-dlg-${k}`, s(DIALOGS[k].title, g, `${DIALOGS[k].title} over a blurred page; a bottom sheet under 600px.`, dialogBody(k), V)], [`v4-dlg-${k}-states`, s(`${DIALOGS[k].title} · states`, g, `${DIALOGS[k].title} in every state.`, dialogStatesBody(k), V)]])),
     };
   })(),

@@ -35,6 +35,10 @@
     {
       "id": "v4-research",
       "name": "v4 · Research"
+    },
+    {
+      "id": "v4-coverage",
+      "name": "v4 · Coverage"
     }
   ],
   "artboards": [
@@ -442,6 +446,24 @@
       "y": 6100,
       "w": 3740,
       "h": 4700,
+      "page": "v4-data"
+    },
+    {
+      "file": "V4HybridDesk834.dc.html",
+      "title": "v4 · Hybrid desk · 834 tablet",
+      "x": 5670,
+      "y": 0,
+      "w": 834,
+      "h": 4400,
+      "page": "v4-data"
+    },
+    {
+      "file": "V4HybridDesk390Light.dc.html",
+      "title": "v4 · Hybrid desk · phone · light",
+      "x": 6624,
+      "y": 0,
+      "w": 390,
+      "h": 5200,
       "page": "v4-data"
     },
     {
@@ -1393,6 +1415,33 @@
       "w": 3220,
       "h": 4200,
       "page": "v4-research"
+    },
+    {
+      "file": "V4NoteView390Light.dc.html",
+      "title": "v4 · Note view · phone · light",
+      "x": 5190,
+      "y": 0,
+      "w": 390,
+      "h": 6600,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4Markets834.dc.html",
+      "title": "v4 · Markets · 834 tablet",
+      "x": 9840,
+      "y": 7840,
+      "w": 834,
+      "h": 4600,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4Coverage.dc.html",
+      "title": "v4 · Coverage matrix · route × width × theme × states",
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 2600,
+      "page": "v4-coverage"
     }
   ],
   "annotations": [
@@ -1515,6 +1564,22 @@
       "w": 640,
       "page": "v4-data",
       "text": "v4 · State matrix · phone widths. Resolves X-12, DS-05–DS-08. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4HybridDesk834",
+      "x": 5670,
+      "y": -230,
+      "w": 640,
+      "page": "v4-data",
+      "text": "v4 · Hybrid desk · 834 tablet. Resolves TKR-08. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4HybridDesk390Light",
+      "x": 6624,
+      "y": -230,
+      "w": 390,
+      "page": "v4-data",
+      "text": "v4 · Hybrid desk · phone · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
     },
     {
       "id": "find-V4Roadmap",
@@ -2315,6 +2380,30 @@
       "w": 640,
       "page": "v4-research",
       "text": "v4 · State matrix · light. Resolves RSH-04, DS-05–DS-08. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4NoteView390Light",
+      "x": 5190,
+      "y": -230,
+      "w": 390,
+      "page": "v4-research",
+      "text": "v4 · Note view · phone · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Markets834",
+      "x": 9840,
+      "y": 7610,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Markets · 834 tablet. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Coverage",
+      "x": 0,
+      "y": -230,
+      "w": 640,
+      "page": "v4-coverage",
+      "text": "v4 · Coverage matrix · route × width × theme × states. Resolves coverage; gaps listed in the matrix. Findings: design/REVIEW-2026-10-13.md."
     }
   ],
   "launch": {

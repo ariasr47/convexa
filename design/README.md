@@ -62,3 +62,14 @@ Changed: the ticker layout (masthead → structure field hero with ladder, tape 
 read strip → wide AI brief beside tape / position / orders → quiet context band), the AI read
 (verdict-first, nine states), figure cells for accent-bar tiles, a ⌘K palette in the nav, gated
 liveness, a 3D dealer-gamma landing hero, six breakpoints and container queries. Sample values only.
+
+## v4 (2026-10-13): the hybrid site
+
+Five canvas pages extend v2 without changing its boards' layouts: **v4 · Data states** (the fourteen-
+state vocabulary, the state matrix, the source map, the hybrid NVDA desk), **v4 · Tools from public
+data** (the roadmap from docs/public-data/CANDIDATES.md and one sheet per priority tool), **v4 · App**
+(every route at 1440, 390 and light, with a states board), **v4 · Research** (the note view with
+neutral directions, the index, phone and light research boards) and **v4 · Coverage**. Sources:
+`src/components/data-states.mjs`, `src/components/tools.mjs`, `src/data/{states,hybrid,tools}.mjs`,
+`src/screens/v4/*`. Findings and canon proposals: `REVIEW-2026-10-13.md`.
+
