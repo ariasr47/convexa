@@ -29,6 +29,7 @@ import { useGate, type GateApi } from '@/features/auth/useGate';
 import {
   AuthError,
   dataMode,
+  demoNowMs,
   getScan,
   saveScanView,
   type ScanDensity,
@@ -134,7 +135,8 @@ export function useScan(): ScanApi {
     filtersActive(urlSeed.filters) ? urlSeed.filters : EMPTY_FILTERS,
   );
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [nowS, setNowS] = useState(() => Date.now() / 1000);
+  // The scenario's clock in the demo (its structure is stamped Oct 7, 2026), the wall clock elsewhere.
+  const [nowS, setNowS] = useState(() => demoNowMs() / 1000);
   const [deltas, setDeltas] = useState<Map<string, PollDelta>>(() => new Map());
   const prevPollRef = useRef<Map<string, RowPollSnap> | null>(null);
   const prevSymbolsKeyRef = useRef<string>('');
@@ -201,7 +203,7 @@ export function useScan(): ScanApi {
 
   // --- the display clock (no network) -------------------------------------------------------------
   useEffect(() => {
-    const id = setInterval(() => setNowS(Date.now() / 1000), SCAN_CLOCK_MS);
+    const id = setInterval(() => setNowS(demoNowMs() / 1000), SCAN_CLOCK_MS);
     return () => clearInterval(id);
   }, []);
 
