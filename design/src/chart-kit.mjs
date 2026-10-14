@@ -105,7 +105,7 @@ export const CHART_CSS = `
   .cx .fring { position: absolute; width: 14px; height: 14px; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid var(--amber-text); pointer-events: none; }
   .cx .s { display: none; }
   .cx .zl { position: absolute; left: 0; font: 500 11px/1 'IBM Plex Sans', sans-serif; color: var(--steel); transform: translateY(calc(-100% - 3px)); white-space: nowrap; }
-  @container (max-width: 480px) { .cx .pa { right: var(--prn); } .cx .l { display: none; } .cx .s { display: inline; } .cx .minor { display: none; } .cx .ev:not(.keep) { display: none; } .cx .ev.keep { top: calc(-1 * var(--pt) + 2px); } .cx .ro { min-width: 130px; } }
+  @container (max-width: 480px) { .cx .pa { right: var(--prn); } .cx .l { display: none; } .cx .s { display: inline; } .cx .minor { display: none; } .cx .ev:not(.keep) { display: none; } .cx .ev.keep { top: calc(-1 * var(--pt) + 2px); } .cx .ro { min-width: 0; max-width: 42%; } .cx .ro .rr { white-space: normal; } }
   @container (max-width: 480px) { .cf { padding: 14px 14px 12px; } .cf-claim { font-size: 14px; } }
 
   .rbar { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -117,7 +117,7 @@ export const CHART_CSS = `
   .rbar .dm { position: absolute; top: 6px; width: 14px; height: 14px; margin-left: -7px; transform: rotate(45deg); background: var(--amber); box-shadow: 0 0 0 2px var(--panel); }
   .rbar .lb { position: relative; height: 14px; font: 400 11px/14px 'IBM Plex Mono', monospace; color: var(--steel); }
   .rbar .lb span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
-  .rbar .lb span.a0 { transform: none; } .rbar .lb span.a1 { transform: translateX(-100%); }
+  .rbar .lb span.a0 { transform: none; } .rbar .lb span.a1 { transform: translateX(-100%); } .rbar .lb span.r2 { top: 16px; }
 
   .spk { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
   .spk svg { display: block; overflow: visible; }
@@ -303,9 +303,10 @@ export function stateBody(state, { height = 220, text = '', cause = '', next = '
 }
 
 /** Range bar: where a value sits in a range, with the median, optional interval and the base diamond. */
+// labels: [{ v, text, align?: 0|1, row?: 2 }] — row 2 sits under row 1 for labels that would collide
 export function rangeBar({ lo = 0, hi = 100, now, median = null, band = null, base = null, labels = [], aria = '', height = 26 } = {}) {
   const P = (v) => (((v - lo) / (hi - lo)) * 100).toFixed(2);
-  return `<div class="rbar" role="img" aria-label="${esc(aria)}"><div class="tr" style="height: ${height}px;"><span class="tk"></span>${band ? `<span class="rn" style="left: ${P(band[0])}%; width: ${(P(band[1]) - P(band[0])).toFixed(2)}%;"></span>` : ''}${median != null ? `<span class="md" style="left: ${P(median)}%;"></span>` : ''}${base != null ? `<span class="dm" style="left: ${P(base)}%;"></span>` : ''}${now != null ? `<span class="nw" data-mark="essential" style="left: ${P(now)}%;"></span>` : ''}</div>${labels.length ? `<div class="lb">${labels.map((l) => `<span class="${l.align === 0 ? 'a0' : l.align === 1 ? 'a1' : ''}" style="left: ${P(l.v)}%;">${l.text}</span>`).join('')}</div>` : ''}</div>`;
+  return `<div class="rbar" role="img" aria-label="${esc(aria)}"><div class="tr" style="height: ${height}px;"><span class="tk"></span>${band ? `<span class="rn" style="left: ${P(band[0])}%; width: ${(P(band[1]) - P(band[0])).toFixed(2)}%;"></span>` : ''}${median != null ? `<span class="md" style="left: ${P(median)}%;"></span>` : ''}${base != null ? `<span class="dm" style="left: ${P(base)}%;"></span>` : ''}${now != null ? `<span class="nw" data-mark="essential" style="left: ${P(now)}%;"></span>` : ''}</div>${labels.length ? `<div class="lb"${labels.some((l) => l.row === 2) ? ' style="height: 30px;"' : ''}>${labels.map((l) => `<span class="${l.align === 0 ? 'a0' : l.align === 1 ? 'a1' : ''}${l.row === 2 ? ' r2' : ''}" style="left: ${P(l.v)}%;">${l.text}</span>`).join('')}</div>` : ''}</div>`;
 }
 
 /** Sparkline with its scaling stated and its end value printed (DE12: sparklines state scaling). */

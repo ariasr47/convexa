@@ -242,7 +242,7 @@ export const ROWS = [
       job: 'Instrument candidates for the ticker desk, so a drawing can be judged before it lands on a desk.',
       env: {
         production: 'No mocks, so no synthetic data: every instrument shows Not live — what it would show, why it is off — and “See it on the demo →” to the same instrument on staging (owner ruling 2026-10-14). An “On this page” line counts them.',
-        staging: 'Every instrument runs on synthetic data in a dashed frame with a “Demo · synthetic” chip; Structure Field can switch to the demo’s SPY chain.',
+        staging: 'Every instrument runs on synthetic data in a dashed, hatched frame with the Sample tag, a “Demo · synthetic” chip and the scenario date (P-3); Structure Field can switch to the demo’s SPY chain.',
       },
       widgets: [
         { name: 'Structure Field', source: 'synthetic field (structureFieldDemo.ts) · staging also the demo SPY chain', production: 'notLive', staging: ['demo', 'Synthetic'] },

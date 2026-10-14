@@ -197,8 +197,8 @@ export function heroPoster() {
   const lab = (x, y, z, text, cls = '') => { const [px, py] = P(x, y, z); return `<span class="${cls}" style="left: ${((px / W) * 100).toFixed(2)}%; top: ${((py / Hh) * 100).toFixed(2)}%;">${text}</span>`; };
   const j7 = F1T.indexOf(7), iC = F1S.indexOf(LV.call), iP = F1S.indexOf(LV.put);
   const labels = [
-    ...[540, 560, 580, 600, 620].map((s, n) => lab(XS(s), 0, 0.8, String(s), n % 2 ? 'minor' : '')),
-    ...[1, 7, 30, 90].map((t) => lab(1.1, 0, ZT(t), `${t}d`)),
+    ...[540, 560, 580, 600, 620].map((s, n) => lab(XS(s), 0, 0.8, String(s), n % 2 || s === 580 ? 'minor' : '')), // under 520px only 540 and 620 stay, clear of the flip label
+    ...[1, 7, 30, 90].map((t) => lab(1.1, 0, ZT(t), `${t}d`, t === 1 ? 'minor' : '')),
     lab(0.35, 0, 1.0, 'Strike', 'ax'),
     lab(XS(LV.call), F1V[j7][iC] * H + 0.1, ZT(7), `Call wall ${LV.call} · +γ`, 'lv'),
     lab(XS(LV.put) - 0.25, 0.22, ZT(30), `Put wall ${LV.put} · −γ`, 'lv'),

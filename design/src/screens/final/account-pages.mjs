@@ -62,7 +62,7 @@ const legend = (items) => `<section class="hd-legend" aria-label="On this page">
 // the design's per-symbol values; the shipped transport returns 70 and +0.42% for every row (gap, spec).
 export const DEMO_SCAN = [
   ['NVDA', '199.17', '+0.01%', 81, 'Prime', '+0.94%', '202.91', '187.97', '197.30'],
-  ['SPY', '690.62', '−0.02%', 74, 'Actionable', '+0.97%', '704.02', '652.22', '683.92'],
+  ['SPY', '690.62', '−0.02%', 74, 'Actionable', '+0.55%', '705.00', '672.50', '686.80'],
   ['QQQ', '632.91', '−0.02%', 70, 'Actionable', '+0.96%', '645.11', '597.64', '626.81'],
   ['AAPL', '264.29', '−0.05%', 63, 'Actionable', '+0.97%', '269.43', '249.61', '261.72'],
   ['MSFT', '526.66', '−0.05%', 52, 'Watch', '+0.97%', '536.90', '497.40', '521.54'],
@@ -110,7 +110,7 @@ export function scannerStates({ minHeight = 0, scheme = 'dark' } = {}) {
     { name: 'Sweep behind', tag: ['stale', 'Last good copy'], when: 'Feed on, but the sweep missed its cadence: rows stay, dimmed, with the age.', html: warn('Sweep last ran 12 min ago — showing the last known rows.', '') + dataCell({ fam: 'table', state: 'stale', w: '100%', h: 'auto' }) },
     { name: 'Couldn’t load', tag: ['error'], when: 'Our request for the scan failed; the cause and one retry.', html: dataCell({ fam: 'table', state: 'error', w: '100%', h: 'auto' }) },
     { name: 'Prices offline', tag: ['stale', 'Prices offline'], when: 'The price stream dropped; structure is unaffected. The header says so and rows keep the last price.', html: `<span class="dline mono">Prices offline · showing last known · structure ~3 min</span>` },
-    { name: 'Row preview, keyboard', tag: null, id: 'SCN-03', when: 'The row’s disclosure button, or Enter on a focused row, opens the preview; hover is only a shortcut.', html: `<div class="hd-p is-sample"><div class="ph"><h3><span class="mono">SPY</span> · preview</h3>${stateTag('sample')}</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; font-size: 13px;"><span class="steel">Score</span><span class="mono">74 · Actionable</span><span class="steel">Gamma flip</span><span class="mono">683.92 · +0.97%</span><span class="steel">Call / put wall</span><span class="mono">704.02 / 652.22</span></div><a href="/ticker/SPY" class="btn secondary sm" style="align-self: flex-start;">Open the SPY desk</a></div>` },
+    { name: 'Row preview, keyboard', tag: null, id: 'SCN-03', when: 'The row’s disclosure button, or Enter on a focused row, opens the preview; hover is only a shortcut.', html: `<div class="hd-p is-sample"><div class="ph"><h3><span class="mono">SPY</span> · preview</h3>${stateTag('sample')}</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; font-size: 13px;"><span class="steel">Score</span><span class="mono">74 · Actionable</span><span class="steel">Gamma flip</span><span class="mono">686.80 · +0.55%</span><span class="steel">Call / put wall</span><span class="mono">705.00 / 672.50</span></div><a href="/ticker/SPY" class="btn secondary sm" style="align-self: flex-start;">Open the SPY desk</a></div>` },
   ];
   return statesBoard({ scheme, minHeight, title: 'Scanner · states', lead: 'Production opens on Not live, signed in or not, because the score reads the options chain. Staging runs the sample scan. The rest are the states a running feed can reach.', trace: 'SCN-01–SCN-04 · P-1, P-2, P-5', items });
 }
@@ -181,7 +181,7 @@ export function alertsProduction({ minHeight = 0, scheme = 'dark' } = {}) {
 // Staging: the shipped seed holds one rule (workspace.ts:506-518, level touch on SPY's gamma flip). The
 // design seeds one rule per public kind beside it, on the demo's own symbols (gap recorded in the spec).
 const DEMO_RULES = [
-  { kindName: 'Level touch', glyph: 'target', subject: 'SPY', what: 'Gamma flip · 683.92 · “Watch the authored sample flip”', last: 'Checks the sample tape', stateText: 'Sample · armed', on: true },
+  { kindName: 'Level touch', glyph: 'target', subject: 'SPY', what: 'Gamma flip · 686.80 · “Watch the authored sample flip”', last: 'Checks the sample tape', stateText: 'Sample · armed', on: true },
   { kind: 'filing', subject: 'NVDA', what: '8-K items 2.02 and 5.02 · 10-Q · 10-K', last: 'Sample filings · Oct 7 scenario', on: true },
   { kind: 'cftc', subject: '10-year T-note', what: 'Leveraged funds · 3-year low · or within 5%', last: 'Sample report · as of Tue Oct 6', on: true },
   { kind: 'si', subject: 'AAPL', what: 'Shares short ±15% between settlements', last: 'Sample settlement · Sep 30', on: true },

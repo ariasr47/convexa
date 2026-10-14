@@ -191,7 +191,7 @@
   .cx .fring { position: absolute; width: 14px; height: 14px; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid var(--amber-text); pointer-events: none; }
   .cx .s { display: none; }
   .cx .zl { position: absolute; left: 0; font: 500 11px/1 'IBM Plex Sans', sans-serif; color: var(--steel); transform: translateY(calc(-100% - 3px)); white-space: nowrap; }
-  @container (max-width: 480px) { .cx .pa { right: var(--prn); } .cx .l { display: none; } .cx .s { display: inline; } .cx .minor { display: none; } .cx .ev:not(.keep) { display: none; } .cx .ev.keep { top: calc(-1 * var(--pt) + 2px); } .cx .ro { min-width: 130px; } }
+  @container (max-width: 480px) { .cx .pa { right: var(--prn); } .cx .l { display: none; } .cx .s { display: inline; } .cx .minor { display: none; } .cx .ev:not(.keep) { display: none; } .cx .ev.keep { top: calc(-1 * var(--pt) + 2px); } .cx .ro { min-width: 0; max-width: 42%; } .cx .ro .rr { white-space: normal; } }
   @container (max-width: 480px) { .cf { padding: 14px 14px 12px; } .cf-claim { font-size: 14px; } }
 
   .rbar { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -203,7 +203,7 @@
   .rbar .dm { position: absolute; top: 6px; width: 14px; height: 14px; margin-left: -7px; transform: rotate(45deg); background: var(--amber); box-shadow: 0 0 0 2px var(--panel); }
   .rbar .lb { position: relative; height: 14px; font: 400 11px/14px 'IBM Plex Mono', monospace; color: var(--steel); }
   .rbar .lb span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
-  .rbar .lb span.a0 { transform: none; } .rbar .lb span.a1 { transform: translateX(-100%); }
+  .rbar .lb span.a0 { transform: none; } .rbar .lb span.a1 { transform: translateX(-100%); } .rbar .lb span.r2 { top: 16px; }
 
   .spk { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
   .spk svg { display: block; overflow: visible; }
@@ -616,7 +616,7 @@
     <h2 class="display">Want the short in-product version?</h2>
     <p>The product page <a href="/methodology">How Convexa works</a> is the same spine, kept next to the desk. This post is the longer, public version of that honesty.</p>
     </article></div></main>
-    <footer class="v4-foot"><div class="wrap v4-foot-in"><span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 14px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 10.4px; height: 10.1px; margin: 0 0.6px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span><nav aria-label="Footer"><a href="/research">Research notes</a><a href="/methodology">How Convexa works</a><a href="/blog">Blog — how we read structure</a><a href="/lab">Lab — instrument demos</a><a href="/settings">Settings</a></nav><span style="flex: 1;"></span><p style="margin: 0; max-width: 560px; font-size: 12px; color: var(--steel);">Convexa is an analysis tool. Positions in the sim book are simulated (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.</p><p style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">© 2026 Convexa. All rights reserved.</p></div></footer>
+    <footer class="v4-foot"><div class="wrap v4-foot-in"><span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 14px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 10.4px; height: 10.1px; margin: 0 0.6px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span><nav aria-label="Footer"><a href="/research">Research notes</a><a href="/methodology">How Convexa works</a><a href="/blog">Blog — how we read structure</a><a href="/lab">Lab — instrument demos</a><a href="/settings">Settings</a><a href="/credits">Sources and credits</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav><span style="flex: 1;"></span><p style="margin: 0; max-width: 560px; font-size: 12px; color: var(--steel);">Convexa is an analysis tool. Positions in the sim book are simulated (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.</p><p style="margin: 0; flex: 1 1 100%; font-size: 12px; color: var(--steel);">© 2026 Convexa. All rights reserved.</p></div></footer>
   </div>
 <div class="site-bar" role="toolbar" aria-label="Design site controls"><a href="index.html">← All screens</a><span class="lbl">Blog · Phone · post</span><button id="scheme-btn" type="button" onclick="toggleScheme()">Light scheme</button></div>
 <script>

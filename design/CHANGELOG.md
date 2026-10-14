@@ -231,3 +231,26 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
 - Checked: `tmp/final-render.mjs` on all 128 boards (no overflow, no text under 11px, exit 0 per group); build and
   verify-tokens exit 0; no NUL bytes. **Published** to https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe as
   versions 8–10 (index + 315 boards). The canvas page itself was not opened in a browser.
+
+## 2026-10-14 · Final · Convexa v1 — the missing screens (wave 2)
+
+- **20 new rows, 107 boards** (page now 39 rows, 235 boards), each placed beside the screen it belongs to:
+  Data sources and credits, Privacy, Terms and disclaimer (after 404; new routes, copy a draft for the owner);
+  the AI read in depth (after the desk: analysis drawer, export drawer, phone peek and sheet, 14 states);
+  the remaining overlays (after dialogs: broker reassess, track-record archive, expanded widget, name a view,
+  browser notifications, password reset as dialog and page, phone sheets); all five Lab instruments (after the
+  Lab index: Not live in production, Sample on staging); and a **Planned** section at the bottom under its own
+  title with the nine public-data tools (designed, not built). Placement: `after:` / `section: 'planned'` in
+  `src/screens/final/index.mjs`.
+- Shared fixes: the footer carries Sources and credits, Privacy and Terms (`lib.mjs` `v4Footer`); on charts
+  under 480px the probe readout wraps inside the plot and range bars take a second label row (`chart-kit.mjs`).
+- Consistency fixes: SPY levels on the scanner, alert and export boards now match the desk (705.00 / 686.80 /
+  672.50); the desk's level chips, levels line and implied-move labels, the note's catalysts and value-range
+  labels, the landing hero's axis ticks, and two planned charts no longer collide on a phone; the Lab index cards
+  carry the Sample tag and scenario date (P-3).
+- Gaps found (on the spec cards' "Built so far"): the demo seed's SPY levels (704.02 / 683.92 / 652.22) and the
+  Lab's synthetic field (walls 500/530) differ from the design; production draws the Lab's mocks; the demo AI read
+  skips the read sheet; no password reset, invitation, account deletion or trust routes exist; the API reports a
+  fallback copy as live.
+- Checked: `tmp/final-render.mjs` on all 235 boards (exit 0 per group; no overflow, no text under 11px) and a
+  label-collision scan (none left); build and verify-tokens exit 0; no NUL bytes.
