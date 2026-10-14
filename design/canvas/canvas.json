@@ -31,6 +31,10 @@
     {
       "id": "v4-app",
       "name": "v4 · App"
+    },
+    {
+      "id": "v4-research",
+      "name": "v4 · Research"
     }
   ],
   "artboards": [
@@ -1227,6 +1231,168 @@
       "w": 1440,
       "h": 1100,
       "page": "v4-app"
+    },
+    {
+      "file": "V4NoteView.dc.html",
+      "title": "v4 · Note view · NVDA · neutral directions (supersedes the research canvas Main board)",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 4600,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4NoteView390.dc.html",
+      "title": "v4 · Note view · phone",
+      "x": 1560,
+      "y": 0,
+      "w": 390,
+      "h": 6600,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4NoteViewLight.dc.html",
+      "title": "v4 · Note view · light",
+      "x": 2070,
+      "y": 0,
+      "w": 1440,
+      "h": 4600,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4NoteStates.dc.html",
+      "title": "v4 · Note view · states",
+      "x": 3630,
+      "y": 0,
+      "w": 1440,
+      "h": 2100,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4ResearchIndex.dc.html",
+      "title": "v4 · Research index with the tabs",
+      "x": 0,
+      "y": 5020,
+      "w": 1440,
+      "h": 1900,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4ResearchIndex390.dc.html",
+      "title": "v4 · Research index · phone",
+      "x": 1560,
+      "y": 5020,
+      "w": 390,
+      "h": 3400,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4ResearchIndexLight.dc.html",
+      "title": "v4 · Research index · light",
+      "x": 2070,
+      "y": 5020,
+      "w": 1440,
+      "h": 1900,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Markets390.dc.html",
+      "title": "v4 · Markets · phone",
+      "x": 0,
+      "y": 7840,
+      "w": 390,
+      "h": 6400,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4Filings390.dc.html",
+      "title": "v4 · Filings · phone",
+      "x": 510,
+      "y": 7840,
+      "w": 390,
+      "h": 3600,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4Scorecard390.dc.html",
+      "title": "v4 · Scorecard · phone",
+      "x": 1020,
+      "y": 7840,
+      "w": 390,
+      "h": 3800,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4TickerResearch390.dc.html",
+      "title": "v4 · Ticker research · phone",
+      "x": 1530,
+      "y": 7840,
+      "w": 390,
+      "h": 6200,
+      "page": "v4-research"
+    },
+    {
+      "file": "V4MarketsLight.dc.html",
+      "title": "v4 · Markets · light",
+      "x": 2040,
+      "y": 7840,
+      "w": 1440,
+      "h": 3300,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4FilingsLight.dc.html",
+      "title": "v4 · Filings · light",
+      "x": 3600,
+      "y": 7840,
+      "w": 1440,
+      "h": 1900,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4ScorecardLight.dc.html",
+      "title": "v4 · Scorecard · light",
+      "x": 5160,
+      "y": 7840,
+      "w": 1440,
+      "h": 2000,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4TickerResearchLight.dc.html",
+      "title": "v4 · Ticker research · light",
+      "x": 6720,
+      "y": 7840,
+      "w": 1440,
+      "h": 2700,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4MarketsDemo.dc.html",
+      "title": "v4 · Markets · demo build (dashed chips)",
+      "x": 8280,
+      "y": 7840,
+      "w": 1440,
+      "h": 3300,
+      "page": "v4-research",
+      "expand": "fill"
+    },
+    {
+      "file": "V4StateMatrixLight.dc.html",
+      "title": "v4 · State matrix · light",
+      "x": 0,
+      "y": 14660,
+      "w": 3220,
+      "h": 4200,
+      "page": "v4-research"
     }
   ],
   "annotations": [
@@ -1285,6 +1451,14 @@
       "w": 900,
       "page": "v4-app",
       "text": "v4 · App (2026-10-13). One row per route: desktop 1440 dark, phone 390, light 1440, then the route’s states board. The ticker desk’s desktop and phone boards are on v4 · Data states. Findings per route: design/REVIEW-2026-10-13.md (wave 3). Figures are illustrative design values."
+    },
+    {
+      "id": "note-v4-research",
+      "x": 0,
+      "y": -520,
+      "w": 900,
+      "page": "v4-research",
+      "text": "v4 · Research refresh (2026-10-13). The note view with neutral directions supersedes the research canvas’s Main board (that canvas is left as it is); the index with its tabs; phone boards for Markets, Filings, Scorecard and ticker research; light boards for every research page and the state matrix; Markets in the demo build."
     },
     {
       "id": "note-system",
@@ -2005,6 +2179,142 @@
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Operator · states. Resolves OPS-01, OPS-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4NoteView",
+      "x": 0,
+      "y": -230,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Note view · NVDA · neutral directions (supersedes the research canvas Main board). Resolves RSH-01, RSH-02. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4NoteView390",
+      "x": 1560,
+      "y": -230,
+      "w": 390,
+      "page": "v4-research",
+      "text": "v4 · Note view · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4NoteViewLight",
+      "x": 2070,
+      "y": -230,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Note view · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4NoteStates",
+      "x": 3630,
+      "y": -230,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Note view · states. Resolves RSH-06. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ResearchIndex",
+      "x": 0,
+      "y": 4790,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Research index with the tabs. Resolves RSH-05. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ResearchIndex390",
+      "x": 1560,
+      "y": 4790,
+      "w": 390,
+      "page": "v4-research",
+      "text": "v4 · Research index · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ResearchIndexLight",
+      "x": 2070,
+      "y": 4790,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Research index · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Markets390",
+      "x": 0,
+      "y": 7610,
+      "w": 390,
+      "page": "v4-research",
+      "text": "v4 · Markets · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Filings390",
+      "x": 510,
+      "y": 7610,
+      "w": 390,
+      "page": "v4-research",
+      "text": "v4 · Filings · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Scorecard390",
+      "x": 1020,
+      "y": 7610,
+      "w": 390,
+      "page": "v4-research",
+      "text": "v4 · Scorecard · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4TickerResearch390",
+      "x": 1530,
+      "y": 7610,
+      "w": 390,
+      "page": "v4-research",
+      "text": "v4 · Ticker research · phone. Resolves RSH-03. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4MarketsLight",
+      "x": 2040,
+      "y": 7610,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Markets · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4FilingsLight",
+      "x": 3600,
+      "y": 7610,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Filings · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4ScorecardLight",
+      "x": 5160,
+      "y": 7610,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Scorecard · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4TickerResearchLight",
+      "x": 6720,
+      "y": 7610,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Ticker research · light. Resolves RSH-04. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4MarketsDemo",
+      "x": 8280,
+      "y": 7610,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · Markets · demo build (dashed chips). Resolves X-09, TL-14. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4StateMatrixLight",
+      "x": 0,
+      "y": 14430,
+      "w": 640,
+      "page": "v4-research",
+      "text": "v4 · State matrix · light. Resolves RSH-04, DS-05–DS-08. Findings: design/REVIEW-2026-10-13.md."
     }
   ],
   "launch": {

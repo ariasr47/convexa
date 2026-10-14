@@ -88,3 +88,12 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
 - **Amber spent once per view:** selected tiles, filters, toggles and the current symbol use phosphor
   borders, checks and weight; the avatar is neutral.
 
+## 2026-10-13 · v4 wave 4 — research refresh
+
+- **Note view with neutral directions** (page “v4 · Research”): company deltas are text on a steel tint
+  with ▲/▼; the case for and against reads by glyph and filled dot vs ring; thesis status by glyph, word
+  and weight; bridge steps up filled, down outlined. Supersedes the research canvas's Main board, which
+  this work does not touch.
+- **Research index with the tabs**, phone boards for Markets, Filings, Scorecard and ticker research,
+  light boards for every research page and the state matrix, and Markets in the demo build.
+

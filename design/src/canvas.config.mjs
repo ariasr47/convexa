@@ -9,6 +9,7 @@ export const pages = [
   { id: 'v4-data', name: 'v4 · Data states' },
   { id: 'v4-tools', name: 'v4 · Tools from public data' },
   { id: 'v4-app', name: 'v4 · App' },
+  { id: 'v4-research', name: 'v4 · Research' },
 ];
 
 // { name, screen, page, w, h, title, opts?, expand?, interactive? }
@@ -80,6 +81,25 @@ export const artboards = [
   { name: 'V4ToolTa', screen: 'v4-tool-ta', page: 'v4-tools', x: 3120, y: 7300, w: 1440, h: 3000, title: 'v4 · Tool · Technical analysis · blocked', findings: 'TL-11, TKR-05, DS-03' },
   { name: 'V4ToolSignals', screen: 'v4-tool-signals', page: 'v4-tools', x: 4680, y: 7300, w: 1440, h: 2800, title: 'v4 · Tool · Signal track record · blocked', findings: 'TL-12' },
   ...appRows(),
+
+  // ---- v4 · Research refresh (wave 4, 2026-10-13) ----
+  { name: 'V4NoteView', screen: 'v4-note-view', page: 'v4-research', x: 0, y: 0, w: 1440, h: 4600, title: 'v4 · Note view · NVDA · neutral directions (supersedes the research canvas Main board)', expand: 'fill', findings: 'RSH-01, RSH-02' },
+  { name: 'V4NoteView390', screen: 'v4-note-view', page: 'v4-research', x: 1560, y: 0, w: 390, h: 6600, title: 'v4 · Note view · phone', findings: 'RSH-03' },
+  { name: 'V4NoteViewLight', screen: 'v4-note-view', page: 'v4-research', x: 2070, y: 0, w: 1440, h: 4600, title: 'v4 · Note view · light', opts: { scheme: 'light' }, expand: 'fill', findings: 'RSH-04' },
+  { name: 'V4NoteStates', screen: 'v4-note-states', page: 'v4-research', x: 3630, y: 0, w: 1440, h: 2100, title: 'v4 · Note view · states', findings: 'RSH-06' },
+  { name: 'V4ResearchIndex', screen: 'v4-research-index', page: 'v4-research', x: 0, y: 5020, w: 1440, h: 1900, title: 'v4 · Research index with the tabs', expand: 'fill', findings: 'RSH-05' },
+  { name: 'V4ResearchIndex390', screen: 'v4-research-index', page: 'v4-research', x: 1560, y: 5020, w: 390, h: 3400, title: 'v4 · Research index · phone', findings: 'RSH-03' },
+  { name: 'V4ResearchIndexLight', screen: 'v4-research-index', page: 'v4-research', x: 2070, y: 5020, w: 1440, h: 1900, title: 'v4 · Research index · light', opts: { scheme: 'light' }, expand: 'fill', findings: 'RSH-04' },
+  { name: 'V4Markets390', screen: 'v4-markets', page: 'v4-research', x: 0, y: 7840, w: 390, h: 6400, title: 'v4 · Markets · phone', findings: 'RSH-03' },
+  { name: 'V4Filings390', screen: 'v4-filings', page: 'v4-research', x: 510, y: 7840, w: 390, h: 3600, title: 'v4 · Filings · phone', findings: 'RSH-03' },
+  { name: 'V4Scorecard390', screen: 'v4-scorecard', page: 'v4-research', x: 1020, y: 7840, w: 390, h: 3800, title: 'v4 · Scorecard · phone', findings: 'RSH-03' },
+  { name: 'V4TickerResearch390', screen: 'v4-ticker-research', page: 'v4-research', x: 1530, y: 7840, w: 390, h: 6200, title: 'v4 · Ticker research · phone', findings: 'RSH-03' },
+  { name: 'V4MarketsLight', screen: 'v4-markets', page: 'v4-research', x: 2040, y: 7840, w: 1440, h: 3300, title: 'v4 · Markets · light', opts: { scheme: 'light' }, expand: 'fill', findings: 'RSH-04' },
+  { name: 'V4FilingsLight', screen: 'v4-filings', page: 'v4-research', x: 3600, y: 7840, w: 1440, h: 1900, title: 'v4 · Filings · light', opts: { scheme: 'light' }, expand: 'fill', findings: 'RSH-04' },
+  { name: 'V4ScorecardLight', screen: 'v4-scorecard', page: 'v4-research', x: 5160, y: 7840, w: 1440, h: 2000, title: 'v4 · Scorecard · light', opts: { scheme: 'light' }, expand: 'fill', findings: 'RSH-04' },
+  { name: 'V4TickerResearchLight', screen: 'v4-ticker-research', page: 'v4-research', x: 6720, y: 7840, w: 1440, h: 2700, title: 'v4 · Ticker research · light', opts: { scheme: 'light' }, expand: 'fill', findings: 'RSH-04' },
+  { name: 'V4MarketsDemo', screen: 'v4-markets', page: 'v4-research', x: 8280, y: 7840, w: 1440, h: 3300, title: 'v4 · Markets · demo build (dashed chips)', opts: { demo: true }, expand: 'fill', findings: 'X-09, TL-14' },
+  { name: 'V4StateMatrixLight', screen: 'v4-state-matrix', page: 'v4-research', x: 0, y: 14660, w: 3220, h: 4200, title: 'v4 · State matrix · light', opts: { scheme: 'light' }, findings: 'RSH-04, DS-05–DS-08' },
 ];
 
 /** v4 · App: one row per route — desktop 1440 dark, phone 390, light 1440, states — with room above
@@ -131,6 +151,7 @@ export const annotations = [
   { id: 'note-v4-data', page: 'v4-data', x: 0, y: -520, w: 900, text: 'v4 · Data states (2026-10-13). The hybrid site: live where free public data reaches, honestly not live where the paid options feed is needed. Source map → state matrix → the NVDA desk in both honest options (explain, or a labelled sample). Every board names the review findings it resolves (design/REVIEW-2026-10-13.md). Figures are illustrative design values.' },
   { id: 'note-v4-tools', page: 'v4-tools', x: 0, y: -520, w: 900, text: 'v4 · Tools from public data (2026-10-13). Source of truth: docs/public-data/CANDIDATES.md and its status words (live · switch · build · verify · blocked). Top row: the roadmap and the built research pages, re-sourced and joined by the new tools. Rows below: one sheet per priority tool with desktop, phone and every state. Blocked tools draw their design target with illustrative values; the gate is open question Q-1.' },
   { id: 'note-v4-app', page: 'v4-app', x: 0, y: -520, w: 900, text: 'v4 · App (2026-10-13). One row per route: desktop 1440 dark, phone 390, light 1440, then the route’s states board. The ticker desk’s desktop and phone boards are on v4 · Data states. Findings per route: design/REVIEW-2026-10-13.md (wave 3). Figures are illustrative design values.' },
+  { id: 'note-v4-research', page: 'v4-research', x: 0, y: -520, w: 900, text: 'v4 · Research refresh (2026-10-13). The note view with neutral directions supersedes the research canvas’s Main board (that canvas is left as it is); the index with its tabs; phone boards for Markets, Filings, Scorecard and ticker research; light boards for every research page and the state matrix; Markets in the demo build.' },
   { id: 'note-system', page: 'page-5', w: 560, text: 'The library is generated from tokens/tokens.json and src/components — every state shown there is a registered state. The light renders prove the scheme is a token swap, not a second layout.' },
 ];
 
