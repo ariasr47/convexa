@@ -21,6 +21,10 @@ import { HYBRID_CSS, hybridDeskBody } from './v4/hybrid-desk.mjs';
 import { TOOLS_CSS, roadmapBody, toolSheetBody } from './v4/tools-sheets.mjs';
 import { RESEARCH_CSS, filingsBody, marketsBody, scorecardBody, tickerResearchBody } from './v4/research.mjs';
 import { TOOLS } from '../data/tools.mjs';
+import { KIT_CSS } from './v4/kit.mjs';
+import { SHELL_CSS, deskStatesBody as deskStatesV4Body, landingBody as landingV4Body, landingStatesBody, shellBody, shellPhoneBody, shellStatesBody } from './v4/shell-landing.mjs';
+import { APP_CSS, alertsBody as alertsV4Body, alertsStatesBody, positionsBody as positionsV4Body, positionsStatesBody, scannerBody as scannerV4Body, scannerStatesBody, settingsBody as settingsV4Body, settingsStatesBody } from './v4/app-pages.mjs';
+import { DIALOGS, DOCS_CSS, blogBody as blogV4Body, dialogBody, dialogStatesBody, docsStatesBody, labBody as labV4Body, methodologyBody as methodologyV4Body, notFoundBody as notFoundV4Body, operatorBody as operatorV4Body, operatorStatesBody } from './v4/docs-dialogs.mjs';
 
 const s = (title, group, desc, body, css = '', extra = {}) => ({ title, group, desc, body, css, ...extra });
 
@@ -60,5 +64,36 @@ export const screens = {
   'v4-filings': s('Filings', 'v4 · Tools from public data', 'The SEC feed for followed companies, with the filing detail and reported figures.', (o) => filingsBody(o), HYBRID_CSS + RESEARCH_CSS),
   'v4-scorecard': s('Scorecard', 'v4 · Tools from public data', 'Forecast ledger and calibration, with the signal track record blocked on a price source.', (o) => scorecardBody(o), HYBRID_CSS + RESEARCH_CSS),
   'v4-ticker-research': s('Ticker research · NVDA', 'v4 · Tools from public data', 'A note’s header, its figures checked against the filing, and every public-data panel for the ticker.', (o) => tickerResearchBody(o), HYBRID_CSS + RESEARCH_CSS),
+  // ---- v4 · App (wave 3): every route ----
+  ...(() => {
+    const V = HYBRID_CSS + RESEARCH_CSS + KIT_CSS + SHELL_CSS + APP_CSS + DOCS_CSS;
+    const g = 'v4 · App';
+    return {
+      'v4-shell': s('Shell · nav, notice, ⌘K', g, 'The five-link nav, the data notice and the jump-to box, open over Research.', (o) => shellBody(o), V),
+      'v4-shell-phone': s('Shell · phone menu', g, 'The phone menu drawer.', (o) => shellPhoneBody(o), V),
+      'v4-shell-states': s('Shell · states', g, 'Notice, nav, jump-to, skip link and footer in every state.', (o) => shellStatesBody(o), V),
+      'v4-landing': s('Landing', g, 'One offer, one action, the model as the hero, labelled as a sample.', (o) => landingV4Body(o), V),
+      'v4-landing-states': s('Landing · states', g, 'Reduced motion, the live band’s failures, demo, closed sign-ups.', (o) => landingStatesBody(o), V),
+      'v4-desk-states': s('Hybrid desk · states', g, 'Each source failing, off, unset or unchosen.', (o) => deskStatesV4Body(o), V),
+      'v4-scanner': s('Scanner', g, 'Not live by default; a labelled sample scan; the last real board as a dated archive.', (o) => scannerV4Body(o), V),
+      'v4-scanner-states': s('Scanner · states', g, 'Explain, archive, loading, empty, filtered, signed out, demo, keyboard preview.', (o) => scannerStatesBody(o), V),
+      'v4-positions': s('Positions', g, 'Paper book with honest mark bases.', (o) => positionsV4Body(o), V),
+      'v4-positions-signedout': s('Positions · signed out', g, 'The private-testing wall.', (o) => positionsV4Body({ ...o, signedOut: true }), V),
+      'v4-positions-states': s('Positions · states', g, 'Empty, mark bases, store fault, broker, demo, orders.', (o) => positionsStatesBody(o), V),
+      'v4-alerts': s('Alerts', g, 'Release and filing rules on public data; structure kinds not live.', (o) => alertsV4Body(o), V),
+      'v4-alerts-states': s('Alerts · states', g, 'Empty, not live, paused, blocked notifications, store fault, a firing.', (o) => alertsStatesBody(o), V),
+      'v4-settings': s('Settings', g, 'Account, preferences, risk inputs, AI providers, brokerage.', (o) => settingsV4Body(o), V),
+      'v4-settings-signedout': s('Settings · signed out', g, 'What works without an account.', (o) => settingsV4Body({ ...o, signedOut: true }), V),
+      'v4-settings-states': s('Settings · states', g, 'Validation, not set, save failed, changed elsewhere, disconnect, demo.', (o) => settingsStatesBody(o), V),
+      'v4-methodology': s('Methodology', g, 'How Convexa works, with “What’s live on this site”.', (o) => methodologyV4Body(o), V),
+      'v4-blog': s('Blog', g, 'The blog index.', (o) => blogV4Body(o), V),
+      'v4-lab': s('Lab', g, 'Instrument candidates on synthetic data.', (o) => labV4Body(o), V),
+      'v4-not-found': s('404', g, 'Nothing at this address.', (o) => notFoundV4Body(o), V),
+      'v4-docs-states': s('Static pages · states', g, 'Route loading and failure, deep links, the Lab’s off control.', (o) => docsStatesBody(o), V),
+      'v4-operator': s('Operator', g, 'Metrics and the session archive, off the trader shell.', (o) => operatorV4Body(o), V),
+      'v4-operator-states': s('Operator · states', g, 'Locked, off, unavailable, empty.', (o) => operatorStatesBody(o), V),
+      ...Object.fromEntries(Object.keys(DIALOGS).flatMap((k) => [[`v4-dlg-${k}`, s(DIALOGS[k].title, g, `${DIALOGS[k].title} over a blurred page; a bottom sheet under 600px.`, dialogBody(k), V)], [`v4-dlg-${k}-states`, s(`${DIALOGS[k].title} · states`, g, `${DIALOGS[k].title} in every state.`, dialogStatesBody(k), V)]])),
+    };
+  })(),
   ...Object.fromEntries(TOOLS.map((t) => [`v4-tool-${t.key}`, s(`Tool · ${t.name}`, 'v4 · Tools from public data', `${t.unlocks}. Status: ${t.status}.`, (o) => toolSheetBody({ ...o, tool: t.key }), SHEET_CSS + TOOLS_CSS + HYBRID_CSS)])),
 };

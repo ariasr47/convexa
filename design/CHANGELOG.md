@@ -72,3 +72,19 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
   blocked panel with a labelled sample), ticker research (six public positioning sources, XBRL check).
 - No buy/sell language: every signal-like output is described as research.
 
+## 2026-10-13 · v4 wave 3 — every route
+
+- **Page “v4 · App”:** one row per route — desktop 1440 dark, phone 390, light 1440, and a states board —
+  for the shell (nav, data notice, ⌘K jump-to, footer), landing, scanner, positions (with the signed-out
+  wall), alerts, settings (with signed out), methodology, blog, lab, 404 and route fallback, the six
+  overlays (sign in and the wall, trade entry, order detail, what's sent, persona, scan view editor) and
+  the operator pages. The ticker desk adds a light board and a states board to wave 1's.
+- **Hybrid decisions drawn on every route:** “Sign in” everywhere and Settings in the footer; the
+  jump-to box lists tickers and notes by name because scores aren't live; the landing labels its hero a
+  sample and lists what is live; the scanner explains first, samples on request and keeps the last real
+  board as a dated archive; positions name each mark's basis; alerts gain release-date and new-filing
+  kinds (proposal Q-5); trade entry opens on Manual price; what's sent says nothing leaves; methodology
+  gains “What's live on this site”, the notice's link target.
+- **Amber spent once per view:** selected tiles, filters, toggles and the current symbol use phosphor
+  borders, checks and weight; the avatar is neutral.
+

@@ -8,6 +8,7 @@ export const pages = [
   { id: 'page-5', name: 'System' },
   { id: 'v4-data', name: 'v4 · Data states' },
   { id: 'v4-tools', name: 'v4 · Tools from public data' },
+  { id: 'v4-app', name: 'v4 · App' },
 ];
 
 // { name, screen, page, w, h, title, opts?, expand?, interactive? }
@@ -78,7 +79,49 @@ export const artboards = [
   { name: 'V4ToolPeers', screen: 'v4-tool-peers', page: 'v4-tools', x: 1560, y: 7300, w: 1440, h: 2800, title: 'v4 · Tool · Peer table · build', findings: 'TL-10' },
   { name: 'V4ToolTa', screen: 'v4-tool-ta', page: 'v4-tools', x: 3120, y: 7300, w: 1440, h: 3000, title: 'v4 · Tool · Technical analysis · blocked', findings: 'TL-11, TKR-05, DS-03' },
   { name: 'V4ToolSignals', screen: 'v4-tool-signals', page: 'v4-tools', x: 4680, y: 7300, w: 1440, h: 2800, title: 'v4 · Tool · Signal track record · blocked', findings: 'TL-12' },
+  ...appRows(),
 ];
+
+/** v4 · App: one row per route — desktop 1440 dark, phone 390, light 1440, states — with room above
+ *  each row for the findings notes. */
+function appRows() {
+  const R = [
+    // [route label, base name, screen, desktop h, phone h, states screen, states h, findings, extras]
+    ['Global shell', 'Shell', 'v4-shell', 1100, 844, 'v4-shell-states', 2500, 'X-01, SHL-01–SHL-05', [], 'v4-shell-phone'],
+    ['Landing', 'Landing', 'v4-landing', 3000, 5000, 'v4-landing-states', 1700, 'LND-01–LND-04', []],
+    ['Ticker desk (desktop and phone on v4 · Data states)', 'Desk', null, 0, 0, 'v4-desk-states', 2600, 'X-02, DS-02, DS-03, TKR-03, TKR-05', [['V4DeskLight', 'v4-hybrid-desk', 1440, 3400, 'Hybrid desk · light', { scheme: 'light' }]]],
+    ['Scanner', 'Scanner', 'v4-scanner', 1600, 2400, 'v4-scanner-states', 1900, 'SCN-01–SCN-04, X-11', []],
+    ['Positions', 'Positions', 'v4-positions', 1600, 2600, 'v4-positions-states', 2000, 'POS-01–POS-04', [['V4PositionsSignedOut', 'v4-positions-signedout', 1440, 900, 'Positions · signed out (wall)', {}]]],
+    ['Alerts', 'Alerts', 'v4-alerts', 1400, 2400, 'v4-alerts-states', 1700, 'ALR-01–ALR-03, Q-5', []],
+    ['Settings', 'Settings', 'v4-settings', 2000, 2900, 'v4-settings-states', 1700, 'SET-01–SET-03', [['V4SettingsSignedOut', 'v4-settings-signedout', 1440, 1500, 'Settings · signed out', {}]]],
+    ['Methodology', 'Methodology', 'v4-methodology', 2200, 3800, 'v4-docs-states', 1700, 'DOC-01, DOC-02', []],
+    ['Blog', 'Blog', 'v4-blog', 900, 1500, null, 0, 'DOC-04', []],
+    ['Lab', 'Lab', 'v4-lab', 1500, 2900, null, 0, 'DOC-03', []],
+    ['404 and route fallback', 'NotFound', 'v4-not-found', 900, 1000, null, 0, 'DOC-04, DOC-05', []],
+    ['Sign in and the wall', 'SignIn', 'v4-dlg-sign-in', 1000, 1000, 'v4-dlg-sign-in-states', 1700, 'DLG-04, POS-03', []],
+    ['Trade entry', 'TradeEntry', 'v4-dlg-trade-entry', 1100, 1300, 'v4-dlg-trade-entry-states', 1800, 'DLG-01', []],
+    ['Order detail', 'OrderDetail', 'v4-dlg-order-detail', 1000, 1100, 'v4-dlg-order-detail-states', 1200, 'DLG-02', []],
+    ['What’s sent drawer', 'WhatsSent', 'v4-dlg-whats-sent', 1000, 1100, 'v4-dlg-whats-sent-states', 1800, 'DLG-03', []],
+    ['Persona', 'Persona', 'v4-dlg-persona', 1000, 1100, 'v4-dlg-persona-states', 1100, 'DLG-05', []],
+    ['Scan view editor', 'ViewEditor', 'v4-dlg-view-editor', 1000, 1200, 'v4-dlg-view-editor-states', 1100, 'DLG-06', []],
+    ['Operator', 'Operator', 'v4-operator', 1200, 1500, 'v4-operator-states', 1100, 'OPS-01, OPS-02', []],
+  ];
+  const out = [];
+  let y = 0;
+  for (const [label, base, screen, dh, ph, st, sth, findings, extras, phoneScreen] of R) {
+    let x = 0, rowH = 0;
+    const add = (name, scr, w, h, title, opts = {}, expand = false) => { out.push({ name, screen: scr, page: 'v4-app', x, y, w, h, title, opts, findings, ...(expand ? { expand: 'fill' } : {}) }); x += w + 120; rowH = Math.max(rowH, h); };
+    if (screen) {
+      add(`V4${base}`, screen, 1440, dh, `v4 · ${label} · desktop`, {}, true);
+      add(`V4${base}390`, phoneScreen || screen, 390, ph, `v4 · ${label} · phone`);
+      add(`V4${base}Light`, screen, 1440, dh, `v4 · ${label} · light`, { scheme: 'light' }, true);
+    }
+    for (const [n, scr, w, h, t, o] of extras) add(n, scr, w, h, `v4 · ${t}`, o, true);
+    if (st) add(`V4${base}States`, st, 1440, sth, `v4 · ${label} · states`);
+    y += rowH + 420;
+  }
+  return out;
+}
 
 export const annotations = [
   { id: 'note-tweaks', page: 'page-1', w: 560, text: 'Ticker desk — the tweak chips switch readState (idle · loading · trade · no_trade · stale · cooldown · signed_out · no_key), live (pulses, particles, trail), scheme (dark · light) and the phone sheet (open · peek). Click “Analyze current snapshot” to run loading → trade; Field / Magnet switches the hero. Expand this frame and resize your window: the layout is fluid.' },
@@ -87,6 +130,7 @@ export const annotations = [
   { id: 'note-dialogs', page: 'page-4', w: 520, text: 'Every overlay and gate in the product: sign-in and the private-testing wall, the one shared sim trade-entry dialog in both variants (with the six binding disclosures verbatim), the egress drawer, persona editing, order detail in both coverage states, the scan view editor, route fallback, 404, and the two operator surfaces.' },
   { id: 'note-v4-data', page: 'v4-data', x: 0, y: -520, w: 900, text: 'v4 · Data states (2026-10-13). The hybrid site: live where free public data reaches, honestly not live where the paid options feed is needed. Source map → state matrix → the NVDA desk in both honest options (explain, or a labelled sample). Every board names the review findings it resolves (design/REVIEW-2026-10-13.md). Figures are illustrative design values.' },
   { id: 'note-v4-tools', page: 'v4-tools', x: 0, y: -520, w: 900, text: 'v4 · Tools from public data (2026-10-13). Source of truth: docs/public-data/CANDIDATES.md and its status words (live · switch · build · verify · blocked). Top row: the roadmap and the built research pages, re-sourced and joined by the new tools. Rows below: one sheet per priority tool with desktop, phone and every state. Blocked tools draw their design target with illustrative values; the gate is open question Q-1.' },
+  { id: 'note-v4-app', page: 'v4-app', x: 0, y: -520, w: 900, text: 'v4 · App (2026-10-13). One row per route: desktop 1440 dark, phone 390, light 1440, then the route’s states board. The ticker desk’s desktop and phone boards are on v4 · Data states. Findings per route: design/REVIEW-2026-10-13.md (wave 3). Figures are illustrative design values.' },
   { id: 'note-system', page: 'page-5', w: 560, text: 'The library is generated from tokens/tokens.json and src/components — every state shown there is a registered state. The light renders prove the scheme is a token swap, not a second layout.' },
 ];
 
