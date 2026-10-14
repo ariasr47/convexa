@@ -361,17 +361,35 @@
     },
     {
       "file": "Library.dc.html",
-      "title": "Library · tokens, components, states, React mapping",
+      "title": "Library · 1 of 3 · tokens, type, controls, data",
       "x": 0,
       "y": 0,
       "w": 1440,
-      "h": 14460,
+      "h": 6240,
+      "page": "page-5"
+    },
+    {
+      "file": "LibraryB.dc.html",
+      "title": "Library · 2 of 3 · chrome, overlays, patterns, states, charts, motion",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 4750,
+      "page": "page-5"
+    },
+    {
+      "file": "LibraryC.dc.html",
+      "title": "Library · 3 of 3 · React mapping",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 3970,
       "page": "page-5"
     },
     {
       "file": "Components.dc.html",
       "title": "Components & motion sheet",
-      "x": 1560,
+      "x": 4680,
       "y": 0,
       "w": 1440,
       "h": 2720,
@@ -380,8 +398,8 @@
     {
       "file": "DeskLight.dc.html",
       "title": "Desk · light scheme (interactive)",
-      "x": 3120,
-      "y": 0,
+      "x": 0,
+      "y": 6380,
       "w": 1440,
       "h": 2300,
       "page": "page-5",
@@ -390,8 +408,8 @@
     {
       "file": "LandingLight.dc.html",
       "title": "Landing · light scheme",
-      "x": 4680,
-      "y": 0,
+      "x": 1560,
+      "y": 6380,
       "w": 1440,
       "h": 2960,
       "page": "page-5"
