@@ -331,3 +331,23 @@ export function ticks(min, max, step, f = (v) => String(v), { minorEvery = 0 } =
 
 /** A small note in the board's own voice: "Before" / "After" ribbons for the before–after boards. */
 export const ribbon = (text, kind = 'after') => `<span class="caps" style="display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 999px; ${kind === 'before' ? 'border: 1px solid var(--line-2); color: var(--steel);' : 'background: rgba(138,155,180,0.16); color: var(--phosphor);'}">${kind === 'before' ? icon('clock', 12) : icon('check', 12)}${text}</span>`;
+
+/**
+ * A labelled category bar list: names at the left (wrapping, never truncated), bars from a shared zero,
+ * value labels at the bar end, optional open-ended bars ("45%+") and negatives left of zero. Ticks are
+ * optional (when every value is printed the axis may go, dv:marks). rows: [{ name, v, label, role, open }]
+ */
+export function barList({ rows, min = 0, max, ticks: tk = [], labelW = 220, rowH = 34, aria = '', pr = 96, prn = 72, keyboard = true }) {
+  const n = rows.length; const height = n * rowH + (tk.length ? 30 : 8);
+  const body = plot({ height, pl: labelW, pr, prn, pt: 4, pb: tk.length ? 26 : 4, keyboard, ends: false, x: { min, max, ticks: tk }, y: { min: n + 0.5, max: 0.5, ticks: [] }, hbars: rows.map((r, i) => ({ y: i + 1, v: r.v, role: r.role || 'ctx', label: r.label })), hbarH: 14, aria });
+  const names = rows.map((r, i) => `<span style="position: absolute; right: calc(100% + 12px); top: ${(((i + 0.5) / n) * 100).toFixed(2)}%; transform: translateY(-50%); width: ${labelW - 16}px; text-align: right; font-size: 12.5px; line-height: 1.25; color: ${r.role === 'emph' ? 'var(--phosphor)' : 'var(--steel)'}; font-weight: ${r.role === 'emph' ? 600 : 400};">${r.name}</span>${r.open ? `<span aria-hidden="true" style="position: absolute; left: calc(${(((r.v - min) / (max - min)) * 100).toFixed(2)}% - 1px); top: ${(((i + 0.5) / n) * 100).toFixed(2)}%; transform: translateY(-50%); width: 0; height: 0; border-top: 9px solid transparent; border-bottom: 9px solid transparent; border-left: 10px solid ${r.role === 'emph' ? 'var(--c-emph)' : 'var(--c-ctx)'};"></span>` : ''}`).join('');
+  const zero = min < 0 ? `<span style="position: absolute; top: -4px; bottom: -4px; left: ${(((0 - min) / (max - min)) * 100).toFixed(2)}%; border-left: 1px solid var(--c-axis);"></span>` : '';
+  return body.replace('<div class="pa">', `<div class="pa">${zero}${names}`);
+}
+
+/** Before/after row for the family boards: the shipped form (a shape sketch + defects with file:line),
+ *  then the upgrade. Sketches carry no text, so nothing on a board renders under the 11px floor. */
+export function baRow({ title, ids, before, defects = [], after, file = '' }) {
+  return `<section class="famrow"><header><h3>${title}</h3><span class="ids">${ids}</span></header><div class="ba"><div class="b"><span class="caps">Before · as shipped${file ? ` · <span class="mono" style="text-transform: none; letter-spacing: 0;">${file}</span>` : ''}</span>${before ? `<div aria-hidden="true" style="border-radius: 8px; background: var(--panel); border: 1px solid var(--line); padding: 10px 12px;">${before}</div>` : ''}<ul>${defects.map((d) => `<li>${d}</li>`).join('')}</ul></div><div class="a"><span class="caps">After</span>${after}</div></div></section>`;
+}
+
