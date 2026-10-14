@@ -1,9 +1,11 @@
 // v4 · the hybrid ticker desk (NVDA). Public data live; the options-feed panels either explain
 // themselves (opts.sample false) or show a labelled sample (opts.sample true). One fluid body: the
 // phone board is this screen at 390 (zone B folds into one list there).
-import { fluidChart, icon, v4Page } from '../../lib.mjs';
+import { icon, v4Page } from '../../lib.mjs';
 import { NVDA } from '../../data/index.mjs';
 import { dataCell, gexBars, provChip, rangeBar, stateTag } from '../../components/data-states.mjs';
+import { renderTool } from '../../components/tools.mjs';
+import { tvFrame, tvHead, tvNote } from '../../components/tradingview.mjs';
 
 export const HYBRID_CSS = `
   .hd { padding-top: 24px; display: flex; flex-direction: column; gap: 24px; }
@@ -40,42 +42,22 @@ const P = (inner, { sample = false, label = '', extra = '' } = {}) => `<section 
 const head = (title, tag, more = '') => `<div class="ph"><h3>${title}</h3>${tag}${more}</div>`;
 const would = (w, off) => `<p class="dline" style="margin: 0;"><strong style="color: var(--phosphor);">Would show</strong> ${w}</p><p class="dline" style="margin: 0;"><strong style="color: var(--phosphor);">Off because</strong> ${off}</p>`;
 
-function priceChart() {
-  const c = NVDA.closes;
-  const avg = (n, off) => c.map((_, i) => { const s = c.slice(Math.max(0, i - n + 1), i + 1); return s.reduce((a, v) => a + v, 0) / s.length - off; });
-  const s20 = avg(20, 1.5), s50 = avg(50, 7), last = c.length - 1;
-  const pts = (vals) => vals.map((v, i) => [i, v]);
-  return fluidChart({
-    height: 240, pl: 40, pr: 118, prn: 64, xmin: 0, xmax: last, ymin: 200, ymax: 246,
-    aria: 'NVDA daily closes from Sep 15 to Oct 12, with the 20- and 50-day averages; support near 211 and resistance at the 52-week high, 243.37',
-    yTicks: [{ v: 210, label: '210' }, { v: 220, label: '220', minor: true }, { v: 230, label: '230' }, { v: 240, label: '240' }],
-    xTicks: [{ v: 0, label: 'Sep 15' }, { v: last, label: 'Oct 12' }],
-    hlines: [{ v: 211, label: { long: 'support 211.00', short: 'support' } }, { v: 243.37, label: { long: '52-wk high 243.37', short: 'high' } }],
-    series: [
-      { points: pts(s50), stroke: 'var(--steel)', width: 1.5, dash: '6 4', end: { long: '50-day avg', short: '50d' }, endColor: 'var(--steel)', endY: s50[last] - 1.2 },
-      { points: pts(s20), stroke: 'var(--steel)', width: 1.5, end: { long: '20-day avg', short: '20d' }, endColor: 'var(--steel)', endY: s20[last] - 1.2 },
-      { points: pts(c), stroke: 'var(--phosphor)', width: 2.25, end: { long: '226.32 close', short: '226.32' }, endY: c[last] + 1.2 },
-    ],
-    pointLabels: [],
-  });
-}
-
-function liveZone() {
+function liveZone(sample = false) {
   const t = NVDA.ta;
-  const ta = P(`${head('Price and trend', stateTag('computed', 'Computed · end of day'))}
-    <div><p class="claim">NVDA has closed above its 20- and 50-day averages for 14 sessions.</p><p class="sub">Daily closes, $, Sep 15 to Oct 12. Averages and levels computed by Convexa from end-of-day bars.</p></div>
-    ${priceChart()}
-    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">${provChip('[EOD PRICE SOURCE] · close Oct 12', 'solid')}<span class="dline" style="font-size: 11px;">Price source and its display licence: open question (REVIEW Q-1).</span></div>`, { label: 'Price and trend' });
-  const readings = P(`${head('Readings', stateTag('computed', 'Computed'))}
+  // A chart by TradingView (live, display-only) beside the readings Convexa would compute (blocked).
+  const ta = `<section class="hd-p" aria-label="NVDA daily chart by TradingView">${tvHead('NVDA', { level: 'h3' })}<div class="cq">${tvFrame({ ticker: 'NVDA', height: 520, phoneHeight: 420 })}</div>${tvNote()}</section>`;
+  const readings = sample
+    ? P(`${head('Readings Convexa would compute', stateTag('sample', 'Sample'))}
     <div class="hd-fig">
-      <div><span class="caps">RSI 14</span><span class="v">${t.rsi}</span><span class="dline" style="font-size: 11px;">between 30 and 70</span></div>
-      <div><span class="caps">ATR 14</span><span class="v">${t.atr}</span><span class="dline" style="font-size: 11px;">${t.atrPct} of the close</span></div>
-      <div><span class="caps">Realized vol · 20d</span><span class="v">${t.hv20}</span><span class="dline" style="font-size: 11px;">60-day ${t.hv60}</span></div>
-      <div><span class="caps">Support · resistance</span><span class="v" style="font-size: 15px;">${t.support} · ${t.resistance}</span><span class="dline" style="font-size: 11px;">from the daily range</span></div>
-      <div><span class="caps">vs SPY · 3 months</span><span class="v">${t.rsSpy}</span><span class="dline" style="font-size: 11px;">relative strength</span></div>
-      <div><span class="caps">vs SMH · 3 months</span><span class="v">${t.rsSector}</span><span class="dline" style="font-size: 11px;">against its sector ETF</span></div>
+      <div><span class="caps">RSI 14</span><span class="v">${t.rsi}</span></div>
+      <div><span class="caps">ATR 14</span><span class="v">${t.atr}</span></div>
+      <div><span class="caps">Realized vol · 20d</span><span class="v">${t.hv20}</span></div>
+      <div><span class="caps">Support · resistance</span><span class="v" style="font-size: 15px;">${t.support} · ${t.resistance}</span></div>
+      <div><span class="caps">vs SPY · 3 months</span><span class="v">${t.rsSpy}</span></div>
+      <div><span class="caps">vs SMH · 3 months</span><span class="v">${t.rsSector}</span></div>
     </div>
-    <span class="dline" style="font-size: 11px;">Implied volatility needs the options chain and stays not live. Readings describe; they are not signals.</span>`, { label: 'Technical readings' });
+    <span class="dline" style="font-size: 11px;">Sample bars from the Oct 7 scenario, not market data. Live, these need daily prices licensed to Convexa.</span>`, { label: 'Readings, sample', sample: true })
+    : renderTool('ta', { readingsOnly: true });
   const cards = [
     dataCell({ fam: 'pos', state: 'delayed', w: '100%', h: 'auto' }),
     dataCell({ fam: 'pos', state: 'current', w: '100%', h: 'auto' }),
@@ -122,20 +104,19 @@ function notLiveZone(sample) {
 
 export function hybridDeskBody({ minHeight = 3200, scheme = 'dark', sample = false } = {}) {
   const legend = `<section class="hd-legend" aria-label="Data on this page"><span class="caps" style="color: var(--phosphor);">On this page</span>
-    <span style="display: inline-flex; gap: 6px; align-items: center;">${stateTag('current', 'Updated')}<span class="n">3</span></span>
-    <span style="display: inline-flex; gap: 6px; align-items: center;">${stateTag('delayed', 'Delayed by source')}<span class="n">3</span></span>
-    <span style="display: inline-flex; gap: 6px; align-items: center;">${stateTag('computed', 'Computed')}<span class="n">2</span></span>
-    <span style="display: inline-flex; gap: 6px; align-items: center;">${stateTag(sample ? 'sample' : 'notLive', sample ? 'Sample' : 'Not live')}<span class="n">9</span></span>
+    <span style="display: inline-flex; gap: 6px; align-items: center;">${stateTag('current', 'Updated')}<span class="n">4</span></span>
+    <span style="display: inline-flex; gap: 6px; align-items: center;">${stateTag('delayed', 'Delayed by source')}<span class="n">2</span></span>
+    <span style="display: inline-flex; gap: 6px; align-items: center;">${stateTag('thirdParty', 'Live · TradingView')}<span class="n">1</span></span>
+    <span style="display: inline-flex; gap: 6px; align-items: center;">${stateTag(sample ? 'sample' : 'notLive', sample ? 'Sample' : 'Not live')}<span class="n">10</span></span>
     <span style="flex: 1 1 auto;"></span>
-    <span style="display: inline-flex; gap: 8px; align-items: center; font-size: 12px; color: var(--steel);">Options panels<span class="hd-seg" role="group" aria-label="Options panels"><button type="button" aria-pressed="${!sample}">Explain</button><button type="button" aria-pressed="${sample}">Show sample</button></span></span></section>`;
+    <span style="display: inline-flex; gap: 8px; align-items: center; font-size: 12px; color: var(--steel);">Not-live panels<span class="hd-seg" role="group" aria-label="Not-live panels"><button type="button" aria-pressed="${!sample}">Explain</button><button type="button" aria-pressed="${sample}">Show sample</button></span></span></section>`;
   const mast = `<div class="hd-mast">
     <div class="who">
       <div style="display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;"><h1 class="display" style="margin: 0; font-size: clamp(32px, 3vw, 44px); letter-spacing: -0.02em;">${NVDA.symbol}</h1><span class="steel" style="font-size: 14px;">${NVDA.name} · ${NVDA.venue} · ${NVDA.sector}</span></div>
-      <div style="display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap;"><span class="mono" style="font-size: 22px; font-weight: 500;">${NVDA.close}</span>${stateTag('delayed', `Close · ${NVDA.closeDate}`)}<span class="mono" style="font-size: 13px;">${NVDA.change}</span><span class="steel" style="font-size: 12px;">on the day</span></div>
-      <div style="max-width: 360px;">${rangeBar(NVDA.pos52, { median: 58, lo: '$164.27', md: '52 weeks', hi: '$243.37', aria: 'Close at 75% of its 52-week range, 164.27 to 243.37' })}</div>
+      <p class="dline" style="margin: 0; max-width: 64ch; font-size: 13px;">No price of Convexa’s own on this site: the daily chart below is TradingView’s, with US prices delayed. Options-based panels further down are not live.</p>
     </div>
     <div class="act"><nav aria-label="NVDA" class="hd-tabs"><a href="/ticker/NVDA" aria-current="page">Overview</a><a href="/ticker/NVDA/technical-analysis">Technical</a><a href="/ticker/NVDA/research">Research</a></nav><a href="/ticker/NVDA/research" class="btn primary lg">Read the NVDA note</a></div>
   </div>
   <nav aria-label="Quick symbols" class="hd-syms">${['SPY', 'QQQ', 'IWM', 'NVDA', 'TSLA', 'AAPL', 'MSFT', 'AMD'].map((s) => `<a href="/ticker/${s}"${s === 'NVDA' ? ' aria-current="true"' : ''}>${s}</a>`).join('')}</nav>`;
-  return v4Page({ scheme, minHeight, active: 'ticker', label: 'NVDA desk', main: `<div class="wrap hd">${mast}${legend}${liveZone()}${notLiveZone(sample)}<p class="dline" style="margin: 0;">Research and tools, not investment advice. Figures on this board are illustrative design values.</p></div>` });
+  return v4Page({ scheme, minHeight, active: 'ticker', label: 'NVDA desk', main: `<div class="wrap hd">${mast}${legend}${liveZone(sample)}${notLiveZone(sample)}<p class="dline" style="margin: 0;">Research and tools, not investment advice. Figures on this board are illustrative design values.</p></div>` });
 }

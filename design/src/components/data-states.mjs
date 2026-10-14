@@ -2,9 +2,9 @@
 // all fourteen states from data/states.mjs. The library renders them from the registry; the state
 // matrix and the hybrid desk call the same functions, so the three can never disagree.
 import { icon } from '../lib.mjs';
-import { COMPUTED, DATA_STATES, FAMILIES, LOCAL, STATE_ROWS, STREAM } from '../data/states.mjs';
+import { COMPUTED, DATA_STATES, FAMILIES, LOCAL, STATE_ROWS, STREAM, THIRD } from '../data/states.mjs';
 
-const ROW = Object.fromEntries([...STATE_ROWS, STREAM, COMPUTED, LOCAL].map((r) => [r.key, r]));
+const ROW = Object.fromEntries([...STATE_ROWS, STREAM, COMPUTED, LOCAL, THIRD].map((r) => [r.key, r]));
 export const STATE_BY_KEY = ROW;
 
 /** The state tag: word + glyph + treatment. Never hue alone. */
@@ -30,9 +30,11 @@ export const BUILD_STATUS = {
   blocked: { glyph: 'notlive', note: 'needs a daily price history licensed for public display' },
 };
 export function statusChip(status) {
+  // "live (TradingView chart)" → the live chip with its qualifier; "build / verify" → two chips.
   const parts = String(status).split(/\s*\/\s*/);
-  return parts.map((s) => `<span class="bstat s-${s}">${icon(BUILD_STATUS[s]?.glyph || 'info', 12)}${s}</span>`).join('');
+  return parts.map((p) => { const m = p.match(/^(\w+)\s*\(([^)]+)\)$/); const s = m ? m[1] : p; return `<span class="bstat s-${s}">${icon(BUILD_STATUS[s]?.glyph || 'info', 12)}${s}${m ? ` · ${m[2]}` : ''}</span>`; }).join('');
 }
+export const statusKeys = (status) => String(status).split(/\s*\/\s*/).map((p) => p.replace(/\s*\(.*\)$/, ''));
 
 // ---- marks ------------------------------------------------------------------------------------
 const FILINGS = [['Oct 9', '8-K', 'Item 5.02 · officer change'], ['Sep 24', '8-K', 'Item 5.07 · shareholder vote'], ['Aug 27', '10-Q', 'Quarter to Jul 27'], ['Aug 27', '8-K', 'Item 2.02 · results']];
@@ -146,6 +148,7 @@ export const tagSpec = {
 export const tagStates = [
   ...STATE_ROWS.filter((r) => r.kind !== 'none').map((r) => ({ label: r.name, props: { state: r.key } })),
   { label: 'Computed live', props: { state: 'computed' } },
+  { label: 'Live · third party', props: { state: 'thirdParty' } },
   { label: 'Live stream (paid feed only)', props: { state: 'live' } },
   { label: 'Provenance · primary', props: { prov: ['U.S. Treasury · par yield curve', 'solid'] } },
   { label: 'Provenance · third party', props: { prov: ['StockAnalysis · untraced', 'dotted'] } },
@@ -160,4 +163,4 @@ export const familyEntries = FAMILIES.map((f) => ({
   render: (p) => dataCell(p),
 }));
 
-export { STATE_ROWS, FAMILIES, DATA_STATES, STREAM, COMPUTED, LOCAL };
+export { STATE_ROWS, FAMILIES, DATA_STATES, STREAM, COMPUTED, LOCAL, THIRD };

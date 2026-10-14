@@ -30,7 +30,7 @@ export const COVERAGE = [
   ['Landing', 'V4Landing', 'V4Landing390', 'V4LandingLight', G('token swap'), G('stacks under 1100'), 'V4LandingStates', 'Landing, Landing834, Landing390, LandingLight'],
   ['Ticker desk (hybrid)', 'V4HybridDesk', 'V4HybridDesk390', 'V4DeskLight', 'V4HybridDesk390Light', 'V4HybridDesk834', 'V4DeskStates', 'Main, Desk1920/1280/1024/834/390, DeskLight, DeskStates, AiRead'],
   ['Ticker desk · sample on', 'V4HybridDeskSample', PART('V4HybridDesk390', 'one list, sample toggle'), G('token swap'), G('token swap'), G(''), PART('V4StateMatrix', 'sample row'), ''],
-  ['Ticker · Technical tab', PART('V4ToolTa', 'tool sheet'), PART('V4ToolTa', 'phone frame on the sheet'), G('not drawn'), G('not drawn'), G(''), PART('V4DeskStates', 'blocked state'), ''],
+  ['Ticker · Technical tab', 'V4Technical', 'V4Technical390', 'V4TechnicalLight', G('token swap'), G(''), 'V4TechnicalStates', ''],
   ['Ticker · Research (note)', 'V4NoteView', 'V4NoteView390', 'V4NoteViewLight', 'V4NoteView390Light', G(''), 'V4NoteStates', ''],
   ['Ticker · Research panels', 'V4TickerResearch', 'V4TickerResearch390', 'V4TickerResearchLight', G('token swap'), G(''), PART('V4StateMatrix', 'positioning and feed rows'), ''],
   ['Research index', 'V4ResearchIndex', 'V4ResearchIndex390', 'V4ResearchIndexLight', G('token swap'), G(''), G('index loading, no notes, no match, demo not drawn'), ''],

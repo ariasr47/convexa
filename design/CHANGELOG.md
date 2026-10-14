@@ -114,3 +114,16 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
   calendar's review-trigger chips).
 - **Frame heights are measured**, not estimated, so no board clips its content.
 
+## 2026-10-13 · v4 — TradingView's chart adopted (REVIEW Q-1 resolved by the owner)
+
+- **The Technical tab shows TradingView's daily chart as TradingView's** (canon Amendments row
+  “Third-party embeds”): “NVDA daily chart”, a dotted chip “Chart by TradingView · US prices delayed”,
+  the frame with TradingView's own palette and attribution, the privacy note. Loading holds the final
+  size with a 1px border; a blocked loader shows the shipped info alert; demo keeps the sample bars;
+  the technical-rating gauge is not embedded. New route boards V4Technical (+390, light, states).
+- **The split stays visible:** a chart by TradingView (live, display-only) beside readings Convexa would
+  compute (blocked until Convexa has a feed licensed to it), on the desk and the TA tool sheet. The
+  desk shows no close of its own. The signal track record stays blocked.
+- **New state tag “Live · TradingView”** (dotted, like the third-party provenance chip). Supersedes the
+  `[EOD PRICE SOURCE]` placeholders and the “blocked” Technical tab of waves 1–3.
+

@@ -1,7 +1,7 @@
 // v4 · Data states — the spec sheets: the widget source map and the state matrix (desktop, phone).
 import { icon } from '../../lib.mjs';
-import { SOURCE_MAP, STATE_ROWS, FAMILIES, COMPUTED, LOCAL, STREAM } from '../../data/index.mjs';
-import { dataCell, provChip, stateTag, statusChip, BUILD_STATUS } from '../../components/data-states.mjs';
+import { SOURCE_MAP, STATE_ROWS, FAMILIES, COMPUTED, LOCAL, STREAM, THIRD } from '../../data/index.mjs';
+import { dataCell, provChip, stateTag, statusChip, statusKeys, BUILD_STATUS } from '../../components/data-states.mjs';
 
 export const SHEET_CSS = `
   .sheet { padding: 48px 64px 64px; display: flex; flex-direction: column; gap: 32px; box-sizing: border-box; }
@@ -24,7 +24,7 @@ export function sheetHead(title, lead, trace = '') {
   return `<header><h1 class="display">${title}</h1><p class="lead">${lead}</p>${trace ? `<p class="trace">Resolves ${trace}</p>` : ''}</header>`;
 }
 
-const LEGEND_EXTRA = [COMPUTED, LOCAL, STREAM];
+const LEGEND_EXTRA = [COMPUTED, THIRD, LOCAL, STREAM];
 export function stateLegend() {
   return `<div class="legend">${[...STATE_ROWS, ...LEGEND_EXTRA].map((r) => `<div>${stateTag(r.key, r.key === 'current' ? 'Updated Oct 9' : '', { lg: true })}<span style="font-size: 13px; font-weight: 600;">${r.name}</span><span style="font-size: 12px; color: var(--steel); line-height: 1.45;">${r.rule}</span></div>`).join('')}</div>`;
 }
@@ -35,14 +35,14 @@ export function sourceMapBody({ minHeight = 4600, scheme = 'dark' } = {}) {
   const byStatus = {};
   for (const r of all) {
     byState[r[6]] = (byState[r[6]] || 0) + 1;
-    for (const s of String(r[5]).split(/\s*\/\s*/)) byStatus[s] = (byStatus[s] || 0) + 1;
+    for (const s of statusKeys(r[5])) byStatus[s] = (byStatus[s] || 0) + 1;
   }
-  const stateOrder = ['current', 'delayed', 'computed', 'local', 'notLive', 'paused', 'sample', 'demo'];
+  const stateOrder = ['current', 'delayed', 'computed', 'thirdParty', 'local', 'notLive', 'paused', 'sample', 'demo'];
   const tally = `<div class="tally">${stateOrder.filter((k) => byState[k]).map((k) => `<span>${stateTag(k, '', { lg: true })}${byState[k]}</span>`).join('')}</div>`;
   const statusTally = `<div class="tally">${['live', 'switch', 'build', 'verify', 'blocked', 'not live', '—'].filter((k) => byStatus[k]).map((k) => `<span>${BUILD_STATUS[k] ? statusChip(k) : `<span class="bstat">${k === 'not live' ? icon('notlive', 12) : ''}${k === '—' ? 'no data source' : k}</span>`}${byStatus[k]}</span>`).join('')}</div>`;
-  const table = `<table class="smap"><thead><tr><th style="width: 19%;">Widget · what it shows</th><th style="width: 15%;">Needs</th><th style="width: 12%;">Source</th><th style="width: 11%;">Delay</th><th style="width: 9%;">Build status</th><th style="width: 13%;">Hybrid site</th><th style="width: 11%;">Labelled with</th><th>Today, if different</th></tr></thead><tbody>${SOURCE_MAP.map((g) => `<tr class="grp"><td colspan="8">${g.screen}</td></tr>${g.rows.map(([w, shows, needs, src, delay, status, state, tagText, chipText, today]) => `<tr><td class="w"><b>${w}</b>${shows}</td><td>${needs}</td><td>${src}</td><td>${delay}</td><td><span style="display: flex; flex-wrap: wrap; gap: 4px;">${status === '—' ? '<span class="steel">—</span>' : status === 'not live' ? `<span class="bstat">${icon('notlive', 12)}not live</span>` : statusChip(status)}</span></td><td><span class="stagwrap">${stateTag(state, tagText && state !== 'local' ? tagText : '')}</span></td><td>${chipText ? provChip(chipText, /Sample|sample/.test(chipText) ? 'dashed' : 'solid') : tagText && state === 'local' ? `<span class="steel">${tagText}</span>` : '<span class="steel">—</span>'}</td><td>${today || ''}</td></tr>`).join('')}`).join('')}</tbody></table>`;
+  const table = `<table class="smap"><thead><tr><th style="width: 19%;">Widget · what it shows</th><th style="width: 15%;">Needs</th><th style="width: 12%;">Source</th><th style="width: 11%;">Delay</th><th style="width: 9%;">Build status</th><th style="width: 13%;">Hybrid site</th><th style="width: 11%;">Labelled with</th><th>Today, if different</th></tr></thead><tbody>${SOURCE_MAP.map((g) => `<tr class="grp"><td colspan="8">${g.screen}</td></tr>${g.rows.map(([w, shows, needs, src, delay, status, state, tagText, chipText, today]) => `<tr><td class="w"><b>${w}</b>${shows}</td><td>${needs}</td><td>${src}</td><td>${delay}</td><td><span style="display: flex; flex-wrap: wrap; gap: 4px;">${status === '—' ? '<span class="steel">—</span>' : status === 'not live' ? `<span class="bstat">${icon('notlive', 12)}not live</span>` : statusChip(status)}</span></td><td><span class="stagwrap">${stateTag(state, tagText && state !== 'local' ? tagText : '')}</span></td><td>${chipText ? provChip(chipText, /Sample|sample/.test(chipText) ? 'dashed' : /TradingView/.test(chipText) ? 'dotted' : 'solid') : tagText && state === 'local' ? `<span class="steel">${tagText}</span>` : '<span class="steel">—</span>'}</td><td>${today || ''}</td></tr>`).join('')}`).join('')}</tbody></table>`;
   return `<div class="v4" data-scheme="${scheme}" style="width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor);"><div class="sheet">
-    ${sheetHead('Where every number comes from', 'Every widget on every screen: what it shows, what it needs, where that comes from, how late it arrives, and what the hybrid site shows once SEC_USER_AGENT is set. Live where free public data reaches; honestly not live where the paid options feed is needed. Build status uses docs/public-data/CANDIDATES.md’s words. “[EOD PRICE SOURCE]” is an open question, not a fact: no daily price source licensed for public display has been chosen.', 'X-01 · X-02 · X-03 · X-08 · DS-01 · DS-02 · DS-03 · DS-04')}
+    ${sheetHead('Where every number comes from', 'Every widget on every screen: what it shows, what it needs, where that comes from, how late it arrives, and what the hybrid site shows once SEC_USER_AGENT is set. Live where free public data reaches; honestly not live where the paid options feed is needed. Build status uses docs/public-data/CANDIDATES.md’s words. Daily charts are TradingView’s widget (adopted 2026-10-13), display-only; anything Convexa would compute from prices stays blocked until it has a feed licensed to it.', 'X-01 · X-02 · X-03 · X-08 · DS-01 · DS-02 · DS-03 · DS-04')}
     <section aria-label="Totals" style="display: flex; flex-direction: column; gap: 14px;"><span class="caps">${all.length} widgets · by state in the hybrid site</span>${tally}<span class="caps" style="margin-top: 8px;">by build status</span>${statusTally}</section>
     <section aria-label="State vocabulary" style="display: flex; flex-direction: column; gap: 12px;"><span class="caps">The vocabulary: a word and a glyph for each state, never hue alone</span>${stateLegend()}</section>
     <section aria-label="Source map">${table}</section>

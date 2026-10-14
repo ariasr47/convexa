@@ -26,6 +26,7 @@ import { SHELL_CSS, deskStatesBody as deskStatesV4Body, landingBody as landingV4
 import { APP_CSS, alertsBody as alertsV4Body, alertsStatesBody, positionsBody as positionsV4Body, positionsStatesBody, scannerBody as scannerV4Body, scannerStatesBody, settingsBody as settingsV4Body, settingsStatesBody } from './v4/app-pages.mjs';
 import { NOTES_CSS, noteStatesBody, noteViewBody, researchIndexBody } from './v4/notes.mjs';
 import { COVERAGE_CSS, coverageBody } from './v4/coverage.mjs';
+import { technicalBody, technicalStatesBody } from './v4/technical.mjs';
 import { DIALOGS, DOCS_CSS, blogBody as blogV4Body, dialogBody, dialogStatesBody, docsStatesBody, labBody as labV4Body, methodologyBody as methodologyV4Body, notFoundBody as notFoundV4Body, operatorBody as operatorV4Body, operatorStatesBody } from './v4/docs-dialogs.mjs';
 
 const s = (title, group, desc, body, css = '', extra = {}) => ({ title, group, desc, body, css, ...extra });
@@ -77,6 +78,8 @@ export const screens = {
       'v4-landing': s('Landing', g, 'One offer, one action, the model as the hero, labelled as a sample.', (o) => landingV4Body(o), V),
       'v4-landing-states': s('Landing · states', g, 'Reduced motion, the live band’s failures, demo, closed sign-ups.', (o) => landingStatesBody(o), V),
       'v4-desk-states': s('Hybrid desk · states', g, 'Each source failing, off, unset or unchosen.', (o) => deskStatesV4Body(o), V),
+      'v4-technical': s('Technical tab · NVDA', g, 'TradingView’s daily chart, shown as TradingView’s (shipped 2026-10-13).', (o) => technicalBody(o), V),
+      'v4-technical-states': s('Technical tab · states', g, 'Loading, blocked loader, demo, no note, what is not embedded.', (o) => technicalStatesBody(o), V),
       'v4-scanner': s('Scanner', g, 'Not live by default; a labelled sample scan; the last real board as a dated archive.', (o) => scannerV4Body(o), V),
       'v4-scanner-states': s('Scanner · states', g, 'Explain, archive, loading, empty, filtered, signed out, demo, keyboard preview.', (o) => scannerStatesBody(o), V),
       'v4-positions': s('Positions', g, 'Paper book with honest mark bases.', (o) => positionsV4Body(o), V),

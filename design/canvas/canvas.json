@@ -398,7 +398,7 @@
       "x": 0,
       "y": 0,
       "w": 1920,
-      "h": 6310,
+      "h": 6450,
       "page": "v4-data"
     },
     {
@@ -407,7 +407,7 @@
       "x": 2040,
       "y": 0,
       "w": 1440,
-      "h": 2710,
+      "h": 2990,
       "page": "v4-data",
       "expand": "fill"
     },
@@ -417,7 +417,7 @@
       "x": 3600,
       "y": 0,
       "w": 1440,
-      "h": 2710,
+      "h": 2990,
       "page": "v4-data",
       "expand": "fill"
     },
@@ -427,7 +427,7 @@
       "x": 5160,
       "y": 0,
       "w": 390,
-      "h": 4210,
+      "h": 4340,
       "page": "v4-data"
     },
     {
@@ -454,7 +454,7 @@
       "x": 5670,
       "y": 0,
       "w": 834,
-      "h": 4060,
+      "h": 4260,
       "page": "v4-data"
     },
     {
@@ -463,7 +463,7 @@
       "x": 6624,
       "y": 0,
       "w": 390,
-      "h": 4210,
+      "h": 4340,
       "page": "v4-data"
     },
     {
@@ -472,7 +472,7 @@
       "x": 0,
       "y": 0,
       "w": 1920,
-      "h": 2390,
+      "h": 2400,
       "page": "v4-tools"
     },
     {
@@ -511,7 +511,7 @@
       "x": 6720,
       "y": 0,
       "w": 1440,
-      "h": 2250,
+      "h": 2230,
       "page": "v4-tools",
       "expand": "fill"
     },
@@ -584,7 +584,7 @@
       "x": 3120,
       "y": 7300,
       "w": 1440,
-      "h": 2690,
+      "h": 3100,
       "page": "v4-tools"
     },
     {
@@ -678,7 +678,7 @@
       "x": 0,
       "y": 7560,
       "w": 1440,
-      "h": 2710,
+      "h": 2990,
       "page": "v4-app",
       "expand": "fill"
     },
@@ -688,14 +688,52 @@
       "x": 1560,
       "y": 7560,
       "w": 1440,
-      "h": 2250,
+      "h": 2690,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4Technical.dc.html",
+      "title": "v4 · Ticker · Technical tab (TradingView) · desktop",
+      "x": 0,
+      "y": 10970,
+      "w": 1440,
+      "h": 1270,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4Technical390.dc.html",
+      "title": "v4 · Ticker · Technical tab (TradingView) · phone",
+      "x": 1560,
+      "y": 10970,
+      "w": 390,
+      "h": 1370,
+      "page": "v4-app"
+    },
+    {
+      "file": "V4TechnicalLight.dc.html",
+      "title": "v4 · Ticker · Technical tab (TradingView) · light",
+      "x": 2070,
+      "y": 10970,
+      "w": 1440,
+      "h": 1270,
+      "page": "v4-app",
+      "expand": "fill"
+    },
+    {
+      "file": "V4TechnicalStates.dc.html",
+      "title": "v4 · Ticker · Technical tab (TradingView) · states",
+      "x": 3630,
+      "y": 10970,
+      "w": 1440,
+      "h": 1320,
       "page": "v4-app"
     },
     {
       "file": "V4Scanner.dc.html",
       "title": "v4 · Scanner · desktop",
       "x": 0,
-      "y": 10690,
+      "y": 12760,
       "w": 1440,
       "h": 1310,
       "page": "v4-app",
@@ -705,7 +743,7 @@
       "file": "V4Scanner390.dc.html",
       "title": "v4 · Scanner · phone",
       "x": 1560,
-      "y": 10690,
+      "y": 12760,
       "w": 390,
       "h": 1810,
       "page": "v4-app"
@@ -714,7 +752,7 @@
       "file": "V4ScannerLight.dc.html",
       "title": "v4 · Scanner · light",
       "x": 2070,
-      "y": 10690,
+      "y": 12760,
       "w": 1440,
       "h": 1310,
       "page": "v4-app",
@@ -724,7 +762,7 @@
       "file": "V4ScannerStates.dc.html",
       "title": "v4 · Scanner · states",
       "x": 3630,
-      "y": 10690,
+      "y": 12760,
       "w": 1440,
       "h": 1790,
       "page": "v4-app"
@@ -733,7 +771,7 @@
       "file": "V4Positions.dc.html",
       "title": "v4 · Positions · desktop",
       "x": 0,
-      "y": 12920,
+      "y": 14990,
       "w": 1440,
       "h": 1070,
       "page": "v4-app",
@@ -743,7 +781,7 @@
       "file": "V4Positions390.dc.html",
       "title": "v4 · Positions · phone",
       "x": 1560,
-      "y": 12920,
+      "y": 14990,
       "w": 390,
       "h": 1910,
       "page": "v4-app"
@@ -752,7 +790,7 @@
       "file": "V4PositionsLight.dc.html",
       "title": "v4 · Positions · light",
       "x": 2070,
-      "y": 12920,
+      "y": 14990,
       "w": 1440,
       "h": 1070,
       "page": "v4-app",
@@ -762,7 +800,7 @@
       "file": "V4PositionsSignedOut.dc.html",
       "title": "v4 · Positions · signed out (wall)",
       "x": 3630,
-      "y": 12920,
+      "y": 14990,
       "w": 1440,
       "h": 710,
       "page": "v4-app",
@@ -772,7 +810,7 @@
       "file": "V4PositionsStates.dc.html",
       "title": "v4 · Positions · states",
       "x": 5190,
-      "y": 12920,
+      "y": 14990,
       "w": 1440,
       "h": 1560,
       "page": "v4-app"
@@ -781,7 +819,7 @@
       "file": "V4Alerts.dc.html",
       "title": "v4 · Alerts · desktop",
       "x": 0,
-      "y": 15250,
+      "y": 17320,
       "w": 1440,
       "h": 1010,
       "page": "v4-app",
@@ -791,7 +829,7 @@
       "file": "V4Alerts390.dc.html",
       "title": "v4 · Alerts · phone",
       "x": 1560,
-      "y": 15250,
+      "y": 17320,
       "w": 390,
       "h": 1890,
       "page": "v4-app"
@@ -800,7 +838,7 @@
       "file": "V4AlertsLight.dc.html",
       "title": "v4 · Alerts · light",
       "x": 2070,
-      "y": 15250,
+      "y": 17320,
       "w": 1440,
       "h": 1010,
       "page": "v4-app",
@@ -810,7 +848,7 @@
       "file": "V4AlertsStates.dc.html",
       "title": "v4 · Alerts · states",
       "x": 3630,
-      "y": 15250,
+      "y": 17320,
       "w": 1440,
       "h": 1280,
       "page": "v4-app"
@@ -819,7 +857,7 @@
       "file": "V4Settings.dc.html",
       "title": "v4 · Settings · desktop",
       "x": 0,
-      "y": 17560,
+      "y": 19630,
       "w": 1440,
       "h": 1650,
       "page": "v4-app",
@@ -829,7 +867,7 @@
       "file": "V4Settings390.dc.html",
       "title": "v4 · Settings · phone",
       "x": 1560,
-      "y": 17560,
+      "y": 19630,
       "w": 390,
       "h": 2090,
       "page": "v4-app"
@@ -838,7 +876,7 @@
       "file": "V4SettingsLight.dc.html",
       "title": "v4 · Settings · light",
       "x": 2070,
-      "y": 17560,
+      "y": 19630,
       "w": 1440,
       "h": 1650,
       "page": "v4-app",
@@ -848,7 +886,7 @@
       "file": "V4SettingsSignedOut.dc.html",
       "title": "v4 · Settings · signed out",
       "x": 3630,
-      "y": 17560,
+      "y": 19630,
       "w": 1440,
       "h": 1320,
       "page": "v4-app",
@@ -858,7 +896,7 @@
       "file": "V4SettingsStates.dc.html",
       "title": "v4 · Settings · states",
       "x": 5190,
-      "y": 17560,
+      "y": 19630,
       "w": 1440,
       "h": 1400,
       "page": "v4-app"
@@ -867,9 +905,9 @@
       "file": "V4Methodology.dc.html",
       "title": "v4 · Methodology · desktop",
       "x": 0,
-      "y": 20070,
+      "y": 22140,
       "w": 1440,
-      "h": 1790,
+      "h": 1930,
       "page": "v4-app",
       "expand": "fill"
     },
@@ -877,18 +915,18 @@
       "file": "V4Methodology390.dc.html",
       "title": "v4 · Methodology · phone",
       "x": 1560,
-      "y": 20070,
+      "y": 22140,
       "w": 390,
-      "h": 2400,
+      "h": 2600,
       "page": "v4-app"
     },
     {
       "file": "V4MethodologyLight.dc.html",
       "title": "v4 · Methodology · light",
       "x": 2070,
-      "y": 20070,
+      "y": 22140,
       "w": 1440,
-      "h": 1790,
+      "h": 1930,
       "page": "v4-app",
       "expand": "fill"
     },
@@ -896,7 +934,7 @@
       "file": "V4MethodologyStates.dc.html",
       "title": "v4 · Methodology · states",
       "x": 3630,
-      "y": 20070,
+      "y": 22140,
       "w": 1440,
       "h": 1360,
       "page": "v4-app"
@@ -905,7 +943,7 @@
       "file": "V4Blog.dc.html",
       "title": "v4 · Blog · desktop",
       "x": 0,
-      "y": 22890,
+      "y": 25160,
       "w": 1440,
       "h": 740,
       "page": "v4-app",
@@ -915,7 +953,7 @@
       "file": "V4Blog390.dc.html",
       "title": "v4 · Blog · phone",
       "x": 1560,
-      "y": 22890,
+      "y": 25160,
       "w": 390,
       "h": 950,
       "page": "v4-app"
@@ -924,7 +962,7 @@
       "file": "V4BlogLight.dc.html",
       "title": "v4 · Blog · light",
       "x": 2070,
-      "y": 22890,
+      "y": 25160,
       "w": 1440,
       "h": 740,
       "page": "v4-app",
@@ -934,7 +972,7 @@
       "file": "V4Lab.dc.html",
       "title": "v4 · Lab · desktop",
       "x": 0,
-      "y": 24260,
+      "y": 26530,
       "w": 1440,
       "h": 1110,
       "page": "v4-app",
@@ -944,7 +982,7 @@
       "file": "V4Lab390.dc.html",
       "title": "v4 · Lab · phone",
       "x": 1560,
-      "y": 24260,
+      "y": 26530,
       "w": 390,
       "h": 2000,
       "page": "v4-app"
@@ -953,7 +991,7 @@
       "file": "V4LabLight.dc.html",
       "title": "v4 · Lab · light",
       "x": 2070,
-      "y": 24260,
+      "y": 26530,
       "w": 1440,
       "h": 1110,
       "page": "v4-app",
@@ -963,7 +1001,7 @@
       "file": "V4NotFound.dc.html",
       "title": "v4 · 404 and route fallback · desktop",
       "x": 0,
-      "y": 26680,
+      "y": 28950,
       "w": 1440,
       "h": 700,
       "page": "v4-app",
@@ -973,7 +1011,7 @@
       "file": "V4NotFound390.dc.html",
       "title": "v4 · 404 and route fallback · phone",
       "x": 1560,
-      "y": 26680,
+      "y": 28950,
       "w": 390,
       "h": 900,
       "page": "v4-app"
@@ -982,7 +1020,7 @@
       "file": "V4NotFoundLight.dc.html",
       "title": "v4 · 404 and route fallback · light",
       "x": 2070,
-      "y": 26680,
+      "y": 28950,
       "w": 1440,
       "h": 700,
       "page": "v4-app",
@@ -992,7 +1030,7 @@
       "file": "V4SignIn.dc.html",
       "title": "v4 · Sign in and the wall · desktop",
       "x": 0,
-      "y": 28000,
+      "y": 30270,
       "w": 1440,
       "h": 1000,
       "page": "v4-app",
@@ -1002,7 +1040,7 @@
       "file": "V4SignIn390.dc.html",
       "title": "v4 · Sign in and the wall · phone",
       "x": 1560,
-      "y": 28000,
+      "y": 30270,
       "w": 390,
       "h": 1000,
       "page": "v4-app"
@@ -1011,7 +1049,7 @@
       "file": "V4SignInLight.dc.html",
       "title": "v4 · Sign in and the wall · light",
       "x": 2070,
-      "y": 28000,
+      "y": 30270,
       "w": 1440,
       "h": 1000,
       "page": "v4-app",
@@ -1021,7 +1059,7 @@
       "file": "V4SignInStates.dc.html",
       "title": "v4 · Sign in and the wall · states",
       "x": 3630,
-      "y": 28000,
+      "y": 30270,
       "w": 1440,
       "h": 1330,
       "page": "v4-app"
@@ -1030,7 +1068,7 @@
       "file": "V4TradeEntry.dc.html",
       "title": "v4 · Trade entry · desktop",
       "x": 0,
-      "y": 29750,
+      "y": 32020,
       "w": 1440,
       "h": 1100,
       "page": "v4-app",
@@ -1040,7 +1078,7 @@
       "file": "V4TradeEntry390.dc.html",
       "title": "v4 · Trade entry · phone",
       "x": 1560,
-      "y": 29750,
+      "y": 32020,
       "w": 390,
       "h": 1300,
       "page": "v4-app"
@@ -1049,7 +1087,7 @@
       "file": "V4TradeEntryLight.dc.html",
       "title": "v4 · Trade entry · light",
       "x": 2070,
-      "y": 29750,
+      "y": 32020,
       "w": 1440,
       "h": 1100,
       "page": "v4-app",
@@ -1059,7 +1097,7 @@
       "file": "V4TradeEntryStates.dc.html",
       "title": "v4 · Trade entry · states",
       "x": 3630,
-      "y": 29750,
+      "y": 32020,
       "w": 1440,
       "h": 1400,
       "page": "v4-app"
@@ -1068,7 +1106,7 @@
       "file": "V4OrderDetail.dc.html",
       "title": "v4 · Order detail · desktop",
       "x": 0,
-      "y": 31570,
+      "y": 33840,
       "w": 1440,
       "h": 1000,
       "page": "v4-app",
@@ -1078,7 +1116,7 @@
       "file": "V4OrderDetail390.dc.html",
       "title": "v4 · Order detail · phone",
       "x": 1560,
-      "y": 31570,
+      "y": 33840,
       "w": 390,
       "h": 1100,
       "page": "v4-app"
@@ -1087,7 +1125,7 @@
       "file": "V4OrderDetailLight.dc.html",
       "title": "v4 · Order detail · light",
       "x": 2070,
-      "y": 31570,
+      "y": 33840,
       "w": 1440,
       "h": 1000,
       "page": "v4-app",
@@ -1097,7 +1135,7 @@
       "file": "V4OrderDetailStates.dc.html",
       "title": "v4 · Order detail · states",
       "x": 3630,
-      "y": 31570,
+      "y": 33840,
       "w": 1440,
       "h": 660,
       "page": "v4-app"
@@ -1106,7 +1144,7 @@
       "file": "V4WhatsSent.dc.html",
       "title": "v4 · What’s sent drawer · desktop",
       "x": 0,
-      "y": 33090,
+      "y": 35360,
       "w": 1440,
       "h": 1120,
       "page": "v4-app",
@@ -1116,7 +1154,7 @@
       "file": "V4WhatsSent390.dc.html",
       "title": "v4 · What’s sent drawer · phone",
       "x": 1560,
-      "y": 33090,
+      "y": 35360,
       "w": 390,
       "h": 1100,
       "page": "v4-app"
@@ -1125,7 +1163,7 @@
       "file": "V4WhatsSentLight.dc.html",
       "title": "v4 · What’s sent drawer · light",
       "x": 2070,
-      "y": 33090,
+      "y": 35360,
       "w": 1440,
       "h": 1120,
       "page": "v4-app",
@@ -1135,7 +1173,7 @@
       "file": "V4WhatsSentStates.dc.html",
       "title": "v4 · What’s sent drawer · states",
       "x": 3630,
-      "y": 33090,
+      "y": 35360,
       "w": 1440,
       "h": 1290,
       "page": "v4-app"
@@ -1144,7 +1182,7 @@
       "file": "V4Persona.dc.html",
       "title": "v4 · Persona · desktop",
       "x": 0,
-      "y": 34800,
+      "y": 37070,
       "w": 1440,
       "h": 1000,
       "page": "v4-app",
@@ -1154,7 +1192,7 @@
       "file": "V4Persona390.dc.html",
       "title": "v4 · Persona · phone",
       "x": 1560,
-      "y": 34800,
+      "y": 37070,
       "w": 390,
       "h": 1100,
       "page": "v4-app"
@@ -1163,7 +1201,7 @@
       "file": "V4PersonaLight.dc.html",
       "title": "v4 · Persona · light",
       "x": 2070,
-      "y": 34800,
+      "y": 37070,
       "w": 1440,
       "h": 1000,
       "page": "v4-app",
@@ -1173,7 +1211,7 @@
       "file": "V4PersonaStates.dc.html",
       "title": "v4 · Persona · states",
       "x": 3630,
-      "y": 34800,
+      "y": 37070,
       "w": 1440,
       "h": 760,
       "page": "v4-app"
@@ -1182,7 +1220,7 @@
       "file": "V4ViewEditor.dc.html",
       "title": "v4 · Scan view editor · desktop",
       "x": 0,
-      "y": 36320,
+      "y": 38590,
       "w": 1440,
       "h": 1000,
       "page": "v4-app",
@@ -1192,7 +1230,7 @@
       "file": "V4ViewEditor390.dc.html",
       "title": "v4 · Scan view editor · phone",
       "x": 1560,
-      "y": 36320,
+      "y": 38590,
       "w": 390,
       "h": 1200,
       "page": "v4-app"
@@ -1201,7 +1239,7 @@
       "file": "V4ViewEditorLight.dc.html",
       "title": "v4 · Scan view editor · light",
       "x": 2070,
-      "y": 36320,
+      "y": 38590,
       "w": 1440,
       "h": 1000,
       "page": "v4-app",
@@ -1211,7 +1249,7 @@
       "file": "V4ViewEditorStates.dc.html",
       "title": "v4 · Scan view editor · states",
       "x": 3630,
-      "y": 36320,
+      "y": 38590,
       "w": 1440,
       "h": 840,
       "page": "v4-app"
@@ -1220,7 +1258,7 @@
       "file": "V4Operator.dc.html",
       "title": "v4 · Operator · desktop",
       "x": 0,
-      "y": 37940,
+      "y": 40210,
       "w": 1440,
       "h": 730,
       "page": "v4-app",
@@ -1230,7 +1268,7 @@
       "file": "V4Operator390.dc.html",
       "title": "v4 · Operator · phone",
       "x": 1560,
-      "y": 37940,
+      "y": 40210,
       "w": 390,
       "h": 840,
       "page": "v4-app"
@@ -1239,7 +1277,7 @@
       "file": "V4OperatorLight.dc.html",
       "title": "v4 · Operator · light",
       "x": 2070,
-      "y": 37940,
+      "y": 40210,
       "w": 1440,
       "h": 730,
       "page": "v4-app",
@@ -1249,7 +1287,7 @@
       "file": "V4OperatorStates.dc.html",
       "title": "v4 · Operator · states",
       "x": 3630,
-      "y": 37940,
+      "y": 40210,
       "w": 1440,
       "h": 790,
       "page": "v4-app"
@@ -1345,7 +1383,7 @@
       "x": 1020,
       "y": 7840,
       "w": 390,
-      "h": 3110,
+      "h": 3130,
       "page": "v4-research"
     },
     {
@@ -1354,7 +1392,7 @@
       "x": 1530,
       "y": 7840,
       "w": 390,
-      "h": 4400,
+      "h": 4290,
       "page": "v4-research"
     },
     {
@@ -1393,7 +1431,7 @@
       "x": 6720,
       "y": 7840,
       "w": 1440,
-      "h": 2250,
+      "h": 2230,
       "page": "v4-research",
       "expand": "fill"
     },
@@ -1431,7 +1469,7 @@
       "x": 9840,
       "y": 7840,
       "w": 834,
-      "h": 3780,
+      "h": 3790,
       "page": "v4-research"
     },
     {
@@ -1440,7 +1478,7 @@
       "x": 0,
       "y": 0,
       "w": 1920,
-      "h": 1900,
+      "h": 1890,
       "page": "v4-coverage"
     }
   ],
@@ -1774,9 +1812,41 @@
       "text": "v4 · Ticker desk (desktop and phone on v4 · Data states) · states. Resolves X-02, DS-02, DS-03, TKR-03, TKR-05. Findings: design/REVIEW-2026-10-13.md."
     },
     {
+      "id": "find-V4Technical",
+      "x": 0,
+      "y": 10740,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Ticker · Technical tab (TradingView) · desktop. Resolves TKR-05, TL-11, P-7. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4Technical390",
+      "x": 1560,
+      "y": 10740,
+      "w": 390,
+      "page": "v4-app",
+      "text": "v4 · Ticker · Technical tab (TradingView) · phone. Resolves TKR-05, TL-11, P-7. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4TechnicalLight",
+      "x": 2070,
+      "y": 10740,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Ticker · Technical tab (TradingView) · light. Resolves TKR-05, TL-11, P-7. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "find-V4TechnicalStates",
+      "x": 3630,
+      "y": 10740,
+      "w": 640,
+      "page": "v4-app",
+      "text": "v4 · Ticker · Technical tab (TradingView) · states. Resolves TKR-05, TL-11, P-7. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
       "id": "find-V4Scanner",
       "x": 0,
-      "y": 10460,
+      "y": 12530,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Scanner · desktop. Resolves SCN-01–SCN-04, X-11. Findings: design/REVIEW-2026-10-13.md."
@@ -1784,7 +1854,7 @@
     {
       "id": "find-V4Scanner390",
       "x": 1560,
-      "y": 10460,
+      "y": 12530,
       "w": 390,
       "page": "v4-app",
       "text": "v4 · Scanner · phone. Resolves SCN-01–SCN-04, X-11. Findings: design/REVIEW-2026-10-13.md."
@@ -1792,7 +1862,7 @@
     {
       "id": "find-V4ScannerLight",
       "x": 2070,
-      "y": 10460,
+      "y": 12530,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Scanner · light. Resolves SCN-01–SCN-04, X-11. Findings: design/REVIEW-2026-10-13.md."
@@ -1800,7 +1870,7 @@
     {
       "id": "find-V4ScannerStates",
       "x": 3630,
-      "y": 10460,
+      "y": 12530,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Scanner · states. Resolves SCN-01–SCN-04, X-11. Findings: design/REVIEW-2026-10-13.md."
@@ -1808,7 +1878,7 @@
     {
       "id": "find-V4Positions",
       "x": 0,
-      "y": 12690,
+      "y": 14760,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Positions · desktop. Resolves POS-01–POS-04. Findings: design/REVIEW-2026-10-13.md."
@@ -1816,7 +1886,7 @@
     {
       "id": "find-V4Positions390",
       "x": 1560,
-      "y": 12690,
+      "y": 14760,
       "w": 390,
       "page": "v4-app",
       "text": "v4 · Positions · phone. Resolves POS-01–POS-04. Findings: design/REVIEW-2026-10-13.md."
@@ -1824,7 +1894,7 @@
     {
       "id": "find-V4PositionsLight",
       "x": 2070,
-      "y": 12690,
+      "y": 14760,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Positions · light. Resolves POS-01–POS-04. Findings: design/REVIEW-2026-10-13.md."
@@ -1832,7 +1902,7 @@
     {
       "id": "find-V4PositionsSignedOut",
       "x": 3630,
-      "y": 12690,
+      "y": 14760,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Positions · signed out (wall). Resolves POS-01–POS-04. Findings: design/REVIEW-2026-10-13.md."
@@ -1840,7 +1910,7 @@
     {
       "id": "find-V4PositionsStates",
       "x": 5190,
-      "y": 12690,
+      "y": 14760,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Positions · states. Resolves POS-01–POS-04. Findings: design/REVIEW-2026-10-13.md."
@@ -1848,7 +1918,7 @@
     {
       "id": "find-V4Alerts",
       "x": 0,
-      "y": 15020,
+      "y": 17090,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Alerts · desktop. Resolves ALR-01–ALR-03, Q-5. Findings: design/REVIEW-2026-10-13.md."
@@ -1856,7 +1926,7 @@
     {
       "id": "find-V4Alerts390",
       "x": 1560,
-      "y": 15020,
+      "y": 17090,
       "w": 390,
       "page": "v4-app",
       "text": "v4 · Alerts · phone. Resolves ALR-01–ALR-03, Q-5. Findings: design/REVIEW-2026-10-13.md."
@@ -1864,7 +1934,7 @@
     {
       "id": "find-V4AlertsLight",
       "x": 2070,
-      "y": 15020,
+      "y": 17090,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Alerts · light. Resolves ALR-01–ALR-03, Q-5. Findings: design/REVIEW-2026-10-13.md."
@@ -1872,7 +1942,7 @@
     {
       "id": "find-V4AlertsStates",
       "x": 3630,
-      "y": 15020,
+      "y": 17090,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Alerts · states. Resolves ALR-01–ALR-03, Q-5. Findings: design/REVIEW-2026-10-13.md."
@@ -1880,7 +1950,7 @@
     {
       "id": "find-V4Settings",
       "x": 0,
-      "y": 17330,
+      "y": 19400,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Settings · desktop. Resolves SET-01–SET-03. Findings: design/REVIEW-2026-10-13.md."
@@ -1888,7 +1958,7 @@
     {
       "id": "find-V4Settings390",
       "x": 1560,
-      "y": 17330,
+      "y": 19400,
       "w": 390,
       "page": "v4-app",
       "text": "v4 · Settings · phone. Resolves SET-01–SET-03. Findings: design/REVIEW-2026-10-13.md."
@@ -1896,7 +1966,7 @@
     {
       "id": "find-V4SettingsLight",
       "x": 2070,
-      "y": 17330,
+      "y": 19400,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Settings · light. Resolves SET-01–SET-03. Findings: design/REVIEW-2026-10-13.md."
@@ -1904,7 +1974,7 @@
     {
       "id": "find-V4SettingsSignedOut",
       "x": 3630,
-      "y": 17330,
+      "y": 19400,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Settings · signed out. Resolves SET-01–SET-03. Findings: design/REVIEW-2026-10-13.md."
@@ -1912,7 +1982,7 @@
     {
       "id": "find-V4SettingsStates",
       "x": 5190,
-      "y": 17330,
+      "y": 19400,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Settings · states. Resolves SET-01–SET-03. Findings: design/REVIEW-2026-10-13.md."
@@ -1920,7 +1990,7 @@
     {
       "id": "find-V4Methodology",
       "x": 0,
-      "y": 19840,
+      "y": 21910,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Methodology · desktop. Resolves DOC-01, DOC-02. Findings: design/REVIEW-2026-10-13.md."
@@ -1928,7 +1998,7 @@
     {
       "id": "find-V4Methodology390",
       "x": 1560,
-      "y": 19840,
+      "y": 21910,
       "w": 390,
       "page": "v4-app",
       "text": "v4 · Methodology · phone. Resolves DOC-01, DOC-02. Findings: design/REVIEW-2026-10-13.md."
@@ -1936,7 +2006,7 @@
     {
       "id": "find-V4MethodologyLight",
       "x": 2070,
-      "y": 19840,
+      "y": 21910,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Methodology · light. Resolves DOC-01, DOC-02. Findings: design/REVIEW-2026-10-13.md."
@@ -1944,7 +2014,7 @@
     {
       "id": "find-V4MethodologyStates",
       "x": 3630,
-      "y": 19840,
+      "y": 21910,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Methodology · states. Resolves DOC-01, DOC-02. Findings: design/REVIEW-2026-10-13.md."
@@ -1952,7 +2022,7 @@
     {
       "id": "find-V4Blog",
       "x": 0,
-      "y": 22660,
+      "y": 24930,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Blog · desktop. Resolves DOC-04. Findings: design/REVIEW-2026-10-13.md."
@@ -1960,7 +2030,7 @@
     {
       "id": "find-V4Blog390",
       "x": 1560,
-      "y": 22660,
+      "y": 24930,
       "w": 390,
       "page": "v4-app",
       "text": "v4 · Blog · phone. Resolves DOC-04. Findings: design/REVIEW-2026-10-13.md."
@@ -1968,7 +2038,7 @@
     {
       "id": "find-V4BlogLight",
       "x": 2070,
-      "y": 22660,
+      "y": 24930,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Blog · light. Resolves DOC-04. Findings: design/REVIEW-2026-10-13.md."
@@ -1976,7 +2046,7 @@
     {
       "id": "find-V4Lab",
       "x": 0,
-      "y": 24030,
+      "y": 26300,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Lab · desktop. Resolves DOC-03. Findings: design/REVIEW-2026-10-13.md."
@@ -1984,7 +2054,7 @@
     {
       "id": "find-V4Lab390",
       "x": 1560,
-      "y": 24030,
+      "y": 26300,
       "w": 390,
       "page": "v4-app",
       "text": "v4 · Lab · phone. Resolves DOC-03. Findings: design/REVIEW-2026-10-13.md."
@@ -1992,7 +2062,7 @@
     {
       "id": "find-V4LabLight",
       "x": 2070,
-      "y": 24030,
+      "y": 26300,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Lab · light. Resolves DOC-03. Findings: design/REVIEW-2026-10-13.md."
@@ -2000,7 +2070,7 @@
     {
       "id": "find-V4NotFound",
       "x": 0,
-      "y": 26450,
+      "y": 28720,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · 404 and route fallback · desktop. Resolves DOC-04, DOC-05. Findings: design/REVIEW-2026-10-13.md."
@@ -2008,7 +2078,7 @@
     {
       "id": "find-V4NotFound390",
       "x": 1560,
-      "y": 26450,
+      "y": 28720,
       "w": 390,
       "page": "v4-app",
       "text": "v4 · 404 and route fallback · phone. Resolves DOC-04, DOC-05. Findings: design/REVIEW-2026-10-13.md."
@@ -2016,7 +2086,7 @@
     {
       "id": "find-V4NotFoundLight",
       "x": 2070,
-      "y": 26450,
+      "y": 28720,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · 404 and route fallback · light. Resolves DOC-04, DOC-05. Findings: design/REVIEW-2026-10-13.md."
@@ -2024,7 +2094,7 @@
     {
       "id": "find-V4SignIn",
       "x": 0,
-      "y": 27770,
+      "y": 30040,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Sign in and the wall · desktop. Resolves DLG-04, POS-03. Findings: design/REVIEW-2026-10-13.md."
@@ -2032,7 +2102,7 @@
     {
       "id": "find-V4SignIn390",
       "x": 1560,
-      "y": 27770,
+      "y": 30040,
       "w": 390,
       "page": "v4-app",
       "text": "v4 · Sign in and the wall · phone. Resolves DLG-04, POS-03. Findings: design/REVIEW-2026-10-13.md."
@@ -2040,7 +2110,7 @@
     {
       "id": "find-V4SignInLight",
       "x": 2070,
-      "y": 27770,
+      "y": 30040,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Sign in and the wall · light. Resolves DLG-04, POS-03. Findings: design/REVIEW-2026-10-13.md."
@@ -2048,7 +2118,7 @@
     {
       "id": "find-V4SignInStates",
       "x": 3630,
-      "y": 27770,
+      "y": 30040,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Sign in and the wall · states. Resolves DLG-04, POS-03. Findings: design/REVIEW-2026-10-13.md."
@@ -2056,7 +2126,7 @@
     {
       "id": "find-V4TradeEntry",
       "x": 0,
-      "y": 29520,
+      "y": 31790,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Trade entry · desktop. Resolves DLG-01. Findings: design/REVIEW-2026-10-13.md."
@@ -2064,7 +2134,7 @@
     {
       "id": "find-V4TradeEntry390",
       "x": 1560,
-      "y": 29520,
+      "y": 31790,
       "w": 390,
       "page": "v4-app",
       "text": "v4 · Trade entry · phone. Resolves DLG-01. Findings: design/REVIEW-2026-10-13.md."
@@ -2072,7 +2142,7 @@
     {
       "id": "find-V4TradeEntryLight",
       "x": 2070,
-      "y": 29520,
+      "y": 31790,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Trade entry · light. Resolves DLG-01. Findings: design/REVIEW-2026-10-13.md."
@@ -2080,7 +2150,7 @@
     {
       "id": "find-V4TradeEntryStates",
       "x": 3630,
-      "y": 29520,
+      "y": 31790,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Trade entry · states. Resolves DLG-01. Findings: design/REVIEW-2026-10-13.md."
@@ -2088,7 +2158,7 @@
     {
       "id": "find-V4OrderDetail",
       "x": 0,
-      "y": 31340,
+      "y": 33610,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Order detail · desktop. Resolves DLG-02. Findings: design/REVIEW-2026-10-13.md."
@@ -2096,7 +2166,7 @@
     {
       "id": "find-V4OrderDetail390",
       "x": 1560,
-      "y": 31340,
+      "y": 33610,
       "w": 390,
       "page": "v4-app",
       "text": "v4 · Order detail · phone. Resolves DLG-02. Findings: design/REVIEW-2026-10-13.md."
@@ -2104,7 +2174,7 @@
     {
       "id": "find-V4OrderDetailLight",
       "x": 2070,
-      "y": 31340,
+      "y": 33610,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Order detail · light. Resolves DLG-02. Findings: design/REVIEW-2026-10-13.md."
@@ -2112,7 +2182,7 @@
     {
       "id": "find-V4OrderDetailStates",
       "x": 3630,
-      "y": 31340,
+      "y": 33610,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Order detail · states. Resolves DLG-02. Findings: design/REVIEW-2026-10-13.md."
@@ -2120,7 +2190,7 @@
     {
       "id": "find-V4WhatsSent",
       "x": 0,
-      "y": 32860,
+      "y": 35130,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · What’s sent drawer · desktop. Resolves DLG-03. Findings: design/REVIEW-2026-10-13.md."
@@ -2128,7 +2198,7 @@
     {
       "id": "find-V4WhatsSent390",
       "x": 1560,
-      "y": 32860,
+      "y": 35130,
       "w": 390,
       "page": "v4-app",
       "text": "v4 · What’s sent drawer · phone. Resolves DLG-03. Findings: design/REVIEW-2026-10-13.md."
@@ -2136,7 +2206,7 @@
     {
       "id": "find-V4WhatsSentLight",
       "x": 2070,
-      "y": 32860,
+      "y": 35130,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · What’s sent drawer · light. Resolves DLG-03. Findings: design/REVIEW-2026-10-13.md."
@@ -2144,7 +2214,7 @@
     {
       "id": "find-V4WhatsSentStates",
       "x": 3630,
-      "y": 32860,
+      "y": 35130,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · What’s sent drawer · states. Resolves DLG-03. Findings: design/REVIEW-2026-10-13.md."
@@ -2152,7 +2222,7 @@
     {
       "id": "find-V4Persona",
       "x": 0,
-      "y": 34570,
+      "y": 36840,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Persona · desktop. Resolves DLG-05. Findings: design/REVIEW-2026-10-13.md."
@@ -2160,7 +2230,7 @@
     {
       "id": "find-V4Persona390",
       "x": 1560,
-      "y": 34570,
+      "y": 36840,
       "w": 390,
       "page": "v4-app",
       "text": "v4 · Persona · phone. Resolves DLG-05. Findings: design/REVIEW-2026-10-13.md."
@@ -2168,7 +2238,7 @@
     {
       "id": "find-V4PersonaLight",
       "x": 2070,
-      "y": 34570,
+      "y": 36840,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Persona · light. Resolves DLG-05. Findings: design/REVIEW-2026-10-13.md."
@@ -2176,7 +2246,7 @@
     {
       "id": "find-V4PersonaStates",
       "x": 3630,
-      "y": 34570,
+      "y": 36840,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Persona · states. Resolves DLG-05. Findings: design/REVIEW-2026-10-13.md."
@@ -2184,7 +2254,7 @@
     {
       "id": "find-V4ViewEditor",
       "x": 0,
-      "y": 36090,
+      "y": 38360,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Scan view editor · desktop. Resolves DLG-06. Findings: design/REVIEW-2026-10-13.md."
@@ -2192,7 +2262,7 @@
     {
       "id": "find-V4ViewEditor390",
       "x": 1560,
-      "y": 36090,
+      "y": 38360,
       "w": 390,
       "page": "v4-app",
       "text": "v4 · Scan view editor · phone. Resolves DLG-06. Findings: design/REVIEW-2026-10-13.md."
@@ -2200,7 +2270,7 @@
     {
       "id": "find-V4ViewEditorLight",
       "x": 2070,
-      "y": 36090,
+      "y": 38360,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Scan view editor · light. Resolves DLG-06. Findings: design/REVIEW-2026-10-13.md."
@@ -2208,7 +2278,7 @@
     {
       "id": "find-V4ViewEditorStates",
       "x": 3630,
-      "y": 36090,
+      "y": 38360,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Scan view editor · states. Resolves DLG-06. Findings: design/REVIEW-2026-10-13.md."
@@ -2216,7 +2286,7 @@
     {
       "id": "find-V4Operator",
       "x": 0,
-      "y": 37710,
+      "y": 39980,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Operator · desktop. Resolves OPS-01, OPS-02. Findings: design/REVIEW-2026-10-13.md."
@@ -2224,7 +2294,7 @@
     {
       "id": "find-V4Operator390",
       "x": 1560,
-      "y": 37710,
+      "y": 39980,
       "w": 390,
       "page": "v4-app",
       "text": "v4 · Operator · phone. Resolves OPS-01, OPS-02. Findings: design/REVIEW-2026-10-13.md."
@@ -2232,7 +2302,7 @@
     {
       "id": "find-V4OperatorLight",
       "x": 2070,
-      "y": 37710,
+      "y": 39980,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Operator · light. Resolves OPS-01, OPS-02. Findings: design/REVIEW-2026-10-13.md."
@@ -2240,7 +2310,7 @@
     {
       "id": "find-V4OperatorStates",
       "x": 3630,
-      "y": 37710,
+      "y": 39980,
       "w": 640,
       "page": "v4-app",
       "text": "v4 · Operator · states. Resolves OPS-01, OPS-02. Findings: design/REVIEW-2026-10-13.md."

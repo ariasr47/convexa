@@ -5,6 +5,7 @@ import { TOOLS } from '../data/tools.mjs';
 import { NVDA } from '../data/hybrid.mjs';
 import { STATE_ROWS } from '../data/states.mjs';
 import { dataCell, provChip, rangeBar, stateTag } from './data-states.mjs';
+import { TV_CHIP, sampleBarView, tvBlocked, tvFrame, tvHead, tvNote } from './tradingview.mjs';
 
 const T = Object.fromEntries(TOOLS.map((t) => [t.key, t]));
 const claim = (c, sub) => `<div><p class="claim">${c}</p><p class="sub">${sub}</p></div>`;
@@ -76,13 +77,13 @@ const R = {
     return `${claim('NVDA’s gross margin ranks second of nine semiconductor filers for calendar Q2.', 'GAAP gross profit ÷ revenue, %, calendar quarter 2026 Q2, from each filer’s tagged facts. Axis 0 to 100%. Peer names are placeholders on this board.')}${rows.map(dotRow).join('')}
       <p class="dline" style="margin: 0;"><strong style="color: var(--phosphor);">Read with care:</strong> fiscal quarters differ; the frames API maps each filing to the calendar quarter it mostly covers.</p><p class="srcline">Source: SEC XBRL frames API, us-gaap:GrossProfit and us-gaap:Revenues, CY2026Q2, 9 filers.</p>`;
   },
-  ta({ compact = false, dim = false, research = false } = {}) {
-    const t = NVDA.ta;
-    if (research) return `${claim('Since the note was written, NVDA has moved with the market and slightly ahead of its sector.', 'Close relative to the note’s price date (Oct 9), NVDA vs SPY and SMH, %. Computed from end-of-day bars.')}
-      <div class="hd-fig" style="grid-template-columns: repeat(3, minmax(0, 1fr));"><div><span class="caps">NVDA</span><span class="v">+2.1%</span></div><div><span class="caps">SPY</span><span class="v">+1.2%</span></div><div><span class="caps">SMH</span><span class="v">+1.6%</span></div></div><p class="srcline">The note’s figures don’t change with price; the valuation strip hides % to base once the price is 30 days old.</p>`;
-    if (compact) return `<span class="dval${dim ? ' t-dim' : ''}" style="font-size: 20px;">Above 20- and 50-day</span><span class="dline">RSI ${t.rsi} · ATR ${t.atr} · 20-day realized vol ${t.hv20}</span>${line(NVDA.closes, { w: 260, h: 48, dim })}`;
-    return `${claim('NVDA has closed above its 20- and 50-day averages for 14 sessions.', 'Daily closes and averages, readings computed from end-of-day bars. Descriptive, not a signal.')}${fluidChart({ height: 190, pl: 40, pr: 70, prn: 58, xmin: 0, xmax: NVDA.closes.length - 1, ymin: 200, ymax: 232, aria: 'NVDA daily closes, Sep 15 to Oct 12, rising from 205 to 226.32', yTicks: [{ v: 205, label: '205' }, { v: 215, label: '215' }, { v: 225, label: '225' }], xTicks: [{ v: 0, label: 'Sep 15' }, { v: NVDA.closes.length - 1, label: 'Oct 12' }], series: [{ points: NVDA.closes.map((n, i) => [i, n]), stroke: dim ? 'var(--text-dim)' : 'var(--phosphor)', end: { long: '226.32', short: '226.32' } }] })}
-      <div class="hd-fig" style="grid-template-columns: repeat(3, minmax(0, 1fr));"><div><span class="caps">RSI 14</span><span class="v">${t.rsi}</span></div><div><span class="caps">ATR 14</span><span class="v">${t.atr}</span></div><div><span class="caps">Realized vol · 20d</span><span class="v">${t.hv20}</span></div><div><span class="caps">Support · daily range</span><span class="v">${t.support}</span></div><div><span class="caps">vs SPY · 3 mo</span><span class="v">${t.rsSpy}</span></div><div><span class="caps">vs SMH · 3 mo</span><span class="v">${t.rsSector}</span></div></div>`;
+  ta({ compact = false, research = false, readingsOnly = false } = {}) {
+    // A chart by TradingView (live, display-only) beside readings Convexa would compute (blocked).
+    const readings = `<section class="hd-p" aria-label="Readings Convexa would compute"><div class="ph"><h3>Readings Convexa would compute</h3>${stateTag('notLive', 'Not live · price source')}</div><div class="hd-fig" style="grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));">${['RSI 14', 'ATR 14', 'Realized vol · 20d', 'Support · resistance', 'vs SPY · 3 mo', 'vs SMH · 3 mo'].map((l) => `<div><span class="caps">${l}</span><span class="dnan">—</span></div>`).join('')}</div><p class="dline" style="margin: 0;"><strong style="color: var(--phosphor);">Off because</strong> Convexa has no daily prices licensed to it. TradingView’s chart is display-only: Convexa doesn’t read, store or compute anything from it.</p></section>`;
+    if (readingsOnly) return readings;
+    if (research) return `<p class="dline" style="margin: 0; font-size: 13px;"><strong style="color: var(--phosphor);">Would show</strong> NVDA against SPY and SMH since the note’s price date, computed by Convexa.</p><p class="dline" style="margin: 0; font-size: 13px;"><strong style="color: var(--phosphor);">Off because</strong> Convexa has no daily prices licensed to it; TradingView’s chart on the Technical tab is display-only.</p><a href="/ticker/NVDA/technical-analysis" class="t-info" style="display: inline-flex; gap: 6px; align-items: center; min-height: 24px; font-weight: 500;">Open the daily chart, by TradingView ${icon('arrow', 14)}</a>`;
+    if (compact) return tvFrame({ ticker: 'NVDA', height: 150, phoneHeight: 150, mini: true });
+    return `${tvHead('NVDA', { level: 'h3' })}<div class="cq">${tvFrame({ ticker: 'NVDA', height: 620, phoneHeight: 480 })}</div>${tvNote()}${readings}`;
   },
   signals({ compact = false, dim = false } = {}) {
     const rows = T.signals.rows;
@@ -97,7 +98,31 @@ const R = {
 export const renderTool = (key, opts) => R[key](opts);
 
 // ---- the generic state set: every tool, every state, honest about what cannot happen --------------
+function taRecord(state) {
+  const t = T.ta;
+  const na = (why) => ({ title: t.name, tag: null, blocks: [['na', why]], foot: [] });
+  const tv = ['prov', TV_CHIP, 'dotted'];
+  switch (state) {
+    case 'current': return { title: 'Daily chart · NVDA', tag: ['thirdParty'], blocks: [['html', tvFrame({ height: 132, phoneHeight: 132, mini: true })]], foot: [tv] };
+    case 'delayed': return { title: 'Daily chart · NVDA', tag: ['delayed', 'Delayed · Cboe One'], blocks: [['html', tvFrame({ height: 104, phoneHeight: 104, mini: true })], ['line', t.delayedNote + '.']], foot: [tv] };
+    case 'stale': return na('Convexa keeps no copy of TradingView’s chart, so there is no last good copy; a failed load shows Error.');
+    case 'loading': return { title: 'Daily chart · NVDA', tag: null, blocks: [['html', tvFrame({ height: 140, phoneHeight: 140, state: 'loading' })], ['line', 'The frame holds its final size with a 1px border; nothing shifts.']], foot: [] };
+    case 'empty': return { title: 'Daily chart · XYZ', tag: null, blocks: [['strong', t.empty[0]], ['line', t.empty[1]]], foot: [] };
+    case 'error': return { title: 'Daily chart · NVDA', tag: null, blocks: [['html', tvBlocked('NVDA')]], foot: [] };
+    case 'unavailable': return na('One failure state: if TradingView doesn’t answer, the frame shows the same notice as a blocked loader (Error).');
+    case 'notConfigured': return na('TradingView’s free widget needs no key or account.');
+    case 'off': return na('Live builds always load it; the CSP allows exactly TradingView’s hosts.');
+    case 'paused': return na('It doesn’t depend on Convexa’s market-data mode.');
+    case 'notLive': return { title: 'Readings Convexa would compute', tag: ['notLive', 'Not live · price source'], blocks: [['would', 'RSI, ATR, realized vol, relative strength vs SPY and SMH, support and resistance, computed by Convexa.'], ['off', 'Convexa has no daily prices licensed to it; TradingView’s chart is display-only.']], foot: [] };
+    case 'sample': return { title: 'Technical analysis · sample', tag: ['sample', 'Sample bars'], blocks: [['line', 'The demo’s sample-bar view: 60 synthetic daily bars with EMA 20 and 50, RSI 14, ADX 14 and ATR 14.']], foot: [['prov', 'Sample series · not recorded market history', 'dashed']], frame: 'sample' };
+    case 'demo': return { title: 'Technical analysis · NVDA', tag: null, blocks: [['line', 'Demo builds keep the sample-bar view; TradingView’s widget appears only in live builds.']], foot: [['prov', 'Demo · sample data', 'dashed']] };
+    case 'locked': return na('Public on every ticker; nothing sits behind a sign-in.');
+    default: return na('');
+  }
+}
+
 export function toolRecord(key, state) {
+  if (key === 'ta') return taRecord(state);
   const t = T[key];
   const html = (o) => ['html', R[key]({ compact: true, ...o })];
   const chip = ['prov', t.chip, 'solid'];

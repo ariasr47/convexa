@@ -26,6 +26,9 @@ export const STATE_ROWS = [
 export const STREAM = { key: 'live', name: 'Live stream', word: 'Live', glyph: '', kind: 'stream', rule: 'Only while a genuine stream delivers (rules 18 and 22). The hybrid site never shows it.' };
 /** A flavour of Live: Convexa computes the figure from public inputs (2s10s, breakeven, TA). */
 export const COMPUTED = { key: 'computed', name: 'Computed live', word: 'Computed', glyph: 'sigma', kind: 'solid', rule: 'Convexa computes it from public inputs, and names them.' };
+/** Live, but drawn by a third party from its own data: TradingView's chart (canon 2026-10-13
+ *  "Third-party embeds"). Dotted, like the third-party provenance chip. */
+export const THIRD = { key: 'thirdParty', name: 'Live · third party', word: 'Live · TradingView', glyph: 'external', kind: 'dotted', rule: 'A third party draws it from its own data; Convexa reads nothing from it. Dotted, like its provenance chip.' };
 /** Works without any market data: stored in this browser or the account, or static copy. */
 export const LOCAL = { key: 'local', name: 'Local · no market data', word: 'Stored here', glyph: 'check', kind: 'solid', rule: 'Kept in this browser or the account; needs no feed.' };
 
@@ -152,7 +155,7 @@ export const DATA_STATES = {
   },
   tape: {
     current: { title: 'Live tape · SPY', tag: ['live', 'live · 573.12'], blocks: [['mark', 'prints']], foot: [['src', 'Only while the paid feed streams (rule 18 live)']] },
-    delayed: { title: 'Last close · SPY', tag: ['delayed', 'End of day'], blocks: [['value', '$573.12', { size: 24 }], ['line', 'Close, Mon Oct 12. Intraday prints are not live on this site.']], foot: [['prov', '[EOD PRICE SOURCE] · Oct 12', 'solid']] },
+    delayed: { title: 'Daily chart · SPY', tag: ['delayed', 'Delayed · by TradingView'], blocks: [['strong', 'Prices on this site are TradingView’s, delayed.'], ['line', 'Intraday prints are not live. The Technical tab embeds TradingView’s daily chart; Convexa reads nothing from it.']], foot: [['prov', 'Chart by TradingView · US prices delayed', 'dotted']] },
     stale: { title: 'Live tape · SPY', tag: ['stale', 'Live offline — reconnecting…'], blocks: [['mark', 'prints', { dim: true }], ['pause', 'last trade 573.10 · stream dropped 10:42:09']], foot: [] },
     loading: { title: 'Live tape · SPY', tag: null, blocks: [['mark', 'skelRows', { n: 3, plain: true }]], foot: [['src', 'Connecting to the stream…']] },
     empty: { title: 'Live tape · SPY', tag: ['paused', 'Closed'], blocks: [['strong', 'No prints yet today.'], ['line', 'The session opens at 9:30 AM ET. The last close is 573.12.']], foot: [] },
