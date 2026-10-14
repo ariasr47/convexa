@@ -63,7 +63,7 @@ function parse(str, bg) {
 }
 const hex = ([r, g, b]) => '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase();
 
-export function libraryBody({ minHeight = 5400, standalone = false, dataStates = 'full', charts = 'full' } = {}) {
+export function libraryBody({ minHeight = 5400, standalone = false, dataStates = 'full', charts = 'full', part = 0 } = {}) {
   const C = tokens.color;
   const inkD = parse(C.dark.ink, [0, 0, 0]), inkL = parse(C.light.ink, [255, 255, 255]);
   const rows = [
@@ -197,6 +197,10 @@ SPY_RISK.map(riskField)` });
     ['react', 'React mapping', 'Where each primitive lands in apps/dashboard and what changes — the first rows come from each component’s spec.', mapping],
   ];
 
+  // The canvas caps a frame at 8,000px, so the Library board is drawn in three parts (v5, 2026-10-13);
+  // the site library stays one page. part 0 = all sections.
+  const PARTS = { 1: ['tokens', 'type', 'controls', 'data'], 2: ['chrome', 'overlays', 'patterns', 'data-states', 'charts', 'motion'], 3: ['react'] };
+  if (part) { const keep = PARTS[part]; for (let i = sections.length - 1; i >= 0; i--) if (!keep.includes(sections[i][0])) sections.splice(i, 1); }
   return `<div class="lib" style="min-height: ${minHeight}px; padding: 36px clamp(16px, 3vw, 40px) 48px;">
     <div style="display: flex; align-items: flex-end; gap: 24px; flex-wrap: wrap; margin-bottom: 28px;">
       <div><div class="caps" style="color: var(--amber-text);">Convexa design system · Curvature Terminal v2</div><h1 class="display" style="margin: 6px 0 0; font-size: clamp(26px, 2.6vw, 34px);">Tokens, components, states and the library</h1><p class="lead" style="margin-top: 8px;">Every primitive on the canvas, isolated with its states and the markup that produces it. The classes are the ones in <span class="mono">tokens.css</span>; the React column says where each primitive lands in the app.</p></div>

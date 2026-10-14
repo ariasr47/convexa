@@ -64,7 +64,10 @@ export const artboards = fitAll([
   { name: 'NotFound', screen: 'not-found', page: 'page-4', w: 1440, h: 640, title: 'Route fallback + 404' },
   { name: 'Operator', screen: 'operator', page: 'page-4', w: 1440, h: 1080, title: 'Operator · metrics + research' },
 
-  { name: 'Library', screen: 'library', page: 'page-5', w: 1440, h: 14460, /* measured 2026-10-13 (v5): it was 5900 and clipped ~7,450px of the library before v5's charts section */ title: 'Library · tokens, components, states, React mapping', opts: { dataStates: 'summary', charts: 'summary' } },
+  // v5: the canvas caps a frame at 8,000px; the library (14,460px measured, it was 5,900 and clipped) is three boards.
+  { name: 'Library', screen: 'library', page: 'page-5', w: 1440, h: 6240, title: 'Library · 1 of 3 · tokens, type, controls, data', opts: { dataStates: 'summary', charts: 'summary', part: 1 } },
+  { name: 'LibraryB', screen: 'library', page: 'page-5', w: 1440, h: 4750, title: 'Library · 2 of 3 · chrome, overlays, patterns, states, charts, motion', opts: { dataStates: 'summary', charts: 'summary', part: 2 } },
+  { name: 'LibraryC', screen: 'library', page: 'page-5', w: 1440, h: 3970, title: 'Library · 3 of 3 · React mapping', opts: { dataStates: 'summary', charts: 'summary', part: 3 } },
   { name: 'Components', screen: 'components-sheet', page: 'page-5', w: 1440, h: 2720, title: 'Components & motion sheet' },
   { name: 'DeskLight', screen: 'desk', page: 'page-5', w: 1440, h: 2300, title: 'Desk · light scheme (interactive)', opts: { scheme: 'light' } },
   { name: 'LandingLight', screen: 'landing', page: 'page-5', w: 1440, h: 2960, title: 'Landing · light scheme', opts: { scheme: 'light' } },
