@@ -53,8 +53,9 @@ function useRead<T>(load: () => Promise<T>, key: string, enabled = true): Read<T
   return { data, error, loading, retry: () => setAttempt((n) => n + 1) };
 }
 
-export function usePublicMarkets(): Read<PublicMarkets> {
-  return useRead(getPublicMarkets, 'markets');
+/** `enabled: false` reads nothing (the demo's credits page makes no request). */
+export function usePublicMarkets(enabled = true): Read<PublicMarkets> {
+  return useRead(getPublicMarkets, 'markets', enabled);
 }
 
 export function usePublicFilings(tickers: string[]): Read<PublicFilings> {

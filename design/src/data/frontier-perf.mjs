@@ -15,7 +15,10 @@ export const PERF = {
     buffer: '2540 × 1320 = 3.35 MP at DPR 2 (within 5.2); 1270 × 660 = 0.84 MP after the ladder',
     payload: '7.5 kB gzip (20 kB raw), no library',
     loss: 'Pass: poster while lost, restored, drew again',
-    summary: 'Script 0.2 ms per render; after the runtime ladder p95 17.0 ms on a software rasteriser (budget 16.7: just over); 5 draw calls, 6,144 triangles; 7.5 kB gzip; context loss recovers; 0 idle frames.',
+    summary: 'Script 0.2 ms per render; after the runtime ladder p95 17.0 ms on a software rasteriser (budget 16.7: just over); 5 draw calls, 6,144 triangles; 7.5 kB gzip; context loss recovers; 0 idle frames. On the real GPU (2026-10-14): p95 9.9–10.3 ms at DPR 2 with no ladder step, so the P-15 condition is met.',
+    // Added 2026-10-14 (owner decision D-8): the same F1 harness (tmp/hero-gpu-perf.mjs, the F1 block of
+    // tmp/canvas-v5/tools/perf.mjs) launched on ANGLE Metal instead of SwiftShader. Two runs, DPR 2.
+    gpu: 'Headless Chromium 151 on this M1 Pro, WebGL “ANGLE Metal Renderer: Apple M1 Pro” (the real GPU), 1440×900, DPR 2, 4 s in-page drag. Render intervals p50 8.3 ms, p95 9.9 and 10.3 ms (two runs), p99 10.3, max 10.4 and 11.1; no ladder step (DPR stayed 2, 3.36 MP); script p95 0.6 and 0.3 ms per render; 0 idle frames; no console errors. rAF ran at 120 Hz (p50 8.3 ms). One rAF interval of 166.6 ms in the first run’s drag (none in the second). p95 ≤ 16.7 ms: met. Not measured on a phone.',
   },
   f2: {
     env: ENV,

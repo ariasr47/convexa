@@ -56,7 +56,8 @@ export function Footer() {
               Blog — how we read structure
             </Link>
             {/* (v2) Lab demoted from the top nav to the footer (canon rule 19, AC-23) — still
-                reachable, just not a product-spine link. */}
+                reachable, just not a product-spine link. The three trust pages follow it
+                (design/src/screens/final/trust.mjs). */}
             <Link
               component={RouterLink}
               to="/lab"
@@ -66,6 +67,36 @@ export function Footer() {
               data-testid="footer-lab-link"
             >
               Lab — instrument demos
+            </Link>
+            <Link
+              component={RouterLink}
+              to="/credits"
+              variant="caption"
+              underline="hover"
+              sx={{ color: 'text.secondary', width: 'fit-content' }}
+              data-testid="footer-credits-link"
+            >
+              Sources and credits
+            </Link>
+            <Link
+              component={RouterLink}
+              to="/privacy"
+              variant="caption"
+              underline="hover"
+              sx={{ color: 'text.secondary', width: 'fit-content' }}
+              data-testid="footer-privacy-link"
+            >
+              Privacy
+            </Link>
+            <Link
+              component={RouterLink}
+              to="/terms"
+              variant="caption"
+              underline="hover"
+              sx={{ color: 'text.secondary', width: 'fit-content' }}
+              data-testid="footer-terms-link"
+            >
+              Terms
             </Link>
           </Stack>
           <Typography

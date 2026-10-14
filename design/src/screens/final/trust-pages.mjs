@@ -134,7 +134,7 @@ export const SOURCES = [
     reads: 'Nothing. TradingView draws daily candles, the 20- and 50-day EMAs and RSI 14 from its own prices, inside a frame on the Technical tab and the desk’s daily price panel.',
     cadence: 'TradingView’s own. US prices are delayed (Cboe One).',
     terms: 'Display only: Convexa reads, stores and computes nothing from the frame (TradingView policies §3). TradingView’s attribution, “Chart by TradingView”, stays exactly as it publishes it (§4).',
-    privacy: 'Loading the chart sends your browser’s IP address and the page’s address to TradingView. Its FAQ says it sets no cookies.',
+    privacy: 'Loading the chart sends your browser’s IP address and the page’s address to TradingView.',
     where: 'Ticker → Technical; the ticker desk’s daily price panel.',
     link: ['TradingView', 'https://www.tradingview.com'],
     prod: ['thirdParty'], prodNote: 'Loads when you open the view. Convexa can’t see whether TradingView is up.',
@@ -185,7 +185,7 @@ function legend(env) {
 }
 const TYPE_ROWS = [
   ['IBM Plex Sans', 'Copyright 2019 IBM Corp.', 'SIL OFL 1.1', '/fonts/ibm-plex-sans/OFL.txt'],
-  ['IBM Plex Mono', 'Copyright 2019 IBM Corp.', 'SIL OFL 1.1', '/fonts/ibm-plex-mono/OFL.txt'],
+  ['IBM Plex Mono', 'Copyright 2017 IBM Corp.', 'SIL OFL 1.1', '/fonts/ibm-plex-mono/OFL.txt'],
   ['Archivo', 'Copyright 2020 The Archivo Project Authors (Omnibus-Type)', 'SIL OFL 1.1', '/fonts/archivo/OFL.txt'],
 ];
 function creditsArticle(env) {
@@ -245,13 +245,13 @@ const KEYS = [
   ['convexa.recent-tickers.v1', 'The last tickers you opened, for the ⌘K jump box.', 'When you open a ticker'],
 ];
 const SERVER_ROWS = [
-  ['Your sign-in', 'Your email address and display name. Your password as an argon2 hash — never the password itself — or, if you sign in with Google, your Google account ID. When the account was made and when you last signed in.'],
-  ['Your session', 'A record of each signed-in session. The browser holds one cookie, gf_session (HttpOnly, Secure, SameSite=Lax). A session ends after 7 days unused, and after 30 days at most.'],
+  ['Your sign-in', 'Your email address and display name. Your password as an argon2 hash — never the password itself. When the account was made and when you last signed in.'],
+  ['Your session', 'A record of each signed-in session; the browser holds one session cookie, gf_session. A session ends after 7 days unused, and after 30 days at most.'],
   ['Your settings', 'Theme, default ticker, scanner view, active persona, and the AI provider and model you chose.'],
   ['Your risk inputs', 'The account size and per-trade cap you type. Stored with your account, never in this browser; sent to your AI provider with each read you ask for.'],
-  ['Your simulated book', 'A copy of your paper positions and orders, so they follow you between devices. The newest copy wins.'],
-  ['Your AI key', 'Encrypted (AES-256-GCM). Only its last four characters are ever shown back; the key never returns to the browser. If you link a Grok subscription instead, the link is encrypted the same way.'],
-  ['Your Webull keys', 'Only if you connect Webull. Encrypted the same way, never shown again. Used to read your positions — Convexa never places, changes or cancels an order.'],
+  ['Your simulated book', 'A copy of your paper positions, orders and decision notes, so they follow you between devices. The copy with the newest timestamp wins, and this browser keeps its own copy too.'],
+  ['Your AI key', 'Encrypted (AES-256-GCM). Only its last four characters are ever shown back; the key itself never returns to the browser.'],
+  ['Your Webull keys', 'Only if you save them. Encrypted the same way; only the app key’s last four characters are shown back. Convexa doesn’t contact Webull yet, so they aren’t sent anywhere.'],
 ];
 function privacyArticle(env) {
   const stg = env === 'staging';
@@ -259,7 +259,7 @@ function privacyArticle(env) {
     ? `<p class="lead"><strong>This is the demo. Nothing you do here leaves this browser.</strong> The demo has no account, calls no server and loads no third party. What you change is kept in this browser under the convexa.demo.v1. prefix until you reset it.</p>`
     : `<p class="lead">Convexa runs no ads, no analytics and no tracking scripts. If you don’t sign in, what you do here stays in this browser. A few things do leave it, and this page names each one.</p>`;
   const browser = stg
-    ? `${P('The demo keeps the same things the live site keeps, each under the <strong>convexa.demo.v1.</strong> prefix, so it never touches a live site’s data in the same browser. It adds three of its own: the demo account’s settings, its scanner view, and a marker that says the sample book has been set up.')}${tbl(['Key (after the prefix)', 'What it holds'], [...KEYS.map(([k, w]) => [k, k === 'convexa.uiprefs.v1' ? 'The demo account’s theme and default ticker.' : w]), ['convexa.demo.auth.settings.v1', 'The demo account’s settings and risk inputs.'], ['convexa.demo.scan.view.v1', 'The demo scanner’s saved view.'], ['convexa.demo.workspace.initialized.v1', 'That the sample book has been set up.']], 'tr-keys')}`
+    ? `${P('The demo keeps the same things the live site keeps, each under the <strong>convexa.demo.v1.</strong> prefix, so it never touches a live site’s data in the same browser. It adds four of its own: the demo account’s settings, its scanner view, its book’s fills, and a marker that says the sample book has been set up.')}${tbl(['Key (after the prefix)', 'What it holds'], [...KEYS.map(([k, w]) => [k, k === 'convexa.uiprefs.v1' ? 'The demo account’s theme and default ticker.' : w]), ['convexa.demo.auth.settings.v1', 'The demo account’s settings and risk inputs.'], ['convexa.demo.scan.view.v1', 'The demo scanner’s saved view.'], ['convexa.demo.book.v1', 'The demo book’s fills and marks.'], ['convexa.demo.workspace.initialized.v1', 'That the sample book has been set up.']], 'tr-keys')}`
     : `${P('These live in your browser’s local storage for this site. Nothing reads them but this site’s own pages, and none of them is sent anywhere unless you sign in (see below). Signed in, your settings come from your account instead.')}${tbl(['Key', 'What it holds', 'Written'], KEYS, 'tr-keys')}${P('Exporting your positions saves a file, convexa-archive-<em>date</em>.json, to your own device. Convexa keeps no copy of it.')}`;
   const account = stg
     ? `${P('The demo is always signed in to one shared demo account, and that account lives in this browser, not on a server. There’s no sign-out; <strong>Reset demo data</strong> in the bar puts it back as it started.')}`
@@ -269,17 +269,15 @@ function privacyArticle(env) {
     : `${P('Your browser talks to two places: this site and, on two views, TradingView. Everything else is fetched by Convexa’s server, which never passes on who you are.')}
       ${tbl(['Who', 'When', 'What they get'], [
         ['Convexa’s hosts', 'Every visit', 'The site is served by Cloudflare Pages and its API runs on Railway. Like any host, they see your IP address with each request.'],
-        ['TradingView', 'When you open the Technical tab or the desk’s price panel', 'Your IP address and the page’s address. Its FAQ says it sets no cookies.'],
-        ['Your AI provider', 'Only signed in, with your own key saved, when you ask for a read', 'Convexa’s server sends the computed snapshot, the candidate contracts, your two risk numbers, the open-positions digest for that ticker, the persona’s prompt and the field glossary. Open “What’s sent to the AI” on any ticker to read it first. Anthropic, OpenAI, xAI, Google Gemini, or an OpenAI-compatible endpoint you name; their own privacy terms apply.'],
-        ['Webull', 'Only if you connect it', 'Convexa’s server asks Webull for your positions with your keys.'],
-        ['Google', 'Only if you sign in with Google', 'Google confirms who you are; Convexa keeps your Google account ID and email.'],
+        ['TradingView', 'When you open the Technical tab or the desk’s price panel', 'Its chart loads a script and a frame from TradingView, which receives your IP address and the page’s address.'],
+        ['Your AI provider', 'Only signed in, with your own key saved, when you ask for a read', 'Convexa’s server sends the ticker’s computed market state and signals, the candidate contracts, your risk inputs, a summary of your open positions in that ticker with your book’s count and capital at risk, and the persona’s name. “View what’s sent” on any ticker shows the export. The provider is the one you chose — Anthropic, OpenAI, xAI or Google Gemini — and its own privacy terms apply.'],
         ['Treasury, CFTC, FINRA, SEC', 'Never from your browser', 'Convexa’s server fetches public data once for every reader. These sources learn nothing about you.'],
       ])}`;
-  const never = `<ul class="tr-never">${['No analytics, ads or tracking pixels', 'No third-party cookies', 'No font or script services beyond TradingView’s chart', 'Doesn’t sell what it keeps, or share it beyond what this page lists', 'Doesn’t read your positions from a broker unless you connect one', 'Never places, changes or cancels a broker order'].map((t) => `<li>${icon('check', 15)}<span>${t}</span></li>`).join('')}</ul>`;
+  const never = `<ul class="tr-never">${['No analytics, ads or tracking pixels', 'No third-party cookies set by Convexa', 'No font or script services beyond TradingView’s chart', 'Doesn’t sell what it keeps, or share it beyond what this page lists', 'Never places, changes or cancels a broker order', 'Never sends your AI key back to your browser'].map((t) => `<li>${icon('check', 15)}<span>${t}</span></li>`).join('')}</ul>`;
   const clear = stg
     ? `<div class="tr-box k-demo"><h3>${stateTag('demo')}Reset demo data</h3><p>The button in the demo bar removes every key under convexa.demo.v1. and sets the sample book up again. Nothing else in your browser is touched.</p></div>`
     : `<div class="tr-box"><h3>Signed out</h3><p>Clear this site’s data in your browser (site settings → clear data). That removes every key above. Export your positions first if you want to keep them.</p></div>
-      <div class="tr-box"><h3>Signed in</h3><p>Sign out ends the session and clears the cookie. In Settings you can remove your AI key and disconnect Webull, which deletes those keys from the server. To delete the account itself, ask the site’s owner; there is no delete button yet.</p></div>`;
+      <div class="tr-box"><h3>Signed in</h3><p>Signing out ends the session. In Settings you can remove your AI key and your Webull keys, which deletes them from the server. To delete the account itself, ask the site’s owner; there is no delete button yet.</p></div>`;
   return `<div style="display: flex; flex-direction: column; gap: 10px;"><span class="caps">Privacy</span><h1 class="display">Privacy</h1><span class="upd">Last updated Oct 14, 2026</span></div>
     ${h2('short', 'The short version')}${short}
     ${h2('browser', 'In this browser')}${browser}
@@ -304,9 +302,9 @@ function termsArticle(env) {
   return `<div style="display: flex; flex-direction: column; gap: 10px;"><span class="caps">Terms</span><h1 class="display">Terms and disclaimer</h1><span class="upd">Last updated Oct 14, 2026</span><p class="lead">Convexa is an analysis tool. It shows dealer positioning and public market data and explains how it reads them. It doesn’t tell you what to trade.</p></div>
     ${demo}
     ${h2('what', 'What Convexa is')}${P('Convexa reads options dealer positioning and public records — Treasury yields, futures positioning, short interest, SEC filings — and lays them out with their sources and dates. It publishes research notes, each with its price date and the date it should be reviewed by. Using the site means accepting these terms.')}
-    ${h2('advice', 'Not investment advice')}${P('<strong>Nothing on Convexa is investment advice</strong>, and nothing on it is a recommendation to buy, sell or hold anything. Convexa makes no buy or sell calls. Structure is context for a plan, not a forecast of where a price will go.')}${P('An AI read is written by a model you choose, with your own key, framed by your persona and capped by risk inputs you type. It can be wrong. It is advisory, and nothing happens with it unless you accept it into the simulated book. You make your own decisions, and you are responsible for them.')}
-    ${h2('simulated', 'Simulated trades only')}${P('<strong>Positions and orders in the sim book are simulated (paper).</strong> No money moves. Fills are modelled at the mid with no slippage and no partial fills, so simulated profit and loss is hypothetical and will differ from what a real order would have done.')}
-    ${h2('broker', 'A connected brokerage is read-only')}${P('If you connect Webull, Convexa reads your positions with the keys you give it. <strong>A connected brokerage is read-only — Convexa never places, changes, or cancels an order.</strong> It has no way to: the connection has no write path. Disconnecting deletes your keys from Convexa and changes nothing at Webull.')}
+    ${h2('advice', 'Not investment advice')}${P('<strong>Nothing on Convexa is investment advice</strong>, and nothing on it is a recommendation to buy, sell or hold anything. Convexa makes no buy or sell calls. Structure is context for a plan, not a forecast of where a price will go.')}${P('An AI read is written by a model you choose, with your own key, framed by your persona and the risk inputs you type. It can be wrong. It is advisory, and nothing happens with it unless you accept it into the simulated book. You make your own decisions, and you are responsible for them.')}
+    ${h2('simulated', 'Simulated trades only')}${P('<strong>Positions and orders in the sim book are simulated (paper).</strong> No money moves. Fills are modelled at the option’s mid or a price you enter, with no slippage and no partial fills, so simulated profit and loss is hypothetical and will differ from what a real order would have done.')}
+    ${h2('broker', 'A connected brokerage is read-only')}${P('If you save Webull keys in Settings, Convexa stores them encrypted; it doesn’t contact Webull yet. <strong>A connected brokerage is read-only — Convexa never places, changes, or cancels an order.</strong> It has no way to: the broker connection has no write path. Removing your keys deletes them from Convexa and changes nothing at Webull.')}
     ${h2('data', 'Data can be late or wrong')}${P('Every source publishes on its own schedule, some of them weeks late, and any of them can be down, revised or mistaken. Each card says its source and its date, and says so when data is late, stale or missing — never a made-up value. Figures Convexa computes are only as good as their inputs. On this site, nothing built from the options chain is live. <a href="/credits">Sources and credits</a> lists every source and how late it is.')}
     ${h2('third', 'Third-party terms')}${P('Data and services from others come with their terms:')}
     <ul class="tr-list"><li><strong>FINRA</strong> owns and is the source of the short-interest and short-sale-volume data, including what Convexa calculates from it. Shown free for non-commercial personal use; please don’t redistribute it.</li><li><strong>TradingView</strong>’s chart is shown under TradingView’s terms, display only, with its attribution as published.</li><li><strong>Your AI provider</strong>’s terms apply to the key you bring and to what it writes.</li><li><strong>Webull</strong>’s terms apply to the keys you create there.</li><li><strong>The SEC, the Treasury and the CFTC</strong> publish public records; Convexa shows them as published, with their dates.</li></ul>

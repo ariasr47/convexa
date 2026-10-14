@@ -147,6 +147,15 @@ const TermHeatLab = lazy(() =>
 const FlowRibbonsLab = lazy(() =>
   import('@/pages/lab/demos/FlowRibbonsLab').then((m) => ({ default: m.FlowRibbonsLab })),
 );
+const CreditsPage = lazy(() =>
+  import('@/pages/trust/CreditsPage').then((m) => ({ default: m.CreditsPage })),
+);
+const PrivacyPage = lazy(() =>
+  import('@/pages/trust/PrivacyPage').then((m) => ({ default: m.PrivacyPage })),
+);
+const TermsPage = lazy(() =>
+  import('@/pages/trust/TermsPage').then((m) => ({ default: m.TermsPage })),
+);
 const NotFound = lazy(() =>
   import('@/pages/not-found/NotFound').then((m) => ({ default: m.NotFound })),
 );
@@ -305,6 +314,10 @@ export function AppRoutes() {
         <Route path="/blog" element={lazyRoute(<BlogPage />)} />
         {/* Methodology — product spine #7 trust surface (static; public). */}
         <Route path="/methodology" element={lazyRoute(<MethodologyPage />)} />
+        {/* The trust pages: sources and credits, privacy, terms (design/src/screens/final/trust.mjs). */}
+        <Route path="/credits" element={lazyRoute(<CreditsPage />)} />
+        <Route path="/privacy" element={lazyRoute(<PrivacyPage />)} />
+        <Route path="/terms" element={lazyRoute(<TermsPage />)} />
         {/* Alerts v1 — structure rules (level / tier / score); public, local durable. */}
         <Route path="/alerts" element={lazyRoute(<AlertsPage />)} />
         {/* Lab — public instrument demos (ticker candidates + shipped Structure Field). */}
