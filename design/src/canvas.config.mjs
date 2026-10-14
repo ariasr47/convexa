@@ -14,6 +14,7 @@ export const pages = [
   { id: 'v5-charts', name: 'v5 · Charts · audit and system' },
   { id: 'q5-alerts', name: 'Ruled · Alerts on public data (Q-5)' },
   { id: 'v5-families', name: 'v5 · Chart families · before and after' },
+  { id: 'v5-frontier', name: 'v5 · Frontier' },
 ];
 
 // v4 frame heights, measured 2026-10-13 by rendering design/site at each board's own width in headless
@@ -23,7 +24,7 @@ export const pages = [
 const MEASURED = { V4Alerts: 1010, V4Alerts390: 1890, V4AlertsLight: 1010, V4AlertsStates: 1280, V4Blog: 740, V4Blog390: 950, V4BlogLight: 740, V4Coverage: 1890, V4DeskLight: 2990, V4DeskStates: 2690, V4Filings: 1290, V4Filings390: 2620, V4FilingsLight: 1290, V4HybridDesk: 2990, V4HybridDesk390: 4340, V4HybridDesk390Light: 4340, V4HybridDesk834: 4260, V4HybridDeskSample: 2990, V4Lab: 1110, V4Lab390: 2000, V4LabLight: 1110, V4Landing: 2400, V4Landing390: 4100, V4LandingLight: 2400, V4LandingStates: 1450, V4Markets: 3030, V4Markets390: 4910, V4Markets834: 3790, V4MarketsDemo: 3030, V4MarketsLight: 3030, V4Methodology: 1930, V4Methodology390: 2600, V4MethodologyLight: 1930, V4MethodologyStates: 1360, V4NotFound: 700, V4NotFound390: 900, V4NotFoundLight: 700, V4NoteStates: 1200, V4NoteView: 3520, V4NoteView390: 4740, V4NoteView390Light: 4740, V4NoteViewLight: 3520, V4Operator: 730, V4Operator390: 840, V4OperatorLight: 730, V4OperatorStates: 790, V4OrderDetail: 1000, V4OrderDetail390: 1100, V4OrderDetailLight: 1000, V4OrderDetailStates: 660, V4Persona: 1000, V4Persona390: 1100, V4PersonaLight: 1000, V4PersonaStates: 760, V4Positions: 1070, V4Positions390: 1910, V4PositionsLight: 1070, V4PositionsSignedOut: 710, V4PositionsStates: 1560, V4ResearchIndex: 1300, V4ResearchIndex390: 2030, V4ResearchIndexLight: 1300, V4Roadmap: 2400, V4Scanner: 1310, V4Scanner390: 1810, V4ScannerLight: 1310, V4ScannerStates: 1790, V4Scorecard: 1500, V4Scorecard390: 3130, V4ScorecardLight: 1500, V4Settings: 1650, V4Settings390: 2090, V4SettingsLight: 1650, V4SettingsSignedOut: 1320, V4SettingsStates: 1400, V4Shell: 760, V4Shell390: 844, V4ShellLight: 760, V4ShellStates: 2620, V4SignIn: 1000, V4SignIn390: 1000, V4SignInLight: 1000, V4SignInStates: 1330, V4SourceMap: 6450, V4StateMatrix: 4090, V4StateMatrix390: 4510, V4StateMatrixLight: 4090, V4Technical: 1270, V4Technical390: 1370, V4TechnicalLight: 1270, V4TechnicalStates: 1320, V4TickerResearch: 2230, V4TickerResearch390: 4290, V4TickerResearchLight: 2230, V4ToolCalendar: 2550, V4ToolClusters: 2270, V4ToolHolders: 2310, V4ToolLiquidity: 2370, V4ToolOtc: 2370, V4ToolPeers: 2440, V4ToolSignals: 2260, V4ToolTa: 3100, V4ToolXbrl: 2470, V4TradeEntry: 1100, V4TradeEntry390: 1300, V4TradeEntryLight: 1100, V4TradeEntryStates: 1400, V4ViewEditor: 1000, V4ViewEditor390: 1200, V4ViewEditorLight: 1000, V4ViewEditorStates: 840, V4WhatsSent: 1120, V4WhatsSent390: 1100, V4WhatsSentLight: 1120, V4WhatsSentStates: 1290 };
 // v5 frame heights, measured by rendering design/site at each board's width (main tree
 // tmp/canvas-v5/tools/measure.mjs): natural page height + 40px, rounded up to 10.
-const MEASURED_V5 = {V5Audit: 2120, V5ChartSystem: 7460, V5ChartStates: 3710, V5ChartPhone: 2340, V5ThirdParty: 1830, V5ChartSystemLight: 7460, V5FamNoteFigures: 3120, V5FamNoteValuation: 2650, V5FamMarkets: 3230, V5FamScorecard: 2080, V5FamPanels: 1770, V5FamDesk: 3720, V5FamOther: 1360, V5Tools: 5040, V5TvFraming: 3660, V5Tools390: 7140, V5TvFraming390: 6960, V5FamNoteFigures390: 4770, V5FamMarkets390: 5370, V5FamMarketsLight: 3230, V5FamScorecardLight: 2080, V5Alerts: 2350, V5Alerts390: 4000, V5AlertsLight: 2350, V5AlertsFlow: 1920, V5AlertsFlow390: 5100, V5AlertsStates: 3560};
+const MEASURED_V5 = {V5Audit: 2120, V5ChartSystem: 7460, V5ChartStates: 3710, V5ChartPhone: 2340, V5ThirdParty: 1830, V5ChartSystemLight: 7460, V5FamNoteFigures: 3120, V5FamNoteValuation: 2650, V5FamMarkets: 3230, V5FamScorecard: 2080, V5FamPanels: 1770, V5FamDesk: 3720, V5FamOther: 1360, V5Tools: 5040, V5TvFraming: 3660, V5Tools390: 7140, V5TvFraming390: 6960, V5FamNoteFigures390: 4770, V5FamMarkets390: 5370, V5FamMarketsLight: 3230, V5FamScorecardLight: 2080, V5Frontier: 1370, V5FrontierGamma: 2610, V5FrontierCurve: 2460, V5FrontierCalib: 1880, V5FrontierCurve390: 3570, V5Alerts: 2350, V5Alerts390: 4000, V5AlertsLight: 2350, V5AlertsFlow: 1920, V5AlertsFlow390: 5100, V5AlertsStates: 3560};
 const fitH = (name, h) => MEASURED[name] ?? MEASURED_V5[name] ?? h;
 
 // { name, screen, page, w, h, title, opts?, expand?, interactive? }
@@ -156,6 +157,15 @@ export const artboards = fitAll([
     ['V5FamMarkets390', 'v5-fam-markets', 390, 6000, 'v5 · Markets · phone', {}, 'At 390: one-column facets, only the latest FOMC chip, the curve with leaders.'],
     ['V5FamMarketsLight', 'v5-fam-markets', 1440, 5200, 'v5 · Markets · light', { scheme: 'light' }, 'The Markets family in the light scheme.'],
     ['V5FamScorecardLight', 'v5-fam-scorecard', 1440, 3000, 'v5 · Scorecard · light', { scheme: 'light' }, 'Calibration and by-month in the light scheme.'],
+  ]),
+
+  // ---- v5 wave 4 · the frontier (the boards show each prototype's designed fallback; the site runs it) ----
+  ...v5Row('v5-frontier', 0, [
+    ['V5Frontier', 'v5-frontier', 1440, 2200, 'v5 · The frontier · overview', {}, 'Wave 4: three prototypes in design/site (v5-frontier-*.html) with measured budgets; what was considered and not built.'],
+    ['V5FrontierGamma', 'v5-frontier-gamma', 1440, 3000, 'v5 · F1 · Dealer-gamma surface (WebGL) · fallback shown', {}, 'F1 runs in design/site/v5-frontier-gamma.html. Here: the static projection it falls back to. Needs P-15.'],
+    ['V5FrontierCurve', 'v5-frontier-curve', 1440, 3000, 'v5 · F2 · A year of the curve · fallback shown', {}, 'F2 runs in design/site/v5-frontier-curve.html. Here: today’s curve and the year in four curves.'],
+    ['V5FrontierCalib', 'v5-frontier-calibration', 1440, 2600, 'v5 · F3 · Calibration, explorable · fallback shown', {}, 'F3 runs in design/site/v5-frontier-calibration.html. Here: the 95% chart and the table.'],
+    ['V5FrontierCurve390', 'v5-frontier-curve', 390, 4800, 'v5 · F2 · phone', {}, 'F2 at 390.'],
   ]),
 
   // ---- Q-5, ruled "design it now" by the owner (2026-10-13): alerts on public data ----

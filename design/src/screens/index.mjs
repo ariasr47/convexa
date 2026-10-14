@@ -32,6 +32,7 @@ import { famMarketsBody, famNoteFiguresBody, famNoteValuationBody, famPanelsBody
 import { famDeskBody, famOtherBody } from './v5/families-desk.mjs';
 import { toolsBody } from './v5/tools-v5.mjs';
 import { TV5_CSS, tvFramingBody } from './v5/tv-v5.mjs';
+import { FRONTIER_CSS, f1Body, f1Script, f2Body, f2Script, f3Body, f3Script, frontierBody } from './v5/frontier.mjs';
 import { V5_CSS, auditBody, chartSystemBody, chartStatesBody, chartPhoneBody, thirdPartyBody } from './v5/system.mjs';
 import { DIALOGS, DOCS_CSS, blogBody as blogV4Body, dialogBody, dialogStatesBody, docsStatesBody, labBody as labV4Body, methodologyBody as methodologyV4Body, notFoundBody as notFoundV4Body, operatorBody as operatorV4Body, operatorStatesBody } from './v4/docs-dialogs.mjs';
 
@@ -129,6 +130,10 @@ export const screens = {
       'v5-fam-other': s('Families · scanner, positions, operator, Lab', g, 'The smaller charts and what the rulings settled.', (o) => famOtherBody(o), V),
       'v5-tools': s('Planned tools, charted', g, 'Liquidity, calendar, OTC, insider clusters, 13F, XBRL, peers, signal track record, TA.', (o) => toolsBody(o), V),
       'v5-tv': s('TradingView, framed', g, 'The Technical tab, the desk’s price panel, the frame’s states, load on request, and where a frame belongs.', (o) => tvFramingBody(o), V + TV5_CSS),
+      'v5-frontier': s('Frontier · overview', g, 'Three prototypes chosen by value, their measured budgets, fallbacks and canon; what was considered and not built.', (o) => frontierBody(o), V + FRONTIER_CSS),
+      'v5-frontier-gamma': s('Frontier · F1 dealer-gamma surface (WebGL)', g, 'The landing hero in WebGL2, turned by hand; the static projection as its designed fallback.', (o) => f1Body(o), V + FRONTIER_CSS, { siteScript: f1Script() }),
+      'v5-frontier-curve': s('Frontier · F2 a year of the curve', g, 'Scrub every business day of the Treasury curve; FOMC decisions on the track.', (o) => f2Body(o), V + FRONTIER_CSS, { siteScript: f2Script() }),
+      'v5-frontier-calibration': s('Frontier · F3 calibration, explorable', g, 'Change the interval, merge bins, read the calls behind a dot.', (o) => f3Body(o), V + FRONTIER_CSS, { siteScript: f3Script() }),
       // Q-5, ruled by the owner 2026-10-13: alerts on public data
       'q5-alerts': s('Alerts on public data', 'Ruled · Q-5', 'Six alert kinds that work on the semi-live site, each with its source, delay and state word.', (o) => alertsPageBody(o), V + APP_CSS + ALERTS5_CSS),
       'q5-alerts-flow': s('New alert · flow', 'Ruled · Q-5', 'Choose, set up, read back: the create-alert dialog (a bottom sheet on phones).', (o) => alertsFlowBody(o), V + APP_CSS + ALERTS5_CSS),

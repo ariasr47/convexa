@@ -126,6 +126,9 @@ for (const [slug, scr] of Object.entries(screens)) {
   let inner = scr.body({ minHeight: 0, standalone: true }).replace(/ data-scheme="dark"/g, '');
   let script = '', bar = siteBar(scr.title);
   if (scr.interactive) { inner = staticize(inner, deskVals); script = runtime(scr.interactive.script); bar = deskBar; }
+  // v5 frontier prototypes: the body is the designed fallback (what the canvas board shows); the site page
+  // adds the script that turns it into the working prototype (progressive enhancement).
+  if (scr.siteScript) script += `<script>\n${scr.siteScript}\n</script>`;
   else if (/\{\{/.test(inner)) throw new Error(`static page ${slug} still contains template holes`);
   writeFileSync(join(SITE, `${slug}.html`), page({ title: scr.title, inner, css: scr.css, desc: scr.desc, script, bar }));
   pages.push([slug, scr.title, scr.group, scr.desc]);

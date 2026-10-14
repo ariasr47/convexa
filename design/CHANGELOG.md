@@ -202,3 +202,17 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
 - **TradingView:** placement decided screen by screen (Technical tab and the desk's price panel only);
   loading words, a 12 s timeout, a per-symbol reset; proposal P-14 (load on request).
 - **Measure tool:** outlined marks are read by their border, wash-filled ranges by their edge.
+
+## 2026-10-13 · v5 wave 4 — the frontier
+
+- **Three prototypes in design/site**, each drawn first as its designed fallback (what the canvas boards
+  show): F1, the dealer-gamma surface in WebGL2 (no dependency, render on demand, orthographic, keyboard
+  probe, a runtime pixel-ratio ladder, context-loss recovery, the static projection as its fallback);
+  F2, a year of the Treasury curve by hand (scrubber, FOMC decisions on the track, the claim recomputed per
+  day, Play that steps a month under reduced motion); F3, calibration you can question (interval, bin
+  width, the calls behind a dot).
+- **Budgets measured, not assumed**: frame intervals, script time, draw calls, buffer size, idle frames,
+  context loss, Event Timing, gzip payload (CHARTS-2026-10-13.md, wave 4). F1 lands just over its frame
+  budget on a software rasteriser after the ladder (p95 17.0 ms) and is reported so.
+- **Canon proposals P-12 and P-15**; horizon charts, a step-through bridge and a price timeline
+  considered and not built, with reasons.
