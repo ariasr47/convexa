@@ -12,6 +12,7 @@ export const pages = [
   { id: 'v4-research', name: 'v4 · Research' },
   { id: 'v4-coverage', name: 'v4 · Coverage' },
   { id: 'v5-charts', name: 'v5 · Charts · audit and system' },
+  { id: 'q5-alerts', name: 'Ruled · Alerts on public data (Q-5)' },
 ];
 
 // v4 frame heights, measured 2026-10-13 by rendering design/site at each board's own width in headless
@@ -21,7 +22,7 @@ export const pages = [
 const MEASURED = { V4Alerts: 1010, V4Alerts390: 1890, V4AlertsLight: 1010, V4AlertsStates: 1280, V4Blog: 740, V4Blog390: 950, V4BlogLight: 740, V4Coverage: 1890, V4DeskLight: 2990, V4DeskStates: 2690, V4Filings: 1290, V4Filings390: 2620, V4FilingsLight: 1290, V4HybridDesk: 2990, V4HybridDesk390: 4340, V4HybridDesk390Light: 4340, V4HybridDesk834: 4260, V4HybridDeskSample: 2990, V4Lab: 1110, V4Lab390: 2000, V4LabLight: 1110, V4Landing: 2400, V4Landing390: 4100, V4LandingLight: 2400, V4LandingStates: 1450, V4Markets: 3030, V4Markets390: 4910, V4Markets834: 3790, V4MarketsDemo: 3030, V4MarketsLight: 3030, V4Methodology: 1930, V4Methodology390: 2600, V4MethodologyLight: 1930, V4MethodologyStates: 1360, V4NotFound: 700, V4NotFound390: 900, V4NotFoundLight: 700, V4NoteStates: 1200, V4NoteView: 3520, V4NoteView390: 4740, V4NoteView390Light: 4740, V4NoteViewLight: 3520, V4Operator: 730, V4Operator390: 840, V4OperatorLight: 730, V4OperatorStates: 790, V4OrderDetail: 1000, V4OrderDetail390: 1100, V4OrderDetailLight: 1000, V4OrderDetailStates: 660, V4Persona: 1000, V4Persona390: 1100, V4PersonaLight: 1000, V4PersonaStates: 760, V4Positions: 1070, V4Positions390: 1910, V4PositionsLight: 1070, V4PositionsSignedOut: 710, V4PositionsStates: 1560, V4ResearchIndex: 1300, V4ResearchIndex390: 2030, V4ResearchIndexLight: 1300, V4Roadmap: 2400, V4Scanner: 1310, V4Scanner390: 1810, V4ScannerLight: 1310, V4ScannerStates: 1790, V4Scorecard: 1500, V4Scorecard390: 3130, V4ScorecardLight: 1500, V4Settings: 1650, V4Settings390: 2090, V4SettingsLight: 1650, V4SettingsSignedOut: 1320, V4SettingsStates: 1400, V4Shell: 760, V4Shell390: 844, V4ShellLight: 760, V4ShellStates: 2620, V4SignIn: 1000, V4SignIn390: 1000, V4SignInLight: 1000, V4SignInStates: 1330, V4SourceMap: 6450, V4StateMatrix: 4090, V4StateMatrix390: 4510, V4StateMatrixLight: 4090, V4Technical: 1270, V4Technical390: 1370, V4TechnicalLight: 1270, V4TechnicalStates: 1320, V4TickerResearch: 2230, V4TickerResearch390: 4290, V4TickerResearchLight: 2230, V4ToolCalendar: 2550, V4ToolClusters: 2270, V4ToolHolders: 2310, V4ToolLiquidity: 2370, V4ToolOtc: 2370, V4ToolPeers: 2440, V4ToolSignals: 2260, V4ToolTa: 3100, V4ToolXbrl: 2470, V4TradeEntry: 1100, V4TradeEntry390: 1300, V4TradeEntryLight: 1100, V4TradeEntryStates: 1400, V4ViewEditor: 1000, V4ViewEditor390: 1200, V4ViewEditorLight: 1000, V4ViewEditorStates: 840, V4WhatsSent: 1120, V4WhatsSent390: 1100, V4WhatsSentLight: 1120, V4WhatsSentStates: 1290 };
 // v5 frame heights, measured by rendering design/site at each board's width (main tree
 // tmp/canvas-v5/tools/measure.mjs): natural page height + 40px, rounded up to 10.
-const MEASURED_V5 = {V5Audit: 2120, V5ChartSystem: 7460, V5ChartStates: 3710, V5ChartPhone: 2340, V5ThirdParty: 1830, V5ChartSystemLight: 7460};
+const MEASURED_V5 = {V5Audit: 2120, V5ChartSystem: 7460, V5ChartStates: 3710, V5ChartPhone: 2340, V5ThirdParty: 1830, V5ChartSystemLight: 7460, V5Alerts: 2350, V5Alerts390: 4000, V5AlertsLight: 2350, V5AlertsFlow: 1920, V5AlertsFlow390: 5100, V5AlertsStates: 3560};
 const fitH = (name, h) => MEASURED[name] ?? MEASURED_V5[name] ?? h;
 
 // { name, screen, page, w, h, title, opts?, expand?, interactive? }
@@ -131,6 +132,16 @@ export const artboards = fitAll([
     ['V5ChartPhone', 'v5-phone', 390, 2600, 'v5 · Charts on a phone (390)', {}, 'Wave 2: re-layout, never scale-down; text ≥ 11px; the bridge as rows, crossing zero.'],
     ['V5ThirdParty', 'v5-third-party', 1440, 2400, 'v5 · Ours, and theirs', {}, 'Wave 2: a Convexa chart beside TradingView’s frame; the eight deliberate differences. Resolves TT-01, DB-15.'],
     ['V5ChartSystemLight', 'v5-system', 1440, 6000, 'v5 · One chart system · light', { scheme: 'light' }, 'The same board in the light scheme: the roles are token swaps.'],
+  ]),
+
+  // ---- Q-5, ruled "design it now" by the owner (2026-10-13): alerts on public data ----
+  ...v5Row('q5-alerts', 0, [
+    ['V5Alerts', 'q5-alerts', 1440, 1800, 'Alerts on public data · desktop', {}, 'Q-5: six kinds, each naming its source and delay; SEC kinds Not set up until SEC_USER_AGENT; structure kinds Not live. P-1 legend, P-2 words.'],
+    ['V5Alerts390', 'q5-alerts', 390, 3600, 'Alerts on public data · phone', {}, 'Q-5 at 390: rules as stacked rows, the kind table as cards, 44px targets.'],
+    ['V5AlertsLight', 'q5-alerts', 1440, 1800, 'Alerts on public data · light', { scheme: 'light' }, 'Q-5 in the light scheme.'],
+    ['V5AlertsFlow', 'q5-alerts-flow', 1440, 2400, 'New alert · choose, set up, read back', {}, 'Q-5: the create-alert dialog in three steps, with three set-up variants and the saved result.'],
+    ['V5AlertsFlow390', 'q5-alerts-flow', 390, 5200, 'New alert · phone (bottom sheets)', {}, 'Q-5 at 390: each step is a bottom sheet.'],
+    ['V5AlertsStates', 'q5-alerts-states', 1440, 3000, 'Alerts on public data · states', {}, 'Q-5: empty, not set up, source down, couldn’t load, off, fired, blocked, demo, and the dialog’s validation, duplicate, saving and failed save.'],
   ]),
 ]);
 

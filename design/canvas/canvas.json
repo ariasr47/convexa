@@ -43,6 +43,10 @@
     {
       "id": "v5-charts",
       "name": "v5 · Charts · audit and system"
+    },
+    {
+      "id": "q5-alerts",
+      "name": "Ruled · Alerts on public data (Q-5)"
     }
   ],
   "artboards": [
@@ -1561,6 +1565,64 @@
       "h": 7460,
       "page": "v5-charts",
       "expand": "fill"
+    },
+    {
+      "file": "V5Alerts.dc.html",
+      "title": "Alerts on public data · desktop",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 2350,
+      "page": "q5-alerts",
+      "expand": "fill"
+    },
+    {
+      "file": "V5Alerts390.dc.html",
+      "title": "Alerts on public data · phone",
+      "x": 1560,
+      "y": 0,
+      "w": 390,
+      "h": 4000,
+      "page": "q5-alerts"
+    },
+    {
+      "file": "V5AlertsLight.dc.html",
+      "title": "Alerts on public data · light",
+      "x": 2070,
+      "y": 0,
+      "w": 1440,
+      "h": 2350,
+      "page": "q5-alerts",
+      "expand": "fill"
+    },
+    {
+      "file": "V5AlertsFlow.dc.html",
+      "title": "New alert · choose, set up, read back",
+      "x": 3630,
+      "y": 0,
+      "w": 1440,
+      "h": 1920,
+      "page": "q5-alerts",
+      "expand": "fill"
+    },
+    {
+      "file": "V5AlertsFlow390.dc.html",
+      "title": "New alert · phone (bottom sheets)",
+      "x": 5190,
+      "y": 0,
+      "w": 390,
+      "h": 5100,
+      "page": "q5-alerts"
+    },
+    {
+      "file": "V5AlertsStates.dc.html",
+      "title": "Alerts on public data · states",
+      "x": 5700,
+      "y": 0,
+      "w": 1440,
+      "h": 3560,
+      "page": "q5-alerts",
+      "expand": "fill"
     }
   ],
   "annotations": [
@@ -2611,6 +2673,54 @@
       "w": 640,
       "page": "v5-charts",
       "text": "v5 · One chart system · light. The same board in the light scheme: the roles are token swaps."
+    },
+    {
+      "id": "v5-V5Alerts",
+      "x": 0,
+      "y": -260,
+      "w": 640,
+      "page": "q5-alerts",
+      "text": "Alerts on public data · desktop. Q-5: six kinds, each naming its source and delay; SEC kinds Not set up until SEC_USER_AGENT; structure kinds Not live. P-1 legend, P-2 words."
+    },
+    {
+      "id": "v5-V5Alerts390",
+      "x": 1560,
+      "y": -260,
+      "w": 390,
+      "page": "q5-alerts",
+      "text": "Alerts on public data · phone. Q-5 at 390: rules as stacked rows, the kind table as cards, 44px targets."
+    },
+    {
+      "id": "v5-V5AlertsLight",
+      "x": 2070,
+      "y": -260,
+      "w": 640,
+      "page": "q5-alerts",
+      "text": "Alerts on public data · light. Q-5 in the light scheme."
+    },
+    {
+      "id": "v5-V5AlertsFlow",
+      "x": 3630,
+      "y": -260,
+      "w": 640,
+      "page": "q5-alerts",
+      "text": "New alert · choose, set up, read back. Q-5: the create-alert dialog in three steps, with three set-up variants and the saved result."
+    },
+    {
+      "id": "v5-V5AlertsFlow390",
+      "x": 5190,
+      "y": -260,
+      "w": 390,
+      "page": "q5-alerts",
+      "text": "New alert · phone (bottom sheets). Q-5 at 390: each step is a bottom sheet."
+    },
+    {
+      "id": "v5-V5AlertsStates",
+      "x": 5700,
+      "y": -260,
+      "w": 640,
+      "page": "q5-alerts",
+      "text": "Alerts on public data · states. Q-5: empty, not set up, source down, couldn’t load, off, fired, blocked, demo, and the dialog’s validation, duplicate, saving and failed save."
     }
   ],
   "launch": {

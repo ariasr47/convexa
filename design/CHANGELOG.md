@@ -174,3 +174,18 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
   labels as text (2.82–3.57:1; now steel with line keys) and hard-coded a dark-scheme fence colour; the
   ticker sub-tabs' current tab measured 1.76:1 (a generic link rule outranked it); light warning strips
   measured 4.25:1; the Library board was 5,900px tall against 13,350px of content (now measured).
+
+## 2026-10-13 · Owner rulings on the v4 proposals (canon Amendments row of the same name)
+
+- **P-1, P-2, P-3, P-4, P-6 approved**; the boards already drew them. **TradingView keeps its candles.**
+- **P-5 rejected:** a ticker's price change stays green/red, as text through `textUp`/`textDown`, with ▲/▼.
+  Reverted: the V4Scanner change column (table and cards) is directional again; the shared `.up`/`.down`
+  text classes and the direction chips move from the fill hues to the text grades, which reaches the v2
+  desk masthead, the landing mini tickers, the scanner and positions text. Sparklines keep the direction
+  fill hues (they are marks). Supersedes the 2026-10-13 X-05 resolution; research company facts stay neutral.
+- **Q-5 designed (alerts on public data):** six kinds — results approaching, new filing, insider cluster,
+  positioning extreme, short interest change, note coming due — each naming its source and delay and
+  wearing a P-2 word; SEC-backed kinds save but say "Not set up" until SEC_USER_AGENT (Q-4, the owner);
+  structure kinds stay "Not live". The Alerts page with the P-1 "On this page" legend, the three-step
+  create-alert dialog (bottom sheets on phones), and every state. Boards V5Alerts (+390, light),
+  V5AlertsFlow (+390), V5AlertsStates. Q-2 is with the owner; Q-3 deferred.
