@@ -1,6 +1,9 @@
+import { readFileSync, existsSync } from 'node:fs';
+import { FINAL_NOTE, FINAL_PAGE, finalArtboards } from './screens/final/index.mjs';
 // Canvas registry — which screens become artboards, at which widths, on which page. Positions are
 // computed (row flow per page), so adding a frame is one line.
 export const pages = [
+  FINAL_PAGE,
   { id: 'page-1', name: 'Ticker desk' },
   { id: 'page-2', name: 'Responsive' },
   { id: 'page-3', name: 'Site' },
@@ -26,6 +29,8 @@ const MEASURED = { V4Alerts: 1010, V4Alerts390: 1890, V4AlertsLight: 1010, V4Ale
 // tmp/canvas-v5/tools/measure.mjs): natural page height + 40px, rounded up to 10.
 const MEASURED_V5 = {V5Audit: 2120, V5ChartSystem: 7460, V5ChartStates: 3710, V5ChartPhone: 2340, V5ThirdParty: 1830, V5ChartSystemLight: 7460, V5FamNoteFigures: 3120, V5FamNoteValuation: 2650, V5FamMarkets: 3230, V5FamScorecard: 2080, V5FamPanels: 1770, V5FamDesk: 3720, V5FamOther: 1360, V5Tools: 5040, V5TvFraming: 3660, V5Tools390: 7140, V5TvFraming390: 6960, V5FamNoteFigures390: 4770, V5FamMarkets390: 5370, V5FamMarketsLight: 3230, V5FamScorecardLight: 2080, V5Frontier: 1370, V5FrontierGamma: 2610, V5FrontierCurve: 2460, V5FrontierCalib: 1880, V5FrontierCurve390: 3570, V5Alerts: 2350, V5Alerts390: 4000, V5AlertsLight: 2350, V5AlertsFlow: 1920, V5AlertsFlow390: 5100, V5AlertsStates: 3560};
 const fitH = (name, h) => MEASURED[name] ?? MEASURED_V5[name] ?? h;
+const FINAL_HEIGHTS_FILE = new URL('./screens/final/heights.json', import.meta.url);
+const FINAL_HEIGHTS = existsSync(FINAL_HEIGHTS_FILE) ? JSON.parse(readFileSync(FINAL_HEIGHTS_FILE, 'utf8')) : {};
 
 // { name, screen, page, w, h, title, opts?, expand?, interactive? }
 export const artboards = fitAll([
@@ -177,6 +182,9 @@ export const artboards = fitAll([
     ['V5AlertsFlow390', 'q5-alerts-flow', 390, 5200, 'New alert · phone (bottom sheets)', {}, 'Q-5 at 390: each step is a bottom sheet.'],
     ['V5AlertsStates', 'q5-alerts-states', 1440, 3000, 'Alerts on public data · states', {}, 'Q-5: empty, not set up, source down, couldn’t load, off, fired, blocked, demo, and the dialog’s validation, duplicate, saving and failed save.'],
   ]),
+
+  // ---- Final · Convexa v1 (2026-10-14): one row per screen, heights measured into screens/final/heights.json ----
+  ...finalArtboards(FINAL_HEIGHTS),
 ]);
 
 /** v5: a row of boards on one page at height y, 120px apart, each with its note 260px above. */
@@ -229,6 +237,7 @@ function appRows() {
 }
 
 export const annotations = [
+  FINAL_NOTE,
   { id: 'note-tweaks', page: 'page-1', w: 560, text: 'Ticker desk — the tweak chips switch readState (idle · loading · trade · no_trade · stale · cooldown · signed_out · no_key), live (pulses, particles, trail), scheme (dark · light) and the phone sheet (open · peek). Click “Analyze current snapshot” to run loading → trade; Field / Magnet switches the hero. Expand this frame and resize your window: the layout is fluid.' },
   { id: 'note-resp', page: 'page-2', w: 620, text: 'Same source, five widths. Every frame here renders the identical page body through one set of media and container queries — nothing is redrawn by hand. The phone desk docks the AI read as a bottom sheet; tables become cards under 1000px; the settings rail becomes tabs under 900px.' },
   { id: 'note-site', page: 'page-3', w: 520, text: 'Site surfaces at 1440. Copy is grounded in the product (69-name universe, ~60s desk cadence, ~3-min scanner sweep, 7–45 DTE, simulated book, BYO key); all prices, P/L, scores and timestamps are sample values.' },
@@ -274,7 +283,7 @@ export function canvasJson() {
       // v5: one note above each board, saying which wave it belongs to and what it resolves.
       ...layout().filter((a) => a.v5note).map((a) => ({ id: `v5-${a.name}`, x: a.x, y: a.y - 260, w: Math.min(a.w, 640), page: a.page, text: `${a.title}. ${a.v5note}` })),
     ],
-    launch: { view: 'canvas', page: 'page-1' },
+    launch: { view: 'canvas', page: FINAL_PAGE.id },
   };
 }
 

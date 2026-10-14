@@ -1,6 +1,10 @@
 {
   "pages": [
     {
+      "id": "final",
+      "name": "Final · Convexa v1"
+    },
+    {
       "id": "page-1",
       "name": "Ticker desk"
     },
@@ -58,6 +62,55 @@
     }
   ],
   "artboards": [
+    {
+      "file": "FFoundationsSpec.dc.html",
+      "title": "Final · Foundations · spec",
+      "x": 0,
+      "y": 0,
+      "w": 760,
+      "h": 2200,
+      "page": "final"
+    },
+    {
+      "file": "FFoundationsStateMatrix.dc.html",
+      "title": "Final · Foundations · State vocabulary × families",
+      "x": 880,
+      "y": 0,
+      "w": 1440,
+      "h": 4100,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FFoundationsChartSystem.dc.html",
+      "title": "Final · Foundations · Chart system (P-8–P-13, ruled)",
+      "x": 2440,
+      "y": 0,
+      "w": 1440,
+      "h": 6000,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FFoundationsChartStates.dc.html",
+      "title": "Final · Foundations · Every chart, in every state",
+      "x": 4000,
+      "y": 0,
+      "w": 1440,
+      "h": 5200,
+      "page": "final",
+      "expand": "fill"
+    },
+    {
+      "file": "FFoundationsThirdParty.dc.html",
+      "title": "Final · Foundations · Ours, and theirs (P-8, P-14 load on view)",
+      "x": 5560,
+      "y": 0,
+      "w": 1440,
+      "h": 2400,
+      "page": "final",
+      "expand": "fill"
+    },
     {
       "file": "Main.dc.html",
       "title": "Ticker desk · SPY (interactive · expand and resize the window)",
@@ -1830,6 +1883,14 @@
   ],
   "annotations": [
     {
+      "id": "note-final",
+      "x": 0,
+      "y": -460,
+      "w": 1100,
+      "page": "final",
+      "text": "Final · Convexa v1 (2026-10-14). The whole app in its ruled state, one row per screen: the spec card (purpose, every widget’s data source, production vs staging, every state in its words, phone, acceptance, build status, rulings, code), then staging (the demo account: signed in, all sample), production where it differs (no mocks; what needs the Massive options feed shows Not live), phone, light and states. Carries P-1–P-4, P-6, P-8–P-15 and the 2026-10-14 environment rulings. The earlier pages stay as history."
+    },
+    {
       "id": "note-tweaks",
       "x": 0,
       "y": -150,
@@ -3088,6 +3149,6 @@
   ],
   "launch": {
     "view": "canvas",
-    "page": "page-1"
+    "page": "final"
   }
 }

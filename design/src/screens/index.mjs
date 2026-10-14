@@ -34,6 +34,7 @@ import { toolsBody } from './v5/tools-v5.mjs';
 import { TV5_CSS, tvFramingBody } from './v5/tv-v5.mjs';
 import { FRONTIER_CSS, f1Body, f1Script, f2Body, f2Script, f3Body, f3Script, frontierBody } from './v5/frontier.mjs';
 import { V5_CSS, auditBody, chartSystemBody, chartStatesBody, chartPhoneBody, thirdPartyBody } from './v5/system.mjs';
+import { finalScreens } from './final/index.mjs';
 import { DIALOGS, DOCS_CSS, blogBody as blogV4Body, dialogBody, dialogStatesBody, docsStatesBody, labBody as labV4Body, methodologyBody as methodologyV4Body, notFoundBody as notFoundV4Body, operatorBody as operatorV4Body, operatorStatesBody } from './v4/docs-dialogs.mjs';
 
 const s = (title, group, desc, body, css = '', extra = {}) => ({ title, group, desc, body, css, ...extra });
@@ -141,4 +142,6 @@ export const screens = {
       'v5-third-party': s('Charts · ours and theirs', g, 'A Convexa chart beside TradingView’s frame: the eight deliberate differences and the frame’s two states.', (o) => thirdPartyBody(o), V),
     };
   })(),
+  // ---- Final · Convexa v1 (2026-10-14): every screen in its ruled state, with a spec card per row ----
+  ...finalScreens(s, HYBRID_CSS + RESEARCH_CSS + KIT_CSS + V5_CSS + APP_CSS + NOTES_CSS + DOCS_CSS + SHELL_CSS + ALERTS5_CSS + TV5_CSS + FRONTIER_CSS + TOOLS_CSS),
 };
