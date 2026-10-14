@@ -420,8 +420,10 @@ describe('positions · end-to-end flow (centerpiece)', () => {
     cleanup();
     renderHarness({ forceOffline: true });
     await waitFor(() => expect(screen.getAllByTestId('position-row').length).toBeGreaterThan(0));
+    // The retained caption needs the mark, which lands with the contract read after the rows do:
+    // wait for it rather than asserting in the same tick (that race failed under suite load).
+    expect((await screen.findAllByText('offline · last known')).length).toBeGreaterThan(0);
     expect(document.querySelectorAll('svg[data-testid="PauseIcon"]').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('offline · last known').length).toBeGreaterThan(0);
     // static contract still renders (slim Ticker — symbol + `$250 Call` leg), never blanked
     const contract = screen.getAllByTestId('cell-contract')[0];
     expect(within(contract).getByText('TSLA')).toBeInTheDocument();
