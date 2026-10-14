@@ -52,7 +52,7 @@ export const ROWS = [
       built: [
         { status: 'shipped', what: 'The environments (production live build; staging demo build, signed in to the seed account).' },
         { status: 'shipped', what: 'The state words (P-2) and the Not live copy (P-1) in the dashboard’s dataState module.' },
-        { status: 'partial', what: 'Production desk still calls three Massive endpoints that return 503.' },
+        { status: 'shipped', what: 'The production desk calls no endpoint that needs Massive (the public desk, 2026-10-14).' },
         { status: 'todo', what: 'The chart system (P-8–P-13): one chart frame, neutral roles, chartContext2 and chartBand tokens.' },
       ],
       rulings: ['P-1', 'P-2', 'P-3', 'P-4', 'P-6', 'P-8', 'P-9', 'P-10', 'P-11', 'P-12', 'P-13', 'Env 2026-10-14'],

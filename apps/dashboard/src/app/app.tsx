@@ -24,7 +24,8 @@
  *                              `default_ticker` pref wins (server-wins signed-in, client-local
  *                              anonymous); unset ⇒ SPY (index-first-defaults AC-1/AC-2; supersedes
  *                              the old static `/ticker/TSLA` redirect of AC-Route-3)
- *      - `/ticker/:symbol`   → <TickerDashboard/>   (relocated, unchanged; URL-addressable symbol)
+ *      - `/ticker/:symbol`   → <TickerDeskRoute/>   (the full desk, or the public desk on a live build
+ *                              whose options feed is off; URL-addressable symbol)
  *      - `/positions`        → <PositionsPage/>     (relocated PortfolioPanel, standalone wrapper)
  *      - `/scanner`          → <Scanner/>           (static coming-soon)
  *
@@ -44,12 +45,14 @@ import { RequireAuth } from '@/features/auth/RequireAuth';
 import { AppThemeProvider } from '@/features/auth/ThemeProvider';
 import { useSettings } from '@/features/auth/useSettings';
 import { Landing } from '@/pages/landing/Landing';
+import { marketDataOff } from '@/shared/dataState/marketData';
+import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
 import { PageColumn } from '@/shared/ui/PageColumn';
 import { RouteFallback } from '@/shared/ui/RouteFallback';
 import { AppShell } from '@/shell/AppShell';
 import { dataMode } from '@convexa/api';
-import { Typography } from '@mui/material';
+import Typography from '@mui/material/Typography';
 import { lazy, Suspense, type ReactElement } from 'react';
 import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 
@@ -64,6 +67,9 @@ function DemoOperatorUnavailable() {
 // Lazy page chunks (named exports mapped to lazy's `default` shape).
 const TickerDashboard = lazy(() =>
   import('@/pages/ticker/TickerDashboard').then((m) => ({ default: m.TickerDashboard })),
+);
+const PublicDesk = lazy(() =>
+  import('@/pages/ticker/public-desk/PublicDesk').then((m) => ({ default: m.PublicDesk })),
 );
 const TechnicalAnalysisView = lazy(() =>
   import('@/pages/ticker/technical-analysis/TechnicalAnalysisView').then((m) => ({
@@ -159,6 +165,21 @@ function DefaultTickerRedirect() {
   return <Navigate to={`/ticker/${encodeURIComponent(effective.defaultTicker)}`} replace />;
 }
 
+/** The ticker desk. A live build whose options feed is off (/api/health says `not_live` or
+ *  `paused`) mounts the public desk instead, which never calls the endpoints that need the feed;
+ *  waiting for the health read is what keeps the full desk's requests from starting. Demo builds and
+ *  a live feed (or an unknown answer) keep the full desk. */
+function TickerDeskRoute() {
+  const mode = useMarketDataMode();
+  if (dataMode === 'demo') return <TickerDashboard />;
+  if (mode === null) return <RouteFallback />;
+  return marketDataOff(mode) ? (
+    <PublicDesk feed={mode === 'paused' ? 'paused' : 'not_live'} />
+  ) : (
+    <TickerDashboard />
+  );
+}
+
 /** Indicators need daily bars: demo builds compute them from sample bars; the live build shows
  *  TradingView's chart, since it has no bar feed licensed for public display. */
 function TechnicalAnalysisRoute() {
@@ -230,7 +251,7 @@ export function AppRoutes() {
             </ErrorBoundary>
           }
         />
-        <Route path="/ticker/:ticker" element={lazyRoute(<TickerDashboard />)} />
+        <Route path="/ticker/:ticker" element={lazyRoute(<TickerDeskRoute />)} />
         <Route
           path="/ticker/:symbol/technical-analysis"
           element={lazyRoute(<TechnicalAnalysisRoute />)}

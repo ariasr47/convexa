@@ -299,7 +299,7 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
   await expect(page).toHaveURL(/\/ticker\/SPY$/);
 
   await page.evaluate(() => performance.clearResourceTimings());
-  await page.getByRole('tab', { name: 'Technical analysis', exact: true }).click();
+  await page.getByRole('tab', { name: 'Technical', exact: true }).click();
   await expect(page).toHaveURL(/\/ticker\/SPY\/technical-analysis$/);
   await expect(page.getByText(/Technical analysis · SPY/)).toBeVisible();
   await expect(page.getByText(/60 synthetic daily bars/)).toBeVisible();

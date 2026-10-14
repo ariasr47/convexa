@@ -774,7 +774,7 @@ export function TickerDashboard() {
           component={RouterLink}
           to={`/ticker/${encodeURIComponent(ticker)}/technical-analysis`}
           value="technical"
-          label="Technical analysis"
+          label="Technical"
         />
         <Tab
           component={RouterLink}

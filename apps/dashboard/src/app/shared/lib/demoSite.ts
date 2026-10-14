@@ -14,3 +14,14 @@ export const STAGING_DEMO_URL = 'https://staging.convexa.pages.dev';
 export function isDemoBuild(): boolean {
   return typeof window !== 'undefined' && window.__CONVEXA_BOOT__?.mode === 'demo';
 }
+
+/** The symbols the demo scenario covers (libs/api/src/lib/demo/catalog, pinned by catalog.spec.ts).
+ *  Kept here rather than imported so the live build never bundles the demo's seed data. */
+export const STAGING_DEMO_SYMBOLS = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'NVDA', 'TSLA'] as const;
+
+/** The same ticker desk on the demo, or SPY's when the demo doesn't cover this symbol. */
+export function demoDeskUrl(ticker: string): string {
+  const t = ticker.trim().toUpperCase();
+  const covered = (STAGING_DEMO_SYMBOLS as readonly string[]).includes(t);
+  return `${STAGING_DEMO_URL}/ticker/${encodeURIComponent(covered ? t : 'SPY')}`;
+}

@@ -6,6 +6,9 @@
  *
  * FINRA's data is credited to FINRA as owner and source, derived figures included, with a
  * do-not-redistribute notice (FINRA Equity Data terms §2.3; docs/public-data/README.md).
+ *
+ * The cards are exported for the public desk (pages/ticker/public-desk), which shows the same
+ * figures beside TradingView's chart when the options feed is off.
  */
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { publicDataWord } from '@/shared/dataState/vocabulary';
@@ -223,7 +226,7 @@ export function NotePublicPanels({
   );
 }
 
-function CardHead({ label, tag }: { label: string; tag: React.ReactNode }) {
+export function CardHead({ label, tag }: { label: string; tag: React.ReactNode }) {
   return (
     <Box
       sx={{
@@ -305,7 +308,15 @@ function Facts({ rows }: { rows: [string, string][] }) {
 
 /** A card with no figure: nothing to report (no tag), or a state that explains why (Source down,
  *  Not set up). Solid border: canon P-3 reserves dashed frames for sample data. */
-function Missing({ label, text, tag }: { label: string; text: string; tag?: React.ReactNode }) {
+export function Missing({
+  label,
+  text,
+  tag,
+}: {
+  label: string;
+  text: string;
+  tag?: React.ReactNode;
+}) {
   return (
     <Box
       component="article"
@@ -329,7 +340,7 @@ function PartNote({ text }: { text: string | null }) {
   );
 }
 
-function ShortInterestCard({ d }: { d: PublicTicker }) {
+export function ShortInterestCard({ d }: { d: PublicTicker }) {
   const si = d.short_interest;
   const demo = dataMode === 'demo';
   if (d.short_interest_state === 'unavailable' && !demo)
@@ -401,7 +412,7 @@ function ShortInterestCard({ d }: { d: PublicTicker }) {
   );
 }
 
-function ShortVolumeCard({ d }: { d: PublicTicker }) {
+export function ShortVolumeCard({ d }: { d: PublicTicker }) {
   const sv = d.short_volume;
   const demo = dataMode === 'demo';
   if (d.short_volume_state === 'unavailable' && !demo)
@@ -439,7 +450,7 @@ function ShortVolumeCard({ d }: { d: PublicTicker }) {
   );
 }
 
-function InsidersCard({ d }: { d: PublicTicker }) {
+export function InsidersCard({ d }: { d: PublicTicker }) {
   const ins = d.insiders;
   const demo = dataMode === 'demo';
   if (!ins || ins.state === 'not_configured')
