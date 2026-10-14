@@ -7,6 +7,7 @@
  * affordance lives in `action` and is the caller's responsibility (e.g. a non-navigating waitlist
  * toast button, or a link to an honest placeholder page). Pure presentation: no data, no fetch.
  */
+import { extrasFor } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
@@ -22,7 +23,8 @@ export function ComingSoonBadge() {
       size="small"
       variant="outlined"
       label="coming soon"
-      sx={{ color: 'primary.main', borderColor: 'primary.main', borderRadius: 999 }}
+      // Label in text-grade amber (legible on light surfaces); the border keeps the fill amber.
+      sx={{ color: (t) => extrasFor(t).textAmber, borderColor: 'primary.main', borderRadius: 999 }}
     />
   );
 }

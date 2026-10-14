@@ -148,13 +148,16 @@ function QuickChip({
         px: 1.25,
         py: 0.5,
         borderRadius: '999px',
-        border: `1px solid ${selected ? t.palette.primary.main : t.palette.divider}`,
-        // Quiet selected surface via primary alpha — never success/error green/red.
-        bgcolor: selected ? alpha(t.palette.primary.main, 0.14) : 'transparent',
-        color: selected ? t.palette.primary.main : t.palette.text.primary,
+        // Canon P-6 (owner ruling 2026-10-13): the current symbol is marked by outline and weight,
+        // not amber, so amber stays spent on the one primary action, the active nav and the focus
+        // ring. (The amber selected label also measured 2.63:1 in light mode.)
+        border: `1px solid ${selected ? t.palette.text.primary : t.palette.divider}`,
+        boxShadow: selected ? `inset 0 0 0 1px ${t.palette.text.primary}` : 'none',
+        bgcolor: 'transparent',
+        color: t.palette.text.primary,
         fontFamily: MONO,
         fontSize: 12,
-        fontWeight: 600,
+        fontWeight: selected ? 700 : 500,
         letterSpacing: '0.04em',
         lineHeight: 1.2,
         textTransform: 'uppercase',

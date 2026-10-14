@@ -333,7 +333,8 @@ function BookLink() {
       sx={{
         fontSize: '0.8rem',
         fontWeight: 600,
-        color: 'primary.main',
+        // Text-grade amber: light `primary.main` measured 3.27:1 as this 12.8px label.
+        color: (t) => extrasFor(t).textAmber,
         textDecoration: 'none',
         whiteSpace: 'nowrap',
         minHeight: 44,

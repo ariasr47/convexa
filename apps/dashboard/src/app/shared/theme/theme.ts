@@ -162,9 +162,43 @@ const COMMON = {
     // cannot also be the control role, so each control family binds 8 explicitly. `styleOverrides`
     // root objects are plain CSS-in-JS (not routed through the `sx` engine's `createUnaryUnit`), so
     // a bare `8` here is genuinely 8px, not a multiplier.
+    //
+    // Amber as TEXT takes the text-grade amber (`extrasFor(theme).textAmber`), the same split the
+    // focus ring uses above: an outlined or text primary Button draws its LABEL in the colour MUI
+    // gives it, and light `primary.main` (amberDeep #C57F19) measured 2.89–3.27:1 as 13px label
+    // text on the light surfaces (Alerts "Enable browser notifications", Positions export/import,
+    // 2026-10-13). textAmber: dark ≡ gammaAmber ≡ primary.main (dark renders unchanged), light
+    // #8F5C0F. Borders, hover tints and contained fills keep `primary.main`.
     MuiButton: {
       styleOverrides: {
-        root: { textTransform: 'none' as const, borderRadius: 8 },
+        root: ({ theme }: { theme: Theme }) => ({
+          textTransform: 'none' as const,
+          borderRadius: 8,
+          variants: [
+            {
+              props: { variant: 'outlined', color: 'primary' } as const,
+              style: { color: extrasFor(theme).textAmber },
+            },
+            {
+              props: { variant: 'text', color: 'primary' } as const,
+              style: { color: extrasFor(theme).textAmber },
+            },
+          ],
+        }),
+      },
+    },
+    // The same rule for an outlined primary Chip's label ("Lab", the trade-entry seed chip): its
+    // border keeps `primary.main`, its text takes textAmber.
+    MuiChip: {
+      styleOverrides: {
+        root: ({ theme }: { theme: Theme }) => ({
+          variants: [
+            {
+              props: { variant: 'outlined', color: 'primary' } as const,
+              style: { color: extrasFor(theme).textAmber },
+            },
+          ],
+        }),
       },
     },
     MuiOutlinedInput: { styleOverrides: { root: { borderRadius: 8 } } },
