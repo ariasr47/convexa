@@ -141,3 +141,36 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
   single-file viewer in `canvas/` is frozen.
 - **Board files:** each now names itself (`<title>`), declares `lang="en"`, and marks its logic script
   `type="text/x-dc"` so the frame never runs it as a classic script. No board's markup changed.
+
+## 2026-10-13 · v5 wave 1 — every chart, audited
+
+- **82 entries audited** (52 app charts, 21 board-only marks, 9 planned tools) in
+  `design/CHARTS-2026-10-13.md`: each with the question it answers, its form, findings cited to the
+  review standard or the dataviz method, the upgrade, effort, risk and score. Board **V5Audit**.
+- **Four charts draw something false:** the bridge cannot go below zero (5 of 19 shipped bridges break),
+  the research index draws losses as 3px stubs, a missing opportunity score draws as 0, and a "5m" tape
+  trail holds about 1.7 s. One root cause sits under the rest (SYS-01): no shared chart layer.
+
+## 2026-10-13 · v5 wave 2 — one chart system
+
+- **`src/chart-kit.mjs`** succeeds `fluidChart()`: frame, plot (bars, bands, gaps, events, crosshair,
+  end labels with collision leaders), range bar, sparkline, small multiples, table twin, state bodies,
+  pinned `Intl` formatters. Same construction (stretched SVG strokes, HTML text at true size).
+- **`src/components/charts.mjs`**: fifteen primitives, each with its variants and the seven data states
+  (loading at final size, empty, error with cause, stale, not live, sample, demo) and a React mapping to
+  `apps/dashboard/src/app/shared/charts/`. They join the library as the "Charts" group (full on the site
+  library; the Library board shows the frame and points to the v5 page).
+- **Two proposed token roles** under `tokens.json → additions.proposed`: `chartContext2` (the older
+  comparison line; dark #606E82 / light #7B899D) and `chartBand` (the uncertainty wash). The dataviz
+  validator passes the neutral context ramp in both schemes; `verify-tokens.mjs` now checks each
+  proposed role's contrast floor and fails if tokens.ts lands a different value (mutation-tested).
+- **Rules drawn from the canon** (board V5ChartSystem): a claim needs data; neutral first, no
+  categorical palette on the trader path; green/red only when money moves and never alone (the pair
+  measures ΔE 4.3–4.7 under deuteranopia); amber only as the focus ring and the base diamond; the
+  register holds; the frame's border is its provenance. Canon proposals P-8 to P-13 in CHARTS.
+- **Boards:** V5ChartSystem (+light), V5ChartStates, V5ChartPhone (390), V5ThirdParty (ours vs
+  TradingView's frame: eight deliberate differences).
+- **Fixes found by measuring, on existing boards:** the TradingView illustration coloured its study
+  labels as text (2.82–3.57:1; now steel with line keys) and hard-coded a dark-scheme fence colour; the
+  ticker sub-tabs' current tab measured 1.76:1 (a generic link rule outranked it); light warning strips
+  measured 4.25:1; the Library board was 5,900px tall against 13,350px of content (now measured).

@@ -11,6 +11,7 @@ export const pages = [
   { id: 'v4-app', name: 'v4 · App' },
   { id: 'v4-research', name: 'v4 · Research' },
   { id: 'v4-coverage', name: 'v4 · Coverage' },
+  { id: 'v5-charts', name: 'v5 · Charts · audit and system' },
 ];
 
 // v4 frame heights, measured 2026-10-13 by rendering design/site at each board's own width in headless
@@ -18,7 +19,10 @@ export const pages = [
 // dialog height plus its margin. Replaces the first estimates, two of which clipped (source map, shell
 // states).
 const MEASURED = { V4Alerts: 1010, V4Alerts390: 1890, V4AlertsLight: 1010, V4AlertsStates: 1280, V4Blog: 740, V4Blog390: 950, V4BlogLight: 740, V4Coverage: 1890, V4DeskLight: 2990, V4DeskStates: 2690, V4Filings: 1290, V4Filings390: 2620, V4FilingsLight: 1290, V4HybridDesk: 2990, V4HybridDesk390: 4340, V4HybridDesk390Light: 4340, V4HybridDesk834: 4260, V4HybridDeskSample: 2990, V4Lab: 1110, V4Lab390: 2000, V4LabLight: 1110, V4Landing: 2400, V4Landing390: 4100, V4LandingLight: 2400, V4LandingStates: 1450, V4Markets: 3030, V4Markets390: 4910, V4Markets834: 3790, V4MarketsDemo: 3030, V4MarketsLight: 3030, V4Methodology: 1930, V4Methodology390: 2600, V4MethodologyLight: 1930, V4MethodologyStates: 1360, V4NotFound: 700, V4NotFound390: 900, V4NotFoundLight: 700, V4NoteStates: 1200, V4NoteView: 3520, V4NoteView390: 4740, V4NoteView390Light: 4740, V4NoteViewLight: 3520, V4Operator: 730, V4Operator390: 840, V4OperatorLight: 730, V4OperatorStates: 790, V4OrderDetail: 1000, V4OrderDetail390: 1100, V4OrderDetailLight: 1000, V4OrderDetailStates: 660, V4Persona: 1000, V4Persona390: 1100, V4PersonaLight: 1000, V4PersonaStates: 760, V4Positions: 1070, V4Positions390: 1910, V4PositionsLight: 1070, V4PositionsSignedOut: 710, V4PositionsStates: 1560, V4ResearchIndex: 1300, V4ResearchIndex390: 2030, V4ResearchIndexLight: 1300, V4Roadmap: 2400, V4Scanner: 1310, V4Scanner390: 1810, V4ScannerLight: 1310, V4ScannerStates: 1790, V4Scorecard: 1500, V4Scorecard390: 3130, V4ScorecardLight: 1500, V4Settings: 1650, V4Settings390: 2090, V4SettingsLight: 1650, V4SettingsSignedOut: 1320, V4SettingsStates: 1400, V4Shell: 760, V4Shell390: 844, V4ShellLight: 760, V4ShellStates: 2620, V4SignIn: 1000, V4SignIn390: 1000, V4SignInLight: 1000, V4SignInStates: 1330, V4SourceMap: 6450, V4StateMatrix: 4090, V4StateMatrix390: 4510, V4StateMatrixLight: 4090, V4Technical: 1270, V4Technical390: 1370, V4TechnicalLight: 1270, V4TechnicalStates: 1320, V4TickerResearch: 2230, V4TickerResearch390: 4290, V4TickerResearchLight: 2230, V4ToolCalendar: 2550, V4ToolClusters: 2270, V4ToolHolders: 2310, V4ToolLiquidity: 2370, V4ToolOtc: 2370, V4ToolPeers: 2440, V4ToolSignals: 2260, V4ToolTa: 3100, V4ToolXbrl: 2470, V4TradeEntry: 1100, V4TradeEntry390: 1300, V4TradeEntryLight: 1100, V4TradeEntryStates: 1400, V4ViewEditor: 1000, V4ViewEditor390: 1200, V4ViewEditorLight: 1000, V4ViewEditorStates: 840, V4WhatsSent: 1120, V4WhatsSent390: 1100, V4WhatsSentLight: 1120, V4WhatsSentStates: 1290 };
-const fitH = (name, h) => MEASURED[name] ?? h;
+// v5 frame heights, measured by rendering design/site at each board's width (main tree
+// tmp/canvas-v5/tools/measure.mjs): natural page height + 40px, rounded up to 10.
+const MEASURED_V5 = {V5Audit: 2120, V5ChartSystem: 7460, V5ChartStates: 3710, V5ChartPhone: 2340, V5ThirdParty: 1830, V5ChartSystemLight: 7460};
+const fitH = (name, h) => MEASURED[name] ?? MEASURED_V5[name] ?? h;
 
 // { name, screen, page, w, h, title, opts?, expand?, interactive? }
 export const artboards = fitAll([
@@ -60,7 +64,7 @@ export const artboards = fitAll([
   { name: 'NotFound', screen: 'not-found', page: 'page-4', w: 1440, h: 640, title: 'Route fallback + 404' },
   { name: 'Operator', screen: 'operator', page: 'page-4', w: 1440, h: 1080, title: 'Operator · metrics + research' },
 
-  { name: 'Library', screen: 'library', page: 'page-5', w: 1440, h: 5900, title: 'Library · tokens, components, states, React mapping', opts: { dataStates: 'summary' } },
+  { name: 'Library', screen: 'library', page: 'page-5', w: 1440, h: 14460, /* measured 2026-10-13 (v5): it was 5900 and clipped ~7,450px of the library before v5's charts section */ title: 'Library · tokens, components, states, React mapping', opts: { dataStates: 'summary', charts: 'summary' } },
   { name: 'Components', screen: 'components-sheet', page: 'page-5', w: 1440, h: 2720, title: 'Components & motion sheet' },
   { name: 'DeskLight', screen: 'desk', page: 'page-5', w: 1440, h: 2300, title: 'Desk · light scheme (interactive)', opts: { scheme: 'light' } },
   { name: 'LandingLight', screen: 'landing', page: 'page-5', w: 1440, h: 2960, title: 'Landing · light scheme', opts: { scheme: 'light' } },
@@ -115,8 +119,24 @@ export const artboards = fitAll([
 
   // ---- v4 · Coverage (wave 5, 2026-10-13) ----
   { name: 'V4Coverage', screen: 'v4-coverage', page: 'v4-coverage', x: 0, y: 0, w: 1920, h: 2600, title: 'v4 · Coverage matrix · route × width × theme × states', findings: 'coverage; gaps listed in the matrix' },
+
+  // ---- v5 · Charts (2026-10-13): the audit and the chart system ----
+  ...v5Row('v5-charts', 0, [
+    ['V5Audit', 'v5-audit', 1440, 2300, 'v5 · Every chart, audited', {}, 'Wave 1: 82 entries, the top ten, what recurs. Long form: design/CHARTS-2026-10-13.md.'],
+    ['V5ChartSystem', 'v5-system', 1440, 6000, 'v5 · One chart system', {}, 'Wave 2: rules, colour roles (validator results), mark specs, every primitive, the React module map. Resolves SYS-01.'],
+    ['V5ChartStates', 'v5-states', 1440, 5200, 'v5 · Every chart, in every state', {}, 'Wave 2: ready + the seven data states at final size, scrub, keyboard focus, primitive × state. Resolves CH2, the silent nulls.'],
+    ['V5ChartPhone', 'v5-phone', 390, 2600, 'v5 · Charts on a phone (390)', {}, 'Wave 2: re-layout, never scale-down; text ≥ 11px; the bridge as rows, crossing zero.'],
+    ['V5ThirdParty', 'v5-third-party', 1440, 2400, 'v5 · Ours, and theirs', {}, 'Wave 2: a Convexa chart beside TradingView’s frame; the eight deliberate differences. Resolves TT-01, DB-15.'],
+    ['V5ChartSystemLight', 'v5-system', 1440, 6000, 'v5 · One chart system · light', { scheme: 'light' }, 'The same board in the light scheme: the roles are token swaps.'],
+  ]),
 ]);
-function fitAll(list) { return list.map((a) => (a.name.startsWith('V4') ? { ...a, h: fitH(a.name, a.h) } : a)); }
+
+/** v5: a row of boards on one page at height y, 120px apart, each with its note 260px above. */
+function v5Row(page, y, rows) {
+  let x = 0;
+  return rows.map(([name, screen, w, h, title, opts, v5note]) => { const a = { name, screen, page, x, y, w, h, title, opts, v5note, ...(w >= 1280 ? { expand: 'fill' } : {}) }; x += w + 120; return a; });
+}
+function fitAll(list) { return list.map((a) => (a.name.startsWith('V4') || a.name.startsWith('V5') ? { ...a, h: fitH(a.name, a.h) } : a)); }
 
 /** v4 · App: one row per route — desktop 1440 dark, phone 390, light 1440, states — with room above
  *  each row for the findings notes. */
@@ -169,6 +189,7 @@ export const annotations = [
   { id: 'note-v4-tools', page: 'v4-tools', x: 0, y: -520, w: 900, text: 'v4 · Tools from public data (2026-10-13). Source of truth: docs/public-data/CANDIDATES.md and its status words (live · switch · build · verify · blocked). Top row: the roadmap and the built research pages, re-sourced and joined by the new tools. Rows below: one sheet per priority tool with desktop, phone and every state. Blocked tools draw their design target with illustrative values; the gate is open question Q-1.' },
   { id: 'note-v4-app', page: 'v4-app', x: 0, y: -520, w: 900, text: 'v4 · App (2026-10-13). One row per route: desktop 1440 dark, phone 390, light 1440, then the route’s states board. The ticker desk’s desktop and phone boards are on v4 · Data states. Findings per route: design/REVIEW-2026-10-13.md (wave 3). Figures are illustrative design values.' },
   { id: 'note-v4-research', page: 'v4-research', x: 0, y: -520, w: 900, text: 'v4 · Research refresh (2026-10-13). The note view with neutral directions supersedes the research canvas’s Main board (that canvas is left as it is); the index with its tabs; phone boards for Markets, Filings, Scorecard and ticker research; light boards for every research page and the state matrix; Markets in the demo build.' },
+  { id: 'note-v5-charts', page: 'v5-charts', x: 0, y: -620, w: 900, text: 'v5 · Charts (2026-10-13). Wave 1 audits every chart in the app and on these boards (design/CHARTS-2026-10-13.md); wave 2 is one chart system: a frame that makes a claim and names its source, a plot with text at true size, labels on the data, a table twin, one tab stop, the seven data states. Values are illustrative; sources are the ones the app reads.' },
   { id: 'note-system', page: 'page-5', w: 560, text: 'The library is generated from tokens/tokens.json and src/components — every state shown there is a registered state. The light renders prove the scheme is a token swap, not a second layout.' },
 ];
 
@@ -202,6 +223,8 @@ export function canvasJson() {
       ...annotations.map((n) => ({ id: n.id, x: n.x ?? 0, y: n.y ?? -150, w: n.w, page: n.page, text: n.text })),
       // v4: one findings note above every v4 board, naming the review IDs it resolves.
       ...layout().filter((a) => a.findings).map((a) => ({ id: `find-${a.name}`, x: a.x, y: a.y - 230, w: Math.min(a.w, 640), page: a.page, text: `${a.title}. Resolves ${a.findings}. Findings: design/REVIEW-2026-10-13.md.` })),
+      // v5: one note above each board, saying which wave it belongs to and what it resolves.
+      ...layout().filter((a) => a.v5note).map((a) => ({ id: `v5-${a.name}`, x: a.x, y: a.y - 260, w: Math.min(a.w, 640), page: a.page, text: `${a.title}. ${a.v5note}` })),
     ],
     launch: { view: 'canvas', page: 'page-1' },
   };

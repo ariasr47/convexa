@@ -66,7 +66,7 @@ const ADDITIONS_MAP = {
 // Step 1 — set-equality: the names PROPOSED in tokens.json's `additions` must be exactly the
 // names this checker knows how to verify, in both directions. A name added to `additions`
 // without a matching entry here (or vice versa) is itself a defect, independent of any value.
-const designAdditionNames = Object.keys(design.additions).filter((k) => k !== '$comment').sort();
+const designAdditionNames = Object.keys(design.additions).filter((k) => k !== '$comment' && k !== 'proposed').sort();
 const knownAdditionNames = Object.keys(ADDITIONS_MAP).sort();
 const onlyInDesign = designAdditionNames.filter((k) => !knownAdditionNames.includes(k));
 const onlyInChecker = knownAdditionNames.filter((k) => !designAdditionNames.includes(k));
@@ -98,6 +98,40 @@ for (const [key, mode, expected, label] of additionChecks) {
   const ok = expected && got && got.toLowerCase() === expected.toLowerCase();
   if (!ok) bad++;
   console.log(`${ok ? '✓' : '✗'} ${mode.padEnd(5)} ${key.padEnd(10)} design ${String(got).padEnd(28)} tokens.ts ${label} = ${expected ?? '(not found)'}`);
+}
+// ---------------------------------------------------------------------------------------------
+// v5 (2026-10-13): roles PROPOSED for tokens.ts (`additions.proposed`). Not in the app yet, so there is
+// nothing to mirror; instead each one must (a) carry a value for both schemes, (b) clear its stated
+// contrast floor on its stated surfaces, measured here (WCAG 2 relative luminance), and (c) either be
+// absent from tokens.ts or, once it lands, carry the same value there (then it moves into the mirror).
+// ---------------------------------------------------------------------------------------------
+const proposed = Object.entries(design.additions.proposed || {}).filter(([k]) => k !== '$comment');
+const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+const rgbOf = (s) => { const h = /^#([0-9a-f]{6})$/i.exec(s); if (h) return [0, 2, 4].map((i) => parseInt(h[1].slice(i, i + 2), 16)); const m = /^rgba?\(([^)]+)\)$/i.exec(s); if (m) return m[1].split(',').map(Number).slice(0, 3); return null; };
+const lum = (rgb) => 0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2]);
+const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+if (proposed.length) console.log('\nv5 proposed chart roles (not in tokens.ts yet; checked for shape and contrast):');
+for (const [name, r] of proposed) {
+  for (const mode of ['dark', 'light']) {
+    const v = r[mode]; const rgb = v && rgbOf(v);
+    if (!rgb) { bad++; console.log(`✗ ${mode.padEnd(5)} ${name.padEnd(14)} missing or unparseable value ${v}`); continue; }
+    const floor = r.floor;
+    if (floor && floor.contrast) {
+      for (const surf of floor.on) {
+        const sv = rgbOf(design.color[mode][surf] || '');
+        if (!sv) { bad++; console.log(`✗ ${mode.padEnd(5)} ${name.padEnd(14)} unknown surface ${surf}`); continue; }
+        const cr = ratio(rgb, sv); const ok = cr >= floor.contrast; if (!ok) bad++;
+        console.log(`${ok ? '✓' : '✗'} ${mode.padEnd(5)} ${name.padEnd(14)} ${v.padEnd(22)} ${cr.toFixed(2)}:1 on ${surf} (floor ${floor.contrast}:1)`);
+      }
+    } else console.log(`· ${mode.padEnd(5)} ${name.padEnd(14)} ${v.padEnd(22)} no contrast floor (not a carrier: ${String(r.role).split('.')[0]})`);
+  }
+  const key = String(r.home || '').split('.').pop();
+  const landed = key ? seq(key) : [];
+  if (landed.length) {
+    const same = landed[0]?.toLowerCase() === r.dark.toLowerCase() && landed[1]?.toLowerCase() === r.light.toLowerCase();
+    if (!same) bad++;
+    console.log(`${same ? '✓' : '✗'} ${name} has landed in tokens.ts as ${r.home} (${landed.join(' / ')}): ${same ? 'same values, move it into the mirror' : 'VALUES DIFFER from the proposal'}`);
+  }
 }
 console.log(bad ? `\n${bad} mismatch(es) — design and app tokens have drifted.` : '\nAll shared tokens match tokens.ts.');
 process.exit(bad ? 1 : 0);
