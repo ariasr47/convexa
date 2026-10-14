@@ -216,3 +216,18 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
   budget on a software rasteriser after the ladder (p95 17.0 ms) and is reported so.
 - **Canon proposals P-12 and P-15**; horizon charts, a step-through bridge and a price timeline
   considered and not built, with reasons.
+
+## 2026-10-14 · Final · Convexa v1 — every screen in its ruled state
+
+- **New first page "Final · Convexa v1"** (owner request): 19 rows, 128 boards. Each row opens with a spec card
+  (purpose, every widget's data source, production vs staging, every state in its P-2 words, phone, acceptance,
+  built so far, rulings, code), then staging (the demo account), production (no mocks; Massive-dependent panels
+  Not live with "See it on the demo →"), phone, light, states. Rows: foundations; shell, landing, methodology,
+  blog, Lab, 404, operator; ticker desk, Technical, research note; research index, Markets, Filings, Scorecard;
+  scanner, positions, alerts, settings, dialogs. Source: `src/screens/final/`; brief: `FINAL-BRIEF.md`.
+- Carries P-1–P-4, P-6, P-8–P-15 (v5 rulings 2026-10-14) and the 2026-10-14 environment rulings. The earlier
+  pages stay as history; their demo boards now say "Signed in as the demo account" and the signed-out nav says
+  "Log in" (shared `lib.mjs`), and light chart boards take the light chart roles (shared `chart-kit.mjs` fix).
+- Checked: `tmp/final-render.mjs` on all 128 boards (no overflow, no text under 11px, exit 0 per group); build and
+  verify-tokens exit 0; no NUL bytes. **Published** to https://claude.ai/artifact/3ooV24ayHwh52t3qAhFiBe as
+  versions 8–10 (index + 315 boards). The canvas page itself was not opened in a browser.
