@@ -26,6 +26,32 @@ honestly, so the API reads the Treasury's own CSVs (the same figures FRED republ
 None of these needs a key. All of them are public records or official datasets, so their figures can be
 shown on a public site.
 
+## Price charts: TradingView (adopted 2026-10-13)
+
+The live site's Technical tab (`/ticker/<TICKER>/technical-analysis`) embeds TradingView's free
+advanced-chart widget: daily candles, EMA 20 and 50, RSI 14. No free or cheap price feed allows
+showing prices on a public site (see `CANDIDATES.md`, "Research, 2026-10-13"). TradingView licenses
+the data in its own widget, so the page shows TradingView's chart as TradingView's:
+
+- **Display only.** Convexa never reads, stores or computes from the prices in the frame
+  (TradingView policies §3). Indicators Convexa computes itself still need a licensed feed.
+- **Attribution.** The "… by TradingView" line stays exactly as TradingView publishes it (§4).
+- **Labelled.** A dotted third-party chip ("Chart by TradingView · US prices delayed") sits above it.
+  US prices come from Cboe One and are delayed.
+- **Privacy.** Every view sends the visitor's IP address and the page address to TradingView. Its
+  FAQ says it sets no cookies. A note under the chart says so.
+- **Security.** The CSP allows `script-src https://s3.tradingview.com` and `frame-src
+https://www.tradingview-widget.com https://s.tradingview.com`, and nothing else third-party. The
+  loader script can't be pinned with a Subresource Integrity hash, so we trust what TradingView
+  serves.
+- **Not embedded:** TradingView's technical-rating gauge, which words its summary as buy and sell
+  calls.
+- **Demo builds** keep their sample-bar view; the widget appears only in live builds.
+
+Verified 2026-10-13 against a local production build served with the production CSP (headless
+Chromium): no CSP violations and no console errors; the frame drew NVDA's daily chart with EMA 20,
+EMA 50 and RSI 14 at 1280 and 390 wide, in dark and light.
+
 ## Settings (API)
 
 - `PUBLIC_DATA` — `on` (default) or `off`. Off answers every endpoint with state `off` and calls nothing.

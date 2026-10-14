@@ -27,7 +27,14 @@ export function Caps({ children, sx }: { children: ReactNode; sx?: SxProps<Theme
 
 /** Where a page's data came from. Primary is a public record or an official dataset; sample is the
  *  demo's authored data, dashed. */
-export function ProvenanceChip({ text, kind }: { text: string; kind: 'primary' | 'sample' }) {
+/** Solid: a primary source. Dotted: a third party's (TradingView). Dashed: the demo's sample data. */
+export function ProvenanceChip({
+  text,
+  kind,
+}: {
+  text: string;
+  kind: 'primary' | 'third-party' | 'sample';
+}) {
   return (
     <Box
       component="span"
@@ -42,7 +49,7 @@ export function ProvenanceChip({ text, kind }: { text: string; kind: 'primary' |
         py: '4px',
         lineHeight: 1.35,
         borderRadius: '12px',
-        border: `1px ${kind === 'sample' ? 'dashed' : 'solid'} ${alpha(t.palette.text.secondary, kind === 'sample' ? 0.55 : 0.3)}`,
+        border: `1px ${kind === 'sample' ? 'dashed' : kind === 'third-party' ? 'dotted' : 'solid'} ${alpha(t.palette.text.secondary, kind === 'primary' ? 0.3 : 0.55)}`,
         fontSize: 11,
         color: kind === 'sample' ? 'text.secondary' : 'text.primary',
         overflowWrap: 'anywhere',

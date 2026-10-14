@@ -40,7 +40,8 @@ export function MarketDataNotice() {
           Live market data is off.
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          Prices, dealer structure and AI reads are paused. Research notes are current.
+          Prices, dealer structure and AI reads are paused. Daily charts come from TradingView, and
+          research notes are current.
         </Typography>
         <Box sx={{ flexGrow: 1 }} />
         <Stack direction="row" spacing={2}>

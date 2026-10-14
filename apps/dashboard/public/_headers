@@ -3,6 +3,9 @@
 #
 # Keep CSP conservative but workable: Vite-built SPA, same-origin /api proxy,
 # Google Fonts not used (self-hosted), no third-party analytics scripts required.
+# TradingView (2026-10-13, owner's choice): its widget loader from s3.tradingview.com, and the
+# iframes it frames from its two widget hosts. Nothing else third-party; see
+# apps/dashboard/src/app/pages/ticker/technical-analysis/tradingView.ts.
 
 /*
   X-Content-Type-Options: nosniff
@@ -11,7 +14,7 @@
   Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()
   Cross-Origin-Opener-Policy: same-origin
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' https://s3.tradingview.com; frame-src https://www.tradingview-widget.com https://s.tradingview.com; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests
 
 # Do not cache the SPA shell aggressively — deploys should show new assets promptly.
 /index.html

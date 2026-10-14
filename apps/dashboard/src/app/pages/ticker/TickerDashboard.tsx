@@ -872,6 +872,15 @@ export function TickerDashboard() {
               Read {ticker.toUpperCase()} research →
             </Link>
             <Link
+              component={RouterLink}
+              to={`/ticker/${encodeURIComponent(ticker.toUpperCase())}/technical-analysis`}
+              variant="body2"
+              underline="always"
+              sx={{ color: (theme) => extrasFor(theme).textInfo }}
+            >
+              Daily chart and technicals →
+            </Link>
+            <Link
               href={STAGING_DEMO_URL}
               variant="body2"
               underline="always"

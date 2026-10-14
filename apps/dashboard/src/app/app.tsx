@@ -73,9 +73,9 @@ const TechnicalAnalysisView = lazy(() =>
 const ResearchView = lazy(() =>
   import('@/pages/ticker/research/ResearchView').then((m) => ({ default: m.ResearchView })),
 );
-const TechnicalAnalysisOff = lazy(() =>
-  import('@/pages/ticker/technical-analysis/TechnicalAnalysisOff').then((m) => ({
-    default: m.TechnicalAnalysisOff,
+const TechnicalAnalysisLive = lazy(() =>
+  import('@/pages/ticker/technical-analysis/TechnicalAnalysisLive').then((m) => ({
+    default: m.TechnicalAnalysisLive,
   })),
 );
 const NotesView = lazy(() =>
@@ -159,7 +159,8 @@ function DefaultTickerRedirect() {
   return <Navigate to={`/ticker/${encodeURIComponent(effective.defaultTicker)}`} replace />;
 }
 
-/** Indicators need daily bars: demo builds have sample bars; the live build has no bar feed. */
+/** Indicators need daily bars: demo builds compute them from sample bars; the live build shows
+ *  TradingView's chart, since it has no bar feed licensed for public display. */
 function TechnicalAnalysisRoute() {
   const { symbol = '' } = useParams();
   return (
@@ -167,7 +168,7 @@ function TechnicalAnalysisRoute() {
       {dataMode === 'demo' ? (
         <TechnicalAnalysisView symbol={symbol} />
       ) : (
-        <TechnicalAnalysisOff symbol={symbol} />
+        <TechnicalAnalysisLive symbol={symbol} />
       )}
     </PageColumn>
   );
