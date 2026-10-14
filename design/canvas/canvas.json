@@ -39,6 +39,10 @@
     {
       "id": "v4-coverage",
       "name": "v4 · Coverage"
+    },
+    {
+      "id": "v5-charts",
+      "name": "v5 · Charts · audit and system"
     }
   ],
   "artboards": [
@@ -361,7 +365,7 @@
       "x": 0,
       "y": 0,
       "w": 1440,
-      "h": 5900,
+      "h": 14460,
       "page": "page-5"
     },
     {
@@ -1480,6 +1484,65 @@
       "w": 1920,
       "h": 1890,
       "page": "v4-coverage"
+    },
+    {
+      "file": "V5Audit.dc.html",
+      "title": "v5 · Every chart, audited",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 2120,
+      "page": "v5-charts",
+      "expand": "fill"
+    },
+    {
+      "file": "V5ChartSystem.dc.html",
+      "title": "v5 · One chart system",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 7460,
+      "page": "v5-charts",
+      "expand": "fill"
+    },
+    {
+      "file": "V5ChartStates.dc.html",
+      "title": "v5 · Every chart, in every state",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 3710,
+      "page": "v5-charts",
+      "expand": "fill"
+    },
+    {
+      "file": "V5ChartPhone.dc.html",
+      "title": "v5 · Charts on a phone (390)",
+      "x": 4680,
+      "y": 0,
+      "w": 390,
+      "h": 2340,
+      "page": "v5-charts"
+    },
+    {
+      "file": "V5ThirdParty.dc.html",
+      "title": "v5 · Ours, and theirs",
+      "x": 5190,
+      "y": 0,
+      "w": 1440,
+      "h": 1830,
+      "page": "v5-charts",
+      "expand": "fill"
+    },
+    {
+      "file": "V5ChartSystemLight.dc.html",
+      "title": "v5 · One chart system · light",
+      "x": 6750,
+      "y": 0,
+      "w": 1440,
+      "h": 7460,
+      "page": "v5-charts",
+      "expand": "fill"
     }
   ],
   "annotations": [
@@ -1546,6 +1609,14 @@
       "w": 900,
       "page": "v4-research",
       "text": "v4 · Research refresh (2026-10-13). The note view with neutral directions supersedes the research canvas’s Main board (that canvas is left as it is); the index with its tabs; phone boards for Markets, Filings, Scorecard and ticker research; light boards for every research page and the state matrix; Markets in the demo build."
+    },
+    {
+      "id": "note-v5-charts",
+      "x": 0,
+      "y": -620,
+      "w": 900,
+      "page": "v5-charts",
+      "text": "v5 · Charts (2026-10-13). Wave 1 audits every chart in the app and on these boards (design/CHARTS-2026-10-13.md); wave 2 is one chart system: a frame that makes a claim and names its source, a plot with text at true size, labels on the data, a table twin, one tab stop, the seven data states. Values are illustrative; sources are the ones the app reads."
     },
     {
       "id": "note-system",
@@ -2474,6 +2545,54 @@
       "w": 640,
       "page": "v4-coverage",
       "text": "v4 · Coverage matrix · route × width × theme × states. Resolves coverage; gaps listed in the matrix. Findings: design/REVIEW-2026-10-13.md."
+    },
+    {
+      "id": "v5-V5Audit",
+      "x": 0,
+      "y": -260,
+      "w": 640,
+      "page": "v5-charts",
+      "text": "v5 · Every chart, audited. Wave 1: 82 entries, the top ten, what recurs. Long form: design/CHARTS-2026-10-13.md."
+    },
+    {
+      "id": "v5-V5ChartSystem",
+      "x": 1560,
+      "y": -260,
+      "w": 640,
+      "page": "v5-charts",
+      "text": "v5 · One chart system. Wave 2: rules, colour roles (validator results), mark specs, every primitive, the React module map. Resolves SYS-01."
+    },
+    {
+      "id": "v5-V5ChartStates",
+      "x": 3120,
+      "y": -260,
+      "w": 640,
+      "page": "v5-charts",
+      "text": "v5 · Every chart, in every state. Wave 2: ready + the seven data states at final size, scrub, keyboard focus, primitive × state. Resolves CH2, the silent nulls."
+    },
+    {
+      "id": "v5-V5ChartPhone",
+      "x": 4680,
+      "y": -260,
+      "w": 390,
+      "page": "v5-charts",
+      "text": "v5 · Charts on a phone (390). Wave 2: re-layout, never scale-down; text ≥ 11px; the bridge as rows, crossing zero."
+    },
+    {
+      "id": "v5-V5ThirdParty",
+      "x": 5190,
+      "y": -260,
+      "w": 640,
+      "page": "v5-charts",
+      "text": "v5 · Ours, and theirs. Wave 2: a Convexa chart beside TradingView’s frame; the eight deliberate differences. Resolves TT-01, DB-15."
+    },
+    {
+      "id": "v5-V5ChartSystemLight",
+      "x": 6750,
+      "y": -260,
+      "w": 640,
+      "page": "v5-charts",
+      "text": "v5 · One chart system · light. The same board in the light scheme: the roles are token swaps."
     }
   ],
   "launch": {
