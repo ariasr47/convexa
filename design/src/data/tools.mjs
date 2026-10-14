@@ -20,12 +20,12 @@ export const TOOLS = [
     empty: ['Nothing scheduled in the next two weeks.', 'The next release on the calendar is the FOMC statement on Oct 28.'],
     config: null, blocked: false, locked: null, skel: 'rows',
     events: [
-      ['Oct 15', 'Wed', 'CPI, September', 'BLS', '8:30 AM ET', '3 notes review their discount rate'],
+      ['Oct 15', 'Wed', 'CPI, September', 'BLS', '8:30 AM ET', '3 notes'],
       ['Oct 21', 'Tue', '20-year bond auction', 'Treasury', '1:00 PM ET', ''],
-      ['Oct 28', 'Wed', 'FOMC statement', 'Fed', '2:00 PM ET', 'Every valued note reviews its rate'],
+      ['Oct 28', 'Wed', 'FOMC statement', 'Fed', '2:00 PM ET', 'every valued note'],
       ['Oct 29', 'Thu', 'GDP, Q3 advance', 'BEA', '8:30 AM ET', ''],
       ['Oct 31', 'Fri', 'PCE prices, September', 'BEA', '8:30 AM ET', ''],
-      ['Nov 6', 'Fri', 'Employment situation, October', 'BLS', '8:30 AM ET', '2 notes cite payrolls'],
+      ['Nov 6', 'Fri', 'Employment situation, October', 'BLS', '8:30 AM ET', '2 notes'],
     ],
   },
   {

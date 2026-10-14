@@ -1,7 +1,7 @@
 // v4 · the hybrid ticker desk (NVDA). Public data live; the options-feed panels either explain
 // themselves (opts.sample false) or show a labelled sample (opts.sample true). One fluid body: the
 // phone board is this screen at 390 (zone B folds into one list there).
-import { icon, v4Page } from '../../lib.mjs';
+import { fluidChart, icon, v4Page } from '../../lib.mjs';
 import { NVDA } from '../../data/index.mjs';
 import { dataCell, gexBars, provChip, rangeBar, stateTag } from '../../components/data-states.mjs';
 
@@ -41,27 +41,23 @@ const head = (title, tag, more = '') => `<div class="ph"><h3>${title}</h3>${tag}
 const would = (w, off) => `<p class="dline" style="margin: 0;"><strong style="color: var(--phosphor);">Would show</strong> ${w}</p><p class="dline" style="margin: 0;"><strong style="color: var(--phosphor);">Off because</strong> ${off}</p>`;
 
 function priceChart() {
-  const c = NVDA.closes, w = 820, h = 240, l = 48, r = 120, t = 16, b = 28;
-  const min = 200, max = 246;
-  const x = (i) => l + (i / (c.length - 1)) * (w - l - r);
-  const y = (v) => t + (1 - (v - min) / (max - min)) * (h - t - b);
-  const path = (vals) => vals.map((v, i) => `${i ? 'L' : 'M'} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
-  const avg = (n) => c.map((_, i) => { const s = c.slice(Math.max(0, i - n + 1), i + 1); return s.reduce((a, v) => a + v, 0) / s.length - (n === 20 ? 1.5 : 7); });
-  const s20 = avg(20), s50 = avg(50);
-  const lastX = x(c.length - 1);
-  const grid = [210, 220, 230, 240].map((v) => `<line x1="${l}" x2="${w - r}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--line)"></line><text x="${l - 8}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end" font-family="IBM Plex Mono" font-size="11" fill="var(--steel)">${v}</text>`).join('');
-  const level = (v, label) => `<line x1="${l}" x2="${w - r}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--steel-2)" stroke-dasharray="2 4"></line><text x="${w - r + 8}" y="${(y(v) + 4).toFixed(1)}" font-family="IBM Plex Sans" font-size="11" fill="var(--steel)">${label}</text>`;
-  return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="NVDA daily closes from mid-September to Oct 12, with the 20- and 50-day averages; support near 211 and resistance at the 52-week high, 243.37" style="display: block; width: 100%; height: auto;">
-    ${grid}${level(211, 'support 211.00')}${level(243.37, '52-wk high 243.37')}
-    <path d="${path(s50)}" fill="none" stroke="var(--steel)" stroke-width="1.5" stroke-dasharray="6 4"></path>
-    <path d="${path(s20)}" fill="none" stroke="var(--steel)" stroke-width="1.5"></path>
-    <path d="${path(c)}" fill="none" stroke="var(--phosphor)" stroke-width="2.25" stroke-linejoin="round"></path>
-    <circle cx="${lastX.toFixed(1)}" cy="${y(c[c.length - 1]).toFixed(1)}" r="3.5" fill="var(--phosphor)"></circle>
-    <text x="${(lastX + 8).toFixed(1)}" y="${(y(c[c.length - 1]) - 6).toFixed(1)}" font-family="IBM Plex Mono" font-size="12" font-weight="600" fill="var(--phosphor)">226.32 close</text>
-    <text x="${(lastX + 8).toFixed(1)}" y="${(y(s20[s20.length - 1]) + 14).toFixed(1)}" font-family="IBM Plex Sans" font-size="11" fill="var(--steel)">20-day avg</text>
-    <text x="${(lastX + 8).toFixed(1)}" y="${(y(s50[s50.length - 1]) + 16).toFixed(1)}" font-family="IBM Plex Sans" font-size="11" fill="var(--steel)">50-day avg</text>
-    <text x="${l}" y="${h - 6}" font-family="IBM Plex Mono" font-size="11" fill="var(--steel)">Sep 15</text><text x="${w - r}" y="${h - 6}" text-anchor="end" font-family="IBM Plex Mono" font-size="11" fill="var(--steel)">Oct 12</text>
-  </svg>`;
+  const c = NVDA.closes;
+  const avg = (n, off) => c.map((_, i) => { const s = c.slice(Math.max(0, i - n + 1), i + 1); return s.reduce((a, v) => a + v, 0) / s.length - off; });
+  const s20 = avg(20, 1.5), s50 = avg(50, 7), last = c.length - 1;
+  const pts = (vals) => vals.map((v, i) => [i, v]);
+  return fluidChart({
+    height: 240, pl: 40, pr: 118, prn: 64, xmin: 0, xmax: last, ymin: 200, ymax: 246,
+    aria: 'NVDA daily closes from Sep 15 to Oct 12, with the 20- and 50-day averages; support near 211 and resistance at the 52-week high, 243.37',
+    yTicks: [{ v: 210, label: '210' }, { v: 220, label: '220', minor: true }, { v: 230, label: '230' }, { v: 240, label: '240' }],
+    xTicks: [{ v: 0, label: 'Sep 15' }, { v: last, label: 'Oct 12' }],
+    hlines: [{ v: 211, label: { long: 'support 211.00', short: 'support' } }, { v: 243.37, label: { long: '52-wk high 243.37', short: 'high' } }],
+    series: [
+      { points: pts(s50), stroke: 'var(--steel)', width: 1.5, dash: '6 4', end: { long: '50-day avg', short: '50d' }, endColor: 'var(--steel)', endY: s50[last] - 1.2 },
+      { points: pts(s20), stroke: 'var(--steel)', width: 1.5, end: { long: '20-day avg', short: '20d' }, endColor: 'var(--steel)', endY: s20[last] - 1.2 },
+      { points: pts(c), stroke: 'var(--phosphor)', width: 2.25, end: { long: '226.32 close', short: '226.32' }, endY: c[last] + 1.2 },
+    ],
+    pointLabels: [],
+  });
 }
 
 function liveZone() {

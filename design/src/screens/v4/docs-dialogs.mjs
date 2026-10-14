@@ -1,6 +1,6 @@
 // v4 · Methodology, Blog, Lab, 404 and route fallback; the dialogs (sign in, trade entry, order
 // detail, what's sent, persona, view editor); the operator pages. Pages and their states boards.
-import { icon, v4Nav, v4Notice, v4Page, wordmark } from '../../lib.mjs';
+import { fluidChart, icon, v4Nav, v4Notice, v4Page, wordmark } from '../../lib.mjs';
 import { dataCell, gexBars, provChip, stateTag } from '../../components/data-states.mjs';
 import { dlg, fld, overPage, seg, statesBoard, sw } from './kit.mjs';
 
@@ -15,7 +15,7 @@ export const DOCS_CSS = `
   .doc article p { margin: 0; font-size: 15.5px; line-height: 1.65; color: var(--steel); text-wrap: pretty; }
   .doc article p strong { color: var(--phosphor); }
   .lab-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 16px; }
-  .ops-bar { display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 24px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .ops-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 48px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
   @media (max-width: 899px) { .doc { grid-template-columns: 1fr; gap: 16px; } .doc nav { position: static; flex-direction: row; overflow-x: auto; } .doc nav a { flex: 0 0 auto; min-height: 44px; } }
 `;
 
@@ -155,11 +155,9 @@ export function dialogStatesBody(key) {
 export function operatorBody({ minHeight = 1300, scheme = 'dark' } = {}) {
   const C = { vendor_fetch: '#4e79a7', engine_build: '#f28e2b', off_exchange: '#59a14f', signals: '#b07aa1' };
   const series = { vendor_fetch: [420, 410, 455, 430, 418, 440, 462, 451], engine_build: [180, 176, 190, 185, 182, 188, 195, 191], off_exchange: [90, 88, 96, 92, 89, 94, 99, 97], signals: [40, 38, 41, 40, 39, 42, 44, 43] };
-  const w = 760, h = 220, l = 48, r = 120, max = 500;
-  const x = (i) => l + (i / 7) * (w - l - r), y = (v) => 14 + (1 - v / max) * (h - 34);
-  const lines = Object.entries(series).map(([k, v]) => `<polyline points="${v.map((n, i) => `${x(i).toFixed(1)},${y(n).toFixed(1)}`).join(' ')}" fill="none" stroke="${C[k]}" stroke-width="2"></polyline><text x="${(x(7) + 8).toFixed(1)}" y="${(y(v[7]) + 4).toFixed(1)}" font-family="IBM Plex Mono" font-size="11" fill="var(--phosphor)">${k} ${v[7]}ms</text>`).join('');
-  const chart = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="p95 latency by stage over the last 8 hours: vendor fetch about 450 ms, engine build 190, off-exchange 97, signals 43" style="display: block; width: 100%; height: auto;">${[0, 250, 500].map((v) => `<line x1="${l}" x2="${w - r}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--line)"></line><text x="${l - 8}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end" font-family="IBM Plex Mono" font-size="11" fill="var(--steel)">${v}</text>`).join('')}${lines}</svg>`;
-  return `<div class="v4" data-scheme="${scheme}" style="width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor);"><div class="ops-bar">${wordmark(14)}<span class="stag k-solid">operator</span><span class="mono steel" style="font-size: 12px;">/_ops/metrics</span><span style="flex: 1;"></span><span class="dline">Instrumentation on · read-only · off the trader shell</span></div>
+  const short = { vendor_fetch: 'fetch', engine_build: 'build', off_exchange: 'off-exch', signals: 'signals' };
+  const chart = fluidChart({ height: 230, pl: 40, pr: 150, prn: 92, xmin: 0, xmax: 7, ymin: 0, ymax: 500, aria: 'p95 latency by stage over the last 8 hours: vendor fetch about 450 ms, engine build 190, off-exchange 97, signals 43', yTicks: [0, 250, 500].map((v) => ({ v, label: String(v) })), xTicks: [{ v: 0, label: '−8 h' }, { v: 7, label: 'now' }], series: Object.entries(series).map(([k, v]) => ({ points: v.map((n, i) => [i, n]), stroke: C[k], end: { long: `${k} ${v[7]} ms`, short: `${short[k]} ${v[7]}` }, endColor: 'var(--phosphor)' })) });
+  return `<div class="v4" data-scheme="${scheme}" style="width: 100%; min-height: ${minHeight}px; background: var(--ink); color: var(--phosphor);"><div class="ops-bar">${wordmark(14)}<span class="stag k-solid">operator</span><span class="mono steel" style="font-size: 12px;">/_ops/metrics</span><span style="flex: 1;"></span><span class="dline only-wide">Instrumentation on · read-only · off the trader shell</span></div>
     <main class="wrap" style="padding-top: 24px; display: flex; flex-direction: column; gap: 16px;"><h1 class="display" style="margin: 0; font-size: 30px;">Operator metrics</h1>
       <section class="hd-p"><div class="ph"><h3>Vendor fetch is most of the bundle’s p95 time: about 450 ms of 780.</h3>${stateTag('current', 'Rolling 8 h')}</div><p class="sub" style="margin: 0;">p95 latency by bundle stage, ms. Diagnostic series use the non-brand categorical palette (chartCategorical), labelled at the line ends.</p>${chart}</section>
       <section class="hd-p"><div class="ph"><h3>Session archive</h3><span class="mono steel" style="font-size: 12px;">/_ops/research</span></div><span class="dline">Stored session books, unlocked with the API origin and the metrics token. Renamed on screen so it never reads as the trader-facing Research section.</span><div class="drows">${[['2026-10-08', 'massive', '15:59:58 ET'], ['2026-10-07', 'massive', '15:59:57 ET'], ['2026-10-06', 'massive', '15:59:59 ET']].map(([d, s, t]) => `<div style="grid-template-columns: 120px 100px minmax(0, 1fr);"><span class="mono">${d}</span><span class="steel">${s}</span><span class="mono steel">${t}</span></div>`).join('')}</div></section></main></div>`;

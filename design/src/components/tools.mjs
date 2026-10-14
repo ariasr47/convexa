@@ -1,6 +1,6 @@
 // Tools from public data (v4 wave 2) — one renderer per tool, plus the generic state set every tool
 // gets from its record in data/tools.mjs. Live content is research, never a buy/sell instruction.
-import { icon } from '../lib.mjs';
+import { fluidChart, icon } from '../lib.mjs';
 import { TOOLS } from '../data/tools.mjs';
 import { NVDA } from '../data/hybrid.mjs';
 import { STATE_ROWS } from '../data/states.mjs';
@@ -25,7 +25,7 @@ const R = {
     const v = T.liquidity.values;
     if (compact) return `<span class="dval${dim ? ' t-dim' : ''}" style="font-size: 22px;">${v.net}</span><span class="dline">${v.change} · Fed assets less TGA less reverse repo</span>${line(v.series.slice(-12), { w: 260, h: 48, dim })}`;
     return `${claim('Net liquidity fell $86B in four weeks as the Treasury rebuilt its cash.', 'Fed balance sheet less the Treasury General Account less reverse repo, $T, 26 weeks to Oct 9.')}
-      ${line(v.series, { w: 760, h: 180, dim, labelEnd: v.net })}
+      ${fluidChart({ height: 190, pl: 44, pr: 70, prn: 58, xmin: 0, xmax: v.series.length - 1, ymin: 5.5, ymax: 5.75, aria: 'Net liquidity, 26 weeks to Oct 9: from 5.71 to 5.56 trillion dollars', yTicks: [{ v: 5.55, label: '5.55' }, { v: 5.65, label: '5.65' }, { v: 5.75, label: '5.75' }], xTicks: [{ v: 0, label: 'Apr 16' }, { v: v.series.length - 1, label: 'Oct 9' }], series: [{ points: v.series.map((n, i) => [i, n]), stroke: dim ? 'var(--text-dim)' : 'var(--phosphor)', end: { long: v.net, short: v.net } }] })}
       <div class="hd-fig" style="grid-template-columns: repeat(3, minmax(0, 1fr));"><div><span class="caps">Fed assets · H.4.1</span><span class="v">${v.fed}</span><span class="dline" style="font-size: 11px;">week to Oct 8 · weekly</span></div><div><span class="caps">Treasury cash · TGA</span><span class="v">${v.tga}</span><span class="dline" style="font-size: 11px;">Oct 9 · daily</span></div><div><span class="caps">Reverse repo · RRP</span><span class="v">${v.rrp}</span><span class="dline" style="font-size: 11px;">Oct 9 · daily</span></div></div>
       <p class="srcline">Sources: Federal Reserve H.4.1 (Data Download Program), Treasury Daily Treasury Statement (Fiscal Data API), NY Fed reverse repo (Markets API). The weekly and daily series are aligned on the H.4.1 date. Computed by Convexa.</p>`;
   },
@@ -81,7 +81,7 @@ const R = {
     if (research) return `${claim('Since the note was written, NVDA has moved with the market and slightly ahead of its sector.', 'Close relative to the note’s price date (Oct 9), NVDA vs SPY and SMH, %. Computed from end-of-day bars.')}
       <div class="hd-fig" style="grid-template-columns: repeat(3, minmax(0, 1fr));"><div><span class="caps">NVDA</span><span class="v">+2.1%</span></div><div><span class="caps">SPY</span><span class="v">+1.2%</span></div><div><span class="caps">SMH</span><span class="v">+1.6%</span></div></div><p class="srcline">The note’s figures don’t change with price; the valuation strip hides % to base once the price is 30 days old.</p>`;
     if (compact) return `<span class="dval${dim ? ' t-dim' : ''}" style="font-size: 20px;">Above 20- and 50-day</span><span class="dline">RSI ${t.rsi} · ATR ${t.atr} · 20-day realized vol ${t.hv20}</span>${line(NVDA.closes, { w: 260, h: 48, dim })}`;
-    return `${claim('NVDA has closed above its 20- and 50-day averages for 14 sessions.', 'Daily closes and averages, readings computed from end-of-day bars. Descriptive, not a signal.')}${line(NVDA.closes, { w: 760, h: 180, dim, labelEnd: '226.32' })}
+    return `${claim('NVDA has closed above its 20- and 50-day averages for 14 sessions.', 'Daily closes and averages, readings computed from end-of-day bars. Descriptive, not a signal.')}${fluidChart({ height: 190, pl: 40, pr: 70, prn: 58, xmin: 0, xmax: NVDA.closes.length - 1, ymin: 200, ymax: 232, aria: 'NVDA daily closes, Sep 15 to Oct 12, rising from 205 to 226.32', yTicks: [{ v: 205, label: '205' }, { v: 215, label: '215' }, { v: 225, label: '225' }], xTicks: [{ v: 0, label: 'Sep 15' }, { v: NVDA.closes.length - 1, label: 'Oct 12' }], series: [{ points: NVDA.closes.map((n, i) => [i, n]), stroke: dim ? 'var(--text-dim)' : 'var(--phosphor)', end: { long: '226.32', short: '226.32' } }] })}
       <div class="hd-fig" style="grid-template-columns: repeat(3, minmax(0, 1fr));"><div><span class="caps">RSI 14</span><span class="v">${t.rsi}</span></div><div><span class="caps">ATR 14</span><span class="v">${t.atr}</span></div><div><span class="caps">Realized vol · 20d</span><span class="v">${t.hv20}</span></div><div><span class="caps">Support · daily range</span><span class="v">${t.support}</span></div><div><span class="caps">vs SPY · 3 mo</span><span class="v">${t.rsSpy}</span></div><div><span class="caps">vs SMH · 3 mo</span><span class="v">${t.rsSector}</span></div></div>`;
   },
   signals({ compact = false, dim = false } = {}) {

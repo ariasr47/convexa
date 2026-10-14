@@ -193,6 +193,20 @@
   .smap td.w b { display: block; font-weight: 600; }
   .smap tr.grp td { padding: 22px 10px 8px; border-bottom: 1px solid var(--line-2); color: var(--phosphor); font-family: 'Archivo', sans-serif; font-stretch: 112.5%; font-weight: 700; font-size: 17px; }
   .smap td .stagwrap { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+  .fc { position: relative; width: 100%; container-type: inline-size; }
+  .fc .pa { position: absolute; left: var(--pl); right: var(--pr); top: var(--pt); bottom: var(--pb); }
+  .fc svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .fc .yl { position: absolute; right: calc(100% + 8px); transform: translateY(-50%); font: 400 11px/1 'IBM Plex Mono', monospace; color: var(--steel); white-space: nowrap; }
+  .fc .xl { position: absolute; top: calc(100% + 8px); transform: translateX(-50%); font: 400 11px/1 'IBM Plex Mono', monospace; color: var(--steel); white-space: nowrap; }
+  .fc .pl { position: absolute; transform: translate(-50%, calc(-100% - 7px)); font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--phosphor); white-space: nowrap; }
+  .fc .el { position: absolute; left: calc(100% + 8px); transform: translateY(-50%); font: 600 12px/1.15 'IBM Plex Sans', sans-serif; white-space: nowrap; }
+  .fc .dot { position: absolute; width: 7px; height: 7px; border-radius: 50%; transform: translate(-50%, -50%); box-sizing: border-box; }
+  .fc .s { display: none; }
+  @container (max-width: 480px) { .fc .pa { right: var(--prn); } .fc .l { display: none; } .fc .s { display: inline; } .fc .minor { display: none; } }
+  .cq { container-type: inline-size; }
+  .cq .v-s, .cq .v-m { display: none; }
+  @container (max-width: 659px) { .cq .v-l { display: none; } .cq .v-m { display: block; } }
+  @container (max-width: 479px) { .cq .v-m { display: none; } .cq .v-s { display: block; } }
   @media (max-width: 1099px) { .v4n-search { display: none; } .v4n-icon.search { display: inline-flex; } }
   @media (max-width: 899px) { .v4n-links { display: none; } .v4n-icon.menu { display: inline-flex; } .v4n-in { gap: 8px; } }
   @media (max-width: 767px) { .only-wide { display: none !important; } }
@@ -246,6 +260,8 @@
   .rs-chipbar a { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--steel); text-decoration: none; font-size: 13px; }
   .rs-chipbar a[aria-current="true"] { color: var(--ink); background: var(--phosphor); border-color: var(--phosphor); font-weight: 600; }
   .rs-form { font: 600 11px 'IBM Plex Mono', monospace; padding: 2px 6px; border-radius: 5px; background: rgba(138,155,180,0.16); text-align: center; }
+  .fut { display: grid; grid-template-columns: 140px 150px minmax(0, 1fr); gap: 8px 16px; align-items: center; }
+  @container (max-width: 560px) { .fut { grid-template-columns: minmax(0, 1fr) auto; } .fut > :last-child { grid-column: 1 / -1; } }
   .rs-note-head h1 { margin: 0; max-width: 32ch; font-size: clamp(26px, 2.6vw, 34px); line-height: 1.15; }
   @media (max-width: 1099px) { .rs-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 899px) { .rs-2, .rs-2.half, .rs-3 { grid-template-columns: 1fr; } .rs-feed > div { grid-template-columns: 56px minmax(0, 1fr); } .rs-feed > div > :nth-child(2), .rs-feed > div > :nth-child(3) { display: none; } .rs-chipbar a { min-height: 44px; } }
@@ -357,11 +373,11 @@
   .doc article p { margin: 0; font-size: 15.5px; line-height: 1.65; color: var(--steel); text-wrap: pretty; }
   .doc article p strong { color: var(--phosphor); }
   .lab-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 16px; }
-  .ops-bar { display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 24px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .ops-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 48px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
   @media (max-width: 899px) { .doc { grid-template-columns: 1fr; gap: 16px; } .doc nav { position: static; flex-direction: row; overflow-x: auto; } .doc nav a { flex: 0 0 auto; min-height: 44px; } }
 </style>
 </helmet>
-<div class="v4" data-scheme="dark" style="width: 100%; min-height: 900px; background: var(--ink); color: var(--phosphor);">
+<div class="v4" data-scheme="dark" style="width: 100%; min-height: 710px; background: var(--ink); color: var(--phosphor);">
     <a href="#main" class="btn secondary sm" style="position: absolute; left: -9999px;">Skip to main content</a>
     <div role="status" aria-label="What is live on this site" class="v4-notice"><div class="wrap" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="12" cy="12" r="8"></circle><path d="M6.6 6.6l10.8 10.8"></path></svg><strong style="font-weight: 600;">Options data isn't live on this site.</strong><span class="steel only-wide">Dealer structure, flow and AI reads need a paid options feed. Rates, positioning, short data, filings and research are live.</span><span class="steel only-phone">Public data is.</span><span style="flex: 1;"></span><a href="/methodology#data" class="t-info" style="min-height: 24px; display: inline-flex; align-items: center;">What's live</a><a href="https://staging.convexa.pages.dev" class="t-info only-wide">See the full demo →</a></div></div>
     <header class="v4n"><div class="wrap v4n-in">
@@ -379,7 +395,7 @@
     <footer class="v4-foot"><div class="wrap v4-foot-in"><span role="img" aria-label="Convexa" style="display: inline-flex; align-items: baseline; font-family: 'Archivo', 'IBM Plex Sans', sans-serif; font-stretch: 125%; font-weight: 700; letter-spacing: 0.03em; line-height: 1; font-size: 14px; color: var(--phosphor); white-space: nowrap;"><span aria-hidden="true">CONVE</span><svg aria-hidden="true" viewBox="0 0 100 100" style="width: 10.4px; height: 10.1px; margin: 0 0.6px; overflow: visible; color: var(--amber);" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"><path d="M 12 91 Q 58 62 88 9"></path><path d="M 12 9 Q 42 62 88 91"></path></svg><span aria-hidden="true">A</span></span><nav aria-label="Footer"><a href="/research">Research notes</a><a href="/methodology">How Convexa works</a><a href="/blog">Blog — how we read structure</a><a href="/lab">Lab — instrument demos</a><a href="/settings">Settings</a></nav><span style="flex: 1;"></span><p style="margin: 0; max-width: 560px; font-size: 12px; color: var(--steel);">Convexa is an analysis tool. Positions in the sim book are simulated (paper); a connected brokerage is read-only — Convexa never places, changes, or cancels an order. Not investment advice.</p></div></footer>
   </div>
 </x-dc>
-<script data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+<script data-dc-script data-props='{"$preview":{"width":1440,"height":710}}'>
 class Component extends DCLogic {}
 </script>
 </body>

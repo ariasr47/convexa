@@ -1,7 +1,7 @@
 // v4 · Research pages built on public data: Markets, Filings, Scorecard, and a ticker's research tab.
 // Ported from the v3 research boards (live canvas HxZArSCsbrjQCx8VBbYRw7, unchanged), re-sourced
 // (Treasury, not FRED), re-stated in the v4 data-state vocabulary, and joined by the wave-2 tools.
-import { icon, v4Page } from '../../lib.mjs';
+import { fluidChart, icon, v4Page } from '../../lib.mjs';
 import { dataCell, provChip, rangeBar, stateTag } from '../../components/data-states.mjs';
 import { renderTool } from '../../components/tools.mjs';
 
@@ -24,6 +24,8 @@ export const RESEARCH_CSS = `
   .rs-chipbar a { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--steel); text-decoration: none; font-size: 13px; }
   .rs-chipbar a[aria-current="true"] { color: var(--ink); background: var(--phosphor); border-color: var(--phosphor); font-weight: 600; }
   .rs-form { font: 600 11px 'IBM Plex Mono', monospace; padding: 2px 6px; border-radius: 5px; background: rgba(138,155,180,0.16); text-align: center; }
+  .fut { display: grid; grid-template-columns: 140px 150px minmax(0, 1fr); gap: 8px 16px; align-items: center; }
+  @container (max-width: 560px) { .fut { grid-template-columns: minmax(0, 1fr) auto; } .fut > :last-child { grid-column: 1 / -1; } }
   .rs-note-head h1 { margin: 0; max-width: 32ch; font-size: clamp(26px, 2.6vw, 34px); line-height: 1.15; }
   @media (max-width: 1099px) { .rs-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 899px) { .rs-2, .rs-2.half, .rs-3 { grid-template-columns: 1fr; } .rs-feed > div { grid-template-columns: 56px minmax(0, 1fr); } .rs-feed > div > :nth-child(2), .rs-feed > div > :nth-child(3) { display: none; } .rs-chipbar a { min-height: 44px; } }
@@ -35,20 +37,18 @@ const src = (s) => `<p class="srcline">${s}</p>`;
 
 // ---- Markets --------------------------------------------------------------------------------------
 function curveChart() {
-  const T = ['3M', '2Y', '5Y', '10Y', '30Y'], now = [3.91, 3.62, 3.74, 4.18, 4.74], ago = [4.03, 3.60, 3.74, 4.07, 4.56];
-  const w = 720, h = 260, l = 48, r = 110, t = 20, b = 30, min = 3.4, max = 4.9;
-  const x = (i) => l + [0, 0.18, 0.36, 0.58, 1][i] * (w - l - r);
-  const y = (v) => t + (1 - (v - min) / (max - min)) * (h - t - b);
-  const pl = (vals) => vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Treasury par yields. Oct 9, 2026: 3-month 3.91, 2-year 3.62, 5-year 3.74, 10-year 4.18, 30-year 4.74. Oct 9, 2025: 4.03, 3.60, 3.74, 4.07, 4.56." style="display: block; width: 100%; height: auto;">
-    ${[3.5, 4.0, 4.5].map((v) => `<line x1="${l}" x2="${w - r}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--line)"></line><text x="${l - 8}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end" font-family="IBM Plex Mono" font-size="11" fill="var(--steel)">${v.toFixed(1)}%</text>`).join('')}
-    ${T.map((n, i) => `<text x="${x(i).toFixed(1)}" y="${h - 8}" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="var(--steel)">${n}</text>`).join('')}
-    <polyline points="${pl(ago)}" fill="none" stroke="var(--steel)" stroke-width="2" stroke-dasharray="5 5"></polyline>
-    <polyline points="${pl(now)}" fill="none" stroke="var(--phosphor)" stroke-width="2.5"></polyline>
-    ${now.map((v, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3.5" fill="var(--phosphor)"></circle><text x="${x(i).toFixed(1)}" y="${(y(v) - 10).toFixed(1)}" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="var(--phosphor)">${v.toFixed(2)}</text>`).join('')}
-    <text x="${(x(4) + 10).toFixed(1)}" y="${(y(4.74) + 4).toFixed(1)}" font-family="IBM Plex Sans" font-size="12" font-weight="600" fill="var(--phosphor)">Oct 9, 2026</text>
-    <text x="${(x(4) + 10).toFixed(1)}" y="${(y(4.56) + 18).toFixed(1)}" font-family="IBM Plex Sans" font-size="12" font-weight="600" fill="var(--steel)">Oct 9, 2025</text>
-  </svg>`;
+  const T = ['3M', '2Y', '5Y', '10Y', '30Y'], at = [0, 0.18, 0.36, 0.58, 1], now = [3.91, 3.62, 3.74, 4.18, 4.74], ago = [4.03, 3.60, 3.74, 4.07, 4.56];
+  return fluidChart({
+    height: 260, pl: 44, pr: 104, prn: 48, xmin: 0, xmax: 1, ymin: 3.4, ymax: 4.9,
+    aria: 'Treasury par yields. Oct 9, 2026: 3-month 3.91, 2-year 3.62, 5-year 3.74, 10-year 4.18, 30-year 4.74. Oct 9, 2025: 4.03, 3.60, 3.74, 4.07, 4.56.',
+    yTicks: [3.5, 4.0, 4.5].map((v) => ({ v, label: `${v.toFixed(1)}%` })),
+    xTicks: T.map((t, i) => ({ v: at[i], label: t })),
+    series: [
+      { points: ago.map((v, i) => [at[i], v]), stroke: 'var(--steel)', width: 2, dash: '5 5', dots: true, hollow: true, end: { long: 'Oct 9, 2025', short: '2025' }, endColor: 'var(--steel)', endY: 4.48 },
+      { points: now.map((v, i) => [at[i], v]), stroke: 'var(--phosphor)', width: 2.5, dots: true, end: { long: 'Oct 9, 2026', short: '2026' }, endY: 4.8 },
+    ],
+    pointLabels: now.map((v, i) => ({ x: at[i], y: v, text: v.toFixed(2), minor: i === 1 })),
+  });
 }
 function decomposition() {
   const rows = [['10-year Treasury', 0.11], ['Real 10-year (TIPS)', 0.16], ['10-year breakeven', -0.05]];
@@ -60,7 +60,7 @@ function futures() {
     ['E-mini S&amp;P 500 · CME', [['Asset managers', '+1,031k', '+8k on week', 81], ['Leveraged funds', '−402k', '+14k on week', 22]]],
     ['E-mini Nasdaq-100 · CME', [['Asset managers', '+96k', '−3k on week', 54], ['Leveraged funds', '−38k', '+2k on week', 47]]],
   ];
-  return rows.map(([m, groups]) => `<div style="display: flex; flex-direction: column; gap: 10px; padding: 14px 0; border-top: 1px solid var(--line);"><span style="font-weight: 600; font-size: 13.5px;">${m}</span>${groups.map(([g, net, wk, pos]) => `<div style="display: grid; grid-template-columns: 140px 150px minmax(0, 1fr); gap: 16px; align-items: center;"><span class="steel" style="font-size: 12.5px;">${g}</span><span class="mono" style="font-size: 13px;">${net} <span class="steel" style="font-size: 11px;">${wk}</span></span>${rangeBar(pos, { median: 50, aria: `${g} net position at ${pos}% of its 3-year range` })}</div>`).join('')}</div>`).join('');
+  return rows.map(([m, groups]) => `<div style="display: flex; flex-direction: column; gap: 10px; padding: 14px 0; border-top: 1px solid var(--line);"><span style="font-weight: 600; font-size: 13.5px;">${m}</span>${groups.map(([g, net, wk, pos]) => `<div class="fut"><span class="steel" style="font-size: 12.5px;">${g}</span><span class="mono" style="font-size: 13px;">${net} <span class="steel" style="font-size: 11px;">${wk}</span></span>${rangeBar(pos, { median: 50, aria: `${g} net position at ${pos}% of its 3-year range` })}</div>`).join('')}</div>`).join('');
 }
 
 export function marketsBody({ minHeight = 3600, scheme = 'dark', demo = false } = {}) {

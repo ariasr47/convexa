@@ -103,3 +103,14 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
   checked against the registry at build time; 168 cells, 95 covered, 14 partial, 59 gaps (named), 0
   missing references. Adds the desk at 834 and phone-light, the note view at phone-light, Markets at 834.
 
+## 2026-10-13 · v4 render fix (supersedes nothing; corrects waves 1–4)
+
+- **Charts render their text at true size.** `fluidChart()` draws lines in a stretched SVG with
+  non-scaling strokes and puts every label, tick and dot in HTML, so text stays 11px at any width;
+  under 480px of container it swaps to short labels and drops minor ticks. The landing's gamma surface
+  is drawn at three sizes and picked by container width. Matches the app's rule (useWidth.ts,
+  Charts.tsx): chart text ≥ 10px, 11 preferred, drawn at the real width rather than scaled.
+- **No horizontal overflow at any declared width** (Markets futures rows, the operator bar, the
+  calendar's review-trigger chips).
+- **Frame heights are measured**, not estimated, so no board clips its content.
+

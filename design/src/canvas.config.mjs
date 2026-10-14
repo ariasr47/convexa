@@ -13,8 +13,15 @@ export const pages = [
   { id: 'v4-coverage', name: 'v4 · Coverage' },
 ];
 
+// v4 frame heights, measured 2026-10-13 by rendering design/site at each board's own width in headless
+// Chromium (main tree tmp/canvas-v4/tools/heights2.mjs): natural page height + 60px, or an overlay's
+// dialog height plus its margin. Replaces the first estimates, two of which clipped (source map, shell
+// states).
+const MEASURED = { V4Alerts: 1010, V4Alerts390: 1890, V4AlertsLight: 1010, V4AlertsStates: 1280, V4Blog: 740, V4Blog390: 950, V4BlogLight: 740, V4Coverage: 1900, V4DeskLight: 2710, V4DeskStates: 2250, V4Filings: 1290, V4Filings390: 2620, V4FilingsLight: 1290, V4HybridDesk: 2710, V4HybridDesk390: 4210, V4HybridDesk390Light: 4210, V4HybridDesk834: 4060, V4HybridDeskSample: 2710, V4Lab: 1110, V4Lab390: 2000, V4LabLight: 1110, V4Landing: 2400, V4Landing390: 4100, V4LandingLight: 2400, V4LandingStates: 1450, V4Markets: 3030, V4Markets390: 4910, V4Markets834: 3780, V4MarketsDemo: 3030, V4MarketsLight: 3030, V4Methodology: 1790, V4Methodology390: 2400, V4MethodologyLight: 1790, V4MethodologyStates: 1360, V4NotFound: 700, V4NotFound390: 900, V4NotFoundLight: 700, V4NoteStates: 1200, V4NoteView: 3520, V4NoteView390: 4740, V4NoteView390Light: 4740, V4NoteViewLight: 3520, V4Operator: 730, V4Operator390: 840, V4OperatorLight: 730, V4OperatorStates: 790, V4OrderDetailStates: 660, V4PersonaStates: 760, V4Positions: 1070, V4Positions390: 1910, V4PositionsLight: 1070, V4PositionsSignedOut: 710, V4PositionsStates: 1560, V4ResearchIndex: 1300, V4ResearchIndex390: 2030, V4ResearchIndexLight: 1300, V4Roadmap: 2390, V4Scanner: 1310, V4Scanner390: 1810, V4ScannerLight: 1310, V4ScannerStates: 1790, V4Scorecard: 1500, V4Scorecard390: 3110, V4ScorecardLight: 1500, V4Settings: 1650, V4Settings390: 2090, V4SettingsLight: 1650, V4SettingsSignedOut: 1320, V4SettingsStates: 1400, V4Shell: 760, V4ShellLight: 760, V4ShellStates: 2620, V4SignInStates: 1330, V4SourceMap: 6310, V4StateMatrix: 4090, V4StateMatrix390: 4510, V4StateMatrixLight: 4090, V4TickerResearch: 2250, V4TickerResearch390: 4400, V4TickerResearchLight: 2250, V4ToolCalendar: 2550, V4ToolClusters: 2270, V4ToolHolders: 2310, V4ToolLiquidity: 2370, V4ToolOtc: 2370, V4ToolPeers: 2440, V4ToolSignals: 2260, V4ToolTa: 2690, V4ToolXbrl: 2470, V4TradeEntryStates: 1400, V4ViewEditorStates: 840, V4WhatsSent: 1120, V4WhatsSentLight: 1120, V4WhatsSentStates: 1290 };
+const fitH = (name, h) => MEASURED[name] ?? h;
+
 // { name, screen, page, w, h, title, opts?, expand?, interactive? }
-export const artboards = [
+export const artboards = fitAll([
   { name: 'Main', screen: 'desk', page: 'page-1', w: 1440, h: 2300, title: 'Ticker desk · SPY (interactive · expand and resize the window)', expand: 'fill' },
   { name: 'DeskStates', screen: 'desk-states', page: 'page-1', w: 1440, h: 2200, title: 'Desk · loading, failed, offline, empty, Prime, closed' },
   { name: 'AiRead', screen: 'ai-read', page: 'page-1', w: 1440, h: 1720, title: 'AI read · nine states (narrow form)' },
@@ -63,8 +70,8 @@ export const artboards = [
   { name: 'V4HybridDesk', screen: 'v4-hybrid-desk', page: 'v4-data', x: 2040, y: 0, w: 1440, h: 3400, title: 'v4 · Hybrid desk · NVDA · not-live panels explained', expand: 'fill', findings: 'X-01, X-03, X-05, X-06, TKR-01–TKR-07' },
   { name: 'V4HybridDeskSample', screen: 'v4-hybrid-desk', page: 'v4-data', x: 3600, y: 0, w: 1440, h: 3400, title: 'v4 · Hybrid desk · NVDA · sample illustrations on', opts: { sample: true }, expand: 'fill', findings: 'X-10, TKR-02, TKR-04' },
   { name: 'V4HybridDesk390', screen: 'v4-hybrid-desk', page: 'v4-data', x: 5160, y: 0, w: 390, h: 5200, title: 'v4 · Hybrid desk · NVDA · phone', findings: 'X-12, TKR-06, TKR-08' },
-  { name: 'V4StateMatrix', screen: 'v4-state-matrix', page: 'v4-data', x: 0, y: 6100, w: 3220, h: 4200, title: 'v4 · State matrix · 9 families × 14 states', findings: 'X-01, X-02, X-09, X-10, DS-05–DS-08' },
-  { name: 'V4StateMatrix390', screen: 'v4-state-matrix-phone', page: 'v4-data', x: 3340, y: 6100, w: 3740, h: 4700, title: 'v4 · State matrix · phone widths', findings: 'X-12, DS-05–DS-08' },
+  { name: 'V4StateMatrix', screen: 'v4-state-matrix', page: 'v4-data', x: 0, y: 6760, w: 3220, h: 4200, title: 'v4 · State matrix · 9 families × 14 states', findings: 'X-01, X-02, X-09, X-10, DS-05–DS-08' },
+  { name: 'V4StateMatrix390', screen: 'v4-state-matrix-phone', page: 'v4-data', x: 3340, y: 6760, w: 3740, h: 4700, title: 'v4 · State matrix · phone widths', findings: 'X-12, DS-05–DS-08' },
 
   // ---- v4 · Tools from public data (wave 2, 2026-10-13) ----
   { name: 'V4Roadmap', screen: 'v4-roadmap', page: 'v4-tools', x: 0, y: 0, w: 1920, h: 3600, title: 'v4 · Roadmap: everything Convexa can build without the paid feed', findings: 'TL-13, Q-1, Q-2, Q-3' },
@@ -108,7 +115,8 @@ export const artboards = [
 
   // ---- v4 · Coverage (wave 5, 2026-10-13) ----
   { name: 'V4Coverage', screen: 'v4-coverage', page: 'v4-coverage', x: 0, y: 0, w: 1920, h: 2600, title: 'v4 · Coverage matrix · route × width × theme × states', findings: 'coverage; gaps listed in the matrix' },
-];
+]);
+function fitAll(list) { return list.map((a) => (a.name.startsWith('V4') ? { ...a, h: fitH(a.name, a.h) } : a)); }
 
 /** v4 · App: one row per route — desktop 1440 dark, phone 390, light 1440, states — with room above
  *  each row for the findings notes. */
@@ -138,7 +146,7 @@ function appRows() {
   let y = 0;
   for (const [label, base, screen, dh, ph, st, sth, findings, extras, phoneScreen] of R) {
     let x = 0, rowH = 0;
-    const add = (name, scr, w, h, title, opts = {}, expand = false) => { out.push({ name, screen: scr, page: 'v4-app', x, y, w, h, title, opts, findings, ...(expand ? { expand: 'fill' } : {}) }); x += w + 120; rowH = Math.max(rowH, h); };
+    const add = (name, scr, w, h0, title, opts = {}, expand = false) => { const h = fitH(name, h0); out.push({ name, screen: scr, page: 'v4-app', x, y, w, h, title, opts, findings, ...(expand ? { expand: 'fill' } : {}) }); x += w + 120; rowH = Math.max(rowH, h); };
     if (screen) {
       add(`V4${base}`, screen, 1440, dh, `v4 · ${label} · desktop`, {}, true);
       add(`V4${base}390`, phoneScreen || screen, 390, ph, `v4 · ${label} · phone`);

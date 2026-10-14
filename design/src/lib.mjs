@@ -100,6 +100,20 @@ const V4_CSS = `
   .smap td.w b { display: block; font-weight: 600; }
   .smap tr.grp td { padding: 22px 10px 8px; border-bottom: 1px solid var(--line-2); color: var(--phosphor); font-family: 'Archivo', sans-serif; font-stretch: 112.5%; font-weight: 700; font-size: 17px; }
   .smap td .stagwrap { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+  .fc { position: relative; width: 100%; container-type: inline-size; }
+  .fc .pa { position: absolute; left: var(--pl); right: var(--pr); top: var(--pt); bottom: var(--pb); }
+  .fc svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .fc .yl { position: absolute; right: calc(100% + 8px); transform: translateY(-50%); font: 400 11px/1 'IBM Plex Mono', monospace; color: var(--steel); white-space: nowrap; }
+  .fc .xl { position: absolute; top: calc(100% + 8px); transform: translateX(-50%); font: 400 11px/1 'IBM Plex Mono', monospace; color: var(--steel); white-space: nowrap; }
+  .fc .pl { position: absolute; transform: translate(-50%, calc(-100% - 7px)); font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--phosphor); white-space: nowrap; }
+  .fc .el { position: absolute; left: calc(100% + 8px); transform: translateY(-50%); font: 600 12px/1.15 'IBM Plex Sans', sans-serif; white-space: nowrap; }
+  .fc .dot { position: absolute; width: 7px; height: 7px; border-radius: 50%; transform: translate(-50%, -50%); box-sizing: border-box; }
+  .fc .s { display: none; }
+  @container (max-width: 480px) { .fc .pa { right: var(--prn); } .fc .l { display: none; } .fc .s { display: inline; } .fc .minor { display: none; } }
+  .cq { container-type: inline-size; }
+  .cq .v-s, .cq .v-m { display: none; }
+  @container (max-width: 659px) { .cq .v-l { display: none; } .cq .v-m { display: block; } }
+  @container (max-width: 479px) { .cq .v-m { display: none; } .cq .v-s { display: block; } }
   @media (max-width: 1099px) { .v4n-search { display: none; } .v4n-icon.search { display: inline-flex; } }
   @media (max-width: 899px) { .v4n-links { display: none; } .v4n-icon.menu { display: inline-flex; } .v4n-in { gap: 8px; } }
   @media (max-width: 767px) { .only-wide { display: none !important; } }
@@ -485,7 +499,7 @@ export function ring(score, { size = 44, stroke = 4, color = 'var(--amber)' } = 
 }
 
 // ---- 3D gamma surface (isometric wireframe: strike × tenor × net GEX) -----------------------
-export function gammaSurface({ width = 720, height = 440 } = {}) {
+export function gammaSurface({ width = 720, height = 440, id = 'gs' } = {}) {
   const rows = 9, cols = 21;
   const ox = width * 0.5, oy = height * 0.6;
   const sx = width / 34, sy = width / 62, sz = 78;
@@ -527,8 +541,8 @@ export function gammaSurface({ width = 720, height = 440 } = {}) {
   const [fx, fy] = proj(0, ((SPY.flip - 550) / 50) * (cols - 1));
   const [spx, spy] = proj(0, ((SPY.spot - 550) / 50) * (cols - 1));
   return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" style="display: block; width: 100%; height: auto; overflow: visible;" role="img" aria-label="Dealer gamma surface across strike and tenor">
-    <defs><radialGradient id="gs-glow" cx="50%" cy="60%" r="55%"><stop offset="0" stop-color="var(--amber)" stop-opacity="0.10"></stop><stop offset="1" stop-color="var(--amber)" stop-opacity="0"></stop></radialGradient></defs>
-    <rect width="${width}" height="${height}" fill="url(#gs-glow)"></rect>
+    <defs><radialGradient id="${id}-glow" cx="50%" cy="60%" r="55%"><stop offset="0" stop-color="var(--amber)" stop-opacity="0.10"></stop><stop offset="1" stop-color="var(--amber)" stop-opacity="0"></stop></radialGradient></defs>
+    <rect width="${width}" height="${height}" fill="url(#${id}-glow)"></rect>
     ${lines}${ridge(SPY.putWall, 'var(--down)', 1.5)}${ridge(SPY.callWall, 'var(--up)', 1.5)}${ridge(SPY.flip, 'var(--amber)', 2.25)}
     <circle cx="${spx.toFixed(1)}" cy="${spy.toFixed(1)}" r="5" fill="var(--signal)"></circle>
     <circle cx="${spx.toFixed(1)}" cy="${spy.toFixed(1)}" r="12" fill="var(--signal)" fill-opacity="0.18" class="beam"></circle>
@@ -614,4 +628,25 @@ export function v4Page({ scheme = 'dark', minHeight = 0, notice = 'hybrid', acti
     <main id="main"${label ? ` aria-label="${label}"` : ''}>${main}</main>
     ${footer ? v4Footer() : ''}
   </div>`;
+}
+
+// ---- v4 fluid chart (2026-10-13 render fix) -------------------------------------------------------
+// Lines live in a stretched SVG (non-scaling strokes); every label, tick and dot is HTML placed in %
+// of the plot area, so text renders at its true px size at any width (the app's useWidth rule: chart
+// text ≥ 10px, 11 preferred). Under 480px of container width the long labels swap for short ones,
+// minor ticks drop and the right gutter narrows.
+export function fluidChart({ height = 220, pl = 44, pr = 110, prn = 56, pt = 18, pb = 26, xmin = 0, xmax = 1, ymin = 0, ymax = 1, series = [], yTicks = [], xTicks = [], pointLabels = [], hlines = [], aria = '' } = {}) {
+  const X = (v) => (((v - xmin) / (xmax - xmin)) * 100).toFixed(2);
+  const Y = (v) => ((1 - (v - ymin) / (ymax - ymin)) * 100).toFixed(2);
+  const lab = (l) => (typeof l === 'string' ? l : `<span class="l">${l.long}</span><span class="s">${l.short}</span>`);
+  const grid = yTicks.map((t) => `<line x1="0" x2="1000" y1="${Y(t.v) * 10}" y2="${Y(t.v) * 10}" stroke="var(--line)" vector-effect="non-scaling-stroke"></line>`).join('');
+  const hl = hlines.map((h) => `<line x1="0" x2="1000" y1="${Y(h.v) * 10}" y2="${Y(h.v) * 10}" stroke="var(--steel-2)" stroke-dasharray="2 4" vector-effect="non-scaling-stroke"></line>`).join('');
+  const lines = series.map((s) => `<polyline points="${s.points.map(([x, y]) => `${X(x) * 10},${Y(y) * 10}`).join(' ')}" fill="none" stroke="${s.stroke || 'var(--phosphor)'}" stroke-width="${s.width || 2}" ${s.dash ? `stroke-dasharray="${s.dash}"` : ''} stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline>`).join('');
+  const dots = series.flatMap((s) => (s.dots ? s.points.map(([x, y]) => `<span class="dot" style="left: ${X(x)}%; top: ${Y(y)}%; background: ${s.dotFill || s.stroke || 'var(--phosphor)'};${s.hollow ? ' background: var(--panel); border: 1.5px solid ' + (s.stroke || 'var(--steel)') + ';' : ''}"></span>`) : [])).join('');
+  const ends = series.filter((s) => s.end).map((s) => { const [x, y] = s.points[s.points.length - 1]; return `<span class="el" style="top: ${Y(s.endY ?? y)}%; color: ${s.endColor || s.stroke || 'var(--phosphor)'};">${lab(s.end)}</span>`; }).join('');
+  const yl = yTicks.map((t) => `<span class="yl" style="top: ${Y(t.v)}%;">${t.label}</span>`).join('');
+  const xl = xTicks.map((t) => `<span class="xl${t.minor ? ' minor' : ''}" style="left: ${X(t.v)}%;">${lab(t.label)}</span>`).join('');
+  const hll = hlines.map((h) => `<span class="el" style="top: ${Y(h.v)}%; color: var(--steel); font-weight: 400; font-size: 11px;">${lab(h.label)}</span>`).join('');
+  const pls = pointLabels.map((p) => `<span class="pl${p.minor ? ' minor' : ''}" style="left: ${X(p.x)}%; top: ${Y(p.y)}%;${p.color ? ' color: ' + p.color + ';' : ''}">${p.text}</span>`).join('');
+  return `<div class="fc" role="img" aria-label="${aria}" style="height: ${height}px; --pl: ${pl}px; --pr: ${pr}px; --prn: ${prn}px; --pt: ${pt}px; --pb: ${pb}px;"><div class="pa"><svg viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">${grid}${hl}${lines}</svg>${dots}${yl}${xl}${pls}${ends}${hll}</div></div>`;
 }
