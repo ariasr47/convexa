@@ -161,12 +161,13 @@
   .cx .bar.neg { border-radius: 0 0 4px 4px; }
   .cx .bar.hb { transform: translateY(-50%); border-radius: 0 4px 4px 0; }
   .cx .bar.hb.neg { border-radius: 4px 0 0 4px; }
-  .cx .bar.out { background: transparent !important; border: 1px dashed var(--c-axis); }
+  .cx .bar.out { background: transparent !important; border: 1.5px dashed var(--c-edge); box-sizing: border-box; }
   .cx .bv { position: absolute; transform: translate(-50%, calc(-100% - 4px)); font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--phosphor); white-space: nowrap; }
   .cx .bv.neg { transform: translate(-50%, 4px); }
   .cx .evlane { position: absolute; right: calc(100% + 8px); top: calc(-1 * var(--pt) + 6px); font: 600 11px/1 'IBM Plex Sans', sans-serif; color: var(--steel); white-space: nowrap; }
   .cx .ev { position: absolute; top: calc(-1 * var(--pt) + 2px); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 6px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--panel); font: 600 11px/1 'IBM Plex Sans', sans-serif; color: var(--phosphor); white-space: nowrap; }
   .cx .ev.lane2 { top: calc(-1 * var(--pt) + 26px); }
+  .cx .ev.e0 { transform: translateX(-12px); } .cx .ev.e1 { transform: translateX(calc(-100% + 12px)); }
   .cx .rg { position: absolute; top: 0; bottom: 0; background: var(--c-band); border-left: 1px solid var(--c-edge); border-right: 1px solid var(--c-edge); }
   .cx .rgl { position: absolute; top: 4px; transform: translateX(-50%); font: 500 11px/1.2 'IBM Plex Sans', sans-serif; color: var(--steel); white-space: nowrap; }
   .cx .gap { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, transparent 0 5px, var(--line) 5px 6px); }
