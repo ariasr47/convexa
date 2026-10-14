@@ -208,7 +208,7 @@ function TickerCard({ row, today }: { row: Row; today: string }) {
             px: 1.25,
             py: 1,
             borderRadius: '8px',
-            border: `1px dashed ${alpha(t.palette.text.secondary, 0.35)}`,
+            border: `1px solid ${alpha(t.palette.text.secondary, 0.25)}`,
             fontSize: 12,
             color: 'text.secondary',
           })}

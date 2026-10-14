@@ -234,9 +234,11 @@ export function monthDay(epochSeconds: number): string {
  *  OpenAPI-widened `string` as already-validated (`[digested-labels-not-raw-dump]`). Anything other
  *  than the literal `"paused"` reads as `"live"`, matching the backend's own "live is the default"
  *  rule and failing toward TODAY'S unchanged behavior rather than toward a needless paused banner. */
-export function scanMarketDataMode(value: string | null | undefined): 'live' | 'paused' | 'sample' {
+export type ScanMarketData = 'live' | 'paused' | 'not_live' | 'sample';
+
+export function scanMarketDataMode(value: string | null | undefined): ScanMarketData {
   if (dataMode === 'demo' && value === 'sample') return 'sample';
-  return value === 'paused' ? 'paused' : 'live';
+  return value === 'paused' || value === 'not_live' ? value : 'live';
 }
 
 /** `null`/`undefined`/non-finite ⇒ the em-dash. A real `0` formats normally — a zero is data. */
@@ -345,7 +347,7 @@ export const SWEEP_DOWN_AFTER_S = 180;
 export function sweepBanner(
   sweep: SweepHeartbeat | null,
   nowS: number,
-  marketData: 'live' | 'paused' | 'sample' = 'live',
+  marketData: ScanMarketData = 'live',
 ): { engaged: boolean; text: string } {
   if (marketData === 'sample') {
     return {
@@ -353,10 +355,16 @@ export function sweepBanner(
       text: 'Authored scenario · October 7, 2026 · no market feed connected',
     };
   }
-  if (marketData === 'paused') {
+  if (marketData === 'paused' || marketData === 'not_live') {
     const lastSweptOn =
       sweep?.sweep_last_completed != null ? monthDay(sweep.sweep_last_completed) : null;
-    return { engaged: true, text: SCAN_COPY.marketDataPaused(lastSweptOn) };
+    return {
+      engaged: true,
+      text:
+        marketData === 'not_live'
+          ? SCAN_COPY.marketDataNotLive(lastSweptOn)
+          : SCAN_COPY.marketDataPaused(lastSweptOn),
+    };
   }
   if (sweep == null) return { engaged: true, text: SCAN_COPY.sweepAbsent };
   if (nowS - sweep.updated_at <= SWEEP_DOWN_AFTER_S) return { engaged: false, text: '' };

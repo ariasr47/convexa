@@ -654,7 +654,7 @@ function SignalsOff() {
       aria-labelledby="signals-off"
       sx={(t) => ({
         ...PANEL_SX,
-        border: `1px dashed ${alpha(t.palette.text.secondary, 0.4)}`,
+        border: `1px solid ${alpha(t.palette.text.secondary, 0.25)}`,
         p: { xs: 2, sm: 3 },
         display: 'grid',
         gap: 1.5,

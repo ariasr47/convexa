@@ -45,6 +45,7 @@ import { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommen
 import { PrimeBanner, tierMeta } from '@/pages/ticker/widgets/opportunity-tier';
 import { dataMode, getTicker, OptionRight, type Expiration } from '@convexa/api';
 import PauseCircleOutlinedIcon from '@mui/icons-material/PauseCircleOutlined';
+import SensorsOffOutlinedIcon from '@mui/icons-material/SensorsOffOutlined';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
@@ -67,6 +68,8 @@ import { useTheme, type Theme } from '@mui/material/styles';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 
+import { NOT_LIVE_COPY } from '@/shared/dataState/marketData';
+import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { elevationFor, extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
@@ -516,6 +519,9 @@ export function TickerDashboard() {
   const { live, demoOrderFrame, streamOffline, isLive, displayActive, lastSessionPhase } =
     useLiveTape();
   const { data, loading, error, paused: marketDataPaused, refresh: load } = page.bundle;
+  // The bundle only says market data is off; /api/health says why. `not_live` (no paid feed exists,
+  // canon P-1) gets its honest words; a real operator pause keeps the paused panel.
+  const marketDataNotLive = useMarketDataMode() === 'not_live';
   useEffect(() => {
     if (dataMode !== 'demo') return;
     const symbol = ticker.toUpperCase();
@@ -840,11 +846,18 @@ export function TickerDashboard() {
           behind `error` has already stopped polling by the time this renders (`useTickerBundle`'s
           `haltOn: isMarketDataPaused`) — changing the ticker is the only thing that asks again. */}
       {error && !data && marketDataPaused && (
-        <Alert severity="info" icon={<PauseCircleOutlinedIcon />} role="status">
-          <AlertTitle>Market data is paused.</AlertTitle>
+        <Alert
+          severity="info"
+          icon={marketDataNotLive ? <SensorsOffOutlinedIcon /> : <PauseCircleOutlinedIcon />}
+          role="status"
+        >
+          <AlertTitle>
+            {marketDataNotLive ? NOT_LIVE_COPY.title : 'Market data is paused.'}
+          </AlertTitle>
           <Typography variant="body2">
-            Convexa isn’t connected to a market-data feed right now, so this desk can’t load prices
-            or dealer structure. Nothing is broken, and retrying won’t change it.
+            {marketDataNotLive
+              ? `This desk reads dealer structure from a paid options feed this site doesn’t run, so its structure, flow and AI read can’t load. Nothing is broken, and retrying won’t change it. For ${ticker.toUpperCase()}, research, positioning, filings and TradingView’s daily chart are live.`
+              : 'Convexa isn’t connected to a market-data feed right now, so this desk can’t load prices or dealer structure. Nothing is broken, and retrying won’t change it.'}
           </Typography>
           <Stack direction="row" spacing={2} sx={{ mt: 1, rowGap: 0.5, flexWrap: 'wrap' }}>
             {/* `info.main` is the deliberately-quiet FILL-grade blue (`[theme-token-discipline]`'s

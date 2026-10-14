@@ -55,6 +55,7 @@ import {
   type PollDelta,
   type RowPollSnap,
   type ScanFilters,
+  type ScanMarketData,
 } from './format';
 import { SCAN_COPY } from './labels';
 
@@ -74,7 +75,7 @@ interface Snapshot {
   degraded: boolean;
   /** SPEC B4 (narrowed off the wire's widened string, F3). Defaults 'live' pre-first-read and on a
    *  degraded poll — a failed poll never invents a mode change. */
-  marketData: 'live' | 'paused' | 'sample';
+  marketData: ScanMarketData;
 }
 
 export interface ScanApi {

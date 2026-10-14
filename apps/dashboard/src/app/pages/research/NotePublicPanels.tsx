@@ -1,8 +1,14 @@
 /**
  * Below a ticker's note: who is positioned how (short interest, short-sale volume, insider trades) and
  * what the company has filed since the note was written. Each card names its source and its delay,
- * because each source reports late in its own way.
+ * because each source reports late in its own way, and carries one data-state word (canon P-2): an
+ * outage reads "Source down", never as an empty fact.
+ *
+ * FINRA's data is credited to FINRA as owner and source, derived figures included, with a
+ * do-not-redistribute notice (FINRA Equity Data terms §2.3; docs/public-data/README.md).
  */
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import { publicDataWord } from '@/shared/dataState/vocabulary';
 import { dataMode, type PublicTicker } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { alpha } from '@mui/material/styles';
@@ -11,7 +17,7 @@ import { localToday, upcoming } from 'virtual:convexa-research';
 import { standing } from './filings';
 import { formatNoteDate, formatShortDate } from './format';
 import type { Read } from './publicData';
-import { Caps, SourceProblem, StaleNote } from './publicUi';
+import { Caps, SourceProblem } from './publicUi';
 import type { Aging } from './types';
 import { DISPLAY, MONO, PANEL_SX } from './ui';
 
@@ -87,7 +93,6 @@ export function NotePublicPanels({
             it reports.
           </Box>
         </Box>
-        {d.detail && dataMode !== 'demo' && <StaleNote text={d.detail} />}
         <Box
           sx={{
             display: 'grid',
@@ -98,6 +103,14 @@ export function NotePublicPanels({
           <ShortInterestCard d={d} />
           <ShortVolumeCard d={d} />
           <InsidersCard d={d} />
+        </Box>
+        <Box
+          component="p"
+          sx={{ m: 0, fontSize: 12, color: 'text.secondary', maxWidth: 720, textWrap: 'pretty' }}
+        >
+          FINRA owns and is the source of the short-interest and short-sale-volume data here,
+          including the percentages and averages Convexa calculates from it. Shown free for
+          non-commercial personal use; please don&apos;t redistribute it.
         </Box>
       </Box>
 
@@ -117,6 +130,12 @@ export function NotePublicPanels({
           <Box component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>
             From SEC EDGAR, checked every hour.
           </Box>
+          <DataStateTag
+            state={publicDataWord(d.filings_state, {
+              stale: d.filings_state === 'live' && !!d.filings_detail && dataMode !== 'demo',
+              demo: dataMode === 'demo',
+            })}
+          />
         </Box>
         {d.filings_state === 'not_configured' ? (
           <Box component="p" sx={{ m: 0, fontSize: 14, color: 'text.secondary' }}>
@@ -125,7 +144,7 @@ export function NotePublicPanels({
           </Box>
         ) : d.filings_state === 'unavailable' && d.filings.length === 0 ? (
           <Box component="p" sx={{ m: 0, fontSize: 14, color: 'text.secondary' }}>
-            {d.filings_detail ?? 'EDGAR did not answer.'}
+            {`${d.filings_detail ?? 'EDGAR did not answer.'} This list is unknown, not empty.`}
           </Box>
         ) : newFilings.length === 0 ? (
           <Box
@@ -134,7 +153,7 @@ export function NotePublicPanels({
               gap: 1,
               p: 2,
               borderRadius: '10px',
-              border: `1px dashed ${alpha(t.palette.text.secondary, 0.4)}`,
+              border: `1px solid ${alpha(t.palette.text.secondary, 0.25)}`,
             })}
           >
             <Box
@@ -204,14 +223,33 @@ export function NotePublicPanels({
   );
 }
 
+function CardHead({ label, tag }: { label: string; tag: React.ReactNode }) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '6px 10px',
+      }}
+    >
+      <Caps>{label}</Caps>
+      {tag}
+    </Box>
+  );
+}
+
 function Card({
   label,
+  tag,
   value,
   unit,
   children,
   source,
 }: {
   label: string;
+  tag: React.ReactNode;
   value: string;
   unit?: string;
   children: React.ReactNode;
@@ -222,7 +260,7 @@ function Card({
       component="article"
       sx={{ ...PANEL_SX, p: '18px 20px', display: 'grid', gap: 1.25, alignContent: 'start' }}
     >
-      <Caps>{label}</Caps>
+      <CardHead label={label} tag={tag} />
       <Box component="span" sx={{ ...MONO, fontSize: 26, fontWeight: 500, lineHeight: 1.2 }}>
         {value}
         {unit && (
@@ -265,20 +303,15 @@ function Facts({ rows }: { rows: [string, string][] }) {
   );
 }
 
-function Missing({ label, text }: { label: string; text: string }) {
+/** A card with no figure: nothing to report (no tag), or a state that explains why (Source down,
+ *  Not set up). Solid border: canon P-3 reserves dashed frames for sample data. */
+function Missing({ label, text, tag }: { label: string; text: string; tag?: React.ReactNode }) {
   return (
     <Box
       component="article"
-      sx={(t) => ({
-        ...PANEL_SX,
-        p: '18px 20px',
-        display: 'grid',
-        gap: 1,
-        alignContent: 'start',
-        border: `1px dashed ${alpha(t.palette.text.secondary, 0.4)}`,
-      })}
+      sx={{ ...PANEL_SX, p: '18px 20px', display: 'grid', gap: 1, alignContent: 'start' }}
     >
-      <Caps>{label}</Caps>
+      <CardHead label={label} tag={tag} />
       <Box component="span" sx={{ fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}>
         {text}
       </Box>
@@ -286,21 +319,48 @@ function Missing({ label, text }: { label: string; text: string }) {
   );
 }
 
+/** A part-level note, shown under a figure: a stale copy, or files that couldn't be read. */
+function PartNote({ text }: { text: string | null }) {
+  if (!text || dataMode === 'demo') return null;
+  return (
+    <Box component="p" sx={{ m: 0, fontSize: 12, color: 'warning.main', textWrap: 'pretty' }}>
+      {text}
+    </Box>
+  );
+}
+
 function ShortInterestCard({ d }: { d: PublicTicker }) {
   const si = d.short_interest;
+  const demo = dataMode === 'demo';
+  if (d.short_interest_state === 'unavailable' && !demo)
+    return (
+      <Missing
+        label="Short interest"
+        tag={<DataStateTag state="sourceDown" />}
+        text={`${d.short_interest_detail ?? 'FINRA did not answer.'} Unknown, not empty.`}
+      />
+    );
   if (!si)
     return (
       <Missing label="Short interest" text="FINRA has no short-interest report for this symbol." />
     );
+  const stale = !!d.short_interest_detail && !demo;
   const share = d.shares_outstanding ? si.shares_short / d.shares_outstanding.value : null;
   const max = Math.max(...si.history.map((h) => h.shares_short), si.shares_short, 1);
   return (
     <Card
       label="Short interest"
+      tag={
+        <DataStateTag
+          state={publicDataWord(d.short_interest_state, { stale, delayed: true, demo })}
+          detail={stale || demo ? null : `settled ${formatShortDate(si.settlement_date)}`}
+        />
+      }
       value={share !== null ? `${(share * 100).toFixed(2)}%` : big(si.shares_short)}
       unit={share !== null ? 'of shares out' : 'shares'}
-      source={`FINRA · settlement ${formatShortDate(si.settlement_date)}, published about a week later`}
+      source={`Data owned and provided by FINRA · settlement ${formatShortDate(si.settlement_date)}, published about a week later`}
     >
+      <PartNote text={d.short_interest_detail} />
       {si.history.length > 1 && (
         <Box
           role="img"
@@ -343,6 +403,15 @@ function ShortInterestCard({ d }: { d: PublicTicker }) {
 
 function ShortVolumeCard({ d }: { d: PublicTicker }) {
   const sv = d.short_volume;
+  const demo = dataMode === 'demo';
+  if (d.short_volume_state === 'unavailable' && !demo)
+    return (
+      <Missing
+        label="Short-sale volume"
+        tag={<DataStateTag state="sourceDown" />}
+        text={`${d.short_volume_detail ?? "FINRA's daily files did not answer."} Unknown, not empty.`}
+      />
+    );
   if (!sv)
     return (
       <Missing label="Short-sale volume" text="FINRA's daily file has no volume for this symbol." />
@@ -350,10 +419,17 @@ function ShortVolumeCard({ d }: { d: PublicTicker }) {
   return (
     <Card
       label="Short-sale volume"
+      tag={
+        <DataStateTag
+          state={publicDataWord(d.short_volume_state, { demo })}
+          detail={demo ? null : formatShortDate(sv.date)}
+        />
+      }
       value={`${Math.round(sv.ratio * 100)}%`}
       unit="of volume"
-      source={`FINRA Reg SHO daily file · ${formatShortDate(sv.date)}`}
+      source={`Data owned and provided by FINRA (Reg SHO daily short-sale volume) · ${formatShortDate(sv.date)}`}
     >
+      <PartNote text={d.short_volume_detail} />
       <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary', textWrap: 'pretty' }}>
         Counts every sale marked short, including market makers hedging customers&apos; buys. It is
         not short interest, and a high reading is normal.
@@ -365,18 +441,34 @@ function ShortVolumeCard({ d }: { d: PublicTicker }) {
 
 function InsidersCard({ d }: { d: PublicTicker }) {
   const ins = d.insiders;
+  const demo = dataMode === 'demo';
   if (!ins || ins.state === 'not_configured')
     return (
       <Missing
         label="Insider trades"
+        tag={<DataStateTag state="notSetUp" />}
         text="Insider filings come from SEC EDGAR, which isn't set up on this server yet."
       />
     );
   if (ins.state !== 'live')
-    return <Missing label="Insider trades" text={ins.detail ?? 'EDGAR did not answer.'} />;
+    return (
+      <Missing
+        label="Insider trades"
+        tag={<DataStateTag state={publicDataWord(ins.state)} />}
+        text={`${ins.detail ?? 'EDGAR did not answer.'} Unknown, not empty.`}
+      />
+    );
   return (
     <Card
       label={`Insider trades · ${ins.window_days} days`}
+      tag={
+        <DataStateTag
+          state={publicDataWord(ins.state, { stale: !!ins.detail && !demo, demo })}
+          detail={
+            demo || !ins.latest || ins.detail ? null : `latest ${formatShortDate(ins.latest)}`
+          }
+        />
+      }
       value={`${ins.sales} ${ins.sales === 1 ? 'sale' : 'sales'}`}
       unit={`· ${ins.buys} ${ins.buys === 1 ? 'buy' : 'buys'}`}
       source={`SEC Form 4 · ${ins.filings} filings${ins.latest ? `, latest ${formatShortDate(ins.latest)}` : ''}`}

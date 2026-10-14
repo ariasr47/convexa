@@ -67,6 +67,12 @@ export const SCAN_COPY = {
     lastSweptOn
       ? `Market data paused · showing the last board, from ${lastSweptOn}`
       : 'Market data paused · showing the last board',
+  /** Canon P-1: `market_data: "not_live"` (no paid feed exists), the same standing fact in its
+   *  honest word. */
+  marketDataNotLive: (lastSweptOn: string | null) =>
+    lastSweptOn
+      ? `Options data isn’t live on this site · showing the last board, from ${lastSweptOn}`
+      : 'Options data isn’t live on this site · showing the last board',
   /** Per-row structure freshness — never "live" / never bare "Updated" (spine #4). */
   updated: (rel: string) => `Structure as-of ${rel}`,
   /** Structure age for the desk strip (same phrasing as the per-row line). */

@@ -14,6 +14,7 @@ import { alertsReadFaulted } from '@/features/alerts/store';
 import type { AlertKind, AlertRule, LevelRef } from '@/features/alerts/types';
 import { useAlerts } from '@/features/alerts/useAlerts';
 import { NOT_RECORDED } from '@/shared/copy/notANumber';
+import { marketDataOff } from '@/shared/dataState/marketData';
 import { faceFor } from '@/shared/figure';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { extrasFor } from '@/shared/theme/tokens';
@@ -324,11 +325,13 @@ export function AlertsPage() {
       </Stack>
 
       {faulted && <AlertsFaultedBanner />}
-      {/* Rules evaluate on structure snapshots, and none arrive while the server runs paused. */}
-      {marketDataMode === 'paused' && (
+      {/* Rules evaluate on structure snapshots, and none arrive while market data is not live
+          (no paid feed, canon P-1) or paused (an operator paused one). */}
+      {marketDataOff(marketDataMode) && (
         <Alert severity="info" icon={<PauseCircleOutlinedIcon />} role="status" sx={{ mb: 3 }}>
-          Live market data is off, so no rule can fire right now. Rules you add stay saved in this
-          browser.
+          {marketDataMode === 'not_live'
+            ? 'Options data isn’t live on this site, so no rule can fire. Rules you add stay saved in this browser.'
+            : 'Live market data is paused, so no rule can fire right now. Rules you add stay saved in this browser.'}
         </Alert>
       )}
 

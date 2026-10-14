@@ -4,6 +4,8 @@
  * prior period; a results release says where its figures will arrive. The filter lives in the URL so
  * Back and a shared link keep it; j and k move through the list, o opens the filing.
  */
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import { publicDataWord } from '@/shared/dataState/vocabulary';
 import { dataMode, type PublicFiling } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { alpha } from '@mui/material/styles';
@@ -126,6 +128,13 @@ export function FilingsPage() {
                 kind={dataMode === 'demo' ? 'sample' : 'primary'}
               />
             )}
+            {read.data && dataMode !== 'demo' && (
+              <DataStateTag
+                state={publicDataWord(read.data.state, {
+                  stale: read.data.state === 'live' && !!read.data.detail,
+                })}
+              />
+            )}
             <Box
               component="span"
               sx={{
@@ -170,7 +179,7 @@ export function FilingsPage() {
                     gap: 0.5,
                     p: '10px 14px',
                     borderRadius: '10px',
-                    border: `1px dashed ${alpha(t.palette.text.secondary, 0.4)}`,
+                    border: `1px solid ${alpha(t.palette.text.secondary, 0.25)}`,
                   })}
                 >
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>

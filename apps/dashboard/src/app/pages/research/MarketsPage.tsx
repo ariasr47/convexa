@@ -3,6 +3,7 @@
  * here is worked out from the data (a claim, not a label), every figure carries its source and date,
  * and the 10-year is checked against the rate each note was valued with.
  */
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { extrasFor } from '@/shared/theme/tokens';
 import { dataMode, type PublicMarkets } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -85,6 +86,31 @@ export function MarketsPage() {
                 kind={dataMode === 'demo' ? 'sample' : 'primary'}
               />
             )}
+            {/* One state word per source (canon P-2); demo builds say it once, in the chip above. */}
+            {data &&
+              dataMode !== 'demo' &&
+              (data.state === 'off' ? (
+                <DataStateTag state="off" />
+              ) : (
+                <>
+                  {data.rates ? (
+                    <DataStateTag
+                      state="updated"
+                      detail={`rates ${formatShortDate(data.rates.as_of)}`}
+                    />
+                  ) : (
+                    <DataStateTag state="sourceDown" detail="rates" />
+                  )}
+                  {data.futures ? (
+                    <DataStateTag
+                      state="delayed"
+                      detail={`positioning as of ${formatShortDate(data.futures.report_date)}`}
+                    />
+                  ) : (
+                    <DataStateTag state="sourceDown" detail="positioning" />
+                  )}
+                </>
+              ))}
           </Box>
         </Box>
 

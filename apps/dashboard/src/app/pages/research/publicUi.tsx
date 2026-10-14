@@ -159,7 +159,8 @@ export function SourceProblem({
         p: { xs: 2, sm: 3 },
         display: 'grid',
         gap: 1,
-        border: `1px dashed ${alpha(t.palette.text.secondary, 0.4)}`,
+        // Solid: canon P-3 reserves dashed frames for sample data.
+        border: `1px solid ${alpha(t.palette.text.secondary, 0.25)}`,
       })}
     >
       <Box component="span" sx={{ fontWeight: 600 }}>
