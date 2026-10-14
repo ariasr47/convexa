@@ -114,7 +114,7 @@ export const LANDING_COPY = {
     // `landing.mjs:117` MINUS "across 69 tracked names" (SPEC §4): the count is true today, but
     // the landing never reads `universe.json`, so one owner edit plus a restart would make the
     // page lie with no test to notice. The deviation IS the pin (AC-C1 governs over the source).
-    body: 'The full structure desk is free. Sign up when you want the Scanner, a simulated book that persists, and AI reads on your own key.',
+    body: 'Every ticker page is open: TradingView’s daily chart, short data, filings and the research notes. The Scanner, a simulated book and AI reads need an account.',
     primary: 'Open the Ticker →',
     // Imported, never retyped (SPEC §8: "reopening sign-ups is therefore a server change plus
     // exactly one frontend edit at that one string's site" — the landing must never hold its own

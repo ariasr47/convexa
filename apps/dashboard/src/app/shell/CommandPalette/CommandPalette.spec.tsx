@@ -1,5 +1,6 @@
 /**
- * `CommandPalette` — component states (SPEC §4.4 P1–P6). Network mocked at `getScan()` only.
+ * `CommandPalette` — component states (SPEC §4.4 P1–P6). Network mocked at `getScan()` (and the
+ * health read, as live).
  * The keyboard END-TO-END walk (⌘K open → reach all four surfaces) lives in `palette.flow.spec.tsx`;
  * the signed-out wall is covered in `app.risk.spec.tsx`. This file covers the palette's OWN render
  * states.
@@ -14,7 +15,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CommandPalette } from './CommandPalette';
 
 const { getScanMock } = vi.hoisted(() => ({ getScanMock: vi.fn() }));
-vi.mock('@convexa/api', () => ({ getScan: getScanMock }));
+// A live build with the feed live: the palette reads the scan (the feed-off arm skips it).
+vi.mock('@convexa/api', () => ({
+  getScan: getScanMock,
+  dataMode: 'live',
+  getMarketDataMode: async () => 'live',
+}));
 
 afterEach(() => {
   vi.restoreAllMocks();

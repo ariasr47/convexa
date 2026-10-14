@@ -121,6 +121,12 @@ const OperatorSessionArchive = lazy(() =>
     default: m.OperatorSessionArchive,
   })),
 );
+const LabIndexNotLive = lazy(() =>
+  import('@/pages/lab/LabNotLive').then((m) => ({ default: m.LabIndexNotLive })),
+);
+const LabInstrumentNotLive = lazy(() =>
+  import('@/pages/lab/LabNotLive').then((m) => ({ default: m.LabInstrumentNotLive })),
+);
 const LabIndex = lazy(() => import('@/pages/lab/LabIndex').then((m) => ({ default: m.LabIndex })));
 const StructureFieldLab = lazy(() =>
   import('@/pages/lab/StructureFieldLab').then((m) => ({ default: m.StructureFieldLab })),
@@ -285,12 +291,27 @@ export function AppRoutes() {
         {/* Alerts v1 — structure rules (level / tier / score); public, local durable. */}
         <Route path="/alerts" element={lazyRoute(<AlertsPage />)} />
         {/* Lab — public instrument demos (ticker candidates + shipped Structure Field). */}
-        <Route path="/lab" element={lazyRoute(<LabIndex />)} />
-        <Route path="/lab/structure-field" element={lazyRoute(<StructureFieldLab />)} />
-        <Route path="/lab/tape-pulse" element={lazyRoute(<TapePulseLab />)} />
-        <Route path="/lab/wall-magnet" element={lazyRoute(<WallMagnetLab />)} />
-        <Route path="/lab/term-heat" element={lazyRoute(<TermHeatLab />)} />
-        <Route path="/lab/flow-ribbons" element={lazyRoute(<FlowRibbonsLab />)} />
+        {/* The Lab's instruments run on synthetic data: the demo build shows them; a live build
+            mocks nothing (owner, 2026-10-14), so each says Not live and links to the demo. */}
+        <Route
+          path="/lab"
+          element={lazyRoute(dataMode === 'demo' ? <LabIndex /> : <LabIndexNotLive />)}
+        />
+        {(
+          [
+            ['structure-field', <StructureFieldLab />],
+            ['tape-pulse', <TapePulseLab />],
+            ['wall-magnet', <WallMagnetLab />],
+            ['term-heat', <TermHeatLab />],
+            ['flow-ribbons', <FlowRibbonsLab />],
+          ] as const
+        ).map(([id, page]) => (
+          <Route
+            key={id}
+            path={`/lab/${id}`}
+            element={lazyRoute(dataMode === 'demo' ? page : <LabInstrumentNotLive id={id} />)}
+          />
+        ))}
         {/* Settings — the 3 light prefs (account menu links here when signed in; viewable anonymously). */}
         <Route path="/settings" element={lazyRoute(<SettingsPage />)} />
         {/* Catch-all — LAST child of the shell group, so the 404 wears the nav AND the footer

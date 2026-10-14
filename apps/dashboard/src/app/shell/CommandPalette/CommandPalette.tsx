@@ -63,7 +63,11 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   // P4: the honest "we checked, there is nothing" claim — ONLY once the read has actually
   // resolved. During loading we do not yet know, so this line must not render (`[absent-is-not-none]`).
   const showNoResultsLine =
-    scan.phase === 'ready' && !scan.unavailable && query.trim() !== '' && symbolItems.length === 0;
+    scan.phase === 'ready' &&
+    !scan.unavailable &&
+    !scan.off &&
+    query.trim() !== '' &&
+    symbolItems.length === 0;
 
   const items: Item[] = useMemo(() => {
     const commandItems: Item[] = PALETTE_COMMANDS.map((command) => ({ kind: 'command', command }));
@@ -240,6 +244,16 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           <Box component="li" data-testid="palette-unavailable" sx={{ px: 2, py: 1.5 }}>
             <Typography sx={{ color: 'text.secondary' }}>
               Ranked results are unavailable right now.
+            </Typography>
+          </Box>
+        )}
+
+        {/* The options feed is off on this site: no ranked read was made, so none is claimed. */}
+        {scan.phase === 'ready' && scan.off && (
+          <Box component="li" data-testid="palette-not-live" sx={{ px: 2, py: 1.5 }}>
+            <Typography sx={{ color: 'text.secondary' }}>
+              Ranked symbols need the options feed, which isn’t live on this site. Type a symbol to
+              open its page.
             </Typography>
           </Box>
         )}

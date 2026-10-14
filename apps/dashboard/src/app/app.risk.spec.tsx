@@ -206,8 +206,9 @@ describe('route table', () => {
       ready: () => screen.findByTestId('lab-index'),
     },
     {
+      // A live build mocks nothing (owner, 2026-10-14): the synthetic instrument says Not live.
       path: '/lab/structure-field',
-      ready: () => screen.findByTestId('structure-field-lab'),
+      ready: () => screen.findByTestId('lab-structure-field-not-live'),
     },
     { path: '/settings', ready: () => screen.findByTestId('settings-page') },
   ];

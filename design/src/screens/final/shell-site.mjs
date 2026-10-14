@@ -269,7 +269,7 @@ export const ROWS = [
       ],
       built: [
         { status: 'shipped', what: 'The Lab index and five instrument pages on synthetic data (labCatalog.ts, LabShell, demos/), reached from the footer.' },
-        { status: 'todo', what: 'Production Not live for every instrument with its demo link: today production draws the synthetic instruments.' },
+        { status: 'shipped', what: 'Production Not live for every instrument with its demo link (pages/lab/LabNotLive.tsx, 2026-10-14): a live build draws no synthetic instrument.' },
         { status: 'partial', what: 'Structure Field’s “live SPY structure” calls the bundle (needs the options feed); designed: a “Demo SPY chain” source on staging only.' },
         { status: 'partial', what: 'Term Heat colours contango and backwardation green and red; designed: one ordinal phosphor ramp with labels (P-9, P-11).' },
       ],
