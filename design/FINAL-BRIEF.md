@@ -113,3 +113,13 @@ FINRA, SEC) with sources and dates, and Not live for the rest. No NUL bytes in f
 
 Rows and boards you made (with final heights), the render tool's last exit code, any shared-file change you
 need (exact), and gaps between the shipped app and the final design that the owner should know about.
+
+## Addendum (2026-10-14, wave 2): rows placed beside existing ones
+
+Wave 2 groups add rows to an existing page. Each row object may carry `after: '<key>'` (the key of the row it
+follows on the page; existing keys: foundations, shell, landing, methodology, blog, lab, not-found, operator,
+desk, technical, note, research-index, research-markets, research-filings, research-scorecard, scanner,
+positions, alerts, settings, dialogs) or `section: 'planned'` (goes in the Planned section at the bottom, under
+its own title: designed, not built). Row keys must be unique across the page. New screens that the app does
+not have yet get a proposed route in the spec card and "Designed, not built" under Built so far.
+The render tool takes the new groups by name: `node /Users/rodrigoarias/dev/convexa/tmp/final-render.mjs <group> --shots`.

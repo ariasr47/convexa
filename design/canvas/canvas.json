@@ -3080,6 +3080,15 @@
       "text": "Final · Convexa v1 (2026-10-14). The whole app in its ruled state, one row per screen: the spec card (purpose, every widget’s data source, production vs staging, every state in its words, phone, acceptance, build status, rulings, code), then staging (the demo account: signed in, all sample), production where it differs (no mocks; what needs the Massive options feed shows Not live), phone, light and states. Carries P-1–P-4, P-6, P-8–P-15 and the 2026-10-14 environment rulings. The earlier pages stay as history."
     },
     {
+      "id": "note-final-planned",
+      "x": 0,
+      "y": 0,
+      "page": "final",
+      "text": "Planned · designed, not built — the public-data tools from docs/public-data/CANDIDATES.md",
+      "kind": "title1",
+      "maxW": 4000
+    },
+    {
       "id": "note-tweaks",
       "x": 0,
       "y": -150,

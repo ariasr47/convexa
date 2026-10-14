@@ -1,5 +1,5 @@
 import { readFileSync, existsSync } from 'node:fs';
-import { FINAL_NOTE, FINAL_PAGE, finalArtboards } from './screens/final/index.mjs';
+import { FINAL_NOTE, FINAL_PAGE, PLANNED_NOTE, finalArtboards } from './screens/final/index.mjs';
 // Canvas registry — which screens become artboards, at which widths, on which page. Positions are
 // computed (row flow per page), so adding a frame is one line.
 export const pages = [
@@ -238,6 +238,7 @@ function appRows() {
 
 export const annotations = [
   FINAL_NOTE,
+  PLANNED_NOTE,
   { id: 'note-tweaks', page: 'page-1', w: 560, text: 'Ticker desk — the tweak chips switch readState (idle · loading · trade · no_trade · stale · cooldown · signed_out · no_key), live (pulses, particles, trail), scheme (dark · light) and the phone sheet (open · peek). Click “Analyze current snapshot” to run loading → trade; Field / Magnet switches the hero. Expand this frame and resize your window: the layout is fluid.' },
   { id: 'note-resp', page: 'page-2', w: 620, text: 'Same source, five widths. Every frame here renders the identical page body through one set of media and container queries — nothing is redrawn by hand. The phone desk docks the AI read as a bottom sheet; tables become cards under 1000px; the settings rail becomes tabs under 900px.' },
   { id: 'note-site', page: 'page-3', w: 520, text: 'Site surfaces at 1440. Copy is grounded in the product (69-name universe, ~60s desk cadence, ~3-min scanner sweep, 7–45 DTE, simulated book, BYO key); all prices, P/L, scores and timestamps are sample values.' },
@@ -277,7 +278,7 @@ export function canvasJson() {
       ...(expand ? { expand } : {}),
     })),
     annotations: [
-      ...annotations.map((n) => ({ id: n.id, x: n.x ?? 0, y: n.y ?? -150, w: n.w, page: n.page, text: n.text })),
+      ...annotations.map((n) => ({ id: n.id, x: n.x ?? 0, y: n.y ?? -150, ...(n.w ? { w: n.w } : {}), page: n.page, text: n.text, ...(n.kind ? { kind: n.kind } : {}), ...(n.maxW ? { maxW: n.maxW } : {}) })),
       // v4: one findings note above every v4 board, naming the review IDs it resolves.
       ...layout().filter((a) => a.findings).map((a) => ({ id: `find-${a.name}`, x: a.x, y: a.y - 230, w: Math.min(a.w, 640), page: a.page, text: `${a.title}. Resolves ${a.findings}. Findings: design/REVIEW-2026-10-13.md.` })),
       // v5: one note above each board, saying which wave it belongs to and what it resolves.
