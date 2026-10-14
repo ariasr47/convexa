@@ -20,7 +20,7 @@
 import { usePersona } from '@/features/personas/usePersona';
 import { DisclaimerCopy } from '@/shared/copy/disclaimer';
 import { extrasFor } from '@/shared/theme/tokens';
-import { dataMode, type ThemePref } from '@convexa/api';
+import { dataMode, resetDemoWorkspace, type ThemePref } from '@convexa/api';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
 import SettingsBrightnessOutlinedIcon from '@mui/icons-material/SettingsBrightnessOutlined';
@@ -196,11 +196,36 @@ export function SettingsPage() {
         {/* ===== 1. Account panel — display + Sign out (log out now lives here) ===== */}
         <PanelCard heading={C.accountHeading} testId="settings-account-panel">
           {dataMode === 'demo' ? (
-            <Stack spacing={0.5} data-testid="settings-account-demo">
-              <Typography sx={{ fontWeight: 700 }}>Demo visitor</Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Saved in this browser&apos;s demo workspace.
-              </Typography>
+            // Always signed in to the seed demo account (owner, 2026-10-14). In place of sign-out,
+            // a reset puts the seed account back.
+            <Stack
+              direction="row"
+              spacing={2}
+              useFlexGap
+              sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+              data-testid="settings-account-demo"
+            >
+              <Box sx={AVATAR_SX} aria-hidden>
+                {avatarInitial(auth.user)}
+              </Box>
+              {/* 200px floor: on a phone the reset button drops below instead of squeezing this. */}
+              <Box sx={{ minWidth: 0, flex: '1 1 200px' }}>
+                <Typography sx={{ fontWeight: 700 }} noWrap>
+                  {auth.user?.display_name ?? 'Demo account'}
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  Sample data. Your changes stay in this browser until you reset.
+                </Typography>
+              </Box>
+              <Button
+                variant="outlined"
+                size="small"
+                data-testid="settings-demo-reset"
+                onClick={resetDemoWorkspace}
+                sx={{ flex: 'none' }}
+              >
+                Reset demo data
+              </Button>
             </Stack>
           ) : auth.authenticated ? (
             <Stack

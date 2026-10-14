@@ -1,3 +1,5 @@
+import type { AuthUser } from '../convexa';
+
 export type DataMode = 'demo' | 'live';
 export type SupportedDemoSymbol = 'SPY' | 'QQQ' | 'AAPL' | 'MSFT' | 'NVDA' | 'TSLA';
 export interface ScenarioProvenance {
@@ -50,3 +52,12 @@ export function demoStorageKey(logicalKey: string): string {
   if (buildMode() === 'test') return logicalKey;
   throw new Error('Missing Convexa build bootstrap; refusing storage access');
 }
+
+/** The seed account every demo visitor is signed in to (owner, 2026-10-14): nothing in the demo sits
+ *  behind a sign-in screen. There is no sign-out; resetting the demo restores this account's seed. */
+export const DEMO_ACCOUNT: AuthUser = {
+  id: 'demo-account',
+  email: 'demo@example.invalid',
+  display_name: 'Demo account',
+  auth_methods: [],
+};

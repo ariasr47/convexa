@@ -29,6 +29,7 @@
  * the two "Sign in" style actions either route to `/ticker` or open the shared `AuthDialog`.
  */
 import { useAuthDialog } from '@/features/auth/AuthDialogProvider';
+import { isDemoBuild } from '@/shared/lib/demoSite';
 import { prefetchTickerRoute, scheduleLandingPrefetch } from '@/shared/lib/prefetchRoutes';
 import { displayScale, extrasFor } from '@/shared/theme/tokens';
 import CheckIcon from '@mui/icons-material/Check';
@@ -178,6 +179,7 @@ function FeatureSection({
 
 export function Landing() {
   const { openAuth } = useAuthDialog();
+  const demo = isDemoBuild();
   const signInRef = useRef<HTMLButtonElement>(null);
 
   // The one intentional non-data edge (SPEC §2.1): warms route chunks after first paint, touches
@@ -561,10 +563,10 @@ export function Landing() {
                 variant="h2"
                 sx={{ ...sectionHeadingSx, fontSize: 'clamp(24px, 2.4vw, 32px)' }}
               >
-                {LANDING_COPY.cta.heading}
+                {demo ? LANDING_COPY.ctaDemo.heading : LANDING_COPY.cta.heading}
               </Typography>
               <Typography variant="body1" sx={{ color: 'text.secondary', mt: 1.5, maxWidth: 560 }}>
-                {LANDING_COPY.cta.body}
+                {demo ? LANDING_COPY.ctaDemo.body : LANDING_COPY.cta.body}
               </Typography>
             </Box>
             <Stack spacing={1.25} sx={{ alignItems: 'stretch' }}>
@@ -582,17 +584,20 @@ export function Landing() {
                 variant="outlined"
                 size="large"
                 ref={signInRef}
-                onClick={() => openAuth({ returnFocus: signInRef.current })}
+                // Demo: no sign-in exists, so the button opens the demo account's book instead.
+                {...(demo
+                  ? { component: RouterLink, to: '/positions' }
+                  : { onClick: () => openAuth({ returnFocus: signInRef.current }) })}
                 data-testid="cta-band-secondary"
                 // A11Y-2 (color-contrast, serious): this band sits on `background.paper` (white
                 // in light mode), so the default `primary.main` label measured 3.27:1 — still
                 // under 4.5:1. Same text-grade-amber fix as the hero's `cta-secondary`.
                 sx={{ color: (theme) => extrasFor(theme).textAmber }}
               >
-                {LANDING_COPY.cta.secondary}
+                {demo ? LANDING_COPY.ctaDemo.secondary : LANDING_COPY.cta.secondary}
               </Button>
               <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center' }}>
-                {LANDING_COPY.cta.signupsClosed}
+                {demo ? LANDING_COPY.ctaDemo.note : LANDING_COPY.cta.signupsClosed}
               </Typography>
             </Stack>
           </Box>

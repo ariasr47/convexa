@@ -278,15 +278,15 @@ describe('G3 demo workspace and paper order flow', () => {
     vi.unstubAllGlobals();
   });
 
-  it('provides Demo visitor identity without resolving a server session', async () => {
+  it('signs in to the seed demo account without a network request', async () => {
     const fetch = vi.fn(() => Promise.reject(new Error('unexpected network request')));
     vi.stubGlobal('fetch', fetch);
     const wrapper = ({ children }: { children: ReactNode }) =>
       createElement(AuthProvider, null, children);
     const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.ready).toBe(true));
-    expect(result.current.authenticated).toBe(false);
-    expect(result.current.user?.display_name).toBe('Demo visitor');
+    expect(result.current.authenticated).toBe(true);
+    expect(result.current.user?.display_name).toBe('Demo account');
     expect(fetch).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });

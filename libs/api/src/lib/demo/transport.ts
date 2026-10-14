@@ -17,7 +17,7 @@ import {
   sampleContractQuote,
 } from './catalog';
 import { computeIndicators } from './indicators';
-import { dataMode, demoStorageKey } from './mode';
+import { DEMO_ACCOUNT, dataMode, demoStorageKey } from './mode';
 import { demoPublicData } from './public-data';
 import { canSimulatePaperAction, initializeDemoWorkspace } from './workspace';
 
@@ -381,7 +381,8 @@ function readDemoSettings(): AuthSettingsWire {
     theme: prefs.theme ?? 'dark',
     default_ticker: prefs.default_ticker ?? 'SPY',
     active_persona_id: 'demo-careful-reader',
-    risk_inputs: riskInputs(),
+    // Seeded so the account's risk caps show filled in: a $25,000 sample account, 2% per trade.
+    risk_inputs: riskInputs(25_000, { unit: 'percent', value: 2 }),
   };
 }
 
@@ -1058,14 +1059,9 @@ export async function demoFetch(request: Request): Promise<Response> {
       const response: AuthResponseWire = {
         authenticated: true,
         google_available: false,
-        user: {
-          id: 'demo-visitor',
-          email: 'visitor@example.invalid',
-          display_name: 'Demo visitor',
-          auth_methods: [],
-        },
+        user: DEMO_ACCOUNT,
         settings: readDemoSettings(),
-        demo_seed: { email: 'visitor@example.invalid' },
+        demo_seed: null,
       };
       return json(response);
     } catch {

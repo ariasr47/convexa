@@ -62,7 +62,7 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
   await page.goto('/');
   await expect(page.getByTestId('demo-provenance')).toContainText('Demo · sample data');
   await expect(page.getByTestId('demo-provenance')).toContainText('October 7, 2026');
-  await expect(page.getByTestId('demo-provenance')).toContainText('Demo visitor');
+  await expect(page.getByTestId('demo-provenance')).toContainText('Signed in as the demo account');
   const entryAssets = await page.evaluate(() =>
     performance
       .getEntriesByType('resource')
@@ -461,7 +461,10 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
       },
     });
   });
-  await page.getByRole('button', { name: 'Reset Demo' }).click();
+  await page
+    .getByTestId('demo-provenance')
+    .getByRole('button', { name: 'Reset demo data' })
+    .click();
   await expect(page.getByTestId('demo-provenance')).toContainText(
     'Simulated playback paused. Showing the last sample.',
   );

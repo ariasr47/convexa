@@ -122,4 +122,12 @@ export const LANDING_COPY = {
     secondary: AUTH_COPY.account.signIn,
     signupsClosed: AUTH_COPY.signup.signupsClosed,
   },
+
+  /** The demo build is always signed in to its seed account (owner, 2026-10-14): no sign-in here. */
+  ctaDemo: {
+    heading: 'You’re signed in to the demo account.',
+    body: 'Every screen is open, on sample data: the Scanner, a simulated book, alerts, and AI reads written for the scenario.',
+    secondary: 'Open the demo book',
+    note: 'Your changes stay in this browser. Reset them any time from the demo bar.',
+  },
 } as const;

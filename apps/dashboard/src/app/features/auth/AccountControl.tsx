@@ -10,6 +10,7 @@
  * The degraded state is treated as unauthenticated (shows `Sign in`); the "couldn't reach sign-in"
  * copy surfaces only on submit / on a gated action — never here, and never on the trader path.
  */
+import { dataMode } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Skeleton from '@mui/material/Skeleton';
@@ -93,7 +94,8 @@ export function AccountControl() {
           display: { xs: 'none', sm: 'block' },
         }}
       >
-        {auth.user?.email}
+        {/* The demo account shows its name: its address is a placeholder, not an inbox. */}
+        {dataMode === 'demo' ? auth.user?.display_name : auth.user?.email}
       </Typography>
       <Box
         component={RouterLink}

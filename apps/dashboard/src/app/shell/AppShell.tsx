@@ -134,7 +134,7 @@ export function AppShell() {
               Authored scenario · October 7, 2026 · no market feed connected
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Demo visitor
+              Signed in as the demo account
             </Typography>
             <Box sx={{ flexGrow: 1 }} />
             {playback.playback === 'paused' && (
@@ -157,7 +157,7 @@ export function AppShell() {
               onClick={resetDemoWorkspace}
               sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
             >
-              Reset Demo
+              Reset demo data
             </Button>
           </Stack>
         </Box>

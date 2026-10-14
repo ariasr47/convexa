@@ -22,6 +22,7 @@ import {
   saveSettings as apiSave,
   signup as apiSignup,
   dataMode,
+  DEMO_ACCOUNT,
   getSession,
   type AuthUser,
   type LoginRequest,
@@ -81,6 +82,20 @@ const ANON: AuthState = {
   subsystemDegraded: false,
 };
 
+/** Demo builds are always signed in to the seed demo account (owner, 2026-10-14), so no demo screen
+ *  sits behind a sign-in wall. The account and its settings come from the demo transport's who-am-I,
+ *  the same read the live build makes. If that read fails (malformed local demo settings), the
+ *  visitor stays signed in on client-local settings rather than dropping to anonymous. */
+const DEMO_SIGNED_IN: AuthState = {
+  ready: true,
+  authenticated: true,
+  user: DEMO_ACCOUNT,
+  googleAvailable: false,
+  settings: null,
+  demoSeed: null,
+  subsystemDegraded: false,
+};
+
 const AuthContext = createContext<AuthApi | null>(null);
 
 function applySession(s: SessionStatus): AuthState {
@@ -97,54 +112,43 @@ function applySession(s: SessionStatus): AuthState {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const demo = dataMode === 'demo';
-  const demoState: AuthState = {
-    ready: true,
-    authenticated: false,
-    user: {
-      id: 'demo-visitor',
-      email: 'visitor@demo.invalid',
-      display_name: 'Demo visitor',
-    } as AuthUser,
-    googleAvailable: false,
-    settings: null,
-    demoSeed: null,
-    subsystemDegraded: false,
-  };
-  const [state, setState] = useState<AuthState>(demo ? demoState : ANON);
+  // Demo: signed in from the first render (`ready` waits for the settings read), so no sign-in
+  // copy flashes while who-am-I is in flight.
+  const [state, setState] = useState<AuthState>(demo ? { ...DEMO_SIGNED_IN, ready: false } : ANON);
   // Guard against a stale resolve overwriting a newer one (e.g. logout completes before an in-flight
   // mount read). Each read tags itself; only the latest applies.
   const seq = useRef(0);
 
   const refresh = useCallback(async () => {
-    if (demo) {
-      setState(demoState);
-      return;
-    }
     const id = ++seq.current;
     try {
       const s = await getSession();
       if (seq.current === id) setState(applySession(s));
     } catch {
-      // Transport fault ⇒ anonymous + degraded. NEVER throws into the trader path.
+      // Transport fault ⇒ anonymous + degraded (demo: still the demo account). NEVER throws into
+      // the trader path.
       if (seq.current === id) {
-        setState({
-          ready: true,
-          authenticated: false,
-          user: null,
-          googleAvailable: false,
-          settings: null,
-          demoSeed: null,
-          subsystemDegraded: true,
-        });
+        setState(
+          demo
+            ? DEMO_SIGNED_IN
+            : {
+                ready: true,
+                authenticated: false,
+                user: null,
+                googleAvailable: false,
+                settings: null,
+                demoSeed: null,
+                subsystemDegraded: true,
+              },
+        );
       }
     }
   }, [demo]);
 
   // One who-am-I on mount. Children render immediately (anonymous-capable) while it's in flight.
   useEffect(() => {
-    if (demo) return;
     void refresh();
-  }, [demo, refresh]);
+  }, [refresh]);
 
   // DEV/TEST convenience: when the always-available test account signs in, seed a simulated
   // portfolio into the client-local positions store (once, non-destructively). A no-op for every
@@ -183,20 +187,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
-    if (demo) return;
+    if (demo) return; // the demo has no sign-out; "Reset demo data" restores the seed account
     await apiLogout(); // idempotent, best-effort
     await refresh(); // re-read who-am-I ⇒ anonymous
   }, [demo, refresh]);
 
-  const updateSettings = useCallback(
-    async (patch: UserSettingsPatch) => {
-      if (demo) throw new Error('Account settings are unavailable in the public demo.');
-      const saved = await apiSave(patch); // throws on failure → caller reverts
-      setState((prev) => (prev.authenticated ? { ...prev, settings: saved } : prev));
-      return saved;
-    },
-    [demo],
-  );
+  const updateSettings = useCallback(async (patch: UserSettingsPatch) => {
+    // Demo: the demo transport stores it in this browser's demo workspace.
+    const saved = await apiSave(patch); // throws on failure → caller reverts
+    setState((prev) => (prev.authenticated ? { ...prev, settings: saved } : prev));
+    return saved;
+  }, []);
 
   const api = useMemo<AuthApi>(
     () => ({ ...state, refresh, signIn, signUp, signOut, updateSettings }),

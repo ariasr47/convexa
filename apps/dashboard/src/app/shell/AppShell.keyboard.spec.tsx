@@ -25,6 +25,7 @@ vi.mock('@convexa/api', () => ({
   resetDemoWorkspace: resetDemoWorkspaceMock,
   getScan: getScanMock,
   getMarketDataMode: () => Promise.resolve('live'),
+  DEMO_ACCOUNT: { id: 'demo-account', email: 'demo@example.invalid', display_name: 'Demo account' },
 }));
 
 describe('AppShell · keyboard skip link (spine #6)', () => {

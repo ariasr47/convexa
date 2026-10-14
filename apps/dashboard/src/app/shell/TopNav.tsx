@@ -20,12 +20,10 @@ import {
   prefetchTickerRoute,
 } from '@/shared/lib/prefetchRoutes';
 import { elevationFor, extrasFor, typographyTokens } from '@/shared/theme/tokens';
-import { dataMode } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import KeyboardCommandKeyOutlined from '@mui/icons-material/KeyboardCommandKeyOutlined';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
-import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
@@ -310,18 +308,9 @@ export function TopNav({ onOpenPalette }: TopNavProps = {}) {
 
           {/* Account control (UX_BLUEPRINT §2.1) — top-right. Loading / login·signup / account menu.
               Non-blocking: the rest of the app renders regardless of who-am-I. */}
-          {dataMode === 'live' && <AccountControl />}
-          {dataMode === 'demo' && (
-            <IconButton
-              component={NavLink}
-              to="/settings"
-              aria-label="Settings"
-              data-testid="nav-settings"
-              sx={{ width: 44, height: 44, color: 'text.primary' }}
-            >
-              <SettingsOutlined />
-            </IconButton>
-          )}
+          {/* The demo is always signed in to its seed account (owner, 2026-10-14), so it shows
+              the same signed-in control as a live account. */}
+          <AccountControl />
 
           {/* Hamburger — below md only. Opens the nav drawer. `size="small"` — same AC-40 note as
               the search icon above; the coarse-pointer floor still guarantees ≥44px on a real touch
