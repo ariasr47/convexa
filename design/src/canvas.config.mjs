@@ -326,7 +326,8 @@ export function canvasIndexV3() {
     launch: legacy.launch,
     pages: legacy.pages,
     boards,
-    order: legacy.artboards.map((a) => a.file),
+    // Back-to-front draw order. The entry board stays first even though the Final page now leads the page list.
+    order: ['Main.dc.html', ...legacy.artboards.map((a) => a.file).filter((f) => f !== 'Main.dc.html')],
     notes,
     designSystems: [],
   };
