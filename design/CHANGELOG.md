@@ -189,3 +189,16 @@ Append-only. Supersede, never rewrite: a later entry can overrule an earlier one
   structure kinds stay "Not live". The Alerts page with the P-1 "On this page" legend, the three-step
   create-alert dialog (bottom sheets on phones), and every state. Boards V5Alerts (+390, light),
   V5AlertsFlow (+390), V5AlertsStates. Q-2 is with the owner; Q-3 deferred.
+
+## 2026-10-13 · v5 wave 3 — every chart family, before and after
+
+- **Eleven family boards** (page "v5 · Chart families · before and after"): note figures, valuation,
+  Markets, Scorecard and Filings, note panels, the ticker desk, the smaller charts, the planned tools and
+  TradingView's framing, with phone and light variants. Each row pairs the shipped shape and its defects
+  (file:line) with the upgrade on the chart system. Summary per family in CHARTS-2026-10-13.md.
+- **Kit additions:** whiskers, floating bars with connectors (waterfalls that cross zero), dots and
+  segments, a labelled bar list with open-ended and negative bars, the before/after row; event chips
+  anchor inside the plot at its edges.
+- **TradingView:** placement decided screen by screen (Technical tab and the desk's price panel only);
+  loading words, a 12 s timeout, a per-symbol reset; proposal P-14 (load on request).
+- **Measure tool:** outlined marks are read by their border, wash-filled ranges by their edge.

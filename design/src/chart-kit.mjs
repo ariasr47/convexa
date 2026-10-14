@@ -75,12 +75,13 @@ export const CHART_CSS = `
   .cx .bar.neg { border-radius: 0 0 4px 4px; }
   .cx .bar.hb { transform: translateY(-50%); border-radius: 0 4px 4px 0; }
   .cx .bar.hb.neg { border-radius: 4px 0 0 4px; }
-  .cx .bar.out { background: transparent !important; border: 1px dashed var(--c-axis); }
+  .cx .bar.out { background: transparent !important; border: 1.5px dashed var(--c-edge); box-sizing: border-box; }
   .cx .bv { position: absolute; transform: translate(-50%, calc(-100% - 4px)); font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--phosphor); white-space: nowrap; }
   .cx .bv.neg { transform: translate(-50%, 4px); }
   .cx .evlane { position: absolute; right: calc(100% + 8px); top: calc(-1 * var(--pt) + 6px); font: 600 11px/1 'IBM Plex Sans', sans-serif; color: var(--steel); white-space: nowrap; }
   .cx .ev { position: absolute; top: calc(-1 * var(--pt) + 2px); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 6px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--panel); font: 600 11px/1 'IBM Plex Sans', sans-serif; color: var(--phosphor); white-space: nowrap; }
   .cx .ev.lane2 { top: calc(-1 * var(--pt) + 26px); }
+  .cx .ev.e0 { transform: translateX(-12px); } .cx .ev.e1 { transform: translateX(calc(-100% + 12px)); }
   .cx .rg { position: absolute; top: 0; bottom: 0; background: var(--c-band); border-left: 1px solid var(--c-edge); border-right: 1px solid var(--c-edge); }
   .cx .rgl { position: absolute; top: 4px; transform: translateX(-50%); font: 500 11px/1.2 'IBM Plex Sans', sans-serif; color: var(--steel); white-space: nowrap; }
   .cx .gap { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, transparent 0 5px, var(--line) 5px 6px); }
@@ -219,7 +220,7 @@ export function plot({ height = 220, pl = 46, pr = 120, prn = 64, pt = 18, pb = 
   }
   void xz;
   for (const w of whiskers) html.push(`<span class="wk" data-mark="essential" style="left: ${f2(X(w.x))}%; top: ${f2(Y(w.hi))}%; height: ${f2(Y(w.lo) - Y(w.hi))}%;${w.role ? ` border-color: ${col(w.role)};` : ''}"></span>`);
-  const fslot = fbars.length ? 100 / Math.max(1, fbars.length) : 0;
+  const fslot = fbars.length ? 100 / Math.max(1, new Set(fbars.map((b) => b.x)).size) : 0; // stacked segments share an x
   for (const b of fbars) {
     const top = Y(Math.max(b.y0, b.y1)), bot = Y(Math.min(b.y0, b.y1));
     html.push(`<span class="fb${b.outline ? ' o' : ''}" data-mark="essential" style="left: ${f2(X(b.x))}%; top: ${f2(top)}%; height: ${f2(Math.max(0.5, bot - top))}%; width: min(${barW + 8}px, ${f2(fslot * 0.6)}%); background: ${col(b.role)};"></span>`);
@@ -239,7 +240,7 @@ export function plot({ height = 220, pl = 46, pr = 120, prn = 64, pt = 18, pb = 
   if (events.length && eventLane) html.push(`<span class="evlane">${lab(eventLane)}</span>`);
   for (const e of events.slice().sort((a, b) => a.x - b.x)) {
     const ex = X(e.x); const lane2 = e.lane === 2 || ex - lastX < 9; if (!lane2) lastX = ex;
-    html.push(`<span class="ev${lane2 ? ' lane2' : ''}${e.minor ? ' minor' : ''}${e.keep ? ' keep' : ''}" style="left: clamp(22px, ${f2(ex)}%, calc(100% - 22px));" title="${esc(plain(e.title || e.label))}">${lab(e.label)}</span>`);
+    html.push(`<span class="ev${lane2 ? ' lane2' : ''}${e.minor ? ' minor' : ''}${e.keep ? ' keep' : ''}${ex < 12 ? ' e0' : ex > 88 ? ' e1' : ''}" style="left: ${f2(ex)}%;" title="${esc(plain(e.title || e.label))}">${lab(e.label)}</span>`);
   }
   for (const p of pointLabels) html.push(`<span class="pl${p.pos ? ' ' + p.pos : ''}${p.minor ? ' minor' : ''}" style="left: ${f2(X(p.x))}%; top: ${f2(Y(p.y))}%;${p.color ? ` color: ${p.color};` : ''}">${p.text}</span>`);
   // end labels with collision handling: sorted by y, ≥ 30px apart (two-line labels), leader when moved

@@ -28,6 +28,10 @@ import { NOTES_CSS, noteStatesBody, noteViewBody, researchIndexBody } from './v4
 import { COVERAGE_CSS, coverageBody } from './v4/coverage.mjs';
 import { technicalBody, technicalStatesBody } from './v4/technical.mjs';
 import { ALERTS5_CSS, alertsFlowBody, alertsPageBody, alertsStates5Body } from './v5/alerts-public.mjs';
+import { famMarketsBody, famNoteFiguresBody, famNoteValuationBody, famPanelsBody, famScorecardBody } from './v5/families-research.mjs';
+import { famDeskBody, famOtherBody } from './v5/families-desk.mjs';
+import { toolsBody } from './v5/tools-v5.mjs';
+import { TV5_CSS, tvFramingBody } from './v5/tv-v5.mjs';
 import { V5_CSS, auditBody, chartSystemBody, chartStatesBody, chartPhoneBody, thirdPartyBody } from './v5/system.mjs';
 import { DIALOGS, DOCS_CSS, blogBody as blogV4Body, dialogBody, dialogStatesBody, docsStatesBody, labBody as labV4Body, methodologyBody as methodologyV4Body, notFoundBody as notFoundV4Body, operatorBody as operatorV4Body, operatorStatesBody } from './v4/docs-dialogs.mjs';
 
@@ -116,6 +120,15 @@ export const screens = {
       'v5-system': s('Charts · one chart system', g, 'Rules from the canon, colour roles with measured contrast and validator verdicts, mark specs, every primitive and its React module.', (o) => chartSystemBody(o), V),
       'v5-states': s('Charts · every state', g, 'Ready and the seven data states at final size, scrub and keyboard focus, primitive × state.', (o) => chartStatesBody(o), V),
       'v5-phone': s('Charts · on a phone', g, 'Re-layout at 390: short labels, fewer ticks, one-column facets, the bridge as rows.', (o) => chartPhoneBody(o), V),
+      'v5-fam-note-figures': s('Families · note figures', g, 'Column chart, proportion, bridge (crossing zero), index mini chart, compare: before and after.', (o) => famNoteFiguresBody(o), V),
+      'v5-fam-note-valuation': s('Families · valuation', g, 'Price vs value, football field, odds, sensitivity, implied growth, catalysts: before and after.', (o) => famNoteValuationBody(o), V),
+      'v5-fam-markets': s('Families · Markets', g, 'Curve, decomposition, 2s10s, note-rate drift, CFTC positioning: before and after.', (o) => famMarketsBody(o), V),
+      'v5-fam-scorecard': s('Families · Scorecard and Filings', g, 'By month (counts what it draws), calibration with Wilson intervals, reported figures: before and after.', (o) => famScorecardBody(o), V),
+      'v5-fam-panels': s('Families · note panels', g, 'Short interest, short-sale volume (a gated design target), switched-off panels: before and after.', (o) => famPanelsBody(o), V),
+      'v5-fam-desk': s('Families · ticker desk', g, 'Structure field, magnet, ladder, term structure, straddle, tape, path, opportunity: before and after (sample, beside not live).', (o) => famDeskBody(o), V),
+      'v5-fam-other': s('Families · scanner, positions, operator, Lab', g, 'The smaller charts and what the rulings settled.', (o) => famOtherBody(o), V),
+      'v5-tools': s('Planned tools, charted', g, 'Liquidity, calendar, OTC, insider clusters, 13F, XBRL, peers, signal track record, TA.', (o) => toolsBody(o), V),
+      'v5-tv': s('TradingView, framed', g, 'The Technical tab, the desk’s price panel, the frame’s states, load on request, and where a frame belongs.', (o) => tvFramingBody(o), V + TV5_CSS),
       // Q-5, ruled by the owner 2026-10-13: alerts on public data
       'q5-alerts': s('Alerts on public data', 'Ruled · Q-5', 'Six alert kinds that work on the semi-live site, each with its source, delay and state word.', (o) => alertsPageBody(o), V + APP_CSS + ALERTS5_CSS),
       'q5-alerts-flow': s('New alert · flow', 'Ruled · Q-5', 'Choose, set up, read back: the create-alert dialog (a bottom sheet on phones).', (o) => alertsFlowBody(o), V + APP_CSS + ALERTS5_CSS),
