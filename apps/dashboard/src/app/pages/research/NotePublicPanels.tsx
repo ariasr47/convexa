@@ -22,6 +22,7 @@ import { standing } from './filings';
 import { formatNoteDate, formatShortDate } from './format';
 import type { Read } from './publicData';
 import { Caps, SourceProblem } from './publicUi';
+import { SecRecordSections } from './SecRecordSections';
 import type { Aging } from './types';
 import { DISPLAY, MONO, PANEL_SX } from './ui';
 import { useWidth } from './useWidth';
@@ -118,7 +119,7 @@ export function NotePublicPanels({
           non-commercial personal use; please don&apos;t redistribute it.
         </Box>
       </Box>
-
+      <SecRecordSections d={d} />
       <Box
         component="section"
         aria-labelledby="filed-since"

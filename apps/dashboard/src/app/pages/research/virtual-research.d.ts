@@ -3,8 +3,11 @@ declare module 'virtual:convexa-research' {
   import type {
     Aging,
     AgingEvent,
+    FiledCheckRow,
+    FiledFiling,
     Freshness,
     LedgerScore,
+    NoteFigure,
     ResearchTickerSummary,
     Upcoming,
   } from '@/pages/research/types';
@@ -33,4 +36,6 @@ declare module 'virtual:convexa-research' {
   export function upcoming(events: AgingEvent[], today: string, horizonDays: number): Upcoming[];
   /** Today in the reader's time zone, YYYY-MM-DD. */
   export function localToday(now?: Date): string;
+  /** Each figure against the filing for its period (tools/research-notes/filing-check.mjs). */
+  export function checkFigures(figures: NoteFigure[], filings: FiledFiling[]): FiledCheckRow[];
 }
