@@ -1,8 +1,7 @@
 /**
  * AiReadSample — a landing-local composition over `shared/figure` + `shared/ui` (SPEC §2.2 item 3,
- * §4 "Landing — score and AI-read samples"). Panel head: an icon imported from `shared/` (never
- * authored here — the one-hero-instrument cap stays decidable by set-equality, §7 item 2), the
- * `AI read · SPY` title, the shipped `SIMULATED` chip, and this panel's OWN sample mark
+ * §4 "Landing — score and AI-read samples"). The frame's title is `AI read · SPY`; the verdict row
+ * carries the shipped `SIMULATED` chip; the caption is this panel's OWN sample mark
  * (`AI_SAMPLE_MARK`) — a DIFFERENT withdrawal than the hero/field's shared `SAMPLE_MARK`, because
  * the claim it withdraws is different: no model run happened here, as against no live read.
  *
@@ -13,15 +12,22 @@
  * `[no-real-order-path]`: the two CTA-shaped elements are non-focusable presentational nodes —
  * `<Box component="span">`, no `tabIndex`, no `href`, no `onClick` — a picture of a control never
  * enters the tab order and never becomes a mounted `TradeEntryDialog`.
+ *
+ * The frame is the shared ChartFrame in its sample provenance (P-3, P-8): dashed, with the hatch
+ * stripe. Production tags it "Illustrative sample" and carries `AI_SAMPLE_MARK` as its caption;
+ * staging carries the demo's dashed chip in its place (Env 2026-10-14).
  */
+import { ChartFrame } from '@/shared/charts/frame';
 import { MONO_FACE, SANS_FACE, UNTRACED_RULE } from '@/shared/figure';
 import { extrasFor } from '@/shared/theme/tokens';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import { alpha } from '@mui/material/styles';
+import { LANDING_COPY } from './copy';
 import { AI_SAMPLE_MARK } from './samples';
+
+const TITLE = 'AI read · SPY';
 
 interface ReadCell {
   label: string;
@@ -37,51 +43,25 @@ const CELLS: ReadCell[] = [
   { label: 'Target', value: '579.50', caption: 'AI-stated · untraced', traced: false },
 ];
 
-export function AiReadSample() {
+export function AiReadSample({ demo = false }: { demo?: boolean }) {
   return (
-    <Box
-      data-testid="landing-ai-read-panel"
-      sx={{
-        bgcolor: 'background.paper',
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 1,
-        overflow: 'hidden',
-      }}
+    <ChartFrame
+      testId="landing-ai-read-panel"
+      finding={TITLE}
+      metric={TITLE}
+      provenance="sample"
+      height={200}
+      tag={demo ? undefined : { state: 'sample', word: LANDING_COPY.sample.tag }}
+      source={demo ? { text: LANDING_COPY.sample.demoChip } : undefined}
+      note={demo ? undefined : AI_SAMPLE_MARK}
     >
-      <Box sx={{ px: 2, pt: 2, pb: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-          <Box
-            sx={(theme) => ({
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 24,
-              height: 24,
-              borderRadius: 1,
-              bgcolor: alpha(theme.palette.primary.main, 0.16),
-              color: extrasFor(theme).textAmber,
-            })}
-          >
-            <AutoAwesomeIcon sx={{ fontSize: 14 }} />
-          </Box>
-          <Box component="span" sx={{ fontSize: 13.5, fontWeight: 600 }}>
-            AI read · SPY
-          </Box>
-          <Chip
-            label="SIMULATED"
-            size="small"
-            variant="outlined"
-            sx={{ fontSize: 11, height: 20 }}
-          />
-        </Stack>
-        <Box component="p" sx={{ m: 0, mt: 1, fontSize: 12, color: 'text.secondary' }}>
-          {AI_SAMPLE_MARK}
-        </Box>
-      </Box>
-
-      <Box sx={{ px: 2, pt: 2, pb: 2 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'baseline', flexWrap: 'wrap' }}>
+      <Box>
+        <Stack
+          direction="row"
+          spacing={1}
+          useFlexGap
+          sx={{ alignItems: 'baseline', flexWrap: 'wrap', rowGap: 0.5 }}
+        >
           <Box
             component="span"
             sx={(theme) => ({ fontSize: 26, fontWeight: 600, color: extrasFor(theme).textAmber })}
@@ -94,6 +74,12 @@ export function AiReadSample() {
           <Box component="span" sx={{ fontSize: 26, fontWeight: 500 }}>
             Bullish
           </Box>
+          <Chip
+            label="SIMULATED"
+            size="small"
+            variant="outlined"
+            sx={{ fontSize: 11, height: 20, ml: 'auto', alignSelf: 'center' }}
+          />
         </Stack>
         <Stack
           direction="row"
@@ -203,6 +189,6 @@ export function AiReadSample() {
           </Box>
         </Stack>
       </Box>
-    </Box>
+    </ChartFrame>
   );
 }

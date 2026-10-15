@@ -1,220 +1,503 @@
 /**
- * GammaSurfaceHero — THE one hero instrument (canon `DESIGN_SYSTEM.md:52-53,113`; owner ruling
- * D-B = (A), 2026-09-10). A faithful inline-SVG port of `design/src/lib.mjs:383-425`'s
- * `gammaSurface()`: the dealer-gamma surface over strike × tenor, net gamma as height, drawn in
- * depth as an isometric wireframe, with the gamma-flip / call-wall / put-wall ridges.
+ * GammaSurfaceHero — the landing's one hero instrument: the F1 dealer-gamma surface (canon P-15,
+ * owner rulings 2026-10-14). Strike across, expiry deep, net dealer gamma up and down, turned by hand.
  *
- * BUILD CONSTRAINT, not a device-conditional state (SPEC §2.3): prop-free, static from first paint,
- * geometry computed ONCE at module load from closed-form arithmetic. No WebGL, no Canvas2D, no rAF
- * paint loop, no lifecycle-effect hook, no new runtime dependency. The one real failure mode is a
- * JavaScript throw, and the route ErrorBoundary covers it (SPEC §5).
+ * Two renderings of one picture:
+ * - The static projection, an inline SVG computed once at module load (`heroSurface.ts`). It is the
+ *   designed fallback, not a loading screen: no WebGL2, a failed shader, a lost context, or before the
+ *   script runs. Same labels, same readout, and the arrow keys still move the probe.
+ * - The WebGL2 view (`heroGl.ts`): no dependency, render on demand (no frames while idle), no
+ *   autoplay, a runtime pixel-ratio ladder. It replaces the projection after its first frame. It
+ *   ships OFF for now (`HERO_WEBGL_SHIPS` below): P-15's frame-time condition wasn't met as written.
  *
- * THREE THINGS FROM THE DESIGN SOURCE MUST NOT TRAVEL HERE, and this is enforced, not remembered:
- *   - `class="beam"` on the spot marker (`lib.mjs:429`) — an ungated data-signal keyframe;
- *   - the `panel is-live` wrapper with its `chip live` + dot (`landing.mjs:51-52`);
- *   - the two mono figures painted INTO the SVG (`lib.mjs:430-431`, `mid 573.12` / `gamma flip
- *     568.50`) — mono is the traced register, and a specific mid painted into a marketing hero is an
- *     untraceable figure wearing it.
- * THIS SVG PAINTS NO TEXT AT ALL. Legend, eyebrow and the sample disclosure are DOM text beside the
- * picture (Landing.tsx), in the accessibility tree.
+ * P-11: sign reads by position (above or below the zero plane) and by the +γ / −γ labels, never by hue
+ * alone. P-15: the flip is phosphor, not amber; production labels the panel "Illustrative sample".
+ * P-3 / P-8: the frame is dashed with the hatch stripe, because the figure is a sample. Staging swaps
+ * the tag for the demo's dashed chip (Env 2026-10-14).
  *
- * The `<radialGradient>` below is the camelCase SVG ELEMENT — distinct from the hyphenated CSS
- * function of the same family, which the landing's DOM layer does not use; a faithful port keeps
- * it that way. The CTA band's matching CSS
- * glow wash (`landing.mjs:116`) is DROPPED here too, not re-admitted.
- *
- * Tokens only — every colour is a palette slot resolved in `sx`. Every design-source CSS custom
- * property below carries its app-side slot, confirmed by exact hex match in BOTH colour schemes
- * (`shared/theme/tokens.ts`) — not by resemblance:
- *   `--up` (`lib.mjs` call-wall ridge)   → `palette.success.main`  (`up`/`down` are the app's
- *   `--down` (put-wall ridge)            → `palette.error.main`     RESERVED signed-direction slots,
- *                                           `tokens.ts:62-63`: "calls / +gamma" / "puts / -gamma").
- *   `--amber` (flip ridge + glow)        → `palette.primary.main` — dark `#F2A93B`/light `#C57F19`
- *                                           match `gammaAmber`/`amberDeep` byte-for-byte
- *                                           (`tokens.ts:37,43,60,73`); `tokens.ts:64`'s own comment
- *                                           records the flip semantic as "moved to primary". NOT
- *                                           `extras.textAmber` — that slot is documented
- *                                           TEXT-grade-only ("body/label-size (<18px) amber text",
- *                                           `tokens.ts:141-148`), diverges from `--amber` in light
- *                                           mode (`#8F5C0F` vs the source's `#C57F19`), and this SVG
- *                                           paints no text.
- *   `--signal` (spot marker fill)        → `palette.info.main` — dark `#5E8BC4`/light `#3D6DA5`
- *                                           match `signal`/`lightInfo` byte-for-byte
- *                                           (`tokens.ts:45,54`); also the app's own existing
- *                                           precedent (`shared/charts/structure-field/levelStrokes.ts`
- *                                           `resolveLevelPalette().mid === palette.info.main`).
- *                                           NOT `primary.main` — that is the amber brand fill; the
- *                                           spot must read as the distinct "live/signal" hue the
- *                                           call/put/flip ridges are not, the same way the ticker
- *                                           desk's own mid never borrows the flip's colour.
- * Every one of the above is passed as an `sx` CALLBACK — `(t) => t.palette.<slot>.main` — never a
- * bare dot-path string. MUI's `sx` only auto-resolves theme dot-paths (e.g. `'primary.main'`) for
- * the handful of props registered in `@mui/system`'s `defaultSxConfig` (`color`, `bgcolor`,
- * `backgroundColor`, `borderColor`, …); `fill` and `stroke` are not among them
- * (`styleFunctionSx.js`'s `setThemeValue`: `if (!options) { css[prop] = value; return; }`), so a
- * bare string there is emitted VERBATIM as invalid CSS (e.g. `fill:primary.main`) and silently
- * drops to the SVG initial value (`fill:black` / `stroke:none`) — an invisible wireframe and a
- * black spot dot, passing every DOM-presence assertion while failing to render. Confirmed against
- * this folder's own shipped precedent: `HeroCurve.tsx:88,95`
- * uses the callback form exclusively; there is no bare dot-path `fill`/`stroke` anywhere else in the
- * app.
+ * No request: the values are frozen and bundled with the page (AC-L17).
  */
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import { extrasFor } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
+import { alpha, useTheme, type Theme } from '@mui/material/styles';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { LANDING_COPY } from './copy';
+import {
+  createHeroGl,
+  parseColor,
+  separateLevelLabels,
+  type HeroColors,
+  type HeroGl,
+} from './heroGl';
+import {
+  LABELS,
+  POSTER_FLIP,
+  POSTER_H,
+  POSTER_PLANE,
+  POSTER_QUADS,
+  POSTER_W,
+  PROBE_HOME,
+  posterPercent,
+  probeWorld,
+  readout,
+  stepProbe,
+  type Probe,
+  type SurfaceLabel,
+} from './heroSurface';
+import { SAMPLE_MARK } from './samples';
 
-// ---- the sample structure, from `design/src/data/index.mjs` (illustrative, frozen) -------------
-const SPOT = 573.12;
-const CALL_WALL = 580;
-const PUT_WALL = 560;
-const FLIP = 568.5;
+const MONO = '"IBM Plex Mono", ui-monospace, monospace';
+const SANS = '"IBM Plex Sans", system-ui, sans-serif';
+const READOUT_ID = 'landing-hero-readout';
+const CAPTION_ID = 'gs-sample-caption';
 
-const WIDTH = 720;
-const HEIGHT = 440;
-const ROWS = 9; // tenors
-const COLS = 21; // strikes
+/**
+ * P-15's shipping condition: p95 frame time ≤ 16.7 ms while turning, on a real GPU. Measured on the
+ * demo build 2026-10-15 (Apple M1 Pro, ANGLE Metal, DPR 2, headed Chrome 155, tmp/hero-gpu-perf.mjs):
+ * p95 18.4 and 18.4 ms, against an empty page's bare rAF p95 of 18.6 and 18.2 ms just before each run
+ * (an earlier pair: 17.6 / 17.6 against 17.6; headless: 16.8 / 16.8). The Mac was driving a 60 Hz display,
+ * so the interval is the display's clock, not the hero (p95 0.4–0.5 ms script and 0.1 ms GPU per frame,
+ * 0 idle frames). That is over the bar as written, so per the owner's
+ * instruction the WebGL view ships OFF and the page shows the static projection until the owner rules
+ * on the numbers. Turning it on is this one constant; `window.__HERO_WEBGL__ = true` before load turns
+ * it on for a measurement of the shipped build.
+ */
+const HERO_WEBGL_SHIPS = false;
 
-const OX = WIDTH * 0.5;
-const OY = HEIGHT * 0.6;
-const SX = WIDTH / 34;
-const SY = WIDTH / 62;
-const SZ = 78;
+type Mode = 'poster' | 'webgl' | 'fallback';
 
-/** Net dealer gamma as height — `lib.mjs:387-394`, unchanged. */
-function z(i: number, j: number): number {
-  const k = 550 + (j * 50) / (COLS - 1);
-  const tenor = i / (ROWS - 1);
-  const d = k - FLIP - tenor * 4;
-  const call = Math.exp(-((k - CALL_WALL - tenor * 3) ** 2) / 34);
-  const put = -Math.exp(-((k - PUT_WALL + tenor * 2) ** 2) / 44);
-  return (d >= 0 ? call : put) * (1 - tenor * 0.55) + Math.sign(d) * 0.08;
+const LABEL_POS = new Map<string, { left: string; top: string }>(
+  LABELS.map((l) => [l.key, posterPercent(...l.world)]),
+);
+
+function heroColors(t: Theme): HeroColors {
+  const x = extrasFor(t);
+  return {
+    up: parseColor(t.palette.success.main),
+    down: parseColor(t.palette.error.main),
+    mid: parseColor(x.panelRaised),
+    line: parseColor(x.lineStrong),
+    phosphor: parseColor(t.palette.text.primary),
+    steel: parseColor(t.palette.text.secondary),
+  };
 }
 
-/** The isometric projection — `lib.mjs:395-399`, unchanged. Three axes in ONE projection: strike
- *  across `j`, tenor across `i`, net dealer gamma as height through `z(i, j)`. */
-function proj(i: number, j: number): [number, number] {
-  const u = j - (COLS - 1) / 2;
-  const v = i - (ROWS - 1) / 2;
-  return [OX + (u - v) * SX * 0.72, OY + (u + v) * SY * 0.5 - z(i, j) * SZ];
-}
-
-interface Wire {
-  d: string;
-  opacity: number;
-}
-
-/** Computed ONCE at module load — never per render, never per frame. */
-const WIRES: Wire[] = (() => {
-  const out: Wire[] = [];
-  for (let i = 0; i < ROWS; i++) {
-    let d = '';
-    for (let j = 0; j < COLS; j++) {
-      const [x, y] = proj(i, j);
-      d += `${j ? 'L' : 'M'} ${x.toFixed(1)} ${y.toFixed(1)} `;
-    }
-    out.push({ d, opacity: Number((0.25 + (1 - i / ROWS) * 0.55).toFixed(2)) });
-  }
-  for (let j = 0; j < COLS; j++) {
-    let d = '';
-    for (let i = 0; i < ROWS; i++) {
-      const [x, y] = proj(i, j);
-      d += `${i ? 'L' : 'M'} ${x.toFixed(1)} ${y.toFixed(1)} `;
-    }
-    out.push({ d, opacity: 0.22 });
-  }
-  return out;
-})();
-
-/** A ridge at a target strike — `lib.mjs:411-421`, minus the drop-shadow filter. */
-function ridgePath(kTarget: number): string {
-  let d = '';
-  for (let i = 0; i < ROWS; i++) {
-    const j = ((kTarget - 550) / 50) * (COLS - 1);
-    const j0 = Math.floor(j);
-    const t = j - j0;
-    const [x0, y0] = proj(i, j0);
-    const [x1, y1] = proj(i, Math.min(COLS - 1, j0 + 1));
-    d += `${i ? 'L' : 'M'} ${(x0 + (x1 - x0) * t).toFixed(1)} ${(y0 + (y1 - y0) * t).toFixed(1)} `;
-  }
-  return d;
-}
-
-const RIDGE_FLIP = ridgePath(FLIP);
-const RIDGE_CALL = ridgePath(CALL_WALL);
-const RIDGE_PUT = ridgePath(PUT_WALL);
-/** The spot marker position — a quiet dot, NO `beam` class, NO pulse, NO painted figure. */
-const [SPOT_X, SPOT_Y] = proj(0, ((SPOT - 550) / 50) * (COLS - 1));
-
-export function GammaSurfaceHero() {
+/** The static projection: every model cell as a polygon, back to front. */
+function Poster({ hidden }: { hidden: boolean }) {
+  const t = useTheme();
+  const fill = useMemo(
+    () => ({
+      up: t.palette.success.main,
+      down: t.palette.error.main,
+      mid: extrasFor(t).panelRaised,
+    }),
+    [t],
+  );
+  const line = extrasFor(t).lineStrong;
   return (
     <Box
       component="svg"
-      role="img"
-      aria-label="Dealer gamma surface across strike and tenor"
-      aria-describedby="gs-sample-caption"
-      data-testid="gamma-surface-hero"
-      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-      preserveAspectRatio="xMidYMid meet"
-      sx={{ display: 'block', width: '100%', height: 'auto', overflow: 'visible' }}
+      data-testid="gamma-surface-poster"
+      viewBox={`0 0 ${POSTER_W} ${POSTER_H}`}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      sx={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        display: 'block',
+        visibility: hidden ? 'hidden' : 'visible',
+      }}
     >
-      <defs>
-        <radialGradient id="gs-glow" cx="50%" cy="60%" r="55%">
-          <stop offset="0" stopColor="currentColor" stopOpacity="0.10" />
-          <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <Box
-        component="rect"
-        width={WIDTH}
-        height={HEIGHT}
-        fill="url(#gs-glow)"
-        sx={{ color: (t) => t.palette.primary.main }}
+      <polygon
+        points={POSTER_PLANE}
+        fill="none"
+        stroke={t.palette.text.secondary}
+        strokeWidth={1}
+        vectorEffect="non-scaling-stroke"
       />
-      {WIRES.map((w, n) => (
-        <Box
+      {POSTER_QUADS.map((q, n) => (
+        <polygon
           key={n}
-          component="path"
-          data-testid="gs-wire"
-          d={w.d}
-          fill="none"
-          strokeWidth={1}
-          strokeOpacity={w.opacity}
-          sx={{ stroke: (t) => t.palette.text.secondary }}
+          points={q.points}
+          fill={fill[q.sign]}
+          fillOpacity={q.opacity}
+          stroke={line}
+          strokeWidth={0.6}
         />
       ))}
+      {POSTER_FLIP.map(([x1, y1, x2, y2], n) => (
+        <line
+          key={n}
+          data-testid="gs-flip"
+          x1={x1.toFixed(1)}
+          y1={y1.toFixed(1)}
+          x2={x2.toFixed(1)}
+          y2={y2.toFixed(1)}
+          stroke={t.palette.text.primary}
+          strokeWidth={2}
+          vectorEffect="non-scaling-stroke"
+        />
+      ))}
+    </Box>
+  );
+}
+
+function Label({ label }: { label: SurfaceLabel }) {
+  const pos = LABEL_POS.get(label.key) ?? { left: '0', top: '0' };
+  return (
+    <span
+      className={`gs-l gs-${label.kind}${label.minor ? ' minor' : ''}${label.above ? ' above' : ''}${label.end ? ' end' : ''}`}
+      data-key={label.key}
+      data-x={label.world[0].toFixed(4)}
+      data-y={label.world[1].toFixed(4)}
+      data-z={label.world[2].toFixed(4)}
+      data-pl={pos.left}
+      data-pt={pos.top}
+      style={{ left: pos.left, top: pos.top }}
+    >
+      {label.text}
+    </span>
+  );
+}
+
+function Kbd({ children }: { children: string }) {
+  return (
+    <Box
+      component="kbd"
+      sx={{
+        display: 'inline-block',
+        minWidth: 18,
+        px: '4px',
+        mx: '2px',
+        fontFamily: MONO,
+        fontSize: 11,
+        lineHeight: '16px',
+        textAlign: 'center',
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: '4px',
+        color: 'text.primary',
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+export function GammaSurfaceHero({ demo }: { demo: boolean }) {
+  const theme = useTheme();
+  const stageRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const labelsRef = useRef<HTMLDivElement>(null);
+  const dotRef = useRef<HTMLSpanElement>(null);
+  const glRef = useRef<HeroGl | null>(null);
+  const [mode, setMode] = useState<Mode>('poster');
+  const [probe, setProbe] = useState<Probe>(PROBE_HOME);
+  const [announce, setAnnounce] = useState('');
+  const colors = useMemo(() => heroColors(theme), [theme]);
+  const colorsRef = useRef(colors);
+  colorsRef.current = colors;
+  const probeRef = useRef(probe);
+  probeRef.current = probe;
+
+  // Start the WebGL2 view once; the static projection stays if it can't.
+  useEffect(() => {
+    const stage = stageRef.current;
+    const canvas = canvasRef.current;
+    const labels = labelsRef.current;
+    const dot = dotRef.current;
+    if (!stage || !canvas || !labels || !dot) return;
+    if (!HERO_WEBGL_SHIPS && !window.__HERO_WEBGL__) {
+      setMode('fallback');
+      return;
+    }
+    const labelEls = Array.from(labels.querySelectorAll<HTMLElement>('.gs-l'));
+    const gl = createHeroGl({
+      stage,
+      canvas,
+      labels: () => labelEls,
+      dot,
+      colors: colorsRef.current,
+      probe: probeRef.current,
+      onProbe: setProbe,
+      onContext: (ok) => {
+        if (!ok) {
+          // A lost context hands the stage back to the projection, labels and all.
+          for (const el of labelEls) {
+            el.style.left = el.dataset.pl ?? '';
+            el.style.top = el.dataset.pt ?? '';
+          }
+        }
+        setMode(ok ? 'webgl' : 'fallback');
+      },
+    });
+    if (!gl) {
+      setMode('fallback');
+      return;
+    }
+    glRef.current = gl;
+    return () => {
+      gl.dispose();
+      glRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    glRef.current?.setColors(colors);
+  }, [colors]);
+
+  // The probe dot: placed by the WebGL frame in that mode, by the projection otherwise.
+  useLayoutEffect(() => {
+    glRef.current?.setProbe(probe);
+    if (mode === 'webgl') return;
+    const dot = dotRef.current;
+    if (!dot) return;
+    const p = posterPercent(...probeWorld(probe));
+    dot.style.left = p.left;
+    dot.style.top = p.top;
+  }, [probe, mode]);
+
+  // The projection's labels scale with the stage, so the level labels are kept apart on each resize
+  // (the WebGL view does this after every frame).
+  useLayoutEffect(() => {
+    if (mode === 'webgl') return;
+    const stage = stageRef.current;
+    const labels = labelsRef.current;
+    if (!stage || !labels) return;
+    const els = Array.from(labels.querySelectorAll<HTMLElement>('.gs-l'));
+    const run = () => separateLevelLabels(els);
+    run();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(run);
+    ro.observe(stage);
+    return () => ro.disconnect();
+  }, [mode]);
+
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.shiftKey || e.altKey || e.metaKey || e.ctrlKey) return; // Shift+arrows turn (heroGl)
+    const next = stepProbe(probe, e.key);
+    if (!next) return;
+    e.preventDefault();
+    setProbe(next);
+    setAnnounce(readout(next));
+  };
+
+  return (
+    <Box
+      component="figure"
+      data-testid="landing-hero-panel"
+      data-mode={mode}
+      data-provenance="sample"
+      aria-label={LANDING_COPY.hero.surfaceName}
+      sx={(t) => ({
+        position: 'relative',
+        m: 0,
+        p: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1.25,
+        minWidth: 0,
+        bgcolor: 'background.paper',
+        borderRadius: '12px',
+        // P-3 / P-8: a sample's frame is dashed, with the hatch stripe (ChartFrame's treatment).
+        border: `1px dashed ${extrasFor(t).textTertiary}`,
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: 0,
+          height: 8,
+          borderRadius: '11px 11px 0 0',
+          pointerEvents: 'none',
+          background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(
+            t.palette.text.secondary,
+            0.28,
+          )} 6px 12px)`,
+        },
+      })}
+    >
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 10px' }}>
+        <Box
+          component="span"
+          sx={(t) => ({
+            flex: '1 1 auto',
+            fontFamily: SANS,
+            fontSize: 11.5,
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: extrasFor(t).textAmber,
+          })}
+        >
+          {LANDING_COPY.hero.panelEyebrow}
+        </Box>
+        {!demo && <DataStateTag state="sample" word={LANDING_COPY.sample.tag} />}
+      </Box>
+
       <Box
-        component="path"
-        data-testid="gs-ridge-put-wall"
-        d={RIDGE_PUT}
-        fill="none"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        sx={{ stroke: (t) => t.palette.error.main }}
-      />
+        ref={stageRef}
+        tabIndex={0}
+        role="group"
+        aria-roledescription="3D chart"
+        aria-label={`${LANDING_COPY.hero.surfaceName}. ${LANDING_COPY.hero.surfaceKeys}`}
+        aria-describedby={`${READOUT_ID} ${CAPTION_ID}`}
+        data-testid="gamma-surface-hero"
+        onKeyDown={onKeyDown}
+        sx={(t) => ({
+          position: 'relative',
+          width: '100%',
+          aspectRatio: '1000 / 560',
+          borderRadius: '10px',
+          bgcolor: extrasFor(t).well,
+          overflow: 'hidden',
+          touchAction: 'pan-y',
+          containerType: 'inline-size',
+          outline: 'none',
+          '&:focus-visible': { outline: `2px solid ${extrasFor(t).textAmber}`, outlineOffset: 4 },
+          '& .gs-l': {
+            position: 'absolute',
+            transform: 'translate(-50%, -50%)',
+            whiteSpace: 'nowrap',
+            fontSize: 11,
+            lineHeight: 1,
+            color: 'text.secondary',
+          },
+          '& .gs-tick': { fontFamily: MONO, fontWeight: 500 },
+          '& .gs-axis': { fontFamily: SANS, fontWeight: 600 },
+          '& .gs-level': {
+            fontFamily: SANS,
+            fontWeight: 600,
+            lineHeight: 1.2,
+            color: 'text.primary',
+            bgcolor: extrasFor(t).well,
+            px: '5px',
+            py: '2px',
+            borderRadius: '4px',
+          },
+          // Clear of the 10px probe dot at its home point, at any width.
+          '& .gs-l.above': { transform: 'translate(-50%, calc(-100% - 9px))' },
+          '& .gs-l.end': { transform: 'translate(-100%, -50%)' },
+          '@container (max-width: 520px)': { '& .minor': { display: 'none' } },
+        })}
+      >
+        <Poster hidden={mode === 'webgl'} />
+        <Box
+          component="canvas"
+          ref={canvasRef}
+          aria-hidden="true"
+          data-testid="gamma-surface-canvas"
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            display: mode === 'webgl' ? 'block' : 'none',
+            cursor: 'grab',
+            touchAction: 'pan-y',
+            '&:active': { cursor: 'grabbing' },
+          }}
+        />
+        <Box
+          ref={labelsRef}
+          aria-hidden="true"
+          sx={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+        >
+          {LABELS.map((l) => (
+            <Label key={l.key} label={l} />
+          ))}
+          <Box
+            component="span"
+            ref={dotRef}
+            sx={(t) => ({
+              position: 'absolute',
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              transform: 'translate(-50%, -50%)',
+              bgcolor: 'text.primary',
+              boxShadow: `0 0 0 2px ${extrasFor(t).well}`,
+            })}
+          />
+        </Box>
+      </Box>
+
       <Box
-        component="path"
-        data-testid="gs-ridge-call-wall"
-        d={RIDGE_CALL}
-        fill="none"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        sx={{ stroke: (t) => t.palette.success.main }}
-      />
+        id={READOUT_ID}
+        data-testid="gamma-surface-readout"
+        sx={{
+          fontFamily: MONO,
+          fontSize: 12.5,
+          lineHeight: 1.4,
+          color: 'text.primary',
+          overflowWrap: 'anywhere',
+        }}
+      >
+        {readout(probe)}
+      </Box>
       <Box
-        component="path"
-        data-testid="gs-ridge-flip"
-        d={RIDGE_FLIP}
-        fill="none"
-        strokeWidth={2.25}
-        strokeLinecap="round"
-        sx={{ stroke: (t) => t.palette.primary.main }}
-      />
+        component="span"
+        aria-live="polite"
+        sx={{
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          overflow: 'hidden',
+          clipPath: 'inset(50%)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {announce}
+      </Box>
+      <Box component="p" sx={{ m: 0, fontSize: 12, lineHeight: 1.6, color: 'text.secondary' }}>
+        {mode === 'fallback' ? (
+          LANDING_COPY.hero.helpStatic
+        ) : (
+          <>
+            {LANDING_COPY.hero.helpTurn} · <Kbd>←</Kbd>
+            <Kbd>→</Kbd> strikes · <Kbd>↑</Kbd>
+            <Kbd>↓</Kbd> expiries · <Kbd>Home</Kbd> resets
+          </>
+        )}
+      </Box>
       <Box
-        component="circle"
-        data-testid="gs-spot"
-        cx={SPOT_X.toFixed(1)}
-        cy={SPOT_Y.toFixed(1)}
-        r={5}
-        sx={{ fill: (t) => t.palette.info.main }}
-      />
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '6px 12px',
+          fontSize: 12,
+          color: 'text.secondary',
+        }}
+      >
+        {demo ? (
+          <>
+            <Box
+              component="span"
+              id={CAPTION_ID}
+              sx={(t) => ({
+                display: 'inline-block',
+                minHeight: 24,
+                px: 1.25,
+                py: '4px',
+                fontFamily: MONO,
+                fontSize: 11,
+                lineHeight: 1.35,
+                borderRadius: '12px',
+                border: `1px dashed ${alpha(t.palette.text.secondary, 0.55)}`,
+              })}
+            >
+              {LANDING_COPY.sample.demoChip}
+            </Box>
+            <span>{LANDING_COPY.hero.stagingNote}</span>
+          </>
+        ) : (
+          <span id={CAPTION_ID}>{SAMPLE_MARK}</span>
+        )}
+      </Box>
     </Box>
   );
 }
