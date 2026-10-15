@@ -205,13 +205,13 @@ describe('49 (SB) — the page states structure-snapshot evaluation, not a strea
 });
 
 describe('50 — a denied or unavailable notification permission renders a state saying so; the control never reads "on" for a permission not granted', () => {
-  it('unavailable (no Notification global, e.g. this jsdom environment): the control reads "off" and explains why', () => {
+  it('unavailable (no Notification global, e.g. this jsdom environment): says so, nothing to press', () => {
     mount();
-    expect(screen.getByTestId('alerts-notify')).toHaveTextContent('Enable browser notify');
-    expect(screen.getByTestId('alerts-notify-explain')).toHaveTextContent(/aren't available/i);
+    expect(screen.queryByTestId('alerts-notify')).not.toBeInTheDocument();
+    expect(screen.getByTestId('alerts-notify-explain')).toHaveTextContent(/aren’t available/i);
   });
 
-  it('denied: the control reads "off" and explains why, even if a STALE stored flag claims "on"', () => {
+  it('denied: says blocked and where to change it, even if a STALE stored flag claims "on"; no button that can’t work', () => {
     class FakeNotification {
       static permission: NotificationPermission = 'denied';
       static requestPermission = vi.fn(async () => FakeNotification.permission);
@@ -221,19 +221,46 @@ describe('50 — a denied or unavailable notification permission renders a state
     // must not take its word for it.
     seed({ notifyBrowser: true });
     mount();
-    expect(screen.getByTestId('alerts-notify')).toHaveTextContent('Enable browser notify');
+    expect(screen.queryByTestId('alerts-notify-on')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('alerts-notify')).not.toBeInTheDocument();
     expect(screen.getByTestId('alerts-notify-explain')).toHaveTextContent(/blocked/i);
   });
 
-  it('granted: the control reads "on", no explain line', () => {
+  it('granted and on: reads on; Turn off stops them without a browser prompt and survives a remount', async () => {
     class FakeNotification {
       static permission: NotificationPermission = 'granted';
       static requestPermission = vi.fn(async () => FakeNotification.permission);
     }
     vi.stubGlobal('Notification', FakeNotification);
-    mount();
-    expect(screen.getByTestId('alerts-notify')).toHaveTextContent('Browser notify on');
+    seed({ notifyBrowser: true });
+    const view = mount();
+    expect(screen.getByTestId('alerts-notify-on')).toHaveTextContent('Browser notifications on');
     expect(screen.queryByTestId('alerts-notify-explain')).not.toBeInTheDocument();
+    await userEvent.setup().click(screen.getByTestId('alerts-notify-off'));
+    expect(FakeNotification.requestPermission).not.toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem(ALERTS_KEY) ?? '{}').notifyBrowser).toBe(false);
+    view.unmount();
+    mount();
+    // The browser still grants permission; the trader's "off" holds.
+    expect(screen.getByTestId('alerts-notify')).toHaveTextContent('Turn on browser notifications');
+  });
+
+  it('never asked: Convexa asks first; only Continue opens the browser prompt', async () => {
+    class FakeNotification {
+      static permission: NotificationPermission = 'default';
+      static requestPermission = vi.fn(async () => {
+        FakeNotification.permission = 'granted';
+        return FakeNotification.permission;
+      });
+    }
+    vi.stubGlobal('Notification', FakeNotification);
+    mount();
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId('alerts-notify'));
+    expect(FakeNotification.requestPermission).not.toHaveBeenCalled();
+    await user.click(screen.getByTestId('alerts-notify-continue'));
+    expect(FakeNotification.requestPermission).toHaveBeenCalledTimes(1);
+    expect(await screen.findByTestId('alerts-notify-on')).toBeInTheDocument();
   });
 });
 

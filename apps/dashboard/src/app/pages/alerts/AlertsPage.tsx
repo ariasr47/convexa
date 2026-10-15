@@ -9,6 +9,7 @@
  * `PositionRow.tsx:122-127`'s `Refused`/`FaultedBanner`, mirrored locally rather than importing the
  * trading domain into alerts — carried debt, FE-14 item 7).
  */
+import { BrowserNotifyControl } from '@/features/alerts/BrowserNotifyControl';
 import { KINDS, KIND_LABEL, LEVELS, LEVEL_LABEL, NOT_SET } from '@/features/alerts/labels';
 import { alertsReadFaulted } from '@/features/alerts/store';
 import type { AlertKind, AlertRule, LevelRef } from '@/features/alerts/types';
@@ -18,7 +19,6 @@ import { marketDataOff } from '@/shared/dataState/marketData';
 import { faceFor } from '@/shared/figure';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { extrasFor } from '@/shared/theme/tokens';
-import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
 import PauseCircleOutlinedIcon from '@mui/icons-material/PauseCircleOutlined';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Alert from '@mui/material/Alert';
@@ -268,16 +268,6 @@ export function AlertsPage() {
     });
   };
 
-  // Criterion 50 — a denied/unavailable permission renders a state SAYING SO; the control itself
-  // (`a.notifyBrowser`, computed in `useAlerts` from the ACTUAL `Notification.permission`) already
-  // never reads as "on" for a permission the browser did not grant.
-  const notifyExplain =
-    a.notifyPermission === 'denied'
-      ? 'Browser notifications are blocked for this site. Alerts still show here, but nothing pops from the browser.'
-      : a.notifyPermission === 'unavailable'
-        ? "Browser notifications aren't available in this browser. Alerts still show here."
-        : null;
-
   const RULE_FILTERS: { key: RuleFilter; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'armed', label: 'Armed' },
@@ -457,47 +447,15 @@ export function AlertsPage() {
               )}
             </>
           )}
-          {/* The browser-notifications row (design/src/screens/alerts.mjs:24) — one recessed row
-              holding the explanation and the (unchanged) notify button. */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              p: '10px 12px',
-              borderRadius: '8px',
-              bgcolor: (t) => extrasFor(t).well,
-              border: '1px solid',
-              borderColor: 'divider',
-              flexWrap: 'wrap',
-            }}
-          >
-            <NotificationsNoneOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-            <Typography variant="caption" color="text.secondary" sx={{ flex: '1 1 160px' }}>
-              Fired alerts are listed here. Browser notifications, once allowed, also pop while a
-              desk is open.
-            </Typography>
-            <AlertsRefused when={faulted}>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => void a.requestBrowserPermission()}
-                data-testid="alerts-notify"
-                sx={{ minHeight: 44 }}
-              >
-                {a.notifyBrowser ? 'Browser notify on' : 'Enable browser notify'}
-              </Button>
-            </AlertsRefused>
-          </Box>
-          {notifyExplain && (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              data-testid="alerts-notify-explain"
-            >
-              {notifyExplain}
-            </Typography>
-          )}
+          {/* Browser notifications: Convexa's own ask before the browser's prompt, Turn off once
+              on, and the blocked / unavailable sentences (BrowserNotifyControl). */}
+          <BrowserNotifyControl
+            on={a.notifyBrowser}
+            permission={a.notifyPermission}
+            onEnable={a.enableBrowserNotify}
+            onTurnOff={a.turnOffBrowserNotify}
+            refuse={(el) => <AlertsRefused when={faulted}>{el}</AlertsRefused>}
+          />
           <Stack
             direction="row"
             spacing={1.5}
