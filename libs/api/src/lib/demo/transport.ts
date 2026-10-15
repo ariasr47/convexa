@@ -436,6 +436,16 @@ function candidateSet(
   };
 }
 
+/** The scenario's own close-to-close change, in percent to two places: the last authored close against
+ *  the one before it. `null` (shown as —) when there is no prior close to compare with. */
+export function closeToClosePct(bars: ReadonlyArray<{ close: number }>): number | null {
+  if (bars.length < 2) return null;
+  const prior = bars[bars.length - 2].close;
+  const last = bars[bars.length - 1].close;
+  if (!Number.isFinite(prior) || !Number.isFinite(last) || prior <= 0) return null;
+  return Number((((last - prior) / prior) * 100).toFixed(2));
+}
+
 function scoreDrivers(total: number) {
   return { total, proximity: 18, setups: 12, vol: total - 35, transition: 5, dark_pool: 0 };
 }
@@ -1232,7 +1242,7 @@ export async function demoFetch(request: Request): Promise<Response> {
           status: 'ok',
           price,
           as_of: stamp / 1000,
-          chg_pct: 0.42,
+          chg_pct: closeToClosePct(sample!.bars),
           call_wall: variant.wall,
           put_wall: putWall,
           flip: variant.flip,

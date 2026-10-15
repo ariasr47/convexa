@@ -137,6 +137,9 @@ export function PriceCell({
 export function ChgCell({ row }: { row: ScanRow }) {
   const value = dash(row.chg_pct, fmtSignedPct);
   const { figureState, mono } = figureStateOf({ value, register: 'traced' });
+  // P-11 / P-5 rejected: the sign never rests on hue alone. ▲/▼ before the signed figure.
+  const chg = row.chg_pct;
+  const arrow = chg == null || !Number.isFinite(chg) || chg === 0 ? null : chg > 0 ? '▲' : '▼';
   return (
     <Typography
       component="span"
@@ -145,6 +148,7 @@ export function ChgCell({ row }: { row: ScanRow }) {
       data-figure-register={mono ? 'mono' : 'sans'}
       sx={{ ...faceFor(mono), fontSize: 'inherit', color: directionColor(row.chg_pct) }}
     >
+      {arrow ? <span aria-hidden="true">{`${arrow} `}</span> : null}
       {value}
     </Typography>
   );
