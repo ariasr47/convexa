@@ -9,6 +9,19 @@
 //!   statement is released.
 //!
 //! Plus the expected results window of a company, projected from its own EDGAR filing history.
+//!
+//! No release carries its reference period ("CPI", never "CPI, September"), because neither
+//! schedule states one and no fixed rule gives it (checked against the saved answers, 2026-10-15):
+//! - BLS's iCalendar events carry only SUMMARY, DTSTART, DURATION, LOCATION and CATEGORIES (no
+//!   DESCRIPTION), and no SUMMARY of the three releases read names a month
+//!   (tests/fixtures/public_data/bls_schedule.ics).
+//! - BEA's file is release instants only (tests/fixtures/public_data/bea_release_dates.json), and
+//!   the same file shows the month-after convention breaking: Personal Income and Outlays has no
+//!   release between 2025-09-26 and 2025-12-05, then two in April 2026 (Apr 9 and Apr 30); GDP
+//!   likewise skips from 2025-09-25 to 2025-12-23. Deriving "the prior month" or "the quarter's
+//!   advance estimate" from a date would mislabel exactly those catch-up releases.
+//!
+//! So the period is left out rather than guessed; a source that states it would be parsed here.
 
 use super::edgar::{classify, SubmissionRow};
 use super::types::{FilingKind, Release, ResultsBasis, ResultsWindow};

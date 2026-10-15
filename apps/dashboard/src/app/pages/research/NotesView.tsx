@@ -11,6 +11,7 @@ import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
 import Skeleton from '@mui/material/Skeleton';
 import { alpha } from '@mui/material/styles';
+import { useMemo } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { researchIndex } from 'virtual:convexa-research';
 import { filedSince } from './filings';
@@ -18,7 +19,8 @@ import { formatNoteDate } from './format';
 import { NotePublicPanels } from './NotePublicPanels';
 import { useTickerNotes } from './notesData';
 import { NoteView } from './NoteView';
-import { usePublicTicker } from './publicData';
+import { usePublicFilings, usePublicMarkets, usePublicTicker } from './publicData';
+import { fomcDays } from './reviewTriggers';
 import type { ResearchNote } from './types';
 import { Panel, StateDot } from './ui';
 
@@ -181,6 +183,14 @@ export function NotesView({ symbol, slug }: { symbol: string; slug?: string }) {
   const { state, retry } = useTickerNotes(ticker);
   const pub = usePublicTicker(ticker);
   const summary = researchIndex.find((r) => r.ticker === ticker)?.latest ?? null;
+  // The release calendar's review triggers for the newest note: FOMC days (the Fed's schedule, with
+  // the calendar's reading laid over it) and the company's estimated results window.
+  const markets = usePublicMarkets(summary !== null);
+  const results = usePublicFilings([ticker], summary !== null);
+  const calendar = useMemo(
+    () => ({ fomc: fomcDays(markets.data?.calendar), windows: results.data?.results ?? [] }),
+    [markets.data, results.data],
+  );
   return (
     <ResearchColumn>
       <TickerTabs ticker={ticker} />
@@ -250,6 +260,7 @@ export function NotesView({ symbol, slug }: { symbol: string; slug?: string }) {
                 key={shown.slug}
                 note={shown}
                 filed={filed}
+                calendar={isLatest ? calendar : null}
                 kind={
                   isFirst
                     ? notes.length === 1

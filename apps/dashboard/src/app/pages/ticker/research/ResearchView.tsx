@@ -1,6 +1,13 @@
+import { usePublicTicker } from '@/pages/research/publicData';
+import { SecRecordSections } from '@/pages/research/SecRecordSections';
 import { TickerTabs } from '@/pages/ticker/TickerTabs';
 import { extrasFor } from '@/shared/theme/tokens';
-import { loadSampleResearch, type LocalOutcome, type SampleResearchCase } from '@convexa/api';
+import {
+  loadSampleResearch,
+  type LocalOutcome,
+  type PublicTicker,
+  type SampleResearchCase,
+} from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -11,6 +18,45 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DemoNoteSide } from './DemoNoteSide';
+
+/**
+ * The public-record band under the sample note (Final · Planned · Insider clusters and Figures
+ * against the filing, staging boards): the same SEC sections the production note carries, on the
+ * demo transport's sample answer, so nothing leaves the browser. Each frame is dashed and hatched and
+ * says what it is shaped like (canon P-3, P-8). A fund has no Form 4 trades or company reports.
+ */
+function DemoPublicRecord({ symbol, d }: { symbol: string; d: PublicTicker }) {
+  const company = d.insiders !== null || d.periodic.length > 0;
+  return (
+    <Box
+      component="section"
+      aria-labelledby="public-record"
+      sx={{ display: 'grid', gap: 3, minWidth: 0, pt: { xs: 1, md: 2 } }}
+    >
+      <Box sx={{ display: 'grid', gap: 0.5 }}>
+        <Typography
+          id="public-record"
+          component="h2"
+          variant="overline"
+          color="text.secondary"
+          sx={{ lineHeight: 1.6 }}
+        >
+          {`Public record · ${symbol}`}
+        </Typography>
+        <Box component="span" sx={{ fontSize: 13, color: 'text.secondary', maxWidth: '72ch' }}>
+          Demo · sample data; nothing here is an SEC record.
+        </Box>
+      </Box>
+      {company ? (
+        <SecRecordSections d={d} />
+      ) : (
+        <Box component="p" sx={{ m: 0, fontSize: 14, color: 'text.secondary' }}>
+          {`${symbol} is a fund, not a company: it files no Form 4 trades or quarterly reports, so the sample has none.`}
+        </Box>
+      )}
+    </Box>
+  );
+}
 
 type ReadyState = {
   phase: 'ready';
@@ -97,6 +143,8 @@ function FactList({
 }
 
 export function ResearchView({ symbol }: { symbol: string }) {
+  // The demo transport's public-data answer (in the browser): the side column and the band read it.
+  const pub = usePublicTicker(symbol.toUpperCase());
   const [state, setState] = useState<RequestState>({ phase: 'loading' });
   const stateRef = useRef(state);
   const requestRef = useRef(0);
@@ -310,8 +358,9 @@ export function ResearchView({ symbol }: { symbol: string }) {
             </Button>
           </Box>
         </Stack>
-        <DemoNoteSide symbol={symbol.toUpperCase()} />
+        <DemoNoteSide symbol={symbol.toUpperCase()} read={pub} />
       </Box>
+      {pub.data && <DemoPublicRecord symbol={symbol.toUpperCase()} d={pub.data} />}
     </Stack>
   );
 }
