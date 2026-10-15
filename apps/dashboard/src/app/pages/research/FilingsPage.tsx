@@ -4,15 +4,17 @@
  * prior period; a results release says where its figures will arrive. The filter lives in the URL so
  * Back and a shared link keep it; j and k move through the list, o opens the filing.
  */
+import { ChartFrame, type ChartStatus } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { publicDataWord } from '@/shared/dataState/vocabulary';
-import { dataMode, type PublicFiling } from '@convexa/api';
+import { STAGING_DEMO_SYMBOLS, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
+import { dataMode, type PublicFiling, type PublicTicker } from '@convexa/api';
 import Box from '@mui/material/Box';
-import { alpha } from '@mui/material/styles';
+import { alpha, type Theme } from '@mui/material/styles';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { localToday, researchIndex, upcoming } from 'virtual:convexa-research';
-import { standing } from './filings';
+import { figureChange, standing } from './filings';
 import { formatNoteDate, formatShortDate } from './format';
 import { ResearchColumn } from './NotesView';
 import { usePublicFilings, usePublicTicker } from './publicData';
@@ -37,8 +39,14 @@ const KIND_WORD: Record<Kind, string> = {
   other: 'Other',
 };
 
-const notesByTicker = new Map(researchIndex.map((r) => [r.ticker, r.latest]));
-const TICKERS = researchIndex.map((r) => r.ticker);
+const DEMO = dataMode === 'demo';
+// The demo's sample filings belong to its six sample symbols, not to the production notes.
+const notesByTicker = new Map(DEMO ? [] : researchIndex.map((r) => [r.ticker, r.latest]));
+const TICKERS: string[] = DEMO ? [...STAGING_DEMO_SYMBOLS] : researchIndex.map((r) => r.ticker);
+const EDGAR_SEARCH = 'https://www.sec.gov/edgar/search/';
+/** Sample data is dashed (canon P-3). */
+const DEMO_EDGE = (t: Theme) =>
+  DEMO ? { border: `1px dashed ${alpha(t.palette.text.secondary, 0.55)}` } : {};
 
 export function FilingsPage() {
   const today = useMemo(() => localToday(), []);
@@ -51,7 +59,8 @@ export function FilingsPage() {
   const current = shown.find((f) => f.accession === selected) ?? shown[0] ?? null;
   const expected = useMemo(
     () =>
-      researchIndex
+      // The demo's sample notes carry no dated results.
+      (DEMO ? [] : researchIndex)
         .flatMap((r) =>
           upcoming(r.latest.aging.events, today, 42)
             .filter((u) => /results|earnings/i.test(u.label))
@@ -60,6 +69,64 @@ export function FilingsPage() {
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(0, 6),
     [today],
+  );
+
+  const notSetUp = read.data?.state === 'not_configured' && !DEMO;
+  const expectedSection = (
+    <Box component="section" aria-labelledby="expected" sx={{ display: 'grid', gap: 1 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.25 }}>
+        <Caps>
+          <span id="expected">Expected · next six weeks</span>
+        </Caps>
+        {!DEMO && <DataStateTag state="computed" detail="from the notes" />}
+      </Box>
+      {expected.length === 0 ? (
+        <Box component="p" sx={{ m: 0, fontSize: 13, color: 'text.secondary' }}>
+          {DEMO
+            ? 'The demo’s sample notes carry no dated results, so nothing is expected in this scenario.'
+            : 'No note expects results in the next six weeks.'}
+        </Box>
+      ) : (
+        <Box
+          component="ol"
+          sx={{
+            listStyle: 'none',
+            m: 0,
+            p: 0,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))',
+            gap: 1,
+          }}
+        >
+          {expected.map((e, i) => (
+            <Box
+              component="li"
+              key={i}
+              sx={(t) => ({
+                display: 'grid',
+                gap: 0.5,
+                p: '10px 14px',
+                borderRadius: '10px',
+                border: `1px solid ${alpha(t.palette.text.secondary, 0.25)}`,
+              })}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
+                <TickerChip ticker={e.ticker} />
+                <Box component="span" sx={{ ...MONO, fontSize: 12, color: 'text.secondary' }}>
+                  {e.whenLabel}
+                </Box>
+              </Box>
+              <Box component="span" sx={{ fontSize: 14, fontWeight: 500 }}>
+                {e.label}
+              </Box>
+              <Box component="span" sx={{ fontSize: 11, color: 'text.secondary' }}>
+                {`makes the ${e.ticker} note due when filed`}
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      )}
+    </Box>
   );
 
   const setKind = (k: Kind | 'all') => {
@@ -105,7 +172,9 @@ export function FilingsPage() {
                 textWrap: 'pretty',
               }}
             >
-              {`What the ${TICKERS.length} followed companies filed with the SEC, newest first. A results or quarterly filing the note hasn't read makes it due.`}
+              {DEMO
+                ? "What the demo's sample companies filed, newest first. A results or quarterly filing the note hasn't read makes it due."
+                : `What the ${TICKERS.length} followed companies filed with the SEC, newest first. A results or quarterly filing the note hasn't read makes it due.`}
             </Box>
           </Box>
           <Box
@@ -128,6 +197,9 @@ export function FilingsPage() {
                 kind={dataMode === 'demo' ? 'sample' : 'primary'}
               />
             )}
+            {notSetUp && (
+              <ProvenanceChip text="SEC EDGAR · not set up on this site" kind="primary" />
+            )}
             {read.data && dataMode !== 'demo' && (
               <DataStateTag
                 state={publicDataWord(read.data.state, {
@@ -138,7 +210,7 @@ export function FilingsPage() {
             <Box
               component="span"
               sx={{
-                display: { xs: 'none', md: 'inline-flex' },
+                display: { xs: 'none', md: notSetUp ? 'none' : 'inline-flex' },
                 alignItems: 'center',
                 gap: 0.75,
                 fontSize: 12,
@@ -154,48 +226,7 @@ export function FilingsPage() {
           </Box>
         </Box>
 
-        {expected.length > 0 && (
-          <Box component="section" aria-labelledby="expected" sx={{ display: 'grid', gap: 1 }}>
-            <Caps>
-              <span id="expected">Expected · next six weeks</span>
-            </Caps>
-            <Box
-              component="ol"
-              sx={{
-                listStyle: 'none',
-                m: 0,
-                p: 0,
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))',
-                gap: 1,
-              }}
-            >
-              {expected.map((e, i) => (
-                <Box
-                  component="li"
-                  key={i}
-                  sx={(t) => ({
-                    display: 'grid',
-                    gap: 0.5,
-                    p: '10px 14px',
-                    borderRadius: '10px',
-                    border: `1px solid ${alpha(t.palette.text.secondary, 0.25)}`,
-                  })}
-                >
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
-                    <TickerChip ticker={e.ticker} />
-                    <Box component="span" sx={{ ...MONO, fontSize: 12, color: 'text.secondary' }}>
-                      {e.whenLabel}
-                    </Box>
-                  </Box>
-                  <Box component="span" sx={{ fontSize: 14, fontWeight: 500 }}>
-                    {e.label}
-                  </Box>
-                </Box>
-              ))}
-            </Box>
-          </Box>
-        )}
+        {!notSetUp && expectedSection}
 
         {read.loading && !read.data ? (
           <FeedSkeleton />
@@ -211,10 +242,10 @@ export function FilingsPage() {
             body="Filings come from SEC EDGAR through Convexa's API, which has them turned off."
           />
         ) : read.data.state === 'not_configured' ? (
-          <SourceProblem
-            title="SEC filings aren't set up yet."
-            body="EDGAR asks every program that reads it to identify itself with a contact address. Set SEC_USER_AGENT on the API and filings appear here."
-          />
+          <>
+            <NotSetUp />
+            {expectedSection}
+          </>
         ) : (
           <>
             {read.data.detail && dataMode !== 'demo' && <StaleNote text={read.data.detail} />}
@@ -276,6 +307,7 @@ export function FilingsPage() {
                 </Box>
               </Box>
             )}
+            <Unlisted missing={read.data.missing} filings={filings} />
           </>
         )}
 
@@ -362,7 +394,7 @@ function Feed({
           window.open(current.url, '_blank', 'noopener,noreferrer');
         }
       }}
-      sx={{ ...PANEL_SX, listStyle: 'none', m: 0, p: 0, overflow: 'hidden' }}
+      sx={[{ ...PANEL_SX, listStyle: 'none', m: 0, p: 0, overflow: 'hidden' }, DEMO_EDGE]}
     >
       {filings.map((f, i) => {
         const note = notesByTicker.get(f.ticker);
@@ -485,19 +517,11 @@ function Detail({ filing }: { filing: PublicFiling }) {
       setCopied(false);
     }
   };
-  const fmt = (v: number, unit: string) =>
-    unit.includes('/shares')
-      ? `$${v.toFixed(2)}`
-      : Math.abs(v) >= 1e9
-        ? `$${(v / 1e9).toLocaleString('en-US', { maximumFractionDigits: 2 })}B`
-        : Math.abs(v) >= 1e6
-          ? `$${(v / 1e6).toLocaleString('en-US', { maximumFractionDigits: 1 })}M`
-          : v.toLocaleString('en-US');
   return (
     <Box
       component="section"
       aria-labelledby="filing-detail"
-      sx={{ ...PANEL_SX, p: { xs: 2, sm: 3 }, display: 'grid', gap: 2 }}
+      sx={[{ ...PANEL_SX, p: { xs: 2, sm: 3 }, display: 'grid', gap: 2 }, DEMO_EDGE]}
     >
       <Box sx={{ display: 'grid', gap: 0.75 }}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
@@ -530,105 +554,7 @@ function Detail({ filing }: { filing: PublicFiling }) {
       </Box>
 
       {isPeriodic ? (
-        ticker.loading && !ticker.data ? (
-          <Box
-            sx={(t) => ({
-              height: 160,
-              borderRadius: '8px',
-              bgcolor: alpha(t.palette.text.secondary, 0.06),
-            })}
-            aria-busy="true"
-            aria-label="Loading the reported figures"
-          />
-        ) : report && report.facts.length > 0 ? (
-          <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <Box component="tr" sx={{ textAlign: 'left' }}>
-                {['Figure', 'This period', 'Prior period'].map((h, i) => (
-                  <Box
-                    component="th"
-                    scope="col"
-                    key={h}
-                    sx={(t) => ({
-                      ...{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        color: 'text.secondary',
-                      },
-                      py: 0.75,
-                      pr: 1,
-                      textAlign: i === 0 ? 'left' : 'right',
-                      borderBottom: `1px solid ${alpha(t.palette.text.secondary, 0.3)}`,
-                    })}
-                  >
-                    {h}
-                  </Box>
-                ))}
-              </Box>
-            </thead>
-            <tbody>
-              {report.facts.map((fact) => (
-                <Box component="tr" key={fact.concept}>
-                  <Box
-                    component="th"
-                    scope="row"
-                    sx={(t) => ({
-                      textAlign: 'left',
-                      fontWeight: 500,
-                      py: 1.25,
-                      pr: 1,
-                      borderBottom: `1px solid ${t.palette.divider}`,
-                    })}
-                  >
-                    {fact.label}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={(t) => ({
-                      ...MONO,
-                      textAlign: 'right',
-                      py: 1.25,
-                      pr: 1,
-                      borderBottom: `1px solid ${t.palette.divider}`,
-                    })}
-                  >
-                    {fmt(fact.value, fact.unit)}
-                    <Box
-                      component="span"
-                      sx={{ display: 'block', fontSize: 11, color: 'text.secondary' }}
-                    >
-                      {formatShortDate(fact.period_end)}
-                    </Box>
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={(t) => ({
-                      ...MONO,
-                      textAlign: 'right',
-                      py: 1.25,
-                      color: 'text.secondary',
-                      borderBottom: `1px solid ${t.palette.divider}`,
-                    })}
-                  >
-                    {fact.prior_value == null ? '—' : fmt(fact.prior_value, fact.unit)}
-                    {fact.prior_period_end && (
-                      <Box component="span" sx={{ display: 'block', fontSize: 11 }}>
-                        {formatShortDate(fact.prior_period_end)}
-                      </Box>
-                    )}
-                  </Box>
-                </Box>
-              ))}
-            </tbody>
-          </Box>
-        ) : (
-          <Box component="p" sx={{ m: 0, fontSize: 13, color: 'text.secondary' }}>
-            The machine-readable figures for this report aren&apos;t available yet. The filing
-            itself has them.
-          </Box>
-        )
+        <ReportedFigures filing={filing} read={ticker} report={report} />
       ) : filing.kind === 'results' ? (
         <Box component="p" sx={{ m: 0, fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}>
           A results release. Its tables are in the exhibit; the same figures arrive in
@@ -733,5 +659,354 @@ function FeedSkeleton() {
         </Box>
       ))}
     </Box>
+  );
+}
+
+/** Production before the operator sets SEC_USER_AGENT: what's missing in the reader's words, what
+ *  it would show, what still works, and the operator's step folded away (design: Final · Filings). */
+function NotSetUp() {
+  return (
+    <Box
+      component="section"
+      aria-labelledby="not-set-up"
+      sx={(t) => ({
+        ...PANEL_SX,
+        border: `1px solid ${alpha(t.palette.text.secondary, 0.25)}`,
+        p: { xs: 2, sm: 3 },
+        display: 'grid',
+        gap: 1.75,
+        maxWidth: 920,
+      })}
+    >
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 12px' }}>
+        <Box
+          component="h2"
+          id="not-set-up"
+          sx={{ ...DISPLAY, m: 0, fontWeight: 600, fontSize: 18, lineHeight: 1.3 }}
+        >
+          SEC filings aren’t set up on this site yet.
+        </Box>
+        <DataStateTag state="notSetUp" />
+      </Box>
+      <Box component="p" sx={{ m: 0, fontSize: 14, lineHeight: 1.55, textWrap: 'pretty' }}>
+        Filings come from SEC EDGAR, which asks every program that reads it to identify itself with
+        a contact address. This site hasn’t been given one, so nothing is fetched and no filing is
+        shown. Nothing here is a fault: the notes keep their own dates, so nothing comes due late.
+      </Box>
+      <Box
+        component="dl"
+        sx={{
+          m: 0,
+          display: 'grid',
+          gridTemplateColumns: 'max-content minmax(0, 1fr)',
+          gap: '8px 16px',
+          fontSize: 13,
+        }}
+      >
+        <Box component="dt" sx={{ color: 'text.secondary' }}>
+          Would show
+        </Box>
+        <Box component="dd" sx={{ m: 0 }}>
+          {`What the ${TICKERS.length} followed companies filed in the last 90 days, newest first; which filings a note hasn’t read yet; reported figures from each quarterly and annual report`}
+        </Box>
+        <Box component="dt" sx={{ color: 'text.secondary' }}>
+          Covers
+        </Box>
+        <Box component="dd" sx={{ m: 0, display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+          {TICKERS.map((t) => (
+            <Box
+              component="span"
+              key={t}
+              sx={(th) => ({
+                ...MONO,
+                fontSize: 12,
+                px: 1,
+                py: '2px',
+                borderRadius: '6px',
+                border: `1px solid ${alpha(th.palette.text.secondary, 0.3)}`,
+              })}
+            >
+              {t}
+            </Box>
+          ))}
+        </Box>
+        <Box component="dt" sx={{ color: 'text.secondary' }}>
+          Meanwhile
+        </Box>
+        <Box component="dd" sx={{ m: 0 }}>
+          Each note links the filings it cites, and Expected below still works from the notes’ own
+          dates
+        </Box>
+      </Box>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0 20px' }}>
+        <Box
+          component="a"
+          href={`${STAGING_DEMO_URL}/research/filings`}
+          sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, fontWeight: 500 }}
+        >
+          See sample filings on the demo →
+        </Box>
+        <Box
+          component="a"
+          href={EDGAR_SEARCH}
+          target="_blank"
+          rel="noopener noreferrer"
+          sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 44 }}
+        >
+          Search EDGAR yourself ↗
+        </Box>
+      </Box>
+      <Box component="details" sx={{ fontSize: 13 }}>
+        <Box component="summary" sx={{ cursor: 'pointer', fontWeight: 600, py: 1.25 }}>
+          For the site’s operator
+        </Box>
+        <Box component="p" sx={{ m: '4px 0 0', color: 'text.secondary', textWrap: 'pretty' }}>
+          Set{' '}
+          <Box component="code" sx={{ ...MONO, fontSize: 12 }}>
+            SEC_USER_AGENT
+          </Box>{' '}
+          on the API to a name and a contact email address (EDGAR’s fair-access rule), then restart
+          it. Filings appear within the hour; company facts within a day.
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+/** Tickers the feed has nothing for, named rather than silently dropped: the ones EDGAR's ticker map
+ *  doesn't know (the API's `missing` list) and the ones that filed nothing in the window. */
+function Unlisted({ missing, filings }: { missing: string[]; filings: PublicFiling[] }) {
+  const filed = new Set(filings.map((f) => f.ticker));
+  const quiet = TICKERS.filter((t) => !missing.includes(t) && !filed.has(t));
+  if (missing.length === 0 && quiet.length === 0) return null;
+  const list = (ts: string[]) =>
+    ts.length === 1 ? ts[0] : `${ts.slice(0, -1).join(', ')} and ${ts[ts.length - 1]}`;
+  return (
+    <Box
+      component="section"
+      aria-label="Not in the feed"
+      sx={{ display: 'grid', gap: 1, fontSize: 13, color: 'text.secondary' }}
+    >
+      {missing.length > 0 && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 10px' }}>
+          <Box
+            component="span"
+            sx={(t) => ({
+              fontSize: 12,
+              fontWeight: 500,
+              px: 1,
+              py: '2px',
+              borderRadius: '12px',
+              border: `1px solid ${alpha(t.palette.text.secondary, 0.55)}`,
+            })}
+          >
+            Not an SEC filer
+          </Box>
+          <Box component="span" sx={{ minWidth: 0, textWrap: 'pretty' }}>
+            {`${list(missing)} ${missing.length === 1 ? 'isn’t' : 'aren’t'} in EDGAR’s list of company tickers, so there are no company reports to show for ${missing.length === 1 ? 'it' : 'them'}. Funds and some foreign issuers read this way.`}
+          </Box>
+        </Box>
+      )}
+      {quiet.length > 0 && (
+        <Box component="span" sx={{ textWrap: 'pretty' }}>
+          {DEMO
+            ? `${list(quiet)} ${quiet.length === 1 ? 'has' : 'have'} no sample filings in this scenario.`
+            : `${list(quiet)} filed nothing in the last 90 days (ownership forms 3, 4, 5 and 144 are left out).`}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+/** "$96.2B", "$885.0M", "$2.31" for a per-share figure. */
+function figure(v: number, unit: string) {
+  if (unit.includes('/shares')) return `${v < 0 ? '−' : ''}$${Math.abs(v).toFixed(2)}`;
+  const sign = v < 0 ? '−' : '';
+  const a = Math.abs(v);
+  if (a >= 1e9)
+    return `${sign}$${(a / 1e9).toLocaleString('en-US', { maximumFractionDigits: 2 })}B`;
+  if (a >= 1e6)
+    return `${sign}$${(a / 1e6).toLocaleString('en-US', { maximumFractionDigits: 1 })}M`;
+  return `${sign}${a.toLocaleString('en-US')}`;
+}
+
+type Periodic = PublicTicker['periodic'][number];
+
+/** A periodic report's figures against the prior period, in the chart frame: a finding from the
+ *  figures, a change column (▲/▼, neutral), the source chip. A failed request says Couldn't load
+ *  and offers Try again; "not yet" is kept for figures that genuinely haven't arrived. */
+function ReportedFigures({
+  filing,
+  read,
+  report,
+}: {
+  filing: PublicFiling;
+  read: ReturnType<typeof usePublicTicker>;
+  report: Periodic | undefined;
+}) {
+  const failed = !!read.error || (!!read.data && read.data.filings_state !== 'live');
+  const facts = report?.facts ?? [];
+  const lead = facts.find((f) => f.concept === 'Revenue') ?? facts[0];
+  const leadChange = lead ? figureChange(lead.prior_value, lead.value) : null;
+  const finding = lead
+    ? `${DEMO ? 'Sample figures: ' : ''}${lead.label} ${figure(lead.value, lead.unit)}${
+        leadChange && lead.prior_period_end
+          ? `, ${leadChange.replace('▲', 'up').replace('▼', 'down').replace('± ', 'flat at ')} from the period to ${formatShortDate(lead.prior_period_end)}`
+          : ''
+      }`
+    : 'Reported figures';
+  const status: ChartStatus =
+    read.loading && !read.data
+      ? { kind: 'loading' }
+      : failed
+        ? {
+            kind: 'message',
+            tone: 'warn',
+            text: 'Couldn’t load the reported figures.',
+            cause: `${read.data?.filings_detail ?? `The SEC company-facts request failed${read.error ? ` (${read.error})` : ''}.`} The filing itself is linked below.`,
+          }
+        : facts.length === 0
+          ? {
+              kind: 'message',
+              tone: 'quiet',
+              text: 'The machine-readable figures for this report aren’t available yet.',
+              cause:
+                'The SEC adds them to its company facts after the filing; the filing itself has them now.',
+            }
+          : { kind: 'ready' };
+  const cell = (t: Theme) => ({
+    ...MONO,
+    textAlign: 'right' as const,
+    py: 1.25,
+    pr: 1,
+    borderBottom: `1px solid ${t.palette.divider}`,
+  });
+  return (
+    <ChartFrame
+      finding={finding}
+      metric="Reported figures"
+      sub={`${filing.form}${report?.period_end ? `, period to ${formatNoteDate(report.period_end)}` : ''}, against the prior period of the same length · change with ▲/▼`}
+      height={160}
+      status={status}
+      provenance={DEMO ? 'sample' : 'primary'}
+      tag={
+        failed
+          ? { state: 'couldntLoad' }
+          : status.kind !== 'ready'
+            ? undefined
+            : DEMO
+              ? { state: 'demo' }
+              : { state: 'updated', detail: `filed ${formatShortDate(filing.filed)}` }
+      }
+      source={
+        DEMO
+          ? { text: 'Demo · shaped like SEC EDGAR company facts' }
+          : { text: 'SEC · company facts (XBRL)', href: filing.url }
+      }
+      asOf={DEMO ? 'Scenario · Oct 7, 2026' : `Filed ${formatNoteDate(filing.filed)}`}
+      action={
+        failed ? (
+          <Box
+            component="button"
+            type="button"
+            onClick={read.retry}
+            sx={(t) => ({
+              minHeight: 36,
+              px: 1.75,
+              borderRadius: '8px',
+              border: `1px solid ${alpha(t.palette.text.secondary, 0.3)}`,
+              bgcolor: 'transparent',
+              color: 'text.primary',
+              font: 'inherit',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
+              '@media (pointer: coarse)': { minHeight: 44 },
+            })}
+          >
+            Try again
+          </Box>
+        ) : undefined
+      }
+      testId="chart-reported-figures"
+    >
+      <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <Box
+          component="caption"
+          sx={{
+            position: 'absolute',
+            width: '1px',
+            height: '1px',
+            overflow: 'hidden',
+            clip: 'rect(0 0 0 0)',
+          }}
+        >
+          {`Reported figures, ${filing.ticker} ${filing.form}, against the prior period`}
+        </Box>
+        <thead>
+          <Box component="tr">
+            {['Figure', 'This period', 'Prior period', 'Change'].map((h, i) => (
+              <Box
+                component="th"
+                scope="col"
+                key={h}
+                sx={(t) => ({
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: 'text.secondary',
+                  py: 0.75,
+                  pr: i === 3 ? 0 : 1,
+                  textAlign: i === 0 ? 'left' : 'right',
+                  borderBottom: `1px solid ${alpha(t.palette.text.secondary, 0.3)}`,
+                })}
+              >
+                {h}
+              </Box>
+            ))}
+          </Box>
+        </thead>
+        <tbody>
+          {facts.map((fact) => (
+            <Box component="tr" key={fact.concept}>
+              <Box
+                component="th"
+                scope="row"
+                sx={(t) => ({
+                  textAlign: 'left',
+                  fontWeight: 500,
+                  py: 1.25,
+                  pr: 1,
+                  borderBottom: `1px solid ${t.palette.divider}`,
+                })}
+              >
+                {fact.label}
+              </Box>
+              <Box component="td" sx={cell}>
+                {figure(fact.value, fact.unit)}
+                <Box
+                  component="span"
+                  sx={{ display: 'block', fontSize: 11, color: 'text.secondary' }}
+                >
+                  {formatShortDate(fact.period_end)}
+                </Box>
+              </Box>
+              <Box component="td" sx={(t) => ({ ...cell(t), color: 'text.secondary' })}>
+                {fact.prior_value == null ? '—' : figure(fact.prior_value, fact.unit)}
+                {fact.prior_period_end && (
+                  <Box component="span" sx={{ display: 'block', fontSize: 11 }}>
+                    {formatShortDate(fact.prior_period_end)}
+                  </Box>
+                )}
+              </Box>
+              <Box component="td" sx={(t) => ({ ...cell(t), pr: 0, whiteSpace: 'nowrap' })}>
+                {figureChange(fact.prior_value, fact.value) ?? '—'}
+              </Box>
+            </Box>
+          ))}
+        </tbody>
+      </Box>
+    </ChartFrame>
   );
 }

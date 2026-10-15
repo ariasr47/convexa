@@ -3,10 +3,13 @@
  * The top bar's amber already marks the section, so the current tab here is underlined in text colour
  * and amber stays spent. On a phone the row scrolls sideways as a rail rather than wrapping.
  */
+import { STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
+import { dataMode } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { alpha } from '@mui/material/styles';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { researchIndex } from 'virtual:convexa-research';
+import { useSampleLedger } from './sampleLedger';
 import { MONO } from './ui';
 
 const openForecasts = researchIndex.reduce(
@@ -14,15 +17,26 @@ const openForecasts = researchIndex.reduce(
   0,
 );
 
-const TABS = [
-  { to: '/research', label: 'Notes', badge: String(researchIndex.length) },
-  { to: '/research/markets', label: 'Markets', badge: null },
-  { to: '/research/filings', label: 'Filings', badge: null },
-  { to: '/research/scorecard', label: 'Scorecard', badge: `${openForecasts} open` },
-] as const;
-
 export function ResearchTabs() {
   const { pathname } = useLocation();
+  // The demo build counts its own six sample notes and their forecasts, not production's.
+  const ledger = useSampleLedger();
+  const demo = dataMode === 'demo';
+  const demoOpen = ledger ? ledger.forecasts.filter((f) => f.outcome === null).length : null;
+  const TABS: { to: string; label: string; badge: string | null }[] = [
+    {
+      to: '/research',
+      label: 'Notes',
+      badge: String(demo ? STAGING_DEMO_SYMBOLS.length : researchIndex.length),
+    },
+    { to: '/research/markets', label: 'Markets', badge: null },
+    { to: '/research/filings', label: 'Filings', badge: null },
+    {
+      to: '/research/scorecard',
+      label: 'Scorecard',
+      badge: demo ? (demoOpen === null ? null : `${demoOpen} open`) : `${openForecasts} open`,
+    },
+  ];
   const current = (to: string) =>
     to === '/research' ? pathname === '/research' : pathname.startsWith(to);
   return (

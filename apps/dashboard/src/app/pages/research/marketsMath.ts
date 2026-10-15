@@ -68,3 +68,20 @@ export function noteRates(
     };
   });
 }
+
+/**
+ * The part of the markets answer's `detail` that is about one source, or null when that source
+ * answered this cycle. The API joins one sentence per source that failed
+ * (apps/api/src/services/public_data/cache.rs `note`: "U.S. Treasury did not answer at 14:10 UTC;
+ * showing data fetched at 08:10 UTC."), naming each by its source constant: "U.S. Treasury", "CFTC",
+ * "Liquidity". A source with a sentence and data on the page is showing its last good copy.
+ */
+export function sourceNote(detail: string | null | undefined, source: string): string | null {
+  if (!detail) return null;
+  const start = `${source} did not answer`;
+  const at = detail.indexOf(start);
+  // Only at a sentence start: "Treasury Daily Treasury Statement" must not match "U.S. Treasury".
+  if (at < 0 || (at > 0 && detail.slice(at - 2, at) !== '. ')) return null;
+  const end = detail.indexOf('.', detail.indexOf(' UTC', at) + 4);
+  return detail.slice(at, end < 0 ? undefined : end + 1);
+}

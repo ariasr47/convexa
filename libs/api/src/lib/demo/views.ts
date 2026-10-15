@@ -63,6 +63,31 @@ export async function loadSampleBars(symbol: string): Promise<LocalOutcome<Sampl
   }
 }
 
+export type { SampleForecast, SampleLedger, SampleSignalGrade } from './research-ledger';
+
+/** The demo's forecast ledger and sample signal grades (research-ledger.ts), loaded on demand so the
+ *  live build never fetches it. */
+export async function loadSampleLedger(): Promise<
+  LocalOutcome<import('./research-ledger').SampleLedger>
+> {
+  if (dataMode === 'live')
+    return {
+      state: 'unavailable',
+      reason: 'live_provider_missing',
+      detail: 'The sample forecast ledger is not a live provider capability.',
+    };
+  try {
+    const { sampleLedger } = await import('./research-ledger');
+    return { state: 'ready', value: sampleLedger(), provenance: scenarioProvenance()! };
+  } catch {
+    return {
+      state: 'error',
+      reason: 'load_failed',
+      detail: 'The sample ledger could not be loaded.',
+    };
+  }
+}
+
 export async function loadSampleResearch(
   symbol: string,
 ): Promise<LocalOutcome<SampleResearchCase>> {

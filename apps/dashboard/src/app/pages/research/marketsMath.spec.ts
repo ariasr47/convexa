@@ -2,7 +2,7 @@
 // with against today's. A wrong lookup or flag is silent and misleads, so each rule is pinned:
 // holidays fall back to the day before, missing series are skipped, and the flag fires at ±0.25.
 import { describe, expect, it } from 'vitest';
-import { noteRates, spread2s10s, tenYearOn, type YieldPoint } from './marketsMath';
+import { noteRates, sourceNote, spread2s10s, tenYearOn, type YieldPoint } from './marketsMath';
 
 const day = (date: string, t2y: number | null, t10y: number | null): YieldPoint => ({
   date,
@@ -51,5 +51,30 @@ describe('2s10s', () => {
       { date: '2026-10-09', value: 0.44 },
       { date: '2026-10-13', value: 0.61 },
     ]);
+  });
+});
+
+describe('which source a stale note is about', () => {
+  // The state word for each source turns on this: an outage of one must not mark another stale.
+  const detail =
+    'U.S. Treasury did not answer at 14:10 UTC; showing data fetched at 08:10 UTC. Liquidity did not answer at 2026-10-14 14:10 UTC and no earlier copy is cached.';
+
+  it('finds each source’s own sentence', () => {
+    expect(sourceNote(detail, 'U.S. Treasury')).toBe(
+      'U.S. Treasury did not answer at 14:10 UTC; showing data fetched at 08:10 UTC.',
+    );
+    expect(sourceNote(detail, 'Liquidity')).toBe(
+      'Liquidity did not answer at 2026-10-14 14:10 UTC and no earlier copy is cached.',
+    );
+  });
+
+  it('is null for a source that answered, and for no detail at all', () => {
+    expect(sourceNote(detail, 'CFTC')).toBeNull();
+    expect(sourceNote(null, 'U.S. Treasury')).toBeNull();
+    expect(sourceNote('Demo sample: authored figures.', 'U.S. Treasury')).toBeNull();
+  });
+
+  it('matches a name only at a sentence start', () => {
+    expect(sourceNote('X Treasury did not answer at 14:10 UTC.', 'Treasury')).toBeNull();
   });
 });

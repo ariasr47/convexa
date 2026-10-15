@@ -36,3 +36,18 @@ export function filedSince(
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
 }
+
+/**
+ * A reported figure against its prior period, as the filing detail shows it: "▲ 106%", "▼ 12%". The
+ * change is measured against the prior's size, so a loss that narrows reads as a rise; with no prior,
+ * or a prior of zero, there is no percentage to give. Neutral: the arrow carries the sign (P-11).
+ */
+export function figureChange(prior: number | null | undefined, value: number): string | null {
+  if (prior == null || prior === 0 || !Number.isFinite(prior) || !Number.isFinite(value))
+    return null;
+  const change = ((value - prior) / Math.abs(prior)) * 100;
+  const size = Math.abs(change);
+  const shown = size < 10 ? size.toFixed(1) : String(Math.round(size));
+  if (Number(shown) === 0) return '± 0%';
+  return `${change > 0 ? '▲' : '▼'} ${shown}%`;
+}
