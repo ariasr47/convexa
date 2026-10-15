@@ -7,7 +7,7 @@
 
 use crate::error::AppError;
 use crate::services::public_data::{
-    self as service, cftc, normalize_ticker, parse_ticker_list, treasury, DataState,
+    self as service, cftc, liquidity, normalize_ticker, parse_ticker_list, treasury, DataState,
 };
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
@@ -204,6 +204,32 @@ pub struct PublicMarketsWire {
     pub rates: Option<RatesWire>,
     #[schema(required = true)]
     pub futures: Option<FuturesWire>,
+    #[schema(required = true)]
+    pub liquidity: Option<LiquidityWire>,
+}
+
+/// One H.4.1 Wednesday, $ millions: `net` = `fed_assets` − `tga` − `reverse_repo`. The TGA and
+/// reverse repo are that Wednesday's, or the last business day's before it within four days.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct LiquidityWeekWire {
+    /// YYYY-MM-DD, the H.4.1 Wednesday.
+    pub date: String,
+    pub fed_assets: f64,
+    pub tga: f64,
+    pub reverse_repo: f64,
+    pub net: f64,
+}
+
+/// Net liquidity: the Fed's total assets less the Treasury General Account and overnight reverse
+/// repo, weekly, at most 26 weeks, oldest first.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct LiquidityWire {
+    pub source: String,
+    /// YYYY-MM-DD, the latest H.4.1 Wednesday netted (released the Thursday after).
+    pub as_of: String,
+    /// RFC 3339 UTC: when this server fetched the data.
+    pub fetched_at: String,
+    pub weeks: Vec<LiquidityWeekWire>,
 }
 
 impl From<service::Markets> for PublicMarketsWire {
@@ -246,6 +272,23 @@ impl From<service::Markets> for PublicMarketsWire {
                                 other_reportables: w.other_reportables,
                             })
                             .collect(),
+                    })
+                    .collect(),
+            }),
+            liquidity: m.liquidity.map(|l| LiquidityWire {
+                source: liquidity::SOURCE_LABEL.into(),
+                as_of: day(l.series.as_of),
+                fetched_at: instant(l.fetched_at),
+                weeks: l
+                    .series
+                    .weeks
+                    .iter()
+                    .map(|w| LiquidityWeekWire {
+                        date: day(w.date),
+                        fed_assets: w.fed_assets,
+                        tga: w.tga,
+                        reverse_repo: w.reverse_repo,
+                        net: w.net,
                     })
                     .collect(),
             }),
@@ -688,6 +731,18 @@ fn representative_markets() -> PublicMarketsWire {
                     dealers: Some(-98_000),
                     other_reportables: None,
                 }],
+            }],
+        }),
+        liquidity: Some(LiquidityWire {
+            source: liquidity::SOURCE_LABEL.into(),
+            as_of: "2026-10-07".into(),
+            fetched_at: "2026-10-13T07:00:00Z".into(),
+            weeks: vec![LiquidityWeekWire {
+                date: "2026-10-07".into(),
+                fed_assets: 6_747_560.0,
+                tga: 885_783.0,
+                reverse_repo: 2_338.0,
+                net: 5_859_439.0,
             }],
         }),
     }

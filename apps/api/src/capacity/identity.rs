@@ -41,7 +41,9 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // Re-pinned for the API gaps (2026-10-14): `PositionGroupWire` gains `p10_3y`/`p90_3y`,
 // `FuturesMarketWire` gains `dealers`, `other_reportables` and a weekly `history`, and
 // `ShortVolumeWire` gains its `daily` series: additive schema growth, zero new operations, so the
-// precutover baseline stays pinned and four artifacts move.
+// precutover baseline stays pinned and four artifacts move. Again the same day for
+// `PublicMarketsWire.liquidity` (`LiquidityWire`, `LiquidityWeekWire`): additive, zero new
+// operations.
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -49,19 +51,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "d82152ff6ef61ed4b5f5310333832448dcea13d578ee8fa0eab106919536755e",
+        "ea133910a522219e5c96104d0bd34f29a1cfa5acf6fb403ec0e50a8b96d7f53b",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "56ae4ac4541f2aaa7d421dd198490b12d08b6b996c4aaea70bdf618eeeb51bbb",
+        "9d0ca24449e2bf2149be1c9d5d2491415aa80317c1c216305735dc90fb99a21a",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "e83b7cfe6cbec017a6a35f7fe28b10c8d331886f6cb228bd08cf290badef10d6",
+        "005ad96c256ac0a3d3134d4545055594c2f2fd6ce039a9a20bb4b63534ba9c08",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "2e64f060c4c8fef4e94f2d9b67ee034ea7cb9255748e1afe4cff339509df1c56",
+        "fcc945fff93979c74c1784314034874291661d8f8dd387d1c55c1f6e6dc55c33",
     ),
 ];
 

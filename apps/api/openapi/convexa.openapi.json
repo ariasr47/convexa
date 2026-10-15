@@ -2457,6 +2457,57 @@
         "required": ["slope", "put_iv", "call_iv", "expiration", "reference"],
         "type": "object"
       },
+      "LiquidityWeekWire": {
+        "description": "One H.4.1 Wednesday, $ millions: `net` = `fed_assets` − `tga` − `reverse_repo`. The TGA and\nreverse repo are that Wednesday's, or the last business day's before it within four days.",
+        "properties": {
+          "date": {
+            "description": "YYYY-MM-DD, the H.4.1 Wednesday.",
+            "type": "string"
+          },
+          "fed_assets": {
+            "format": "double",
+            "type": "number"
+          },
+          "net": {
+            "format": "double",
+            "type": "number"
+          },
+          "reverse_repo": {
+            "format": "double",
+            "type": "number"
+          },
+          "tga": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": ["date", "fed_assets", "tga", "reverse_repo", "net"],
+        "type": "object"
+      },
+      "LiquidityWire": {
+        "description": "Net liquidity: the Fed's total assets less the Treasury General Account and overnight reverse\nrepo, weekly, at most 26 weeks, oldest first.",
+        "properties": {
+          "as_of": {
+            "description": "YYYY-MM-DD, the latest H.4.1 Wednesday netted (released the Thursday after).",
+            "type": "string"
+          },
+          "fetched_at": {
+            "description": "RFC 3339 UTC: when this server fetched the data.",
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "weeks": {
+            "items": {
+              "$ref": "#/components/schemas/LiquidityWeekWire"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["source", "as_of", "fetched_at", "weeks"],
+        "type": "object"
+      },
       "ListSnapshotRow": {
         "properties": {
           "as_of": {
@@ -4020,6 +4071,16 @@
               }
             ]
           },
+          "liquidity": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LiquidityWire"
+              }
+            ]
+          },
           "rates": {
             "oneOf": [
               {
@@ -4034,7 +4095,7 @@
             "$ref": "#/components/schemas/PublicDataState"
           }
         },
-        "required": ["state", "detail", "rates", "futures"],
+        "required": ["state", "detail", "rates", "futures", "liquidity"],
         "type": "object"
       },
       "PublicTickerWire": {

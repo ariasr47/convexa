@@ -3,8 +3,8 @@
 // hand: a status changes when a spec card's `built` list does.
 //
 // A screen is Built when every item on its card is shipped, In progress when some are shipped or
-// partly built, and Designed when none are. Planned rows read Designed: their shipped items are the
-// host page, not the tool.
+// partly built, and Designed when none are. Items marked `host: true` (the page a planned tool sits
+// on) never count toward a status.
 
 const STATUS = {
   built: { word: 'Built', cls: 'built' },
@@ -59,16 +59,17 @@ export function rowProgress(row) {
   const c = { shipped: 0, partial: 0, todo: 0 };
   for (const b of built) c[b.status] = (c[b.status] ?? 0) + 1;
   const total = c.shipped + c.partial + c.todo;
-  // A planned row's shipped items describe its host page (the Markets page Liquidity would sit
-  // on), not the tool, so a planned row reads Designed until its own work starts.
+  // Items marked `host: true` describe the page a planned tool sits on (the Markets page Liquidity
+  // lives on), not the tool, so the status counts only the tool's own items.
+  const own = built.filter((b) => !b.host);
+  const o = { shipped: 0, partial: 0 };
+  for (const b of own) if (b.status in o) o[b.status] += 1;
   const status =
-    row.section === 'planned'
-      ? 'designed'
-      : total > 0 && c.shipped === total
-        ? 'built'
-        : c.shipped + c.partial > 0
-          ? 'progress'
-          : 'designed';
+    own.length > 0 && o.shipped === own.length
+      ? 'built'
+      : o.shipped + o.partial > 0
+        ? 'progress'
+        : 'designed';
   const open = built.filter((b) => b.status !== 'shipped');
   return { ...c, total, status, open };
 }
@@ -154,7 +155,7 @@ export function progressBoard(groups) {
       <header>
         <div class="eyebrow">Final · Convexa v1 · board map</div>
         <h1 class="display">What’s built</h1>
-        <p class="lead">Every screen on this page, read from its own spec card’s “Built so far” each time the design builds; nothing on this board is typed by hand. A screen is <strong>Built</strong> when every item on its card is shipped, <strong>In progress</strong> when some are shipped or partly built, and <strong>Designed</strong> when none are (planned tools stay Designed until their own work starts: their shipped items are the host page). Board names are the ones in its row, left to right.</p>
+        <p class="lead">Every screen on this page, read from its own spec card’s “Built so far” each time the design builds; nothing on this board is typed by hand. A screen is <strong>Built</strong> when every item on its card is shipped, <strong>In progress</strong> when some are shipped or partly built, and <strong>Designed</strong> when none are. A planned tool’s status counts only its own items, not the page it sits on. Board names are the ones in its row, left to right.</p>
       </header>
       ${totals}
       ${groups.map(group).join('')}

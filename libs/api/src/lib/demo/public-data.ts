@@ -214,6 +214,34 @@ function demoMarket(
   };
 }
 
+/** Twenty-six H.4.1 Wednesdays ending Sep 30, 2026, on a smooth authored path shaped like the
+ *  live inputs ($ millions): Fed assets edging up, the Treasury's cash rebuilding into quarter end,
+ *  reverse repo draining. `net` is computed from the three, as the API does. */
+function demoLiquidity(): NonNullable<PublicMarkets['liquidity']> {
+  const end = Date.parse('2026-09-30T00:00:00Z');
+  const W = 26;
+  const weeks = Array.from({ length: W }, (_, i) => {
+    const fed = Math.round(6_600_000 + i * 4_200 + Math.sin(i * 1.7) * 3_000);
+    const tga = Math.round(
+      830_000 + Math.sin(i / 3.5) * 40_000 + (i >= 21 ? ((i - 20) / 5) * 85_000 : 0),
+    );
+    const rrp = Math.round(Math.max(4_000, 30_000 - i * 800 + Math.cos(i * 1.3) * 1_500));
+    return {
+      date: isoDay(end - (W - 1 - i) * 7 * DAY_MS),
+      fed_assets: fed,
+      tga,
+      reverse_repo: rrp,
+      net: fed - tga - rrp,
+    };
+  });
+  return {
+    source: 'Demo sample (shaped like Fed H.4.1, Treasury DTS and NY Fed reverse repo)',
+    as_of: weeks[W - 1].date,
+    fetched_at: DEMO_TIME,
+    weeks,
+  };
+}
+
 export function demoPublicMarkets(): PublicMarkets {
   const daily = demoYields();
   const latest = daily[daily.length - 1];
@@ -254,6 +282,7 @@ export function demoPublicMarkets(): PublicMarkets {
         }),
       ],
     },
+    liquidity: demoLiquidity(),
   };
 }
 

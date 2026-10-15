@@ -10,6 +10,7 @@ pub(crate) mod cftc;
 pub(crate) mod edgar;
 pub(crate) mod fetch;
 pub(crate) mod finra;
+pub(crate) mod liquidity;
 pub(crate) mod treasury;
 pub mod types;
 
@@ -109,6 +110,7 @@ struct Inner {
     sec_gate: SecGate,
     rates: TtlCache<(), RatesSeries>,
     futures: TtlCache<(), FuturesSummary>,
+    liquidity: TtlCache<(), LiquiditySeries>,
     short_interest: TtlCache<String, Option<ShortInterest>>,
     daily_files: TtlCache<NaiveDate, Option<DailyFile>>,
     sec_tickers: TtlCache<(), HashMap<String, u64>>,
@@ -133,6 +135,8 @@ impl PublicDataService {
                 sec_gate: SecGate::new(SEC_SPACING),
                 rates: TtlCache::new(|_| 6 * HOUR, RETRY_AFTER_FAILURE, 1),
                 futures: TtlCache::new(|_| 12 * HOUR, RETRY_AFTER_FAILURE, 1),
+                // Weekly data, released Thursdays: six hours keeps a Thursday release same-evening.
+                liquidity: TtlCache::new(|_| 6 * HOUR, RETRY_AFTER_FAILURE, 1),
                 short_interest: TtlCache::new(|_| 12 * HOUR, RETRY_AFTER_FAILURE, 512),
                 // A past day's file never changes; a missing one (holiday, not yet published)
                 // is asked again within the hour.
@@ -169,13 +173,26 @@ impl PublicDataService {
                 detail: Some(OFF_DETAIL.into()),
                 rates: None,
                 futures: None,
+                liquidity: None,
             };
         }
-        let (rates, futures) = tokio::join!(self.rates_lookup(), self.futures_lookup());
-        let notes: Vec<String> = [rates.note(treasury::SOURCE), futures.note(cftc::SOURCE)]
-            .into_iter()
-            .flatten()
-            .collect();
+        let (rates, futures, liquidity) = tokio::join!(
+            self.rates_lookup(),
+            self.futures_lookup(),
+            self.liquidity_lookup()
+        );
+        let notes: Vec<String> = [
+            rates.note(treasury::SOURCE),
+            futures.note(cftc::SOURCE),
+            liquidity.note("Liquidity"),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+        let liquidity = liquidity.cached().map(|c| Liquidity {
+            fetched_at: c.fetched_at,
+            series: Arc::clone(&c.value),
+        });
         let rates = rates.cached().map(|c| Rates {
             as_of: c.value.latest.date,
             fetched_at: c.fetched_at,
@@ -186,7 +203,7 @@ impl PublicDataService {
             summary: Arc::clone(&c.value),
         });
         Markets {
-            state: if rates.is_none() && futures.is_none() {
+            state: if rates.is_none() && futures.is_none() && liquidity.is_none() {
                 DataState::Unavailable
             } else {
                 DataState::Live
@@ -194,7 +211,49 @@ impl PublicDataService {
             detail: join(notes),
             rates,
             futures,
+            liquidity,
         }
+    }
+
+    /// The three liquidity inputs together: all must answer, or the cache serves its last good
+    /// copy (never a net computed from two of three).
+    async fn liquidity_lookup(&self) -> Lookup<LiquiditySeries> {
+        let http = &self.inner.http;
+        self.inner
+            .liquidity
+            .get((), || async move {
+                let today = Utc::now()
+                    .with_timezone(&chrono_tz::America::New_York)
+                    .date_naive();
+                // 26 weeks plus slack for the lookback and a late release.
+                let from = today - chrono::Duration::days(7 * (liquidity::WEEKS as i64 + 2));
+                let h41_url = liquidity::h41_url(liquidity::WEEKS as u32 + 2);
+                let dts_url = liquidity::dts_url(from, today);
+                let rrp_url = liquidity::rrp_url(from, today);
+                let (h41, dts, rrp) = tokio::join!(
+                    http.get(liquidity::FED_SOURCE, &h41_url, liquidity::MAX_BYTES, &[]),
+                    http.get(
+                        liquidity::TREASURY_SOURCE,
+                        &dts_url,
+                        liquidity::MAX_BYTES,
+                        &[]
+                    ),
+                    http.get(liquidity::NYFED_SOURCE, &rrp_url, liquidity::MAX_BYTES, &[]),
+                );
+                let h41 = required(liquidity::FED_SOURCE, h41?)?;
+                let h41 = liquidity::parse_h41(&String::from_utf8_lossy(&h41))
+                    .map_err(|e| FetchError::new(liquidity::FED_SOURCE, format!("parse: {e}")))?;
+                let tga = liquidity::parse_dts(&required(liquidity::TREASURY_SOURCE, dts?)?)
+                    .map_err(|e| {
+                        FetchError::new(liquidity::TREASURY_SOURCE, format!("parse: {e}"))
+                    })?;
+                let rrp = liquidity::parse_rrp(&required(liquidity::NYFED_SOURCE, rrp?)?)
+                    .map_err(|e| FetchError::new(liquidity::NYFED_SOURCE, format!("parse: {e}")))?;
+                liquidity::build(&h41, &tga, &rrp).ok_or_else(|| {
+                    FetchError::new(liquidity::FED_SOURCE, "no Wednesday has all three inputs")
+                })
+            })
+            .await
     }
 
     /// Both Treasury curves for every calendar year the 400-day window touches. The current

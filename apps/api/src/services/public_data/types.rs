@@ -94,12 +94,37 @@ pub struct Futures {
     pub summary: Arc<FuturesSummary>,
 }
 
+/// One H.4.1 Wednesday netted, all in $ millions: `net = fed_assets − tga − reverse_repo`.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct LiquidityWeek {
+    pub date: NaiveDate,
+    pub fed_assets: f64,
+    pub tga: f64,
+    pub reverse_repo: f64,
+    pub net: f64,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct LiquiditySeries {
+    /// The latest Wednesday netted.
+    pub as_of: NaiveDate,
+    /// Oldest first, at most 26.
+    pub weeks: Vec<LiquidityWeek>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Liquidity {
+    pub fetched_at: DateTime<Utc>,
+    pub series: Arc<LiquiditySeries>,
+}
+
 #[derive(Debug, Clone)]
 pub struct Markets {
     pub state: DataState,
     pub detail: Option<String>,
     pub rates: Option<Rates>,
     pub futures: Option<Futures>,
+    pub liquidity: Option<Liquidity>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

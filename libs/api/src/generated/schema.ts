@@ -1692,6 +1692,34 @@ export interface components {
       /** Format: double */
       slope: number;
     };
+    /**
+     * @description One H.4.1 Wednesday, $ millions: `net` = `fed_assets` − `tga` − `reverse_repo`. The TGA and
+     *     reverse repo are that Wednesday's, or the last business day's before it within four days.
+     */
+    LiquidityWeekWire: {
+      /** @description YYYY-MM-DD, the H.4.1 Wednesday. */
+      date: string;
+      /** Format: double */
+      fed_assets: number;
+      /** Format: double */
+      net: number;
+      /** Format: double */
+      reverse_repo: number;
+      /** Format: double */
+      tga: number;
+    };
+    /**
+     * @description Net liquidity: the Fed's total assets less the Treasury General Account and overnight reverse
+     *     repo, weekly, at most 26 weeks, oldest first.
+     */
+    LiquidityWire: {
+      /** @description YYYY-MM-DD, the latest H.4.1 Wednesday netted (released the Thursday after). */
+      as_of: string;
+      /** @description RFC 3339 UTC: when this server fetched the data. */
+      fetched_at: string;
+      source: string;
+      weeks: components['schemas']['LiquidityWeekWire'][];
+    };
     ListSnapshotRow: {
       as_of: string;
       source: string;
@@ -2222,6 +2250,7 @@ export interface components {
     PublicMarketsWire: {
       detail: string | null;
       futures: null | components['schemas']['FuturesWire'];
+      liquidity: null | components['schemas']['LiquidityWire'];
       rates: null | components['schemas']['RatesWire'];
       state: components['schemas']['PublicDataState'];
     };

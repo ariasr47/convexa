@@ -38,8 +38,10 @@ export const LIQUIDITY_SPEC = {
     'Staging: zero requests to the Fed, Treasury or NY Fed; the frame is dashed and hatched.',
   ],
   built: [
-    { status: 'todo', what: 'Status: build. Free sources confirmed reachable (CANDIDATES.md); no fetcher, no wire field, no panel yet. Parked by owner until the v5 chart system ships (2026-10-14).' },
-    { status: 'shipped', what: 'The host page (/research/markets: Treasury curve, CFTC positioning) and its state words.' },
+    { status: 'shipped', what: 'API (2026-10-15): the H.4.1 total assets (Data Download Program, found by its identifier H41/H41/RESPPMA_N.WW), the Treasury’s TGA closing balance (Fiscal Data DTS) and NY Fed reverse repo, fetched together and netted per Wednesday (the same day, or the business day before it within four days); 26 weeks; PublicMarketsWire.liquidity (apps/api/src/services/public_data/liquidity.rs, tested against the three real answers).' },
+    { status: 'shipped', what: 'The section on /research/markets (LiquiditySection.tsx): the four-figure strip with four-week changes, the net line on an axis that says it doesn’t start at zero, the three inputs on their own stated ranges, a table twin, and a title computed from the figures that names the input that moved most. Checked live: $5.86T for the week to Oct 7.' },
+    { status: 'partial', what: 'Not yet: event marks on the line (quarter ends, FOMC, tax dates), and a Delayed by source tag when the Fed moves the H.4.1 for a holiday (the frame shows the last Wednesday it has).' },
+    { status: 'shipped', what: 'The host page (/research/markets: Treasury curve, CFTC positioning) and its state words.', host: true },
   ],
   rulings: ['P-1', ...CORE],
   code: ['apps/api/src/services/public_data/{fed_h41,fiscal_dts,nyfed}.rs (new)', 'apps/api/src/routes/public_data.rs · PublicMarketsWire.liquidity (new)', 'apps/dashboard/src/app/pages/research/MarketsPage.tsx', 'libs/api/src/lib/demo/public-data.ts (sample fixture)'],
@@ -115,7 +117,7 @@ export const OTC_SPEC = {
   ],
   built: [
     { status: 'todo', what: 'Status: build / verify. Source reachable; FINRA’s public-display terms unchecked (open question Q-2). Parked by owner until the v5 chart system ships (2026-10-14).' },
-    { status: 'shipped', what: 'The band’s neighbours: FINRA short interest and short-sale volume cards (live).' },
+    { status: 'shipped', what: 'The band’s neighbours: FINRA short interest and short-sale volume cards (live).', host: true },
   ],
   rulings: ['P-1', ...CORE],
   code: ['apps/api/src/services/public_data/finra.rs (+ OTC Transparency weekly)', 'apps/api/src/routes/public_data.rs · PublicTickerWire.off_exchange (new)', 'apps/dashboard/src/app/pages/research/NotePublicPanels.tsx'],
@@ -152,7 +154,7 @@ export const CLUSTERS_SPEC = {
   ],
   built: [
     { status: 'todo', what: 'Status: build (after the switch). Needs per-transaction Form 4 rows; today’s wire only carries totals. Parked by owner until the v5 chart system ships (2026-10-14).' },
-    { status: 'shipped', what: 'Insider trades card (90-day sales, buys, plan count) behind SEC_USER_AGENT: “switch”.' },
+    { status: 'shipped', what: 'Insider trades card (90-day sales, buys, plan count) behind SEC_USER_AGENT: “switch”.', host: true },
   ],
   rulings: [...CORE],
   code: ['apps/api/src/services/public_data/edgar.rs (Form 4 transactions)', 'apps/api/src/routes/public_data.rs · InsidersWire.transactions, .clusters (new)', 'apps/dashboard/src/app/pages/research/NotePublicPanels.tsx · InsidersCard'],
@@ -223,7 +225,7 @@ export const XBRL_SPEC = {
   ],
   built: [
     { status: 'todo', what: 'Status: build. Note figures carry no XBRL concept yet; no comparison exists. Parked by owner until the v5 chart system ships (2026-10-14).' },
-    { status: 'shipped', what: 'Reported figures in the Filings detail (FactWire, six concepts) behind SEC_USER_AGENT: “switch”.' },
+    { status: 'shipped', what: 'Reported figures in the Filings detail (FactWire, six concepts) behind SEC_USER_AGENT: “switch”.', host: true },
   ],
   rulings: [...CORE],
   code: ['research/<TICKER>/*.md (figure concepts in front matter)', 'apps/api/src/services/public_data/edgar.rs (company facts)', 'apps/dashboard/src/app/pages/research/NotePublicPanels.tsx', 'tools/ (research check, new)'],
@@ -288,7 +290,7 @@ export const SIGNALS_SPEC = {
   ],
   built: [
     { status: 'todo', what: 'Status: blocked. Needs daily prices licensed for public display; also needs setups, which need Massive in production. Parked by owner until the v5 chart system ships (2026-10-14).' },
-    { status: 'shipped', what: 'The Not live panel on /research/scorecard (SignalsOff).' },
+    { status: 'shipped', what: 'The Not live panel on /research/scorecard (SignalsOff).', host: true },
   ],
   rulings: ['P-1', 'P-3', ...CORE],
   code: ['apps/dashboard/src/app/pages/research/ScorecardPage.tsx · SignalsOff', 'apps/dashboard/src/app/features/trading/outcomes/ledger.ts (setup outcomes)'],
@@ -326,7 +328,7 @@ export const TA_SPEC = {
   ],
   built: [
     { status: 'todo', what: 'Status: blocked (Convexa readings). Needs a daily price history licensed for public display (Twelve Data Venture the cheapest clear path, unconfirmed). Parked by owner until the v5 chart system ships (2026-10-14).' },
-    { status: 'shipped', what: 'TradingView’s chart, live (status live, adopted 2026-10-13); staging’s EMA 20/50, RSI 14, ADX 14, ATR 14 from sample bars.' },
+    { status: 'shipped', what: 'TradingView’s chart, live (status live, adopted 2026-10-13); staging’s EMA 20/50, RSI 14, ADX 14, ATR 14 from sample bars.', host: true },
   ],
   rulings: ['P-1', 'P-14', ...CORE],
   code: ['apps/dashboard/src/app/pages/ticker/technical-analysis/TechnicalAnalysisLive.tsx · TechnicalAnalysisView.tsx', 'libs/api/src/lib/demo/indicators.ts'],

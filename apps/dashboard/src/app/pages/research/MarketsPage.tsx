@@ -14,6 +14,7 @@ import { useMemo } from 'react';
 import { researchIndex } from 'virtual:convexa-research';
 import { FOMC_CHECKED, FOMC_SOURCE, fomcInSeries } from './fomc';
 import { formatNoteDate, formatShortDate } from './format';
+import { LiquiditySection } from './LiquiditySection';
 import { DRIFT_FLAG_POINTS, noteRates, spread2s10s, type YieldPoint } from './marketsMath';
 import { ResearchColumn } from './NotesView';
 import { usePublicMarkets } from './publicData';
@@ -176,13 +177,25 @@ export function MarketsPage() {
                 onRetry={read.retry}
               />
             )}
+            {/* `null`: the sources failed with nothing cached. Absent (an API from before
+                liquidity existed): nothing to say, so nothing drawn. */}
+            {data.liquidity ? (
+              <LiquiditySection liquidity={data.liquidity} />
+            ) : data.liquidity === null ? (
+              <SourceProblem
+                title="Liquidity is unavailable right now."
+                body="The Fed, the Treasury or the NY Fed didn't answer and there is no earlier copy to show."
+                onRetry={read.retry}
+              />
+            ) : null}
           </>
         )}
 
         <Disclaimer>
           Rates: U.S. Department of the Treasury, Daily Treasury Par Yield Curve and Par Real Yield
           Curve Rates. Positioning: CFTC Commitments of Traders, Traders in Financial Futures.
-          Personal research. Not financial advice.
+          Liquidity: Federal Reserve H.4.1, Treasury Daily Treasury Statement and NY Fed reverse
+          repo operations. Personal research. Not financial advice.
         </Disclaimer>
       </Box>
     </ResearchColumn>
@@ -1338,7 +1351,8 @@ function GroupPanel({
 }) {
   const [ref, W] = useWidth<HTMLDivElement>();
   const net = series[series.length - 1];
-  const PL = 48;
+  // Room for the widest axis label ("+2,828K", 7 mono characters at 11px) and its gap.
+  const PL = 62;
   const PT = 6;
   const PH = 76;
   const H = PT + PH + 20;
