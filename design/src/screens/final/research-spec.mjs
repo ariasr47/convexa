@@ -43,6 +43,7 @@ export const INDEX_SPEC = {
     { status: 'shipped', what: 'Staging (2026-10-15): the six authored sample notes as cards in the same grid, dashed with the hatch stripe and tagged Sample, each with its thesis and its last ten sample sessions’ close-to-close change on the zero-line mini chart; Coming up says the sample notes carry no dated catalysts; the tabs count Notes 6 and Scorecard 34 open (ResearchIndexPage.tsx SampleNoteCard, ResearchTabs.tsx).' },
     { status: 'shipped', what: 'Freshness note when the filings check isn’t available (2026-10-15): under the filters, the state word (Not set up, Off, Source down or Couldn’t load) and “Freshness here comes from each note’s dates…” (ResearchIndexPage.tsx FilingsFallback).' },
     { status: 'shipped', what: 'Cards drop the per-card metric row and price-vs-value strip; both live in the note header (owner ruling 2026-10-14; ResearchIndexPage.tsx TickerCard).' },
+    { status: 'shipped', what: 'The calendar’s review triggers (2026-10-15, Planned · Calendar): freshness and each card’s Next count FOMC decisions for notes with a valuation and estimated results windows; Coming up keeps one Fed row for every valued note (reviewTriggers.ts).' },
   ],
   rulings: ['P-2', 'P-3', 'P-8', 'P-9', 'P-10', 'P-11', 'P-13', 'Env 2026-10-14'],
   code: [`${R}/ResearchIndexPage.tsx (MiniChart :60-134)`, `${R}/ui.tsx (freshness words :183-227)`, `${R}/filings.ts`, 'tools/research-notes/freshness.mjs · notes.mjs', 'research/<TICKER>/2026-10-13-initiation.md', 'libs/api/src/lib/demo/catalog/shared.ts (sample notes)'],
@@ -134,11 +135,11 @@ export const FILINGS_SPEC = {
     { status: 'shipped', what: 'Not set up leads with reader copy (2026-10-15): Would show / Covers / Meanwhile, “See sample filings on the demo →”, Search EDGAR, “For the site’s operator” folded, and Expected after it tagged Computed (FilingsPage.tsx NotSetUp).' },
     { status: 'shipped', what: 'Reported figures on the chart frame with a Change column (▲/▼ on the prior’s size, neutral; filings.ts figureChange, tested); a failed request reads Couldn’t load with Try again, and “not yet” is kept for figures that haven’t arrived (2026-10-15).' },
     { status: 'shipped', what: 'Under the feed, the API’s missing list is named “Not an SEC filer”, and tickers that filed nothing in the window are named too (2026-10-15).' },
-    { status: 'partial', what: 'Staging asks for the six sample symbols, so the feed shows 12 sample filings (AAPL has three in the demo fixture, which the AAPL desk also reads), and with no sample note citing them every row reads “not cited”.' },
+    { status: 'shipped', what: 'Staging matches the board (2026-10-15): nine sample filings, three each for MSFT, NVDA and TSLA (All 9, Results 3, Quarterly and annual 3, Other 3); the sample notes cite all but TSLA’s shareholder-vote 8-K, which reads “not cited”; SPY and QQQ are named under the feed as not SEC filers and AAPL as having no sample filings. One source: the demo fixture authors no AAPL filings, so the AAPL note’s side column says the same (demo/public-data.ts SAMPLE_FILERS, demoNoteFilings, tested).' },
     { status: 'todo', what: 'Production is not set up: the operator must set SEC_USER_AGENT.' },
   ],
   rulings: ['P-2', 'P-3', 'P-8', 'P-10', 'P-13', 'Env 2026-10-14'],
-  code: [`${R}/FilingsPage.tsx`, `${R}/filings.ts`, 'apps/api/src/services/public_data/edgar.rs', 'apps/api/src/services/public_data/mod.rs:84-95, 272-283', 'apps/api/src/routes/public_data.rs:551-559', 'libs/api/src/lib/demo/public-data.ts:198-284'],
+  code: [`${R}/FilingsPage.tsx`, `${R}/filings.ts`, 'apps/api/src/services/public_data/edgar.rs', 'apps/api/src/services/public_data/mod.rs:84-95, 272-283', 'apps/api/src/routes/public_data.rs:551-559', 'libs/api/src/lib/demo/public-data.ts (demoFilingsFor, demoNoteFilings)'],
 };
 
 export const SCORECARD_SPEC = {
