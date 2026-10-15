@@ -22,22 +22,23 @@ import { alpha, useTheme } from '@mui/material/styles';
 import type { ComponentType } from 'react';
 import { checkFigures, researchIndex } from 'virtual:convexa-research';
 import { formatNoteDate, formatShortDate } from './format';
+import { billionsWord, currencyPrefix, formatBillions, inOneUnit, niceTicks } from './money';
+import { tickerSecStale } from './secState';
 import type { FiledCheckRow, FiledFiling, NoteFigure } from './types';
-import { MONO } from './ui';
+import { lowerLead, MONO } from './ui';
 import { useWidth } from './useWidth';
 
 const DEMO_DAY = '2026-10-07';
 const NOT_SET_UP_CAUSE =
   'Figures are checked against the SEC’s company facts, through EDGAR. EDGAR asks every program that reads it to identify itself with a contact address; this site hasn’t been given one.';
 
-const billions = (v: number, d = 1) =>
-  `$${(v / 1e9).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d })}B`;
-
 /** Demo figures, written the way a note writes them, from the sample 10-Q: one a cent off, so the
  *  Differs form is visible. Sample only; production reads the note's own figures. */
 function demoFigures(filing: FiledFiling | undefined): NoteFigure[] {
   if (!filing) return [];
-  const v = (c: string) => filing.tagged.find((t) => t.concept === c)?.value;
+  const fact = (c: string) => filing.tagged.find((t) => t.concept === c);
+  const v = (c: string) => fact(c)?.value;
+  const money = (c: string) => formatBillions(v(c) ?? 0, fact(c)?.unit ?? 'USD');
   const period = `Q${filing.fiscal_period?.slice(1) ?? '2'} FY${filing.fiscal_year ?? 2027}`;
   const out: NoteFigure[] = [];
   const rev = v('us-gaap:Revenues');
@@ -47,7 +48,7 @@ function demoFigures(filing: FiledFiling | undefined): NoteFigure[] {
   if (rev != null)
     out.push({
       label: 'Revenue',
-      value: billions(rev),
+      value: money('us-gaap:Revenues'),
       asOf: period,
       concept: 'us-gaap:Revenues',
       why: null,
@@ -55,7 +56,7 @@ function demoFigures(filing: FiledFiling | undefined): NoteFigure[] {
   if (net != null)
     out.push({
       label: 'Net income',
-      value: billions(net),
+      value: money('us-gaap:NetIncomeLoss'),
       asOf: period,
       concept: 'us-gaap:NetIncomeLoss',
       why: null,
@@ -63,7 +64,7 @@ function demoFigures(filing: FiledFiling | undefined): NoteFigure[] {
   if (eps != null)
     out.push({
       label: 'Diluted EPS',
-      value: `$${(eps + 0.01).toFixed(2)}`,
+      value: `${currencyPrefix(fact('us-gaap:EarningsPerShareDiluted')?.unit ?? 'USD') ?? ''}${(eps + 0.01).toFixed(2)}`,
       asOf: period,
       concept: 'us-gaap:EarningsPerShareDiluted',
       why: null,
@@ -71,7 +72,7 @@ function demoFigures(filing: FiledFiling | undefined): NoteFigure[] {
   if (cash != null && filing.period_end)
     out.push({
       label: 'Cash and equivalents',
-      value: billions(cash),
+      value: money('us-gaap:CashAndCashEquivalentsAtCarryingValue'),
       asOf: filing.period_end,
       concept: 'us-gaap:CashAndCashEquivalentsAtCarryingValue',
       why: null,
@@ -103,7 +104,7 @@ export function filedFinding(rows: FiledCheckRow[], form: string, demo: boolean)
   if (off.length === 1) {
     const r = off[0];
     return say(
-      `One of ${of.replace(/^the one figure/, '1 figure')} ${r.status === 'differs' ? 'differs from' : 'can’t be matched to'} the ${r.form ?? form}: ${r.label.toLowerCase()}${r.gap ? `, by ${r.gap}` : ''}`,
+      `One of ${of.replace(/^the one figure/, '1 figure')} ${r.status === 'differs' ? 'differs from' : 'can’t be matched to'} the ${r.form ?? form}: ${lowerLead(r.label)}${r.gap ? `, by ${r.gap}` : ''}`,
     );
   }
   if (off.length > 1) return say(`${off.length} of ${of} don’t match the ${form}`);
@@ -119,6 +120,8 @@ export function filedFinding(rows: FiledCheckRow[], form: string, demo: boolean)
 }
 
 export function FiledFiguresSection({ d }: { d: PublicTicker }) {
+  // One currency per chart: a series that mixes units keeps the years in the unit most years use.
+  const years = inOneUnit(d.annual_revenue ?? []);
   return (
     <Box component="section" aria-labelledby="checked-filing" sx={{ display: 'grid', gap: 1.75 }}>
       <Box sx={{ display: 'grid', gap: 0.5 }}>
@@ -144,9 +147,7 @@ export function FiledFiguresSection({ d }: { d: PublicTicker }) {
         </Box>
       </Box>
       <CheckFrame d={d} />
-      {d.filings_state === 'live' && (d.annual_revenue ?? []).length > 1 && (
-        <RevenueAsFiled d={d} years={d.annual_revenue} />
-      )}
+      {d.filings_state === 'live' && years.length > 1 && <RevenueAsFiled d={d} years={years} />}
     </Box>
   );
 }
@@ -229,7 +230,9 @@ function CheckFrame({ d }: { d: PublicTicker }) {
     );
   const rows = checkFigures(figures, filings);
   const pending = rows.some((r) => r.status === 'pending');
+  const stale = !demo && tickerSecStale(d);
   const factsNote = d.detail && /company facts/i.test(d.detail) && !demo ? d.detail : null;
+  const staleNote = stale ? d.filings_detail : null;
   return (
     <ChartFrame
       finding={filedFinding(rows, form, demo)}
@@ -239,9 +242,11 @@ function CheckFrame({ d }: { d: PublicTicker }) {
       tag={
         demo
           ? { state: 'demo' }
-          : pending
-            ? { state: 'delayed', detail: 'facts not in yet' }
-            : { state: 'computed', detail: 'checked against the filing' }
+          : stale
+            ? { state: 'lastGood' }
+            : pending
+              ? { state: 'delayed', detail: 'facts not in yet' }
+              : { state: 'computed', detail: 'checked against the filing' }
       }
       height={rows.length * 48 + 40}
       source={source}
@@ -259,10 +264,17 @@ function CheckFrame({ d }: { d: PublicTicker }) {
       }
       testId="chart-filed-figures"
     >
-      {factsNote && (
-        <Box component="p" sx={{ m: 0, fontSize: 12, color: 'warning.main', textWrap: 'pretty' }}>
-          {factsNote}
-        </Box>
+      {[staleNote, factsNote].map(
+        (text) =>
+          text && (
+            <Box
+              component="p"
+              key={text}
+              sx={{ m: 0, fontSize: 12, color: 'warning.main', textWrap: 'pretty' }}
+            >
+              {text}
+            </Box>
+          ),
       )}
       <CheckTable rows={rows} />
     </ChartFrame>
@@ -472,9 +484,14 @@ function Pair({ k, v }: { k: string; v: string }) {
 const yearLabel = (y: PublicAnnualRevenue) =>
   y.fiscal_year != null ? `FY${String(y.fiscal_year).slice(2)}` : formatShortDate(y.period_end);
 
-/** Annual revenue as first filed: a column per fiscal year, the latest lit, a restated year marked. */
+/** Annual revenue as first filed: a column per fiscal year, the latest lit, a restated year marked.
+ *  Every label carries the series' own currency (the wire `unit`): a foreign filer's 20-F revenue is
+ *  in its reporting currency, never dollars. `years` share one unit (FiledFiguresSection). */
 function RevenueAsFiled({ d, years }: { d: PublicTicker; years: PublicAnnualRevenue[] }) {
   const demo = dataMode === 'demo';
+  const stale = !demo && tickerSecStale(d);
+  const unit = years[0].unit;
+  const billions = (v: number) => formatBillions(v, unit);
   const first = years[0];
   const last = years[years.length - 1];
   const restated = years.filter((y) => y.restated_value != null);
@@ -497,9 +514,15 @@ function RevenueAsFiled({ d, years }: { d: PublicTicker; years: PublicAnnualReve
     <ChartFrame
       finding={finding}
       metric={`${d.ticker} annual revenue as filed`}
-      sub={`${d.ticker} annual revenue · $ billions · as tagged in each year’s annual report · a figure a later filing changed carries a “Restated” marker`}
+      sub={`${d.ticker} annual revenue · ${billionsWord(unit)} · as tagged in each year’s annual report · a figure a later filing changed carries a “Restated” marker`}
       provenance={demo ? 'sample' : 'primary'}
-      tag={demo ? { state: 'demo' } : { state: 'updated', detail: 'on filing' }}
+      tag={
+        demo
+          ? { state: 'demo' }
+          : stale
+            ? { state: 'lastGood' }
+            : { state: 'updated', detail: 'on filing' }
+      }
       height={220}
       source={
         demo
@@ -516,7 +539,12 @@ function RevenueAsFiled({ d, years }: { d: PublicTicker; years: PublicAnnualReve
       }
       table={{
         caption: 'Annual revenue and the filing it comes from',
-        cols: ['Fiscal year', 'Revenue, $B', 'Filed', 'Restated to, $B'],
+        cols: [
+          'Fiscal year',
+          `Revenue, ${currencyPrefix(unit)?.trim() ?? ''}B`,
+          'Filed',
+          `Restated to, ${currencyPrefix(unit)?.trim() ?? ''}B`,
+        ],
         rows: years.map((y) => [
           yearLabel(y),
           (y.value / 1e9).toFixed(3),
@@ -526,29 +554,50 @@ function RevenueAsFiled({ d, years }: { d: PublicTicker; years: PublicAnnualReve
       }}
       testId="chart-revenue-as-filed"
     >
-      <RevenueBars years={years} />
+      {stale && d.filings_detail && (
+        <Box component="p" sx={{ m: 0, fontSize: 12, color: 'warning.main', textWrap: 'pretty' }}>
+          {d.filings_detail}
+        </Box>
+      )}
+      <RevenueBars years={years} unit={unit} />
     </ChartFrame>
   );
 }
 
-function RevenueBars({ years }: { years: PublicAnnualRevenue[] }) {
+/** Mono 11px: about 6.7px a character, for fitting a label to the room it has. */
+const CHAR_PX = 6.7;
+
+function RevenueBars({ years, unit }: { years: PublicAnnualRevenue[]; unit: string }) {
   const t = useTheme();
   const c = chartRoles(t);
   const [ref, W] = useWidth<HTMLDivElement>();
-  const PL = 50;
+  const code = currencyPrefix(unit) ?? '';
+  const maxB = Math.max(0, ...years.map((y) => y.value)) / 1e9;
+  // A 1, 2 or 5 step at any magnitude: a NT$3.8T filer gets five ticks, not sixty-five.
+  const ticks = niceTicks(maxB);
+  const top = ticks[ticks.length - 1];
+  const tickText = (v: number) =>
+    v === top ? `${code}${v.toLocaleString('en-US')}B` : v.toLocaleString('en-US');
+  const PL = Math.max(50, Math.ceil(tickText(top).length * CHAR_PX) + 10);
   const PR = 16;
   const PT = 30;
   const PH = 150;
   const H = PT + PH + 24;
-  const maxB = Math.max(...years.map((y) => y.value)) / 1e9;
-  const step = maxB > 200 ? 60 : maxB > 100 ? 40 : maxB > 40 ? 20 : maxB > 20 ? 10 : 5;
-  const top = Math.ceil(maxB / step) * step || step;
-  const ticks: number[] = [];
-  for (let v = 0; v <= top + 1e-9; v += step) ticks.push(v);
   const slot = Math.max(0, W - PL - PR) / years.length;
   const x = (i: number) => PL + slot * (i + 0.5);
   const y = (b: number) => PT + (1 - b / top) * PH;
   const bw = Math.max(8, Math.min(44, slot * 0.55));
+  // A bar's label in full when it fits its slot; else the number alone (the axis and the sub-line
+  // carry the currency); else none (the table twin has every figure).
+  const barText = (v: number) => {
+    const full = formatBillions(v, unit);
+    const bare = (v / 1e9).toLocaleString('en-US', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    });
+    const room = slot - 4;
+    return full.length * CHAR_PX <= room ? full : bare.length * CHAR_PX <= room ? bare : '';
+  };
   return (
     <Box ref={ref} sx={{ height: H, minWidth: 0 }}>
       {W > 0 && (
@@ -556,7 +605,7 @@ function RevenueBars({ years }: { years: PublicAnnualRevenue[] }) {
           width={W}
           height={H}
           role="img"
-          aria-label={`Annual revenue as filed: ${years.map((v) => `${yearLabel(v)} ${billions(v.value)}${v.restated_value != null ? ', restated' : ''}`).join(', ')}`}
+          aria-label={`Annual revenue as filed: ${years.map((v) => `${yearLabel(v)} ${formatBillions(v.value, unit)}${v.restated_value != null ? ', restated' : ''}`).join(', ')}`}
           style={{ display: 'block' }}
         >
           {ticks.map((v) => (
@@ -570,7 +619,7 @@ function RevenueBars({ years }: { years: PublicAnnualRevenue[] }) {
                 fill={t.palette.text.secondary}
                 style={MONO}
               >
-                {v === top ? `$${v}B` : v}
+                {tickText(v)}
               </text>
             </g>
           ))}
@@ -595,7 +644,7 @@ function RevenueBars({ years }: { years: PublicAnnualRevenue[] }) {
                   fill={t.palette.text.primary}
                   style={MONO}
                 >
-                  {`$${b.toFixed(1)}B`}
+                  {barText(v.value)}
                 </text>
                 {v.restated_value != null && (
                   <text
