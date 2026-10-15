@@ -21,8 +21,8 @@ export const OPEN_QUESTIONS = [
     id: 'Q-FINRA-TERMS',
     asked: '2026-10-15',
     status: 'open',
-    ask: 'Do FINRA’s display terms allow its short interest, Reg SHO short-sale volume and OTC data on a public site?',
-    why: 'The owner is researching it (Q-2). Until then production shows FINRA data as Off; a yes flips one code constant and builds Off-exchange volume.',
+    ask: 'Create a free Individual account on developer.finra.org, accept its API Terms yourself, and provision a Public credential?',
+    why: 'Researched 2026-10-15 (docs/public-data/FINRA-TERMS-2026-10-15.md): FINRA allows free, attributed, non-commercial display only through its API with a credential; the cdn.finra.org Reg SHO files fall under finra.org terms that need written consent. With the credential, Convexa moves all three datasets onto the API and production can turn FINRA back on.',
   },
   {
     id: 'Q-SEC-LOCAL',
