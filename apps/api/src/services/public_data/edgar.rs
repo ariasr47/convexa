@@ -477,7 +477,11 @@ pub(crate) fn parse_company_facts(json: &[u8]) -> Result<CompanyFacts, String> {
                 (unit, points)
             })
             .collect();
-        units.sort_by(|a, b| a.0.cmp(&b.0));
+        // US dollars first: a 20-F that tags a year in its own currency and as a dollar
+        // convenience translation is read in dollars (fact_for takes the first unit it finds).
+        units.sort_by(|a, b| {
+            super::filed_figures::unit_order(&a.0).cmp(&super::filed_figures::unit_order(&b.0))
+        });
         concepts.insert(key, units);
     }
     Ok(CompanyFacts {
