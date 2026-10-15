@@ -25,12 +25,11 @@ import Link from '@mui/material/Link';
 import { Link as RouterLink } from 'react-router-dom';
 import { DocBox, DocPage, DocTable, H2, Lead, linkSx, Para } from './DocPage';
 
-/** Who to ask about your data or to delete an account. The owner supplies it before /privacy is
- *  linked anywhere it matters (design acceptance: "Owner adds a contact address before it ships").
- *  null: the page says to ask the site's owner. */
-export const PRIVACY_CONTACT: string | null = null;
+/** Where to ask about your data or to delete an account: the owner's public GitHub profile (owner's
+ *  answer of 2026-10-15, question 3). null: the page says to ask the site's owner. */
+export const PRIVACY_CONTACT: string | null = 'https://github.com/ariasr47';
 
-export const PRIVACY_UPDATED = 'Last updated Oct 14, 2026';
+export const PRIVACY_UPDATED = 'Last updated Oct 15, 2026';
 
 const TOC = [
   ['short', 'The short version'],
@@ -137,10 +136,16 @@ export function PrivacyPage() {
     : TOC;
   const ask = PRIVACY_CONTACT ? (
     <>
-      write to{' '}
-      <Box component="span" sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '0.92em' }}>
-        {PRIVACY_CONTACT}
-      </Box>
+      ask the site’s owner through{' '}
+      <Link
+        href={PRIVACY_CONTACT}
+        target="_blank"
+        rel="noopener noreferrer"
+        underline="always"
+        sx={linkSx}
+      >
+        {PRIVACY_CONTACT.replace(/^https:\/\//, '')} ↗
+      </Link>
     </>
   ) : (
     'ask the site’s owner'

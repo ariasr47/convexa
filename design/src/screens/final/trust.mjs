@@ -72,6 +72,8 @@ export const ROWS = [
         { status: 'partial', waits: 'decided', what: 'No separate GET /api/public-data/sources: a new operation grows the frozen precutover operation baseline, so the rows ride the two answers the page already reads.' },
         { status: 'shipped', what: 'The credits it gathers exist on their cards today: FINRA’s notice and owner line (NotePublicPanels), TradingView’s chip, attribution and privacy line (TechnicalAnalysisLive), Treasury/CFTC/SEC source chips.' },
         { status: 'shipped', what: 'The API tells a last good copy from a fresh fetch (2026-10-15): each source row, and each section’s `source_state`, says updated, delayed, last_good, source_down, not_set_up or off; delayed comes from the API for CFTC and FINRA short interest. Tested fresh → failed fetch serving the last good copy → recovery. The legacy `state` still says live for both.' },
+        { status: 'shipped', what: 'FINRA Off on production (owner, 2026-10-15): both FINRA cards say Off with the reason, whatever the API’s row says, while FINRA_ON_PRODUCTION in pages/trust/sources.ts is false (pages/trust/cardState.ts switchedOff, tested).' },
+        { status: 'shipped', what: 'Dates and counts (2026-10-15): the release-schedules and SEC cards are dated by Convexa’s last read; the H.4.1 line says its date once; the two daily liquidity inputs say they carry the H.4.1 Wednesday’s figure; the legend says how many cards are still being checked (cardState.ts legendCounts, tested).' },
         FOOTER_BUILT,
       ],
       rulings: ['P-1', 'P-2', 'P-4', 'P-8', 'P-13', 'P-14', 'Env 2026-10-14', 'FINRA terms §2.3', 'TradingView policies §3–4'],
@@ -123,7 +125,7 @@ export const ROWS = [
       ],
       built: [
         { status: 'shipped', what: 'The /privacy route and page (pages/trust/PrivacyPage.tsx, 2026-10-14), every claim checked against the code: the eight live keys and the demo’s four, the auth store, CSP, the four AI providers, Webull keys stored but never sent.' },
-        { status: 'todo', what: 'A contact address (PRIVACY_CONTACT in PrivacyPage.tsx); until the owner supplies one, the page says to ask the site’s owner.' },
+        { status: 'shipped', what: 'The contact route (PRIVACY_CONTACT in PrivacyPage.tsx, 2026-10-15): the owner’s public GitHub profile, github.com/ariasr47, per the owner’s answer of 2026-10-15; “How to clear it” links it for deleting an account.' },
         { status: 'shipped', what: 'The behaviour it describes: local-only signed-out data, encrypted AI and Webull keys, HttpOnly session cookie, TradingView’s privacy line, the “What’s sent” drawer, Reset demo data.' },
         { status: 'todo', waits: 'parked', what: 'No self-serve account deletion exists (no endpoint in routes/auth.rs); the page says to ask the owner. Parked by owner (2026-10-14): the privacy page says to ask the owner.' },
         FOOTER_BUILT,
