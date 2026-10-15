@@ -20,7 +20,7 @@ import {
 import { filedSince } from '@/pages/research/filings';
 import { formatNoteDate, formatShortDate } from '@/pages/research/format';
 import { usePublicTicker } from '@/pages/research/publicData';
-import { Caps, ProvenanceChip, SourceProblem } from '@/pages/research/publicUi';
+import { Caps, SourceProblem } from '@/pages/research/publicUi';
 import { DISPLAY, FreshnessLine, MONO, PANEL_SX } from '@/pages/research/ui';
 import { recordVisit } from '@/pages/ticker/recentTickers/store';
 import { TradingViewDaily } from '@/pages/ticker/technical-analysis/TradingViewDaily';
@@ -321,20 +321,7 @@ function PublicZone({
           alignItems: 'start',
         }}
       >
-        <Box
-          component="article"
-          aria-labelledby="tv-head"
-          sx={{ display: 'grid', gap: 1.25, minWidth: 0 }}
-        >
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
-            <Box component="h3" id="tv-head" sx={{ m: 0, fontSize: 15, fontWeight: 600 }}>
-              {`${ticker} daily chart`}
-            </Box>
-            <ProvenanceChip text="Chart by TradingView · US prices delayed" kind="third-party" />
-            <DataStateTag state="thirdParty" />
-          </Box>
-          <TradingViewDaily ticker={ticker} height={520} phoneHeight={420} />
-        </Box>
+        <TradingViewDaily ticker={ticker} height={520} phoneHeight={420} />
         <Box sx={{ display: 'grid', gap: 2, minWidth: 0 }}>
           <NoteCard ticker={ticker} note={note} d={d} />
           {d && d.state !== 'off' && !read.error && <ShortVolumeCard d={d} />}
@@ -351,7 +338,7 @@ function PublicZone({
                 alignItems: 'start',
               }}
             >
-              <ShortInterestCard d={d} />
+              <ShortInterestCard d={d} compact />
               <Box sx={{ display: 'grid', gap: 2, minWidth: 0 }}>
                 <FilingsCard d={d} />
                 <InsidersCard d={d} />
