@@ -87,6 +87,11 @@ function TermLine({ pts }: { pts: TermStructure['points'] }) {
   const x = (dte: number) => PL + (dte / maxDte) * Math.max(0, W - PL - PR);
   const y = (v: number) => PT + ((hi - v) / (hi - lo || 1)) * PH;
   // A dot's label above it, dropped when it would touch the one before (the table has them all).
+  // A label's centre, kept inside the plot so the last tenor's figure never runs off the edge.
+  const cx = (dte: number, text: string) => {
+    const w = text.length * CH;
+    return Math.min(Math.max(x(dte), w / 2), W - w / 2);
+  };
   let lastRight = -Infinity;
   const labelled = pts.map((p) => {
     const w = `${p.atm_iv.toFixed(1)}%`.length * CH;
@@ -147,7 +152,7 @@ function TermLine({ pts }: { pts: TermStructure['points'] }) {
               />
               {labelled[i] && (
                 <text
-                  x={x(p.dte)}
+                  x={cx(p.dte, `${p.atm_iv.toFixed(1)}%`)}
                   y={y(p.atm_iv) - 9}
                   textAnchor="middle"
                   fontSize={11}
@@ -159,7 +164,7 @@ function TermLine({ pts }: { pts: TermStructure['points'] }) {
               )}
               {dteShown[i] && (
                 <text
-                  x={x(p.dte)}
+                  x={cx(p.dte, `${p.dte}d`)}
                   y={PT + PH + 16}
                   textAnchor="middle"
                   fontSize={11}
