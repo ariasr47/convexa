@@ -8,7 +8,7 @@ import { ChartFrame, type ChartStatus } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { publicDataWord } from '@/shared/dataState/vocabulary';
 import { STAGING_DEMO_SYMBOLS, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
-import { dataMode, type PublicFiling, type PublicTicker } from '@convexa/api';
+import { dataMode, demoNoteFilings, type PublicFiling, type PublicTicker } from '@convexa/api';
 import Box from '@mui/material/Box';
 import { alpha, type Theme } from '@mui/material/styles';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -40,8 +40,16 @@ const KIND_WORD: Record<Kind, string> = {
 };
 
 const DEMO = dataMode === 'demo';
-// The demo's sample filings belong to its six sample symbols, not to the production notes.
-const notesByTicker = new Map(DEMO ? [] : researchIndex.map((r) => [r.ticker, r.latest]));
+// The demo's sample filings belong to its six sample symbols, and its sample notes cite them
+// (demo/public-data.ts demoNoteFilings), not the production notes.
+const notesByTicker = new Map<string, { date: string; accessions: string[] }>(
+  DEMO
+    ? STAGING_DEMO_SYMBOLS.flatMap((t) => {
+        const cites = demoNoteFilings(t);
+        return cites ? [[t, cites] as const] : [];
+      })
+    : researchIndex.map((r) => [r.ticker, r.latest] as const),
+);
 const TICKERS: string[] = DEMO ? [...STAGING_DEMO_SYMBOLS] : researchIndex.map((r) => r.ticker);
 const EDGAR_SEARCH = 'https://www.sec.gov/edgar/search/';
 /** Sample data is dashed (canon P-3). */

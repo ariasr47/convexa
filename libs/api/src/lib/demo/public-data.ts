@@ -319,14 +319,44 @@ function demoShortVolume(totalVolume: number, ratio: number): PublicShortVolume 
   };
 }
 
+/** The companies the sample authors SEC filings for: three each (a results 8-K, its 10-Q, and a
+ *  shareholder-vote 8-K), as on the Filings staging board. AAPL is a company with no sample filings
+ *  in this scenario, so it has no filing list, quarterly report or annual revenue; SPY and QQQ are
+ *  funds, which file no company reports. Form 4 trades are ownership forms, outside the filing list,
+ *  and every company keeps its insider sample. */
+const SAMPLE_FILERS = new Set(['MSFT', 'NVDA', 'TSLA']);
+
+/** A sample filing's accession: the ticker's place in PROFILES, then its number. The Q2 10-Q is
+ *  number 2 both in the filing list and in the periodic reports, so the two agree. */
+const sampleAccession = (ticker: string, n: number) =>
+  `0000000000-26-${String(Object.keys(PROFILES).indexOf(ticker) * 10 + n).padStart(6, '0')}`;
+
+/** The sample filings each sample note does not cite, by number: TSLA's shareholder-vote 8-K. */
+const UNCITED: Record<string, number[]> = { TSLA: [3] };
+
+/**
+ * What a sample note cites, for the Filings page's standing (filings.ts). The sample notes are dated
+ * on the scenario day, after every sample filing, so a filing reads "in note" or "not cited", never
+ * "new since the note". `null` for a symbol with no sample note.
+ */
+export function demoNoteFilings(ticker: string): { date: string; accessions: string[] } | null {
+  if (!PROFILES[ticker]) return null;
+  return {
+    date: DEMO_DATE,
+    accessions: demoFilingsFor(ticker)
+      .filter(
+        (f) => !(UNCITED[ticker] ?? []).some((n) => f.accession === sampleAccession(ticker, n)),
+      )
+      .map((f) => f.accession),
+  };
+}
+
 /** SEC's company browse page for the ticker: a real page, since the demo filings are not. */
 const secBrowse = (ticker: string) =>
   `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${encodeURIComponent(ticker)}&owner=include&count=40`;
 
 function demoFilingsFor(ticker: string): PublicFiling[] {
-  const profile = PROFILES[ticker];
-  if (!profile || profile.revenue === null) return [];
-  const index = Object.keys(PROFILES).indexOf(ticker);
+  if (!SAMPLE_FILERS.has(ticker)) return [];
   const filing = (
     n: number,
     form: string,
@@ -337,7 +367,7 @@ function demoFilingsFor(ticker: string): PublicFiling[] {
   ): PublicFiling => ({
     ticker,
     cik: '0000000000',
-    accession: `0000000000-26-${String(index * 10 + n).padStart(6, '0')}`,
+    accession: sampleAccession(ticker, n),
     form,
     items,
     filed,
@@ -360,7 +390,10 @@ export function demoPublicFilings(tickers: string[]): PublicFilings {
   const filings: PublicFiling[] = [];
   const missing: string[] = [];
   for (const ticker of tickers) {
-    if (PROFILES[ticker]) filings.push(...demoFilingsFor(ticker));
+    // A fund (no company figures) reads like a ticker EDGAR's company map doesn't list, as the
+    // Filings board names SPY and QQQ.
+    if (PROFILES[ticker] && PROFILES[ticker].revenue !== null)
+      filings.push(...demoFilingsFor(ticker));
     else missing.push(ticker);
   }
   return {
@@ -375,6 +408,7 @@ export function demoPublicFilings(tickers: string[]): PublicFilings {
 
 function demoPeriodic(ticker: string, profile: Profile): PublicPeriodicFiling[] {
   const { revenue, netIncome, eps, cash } = profile;
+  if (!SAMPLE_FILERS.has(ticker)) return [];
   if (revenue === null || netIncome === null || eps === null || cash === null) return [];
   const quarters = [
     {
@@ -396,7 +430,6 @@ function demoPeriodic(ticker: string, profile: Profile): PublicPeriodicFiling[] 
       fp: 'Q1',
     },
   ];
-  const index = Object.keys(PROFILES).indexOf(ticker);
   return quarters.map((q) => {
     const fact = (
       concept: string,
@@ -424,7 +457,7 @@ function demoPeriodic(ticker: string, profile: Profile): PublicPeriodicFiling[] 
         end: q.end,
       }) satisfies PublicTaggedFact;
     return {
-      accession: `0000000000-26-${String(index * 10 + q.accession).padStart(6, '0')}`,
+      accession: sampleAccession(ticker, q.accession),
       form: '10-Q',
       filed: q.filed,
       period_end: q.end,
@@ -448,7 +481,7 @@ function demoPeriodic(ticker: string, profile: Profile): PublicPeriodicFiling[] 
 
 /** Five sample fiscal years of annual revenue, each as first filed, growing, none restated. */
 function demoAnnualRevenue(ticker: string, profile: Profile): PublicAnnualRevenue[] {
-  if (profile.revenue === null) return [];
+  if (profile.revenue === null || !SAMPLE_FILERS.has(ticker)) return [];
   const index = Object.keys(PROFILES).indexOf(ticker);
   const years = [
     { fy: 2022, end: '2022-01-30', filed: '2022-03-18', share: 0.31 },
@@ -612,7 +645,9 @@ export function demoPublicTicker(ticker: string): PublicTicker {
     annual_revenue: demoAnnualRevenue(ticker, profile),
     filings: demoFilingsFor(ticker),
     filings_state: 'live',
-    filings_detail: company ? SAMPLE : `Demo sample: no filings are authored for ${ticker}.`,
+    filings_detail: SAMPLE_FILERS.has(ticker)
+      ? SAMPLE
+      : `Demo sample: no filings are authored for ${ticker}.`,
   };
 }
 
