@@ -184,7 +184,9 @@ describe('AC-24 — ⌘K opens the palette from anywhere in the shell; all four 
     signedIn();
     const user = userEvent.setup();
     renderAt('/ticker/SPY');
-    await screen.findByTestId('command-deck');
+    // The desk's lazy chunk is the first thing this file compiles; under a parallel run it can take
+    // longer than findBy's default 1s.
+    await screen.findByTestId('command-deck', undefined, { timeout: 5000 });
 
     // Scanner — index 0, no arrow presses.
     await openWithKeyboard(user);

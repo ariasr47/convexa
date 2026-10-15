@@ -62,7 +62,7 @@ function Kbd({ children }: { children: ReactNode }) {
         display: 'inline-flex',
         alignItems: 'center',
         px: 0.75,
-        borderRadius: 1,
+        borderRadius: '4px',
         border: '1px solid',
         borderColor: 'divider',
         fontFamily: typographyTokens.monoFontFamily,
@@ -110,8 +110,8 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
     () => (data.notes.phase === 'ready' ? matchNotes(data.notes.items, q) : []),
     [data.notes, q],
   );
-  const exact = tickers.some((t) => t.symbol === q.toUpperCase());
-  const showOpenAnyway = isPlausibleTicker(q) && !exact;
+  // Never a dead end: a plausible symbol nothing lists can still be opened.
+  const showOpenAnyway = isPlausibleTicker(q) && tickers.length === 0;
   // The “we checked, nothing matches” line only once both lists have answered (absent ≠ none).
   const settled = data.tickers.phase !== 'loading' && data.notes.phase !== 'loading';
   const showNoMatch =

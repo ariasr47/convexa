@@ -27,7 +27,7 @@ function Kbd({ children, label }: { children: ReactNode; label?: string }) {
         justifyContent: 'center',
         px: 0.75,
         py: '1px',
-        borderRadius: 1,
+        borderRadius: '4px',
         border: '1px solid',
         borderColor: 'divider',
         fontFamily: typographyTokens.monoFontFamily,

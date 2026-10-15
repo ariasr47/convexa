@@ -87,6 +87,11 @@ export function tickersByName(
   return [...byTicker.values()].sort((a, b) => a.symbol.localeCompare(b.symbol));
 }
 
+/** Highest score first; rows with no score keep their order at the end. */
+export function byScore(rows: readonly ScanRow[]): ScanRow[] {
+  return [...rows].sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
+}
+
 export function usePaletteData(active: boolean): PaletteData {
   const [data, setData] = useState<PaletteData>(LOADING);
 
@@ -108,7 +113,7 @@ export function usePaletteData(active: boolean): PaletteData {
             sweep: res.sweep,
             tickers: {
               phase: 'ready',
-              items: res.rows.map((row) => ({
+              items: byScore(res.rows).map((row) => ({
                 symbol: row.symbol,
                 name: null,
                 hasNote: true,

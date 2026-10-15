@@ -23,7 +23,7 @@ function Kbd({ children }: { children: ReactNode }) {
       sx={{
         px: 0.75,
         py: '1px',
-        borderRadius: 1,
+        borderRadius: '4px',
         border: '1px solid',
         borderColor: 'divider',
         fontFamily: typographyTokens.monoFontFamily,
