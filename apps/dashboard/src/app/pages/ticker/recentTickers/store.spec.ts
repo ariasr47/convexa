@@ -1,9 +1,16 @@
 /**
  * recentTickers store — pure unit (AC-2, AC-5, AC-6).
- * Durable key: convexa.recent-tickers.v1. Pins closed. Recents ≤8, de-duped vs pins.
+ * Durable key: convexa.recent-tickers.v1. Pins closed. Visits keep pins; the Quick row's recents ≤8, no pins.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { RECENT_TICKERS_KEY, __resetRecentTickers, listRecents, recordVisit } from './store';
+import {
+  MAX_RECENTS,
+  RECENT_TICKERS_KEY,
+  __resetRecentTickers,
+  listRecentVisits,
+  listRecents,
+  recordVisit,
+} from './store';
 
 beforeEach(() => {
   localStorage.clear();
@@ -28,6 +35,18 @@ describe('recentTickers store', () => {
     __resetRecentTickers(); // drop memory; force re-read
     expect(listRecents()).toEqual(['AMD', 'IWM']);
     expect(localStorage.getItem(RECENT_TICKERS_KEY)).toBeTruthy();
+  });
+
+  it('⌘K visits keep the pins; the Quick row leaves them out and never loses a recent to one', () => {
+    for (let i = 0; i < MAX_RECENTS; i++) recordVisit(`T${i}`);
+    recordVisit('nvda');
+    recordVisit('SPY');
+    recordVisit('QQQ');
+    expect(listRecentVisits(4)).toEqual(['QQQ', 'SPY', 'NVDA', 'T7']);
+    __resetRecentTickers(); // the pins survive a reload too
+    expect(listRecents()).toHaveLength(MAX_RECENTS);
+    expect(listRecents()).not.toContain('NVDA');
+    expect(listRecents()[MAX_RECENTS - 1]).toBe('T0');
   });
 
   it('corrupt blob → empty recents, does not throw, leaves original key intact until write', () => {

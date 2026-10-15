@@ -2,7 +2,9 @@
  * Client-local recent tickers for the Command Deck Quick row (recent-ticker-chips).
  *
  * Durable key: `convexa.recent-tickers.v1` (new — no brand migration).
- * Pins are a closed code constant (not stored). Recents are MRU, de-duped vs pins, capped at 8.
+ * Pins are a closed code constant. Every visit is stored MRU, pins included, so the ⌘K jump box's
+ * “Recent” group (`listRecentVisits`) shows the pinned tickers you opened too; the Quick row's
+ * `listRecents` leaves the pins out (it always shows them) and stays capped at 8.
  * Corrupt/unreadable → empty in-memory; original blob left intact until a successful write.
  * Never throws into the UI. Never a scoring input.
  */
@@ -13,10 +15,12 @@ const SCHEMA_VERSION = 1;
 export const MAX_RECENTS = 8;
 export const PINNED_TICKERS = ['SPY', 'QQQ', 'NVDA'] as const;
 export type PinnedTicker = (typeof PINNED_TICKERS)[number];
+/** Room for every pin on top of MAX_RECENTS, so the Quick row never loses a recent to a pin. */
+const MAX_STORED = MAX_RECENTS + PINNED_TICKERS.length;
 
 interface PersistShape {
   schema_version: number;
-  /** Uppercase symbols, most-recent-first, never includes a pin. */
+  /** Uppercase symbols, most-recent-first, pins included. */
   symbols: string[];
 }
 
@@ -49,7 +53,7 @@ function read(): PersistShape {
       ? parsed.symbols
           .filter((s): s is string => typeof s === 'string')
           .map(normalize)
-          .filter((s) => s && !PIN_SET.has(s))
+          .filter((s) => s)
       : [];
     // de-dupe preserving order
     const seen = new Set<string>();
@@ -61,7 +65,7 @@ function read(): PersistShape {
     }
     memory = {
       schema_version: SCHEMA_VERSION,
-      symbols: deduped.slice(0, MAX_RECENTS),
+      symbols: deduped.slice(0, MAX_STORED),
     };
     faulted = false;
   } catch {
@@ -82,22 +86,29 @@ function write(s: PersistShape) {
   }
 }
 
-/** Recents only (no pins). Most-recent-first. */
+/** Recents only (no pins), for the Quick row. Most-recent-first, at most MAX_RECENTS. */
 export function listRecents(): string[] {
-  return [...read().symbols];
+  return read()
+    .symbols.filter((s) => !PIN_SET.has(s))
+    .slice(0, MAX_RECENTS);
+}
+
+/** Every ticker opened, pins included, most-recent-first — the ⌘K jump box's “Recent” group. */
+export function listRecentVisits(limit: number = MAX_STORED): string[] {
+  return read().symbols.slice(0, Math.max(0, limit));
 }
 
 /**
- * Record a successful navigation to `symbol`. Pins are never stored in recents.
- * Blank → no-op. Self-de-dupes to front. Caps at MAX_RECENTS.
+ * Record a successful navigation to `symbol`. Blank → no-op. Self-de-dupes to front. Caps at
+ * MAX_STORED, which leaves MAX_RECENTS non-pins however many pins were opened.
  */
 export function recordVisit(symbol: string): void {
   const s = normalize(symbol);
-  if (!s || PIN_SET.has(s)) return;
+  if (!s) return;
   const prev = read().symbols.filter((x) => x !== s);
   write({
     schema_version: SCHEMA_VERSION,
-    symbols: [s, ...prev].slice(0, MAX_RECENTS),
+    symbols: [s, ...prev].slice(0, MAX_STORED),
   });
 }
 
