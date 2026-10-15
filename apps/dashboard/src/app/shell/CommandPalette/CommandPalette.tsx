@@ -123,8 +123,9 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
   );
   // Never a dead end: a plausible symbol nothing lists can still be opened.
   const showOpenAnyway = isPlausibleTicker(q) && tickers.length === 0;
-  // The “we checked, nothing matches” line only once both lists have answered (absent ≠ none).
-  const settled = data.tickers.phase !== 'loading' && data.notes.phase !== 'loading';
+  // The “we checked, nothing matches” line only once both lists have ANSWERED (absent ≠ none). A
+  // failed list was never searched, so it can't back the claim: the failed read says so on its own.
+  const settled = data.tickers.phase === 'ready' && data.notes.phase === 'ready';
   const showNoMatch =
     settled && q !== '' && commands.length === 0 && tickers.length === 0 && notes.length === 0;
 
