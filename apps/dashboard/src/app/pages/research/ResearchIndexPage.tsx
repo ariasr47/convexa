@@ -6,6 +6,7 @@
  * "coming up" are worked out in the reader's browser. In the demo build the per-ticker tabs carry
  * authored sample notes instead, so this page points at those.
  */
+import { chartRoles } from '@/shared/charts/frame';
 import { dataMode } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
@@ -65,8 +66,8 @@ function MiniChart({ chart }: { chart: NonNullable<ResearchTickerSummary['latest
   const y = (v: number) => ((v - lo) / span) * 56;
   const last = chart.bars[chart.latest];
   return (
-    // One column that may shrink below the caption's width, so a long caption ellipsizes instead of
-    // widening the card past a phone screen.
+    // One column that may shrink below the caption's width; a long caption wraps (its unit is often
+    // at the end, so it is never cut off) instead of widening the card past a phone screen.
     <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 0.75 }}>
       <Box
         sx={{
@@ -77,10 +78,7 @@ function MiniChart({ chart }: { chart: NonNullable<ResearchTickerSummary['latest
           color: 'text.secondary',
         }}
       >
-        <Box
-          component="span"
-          sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-        >
+        <Box component="span" sx={{ minWidth: 0, lineHeight: 1.4, textWrap: 'pretty' }}>
           {chart.caption}
         </Box>
         {last && (
@@ -92,38 +90,42 @@ function MiniChart({ chart }: { chart: NonNullable<ResearchTickerSummary['latest
       <Box
         role="img"
         aria-label={`${chart.caption}: ${chart.bars.map((b) => `${b.label} ${b.shown || b.value}`).join(', ')}`}
-        sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.5, height: 56, position: 'relative' }}
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'space-around',
+          gap: 0.5,
+          height: 56,
+          position: 'relative',
+        }}
       >
-        {lo < 0 && (
-          <Box
-            aria-hidden
-            sx={(t) => ({
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              bottom: `${y(0)}px`,
-              borderTop: `1px solid ${alpha(t.palette.text.secondary, 0.6)}`,
-              pointerEvents: 'none',
-            })}
-          />
-        )}
+        <Box
+          aria-hidden
+          sx={(t) => ({
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: `${y(0)}px`,
+            borderTop: `1px solid ${chartRoles(t).axis}`,
+            pointerEvents: 'none',
+          })}
+        />
         {chart.bars.map((b, i) => (
           <Box
             key={i}
             sx={(t) => ({
-              flex: 1,
+              // Bars stay thin (≤ 18px) at any card width and are never scaled down below that.
+              flex: '1 1 0',
+              maxWidth: 18,
               height: Math.max(2, Math.round(y(Math.max(0, b.value)) - y(Math.min(0, b.value)))),
               mb: `${Math.round(y(Math.min(0, b.value)))}px`,
               borderRadius: b.value < 0 ? '1px 1px 3px 3px' : '3px 3px 1px 1px',
               boxSizing: 'border-box',
               ...(b.kind === 'guide'
-                ? { border: `1.5px dashed ${alpha(t.palette.text.primary, 0.6)}` }
+                ? { border: `1.5px dashed ${chartRoles(t).ctx}` }
                 : b.kind === 'approx'
                   ? { background: HATCH(t) }
-                  : {
-                      bgcolor:
-                        i === chart.latest ? 'text.primary' : alpha(t.palette.text.secondary, 0.75),
-                    }),
+                  : { bgcolor: i === chart.latest ? chartRoles(t).emph : chartRoles(t).ctx }),
             })}
           />
         ))}

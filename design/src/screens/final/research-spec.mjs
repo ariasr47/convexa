@@ -39,7 +39,7 @@ export const INDEX_SPEC = {
   built: [
     { status: 'shipped', what: 'Index, search, stance and freshness filters, Coming up, cards, browser-side freshness (ResearchIndexPage.tsx).' },
     { status: 'shipped', what: 'Mini chart on one scale that includes zero; losses hang below a zero line (58a6de05).' },
-    { status: 'partial', what: 'Mini chart is still a bespoke SVG with a 2px minimum and an ellipsized caption; final uses the shared Plot with the caption wrapping.' },
+    { status: 'shipped', what: 'Mini chart on a zero line with losses below it, bars at most 18px, neutral roles, and the caption wrapping instead of ellipsizing (RN-13, ResearchIndexPage.tsx MiniChart, 2026-10-14).' },
     { status: 'partial', what: 'Staging: the demo build replaces the cards with a DemoNotice panel (6 links) while the tab badges still count the 14 live notes and 77 forecasts.' },
     { status: 'todo', what: 'Freshness note when filings aren’t set up (today it silently falls back to dates).' },
     { status: 'shipped', what: 'Cards drop the per-card metric row and price-vs-value strip; both live in the note header (owner ruling 2026-10-14; ResearchIndexPage.tsx TickerCard).' },

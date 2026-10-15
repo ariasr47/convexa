@@ -14,7 +14,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { freshness as freshnessOf, localToday, upcoming } from 'virtual:convexa-research';
 import { StripBlock, TldrBlock } from './blocks/Figures';
-import { PriceValueStrip, stripData } from './blocks/Valuation';
+import { PriceValueFrame, stripData } from './blocks/Valuation';
 import { formatNoteDate, formatShortDate, money, STANCE_LABEL, UNCERTAINTY_LABEL } from './format';
 import { NoteInlines } from './Inlines';
 import { NoteBody } from './NoteBody';
@@ -676,7 +676,16 @@ export function NoteView({
   const active = useActiveSection(ids);
   let partNumber = 0;
   return (
-    <NoteContext.Provider value={{ today, freshness: f, valuation, sources: note.sources }}>
+    <NoteContext.Provider
+      value={{
+        today,
+        ticker: note.ticker,
+        date: note.date,
+        freshness: f,
+        valuation,
+        sources: note.sources,
+      }}
+    >
       <Box
         component="article"
         aria-labelledby="note-title"
@@ -688,14 +697,14 @@ export function NoteView({
         {(valuation || tldr) && (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 2 }}>
             {valuation && (
-              <Panel sx={{ flex: '999 1 520px', px: 3, py: 2.5, borderRadius: '16px' }}>
-                <PriceValueStrip
+              <Box sx={{ flex: '999 1 520px', minWidth: 0, display: 'grid' }}>
+                <PriceValueFrame
                   data={stripData(valuation)}
                   uncertainty={valuation.uncertainty}
                   priceAgeDays={f.priceAgeDays}
                   priceStale={f.priceStale}
                 />
-              </Panel>
+              </Box>
             )}
             {tldr?.type === 'tldr' && (
               <Box sx={{ flex: '1 1 340px', minWidth: 0, display: 'grid' }}>

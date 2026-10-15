@@ -3,14 +3,17 @@
  * `moves`, and the numbered sources. Anything that depends on today's date (next up, "outcome not
  * recorded", "awaiting resolution") is worked out here, in the reader's browser.
  */
+import { ChartFrame, chartRoles } from '@/shared/charts/frame';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import { alpha } from '@mui/material/styles';
-import { formatNoteDate, INPUT_LABEL } from '../format';
+import { formatNoteDate, formatShortDate, INPUT_LABEL } from '../format';
 import { NoteInlines } from '../Inlines';
 import { useNoteContext } from '../noteContext';
 import type { NoteBlock, When } from '../types';
 import { HEAD_ROW_SX, MONO, Panel, PANEL_SX, Pill } from '../ui';
+import { useWidth } from '../useWidth';
+import { useNoteFrame } from './noteFrame';
 
 type Of<T extends NoteBlock['type']> = Extract<NoteBlock, { type: T }>;
 
@@ -41,129 +44,328 @@ function inDays(n: number) {
   return `in ${Math.round(n / 30)} months`;
 }
 
+function addDays(day: string, n: number) {
+  const [y, m, d] = day.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + n));
+  return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')}`;
+}
+
+const SPAN = 120;
+const CH = 6.8;
+
+/**
+ * The next 120 days to scale, above the list (RN-12): today at the left edge, each dated catalyst a
+ * mark at its day (a window a bar across it), named on the first row its label fits. The next one is
+ * phosphor; a confirmed date is filled, an expected one open, as in the list. Catalysts past 120
+ * days, undated or already resolved stay in the list only.
+ */
+function CatalystStrip({
+  items,
+  nextIndex,
+}: {
+  items: Of<'catalysts'>['items'];
+  nextIndex: number;
+}) {
+  const { today, ticker } = useNoteContext();
+  const frame = useNoteFrame('catalysts');
+  const [ref, W] = useWidth<HTMLDivElement>();
+  const horizon = addDays(today, SPAN);
+  const shown = items
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => {
+      const start = c.when.start ?? c.when.end;
+      return !c.outcome && start && c.when.end && c.when.end >= today && start <= horizon;
+    });
+  if (!shown.length) return null;
+  const X = (day: string) => (Math.min(SPAN, Math.max(0, daysUntil(today, day))) / SPAN) * W;
+  const next = shown.find(({ i }) => i === nextIndex) ?? shown[0];
+  const nextStart = (next.c.when.start ?? next.c.when.end) as string;
+  const finding = `${next.c.event} ${inDays(daysUntil(today, nextStart))}${
+    shown.length > 1 ? `; ${shown.length - 1} more in the next ${SPAN} days` : ''
+  }`;
+  // Each label takes the first of three rows where it doesn't touch another; the rest are listed below.
+  const rows: { i: number; left: number; w: number }[][] = [[], [], []];
+  const placed = new Map<number, { row: number; left: number }>();
+  if (W > 0)
+    for (const { c, i } of [next, ...shown.filter((x) => x !== next)]) {
+      const w = c.event.length * CH;
+      const left = Math.min(X((c.when.start ?? c.when.end) as string), Math.max(0, W - w));
+      const row = rows.findIndex((r) =>
+        r.every((o) => left >= o.left + o.w + 10 || left + w + 10 <= o.left),
+      );
+      if (row >= 0) {
+        rows[row].push({ i, left, w });
+        placed.set(i, { row, left });
+      }
+    }
+  const used = rows.filter((r) => r.length).length;
+  const AXIS = used * 18 + 14;
+  const H = AXIS + 34;
+  const ticks = [0, 30, 60, 90, 120];
+  return (
+    <ChartFrame
+      {...frame}
+      finding={finding}
+      metric="Catalysts, next 120 days"
+      sub={`${ticker} catalysts on a time scale · the next ${SPAN} days from ${formatShortDate(today)} · filled = confirmed date, open = expected`}
+      height={H}
+    >
+      <Box
+        ref={ref}
+        role="img"
+        aria-label={shown.map(({ c }) => `${c.event}, ${whenText(c.when)}`).join('; ')}
+        sx={{ position: 'relative', height: H, minWidth: 0 }}
+      >
+        {W > 0 && (
+          <>
+            <Box
+              sx={(t) => ({
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                top: AXIS,
+                borderTop: `1px solid ${chartRoles(t).axis}`,
+              })}
+            />
+            {shown.map(({ c, i }) => {
+              const start = (c.when.start ?? c.when.end) as string;
+              const end = c.when.end as string;
+              const isNext = i === next.i;
+              const x0 = X(start);
+              const x1 = X(end);
+              const p = placed.get(i);
+              const confirmed = c.status === 'confirmed';
+              return (
+                <Box key={i}>
+                  {p && (
+                    <>
+                      <Box
+                        sx={(t) => ({
+                          position: 'absolute',
+                          left: x0,
+                          top: p.row * 18 + 14,
+                          height: AXIS - (p.row * 18 + 14),
+                          borderLeft: `1px solid ${isNext ? chartRoles(t).emph : chartRoles(t).edge}`,
+                        })}
+                      />
+                      <Box
+                        component="span"
+                        sx={{
+                          position: 'absolute',
+                          top: p.row * 18,
+                          left: p.left,
+                          fontSize: 12,
+                          lineHeight: '14px',
+                          whiteSpace: 'nowrap',
+                          color: isNext ? 'text.primary' : 'text.secondary',
+                          fontWeight: isNext ? 600 : 400,
+                        }}
+                      >
+                        {c.event}
+                      </Box>
+                    </>
+                  )}
+                  {x1 - x0 > 4 && (
+                    <Box
+                      sx={(t) => ({
+                        position: 'absolute',
+                        left: x0,
+                        width: x1 - x0,
+                        top: AXIS - 3,
+                        height: 6,
+                        borderRadius: '3px',
+                        bgcolor: isNext ? chartRoles(t).emph : chartRoles(t).ctx2,
+                      })}
+                    />
+                  )}
+                  <Box
+                    sx={(t) => ({
+                      position: 'absolute',
+                      left: x0 - 5,
+                      top: AXIS - 5,
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      boxSizing: 'border-box',
+                      bgcolor: confirmed
+                        ? isNext
+                          ? chartRoles(t).emph
+                          : chartRoles(t).ctx
+                        : t.palette.background.paper,
+                      border: `2px solid ${isNext ? chartRoles(t).emph : chartRoles(t).ctx}`,
+                    })}
+                  />
+                </Box>
+              );
+            })}
+            {ticks.map((d, k) => (
+              <Box
+                key={d}
+                component="span"
+                aria-hidden
+                sx={{
+                  ...MONO,
+                  position: 'absolute',
+                  top: AXIS + 10,
+                  left: (d / SPAN) * W,
+                  transform:
+                    k === 0
+                      ? 'none'
+                      : k === ticks.length - 1
+                        ? 'translateX(-100%)'
+                        : 'translateX(-50%)',
+                  fontSize: 11,
+                  lineHeight: '14px',
+                  whiteSpace: 'nowrap',
+                  color: 'text.secondary',
+                  // On a narrow strip only today and the far end keep their dates.
+                  display: W < 420 && k % 2 === 1 ? 'none' : 'block',
+                }}
+              >
+                {k === 0 ? `Today, ${formatShortDate(today)}` : formatShortDate(addDays(today, d))}
+              </Box>
+            ))}
+          </>
+        )}
+      </Box>
+    </ChartFrame>
+  );
+}
+
 export function CatalystsBlock({ block }: { block: Of<'catalysts'> }) {
   const { today } = useNoteContext();
   const nextIndex = block.items.findIndex((c) => !c.outcome && c.when.end && c.when.end >= today);
   return (
-    <Box
-      component="ol"
-      sx={{
-        ...PANEL_SX,
-        listStyle: 'none',
-        m: 0,
-        p: 2.5,
-        pb: 0.5,
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      {block.items.map((c, i) => {
-        const isNext = i === nextIndex;
-        const gone = !c.outcome && passed(c.when, today);
-        const last = i === block.items.length - 1;
-        const start = c.when.start ?? c.when.end;
-        const chip = c.outcome
-          ? 'Outcome recorded'
-          : gone
-            ? 'Outcome not recorded'
-            : isNext && start
-              ? `Next up · ${inDays(daysUntil(today, start))}`
-              : c.status === 'confirmed'
-                ? 'Confirmed'
-                : c.status === 'target'
-                  ? 'Company target'
-                  : 'Expected';
-        return (
-          <Box
-            component="li"
-            key={i}
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '84px 16px minmax(0, 1fr)',
-                sm: '120px 20px minmax(0, 1fr)',
-              },
-              gap: 1.5,
-              alignItems: 'start',
-            }}
-          >
+    <Box sx={{ display: 'grid', gap: 1.5, minWidth: 0 }}>
+      <CatalystStrip items={block.items} nextIndex={nextIndex} />
+      <Box
+        component="ol"
+        sx={{
+          ...PANEL_SX,
+          listStyle: 'none',
+          m: 0,
+          p: 2.5,
+          pb: 0.5,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {block.items.map((c, i) => {
+          const isNext = i === nextIndex;
+          const gone = !c.outcome && passed(c.when, today);
+          const last = i === block.items.length - 1;
+          const start = c.when.start ?? c.when.end;
+          const chip = c.outcome
+            ? 'Outcome recorded'
+            : gone
+              ? 'Outcome not recorded'
+              : isNext && start
+                ? `Next up · ${inDays(daysUntil(today, start))}`
+                : c.status === 'confirmed'
+                  ? 'Confirmed'
+                  : c.status === 'target'
+                    ? 'Company target'
+                    : 'Expected';
+          return (
             <Box
-              component="span"
+              component="li"
+              key={i}
               sx={{
-                ...MONO,
-                fontSize: 12,
-                color: isNext ? 'text.primary' : 'text.secondary',
-                pt: '2px',
-                textAlign: 'right',
-              }}
-            >
-              {whenText(c.when)}
-            </Box>
-            <Box
-              component="span"
-              aria-hidden
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                alignSelf: 'stretch',
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '84px 16px minmax(0, 1fr)',
+                  sm: '120px 20px minmax(0, 1fr)',
+                },
+                gap: 1.5,
+                alignItems: 'start',
               }}
             >
               <Box
                 component="span"
-                sx={(t) => ({
-                  width: 12,
-                  height: 12,
-                  mt: '4px',
-                  borderRadius: '50%',
-                  flexShrink: 0,
-                  boxSizing: 'border-box',
-                  ...(isNext
-                    ? {
-                        bgcolor: 'text.primary',
-                        boxShadow: `0 0 0 4px ${alpha(t.palette.text.primary, 0.16)}`,
-                      }
-                    : c.outcome || c.status === 'confirmed'
-                      ? { bgcolor: 'text.secondary' }
-                      : { border: `2px solid ${t.palette.text.secondary}` }),
-                })}
-              />
-              {!last && (
+                sx={{
+                  ...MONO,
+                  fontSize: 12,
+                  color: isNext ? 'text.primary' : 'text.secondary',
+                  pt: '2px',
+                  textAlign: 'right',
+                }}
+              >
+                {whenText(c.when)}
+              </Box>
+              <Box
+                component="span"
+                aria-hidden
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  alignSelf: 'stretch',
+                }}
+              >
                 <Box
                   component="span"
                   sx={(t) => ({
-                    flexGrow: 1,
-                    width: 2,
-                    mt: 0.5,
-                    bgcolor: alpha(t.palette.text.secondary, 0.22),
+                    width: 12,
+                    height: 12,
+                    mt: '4px',
+                    borderRadius: '50%',
+                    flexShrink: 0,
+                    boxSizing: 'border-box',
+                    ...(isNext
+                      ? {
+                          bgcolor: 'text.primary',
+                          boxShadow: `0 0 0 4px ${alpha(t.palette.text.primary, 0.16)}`,
+                        }
+                      : c.outcome || c.status === 'confirmed'
+                        ? { bgcolor: 'text.secondary' }
+                        : { border: `2px solid ${t.palette.text.secondary}` }),
                   })}
                 />
-              )}
-            </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pb: 2.25, minWidth: 0 }}>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
-                <Box component="span" sx={{ fontWeight: 600, fontSize: 14 }}>
-                  {c.event}
-                </Box>
-                <Pill variant={gone ? 'dashed' : isNext ? 'strong' : 'quiet'} sx={{ fontSize: 11 }}>
-                  {chip}
-                </Pill>
+                {!last && (
+                  <Box
+                    component="span"
+                    sx={(t) => ({
+                      flexGrow: 1,
+                      width: 2,
+                      mt: 0.5,
+                      bgcolor: alpha(t.palette.text.secondary, 0.22),
+                    })}
+                  />
+                )}
               </Box>
-              <Box component="span" sx={{ fontSize: 13, color: 'text.secondary', lineHeight: 1.5 }}>
-                <NoteInlines nodes={c.detail} />
-              </Box>
-              {c.outcome && (
-                <Box component="span" sx={{ fontSize: 13, lineHeight: 1.5 }}>
-                  <Box component="span" sx={{ fontWeight: 600 }}>
-                    Outcome:{' '}
+              <Box
+                sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pb: 2.25, minWidth: 0 }}
+              >
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
+                  <Box component="span" sx={{ fontWeight: 600, fontSize: 14 }}>
+                    {c.event}
                   </Box>
-                  <NoteInlines nodes={c.outcome} />
+                  <Pill
+                    variant={gone ? 'dashed' : isNext ? 'strong' : 'quiet'}
+                    sx={{ fontSize: 11 }}
+                  >
+                    {chip}
+                  </Pill>
                 </Box>
-              )}
+                <Box
+                  component="span"
+                  sx={{ fontSize: 13, color: 'text.secondary', lineHeight: 1.5 }}
+                >
+                  <NoteInlines nodes={c.detail} />
+                </Box>
+                {c.outcome && (
+                  <Box component="span" sx={{ fontSize: 13, lineHeight: 1.5 }}>
+                    <Box component="span" sx={{ fontWeight: 600 }}>
+                      Outcome:{' '}
+                    </Box>
+                    <NoteInlines nodes={c.outcome} />
+                  </Box>
+                )}
+              </Box>
             </Box>
-          </Box>
-        );
-      })}
+          );
+        })}
+      </Box>
     </Box>
   );
 }

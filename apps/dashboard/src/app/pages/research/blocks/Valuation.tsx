@@ -3,9 +3,12 @@
  * twentieths, the sensitivity grid, the assumptions, and "what the price implies". Every number here
  * arrives computed by the build (tools/research-notes/valuation.mjs); this file only draws.
  *
- * Uncertainty is shown, not hidden: ranges have soft ends, the base case is one mark inside a band,
- * and any figure measured against the price disappears once the price is 30 days old.
+ * Uncertainty is shown, not hidden: ranges are solid to their ends (the edges are the range), the
+ * base case is one mark inside a band, open-ended rates are drawn open, and any figure measured
+ * against the price disappears once the price is 30 days old. The charts sit on the v5 chart frame
+ * (canon P-8 to P-13; design/src/screens/v5/families-research.mjs, RN-06 and RN-08 to RN-11).
  */
+import { ChartFrame, chartRoles } from '@/shared/charts/frame';
 import Box from '@mui/material/Box';
 import type { Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
@@ -25,7 +28,9 @@ import {
 import { NoteInlines } from '../Inlines';
 import { useNoteContext } from '../noteContext';
 import type { Dated, ScenarioName, Uncertainty, ValuationBlock } from '../types';
-import { Eyebrow, MONO, Panel, PANEL_SX, YourCall } from '../ui';
+import { MONO, Panel, PANEL_SX, YourCall } from '../ui';
+import { useWidth } from '../useWidth';
+import { useNoteFrame } from './noteFrame';
 
 const NAMES: ScenarioName[] = ['bear', 'base', 'bull'];
 const TITLE: Record<ScenarioName, string> = { bear: 'Bear', base: 'Base', bull: 'Bull' };
@@ -54,6 +59,9 @@ function axisMax(values: number[]) {
   );
 }
 const at = (v: number, max: number) => `${Math.min(100, Math.max(0, (v / max) * 100))}%`;
+/** An axis tick in dollars: round numbers print without cents ("$0", "$250"). */
+const tickMoney = (v: number) =>
+  `$${v.toLocaleString('en-US', { maximumFractionDigits: v === Math.round(v) ? 0 : 2 })}`;
 
 /** Signed change, arrow first, hue second: "▼ 13%". */
 export function Signed({ value }: { value: number }) {
@@ -102,11 +110,6 @@ export function UncertaintyMark({ level }: { level: Uncertainty }) {
   );
 }
 
-const band = (t: Theme, strength = 0.62) => {
-  const c = t.palette.info.main;
-  return `linear-gradient(90deg, ${alpha(c, 0)} 0%, ${alpha(c, strength * 0.5)} 12%, ${alpha(c, strength)} 38%, ${alpha(c, strength * 0.5)} 75%, ${alpha(c, 0)} 100%)`;
-};
-
 export type StripData = {
   price: Dated;
   values: Record<ScenarioName, number>;
@@ -127,232 +130,262 @@ export function stripData(v: ValuationBlock): StripData {
   };
 }
 
+/** A mono character at 11px, a little generous, for laying labels out before they're drawn. */
+const CH = 6.8;
+
 /**
- * Price against the value range: a soft-edged bear-to-bull band, the base case as one mark inside it,
- * and today's line at the dated price. `priceAgeDays` past 30 dashes the line and drops every figure
- * measured against it; the range itself stays, because it doesn't depend on the price.
+ * Price against the value range (RN-06), on the chart frame in the note's header: a band solid to
+ * its ends (the edges are the range, so it must not look narrower than it is), the base case as the
+ * page's one amber diamond, the odds-weighted value as a labelled steel mark, and the dated price as
+ * the phosphor line. Labels sit at their marks, on a second row when they would touch, and the axis
+ * names its scale. A price over 30 days old dashes the line and drops every figure measured against
+ * it, the title included; the range stays, because it doesn't depend on the price.
  */
-export function PriceValueStrip({
+export function PriceValueFrame({
   data,
   uncertainty,
   priceAgeDays,
   priceStale,
-  compact = false,
 }: {
   data: StripData;
   uncertainty: Uncertainty | null;
   priceAgeDays: number | null;
   priceStale: boolean;
-  compact?: boolean;
 }) {
+  const frame = useNoteFrame();
+  const { price, values } = data;
+  const toBase = ((values.base - price.value) / price.value) * 100;
+  const finding = priceStale
+    ? `Value range ${money(values.bear)} to ${money(values.bull)}, base case ${money(values.base)}`
+    : Math.abs(toBase) < 0.5
+      ? `At ${priceText(price.value)} the price sits at the base case of ${money(values.base)}`
+      : `At ${priceText(price.value)} the price sits ${percent(toBase)} ${toBase >= 0 ? 'below' : 'above'} the base case of ${money(values.base)}`;
+  return (
+    <ChartFrame
+      {...frame}
+      testId="note-price-value"
+      finding={finding}
+      metric="Price against the value range"
+      sub={`Value per share · the note’s bear, base and bull${data.weighted !== null ? ' and odds-weighted value' : ''} · price from the note (${formatShortDate(price.asOf)})`}
+      height={96}
+      legend={uncertainty ? <UncertaintyMark level={uncertainty} /> : undefined}
+      table={{
+        caption: 'Value per share against the price',
+        cols: ['Mark', 'Per share'],
+        rows: [
+          ['Bear', money(values.bear)],
+          ['Base', money(values.base)],
+          ['Bull', money(values.bull)],
+          ...(data.weighted !== null ? [['Weighted by the odds', money(data.weighted)]] : []),
+          [`Price, ${formatShortDate(price.asOf)}`, priceText(price.value)],
+        ],
+      }}
+    >
+      <PriceValueStrip data={data} priceAgeDays={priceAgeDays} priceStale={priceStale} />
+    </ChartFrame>
+  );
+}
+
+function PriceValueStrip({
+  data,
+  priceAgeDays,
+  priceStale,
+}: {
+  data: StripData;
+  priceAgeDays: number | null;
+  priceStale: boolean;
+}) {
+  const [ref, W] = useWidth<HTMLDivElement>();
   const { price, values } = data;
   const lo = Math.min(values.bear, values.base, values.bull);
   const hi = Math.max(values.bear, values.base, values.bull);
-  const max = axisMax([hi, price.value]);
-  const lp = (lo / max) * 100;
-  const hp = (hi / max) * 100;
-  const bp = (values.base / max) * 100;
-  const crowded = bp - lp < 18 || hp - bp < 18;
-  // A narrow range has no room for three labels on the strip at any width: use the phone's legend row.
-  const legendOnly = hp - lp < 30;
+  const max = axisMax([hi, price.value, data.weighted ?? 0]);
+  const X = (v: number) => (Math.min(max, Math.max(0, v)) / max) * W;
   const toBase = ((values.base - price.value) / price.value) * 100;
   const label =
-    `Value range ${money(values.bear)} bear to ${money(values.bull)} bull, base ${money(values.base)}; ` +
-    `price ${priceText(price.value)} on ${formatShortDate(price.asOf)}` +
+    `Value range ${money(values.bear)} bear to ${money(values.bull)} bull, base ${money(values.base)}` +
+    (data.weighted !== null ? `, weighted ${money(data.weighted)}` : '') +
+    `; price ${priceText(price.value)} on ${formatShortDate(price.asOf)}` +
     (priceStale
       ? `, ${priceAgeDays} days old`
       : `, ${Math.abs(Math.round(toBase))}% ${toBase >= 0 ? 'below' : 'above'} the base case`);
-  const H = compact ? 44 : 64;
+
+  // Labels at their marks: base first, then the ends, then the weighted value; each takes the first
+  // row it fits on without touching another, and anything left over is in the line below and the table.
+  const marks: { key: string; v: number; text: string; primary: boolean }[] = [
+    { key: 'base', v: values.base, text: `Base ${money(values.base)}`, primary: true },
+    { key: 'bear', v: values.bear, text: `Bear ${money(values.bear)}`, primary: false },
+    { key: 'bull', v: values.bull, text: `Bull ${money(values.bull)}`, primary: false },
+    ...(data.weighted !== null
+      ? [
+          {
+            key: 'weighted',
+            v: data.weighted,
+            text: `Weighted ${money(data.weighted)}`,
+            primary: false,
+          },
+        ]
+      : []),
+  ];
+  const rows: { key: string; cx: number; w: number; text: string; primary: boolean }[][] = [[], []];
+  if (W > 0)
+    for (const m of marks) {
+      const w = m.text.length * CH;
+      const cx = Math.min(Math.max(X(m.v), w / 2), W - w / 2);
+      const row = rows.find((r) => r.every((o) => Math.abs(o.cx - cx) >= (o.w + w) / 2 + 10));
+      row?.push({ key: m.key, cx, w, text: m.text, primary: m.primary });
+    }
+  const used = rows.filter((r) => r.length).length;
+  const TRACK = 30;
+  const LABELS = 52;
+  const AXIS = LABELS + used * 16 + 4;
+  const H = AXIS + 14;
+  const ticks = [0, max / 2, max];
+  const priceText_ = `Price ${priceText(price.value)}${priceStale ? ` · ${formatShortDate(price.asOf)}, ${priceAgeDays} days old` : ''}`;
+  const priceRight = W > 0 && X(price.value) + 8 + priceText_.length * CH > W;
   return (
-    <Box sx={{ display: 'grid', gap: compact ? 0.75 : 1.75, minWidth: 0 }}>
-      {!compact && (
-        <Box
-          sx={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            justifyContent: 'space-between',
-            alignItems: 'baseline',
-            gap: 1,
-          }}
-        >
-          <Eyebrow>Price vs value · per share</Eyebrow>
-          {uncertainty && <UncertaintyMark level={uncertainty} />}
-        </Box>
-      )}
+    <Box sx={{ display: 'grid', gap: 1.75, minWidth: 0 }}>
       <Box
+        ref={ref}
         role="img"
         aria-label={label}
-        sx={{
-          position: 'relative',
-          height: {
-            xs: compact ? H : 44,
-            sm: legendOnly && !compact ? 44 : H + (crowded && !compact ? 16 : 0),
-          },
-        }}
+        sx={{ position: 'relative', height: H, ...MONO }}
       >
-        <Box
-          sx={(t) => ({
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: compact ? 16 : 30,
-            height: 2,
-            bgcolor: alpha(t.palette.text.secondary, 0.12),
-          })}
-        />
-        <Box
-          sx={(t) => ({
-            position: 'absolute',
-            top: compact ? 10 : 22,
-            height: compact ? 12 : 18,
-            left: `${lp}%`,
-            width: `${Math.max(1, hp - lp)}%`,
-            borderRadius: '9px',
-            background: band(t),
-          })}
-        />
-        {/* The base case: the one amber mark on the page. */}
-        <Box
-          sx={(t) => ({
-            position: 'absolute',
-            top: compact ? 10 : 23,
-            left: `${bp}%`,
-            width: compact ? 11 : 16,
-            height: compact ? 11 : 16,
-            ml: compact ? '-5.5px' : '-8px',
-            transform: 'rotate(45deg)',
-            bgcolor: 'primary.main',
-            borderRadius: '2px',
-            boxShadow: `0 0 0 2px ${t.palette.background.paper}`,
-          })}
-        />
-        {data.weighted !== null && (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: compact ? 6 : 16,
-              left: at(data.weighted, max),
-              width: 3,
-              height: compact ? 20 : 30,
-              ml: '-1.5px',
-              borderRadius: '2px',
-              bgcolor: 'text.primary',
-            }}
-          />
-        )}
-        <Box
-          sx={(t) => ({
-            position: 'absolute',
-            left: at(price.value, max),
-            top: compact ? 2 : 8,
-            bottom: compact ? 14 : 0,
-            borderLeft: priceStale
-              ? `2px dashed ${alpha(t.palette.text.primary, 0.6)}`
-              : `2px solid ${t.palette.text.primary}`,
-          })}
-        />
-        {!compact && (
+        {W > 0 && (
           <>
             <Box
               component="span"
               sx={{
-                ...MONO,
                 position: 'absolute',
-                top: -6,
-                left: at(price.value, max),
-                ml: 1,
+                top: 0,
+                left: X(price.value),
                 fontSize: 11,
+                lineHeight: '14px',
                 whiteSpace: 'nowrap',
                 color: priceStale ? 'text.secondary' : 'text.primary',
-                transform: price.value / max > 0.7 ? 'translateX(calc(-100% - 16px))' : 'none',
+                transform: priceRight ? 'translateX(calc(-100% - 8px))' : 'translateX(8px)',
               }}
             >
-              Price {priceText(price.value)}
-              {priceStale && ` · ${formatShortDate(price.asOf)}`}
+              {priceText_}
             </Box>
             <Box
-              component="span"
-              sx={{
-                ...MONO,
-                display: legendOnly ? 'none' : { xs: 'none', sm: 'block' },
+              sx={(t) => ({
                 position: 'absolute',
-                top: 46,
-                left: `${lp}%`,
-                fontSize: 11,
-                color: 'text.secondary',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Bear {money(values.bear)}
-            </Box>
+                left: 0,
+                right: 0,
+                top: TRACK - 1,
+                height: 2,
+                bgcolor: chartRoles(t).grid,
+              })}
+            />
             <Box
-              component="span"
-              sx={{
-                ...MONO,
-                display: legendOnly ? 'none' : { xs: 'none', sm: 'block' },
+              sx={(t) => ({
                 position: 'absolute',
-                top: crowded ? 62 : 46,
-                left: `${bp}%`,
-                transform: bp < 8 ? 'none' : bp > 92 ? 'translateX(-100%)' : 'translateX(-50%)',
-                fontSize: 11,
-                color: 'text.primary',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Base {money(values.base)}
-            </Box>
+                top: TRACK - 10,
+                height: 20,
+                left: X(lo),
+                width: Math.max(2, X(hi) - X(lo)),
+                boxSizing: 'border-box',
+                borderRadius: '3px',
+                bgcolor: chartRoles(t).band,
+                borderLeft: `1.5px solid ${chartRoles(t).edge}`,
+                borderRight: `1.5px solid ${chartRoles(t).edge}`,
+              })}
+            />
+            {data.weighted !== null && (
+              <Box
+                sx={(t) => ({
+                  position: 'absolute',
+                  top: TRACK - 14,
+                  left: X(data.weighted ?? 0) - 1.5,
+                  width: 3,
+                  height: 28,
+                  borderRadius: '2px',
+                  bgcolor: chartRoles(t).ctx,
+                })}
+              />
+            )}
+            {/* The base case: the one amber mark on the page. */}
             <Box
-              component="span"
-              sx={{
-                ...MONO,
-                display: legendOnly ? 'none' : { xs: 'none', sm: 'block' },
+              sx={(t) => ({
                 position: 'absolute',
-                top: 46,
-                left: `${hp}%`,
-                transform: 'translateX(-100%)',
-                fontSize: 11,
-                color: 'text.secondary',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Bull {money(values.bull)}
-            </Box>
+                top: TRACK - 8,
+                left: X(values.base) - 8,
+                width: 16,
+                height: 16,
+                transform: 'rotate(45deg)',
+                bgcolor: 'primary.main',
+                borderRadius: '2px',
+                boxShadow: `0 0 0 2px ${t.palette.background.paper}`,
+              })}
+            />
+            <Box
+              sx={(t) => ({
+                position: 'absolute',
+                left: X(price.value) - 1,
+                top: 14,
+                height: LABELS - 14,
+                borderLeft: priceStale
+                  ? `2px dashed ${chartRoles(t).ctx}`
+                  : `2px solid ${chartRoles(t).emph}`,
+              })}
+            />
+            {rows.map((r, i) =>
+              r.map((l) => (
+                <Box
+                  key={l.key}
+                  component="span"
+                  sx={{
+                    position: 'absolute',
+                    top: LABELS + i * 16,
+                    left: l.cx - l.w / 2,
+                    width: l.w,
+                    textAlign: 'center',
+                    fontSize: 11,
+                    lineHeight: '14px',
+                    whiteSpace: 'nowrap',
+                    color: l.primary ? 'text.primary' : 'text.secondary',
+                  }}
+                >
+                  {l.text}
+                </Box>
+              )),
+            )}
+            {ticks.map((v, i) => (
+              <Box
+                key={v}
+                component="span"
+                aria-hidden
+                sx={{
+                  position: 'absolute',
+                  top: AXIS,
+                  left: X(v),
+                  transform:
+                    i === 0
+                      ? 'none'
+                      : i === ticks.length - 1
+                        ? 'translateX(-100%)'
+                        : 'translateX(-50%)',
+                  fontSize: 11,
+                  lineHeight: '14px',
+                  color: 'text.secondary',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {tickMoney(v)}
+              </Box>
+            ))}
           </>
         )}
       </Box>
-      {!compact && (
-        <Box
-          aria-hidden
-          sx={{
-            display: legendOnly ? 'grid' : { xs: 'grid', sm: 'none' },
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-            ...MONO,
-            fontSize: 12,
-            textAlign: 'center',
-          }}
-        >
-          {NAMES.map((name) => (
-            <Box
-              key={name}
-              component="span"
-              sx={{ display: 'grid', color: name === 'base' ? 'text.primary' : 'text.secondary' }}
-            >
-              <Box component="span" sx={{ fontFamily: 'inherit', fontSize: 11 }}>
-                {TITLE[name]}
-              </Box>
-              {money(values[name])}
-            </Box>
-          ))}
-        </Box>
-      )}
       <Box
         sx={{
           display: 'flex',
           flexWrap: 'wrap',
-          gap: compact ? '2px 12px' : '6px 18px',
-          fontSize: compact ? 12 : 13,
-          pt: compact ? 0 : 1.25,
-          borderTop: compact ? 0 : 1,
+          gap: '6px 18px',
+          fontSize: 13,
+          pt: 1.25,
+          borderTop: 1,
           borderColor: 'divider',
           color: 'text.secondary',
         }}
@@ -366,24 +399,13 @@ export function PriceValueStrip({
             <Box component="span" sx={{ color: 'text.primary' }}>
               <Signed value={toBase} /> from the {formatShortDate(price.asOf)} price to base
             </Box>
-            {!compact && (
-              <span>
-                Range <Signed value={((lo - price.value) / price.value) * 100} /> to{' '}
-                <Signed value={((hi - price.value) / price.value) * 100} />
-              </span>
-            )}
+            <span>
+              Range <Signed value={((lo - price.value) / price.value) * 100} /> to{' '}
+              <Signed value={((hi - price.value) / price.value) * 100} />
+            </span>
           </>
         )}
-        {data.weighted !== null ? (
-          <span>
-            Weighted{' '}
-            <Box component="span" sx={{ ...MONO, color: 'text.primary' }}>
-              {money(data.weighted)}
-            </Box>
-          </span>
-        ) : (
-          !compact && <span>Scenario odds not set</span>
-        )}
+        {data.weighted === null && <span>Scenario odds not set</span>}
       </Box>
     </Box>
   );
@@ -434,7 +456,14 @@ export function ValuationBlockView({ block: v }: { block: ValuationBlock }) {
   );
 }
 
+/**
+ * Value per share by method (RN-08): each method's range solid to its ends, its base case a phosphor
+ * tick, a third party's figure a dotted box (dotted is a third party's mark, P-8), and the dated price
+ * the line through every row. Labels sit beside the ends they name; the axis keeps three ticks on a
+ * phone, and the legend names every mark.
+ */
 function FootballField({ v, stale }: { v: ValuationBlock; stale: boolean }) {
+  const frame = useNoteFrame('football');
   const r = v.result;
   const sens = r.sensitivity ? r.sensitivity.cells.flat().map((c) => c.value) : [];
   const rows: {
@@ -482,211 +511,287 @@ function FootballField({ v, stale }: { v: ValuationBlock; stale: boolean }) {
       kind: 'third',
     });
   const max = axisMax([...rows.flatMap((x) => [x.hi ?? 0, x.mark ?? 0]), v.price.value]);
-  const ticks = [0.25, 0.5, 0.75].map((f) => f * max);
-  // A band's two end labels sit apart only when the band is wide enough for both on the narrowest
-  // axis (~260px on a phone; 10px mono is ~6.2px a character); otherwise one "lo–hi" label.
-  const apart = (lo: number, hi: number) =>
-    (hi - lo) / max >= ((money(lo) + money(hi)).length * 6.2 + 12) / 260;
+  const ticks = [0, max / 2, max];
+  // A valuation method's figures against the price: the traded range is where the price has been,
+  // not a value, so it never counts toward the finding.
+  const methods = rows.filter((x) => x.kind !== 'trade');
+  const lows = methods.map((x) => x.lo ?? x.mark ?? 0);
+  const highs = methods.map((x) => x.hi ?? x.mark ?? 0);
+  const p = v.price.value;
+  const finding = stale
+    ? `Value per share runs from ${money(Math.min(...lows))} to ${money(Math.max(...highs))} across the methods`
+    : lows.every((x) => x > p)
+      ? `Every method puts value above the ${priceText(p)} price`
+      : highs.every((x) => x < p)
+        ? `Every method puts value below the ${priceText(p)} price`
+        : `The methods straddle the ${priceText(p)} price`;
+  const legendItems: [string, (t: Theme) => object][] = [
+    [
+      'Range',
+      (t) => ({ bgcolor: chartRoles(t).band, border: `1.5px solid ${chartRoles(t).edge}` }),
+    ],
+    ['Base case', (t) => ({ width: 4, bgcolor: chartRoles(t).emph })],
+    ...(v.thirdParty
+      ? ([
+          [
+            'A third party’s figure',
+            (t: Theme) => ({ border: `1.5px dotted ${chartRoles(t).emph}` }),
+          ],
+        ] as [string, (t: Theme) => object][])
+      : []),
+    [
+      `Price ${priceText(p)}, ${formatShortDate(v.price.asOf)}${stale ? ', over 30 days old' : ''}`,
+      (t) => ({
+        width: 2,
+        height: 14,
+        borderLeft: `2px ${stale ? 'dashed' : 'solid'} ${chartRoles(t).emph}`,
+      }),
+    ],
+  ];
+  const LABEL_COL = { xs: 'minmax(0, 1fr)', sm: '190px minmax(0, 1fr)' };
+  const [axisRef, TW] = useWidth<HTMLDivElement>();
   return (
-    <Box
-      component="figure"
-      sx={{ ...PANEL_SX, m: 0, p: 2.5, display: 'grid', gap: 0.5, minWidth: 0 }}
-    >
-      <Box
-        component="figcaption"
-        sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          justifyContent: 'space-between',
-          gap: 1,
-          fontSize: 12,
-          color: 'text.secondary',
-          mb: 1,
-        }}
-      >
-        <span>Value per share by method · bar ends fade because the edges are soft</span>
-        <span>
-          Price {priceText(v.price.value)} · {formatShortDate(v.price.asOf)}
-          {stale && ' (over 30 days old)'}
-        </span>
-      </Box>
-      {rows.map((row) => (
+    <ChartFrame
+      {...frame}
+      finding={finding}
+      metric="Value per share by method"
+      sub="Value per share by method · $ · each method’s range, its base case, and the price"
+      height={rows.length * 48 + 20}
+      legend={
         <Box
-          key={row.label}
-          role="img"
-          aria-label={`${row.label}: ${row.lo !== null && row.hi !== null ? `${money(row.lo)} to ${money(row.hi)}` : ''}${row.mark !== null ? `${row.lo !== null ? ', ' : ''}mark ${money(row.mark)}` : ''}`}
           sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: '190px minmax(0, 1fr)' },
-            gap: { xs: 0.5, sm: 1.75 },
-            alignItems: 'center',
-            minHeight: 48,
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '4px 16px',
+            fontSize: 12,
+            color: 'text.secondary',
           }}
         >
-          <Box sx={{ display: 'flex', flexDirection: 'column', fontSize: 13, lineHeight: 1.3 }}>
-            <Box component="span" sx={{ fontWeight: 500 }}>
-              {row.label}
-            </Box>
-            <Box component="span" sx={{ fontSize: 11, color: 'text.secondary' }}>
-              {row.sub}
-            </Box>
-          </Box>
-          <Box sx={{ position: 'relative', height: 48 }}>
+          {legendItems.map(([name, sx]) => (
             <Box
-              sx={(t) => ({
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                top: 21,
-                height: 2,
-                bgcolor: alpha(t.palette.text.secondary, 0.08),
-              })}
-            />
-            {row.lo !== null && row.hi !== null && (
+              key={name}
+              component="span"
+              sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}
+            >
               <Box
-                sx={(t) => {
-                  const c = row.kind === 'model' ? t.palette.info.main : t.palette.text.secondary;
-                  return {
-                    position: 'absolute',
-                    top: 15,
-                    height: 14,
-                    borderRadius: '7px',
-                    left: at(row.lo ?? 0, max),
-                    width: `${Math.max(1, (((row.hi ?? 0) - (row.lo ?? 0)) / max) * 100)}%`,
-                    background: `linear-gradient(90deg, ${alpha(c, 0)} 0%, ${alpha(c, 0.6)} 12%, ${alpha(c, 0.6)} 88%, ${alpha(c, 0)} 100%)`,
-                  };
-                }}
-              />
-            )}
-            {row.mark !== null && (
-              <Box
+                component="span"
+                aria-hidden
                 sx={(t) => ({
-                  position: 'absolute',
-                  top: 12,
-                  height: 20,
-                  left: at(row.mark ?? 0, max),
-                  ...(row.kind === 'third'
-                    ? {
-                        width: 10,
-                        ml: '-5px',
-                        border: `1.5px dashed ${t.palette.text.secondary}`,
-                        boxSizing: 'border-box',
-                        borderRadius: '2px',
-                      }
-                    : { width: 4, ml: '-2px', borderRadius: '2px', bgcolor: 'text.primary' }),
+                  width: 12,
+                  height: 10,
+                  borderRadius: '2px',
+                  boxSizing: 'border-box',
+                  ...sx(t),
                 })}
               />
-            )}
-            {row.lo !== null && row.hi !== null && !apart(row.lo, row.hi) ? (
-              <Box
-                component="span"
-                sx={{
-                  ...MONO,
-                  position: 'absolute',
-                  top: 32,
-                  left: at(row.lo, max),
-                  fontSize: 11,
-                  color: 'text.secondary',
-                  whiteSpace: 'nowrap',
-                  transform: row.lo / max > 0.7 ? 'translateX(-60%)' : 'none',
-                }}
-              >
-                {money(row.lo)}–{money(row.hi)}
-              </Box>
-            ) : (
-              row.lo !== null && (
-                <Box
-                  component="span"
-                  sx={{
-                    ...MONO,
-                    position: 'absolute',
-                    top: 32,
-                    left: at(row.lo, max),
-                    fontSize: 11,
-                    color: 'text.secondary',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {money(row.lo)}
-                </Box>
-              )
-            )}
-            {row.hi !== null && row.lo !== null && apart(row.lo, row.hi) && (
-              <Box
-                component="span"
-                sx={{
-                  ...MONO,
-                  position: 'absolute',
-                  top: 32,
-                  left: at(row.hi, max),
-                  transform: 'translateX(-100%)',
-                  fontSize: 11,
-                  color: 'text.secondary',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {money(row.hi)}
-              </Box>
-            )}
-            {row.lo === null && row.mark !== null && (
-              <Box
-                component="span"
-                sx={{
-                  ...MONO,
-                  position: 'absolute',
-                  top: 32,
-                  left: at(row.mark, max),
-                  ml: 1,
-                  fontSize: 11,
-                  color: 'text.secondary',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {money(row.mark)}
-              </Box>
-            )}
-            <Box
-              sx={(t) => ({
-                position: 'absolute',
-                left: at(v.price.value, max),
-                top: 0,
-                bottom: 0,
-                borderLeft: stale
-                  ? `2px dashed ${alpha(t.palette.text.primary, 0.6)}`
-                  : `2px solid ${t.palette.text.primary}`,
-              })}
-            />
-          </Box>
-        </Box>
-      ))}
-      <Box
-        sx={{
-          display: { xs: 'none', sm: 'grid' },
-          gridTemplateColumns: '190px minmax(0, 1fr)',
-          gap: 1.75,
-          mt: 0.5,
-        }}
-      >
-        <span />
-        <Box
-          sx={{ position: 'relative', height: 16, ...MONO, fontSize: 11, color: 'text.secondary' }}
-        >
-          <Box component="span" sx={{ position: 'absolute', left: 0 }}>
-            $0
-          </Box>
-          {ticks.map((tk) => (
-            <Box
-              component="span"
-              key={tk}
-              sx={{ position: 'absolute', left: at(tk, max), transform: 'translateX(-50%)' }}
-            >
-              {money(tk)}
+              {name}
             </Box>
           ))}
         </Box>
+      }
+      table={{
+        caption: 'Value per share by method',
+        cols: ['Method', 'Low', 'High', 'Mark'],
+        rows: rows.map((x) => [
+          `${x.label} (${x.sub})`,
+          x.lo !== null ? money(x.lo) : '—',
+          x.hi !== null ? money(x.hi) : '—',
+          x.mark !== null ? money(x.mark) : '—',
+        ]),
+      }}
+    >
+      <Box sx={{ display: 'grid', gap: 0.5 }}>
+        {rows.map((row) => (
+          <Box
+            key={row.label}
+            role="img"
+            aria-label={`${row.label}: ${row.lo !== null && row.hi !== null ? `${money(row.lo)} to ${money(row.hi)}` : ''}${row.mark !== null ? `${row.lo !== null ? ', ' : ''}${row.kind === 'third' ? 'figure' : 'base'} ${money(row.mark)}` : ''}`}
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: LABEL_COL,
+              gap: { xs: 0.25, sm: 1.75 },
+              alignItems: 'center',
+            }}
+          >
+            <Box sx={{ display: 'flex', flexDirection: 'column', fontSize: 13, lineHeight: 1.3 }}>
+              <Box
+                component="span"
+                sx={{
+                  fontWeight: row.kind === 'model' ? 600 : 400,
+                  color: row.kind === 'model' ? 'text.primary' : 'text.secondary',
+                }}
+              >
+                {row.label}
+              </Box>
+              <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
+                {row.sub}
+              </Box>
+            </Box>
+            <Box
+              sx={{
+                position: 'relative',
+                height:
+                  TW > 0 && endLabels(row.lo, row.hi, row.mark, TW, max).some((l) => l.below)
+                    ? 42
+                    : 30,
+              }}
+            >
+              <Box
+                sx={(t) => ({
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  top: 14,
+                  height: 2,
+                  bgcolor: chartRoles(t).grid,
+                })}
+              />
+              {row.lo !== null && row.hi !== null && (
+                <Box
+                  sx={(t) => ({
+                    position: 'absolute',
+                    top: 8,
+                    height: 14,
+                    borderRadius: '3px',
+                    boxSizing: 'border-box',
+                    left: at(row.lo ?? 0, max),
+                    width: `${Math.max(1, (((row.hi ?? 0) - (row.lo ?? 0)) / max) * 100)}%`,
+                    bgcolor: row.kind === 'model' ? chartRoles(t).band : 'transparent',
+                    border: `1.5px solid ${row.kind === 'model' ? chartRoles(t).edge : chartRoles(t).ctx}`,
+                  })}
+                />
+              )}
+              {row.mark !== null && (
+                <Box
+                  sx={(t) => ({
+                    position: 'absolute',
+                    top: 5,
+                    height: 20,
+                    left: at(row.mark ?? 0, max),
+                    ...(row.kind === 'third'
+                      ? {
+                          width: 10,
+                          ml: '-5px',
+                          border: `1.5px dotted ${chartRoles(t).emph}`,
+                          boxSizing: 'border-box',
+                          borderRadius: '2px',
+                        }
+                      : { width: 4, ml: '-2px', borderRadius: '2px', bgcolor: chartRoles(t).emph }),
+                  })}
+                />
+              )}
+              {TW > 0 &&
+                endLabels(row.lo, row.hi, row.mark, TW, max).map((l) => (
+                  <Box
+                    key={l.text}
+                    component="span"
+                    sx={{
+                      ...MONO,
+                      position: 'absolute',
+                      top: l.below ? 26 : 8,
+                      left: l.left,
+                      fontSize: 11,
+                      lineHeight: '14px',
+                      color: 'text.secondary',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {l.text}
+                  </Box>
+                ))}
+              <Box
+                sx={(t) => ({
+                  position: 'absolute',
+                  left: at(p, max),
+                  top: -4,
+                  bottom: -4,
+                  borderLeft: `2px ${stale ? 'dashed' : 'solid'} ${chartRoles(t).emph}`,
+                })}
+              />
+            </Box>
+          </Box>
+        ))}
+        <Box sx={{ display: 'grid', gridTemplateColumns: LABEL_COL, gap: 1.75, mt: 0.5 }}>
+          <Box sx={{ display: { xs: 'none', sm: 'block' } }} />
+          <Box
+            ref={axisRef}
+            aria-hidden
+            sx={{
+              position: 'relative',
+              height: 16,
+              ...MONO,
+              fontSize: 11,
+              color: 'text.secondary',
+            }}
+          >
+            {ticks.map((tk, i) => (
+              <Box
+                component="span"
+                key={tk}
+                sx={{
+                  position: 'absolute',
+                  left: at(tk, max),
+                  whiteSpace: 'nowrap',
+                  transform:
+                    i === 0
+                      ? 'none'
+                      : i === ticks.length - 1
+                        ? 'translateX(-100%)'
+                        : 'translateX(-50%)',
+                }}
+              >
+                {tickMoney(tk)}
+              </Box>
+            ))}
+          </Box>
+        </Box>
       </Box>
-    </Box>
+    </ChartFrame>
   );
+}
+
+/**
+ * Where a football-field row's figures go, in pixels on a track `tw` wide. Each end beside its end,
+ * outside the band, when both fit; otherwise under the band, low end left-aligned to it and high end
+ * right-aligned, or one centred "lo–hi" when the band is too short for two. Never inside the band,
+ * where the base tick and the price line run. A single figure (a third party's) sits right of its
+ * mark, or left when the right is short. Nothing is placed past the track.
+ */
+function endLabels(
+  lo: number | null,
+  hi: number | null,
+  mark: number | null,
+  tw: number,
+  max: number,
+) {
+  const X = (v: number) => (Math.min(max, Math.max(0, v)) / max) * tw;
+  const w = (t: string) => t.length * CH;
+  const GAP = 6;
+  const fit = (left: number, t: string) => Math.min(Math.max(0, left), tw - w(t));
+  if (lo === null || hi === null) {
+    if (mark === null) return [];
+    const t = money(mark);
+    const right = X(mark) + 10;
+    return [
+      { text: t, left: right + w(t) <= tw ? right : fit(X(mark) - 10 - w(t), t), below: false },
+    ];
+  }
+  const a = money(lo);
+  const b = money(hi);
+  if (X(lo) - GAP - w(a) >= 0 && X(hi) + GAP + w(b) <= tw)
+    return [
+      { text: a, left: X(lo) - GAP - w(a), below: false },
+      { text: b, left: X(hi) + GAP, below: false },
+    ];
+  const la = fit(X(lo), a);
+  const lb = fit(X(hi) - w(b), b);
+  if (la + w(a) + 8 <= lb)
+    return [
+      { text: a, left: la, below: true },
+      { text: b, left: lb, below: true },
+    ];
+  const c = `${a}–${b}`;
+  return [{ text: c, left: fit((X(lo) + X(hi) - w(c)) / 2, c), below: true }];
 }
 
 function inputChips(v: ValuationBlock, name: ScenarioName) {
@@ -775,94 +880,122 @@ function ScenarioCard({
   );
 }
 
+/** Each scenario's cells: ordered context steps, base the claim's phosphor (P-9). The group labels
+ *  above the cells carry the scenario, so no cell's meaning rests on its shade (RN-09). */
 const ODDS_TONE: Record<ScenarioName, (t: Theme) => string> = {
-  bear: (t) => alpha(t.palette.text.secondary, 0.55),
-  base: (t) => t.palette.text.primary,
-  bull: (t) => alpha(t.palette.info.main, 0.85),
+  bear: (t) => chartRoles(t).ctx2,
+  base: (t) => chartRoles(t).emph,
+  bull: (t) => chartRoles(t).ctx,
 };
 
 function Odds({ v, stale }: { v: ValuationBlock; stale: boolean }) {
-  const cells: (ScenarioName | null)[] = v.odds
-    ? NAMES.flatMap((name, i) => Array.from({ length: v.odds?.[i] ?? 0 }, () => name))
-    : Array.from({ length: 20 }, () => null);
+  const frame = useNoteFrame('odds');
+  const odds = v.odds;
+  const weighted = v.result.weighted;
+  const finding = odds
+    ? `The note gives the base case ${odds[1]} in 20${odds[1] > 10 ? ', better than even' : odds[1] === 10 ? ', even odds' : ''}`
+    : 'Scenario odds';
   return (
-    <Panel sx={{ display: 'grid', gap: 1.25, alignContent: 'start' }}>
-      <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
-        Scenario odds, in twentieths · each cell is 1 in 20
-      </Box>
-      <Box
-        role="img"
-        aria-label={
-          v.odds ? `Bear ${v.odds[0]}, base ${v.odds[1]}, bull ${v.odds[2]} in 20` : 'Odds not set'
-        }
-        sx={{ display: 'grid', gridTemplateColumns: 'repeat(20, minmax(0, 1fr))', gap: '3px' }}
-      >
-        {cells.map((c, i) => (
-          <Box
-            key={i}
-            sx={(t) => ({
-              height: 22,
-              borderRadius: '3px',
-              boxSizing: 'border-box',
-              ...(c
-                ? { bgcolor: ODDS_TONE[c](t) }
-                : { border: `1px dashed ${alpha(t.palette.text.secondary, 0.45)}` }),
-            })}
-          />
-        ))}
-      </Box>
-      {v.odds && v.result.weighted ? (
-        <Box
-          sx={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '4px 14px',
-            fontSize: 12,
-            color: 'text.secondary',
-          }}
-        >
-          {NAMES.map((name, i) => (
-            <Box
-              key={name}
-              component="span"
-              sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}
-            >
-              <Box
-                component="span"
-                sx={(t) => ({
-                  width: 10,
-                  height: 10,
-                  borderRadius: '2px',
-                  bgcolor: ODDS_TONE[name](t),
-                })}
-              />
-              {TITLE[name]} {v.odds?.[i]}/20
-            </Box>
-          ))}
-          <Box component="span" sx={{ color: 'text.primary' }}>
+    <ChartFrame
+      {...frame}
+      finding={finding}
+      metric="Scenario odds"
+      sub="Scenario odds, in twentieths · each cell is 1 in 20"
+      height={64}
+      status={
+        odds
+          ? { kind: 'ready' }
+          : {
+              kind: 'message',
+              tone: 'quiet',
+              text: 'This note sets no odds.',
+              cause:
+                'Write odds: 5/11/4 (bear/base/bull in twentieths) and the cells fill, with the weighted value marked on the price-vs-value strip.',
+            }
+      }
+      action={odds ? undefined : <YourCall label="not set" />}
+      table={
+        odds
+          ? {
+              caption: 'Scenario odds in twentieths',
+              cols: ['Scenario', 'In 20', 'Value'],
+              rows: NAMES.map((name, i) => [
+                TITLE[name],
+                odds[i],
+                money(v.result.scenarios[name].value),
+              ]),
+            }
+          : undefined
+      }
+      note={
+        odds && weighted ? (
+          <>
             Weighted{' '}
-            <Box component="span" sx={MONO}>
-              {money(v.result.weighted.value)}
+            <Box component="span" sx={{ ...MONO, color: 'text.primary' }}>
+              {money(weighted.value)}
             </Box>
             {!stale && (
               <>
                 {' '}
-                (<Signed value={v.result.weighted.vsPrice} /> vs price)
+                (<Signed value={weighted.vsPrice} /> vs price)
               </>
             )}
-          </Box>
-        </Box>
-      ) : (
-        <Box component="span" sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.5 }}>
-          <YourCall label="not set" /> Write{' '}
-          <Box component="code" sx={{ ...MONO, color: 'text.primary' }}>
-            odds: 5/11/4
-          </Box>{' '}
-          (bear/base/bull in twentieths) and the cells fill, with the weighted value marked on the
-          price-vs-value strip.
+          </>
+        ) : undefined
+      }
+    >
+      {odds && (
+        <Box
+          role="img"
+          aria-label={`Bear ${odds[0]}, base ${odds[1]}, bull ${odds[2]} in 20`}
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: NAMES.map((_, i) => `${Math.max(odds[i], 0.0001)}fr`).join(' '),
+            columnGap: '3px',
+            rowGap: 0.75,
+          }}
+        >
+          {NAMES.map((name, i) =>
+            odds[i] > 0 ? (
+              <Box
+                key={`l-${name}`}
+                component="span"
+                sx={{
+                  gridRow: 1,
+                  fontSize: 12,
+                  lineHeight: 1.3,
+                  minWidth: 0,
+                  color: name === 'base' ? 'text.primary' : 'text.secondary',
+                  fontWeight: name === 'base' ? 600 : 400,
+                }}
+              >
+                {TITLE[name]} · {odds[i]}
+              </Box>
+            ) : (
+              <span key={`l-${name}`} />
+            ),
+          )}
+          {NAMES.map((name, i) => (
+            <Box
+              key={name}
+              sx={{
+                gridRow: 2,
+                display: 'grid',
+                gridTemplateColumns: `repeat(${odds[i]}, minmax(0, 1fr))`,
+                gap: '3px',
+              }}
+            >
+              {Array.from({ length: odds[i] }, (_, k) => (
+                <Box
+                  key={k}
+                  sx={(t) => ({ height: 22, borderRadius: '3px', bgcolor: ODDS_TONE[name](t) })}
+                />
+              ))}
+            </Box>
+          ))}
         </Box>
       )}
-    </Panel>
+    </ChartFrame>
   );
 }
 
@@ -887,95 +1020,113 @@ function baseInput(v: ValuationBlock, key: string): number | null {
   return globals[key] ?? null;
 }
 
+/** The base value as two inputs move (RN-10): a real table, the base case outlined, each cell's
+ *  distance from the price as its shade and as a signed figure (never the shade alone). */
 function Sensitivity({ v, stale }: { v: ValuationBlock; stale: boolean }) {
+  const frame = useNoteFrame('sensitivity');
   const s = v.result.sensitivity;
   if (!s) return null;
   const rowBase = baseInput(v, s.row.key);
   const colBase = baseInput(v, s.col.key);
   const isBase = (label: string, base: number | null) =>
     base !== null && Math.abs(labelValue(label) - base) < 1e-9;
+  const rowName = INPUT_LABEL[s.row.key] ?? s.row.key;
+  const colName = (INPUT_LABEL[s.col.key] ?? s.col.key).toLowerCase();
+  const all = s.cells.flat().map((c) => c.value);
+  const p = v.price.value;
+  const finding = stale
+    ? `The base value runs from ${money(Math.min(...all))} to ${money(Math.max(...all))} across the grid`
+    : all.every((x) => x > p)
+      ? 'The base value stays above the price across the grid'
+      : all.every((x) => x < p)
+        ? 'The base value stays below the price across the grid'
+        : `The base value crosses the ${priceText(p)} price within the grid`;
   return (
-    <Panel sx={{ display: 'grid', gap: 1.25, alignContent: 'start' }}>
-      <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
-        Base value as {(INPUT_LABEL[s.row.key] ?? s.row.key).toLowerCase()} (rows) and{' '}
-        {(INPUT_LABEL[s.col.key] ?? s.col.key).toLowerCase()} (columns) move
-        {stale ? '' : ' · signed vs the price'}
-      </Box>
+    <ChartFrame
+      {...frame}
+      finding={finding}
+      metric="Sensitivity of the base value"
+      sub={`Base value per share · rows: ${rowName.toLowerCase()} · columns: ${colName}${stale ? '' : ' · signed vs the price'}`}
+      height={150}
+      note="Shading grows with distance from the price; the sign gives the direction. Outlined: the base case."
+    >
       <Box
-        role="table"
+        role="region"
         aria-label="Sensitivity of the base value"
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: '56px repeat(3, minmax(0, 1fr))',
-          gap: 0.5,
-          ...MONO,
-          fontSize: 12,
-        }}
+        tabIndex={0}
+        sx={{ overflowX: 'auto', minWidth: 0 }}
       >
         <Box
-          role="columnheader"
-          component="span"
-          sx={{ color: 'text.secondary', fontSize: 11, py: 0.75 }}
-        />
-        {s.col.labels.map((l) => (
-          <Box
-            role="columnheader"
-            key={l}
-            component="span"
-            sx={{ color: 'text.secondary', textAlign: 'center', py: 0.75 }}
-          >
-            {l}
-          </Box>
-        ))}
-        {s.cells.map((row, ri) => [
-          <Box
-            role="rowheader"
-            key={`h${ri}`}
-            component="span"
-            sx={{ color: 'text.secondary', py: 1 }}
-          >
-            {s.row.labels[ri]}
-          </Box>,
-          ...row.map((cell, ci) => {
-            const base = isBase(s.row.labels[ri], rowBase) && isBase(s.col.labels[ci], colBase);
-            return (
-              <Box
-                role="cell"
-                key={`${ri}-${ci}`}
-                component="span"
-                sx={(t) => ({
-                  textAlign: 'center',
-                  py: 1,
-                  borderRadius: '6px',
-                  bgcolor: alpha(
-                    t.palette.text.primary,
-                    stale ? 0.06 : Math.min(0.26, 0.05 + Math.abs(cell.vsPrice) / 220),
-                  ),
-                  boxShadow: base ? `inset 0 0 0 1.5px ${t.palette.text.primary}` : 'none',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  lineHeight: 1.3,
-                })}
-              >
-                <span>{money(cell.value)}</span>
-                {!stale && (
-                  // Primary, not secondary: on the deepest cell tint secondary measures 2.94:1 (dark),
-                  // primary 6.55:1. The smaller size carries the hierarchy.
-                  <Box component="span" sx={{ fontSize: 11, color: 'text.primary' }}>
-                    {arrow(cell.vsPrice)}
-                    {percent(cell.vsPrice)}
-                  </Box>
-                )}
+          component="table"
+          sx={{
+            borderCollapse: 'separate',
+            borderSpacing: '4px',
+            width: '100%',
+            ...MONO,
+            fontSize: 12,
+            '& th': { fontWeight: 400, color: 'text.secondary', fontSize: 11, py: 0.75, px: 0.5 },
+            '& thead th': { textAlign: 'center' },
+            '& tbody th': { textAlign: 'left', whiteSpace: 'nowrap' },
+          }}
+        >
+          <thead>
+            <tr>
+              <Box component="th" scope="col" sx={{ textAlign: 'left !important' }}>
+                {rowName}
               </Box>
-            );
-          }),
-        ])}
+              {s.col.labels.map((l) => (
+                <th key={l} scope="col">
+                  {l}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {s.cells.map((row, ri) => (
+              <tr key={ri}>
+                <th scope="row">{s.row.labels[ri]}</th>
+                {row.map((cell, ci) => {
+                  const base =
+                    isBase(s.row.labels[ri], rowBase) && isBase(s.col.labels[ci], colBase);
+                  return (
+                    <Box
+                      component="td"
+                      key={ci}
+                      sx={(t) => ({
+                        textAlign: 'center',
+                        py: 0.75,
+                        borderRadius: '6px',
+                        lineHeight: 1.3,
+                        bgcolor: alpha(
+                          t.palette.text.primary,
+                          stale ? 0.06 : Math.min(0.26, 0.05 + Math.abs(cell.vsPrice) / 220),
+                        ),
+                        boxShadow: base ? `inset 0 0 0 1.5px ${t.palette.text.primary}` : 'none',
+                      })}
+                    >
+                      <Box component="span" sx={{ display: 'block' }}>
+                        {money(cell.value)}
+                      </Box>
+                      {!stale && (
+                        // Primary, not secondary: on the deepest cell tint secondary measures 2.94:1
+                        // (dark), primary 6.55:1. The smaller size carries the hierarchy.
+                        <Box
+                          component="span"
+                          sx={{ display: 'block', fontSize: 11, color: 'text.primary' }}
+                        >
+                          {cell.vsPrice >= 0 ? '+' : '−'}
+                          {percent(cell.vsPrice)}
+                        </Box>
+                      )}
+                    </Box>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </Box>
       </Box>
-      <Box component="span" sx={{ fontSize: 11, color: 'text.secondary' }}>
-        Shading grows with distance from the price; the arrow gives the direction. Outlined: the
-        base case.
-      </Box>
-    </Panel>
+    </ChartFrame>
   );
 }
 
@@ -1136,19 +1287,24 @@ function Assumptions({ v }: { v: ValuationBlock }) {
 }
 
 /** Mauboussin, The Base Rate Book (Credit Suisse, 2016): sales growth, top 1,000 global companies
- *  1950–2015, inflation-adjusted. */
+ *  1950–2015, inflation-adjusted. "45%+" is open-ended: drawn with an arrow end, never as exactly 45. */
 const BASE_RATES = [
-  { label: 'Median company, 3 years', value: 5.4, shown: '5.4%' },
-  { label: 'Top 2.5% of 3-year runs', value: 45, shown: '45%+' },
-  { label: 'Top 1.3% of 5-year runs', value: 45, shown: '45%+' },
+  { label: 'Median company, 3 years', value: 5.4, shown: '5.4%', open: false },
+  { label: 'Top 2.5% of 3-year runs', value: 45, shown: '45%+', open: true },
+  { label: 'Top 1.3% of 5-year runs', value: 45, shown: '45%+', open: true },
 ];
+
+const signedPct = (v: number) => `${v < 0 ? '−' : ''}${percent(v)}`;
 
 /** "What the price implies": enterprise value, the steady-state share, and the growth it needs. */
 export function ImpliedBlockView() {
   const { valuation: v, freshness } = useNoteContext();
+  const frame = useNoteFrame('implied');
   if (!v) return null;
   const i = v.result.implied;
-  const growthMax = Math.max(i.growth ?? 0, 45) * 1.05;
+  const lo = Math.min(0, i.growth ?? 0);
+  const hi = Math.max(i.growth ?? 0, 45) * 1.12;
+  const today = Math.round(i.steadyStateShare);
   return (
     <Box
       sx={{
@@ -1176,11 +1332,25 @@ export function ImpliedBlockView() {
           </Box>
           <Box
             role="img"
-            aria-label={`Today's profit, capitalized, supports ${Math.round(i.steadyStateShare)}% of the price; future growth has to earn the other ${100 - Math.round(i.steadyStateShare)}%`}
-            sx={{ display: 'flex', height: 16, borderRadius: '6px', overflow: 'hidden' }}
+            aria-label={`Today's profit, capitalized, supports ${today}% of the price; future growth has to earn the other ${100 - today}%`}
+            sx={{ display: 'flex', gap: '2px', height: 16 }}
           >
-            <Box sx={{ width: `${Math.max(2, i.steadyStateShare)}%`, bgcolor: 'text.secondary' }} />
-            <Box sx={(t) => ({ flex: 1, bgcolor: alpha(t.palette.info.main, 0.5) })} />
+            <Box
+              sx={(t) => ({
+                width: `${Math.max(2, i.steadyStateShare)}%`,
+                borderRadius: '4px',
+                bgcolor: chartRoles(t).ctx,
+              })}
+            />
+            <Box
+              sx={(t) => ({
+                flex: 1,
+                borderRadius: '4px',
+                boxSizing: 'border-box',
+                bgcolor: chartRoles(t).band,
+                border: `1.5px solid ${chartRoles(t).edge}`,
+              })}
+            />
           </Box>
           {/* The labels sit under the bar: inside a segment they clip whenever its share is small. */}
           <Box
@@ -1195,25 +1365,34 @@ export function ImpliedBlockView() {
             }}
           >
             {[
-              { name: 'today', share: Math.round(i.steadyStateShare), fill: 'text.secondary' },
+              { name: 'today', share: today, fill: (t: Theme) => ({ bgcolor: chartRoles(t).ctx }) },
               {
                 name: 'future growth',
-                share: 100 - Math.round(i.steadyStateShare),
-                fill: (t: Theme) => alpha(t.palette.info.main, 0.5),
+                share: 100 - today,
+                fill: (t: Theme) => ({
+                  bgcolor: chartRoles(t).band,
+                  border: `1.5px solid ${chartRoles(t).edge}`,
+                }),
               },
-            ].map((s) => (
+            ].map((x) => (
               <Box
-                key={s.name}
+                key={x.name}
                 component="span"
                 sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}
               >
                 <Box
                   component="span"
-                  sx={{ width: 10, height: 10, borderRadius: '2px', bgcolor: s.fill }}
+                  sx={(t) => ({
+                    width: 10,
+                    height: 10,
+                    borderRadius: '2px',
+                    boxSizing: 'border-box',
+                    ...x.fill(t),
+                  })}
                 />
-                {s.name}{' '}
+                {x.name}{' '}
                 <Box component="span" sx={{ ...MONO, color: 'text.primary' }}>
-                  {s.share}%
+                  {x.share}%
                 </Box>
               </Box>
             ))}
@@ -1225,72 +1404,100 @@ export function ImpliedBlockView() {
           </Box>
         </Box>
       </Panel>
-      <Panel sx={{ display: 'grid', gap: 1.25, alignContent: 'start' }}>
-        <Box component="span" sx={{ fontSize: 12, color: 'text.secondary' }}>
-          Growth the price implies, against how often it happens
-        </Box>
+      <ChartFrame
+        {...frame}
+        finding={
+          i.growth !== null
+            ? `The price implies ${signedPct(i.growth)} a year of revenue growth (${i.growthYears})`
+            : 'No growth rate reaches this price'
+        }
+        metric="Growth the price implies"
+        sub="Revenue growth the price implies, against how often companies achieved it · % a year"
+        height={140}
+        note={
+          <>
+            {i.growth === null &&
+              (!i.growthAddsValue
+                ? 'At base inputs new capital earns less than it costs, so faster growth lowers the value instead of raising it. '
+                : i.bound === 'above'
+                  ? 'No growth rate up to 300% a year reaches this price. '
+                  : 'Even shrinking 50% a year leaves the base case above this price. ')}
+            Implied: the base case solved for revenue growth, every other input held. Base rates:
+            annual sales growth of the top 1,000 global companies, 1950–2015, after inflation
+            (Mauboussin, The Base Rate Book, 2016). The implied rate is before inflation, so the
+            comparison flatters the company slightly. “45%+” is open-ended (the arrow), not 45.
+          </>
+        }
+        table={{
+          caption: 'Implied growth against base rates, % a year',
+          cols: ['Rate', '% a year'],
+          rows: [
+            ...(i.growth !== null
+              ? [[`This price implies (${i.growthYears})`, `${signedPct(i.growth)}`]]
+              : []),
+            ...BASE_RATES.map((b) => [b.label, b.shown]),
+          ],
+        }}
+      >
         <Box
           role="img"
-          aria-label={`${i.growth === null ? 'No growth rate in range reaches the price' : `The price implies ${percent(i.growth)} a year, ${i.growthYears}`}; base rates: median 5.4%, top 2.5% of 3-year runs 45% or more`}
+          aria-label={`${i.growth === null ? 'No growth rate in range reaches the price' : `The price implies ${signedPct(i.growth)} a year, ${i.growthYears}`}; base rates: median 5.4%, top 2.5% of 3-year runs 45% or more`}
           sx={{ display: 'grid', gap: 1 }}
         >
+          {i.growth !== null && (
+            <RateBar
+              label={`This price implies (${i.growthYears})`}
+              value={i.growth}
+              shown={`${signedPct(i.growth)}/yr`}
+              lo={lo}
+              hi={hi}
+              emph
+            />
+          )}
           {BASE_RATES.map((b) => (
             <RateBar
               key={b.label}
               label={b.label}
               value={b.value}
               shown={b.shown}
-              max={growthMax}
-              emph={false}
+              lo={lo}
+              hi={hi}
+              open={b.open}
             />
           ))}
-          {i.growth !== null ? (
-            <RateBar
-              label={`This price implies (${i.growthYears})`}
-              value={Math.max(0, i.growth)}
-              shown={`${percent(i.growth)}/yr`}
-              max={growthMax}
-              emph
-            />
-          ) : (
-            <Box component="span" sx={{ fontSize: 13, fontWeight: 600 }}>
-              {!i.growthAddsValue
-                ? 'No growth rate reaches this price. At base inputs new capital earns less than it costs, so faster growth lowers the value instead of raising it.'
-                : i.bound === 'above'
-                  ? 'No growth rate up to 300% a year reaches this price.'
-                  : 'Even shrinking 50% a year leaves the base case above this price.'}
-            </Box>
-          )}
         </Box>
-        <Box component="span" sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.5 }}>
-          Implied: the base case solved for revenue growth, every other input held. Base rates:
-          annual sales growth of the top 1,000 global companies, 1950–2015, after inflation
-          (Mauboussin, The Base Rate Book, 2016). The implied rate is before inflation, so the
-          comparison flatters the company slightly.
-        </Box>
-      </Panel>
+      </ChartFrame>
     </Box>
   );
 }
 
+/** One rate on a shared scale from zero: below-zero growth runs left of the zero line, and an
+ *  open-ended rate ends in an arrow instead of a square end (RN-11). */
 function RateBar({
   label,
   value,
   shown,
-  max,
-  emph,
+  lo,
+  hi,
+  emph = false,
+  open = false,
 }: {
   label: string;
   value: number;
   shown: string;
-  max: number;
-  emph: boolean;
+  lo: number;
+  hi: number;
+  emph?: boolean;
+  open?: boolean;
 }) {
+  const P = (x: number) => ((Math.min(hi, Math.max(lo, x)) - lo) / (hi - lo)) * 100;
+  const zero = P(0);
+  const end = P(value);
   return (
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: 'minmax(0, 150px) minmax(0, 1fr) 72px',
+        gridTemplateColumns: 'minmax(0, 150px) minmax(0, 1fr) 64px',
         gap: 1.25,
         alignItems: 'center',
         fontSize: 12,
@@ -1302,21 +1509,42 @@ function RateBar({
       >
         {label}
       </Box>
-      <Box
-        sx={(t) => ({
-          height: 12,
-          borderRadius: '3px',
-          bgcolor: alpha(t.palette.text.secondary, 0.12),
-        })}
-      >
+      <Box sx={{ position: 'relative', height: 16 }}>
         <Box
-          sx={{
-            width: `${Math.min(100, Math.max(1, (value / max) * 100))}%`,
-            height: '100%',
-            borderRadius: '3px',
-            bgcolor: emph ? 'text.primary' : 'text.secondary',
-          }}
+          sx={(t) => ({
+            position: 'absolute',
+            top: -3,
+            bottom: -3,
+            left: `${zero}%`,
+            borderLeft: `1px solid ${chartRoles(t).axis}`,
+          })}
         />
+        <Box
+          sx={(t) => ({
+            position: 'absolute',
+            top: 2,
+            height: 12,
+            left: `${Math.min(zero, end)}%`,
+            width: `max(2px, ${Math.abs(end - zero)}%)`,
+            borderRadius: value >= 0 ? '0 3px 3px 0' : '3px 0 0 3px',
+            bgcolor: emph ? chartRoles(t).emph : chartRoles(t).ctx,
+          })}
+        />
+        {open && (
+          <Box
+            aria-hidden
+            sx={(t) => ({
+              position: 'absolute',
+              top: 0,
+              left: `${end}%`,
+              width: 0,
+              height: 0,
+              borderTop: '8px solid transparent',
+              borderBottom: '8px solid transparent',
+              borderLeft: `9px solid ${emph ? chartRoles(t).emph : chartRoles(t).ctx}`,
+            })}
+          />
+        )}
       </Box>
       <Box component="span" sx={{ ...MONO, textAlign: 'right' }}>
         {shown}

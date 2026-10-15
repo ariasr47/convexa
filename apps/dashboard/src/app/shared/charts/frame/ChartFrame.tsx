@@ -221,10 +221,11 @@ function StateBody({
     <Box
       sx={(t) => ({
         position: 'relative',
-        height,
+        // At least the plot's height, so the frame doesn't shift; taller when the message needs it.
+        minHeight: height,
         display: 'flex',
         alignItems: 'center',
-        px: 1,
+        p: 1,
         // The ghost grid: the chart's outline, so the frame reads as a chart with nothing in it.
         backgroundImage: `repeating-linear-gradient(0deg, transparent 0 calc(25% - 1px), ${alpha(
           t.palette.text.secondary,
