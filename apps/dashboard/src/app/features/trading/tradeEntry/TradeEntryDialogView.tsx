@@ -93,7 +93,12 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { FieldLabel } from './FieldLabel';
 import { FillModeToggle } from './FillModeToggle';
 import { LegFields, multiplierFor } from './LegFields';
-import { checkManualEntry, MANUAL_ENTRY_COPY, normalizeUnderlying } from './manualContract';
+import {
+  checkManualEntry,
+  MANUAL_ENTRY_COPY,
+  normalizeUnderlying,
+  underlyingError,
+} from './manualContract';
 import {
   defaultGoodTil,
   goodTilToExpiresAt,
@@ -524,8 +529,8 @@ export function TradeEntryDialog({
                 {isOrder
                   ? ORDER_DIALOG_TITLE
                   : manualContract
-                    ? manualCheck?.ok
-                      ? `Open simulated position · ${manualCheck.ticker}`
+                    ? underlyingError(underlying) == null
+                      ? `Open simulated position · ${entryTicker}`
                       : 'Open simulated position'
                     : `Open simulated position · ${ticker}`}
               </Typography>
@@ -594,9 +599,6 @@ export function TradeEntryDialog({
             </>
           )}
 
-          {/* Fill-mode segmented control (shipped 3-mode — replaced by the 2-option entry-price
-              control in the ORDER VARIANT ONLY, §3.1-6). Market/Limit resolve ONE option contract,
-              so once the entry is not a single option leg they are refused VISIBLY, never hidden. */}
           {/* MANUAL CONTRACT ENTRY — the underlying first: every leg of a position shares it. */}
           {manualContract && (
             <Box data-testid="entry-manual-contract">
@@ -636,6 +638,9 @@ export function TradeEntryDialog({
             </Box>
           )}
 
+          {/* Fill-mode segmented control (shipped 3-mode — replaced by the 2-option entry-price
+              control in the ORDER VARIANT ONLY, §3.1-6). Market/Limit resolve ONE option contract,
+              so once the entry is not a single option leg they are refused VISIBLY, never hidden. */}
           {!isOrder && (
             <FillModeToggle
               value={effectiveMode}
