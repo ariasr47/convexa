@@ -467,6 +467,8 @@ test('G1 · built demo journey stays local, keeps provenance, and covers visitor
     .getByTestId('demo-provenance')
     .getByRole('button', { name: 'Reset demo data' })
     .click();
+  // Reset asks first (shell-site.mjs): confirm in the popover under the button.
+  await page.getByTestId('demo-reset-confirm-yes').click();
   await expect(page.getByTestId('demo-provenance')).toContainText(
     'Simulated playback paused. Showing the last sample.',
   );

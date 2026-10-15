@@ -16,9 +16,8 @@ export function RouteFallback() {
   return (
     <Box
       data-testid="route-fallback"
-      role="status"
+      role="progressbar"
       aria-label="Loading page"
-      aria-busy="true"
       sx={{
         maxWidth: 1240,
         mx: 'auto',

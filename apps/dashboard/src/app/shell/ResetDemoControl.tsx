@@ -61,7 +61,10 @@ export function ResetDemoControl({ onReset }: { onReset: () => void }) {
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
           <Button
             variant="contained"
-            onClick={onReset}
+            onClick={() => {
+              setOpen(false);
+              onReset();
+            }}
             data-testid="demo-reset-confirm-yes"
             sx={{ minHeight: 44 }}
           >
