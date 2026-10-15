@@ -1383,7 +1383,8 @@ function GroupPanel({
   const net = series[series.length - 1];
   // Room for the widest axis label ("+2,828K", 7 mono characters at 11px) and its gap.
   const PL = 62;
-  const PT = 6;
+  // The top tick's label sits 4px under its line; its em box needs ~9px above that baseline.
+  const PT = 9;
   const PH = 76;
   const H = PT + PH + 20;
   const x = (i: number) => PL + (i / Math.max(1, series.length - 1)) * Math.max(0, W - PL - 4);
