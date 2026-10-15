@@ -34,6 +34,7 @@ import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { isDeliveringLive } from '@/shared/liveness/liveClaim';
 import { downText, upText } from '@/shared/theme/tokens';
 import { PanelContainer } from '@/shared/ui/PanelContainer';
+import { RouteFallback } from '@/shared/ui/RouteFallback';
 import {
   dataMode,
   getTicker,
@@ -112,7 +113,7 @@ function personaLabelOf(id: string): string | null {
   return [...PRESETS, ...loadCustoms()].find((p) => p.id === id)?.name ?? null;
 }
 
-export function PositionsPage() {
+function PositionsBook({ markFeed }: { markFeed: MarkFeed }) {
   // The focused ticker is derived once on mount from the durable book (re-derives on remount, like a
   // reload). It drives the anchor bundle + the single page-scoped SSE.
   const ticker = useMemo(() => focusedTicker(), []);
@@ -134,6 +135,8 @@ export function PositionsPage() {
   // `data` staying null — this only stops the silent, indefinite re-ask of a route that will never
   // answer differently.
   useEffect(() => {
+    // No options feed on this site: the bundle route can only refuse, so it is never asked.
+    if (markFeed === 'notLive') return;
     let cancelled = false;
     let halted = false;
     const load = () => {
@@ -153,7 +156,7 @@ export function PositionsPage() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [ticker]);
+  }, [ticker, markFeed]);
 
   // ONE page-scoped SSE for the focused ticker (same lifecycle/teardown as the Ticker viewer). At most
   // one EventSource per ticker; closed on unmount. The watchdog flips `streamOffline` on a drop so live
@@ -161,6 +164,7 @@ export function PositionsPage() {
   useEffect(() => {
     setLive(null);
     setStreamOffline(false);
+    if (markFeed === 'notLive') return;
     let gapTimer: ReturnType<typeof setTimeout> | undefined;
     const unsub = subscribeTicker(ticker, {}, (event) => {
       if (event.kind === 'ticker_update') {
@@ -177,7 +181,7 @@ export function PositionsPage() {
       if (gapTimer) clearTimeout(gapTimer);
       unsub();
     };
-  }, [ticker]);
+  }, [ticker, markFeed]);
 
   const pf = usePortfolio(ticker, data, live, isLive, streamOffline);
   const [entryOpen, setEntryOpen] = useState(false);
@@ -210,12 +214,6 @@ export function PositionsPage() {
   // (never live-derived, so no offline arm; `capitalAtRisk.ts`'s own header). Reuses the SAME
   // `view.max_loss` every row/card cell already reads — not a second compute path.
   const capitalAtRisk = useMemo(() => capitalAtRiskStateOf({ views: pf.views }), [pf.views]);
-
-  // Where marks come from (markFeed.tsx): the demo's sample chain, or no feed at all on a live build
-  // whose server says `not_live` (records and user-entered prices still work; option marks can't).
-  const marketData = useMarketDataMode();
-  const markFeed: MarkFeed =
-    dataMode === 'demo' ? 'sample' : marketData === 'not_live' ? 'notLive' : 'live';
 
   return (
     <MarkFeedProvider value={markFeed}>
@@ -297,6 +295,22 @@ export function PositionsPage() {
           Do not "make it consistent" with that block (`[live-vs-static-isolation]`, AC-E17). */}
         <TrackRecordSection personaLabel={personaLabelOf} />
       </Box>
+    </MarkFeedProvider>
+  );
+}
+
+/** Where marks come from (markFeed.tsx): the demo's sample chain, or, on a live build whose server
+ *  says `not_live`, no feed at all (records and user-entered prices still work; option marks can't,
+ *  and the bundle, stream and contract routes are never asked). The health read is shared and
+ *  answered once per page load; the book waits for it so no request starts on a guess. */
+export function PositionsPage() {
+  const marketData = useMarketDataMode();
+  if (dataMode !== 'demo' && marketData === null) return <RouteFallback />;
+  const markFeed: MarkFeed =
+    dataMode === 'demo' ? 'sample' : marketData === 'not_live' ? 'notLive' : 'live';
+  return (
+    <MarkFeedProvider value={markFeed}>
+      <PositionsBook markFeed={markFeed} />
     </MarkFeedProvider>
   );
 }

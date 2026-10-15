@@ -180,6 +180,9 @@ export function BrokerReassessAction({
               m: 0,
               overflow: 'auto',
               maxHeight: 320,
+              // Wrap long values (the basis line) inside the box, never past its edge.
+              whiteSpace: 'pre-wrap',
+              overflowWrap: 'anywhere',
             }}
           >
             {json}
