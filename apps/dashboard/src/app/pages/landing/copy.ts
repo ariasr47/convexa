@@ -44,9 +44,20 @@ export const LANDING_COPY = {
     /** The hero panel's own eyebrow — text-grade amber (canon Amber budget, SPEC §4 Design
      *  direction: "the eyebrow caps use text-grade amber, never fill amber as small text"). */
     panelEyebrow: 'Dealer gamma surface · strike × tenor',
-    /** The legend beside `GammaSurfaceHero` (AC-L4a): three named ridges, in the SVG's own
-     *  ridge colours (flip = primary/amber, call wall = success, put wall = error). */
-    legend: ['gamma flip', 'call wall', 'put wall'] as const,
+    /** The surface's accessible name; the stage adds how to move it. */
+    surfaceName: 'Dealer gamma surface across strike and expiry',
+    surfaceKeys: 'Arrow keys move the probe; Shift and arrows turn the surface.',
+    /** The help line under the readout: the WebGL view, and the static projection (P-15). */
+    helpTurn: 'Drag to turn it (sideways on a phone, so the page still scrolls)',
+    helpStatic: 'The static projection: the same surface, labels and readout, drawn without WebGL.',
+    /** Staging's foot line beside the demo chip: the hero isn't the demo scenario's chain. */
+    stagingNote: 'The model’s shape, not the demo scenario’s chain.',
+  },
+
+  /** The sample marks (P-3, P-15): production's tag, staging's dashed chip. */
+  sample: {
+    tag: 'Illustrative sample',
+    demoChip: 'Demo · illustrative sample',
   },
 
   field: {

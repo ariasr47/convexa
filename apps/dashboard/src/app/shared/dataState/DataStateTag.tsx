@@ -37,8 +37,19 @@ const GLYPH: Record<DataStateKey, ComponentType<{ sx?: object; 'aria-hidden'?: b
   thirdParty: OpenInNewOutlined,
 };
 
-export function DataStateTag({ state, detail }: { state: DataStateKey; detail?: string | null }) {
-  const { word, kind } = DATA_STATES[state];
+export function DataStateTag({
+  state,
+  detail,
+  word: wordOverride,
+}: {
+  state: DataStateKey;
+  detail?: string | null;
+  /** The state's own wording where the canon names one (P-15: the landing's "Illustrative sample"
+   *  is the `sample` state, drawn and glyphed as one). */
+  word?: string;
+}) {
+  const { word: stateWord, kind } = DATA_STATES[state];
+  const word = wordOverride ?? stateWord;
   const Glyph = GLYPH[state];
   return (
     <Box

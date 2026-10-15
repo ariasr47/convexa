@@ -1,6 +1,7 @@
 /**
- * ScoreStripSample — a landing-local composition over `shared/figure` + `shared/ui`. Its CTA-shaped
- * elements are non-focusable presentational nodes: a picture of a control never enters the tab order.
+ * ScoreStripSample — a landing-local composition over `shared/figure` and the shared ChartFrame. Its
+ * CTA-shaped elements are non-focusable presentational nodes: a picture of a control never enters the
+ * tab order.
  *
  * FLIP_DISTANCE_LABEL is DERIVED AT MODULE LOAD from `samples.ts`, never hand-typed: the design's own
  * artboard prints this sample distance as `−0.81%` (`landing.mjs:88`) and `−0.8%` (`landing.mjs:65`),
@@ -9,21 +10,18 @@
  * be edited by this feature, and a page may not import a sibling page — keep the two equal by hand
  * (SPEC §7 item 14).
  *
- * No ring gauge (SPEC §2 — no ring-gauge component exists in `apps/dashboard`, and inventing one for
- * the acquisition page only is a second illustration under the canon's one-hero-instrument limit) and
- * no `<svg>` at all in this file, so §7 item 2's set-equality scan stays decidable.
+ * No ring gauge and no `<svg>` in this file.
  *
- * GATE Z I-3 (AC-L5a, amendment 3): this panel carries the SHARED sample literal
- * (`SAMPLE_MARK`) once — the same words the hero and field panels carry, so `/` still has two
- * sample literals (this one, and the AI-read panel's own distinct withdrawal) and only two, never
- * a third vocabulary for the same claim.
+ * The frame is the sample provenance (P-3, P-8): dashed, with the hatch stripe. Production tags it
+ * "Illustrative sample" and carries the shared `SAMPLE_MARK`; staging carries the demo's dashed chip in
+ * its place (Env 2026-10-14). The sample's tier is marked by outline and weight, not amber (P-6, amber
+ * spent), and no figure here is amber.
  */
+import { ChartFrame } from '@/shared/charts/frame';
 import { MONO_FACE, SANS_FACE } from '@/shared/figure';
 import { extrasFor } from '@/shared/theme/tokens';
-import { TintChip } from '@/shared/ui';
 import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
+import { LANDING_COPY } from './copy';
 import { LANDING_SAMPLE, SAMPLE_MARK } from './samples';
 
 /** The mirrored projection (see the docblock). Signed percentage only, one decimal, figure minus. */
@@ -38,14 +36,12 @@ function percentOnly(level: number, spot: number): string {
 export const FLIP_DISTANCE_LABEL = percentOnly(LANDING_SAMPLE.gammaFlip, LANDING_SAMPLE.spot);
 
 const TIERS = ['Dormant', 'Watch', 'Actionable', 'Prime'] as const;
+const TITLE = 'Triage score · SPY';
 
 interface ScoreCell {
   label: string;
   value: string;
   caption: string;
-  /** Only the sample's OWN tier renders in the amber emphasis register — the other three cells are
-   *  plain traced figures. */
-  emphasize?: boolean;
   valueTestId?: string;
 }
 
@@ -57,7 +53,6 @@ const CELLS: ScoreCell[] = [
     label: 'Opportunity',
     value: String(LANDING_SAMPLE.score),
     caption: `${LANDING_SAMPLE.tier} · near wall · IV cheap`,
-    emphasize: true,
   },
   { label: 'IV / HV', value: LANDING_SAMPLE.ivHv, caption: 'options look cheap' },
   {
@@ -69,37 +64,50 @@ const CELLS: ScoreCell[] = [
   { label: 'Vol / OI', value: LANDING_SAMPLE.volOi, caption: '3 unusual strikes' },
 ];
 
-export function ScoreStripSample() {
+export function ScoreStripSample({ demo = false }: { demo?: boolean }) {
   return (
-    <Box
-      data-testid="landing-score-panel"
-      sx={{
-        bgcolor: 'background.paper',
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 1,
-        overflow: 'hidden',
-      }}
+    <ChartFrame
+      testId="landing-score-panel"
+      finding={TITLE}
+      metric={TITLE}
+      provenance="sample"
+      height={120}
+      tag={demo ? undefined : { state: 'sample', word: LANDING_COPY.sample.tag }}
+      source={demo ? { text: LANDING_COPY.sample.demoChip } : undefined}
+      note={demo ? undefined : <span data-testid="landing-score-caption">{SAMPLE_MARK}</span>}
     >
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        divider={
-          <Box
-            sx={{
-              borderBottom: { xs: '1px solid', sm: 0 },
-              borderRight: { sm: '1px solid' },
-              borderColor: 'divider',
-            }}
-          />
-        }
+      {/* Four cells, 2 × 2 on a phone; hairlines are the 1px gaps over the divider colour. */}
+      <Box
+        sx={(t) => ({
+          display: 'grid',
+          gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(4, minmax(0, 1fr))' },
+          gap: '1px',
+          bgcolor: 'divider',
+          border: 1,
+          borderColor: 'divider',
+          borderRadius: '10px',
+          overflow: 'hidden',
+          '& > div': { bgcolor: extrasFor(t).well },
+        })}
       >
         {CELLS.map((cell) => (
-          <Box key={cell.label} sx={{ flex: 1, minWidth: 0, px: 2, py: 2 }}>
+          <Box
+            key={cell.label}
+            sx={{
+              minWidth: 0,
+              px: 2,
+              py: 1.75,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0.5,
+            }}
+          >
             <Box
               component="div"
               sx={{
                 ...SANS_FACE,
                 fontSize: 11,
+                fontWeight: 600,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 color: 'text.secondary',
@@ -112,61 +120,66 @@ export function ScoreStripSample() {
               data-testid={cell.valueTestId}
               sx={[
                 MONO_FACE,
-                { fontSize: 20, fontWeight: 500, mt: 0.5 },
-                (theme) => ({
-                  color: cell.emphasize ? extrasFor(theme).textAmber : theme.palette.text.primary,
-                }),
+                { fontSize: 24, fontWeight: 500, lineHeight: 1.1, color: 'text.primary' },
               ]}
             >
               {cell.value}
             </Box>
-            <Box component="div" sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+            <Box component="div" sx={{ fontSize: 12, lineHeight: 1.4, color: 'text.secondary' }}>
               {cell.caption}
             </Box>
           </Box>
         ))}
-      </Stack>
-      <Stack
-        direction="row"
-        spacing={1}
+      </Box>
+      <Box
         sx={{
-          px: 2,
-          py: 1.5,
-          borderTop: '1px solid',
-          borderColor: 'divider',
-          alignItems: 'center',
+          display: 'flex',
           flexWrap: 'wrap',
-          rowGap: 1,
+          alignItems: 'center',
+          gap: '6px 8px',
+          fontSize: 12.5,
+          color: 'text.secondary',
         }}
       >
-        {TIERS.map((tier, i) => (
-          <Stack key={tier} direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <TintChip tone={tier === LANDING_SAMPLE.tier ? 'emphasis' : 'neutral'} label={tier} />
-            {i < TIERS.length - 1 && (
-              <Box component="span" sx={{ color: 'text.secondary', fontSize: 12 }}>
-                →
+        {TIERS.map((tier, i) => {
+          const on = tier === LANDING_SAMPLE.tier;
+          return (
+            <Box
+              key={tier}
+              component="span"
+              sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}
+            >
+              {i > 0 && (
+                <Box component="span" aria-hidden="true">
+                  →
+                </Box>
+              )}
+              <Box
+                component="span"
+                aria-current={on ? 'true' : undefined}
+                sx={(t) => ({
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  minHeight: 26,
+                  px: 1.25,
+                  borderRadius: 999,
+                  border: '1px solid',
+                  // P-6: the sample's tier is marked by outline and weight, not amber.
+                  borderColor: on ? t.palette.text.primary : t.palette.divider,
+                  boxShadow: on ? `inset 0 0 0 1px ${t.palette.text.primary}` : 'none',
+                  color: on ? 'text.primary' : 'text.secondary',
+                  fontWeight: on ? 700 : 500,
+                })}
+              >
+                {tier}
               </Box>
-            )}
-          </Stack>
-        ))}
-        <Box component="span" sx={{ ml: 'auto', fontSize: 12, color: 'text.secondary' }}>
+            </Box>
+          );
+        })}
+        <Box component="span" sx={{ ml: 'auto' }}>
           0–100 triage score · not a trade signal
         </Box>
-      </Stack>
-      <Typography
-        variant="caption"
-        data-testid="landing-score-caption"
-        sx={{
-          display: 'block',
-          px: 2,
-          py: 1,
-          color: 'text.secondary',
-          borderTop: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
-        {SAMPLE_MARK}
-      </Typography>
-    </Box>
+      </Box>
+    </ChartFrame>
   );
 }

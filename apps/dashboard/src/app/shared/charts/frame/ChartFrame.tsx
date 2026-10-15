@@ -67,7 +67,7 @@ export function ChartFrame({
   sub?: ReactNode;
   provenance: Provenance;
   status?: ChartStatus;
-  tag?: { state: DataStateKey; detail?: string };
+  tag?: { state: DataStateKey; detail?: string; word?: string };
   /** The plot's height, kept by the loading and message bodies. */
   height: number;
   legend?: ReactNode;
@@ -140,7 +140,7 @@ export function ChartFrame({
           >
             {title}
           </Box>
-          {tag && <DataStateTag state={tag.state} detail={tag.detail} />}
+          {tag && <DataStateTag state={tag.state} detail={tag.detail} word={tag.word} />}
         </Box>
         {sub && (
           <Box

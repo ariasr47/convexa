@@ -6,6 +6,9 @@
  * used to select that form is gone, so nothing here can drift back into the Lab's.
  *
  * The panel header and the sample footnote are DOM copy OWNED BY THE LANDING, not canvas pixels.
+ * The frame is the shared ChartFrame in its sample provenance (P-3, P-8): dashed, with the hatch
+ * stripe. Production tags it "Illustrative sample" and keeps the caption; staging carries the demo's
+ * dashed chip in its place (Env 2026-10-14).
  *
  * GATE Z I-3 (SPEC amendment 3, AC-L5a): `describedById="landing-field-caption"` overrides the
  * canvas's own generated accessible description (written for a real ticker desk — "the live tape
@@ -18,16 +21,20 @@
  * is the hero draw; a shimmer is a data-signal keyframe with no stream to gate it; a zero-height box
  * is layout shift directly under the H1. The measured 20 kB-gzipped trigger is the closer's (F16).
  */
+import { ChartFrame } from '@/shared/charts/frame';
 import { StructureFieldCanvas } from '@/shared/charts/structure-field';
 import { resolveLevelPalette } from '@/shared/charts/structure-field/levelStrokes';
 import { extrasFor } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { useMemo } from 'react';
+import { LANDING_COPY } from './copy';
 import { LANDING_FIELD_MODEL, SAMPLE_MARK } from './samples';
 
-export function StructureFieldSample() {
+const CAPTION_ID = 'landing-field-caption';
+const TITLE = 'Net dealer gamma by strike · SPY';
+
+export function StructureFieldSample({ demo = false }: { demo?: boolean }) {
   const theme = useTheme();
   const palette = useMemo(() => resolveLevelPalette(theme), [theme]);
   const surfaces = useMemo(
@@ -42,37 +49,46 @@ export function StructureFieldSample() {
     [theme],
   );
   return (
-    <Box
-      data-testid="landing-field-panel"
-      sx={{
-        bgcolor: 'background.paper',
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 1,
-        overflow: 'hidden',
-        p: 2,
-      }}
+    <ChartFrame
+      testId="landing-field-panel"
+      finding={TITLE}
+      metric={TITLE}
+      provenance="sample"
+      height={240}
+      tag={demo ? undefined : { state: 'sample', word: LANDING_COPY.sample.tag }}
+      source={demo ? { text: LANDING_COPY.sample.demoChip } : undefined}
+      note={
+        demo ? undefined : (
+          <span id={CAPTION_ID} data-testid="landing-field-caption">
+            {SAMPLE_MARK}
+          </span>
+        )
+      }
     >
-      <Typography component="h3" variant="subtitle2" sx={{ mb: 1 }}>
-        Structure field
-      </Typography>
       <StructureFieldCanvas
         model={LANDING_FIELD_MODEL}
         height={240}
         palette={palette}
         surfaces={surfaces}
-        describedById="landing-field-caption"
+        describedById={CAPTION_ID}
       />
-      {/* `StructureFieldCanvas`'s `aria-describedby="landing-field-caption"` points HERE — the
-          same mechanism `GammaSurfaceHero`'s `aria-describedby="gs-sample-caption"` uses. */}
-      <Typography
-        id="landing-field-caption"
-        variant="caption"
-        data-testid="landing-field-caption"
-        sx={{ display: 'block', mt: 1, color: 'text.secondary' }}
-      >
-        {SAMPLE_MARK}
-      </Typography>
-    </Box>
+      {/* Staging: the canvas's description target, saying what the chip says. */}
+      {demo && (
+        <Box
+          component="span"
+          id={CAPTION_ID}
+          sx={{
+            position: 'absolute',
+            width: '1px',
+            height: '1px',
+            overflow: 'hidden',
+            clipPath: 'inset(50%)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {`${LANDING_COPY.sample.demoChip}. ${SAMPLE_MARK}`}
+        </Box>
+      )}
+    </ChartFrame>
   );
 }

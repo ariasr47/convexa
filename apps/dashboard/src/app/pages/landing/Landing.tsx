@@ -4,8 +4,10 @@
  * Six sections, in the design's order (SPEC §1/§3 AC-L1), and no seventh: hero · structure field ·
  * triage score · AI read · "Numbers say where they came from" (the honesty section — the three trust
  * promises are content INSIDE it, not a section of their own) · CTA band. One hero instrument —
- * `GammaSurfaceHero`, the dealer-gamma surface over strike × tenor (AC-L4a) — plus three labelled
- * samples of shipped surfaces (`StructureFieldSample`, `ScoreStripSample`, `AiReadSample`, all §2.2/F6).
+ * `GammaSurfaceHero`, the F1 dealer-gamma surface over strike × tenor (WebGL2 with its static
+ * projection as the fallback, P-15) — plus three labelled samples of shipped surfaces
+ * (`StructureFieldSample`, `ScoreStripSample`, `AiReadSample`), each in a dashed, hatched sample frame
+ * (P-3, P-8). Production tags all four "Illustrative sample"; staging gives them the demo's chip.
  * `HeroCurve` stays `aria-hidden` decorative background geometry — it is NOT the hero instrument.
  *
  * ZERO DATA EDGE (SPEC §2.1): no `fetch`, no `EventSource`, no durable store, no `@convexa/api`
@@ -46,7 +48,6 @@ import { AiReadSample } from './AiReadSample';
 import { LANDING_COPY } from './copy';
 import { GammaSurfaceHero } from './GammaSurfaceHero';
 import { HeroCurve } from './HeroCurve';
-import { SAMPLE_MARK } from './samples';
 import { ScoreStripSample } from './ScoreStripSample';
 import { StructureFieldSample } from './StructureFieldSample';
 
@@ -80,12 +81,6 @@ const sectionHeadingSx = {
   fontSize: 'clamp(26px, 2.6vw, 34px)',
   lineHeight: 1.15,
 } as const;
-
-const HERO_LEGEND = [
-  { key: 'flip', label: LANDING_COPY.hero.legend[0] },
-  { key: 'call', label: LANDING_COPY.hero.legend[1] },
-  { key: 'put', label: LANDING_COPY.hero.legend[2] },
-] as const;
 
 interface FeatureSectionProps {
   section: 'field' | 'score' | 'ai-read';
@@ -357,70 +352,8 @@ export function Landing() {
               </Typography>
             </Stack>
 
-            <Box
-              data-testid="landing-hero-panel"
-              sx={{
-                bgcolor: 'background.paper',
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 1,
-                p: 2,
-                minWidth: 0,
-              }}
-            >
-              <Eyebrow>{LANDING_COPY.hero.panelEyebrow}</Eyebrow>
-              <Box sx={{ mt: 1 }}>
-                <GammaSurfaceHero />
-              </Box>
-              <Stack
-                direction="row"
-                spacing={2.5}
-                sx={{
-                  mt: 1.5,
-                  pt: 1.5,
-                  borderTop: '1px solid',
-                  borderColor: 'divider',
-                  flexWrap: 'wrap',
-                  rowGap: 1,
-                }}
-              >
-                {HERO_LEGEND.map((item) => (
-                  <Stack
-                    key={item.key}
-                    direction="row"
-                    spacing={0.75}
-                    sx={{ alignItems: 'center' }}
-                  >
-                    <Box
-                      component="span"
-                      sx={{
-                        width: 10,
-                        height: 2,
-                        borderRadius: 1,
-                        bgcolor: (theme) =>
-                          item.key === 'flip'
-                            ? theme.palette.primary.main
-                            : item.key === 'call'
-                              ? theme.palette.success.main
-                              : theme.palette.error.main,
-                      }}
-                    />
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                      {item.label}
-                    </Typography>
-                  </Stack>
-                ))}
-              </Stack>
-              {/* `GammaSurfaceHero`'s `aria-describedby="gs-sample-caption"` points HERE — the
-                  sample disclosure reaches a screen reader even though the SVG paints no text. */}
-              <Typography
-                id="gs-sample-caption"
-                variant="caption"
-                sx={{ display: 'block', mt: 1, color: 'text.secondary' }}
-              >
-                {SAMPLE_MARK}
-              </Typography>
-            </Box>
+            {/* The F1 dealer-gamma surface: WebGL2 with its static projection as the fallback (P-15). */}
+            <GammaSurfaceHero demo={demo} />
           </Box>
         </Container>
       </Box>
@@ -432,7 +365,7 @@ export function Landing() {
         heading={LANDING_COPY.field.h2}
         body={LANDING_COPY.field.body}
         bullets={LANDING_COPY.field.bullets}
-        visual={<StructureFieldSample />}
+        visual={<StructureFieldSample demo={demo} />}
       />
 
       {/* ===== 3. Triage score ===== */}
@@ -442,7 +375,7 @@ export function Landing() {
         heading={LANDING_COPY.score.h2}
         body={LANDING_COPY.score.body}
         bullets={LANDING_COPY.score.bullets}
-        visual={<ScoreStripSample />}
+        visual={<ScoreStripSample demo={demo} />}
         flip
       />
 
@@ -453,7 +386,7 @@ export function Landing() {
         heading={LANDING_COPY.aiRead.h2}
         body={LANDING_COPY.aiRead.body}
         bullets={LANDING_COPY.aiRead.bullets}
-        visual={<AiReadSample />}
+        visual={<AiReadSample demo={demo} />}
       />
 
       {/* ===== 5. "Numbers say where they came from" — the three trust promises live INSIDE
