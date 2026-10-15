@@ -210,8 +210,11 @@ export function Block({ block }: { block: NoteBlock }) {
 }
 
 export function NoteBody({ blocks }: { blocks: NoteBlock[] }) {
+  // `break-word`, not `anywhere`: both break a token only when it can't fit its line (a long URL in
+  // prose), but `anywhere` also counts every character as a break when a table sizes its columns,
+  // so cells shrank to one or two characters ("T/O/T/A/L", "108/.5") instead of the table scrolling.
   return (
-    <Box sx={{ display: 'grid', gap: 2, minWidth: 0, overflowWrap: 'anywhere' }}>
+    <Box sx={{ display: 'grid', gap: 2, minWidth: 0, overflowWrap: 'break-word' }}>
       {blocks.map((block, index) => (
         <Block block={block} key={index} />
       ))}

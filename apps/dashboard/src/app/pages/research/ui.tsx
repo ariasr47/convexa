@@ -180,6 +180,12 @@ export function StateDot({ state, size = 9 }: { state: Freshness['state']; size?
   );
 }
 
+/** A label lowered to run on in a sentence ("Lock-up release" → "lock-up release"), leaving an
+ *  acronym or a name in capitals as written ("GTC Berlin", "FOMC decision", "Q3 results"). */
+export function lowerLead(s: string): string {
+  return /^[A-Z][A-Z0-9]/.test(s) ? s : `${s.charAt(0).toLowerCase()}${s.slice(1)}`;
+}
+
 export const STATE_WORD: Record<Freshness['state'], string> = {
   current: 'Current',
   due: 'Review due',
@@ -198,10 +204,7 @@ export function FreshnessLine({
   /** Name the event behind the next review date: "review by Oct 14 (lock-up release)". */
   withReason?: boolean;
 }) {
-  const reason =
-    withReason && freshness.next
-      ? ` (${freshness.next.label.charAt(0).toLowerCase()}${freshness.next.label.slice(1)})`
-      : '';
+  const reason = withReason && freshness.next ? ` (${lowerLead(freshness.next.label)})` : '';
   const detail =
     freshness.state === 'current'
       ? freshness.next
