@@ -3,7 +3,9 @@
  * here is worked out from the data (a claim, not a label), every figure carries its source and date,
  * and the 10-year is checked against the rate each note was valued with.
  */
+import { ChartFrame, chartRoles, type Provenance } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { extrasFor } from '@/shared/theme/tokens';
 import { dataMode, type PublicMarkets } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -14,14 +16,7 @@ import { formatNoteDate, formatShortDate } from './format';
 import { DRIFT_FLAG_POINTS, noteRates, spread2s10s, type YieldPoint } from './marketsMath';
 import { ResearchColumn } from './NotesView';
 import { usePublicMarkets } from './publicData';
-import {
-  ChartTitle,
-  Disclaimer,
-  ProvenanceChip,
-  ReadStrip,
-  SourceProblem,
-  StaleNote,
-} from './publicUi';
+import { Disclaimer, ProvenanceChip, ReadStrip, SourceProblem, StaleNote } from './publicUi';
 import { ResearchTabs } from './ResearchTabs';
 import { DISPLAY, MONO, PANEL_SX } from './ui';
 import { useWidth } from './useWidth';
@@ -30,6 +25,35 @@ type Rates = NonNullable<PublicMarkets['rates']>;
 type Futures = NonNullable<PublicMarkets['futures']>;
 
 const pts = (n: number) => `${n >= 0 ? '+' : '−'}${Math.abs(n).toFixed(2)}`;
+
+const TSY_URL = 'https://home.treasury.gov/resource-center/data-chart-center/interest-rates';
+
+/** A Treasury chart's provenance on this build (canon P-8): the primary source on the live site, the
+ *  demo's sample data, dashed, on staging. Every chart in the rates section takes its frame from here. */
+function treasuryFrame(
+  source: string,
+  asOf: string,
+  tag: { state: DataStateKey; detail?: string },
+): {
+  provenance: Provenance;
+  source: { text: string; href?: string };
+  asOf: string;
+  tag: { state: DataStateKey; detail?: string };
+} {
+  return dataMode === 'demo'
+    ? {
+        provenance: 'sample',
+        source: { text: 'Demo · shaped like U.S. Treasury data' },
+        asOf: `Scenario · ${formatNoteDate(asOf)}`,
+        tag: { state: 'demo' },
+      }
+    : {
+        provenance: 'primary',
+        source: { text: source, href: TSY_URL },
+        asOf: `As of ${formatNoteDate(asOf)}`,
+        tag,
+      };
+}
 const pct = (n: number | null | undefined) => (n == null ? '—' : `${n.toFixed(2)}%`);
 
 export function MarketsPage() {
@@ -302,14 +326,22 @@ function CurvePanel({ latest, ago }: { latest: YieldPoint; ago: YieldPoint | nul
   const lastNow = now[now.length - 1];
   const lastAgo = before[before.length - 1];
   return (
-    <Box
-      component="figure"
-      sx={{ ...PANEL_SX, m: 0, p: { xs: 2, sm: 3 }, display: 'grid', gap: 1.5, height: '100%' }}
+    <ChartFrame
+      finding={title}
+      metric="Treasury yield curve"
+      sub={`U.S. Treasury par yields by maturity · percent · ${formatNoteDate(latest.date)}${ago ? ` against ${formatNoteDate(ago.date)}` : ''} · maturities spaced by √years`}
+      height={H}
+      {...treasuryFrame('U.S. Treasury · daily par yield curve', latest.date, {
+        state: 'updated',
+        detail: formatShortDate(latest.date),
+      })}
+      table={{
+        caption: 'Treasury par yields by maturity, percent',
+        cols: ['Maturity', formatNoteDate(latest.date), ...(ago ? [formatNoteDate(ago.date)] : [])],
+        rows: MATURITIES.map((m, i) => [m.label, pct(now[i]), ...(ago ? [pct(before[i])] : [])]),
+      }}
+      testId="chart-curve"
     >
-      <ChartTitle
-        title={title}
-        sub={`Treasury par yields by maturity, %. ${formatNoteDate(latest.date)}${ago ? ` against ${formatNoteDate(ago.date)}` : ''}.`}
-      />
       <Box ref={ref} sx={{ minWidth: 0 }}>
         <svg
           role="img"
@@ -354,11 +386,11 @@ function CurvePanel({ latest, ago }: { latest: YieldPoint; ago: YieldPoint | nul
             <Box
               component="polyline"
               points={line(before)}
+              // The older comparison takes the second context step (P-9); its end label names it.
               sx={(t) => ({
                 fill: 'none',
-                stroke: t.palette.text.secondary,
+                stroke: chartRoles(t).ctx2,
                 strokeWidth: 2,
-                strokeDasharray: '5 5',
                 strokeLinejoin: 'round',
               })}
             />
@@ -425,11 +457,7 @@ function CurvePanel({ latest, ago }: { latest: YieldPoint; ago: YieldPoint | nul
           )}
         </svg>
       </Box>
-      <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary' }}>
-        Source: U.S. Treasury daily par yield curve (3-month, 2-, 5-, 10- and 30-year). As of{' '}
-        {formatNoteDate(latest.date)}.
-      </Box>
-    </Box>
+    </ChartFrame>
   );
 }
 
@@ -456,56 +484,77 @@ function Decomposition({ latest, ago }: { latest: YieldPoint; ago: YieldPoint | 
           ? 'Mostly real yields, with some help from inflation expectations.'
           : 'Mostly inflation expectations, not real yields.';
   const scale = Math.max(Math.abs(d10), Math.abs(dReal), Math.abs(dBe), 0.01) * 1.08;
-  const bar = (label: React.ReactNode, v: number, strong: boolean) => (
-    <Box sx={{ display: 'grid', gap: 0.75 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-        <Box component="span" sx={{ fontWeight: strong ? 600 : 400 }}>
-          {label}
+  // One shared zero in the middle of every track: a rise grows right of it, a fall left, and the
+  // signed figure says it too, so no colour carries the sign (P-11).
+  const bar = (label: React.ReactNode, v: number, strong: boolean) => {
+    const w = (Math.abs(v) / scale) * 50;
+    return (
+      <Box sx={{ display: 'grid', gap: 0.75 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+          <Box component="span" sx={{ fontWeight: strong ? 600 : 400 }}>
+            {label}
+          </Box>
+          <Box component="span" sx={MONO}>
+            {pts(v)}
+          </Box>
         </Box>
-        <Box component="span" sx={MONO}>
-          {pts(v)}
-        </Box>
-      </Box>
-      <Box
-        sx={(t) => ({
-          position: 'relative',
-          height: 14,
-          borderRadius: '4px',
-          bgcolor: extrasFor(t).well,
-        })}
-      >
         <Box
-          sx={{
-            position: 'absolute',
-            top: Math.abs(v) / scale < 0.01 ? 2 : 0,
-            bottom: Math.abs(v) / scale < 0.01 ? 2 : 0,
-            left: v >= 0 ? 0 : 'auto',
-            right: v < 0 ? 0 : 'auto',
-            width: Math.abs(v) / scale < 0.01 ? 2 : `${(Math.abs(v) / scale) * 100}%`,
+          sx={(t) => ({
+            position: 'relative',
+            height: 14,
             borderRadius: '4px',
-            bgcolor: strong ? 'text.primary' : 'text.secondary',
-          }}
-        />
+            bgcolor: extrasFor(t).well,
+          })}
+        >
+          <Box
+            aria-hidden
+            sx={(t) => ({
+              position: 'absolute',
+              left: '50%',
+              top: -3,
+              bottom: -3,
+              borderLeft: `1px solid ${chartRoles(t).axis}`,
+            })}
+          />
+          <Box
+            sx={(t) => ({
+              position: 'absolute',
+              top: w < 0.5 ? 2 : 0,
+              bottom: w < 0.5 ? 2 : 0,
+              left: v >= 0 ? '50%' : `calc(50% - ${Math.max(w, 0.4)}%)`,
+              width: `${Math.max(w, 0.4)}%`,
+              borderRadius: v >= 0 ? '0 4px 4px 0' : '4px 0 0 4px',
+              bgcolor: strong ? chartRoles(t).emph : chartRoles(t).ctx,
+            })}
+          />
+        </Box>
       </Box>
-    </Box>
-  );
+    );
+  };
   return (
-    <Box
-      component="figure"
-      sx={{
-        ...PANEL_SX,
-        m: 0,
-        p: { xs: 2, sm: 3 },
-        display: 'grid',
-        gap: 2,
-        height: '100%',
-        alignContent: 'start',
+    <ChartFrame
+      finding={title}
+      metric="The 10-year's move, split"
+      sub={`Change over the year to ${formatNoteDate(latest.date)} · percentage points · 10-year = real (TIPS) + breakeven (calculated) · zero at the centre`}
+      height={170}
+      {...treasuryFrame('U.S. Treasury · par and real curves', latest.date, { state: 'computed' })}
+      note="The 10-year is a real yield plus expected inflation, so this splits its move between the two. Breakeven is the 10-year less the real 10-year."
+      table={{
+        caption: 'Change over a year, percentage points',
+        cols: ['Measure', formatNoteDate(ago.date), formatNoteDate(latest.date), 'Change'],
+        rows: [
+          ['10-year Treasury', pct(ago.t10y), pct(latest.t10y), pts(d10)],
+          ['Real 10-year (TIPS)', pct(ago.real10y), pct(latest.real10y), pts(dReal)],
+          [
+            'Breakeven (calc)',
+            pct(ago.t10y - ago.real10y),
+            pct(latest.t10y - latest.real10y),
+            pts(dBe),
+          ],
+        ],
       }}
+      testId="chart-decomposition"
     >
-      <ChartTitle
-        title={title}
-        sub={`Change over the year to ${formatNoteDate(latest.date)}, percentage points.`}
-      />
       <Box
         role="img"
         aria-label={`10-year ${pts(d10)} points; real 10-year ${pts(dReal)}; breakeven ${pts(dBe)}`}
@@ -524,11 +573,7 @@ function Decomposition({ latest, ago }: { latest: YieldPoint; ago: YieldPoint | 
           false,
         )}
       </Box>
-      <Box component="p" sx={{ m: 0, fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}>
-        The 10-year is a real yield plus expected inflation, so this splits its move between the
-        two. Breakeven is the 10-year less the real 10-year.
-      </Box>
-    </Box>
+    </ChartFrame>
   );
 }
 
@@ -560,15 +605,28 @@ function SpreadPanel({
   const iLo = series.indexOf(lo);
   const iHi = series.indexOf(hi);
   const ticks = [vMin, (vMin + vMax) / 2, vMax];
+  // One row per month (its last business day), then the year's high and low.
+  const monthly = series.filter(
+    (p, k) => k === n - 1 || series[k + 1].date.slice(0, 7) !== p.date.slice(0, 7),
+  );
   return (
-    <Box
-      component="figure"
-      sx={{ ...PANEL_SX, m: 0, p: { xs: 2, sm: 3 }, display: 'grid', gap: 1.5, height: '100%' }}
+    <ChartFrame
+      finding={`2s10s has held between ${lo.value.toFixed(2)} and ${hi.value.toFixed(2)} points all year. It is ${last.value.toFixed(2)} now.`}
+      metric="2s10s spread"
+      sub="10-year less 2-year Treasury par yield · percentage points · each business day for a year · band = the year's range"
+      height={H}
+      {...treasuryFrame('U.S. Treasury · daily par yield curve', asOf, { state: 'computed' })}
+      table={{
+        caption: '2s10s spread, percentage points, month-end and the year’s extremes',
+        cols: ['Date', 'Spread'],
+        rows: [
+          ...monthly.map((p) => [formatNoteDate(p.date), pts(p.value)]),
+          [`High · ${formatNoteDate(hi.date)}`, pts(hi.value)],
+          [`Low · ${formatNoteDate(lo.date)}`, pts(lo.value)],
+        ],
+      }}
+      testId="chart-spread"
     >
-      <ChartTitle
-        title={`2s10s has held between ${lo.value.toFixed(2)} and ${hi.value.toFixed(2)} points all year. It is ${last.value.toFixed(2)} now.`}
-        sub="10-year less 2-year yield, percentage points, each business day for a year."
-      />
       <Box ref={ref} sx={{ minWidth: 0 }}>
         <svg
           role="img"
@@ -578,14 +636,26 @@ function SpreadPanel({
           viewBox={`0 0 ${W} ${H}`}
           style={{ display: 'block' }}
         >
+          {/* The year's range: a band wash whose edges are hairlines, never the wash alone (P-9). */}
           <Box
             component="rect"
             x={L}
             y={y(hi.value)}
             width={W - L - R}
             height={y(lo.value) - y(hi.value)}
-            sx={(t) => ({ fill: alpha(t.palette.text.secondary, 0.08) })}
+            sx={(t) => ({ fill: chartRoles(t).band })}
           />
+          {[hi.value, lo.value].map((v) => (
+            <Box
+              key={v}
+              component="line"
+              x1={L}
+              x2={W - R}
+              y1={y(v)}
+              y2={y(v)}
+              sx={(t) => ({ stroke: chartRoles(t).edge, strokeWidth: 1 })}
+            />
+          ))}
           <Box
             component="g"
             sx={{
@@ -658,11 +728,7 @@ function SpreadPanel({
           </Box>
         </svg>
       </Box>
-      <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary' }}>
-        Shaded band: the year&apos;s range. Source: U.S. Treasury (2- and 10-year). As of{' '}
-        {formatNoteDate(asOf)}.
-      </Box>
-    </Box>
+    </ChartFrame>
   );
 }
 

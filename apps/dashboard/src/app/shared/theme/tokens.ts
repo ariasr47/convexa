@@ -207,6 +207,16 @@ export const extras = {
    */
   textUp: '#2ecc71',
   textDown: '#ff6b6b',
+  /**
+   * Chart roles (canon P-9, owner ruling 2026-10-14; design/tokens/tokens.json additions.proposed).
+   * Charts are neutral and ordinal: the claim's series is `text.primary` (phosphor), context steps
+   * down through `text.secondary` (steel) and then `chartContext2`; a range takes the `chartBand`
+   * wash with `textTertiary` hairline edges. `chartContext2` is the second step of the neutral ramp
+   * (the older comparison line, e.g. the curve a year ago), ≥ 3:1 on panel, ink2 and ink in both
+   * schemes; `chartBand` is never the only carrier: its edges and labels carry the range.
+   */
+  chartContext2: '#606E82',
+  chartBand: 'rgba(233,228,214,0.10)',
 } as const;
 
 /** Light-scheme counterparts, same keys. Raised panels sit a soft warm-grey above white paper;
@@ -273,6 +283,8 @@ export const extrasLight: Record<keyof typeof extras, string> = {
    */
   textUp: '#146F40',
   textDown: '#B02B2B',
+  chartContext2: '#7B899D',
+  chartBand: 'rgba(23,32,43,0.07)',
 } as const;
 
 /** Resolve the mode-correct extras inside an `sx`/styled `theme` callback. */
