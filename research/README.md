@@ -79,7 +79,7 @@ cells take **bold**, _italic_, links and `[n]` source references. Write `\|` for
 | `strip`               | `label \| value @ as-of \| sub \| concept (optional)`                                            | The header strip of figures                                           |
 | `tldr`                | `figure \| sentence` (1–4 rows)                                                                  | The 30-second summary                                                 |
 | `metrics`             | `label \| value @ as-of \| delta \| up/down/flat \| note [n] \| concept (optional)`              | Figure tiles                                                          |
-| `chart bar "Caption"` | `label \| number \| approx/guide (optional) \| shown text (optional)`                            | A column chart (negatives hang below zero); the last plain bar is lit |
+| `chart bar "Caption"` | `label \| number \| approx/guide (optional) \| shown text (optional) \| filing (optional)`       | A column chart (negatives hang below zero); the last plain bar is lit |
 | `split "Caption"`     | `label \| number \| detail (optional)`                                                           | One bar cut into shares of its total                                  |
 | `compare "Caption"`   | `label \| number \| shown text \| emph (optional)`                                               | Horizontal bars on one scale                                          |
 | `bridge "Caption"`    | `label \| number`: first and last rows are totals, the rest signed steps                         | A walk from one total to another                                      |
@@ -160,6 +160,16 @@ terminal_roc` of profit (`terminal_roc` defaults to `terminal_wacc`: no excess r
   `terminal_wacc` and the three scenario rows are required. The columns `rev_y1`, `reinvest_y1` and
   `margin_y1`, and the fields `margin_year` (default 5), `nol`, `terminal_tax`, `terminal_roc`, `traded`,
   `third_party`, `sensitivity`, `odds`, `why`, `uncertainty` and `uncertainty_why` are optional.
+
+### A bar's filing
+
+A `chart` row's fifth cell names the filing that reported the bar: its form, then its accession number,
+its filed date, or both (`10-Q 0001045810-26-000075`, `10-K 2026-02-25`). The chart then shows a
+"Filed" lane above the bars with the form over each bar, and its table lists every filing. Leave it
+empty for a guide or for a figure no one filing reported; write the cells it skips as empty
+(`Q2 FY27 | 96221 | | | 10-Q 0001045810-26-000075`). Forms: 10-Q, 10-K, 20-F, 40-F, 6-K, 8-K, S-1, F-1
+or 424B4, each optionally `/A`. A quarterly figure's filing is the 10-Q that first reported it; a fourth
+quarter's is the 10-K for its year; a non-GAAP figure's is the results 8-K that stated it.
 
 ## Figures against the filing
 

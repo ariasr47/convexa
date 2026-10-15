@@ -101,10 +101,24 @@ export type Uncertainty = 'low' | 'medium' | 'high' | 'very-high' | 'extreme';
 export type ChartBlock = {
   type: 'chart';
   caption: string;
-  bars: { label: string; value: number; kind: '' | 'approx' | 'guide'; shown: string }[];
+  bars: {
+    label: string;
+    value: number;
+    kind: '' | 'approx' | 'guide';
+    shown: string;
+    /** The filing that reported the bar (the row's fifth cell, tools/research-notes/blocks.mjs). */
+    filing?: NoteBarFiling | null;
+  }[];
   /** Index of the last plain bar: the latest reported figure. */
   latest: number;
 };
+
+/** A chart bar's filing: its SEC form and its accession number, filed date or both. */
+export interface NoteBarFiling {
+  form: string;
+  accession: string | null;
+  filed: string | null;
+}
 
 export type NoteBlock =
   | { type: 'heading'; level: 3; children: NoteInline[] }

@@ -7,6 +7,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { parseFilingCell } from './blocks.mjs';
 import { loadNotes, parseNote, summarize } from './notes.mjs';
 
 const front = (fields) => ['---', ...fields, '---', ''].join('\n');
@@ -106,6 +107,31 @@ test('each bad input is refused with a message naming the problem', () => {
       /growth must be a percentage/,
     ],
     ['implied without valuation', ok + fence('implied'), /this note has none/],
+    [
+      'bar filing with an unknown form',
+      ok + fence('chart bar "Revenue"', 'Q1 | 10', 'Q2 | 12 | | | 10Q 2026-08-26'),
+      /starts with its form/,
+    ],
+    [
+      'bar filing with a form only',
+      ok + fence('chart bar "Revenue"', 'Q1 | 10', 'Q2 | 12 | | | 10-Q'),
+      /not just its form/,
+    ],
+    [
+      'bar filing with a bad accession',
+      ok + fence('chart bar "Revenue"', 'Q1 | 10', 'Q2 | 12 | | | 10-Q 1045810-26-75'),
+      /accession number/,
+    ],
+    [
+      'guidance bar with a filing',
+      ok +
+        fence(
+          'chart bar "Revenue"',
+          'Q1 | 10 | | | 10-Q 2026-05-20',
+          'Q2 | 12 | guide | | 8-K 2026-08-26',
+        ),
+      /guidance bar has no filing/,
+    ],
   ];
   for (const [name, source, pattern, file = NVDA] of cases) {
     const { note, errors } = parseNote(source, file);
@@ -274,4 +300,47 @@ test('loadNotes reads only research/<TICKER>/*.md, sorts newest first, reports e
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('a chart bar names the filing that reported it: form, accession, filed date', () => {
+  assert.deepEqual(parseFilingCell('10-Q 0001045810-26-000075'), {
+    form: '10-Q',
+    accession: '0001045810-26-000075',
+    filed: null,
+  });
+  assert.deepEqual(parseFilingCell(' 10-K  2026-02-25 0001045810-26-000021 '), {
+    form: '10-K',
+    accession: '0001045810-26-000021',
+    filed: '2026-02-25',
+  });
+  assert.deepEqual(parseFilingCell('S-1/A 2026-05-11'), {
+    form: 'S-1/A',
+    accession: null,
+    filed: '2026-05-11',
+  });
+  assert.equal(parseFilingCell(''), null);
+  assert.match(parseFilingCell('10-Q 2026-02-30').error, /accession number/);
+  assert.match(parseFilingCell('10-Q 2026-08-26 2026-08-27').error, /accession number/);
+  const source = [
+    ok,
+    'Lead.',
+    '',
+    '# The evidence',
+    '',
+    '## Revenue',
+    fence(
+      'chart bar "Quarterly revenue, $M"',
+      'Q1 FY27 | 81615 | | | 10-Q 0001045810-26-000052',
+      'Q2 FY27 | 96221',
+      'Q3 FY27 guide | 108000 | guide | 108,000 ± 2%',
+    ),
+  ].join('\n');
+  const { note, errors } = parseNote(source, NVDA);
+  assert.deepEqual(errors, []);
+  const chart = note.parts[0].sections[0].blocks[0];
+  assert.deepEqual(
+    chart.bars.map((b) => b.filing),
+    [{ form: '10-Q', accession: '0001045810-26-000052', filed: null }, null, null],
+  );
+  assert.equal(chart.latest, 1);
 });

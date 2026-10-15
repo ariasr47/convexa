@@ -120,6 +120,37 @@ const hatch = (t: Theme) =>
 
 const KIND_WORD = { '': 'reported', approx: 'approximate', guide: 'guidance' } as const;
 
+type BarFiling = NonNullable<Of<'chart'>['bars'][number]['filing']>;
+
+/** A bar's filing in words: "10-Q · filed 2026-08-26 · 0001045810-26-000075". */
+function filingText(f: BarFiling): string {
+  return [f.form, f.filed ? `filed ${f.filed}` : null, f.accession].filter(Boolean).join(' · ');
+}
+
+/** The "Filed" lane above a column chart: one chip per bar whose row names the filing that reported
+ *  it (design: Note · revenue chart, events on the x lane). The latest reported bar's chip is
+ *  outlined like its bar. Chips that would touch keep every k-th, counted from the newest, so the
+ *  newest filing is always named; the table twin lists them all. */
+function filingChips(
+  filings: (BarFiling | null)[],
+  x: (i: number) => number,
+  left: number,
+  right: number,
+) {
+  const at = filings.map((f, i) => (f ? i : -1)).filter((i) => i >= 0);
+  if (!at.length) return [];
+  const w = (i: number) => (filings[i]?.form.length ?? 0) * CH + 12;
+  const cx = (i: number) => Math.min(Math.max(x(i), left + w(i) / 2), right - w(i) / 2);
+  const keep = (k: number) => at.filter((_, j) => (at.length - 1 - j) % k === 0);
+  let k = 1;
+  while (
+    k < at.length &&
+    keep(k).some((i, j, ks) => j > 0 && cx(i) - cx(ks[j - 1]) < (w(i) + w(ks[j - 1])) / 2 + 4)
+  )
+    k++;
+  return keep(k).map((i) => ({ i, cx: cx(i), w: w(i) }));
+}
+
 /** What the bars show, in their own figures: where the series went and the guidance after it. */
 export function columnFinding(block: Of<'chart'>, unit: Unit | null): string {
   const bars = block.bars;
@@ -165,9 +196,13 @@ export function ChartBlock({ block }: { block: Of<'chart'> }) {
   // The unit rides on the tick furthest from zero, so the axis says what its numbers are.
   const unitTick = top > 0 ? top : bottom;
   const tickText = (v: number) => (v === unitTick && v !== 0 ? fmtIn(v, unit) : fmt(v));
-  const gutter = Math.max(...ticks.map((v) => tickText(v).length)) * CH + 10;
+  const filings = bars.map((b) => b.filing ?? null);
+  const LANE_WORD = 'Filed';
+  const LANE = filings.some(Boolean) ? 28 : 0;
+  const gutter =
+    Math.max(...ticks.map((v) => tickText(v).length), LANE ? LANE_WORD.length : 0) * CH + 10;
 
-  const PT = 22;
+  const PT = 22 + LANE;
   const PH = 190;
   const NEG = bottom < 0 ? 16 : 0;
   const plotW = Math.max(0, W - gutter - 4);
@@ -235,17 +270,30 @@ export function ChartBlock({ block }: { block: Of<'chart'> }) {
       (th) => ({ border: `1.5px dashed ${chartRoles(th).ctx}` }),
     ]);
 
+  const chips = W > 0 && LANE ? filingChips(filings, x, gutter, W) : [];
+
   const table: TableTwinData = {
     caption: block.caption,
-    cols: ['Period', unit ? `Value (${unit.pre}${unit.suf})` : 'Value', 'Kind'],
+    cols: [
+      'Period',
+      unit ? `Value (${unit.pre}${unit.suf})` : 'Value',
+      'Kind',
+      ...(LANE ? ['Filed in'] : []),
+    ],
     rows: bars.map((b, i) => [
       b.label,
       b.kind === 'guide' && b.shown ? b.shown : textOf(i),
       i === anchor ? 'latest reported' : KIND_WORD[b.kind],
+      ...(LANE
+        ? [b.filing ? filingText(b.filing) : b.kind === 'guide' ? 'not reported yet' : 'not named']
+        : []),
     ]),
   };
   const aria = `${block.caption}: ${bars
-    .map((b, i) => `${b.label} ${textOf(i)}${b.kind ? ` (${KIND_WORD[b.kind]})` : ''}`)
+    .map(
+      (b, i) =>
+        `${b.label} ${textOf(i)}${b.kind ? ` (${KIND_WORD[b.kind]})` : ''}${b.filing ? `, filed in the ${b.filing.form}` : ''}`,
+    )
     .join(', ')}`;
 
   return (
@@ -272,6 +320,56 @@ export function ChartBlock({ block }: { block: Of<'chart'> }) {
                 <rect width="2" height="5" fill={roles.ctx} />
               </pattern>
             </defs>
+            {LANE > 0 && (
+              <g aria-hidden>
+                <text
+                  x={gutter - 8}
+                  y={15}
+                  textAnchor="end"
+                  fontSize={11}
+                  fontWeight={600}
+                  fill={t.palette.text.secondary}
+                >
+                  {LANE_WORD}
+                </text>
+                {chips.map((c) => {
+                  const f = filings[c.i] as BarFiling;
+                  return (
+                    <g key={c.i}>
+                      <title>{`${bars[c.i].label}: ${filingText(f)}`}</title>
+                      <rect
+                        x={c.cx - c.w / 2}
+                        y={4}
+                        width={c.w}
+                        height={20}
+                        rx={10}
+                        fill={t.palette.background.paper}
+                        stroke={c.i === anchor ? roles.emph : roles.axis}
+                        strokeWidth={1}
+                      />
+                      <text
+                        x={c.cx}
+                        y={18}
+                        textAnchor="middle"
+                        fontSize={11}
+                        fontWeight={600}
+                        fill={c.i === anchor ? roles.emph : t.palette.text.secondary}
+                      >
+                        {f.form}
+                      </text>
+                      <line
+                        x1={x(c.i)}
+                        x2={x(c.i)}
+                        y1={24}
+                        y2={28}
+                        stroke={roles.axis}
+                        strokeWidth={1}
+                      />
+                    </g>
+                  );
+                })}
+              </g>
+            )}
             {ticks.map((v) => (
               <g key={v}>
                 <line

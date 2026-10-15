@@ -55,6 +55,47 @@ export const JUDGMENT_KEYS = [
 const SCENARIO_JUDGMENT_RE =
   /^(bear|base|bull)\.(rev_y1|reinvest_y1|growth|margin_y1|margin_target|sales_to_capital|wacc|p_fail|distress)$/;
 
+/** The SEC forms a chart bar's filing cell may name: the periodic reports, the current reports that
+ *  carry results (8-K, 6-K) and the registration statements a pre-IPO quarter first appears in. */
+export const FILING_FORMS = ['10-Q', '10-K', '20-F', '40-F', '6-K', '8-K', 'S-1', 'F-1', '424B4'];
+const ACCESSION_RE = /^\d{10}-\d{2}-\d{6}$/;
+
+/**
+ * A chart bar's filing cell: the form, then its accession number, its filed date, or both, like
+ * `10-Q 0001045810-26-000075` or `10-K 2026-02-25`. It names the filing that reported the bar, so the
+ * column chart can place it on its "Filed" lane. Empty is null (a guide, or a bar with no one filing).
+ * @param {string} raw
+ * @returns {{ form: string, accession: string | null, filed: string | null } | null | { error: string }}
+ */
+export function parseFilingCell(raw) {
+  const words = String(raw ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!words.length) return null;
+  const [form, ...rest] = words;
+  const bare = form.replace(/\/A$/, '');
+  if (!FILING_FORMS.includes(bare))
+    return {
+      error: `A bar's filing starts with its form, one of ${FILING_FORMS.join(', ')} (or an /A); got ${JSON.stringify(form)}.`,
+    };
+  let accession = null;
+  let filed = null;
+  for (const w of rest) {
+    if (ACCESSION_RE.test(w) && !accession) accession = w;
+    else if (isCalendarDate(w) && !filed) filed = w;
+    else
+      return {
+        error: `After the form, a bar's filing is its accession number (0001045810-26-000075), its filed date (2026-08-26) or both; got ${JSON.stringify(w)}.`,
+      };
+  }
+  if (!accession && !filed)
+    return {
+      error: `Name the filing, not just its form: "${form} 0001045810-26-000075" or "${form} 2026-08-26".`,
+    };
+  return { form, accession, filed };
+}
+
 /** `"Caption"` → Caption; anything else → null. */
 function caption(args) {
   const m = /^"(.*)"$/.exec(args.trim());
@@ -196,9 +237,16 @@ export function parseTypedBlock(name, args, lines, ctx, openLine) {
       need(m, openLine, 'Write the chart as ```chart bar "Caption".');
       count(2, 16);
       const bars = rows.map((r) => {
-        cells(r, 2, 4, 'label | number | approx/guide | shown text');
+        cells(r, 2, 5, 'label | number | approx/guide | shown text | filing');
         const kind = (r.cells[2] ?? '').toLowerCase();
         word(r, kind, ['', 'approx', 'guide'], 'The bar kind');
+        const filing = parseFilingCell(plain(r, 4));
+        if (filing && 'error' in filing) need(false, r.line, filing.error);
+        need(
+          !(filing && kind === 'guide'),
+          r.line,
+          'A guidance bar has no filing: nothing has reported it yet.',
+        );
         // The shown text sits above a bar that is ~30px wide on a phone: a figure, not a sentence.
         need(
           (r.cells[3] ?? '').length <= 14,
@@ -210,6 +258,7 @@ export function parseTypedBlock(name, args, lines, ctx, openLine) {
           value: number(r, r.cells[1] ?? '', 'The bar'),
           kind,
           shown: plain(r, 3),
+          filing: filing && !('error' in filing) ? filing : null,
         };
       });
       const latest = bars.map((b) => b.kind).lastIndexOf('');
