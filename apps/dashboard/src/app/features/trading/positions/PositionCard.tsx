@@ -35,6 +35,7 @@ import { useId, useState } from 'react';
 import { Refused } from './FaultedBanner';
 import { MAX_LOSS_LABEL, MAX_LOSS_WITHHELD_META } from './labels';
 import { LegDisclosureButton, LegDisclosurePanel } from './LegDisclosure';
+import { MarkNotLiveTag, SampleMarkTag, useMarkFeed } from './markFeed';
 import {
   cellContent,
   ClosedSummary,
@@ -86,8 +87,20 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
         offline: streamOffline ? { retained: markFig.hasValue } : null,
       })
     : null;
+  const feed = useMarkFeed();
+  const markNotLive = feed === 'notLive' && markFig != null && !markFig.hasValue;
   const markText =
-    p.status === 'pending' ? `limit $${(p.limit_price ?? 0).toFixed(2)}` : (markFig?.text ?? '');
+    p.status === 'pending'
+      ? `limit $${(p.limit_price ?? 0).toFixed(2)}`
+      : markNotLive
+        ? '—'
+        : (markFig?.text ?? '');
+  // Canon P-2/P-3: a demo mark names the sample chain; with no feed on this site, Mark not live.
+  const markTag = markNotLive ? (
+    <MarkNotLiveTag />
+  ) : feed === 'sample' && markFig?.hasValue && view.mark.basis !== 'manual' ? (
+    <SampleMarkTag />
+  ) : null;
 
   // Multi-expiry shows the NEAREST expiry with a `+N more` suffix — never two dates in one slot.
   const expiryStr =
@@ -271,6 +284,7 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
           >
             {markText}
           </Box>
+          {markTag}
           {markState?.showPause && (
             <>
               <PauseMark />

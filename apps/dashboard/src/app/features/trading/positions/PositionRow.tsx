@@ -27,6 +27,7 @@
  * arithmetically legible as a result: mark − net entry = P/L.
  */
 import { MARK_BASIS_META } from '@/features/trading/model/mark';
+import type { MarkBasis } from '@/features/trading/model/types';
 import { faceFor, figureStateOf, PauseMark } from '@/shared/figure';
 import { downText, upText } from '@/shared/theme/tokens';
 import { dataMode, demoNowMs } from '@convexa/api';
@@ -68,6 +69,7 @@ import {
   WEAKEST_BASIS_TIP,
 } from './labels';
 import { LegDisclosureButton, LegDisclosurePanel } from './LegDisclosure';
+import { MarkNotLiveTag, SampleMarkTag, useMarkFeed } from './markFeed';
 import { PlSparkline } from './PlSparkline';
 import { STRUCTURE_LABELS } from './structure';
 import type { ColumnKey } from './types';
@@ -210,6 +212,40 @@ const unavailableCell = (view: PositionView) =>
     'cell-unavailable',
     view.position.id,
   );
+/** A mark's provenance beside its figure. On the demo a market basis ("snapshot mid", "modeled")
+ *  would claim a quote the sample chain never gave, so it reads "Sample mark · <scenario time>"
+ *  (canon P-3); a user-entered price keeps its own chip on both builds. */
+function MarkProvenance({ basis, label, tip }: { basis: MarkBasis; label: string; tip: string }) {
+  const feed = useMarkFeed();
+  if (feed === 'sample' && basis !== 'manual') return <SampleMarkTag />;
+  return (
+    <Tooltip arrow title={tip}>
+      <Chip size="small" variant="outlined" label={label} />
+    </Tooltip>
+  );
+}
+
+/** No mark this cycle. With no options feed on this site it never will be, so the cell says
+ *  "Mark not live" beside a dash rather than "unavailable" (canon P-2: a not-live slot is a dash). */
+function NoMarkCell({ view }: { view: PositionView }) {
+  const feed = useMarkFeed();
+  if (feed !== 'notLive') return unavailableCell(view);
+  return (
+    <Stack
+      direction="row"
+      spacing={0.75}
+      useFlexGap
+      sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.25 }}
+      data-testid="cell-mark-not-live"
+    >
+      <Typography variant="body2" sx={{ color: 'text.secondary' }} aria-label="No value">
+        {DASH}
+      </Typography>
+      <MarkNotLiveTag />
+    </Stack>
+  );
+}
+
 const notRecordedCell = (helpId: string) =>
   literal('not recorded', NOT_RECORDED_TIP, 'cell-not-recorded', helpId);
 const dashCell = (tip: string) => literal(DASH, tip, undefined);
@@ -397,7 +433,7 @@ export function cellContent(
         offline: streamOffline ? { retained: markFig.hasValue } : null,
       });
       if (!markFig.hasValue) {
-        if (!markState.showPause) return unavailableCell(view);
+        if (!markState.showPause) return <NoMarkCell view={view} />;
         return (
           <Stack
             direction="row"
@@ -432,9 +468,11 @@ export function cellContent(
             {markFig.text}
           </Typography>
           {basisMeta && (
-            <Tooltip arrow title={mixed ? `${basisMeta.tip} ${WEAKEST_BASIS_TIP}` : basisMeta.tip}>
-              <Chip size="small" variant="outlined" label={basisMeta.label} />
-            </Tooltip>
+            <MarkProvenance
+              basis={view.mark.basis}
+              label={basisMeta.label}
+              tip={mixed ? `${basisMeta.tip} ${WEAKEST_BASIS_TIP}` : basisMeta.tip}
+            />
           )}
           {markState.showPause && offlineDecoration(markState.caption, 'cell-mark-caption')}
         </Stack>
@@ -645,7 +683,8 @@ export function cellContent(
             component="span"
             data-testid="trend-help"
             aria-describedby={`trend-help-description-${p.id}`}
-            tabIndex={-1}
+            // Keyboard-reachable, so the tooltip is too (v5 PO-01); the sparkline carries its twin.
+            tabIndex={0}
             // GATE Z, latent duplicate of the FE-5 regression (`5c07dc40`): without `position:
             // 'relative'` this is not a positioned ancestor, so the `VISUALLY_HIDDEN` sibling
             // below (`position: 'absolute'`) escapes to the initial containing block — invisible
