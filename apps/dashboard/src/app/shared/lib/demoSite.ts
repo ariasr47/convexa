@@ -5,6 +5,9 @@
  */
 export const STAGING_DEMO_URL = 'https://staging.convexa.pages.dev';
 
+/** The live production site, which the demo links back to. */
+export const LIVE_SITE_URL = 'https://convexa.pages.dev';
+
 /**
  * Whether this is the demo build, read from the bootstrap global that index.html sets before the
  * bundle runs. Same answer as `dataMode === 'demo'`, without an edge to `@convexa/api`: the public

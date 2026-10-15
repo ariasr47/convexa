@@ -46,6 +46,7 @@
  * inversion canon rule 24 exists to prevent.
  */
 import { SANS_FACE } from '@/shared/figure';
+import { isDemoBuild } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -56,9 +57,17 @@ import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
-import { useEffect } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
-import { METHOD_COPY, type MethodSection } from './copy';
+import { useEffect, useState } from 'react';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { METHOD_COPY, WHATS_LIVE, type MethodSection } from './copy';
+import { WhatsLiveBody } from './WhatsLive';
+
+/** The on-this-page index: “What’s live on this site” first (the bar's deep link), then the
+ *  copy's sections. One list, so the index and the body cannot diverge. */
+const INDEX: readonly { id: string; h: string }[] = [
+  { id: WHATS_LIVE.id, h: WHATS_LIVE.h },
+  ...METHOD_COPY.sections.map((s) => ({ id: s.id, h: s.h })),
+];
 
 /** Deep-link scroll clearance under the sticky `TopNav` (`{xs:56,md:60}` tall) plus breathing
  *  room — mirrors the design source's own `top: 76px` for the sticky TOC (`methodology.mjs:6`),
@@ -139,20 +148,48 @@ export function MethodologyPage() {
 
   // GATE Z I-1 (AC-M1) — a FRESH `/methodology#id` load: the browser's own scroll-to-fragment
   // step already ran, before React had rendered this lazy route's sections, so it found nothing.
-  // Run the equivalent once after mount, against the real DOM.
+  // Run the equivalent after mount, against the real DOM — and again whenever the hash changes
+  // inside the app (the bar's “What’s live” is a router link, which never scrolls by itself).
+  const { hash } = useLocation();
+  const [current, setCurrent] = useState<string | null>(null);
   useEffect(() => {
-    if (!window.location.hash) return;
+    if (!hash) return;
     let id: string;
     try {
-      id = decodeURIComponent(window.location.hash.slice(1));
+      id = decodeURIComponent(hash.slice(1));
     } catch {
       return;
     }
     const target = document.getElementById(id);
     if (!target) return;
-    target.scrollIntoView({ block: 'start' });
+    target.scrollIntoView?.({ block: 'start' });
     target.focus();
+    setCurrent(id);
+  }, [hash]);
+
+  // The index marks the section being read: the first one in view under the nav.
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
+    const visible = new Set<string>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) visible.add(e.target.id);
+          else visible.delete(e.target.id);
+        }
+        const first = INDEX.find((entry) => visible.has(entry.id));
+        if (first) setCurrent(first.id);
+      },
+      { rootMargin: '-80px 0px -55% 0px' },
+    );
+    for (const entry of INDEX) {
+      const el = document.getElementById(entry.id);
+      if (el) observer.observe(el);
+    }
+    return () => observer.disconnect();
   }, []);
+
+  const demo = isDemoBuild();
 
   return (
     <Box
@@ -192,11 +229,12 @@ export function MethodologyPage() {
             alignSelf: 'start',
           }}
         >
-          {METHOD_COPY.sections.map((section) => (
+          {INDEX.map((section) => (
             <Box
               key={section.id}
               component="a"
               href={`/methodology#${section.id}`}
+              aria-current={current === section.id ? 'true' : undefined}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -207,6 +245,11 @@ export function MethodologyPage() {
                 color: 'text.secondary',
                 textDecoration: 'none',
                 '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
+                '&[aria-current="true"]': {
+                  color: 'text.primary',
+                  bgcolor: 'action.selected',
+                  fontWeight: 600,
+                },
               }}
             >
               {section.h}
@@ -215,6 +258,25 @@ export function MethodologyPage() {
         </Box>
 
         <Stack component="article" spacing={4.5} sx={{ minWidth: 0 }}>
+          <Box
+            component="section"
+            id={WHATS_LIVE.id}
+            aria-labelledby={`${WHATS_LIVE.id}-heading`}
+            tabIndex={-1}
+            data-testid="methodology-whats-live"
+            data-form={demo ? 'staging' : 'production'}
+            sx={{ scrollMarginTop: SCROLL_CLEAR }}
+          >
+            <Typography
+              component="h2"
+              id={`${WHATS_LIVE.id}-heading`}
+              variant="h6"
+              sx={{ fontWeight: 700, mb: 1.25, letterSpacing: '-0.01em' }}
+            >
+              {WHATS_LIVE.h}
+            </Typography>
+            <WhatsLiveBody demo={demo} />
+          </Box>
           {METHOD_COPY.sections.map((section) => (
             <Box
               key={section.id}

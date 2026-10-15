@@ -32,7 +32,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { METHOD_COPY } from './copy';
+import { METHOD_COPY, WHATS_LIVE } from './copy';
 import { MethodologyPage } from './MethodologyPage';
 
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -108,18 +108,17 @@ function workspaceRoot(): string {
 describe('MethodologyPage (/methodology) — SPEC §7, PLAN F10', () => {
   it('2. every section id resolves to a rendered element on the page (AC-M1 deep link)', () => {
     renderPage();
-    for (const section of METHOD_COPY.sections) {
+    for (const section of [WHATS_LIVE, ...METHOD_COPY.sections]) {
       expect(document.getElementById(section.id), section.id).not.toBeNull();
     }
   });
 
-  it('3. the on-this-page index has exactly ten entries whose hrefs are absolute-path fragments to the section ids, in order (GATE Z I-1/AC-M6 — a bare "#id" resolves against index.html\'s <base href="/"> to the landing; jsdom implements no <base>, so only an absolute path is a real regression guard here)', () => {
+  it('3. the on-this-page index has one entry per section, “What’s live” (#data) first, whose hrefs are absolute-path fragments to the section ids, in order (GATE Z I-1/AC-M6 — a bare "#id" resolves against index.html\'s <base href="/"> to the landing; jsdom implements no <base>, so only an absolute path is a real regression guard here)', () => {
     renderPage();
     const toc = screen.getByTestId('methodology-toc');
     const links = within(toc).getAllByRole('link');
-    expect(links).toHaveLength(10);
     expect(links.map((a) => a.getAttribute('href'))).toEqual(
-      METHOD_COPY.sections.map((s) => `/methodology#${s.id}`),
+      ['data', ...METHOD_COPY.sections.map((s) => s.id)].map((id) => `/methodology#${id}`),
     );
   });
 
@@ -158,6 +157,8 @@ describe('MethodologyPage (/methodology) — SPEC §7, PLAN F10', () => {
       const href = a.getAttribute('href') ?? '';
       const [path, hash] = href.split('#');
       if (hash !== undefined && path === '') continue; // bare "#id" — same-page fragment, always resolves
+      // “What’s live” links the same screens on the staging demo: another site, not this route table.
+      if (/^https:\/\/(staging\.)?convexa\.pages\.dev\//.test(href)) continue;
       // GATE Z I-1: the TOC's own entries are `/methodology#id` (an absolute path, immune to
       // index.html's <base href="/">) — resolve on the PATH half, same as every other anchor.
       const staticDoc = resolve(root, 'apps', 'dashboard', 'public', path.replace(/^\//, ''));

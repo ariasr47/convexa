@@ -260,3 +260,111 @@ export const METHOD_COPY = {
   ctaTicker: 'Open free Ticker',
   ctaBack: 'Back to home',
 } as const;
+
+/**
+ * “What’s live on this site” (#data), the section the production bar's “What’s live” opens. Static
+ * copy chosen by build mode; it must agree with /api/health and the 2026-10-14 environments without
+ * asking either (the page sends no request). Production today: no options vendor, public records
+ * live, SEC EDGAR “Not set up” until the operator sets SEC_USER_AGENT — each row's cadence matches
+ * pages/trust/sources.ts. Design: design/src/screens/final/shell-site-docs.mjs (liveSection).
+ */
+export const WHATS_LIVE = {
+  id: 'data',
+  h: 'What’s live on this site',
+  production: {
+    /** Plain, bold, plain, bold, plain. */
+    lead: [
+      'This site runs without a paid options feed. ',
+      'Public records are live',
+      ', each with its source and its date; SEC filings show Not set up until the operator adds the SEC’s required contact line. ',
+      'Everything built from the options chain is not live',
+      ': those panels say what they would show and why they are off, and link to the same screen on the demo, where every screen runs on sample data.',
+    ],
+    liveHead: 'Live here',
+    live: [
+      ['Treasury yield curves', 'U.S. Treasury', 'Every business day, after the close'],
+      [
+        'Net liquidity',
+        'Federal Reserve H.4.1, Treasury Daily Treasury Statement, NY Fed reverse repo',
+        'Weekly: as of Wednesday, out Thursday',
+      ],
+      [
+        'Futures positioning',
+        'CFTC Traders in Financial Futures',
+        'Weekly: as of Tuesday, out Friday',
+      ],
+      ['Short interest', 'FINRA', 'Twice a month, about a week after each settlement date'],
+      ['Short-sale volume', 'FINRA', 'Every trading day, one business day late'],
+      [
+        'Filings, insider trades, reported figures',
+        'SEC EDGAR',
+        'As filed. Shows “Not set up” until the operator sets SEC_USER_AGENT',
+      ],
+      ['Research notes', 'Convexa', 'As written, each with its review date'],
+      [
+        'Daily price chart',
+        'TradingView (third party)',
+        'TradingView’s own delay; Convexa reads nothing from it',
+      ],
+    ],
+    offHead: 'Not live here',
+    offColumn: 'Needs the options feed',
+    off: [
+      ['Dealer gamma, the walls and the flip', '/ticker/SPY'],
+      ['Flow, the tape and off-exchange blocks', '/ticker/SPY'],
+      ['The scanner’s scores and tiers', '/scanner'],
+      ['AI reads', '/ticker/SPY'],
+      ['Option prices, greeks and implied volatility', '/ticker/SPY'],
+    ],
+    onDemo: 'On the demo →',
+    wordsLead:
+      'Each panel carries one of these words, with its glyph. Failures add burnt orange; none of them uses green or red.',
+  },
+  staging: {
+    /** Bold, then plain. */
+    lead: [
+      'Nothing: this is the demo.',
+      ' Every screen runs on an authored scenario dated October 7, 2026, and the site makes no calls to Convexa’s API or to any third party. You are signed in to the demo account; your changes stay in this browser until you reset them from the demo bar.',
+    ],
+    demoHead: 'In this demo',
+    demo: [
+      ['Dealer structure, flow, scores, AI reads', 'shaped like the Massive options feed'],
+      ['Rates, positioning, short data', 'shaped like Treasury, CFTC and FINRA'],
+      ['Filings and reported figures', 'shaped like SEC EDGAR'],
+      ['Research notes', 'six authored notes'],
+      ['Daily bars and indicators', 'computed from sample bars'],
+    ],
+    liveHead: 'The live site',
+    liveBody:
+      'The production site runs the public data live — Treasury, CFTC, FINRA, research notes and TradingView’s daily chart, and SEC EDGAR once its contact line is set — and shows Not live wherever the options feed would be needed.',
+    liveLink: 'Open the live site',
+  },
+} as const;
+
+/** The P-2 words a production panel can carry, each with what it means. */
+export const STATE_WORDS = [
+  ['updated', 'Current to its source, with the source’s date. Never a live dot.'],
+  ['delayed', 'The source publishes late on a schedule; the tag says by how much.'],
+  ['computed', 'Convexa computed it from public inputs it names.'],
+  ['thirdParty', 'A third party draws it from its own data; Convexa reads nothing from it.'],
+  ['notLive', 'Needs the paid options feed this site doesn’t run.'],
+  ['lastGood', 'This cycle failed; the earlier copy shows dimmed, with when it was fetched.'],
+  ['sourceDown', 'The source didn’t answer and nothing is kept: unknown, not empty.'],
+  ['couldntLoad', 'Our request failed. The panel says why and offers Try again.'],
+  ['notSetUp', 'This site lacks a setting, such as the SEC’s required contact line.'],
+  ['off', 'Switched off on purpose.'],
+  ['signIn', 'Behind the private-testing wall; sign-ups are closed.'],
+  [
+    'sample',
+    'Only on the landing page’s illustrations, as “Illustrative sample”. Never market data.',
+  ],
+] as const;
+
+/** The words the demo uses. */
+export const STAGING_WORDS = [
+  [
+    'demo',
+    'The bar on every page here. Every source chip is dashed and says what the sample is shaped like.',
+  ],
+  ['computed', 'Convexa computed it, here from sample inputs.'],
+] as const;
