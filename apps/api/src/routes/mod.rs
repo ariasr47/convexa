@@ -1888,6 +1888,7 @@ fn register_route_schemas(mut document: OpenApi) -> OpenApi {
     schema!(public_data::PublicSourceWire);
     schema!(public_data::CalendarWire);
     schema!(public_data::ReleaseWire);
+    schema!(public_data::ScheduleHorizonWire);
     schema!(public_data::ResultsBasisWire);
     schema!(public_data::ResultsWindowWire);
     schema!(public_data::InsiderTradeKind);

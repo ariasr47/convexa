@@ -7,6 +7,8 @@
 //! good copy.
 //!
 //! `PUBLIC_DATA=off` makes every answer `off` without contacting anything (tests run this way).
+//! FINRA has its own switch, [`finra::FINRA_DISPLAY_APPROVED`]: while it is off, the FINRA parts
+//! say `off` and FINRA is never contacted, whatever `PUBLIC_DATA` says.
 
 pub(crate) mod cache;
 pub(crate) mod calendar;
@@ -116,6 +118,8 @@ type ScheduleCopy = (DateTime<Utc>, Arc<Vec<Release>>);
 
 struct Inner {
     mode: PublicDataMode,
+    /// [`finra::FINRA_DISPLAY_APPROVED`], held here so a test can show what the switch does.
+    finra_approved: bool,
     http: Http,
     schedule_http: Http,
     sec: SecAccess,
@@ -144,6 +148,7 @@ impl PublicDataService {
         Ok(Self {
             inner: Arc::new(Inner {
                 mode: config.public_data,
+                finra_approved: finra::FINRA_DISPLAY_APPROVED,
                 http: Http::new(PUBLIC_USER_AGENT)?,
                 schedule_http: Http::new(calendar::SCHEDULE_USER_AGENT)?,
                 sec: SecAccess::new(config.sec_user_agent.as_ref()),
@@ -181,6 +186,14 @@ impl PublicDataService {
 
     fn is_on(&self) -> bool {
         self.inner.mode.is_on()
+    }
+
+    #[cfg(test)]
+    fn with_finra_approved(mut self, approved: bool) -> Self {
+        Arc::get_mut(&mut self.inner)
+            .expect("a new service is not shared yet")
+            .finra_approved = approved;
+        self
     }
 
     // ---- markets ---------------------------------------------------------------------------
@@ -244,6 +257,7 @@ impl PublicDataService {
         }
         let (from, to) = calendar::window(today_eastern());
         let mut releases: Vec<Release> = Vec::new();
+        let mut horizons: Vec<ScheduleHorizon> = Vec::new();
         for ((id, name), lookup, marked) in &schedules {
             source_rows.push(sources::from_lookup(
                 (*id, *name),
@@ -253,6 +267,12 @@ impl PublicDataService {
                 name,
             ));
             if let Some(marked) = marked {
+                if let Some(through) = marked.iter().map(|r| r.date).max() {
+                    horizons.push(ScheduleHorizon {
+                        source: id,
+                        through,
+                    });
+                }
                 releases.extend(
                     marked
                         .iter()
@@ -265,7 +285,12 @@ impl PublicDataService {
         let calendar = schedules
             .iter()
             .any(|(_, lookup, _)| lookup.cached().is_some())
-            .then_some(Calendar { from, to, releases });
+            .then_some(Calendar {
+                from,
+                to,
+                releases,
+                horizons,
+            });
         let notes: Vec<String> = [
             rates.note(treasury::SOURCE),
             futures.note(cftc::SOURCE),
@@ -326,7 +351,10 @@ impl PublicDataService {
     }
 
     /// The releases of one schedule with "moved from" marks. A new fetch is compared with the
-    /// copy served before it; a cached copy is served with the marks it already has.
+    /// copy served before it; a cached copy is served with the marks it already has. The copies
+    /// live in this process only (decided 2026-10-15, W1-26): a restart (every deploy) clears the
+    /// marks, so a mark covers the moves seen since the server last started. The date served is
+    /// always the agency's current one; only the annotation is lost.
     fn marked(&self, id: &'static str, lookup: &Lookup<Vec<Release>>) -> Option<Arc<Vec<Release>>> {
         let copy = lookup.cached()?;
         let mut marked = self
@@ -349,7 +377,11 @@ impl PublicDataService {
     }
 
     async fn schedule_lookup(&self, id: &'static str) -> Lookup<Vec<Release>> {
-        let http = &self.inner.schedule_http;
+        let http = if schedule_user_agent(id) == calendar::SCHEDULE_USER_AGENT {
+            &self.inner.schedule_http
+        } else {
+            &self.inner.http
+        };
         self.inner
             .schedules
             .get(id, || async move {
@@ -511,7 +543,9 @@ impl PublicDataService {
             return empty(DataState::Unavailable, map.note(edgar::SOURCE), vec![row]);
         };
         let mut notes: Vec<String> = map.note(edgar::SOURCE).into_iter().collect();
-        let today = Utc::now().date_naive();
+        // Eastern, like the calendar: a results window ending today must not drop out at 8 PM ET
+        // when the UTC date turns.
+        let today = today_eastern();
         let mut filings = Vec::new();
         let mut results = Vec::new();
         let mut missing = Vec::new();
@@ -616,37 +650,44 @@ impl PublicDataService {
                     .collect(),
             };
         }
-        let (interest, volume, sec) = tokio::join!(
-            self.short_interest_part(ticker),
-            self.short_volume_part(ticker),
-            self.sec_part(ticker),
-        );
-        let answered = interest.answered || volume.answered || sec.answered;
-        let part_state = |answered: bool| {
-            if answered {
-                DataState::Live
-            } else {
-                DataState::Unavailable
-            }
+        let finra_on = self.inner.finra_approved;
+        let (interest, volume, sec) = if finra_on {
+            tokio::join!(
+                self.short_interest_part(ticker),
+                self.short_volume_part(ticker),
+                self.sec_part(ticker),
+            )
+        } else {
+            // FINRA is never asked: both parts say Off with the reason, and the SEC part runs
+            // on its own.
+            (
+                Part::finra_off(sources::FINRA_SI),
+                Part::finra_off(sources::FINRA_SHVOL),
+                self.sec_part(ticker).await,
+            )
         };
-        let (interest_state, interest_detail) =
-            (part_state(interest.answered), interest.note.clone());
-        let (volume_state, volume_detail) = (part_state(volume.answered), volume.note.clone());
+        let answered = interest.answered || volume.answered || sec.answered;
+        let (interest_state, interest_detail) = (interest.state(), interest.note.clone());
+        let (volume_state, volume_detail) = (volume.state(), volume.note.clone());
         let source_rows = vec![
             interest.source.clone(),
             volume.source.clone(),
             sec.source.clone(),
         ];
-        let notes: Vec<String> = interest
-            .note
-            .into_iter()
-            .chain(volume.note)
-            .chain(sec.notes)
-            .collect();
+        // The FINRA switch's reason once, not once per FINRA part.
+        let finra_notes: Vec<String> = if finra_on {
+            interest.note.into_iter().chain(volume.note).collect()
+        } else {
+            vec![finra::OFF_DETAIL.to_string()]
+        };
+        let notes: Vec<String> = finra_notes.into_iter().chain(sec.notes).collect();
         TickerReport {
             ticker: ticker.to_string(),
             state: if answered {
                 DataState::Live
+            } else if !finra_on && sec.filings_state == DataState::NotConfigured {
+                // Nothing was asked: FINRA is switched off and SEC is not set up.
+                DataState::NotConfigured
             } else {
                 DataState::Unavailable
             },
@@ -909,27 +950,12 @@ impl PublicDataService {
             let row = sources::from_lookup(sources::SEC, &submissions, false, None, edgar::SOURCE);
             return SecPart::without_data(DataState::Unavailable, detail, false, row);
         };
-        // Last good copy when the ticker map or this company's list failed this cycle.
-        let sec_failed_at = map.failed_at().max(submissions.failed_at());
         let filings_detail = join(
             map.note(edgar::SOURCE)
                 .into_iter()
                 .chain(submissions.note(edgar::SOURCE))
                 .collect(),
         );
-        let sec_row = SourceStatus {
-            id: sources::SEC.0,
-            name: sources::SEC.1,
-            state: if sec_failed_at.is_some() {
-                SourceState::LastGood
-            } else {
-                SourceState::Updated
-            },
-            as_of: None,
-            checked_at: Some(rows.fetched_at),
-            failed_at: sec_failed_at,
-            detail: filings_detail.clone(),
-        };
         let today = Utc::now().date_naive();
         let filings = edgar::recent_filings(ticker, cik, &rows.value, today);
 
@@ -938,10 +964,13 @@ impl PublicDataService {
         let mut summary = Form4Summary::default();
         let mut read = 0u32;
         let mut unread = 0u32;
+        let mut form4_failed_at: Option<DateTime<Utc>> = None;
         for row in form4.iter().take(edgar::FORM4_READ_LIMIT) {
             let document = edgar::raw_form4_document(&row.primary_document);
             let url = edgar::document_url(cik, &row.accession, document);
-            match self.form4(sec, &row.accession, url).await.cached() {
+            let lookup = self.form4(sec, &row.accession, url).await;
+            form4_failed_at = form4_failed_at.max(lookup.failed_at());
+            match lookup.cached() {
                 Some(copy) => {
                     read += 1;
                     let one = copy.value.summary;
@@ -962,11 +991,9 @@ impl PublicDataService {
                 edgar::FORM4_READ_LIMIT
             ));
         }
-        if unread > 0 {
-            insider_notes.push(format!(
-                "{unread} Form 4 document(s) could not be read and are not counted."
-            ));
-        }
+        let unread_note = (unread > 0)
+            .then(|| format!("{unread} Form 4 document(s) could not be read and are not counted."));
+        insider_notes.extend(unread_note.clone());
         let insiders = Insiders {
             state: if read == 0 && unread > 0 {
                 DataState::Unavailable
@@ -994,6 +1021,40 @@ impl PublicDataService {
             .map(filed_figures::annual_revenue)
             .unwrap_or_default();
         let shares_outstanding = facts_value.as_ref().and_then(edgar::shares_outstanding);
+        let facts_note = facts.note(&format!("{} company facts", edgar::SOURCE));
+
+        // The row covers everything read from EDGAR for this answer: the ticker map, the filing
+        // list, the company facts and the Form 4s. Any of them failing this cycle makes it a
+        // last good copy (or a part left out), never Updated, and the row says which.
+        let sec_failed_at = [
+            map.failed_at(),
+            submissions.failed_at(),
+            facts.failed_at(),
+            form4_failed_at,
+        ]
+        .into_iter()
+        .max()
+        .flatten();
+        let sec_row = SourceStatus {
+            id: sources::SEC.0,
+            name: sources::SEC.1,
+            state: if sec_failed_at.is_some() {
+                SourceState::LastGood
+            } else {
+                SourceState::Updated
+            },
+            as_of: None,
+            checked_at: Some(rows.fetched_at),
+            failed_at: sec_failed_at,
+            detail: join(
+                filings_detail
+                    .iter()
+                    .cloned()
+                    .chain(facts_note.clone())
+                    .chain(unread_note)
+                    .collect(),
+            ),
+        };
 
         SecPart {
             insiders: Some(insiders),
@@ -1003,10 +1064,7 @@ impl PublicDataService {
             periodic,
             annual_revenue,
             shares_outstanding,
-            notes: facts
-                .note(&format!("{} company facts", edgar::SOURCE))
-                .into_iter()
-                .collect(),
+            notes: facts_note.into_iter().collect(),
             answered: true,
             source: sec_row,
         }
@@ -1020,6 +1078,30 @@ struct Part<T> {
     /// The source answered (fresh or stale), even if it had nothing for this ticker.
     answered: bool,
     source: SourceStatus,
+}
+
+impl<T> Part<T> {
+    /// A FINRA part while FINRA is switched off: nothing asked, Off with the reason.
+    fn finra_off(source: (&'static str, &'static str)) -> Self {
+        Self {
+            value: None,
+            note: Some(finra::OFF_DETAIL.to_string()),
+            answered: false,
+            source: sources::without_fetch(source, SourceState::Off, finra::OFF_DETAIL),
+        }
+    }
+
+    /// Live when the source answered (fresh or a kept copy), Off when it was switched off,
+    /// otherwise Unavailable.
+    fn state(&self) -> DataState {
+        if self.answered {
+            DataState::Live
+        } else if self.source.state == SourceState::Off {
+            DataState::Off
+        } else {
+            DataState::Unavailable
+        }
+    }
 }
 
 struct SecPart {
@@ -1077,6 +1159,18 @@ async fn curve_file(
         .map_err(|_| FetchError::new(treasury::SOURCE, "CSV is not UTF-8"))?;
     treasury::parse_csv(curve, &text)
         .map_err(|e| FetchError::new(treasury::SOURCE, format!("parse: {e}")))
+}
+
+/// The User-Agent one release schedule is fetched with. BLS answers 403 to a User-Agent without a
+/// URL in it, so only BLS gets the site's credits URL; Treasury answers that same agent in 8-10 s
+/// and the plain one in under half a second (measured 2026-10-15), and the Fed and BEA need
+/// nothing more than the plain one either.
+fn schedule_user_agent(id: &str) -> &'static str {
+    if id == calendar::BLS_ID {
+        calendar::SCHEDULE_USER_AGENT
+    } else {
+        PUBLIC_USER_AGENT
+    }
 }
 
 fn today_eastern() -> NaiveDate {
@@ -1153,6 +1247,116 @@ mod tests {
         let ids: Vec<&str> = ticker.sources.iter().map(|s| s.id).collect();
         assert_eq!(ids, ["finra-si", "finra-shvol", "sec"]);
         assert!(ticker.sources.iter().all(|s| s.state == SourceState::Off));
+    }
+
+    /// Only BLS needs the URL-bearing User-Agent; Treasury slows it to 8-10 s, so a refactor
+    /// that sends every schedule through it again stalls /markets on each refresh.
+    #[test]
+    fn only_bls_is_asked_with_the_url_user_agent() {
+        assert_eq!(
+            schedule_user_agent(calendar::BLS_ID),
+            calendar::SCHEDULE_USER_AGENT
+        );
+        for id in [calendar::FED_ID, calendar::BEA_ID, calendar::TREASURY_ID] {
+            assert_eq!(schedule_user_agent(id), PUBLIC_USER_AGENT, "{id}");
+        }
+        assert_eq!(
+            calendar::SCHEDULES.len(),
+            4,
+            "a new schedule needs its agent chosen here"
+        );
+    }
+
+    /// While FINRA's switch is off, a ticker read never asks FINRA (no FINRA cache key is ever
+    /// fetched), and both FINRA parts and their source rows say Off with the reason.
+    #[tokio::test]
+    async fn finra_switched_off_is_never_asked_and_says_why() {
+        let mut config = crate::state::test_stub_config();
+        config.public_data = PublicDataMode::On;
+        config.sec_user_agent = None;
+        let service = PublicDataService::new(&config)
+            .unwrap()
+            .with_finra_approved(false);
+        let ticker = service.ticker("NVDA").await;
+        assert_eq!(service.inner.short_interest.keys_asked(), 0);
+        assert_eq!(service.inner.daily_files.keys_asked(), 0);
+        assert_eq!(ticker.short_interest_state, DataState::Off);
+        assert_eq!(ticker.short_volume_state, DataState::Off);
+        assert!(ticker.short_interest.is_none() && ticker.short_volume.is_none());
+        assert_eq!(
+            ticker.short_interest_detail.as_deref(),
+            Some(finra::OFF_DETAIL)
+        );
+        assert_eq!(
+            ticker.short_volume_detail.as_deref(),
+            Some(finra::OFF_DETAIL)
+        );
+        for id in ["finra-si", "finra-shvol"] {
+            let row = ticker.sources.iter().find(|s| s.id == id).unwrap();
+            assert_eq!(row.state, SourceState::Off, "{id}");
+            assert_eq!(row.detail.as_deref(), Some(finra::OFF_DETAIL), "{id}");
+            assert!(row.checked_at.is_none() && row.failed_at.is_none(), "{id}");
+        }
+        // SEC isn't set up either: nothing was asked, which is not an outage.
+        assert_eq!(ticker.state, DataState::NotConfigured);
+        assert_eq!(
+            ticker
+                .detail
+                .as_deref()
+                .map(|d| d.matches(finra::OFF_DETAIL).count()),
+            Some(1)
+        );
+    }
+
+    /// The SEC row covers the company facts too: a facts read that failed this cycle makes the
+    /// row Last good copy with the reason, never Updated (the filing list itself answered).
+    #[tokio::test]
+    async fn a_failed_company_facts_read_is_not_reported_as_updated() {
+        let mut config = crate::state::test_stub_config();
+        config.public_data = PublicDataMode::On;
+        config.sec_user_agent = SecUserAgent::from_raw(Some("Convexa tests tests@example.com"));
+        let service = PublicDataService::new(&config)
+            .unwrap()
+            .with_finra_approved(false);
+        let cik = 1_045_810u64;
+        let inner = &service.inner;
+        inner
+            .sec_tickers
+            .get((), || async {
+                Ok(HashMap::from([(edgar::ticker_key("NVDA"), cik)]))
+            })
+            .await;
+        // A recent 10-Q and no Form 4: nothing else is fetched.
+        let rows = vec![SubmissionRow {
+            accession: "0001045810-26-000001".into(),
+            filed: today_eastern() - chrono::Duration::days(10),
+            report_date: None,
+            form: "10-Q".into(),
+            items: Vec::new(),
+            primary_document: "nvda-10q.htm".into(),
+            description: None,
+        }];
+        inner.submissions.get(cik, || async { Ok(rows) }).await;
+        inner
+            .company_facts
+            .get(cik, || async {
+                Err(FetchError::new(edgar::SOURCE, "timeout"))
+            })
+            .await;
+
+        let ticker = service.ticker("NVDA").await;
+        assert_eq!(ticker.filings_state, DataState::Live);
+        let sec = ticker.sources.iter().find(|s| s.id == "sec").unwrap();
+        assert_eq!(sec.state, SourceState::LastGood);
+        assert!(sec.failed_at.is_some());
+        assert!(
+            sec.detail
+                .as_deref()
+                .is_some_and(|d| d.contains("company facts")),
+            "{:?}",
+            sec.detail
+        );
+        assert_eq!(inner.form4.keys_asked(), 0);
     }
 
     /// Without SEC_USER_AGENT the SEC row says Not set up, and no filing history means no

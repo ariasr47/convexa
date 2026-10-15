@@ -164,6 +164,16 @@ where
         slot
     }
 
+    /// How many keys have been asked for (each `get` makes its key's slot first): zero means this
+    /// cache never ran a fetch.
+    #[cfg(test)]
+    pub fn keys_asked(&self) -> usize {
+        self.slots
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner())
+            .len()
+    }
+
     /// Serve `key` from cache when fresh; otherwise run `fetch` once (other readers of the same
     /// key wait for it) and fall back to the last good copy when it fails.
     pub async fn get<F, Fut>(&self, key: K, fetch: F) -> Lookup<V>

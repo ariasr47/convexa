@@ -322,6 +322,20 @@ pub struct CalendarWire {
     pub from: String,
     pub to: String,
     pub releases: Vec<ReleaseWire>,
+    /// How far each schedule read reaches: one entry per schedule with a copy. A day after an
+    /// agency's `through` is not "nothing scheduled" for it; it has not published that far yet.
+    /// Absent from servers before 2026-10-16.
+    #[serde(default)]
+    pub horizons: Vec<ScheduleHorizonWire>,
+}
+
+/// The last date one agency's published schedule lists.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ScheduleHorizonWire {
+    /// The schedule's source id: `fed-fomc`, `bls`, `bea` or `treasury-qr`.
+    pub source: String,
+    /// YYYY-MM-DD, the latest release date in the agency's schedule as last read.
+    pub through: String,
 }
 
 fn agency(source: &str) -> &'static str {
@@ -350,6 +364,14 @@ impl From<service::Calendar> for CalendarWire {
                     moved_from: r.moved_from.map(day),
                 })
                 .collect(),
+            horizons: c
+                .horizons
+                .into_iter()
+                .map(|h| ScheduleHorizonWire {
+                    source: h.source.into(),
+                    through: day(h.through),
+                })
+                .collect(),
         }
     }
 }
@@ -365,8 +387,10 @@ pub enum ResultsBasisWire {
 }
 
 /// The window a company's next results are expected in: each of its last four results dates
-/// carried forward by whole quarters (91 days) to the quarter after the latest. An estimate,
-/// never an announced date.
+/// carried forward by whole quarters (91 days) to the quarter after the latest. Only the newest
+/// dates a quarter apart are used (a skipped quarter ends the run; an annual 20-F/40-F history
+/// gets no window), and a projection more than a week past is dropped. An estimate, never an
+/// announced date.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ResultsWindowWire {
     pub ticker: String,
@@ -800,7 +824,8 @@ pub struct PeriodicFilingWire {
 }
 
 /// `GET /api/public-data/tickers/{ticker}`. FINRA parts are null when FINRA has nothing for the
-/// ticker or failed with nothing cached; SEC parts carry their own state.
+/// ticker, failed with nothing cached, or is switched off on this server (their states say
+/// `off`); SEC parts carry their own state.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct PublicTickerWire {
     pub ticker: String,
@@ -810,7 +835,8 @@ pub struct PublicTickerWire {
     #[schema(required = true)]
     pub short_interest: Option<ShortInterestWire>,
     /// `live` when FINRA answered, even with no report for this symbol (`short_interest` null);
-    /// `unavailable` when it didn't and nothing is cached: an outage, not an empty fact.
+    /// `unavailable` when it didn't and nothing is cached: an outage, not an empty fact; `off`
+    /// when FINRA data is switched off on this server (FINRA is not asked; the detail says why).
     pub short_interest_state: PublicDataState,
     #[schema(required = true)]
     pub short_interest_detail: Option<String>,
@@ -843,7 +869,10 @@ pub struct PublicTickerWire {
     /// current).
     #[serde(default)]
     pub short_volume_source_state: Option<PublicSourceState>,
-    /// SEC EDGAR's state, for `filings`, `insiders` and `periodic` (`updated` when current).
+    /// SEC EDGAR's state, for `filings`, `insiders`, `periodic` and `annual_revenue`: `updated`
+    /// when the ticker map, the filing list, the company facts and the Form 4s all answered this
+    /// cycle; `last_good` when any of them failed (a kept copy, or a part left out), with the
+    /// reason in the `sec` source row's detail.
     #[serde(default)]
     pub filings_source_state: Option<PublicSourceState>,
 }
@@ -1170,6 +1199,16 @@ fn representative_markets() -> PublicMarketsWire {
                     agency: "Fed".into(),
                     source: calendar::FED_ID.into(),
                     moved_from: None,
+                },
+            ],
+            horizons: vec![
+                ScheduleHorizonWire {
+                    source: calendar::FED_ID.into(),
+                    through: "2027-12-08".into(),
+                },
+                ScheduleHorizonWire {
+                    source: calendar::BLS_ID.into(),
+                    through: "2026-12-30".into(),
                 },
             ],
         }),
