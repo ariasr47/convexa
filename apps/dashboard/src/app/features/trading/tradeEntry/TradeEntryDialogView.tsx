@@ -94,6 +94,12 @@ import { FieldLabel } from './FieldLabel';
 import { FillModeToggle } from './FillModeToggle';
 import { LegFields, multiplierFor } from './LegFields';
 import {
+  checkManualEntry,
+  MANUAL_ENTRY_COPY,
+  normalizeUnderlying,
+  underlyingError,
+} from './manualContract';
+import {
   defaultGoodTil,
   goodTilToExpiresAt,
   newDraft,
@@ -198,6 +204,15 @@ export function TradeEntryDialog({
   const [priceMode, setPriceMode] = useState<'market' | 'limit'>('market');
   const [goodTil, setGoodTil] = useState('');
 
+  // Market and Limit fill at a live quote. With no options feed on this site (live build, `not_live`
+  // or `paused`), only Manual price is offered, and the control says why (Final Overlays, DLG-01).
+  const feedOff = dataMode === 'live' && marketDataOff(marketDataMode);
+  // MANUAL CONTRACT ENTRY (manualContract.ts): with the feed off there is no chain to pick an
+  // expiry or strike from, so the trader types the underlying and each contract. Nothing is looked
+  // up — the contract route is never asked — and the shape is checked before anything can open.
+  const manualContract = !isOrder && feedOff && expirations.length === 0;
+  const [underlying, setUnderlying] = useState('');
+
   // Reset fields each time the dialog opens (honor the Prime / AI prefill). A strike the prefill
   // names that isn't in the chain list still seeds — the user can adjust to the nearest listed one.
   useEffect(() => {
@@ -231,6 +246,7 @@ export function TradeEntryDialog({
     setMarketFill(null);
     setFillState('idle');
     setContractStatsFailed(false);
+    setUnderlying('');
     // Order variant: D2 trigger seed (or empty), Market-on-trigger default (the rec schema states
     // no contract premium — honest default, UX §3.1.6), the D3 good-til default.
     if (orderPlan) {
@@ -246,7 +262,7 @@ export function TradeEntryDialog({
   useEffect(() => {
     // rec-absence-literals-hole (F11, discovered — not named in §2.5): `right === ''` (the read named
     // no structure) has no contract to look up either, mirroring the shipped `strike === ''` guard.
-    if (!open || !expiration || strike === '' || right === '') return;
+    if (!open || manualContract || !expiration || strike === '' || right === '') return;
     let cancelled = false;
     setFillState('loading');
     setContractStatsFailed(false);
@@ -277,7 +293,7 @@ export function TradeEntryDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, ticker, expiration, strike, right, spot]);
+  }, [open, manualContract, ticker, expiration, strike, right, spot]);
 
   // ---- Derived previews / guards per mode ------------------------------------------------------
   //
@@ -285,9 +301,6 @@ export function TradeEntryDialog({
   // structure (`composeMark.netLimitDollarsFor` carries that ruling). So both modes are available
   // only for a single OPTION leg — and the boundary is STATED to the trader, never applied silently.
   const singleOptionEntry = legs.length === 1 && legs[0].kind === 'option';
-  // Market and Limit fill at a live quote. With no options feed on this site (live build, `not_live`
-  // or `paused`), only Manual price is offered, and the control says why (Final Overlays, DLG-01).
-  const feedOff = dataMode === 'live' && marketDataOff(marketDataMode);
   const effectiveMode: FillMode = singleOptionEntry && !feedOff ? mode : 'manual';
 
   /**
@@ -309,6 +322,18 @@ export function TradeEntryDialog({
   const draftPrices = legs.map(priceOfDraft);
   const everyLegPriced = draftPrices.every((p) => p != null);
 
+  // The typed contract's check (null when the chain supplies the contract). Its ticker is the one
+  // the position is stored under; until the symbol is valid the host's ticker never stands in.
+  const manualCheck = manualContract
+    ? checkManualEntry({
+        underlying,
+        legs: legs.map((d, i) => ({ ...d, price: draftPrices[i] })),
+        today: todayIso(),
+      })
+    : null;
+  const manualLegErrors = manualCheck && !manualCheck.ok ? manualCheck.legs : null;
+  const entryTicker = manualContract ? normalizeUnderlying(underlying) : ticker;
+
   /** The drafted structure, as a `SimPosition` the SHARED recogniser and leg arithmetic can read. */
   const draftPosition: SimPosition = {
     id: 'draft',
@@ -317,7 +342,7 @@ export function TradeEntryDialog({
       return {
         id: d.key,
         kind: d.kind,
-        ticker,
+        ticker: entryTicker,
         side: d.side,
         qty: d.qty,
         multiplier: multiplierFor(d.kind),
@@ -383,6 +408,7 @@ export function TradeEntryDialog({
 
   const canConfirm = (() => {
     if (!everyLegAddressed) return false;
+    if (manualCheck && !manualCheck.ok) return false;
     if (isOrder) {
       if (goodTilInvalid) return false;
       if (priceMode === 'limit') return limitPrice !== '' && Number(limitPrice) > 0;
@@ -404,8 +430,9 @@ export function TradeEntryDialog({
 
   const handleConfirm = () => {
     if (!everyLegAddressed) return;
+    if (manualCheck && !manualCheck.ok) return;
     const base: SubmitBase = {
-      ticker,
+      ticker: entryTicker,
       stop: stop === '' ? null : Number(stop),
       target: target === '' ? null : Number(target),
     };
@@ -432,7 +459,7 @@ export function TradeEntryDialog({
     // travels with the leg — it is never re-derived from `kind` downstream.
     const legInputs: LegInput[] = legs.map((d, i) => ({
       kind: d.kind,
-      ticker,
+      ticker: entryTicker,
       side: d.side,
       qty: d.qty,
       multiplier: multiplierFor(d.kind),
@@ -499,7 +526,13 @@ export function TradeEntryDialog({
               sx={{ flexGrow: 1, minWidth: 0, alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
             >
               <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                {isOrder ? ORDER_DIALOG_TITLE : `Open simulated position · ${ticker}`}
+                {isOrder
+                  ? ORDER_DIALOG_TITLE
+                  : manualContract
+                    ? underlyingError(underlying) == null
+                      ? `Open simulated position · ${entryTicker}`
+                      : 'Open simulated position'
+                    : `Open simulated position · ${ticker}`}
               </Typography>
               <Chip
                 size="small"
@@ -566,6 +599,45 @@ export function TradeEntryDialog({
             </>
           )}
 
+          {/* MANUAL CONTRACT ENTRY — the underlying first: every leg of a position shares it. */}
+          {manualContract && (
+            <Box data-testid="entry-manual-contract">
+              <Typography
+                variant="caption"
+                sx={{ color: 'text.secondary', display: 'block', mb: 1, fontSize: 12 }}
+              >
+                {MANUAL_ENTRY_COPY.lead}
+              </Typography>
+              <FieldLabel htmlFor="entry-underlying">Underlying</FieldLabel>
+              <TextField
+                id="entry-underlying"
+                size="small"
+                fullWidth
+                value={underlying}
+                onChange={(e) => setUnderlying(e.target.value.toUpperCase())}
+                error={
+                  underlying.trim() !== '' && manualCheck?.ok === false && !!manualCheck.underlying
+                }
+                helperText={
+                  underlying.trim() !== '' && manualCheck?.ok === false
+                    ? (manualCheck.underlying ?? undefined)
+                    : undefined
+                }
+                placeholder="SPY"
+                slotProps={{
+                  htmlInput: {
+                    'aria-label': 'Underlying',
+                    autoCapitalize: 'characters',
+                    autoComplete: 'off',
+                    spellCheck: false,
+                    maxLength: 8,
+                  },
+                }}
+                sx={inputSx}
+              />
+            </Box>
+          )}
+
           {/* Fill-mode segmented control (shipped 3-mode — replaced by the 2-option entry-price
               control in the ORDER VARIANT ONLY, §3.1-6). Market/Limit resolve ONE option contract,
               so once the entry is not a single option leg they are refused VISIBLY, never hidden. */}
@@ -574,7 +646,7 @@ export function TradeEntryDialog({
               value={effectiveMode}
               singleOptionEntry={singleOptionEntry}
               feedOff={feedOff}
-              ticker={ticker}
+              ticker={manualCheck?.ok ? manualCheck.ticker : ticker}
               onChange={setMode}
             />
           )}
@@ -610,6 +682,9 @@ export function TradeEntryDialog({
               // The single-option path keeps the SHIPPED mode-scoped price field below; every other
               // shape prices per leg, because that is the only honest way to net a structure.
               showPrice={!isOrder && !singleOptionEntry}
+              manualContract={manualContract}
+              today={todayIso()}
+              errors={manualLegErrors?.[i]}
               onPatch={(patch) => patchLeg(i, patch)}
               onRemove={() => setLegs((prev) => prev.filter((_, j) => j !== i))}
             />
@@ -774,6 +849,10 @@ export function TradeEntryDialog({
                   if (effectiveMode === 'limit') setLimitPrice(v);
                   else setManualPrice(v);
                 }}
+                error={manualContract && manualPrice !== '' && !!manualLegErrors?.[0]?.price}
+                helperText={
+                  manualContract && manualPrice !== '' ? manualLegErrors?.[0]?.price : undefined
+                }
                 slotProps={{ htmlInput: { 'aria-label': priceLabel } }}
                 sx={inputSx}
               />
