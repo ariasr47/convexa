@@ -26,10 +26,11 @@ import {
 import { filedSince } from './filings';
 import { formatNoteDate, STANCE_LABEL, UNCERTAINTY_LABEL } from './format';
 import { RESEARCH_DISCLAIMER, ResearchColumn } from './NotesView';
-import { usePublicFilings } from './publicData';
+import { usePublicFilings, usePublicMarkets } from './publicData';
 import { ProvenanceChip } from './publicUi';
 import { ResearchTabs } from './ResearchTabs';
-import type { ChartBlock, Freshness, NoteStance, ResearchTickerSummary } from './types';
+import { calendarTriggers, FOMC_TRIGGER, fomcDays, withCalendar } from './reviewTriggers';
+import type { Aging, ChartBlock, Freshness, NoteStance, ResearchTickerSummary } from './types';
 import {
   DISPLAY,
   Eyebrow,
@@ -237,7 +238,8 @@ function FilingsFallback({ state }: { state: 'not_configured' | 'off' | 'unavail
   );
 }
 
-type Row = ResearchTickerSummary & { f: Freshness };
+/** `aging`: the note's own dates with the calendar's review triggers added (reviewTriggers.ts). */
+type Row = ResearchTickerSummary & { f: Freshness; aging: Aging };
 
 const HATCH = (t: Theme) =>
   `repeating-linear-gradient(135deg, ${alpha(t.palette.text.secondary, 0.7)} 0 3px, ${alpha(t.palette.text.secondary, 0.28)} 3px 6px)`;
@@ -323,7 +325,7 @@ function TickerCard({ row, today }: { row: Row; today: string }) {
   const n = row.latest;
   const href = `/ticker/${encodeURIComponent(row.ticker)}/research`;
   const next =
-    row.f.state === 'archived' ? null : (upcoming(n.aging.events, today, 3650)[0] ?? null);
+    row.f.state === 'archived' ? null : (upcoming(row.aging.events, today, 3650)[0] ?? null);
   return (
     <Box
       component="article"
@@ -473,6 +475,10 @@ export function ResearchIndexPage() {
   // and the page says so.
   const filingsRead = usePublicFilings(TICKERS, !DEMO);
   const filings = filingsRead.data?.state === 'live' ? filingsRead.data.filings : null;
+  // The calendar's review triggers: FOMC decisions for valued notes, estimated results windows.
+  const markets = usePublicMarkets(!DEMO);
+  const fomc = useMemo(() => fomcDays(markets.data?.calendar), [markets.data]);
+  const windows = filingsRead.data?.results;
   const filingsFallback =
     DEMO || filingsRead.loading
       ? null
@@ -491,20 +497,37 @@ export function ResearchIndexPage() {
   );
   const rows: Row[] = useMemo(
     () =>
-      researchIndex.map((r) => ({
-        ...r,
-        f: freshnessOf(r.latest.aging, {
-          today,
-          notFollowingSince: r.latest.notFollowingSince,
-          filed: filings
-            ? filedSince(
-                filings.filter((x) => x.ticker === r.ticker),
-                r.latest,
-              )
-            : [],
-        }),
-      })),
-    [today, filings],
+      researchIndex.map((r) => {
+        const aging = withCalendar(
+          r.latest.aging,
+          calendarTriggers({
+            note: {
+              ticker: r.ticker,
+              date: r.latest.date,
+              valued: r.latest.valuation !== null,
+              aging: r.latest.aging,
+            },
+            today,
+            fomc,
+            windows: windows ?? [],
+          }),
+        );
+        return {
+          ...r,
+          aging,
+          f: freshnessOf(aging, {
+            today,
+            notFollowingSince: r.latest.notFollowingSince,
+            filed: filings
+              ? filedSince(
+                  filings.filter((x) => x.ticker === r.ticker),
+                  r.latest,
+                )
+              : [],
+          }),
+        };
+      }),
+    [today, filings, fomc, windows],
   );
   const shown = rows.filter(
     (r) =>
@@ -516,13 +539,25 @@ export function ResearchIndexPage() {
         (stance === 'unset' ? r.latest.stance === null : r.latest.stance === stance)) &&
       (fresh === 'any' || r.f.state === fresh),
   );
-  const soon = rows
-    .filter((r) => r.f.state !== 'archived')
-    .flatMap((r) =>
-      upcoming(r.latest.aging.events, today, 70).map((u) => ({ ...u, ticker: r.ticker })),
-    )
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(0, 6);
+  const live = rows.filter((r) => r.f.state !== 'archived');
+  // The FOMC is one row for every valued note, as on the calendar, not one per note.
+  const nextFomc = live
+    .flatMap((r) => upcoming(r.aging.events, today, 70).filter((u) => u.label === FOMC_TRIGGER))
+    .sort((a, b) => a.date.localeCompare(b.date))[0];
+  // It always keeps a place among the six: it makes more notes due than any one catalyst.
+  const soon = [
+    ...live
+      .flatMap((r) =>
+        upcoming(r.aging.events, today, 70)
+          .filter((u) => u.label !== FOMC_TRIGGER)
+          .map((u) => ({ ...u, ticker: r.ticker })),
+      )
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, nextFomc ? 5 : 6),
+    ...(nextFomc
+      ? [{ ...nextFomc, ticker: 'Fed', whenLabel: `${nextFomc.whenLabel} · every valued note` }]
+      : []),
+  ].sort((a, b) => a.date.localeCompare(b.date));
   const count = (pred: (r: Row) => boolean) => rows.filter(pred).length;
   const stances: { key: StanceFilter; label: string; dashed?: boolean }[] = [
     { key: 'all', label: `All · ${rows.length}` },
@@ -753,8 +788,10 @@ export function ResearchIndexPage() {
                     Coming up
                   </Box>
                   <Box component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>
-                    Catalysts from every note, next 10 weeks. Each date is also when its note comes
-                    due for review.
+                    Catalysts from every note, next 10 weeks, and the calendar’s: the FOMC for every
+                    note with a valuation, and results windows estimated from filing history. Each
+                    date is when its note comes due for review; an estimated window, once the
+                    results are filed.
                   </Box>
                 </Box>
                 <Box

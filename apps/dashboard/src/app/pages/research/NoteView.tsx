@@ -19,7 +19,14 @@ import { formatNoteDate, formatShortDate, money, STANCE_LABEL, UNCERTAINTY_LABEL
 import { NoteInlines } from './Inlines';
 import { NoteBody } from './NoteBody';
 import { NoteContext } from './noteContext';
-import type { Freshness, NoteBlock, ResearchNote, ValuationBlock } from './types';
+import {
+  calendarTriggers,
+  ESTIMATE_TRIGGER,
+  FOMC_TRIGGER,
+  withCalendar,
+  type CalendarInputs,
+} from './reviewTriggers';
+import type { Aging, Freshness, NoteBlock, ResearchNote, ValuationBlock } from './types';
 import { DISPLAY, Eyebrow, FreshnessLine, MONO, Panel, Pill, YourCall } from './ui';
 
 export const RESEARCH_DISCLAIMER = 'Personal research notes. Not financial advice.';
@@ -520,20 +527,31 @@ function PartChips({ note, active }: { note: ResearchNote; active: string }) {
 
 function SideCards({
   note,
+  aging,
+  fromCalendar,
   f,
   today,
   valuation,
 }: {
   note: ResearchNote;
+  /** The note's dates with the calendar's review triggers added. */
+  aging: Aging;
+  fromCalendar: boolean;
   f: Freshness;
   today: string;
   valuation: ValuationBlock | null;
 }) {
-  const next = upcoming(note.aging.events, today, 3650)[0] ?? null;
+  const next = upcoming(aging.events, today, 3650)[0] ?? null;
   const due = [
-    ...note.aging.events
+    ...aging.events
       .filter((e) => !e.resolved && e.when.end && e.when.end >= today)
-      .map((e) => ({ date: e.when.end as string, label: e.label })),
+      .map((e) =>
+        e.label === ESTIMATE_TRIGGER
+          ? { date: e.when.start ?? (e.when.end as string), label: `${e.label} (${e.when.label})` }
+          : e.label === FOMC_TRIGGER
+            ? { date: e.when.end as string, label: `${e.label} · moves the discount rate` }
+            : { date: e.when.end as string, label: e.label },
+      ),
     ...(note.aging.priceAsOf && !f.priceStale
       ? [{ date: shiftDays(note.aging.priceAsOf, 30), label: 'Price turns 30 days old' }]
       : []),
@@ -583,8 +601,9 @@ function SideCards({
             ))}
           </Box>
           <Box component="span" sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.45 }}>
-            After the first date, this page names what happened since. Worked out in your browser
-            from the note's own dates.
+            {fromCalendar
+              ? "After the first date, this page names what happened since. Worked out in your browser from the note's own dates and the published release calendar."
+              : "After the first date, this page names what happened since. Worked out in your browser from the note's own dates."}
           </Box>
         </Panel>
       )}
@@ -650,6 +669,7 @@ export function NoteView({
   kind,
   latest,
   filed = [],
+  calendar = null,
 }: {
   note: ResearchNote;
   /** "Initiation · first note", "Update", … */
@@ -658,17 +678,33 @@ export function NoteView({
   latest: { slug: string; date: string } | null;
   /** Results and quarterly filings made since the note that it doesn't cite: each makes it due. */
   filed?: { date: string; label: string }[];
+  /** The release calendar's review triggers (the newest note only): FOMC days and the API's
+   *  estimated results windows. */
+  calendar?: CalendarInputs | null;
 }) {
   const today = useMemo(() => localToday(), []);
-  const f = freshnessOf(note.aging, {
+  const blocks = allBlocks(note);
+  const valuation =
+    (blocks.find((b) => b.type === 'valuation') as ValuationBlock | undefined) ?? null;
+  const triggers = calendar
+    ? calendarTriggers({
+        note: {
+          ticker: note.ticker,
+          date: note.date,
+          valued: valuation !== null,
+          aging: note.aging,
+        },
+        today,
+        ...calendar,
+      })
+    : [];
+  const aging = withCalendar(note.aging, triggers);
+  const f = freshnessOf(aging, {
     today,
     superseded: latest !== null,
     notFollowingSince: note.notFollowingSince,
     filed,
   });
-  const blocks = allBlocks(note);
-  const valuation =
-    (blocks.find((b) => b.type === 'valuation') as ValuationBlock | undefined) ?? null;
   const strip = note.lead.find((b) => b.type === 'strip');
   const tldr = note.lead.find((b) => b.type === 'tldr');
   const rest = note.lead.filter((b) => !['strip', 'tldr', 'paragraph'].includes(b.type));
@@ -721,7 +757,14 @@ export function NoteView({
             gap: 1.5,
           }}
         >
-          <SideCards note={note} f={f} today={today} valuation={valuation} />
+          <SideCards
+            note={note}
+            aging={aging}
+            fromCalendar={triggers.length > 0}
+            f={f}
+            today={today}
+            valuation={valuation}
+          />
         </Box>
 
         <Box
@@ -811,7 +854,14 @@ export function NoteView({
               '@media (max-height: 860px)': { position: 'static' },
             }}
           >
-            <SideCards note={note} f={f} today={today} valuation={valuation} />
+            <SideCards
+              note={note}
+              aging={aging}
+              fromCalendar={triggers.length > 0}
+              f={f}
+              today={today}
+              valuation={valuation}
+            />
           </Box>
         </Box>
       </Box>
