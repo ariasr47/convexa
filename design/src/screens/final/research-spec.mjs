@@ -135,7 +135,7 @@ export const FILINGS_SPEC = {
     { status: 'shipped', what: 'Reported figures on the chart frame with a Change column (▲/▼ on the prior’s size, neutral; filings.ts figureChange, tested); a failed request reads Couldn’t load with Try again, and “not yet” is kept for figures that haven’t arrived (2026-10-15).' },
     { status: 'shipped', what: 'Under the feed, the API’s missing list is named “Not an SEC filer”, and tickers that filed nothing in the window are named too (2026-10-15).' },
     { status: 'partial', what: 'Staging asks for the six sample symbols, so the feed shows 12 sample filings (AAPL has three in the demo fixture, which the AAPL desk also reads), and with no sample note citing them every row reads “not cited”.' },
-    { status: 'todo', what: 'Production is not set up: the operator must set SEC_USER_AGENT.' },
+    { status: 'shipped', what: 'Production is set up: SEC_USER_AGENT set on the API 2026-10-15 (owner); the feed is live (checked: 11 recent filings for NVDA, AAPL and SPY).' },
   ],
   rulings: ['P-2', 'P-3', 'P-8', 'P-10', 'P-13', 'Env 2026-10-14'],
   code: [`${R}/FilingsPage.tsx`, `${R}/filings.ts`, 'apps/api/src/services/public_data/edgar.rs', 'apps/api/src/services/public_data/mod.rs:84-95, 272-283', 'apps/api/src/routes/public_data.rs:551-559', 'libs/api/src/lib/demo/public-data.ts:198-284'],

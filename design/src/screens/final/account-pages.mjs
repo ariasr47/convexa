@@ -61,12 +61,12 @@ const legend = (items) => `<section class="hd-legend" aria-label="On this page">
 // catalog/shared.ts makeScenario). Change is the scenario's own close-to-close move. Scores and tiers are
 // the design's per-symbol values; the shipped transport returns 70 and +0.42% for every row (gap, spec).
 export const DEMO_SCAN = [
-  ['NVDA', '199.17', '+0.01%', 81, 'Prime', '+0.96%', '202.98', '188.04', '197.26'],
+  ['NVDA', '199.17', '−0.02%', 81, 'Prime', '+0.96%', '202.98', '188.04', '197.26'],
   ['SPY', '690.62', '−0.02%', 74, 'Actionable', '+0.97%', '704.02', '652.22', '683.92'],
-  ['QQQ', '632.92', '−0.02%', 70, 'Actionable', '+0.96%', '645.11', '597.64', '626.81'],
+  ['QQQ', '632.91', '−0.02%', 70, 'Actionable', '+0.96%', '645.11', '597.64', '626.81'],
   ['AAPL', '264.29', '−0.05%', 63, 'Actionable', '+0.97%', '269.43', '249.61', '261.72'],
   ['MSFT', '526.66', '−0.05%', 52, 'Watch', '+0.97%', '536.90', '497.40', '521.54'],
-  ['TSLA', '476.03', '+0.01%', 47, 'Watch', '+0.96%', '485.17', '449.47', '471.46'],
+  ['TSLA', '476.03', '−0.01%', 47, 'Watch', '+0.96%', '485.17', '449.47', '471.46'],
 ];
 const scoreBar = (sc) => `<span class="score"><span><i style="width: ${sc}%;"></i></span><span class="mono">${sc}</span></span>`;
 function demoScanTable({ preview = 'SPY' } = {}) {
