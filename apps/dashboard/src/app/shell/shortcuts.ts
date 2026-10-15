@@ -4,8 +4,8 @@
  * ⌘K / Ctrl+K stays separate (AppShell): it inserts no text, so it may fire from a field.
  *
  * A plain letter does insert text, so none of these may fire while the reader is typing: in an
- * input, a textarea, a select or anything contenteditable, or while a dialog holds focus (its own
- * keys win). Getting this wrong is silent and costly — “gs” typed into a note's search box would
+ * input, a textarea, a select or anything contenteditable, while a dialog holds focus, or while an
+ * open Select or Menu list does (their own keys win). Getting this wrong is silent and costly — “gs” typed into a note's search box would
  * leave the page and drop what was typed — so AppShell.keyboard.spec.tsx pins it.
  */
 
@@ -26,8 +26,16 @@ export function isTypingTarget(target: EventTarget | null): boolean {
   if (target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]'))
     return true;
   if (target instanceof HTMLElement && target.isContentEditable) return true;
-  // A role="textbox"/"combobox" widget, or anything inside an open dialog, owns its own keys.
-  if (target.closest('[role="textbox"], [role="combobox"], [role="dialog"], [role="alertdialog"]'))
+  // A role="textbox"/"combobox" widget, or anything inside an open dialog, owns its own keys. So
+  // does an open list: an MUI Select or Menu moves focus onto its options (role="option" in a
+  // role="listbox", role="menuitem" in a role="menu") inside a role="presentation" popover, where
+  // letters are type-ahead — “g s” there must pick an option, not leave the page.
+  if (
+    target.closest(
+      '[role="textbox"], [role="combobox"], [role="dialog"], [role="alertdialog"], ' +
+        '[role="listbox"], [role="option"], [role="menu"], [role="menuitem"]',
+    )
+  )
     return true;
   return false;
 }
