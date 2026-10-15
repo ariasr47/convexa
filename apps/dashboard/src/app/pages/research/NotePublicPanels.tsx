@@ -23,6 +23,7 @@ import { formatNoteDate, formatShortDate } from './format';
 import type { Read } from './publicData';
 import { Caps, SourceProblem } from './publicUi';
 import { SecRecordSections } from './SecRecordSections';
+import { notSecFiler, tickerSecStale } from './secState';
 import type { Aging } from './types';
 import { DISPLAY, MONO, PANEL_SX } from './ui';
 import { useWidth } from './useWidth';
@@ -157,7 +158,7 @@ export function NotePublicPanels({
           </Box>
           <DataStateTag
             state={publicDataWord(d.filings_state, {
-              stale: d.filings_state === 'live' && !!d.filings_detail && dataMode !== 'demo',
+              stale: d.filings_state === 'live' && tickerSecStale(d),
               demo: dataMode === 'demo',
             })}
           />
@@ -751,7 +752,15 @@ function ShortVolumeBars({
 export function InsidersCard({ d }: { d: PublicTicker }) {
   const ins = d.insiders;
   const demo = dataMode === 'demo';
-  if (!ins || ins.state === 'not_configured')
+  // EDGAR lists no company under the symbol (an index, a fund, a fresh IPO): a fact, not a fault.
+  if (notSecFiler(d))
+    return (
+      <Missing
+        label="Insider trades"
+        text={`Not an SEC filer: ${d.filings_detail ?? `SEC EDGAR lists no company under ${d.ticker}.`} There are no Form 4s to count.`}
+      />
+    );
+  if (ins?.state === 'not_configured' || d.filings_state === 'not_configured')
     return (
       <Missing
         label="Insider trades"
@@ -759,23 +768,24 @@ export function InsidersCard({ d }: { d: PublicTicker }) {
         text="Insider filings come from SEC EDGAR, which isn't set up on this server yet."
       />
     );
-  if (ins.state !== 'live')
+  if (!ins || ins.state !== 'live')
     return (
       <Missing
         label="Insider trades"
-        tag={<DataStateTag state={publicDataWord(ins.state)} />}
-        text={`${ins.detail ?? 'EDGAR did not answer.'} Unknown, not empty.`}
+        tag={<DataStateTag state={publicDataWord(ins?.state ?? d.filings_state, { demo })} />}
+        text={`${ins?.detail ?? d.filings_detail ?? 'EDGAR did not answer.'} Unknown, not empty.`}
       />
     );
+  // Staleness is EDGAR's own word for this answer; `ins.detail` is a coverage note ("Counts cover
+  // the 30 newest of 47…", "2 documents could not be read"), shown under the figure, never a tag.
+  const stale = !demo && tickerSecStale(d);
   return (
     <Card
       label={`Insider trades · ${ins.window_days} days`}
       tag={
         <DataStateTag
-          state={publicDataWord(ins.state, { stale: !!ins.detail && !demo, demo })}
-          detail={
-            demo || !ins.latest || ins.detail ? null : `latest ${formatShortDate(ins.latest)}`
-          }
+          state={publicDataWord(ins.state, { stale, demo })}
+          detail={demo || !ins.latest || stale ? null : `latest ${formatShortDate(ins.latest)}`}
         />
       }
       value={`${ins.sales} ${ins.sales === 1 ? 'sale' : 'sales'}`}
@@ -795,6 +805,12 @@ export function InsidersCard({ d }: { d: PublicTicker }) {
           ['Shares bought', big(ins.shares_bought)],
         ]}
       />
+      {ins.detail && !demo && (
+        <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary', textWrap: 'pretty' }}>
+          {ins.detail}
+        </Box>
+      )}
+      {stale && <PartNote text={d.filings_detail} />}
     </Card>
   );
 }
