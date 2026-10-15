@@ -673,6 +673,13 @@
           "from": {
             "type": "string"
           },
+          "horizons": {
+            "description": "How far each schedule read reaches: one entry per schedule with a copy. A day after an\nagency's `through` is not \"nothing scheduled\" for it; it has not published that far yet.\nAbsent from servers before 2026-10-16.",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleHorizonWire"
+            },
+            "type": "array"
+          },
           "releases": {
             "items": {
               "$ref": "#/components/schemas/ReleaseWire"
@@ -4428,7 +4435,7 @@
         "type": "object"
       },
       "PublicTickerWire": {
-        "description": "`GET /api/public-data/tickers/{ticker}`. FINRA parts are null when FINRA has nothing for the\nticker or failed with nothing cached; SEC parts carry their own state.",
+        "description": "`GET /api/public-data/tickers/{ticker}`. FINRA parts are null when FINRA has nothing for the\nticker, failed with nothing cached, or is switched off on this server (their states say\n`off`); SEC parts carry their own state.",
         "properties": {
           "annual_revenue": {
             "description": "Annual revenue for the latest five fiscal years, oldest first, as first filed.",
@@ -4456,7 +4463,7 @@
               },
               {
                 "$ref": "#/components/schemas/PublicSourceState",
-                "description": "SEC EDGAR's state, for `filings`, `insiders` and `periodic` (`updated` when current)."
+                "description": "SEC EDGAR's state, for `filings`, `insiders`, `periodic` and `annual_revenue`: `updated`\nwhen the ticker map, the filing list, the company facts and the Form 4s all answered this\ncycle; `last_good` when any of them failed (a kept copy, or a part left out), with the\nreason in the `sec` source row's detail."
               }
             ]
           },
@@ -4515,7 +4522,7 @@
           },
           "short_interest_state": {
             "$ref": "#/components/schemas/PublicDataState",
-            "description": "`live` when FINRA answered, even with no report for this symbol (`short_interest` null);\n`unavailable` when it didn't and nothing is cached: an outage, not an empty fact."
+            "description": "`live` when FINRA answered, even with no report for this symbol (`short_interest` null);\n`unavailable` when it didn't and nothing is cached: an outage, not an empty fact; `off`\nwhen FINRA data is switched off on this server (FINRA is not asked; the detail says why)."
           },
           "short_volume": {
             "oneOf": [
@@ -5479,7 +5486,7 @@
         "type": "string"
       },
       "ResultsWindowWire": {
-        "description": "The window a company's next results are expected in: each of its last four results dates\ncarried forward by whole quarters (91 days) to the quarter after the latest. An estimate,\nnever an announced date.",
+        "description": "The window a company's next results are expected in: each of its last four results dates\ncarried forward by whole quarters (91 days) to the quarter after the latest. Only the newest\ndates a quarter apart are used (a skipped quarter ends the run; an annual 20-F/40-F history\ngets no window), and a projection more than a week past is dropped. An estimate, never an\nannounced date.",
         "properties": {
           "basis": {
             "description": "The dates it is projected from, YYYY-MM-DD, newest first (at most four).",
@@ -5750,6 +5757,21 @@
           }
         },
         "required": ["sort"],
+        "type": "object"
+      },
+      "ScheduleHorizonWire": {
+        "description": "The last date one agency's published schedule lists.",
+        "properties": {
+          "source": {
+            "description": "The schedule's source id: `fed-fomc`, `bls`, `bea` or `treasury-qr`.",
+            "type": "string"
+          },
+          "through": {
+            "description": "YYYY-MM-DD, the latest release date in the agency's schedule as last read.",
+            "type": "string"
+          }
+        },
+        "required": ["source", "through"],
         "type": "object"
       },
       "ScoreDriversWire": {

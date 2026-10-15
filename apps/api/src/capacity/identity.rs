@@ -63,6 +63,12 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // (ledger `route-growth-repins-api-artifact-oracle`).
 // Both re-pins landed together in one merge (2026-10-15); the four hashes below are the merged
 // contract's.
+// Re-pinned for the Wave 1 fix round, api-public-data batch (2026-10-15): `CalendarWire` gains
+// optional `horizons` (new schema `ScheduleHorizonWire`, W1-27), and the doc comments of
+// `PublicTickerWire` (FINRA parts may say `off`; `filings_source_state` covers the company facts
+// and Form 4s) and `ResultsWindowWire` (quarterly runs only) change: additive schema growth, zero
+// new operations, so `precutover-operation-baseline.json` stays pinned to its prior hash and four
+// artifacts move (ledger `route-growth-repins-api-artifact-oracle`).
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -70,19 +76,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "3a6f33dd9750e79fea1ed24ed9830f343795fce078c76d97b4f528629ad1d210",
+        "f74f40f3b955ff84024e9efddff02fc598737d3b1fbf230fc30d5b34fcaff025",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "52f360e43d1e9d628ed8bd46466a5bd50826463f38b13ca53359a6656144981a",
+        "db0888d1acc366c74d505fd6232a29618a37abf41d9bcdfff099457f2e228c76",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "d117ed7f2b6c912350a8215d4a9ecc7f9f50ee8d0a5851c0386ec54909e748fc",
+        "78c11af56bb4463f1b690aea866a3a74bbd00398223c8cf7224e701e786fc866",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "a61346531223ccf1038a5f857e7cd65aadab73c5215dab98e0705a7199201f82",
+        "35a5b9ada4219ecf7c8a67a85567c989444ae85af3e8d3ee40b329712a9fffb6",
     ),
 ];
 
