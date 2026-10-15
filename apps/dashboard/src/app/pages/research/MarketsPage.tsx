@@ -5,7 +5,7 @@
  */
 import { ChartFrame, chartRoles, type Provenance } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
-import type { DataStateKey } from '@/shared/dataState/vocabulary';
+import { publicDataWord, type DataStateKey } from '@/shared/dataState/vocabulary';
 import { extrasFor } from '@/shared/theme/tokens';
 import { dataMode, type PublicMarkets } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -15,7 +15,13 @@ import { researchIndex } from 'virtual:convexa-research';
 import { FOMC_CHECKED, FOMC_SOURCE, fomcInSeries } from './fomc';
 import { formatNoteDate, formatShortDate } from './format';
 import { LiquiditySection } from './LiquiditySection';
-import { DRIFT_FLAG_POINTS, noteRates, spread2s10s, type YieldPoint } from './marketsMath';
+import {
+  DRIFT_FLAG_POINTS,
+  noteRates,
+  sourceNote,
+  spread2s10s,
+  type YieldPoint,
+} from './marketsMath';
 import { ResearchColumn } from './NotesView';
 import { usePublicMarkets } from './publicData';
 import { Disclaimer, ProvenanceChip, ReadStrip, SourceProblem, StaleNote } from './publicUi';
@@ -27,6 +33,10 @@ type Rates = NonNullable<PublicMarkets['rates']>;
 type Futures = NonNullable<PublicMarkets['futures']>;
 
 const pts = (n: number) => `${n >= 0 ? '+' : '−'}${Math.abs(n).toFixed(2)}`;
+
+/** The API's source names, as its stale notes spell them (marketsMath.ts sourceNote). */
+const TREASURY = 'U.S. Treasury';
+const CFTC = 'CFTC';
 
 const TSY_URL = 'https://home.treasury.gov/resource-center/data-chart-center/interest-rates';
 
@@ -119,9 +129,12 @@ export function MarketsPage() {
                 <DataStateTag state="off" />
               ) : (
                 <>
+                  {/* A source that failed this cycle shows its last good copy, never "Updated". */}
                   {data.rates ? (
                     <DataStateTag
-                      state="updated"
+                      state={publicDataWord(data.state, {
+                        stale: !!sourceNote(data.detail, TREASURY),
+                      })}
                       detail={`rates ${formatShortDate(data.rates.as_of)}`}
                     />
                   ) : (
@@ -129,7 +142,10 @@ export function MarketsPage() {
                   )}
                   {data.futures ? (
                     <DataStateTag
-                      state="delayed"
+                      state={publicDataWord(data.state, {
+                        stale: !!sourceNote(data.detail, CFTC),
+                        delayed: true,
+                      })}
                       detail={`positioning as of ${formatShortDate(data.futures.report_date)}`}
                     />
                   ) : (
@@ -157,7 +173,7 @@ export function MarketsPage() {
           <>
             {data.detail && dataMode !== 'demo' && <StaleNote text={data.detail} />}
             {data.rates ? (
-              <RatesSection rates={data.rates} />
+              <RatesSection rates={data.rates} stale={!!sourceNote(data.detail, TREASURY)} />
             ) : (
               <SourceProblem
                 title="Rates are unavailable right now."
@@ -167,8 +183,8 @@ export function MarketsPage() {
             )}
             {data.futures ? (
               <>
-                <FuturesSection futures={data.futures} />
-                <PositioningGroups futures={data.futures} />
+                <FuturesSection futures={data.futures} stale={!!sourceNote(data.detail, CFTC)} />
+                <PositioningGroups futures={data.futures} stale={!!sourceNote(data.detail, CFTC)} />
               </>
             ) : (
               <SourceProblem
@@ -180,7 +196,10 @@ export function MarketsPage() {
             {/* `null`: the sources failed with nothing cached. Absent (an API from before
                 liquidity existed): nothing to say, so nothing drawn. */}
             {data.liquidity ? (
-              <LiquiditySection liquidity={data.liquidity} />
+              <LiquiditySection
+                liquidity={data.liquidity}
+                stale={!!sourceNote(data.detail, 'Liquidity')}
+              />
             ) : data.liquidity === null ? (
               <SourceProblem
                 title="Liquidity is unavailable right now."
@@ -202,7 +221,7 @@ export function MarketsPage() {
   );
 }
 
-function RatesSection({ rates }: { rates: Rates }) {
+function RatesSection({ rates, stale = false }: { rates: Rates; stale?: boolean }) {
   const latest = rates.latest as YieldPoint;
   const ago = (rates.year_ago ?? null) as YieldPoint | null;
   const daily = rates.daily as YieldPoint[];
@@ -270,7 +289,7 @@ function RatesSection({ rates }: { rates: Rates }) {
       />
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'stretch' }}>
         <Box sx={{ flex: '999 1 600px', minWidth: 0 }}>
-          <CurvePanel latest={latest} ago={ago} />
+          <CurvePanel latest={latest} ago={ago} stale={stale} />
         </Box>
         <Box sx={{ flex: '1 1 340px', minWidth: 0 }}>
           <Decomposition latest={latest} ago={ago} />
@@ -297,7 +316,15 @@ const MATURITIES: { key: 't3m' | 't2y' | 't5y' | 't10y' | 't30y'; label: string;
     { key: 't30y', label: '30Y', years: 30 },
   ];
 
-function CurvePanel({ latest, ago }: { latest: YieldPoint; ago: YieldPoint | null }) {
+function CurvePanel({
+  latest,
+  ago,
+  stale = false,
+}: {
+  latest: YieldPoint;
+  ago: YieldPoint | null;
+  stale?: boolean;
+}) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const now = MATURITIES.map((m) => latest[m.key]);
   const before = ago ? MATURITIES.map((m) => ago[m.key]) : [];
@@ -349,7 +376,7 @@ function CurvePanel({ latest, ago }: { latest: YieldPoint; ago: YieldPoint | nul
       sub={`U.S. Treasury par yields by maturity · percent · ${formatNoteDate(latest.date)}${ago ? ` against ${formatNoteDate(ago.date)}` : ''} · maturities spaced by √years`}
       height={H}
       {...treasuryFrame('U.S. Treasury · daily par yield curve', latest.date, {
-        state: 'updated',
+        state: stale ? 'lastGood' : 'updated',
         detail: formatShortDate(latest.date),
       })}
       table={{
@@ -1022,7 +1049,7 @@ const CFTC_URL = 'https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.
 
 /** What every CFTC frame shares: provenance, state tag, source and the as-of (positions are as of
  *  a Tuesday and published the Friday after). */
-function cftcFrame(futures: Futures) {
+function cftcFrame(futures: Futures, stale = false) {
   const published = new Date(`${futures.report_date}T12:00:00Z`);
   published.setUTCDate(published.getUTCDate() + 3);
   const demo = dataMode === 'demo';
@@ -1030,7 +1057,10 @@ function cftcFrame(futures: Futures) {
     provenance: (demo ? 'sample' : 'primary') as Provenance,
     tag: demo
       ? { state: 'demo' as const }
-      : { state: 'delayed' as const, detail: `as of ${formatShortDate(futures.report_date)}` },
+      : {
+          state: stale ? ('lastGood' as const) : ('delayed' as const),
+          detail: `as of ${formatShortDate(futures.report_date)}`,
+        },
     source: demo
       ? { text: 'Demo · shaped like CFTC data' }
       : { text: 'CFTC · Traders in Financial Futures', href: CFTC_URL },
@@ -1040,7 +1070,7 @@ function cftcFrame(futures: Futures) {
   };
 }
 
-function FuturesSection({ futures }: { futures: Futures }) {
+function FuturesSection({ futures, stale = false }: { futures: Futures; stale?: boolean }) {
   const groups = futures.markets.flatMap((m) => [
     { market: m, who: 'Asset managers', g: m.asset_managers },
     { market: m, who: 'Leveraged funds', g: m.leveraged_funds },
@@ -1061,7 +1091,7 @@ function FuturesSection({ futures }: { futures: Futures }) {
     : 'Futures positioning';
   return (
     <ChartFrame
-      {...cftcFrame(futures)}
+      {...cftcFrame(futures, stale)}
       finding={finding}
       metric="Futures positioning"
       sub="Net futures positions · thousands of contracts · this week within its own 3-year range · band = 10th–90th percentile · tick = 3-year median · bar = this week · 0 marks the switch from net short to net long"
@@ -1274,7 +1304,7 @@ const monthYear = (d: string) => `${MONTHS[Number(d.slice(5, 7)) - 1]} ${d.slice
  * four panels, never four hues (P-9); above zero is net long, below net short (P-11). Drawn only
  * when every week in the window carries all four groups.
  */
-function PositioningGroups({ futures }: { futures: Futures }) {
+function PositioningGroups({ futures, stale = false }: { futures: Futures; stale?: boolean }) {
   const m = futures.markets.find((x) => x.code === '043602');
   // `?? []`: an API from before the history existed (a deploy can briefly pair a new page with it)
   // draws nothing here rather than failing the page.
@@ -1296,7 +1326,7 @@ function PositioningGroups({ futures }: { futures: Futures }) {
   const last = weeks[weeks.length - 1].date;
   return (
     <ChartFrame
-      {...cftcFrame(futures)}
+      {...cftcFrame(futures, stale)}
       finding={finding}
       metric="Positioning by trader group"
       sub={`Net futures positions, ${m.name}, by trader group · thousands of contracts · weekly, ${monthYear(first)} – ${monthYear(last)} · one scale in every panel · above zero is net long`}
