@@ -1,7 +1,15 @@
 /** Exact SPEC §4 strings — do not paraphrase. */
 
 export const COPY = {
-  appBar: 'Convexa · Session archive',
+  // The page's own head and its two panels (design/src/screens/final/shell-site-docs.mjs
+  // opsArchiveBoard; D-17, 2026-10-15).
+  title: 'Session archive',
+  lead: 'Stored session books, read from the API. Renamed on screen so it never reads as the site’s Research section. Authorizes: nothing.',
+  unlockHead: 'Unlock',
+  tokenNeeded: 'Token needed',
+  booksHead: 'Session books',
+  booksLocked:
+    'Unlock to read the list. Books are recorded from the options feed, which this site doesn’t run, so production records no new ones. The list keeps its columns — date, source, closing stamp — so an empty archive never reads as a failure.',
   documentTitle: 'Session archive — Convexa',
   readOnlyChip: 'read-only',
   authorizesLabel: 'Authorizes:',

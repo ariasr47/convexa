@@ -324,6 +324,7 @@ export const ROWS = [
         { status: 'shipped', what: 'OperatorMetrics (latency trend, stage table, cache and vendor lines), OperatorSessionArchive with its copy table, and DemoOperatorUnavailable on staging.' },
         { status: 'shipped', what: 'The latency trend on the chart frame: small multiples on one scale past three series, neutral roles, a finding only over data (LatencyTrend.tsx, 2026-10-15).' },
         { status: 'shipped', what: 'The slim ops bar on both routes (shared/ui/OpsBar.tsx); DemoOperatorUnavailable says why and offers Back to the demo (2026-10-15).' },
+        { status: 'shipped', what: 'The archive’s head and panels (D-17, 2026-10-15): a visible “Session archive” title and lead, the Unlock panel with its Token needed tag, and a Session books panel while locked. The panel says production records no new books rather than drawing “None stored” before the list is read.' },
       ],
       rulings: ['P-2', 'P-9', 'P-10', 'P-13', 'Env 2026-10-14'],
       code: [`${APP}pages/operator-metrics/operator-metrics.tsx`, `${APP}pages/operator-metrics/LatencyTrend.tsx`, `${APP}pages/operator-metrics/useLatencyTrend.ts`, `${APP}pages/operator-session-archive/`, `${APP}app.tsx (DemoOperatorUnavailable)`, 'apps/api/src/routes/health.rs (/api/_metrics)'],
