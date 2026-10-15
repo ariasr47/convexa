@@ -3,6 +3,7 @@
  */
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { evaluateRule, type EvalMemory, type StructureSnap } from './evaluate';
+import { isStructureKind } from './kinds';
 import {
   getAlertsVersion,
   listRules,
@@ -15,7 +16,7 @@ import {
   subscribeAlerts,
   upsertRule,
 } from './store';
-import type { AlertKind, AlertRule, LevelRef } from './types';
+import type { AlertRule } from './types';
 
 const memByRule = new Map<string, EvalMemory>();
 
@@ -34,7 +35,8 @@ function currentNotifyPermission(): NotifyPermission {
   return typeof Notification === 'undefined' ? 'unavailable' : Notification.permission;
 }
 
-function deliverBrowser(title: string, body: string) {
+/** A browser notification, when the browser allows them; otherwise nothing (the page still lists it). */
+export function deliverBrowser(title: string, body: string) {
   try {
     if (typeof Notification === 'undefined') return;
     if (Notification.permission !== 'granted') return;
@@ -55,7 +57,10 @@ export function useAlerts() {
   const evaluateSnap = useCallback((snap: StructureSnap) => {
     evaluatedThisSession = true;
     const rules = listRules().filter(
-      (r) => r.enabled && r.symbol.toUpperCase() === snap.symbol.toUpperCase(),
+      (r) =>
+        r.enabled &&
+        isStructureKind(r.kind) &&
+        r.symbol.toUpperCase() === snap.symbol.toUpperCase(),
     );
     const notify = readAlerts().notifyBrowser;
     for (const rule of rules) {
@@ -64,36 +69,22 @@ export function useAlerts() {
       memByRule.set(rule.id, memory);
       if (event) {
         pushEvent(event);
-        if (notify) deliverBrowser(`Convexa · ${event.symbol}`, event.message);
+        if (rule.notify ?? notify) deliverBrowser(`Convexa · ${event.symbol}`, event.message);
       }
     }
   }, []);
 
-  const addRule = useCallback(
-    (partial: {
-      kind: AlertKind;
-      symbol: string;
-      level?: LevelRef;
-      priceThreshold?: number;
-      scoreMin?: number;
-      note?: string;
-    }) => {
-      const rule: AlertRule = {
-        id: newRuleId(),
-        kind: partial.kind,
-        symbol: partial.symbol.toUpperCase(),
-        enabled: true,
-        createdAt: Date.now(),
-        level: partial.level,
-        priceThreshold: partial.priceThreshold,
-        scoreMin: partial.scoreMin,
-        note: partial.note,
-      };
-      upsertRule(rule);
-      return rule;
-    },
-    [],
-  );
+  /** Save a new rule from the new-alert flow; the id, `enabled` and `createdAt` are set here. */
+  const addRule = useCallback((partial: Omit<AlertRule, 'id' | 'enabled' | 'createdAt'>) => {
+    const rule: AlertRule = {
+      ...partial,
+      id: newRuleId(),
+      symbol: partial.symbol.toUpperCase(),
+      enabled: true,
+      createdAt: Date.now(),
+    };
+    return { rule, saved: upsertRule(rule) };
+  }, []);
 
   const requestBrowserPermission = useCallback(async () => {
     try {
