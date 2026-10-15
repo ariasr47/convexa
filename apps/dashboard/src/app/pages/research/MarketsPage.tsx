@@ -7,17 +7,20 @@ import { ChartFrame, chartRoles, type Provenance } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { publicDataWord, type DataStateKey } from '@/shared/dataState/vocabulary';
 import { extrasFor } from '@/shared/theme/tokens';
-import { dataMode, type PublicMarkets } from '@convexa/api';
+import { dataMode, DEMO_NOTE_PRICED, type PublicMarkets } from '@convexa/api';
 import Box from '@mui/material/Box';
-import { alpha } from '@mui/material/styles';
+import { alpha, type Theme } from '@mui/material/styles';
 import { useMemo } from 'react';
 import { researchIndex } from 'virtual:convexa-research';
-import { ComingUpSection } from './ComingUpSection';
+import { ComingUpSection, MarketsSectionHead } from './ComingUpSection';
 import { FOMC_CHECKED, FOMC_SOURCE, fomcInSeries } from './fomc';
 import { formatNoteDate, formatShortDate } from './format';
 import { LiquiditySection } from './LiquiditySection';
 import {
+  curveFinding,
+  curveOn,
   DRIFT_FLAG_POINTS,
+  monthsBefore,
   noteRates,
   servingLastGood,
   spread2s10s,
@@ -25,7 +28,7 @@ import {
 } from './marketsMath';
 import { ResearchColumn } from './NotesView';
 import { usePublicMarkets } from './publicData';
-import { Disclaimer, ProvenanceChip, ReadStrip, SourceProblem, StaleNote } from './publicUi';
+import { Caps, Disclaimer, ProvenanceChip, ReadStrip, SourceProblem, StaleNote } from './publicUi';
 import { ResearchTabs } from './ResearchTabs';
 import { DISPLAY, MONO, PANEL_SX } from './ui';
 import { useWidth } from './useWidth';
@@ -106,8 +109,9 @@ export function MarketsPage() {
               textWrap: 'pretty',
             }}
           >
-            Rates and futures positioning from public sources, refreshed each business day. The
-            10-year on this page is the risk-free rate every note&apos;s valuation starts from.
+            Rates, positioning and the money behind them, from public sources, refreshed each
+            business day. The 10-year on this page is the risk-free rate every note&apos;s valuation
+            starts from.
           </Box>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {dataMode === 'demo' && <ProvenanceChip text="Demo · sample data" kind="sample" />}
@@ -157,8 +161,15 @@ export function MarketsPage() {
           </Box>
         </Box>
 
+        {(read.loading || (data && data.state !== 'off')) && (
+          <JumpRail
+            liquidity={!data || data.liquidity !== undefined}
+            comingUp={!data || data.calendar !== undefined}
+          />
+        )}
+
         {read.loading && !data ? (
-          <MarketsSkeleton />
+          <MarketsLoading />
         ) : read.error || !data ? (
           <SourceProblem
             title="Rates and positioning didn't load."
@@ -173,63 +184,156 @@ export function MarketsPage() {
         ) : (
           <>
             {data.detail && dataMode !== 'demo' && <StaleNote text={data.detail} />}
-            {data.rates ? (
-              <RatesSection
-                rates={data.rates}
-                stale={servingLastGood(data.rates?.source_state, data.detail, TREASURY)}
-              />
-            ) : (
-              <SourceProblem
-                title="Rates are unavailable right now."
-                body="The Treasury's rate files didn't answer and there is no earlier copy to show."
-                onRetry={read.retry}
-              />
-            )}
-            {data.futures ? (
-              <>
-                <FuturesSection
-                  futures={data.futures}
-                  stale={servingLastGood(data.futures?.source_state, data.detail, CFTC)}
+            <MarketsSection id="rates" title="Rates">
+              {data.rates ? (
+                <RatesSection
+                  rates={data.rates}
+                  stale={servingLastGood(data.rates?.source_state, data.detail, TREASURY)}
                 />
-                <PositioningGroups
-                  futures={data.futures}
-                  stale={servingLastGood(data.futures?.source_state, data.detail, CFTC)}
+              ) : (
+                <SourceProblem
+                  title="Rates are unavailable right now."
+                  body="The Treasury's rate files didn't answer and there is no earlier copy to show."
+                  onRetry={read.retry}
                 />
-              </>
-            ) : (
-              <SourceProblem
-                title="Futures positioning is unavailable right now."
-                body="The CFTC didn't answer and there is no earlier copy to show."
-                onRetry={read.retry}
-              />
-            )}
+              )}
+            </MarketsSection>
+            <MarketsSection id="positioning" title="Positioning">
+              {data.futures ? (
+                <>
+                  <FuturesSection
+                    futures={data.futures}
+                    stale={servingLastGood(data.futures?.source_state, data.detail, CFTC)}
+                  />
+                  <PositioningGroups
+                    futures={data.futures}
+                    stale={servingLastGood(data.futures?.source_state, data.detail, CFTC)}
+                  />
+                </>
+              ) : (
+                <SourceProblem
+                  title="Futures positioning is unavailable right now."
+                  body="The CFTC didn't answer and there is no earlier copy to show."
+                  onRetry={read.retry}
+                />
+              )}
+            </MarketsSection>
             {/* `null`: the sources failed with nothing cached. Absent (an API from before
                 liquidity existed): nothing to say, so nothing drawn. */}
-            {data.liquidity ? (
-              <LiquiditySection
-                liquidity={data.liquidity}
-                stale={servingLastGood(data.liquidity?.source_state, data.detail, 'Liquidity')}
-              />
-            ) : data.liquidity === null ? (
-              <SourceProblem
-                title="Liquidity is unavailable right now."
-                body="The Fed, the Treasury or the NY Fed didn't answer and there is no earlier copy to show."
-                onRetry={read.retry}
-              />
-            ) : null}
+            {data.liquidity !== undefined && (
+              <MarketsSection id="liquidity" title="Liquidity" lead={LIQUIDITY_LEAD}>
+                {data.liquidity ? (
+                  <LiquiditySection
+                    liquidity={data.liquidity}
+                    stale={servingLastGood(data.liquidity?.source_state, data.detail, 'Liquidity')}
+                  />
+                ) : (
+                  <SourceProblem
+                    title="Liquidity is unavailable right now."
+                    body="The Fed, the Treasury or the NY Fed didn't answer and there is no earlier copy to show."
+                    onRetry={read.retry}
+                  />
+                )}
+              </MarketsSection>
+            )}
           </>
         )}
 
         <ComingUpSection read={read} />
 
         <Disclaimer>
-          Rates: U.S. Department of the Treasury, Daily Treasury Par Yield Curve and Par Real Yield
-          Curve Rates. Positioning: CFTC Commitments of Traders, Traders in Financial Futures.
-          Liquidity: Federal Reserve H.4.1, Treasury Daily Treasury Statement and NY Fed reverse
-          repo operations. Personal research. Not financial advice.
+          {dataMode === 'demo'
+            ? 'Demo · sample data shaped like the Federal Reserve’s, the Treasury’s, the CFTC’s, the BLS’s and the BEA’s files; nothing on this page is a real observation. Research and tools, not investment advice.'
+            : 'Rates: U.S. Department of the Treasury, Daily Treasury Par Yield Curve and Par Real Yield Curve Rates. Positioning: CFTC Commitments of Traders, Traders in Financial Futures. Liquidity: Federal Reserve H.4.1, Treasury Daily Treasury Statement and NY Fed reverse repo operations. Personal research. Not financial advice.'}
         </Disclaimer>
       </Box>
     </ResearchColumn>
+  );
+}
+
+const LIQUIDITY_LEAD =
+  'How much money the Fed’s balance sheet leaves in the system after the Treasury’s cash account and overnight reverse repo. When the Treasury rebuilds its cash, it drains reserves the same way the Fed shrinking would.';
+
+const JUMPS: { id: string; name: string }[] = [
+  { id: 'rates', name: 'Rates' },
+  { id: 'positioning', name: 'Positioning' },
+  { id: 'liquidity', name: 'Liquidity' },
+  { id: 'coming-up', name: 'Coming up' },
+];
+
+/** "On this page": the page's four sections (design: planned-kit marketsHost jump rail). */
+function JumpRail({ liquidity, comingUp }: { liquidity: boolean; comingUp: boolean }) {
+  const shown = JUMPS.filter(
+    (j) => (j.id !== 'liquidity' || liquidity) && (j.id !== 'coming-up' || comingUp),
+  );
+  return (
+    <Box
+      component="nav"
+      aria-label="On this page"
+      sx={(t) => ({
+        display: 'flex',
+        flexWrap: { xs: 'nowrap', sm: 'wrap' },
+        overflowX: { xs: 'auto', sm: 'visible' },
+        alignItems: 'center',
+        gap: '6px 4px',
+        py: 1,
+        borderTop: `1px solid ${t.palette.divider}`,
+        borderBottom: `1px solid ${t.palette.divider}`,
+      })}
+    >
+      <Box
+        component="span"
+        sx={{ fontSize: 12, color: 'text.secondary', mr: 0.75, whiteSpace: 'nowrap' }}
+      >
+        On this page
+      </Box>
+      {shown.map((j) => (
+        <Box
+          key={j.id}
+          component="a"
+          href={`#${j.id}`}
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            minHeight: 32,
+            px: 1.25,
+            borderRadius: '999px',
+            fontSize: 13,
+            color: 'text.secondary',
+            textDecoration: 'none',
+            whiteSpace: 'nowrap',
+            '&:hover': { color: 'text.primary' },
+          }}
+        >
+          {j.name}
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+/** One of the page's sections, under its own heading (design: planned-kit `section`). */
+function MarketsSection({
+  id,
+  title,
+  lead,
+  children,
+}: {
+  id: string;
+  title: string;
+  lead?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Box
+      component="section"
+      id={id}
+      aria-labelledby={`${id}-h`}
+      sx={{ display: 'grid', gap: 2, minWidth: 0, scrollMarginTop: { xs: 72, md: 80 } }}
+    >
+      <MarketsSectionHead id={`${id}-h`} title={title} lead={lead} />
+      {children}
+    </Box>
   );
 }
 
@@ -237,6 +341,11 @@ function RatesSection({ rates, stale = false }: { rates: Rates; stale?: boolean 
   const latest = rates.latest as YieldPoint;
   const ago = (rates.year_ago ?? null) as YieldPoint | null;
   const daily = rates.daily as YieldPoint[];
+  // The curve a month back: the last business day on or before the same day last month.
+  const month = useMemo(() => {
+    const p = curveOn(daily, monthsBefore(latest.date, 1));
+    return p && p.date < latest.date ? p : null;
+  }, [daily, latest.date]);
   const yearAgoDate = useMemo(() => {
     const d = new Date(`${latest.date}T00:00:00Z`);
     d.setUTCFullYear(d.getUTCFullYear() - 1);
@@ -256,52 +365,71 @@ function RatesSection({ rates, stale = false }: { rates: Rates; stale?: boolean 
       ? (latest[k] as number) - (ago[k] as number)
       : null;
 
+  const demo = dataMode === 'demo';
   return (
     <>
-      <ReadStrip
-        label="Rates today"
-        cells={[
-          {
-            label: '10-year Treasury',
-            value: pct(latest.t10y),
-            sub:
-              change('t10y') === null
-                ? ''
-                : `${pts(change('t10y') as number)} pts on a year · was ${pct(ago?.t10y)}`,
-          },
-          {
-            label: 'Real 10-year (TIPS)',
-            value: pct(latest.real10y),
-            sub:
-              change('real10y') === null
-                ? ''
-                : `${pts(change('real10y') as number)} pts on a year · was ${pct(ago?.real10y)}`,
-          },
-          {
-            label: '10-year breakeven',
-            value: pct(be(latest)),
-            sub: `10-year less real (calc)${be(ago) === null ? '' : ` · was ${pct(be(ago))}`}`,
-          },
-          last
-            ? {
-                label: '2s10s spread',
-                value: pts(last.value),
-                sub: `pts · year's range ${lo.value.toFixed(2)}–${hi.value.toFixed(2)}`,
-              }
-            : { label: '2s10s spread', value: '—', sub: 'not published' },
-          {
-            label: '3-month bill',
-            value: pct(latest.t3m),
-            sub:
-              change('t3m') === null
-                ? ''
-                : `${pts(change('t3m') as number)} pts on a year · was ${pct(ago?.t3m)}`,
-          },
-        ]}
-      />
+      <Box sx={{ display: 'grid', gap: 1.25, minWidth: 0 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 10px' }}>
+          <Caps
+            sx={{ color: 'text.primary' }}
+          >{`Rates today · ${formatNoteDate(latest.date)}`}</Caps>
+          {demo ? (
+            <DataStateTag state="demo" />
+          ) : (
+            <DataStateTag
+              state={stale ? 'lastGood' : 'updated'}
+              detail={`rates ${formatShortDate(latest.date)}`}
+            />
+          )}
+        </Box>
+        {/* Sample data is dashed (P-8), as every frame below it is. */}
+        <Box sx={demo ? { '& > section': { borderStyle: 'dashed' } } : undefined}>
+          <ReadStrip
+            label="Rates today"
+            cells={[
+              {
+                label: '10-year Treasury',
+                value: pct(latest.t10y),
+                sub:
+                  change('t10y') === null
+                    ? ''
+                    : `${pts(change('t10y') as number)} pts on a year · was ${pct(ago?.t10y)}`,
+              },
+              {
+                label: 'Real 10-year (TIPS)',
+                value: pct(latest.real10y),
+                sub:
+                  change('real10y') === null
+                    ? ''
+                    : `${pts(change('real10y') as number)} pts on a year · was ${pct(ago?.real10y)}`,
+              },
+              {
+                label: '10-year breakeven',
+                value: pct(be(latest)),
+                sub: `10-year less real (calc)${be(ago) === null ? '' : ` · was ${pct(be(ago))}`}`,
+              },
+              last
+                ? {
+                    label: '2s10s spread',
+                    value: pts(last.value),
+                    sub: `pts · year's range ${lo.value.toFixed(2)}–${hi.value.toFixed(2)}`,
+                  }
+                : { label: '2s10s spread', value: '—', sub: 'not published' },
+              {
+                label: '3-month bill',
+                value: pct(latest.t3m),
+                sub:
+                  change('t3m') === null
+                    ? ''
+                    : `${pts(change('t3m') as number)} pts on a year · was ${pct(ago?.t3m)}`,
+              },
+            ]}
+          />
+        </Box>
+      </Box>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'stretch' }}>
         <Box sx={{ flex: '999 1 600px', minWidth: 0 }}>
-          <CurvePanel latest={latest} ago={ago} stale={stale} />
+          <CurvePanel latest={latest} month={month} ago={ago} stale={stale} />
         </Box>
         <Box sx={{ flex: '1 1 340px', minWidth: 0 }}>
           <Decomposition latest={latest} ago={ago} />
@@ -330,33 +458,22 @@ const MATURITIES: { key: 't3m' | 't2y' | 't5y' | 't10y' | 't30y'; label: string;
 
 function CurvePanel({
   latest,
+  month,
   ago,
   stale = false,
 }: {
   latest: YieldPoint;
+  month: YieldPoint | null;
   ago: YieldPoint | null;
   stale?: boolean;
 }) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const now = MATURITIES.map((m) => latest[m.key]);
+  const mid = month ? MATURITIES.map((m) => month[m.key]) : [];
   const before = ago ? MATURITIES.map((m) => ago[m.key]) : [];
-  const changes = now
-    .map((v, i) => (v !== null && before[i] != null ? v - (before[i] as number) : null))
-    .filter((v): v is number => v !== null);
-  const avg = changes.length ? changes.reduce((a, b) => a + b, 0) / changes.length : null;
-  const inverted = (p: YieldPoint | null) =>
-    !!p && p.t3m !== null && p.t2y !== null && p.t3m > p.t2y;
-  const title =
-    avg === null
-      ? 'The Treasury curve today.'
-      : `The curve ${avg >= 0 ? 'rose' : 'fell'} about ${Math.abs(avg) >= 0.95 && Math.abs(avg) < 1.05 ? 'a point' : `${Math.abs(avg).toFixed(1)} points`} in a year${
-          inverted(latest)
-            ? ', and the front still inverts.'
-            : inverted(ago)
-              ? ', and the front no longer inverts.'
-              : '.'
-        }`;
-  const all = [...now, ...before].filter((v): v is number => v !== null);
+  // The year's change at both ends, never an average of the maturities (D-11, marketsMath.ts).
+  const title = curveFinding(latest, ago) ?? 'The Treasury curve today.';
+  const all = [...now, ...mid, ...before].filter((v): v is number => v !== null);
   const yMin = Math.floor(Math.min(...all)) - 0.5 < 0 ? 0 : Math.floor(Math.min(...all));
   const yMax = Math.ceil(Math.max(...all));
   const W = Math.max(280, width);
@@ -378,23 +495,80 @@ function CurvePanel({
       .filter(Boolean)
       .join(' ');
   const grid = Array.from({ length: yMax - yMin + 1 }, (_, i) => yMin + i);
-  const aria = `Yield curve. ${formatNoteDate(latest.date)}: ${MATURITIES.map((m, i) => `${m.label} ${pct(now[i])}`).join(', ')}.${ago ? ` ${formatNoteDate(ago.date)}: ${MATURITIES.map((m, i) => `${m.label} ${pct(before[i])}`).join(', ')}.` : ''}`;
-  const lastNow = now[now.length - 1];
-  const lastAgo = before[before.length - 1];
+  // The three curves, newest last so it draws on top; each named at its long end.
+  const curves = [
+    ago && { key: 'yr', p: ago, vals: before, label: narrow ? '1Y ago' : formatNoteDate(ago.date) },
+    month && {
+      key: 'mo',
+      p: month,
+      vals: mid,
+      label: narrow ? '1M ago' : formatShortDate(month.date),
+    },
+    { key: 'now', p: latest, vals: now, label: narrow ? 'Now' : formatNoteDate(latest.date) },
+  ].filter((c): c is { key: string; p: YieldPoint; vals: (number | null)[]; label: string } => !!c);
+  // End labels at least 14px apart, in value order, so three close curves never overprint.
+  const ends = curves
+    .flatMap((c) => {
+      const v = c.vals[c.vals.length - 1];
+      return v == null ? [] : [{ key: c.key, label: c.label, at: y(v) + 4 }];
+    })
+    .sort((a, b) => a.at - b.at);
+  for (let i = 1; i < ends.length; i++) ends[i].at = Math.max(ends[i].at, ends[i - 1].at + 14);
+  const stroke = (t: Theme, key: string) =>
+    key === 'now' ? t.palette.text.primary : key === 'mo' ? chartRoles(t).ctx : chartRoles(t).ctx2;
+  const aria = `Yield curve. ${curves
+    .map(
+      (c) =>
+        `${formatNoteDate(c.p.date)}: ${MATURITIES.map((m, i) => `${m.label} ${pct(c.vals[i])}`).join(', ')}.`,
+    )
+    .join(' ')}`;
   return (
     <ChartFrame
       finding={title}
       metric="Treasury yield curve"
-      sub={`U.S. Treasury par yields by maturity · percent · ${formatNoteDate(latest.date)}${ago ? ` against ${formatNoteDate(ago.date)}` : ''} · maturities spaced by √years`}
+      sub={`U.S. Treasury par yields by maturity · percent · ${formatNoteDate(latest.date)}${ago || month ? ` against ${month && ago ? 'a month and a year' : month ? 'a month' : 'a year'} earlier` : ''} · maturities spaced by √years`}
       height={H}
       {...treasuryFrame('U.S. Treasury · daily par yield curve', latest.date, {
         state: stale ? 'lastGood' : 'updated',
         detail: formatShortDate(latest.date),
       })}
+      legend={
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '4px 16px',
+            fontSize: 12,
+            color: 'text.secondary',
+          }}
+        >
+          {[...curves].reverse().map((c) => (
+            <Box
+              key={c.key}
+              component="span"
+              sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}
+            >
+              <Box
+                component="i"
+                aria-hidden
+                sx={(t) => ({
+                  display: 'inline-block',
+                  width: 16,
+                  borderTop: `${c.key === 'now' ? 2.5 : 2}px solid ${stroke(t, c.key)}`,
+                })}
+              />
+              {formatNoteDate(c.p.date)}
+            </Box>
+          ))}
+        </Box>
+      }
       table={{
         caption: 'Treasury par yields by maturity, percent',
-        cols: ['Maturity', formatNoteDate(latest.date), ...(ago ? [formatNoteDate(ago.date)] : [])],
-        rows: MATURITIES.map((m, i) => [m.label, pct(now[i]), ...(ago ? [pct(before[i])] : [])]),
+        cols: ['Maturity', ...[...curves].reverse().map((c) => formatNoteDate(c.p.date))],
+        rows: MATURITIES.map((m, i) => [
+          m.label,
+          ...[...curves].reverse().map((c) => pct(c.vals[i])),
+        ]),
       }}
       testId="chart-curve"
     >
@@ -438,29 +612,21 @@ function CurvePanel({
               </text>
             ))}
           </Box>
-          {ago && (
+          {curves.map((c) => (
             <Box
+              key={c.key}
               component="polyline"
-              points={line(before)}
-              // The older comparison takes the second context step (P-9); its end label names it.
+              points={line(c.vals)}
+              // Now in the claim's colour; a month back and a year back step down through the
+              // two context roles (P-9), each named at its end.
               sx={(t) => ({
                 fill: 'none',
-                stroke: chartRoles(t).ctx2,
-                strokeWidth: 2,
+                stroke: stroke(t, c.key),
+                strokeWidth: c.key === 'now' ? 2.5 : 2,
                 strokeLinejoin: 'round',
               })}
             />
-          )}
-          <Box
-            component="polyline"
-            points={line(now)}
-            sx={(t) => ({
-              fill: 'none',
-              stroke: t.palette.text.primary,
-              strokeWidth: 2.5,
-              strokeLinejoin: 'round',
-            })}
-          />
+          ))}
           {now.map(
             (v, i) =>
               v !== null && (
@@ -489,28 +655,22 @@ function CurvePanel({
                 </g>
               ),
           )}
-          {lastNow !== null && (
+          {ends.map((e) => (
             <Box
+              key={e.key}
               component="text"
               x={W - R + 10}
-              y={y(lastNow) + 4}
-              sx={{ fontSize: 12, fontWeight: 600, fill: 'currentColor', color: 'text.primary' }}
+              y={e.at}
+              sx={{
+                fontSize: 12,
+                fontWeight: 600,
+                fill: 'currentColor',
+                color: e.key === 'now' ? 'text.primary' : 'text.secondary',
+              }}
             >
-              {narrow ? formatShortDate(latest.date) : formatNoteDate(latest.date)}
+              {e.label}
             </Box>
-          )}
-          {ago && lastAgo != null && (
-            <Box
-              component="text"
-              x={W - R + 10}
-              y={y(lastAgo) + 4}
-              sx={{ fontSize: 12, fontWeight: 600, fill: 'currentColor', color: 'text.secondary' }}
-            >
-              {narrow
-                ? `${formatShortDate(ago.date).split(' ')[0]} '${ago.date.slice(2, 4)}`
-                : formatNoteDate(ago.date)}
-            </Box>
-          )}
+          ))}
         </svg>
       </Box>
     </ChartFrame>
@@ -672,7 +832,7 @@ function SpreadPanel({
     <ChartFrame
       finding={`2s10s has held between ${lo.value.toFixed(2)} and ${hi.value.toFixed(2)} points all year. It is ${last.value.toFixed(2)} now.`}
       metric="2s10s spread"
-      sub="10-year less 2-year Treasury par yield · percentage points · each business day for a year · band = the year's range · FOMC = a Fed rate decision (◆ with projections)"
+      sub="10-year less 2-year Treasury par yield · percentage points · each business day for a year · band = the year's range · below 0 the curve inverts · FOMC = a Fed rate decision (◆ with projections)"
       height={H}
       {...treasuryFrame('U.S. Treasury · daily par yield curve', asOf, { state: 'computed' })}
       table={{
@@ -745,22 +905,37 @@ function SpreadPanel({
           >
             {ticks.map((v, i) => (
               <g key={i}>
-                <Box
-                  component="line"
-                  x1={L}
-                  x2={W - R}
-                  y1={y(v)}
-                  y2={y(v)}
-                  sx={(t) => ({
-                    stroke: alpha(t.palette.text.secondary, i === 0 ? 0.3 : 0.14),
-                    strokeDasharray: i === 0 ? undefined : '3 4',
-                  })}
-                />
+                {v !== 0 && (
+                  <Box
+                    component="line"
+                    x1={L}
+                    x2={W - R}
+                    y1={y(v)}
+                    y2={y(v)}
+                    sx={(t) => ({
+                      stroke: alpha(t.palette.text.secondary, i === 0 ? 0.3 : 0.14),
+                      strokeDasharray: i === 0 ? undefined : '3 4',
+                    })}
+                  />
+                )}
                 <text x={L - 6} y={y(v) + 4} textAnchor="end">
                   {v.toFixed(1)}
                 </text>
               </g>
             ))}
+            {/* Zero means something here: below it the curve inverts. One step stronger than the
+                grid, and named (design spreadPlot hlines: "Inverted below 0"). */}
+            <Box
+              component="line"
+              x1={L}
+              x2={W - R}
+              y1={y(0)}
+              y2={y(0)}
+              sx={(t) => ({ stroke: chartRoles(t).axis, strokeWidth: 1.25 })}
+            />
+            <text x={L + 6} y={y(0) - 6}>
+              Inverted below 0
+            </text>
             {/* The FOMC lane: a hairline through the plot at each decision, a mark in the lane
                 (a diamond when the Fed also published projections). */}
             <text x={L - 6} y={LANE + 4} textAnchor="end">
@@ -839,12 +1014,16 @@ function SpreadPanel({
 }
 
 function FeedsNotes({ daily, latest }: { daily: YieldPoint[]; latest: YieldPoint }) {
-  const notes = researchIndex
-    .filter((r) => r.latest.valuation)
-    .map((r) => ({
-      ticker: r.ticker,
-      priced: (r.latest.valuation as NonNullable<typeof r.latest.valuation>).price.asOf,
-    }));
+  const demo = dataMode === 'demo';
+  // Staging draws the demo's sample notes on the sample 10-year, never production's notes (D-05).
+  const notes = demo
+    ? DEMO_NOTE_PRICED
+    : researchIndex
+        .filter((r) => r.latest.valuation)
+        .map((r) => ({
+          ticker: r.ticker,
+          priced: (r.latest.valuation as NonNullable<typeof r.latest.valuation>).price.asOf,
+        }));
   if (latest.t10y === null || notes.length === 0) return null;
   const today = latest.t10y;
   const rows = noteRates(daily, today, notes);
@@ -880,8 +1059,15 @@ function FeedsNotes({ daily, latest }: { daily: YieldPoint[]; latest: YieldPoint
       {...treasuryFrame('U.S. Treasury · daily par yield curve', latest.date, {
         state: 'computed',
       })}
+      source={
+        demo
+          ? { text: 'Demo · the sample notes · Treasury-shaped 10-year' }
+          : { text: 'The notes · U.S. Treasury 10-year', href: TSY_URL }
+      }
       table={{
-        caption: 'Each note’s starting 10-year rate and its drift to today, percent',
+        caption: demo
+          ? 'Each sample note’s starting 10-year rate and its drift to today, percent'
+          : 'Each note’s starting 10-year rate and its drift to today, percent',
         cols: ['Note', 'Priced', 'Rate used', 'Drift', 'Review'],
         rows: rows.map((r) => [
           r.ticker,
@@ -1107,7 +1293,6 @@ function FuturesSection({ futures, stale = false }: { futures: Futures; stale?: 
       finding={finding}
       metric="Futures positioning"
       sub="Net futures positions · thousands of contracts · this week within its own 3-year range · band = 10th–90th percentile · tick = 3-year median · bar = this week · 0 marks the switch from net short to net long"
-      headingLevel="h2"
       height={300}
       note="Reported as of Tuesday and published Friday, so this view is three days old when it updates. It describes who holds what, not what any of them will do."
       table={{
@@ -1342,7 +1527,6 @@ function PositioningGroups({ futures, stale = false }: { futures: Futures; stale
       finding={finding}
       metric="Positioning by trader group"
       sub={`Net futures positions, ${m.name}, by trader group · thousands of contracts · weekly, ${monthYear(first)} – ${monthYear(last)} · one scale in every panel · above zero is net long`}
-      headingLevel="h2"
       height={280}
       table={{
         caption: `${m.name} net positions by trader group, thousands of contracts, newest week first`,
@@ -1513,21 +1697,88 @@ function GroupDates({
   );
 }
 
-function MarketsSkeleton() {
-  const block = (h: number) => (
-    <Box sx={(t) => ({ ...PANEL_SX, height: h, bgcolor: alpha(t.palette.text.secondary, 0.06) })} />
+/**
+ * First paint while /api/public-data/markets answers (a cold read takes seconds): every section
+ * under its heading and every frame at its final height, each naming its metric (P-10), never bare
+ * grey blocks (D-09).
+ */
+function MarketsLoading() {
+  const provenance: Provenance = dataMode === 'demo' ? 'sample' : 'primary';
+  const frame = (metric: string, sub: string, height: number) => (
+    <ChartFrame
+      finding={metric}
+      metric={metric}
+      sub={sub}
+      provenance={provenance}
+      status={{ kind: 'loading' }}
+      height={height}
+    />
   );
   return (
     <Box
       aria-busy="true"
       aria-label="Loading rates and positioning"
-      sx={{ display: 'grid', gap: 2 }}
+      sx={{ display: 'grid', gap: 4 }}
     >
-      {block(104)}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-        <Box sx={{ flex: '999 1 600px' }}>{block(380)}</Box>
-        <Box sx={{ flex: '1 1 340px' }}>{block(380)}</Box>
-      </Box>
+      <MarketsSection id="rates" title="Rates">
+        <Box sx={{ display: 'grid', gap: 1.25 }}>
+          <Caps>Rates today</Caps>
+          <Box
+            role="status"
+            sx={(t) => ({
+              ...PANEL_SX,
+              height: 104,
+              display: 'flex',
+              alignItems: 'center',
+              px: 2.5,
+              fontSize: 13,
+              color: 'text.secondary',
+              bgcolor: alpha(t.palette.text.secondary, 0.04),
+            })}
+          >
+            Loading the Treasury’s latest curve…
+          </Box>
+        </Box>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+          <Box sx={{ flex: '999 1 600px', minWidth: 0 }}>
+            {frame('Treasury yield curve', 'U.S. Treasury par yields by maturity · percent', 280)}
+          </Box>
+          <Box sx={{ flex: '1 1 340px', minWidth: 0 }}>
+            {frame('The 10-year’s move, split', 'Change over the year · percentage points', 170)}
+          </Box>
+        </Box>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+          <Box sx={{ flex: '999 1 600px', minWidth: 0 }}>
+            {frame(
+              '2s10s spread',
+              '10-year less 2-year Treasury par yield · percentage points',
+              248,
+            )}
+          </Box>
+          <Box sx={{ flex: '1 1 340px', minWidth: 0 }}>
+            {frame(
+              'Note discount rates against the 10-year',
+              'The 10-year rate each note’s discount rate started from · percent',
+              200,
+            )}
+          </Box>
+        </Box>
+      </MarketsSection>
+      <MarketsSection id="positioning" title="Positioning">
+        {frame(
+          'Futures positioning',
+          'CFTC Traders in Financial Futures · thousands of contracts',
+          300,
+        )}
+        {frame('Positioning by trader group', '10-year T-note · weekly, three years', 280)}
+      </MarketsSection>
+      <MarketsSection id="liquidity" title="Liquidity" lead={LIQUIDITY_LEAD}>
+        {frame(
+          'Net liquidity',
+          'Fed total assets less the Treasury General Account less overnight reverse repo · weekly',
+          320,
+        )}
+      </MarketsSection>
     </Box>
   );
 }

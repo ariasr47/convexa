@@ -119,7 +119,7 @@ export function LiquiditySection({
       finding={liquidityFinding(weeks)}
       metric="Net liquidity"
       sub={`Fed total assets less the Treasury General Account less overnight reverse repo · $ trillions · weekly, on the H.4.1 Wednesday · the axis starts at $${lo.toFixed(1)}T, not zero: it shows change, not size`}
-      headingLevel="h2"
+      headingLevel="h3"
       height={320}
       provenance={demo ? 'sample' : 'primary'}
       tag={

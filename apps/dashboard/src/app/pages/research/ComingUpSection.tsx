@@ -33,10 +33,50 @@ import {
 } from './comingUp';
 import { usePublicFilings, type Read } from './publicData';
 import { StaleNote } from './publicUi';
-import { MONO } from './ui';
+import { DISPLAY, MONO } from './ui';
 
 const SCHEDULE_IDS = ['fed-fomc', 'bls', 'bea', 'treasury-qr'];
 const METRIC = 'Releases and results, next six weeks';
+const LEAD =
+  'Macro releases and the followed companies’ results, next six weeks. A results date makes its note due; the FOMC makes every note with a valuation due, because it moves the discount rate.';
+
+/** A /research/markets section's heading and lead (design: planned-kit `section`). */
+export function MarketsSectionHead({
+  id,
+  title,
+  lead,
+}: {
+  id: string;
+  title: string;
+  lead?: string;
+}) {
+  return (
+    <Box component="header" sx={{ display: 'grid', gap: 0.75 }}>
+      <Box
+        component="h2"
+        id={id}
+        sx={{ ...DISPLAY, m: 0, fontWeight: 600, fontSize: 24, letterSpacing: '-0.01em' }}
+      >
+        {title}
+      </Box>
+      {lead && (
+        <Box
+          component="p"
+          sx={{
+            m: 0,
+            maxWidth: '72ch',
+            fontSize: 14,
+            lineHeight: 1.55,
+            color: 'text.secondary',
+            textWrap: 'pretty',
+          }}
+        >
+          {lead}
+        </Box>
+      )}
+    </Box>
+  );
+}
 /** The followed companies and the results dates their notes give: a day, a window or a month. */
 function fromNotes(): { followed: string[]; noteResults: NoteResult[] } {
   const rows = researchIndex.filter((r) => !r.latest.notFollowingSince);
@@ -94,12 +134,18 @@ export function ComingUpSection({ read }: { read: Read<PublicMarkets> }) {
   const finding = `${demo ? 'In the sample, ' : atLeast ? 'At least ' : ''}${followedWord} ${built.reporting.length === 1 ? 'reports' : 'report'} in the next six weeks${built.fomc ? `; the Fed decides on ${shortDay(built.fomc)}` : ''}`;
 
   return (
-    <Box component="section" id="coming-up" sx={{ scrollMarginTop: { xs: 72, md: 80 } }}>
+    <Box
+      component="section"
+      id="coming-up"
+      aria-labelledby="coming-up-h"
+      sx={{ display: 'grid', gap: 2, minWidth: 0, scrollMarginTop: { xs: 72, md: 80 } }}
+    >
+      <MarketsSectionHead id="coming-up-h" title="Coming up" lead={LEAD} />
       <ChartFrame
         finding={finding}
         metric={METRIC}
         sub={`Macro releases from the agencies’ published schedules and results dates from the notes, or estimated from each company’s filing history · ${shortDay(built.from)} – ${shortDay(built.weeks[5].end)} · times Eastern`}
-        headingLevel="h2"
+        headingLevel="h3"
         height={180}
         provenance={demo ? 'sample' : 'primary'}
         status={status}
