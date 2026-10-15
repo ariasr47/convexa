@@ -108,6 +108,9 @@ const PositionsPage = lazy(() =>
 );
 const Scanner = lazy(() => import('@/pages/scanner/Scanner').then((m) => ({ default: m.Scanner })));
 const BlogPage = lazy(() => import('@/pages/blog/BlogPage').then((m) => ({ default: m.BlogPage })));
+const BlogPostPage = lazy(() =>
+  import('@/pages/blog/BlogPostPage').then((m) => ({ default: m.BlogPostPage })),
+);
 const MethodologyPage = lazy(() =>
   import('@/pages/methodology/MethodologyPage').then((m) => ({ default: m.MethodologyPage })),
 );
@@ -213,6 +216,13 @@ function ResearchRoute() {
   );
 }
 
+/** A post inside the shell at `/blog/<slug>.html`; anything else under /blog/ is the site's 404
+ *  (pages never import each other, so the route table hands it over). */
+function BlogPostRoute() {
+  const { file = '' } = useParams();
+  return <BlogPostPage file={file} notFound={<NotFound />} />;
+}
+
 /** The route table only (ARCHITECTURE §1.2). Must render UNDER a Router + the auth/theme providers
  *  (supplied by <App/>). */
 export function AppRoutes() {
@@ -287,9 +297,10 @@ export function AppRoutes() {
             </RequireAuth>
           }
         />
-        {/* Blog — static index (zero data work); each card is a full-document anchor to the
-            standalone article HTML in `public/blog/` (static files win over the SPA fallback). */}
+        {/* Blog — static index and posts (zero data work), both inside the shell. A post's text is
+            docs/blog/<slug>.md; the plain no-JavaScript copy is the static /blog/plain/<slug>.html. */}
         <Route path="/blog" element={lazyRoute(<BlogPage />)} />
+        <Route path="/blog/:file" element={lazyRoute(<BlogPostRoute />)} />
         {/* Methodology — product spine #7 trust surface (static; public). */}
         <Route path="/methodology" element={lazyRoute(<MethodologyPage />)} />
         {/* The trust pages: sources and credits, privacy, terms (design/src/screens/final/trust.mjs). */}

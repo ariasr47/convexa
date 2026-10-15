@@ -1,19 +1,12 @@
 /**
- * Blog (`/blog`) — the v2 index composition over the ONE published read (SPEC §4 "Blog index";
- * PLAN.md F8). In the shell, but does ZERO data work: no fetch, no SSE, no compute (the deny-list
- * `eslint.config.mjs` `pages/blog/**` bans `@convexa/api` at build time — SPEC §2.1's zero-edge
- * tree). Each card links to a self-contained static article at `/blog/<slug>.html` (emitted by
- * `docs/blog/build_html.py` into `public/blog/` — the script is the sync step, so the SPA never
- * renders markdown at runtime).
+ * Blog (`/blog`) — the index of published posts (posts.ts). In the shell, and does ZERO data work:
+ * no fetch, no SSE (the deny-list `eslint.config.mjs` `pages/blog/**` bans `@convexa/api` — SPEC
+ * §2.1's zero-edge tree). Each card links to the post inside the shell at `/blog/<slug>.html`.
  *
- * The links are plain full-document anchors ON PURPOSE — the articles are standalone HTML documents
- * served by the static host, not SPA routes; a RouterLink would try (and fail) to resolve them
- * client-side. Token-only styling (`[theme-token-discipline]`): zero hardcoded hex.
+ * Owner ruling D-A = (A), 2026-09-10 (SPEC §1): published posts only, never a draft slot; with
+ * none, the page says so.
  *
- * The index stays a FLAT ARRAY of published articles. Owner ruling D-A = (A), 2026-09-10 (SPEC
- * §1): the index ships the one published read and NO draft slots — the `published | draft`
- * discriminated union has no member to discriminate this phase and is deliberately not built; §1's
- * restoring condition is the only thing that puts it back.
+ * Design: design/src/screens/final/shell-site-docs.mjs (blogIndexBoard, blogStates).
  */
 import { extrasFor } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
@@ -23,27 +16,121 @@ import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useEffect } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { BLOG_COPY } from './copy';
+import { BLOG_ARTICLES, postPath, type BlogArticle } from './posts';
+import { LevelsSchematic } from './Schematics';
 
-interface BlogArticle {
-  slug: string;
-  title: string;
-  description: string;
-  tag: string;
+export function BlogIndex({ articles }: { articles: readonly BlogArticle[] }) {
+  return (
+    <Box
+      sx={{ maxWidth: 1100, mx: 'auto', px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}
+      data-testid="blog-page"
+    >
+      <Stack spacing={1.25} sx={{ mb: 3 }}>
+        <Typography
+          component="p"
+          sx={{
+            m: 0,
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: 'text.secondary',
+          }}
+        >
+          {BLOG_COPY.eyebrow}
+        </Typography>
+        <Typography
+          variant="h4"
+          component="h1"
+          sx={{ fontWeight: 700, letterSpacing: '-0.01em', m: 0 }}
+        >
+          {BLOG_COPY.heading}
+        </Typography>
+        <Typography
+          variant="body1"
+          sx={{ color: 'text.secondary', maxWidth: '62ch', lineHeight: 1.6, m: 0 }}
+        >
+          {BLOG_COPY.intro}
+        </Typography>
+      </Stack>
+
+      {articles.length === 0 ? (
+        <Box
+          data-testid="blog-empty"
+          sx={{ border: '1px dashed', borderColor: 'divider', borderRadius: 2, p: 3 }}
+        >
+          <Typography component="p" sx={{ fontWeight: 700, m: 0 }}>
+            {BLOG_COPY.emptyTitle}
+          </Typography>
+          <Typography component="p" sx={{ color: 'text.secondary', m: 0, mt: 0.5 }}>
+            {BLOG_COPY.emptyBody}
+          </Typography>
+        </Box>
+      ) : (
+        <Stack spacing={2.5}>
+          {articles.map((a) => (
+            <Card key={a.slug} variant="outlined" data-testid={`blog-card-${a.slug}`}>
+              <CardActionArea
+                component={RouterLink}
+                to={postPath(a.slug)}
+                sx={{ p: { xs: 2, sm: 3 } }}
+              >
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))',
+                    gap: 3,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Stack spacing={1.25} sx={{ minWidth: 0 }}>
+                    <Box>
+                      <Chip label={a.tag} size="small" variant="outlined" />
+                    </Box>
+                    <Typography
+                      variant="h5"
+                      component="h2"
+                      sx={{ lineHeight: 1.2, fontWeight: 700 }}
+                    >
+                      {a.title}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      {a.description}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: (theme) => extrasFor(theme).textInfo, fontWeight: 600 }}
+                    >
+                      {BLOG_COPY.readPost}
+                    </Typography>
+                  </Stack>
+                  {a.cardFigure === 'walls-and-flip' && (
+                    <Box component="figure" sx={{ m: 0, minWidth: 0 }} aria-hidden>
+                      <LevelsSchematic />
+                      <Box
+                        component="figcaption"
+                        sx={{ mt: 1, fontSize: 12, color: 'text.secondary' }}
+                      >
+                        {BLOG_COPY.schematic}
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+              </CardActionArea>
+            </Card>
+          ))}
+        </Stack>
+      )}
+      {articles.length > 0 && (
+        <Typography component="p" sx={{ color: 'text.secondary', fontSize: 13, mt: 2.5, mb: 0 }}>
+          {articles.length === 1 ? BLOG_COPY.onePost : BLOG_COPY.morePosts}
+        </Typography>
+      )}
+    </Box>
+  );
 }
-
-/** The published articles. Order = display order. Slugs must match `docs/blog/build_html.py`.
- *  Owner ruling D-A = (A) (SPEC §1): one published read, no draft slots this phase. */
-export const BLOG_ARTICLES: BlogArticle[] = [
-  {
-    slug: 'how-we-read-dealer-structure',
-    title: 'How We Read Dealer Structure',
-    description:
-      'Walls, the gamma flip, GEX, score, and two data speeds — what Convexa actually computes, ' +
-      'on what basis, and where the read is weak.',
-    tag: 'Methodology',
-  },
-];
 
 export function BlogPage() {
   useEffect(() => {
@@ -53,60 +140,7 @@ export function BlogPage() {
       document.title = prev;
     };
   }, []);
-
-  return (
-    <Box sx={{ maxWidth: 760, mx: 'auto', p: 3 }} data-testid="blog-page">
-      <Stack spacing={1} sx={{ my: 4 }}>
-        <Typography
-          variant="overline"
-          component="p"
-          sx={(theme) => ({ color: extrasFor(theme).textAmber, letterSpacing: '0.12em', m: 0 })}
-        >
-          {BLOG_COPY.eyebrow}
-        </Typography>
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.01em' }}>
-          {BLOG_COPY.heading}
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{ color: 'text.secondary', maxWidth: 680, lineHeight: 1.6 }}
-        >
-          {BLOG_COPY.intro}
-        </Typography>
-      </Stack>
-
-      <Stack spacing={2.5}>
-        {BLOG_ARTICLES.map((a) => (
-          <Card key={a.slug} variant="outlined" data-testid={`blog-card-${a.slug}`}>
-            <CardActionArea component="a" href={`/blog/${a.slug}.html`} sx={{ p: 3 }}>
-              <Stack spacing={1}>
-                <Box>
-                  <Chip label={a.tag} size="small" variant="outlined" sx={{ mb: 1 }} />
-                </Box>
-                <Typography variant="h6" component="h2" sx={{ lineHeight: 1.3 }}>
-                  {a.title}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  {a.description}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  // GATE Z I-2 (AC-G1, color-contrast, serious): the light-scheme fill-grade amber
-                  // (`primary.main`) measured 3.26:1 on `background.paper` — under the 4.5:1 text
-                  // floor. Same fix as the landing's outlined/text CTAs (F7c, `591e2654`): the
-                  // LABEL takes the TEXT-GRADE amber (`extrasFor(theme).textAmber`, ≥4.5:1); dark
-                  // is byte-identical.
-                  sx={{ color: (theme) => extrasFor(theme).textAmber, fontWeight: 600 }}
-                >
-                  {BLOG_COPY.readPost}
-                </Typography>
-              </Stack>
-            </CardActionArea>
-          </Card>
-        ))}
-      </Stack>
-    </Box>
-  );
+  return <BlogIndex articles={BLOG_ARTICLES} />;
 }
 
 export default BlogPage;
