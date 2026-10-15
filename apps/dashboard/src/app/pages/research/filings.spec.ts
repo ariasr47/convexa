@@ -1,7 +1,7 @@
 // A results or periodic filing made after a note, and not cited by it, turns the note "review due".
 // Getting this wrong is silent: a stale note shown current, or a current one nagging. Each rule pinned.
 import { describe, expect, it } from 'vitest';
-import { filedSince, standing, type FilingLike } from './filings';
+import { figureChange, filedSince, standing, type FilingLike } from './filings';
 
 const note = { date: '2026-10-13', accessions: ['0000723125-26-000018'] };
 const f = (
@@ -35,5 +35,26 @@ describe('filings against a note', () => {
       { date: '2026-10-15', label: '8-K results filed' },
       { date: '2026-10-20', label: '10-Q filed' },
     ]);
+  });
+});
+
+describe('a reported figure against its prior period', () => {
+  // The change column is a number a reader acts on; a wrong sign or a division by zero is silent.
+  it('gives the change on the prior’s size, with the arrow carrying the sign', () => {
+    expect(figureChange(46_743, 96_221)).toBe('▲ 106%'); // NVDA revenue, more than doubled
+    expect(figureChange(100, 88)).toBe('▼ 12%');
+    expect(figureChange(2.0, 2.1)).toBe('▲ 5.0%'); // under 10%: one decimal
+  });
+
+  it('reads a narrowing loss as a rise, and a deepening one as a fall', () => {
+    expect(figureChange(-200, -100)).toBe('▲ 50%');
+    expect(figureChange(-100, -150)).toBe('▼ 50%');
+  });
+
+  it('gives nothing to divide by as no change at all, and flat as ± 0%', () => {
+    expect(figureChange(null, 10)).toBeNull();
+    expect(figureChange(undefined, 10)).toBeNull();
+    expect(figureChange(0, 10)).toBeNull();
+    expect(figureChange(1_000_000, 1_000_100)).toBe('± 0%');
   });
 });
