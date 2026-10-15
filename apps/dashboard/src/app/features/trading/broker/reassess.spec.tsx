@@ -95,3 +95,26 @@ describe('BrokerReassessAction — advisory only (AC-19)', () => {
     ).toBeNull();
   });
 });
+
+// The demo's holding is authored: its request must never claim a real broker (public demo data is
+// synthetic). A wrong source or basis here would hand a reader a fake Webull position.
+describe('reassessment request on the demo', () => {
+  it('names a demo source and a synthetic basis, never Webull', () => {
+    const req = buildBrokerReassessment(
+      spreadView,
+      { as_of: '2026-10-07T18:30:00Z' },
+      { demo: true },
+    );
+    expect(req.source).toBe('demo_sample');
+    expect(req.as_of_basis).toBe(
+      'on the demo book as of Oct 7, 2026 · 2:30 PM ET · synthetic · a snapshot, never live.',
+    );
+    expect(JSON.stringify(req)).not.toMatch(/webull/i);
+  });
+
+  it('keeps the broker source and basis on a live build', () => {
+    const req = buildBrokerReassessment(spreadView, BOOK_OK_FRESH, { demo: false });
+    expect(req.source).toBe('broker_webull');
+    expect(req.as_of_basis).toContain('Webull');
+  });
+});
