@@ -5,8 +5,13 @@
  * "View position →" when filled (AC-31). Panel-raised skin, token-only, SIMULATED chip (AC-46).
  */
 import { SIMULATED_TIP } from '@/features/trading/positions/labels';
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import { marketDataOff } from '@/shared/dataState/marketData';
 import { MONO_FACE } from '@/shared/figure';
+import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
+import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { extrasFor, upText } from '@/shared/theme/tokens';
+import { dataMode } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -15,6 +20,7 @@ import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
+import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
@@ -28,6 +34,7 @@ import {
   detailScenarioSource,
   entryPriceText,
   goodTilText,
+  NOT_EVALUATED_TEXT,
   REC_NO_TRIGGER_TEXT,
   REC_WORDS_LABEL,
   SCRIPTED_CHIP,
@@ -35,7 +42,7 @@ import {
   sourceAiRead,
   triggerText,
 } from './copy';
-import type { SimOrder } from './types';
+import { isTerminal, type SimOrder } from './types';
 
 // Not-applicable, named rather than inlined: keeps this fallback text out of the raw-text window
 // the shared face module's raw-text scan reads around a mono-bound line, so the scan never misreads
@@ -69,6 +76,10 @@ interface Props {
 
 export function OrderDetailDialog({ order: o, onClose, onViewPosition }: Props) {
   const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleString() : null);
+  // With no options feed on this site an order can't trigger: say so quietly, and link the demo,
+  // where orders trigger on the sample tape (Final Overlays, DLG-02).
+  const marketDataMode = useMarketDataMode();
+  const feedOff = dataMode === 'live' && marketDataOff(marketDataMode);
   return (
     <Dialog
       open={o != null}
@@ -137,6 +148,29 @@ export function OrderDetailDialog({ order: o, onClose, onViewPosition }: Props) 
                   o.provenance.scenario_name ?? o.provenance.scenario_id ?? 'scenario',
                 )}
               </Alert>
+            )}
+
+            {feedOff && !isTerminal(o.status) && (
+              <Box data-testid="order-detail-not-live" sx={{ display: 'grid', gap: 0.75 }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
+                  <DataStateTag state="notLive" label="Not evaluated" />
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    {NOT_EVALUATED_TEXT}
+                  </Typography>
+                </Box>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: 12 }}>
+                  The plan stays as placed; it can still expire or be cancelled. On the demo, orders
+                  trigger on the sample tape.{' '}
+                  <Link
+                    href={`${STAGING_DEMO_URL}/positions`}
+                    underline="always"
+                    data-testid="order-detail-demo"
+                    sx={{ color: (t) => extrasFor(t).textInfo, fontWeight: 600 }}
+                  >
+                    See it on the demo →
+                  </Link>
+                </Typography>
+              </Box>
             )}
 
             {/* SOURCE (AC-30). */}
