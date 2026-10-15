@@ -19,6 +19,8 @@
  */
 import { usePersona } from '@/features/personas/usePersona';
 import { DisclaimerCopy } from '@/shared/copy/disclaimer';
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { extrasFor } from '@/shared/theme/tokens';
 import { dataMode, resetDemoWorkspace, type ThemePref } from '@convexa/api';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
@@ -58,10 +60,13 @@ function PanelCard({
   heading,
   children,
   testId,
+  tag,
 }: {
   heading: string;
   children: React.ReactNode;
   testId?: string;
+  /** The panel's status tag (canon P-2): where its data lives, or what it needs. */
+  tag?: PanelTag;
 }) {
   return (
     <Card
@@ -69,10 +74,52 @@ function PanelCard({
       data-testid={testId}
       sx={{ bgcolor: 'background.paper', borderColor: 'divider', borderRadius: 1, p: 3 }}
     >
-      <Typography sx={{ fontWeight: 700, fontSize: '1.0625rem', mb: 2 }}>{heading}</Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1,
+          mb: 2,
+        }}
+      >
+        <Typography sx={{ fontWeight: 700, fontSize: '1.0625rem' }}>{heading}</Typography>
+        {tag && (
+          <Box component="span" data-testid={testId ? `${testId}-tag` : undefined}>
+            <DataStateTag state={tag.state} label={tag.label} />
+          </Box>
+        )}
+      </Box>
       {children}
     </Card>
   );
+}
+
+type PanelTag = { state: DataStateKey; label?: string };
+type PanelKey = 'account' | 'preferences' | 'risk' | 'ai' | 'brokerage';
+
+/** Each panel's status tag (design/src/screens/final/account-pages.mjs settingsStaging /
+ *  settingsProduction): the demo account, Stored here for what this browser or the account keeps,
+ *  Sign in for what a signed-out visitor can't use, Read-only sample for the demo's AI and broker. */
+function panelTags(mode: 'demo' | 'signedIn' | 'signedOut'): Partial<Record<PanelKey, PanelTag>> {
+  const stored: PanelTag = { state: 'local' };
+  if (mode === 'demo')
+    return {
+      account: { state: 'demo' },
+      risk: stored,
+      ai: { state: 'sample', label: 'Read-only sample' },
+      brokerage: { state: 'sample', label: 'Read-only sample' },
+    };
+  if (mode === 'signedOut')
+    return {
+      account: { state: 'signIn' },
+      preferences: stored,
+      risk: { state: 'signIn' },
+      ai: { state: 'signIn' },
+      brokerage: { state: 'signIn' },
+    };
+  return { preferences: stored, risk: stored };
 }
 
 /** Uppercase field label (11px, 700, letter-spacing, secondary) — matches the auth modal. */
@@ -173,6 +220,10 @@ export function SettingsPage() {
   const hasDisplayName = !!displayName;
   const primaryName = displayName || auth.user?.email || '';
 
+  const tags = panelTags(
+    dataMode === 'demo' ? 'demo' : auth.authenticated ? 'signedIn' : 'signedOut',
+  );
+
   return (
     // design/src/screens/settings.mjs:5 — `minmax(0, 760px)` content column; the section rail
     // (`:28`) is DEFERRED by owner ruling D-B (council/decisions.md) and stays out of scope here.
@@ -194,7 +245,7 @@ export function SettingsPage() {
 
       <Stack spacing={3}>
         {/* ===== 1. Account panel — display + Sign out (log out now lives here) ===== */}
-        <PanelCard heading={C.accountHeading} testId="settings-account-panel">
+        <PanelCard heading={C.accountHeading} tag={tags.account} testId="settings-account-panel">
           {dataMode === 'demo' ? (
             // Always signed in to the seed demo account (owner, 2026-10-14). In place of sign-out,
             // a reset puts the seed account back.
@@ -285,7 +336,11 @@ export function SettingsPage() {
             Panel order (tradeable-rec-inputs, PLAN.md reconciliation): Account → Preferences →
             Risk inputs → AI key → Brokerage. A trader input (Risk inputs) must not be grouped with
             credentials (AI key / Brokerage) — Preferences moves above AI key to make room for it. */}
-        <PanelCard heading={C.preferencesHeading} testId="settings-preferences-panel">
+        <PanelCard
+          heading={C.preferencesHeading}
+          tag={tags.preferences}
+          testId="settings-preferences-panel"
+        >
           <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
             {C.themeHelper}
           </Typography>
@@ -454,17 +509,25 @@ export function SettingsPage() {
         </PanelCard>
 
         {/* ===== 3. Risk inputs panel (tradeable-rec-inputs) — a trader input, not a credential ===== */}
-        <PanelCard heading={RISK_INPUTS_COPY.heading} testId="settings-risk-inputs-panel">
+        <PanelCard
+          heading={RISK_INPUTS_COPY.heading}
+          tag={tags.risk}
+          testId="settings-risk-inputs-panel"
+        >
           <RiskInputsSection />
         </PanelCard>
 
         {/* ===== 4. AI providers panel (ai-providers — keep #ai-key for Ask-AI deep-link) ===== */}
-        <PanelCard heading={C.aiKey.heading} testId="settings-ai-key-panel">
+        <PanelCard heading={C.aiKey.heading} tag={tags.ai} testId="settings-ai-key-panel">
           <AiKeySection embedded />
         </PanelCard>
 
         {/* ===== 5. Brokerage panel (broker-connect — the byo-ai-key shape; #brokerage anchor) ===== */}
-        <PanelCard heading={C.brokerage.heading} testId="settings-brokerage-panel">
+        <PanelCard
+          heading={C.brokerage.heading}
+          tag={tags.brokerage}
+          testId="settings-brokerage-panel"
+        >
           <BrokerageSection embedded />
         </PanelCard>
 

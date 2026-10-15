@@ -25,13 +25,16 @@ import { loadCustoms } from '@/features/personas/store';
 import { subscribeOrders } from '@/features/trading/orders/store';
 import { useOrderEngine } from '@/features/trading/orders/useOrderEngine';
 import { TrackRecordSection } from '@/features/trading/outcomes/TrackRecordSection';
+import { MarkFeedProvider, type MarkFeed } from '@/features/trading/positions/markFeed';
 import { PortfolioPanel } from '@/features/trading/positions/PortfolioPanel';
 import { allPositions } from '@/features/trading/positions/store';
 import { usePortfolio } from '@/features/trading/positions/usePortfolio';
 import { FigureCell } from '@/pages/ticker/widgets/_kit/FigureCell';
+import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { isDeliveringLive } from '@/shared/liveness/liveClaim';
 import { downText, upText } from '@/shared/theme/tokens';
 import { PanelContainer } from '@/shared/ui/PanelContainer';
+import { RouteFallback } from '@/shared/ui/RouteFallback';
 import {
   dataMode,
   getTicker,
@@ -64,6 +67,14 @@ function netPlTintSx(tint: NetPlTint) {
     },
   };
 }
+
+const POSITIONS_LEAD: Record<MarkFeed, string> = {
+  sample:
+    'Your simulated book, paper only. Saved in this browser’s demo workspace; marks come from the sample chain.',
+  notLive:
+    'Your simulated book, paper only, saved in this browser. Option marks need the options feed, which isn’t live on this site; records and user-entered prices still work.',
+  live: 'Your simulated book, paper only, saved in this browser. Marks follow the options feed and name their basis; records never drop.',
+};
 
 const POLL_MS = 60_000; // matches the backend cache TTL (same cadence as the Ticker viewer)
 const STREAM_OFFLINE_MS = 15_000; // payload-gap watchdog → live-mark degrade (mirrors the Ticker page)
@@ -102,7 +113,7 @@ function personaLabelOf(id: string): string | null {
   return [...PRESETS, ...loadCustoms()].find((p) => p.id === id)?.name ?? null;
 }
 
-export function PositionsPage() {
+function PositionsBook({ markFeed }: { markFeed: MarkFeed }) {
   // The focused ticker is derived once on mount from the durable book (re-derives on remount, like a
   // reload). It drives the anchor bundle + the single page-scoped SSE.
   const ticker = useMemo(() => focusedTicker(), []);
@@ -124,6 +135,8 @@ export function PositionsPage() {
   // `data` staying null — this only stops the silent, indefinite re-ask of a route that will never
   // answer differently.
   useEffect(() => {
+    // No options feed on this site: the bundle route can only refuse, so it is never asked.
+    if (markFeed === 'notLive') return;
     let cancelled = false;
     let halted = false;
     const load = () => {
@@ -143,7 +156,7 @@ export function PositionsPage() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [ticker]);
+  }, [ticker, markFeed]);
 
   // ONE page-scoped SSE for the focused ticker (same lifecycle/teardown as the Ticker viewer). At most
   // one EventSource per ticker; closed on unmount. The watchdog flips `streamOffline` on a drop so live
@@ -151,6 +164,7 @@ export function PositionsPage() {
   useEffect(() => {
     setLive(null);
     setStreamOffline(false);
+    if (markFeed === 'notLive') return;
     let gapTimer: ReturnType<typeof setTimeout> | undefined;
     const unsub = subscribeTicker(ticker, {}, (event) => {
       if (event.kind === 'ticker_update') {
@@ -167,7 +181,7 @@ export function PositionsPage() {
       if (gapTimer) clearTimeout(gapTimer);
       unsub();
     };
-  }, [ticker]);
+  }, [ticker, markFeed]);
 
   const pf = usePortfolio(ticker, data, live, isLive, streamOffline);
   const [entryOpen, setEntryOpen] = useState(false);
@@ -202,27 +216,27 @@ export function PositionsPage() {
   const capitalAtRisk = useMemo(() => capitalAtRiskStateOf({ views: pf.views }), [pf.views]);
 
   return (
-    <Box sx={{ maxWidth: 1240, mx: 'auto', p: 3 }}>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '16px 24px',
-          mb: '6px',
-        }}
-      >
-        <Box>
-          <Typography component="h1" sx={{ fontSize: '1.7rem', fontWeight: 700, m: '0 0 4px' }}>
-            Positions
-          </Typography>
-          <Typography component="p" sx={{ fontSize: '0.88rem', color: 'text.secondary', m: 0 }}>
-            Your simulated book — paper-only, persisted in this browser. Live marks degrade
-            gracefully; records never drop.
-          </Typography>
-        </Box>
-        {/* The mast's stat cluster (design/src/screens/positions.mjs:62-65, `.pos-stats`): capital
+    <MarkFeedProvider value={markFeed}>
+      <Box sx={{ maxWidth: 1240, mx: 'auto', p: 3 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '16px 24px',
+            mb: '6px',
+          }}
+        >
+          <Box>
+            <Typography component="h1" sx={{ fontSize: '1.7rem', fontWeight: 700, m: '0 0 4px' }}>
+              Positions
+            </Typography>
+            <Typography component="p" sx={{ fontSize: '0.88rem', color: 'text.secondary', m: 0 }}>
+              {POSITIONS_LEAD[markFeed]}
+            </Typography>
+          </Box>
+          {/* The mast's stat cluster (design/src/screens/positions.mjs:62-65, `.pos-stats`): capital
             at risk beside the live Net P/L readout, right-aligned. Both render through `FigureCell`
             itself, per the panel-shaped exception SPEC §2.1/§2.3 carve out for this readout (council
             `decisions.md` §3 #0+#16; `council/R3-architect.md` #0 and #3 name it explicitly, having
@@ -238,49 +252,66 @@ export function PositionsPage() {
             headless-browser pass, not by jsdom, which cannot evaluate container queries) — the SAME
             shape `ReadStrip.tsx:57`'s `minWidth: 140` already carries for its own nested
             `PanelContainer`s. */}
-        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: '20px', flexWrap: 'wrap' }}>
-          <PanelContainer
-            data-testid="positions-capital-at-risk"
-            sx={{ maxWidth: 260, minWidth: 160, flexShrink: 0 }}
-          >
-            <FigureCell
-              label="Capital at risk"
-              register={capitalAtRisk.register}
-              value={capitalAtRisk.value}
-              caption={capitalAtRisk.caption}
-              offline={null}
-            />
-          </PanelContainer>
-          <PanelContainer
-            data-testid="positions-net-pl"
-            sx={{ maxWidth: 320, minWidth: 200, flexShrink: 0, ...netPlTintSx(netPl.tint) }}
-          >
-            <FigureCell
-              label="Net P/L (open)"
-              register={netPl.register}
-              value={netPl.value}
-              caption={netPl.caption}
-              offline={netPl.offline}
-            />
-          </PanelContainer>
+          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: '20px', flexWrap: 'wrap' }}>
+            <PanelContainer
+              data-testid="positions-capital-at-risk"
+              sx={{ maxWidth: 260, minWidth: 160, flexShrink: 0 }}
+            >
+              <FigureCell
+                label="Capital at risk"
+                register={capitalAtRisk.register}
+                value={capitalAtRisk.value}
+                caption={capitalAtRisk.caption}
+                offline={null}
+              />
+            </PanelContainer>
+            <PanelContainer
+              data-testid="positions-net-pl"
+              sx={{ maxWidth: 320, minWidth: 200, flexShrink: 0, ...netPlTintSx(netPl.tint) }}
+            >
+              <FigureCell
+                label="Net P/L (open)"
+                register={netPl.register}
+                value={netPl.value}
+                caption={netPl.caption}
+                offline={netPl.offline}
+              />
+            </PanelContainer>
+          </Box>
         </Box>
-      </Box>
-      <PortfolioPanel
-        pf={pf}
-        data={data}
-        live={live}
-        isLive={isLive}
-        streamOffline={streamOffline}
-        ticker={ticker}
-        entryOpen={entryOpen}
-        onEntryOpen={setEntryOpen}
-      />
-      {/* outcome-ledger: the reflective read UNDER the book. The book is what this page is for.
+        <PortfolioPanel
+          pf={pf}
+          data={data}
+          live={live}
+          isLive={isLive}
+          streamOffline={streamOffline}
+          ticker={ticker}
+          entryOpen={entryOpen}
+          onEntryOpen={setEntryOpen}
+        />
+        {/* outcome-ledger: the reflective read UNDER the book. The book is what this page is for.
           ⚠ It is a STATIC historical read: it takes NO `data`/`live`/`isLive`/`streamOffline` prop
           and does not dim on a stream drop — unlike the Net P/L header above, which is a LIVE P&L.
           Do not "make it consistent" with that block (`[live-vs-static-isolation]`, AC-E17). */}
-      <TrackRecordSection personaLabel={personaLabelOf} />
-    </Box>
+        <TrackRecordSection personaLabel={personaLabelOf} />
+      </Box>
+    </MarkFeedProvider>
+  );
+}
+
+/** Where marks come from (markFeed.tsx): the demo's sample chain, or, on a live build whose server
+ *  says `not_live`, no feed at all (records and user-entered prices still work; option marks can't,
+ *  and the bundle, stream and contract routes are never asked). The health read is shared and
+ *  answered once per page load; the book waits for it so no request starts on a guess. */
+export function PositionsPage() {
+  const marketData = useMarketDataMode();
+  if (dataMode !== 'demo' && marketData === null) return <RouteFallback />;
+  const markFeed: MarkFeed =
+    dataMode === 'demo' ? 'sample' : marketData === 'not_live' ? 'notLive' : 'live';
+  return (
+    <MarkFeedProvider value={markFeed}>
+      <PositionsBook markFeed={markFeed} />
+    </MarkFeedProvider>
   );
 }
 

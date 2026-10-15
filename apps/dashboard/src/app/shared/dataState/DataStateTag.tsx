@@ -4,6 +4,7 @@
  * warning colour (burnt orange) and nothing uses green or red. `detail` follows the word in the same
  * tag ("Updated Oct 13", "Delayed · 9 days").
  */
+import CheckOutlined from '@mui/icons-material/CheckOutlined';
 import CropFreeOutlined from '@mui/icons-material/CropFreeOutlined';
 import EventOutlined from '@mui/icons-material/EventOutlined';
 import FunctionsOutlined from '@mui/icons-material/FunctionsOutlined';
@@ -35,21 +36,25 @@ const GLYPH: Record<DataStateKey, ComponentType<{ sx?: object; 'aria-hidden'?: b
   demo: CropFreeOutlined,
   signIn: LockOutlined,
   thirdParty: OpenInNewOutlined,
+  local: CheckOutlined,
 };
 
+/** `word` (or its alias `label`) replaces the state's word where the canon or the design names the
+ *  state in context (P-15: the landing's "Illustrative sample"; "Private testing" for Sign in,
+ *  "Read-only sample" for Sample); the glyph and the drawing still come from `state`. */
 export function DataStateTag({
   state,
   detail,
   word: wordOverride,
+  label,
 }: {
   state: DataStateKey;
   detail?: string | null;
-  /** The state's own wording where the canon names one (P-15: the landing's "Illustrative sample"
-   *  is the `sample` state, drawn and glyphed as one). */
   word?: string;
+  label?: string;
 }) {
   const { word: stateWord, kind } = DATA_STATES[state];
-  const word = wordOverride ?? stateWord;
+  const word = wordOverride ?? label ?? stateWord;
   const Glyph = GLYPH[state];
   return (
     <Box

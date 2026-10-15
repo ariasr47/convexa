@@ -6,6 +6,7 @@ import { fetchTrackedContract, type OptionRight, type TrackedContract } from '@c
 import { useEffect, useMemo, useState } from 'react';
 import { legContractKey } from './composeMark';
 import type { SimPosition } from './leg';
+import { useMarkFeed } from './markFeed';
 
 /** One CONTRACT's per-cycle lookup result, shared by every leg that references it. */
 export interface ContractLive {
@@ -18,6 +19,9 @@ export function useContractLive(
   servedAt: string | undefined,
 ): Record<string, ContractLive> {
   const [contractLive, setContractLive] = useState<Record<string, ContractLive>>({});
+  // With no options feed on this site the contract route can only refuse: never ask it. Every
+  // option mark then reads "Mark not live" (markFeed.tsx).
+  const skip = useMarkFeed() === 'notLive';
 
   const contractKeys = useMemo(() => {
     const keys = new Map<
@@ -43,6 +47,7 @@ export function useContractLive(
   const trackKey = [...contractKeys.keys()].toSorted().join(',');
 
   useEffect(() => {
+    if (skip) return;
     let cancelled = false;
     contractKeys.forEach((c, key) => {
       fetchTrackedContract(c.ticker, {
@@ -63,7 +68,7 @@ export function useContractLive(
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trackKey, servedAt]);
+  }, [trackKey, servedAt, skip]);
 
   return contractLive;
 }

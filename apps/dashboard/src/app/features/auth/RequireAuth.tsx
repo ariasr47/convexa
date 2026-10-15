@@ -10,8 +10,10 @@
  * browser does ([server-side-gate-enforcement]).
  *
  * Product spine: refuse VISIBLY (never silent redirect), say what unlocks, and leave a free path
- * into the public Ticker so the funnel does not dead-end.
+ * into the public Ticker so the funnel does not dead-end. Sign-ups are closed: the wall says so and
+ * links the same screen on the demo (owner ruling 2026-10-14 (1)).
  */
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
 import { RouteFallback } from '@/shared/ui/RouteFallback';
@@ -20,7 +22,6 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
 import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 import { useRef } from 'react';
@@ -38,30 +39,32 @@ interface Props {
   demoPath?: string;
 }
 
-/** Spine-aware unlock copy keyed by the `surface` prop passed from the route table. */
-function wallCopy(surface: string): { unlocks: string; freePath: string; demo: string } {
+/** Spine-aware unlock copy keyed by the `surface` prop passed from the route table
+ *  (design/src/screens/final/account-pages.mjs scannerWall / positionsWall). */
+function wallCopy(surface: string): { unlocks: string; demo: string } {
   if (surface.includes('scanner')) {
     return {
       unlocks:
-        'See ranked dealer-gamma setups across the universe, then jump into any name for walls, flip, and flow.',
-      freePath: 'Ticker analysis stays free — open any symbol without an account.',
+        'See ranked dealer-gamma setups across the universe, then jump into any name for walls, flip and flow.',
       demo: 'Want to see a scan? The demo account runs one, on sample data.',
     };
   }
   if (surface.includes('position')) {
     return {
       unlocks:
-        'Track simulated positions, saved views, and P/L so you can practice the plan after you read the structure.',
-      freePath: 'Ticker analysis stays free — open any symbol without an account.',
+        'Track simulated positions, saved views and P&L so you can practise the plan after you read the structure. Positions are paper only.',
       demo: 'Want to see a book? The demo account has one, on sample data.',
     };
   }
   return {
     unlocks: 'This area is limited to invited accounts while Convexa is in private testing.',
-    freePath: 'Ticker analysis stays free without an account.',
     demo: 'The demo account shows this screen on sample data.',
   };
 }
+
+/** Sign-ups are closed (owner ruling 2026-10-14): the wall says so, and what stays open. */
+export const WALL_POLICY =
+  'Invited accounts only; new sign-ups are closed while Convexa is in private testing. Research, rates, positioning and short data are open to everyone.';
 
 export function RequireAuth({ children, surface, demoPath }: Props) {
   const { ready, authenticated, subsystemDegraded, refresh } = useAuth();
@@ -79,95 +82,114 @@ export function RequireAuth({ children, surface, demoPath }: Props) {
   if (!ready) return <RouteFallback />;
   if (authenticated) return <>{children}</>;
 
+  const outlinedSx = {
+    minHeight: 44,
+    // GATE Z I-2 (AC-G1, color-contrast): outlined labels take text-grade amber on the panel.
+    color: (theme: Parameters<typeof extrasFor>[0]) => extrasFor(theme).textAmber,
+  };
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', py: { xs: 6, md: 10 }, px: 2 }}>
+    <Box sx={{ py: { xs: 3, md: 7 }, px: 2 }}>
       <Paper
         variant="outlined"
+        component="section"
+        aria-label={
+          subsystemDegraded ? AUTH_COPY.gate.sessionUnknown : `Sign in to open ${surface}`
+        }
         data-testid="require-auth-wall"
-        sx={{ maxWidth: 520, width: '100%', p: { xs: 3, md: 4 }, textAlign: 'center' }}
+        sx={{
+          maxWidth: 600,
+          mx: 'auto',
+          p: { xs: '22px', md: 4 },
+          borderRadius: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          gap: '14px',
+        }}
       >
-        <Stack spacing={2} sx={{ alignItems: 'center' }}>
-          <Typography variant="h6" component="h1">
-            {subsystemDegraded ? AUTH_COPY.gate.sessionUnknown : `Sign in to open ${surface}`}
+        <DataStateTag state="signIn" label="Private testing" />
+        <Typography
+          component="h1"
+          sx={{ m: 0, fontSize: { xs: 24, md: 28 }, fontWeight: 700, letterSpacing: '-0.01em' }}
+        >
+          {subsystemDegraded ? AUTH_COPY.gate.sessionUnknown : `Sign in to open ${surface}`}
+        </Typography>
+        {subsystemDegraded && (
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+            {AUTH_COPY.gate.unavailable}
           </Typography>
-          {subsystemDegraded && (
-            <Typography variant="body2" color="text.secondary">
-              {AUTH_COPY.gate.unavailable}
-            </Typography>
-          )}
-          <Typography variant="body2" color="text.secondary">
-            {copy.unlocks}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {copy.freePath}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 400 }}>
-            Private testing — invited accounts only. Landing, ticker, and blog stay open without
-            signing in.
-          </Typography>
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={1.5}
-            sx={{ mt: 1, width: '100%', justifyContent: 'center' }}
+        )}
+        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+          {copy.unlocks}
+        </Typography>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '10px', width: '100%' }}>
+          <Button
+            variant="contained"
+            ref={signInRef}
+            onClick={() => openAuth({ returnFocus: signInRef.current })}
+            data-testid="require-auth-signin"
+            sx={{ minHeight: 44, flex: { xs: '1 1 100%', sm: '0 0 auto' } }}
           >
+            {AUTH_COPY.account.signIn}
+          </Button>
+          {subsystemDegraded && (
             <Button
-              variant="contained"
-              ref={signInRef}
-              onClick={() => openAuth({ returnFocus: signInRef.current })}
-              data-testid="require-auth-signin"
-            >
-              {AUTH_COPY.account.signIn}
-            </Button>
-            {subsystemDegraded && (
-              <Button
-                variant="outlined"
-                onClick={() => void refresh()}
-                data-testid="require-auth-retry"
-                // GATE Z I-2 (AC-G1, color-contrast, serious): outlined-button labels default to
-                // `primary.main` (measured 3.26:1 on the wall's `background.paper` panel in light
-                // mode) — same text-grade-amber fix as the landing's `cta-secondary` (F7c,
-                // `591e2654`).
-                sx={{ color: (theme) => extrasFor(theme).textAmber }}
-              >
-                {AUTH_COPY.gate.retry}
-              </Button>
-            )}
-            <Button
-              component={RouterLink}
-              to="/ticker"
               variant="outlined"
-              data-testid="require-auth-ticker"
-              // GATE Z I-2 (AC-G1, color-contrast, serious): same fix as `require-auth-retry`
-              // above (3.26:1 measured, under the 4.5:1 text floor).
-              sx={{ color: (theme) => extrasFor(theme).textAmber }}
+              onClick={() => void refresh()}
+              data-testid="require-auth-retry"
+              sx={{ ...outlinedSx, flex: { xs: '1 1 100%', sm: '0 0 auto' } }}
             >
-              Open free Ticker →
+              {AUTH_COPY.gate.retry}
             </Button>
-          </Stack>
-          {demoPath && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              data-testid="require-auth-demo"
-              sx={{ pt: 1.5, mt: 0.5, borderTop: 1, borderColor: 'divider', width: '100%' }}
-            >
-              {copy.demo}{' '}
-              <Link
-                href={`${STAGING_DEMO_URL}${demoPath}`}
-                underline="always"
-                sx={{
-                  color: (theme) => extrasFor(theme).textInfo,
-                  display: 'inline-flex',
-                  minHeight: 24,
-                  alignItems: 'center',
-                  fontWeight: 600,
-                }}
-              >
-                See it on the demo →
-              </Link>
-            </Typography>
           )}
-        </Stack>
+          <Button
+            component={RouterLink}
+            to="/ticker"
+            variant="outlined"
+            data-testid="require-auth-ticker"
+            sx={{ ...outlinedSx, flex: { xs: '1 1 100%', sm: '0 0 auto' } }}
+          >
+            Open a ticker desk
+          </Button>
+        </Box>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          data-testid="require-auth-policy"
+          sx={{ fontSize: 13, lineHeight: 1.6 }}
+        >
+          {WALL_POLICY}
+        </Typography>
+        {demoPath && (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            data-testid="require-auth-demo"
+            sx={{
+              fontSize: 13,
+              lineHeight: 1.6,
+              pt: 1.5,
+              borderTop: 1,
+              borderColor: 'divider',
+              width: '100%',
+            }}
+          >
+            {copy.demo}{' '}
+            <Link
+              href={`${STAGING_DEMO_URL}${demoPath}`}
+              underline="always"
+              sx={{
+                color: (theme) => extrasFor(theme).textInfo,
+                display: 'inline-flex',
+                minHeight: 24,
+                alignItems: 'center',
+                fontWeight: 600,
+              }}
+            >
+              See it on the demo →
+            </Link>
+          </Typography>
+        )}
       </Paper>
     </Box>
   );

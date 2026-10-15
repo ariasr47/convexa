@@ -16,7 +16,7 @@
  * not-connected with no ghost book; that behavior is the server's, exercised by the broker
  * integration suite.
  */
-import { downText, typographyTokens } from '@/shared/theme/tokens';
+import { downText, typographyTokens, upText } from '@/shared/theme/tokens';
 import {
   AuthError,
   dataMode,
@@ -307,9 +307,12 @@ export function BrokerageSection({ embedded = false }: { embedded?: boolean } = 
 export function DemoBrokerHoldings({
   book,
   embedded = false,
+  action,
 }: {
   book: BrokerBook | null;
   embedded?: boolean;
+  /** A row's own action (the Broker tab passes Build reassessment); Settings passes none. */
+  action?: (position: BrokerBook['positions'][number]) => ReactNode;
 }) {
   return (
     <Section embedded={embedded}>
@@ -327,7 +330,73 @@ export function DemoBrokerHoldings({
           </Typography>
         )}
       </Box>
+      {book?.state === 'ok' && book.positions.length > 0 && (
+        <Box component="ul" sx={{ listStyle: 'none', m: '8px 0 0', p: 0 }}>
+          {book.positions.map((p) => (
+            <DemoHoldingRow key={p.broker_position_id} position={p} action={action?.(p)} />
+          ))}
+        </Box>
+      )}
     </Section>
+  );
+}
+
+const MONO = { fontFamily: typographyTokens.monoFontFamily } as const;
+
+const fact = (f: { state: string; value?: number }) =>
+  f.state === 'supplied' && f.value != null ? f.value.toFixed(2) : 'not provided';
+
+/** One authored holding: symbol, size and cost, the sample mark, and P/L with its sign in text
+ *  (▲/▼ and +/−) as well as hue (P-11). */
+function DemoHoldingRow({
+  position: p,
+  action,
+}: {
+  position: BrokerBook['positions'][number];
+  action?: ReactNode;
+}) {
+  const leg = p.legs[0];
+  if (!leg) return null;
+  const size =
+    leg.kind === 'equity'
+      ? `${Math.abs(leg.quantity)} shares`
+      : `${leg.quantity} × ${leg.strike ?? ''}${leg.right === 'put' ? 'P' : 'C'} ${leg.expiry ?? ''}`;
+  const pl = p.unrealized_pl.state === 'supplied' ? (p.unrealized_pl.value ?? null) : null;
+  return (
+    <Box
+      component="li"
+      data-testid="demo-broker-holding"
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: {
+          xs: '56px minmax(0, 1fr) auto',
+          sm: '70px minmax(0, 1fr) auto auto',
+        },
+        gap: '4px 12px',
+        alignItems: 'center',
+        py: 1.25,
+        borderTop: 1,
+        borderColor: 'divider',
+        fontSize: 13,
+      }}
+    >
+      <Box component="span" sx={{ ...MONO, fontWeight: 600 }}>
+        {leg.symbol}
+      </Box>
+      <Box component="span">{`${size} · cost ${fact(leg.cost_basis)}`}</Box>
+      <Box component="span" sx={{ ...MONO, display: { xs: 'none', sm: 'inline' } }}>
+        {`mark ${fact(leg.broker_mark)}`}
+      </Box>
+      <Box
+        component="span"
+        sx={{ ...MONO, color: pl == null ? 'text.secondary' : pl >= 0 ? upText : downText }}
+      >
+        {pl == null
+          ? 'not provided'
+          : `${pl >= 0 ? '▲ +' : '▼ −'}$${Math.abs(pl).toLocaleString('en-US')}`}
+      </Box>
+      {action && <Box sx={{ gridColumn: '1 / -1' }}>{action}</Box>}
+    </Box>
   );
 }
 

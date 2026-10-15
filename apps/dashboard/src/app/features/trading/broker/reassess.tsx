@@ -11,8 +11,9 @@
  * ADVISORY ONLY (AC-19): the surface renders the assembled request for copy/hand-off and offers
  * NO Accept-into-store or any other write action. The sim reassessment Accept flow is untouched.
  */
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { MONO_FACE } from '@/shared/figure';
-import type { BrokerBook, OptionRight } from '@convexa/api';
+import { dataMode, type BrokerBook, type OptionRight } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -20,7 +21,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Typography from '@mui/material/Typography';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { BrokerPositionView } from './brokerView';
 import { BROKER_COPY, stampTime } from './copy';
 
@@ -33,7 +34,8 @@ export interface PositionContextRef {
 }
 
 export interface BrokerReassessmentRequest {
-  source: 'broker_webull';
+  /** `demo_sample` on the demo build: its one holding is authored, so it never claims a broker. */
+  source: 'broker_webull' | 'demo_sample';
   ticker: string;
   /** The HUMAN-READABLE basis carry (AC-18) — always present, staleness always disclosed. */
   as_of_basis: string;
@@ -49,9 +51,25 @@ export interface BrokerReassessmentRequest {
   modeled_pl_basis: string;
 }
 
+/** "Oct 7, 2026 · 2:30 PM ET" — the scenario's own clock, in New York time. */
+export function demoAsOfText(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const tz = { timeZone: 'America/New_York' } as const;
+  const day = d.toLocaleDateString('en-US', {
+    ...tz,
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const time = d.toLocaleTimeString('en-US', { ...tz, hour: 'numeric', minute: '2-digit' });
+  return `${day} · ${time} ET`;
+}
+
 export function buildBrokerReassessment(
   view: BrokerPositionView,
   book: Pick<BrokerBook, 'as_of'> | null,
+  { demo = dataMode === 'demo' }: { demo?: boolean } = {},
 ): BrokerReassessmentRequest {
   const asOf = book?.as_of ?? null;
   // The EXISTING subject selection (evalSubjectOf, called by the projection — one authority).
@@ -73,13 +91,19 @@ export function buildBrokerReassessment(
         }
       : null;
 
+  // The demo's holding is authored (canon: public demo data is synthetic): a demo source and a
+  // synthetic basis, never a broker's name (Final More overlays, reassessment board).
+  const as_of_basis = demo
+    ? asOf != null
+      ? `on the demo book as of ${demoAsOfText(asOf)} · synthetic · a snapshot, never live.`
+      : 'demo book as-of unknown · synthetic · a snapshot, never live.'
+    : asOf != null
+      ? `on your book as of ${asOf} (${stampTime(asOf)}) · Webull · read-only · read on demand — a snapshot, never live.`
+      : 'book as-of unknown — Webull · read-only · read on demand — a snapshot, never live.';
   return {
-    source: 'broker_webull',
+    source: demo ? 'demo_sample' : 'broker_webull',
     ticker: view.ticker,
-    as_of_basis:
-      asOf != null
-        ? `on your book as of ${asOf} (${stampTime(asOf)}) · Webull · read-only · read on demand — a snapshot, never live.`
-        : 'book as-of unknown — Webull · read-only · read on demand — a snapshot, never live.',
+    as_of_basis,
     as_of: asOf,
     structure: view.structure_label,
     structure_line: view.structure_line_full,
@@ -99,6 +123,12 @@ export function BrokerReassessAction({
   book: Pick<BrokerBook, 'as_of'> | null;
 }) {
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const id = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(id);
+  }, [copied]);
   if (view.fidelity === 'unrecognized') return null; // nothing faithful to reference
   const req = buildBrokerReassessment(view, book);
   const json = JSON.stringify(req, null, 2);
@@ -115,8 +145,18 @@ export function BrokerReassessAction({
         Build reassessment
       </Button>
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontSize: '1.05rem', fontWeight: 700 }}>
-          Reassessment request — advisory only
+        <DialogTitle
+          sx={{
+            fontSize: '1.05rem',
+            fontWeight: 700,
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          {`Reassessment request · ${view.ticker}`}
+          {dataMode === 'demo' && <DataStateTag state="sample" />}
         </DialogTitle>
         <DialogContent>
           {/* The visible basis carry (AC-18) — foregrounded, not buried in the JSON. */}
@@ -140,18 +180,37 @@ export function BrokerReassessAction({
               m: 0,
               overflow: 'auto',
               maxHeight: 320,
+              // Wrap long values (the basis line) inside the box, never past its edge.
+              whiteSpace: 'pre-wrap',
+              overflowWrap: 'anywhere',
             }}
           >
             {json}
           </Box>
+          <Typography
+            variant="body2"
+            data-testid="broker-reassess-advisory"
+            sx={{ mt: 1.5, fontSize: 13, color: 'text.secondary', lineHeight: 1.5 }}
+          >
+            <Box component="strong" sx={{ color: 'text.primary', fontWeight: 600 }}>
+              Advisory only.
+            </Box>{' '}
+            Copy it into a read of your own. Nothing here places, changes or cancels an order, and
+            nothing is added to your book.
+            {dataMode === 'demo' ? ' On the demo nothing is sent.' : ''}
+          </Typography>
         </DialogContent>
         {/* Advisory display only: copy + close. NO accept, NO write, NO order path (AC-19). */}
         <DialogActions>
           <Button
             data-testid="broker-reassess-copy"
-            onClick={() => void navigator.clipboard?.writeText?.(json)}
+            aria-live="polite"
+            onClick={() => {
+              void navigator.clipboard?.writeText?.(json);
+              setCopied(true);
+            }}
           >
-            Copy request
+            {copied ? 'Copied' : 'Copy request'}
           </Button>
           <Button onClick={() => setOpen(false)}>Close</Button>
         </DialogActions>

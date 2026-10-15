@@ -45,6 +45,7 @@ import { RequireAuth } from '@/features/auth/RequireAuth';
 import { AppThemeProvider } from '@/features/auth/ThemeProvider';
 import { useSettings } from '@/features/auth/useSettings';
 import { Landing } from '@/pages/landing/Landing';
+import { DemoOperatorUnavailable } from '@/pages/operator-metrics/DemoOperatorUnavailable';
 import { marketDataOff } from '@/shared/dataState/marketData';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
@@ -53,17 +54,8 @@ import { PageColumn } from '@/shared/ui/PageColumn';
 import { RouteFallback } from '@/shared/ui/RouteFallback';
 import { AppShell } from '@/shell/AppShell';
 import { dataMode } from '@convexa/api';
-import Typography from '@mui/material/Typography';
 import { lazy, Suspense, type ReactElement } from 'react';
 import { Navigate, Route, Routes, useParams } from 'react-router-dom';
-
-function DemoOperatorUnavailable() {
-  return (
-    <main role="status" style={{ padding: 32 }}>
-      <Typography variant="h5">Unavailable in the public demo.</Typography>
-    </main>
-  );
-}
 
 // Lazy page chunks (named exports mapped to lazy's `default` shape).
 const TickerDashboard = lazy(() =>
@@ -107,6 +99,9 @@ const PositionsPage = lazy(() =>
   import('@/pages/positions/PositionsPage').then((m) => ({ default: m.PositionsPage })),
 );
 const Scanner = lazy(() => import('@/pages/scanner/Scanner').then((m) => ({ default: m.Scanner })));
+const ScannerNotLive = lazy(() =>
+  import('@/pages/scanner/ScannerNotLive').then((m) => ({ default: m.ScannerNotLive })),
+);
 const BlogPage = lazy(() => import('@/pages/blog/BlogPage').then((m) => ({ default: m.BlogPage })));
 const BlogPostPage = lazy(() =>
   import('@/pages/blog/BlogPostPage').then((m) => ({ default: m.BlogPostPage })),
@@ -185,6 +180,16 @@ function TickerDeskRoute() {
   ) : (
     <TickerDashboard />
   );
+}
+
+/** The scanner, signed in. A live build with no options feed (`not_live`) mounts the explain page,
+ *  which never calls /api/scan*: every column reads the options chain. A paused feed keeps the
+ *  scanner and its last board under the paused banner; demo builds always run the sample scan. */
+function ScannerRoute() {
+  const mode = useMarketDataMode();
+  if (dataMode === 'demo') return <Scanner />;
+  if (mode === null) return <RouteFallback />;
+  return mode === 'not_live' ? <ScannerNotLive /> : <Scanner />;
 }
 
 /** Indicators need daily bars: demo builds compute them from sample bars; the live build shows
@@ -293,7 +298,7 @@ export function AppRoutes() {
           path="/scanner"
           element={
             <RequireAuth surface="the scanner" demoPath="/scanner">
-              {lazyRoute(<Scanner />)}
+              {lazyRoute(<ScannerRoute />)}
             </RequireAuth>
           }
         />

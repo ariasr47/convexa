@@ -103,11 +103,25 @@ export function useAlerts() {
     }
   }, []);
 
+  // Read the browser's answer on mount. It never turns notifications on by itself: a trader who
+  // pressed "Turn off" stays off across reloads even though the browser still grants permission.
   useEffect(() => {
-    const p = currentNotifyPermission();
-    setNotifyPermission(p);
-    if (p === 'granted') setNotifyBrowser(true);
+    setNotifyPermission(currentNotifyPermission());
   }, []);
+
+  /** Turn notifications on. With permission already granted no browser prompt is needed; otherwise
+   *  the caller has shown Convexa's own ask first, and this opens the browser's prompt. */
+  const enableBrowserNotify = useCallback(async () => {
+    if (currentNotifyPermission() === 'granted') {
+      setNotifyPermission('granted');
+      setNotifyBrowser(true);
+      return true;
+    }
+    return requestBrowserPermission();
+  }, [requestBrowserPermission]);
+
+  /** "Turn off": stops them from Convexa without touching the browser's own permission. */
+  const turnOffBrowserNotify = useCallback(() => setNotifyBrowser(false), []);
 
   // Criterion 50: the control never reads as "on" for a permission the browser did not grant —
   // computed from the ACTUAL permission, not trusted blindly from the durable flag (which could
@@ -129,5 +143,7 @@ export function useAlerts() {
     markAllEventsRead,
     evaluateSnap,
     requestBrowserPermission,
+    enableBrowserNotify,
+    turnOffBrowserNotify,
   };
 }

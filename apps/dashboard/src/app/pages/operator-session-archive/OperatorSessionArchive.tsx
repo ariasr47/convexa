@@ -1,6 +1,6 @@
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { OpsBar, OpsTag } from '@/shared/ui/OpsBar';
 import Alert from '@mui/material/Alert';
-import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -15,7 +15,6 @@ import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
-import Toolbar from '@mui/material/Toolbar';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useEffect } from 'react';
@@ -24,6 +23,16 @@ import { lookupCoverageCell } from './occupancy';
 import { TRIO, type TrioSymbol } from './schedule';
 import { useSessionArchive, type UseSessionArchiveOptions } from './useSessionArchive';
 import type { ArchiveState } from './viewModel';
+
+/** The page's name for assistive tech; the ops bar carries the path. */
+const visuallyHidden = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+} as const;
 
 const mono = { fontFamily: typographyTokens.monoFontFamily } as const;
 
@@ -325,14 +334,12 @@ export function OperatorSessionArchive(props: OperatorSessionArchiveProps = {}) 
 
   return (
     <Box data-testid="operator-session-archive" sx={{ minHeight: '100vh' }}>
-      <AppBar position="static" elevation={0} color="default">
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            {COPY.appBar}
-          </Typography>
-          <Chip size="small" variant="outlined" label={COPY.readOnlyChip} sx={{ mr: 1 }} />
-        </Toolbar>
-      </AppBar>
+      <OpsBar path="/_ops/research">
+        <OpsTag>{COPY.readOnlyChip}</OpsTag>
+      </OpsBar>
+      <Typography component="h1" sx={visuallyHidden}>
+        {COPY.appBar}
+      </Typography>
 
       <Container maxWidth="lg" sx={{ py: 3 }}>
         <Stack spacing={2}>

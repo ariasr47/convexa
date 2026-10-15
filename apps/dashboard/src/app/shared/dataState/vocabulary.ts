@@ -22,7 +22,8 @@ export type DataStateKey =
   | 'sample'
   | 'demo'
   | 'signIn'
-  | 'thirdParty';
+  | 'thirdParty'
+  | 'local';
 
 /** How a tag is drawn: `solid` current data, `warn` a failure, `quiet` deliberately absent,
  *  `dashed` sample data, `dotted` a third party's. */
@@ -43,6 +44,9 @@ export const DATA_STATES: Record<DataStateKey, { word: string; kind: DataStateKi
   demo: { word: 'Demo · sample data', kind: 'dashed' },
   signIn: { word: 'Sign in', kind: 'quiet' },
   thirdParty: { word: 'Live · TradingView', kind: 'dotted' },
+  /** Design LOCAL (design/src/data/states.mjs): kept in this browser or the account, needs no feed.
+   *  Not yet in canon P-2's closed set; an amendment is requested with the Wave 1 lane 4 report. */
+  local: { word: 'Stored here', kind: 'solid' },
 };
 
 /**

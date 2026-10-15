@@ -15,6 +15,7 @@
  */
 import { extrasFor } from '@/shared/theme/tokens';
 import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
+import DeleteOutline from '@mui/icons-material/DeleteOutlineOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -680,13 +681,22 @@ export function CustomizationToolbar({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteOpen(null)}>Cancel</Button>
+          {/* Destructive: outlined burnt orange (the warn token) with the word, never red — red is
+              money moving down (Final More overlays, Delete view). */}
           <Button
-            color="error"
+            variant="outlined"
+            startIcon={<DeleteOutline />}
             onClick={() => {
               if (deleteOpen) pf.deleteView(deleteOpen);
               setDeleteOpen(null);
             }}
             data-testid="delete-confirm"
+            sx={{
+              color: 'text.primary',
+              borderColor: 'warning.main',
+              '&:hover': { borderColor: 'warning.main' },
+              '& .MuiButton-startIcon': { color: 'warning.main' },
+            }}
           >
             Delete view
           </Button>

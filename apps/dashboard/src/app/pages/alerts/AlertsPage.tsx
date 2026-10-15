@@ -13,6 +13,7 @@
  * `PositionRow.tsx`'s `Refused`/`FaultedBanner`, mirrored locally rather than importing the trading
  * domain into alerts.
  */
+import { BrowserNotifyControl } from '@/features/alerts/BrowserNotifyControl';
 import { PUBLIC_KIND, PUBLIC_KINDS, isPublicKind, isStructureKind } from '@/features/alerts/kinds';
 import { KIND_LABEL, LEVEL_LABEL, NOT_SET } from '@/features/alerts/labels';
 import { fmtDay, ruleWhat } from '@/features/alerts/publicRules';
@@ -362,11 +363,6 @@ export function AlertsPage() {
     }, 250);
   };
 
-  const notifyLine =
-    !demo && a.notifyPermission === 'denied'
-      ? 'Browser notifications are blocked for this site. Allow them in your browser’s site settings; firings still appear here.'
-      : null;
-
   return (
     <Box
       data-testid="alerts-page"
@@ -581,19 +577,15 @@ export function AlertsPage() {
                 ? 'Alerts never fire in the demo on their own; this firing is part of the scenario. Nothing here was published by a source.'
                 : 'Convexa checks your public-data alerts when you open this page, in this browser. Nothing checks them while no Alerts page is open.'}
             </Typography>
-            {notifyLine && (
-              <Box
-                sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', flexWrap: 'wrap' }}
-                data-testid="alerts-notify-explain"
-              >
-                <DataStateTag state="notSetUp" detail="Blocked here" />
-                <Typography
-                  sx={{ m: 0, fontSize: 12.5, color: 'text.secondary', flex: '1 1 220px' }}
-                >
-                  {notifyLine}
-                </Typography>
-              </Box>
-            )}
+            {/* Browser notifications: Convexa's own ask before the browser's prompt, Turn off once on,
+                and the blocked / unavailable sentences (More overlays, lane 4). */}
+            <BrowserNotifyControl
+              on={a.notifyBrowser}
+              permission={a.notifyPermission}
+              onEnable={a.enableBrowserNotify}
+              onTurnOff={a.turnOffBrowserNotify}
+              refuse={(el) => <AlertsRefused when={faulted}>{el}</AlertsRefused>}
+            />
           </Panel>
           {!ctx.structureLive && (
             <Panel

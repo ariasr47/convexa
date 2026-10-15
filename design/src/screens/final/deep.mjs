@@ -98,9 +98,9 @@ const OVERLAYS = {
   ],
   built: [
     { status: 'shipped', what: 'Reassessment request (broker/reassess.tsx: “Build reassessment”, basis line, JSON, Copy request / Close), archive import with confirm, report and both decline classes (outcomes/ArchiveBlock.tsx), expand dialog with view-transition morph (Widget.tsx:509-562), view dialogs (CustomizationToolbar.tsx:604-694), the notification permission request and its denied / unavailable sentences (AlertsPage.tsx:271-276).' },
-    { status: 'partial', what: 'Reassessment on the demo: the request says source “broker_webull” and “Webull” in its basis though the holding is authored; designed as a demo source and a synthetic basis.' },
-    { status: 'partial', what: 'Notifications: no ask before the browser prompt (the button calls requestPermission directly) and no way to turn them off from Convexa once granted; the button just re-asks.' },
-    { status: 'partial', what: 'Delete view uses MUI color="error" (red); designed burnt orange with the word.' },
+    { status: 'shipped', what: 'Reassessment on the demo: source “demo_sample” and a synthetic basis (“on the demo book as of Oct 7, 2026 · 2:30 PM ET · synthetic”), the Sample tag and Copied (reassess.tsx, 2026-10-15).' },
+    { status: 'shipped', what: 'Notifications: Convexa’s ask before the browser prompt, “Browser notifications on” with Turn off (no browser prompt; off holds across a reload), and blocked / unavailable with nothing to press (BrowserNotifyControl.tsx, 2026-10-15).' },
+    { status: 'shipped', what: 'Delete view: outlined burnt orange with the word (CustomizationToolbar.tsx, 2026-10-15).' },
     { status: 'todo', what: 'Account recovery and invitation acceptance: no reset endpoint, no token store, no email sender. The sign-in dialog has only log in / sign up today. Parked by owner (2026-10-14): the privacy page says to ask the owner.' },
   ],
   rulings: ['P-2', 'P-3', 'P-4', 'P-8', 'P-12', 'P-13', 'Amber spent', ENV],

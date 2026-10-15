@@ -19,6 +19,7 @@
  * ONCE keeps its last good spot across a later failed refresh — never blanked
  * (`[best-effort-isolated-or-null]`, `[live-vs-static-isolation]`).
  */
+import { useMarkFeed } from '@/features/trading/positions/markFeed';
 import { getTicker, type LiveUpdate, type TickerBundle } from '@convexa/api';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -45,6 +46,8 @@ export function useTickerSpots(
   focusedFallback?: string | null,
 ): TickerSpots {
   const [spots, setSpots] = useState<Record<string, number>>({});
+  // With no options feed on this site the bundle route can only refuse: never ask it.
+  const skip = useMarkFeed() === 'notLive';
 
   const focused = up(bundle?.market_state.ticker ?? focusedFallback) || null;
   const focusedSpot = bundle?.market_state.price ?? null;
@@ -60,6 +63,7 @@ export function useTickerSpots(
   const foreign = useMemo(() => (spotKey === '' ? [] : spotKey.split(',')), [spotKey]);
 
   useEffect(() => {
+    if (skip) return;
     let cancelled = false;
     for (const t of foreign) {
       getTicker(t)
@@ -78,7 +82,7 @@ export function useTickerSpots(
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spotKey, servedAt]);
+  }, [spotKey, servedAt, skip]);
 
   const spotOf = useCallback(
     (ticker: string): number | null => {

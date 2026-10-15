@@ -8,8 +8,12 @@
  * on a stream drop (`⏸ offline` + last-known); the durable row facts never dim, never blank.
  * Token-only styling; the Watching pulse is reduced-motion-guarded via the CSS media query.
  */
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import { marketDataOff } from '@/shared/dataState/marketData';
 import { MONO_FACE } from '@/shared/figure';
+import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { upText } from '@/shared/theme/tokens';
+import { dataMode } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -170,15 +174,28 @@ function EvalCell({ order, evalState }: { order: SimOrder; evalState: OrderEvalS
       </Stack>
     );
   }
+  return <NotEvaluated ticker={order.ticker} />;
+}
+
+/** Not evaluated. With no options feed on this site that is a standing fact, not a fault: quiet,
+ *  the Not live tag, no warning colour (Final Positions states, DLG-02). */
+function NotEvaluated({ ticker }: { ticker: string }) {
+  const marketDataMode = useMarketDataMode();
+  const feedOff = dataMode === 'live' && marketDataOff(marketDataMode);
   return (
-    <Tooltip arrow describeChild title={notEvaluatedTip(order.ticker)}>
-      <Typography
-        variant="caption"
-        sx={{ color: 'warning.main' }}
+    <Tooltip arrow describeChild title={notEvaluatedTip(ticker)}>
+      <Stack
+        direction="row"
+        spacing={0.75}
+        useFlexGap
+        sx={{ alignItems: 'center', flexWrap: 'wrap' }}
         data-testid="order-eval-not-evaluated"
       >
-        {NOT_EVALUATED_TEXT}
-      </Typography>
+        {feedOff && <DataStateTag state="notLive" label="Not evaluated" />}
+        <Typography variant="caption" sx={{ color: feedOff ? 'text.secondary' : 'warning.main' }}>
+          {NOT_EVALUATED_TEXT}
+        </Typography>
+      </Stack>
     </Tooltip>
   );
 }

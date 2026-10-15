@@ -68,8 +68,10 @@ import {
 import { netEntryCost, type Leg, type SimPosition } from '@/features/trading/positions/leg';
 import { STRUCTURE_LABELS, structureKindOf } from '@/features/trading/positions/structure';
 import type { LegInput } from '@/features/trading/positions/usePortfolio';
+import { marketDataOff } from '@/shared/dataState/marketData';
+import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { downText, extrasFor, upText } from '@/shared/theme/tokens';
-import { fetchTrackedContract } from '@convexa/api';
+import { dataMode, fetchTrackedContract } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -162,6 +164,7 @@ export function TradeEntryDialog({
   onClose,
   onConfirm,
 }: Props) {
+  const marketDataMode = useMarketDataMode();
   // Phones get a full-screen sheet (this form has many fields); tablets+ keep the centered dialog.
   const fullScreen = useMediaQuery(useTheme().breakpoints.down('sm'));
   const [mode, setMode] = useState<FillMode>('manual');
@@ -282,7 +285,10 @@ export function TradeEntryDialog({
   // structure (`composeMark.netLimitDollarsFor` carries that ruling). So both modes are available
   // only for a single OPTION leg — and the boundary is STATED to the trader, never applied silently.
   const singleOptionEntry = legs.length === 1 && legs[0].kind === 'option';
-  const effectiveMode: FillMode = singleOptionEntry ? mode : 'manual';
+  // Market and Limit fill at a live quote. With no options feed on this site (live build, `not_live`
+  // or `paused`), only Manual price is offered, and the control says why (Final Overlays, DLG-01).
+  const feedOff = dataMode === 'live' && marketDataOff(marketDataMode);
+  const effectiveMode: FillMode = singleOptionEntry && !feedOff ? mode : 'manual';
 
   /**
    * The per-unit price THIS leg would open at, or `null` when it is not known yet. For the shipped
@@ -567,6 +573,8 @@ export function TradeEntryDialog({
             <FillModeToggle
               value={effectiveMode}
               singleOptionEntry={singleOptionEntry}
+              feedOff={feedOff}
+              ticker={ticker}
               onChange={setMode}
             />
           )}

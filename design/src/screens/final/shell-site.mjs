@@ -319,8 +319,8 @@ export const ROWS = [
       ],
       built: [
         { status: 'shipped', what: 'OperatorMetrics (latency trend, stage table, cache and vendor lines), OperatorSessionArchive with its copy table, and DemoOperatorUnavailable on staging.' },
-        { status: 'partial', what: 'The latency trend draws every stage as a line on one chart in chartCategorical; designed: small multiples past three series (P-9).' },
-        { status: 'partial', what: 'Header: an MUI AppBar with an “Instrumentation: ON” chip; designed: the slim ops bar. DemoOperatorUnavailable is a bare heading; designed adds why and a way back.' },
+        { status: 'shipped', what: 'The latency trend on the chart frame: small multiples on one scale past three series, neutral roles, a finding only over data (LatencyTrend.tsx, 2026-10-15).' },
+        { status: 'shipped', what: 'The slim ops bar on both routes (shared/ui/OpsBar.tsx); DemoOperatorUnavailable says why and offers Back to the demo (2026-10-15).' },
       ],
       rulings: ['P-2', 'P-9', 'P-10', 'P-13', 'Env 2026-10-14'],
       code: [`${APP}pages/operator-metrics/operator-metrics.tsx`, `${APP}pages/operator-metrics/LatencyTrend.tsx`, `${APP}pages/operator-metrics/useLatencyTrend.ts`, `${APP}pages/operator-session-archive/`, `${APP}app.tsx (DemoOperatorUnavailable)`, 'apps/api/src/routes/health.rs (/api/_metrics)'],

@@ -127,7 +127,22 @@ export function BrokerTabPanel({ data, live, isLive, streamOffline }: Props) {
   if (dataMode === 'demo') {
     return (
       <Box data-testid="broker-tab-panel" sx={{ mt: '4px' }}>
-        <DemoBrokerHoldings book={sampleBook} embedded />
+        <DemoBrokerHoldings
+          book={sampleBook}
+          embedded
+          action={(bp) => (
+            <BrokerReassessAction
+              view={buildBrokerPositionView({
+                position: bp,
+                legMarks: marks.legMarksOf(bp),
+                dte: marks.dteOf(bp),
+                nowMs,
+                book: sampleBook,
+              })}
+              book={sampleBook}
+            />
+          )}
+        />
       </Box>
     );
   }

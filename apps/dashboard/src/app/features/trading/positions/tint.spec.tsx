@@ -32,7 +32,7 @@ describe('tint discipline — token discipline (AC-81)', () => {
    * chosen from `right === 'call'`, `side === 'long'`, `net_entry_basis`, the structure name or the
    * risk slot's figure-vs-reason matches none of these and fails the scan.
    */
-  const DIRECTION_BRANCH = /(pl_dollar|plColor|r\$|subtotal|last)\s*>=\s*0/;
+  const DIRECTION_BRANCH = /(pl_dollar|plColor|r\$|subtotal|last|sign)\s*>=\s*0/;
 
   /**
    * PRE-EXISTING, OUT OF SCOPE: the `PAPER` tab badge in `PortfolioPanel` is chrome, not a position
@@ -49,7 +49,9 @@ describe('tint discipline — token discipline (AC-81)', () => {
         const code = line.trim();
         if (code.startsWith('*') || code.startsWith('//')) continue; // prose cannot offend
         if (code.startsWith('import ')) continue; // naming a helper selects nothing
-        if (!/success\.main|error\.main|\bupText\b|\bdownText\b/.test(code)) continue;
+        // The sparkline takes its direction through the chart roles (`roles.up` / `roles.down`).
+        if (!/success\.main|error\.main|\bupText\b|\bdownText\b|roles\.(up|down)\b/.test(code))
+          continue;
         if (DIRECTION_BRANCH.test(code)) {
           carriers += 1;
           continue;
