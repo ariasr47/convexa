@@ -29,10 +29,14 @@
  * attempt silently finds nothing and never retries. The effect below is the manual equivalent,
  * run once after mount.
  *
- * The on-this-page index is a plain VERTICAL list at every width, sticky above `md` (mirrors
- * `design/src/screens/methodology.mjs:6`'s `.toc { position: sticky }`), plain in-flow below —
- * PLAN's planner decision D2: the design's ≤899px horizontal scroller does NOT ship this phase
- * (`curvature-v2-responsive-sweep` owns the six responsive bands). The grid row is left at its
+ * The on-this-page index is a sticky VERTICAL list from `md` (mirrors
+ * `design/src/screens/methodology.mjs:6`'s `.toc { position: sticky }`). Under 900px it is the
+ * Final board's sideways rail of 44px chips under the title (design/src/screens/v4/docs-dialogs.mjs
+ * `.doc nav` at ≤899px; shell-site-docs.mjs “Phone · index rail”): in flow, not sticky, scrolling
+ * sideways inside its own box (`overflow-x: auto`, `overscroll-behavior-x: contain`) so the page
+ * never scrolls sideways; the grid column is `minmax(0, 1fr)` so the rail can't widen the page.
+ * The current chip is filled, and when it changes the rail scrolls itself (`scrollLeft`, never
+ * `scrollIntoView`, which would move the page) to keep it in view. The grid row is left at its
  * default `stretch` (not `start`) so the sticky column's containing block is as tall as the body
  * column — the exact hazard `CommandDeck.tsx`'s `deck-sticky-reveal` docblock names: a sticky
  * element can never render outside its own containing block's box, so a short containing block
@@ -57,7 +61,7 @@ import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { METHOD_COPY, WHATS_LIVE, type MethodSection } from './copy';
 import { WhatsLiveBody } from './WhatsLive';
@@ -189,6 +193,24 @@ export function MethodologyPage() {
     return () => observer.disconnect();
   }, []);
 
+  // Keep the current chip in view inside the phone rail. Only the rail scrolls: on a wide screen
+  // the index is a vertical list that doesn't overflow sideways, so this is a no-op there.
+  // Until a section scrolls into the reading band (on a phone the title fills it), the first entry
+  // is current, as the board draws it.
+  const shownCurrent = current ?? INDEX[0].id;
+  const railRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail || rail.scrollWidth <= rail.clientWidth) return;
+    const chip = rail.querySelector<HTMLElement>('[aria-current="true"]');
+    if (!chip) return;
+    const left = chip.offsetLeft - rail.offsetLeft;
+    const right = left + chip.offsetWidth;
+    if (left < rail.scrollLeft || right > rail.scrollLeft + rail.clientWidth) {
+      rail.scrollLeft = Math.max(0, left - 16);
+    }
+  }, [shownCurrent]);
+
   const demo = isDemoBuild();
 
   return (
@@ -212,18 +234,23 @@ export function MethodologyPage() {
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: '1fr', md: '220px minmax(0, 760px)' },
+          gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: '220px minmax(0, 760px)' },
           gap: { xs: 2, md: 6 },
         }}
       >
         <Box
           component="nav"
+          ref={railRef}
           aria-label="On this page"
           data-testid="methodology-toc"
           sx={{
             display: 'flex',
-            flexDirection: 'column',
-            gap: 0.25,
+            flexDirection: { xs: 'row', md: 'column' },
+            gap: { xs: 0.75, md: 0.25 },
+            minWidth: 0,
+            overflowX: { xs: 'auto', md: 'visible' },
+            overscrollBehaviorX: 'contain',
+            scrollbarWidth: 'thin',
             position: { xs: 'static', md: 'sticky' },
             top: { md: SCROLL_CLEAR.md },
             alignSelf: 'start',
@@ -234,10 +261,12 @@ export function MethodologyPage() {
               key={section.id}
               component="a"
               href={`/methodology#${section.id}`}
-              aria-current={current === section.id ? 'true' : undefined}
+              aria-current={shownCurrent === section.id ? 'true' : undefined}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
+                flex: { xs: '0 0 auto', md: 'initial' },
+                whiteSpace: { xs: 'nowrap', md: 'normal' },
                 minHeight: 44,
                 px: 1.5,
                 borderRadius: 1,
@@ -245,6 +274,8 @@ export function MethodologyPage() {
                 color: 'text.secondary',
                 textDecoration: 'none',
                 '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
+                // The theme's one focus ring, drawn inset so the rail's overflow box never clips it.
+                '&:focus-visible': { outlineOffset: '-2px' },
                 '&[aria-current="true"]': {
                   color: 'text.primary',
                   bgcolor: 'action.selected',

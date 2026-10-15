@@ -60,7 +60,8 @@ export const ROWS = [
         { status: 'shipped', what: 'Production ⌘K lists tickers by name (the universe from GET /api/scan/universe plus every noted ticker) and the research notes, and never calls GET /api/scan; staging ranks by the sample scan and lists the six sample notes. Go-to rows show their g keys; the footer has “? all shortcuts”.' },
         { status: 'shipped', what: 'Footer: Settings joins the links (seven: research, methodology, blog, Settings, credits, privacy, terms).' },
         { status: 'shipped', what: 'The “Couldn’t check what’s live right now.” bar when /api/health fails; Reset demo data asks first (“Reset the demo?”, Reset demo data / Keep my changes); /, g then s · t · r · p · a, and ? (the shortcuts sheet), none of which fire while typing or inside a dialog.' },
-        { status: 'partial', what: 'Still not built: ⌘K recents on an empty query, and the drawer’s extra rows (Settings, Log in, What’s live; Reset demo data on staging).' },
+        { status: 'shipped', what: '⌘K on an empty query: Go to, then Recent, the last five tickers this browser opened (convexa.recent-tickers.v1, the key Privacy lists for the jump box; the demo’s own key family on staging), pinned tickers included; no request. Recent lists tickers only, not pages such as Markets.' },
+        { status: 'shipped', what: 'The phone drawer’s rows under the five links: production has Settings, “Log in” while signed out and “What’s live on this site”; staging has the demo account’s line, Settings and Reset demo data, which asks first through the demo bar’s confirmation.' },
       ],
       rulings: ['P-1', 'P-2', 'P-6', 'P-13', 'Env 2026-10-14', 'Amber spent'],
       code: [`${APP}shell/AppShell.tsx`, `${APP}shell/MarketDataNotice.tsx`, `${APP}shell/TopNav.tsx`, `${APP}shell/Footer.tsx`, `${APP}shell/CommandPalette/`, `${APP}features/auth/AccountControl.tsx`, `${APP}shared/dataState/marketData.ts`, `${APP}shared/lib/demoSite.ts`, 'libs/api/src/lib/demo/workspace.ts (resetDemoWorkspace)'],
@@ -173,7 +174,7 @@ export const ROWS = [
       built: [
         { status: 'shipped', what: 'The ten sections, the score table, the vocabulary table and the generated index (METHOD_COPY).' },
         { status: 'shipped', what: '“What’s live on this site” (#data) in both forms, first in the page and the index, and the state-word list (DataStateTag). Production adds net liquidity (Fed H.4.1, Treasury DTS, NY Fed) to the live list; cadences follow pages/trust/sources.ts. The index marks the section in view; the bar’s link scrolls to and focuses #data.' },
-        { status: 'partial', what: 'The phone index is still a vertical list, not the sideways rail of chips.' },
+        { status: 'shipped', what: 'Under 900px the index is a sideways rail of 44px chips under the title that scrolls inside its own box; the current chip is filled (the first until a section is in view) and the rail scrolls to keep it showing.' },
       ],
       rulings: ['P-1', 'P-2', 'P-13', 'Env 2026-10-14'],
       code: [`${APP}pages/methodology/MethodologyPage.tsx`, `${APP}pages/methodology/copy.ts`, `${APP}shared/copy/notANumber.ts`, `${APP}shared/dataState/`],

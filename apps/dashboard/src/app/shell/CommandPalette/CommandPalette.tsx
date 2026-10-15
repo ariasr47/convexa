@@ -6,11 +6,15 @@
  * and backdrop-click close through the Dialog's OWN `onClose`; this file hand-assembles only the
  * roving `aria-activedescendant` combobox.
  *
- * Three groups under one listbox, in this order: Go to (the five sections, with their `g` keys),
- * Tickers, Research notes; then “Open X anyway” for a plausible symbol nothing matched exactly.
+ * Groups under one listbox, in this order: Go to (the five sections, with their `g` keys), Recent
+ * (empty query only), Tickers, Research notes; then “Open X anyway” for a plausible symbol nothing
+ * matched exactly. Recent is the tickers this browser opened last (`convexa.recent-tickers.v1`, the
+ * key the Privacy page lists for this box; the demo's own key family on staging), read from
+ * localStorage on each open — never a request.
  * Where the tickers and notes come from differs by build (usePaletteData): production lists tickers
  * by name and never calls the scan; staging ranks them by the demo's sample scan.
  */
+import { listRecentVisits } from '@/pages/ticker/recentTickers/store';
 import { typographyTokens } from '@/shared/theme/tokens';
 import WarningAmberOutlined from '@mui/icons-material/WarningAmberOutlined';
 import Box from '@mui/material/Box';
@@ -27,6 +31,7 @@ import { usePaletteData, type PaletteNote, type PaletteTicker } from './usePalet
 
 type Item =
   | { kind: 'command'; command: PaletteCommand }
+  | { kind: 'recent'; symbol: string }
   | { kind: 'ticker'; ticker: PaletteTicker }
   | { kind: 'note'; note: PaletteNote }
   | { kind: 'open-anyway'; symbol: string };
@@ -39,6 +44,8 @@ export interface CommandPaletteProps {
 }
 
 const SKELETON_ROWS = 4;
+/** How many recent tickers an empty query lists. */
+const RECENT_ROWS = 5;
 const KEY_OF: Record<string, string> = Object.fromEntries(
   Object.entries(GO_TO).map(([key, dest]) => [dest.to, key]),
 );
@@ -82,6 +89,7 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const [nowS, setNowS] = useState(() => Date.now() / 1000);
+  const [recents, setRecents] = useState<string[]>([]);
   const listboxId = useId();
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -91,6 +99,8 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
       setQuery('');
       setActiveIndex(0);
       setNowS(Date.now() / 1000);
+      // The store never throws: unreadable or corrupt storage reads as no recents.
+      setRecents(listRecentVisits(RECENT_ROWS));
     }
   }, [open]);
 
@@ -102,6 +112,7 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
         : PALETTE_COMMANDS,
     [q],
   );
+  const recentSymbols = useMemo(() => (q ? [] : recents), [q, recents]);
   const tickers = useMemo(
     () => (data.tickers.phase === 'ready' ? matchTickers(data.tickers.items, q) : []),
     [data.tickers, q],
@@ -120,11 +131,12 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
   const items: Item[] = useMemo(
     () => [
       ...commands.map((command): Item => ({ kind: 'command', command })),
+      ...recentSymbols.map((symbol): Item => ({ kind: 'recent', symbol })),
       ...tickers.map((ticker): Item => ({ kind: 'ticker', ticker })),
       ...notes.map((note): Item => ({ kind: 'note', note })),
       ...(showOpenAnyway ? [{ kind: 'open-anyway', symbol: q.toUpperCase() } as Item] : []),
     ],
-    [commands, tickers, notes, showOpenAnyway, q],
+    [commands, recentSymbols, tickers, notes, showOpenAnyway, q],
   );
 
   // P3 — the first row is pre-selected, again on every filter change.
@@ -146,6 +158,7 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
   function activate(item: Item) {
     if (item.kind === 'command') navigate(item.command.to);
     else if (item.kind === 'ticker') navigate(`/ticker/${item.ticker.symbol}`);
+    else if (item.kind === 'recent') navigate(`/ticker/${encodeURIComponent(item.symbol)}`);
     else if (item.kind === 'note') navigate(item.note.to);
     else navigate(`/ticker/${item.symbol}`);
     onClose();
@@ -209,6 +222,42 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
       </>,
     ),
   );
+
+  const nameOf = (symbol: string) =>
+    data.tickers.phase === 'ready'
+      ? (data.tickers.items.find((t) => t.symbol === symbol)?.name ?? null)
+      : null;
+  const recentRows = recentSymbols.map((symbol) => {
+    const name = nameOf(symbol);
+    return row(
+      { kind: 'recent', symbol },
+      `palette-recent-${symbol}`,
+      <>
+        <Box
+          component="span"
+          sx={{ fontFamily: typographyTokens.monoFontFamily, fontWeight: 600, minWidth: 56 }}
+        >
+          {symbol}
+        </Box>
+        <Box
+          component="span"
+          sx={{
+            color: 'text.secondary',
+            flexGrow: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {name}
+        </Box>
+        <Box component="span" sx={{ color: 'text.secondary', fontSize: 12, whiteSpace: 'nowrap' }}>
+          Ticker
+        </Box>
+      </>,
+    );
+  });
 
   const tickerRows = tickers.map((ticker) => {
     const cell = ticker.row ? paletteScoreCell(ticker.row, data.sweep, nowS) : null;
@@ -342,6 +391,8 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
         sx={{ overflowY: 'auto', flex: '1 1 auto', py: 0.5 }}
       >
         {commandRows.length > 0 && <Group label="Go to">{commandRows}</Group>}
+
+        {recentRows.length > 0 && <Group label="Recent">{recentRows}</Group>}
 
         {(data.tickers.phase !== 'ready' || tickerRows.length > 0) && (
           <Group label={data.ranked ? 'Tickers · ranked by the sample scan' : 'Tickers'}>
