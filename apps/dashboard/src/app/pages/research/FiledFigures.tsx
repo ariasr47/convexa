@@ -205,6 +205,14 @@ function CheckFrame({ d }: { d: PublicTicker }) {
       </Box>,
     );
   if (d.filings_state === 'off') return null;
+  // A sample company the demo authors no quarterly report for (AAPL): nothing to check, and the
+  // production copy about linking a note's figures doesn't apply to a sample.
+  if (demo && filings.length === 0)
+    return message(
+      'demo',
+      'quiet',
+      `The sample authors no quarterly report for ${d.ticker}, so there is nothing to check its figures against.`,
+    );
   if (d.filings_state === 'unavailable' && filings.length === 0)
     return message(
       'sourceDown',

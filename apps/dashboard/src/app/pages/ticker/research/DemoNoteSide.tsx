@@ -7,10 +7,11 @@
  */
 import { ShortInterestCard } from '@/pages/research/NotePublicPanels';
 import { formatShortDate } from '@/pages/research/format';
-import { usePublicTicker } from '@/pages/research/publicData';
+import type { Read } from '@/pages/research/publicData';
 import { MONO } from '@/pages/research/ui';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { extrasFor } from '@/shared/theme/tokens';
+import type { PublicTicker } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Skeleton from '@mui/material/Skeleton';
@@ -103,8 +104,9 @@ function Chip({ text }: { text: string }) {
   );
 }
 
-export function DemoNoteSide({ symbol }: { symbol: string }) {
-  const read = usePublicTicker(symbol);
+/** `read`: the demo transport's public-data answer for the symbol, shared with the public-record
+ *  band under the note (ResearchView), so the page reads it once. */
+export function DemoNoteSide({ symbol, read }: { symbol: string; read: Read<PublicTicker> }) {
   const d = read.data;
   return (
     <Box
