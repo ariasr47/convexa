@@ -24,7 +24,7 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useEffect, useRef, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette/CommandPalette';
 import { Footer } from './Footer';
 import { MarketDataNotice } from './MarketDataNotice';
@@ -55,6 +55,17 @@ export function AppShell() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const navigate = useNavigate();
   const goPending = useRef<number | null>(null);
+
+  // A link to another page opens it at the top. BrowserRouter keeps the window's scroll across a
+  // pushed route, so a link at the foot of a long page (the blog post's “How Convexa works”) landed
+  // part-way down the next one. Back/forward (POP) is left to the browser's own restoration, and an
+  // address with a #fragment is left to the page that scrolls to it (MethodologyPage, Settings).
+  const { pathname, hash } = useLocation();
+  const navigationType = useNavigationType();
+  useEffect(() => {
+    if (navigationType === 'POP' || hash) return;
+    window.scrollTo(0, 0);
+  }, [pathname, hash, navigationType]);
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const isOpenShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k';
