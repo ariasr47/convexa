@@ -6,16 +6,59 @@
  * artboard's own <h1>, and shipping that verbatim gives a document whose outline starts at level 2 —
  * an accessibility-gate regression on a feature that requires zero waivers (SPEC §4).
  */
-import { extrasFor } from '@/shared/theme/tokens';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import KeyboardCommandKeyOutlined from '@mui/icons-material/KeyboardCommandKeyOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { NOT_FOUND_COPY } from './copy';
 
+function Kbd({ children }: { children: ReactNode }) {
+  return (
+    <Box
+      component="kbd"
+      sx={{
+        px: 0.75,
+        py: '1px',
+        borderRadius: 1,
+        border: '1px solid',
+        borderColor: 'divider',
+        fontFamily: typographyTokens.monoFontFamily,
+        fontSize: 12,
+        color: 'text.primary',
+        display: 'inline-flex',
+        alignItems: 'center',
+        verticalAlign: 'middle',
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+/** ⌘K on a Mac, Ctrl K elsewhere (both open the jump-to box; so does /). The ⌘ is an icon: no
+ *  bundled face carries U+2318 (TopNav.tsx, PR #46 §B). */
+function paletteShortcut(): ReactNode {
+  const platform =
+    typeof navigator === 'undefined' ? '' : navigator.platform || navigator.userAgent;
+  return /Mac|iPhone|iPad/i.test(platform) ? (
+    <Box
+      component="span"
+      aria-label="Command K"
+      sx={{ display: 'inline-flex', alignItems: 'center' }}
+    >
+      <KeyboardCommandKeyOutlined aria-hidden sx={{ fontSize: 12 }} />K
+    </Box>
+  ) : (
+    'Ctrl K'
+  );
+}
+
 export function NotFound() {
+  const shortcut = paletteShortcut();
   useEffect(() => {
     const prev = document.title;
     document.title = 'Nothing at this address — Convexa';
@@ -71,6 +114,20 @@ export function NotFound() {
           >
             {NOT_FOUND_COPY.secondary}
           </Button>
+          <Typography
+            component="p"
+            data-testid="not-found-palette-hint"
+            sx={{
+              m: 0,
+              alignSelf: 'center',
+              fontSize: 13.5,
+              color: 'text.secondary',
+              // The shortcut needs a keyboard: hidden on touch screens.
+              '@media (hover: none) and (pointer: coarse)': { display: 'none' },
+            }}
+          >
+            {NOT_FOUND_COPY.hintBefore} <Kbd>{shortcut}</Kbd> {NOT_FOUND_COPY.hintAfter}
+          </Typography>
         </Stack>
       </Stack>
     </Box>
