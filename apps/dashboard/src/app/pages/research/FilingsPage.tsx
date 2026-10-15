@@ -44,6 +44,9 @@ const DEMO = dataMode === 'demo';
 const notesByTicker = new Map(DEMO ? [] : researchIndex.map((r) => [r.ticker, r.latest]));
 const TICKERS: string[] = DEMO ? [...STAGING_DEMO_SYMBOLS] : researchIndex.map((r) => r.ticker);
 const EDGAR_SEARCH = 'https://www.sec.gov/edgar/search/';
+/** Sample data is dashed (canon P-3). */
+const DEMO_EDGE = (t: Theme) =>
+  DEMO ? { border: `1px dashed ${alpha(t.palette.text.secondary, 0.55)}` } : {};
 
 export function FilingsPage() {
   const today = useMemo(() => localToday(), []);
@@ -391,7 +394,7 @@ function Feed({
           window.open(current.url, '_blank', 'noopener,noreferrer');
         }
       }}
-      sx={{ ...PANEL_SX, listStyle: 'none', m: 0, p: 0, overflow: 'hidden' }}
+      sx={[{ ...PANEL_SX, listStyle: 'none', m: 0, p: 0, overflow: 'hidden' }, DEMO_EDGE]}
     >
       {filings.map((f, i) => {
         const note = notesByTicker.get(f.ticker);
@@ -518,7 +521,7 @@ function Detail({ filing }: { filing: PublicFiling }) {
     <Box
       component="section"
       aria-labelledby="filing-detail"
-      sx={{ ...PANEL_SX, p: { xs: 2, sm: 3 }, display: 'grid', gap: 2 }}
+      sx={[{ ...PANEL_SX, p: { xs: 2, sm: 3 }, display: 'grid', gap: 2 }, DEMO_EDGE]}
     >
       <Box sx={{ display: 'grid', gap: 0.75 }}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
@@ -848,7 +851,7 @@ function ReportedFigures({
   const finding = lead
     ? `${DEMO ? 'Sample figures: ' : ''}${lead.label} ${figure(lead.value, lead.unit)}${
         leadChange && lead.prior_period_end
-          ? `, ${leadChange.replace('▲', 'up').replace('▼', 'down').replace('± ', 'flat at ')} on the period to ${formatShortDate(lead.prior_period_end)}`
+          ? `, ${leadChange.replace('▲', 'up').replace('▼', 'down').replace('± ', 'flat at ')} from the period to ${formatShortDate(lead.prior_period_end)}`
           : ''
       }`
     : 'Reported figures';

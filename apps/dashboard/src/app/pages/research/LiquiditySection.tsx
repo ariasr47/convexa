@@ -277,7 +277,7 @@ function NetLine({
   const t = useTheme();
   const roles = chartRoles(t);
   const [ref, W] = useWidth<HTMLDivElement>();
-  const PL = 56;
+  const PL = 62;
   const PR = 96;
   const PT = 12;
   const PH = 170;
@@ -323,7 +323,7 @@ function NetLine({
               {LANES.map((lane, k) => (
                 <text
                   key={lane.kind}
-                  x={PL - 6}
+                  x={PL - 12}
                   y={LANE0 + k * LANE + 4}
                   textAnchor="end"
                   fontSize={11}
