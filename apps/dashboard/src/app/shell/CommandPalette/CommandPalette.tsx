@@ -261,7 +261,10 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
   });
 
   const tickerRows = tickers.map((ticker) => {
-    const cell = ticker.row ? paletteScoreCell(ticker.row, data.sweep, nowS) : null;
+    // Staging's rows are the sample scan's: score and tier, no age (format.ts, `sample`).
+    const cell = ticker.row
+      ? paletteScoreCell(ticker.row, data.sweep, nowS, { sample: data.ranked })
+      : null;
     return row(
       { kind: 'ticker', ticker },
       `palette-symbol-${ticker.symbol}`,
@@ -272,19 +275,50 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
         >
           {ticker.symbol}
         </Box>
-        <Box component="span" sx={{ color: 'text.secondary', flexGrow: 1, minWidth: 0 }}>
-          {cell ? cell.text : ticker.name}
+        <Box
+          component="span"
+          sx={{
+            color: 'text.secondary',
+            flexGrow: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {ticker.name}
         </Box>
         {cell ? (
-          cell.freshness && (
+          <Box
+            component="span"
+            data-testid={`palette-score-${ticker.symbol}`}
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'baseline',
+              gap: 0.75,
+              color: 'text.secondary',
+              fontSize: 12,
+              whiteSpace: 'nowrap',
+            }}
+          >
             <Box
               component="span"
-              data-testid={`palette-freshness-${ticker.symbol}`}
-              sx={{ color: 'text.secondary', fontSize: 12 }}
+              sx={{
+                fontFamily: typographyTokens.monoFontFamily,
+                fontWeight: 600,
+                fontSize: 13,
+                color: 'text.primary',
+              }}
             >
-              {cell.freshness}
+              {cell.text}
             </Box>
-          )
+            {cell.tier}
+            {cell.freshness && (
+              <Box component="span" data-testid={`palette-freshness-${ticker.symbol}`}>
+                {cell.tier ? `· ${cell.freshness}` : cell.freshness}
+              </Box>
+            )}
+          </Box>
         ) : (
           <Box
             component="span"

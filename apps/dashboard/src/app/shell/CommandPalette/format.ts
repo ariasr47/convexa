@@ -2,6 +2,7 @@
  * Pure formatting/matching helpers for the ⌘K palette (SPEC §2.6/§4.4), split out of the component
  * so they are unit-testable without mounting React.
  */
+import { tierLabel } from '@/pages/scanner/labels';
 import type { ScanRow, SweepHeartbeat } from '@convexa/api';
 
 /** The palette's ticker rows: symbol prefix first, then symbol substring, then a company-name
@@ -66,8 +67,13 @@ const relAge = (epochS: number | null | undefined, nowS: number): string | null 
 export interface PaletteScoreCell {
   /** The value text — never a bare `0`, never blank. */
   text: string;
-  /** Freshness caption. `null` only for `building` (no compute exists yet to date). AC-29b: a
-   *  rendered SCORE is never bare — `ok`/`stale`/`error` all carry one. */
+  /** The wire's tier through the scanner's closed lookup (“Prime”, “Watch”, …), shown beside a
+   *  score; `null` when there is no score, or when the wire sent nothing or a tier this build does
+   *  not know (a miss renders nothing, never the raw enum). */
+  tier: string | null;
+  /** Freshness caption. `null` for `building` (no compute exists yet to date), and for a sample
+   *  scan, whose timestamps are the scenario's, not the market's. AC-29b: a rendered LIVE score is
+   *  never bare — `ok`/`stale`/`error` all carry one. */
   freshness: string | null;
 }
 
@@ -75,22 +81,32 @@ export interface PaletteScoreCell {
  * AC-29 — tier/score render from the wire's OWN closed `status` vocabulary through a closed
  * lookup, NEVER re-derived from the score itself. AC-29b — a score is never rendered bare: the
  * sweep's freshness (or the row's own `as_of` when the sweep is absent/stale) rides beside it.
+ *
+ * `sample` (the demo build's scan): no age. The demo's rows carry the scenario's timestamps, so an
+ * age measured against the visitor's wall clock (“as of 184h ago”) is a freshness claim about data
+ * that was never live (site check D-13; the staging ⌘K board shows score and tier only). The
+ * palette's footnote says the scores come from the sample scan.
  */
 export function paletteScoreCell(
   row: ScanRow,
   sweep: SweepHeartbeat | null,
   nowS: number,
+  { sample = false }: { sample?: boolean } = {},
 ): PaletteScoreCell {
-  const asOf = relAge(row.as_of, nowS);
+  const asOf = sample ? null : relAge(row.as_of, nowS);
+  const score = row.score != null ? String(Math.round(row.score)) : '—';
+  const tier = row.score != null ? tierLabel(row.tier) : null;
   switch (row.status) {
     case 'building':
-      return { text: '—', freshness: null };
+      return { text: '—', tier: null, freshness: null };
     case 'error':
-      return { text: 'unavailable', freshness: asOf ? `as of ${asOf}` : null };
+      return { text: 'unavailable', tier: null, freshness: asOf ? `as of ${asOf}` : null };
     case 'stale': {
+      if (sample) return { text: score, tier, freshness: 'stale' };
       const sweepAge = relAge(sweep?.sweep_last_completed, nowS);
       return {
-        text: row.score != null ? String(Math.round(row.score)) : '—',
+        text: score,
+        tier,
         freshness: sweepAge
           ? `stale · sweep ${sweepAge}`
           : asOf
@@ -101,8 +117,9 @@ export function paletteScoreCell(
     case 'ok':
     default:
       return {
-        text: row.score != null ? String(Math.round(row.score)) : '—',
-        freshness: asOf ? `as of ${asOf}` : 'freshness unknown',
+        text: score,
+        tier,
+        freshness: sample ? null : asOf ? `as of ${asOf}` : 'freshness unknown',
       };
   }
 }

@@ -51,6 +51,18 @@ export interface PaletteData {
   ranked: boolean;
 }
 
+/** The demo's six sample symbols by name: the scenario carries tickers only. Same names as the
+ *  sample research cards (pages/research/ResearchIndexPage.tsx SAMPLE_NAMES); a symbol missing here
+ *  renders without a name, never a guessed one. */
+const DEMO_NAMES: Readonly<Record<string, string>> = {
+  AAPL: 'Apple',
+  MSFT: 'Microsoft',
+  NVDA: 'NVIDIA',
+  QQQ: 'Invesco QQQ Trust',
+  SPY: 'SPDR S&P 500 ETF',
+  TSLA: 'Tesla',
+};
+
 const DEMO_NOTES: PaletteNote[] = STAGING_DEMO_SYMBOLS.map((ticker) => ({
   ticker,
   title: 'Sample research note',
@@ -115,7 +127,7 @@ export function usePaletteData(active: boolean): PaletteData {
               phase: 'ready',
               items: byScore(res.rows).map((row) => ({
                 symbol: row.symbol,
-                name: null,
+                name: DEMO_NAMES[row.symbol.toUpperCase()] ?? null,
                 hasNote: true,
                 row,
               })),
