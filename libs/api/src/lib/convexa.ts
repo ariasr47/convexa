@@ -2255,6 +2255,10 @@ export type PublicSourceState = components['schemas']['PublicSourceState'];
 export type PublicCalendar = components['schemas']['CalendarWire'];
 export type PublicRelease = components['schemas']['ReleaseWire'];
 export type PublicResultsWindow = components['schemas']['ResultsWindowWire'];
+export type PublicInsiderTransaction = components['schemas']['InsiderTransactionWire'];
+export type PublicInsiderWindow = components['schemas']['InsiderWindowWire'];
+export type PublicTaggedFact = components['schemas']['TaggedFactWire'];
+export type PublicAnnualRevenue = components['schemas']['AnnualRevenueWire'];
 
 /** GET /api/public-data/markets — U.S. Treasury par/real yields and CFTC futures positioning. */
 export async function getPublicMarkets(): Promise<PublicMarkets> {

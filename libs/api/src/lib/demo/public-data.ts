@@ -1,12 +1,15 @@
 import type {
+  PublicAnnualRevenue,
   PublicFact,
   PublicFiling,
   PublicFilings,
   PublicFuturesMarket,
+  PublicInsiders,
   PublicMarkets,
   PublicPeriodicFiling,
   PublicPositionGroup,
   PublicShortVolume,
+  PublicTaggedFact,
   PublicTicker,
   PublicYieldPoint,
 } from '../convexa';
@@ -374,8 +377,24 @@ function demoPeriodic(ticker: string, profile: Profile): PublicPeriodicFiling[] 
   const { revenue, netIncome, eps, cash } = profile;
   if (revenue === null || netIncome === null || eps === null || cash === null) return [];
   const quarters = [
-    { accession: 2, filed: '2026-08-27', end: '2026-07-26', prior: '2026-04-26', scale: 1 },
-    { accession: 0, filed: '2026-05-28', end: '2026-04-26', prior: '2025-10-26', scale: 0.94 },
+    {
+      accession: 2,
+      filed: '2026-08-27',
+      start: '2026-04-27',
+      end: '2026-07-26',
+      prior: '2026-04-26',
+      scale: 1,
+      fp: 'Q2',
+    },
+    {
+      accession: 0,
+      filed: '2026-05-28',
+      start: '2026-01-26',
+      end: '2026-04-26',
+      prior: '2025-10-26',
+      scale: 0.94,
+      fp: 'Q1',
+    },
   ];
   const index = Object.keys(PROFILES).indexOf(ticker);
   return quarters.map((q) => {
@@ -394,6 +413,16 @@ function demoPeriodic(ticker: string, profile: Profile): PublicPeriodicFiling[] 
       prior_value: round(value * q.scale * 0.94, places),
       prior_period_end: q.prior,
     });
+    // The same values as XBRL tags them for the quarter (or at its end, for cash), so the note's
+    // "Checked against the filing" section has a sample filing to compare with.
+    const tag = (concept: string, value: number, unit: string, places: number, instant = false) =>
+      ({
+        concept,
+        unit,
+        value: round(value * q.scale, places),
+        start: instant ? null : q.start,
+        end: q.end,
+      }) satisfies PublicTaggedFact;
     return {
       accession: `0000000000-26-${String(index * 10 + q.accession).padStart(6, '0')}`,
       form: '10-Q',
@@ -405,8 +434,110 @@ function demoPeriodic(ticker: string, profile: Profile): PublicPeriodicFiling[] 
         fact('EarningsPerShareDiluted', 'Diluted EPS', eps, 'USD/shares', 2),
         fact('CashAndCashEquivalentsAtCarryingValue', 'Cash and equivalents', cash, 'USD', 0),
       ],
+      fiscal_year: 2027,
+      fiscal_period: q.fp,
+      tagged: [
+        tag('us-gaap:CashAndCashEquivalentsAtCarryingValue', cash, 'USD', 0, true),
+        tag('us-gaap:EarningsPerShareDiluted', eps, 'USD/shares', 2),
+        tag('us-gaap:NetIncomeLoss', netIncome, 'USD', 0),
+        tag('us-gaap:Revenues', revenue, 'USD', 0),
+      ],
     };
   });
+}
+
+/** Five sample fiscal years of annual revenue, each as first filed, growing, none restated. */
+function demoAnnualRevenue(ticker: string, profile: Profile): PublicAnnualRevenue[] {
+  if (profile.revenue === null) return [];
+  const index = Object.keys(PROFILES).indexOf(ticker);
+  const years = [
+    { fy: 2022, end: '2022-01-30', filed: '2022-03-18', share: 0.31 },
+    { fy: 2023, end: '2023-01-29', filed: '2023-02-24', share: 0.36 },
+    { fy: 2024, end: '2024-01-28', filed: '2024-02-21', share: 0.52 },
+    { fy: 2025, end: '2025-01-26', filed: '2025-02-26', share: 0.74 },
+    { fy: 2026, end: '2026-01-25', filed: '2026-02-25', share: 0.93 },
+  ];
+  return years.map((y, i) => ({
+    fiscal_year: y.fy,
+    period_end: y.end,
+    value: round(profile.revenue! * 4 * y.share, 0),
+    unit: 'USD',
+    concept: 'us-gaap:Revenues',
+    accession: `0000000000-${String(y.fy).slice(2)}-${String(index * 10 + 5 + i).padStart(6, '0')}`,
+    filed: y.filed,
+    restated_value: null,
+  }));
+}
+
+/** Six months of sample Form 4 trades around the Oct 7 scenario, with one buying cluster (three
+ *  directors in September) so the cluster form is visible; roles only, as on the live answer. */
+function demoInsiders(ticker: string): PublicInsiders {
+  const url = secBrowse(ticker);
+  const t = (
+    insider: number,
+    trade_date: string,
+    kind: 'purchase' | 'sale',
+    shares: number,
+    price: number,
+    planned: boolean,
+    n: number,
+  ) => {
+    const filed = isoDay(Date.parse(`${trade_date}T00:00:00Z`) + 2 * DAY_MS);
+    return {
+      insider,
+      trade_date,
+      filed,
+      kind,
+      shares,
+      price,
+      planned,
+      accession: `0000000000-26-9${String(n).padStart(5, '0')}`,
+      url,
+    };
+  };
+  const transactions = [
+    t(3, '2026-05-20', 'sale', 40_000, 118.2, true, 1),
+    t(0, '2026-06-10', 'sale', 120_000, 121.5, true, 2),
+    t(1, '2026-06-12', 'sale', 30_000, 122.1, true, 3),
+    t(0, '2026-07-08', 'sale', 120_000, 126.4, true, 4),
+    t(2, '2026-08-03', 'sale', 18_000, 131.8, false, 5),
+    t(1, '2026-09-02', 'sale', 30_000, 128.9, true, 6),
+    t(4, '2026-09-14', 'purchase', 1_200, 124.3, false, 7),
+    t(5, '2026-09-16', 'purchase', 800, 123.6, false, 8),
+    t(6, '2026-09-19', 'purchase', 500, 125.1, false, 9),
+  ];
+  // The 90-day card counts the same sample: trades filed Jul 9 – Oct 7.
+  const recent = transactions.filter((x) => x.filed >= '2026-07-09');
+  const sales = recent.filter((x) => x.kind === 'sale');
+  const buys = recent.filter((x) => x.kind === 'purchase');
+  return {
+    state: 'live',
+    detail: SAMPLE,
+    window_days: 90,
+    filings: recent.length,
+    sales: sales.length,
+    buys: buys.length,
+    shares_sold: sales.reduce((s, x) => s + x.shares, 0),
+    shares_bought: buys.reduce((s, x) => s + x.shares, 0),
+    planned: recent.filter((x) => x.planned).length,
+    latest: recent[recent.length - 1].filed,
+    history_days: 182,
+    roles: [
+      'President and CEO',
+      'EVP and CFO',
+      'EVP, Operations',
+      'EVP, Field Operations',
+      'Director 1',
+      'Director 2',
+      'Director 3',
+    ],
+    transactions,
+    clusters: [{ from: '2026-09-14', to: '2026-09-19', insiders: 3, trades: 3, planned_trades: 0 }],
+    sale_windows: [],
+    history_filings: transactions.length,
+    history_filings_read: transactions.length,
+    history_reaches_back_to: null,
+  };
 }
 
 const SETTLEMENTS = [
@@ -440,6 +571,7 @@ export function demoPublicTicker(ticker: string): PublicTicker {
       insiders: null,
       shares_outstanding: null,
       periodic: [],
+      annual_revenue: [],
       filings: [],
       filings_state: 'unavailable',
       filings_detail: `No demo sample is authored for ${ticker}.`,
@@ -473,23 +605,11 @@ export function demoPublicTicker(ticker: string): PublicTicker {
       history,
     },
     short_volume: demoShortVolume(totalVolume, profile.shortRatio),
-    insiders: company
-      ? {
-          state: 'live',
-          detail: SAMPLE,
-          window_days: 90,
-          filings: 6,
-          sales: 9,
-          buys: 1,
-          shares_sold: 410_000,
-          shares_bought: 2_500,
-          planned: 8,
-          latest: '2026-10-02',
-        }
-      : null,
+    insiders: company ? demoInsiders(ticker) : null,
     shares_outstanding:
       profile.shares === null ? null : { value: profile.shares, as_of: '2026-08-20' },
     periodic: demoPeriodic(ticker, profile),
+    annual_revenue: demoAnnualRevenue(ticker, profile),
     filings: demoFilingsFor(ticker),
     filings_state: 'live',
     filings_detail: company ? SAMPLE : `Demo sample: no filings are authored for ${ticker}.`,

@@ -4,6 +4,7 @@
 // never a silently half-drawn visual. Row formats are documented in research/README.md.
 
 import { isCalendarDate, parseWhen } from './dates.mjs';
+import { parseConceptCell } from './filing-check.mjs';
 import { parseNumber, parseValuationBlock, splitAsOf, splitCells } from './valuation.mjs';
 
 export const BLOCK_NAMES = [
@@ -128,6 +129,17 @@ export function parseTypedBlock(name, args, lines, ctx, openLine) {
     }
     return parsed.when;
   };
+  /** The optional last cell of a figure row: its XBRL concept (filing-check.mjs). */
+  const concept = (row, i) => {
+    const raw = plain(row, i).trim();
+    if (!raw) return { concept: null, why: null };
+    const parsed = parseConceptCell(raw);
+    if ('error' in parsed) {
+      need(false, row.line, parsed.error);
+      return { concept: null, why: null };
+    }
+    return { concept: parsed.concept, why: parsed.why };
+  };
   const text = (row, i) => inline(row.cells[i] ?? '', row.line);
   const plain = (row, i) => (row.cells[i] ?? '').replace(/\\\|/g, '|');
 
@@ -137,9 +149,15 @@ export function parseTypedBlock(name, args, lines, ctx, openLine) {
     case 'strip': {
       count(1, 8);
       const items = rows.map((r) => {
-        cells(r, 2, 3, 'label | value @ as-of | sub');
+        cells(r, 2, 4, 'label | value @ as-of | sub | concept');
         const v = dated(r, r.cells[1] ?? '');
-        return { label: plain(r, 0), value: v.value, asOf: v.asOf, sub: text(r, 2) };
+        return {
+          label: plain(r, 0),
+          value: v.value,
+          asOf: v.asOf,
+          sub: text(r, 2),
+          ...concept(r, 3),
+        };
       });
       block = { type: 'strip', items };
       break;
@@ -156,7 +174,7 @@ export function parseTypedBlock(name, args, lines, ctx, openLine) {
     case 'metrics': {
       count(1, 12);
       const items = rows.map((r) => {
-        cells(r, 2, 5, 'label | value @ as-of | delta | up/down/flat | note');
+        cells(r, 2, 6, 'label | value @ as-of | delta | up/down/flat | note | concept');
         const v = dated(r, r.cells[1] ?? '');
         const dir = (r.cells[3] ?? '').toLowerCase() || 'flat';
         word(r, dir, ['up', 'down', 'flat'], 'The direction');
@@ -167,6 +185,7 @@ export function parseTypedBlock(name, args, lines, ctx, openLine) {
           delta: plain(r, 2),
           dir,
           note: text(r, 4),
+          ...concept(r, 5),
         };
       });
       block = { type: 'metrics', items };

@@ -76,9 +76,9 @@ cells take **bold**, _italic_, links and `[n]` source references. Write `\|` for
 
 | Block                 | Row format                                                                                       | Renders                                                               |
 | --------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
-| `strip`               | `label \| value @ as-of \| sub`                                                                  | The header strip of figures                                           |
+| `strip`               | `label \| value @ as-of \| sub \| concept (optional)`                                            | The header strip of figures                                           |
 | `tldr`                | `figure \| sentence` (1–4 rows)                                                                  | The 30-second summary                                                 |
-| `metrics`             | `label \| value @ as-of \| delta \| up/down/flat \| note [n]`                                    | Figure tiles                                                          |
+| `metrics`             | `label \| value @ as-of \| delta \| up/down/flat \| note [n] \| concept (optional)`              | Figure tiles                                                          |
 | `chart bar "Caption"` | `label \| number \| approx/guide (optional) \| shown text (optional)`                            | A column chart (negatives hang below zero); the last plain bar is lit |
 | `split "Caption"`     | `label \| number \| detail (optional)`                                                           | One bar cut into shares of its total                                  |
 | `compare "Caption"`   | `label \| number \| shown text \| emph (optional)`                                               | Horizontal bars on one scale                                          |
@@ -160,6 +160,36 @@ terminal_roc` of profit (`terminal_roc` defaults to `terminal_wacc`: no excess r
   `terminal_wacc` and the three scenario rows are required. The columns `rev_y1`, `reinvest_y1` and
   `margin_y1`, and the fields `margin_year` (default 5), `nol`, `terminal_tax`, `terminal_roc`, `traded`,
   `third_party`, `sensitivity`, `odds`, `why`, `uncertainty` and `uncertainty_why` are optional.
+
+## Figures against the filing
+
+A `strip` or `metrics` figure can name its XBRL concept in a last cell. The note page then shows it
+beside the value the company tagged in its filing for the same period ("Checked against the filing"),
+and `node tools/research-notes/check-filings.mjs` lists the same check for the author.
+
+```metrics
+Revenue | $96.2B @ Q2 FY2027 | ▲ 106% YoY | up | Data Center $89.0B [1] | us-gaap:Revenues
+Operating margin, GAAP | 66.2% @ Q2 FY2027 | ▲ 5.4 pts YoY | up | [1] | us-gaap:OperatingIncomeLoss / us-gaap:Revenues
+Guarantees | $108.5B @ 2026-07-26 | | flat | [2] | none
+```
+
+- **The concept** is one of the concepts in `tools/research-notes/filing-check.mjs` (`CHECKED_CONCEPTS`,
+  the ones the API reads), written with its taxonomy; or two joined by `/` (a ratio, for a `%` figure),
+  `-` or `+` (a computed figure); or `none` when no standard concept exists (the page says "Not tagged ·
+  cites the filing").
+- **The period** is the as-of: `Q2 FY2027` (or `Q2 FY27`) and `FY2026` match the fiscal period the
+  company tagged; a date matches the filing whose period ends that day.
+- **A match** is equal at the note's precision: `$96.2B` matches $96,221M; `66.2%` doesn't match 66.37%.
+- **A known difference** is explained after `;` in the same cell, like
+  `us-gaap:OperatingIncomeLoss / us-gaap:Revenues; as reported in the 8-K`. The page still shows both
+  values; the check then passes.
+- 10-Q cash-flow statements tag year-to-date amounts, not the quarter, so a quarterly cash-flow figure
+  reads "Not tagged in the filing"; cite the filing (`none`) or date it as the year to date.
+
+The check reads only saved SEC company-facts answers, never EDGAR itself: save
+`https://data.sec.gov/api/xbrl/companyfacts/CIK##########.json` as `research/_filings/<TICKER>.json`.
+It exits 1 on a difference with no `;` reason, a concept the filing doesn't tag, units that don't fit,
+or a figure or period it can't read; a ticker with no saved answer is listed as not checked.
 
 ## What the check refuses
 

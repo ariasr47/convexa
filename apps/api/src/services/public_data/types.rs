@@ -291,6 +291,8 @@ pub struct Insiders {
     pub shares_bought: f64,
     pub planned: u32,
     pub latest: Option<NaiveDate>,
+    /// Twelve months of Form 4 trades and the windows derived from them (insider_trades.rs).
+    pub history: super::insider_trades::InsiderHistory,
 }
 
 impl Insiders {
@@ -307,6 +309,7 @@ impl Insiders {
             shares_bought: 0.0,
             planned: 0,
             latest: None,
+            history: super::insider_trades::InsiderHistory::empty(),
         }
     }
 }
@@ -335,6 +338,11 @@ pub struct PeriodicFiling {
     pub filed: NaiveDate,
     pub period_end: Option<NaiveDate>,
     pub facts: Vec<Fact>,
+    /// As the filer tagged them (`fy`, `fp`), when its facts are in (filed_figures.rs).
+    pub fiscal_year: Option<i32>,
+    pub fiscal_period: Option<String>,
+    /// Every checked concept's value for this filing's own period.
+    pub tagged: Vec<super::filed_figures::TaggedFact>,
 }
 
 #[derive(Debug, Clone)]
@@ -354,6 +362,8 @@ pub struct TickerReport {
     pub insiders: Option<Insiders>,
     pub shares_outstanding: Option<DatedValue>,
     pub periodic: Vec<PeriodicFiling>,
+    /// Annual revenue as each year's annual report first filed it, oldest first.
+    pub annual_revenue: Vec<super::filed_figures::AnnualRevenue>,
     pub filings: Vec<Filing>,
     pub filings_state: DataState,
     pub filings_detail: Option<String>,

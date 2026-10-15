@@ -156,7 +156,7 @@ export const CLUSTERS_SPEC = {
     'With SEC_USER_AGENT unset the card says Not set up, not empty.',
   ],
   built: [
-    { status: 'todo', what: 'Status: build (after the switch). Needs per-transaction Form 4 rows; today’s wire only carries totals. Un-parked by owner (2026-10-15).' },
+    { status: 'partial', what: 'Built behind SEC_USER_AGENT (“switch”), 2026-10-15: per-transaction Form 4 rows and the windows on the ticker wire (InsidersWire.transactions, .clusters, .sale_windows, .roles; insider_trades.rs, the cluster rules tested), and the Insider trades · 12 months section in the public-record band, dots by trade date, rings and filled dots, each linked to its filing (InsiderClusters.tsx). Production shows it since SEC_USER_AGENT was set (2026-10-15). Left: the demo research route has no public band (ResearchView.tsx), so the staging sample in the demo transport is on no page; the timeline reads at most 80 Form 4s a year, and says how far back it reaches when a filer files more.' },
     { status: 'shipped', what: 'Insider trades card (90-day sales, buys, plan count) behind SEC_USER_AGENT: “switch”.', host: true },
   ],
   rulings: [...CORE],
@@ -192,7 +192,7 @@ export const HOLDERS_SPEC = {
     'The subtitle says 13F covers long US-listed positions only.',
     'Holder names appear as filed (the board shows placeholders).',
   ],
-  built: [{ status: 'todo', what: 'Status: build. Per-filing 13F parsing not started; shares outstanding already switches on with SEC_USER_AGENT. Un-parked by owner (2026-10-15).' }],
+  built: [{ status: 'todo', what: 'Status: build. Per-filing 13F parsing not started; shares outstanding already switches on with SEC_USER_AGENT. Un-parked by owner (2026-10-15). Skipped again 2026-10-15: no saved 13F-HR response to build against (it needs a filer’s 13F-HR filing index and its information-table XML, saved under apps/api/tests/fixtures/public_data/).' }],
   rulings: [...CORE],
   code: ['apps/api/src/services/public_data/edgar_13f.rs (new)', 'apps/api/src/routes/public_data.rs · PublicTickerWire.holders (new)', 'apps/dashboard/src/app/pages/research/NotePublicPanels.tsx'],
 };
@@ -227,7 +227,7 @@ export const XBRL_SPEC = {
     'Concepts with no standard tag say “Not tagged · cites the filing”, never a dash alone.',
   ],
   built: [
-    { status: 'todo', what: 'Status: build. Note figures carry no XBRL concept yet; no comparison exists. Un-parked by owner (2026-10-15).' },
+    { status: 'partial', what: 'Built behind SEC_USER_AGENT, 2026-10-15: a figure names its concept in the last cell of a metrics or strip row (blocks.mjs, research/README.md); the wire carries each periodic filing’s fiscal period and own-period tagged values and five years of revenue as filed (PeriodicFilingWire.tagged, PublicTickerWire.annual_revenue; filed_figures.rs); one comparison, tested for precision, units and scale and period matching, runs on the note page and in tools/research-notes/check-filings.mjs against saved company facts (FiledFigures.tsx, filing-check.mjs). Left: no note names a concept yet (the owner’s notes are unedited), so production reads “not linked yet”; check-filings.mjs is not yet a step of npm run verify; the demo research route has no public band; 10-Q cash-flow figures are year-to-date, so a quarterly free cash flow reads “Not tagged in the filing”.' },
     { status: 'shipped', what: 'Reported figures in the Filings detail (FactWire, six concepts) behind SEC_USER_AGENT: “switch”.', host: true },
   ],
   rulings: [...CORE],
@@ -260,7 +260,7 @@ export const PEERS_SPEC = {
     'The subtitle names the calendar quarter and the note explains fiscal-quarter mapping.',
     'Missing filers are named in the as-of line.',
   ],
-  built: [{ status: 'todo', what: 'Status: build. No frames fetcher; peer lists not in note front matter yet. Un-parked by owner (2026-10-15).' }],
+  built: [{ status: 'todo', what: 'Status: build. No frames fetcher; peer lists not in note front matter yet. Un-parked by owner (2026-10-15). Skipped again 2026-10-15: no saved XBRL frames response to build against (it needs the SEC frames answers us-gaap/GrossProfit/USD/CY2026Q2, us-gaap/Revenues/USD/CY2026Q2 and us-gaap/Revenues/USD/CY2025Q2).' }],
   rulings: [...CORE],
   code: ['apps/api/src/services/public_data/xbrl_frames.rs (new)', 'apps/dashboard/src/app/pages/research/NotePublicPanels.tsx'],
 };

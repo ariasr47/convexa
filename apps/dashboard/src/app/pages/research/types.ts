@@ -297,7 +297,56 @@ export type ResearchTickerSummary = {
     forecasts: LedgerForecast[];
     /** SEC accession numbers the note cites (0001045810-26-000073). */
     accessions: string[];
+    /** Figures that name their XBRL concept, for "Checked against the filing". */
+    figures: NoteFigure[];
   };
+};
+
+/** A note figure with its XBRL concept (`us-gaap:Revenues`, `A / B`, `A - B` or `none`) and, after
+ *  `;`, the author's reason for a known difference. tools/research-notes/filing-check.mjs. */
+export type NoteFigure = {
+  label: string;
+  value: string;
+  asOf: string;
+  concept: string;
+  why: string | null;
+};
+
+/** A periodic filing's own-period tagged values, as the API sends them (`periodic[]`). */
+export type FiledFiling = {
+  accession: string;
+  form: string;
+  filed: string;
+  period_end: string | null;
+  fiscal_year: number | null;
+  fiscal_period: string | null;
+  tagged: { concept: string; unit: string; value: number; start: string | null; end: string }[];
+};
+
+export type FiledCheckStatus =
+  | 'matches'
+  | 'computed'
+  | 'differs'
+  | 'not_tagged'
+  | 'pending'
+  | 'not_found'
+  | 'missing'
+  | 'unit'
+  | 'invalid';
+
+export type FiledCheckRow = {
+  label: string;
+  note: string;
+  asOf: string;
+  concept: string;
+  why: string | null;
+  status: FiledCheckStatus;
+  filed: number | null;
+  filedText: string | null;
+  gap: string | null;
+  accession: string | null;
+  form: string | null;
+  detail: string;
 };
 
 export type LedgerForecast = {

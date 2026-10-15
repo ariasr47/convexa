@@ -54,6 +54,15 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // zero new operations (the sources list and the calendar ride the existing three public-data
 // operations), so `precutover-operation-baseline.json` stays pinned to its prior hash and four
 // artifacts move (ledger `route-growth-repins-api-artifact-oracle`).
+// Re-pinned for the SEC tools (2026-10-15, Wave 1b lane 7): `InsidersWire` gains the 12-month Form 4
+// timeline (`transactions`, `clusters`, `sale_windows`, `roles`, `history_*`), `PeriodicFilingWire`
+// gains `fiscal_year`/`fiscal_period`/`tagged`, and `PublicTickerWire` gains `annual_revenue`
+// (new schemas `InsiderTradeKind`, `InsiderTransactionWire`, `InsiderWindowWire`, `TaggedFactWire`,
+// `AnnualRevenueWire`): additive schema growth, zero new operations, so
+// `precutover-operation-baseline.json` stays pinned to its prior hash and four artifacts move
+// (ledger `route-growth-repins-api-artifact-oracle`).
+// Both re-pins landed together in one merge (2026-10-15); the four hashes below are the merged
+// contract's.
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -61,19 +70,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "d9bb0db60aa5fa3acc4c6acd393ee7f8db6f100953268c50d1d93c4497797c97",
+        "3a6f33dd9750e79fea1ed24ed9830f343795fce078c76d97b4f528629ad1d210",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "e335cbfc52e05fe47c5e1e10ef1ecab8b41d96e007eae6b2e79f2053c2064877",
+        "52f360e43d1e9d628ed8bd46466a5bd50826463f38b13ca53359a6656144981a",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "f53ee6b337d922c191e2356ac16be46003c0ae293e163a9a136a0f5465515754",
+        "d117ed7f2b6c912350a8215d4a9ecc7f9f50ee8d0a5851c0386ec54909e748fc",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "2a7824cdd433dc6e12e915206a77294e5be67fb2d87a4f3618b4ff7844429851",
+        "a61346531223ccf1038a5f857e7cd65aadab73c5215dab98e0705a7199201f82",
     ),
 ];
 

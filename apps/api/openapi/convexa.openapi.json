@@ -76,6 +76,50 @@
         "required": ["storage_available", "providers", "grok", "preference", "catalog"],
         "type": "object"
       },
+      "AnnualRevenueWire": {
+        "description": "One fiscal year's revenue as its annual report first filed it.",
+        "properties": {
+          "accession": {
+            "type": "string"
+          },
+          "concept": {
+            "type": "string"
+          },
+          "filed": {
+            "type": ["string", "null"]
+          },
+          "fiscal_year": {
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "period_end": {
+            "type": "string"
+          },
+          "restated_value": {
+            "description": "A later filing's different value for the same concept and period.",
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "unit": {
+            "type": "string"
+          },
+          "value": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "fiscal_year",
+          "period_end",
+          "value",
+          "unit",
+          "concept",
+          "accession",
+          "filed",
+          "restated_value"
+        ],
+        "type": "object"
+      },
       "AppErrorBody": {
         "description": "The shared framework error envelope emitted by `AppError::into_response`.",
         "properties": {
@@ -2323,6 +2367,91 @@
         ],
         "type": "object"
       },
+      "InsiderTradeKind": {
+        "enum": ["purchase", "sale"],
+        "type": "string"
+      },
+      "InsiderTransactionWire": {
+        "description": "One Form 4 trade (code P or S, non-derivative).",
+        "properties": {
+          "accession": {
+            "type": "string"
+          },
+          "filed": {
+            "description": "YYYY-MM-DD the Form 4 was filed (up to two business days later).",
+            "type": "string"
+          },
+          "insider": {
+            "description": "Index into `roles`.",
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/InsiderTradeKind"
+          },
+          "planned": {
+            "description": "The filing is marked as made under a Rule 10b5-1 plan.",
+            "type": "boolean"
+          },
+          "price": {
+            "format": "double",
+            "type": ["number", "null"]
+          },
+          "shares": {
+            "format": "double",
+            "type": "number"
+          },
+          "trade_date": {
+            "description": "YYYY-MM-DD the trade was made.",
+            "type": "string"
+          },
+          "url": {
+            "description": "The filing on EDGAR.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "insider",
+          "trade_date",
+          "filed",
+          "kind",
+          "shares",
+          "price",
+          "planned",
+          "accession",
+          "url"
+        ],
+        "type": "object"
+      },
+      "InsiderWindowWire": {
+        "properties": {
+          "from": {
+            "description": "YYYY-MM-DD of the first and last trade in the window.",
+            "type": "string"
+          },
+          "insiders": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "planned_trades": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "to": {
+            "type": "string"
+          },
+          "trades": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": ["from", "to", "insiders", "trades", "planned_trades"],
+        "type": "object"
+      },
       "InsidersWire": {
         "description": "Form 4 open-market activity over the last `window_days`: `sales`/`buys` count transactions\ncoded S/P, `planned` counts those in filings marked as made under a Rule 10b5-1 plan.",
         "properties": {
@@ -2330,6 +2459,13 @@
             "format": "int32",
             "minimum": 0,
             "type": "integer"
+          },
+          "clusters": {
+            "description": "Buying clusters: 3+ insiders buying on the open market within 10 days, outside any 10b5-1\nplan. Overlapping windows merge into one.",
+            "items": {
+              "$ref": "#/components/schemas/InsiderWindowWire"
+            },
+            "type": "array"
           },
           "detail": {
             "type": ["string", "null"]
@@ -2339,6 +2475,27 @@
             "minimum": 0,
             "type": "integer"
           },
+          "history_days": {
+            "description": "The timeline's period: Form 4s filed in the last `history_days` (365), trades placed by\ntrade date. Roles, not names: `roles[i]` names insider `i` (\"EVP and CFO\", \"Director 2\").",
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "history_filings": {
+            "description": "Form 4s filed in the period, and how many were read for the timeline.",
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "history_filings_read": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "history_reaches_back_to": {
+            "description": "YYYY-MM-DD: when not every filing was read, the oldest filing date the timeline reaches.",
+            "type": ["string", "null"]
+          },
           "latest": {
             "description": "YYYY-MM-DD of the newest Form 4 in the window.",
             "type": ["string", "null"]
@@ -2347,6 +2504,19 @@
             "format": "int32",
             "minimum": 0,
             "type": "integer"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "sale_windows": {
+            "description": "3+ insiders selling within 10 days (context, usually plan sales; never a cluster).",
+            "items": {
+              "$ref": "#/components/schemas/InsiderWindowWire"
+            },
+            "type": "array"
           },
           "sales": {
             "format": "int32",
@@ -2364,6 +2534,13 @@
           "state": {
             "$ref": "#/components/schemas/PublicDataState"
           },
+          "transactions": {
+            "description": "Every open-market purchase (P) and sale (S) in those filings, oldest trade first.",
+            "items": {
+              "$ref": "#/components/schemas/InsiderTransactionWire"
+            },
+            "type": "array"
+          },
           "window_days": {
             "format": "int32",
             "minimum": 0,
@@ -2380,7 +2557,15 @@
           "shares_sold",
           "shares_bought",
           "planned",
-          "latest"
+          "latest",
+          "history_days",
+          "roles",
+          "transactions",
+          "clusters",
+          "sale_windows",
+          "history_filings",
+          "history_filings_read",
+          "history_reaches_back_to"
         ],
         "type": "object"
       },
@@ -3879,14 +4064,38 @@
           "filed": {
             "type": "string"
           },
+          "fiscal_period": {
+            "type": ["string", "null"]
+          },
+          "fiscal_year": {
+            "description": "The filer's fiscal year and period for this filing (`fy`, `fp`: 2027, \"Q2\"); null until its\nXBRL facts are in.",
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
           "form": {
             "type": "string"
           },
           "period_end": {
             "type": ["string", "null"]
+          },
+          "tagged": {
+            "description": "Every checked concept's value for this filing's own period; empty until its facts are in.",
+            "items": {
+              "$ref": "#/components/schemas/TaggedFactWire"
+            },
+            "type": "array"
           }
         },
-        "required": ["accession", "form", "filed", "period_end", "facts"],
+        "required": [
+          "accession",
+          "form",
+          "filed",
+          "period_end",
+          "facts",
+          "fiscal_year",
+          "fiscal_period",
+          "tagged"
+        ],
         "type": "object"
       },
       "PersonaWire": {
@@ -4221,6 +4430,13 @@
       "PublicTickerWire": {
         "description": "`GET /api/public-data/tickers/{ticker}`. FINRA parts are null when FINRA has nothing for the\nticker or failed with nothing cached; SEC parts carry their own state.",
         "properties": {
+          "annual_revenue": {
+            "description": "Annual revenue for the latest five fiscal years, oldest first, as first filed.",
+            "items": {
+              "$ref": "#/components/schemas/AnnualRevenueWire"
+            },
+            "type": "array"
+          },
           "detail": {
             "type": ["string", "null"]
           },
@@ -4356,6 +4572,7 @@
           "insiders",
           "shares_outstanding",
           "periodic",
+          "annual_revenue",
           "filings",
           "filings_state",
           "filings_detail"
@@ -6623,6 +6840,31 @@
           }
         },
         "required": ["updated_at", "sweep_last_completed", "universe_size"],
+        "type": "object"
+      },
+      "TaggedFactWire": {
+        "description": "One checked XBRL concept's value for its filing's own period (quarter, year or period end).",
+        "properties": {
+          "concept": {
+            "description": "Taxonomy-qualified: `us-gaap:Revenues`.",
+            "type": "string"
+          },
+          "end": {
+            "type": "string"
+          },
+          "start": {
+            "description": "YYYY-MM-DD; null for a balance-sheet value.",
+            "type": ["string", "null"]
+          },
+          "unit": {
+            "type": "string"
+          },
+          "value": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": ["concept", "unit", "value", "start", "end"],
         "type": "object"
       },
       "TapeDayRowDto": {

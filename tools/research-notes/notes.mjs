@@ -913,9 +913,29 @@ export function summarize(notes) {
           outcome: f.outcome,
         })),
         accessions: secAccessions(latest.sources),
+        figures: filedFigures(latest),
       },
     };
   });
+}
+
+/** The latest note's figures that name an XBRL concept, for "Checked against the filing" (once per
+ *  label and period: the strip often repeats a metric). */
+function filedFigures(note) {
+  const out = [];
+  for (const block of [...blocksOf(note, 'strip'), ...blocksOf(note, 'metrics')])
+    for (const item of block.items) {
+      if (!item.concept) continue;
+      if (out.some((f) => f.label === item.label && f.asOf === item.asOf)) continue;
+      out.push({
+        label: item.label,
+        value: item.value,
+        asOf: item.asOf,
+        concept: item.concept,
+        why: item.why,
+      });
+    }
+  return out;
 }
 
 /** The SEC accession numbers a note cites (0001045810-26-000073), read from its source links, so the

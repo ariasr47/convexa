@@ -13,7 +13,9 @@ pub(crate) mod calendar;
 pub(crate) mod cftc;
 pub(crate) mod edgar;
 pub(crate) mod fetch;
+pub(crate) mod filed_figures;
 pub(crate) mod finra;
+pub(crate) mod insider_trades;
 pub(crate) mod liquidity;
 pub(crate) mod sources;
 pub(crate) mod treasury;
@@ -29,6 +31,7 @@ use edgar::{CompanyFacts, Form4Summary, SubmissionRow};
 use fetch::{FetchError, Http, SecGate, PUBLIC_USER_AGENT};
 use finra::DailyFile;
 use futures_util::StreamExt;
+use insider_trades::Form4Doc;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -127,7 +130,7 @@ struct Inner {
     sec_tickers: TtlCache<(), HashMap<String, u64>>,
     submissions: TtlCache<u64, Vec<SubmissionRow>>,
     company_facts: TtlCache<u64, Option<CompanyFacts>>,
-    form4: TtlCache<String, Form4Summary>,
+    form4: TtlCache<String, Form4Doc>,
 }
 
 /// Process-wide public-data reader (cheap to clone).
@@ -603,6 +606,7 @@ impl PublicDataService {
                 insiders: None,
                 shares_outstanding: None,
                 periodic: Vec::new(),
+                annual_revenue: Vec::new(),
                 filings: Vec::new(),
                 filings_state: DataState::Off,
                 filings_detail: Some(OFF_DETAIL.into()),
@@ -656,6 +660,7 @@ impl PublicDataService {
             insiders: sec.insiders,
             shares_outstanding: sec.shares_outstanding,
             periodic: sec.periodic,
+            annual_revenue: sec.annual_revenue,
             filings: sec.filings,
             filings_state: sec.filings_state,
             filings_detail: sec.filings_detail,
@@ -857,7 +862,7 @@ impl PublicDataService {
             .await
     }
 
-    async fn form4(&self, sec: &Http, accession: &str, url: String) -> Lookup<Form4Summary> {
+    async fn form4(&self, sec: &Http, accession: &str, url: String) -> Lookup<Form4Doc> {
         self.inner
             .form4
             .get(accession.to_string(), || async move {
@@ -865,7 +870,9 @@ impl PublicDataService {
                     .sec_get(sec, &url, edgar::FORM4_MAX_BYTES)
                     .await?
                     .ok_or_else(|| FetchError::new(edgar::SOURCE, "Form 4 document missing"))?;
-                Ok(edgar::parse_form4(&String::from_utf8_lossy(&body)))
+                Ok(insider_trades::parse_form4_doc(&String::from_utf8_lossy(
+                    &body,
+                )))
             })
             .await
     }
@@ -937,7 +944,7 @@ impl PublicDataService {
             match self.form4(sec, &row.accession, url).await.cached() {
                 Some(copy) => {
                     read += 1;
-                    let one = *copy.value;
+                    let one = copy.value.summary;
                     summary.sales += one.sales;
                     summary.buys += one.buys;
                     summary.shares_sold += one.shares_sold;
@@ -975,11 +982,17 @@ impl PublicDataService {
             shares_bought: summary.shares_bought,
             planned: summary.planned,
             latest: form4.first().map(|row| row.filed),
+            history: self.insider_history(sec, cik, &rows.value, today).await,
         };
 
         let facts = self.company_facts(sec, cik).await;
         let facts_value = facts.cached().and_then(|c| c.value.as_ref().clone());
-        let periodic = edgar::periodic_filings(&rows.value, facts_value.as_ref());
+        let mut periodic = edgar::periodic_filings(&rows.value, facts_value.as_ref());
+        filed_figures::attach(&mut periodic, facts_value.as_ref());
+        let annual_revenue = facts_value
+            .as_ref()
+            .map(filed_figures::annual_revenue)
+            .unwrap_or_default();
         let shares_outstanding = facts_value.as_ref().and_then(edgar::shares_outstanding);
 
         SecPart {
@@ -988,6 +1001,7 @@ impl PublicDataService {
             filings_state: DataState::Live,
             filings_detail,
             periodic,
+            annual_revenue,
             shares_outstanding,
             notes: facts
                 .note(&format!("{} company facts", edgar::SOURCE))
@@ -1014,6 +1028,7 @@ struct SecPart {
     filings_state: DataState,
     filings_detail: Option<String>,
     periodic: Vec<PeriodicFiling>,
+    annual_revenue: Vec<filed_figures::AnnualRevenue>,
     shares_outstanding: Option<DatedValue>,
     notes: Vec<String>,
     answered: bool,
@@ -1034,6 +1049,7 @@ impl SecPart {
             filings_state: state,
             filings_detail: detail,
             periodic: Vec::new(),
+            annual_revenue: Vec::new(),
             shares_outstanding: None,
             notes: Vec::new(),
             answered,
