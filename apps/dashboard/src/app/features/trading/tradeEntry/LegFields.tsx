@@ -13,6 +13,7 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import { FieldLabel } from './FieldLabel';
+import type { ManualLegErrors } from './manualContract';
 import type { LegDraft } from './types';
 
 /** `100` for a standard option contract, `1` for equity — decided HERE and stored on the leg. */
@@ -31,6 +32,9 @@ export function LegFields({
   strikes,
   inputSx,
   showPrice,
+  manualContract = false,
+  today,
+  errors,
   onPatch,
   onRemove,
 }: {
@@ -42,6 +46,12 @@ export function LegFields({
   strikes: number[];
   inputSx: object;
   showPrice: boolean;
+  /** No options chain: the expiration and strike are typed, not picked (manualContract.ts). */
+  manualContract?: boolean;
+  /** Lower bound for the typed expiration (YYYY-MM-DD). */
+  today?: string;
+  /** What is wrong with this leg's typed values, shown under each field once it has a value. */
+  errors?: ManualLegErrors;
   onPatch: (patch: Partial<LegDraft>) => void;
   onRemove: () => void;
 }) {
@@ -113,43 +123,86 @@ export function LegFields({
 
         {isOption && (
           <>
-            <Box>
-              <FieldLabel htmlFor={id('entry-expiration')}>Expiration</FieldLabel>
-              <Select
-                id={id('entry-expiration')}
-                size="small"
-                fullWidth
-                value={draft.expiration}
-                onChange={(e) => onPatch({ expiration: String(e.target.value) })}
-                sx={inputSx}
-                inputProps={{ 'aria-label': `Expiration${suffix}` }}
-              >
-                {expirations.map((d) => (
-                  <MenuItem key={d} value={d}>
-                    {d}
-                  </MenuItem>
-                ))}
-              </Select>
-            </Box>
+            {manualContract ? (
+              <Stack direction="row" spacing={2}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <FieldLabel htmlFor={id('entry-expiration')}>Expiration</FieldLabel>
+                  <TextField
+                    id={id('entry-expiration')}
+                    size="small"
+                    fullWidth
+                    type="date"
+                    value={draft.expiration}
+                    onChange={(e) => onPatch({ expiration: e.target.value })}
+                    error={!!draft.expiration && !!errors?.expiration}
+                    helperText={draft.expiration ? errors?.expiration : undefined}
+                    slotProps={{
+                      htmlInput: { min: today, 'aria-label': `Expiration${suffix}` },
+                    }}
+                    sx={inputSx}
+                  />
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <FieldLabel htmlFor={id('entry-strike')}>Strike</FieldLabel>
+                  <TextField
+                    id={id('entry-strike')}
+                    size="small"
+                    fullWidth
+                    type="number"
+                    value={draft.strike}
+                    onChange={(e) =>
+                      onPatch({ strike: e.target.value === '' ? '' : Number(e.target.value) })
+                    }
+                    error={draft.strike !== '' && !!errors?.strike}
+                    helperText={draft.strike !== '' ? errors?.strike : undefined}
+                    slotProps={{
+                      htmlInput: { min: 0, step: 'any', 'aria-label': `Strike${suffix}` },
+                    }}
+                    sx={inputSx}
+                  />
+                </Box>
+              </Stack>
+            ) : (
+              <>
+                <Box>
+                  <FieldLabel htmlFor={id('entry-expiration')}>Expiration</FieldLabel>
+                  <Select
+                    id={id('entry-expiration')}
+                    size="small"
+                    fullWidth
+                    value={draft.expiration}
+                    onChange={(e) => onPatch({ expiration: String(e.target.value) })}
+                    sx={inputSx}
+                    inputProps={{ 'aria-label': `Expiration${suffix}` }}
+                  >
+                    {expirations.map((d) => (
+                      <MenuItem key={d} value={d}>
+                        {d}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </Box>
 
-            <Box>
-              <FieldLabel htmlFor={id('entry-strike')}>Strike</FieldLabel>
-              <Select
-                id={id('entry-strike')}
-                size="small"
-                fullWidth
-                value={draft.strike === '' ? '' : String(draft.strike)}
-                onChange={(e) => onPatch({ strike: Number(e.target.value) })}
-                sx={inputSx}
-                inputProps={{ 'aria-label': `Strike${suffix}` }}
-              >
-                {strikes.map((k) => (
-                  <MenuItem key={k} value={String(k)}>
-                    ${k}
-                  </MenuItem>
-                ))}
-              </Select>
-            </Box>
+                <Box>
+                  <FieldLabel htmlFor={id('entry-strike')}>Strike</FieldLabel>
+                  <Select
+                    id={id('entry-strike')}
+                    size="small"
+                    fullWidth
+                    value={draft.strike === '' ? '' : String(draft.strike)}
+                    onChange={(e) => onPatch({ strike: Number(e.target.value) })}
+                    sx={inputSx}
+                    inputProps={{ 'aria-label': `Strike${suffix}` }}
+                  >
+                    {strikes.map((k) => (
+                      <MenuItem key={k} value={String(k)}>
+                        ${k}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </Box>
+              </>
+            )}
 
             {/* Call / Put — active CALL = success green, active PUT = error red. A DOMAIN fact on an
                 instrument control, not a claim about money: the tint ban is on POSITION and P&L
@@ -214,6 +267,8 @@ export function LegFields({
                 onChange={(e) =>
                   onPatch({ price: e.target.value === '' ? '' : Number(e.target.value) })
                 }
+                error={manualContract && draft.price !== '' && !!errors?.price}
+                helperText={manualContract && draft.price !== '' ? errors?.price : undefined}
                 slotProps={{
                   htmlInput: { min: 0, 'aria-label': `Price leg ${index + 1}` },
                 }}

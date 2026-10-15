@@ -16,7 +16,9 @@ import { SignInPrompt } from '@/features/auth/SignInPrompt';
 import { AUTH_COPY } from '@/features/auth/copy';
 import { EntryPrefill, TradeEntryDialog } from '@/features/trading/TradeEntryDialog';
 import { OrdersPanel } from '@/features/trading/orders/OrdersPanel';
-import type { LiveUpdate, TickerBundle } from '@convexa/api';
+import { marketDataOff } from '@/shared/dataState/marketData';
+import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
+import { dataMode, type LiveUpdate, type TickerBundle } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useMemo, useState } from 'react';
@@ -77,6 +79,11 @@ export function PositionsPanel({
   onEntryOpen,
 }: Props) {
   const m = data?.market_state;
+  // No options feed on this site: there is no bundle to pick a contract from, so the entry opens
+  // without one and the contract is typed (tradeEntry/manualContract.ts). With a feed, the entry
+  // waits for the bundle as before.
+  const marketDataMode = useMarketDataMode();
+  const chainless = dataMode === 'live' && marketDataOff(marketDataMode);
   // Position-side backlink (AC-31): "From sim order · view order →" opens the order detail in the
   // Orders panel above.
   const [viewOrderId, setViewOrderId] = useState<string | null>(null);
@@ -126,7 +133,7 @@ export function PositionsPanel({
         guardSaveView={guardSaveView}
         streamOffline={streamOffline}
         onOpenEntry={onRequestOpenEntry}
-        canOpenEntry={!!data}
+        canOpenEntry={!!data || chainless}
         // Driven FROM the health flag, computed synchronously at store init — never from trying a
         // write and failing. That is what guarantees no frame paints an enabled affordance.
         faulted={pf.health.faulted}
