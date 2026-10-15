@@ -105,6 +105,50 @@ test('upcoming: open, unresolved catalysts inside the horizon, soonest first', (
   );
 });
 
+test('upcoming: sorts on the day each opens, or closes once it is open', () => {
+  // GTC Berlin (Oct 20–22) opens before Q3 results (Oct 21) though it ends after them; a window
+  // open since July sorts on its close, behind next week's dates.
+  const events = [
+    { kind: 'catalyst', label: 'Q3 results', when: when('2026-10-21'), resolved: false },
+    {
+      kind: 'catalyst',
+      label: 'Open since July',
+      when: when('2026-07-01..2026-12-31'),
+      resolved: false,
+    },
+    {
+      kind: 'catalyst',
+      label: 'GTC Berlin',
+      when: when('2026-10-20..2026-10-22'),
+      resolved: false,
+    },
+    {
+      kind: 'catalyst',
+      label: 'Closes Oct 24',
+      when: when('2026-10-01..2026-10-24'),
+      resolved: false,
+    },
+    {
+      kind: 'catalyst',
+      label: 'Q3, window',
+      when: when('2026-10-27..2026-10-30'),
+      resolved: false,
+    },
+    { kind: 'catalyst', label: 'INTC Q3', when: when('2026-10-29'), resolved: false },
+  ];
+  assert.deepEqual(
+    upcoming(events, '2026-10-15', 70).map((u) => [u.label, u.at, u.inDays]),
+    [
+      ['GTC Berlin', '2026-10-20', 5],
+      ['Q3 results', '2026-10-21', 6],
+      ['Closes Oct 24', '2026-10-24', 0],
+      ['Q3, window', '2026-10-27', 12],
+      ['INTC Q3', '2026-10-29', 14],
+      ['Open since July', '2026-12-31', 0],
+    ],
+  );
+});
+
 test('freshness: a filing made since the note makes it due the day it lands, not before', () => {
   const filed = [{ date: '2026-10-13', label: '8-K results' }];
   const before = freshness(aging, { today: '2026-10-12', filed });

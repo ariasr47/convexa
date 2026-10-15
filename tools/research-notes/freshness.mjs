@@ -80,6 +80,10 @@ export function freshness(
 
 /**
  * Unresolved catalysts whose window is still open and starts within `horizonDays`, soonest first.
+ * Each sorts on `at`: the day it opens, or, for a window already open, the day it closes (when it
+ * makes its note due). Sorting on the end alone put a window that opens sooner (GTC Berlin,
+ * Oct 20–22) after a day it opens before (Oct 21); sorting on the start alone put windows open since
+ * July ahead of next week's results.
  * @param {{ kind: string, label: string, when: { start: string | null, end: string | null, label: string },
  *   resolved: boolean }[]} events
  * @param {string} today
@@ -90,13 +94,18 @@ export function upcoming(events, today, horizonDays) {
   return events
     .filter((e) => e.kind === 'catalyst' && !e.resolved && e.when.end && e.when.end >= today)
     .filter((e) => (e.when.start ?? e.when.end) <= limit)
-    .map((e) => ({
-      label: e.label,
-      whenLabel: e.when.label,
-      date: e.when.end,
-      inDays: Math.max(0, daysBetween(today, e.when.start ?? e.when.end)),
-    }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .map((e) => {
+      const start = e.when.start ?? e.when.end;
+      return {
+        label: e.label,
+        whenLabel: e.when.label,
+        start,
+        at: start >= today ? start : e.when.end,
+        date: e.when.end,
+        inDays: Math.max(0, daysBetween(today, start)),
+      };
+    })
+    .sort((a, b) => a.at.localeCompare(b.at) || a.date.localeCompare(b.date));
 }
 
 /** Today in the reader's (or the author's) own time zone, as YYYY-MM-DD. */

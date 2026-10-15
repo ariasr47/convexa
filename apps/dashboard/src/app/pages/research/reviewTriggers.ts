@@ -114,3 +114,51 @@ export function calendarTriggers({
 export function withCalendar(aging: Aging, triggers: readonly AgingEvent[]): Aging {
   return triggers.length ? { ...aging, events: [...aging.events, ...triggers] } : aging;
 }
+
+/**
+ * Staging's sample notes with their review triggers (owner ruling 7, 2026-10-15: staging /research
+ * Coming up follows the Calendar board). The demo has no note files, so each sample note is dated on
+ * the scenario day and carries the sample results date the scenario gives it (DEMO_NOTE_RESULTS);
+ * the scenario's calendar then lays on its FOMC decision (every sample note, as the Calendar board
+ * says) and its estimated results windows, through the same rules as production's notes. Only the
+ * scenario's own calendar is read: the Fed's real schedule (fomc.ts) stays out of the sample.
+ */
+export function sampleNoteAging({
+  followed,
+  noteResults,
+  calendar,
+  windows,
+  today,
+}: {
+  followed: readonly string[];
+  noteResults: readonly { ticker: string; date: string; label: string }[];
+  calendar: PublicCalendar;
+  windows: readonly PublicResultsWindow[];
+  /** The scenario day; each sample note is dated on it. */
+  today: string;
+}): { ticker: string; aging: Aging }[] {
+  const fomc = calendar.releases
+    .filter((r) => r.name === 'FOMC statement')
+    .map((r) => r.date)
+    .sort();
+  return followed.map((ticker) => {
+    const own: Aging = {
+      priceAsOf: null,
+      events: noteResults
+        .filter((n) => n.ticker === ticker)
+        .map((n) => ({
+          kind: 'catalyst' as const,
+          label: n.label,
+          when: day(n.date, formatShortDate(n.date)),
+          resolved: false,
+        })),
+    };
+    const triggers = calendarTriggers({
+      note: { ticker, date: today, valued: true, aging: own },
+      today,
+      fomc,
+      windows,
+    });
+    return { ticker, aging: withCalendar(own, triggers) };
+  });
+}

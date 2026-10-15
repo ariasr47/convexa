@@ -385,4 +385,15 @@ export type Freshness = {
   priceStale: boolean;
 };
 
-export type Upcoming = { label: string; whenLabel: string; date: string; inDays: number };
+/**
+ * `start`: the day the catalyst opens (what `inDays` counts to); `date`: the day it ends; `at`: what
+ * it sorts on, the day it opens or, once open, the day it ends (freshness.mjs upcoming).
+ */
+export type Upcoming = {
+  label: string;
+  whenLabel: string;
+  start: string;
+  at: string;
+  date: string;
+  inDays: number;
+};

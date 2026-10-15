@@ -10,7 +10,16 @@ import { chartRoles } from '@/shared/charts/frame';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
-import { dataMode, loadSampleBars, loadSampleResearch } from '@convexa/api';
+import {
+  dataMode,
+  DEMO_CALENDAR,
+  DEMO_CALENDAR_TODAY,
+  DEMO_FOLLOWED,
+  DEMO_NOTE_RESULTS,
+  DEMO_RESULTS_WINDOWS,
+  loadSampleBars,
+  loadSampleResearch,
+} from '@convexa/api';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import type { Theme } from '@mui/material/styles';
@@ -26,11 +35,24 @@ import {
 import { filedSince } from './filings';
 import { formatNoteDate, STANCE_LABEL, UNCERTAINTY_LABEL } from './format';
 import { RESEARCH_DISCLAIMER, ResearchColumn } from './NotesView';
-import { usePublicFilings, usePublicMarkets } from './publicData';
+import { usePublicFilings } from './publicData';
 import { ProvenanceChip } from './publicUi';
 import { ResearchTabs } from './ResearchTabs';
-import { calendarTriggers, FOMC_TRIGGER, fomcDays, withCalendar } from './reviewTriggers';
-import type { Aging, ChartBlock, Freshness, NoteStance, ResearchTickerSummary } from './types';
+import {
+  calendarTriggers,
+  FOMC_TRIGGER,
+  fomcDays,
+  sampleNoteAging,
+  withCalendar,
+} from './reviewTriggers';
+import type {
+  Aging,
+  ChartBlock,
+  Freshness,
+  NoteStance,
+  ResearchTickerSummary,
+  Upcoming,
+} from './types';
 import {
   DISPLAY,
   Eyebrow,
@@ -46,6 +68,56 @@ import {
 const TICKERS = researchIndex.map((r) => r.ticker);
 
 const DEMO = dataMode === 'demo';
+
+/**
+ * FOMC decision days for the review triggers: the Fed's published schedule (fomc.ts). This page and
+ * the note page read the dated table rather than /api/public-data/markets, an ~89 KB answer they
+ * would fetch only for these dates; the calendar's reading of a moved meeting reaches them when the
+ * table is next checked. /research/markets#coming-up, which draws the releases, still reads it.
+ */
+const FOMC_DAYS = fomcDays(null);
+
+/**
+ * The next catalysts across notes, up to six, soonest first as upcoming() orders them. The FOMC is one
+ * row for every note it makes due, as on the calendar, not one per note, and it always keeps a
+ * place: it makes more notes due than any one catalyst.
+ */
+function comingUp(
+  rows: { ticker: string; aging: Aging }[],
+  today: string,
+  fomcWho: string,
+): (Upcoming & { ticker: string })[] {
+  // As upcoming() orders each note's: the day it opens, or once open, the day it closes.
+  const byStart = (a: Upcoming, b: Upcoming) =>
+    a.at.localeCompare(b.at) || a.date.localeCompare(b.date);
+  const nextFomc = rows
+    .flatMap((r) => upcoming(r.aging.events, today, 70).filter((u) => u.label === FOMC_TRIGGER))
+    .sort(byStart)[0];
+  return [
+    ...rows
+      .flatMap((r) =>
+        upcoming(r.aging.events, today, 70)
+          .filter((u) => u.label !== FOMC_TRIGGER)
+          .map((u) => ({ ...u, ticker: r.ticker })),
+      )
+      .sort(byStart)
+      .slice(0, nextFomc ? 5 : 6),
+    ...(nextFomc
+      ? [{ ...nextFomc, ticker: 'Fed', whenLabel: `${nextFomc.whenLabel} · ${fomcWho}` }]
+      : []),
+  ].sort(byStart);
+}
+
+/** Staging's sample notes with the scenario calendar's review triggers (owner ruling 7). */
+const SAMPLE_AGING = DEMO
+  ? sampleNoteAging({
+      followed: DEMO_FOLLOWED,
+      noteResults: DEMO_NOTE_RESULTS,
+      calendar: DEMO_CALENDAR,
+      windows: DEMO_RESULTS_WINDOWS,
+      today: DEMO_CALENDAR_TODAY,
+    })
+  : [];
 
 /** The demo's sample symbols, by name (the scenario carries tickers only). */
 const SAMPLE_NAMES: Record<string, string> = {
@@ -116,6 +188,8 @@ function useSampleCards(): SampleCard[] | null | undefined {
 /** A sample note's card: the same card as production's, dashed with the hatch stripe (canon P-3). */
 function SampleNoteCard({ card }: { card: SampleCard }) {
   const href = `/ticker/${encodeURIComponent(card.ticker)}/research`;
+  const aging = SAMPLE_AGING.find((s) => s.ticker === card.ticker)?.aging;
+  const next = aging ? (upcoming(aging.events, DEMO_CALENDAR_TODAY, 3650)[0] ?? null) : null;
   return (
     <Box
       component="article"
@@ -180,6 +254,7 @@ function SampleNoteCard({ card }: { card: SampleCard }) {
         {card.thesis}
       </Box>
       {card.chart && <MiniChart chart={card.chart} />}
+      {next && <NextCatalyst next={next} />}
       <Box
         sx={{
           display: 'flex',
@@ -252,6 +327,13 @@ function MiniChart({ chart }: { chart: Omit<ChartBlock, 'type'> }) {
   const span = hi - lo || 1;
   const y = (v: number) => ((v - lo) / span) * 56;
   const last = chart.bars[chart.latest];
+  // The caption names the bar styles it uses, so a dashed guide or a hatched approximation never
+  // reads as a reported figure (Notes spec acceptance: "dashed = guide or consensus").
+  const keys = [
+    chart.bars.some((b) => b.kind === 'guide') && 'dashed = guide or consensus',
+    chart.bars.some((b) => b.kind === 'approx') && 'hatched = approximate',
+  ].filter(Boolean);
+  const caption = [chart.caption, ...keys].join(' · ');
   return (
     // One column that may shrink below the caption's width; a long caption wraps (its unit is often
     // at the end, so it is never cut off) instead of widening the card past a phone screen.
@@ -266,7 +348,7 @@ function MiniChart({ chart }: { chart: Omit<ChartBlock, 'type'> }) {
         }}
       >
         <Box component="span" sx={{ minWidth: 0, lineHeight: 1.4, textWrap: 'pretty' }}>
-          {chart.caption}
+          {caption}
         </Box>
         {last && (
           <Box component="span" sx={{ ...MONO, color: 'text.primary', whiteSpace: 'nowrap' }}>
@@ -276,7 +358,7 @@ function MiniChart({ chart }: { chart: Omit<ChartBlock, 'type'> }) {
       </Box>
       <Box
         role="img"
-        aria-label={`${chart.caption}: ${chart.bars.map((b) => `${b.label} ${b.shown || b.value}`).join(', ')}`}
+        aria-label={`${caption}: ${chart.bars.map((b) => `${b.label} ${b.shown || b.value}`).join(', ')}`}
         sx={{
           display: 'flex',
           alignItems: 'flex-end',
@@ -316,6 +398,41 @@ function MiniChart({ chart }: { chart: Omit<ChartBlock, 'type'> }) {
             })}
           />
         ))}
+      </Box>
+    </Box>
+  );
+}
+
+/** A card's next catalyst: the note's own, or one of the calendar's review triggers. */
+function NextCatalyst({ next }: { next: Upcoming }) {
+  return (
+    <Box
+      sx={(t) => ({
+        display: 'grid',
+        gap: 0.25,
+        px: 1.5,
+        py: 1.25,
+        borderRadius: '10px',
+        bgcolor:
+          t.palette.mode === 'dark'
+            ? alpha(t.palette.common.black, 0.2)
+            : alpha(t.palette.text.primary, 0.04),
+        border: 1,
+        borderColor: 'divider',
+      })}
+    >
+      <Eyebrow sx={{ fontSize: 11 }}>
+        Next ·{' '}
+        {next.start < next.at
+          ? 'open now'
+          : next.inDays <= 0
+            ? 'today'
+            : next.inDays === 1
+              ? 'tomorrow'
+              : `in ${next.inDays} days`}
+      </Eyebrow>
+      <Box component="span" sx={{ fontSize: 14, fontWeight: 500 }}>
+        {next.label}, {next.whenLabel}
       </Box>
     </Box>
   );
@@ -394,31 +511,7 @@ function TickerCard({ row, today }: { row: Row; today: string }) {
         {n.title}
       </Box>
       {n.chart && <MiniChart chart={n.chart} />}
-      {next && (
-        <Box
-          sx={(t) => ({
-            display: 'grid',
-            gap: 0.25,
-            px: 1.5,
-            py: 1.25,
-            borderRadius: '10px',
-            bgcolor:
-              t.palette.mode === 'dark'
-                ? alpha(t.palette.common.black, 0.2)
-                : alpha(t.palette.text.primary, 0.04),
-            border: 1,
-            borderColor: 'divider',
-          })}
-        >
-          <Eyebrow sx={{ fontSize: 11 }}>
-            Next ·{' '}
-            {next.inDays <= 0 ? 'today' : next.inDays === 1 ? 'tomorrow' : `in ${next.inDays} days`}
-          </Eyebrow>
-          <Box component="span" sx={{ fontSize: 14, fontWeight: 500 }}>
-            {next.label}, {next.whenLabel}
-          </Box>
-        </Box>
-      )}
+      {next && <NextCatalyst next={next} />}
       <Box
         sx={{
           display: 'flex',
@@ -438,6 +531,121 @@ function TickerCard({ row, today }: { row: Row; today: string }) {
         <Link component={RouterLink} to={href} sx={{ ml: 'auto', fontWeight: 500 }}>
           Open note →
         </Link>
+      </Box>
+    </Box>
+  );
+}
+
+/**
+ * Coming up on /research: the next six catalysts across notes, each the day its note comes due for
+ * review. Production lists the notes' own catalysts and the calendar's triggers; staging lists the
+ * sample notes' review triggers from the scenario's calendar (owner ruling 7, the Calendar board).
+ */
+function ComingUpList({
+  items,
+  demo = false,
+}: {
+  items: (Upcoming & { ticker: string })[];
+  demo?: boolean;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <Box component="section" aria-labelledby="coming-up" sx={{ display: 'grid', gap: 1.5 }}>
+      <Box sx={{ display: 'grid', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 12px' }}>
+          <Box
+            component="h2"
+            id="coming-up"
+            sx={{ ...DISPLAY, m: 0, fontWeight: 600, fontSize: 20 }}
+          >
+            Coming up · next 10 weeks
+          </Box>
+          {demo ? (
+            <DataStateTag state="demo" />
+          ) : (
+            <DataStateTag state="computed" detail="from every note" />
+          )}
+        </Box>
+        <Box component="p" sx={{ m: 0, fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}>
+          {demo
+            ? 'In the sample: each sample note’s results date, the scenario calendar’s FOMC decision for every sample note, and results windows estimated from sample filing history. Each date is when its note comes due for review. Scenario of Oct 7, 2026.'
+            : 'Catalysts from every note, and the calendar’s: the FOMC for every note with a valuation, and results windows estimated from filing history. Each date is when its note comes due for review; an estimated window, once the results are filed.'}
+        </Box>
+      </Box>
+      <Box
+        component="ol"
+        sx={{
+          listStyle: 'none',
+          m: 0,
+          p: 0,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))',
+          gap: 1.25,
+        }}
+      >
+        {items.map((u, i) => (
+          <Box
+            component="li"
+            key={`${u.ticker}-${u.label}-${u.date}`}
+            sx={(t) => ({
+              ...PANEL_SX,
+              ...(demo && { borderStyle: 'dashed' }),
+              px: 1.75,
+              py: 1.5,
+              display: 'grid',
+              gap: 0.75,
+              ...(i === 0 ? { borderColor: alpha(t.palette.text.primary, 0.35) } : {}),
+            })}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 1,
+              }}
+            >
+              <Box
+                component="span"
+                sx={(t) => ({
+                  ...MONO,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  px: 0.875,
+                  py: '2px',
+                  borderRadius: '5px',
+                  bgcolor: alpha(t.palette.text.secondary, 0.16),
+                })}
+              >
+                {u.ticker}
+              </Box>
+              <Box
+                component="span"
+                sx={{
+                  ...MONO,
+                  fontSize: 11,
+                  color: i === 0 ? 'text.primary' : 'text.secondary',
+                }}
+              >
+                {u.start < u.at
+                  ? 'open now'
+                  : u.inDays <= 0
+                    ? 'today'
+                    : u.inDays === 1
+                      ? 'tomorrow'
+                      : u.inDays < 14
+                        ? `in ${u.inDays} days`
+                        : `~${Math.round(u.inDays / 7)} weeks`}
+              </Box>
+            </Box>
+            <Box component="span" sx={{ fontWeight: 600, fontSize: 14, lineHeight: 1.35 }}>
+              {u.label}
+            </Box>
+            <Box component="span" sx={{ ...MONO, fontSize: 12, color: 'text.secondary' }}>
+              {u.whenLabel}
+            </Box>
+          </Box>
+        ))}
       </Box>
     </Box>
   );
@@ -475,9 +683,8 @@ export function ResearchIndexPage() {
   // and the page says so.
   const filingsRead = usePublicFilings(TICKERS, !DEMO);
   const filings = filingsRead.data?.state === 'live' ? filingsRead.data.filings : null;
-  // The calendar's review triggers: FOMC decisions for valued notes, estimated results windows.
-  const markets = usePublicMarkets(!DEMO);
-  const fomc = useMemo(() => fomcDays(markets.data?.calendar), [markets.data]);
+  // The calendar's review triggers: FOMC decisions for valued notes (the Fed's table, FOMC_DAYS),
+  // estimated results windows (from the filings answer this page already reads).
   const windows = filingsRead.data?.results;
   const filingsFallback =
     DEMO || filingsRead.loading
@@ -508,7 +715,7 @@ export function ResearchIndexPage() {
               aging: r.latest.aging,
             },
             today,
-            fomc,
+            fomc: FOMC_DAYS,
             windows: windows ?? [],
           }),
         );
@@ -527,7 +734,7 @@ export function ResearchIndexPage() {
           }),
         };
       }),
-    [today, filings, fomc, windows],
+    [today, filings, windows],
   );
   const shown = rows.filter(
     (r) =>
@@ -540,24 +747,8 @@ export function ResearchIndexPage() {
       (fresh === 'any' || r.f.state === fresh),
   );
   const live = rows.filter((r) => r.f.state !== 'archived');
-  // The FOMC is one row for every valued note, as on the calendar, not one per note.
-  const nextFomc = live
-    .flatMap((r) => upcoming(r.aging.events, today, 70).filter((u) => u.label === FOMC_TRIGGER))
-    .sort((a, b) => a.date.localeCompare(b.date))[0];
-  // It always keeps a place among the six: it makes more notes due than any one catalyst.
-  const soon = [
-    ...live
-      .flatMap((r) =>
-        upcoming(r.aging.events, today, 70)
-          .filter((u) => u.label !== FOMC_TRIGGER)
-          .map((u) => ({ ...u, ticker: r.ticker })),
-      )
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(0, nextFomc ? 5 : 6),
-    ...(nextFomc
-      ? [{ ...nextFomc, ticker: 'Fed', whenLabel: `${nextFomc.whenLabel} · every valued note` }]
-      : []),
-  ].sort((a, b) => a.date.localeCompare(b.date));
+  const soon = comingUp(live, today, 'every valued note');
+  const sampleSoon = DEMO ? comingUp(SAMPLE_AGING, DEMO_CALENDAR_TODAY, 'every sample note') : [];
   const count = (pred: (r: Row) => boolean) => rows.filter(pred).length;
   const stances: { key: StanceFilter; label: string; dashed?: boolean }[] = [
     { key: 'all', label: `All · ${rows.length}` },
@@ -665,29 +856,7 @@ export function ResearchIndexPage() {
 
         {DEMO ? (
           <>
-            <Box
-              component="section"
-              aria-labelledby="coming-up"
-              sx={(t) => ({
-                ...PANEL_SX,
-                border: `1px dashed ${alpha(t.palette.text.secondary, 0.55)}`,
-                p: { xs: 2, sm: 2.5 },
-                display: 'grid',
-                gap: 0.75,
-              })}
-            >
-              <Box
-                component="h2"
-                id="coming-up"
-                sx={{ ...DISPLAY, m: 0, fontWeight: 600, fontSize: 20 }}
-              >
-                Coming up · next 10 weeks
-              </Box>
-              <Box component="p" sx={{ m: 0, fontSize: 13, color: 'text.secondary' }}>
-                The demo’s sample notes carry no dated catalysts, so nothing comes due in this
-                scenario. In production this lists the next six events across every note.
-              </Box>
-            </Box>
+            <ComingUpList items={sampleSoon} demo />
             <Box
               component="section"
               aria-label="Sample notes"
@@ -766,111 +935,7 @@ export function ResearchIndexPage() {
               {filingsFallback && <FilingsFallback state={filingsFallback} />}
             </Box>
 
-            {soon.length > 0 && (
-              <Box
-                component="section"
-                aria-labelledby="coming-up"
-                sx={{ display: 'grid', gap: 1.5 }}
-              >
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'baseline',
-                    gap: '4px 12px',
-                  }}
-                >
-                  <Box
-                    component="h2"
-                    id="coming-up"
-                    sx={{ ...DISPLAY, m: 0, fontWeight: 600, fontSize: 20 }}
-                  >
-                    Coming up
-                  </Box>
-                  <Box component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>
-                    Catalysts from every note, next 10 weeks, and the calendar’s: the FOMC for every
-                    note with a valuation, and results windows estimated from filing history. Each
-                    date is when its note comes due for review; an estimated window, once the
-                    results are filed.
-                  </Box>
-                </Box>
-                <Box
-                  component="ol"
-                  sx={{
-                    listStyle: 'none',
-                    m: 0,
-                    p: 0,
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))',
-                    gap: 1.25,
-                  }}
-                >
-                  {soon.map((u, i) => (
-                    <Box
-                      component="li"
-                      key={`${u.ticker}-${u.label}-${u.date}`}
-                      sx={(t) => ({
-                        ...PANEL_SX,
-                        px: 1.75,
-                        py: 1.5,
-                        display: 'grid',
-                        gap: 0.75,
-                        ...(i === 0 ? { borderColor: alpha(t.palette.text.primary, 0.35) } : {}),
-                      })}
-                    >
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          gap: 1,
-                        }}
-                      >
-                        <Box
-                          component="span"
-                          sx={(t) => ({
-                            ...MONO,
-                            fontSize: 11,
-                            fontWeight: 600,
-                            px: 0.875,
-                            py: '2px',
-                            borderRadius: '5px',
-                            bgcolor: alpha(t.palette.text.secondary, 0.16),
-                          })}
-                        >
-                          {u.ticker}
-                        </Box>
-                        <Box
-                          component="span"
-                          sx={{
-                            ...MONO,
-                            fontSize: 11,
-                            color: i === 0 ? 'text.primary' : 'text.secondary',
-                          }}
-                        >
-                          {u.inDays <= 0
-                            ? 'today'
-                            : u.inDays === 1
-                              ? 'tomorrow'
-                              : u.inDays < 14
-                                ? `in ${u.inDays} days`
-                                : `~${Math.round(u.inDays / 7)} weeks`}
-                        </Box>
-                      </Box>
-                      <Box
-                        component="span"
-                        sx={{ fontWeight: 600, fontSize: 14, lineHeight: 1.35 }}
-                      >
-                        {u.label}
-                      </Box>
-                      <Box component="span" sx={{ ...MONO, fontSize: 12, color: 'text.secondary' }}>
-                        {u.whenLabel}
-                      </Box>
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-            )}
+            <ComingUpList items={soon} />
 
             <Box
               component="section"
