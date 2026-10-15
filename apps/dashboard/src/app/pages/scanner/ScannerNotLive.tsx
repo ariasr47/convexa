@@ -224,7 +224,11 @@ export function ScannerNotLive() {
   const cards = useLiveCards();
   const tally = new Map<DataStateKey, number>([['notLive', 1]]);
   for (const c of cards) if (c.tag) tally.set(c.tag.state, (tally.get(c.tag.state) ?? 0) + 1);
-  const order = Object.keys(DATA_STATES) as DataStateKey[];
+  // The page's own state first (the board's order), then the live cards' words.
+  const order = [
+    'notLive',
+    ...(Object.keys(DATA_STATES) as DataStateKey[]).filter((k) => k !== 'notLive'),
+  ] as DataStateKey[];
   const counts = order.filter((k) => tally.has(k)).map((k) => [k, tally.get(k) as number]) as [
     DataStateKey,
     number,
