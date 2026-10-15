@@ -85,3 +85,17 @@ export function sourceNote(detail: string | null | undefined, source: string): s
   const end = detail.indexOf('.', detail.indexOf(' UTC', at) + 4);
   return detail.slice(at, end < 0 ? undefined : end + 1);
 }
+
+/**
+ * Whether a markets section is showing a last good copy. The API's per-section `source_state`
+ * decides when it is present (lane 5, 2026-10-15: it alone knows whether the copy came from this
+ * cycle's fetch); an API from before that field falls back to matching its sentence (sourceNote).
+ */
+export function servingLastGood(
+  sourceState: string | null | undefined,
+  detail: string | null | undefined,
+  source: string,
+): boolean {
+  if (sourceState != null) return sourceState === 'last_good';
+  return sourceNote(detail, source) != null;
+}

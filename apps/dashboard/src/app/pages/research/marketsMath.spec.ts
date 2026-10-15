@@ -2,7 +2,14 @@
 // with against today's. A wrong lookup or flag is silent and misleads, so each rule is pinned:
 // holidays fall back to the day before, missing series are skipped, and the flag fires at ±0.25.
 import { describe, expect, it } from 'vitest';
-import { noteRates, sourceNote, spread2s10s, tenYearOn, type YieldPoint } from './marketsMath';
+import {
+  noteRates,
+  servingLastGood,
+  sourceNote,
+  spread2s10s,
+  tenYearOn,
+  type YieldPoint,
+} from './marketsMath';
 
 const day = (date: string, t2y: number | null, t10y: number | null): YieldPoint => ({
   date,
@@ -76,5 +83,17 @@ describe('which source a stale note is about', () => {
 
   it('matches a name only at a sentence start', () => {
     expect(sourceNote('X Treasury did not answer at 14:10 UTC.', 'Treasury')).toBeNull();
+  });
+});
+
+describe('servingLastGood', () => {
+  const stale = 'U.S. Treasury did not answer at 14:10 UTC; showing data fetched at 08:10 UTC.';
+  it('trusts the API’s source_state over the sentence when the field is present', () => {
+    expect(servingLastGood('last_good', null, 'U.S. Treasury')).toBe(true);
+    expect(servingLastGood('updated', stale, 'U.S. Treasury')).toBe(false);
+  });
+  it('falls back to the sentence for an API from before the field', () => {
+    expect(servingLastGood(undefined, stale, 'U.S. Treasury')).toBe(true);
+    expect(servingLastGood(null, null, 'U.S. Treasury')).toBe(false);
   });
 });

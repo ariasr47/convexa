@@ -19,7 +19,7 @@ import { LiquiditySection } from './LiquiditySection';
 import {
   DRIFT_FLAG_POINTS,
   noteRates,
-  sourceNote,
+  servingLastGood,
   spread2s10s,
   type YieldPoint,
 } from './marketsMath';
@@ -134,7 +134,7 @@ export function MarketsPage() {
                   {data.rates ? (
                     <DataStateTag
                       state={publicDataWord(data.state, {
-                        stale: !!sourceNote(data.detail, TREASURY),
+                        stale: servingLastGood(data.rates?.source_state, data.detail, TREASURY),
                       })}
                       detail={`rates ${formatShortDate(data.rates.as_of)}`}
                     />
@@ -144,7 +144,7 @@ export function MarketsPage() {
                   {data.futures ? (
                     <DataStateTag
                       state={publicDataWord(data.state, {
-                        stale: !!sourceNote(data.detail, CFTC),
+                        stale: servingLastGood(data.futures?.source_state, data.detail, CFTC),
                         delayed: true,
                       })}
                       detail={`positioning as of ${formatShortDate(data.futures.report_date)}`}
@@ -174,7 +174,10 @@ export function MarketsPage() {
           <>
             {data.detail && dataMode !== 'demo' && <StaleNote text={data.detail} />}
             {data.rates ? (
-              <RatesSection rates={data.rates} stale={!!sourceNote(data.detail, TREASURY)} />
+              <RatesSection
+                rates={data.rates}
+                stale={servingLastGood(data.rates?.source_state, data.detail, TREASURY)}
+              />
             ) : (
               <SourceProblem
                 title="Rates are unavailable right now."
@@ -184,8 +187,14 @@ export function MarketsPage() {
             )}
             {data.futures ? (
               <>
-                <FuturesSection futures={data.futures} stale={!!sourceNote(data.detail, CFTC)} />
-                <PositioningGroups futures={data.futures} stale={!!sourceNote(data.detail, CFTC)} />
+                <FuturesSection
+                  futures={data.futures}
+                  stale={servingLastGood(data.futures?.source_state, data.detail, CFTC)}
+                />
+                <PositioningGroups
+                  futures={data.futures}
+                  stale={servingLastGood(data.futures?.source_state, data.detail, CFTC)}
+                />
               </>
             ) : (
               <SourceProblem
@@ -199,7 +208,7 @@ export function MarketsPage() {
             {data.liquidity ? (
               <LiquiditySection
                 liquidity={data.liquidity}
-                stale={!!sourceNote(data.detail, 'Liquidity')}
+                stale={servingLastGood(data.liquidity?.source_state, data.detail, 'Liquidity')}
               />
             ) : data.liquidity === null ? (
               <SourceProblem
