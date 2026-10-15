@@ -45,6 +45,7 @@ import { RequireAuth } from '@/features/auth/RequireAuth';
 import { AppThemeProvider } from '@/features/auth/ThemeProvider';
 import { useSettings } from '@/features/auth/useSettings';
 import { Landing } from '@/pages/landing/Landing';
+import { DemoOperatorUnavailable } from '@/pages/operator-metrics/DemoOperatorUnavailable';
 import { marketDataOff } from '@/shared/dataState/marketData';
 import { useMarketDataMode } from '@/shared/hooks/useMarketDataMode';
 import { STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
@@ -53,17 +54,8 @@ import { PageColumn } from '@/shared/ui/PageColumn';
 import { RouteFallback } from '@/shared/ui/RouteFallback';
 import { AppShell } from '@/shell/AppShell';
 import { dataMode } from '@convexa/api';
-import Typography from '@mui/material/Typography';
 import { lazy, Suspense, type ReactElement } from 'react';
 import { Navigate, Route, Routes, useParams } from 'react-router-dom';
-
-function DemoOperatorUnavailable() {
-  return (
-    <main role="status" style={{ padding: 32 }}>
-      <Typography variant="h5">Unavailable in the public demo.</Typography>
-    </main>
-  );
-}
 
 // Lazy page chunks (named exports mapped to lazy's `default` shape).
 const TickerDashboard = lazy(() =>

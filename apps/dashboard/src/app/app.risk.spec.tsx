@@ -301,7 +301,7 @@ describe('operator-vs-trader path separation', () => {
 
     renderAt('/_ops/metrics');
     await waitFor(() => expect(screen.queryByTestId('route-fallback')).not.toBeInTheDocument());
-    expect(await screen.findByText(/Operator Metrics/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Operator metrics' })).toBeInTheDocument();
     expect(screen.queryByTestId('app-shell')).toBeNull();
     expect(screen.queryByTestId('nav-ticker')).toBeNull();
     expectNoOpsLink();

@@ -4,11 +4,11 @@
  * never triggers a bundle fetch or any compute. Honest-presentation: no fabricated/zeroed number
  * as real (empty → `—`), `skipped` shown as skipped, low headroom is factual & non-alerting.
  */
+import { OpsBar, OpsTag } from '@/shared/ui/OpsBar';
 import { MetricsScope, RecentTrace, StageKind, StageName } from '@convexa/api';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Alert from '@mui/material/Alert';
-import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -23,7 +23,6 @@ import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import Toolbar from '@mui/material/Toolbar';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
@@ -221,40 +220,33 @@ export function OperatorMetrics() {
   const { data, error, loading } = trend;
   const [openTickers, setOpenTickers] = useState<Record<string, boolean>>({});
 
+  // The slim ops bar (design: shell-site-docs.mjs opsBar): the page's facts as plain tags, no
+  // colour carrying a state. The dev-only OS Console link stays here, off every trader route.
   const header = (
-    <AppBar position="static" elevation={0} color="default">
-      <Toolbar>
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          Convexa · Operator Metrics
-        </Typography>
-        {data && (
-          <Chip
-            size="small"
-            color={data.instrumentation_enabled ? 'success' : 'default'}
-            label={`Instrumentation: ${data.instrumentation_enabled ? 'ON' : 'OFF'}`}
-            sx={{ mr: 1 }}
-          />
-        )}
-        <Chip size="small" variant="outlined" label="read-only" sx={{ mr: 1 }} />
-        {/* Dev-only link to the delivery-kit OS Console (kit docs/OS_CONSOLE.md). DEV builds only —
-            the console is a localhost kit-meta server (default :4747); in prod this renders nothing.
-            Lives HERE (the operator surface, off every trader route) per
-            [operator-vs-trader-path-separation] — the trader UI never links operator tooling. */}
-        {import.meta.env.DEV && (
-          <Chip
-            size="small"
-            variant="outlined"
-            component="a"
-            clickable
-            href="http://127.0.0.1:4747/"
-            target="_blank"
-            rel="noopener"
-            label="⌘ OS Console"
-            data-testid="os-console-link"
-          />
-        )}
-      </Toolbar>
-    </AppBar>
+    <OpsBar path="/_ops/metrics">
+      {data && (
+        <OpsTag testId="ops-instrumentation">
+          {data.instrumentation_enabled ? 'Instrumentation on' : 'Instrumentation off'}
+        </OpsTag>
+      )}
+      {/* Dev-only link to the delivery-kit OS Console (kit docs/OS_CONSOLE.md). DEV builds only —
+          the console is a localhost kit-meta server (default :4747); in prod this renders nothing.
+          Lives HERE (the operator surface, off every trader route) per
+          [operator-vs-trader-path-separation] — the trader UI never links operator tooling. */}
+      {import.meta.env.DEV && (
+        <Chip
+          size="small"
+          variant="outlined"
+          component="a"
+          clickable
+          href="http://127.0.0.1:4747/"
+          target="_blank"
+          rel="noopener"
+          label="⌘ OS Console"
+          data-testid="os-console-link"
+        />
+      )}
+    </OpsBar>
   );
 
   let body: React.ReactNode;
@@ -303,9 +295,21 @@ export function OperatorMetrics() {
             </Stack>
 
             {empty ? (
-              <Alert severity="info">
-                No requests recorded yet — serve a bundle to populate the baseline.
-              </Alert>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="subtitle1">
+                    Stages · current window{' '}
+                    <Typography component="span" variant="caption" sx={{ color: 'text.secondary' }}>
+                      · 0 requests
+                    </Typography>
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                    No requests recorded yet — serve a bundle to populate the baseline.
+                  </Typography>
+                  {/* Every stage figure reads —, never 0 ms (count 0 ⇒ — in ScopeView). */}
+                  <ScopeView scope={data.global} />
+                </CardContent>
+              </Card>
             ) : (
               <>
                 <Card variant="outlined">
@@ -404,7 +408,16 @@ export function OperatorMetrics() {
   return (
     <>
       {header}
-      <Container maxWidth="lg" sx={{ py: 3 }}>
+      <Container maxWidth="lg" component="main" sx={{ py: 3.5, pb: 6 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mb: 2.5 }}>
+          <Typography component="h1" sx={{ m: 0, fontSize: { xs: 26, sm: 32 }, fontWeight: 700 }}>
+            Operator metrics
+          </Typography>
+          <Typography sx={{ m: 0, fontSize: 14.5, color: 'text.secondary', maxWidth: '80ch' }}>
+            Latency of the options bundle, stage by stage, for this API process. Not linked from the
+            site; the trader pages never call it.
+          </Typography>
+        </Box>
         {body}
       </Container>
     </>
