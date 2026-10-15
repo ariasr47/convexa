@@ -448,7 +448,7 @@ export function paintStructureStep(
   // never cover one another. The bare `spot` label is REMOVED: the spot line stays, thin steel,
   // unlabelled (it is the ladder anchor, not a second price) — the tape/mid pill below is the one
   // price label on the field.
-  o.font = '600 10px "IBM Plex Mono", ui-monospace, monospace';
+  o.font = '600 11px "IBM Plex Mono", ui-monospace, monospace';
   const markerDefs = [
     {
       id: 'put',
@@ -497,7 +497,7 @@ export function paintStructureStep(
       { x: pad.l, y: pad.t + plotH - 18, width: 56, height: 14 },
     ],
   });
-  o.font = '600 10px "IBM Plex Mono", ui-monospace, monospace';
+  o.font = '600 11px "IBM Plex Mono", ui-monospace, monospace';
   for (const marker of markerBoxes) {
     o.fillStyle = marker.color ?? surfaces.phosphor;
     o.fillText(marker.label, marker.x + 8, marker.y + 11);
@@ -506,7 +506,7 @@ export function paintStructureStep(
   // Axis (repair task item 4): strike ticks at a round step along the bottom, `±$<max>M` and `0` on
   // the left — both Mono 10 steel. Replaces the old two-corner `$min`/`$max` + `± dealer γ` labels.
   o.fillStyle = surfaces.steel;
-  o.font = '500 10px "IBM Plex Mono", ui-monospace, monospace';
+  o.font = '500 11px "IBM Plex Mono", ui-monospace, monospace';
   const strikeStep = chooseStrikeStep(maxK - minK);
   const firstTick = Math.ceil(minK / strikeStep) * strikeStep;
   const tickDecimals = Number.isInteger(strikeStep) ? 0 : 1;
@@ -806,18 +806,8 @@ export function paintFrameStep(
     roundRect(ctx, bx, by, barW * intensity, barH, 2);
     ctx.fill();
 
-    const label = probeLabel(best);
-    ctx.font = '600 12px "IBM Plex Mono", ui-monospace, monospace';
-    const tw = ctx.measureText(label).width + 16;
-    const rx = Math.min(Math.max(hx - tw / 2, pad.l), pad.l + plotW - tw);
-    const ry = Math.max(pad.t + 8, hy - 34);
-    ctx.fillStyle = surfaces.raised;
-    ctx.strokeStyle = withAlpha(surfaces.steel, 0.4);
-    roundRect(ctx, rx, ry, tw, 22, 6);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = surfaces.phosphor;
-    ctx.fillText(label, rx + 8, ry + 15);
+    // The strike's figures are HTML text beside the canvas (StructureFieldCanvas's readout, TD-01),
+    // not a canvas label: a drawn label clipped at the plot's edge on a phone and doubled the text.
   }
 
   // Title strip + tape pill — lab chrome only (ticker Widget owns honesty copy).
@@ -837,7 +827,7 @@ export function paintFrameStep(
     ctx.fillText(`${age}  ·  ${src}  ·  probe strikes`, pad.l + 168, 22);
 
     const pill = m.live ? 'TAPE LIVE' : 'TAPE OFF';
-    ctx.font = '700 10px "IBM Plex Sans", system-ui, sans-serif';
+    ctx.font = '700 11px "IBM Plex Sans", system-ui, sans-serif';
     const pw = ctx.measureText(pill).width + 14;
     ctx.fillStyle = m.live ? withAlpha(palette.mid, 0.28) : withAlpha(surfaces.warning, 0.22);
     roundRect(ctx, w - pad.r - pw - 8, 8, pw, 18, 9);

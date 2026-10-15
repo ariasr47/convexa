@@ -19,12 +19,14 @@
  * only what cannot be pure: canvas/DPR/layout setup, the mutable `FrameState`, the structure-key
  * dirty check, the blit, rAF scheduling and the DOM listeners.
  */
+import { TableTwin } from '@/shared/charts/frame';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { withAlpha, type LevelPalette } from './levelStrokes';
 import {
   computeGeometry,
   emptyFrameState,
+  fmtM,
   paintFrameStep,
   paintStructureStep,
   probeLabel,
@@ -33,6 +35,15 @@ import {
 } from './paintStep';
 import { structureBufferKey } from './structureBufferKey';
 import type { StructureFieldModel } from './types';
+
+/** The strike nearest spot: where the keyboard probe starts. */
+function nearestIndex(m: StructureFieldModel): number {
+  let best = 0;
+  m.samples.forEach((s, i) => {
+    if (Math.abs(s.strike - m.spot) < Math.abs(m.samples[best].strike - m.spot)) best = i;
+  });
+  return best;
+}
 
 export type { StructureFieldSurfaces } from './paintStep';
 
@@ -65,6 +76,8 @@ export interface StructureFieldCanvasProps {
    * unset there, so the generated summary still renders exactly as before.
    */
   describedById?: string;
+  /** The desk shows "Show the numbers" under the field: every strike's net gamma as text (TD-01). */
+  table?: boolean;
 }
 
 export function StructureFieldCanvas({
@@ -75,6 +88,7 @@ export function StructureFieldCanvas({
   palette,
   surfaces,
   describedById,
+  table = false,
 }: StructureFieldCanvasProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -85,6 +99,10 @@ export function StructureFieldCanvas({
   // primary instrument; the design source already does this (`design/src/lib.mjs:296`).
   const summaryId = useId();
   const hoverRef = useRef<{ x: number; y: number } | null>(null);
+  // The keyboard probe: ← → step one strike, Home/End jump to the ends (TD-01). The index lives in a
+  // ref the effect reads, so stepping never rebuilds the loop.
+  const probeRef = useRef<number | null>(null);
+  const wakeRef = useRef<() => void>(() => undefined);
   const [hoverReadout, setHoverReadout] = useState<string | null>(null);
   const reducedMotion = useReducedMotion();
   const reducedRef = useRef(reducedMotion);
@@ -110,6 +128,12 @@ export function StructureFieldCanvas({
 
     let raf = 0;
     let running = true;
+    // Paused while the tab is hidden or the field is scrolled out of view (TD-01: the loop ran on
+    // regardless); `schedule` resumes it when it is seen again.
+    let onScreen = true;
+    const schedule = () => {
+      if (running && raf === 0 && onScreen && !document.hidden) raf = requestAnimationFrame(paint);
+    };
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     // Offscreen structure buffer (static between model changes)
@@ -124,7 +148,9 @@ export function StructureFieldCanvas({
     frame.lastT = performance.now();
 
     const layout = () => {
-      const w = Math.max(320, wrap.clientWidth);
+      // The container's own width: a fixed 320px floor overflowed narrow cells (TD-01). 320 only
+      // stands in before the container has been laid out (a width of 0).
+      const w = wrap.clientWidth > 0 ? wrap.clientWidth : 320;
       const h = height;
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
@@ -141,6 +167,7 @@ export function StructureFieldCanvas({
     let { w, h } = layout();
 
     const paint = (now: number) => {
+      raf = 0;
       if (!running) return;
       const m = modelRef.current;
       const reduce = reducedRef.current;
@@ -149,7 +176,7 @@ export function StructureFieldCanvas({
         ctx.fillStyle = surfaces.ink;
         ctx.fillRect(0, 0, w, h);
         frame.lastT = now;
-        raf = requestAnimationFrame(paint);
+        schedule();
         return;
       }
 
@@ -173,7 +200,7 @@ export function StructureFieldCanvas({
 
       paintFrameStep(m, ctx, geom, frame, now, reduce, palette, surfaces, hoverRef.current);
 
-      raf = requestAnimationFrame(paint);
+      schedule();
     };
 
     const onResize = () => {
@@ -200,75 +227,127 @@ export function StructureFieldCanvas({
       setHoverReadout(probeLabel(best));
     };
     const onLeave = () => {
+      if (probeRef.current != null) return;
       hoverRef.current = null;
       setHoverReadout(null);
     };
+    // The keyboard probe draws where a pointer at that strike would, mid-height.
+    wakeRef.current = () => {
+      const m = modelRef.current;
+      const i = probeRef.current;
+      if (i == null || m.samples.length < 2) {
+        hoverRef.current = null;
+        setHoverReadout(null);
+        return;
+      }
+      const minK = m.samples[0].strike;
+      const maxK = m.samples[m.samples.length - 1].strike;
+      const plotW = w - pad.l - pad.r;
+      const s = m.samples[i];
+      hoverRef.current = {
+        x: pad.l + ((s.strike - minK) / (maxK - minK || 1)) * plotW,
+        y: pad.t + (h - pad.t - pad.b) / 2,
+      };
+      setHoverReadout(probeLabel(s));
+      schedule();
+    };
+    const onVisibility = () => schedule();
+    const io =
+      typeof IntersectionObserver === 'undefined'
+        ? null
+        : new IntersectionObserver(([entry]) => {
+            onScreen = entry.isIntersecting;
+            schedule();
+          });
+    io?.observe(wrap);
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => onResize());
+    ro?.observe(wrap);
 
     window.addEventListener('resize', onResize);
+    document.addEventListener('visibilitychange', onVisibility);
     canvas.addEventListener('pointermove', onMove);
     canvas.addEventListener('pointerleave', onLeave);
-    raf = requestAnimationFrame(paint);
+    schedule();
 
     return () => {
       running = false;
       cancelAnimationFrame(raf);
+      io?.disconnect();
+      ro?.disconnect();
       window.removeEventListener('resize', onResize);
+      document.removeEventListener('visibilitychange', onVisibility);
       canvas.removeEventListener('pointermove', onMove);
       canvas.removeEventListener('pointerleave', onLeave);
     };
-  }, [
-    height,
-    variant,
-    embedded,
-    calm,
-    model.samples,
-    model.spot,
-    model.callWall,
-    model.putWall,
-    model.gammaFlip,
-    model.symbol,
-    pad,
-    palette,
-    surfaces,
-  ]);
+    // The model is read through `modelRef` every frame, and `structureBufferKey` repaints the buffer
+    // when its structure changes, so a new model (every mid tick) never tears this loop down: the
+    // tape trail inside the frame state can build (TD-01: it was rebuilt, and emptied, on each tick).
+  }, [height, variant, embedded, calm, pad, palette, surfaces]);
 
   useEffect(() => {
     modelRef.current = model;
   }, [model]);
 
   return (
-    <div ref={wrapRef} className={className} style={{ width: '100%', position: 'relative' }}>
-      <canvas
-        ref={canvasRef}
-        data-testid="structure-field-canvas"
-        role="img"
-        aria-label={`Net dealer gamma by strike for ${model.symbol}`}
-        aria-describedby={describedById ?? summaryId}
-        style={{
-          display: 'block',
-          width: '100%',
-          height,
-          borderRadius: embedded ? 0 : 12,
-          border: embedded ? 'none' : `1px solid ${withAlpha(surfaces.steel, 0.28)}`,
-          // The ambient outer shadow (`rgba(0,0,0,0.65)`) is a deliberately MODE-INVARIANT literal,
-          // not a `tokens.ts` export — GATE Z (curvature-v2-desk-and-read, 2026-09-05, QA F3)
-          // removed the short-lived `fieldAmbientShadow` token: its only consumer is this
-          // `embedded === false` branch (`/lab/structure-field`; the desk hero passes
-          // `variant="ticker"`, so `embedded` is true there and this line never paints), and a
-          // named export with one lab-only consumer, absent from the mirrored `additions` block in
-          // `design/tokens/tokens.json`, contradicts DESIGN_SYSTEM.md:103's "Seven new names ...
-          // mirrored" claim for that surface. This canvas also has no `useTheme()` to resolve
-          // `elevationFor(theme)` from (SPEC §2.7 — it takes already-RESOLVED colours as props), so
-          // there is no existing token this value can bind to without new prop plumbing. See the
-          // exemption entry in `hex-discipline.spec.ts` for the "why a literal, not a token" note.
-          boxShadow: embedded
-            ? 'none'
-            : `0 0 0 1px ${withAlpha(surfaces.ink, 0.6)}, 0 18px 48px -24px rgba(0,0,0,0.65)`,
-          cursor: 'crosshair',
-          touchAction: 'none',
-        }}
-      />
-      {/* The text equivalent (criterion 24): what the field plots, the levels it marks, and a
+    <div className={className} style={{ width: '100%' }}>
+      <div ref={wrapRef} style={{ width: '100%', position: 'relative' }}>
+        <canvas
+          ref={canvasRef}
+          data-testid="structure-field-canvas"
+          role="img"
+          aria-label={`Net dealer gamma by strike for ${model.symbol}`}
+          aria-describedby={describedById ?? summaryId}
+          style={{
+            display: 'block',
+            width: '100%',
+            height,
+            borderRadius: embedded ? 0 : 12,
+            border: embedded ? 'none' : `1px solid ${withAlpha(surfaces.steel, 0.28)}`,
+            // The ambient outer shadow (`rgba(0,0,0,0.65)`) is a deliberately MODE-INVARIANT literal,
+            // not a `tokens.ts` export — GATE Z (curvature-v2-desk-and-read, 2026-09-05, QA F3)
+            // removed the short-lived `fieldAmbientShadow` token: its only consumer is this
+            // `embedded === false` branch (`/lab/structure-field`; the desk hero passes
+            // `variant="ticker"`, so `embedded` is true there and this line never paints), and a
+            // named export with one lab-only consumer, absent from the mirrored `additions` block in
+            // `design/tokens/tokens.json`, contradicts DESIGN_SYSTEM.md:103's "Seven new names ...
+            // mirrored" claim for that surface. This canvas also has no `useTheme()` to resolve
+            // `elevationFor(theme)` from (SPEC §2.7 — it takes already-RESOLVED colours as props), so
+            // there is no existing token this value can bind to without new prop plumbing. See the
+            // exemption entry in `hex-discipline.spec.ts` for the "why a literal, not a token" note.
+            boxShadow: embedded
+              ? 'none'
+              : `0 0 0 1px ${withAlpha(surfaces.ink, 0.6)}, 0 18px 48px -24px rgba(0,0,0,0.65)`,
+            cursor: 'crosshair',
+            // A phone can scroll past the field (TD-01: `none` trapped vertical scrolling).
+            touchAction: 'pan-y',
+          }}
+          tabIndex={0}
+          aria-keyshortcuts="ArrowLeft ArrowRight Home End"
+          onKeyDown={(e) => {
+            const n = modelRef.current.samples.length;
+            if (n < 2) return;
+            const cur = probeRef.current ?? nearestIndex(modelRef.current);
+            const next =
+              e.key === 'ArrowLeft'
+                ? Math.max(0, cur - 1)
+                : e.key === 'ArrowRight'
+                  ? Math.min(n - 1, cur + 1)
+                  : e.key === 'Home'
+                    ? 0
+                    : e.key === 'End'
+                      ? n - 1
+                      : null;
+            if (next == null) return;
+            e.preventDefault();
+            probeRef.current = next;
+            wakeRef.current();
+          }}
+          onBlur={() => {
+            probeRef.current = null;
+            wakeRef.current();
+          }}
+        />
+        {/* The text equivalent (criterion 24): what the field plots, the levels it marks, and a
           pointer at the ladder as its tabular equivalent (criterion 23 — the ladder already puts
           every level + distance in the DOM, beside the field). Visually hidden, not decorative —
           this is the canvas's accessible description, not a caption.
@@ -276,43 +355,79 @@ export function StructureFieldCanvas({
           this paragraph is written for. Skipped entirely when `describedById` is set — a host
           supplying its own description (the landing's frozen sample) has neither fact to claim,
           and the override above already points screen readers at that host's own caption. */}
-      {!describedById && (
-        <p
-          id={summaryId}
-          style={{
-            position: 'absolute',
-            width: 1,
-            height: 1,
-            padding: 0,
-            margin: -1,
-            overflow: 'hidden',
-            clip: 'rect(0 0 0 0)',
-            whiteSpace: 'nowrap',
-            border: 0,
-          }}
-        >
-          Net dealer gamma by strike for {model.symbol}, marking the call wall, put wall, gamma flip
-          and max pain levels plus the live tape mid. The level ladder beside this field states the
-          same levels and distances as text.
-        </p>
-      )}
-      {hoverReadout && (
-        <div
-          style={{
-            position: 'absolute',
-            right: 12,
-            bottom: 12,
-            fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
-            fontSize: 12,
-            color: surfaces.phosphor,
-            background: surfaces.raised,
-            border: `1px solid ${withAlpha(surfaces.steel, 0.3)}`,
-            borderRadius: '8px',
-            padding: '6px 10px',
-            pointerEvents: 'none',
-          }}
-        >
-          {hoverReadout}
+        {!describedById && (
+          <p
+            id={summaryId}
+            style={{
+              position: 'absolute',
+              width: 1,
+              height: 1,
+              padding: 0,
+              margin: -1,
+              overflow: 'hidden',
+              clip: 'rect(0 0 0 0)',
+              whiteSpace: 'nowrap',
+              border: 0,
+            }}
+          >
+            Net dealer gamma by strike for {model.symbol}, marking the call wall, put wall, gamma
+            flip and max pain levels plus the live tape mid. The level ladder beside this field
+            states the same levels and distances as text.
+          </p>
+        )}
+        {/* On the desk the probe's figures are a line under the field that always holds its place
+            (an overlay covered the strike axis on a phone); the lab keeps its corner overlay. */}
+        {embedded ? (
+          <div
+            role="status"
+            aria-live="polite"
+            style={{
+              minHeight: 20,
+              marginTop: 6,
+              fontFamily: hoverReadout ? '"IBM Plex Mono", ui-monospace, monospace' : undefined,
+              fontSize: 12,
+              lineHeight: '18px',
+              color: hoverReadout ? surfaces.phosphor : surfaces.steel,
+              overflowWrap: 'anywhere',
+            }}
+          >
+            {hoverReadout ?? 'Point at the field, or focus it and use ← →, to read a strike.'}
+          </div>
+        ) : (
+          hoverReadout && (
+            <div
+              role="status"
+              aria-live="polite"
+              style={{
+                position: 'absolute',
+                right: 12,
+                bottom: 12,
+                fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+                fontSize: 12,
+                color: surfaces.phosphor,
+                background: surfaces.raised,
+                border: `1px solid ${withAlpha(surfaces.steel, 0.3)}`,
+                borderRadius: '8px',
+                padding: '6px 10px',
+                pointerEvents: 'none',
+              }}
+            >
+              {hoverReadout}
+            </div>
+          )
+        )}
+      </div>
+      {table && model.samples.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          <TableTwin
+            caption={`${model.symbol} net dealer gamma by strike`}
+            cols={['Strike', 'Net gamma', 'Dealers']}
+            rows={model.samples.map((s) => [
+              s.strike.toFixed(2),
+              fmtM(s.netGex),
+              s.netGex >= 0 ? 'long gamma (+γ)' : 'short gamma (−γ)',
+            ])}
+          />
         </div>
       )}
     </div>

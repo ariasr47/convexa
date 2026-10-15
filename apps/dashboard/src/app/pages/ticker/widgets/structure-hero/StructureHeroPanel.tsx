@@ -150,23 +150,24 @@ function FieldLegend() {
     <Box
       component="span"
       data-testid="structure-field-legend"
-      sx={(theme) => ({
+      sx={{
         display: 'inline-flex',
         alignItems: 'center',
         gap: 2,
         fontSize: 11,
         color: 'text.secondary',
         flexWrap: 'wrap',
-        [theme.breakpoints.down(768)]: { display: 'none' },
-      })}
+        // Kept on phones (TD-02): hiding it left the field's green and red unexplained there. The
+        // header wraps it onto its own line instead.
+      }}
     >
       <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
         {swatch('success.main')}
-        call-dominated
+        +γ call-dominated
       </Box>
       <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
         {swatch('error.main')}
-        put-dominated
+        −γ put-dominated
       </Box>
       <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
         {line('primary.main')}
@@ -417,6 +418,7 @@ export function StructureHeroPanel({
                   variant="ticker"
                   palette={palette}
                   surfaces={surfaces}
+                  table
                 />
               )
             )}
