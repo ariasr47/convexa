@@ -7,17 +7,26 @@
  * PLAN's own framing. Moved out of `AlertsPage.tsx` (where `KINDS`/`LEVELS` lived before this task)
  * rather than duplicated, so the two can never drift.
  */
-import type { AlertKind, LevelRef } from './types';
+import type { AlertKind, LevelRef, StructureKind } from './types';
 
-export const KINDS: { value: AlertKind; label: string }[] = [
+export const KINDS: { value: StructureKind; label: string }[] = [
   { value: 'score_gate', label: 'Score gate' },
   { value: 'tier_change', label: 'Tier change' },
   { value: 'level_touch', label: 'Level touch' },
 ];
 
-export const KIND_LABEL: Record<AlertKind, string> = Object.fromEntries(
-  KINDS.map((k) => [k.value, k.label]),
-) as Record<AlertKind, string>;
+/** Every kind's name, structure and public (Q-5) alike. */
+export const KIND_LABEL: Record<AlertKind, string> = {
+  score_gate: 'Score gate',
+  tier_change: 'Tier change',
+  level_touch: 'Level touch',
+  results: 'Results approaching',
+  filing: 'New filing',
+  cluster: 'Insider cluster',
+  cftc: 'Positioning extreme',
+  si: 'Short interest change',
+  note: 'Note coming due',
+};
 
 export const LEVELS: { value: LevelRef; label: string }[] = [
   { value: 'gamma_flip', label: 'Gamma flip' },

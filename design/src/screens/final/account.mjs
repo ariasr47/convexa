@@ -181,8 +181,8 @@ export const ROWS = [
       built: [
         { status: 'shipped', what: 'Alerts v1: structure kinds (level touch, tier change, score gate), local store, browser notification, the faulted banner and the Not live / Paused notice.' },
         { status: 'shipped', what: 'Demo seed: one rule, level touch on SPY’s gamma flip (workspace.ts:506-518).' },
-        { status: 'todo', what: 'The six public-data kinds (Q-5), the On this page legend, the SEC strip, the kind reference, and server-side checks against /api/public-data/*.' },
-        { status: 'todo', what: 'Demo seed rules for the public kinds and a scenario firing.' },
+        { status: 'partial', what: 'The six public-data kinds (Q-5), the On this page legend, the SEC strip and the kind reference are built (AlertsPage.tsx, features/alerts/publicRules.ts). Checks run in the reader’s browser against /api/public-data/* when Alerts opens, and the page says so. Left: server-side scheduled checks (nothing checks while no Alerts page is open); the insider cluster check, which needs per-insider Form 4 rows the API doesn’t serve; the EDGAR cadence half of results approaching (notes’ catalysts only today).' },
+        { status: 'shipped', what: 'Demo seed: one sample rule per public kind beside the SPY flip touch, and one scenario firing that matches the demo’s sample CFTC report (libs/api/src/lib/demo/alerts.ts).' },
       ],
       rulings: ['Q-5', 'P-1', 'P-2', 'P-3', 'P-9', 'P-13', ...ENV],
       code: ['apps/dashboard/src/app/pages/alerts/AlertsPage.tsx', 'apps/dashboard/src/app/features/alerts/', 'apps/api/src/routes/public_data.rs', 'design/src/data/alerts.mjs', 'design/src/screens/v5/alerts-public.mjs'],
@@ -297,7 +297,7 @@ export const ROWS = [
       built: [
         { status: 'shipped', what: 'AuthDialog (login only, sign-ups closed), TradeEntryDialog (position and order variants, D8 disclosures), OrderDetailDialog, PersonaPicker / PersonaCustomizeForm, ViewEditorDialog, StateExportDrawer (sample header in demo).' },
         { status: 'partial', what: 'Production trade entry: Market and Limit gating on the live quote is shipped; the reason line on the control and a demo link are not.' },
-        { status: 'todo', what: 'New-alert flow for the public-data kinds (Q-5).' },
+        { status: 'shipped', what: 'New-alert flow for the public-data kinds (Q-5): choose, set up, read back, with validation, duplicate and failed-save states, a bottom sheet under 600px, and edit and remove (pages/alerts/NewAlertDialog.tsx).' },
         { status: 'todo', what: 'Demo links from production Not live overlays (what’s sent, order detail).' },
       ],
       rulings: ['P-1', 'P-2', 'P-3', 'P-13', 'Q-5', ...ENV],
