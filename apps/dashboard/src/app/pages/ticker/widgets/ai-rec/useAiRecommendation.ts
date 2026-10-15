@@ -212,7 +212,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
         // route, so paused mode answers it with the SAME typed 503 the status-fetch catch above
         // already recognizes (`isMarketDataPaused`). Route it to the honest `market_data_paused`
         // reason — never the generic `transport` bucket, which `AiRecPanelBlocks.tsx` renders as
-        // "AI unavailable — try again" and `presentationPolicy.ts` treats as retryable. In the
+        // "Couldn’t get a read" and `presentationPolicy.ts` treats as retryable. In the
         // shipped app the status read normally reports paused first and disables the action before
         // this can fire; this still covers the race where a request beats that response (or a
         // future caller that reaches `request` directly).

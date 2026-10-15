@@ -395,7 +395,7 @@ export function AiRecPanel({
       <ReadSheet verdict={verdictText} isTrade={Boolean(isTradeVerdict)}>
         <Widget
           id="ai-rec"
-          title={`AI recommendation · ${ticker}`}
+          title={`AI read · ${ticker}`}
           actions={exportAction}
           bodySx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}
         >

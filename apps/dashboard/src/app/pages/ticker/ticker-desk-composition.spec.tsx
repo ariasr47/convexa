@@ -144,7 +144,7 @@ async function captureBaselineOnce(): Promise<Record<string, string>> {
   installBackend();
   renderApp();
   await screen.findByText('Call wall');
-  await screen.findByText('AI recommendation · TSLA');
+  await screen.findByText('AI read · TSLA');
   const regions = captureRegions();
   // Sanity: the baseline itself is non-trivial (regions actually carry real text).
   for (const v of Object.values(regions)) expect(v.length).toBeGreaterThan(0);
@@ -171,7 +171,7 @@ describe('Ticker desk — criterion 47: the AI-read axis never leaks into struct
           expect(within(panel).getByRole('button', { name: COPY.action.get })).toBeEnabled(),
         );
         await user.click(within(panel).getByRole('button', { name: COPY.action.get }));
-        await within(panel).findByText(/AI unavailable/i);
+        await within(panel).findByText(/Couldn’t get a read/i);
       },
     ],
   ] as const)(
@@ -229,7 +229,7 @@ describe('Ticker desk — criterion 54: exactly one shared trade-entry dialog', 
     installBackend();
     const user = renderApp();
     await screen.findByText('Call wall');
-    await screen.findByText('AI recommendation · TSLA');
+    await screen.findByText('AI read · TSLA');
 
     expect(screen.queryByTestId('trade-entry-dialog')).toBeNull();
     await user.click(screen.getByTestId('position-brief-open-trade'));

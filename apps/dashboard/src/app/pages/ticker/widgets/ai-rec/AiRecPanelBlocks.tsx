@@ -29,6 +29,7 @@ import {
   POWERING,
   retryInCooldown,
   retryWhenReset,
+  unavailableCause,
 } from './copy';
 import { MARKET_DATA_PAUSED_REASON, type deriveAiRecPresentation } from './presentationPolicy';
 
@@ -323,7 +324,7 @@ export function UnavailableBlock({
   /** `rec.unavailable_reason` (no-vendor-production-posture F4). A `market_data_paused` fault gets
    *  its own honest, no-blame copy and an info tone — `retryAllowed` is already false for it
    *  (`presentationPolicy.ts`'s sole authority), this only swaps the WORDS. Every other reason
-   *  (including the generic transport fault) keeps today's copy byte-for-byte. */
+   *  reads "Couldn’t get a read" with its cause (`unavailableCause`). */
   reason?: string | null;
 }) {
   const paused = reason === MARKET_DATA_PAUSED_REASON;
@@ -363,7 +364,9 @@ export function UnavailableBlock({
         {paused ? COPY.marketDataPaused.title : COPY.unavailable.title}
       </Typography>
       <Typography variant="body2">
-        {paused ? COPY.marketDataPaused.body : COPY.unavailable.body}
+        {paused
+          ? COPY.marketDataPaused.body
+          : `${unavailableCause(reason)} ${COPY.unavailable.body}`}
       </Typography>
       {scenario && (
         <Chip

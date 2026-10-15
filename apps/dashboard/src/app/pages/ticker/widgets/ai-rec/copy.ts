@@ -41,7 +41,8 @@ export const COPY = {
     invalidation: 'Invalidation',
   },
   noTrade: {
-    title: 'No trade — sit this one out',
+    // "·", not "—": the same words the desk and the design draw (Final · AI read, 2026-10-15).
+    title: 'No trade · sit this one out',
     caption: "No simulated entry — a 'no trade' read is a complete, correct answer.",
   },
   // Structured-reasoning section labels (the redesigned read: scannable verdict + why + re-engage,
@@ -57,8 +58,8 @@ export const COPY = {
     showLess: 'Show less',
   },
   unavailable: {
-    title: 'AI unavailable — try again',
-    body: "Couldn't get a read right now. This didn't affect the rest of the dashboard.",
+    title: 'Couldn’t get a read',
+    body: 'This didn’t affect the rest of the desk.',
   },
   /** no-vendor-production-posture F4 — the honest line for a `market_data_paused` fault (never the
    *  generic `unavailable` copy above, which implies an LLM/key hiccup worth retrying). Shortest
@@ -256,6 +257,30 @@ export const NO_TWO_SIDED_QUOTE_LITERAL = 'no two-sided quote in this snapshot';
 export const DRAWER_RISK_AS_SENT = 'Your risk inputs (as sent with this recommendation)';
 export const DRAWER_RISK_AS_NEXT = 'Your risk inputs (what the next request will send)';
 export const DRAWER_NOT_SENT = "Not sent — you haven't set this.";
+/** The demo's export: every category is unsent because the demo calls no model, not because the
+ *  reader left something unset (Final · AI read, staging export board). */
+export const DRAWER_NOT_SENT_DEMO =
+  'Not sent: the demo calls no model, so nothing leaves this browser.';
+
+/**
+ * Why a read failed, from `rec.unavailable_reason` (A10, "Couldn’t get a read" with a cause). The
+ * API's closed failure reasons (services/llm.rs, services/recommendation.rs) plus the panel's own
+ * `transport`; anything else gets the plain fallback, never a guessed cause.
+ */
+export function unavailableCause(reason: string | null | undefined): string {
+  switch (reason) {
+    case 'timeout':
+      return 'Your AI provider didn’t answer in time.';
+    case 'llm_error':
+      return 'Your AI provider returned an error or an answer Convexa couldn’t read.';
+    case 'transport':
+      return 'Convexa’s server didn’t answer.';
+    case 'over_cap':
+      return 'Today’s reads are used up.';
+    default:
+      return 'The request failed.';
+  }
+}
 export const NONE_OMITTED = 'none omitted';
 
 export const NUMBERS_SAID_EMPTY = 'No candidates in band this cycle.';

@@ -468,18 +468,43 @@ function recommendationExport(
     scenario.research.evidence[0]?.state === 'present'
       ? scenario.research.evidence[0].sourceIds[0]
       : 'unavailable';
+  const spot = scenario.bars.at(-1)!.close;
+  // The scenario's own structure, as the desk draws it (tickerPayload): what a read would be given.
+  // The live export sends the bundle's market_state here too (services/recommendation.rs), though
+  // the generated RecommendationContextBody doesn't list it, so the context is built apart from the
+  // envelope literal. The sample paragraph rides along with the snapshot it describes.
+  const context = {
+    market_state: {
+      ticker: symbol,
+      spot,
+      as_of: DEMO_TIME,
+      call_wall: variant.wall,
+      put_wall: Number((variant.wall - spot * 0.075).toFixed(2)),
+      gamma_flip: variant.flip,
+      max_pain: spot,
+      setup: variant.setup,
+      score: variant.score,
+      sample_analysis: sampleAnalysisText(symbol, variant, sourceId),
+    },
+    candidates: candidateSet(symbol, scenario),
+    risk_inputs: { state: 'not_set', account_size: null, per_trade_cap: null },
+    open_positions: { source: 'simulated', state: 'not_sent' },
+  };
   return {
     ticker: symbol,
     as_of: DEMO_TIME,
     persona: { id: null, name: 'Authored sample' },
-    context: {
-      candidates: candidateSet(symbol, scenario),
-      risk_inputs: { state: 'not_set', account_size: null, per_trade_cap: null },
-      open_positions: { source: 'simulated', state: 'not_sent' },
-    },
+    context,
     egress_note:
       'No content was sent to a model or external provider. This export contains authored sample context only.',
-    glossary: sampleAnalysisText(symbol, variant, sourceId),
+    persona_prompt: null,
+    glossary: [
+      'spot: the underlying’s close at the scenario snapshot',
+      'call_wall / put_wall: the strikes with the largest call and put dealer gamma',
+      'gamma_flip: where net dealer gamma changes sign',
+      'max_pain: the strike where open options would expire worth the least',
+      'score: the scanner’s 0–100 score for the setup',
+    ].join('\n'),
     egress_categories: [
       { key: 'context', sent: false },
       { key: 'candidates', sent: false },

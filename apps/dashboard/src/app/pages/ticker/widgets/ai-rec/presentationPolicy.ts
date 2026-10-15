@@ -4,7 +4,7 @@ import { riskInputsSuperseded } from './literals';
 /** no-vendor-production-posture F4 — the FE-synthesized `unavailable_reason`
  *  (`useAiRecommendation.ts`'s status-fetch catch) for a `market_data_paused` fault. NOT a wire
  *  value on this field; a sentinel this module and `AiRecPanelBlocks.tsx` both recognize so the
- *  panel renders honest copy with no Retry, instead of the generic "AI unavailable — try again". */
+ *  panel renders honest copy with no Retry, instead of the generic "Couldn’t get a read". */
 export const MARKET_DATA_PAUSED_REASON = 'market_data_paused';
 
 export type AiRecRequestState =

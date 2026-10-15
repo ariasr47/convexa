@@ -105,7 +105,7 @@ describe('useAiRecommendation — no-vendor-production-posture B2 amendment (GAT
   // action before `request` ever fires — this covers the race where a request beats that response
   // (or a future caller that reaches `request` directly), and proves the exact regression the
   // amendment names: this fault must render the honest paused copy, never `transport` (which
-  // `AiRecPanelBlocks.tsx` renders as "AI unavailable — try again"), and it must not be rethrown the
+  // `AiRecPanelBlocks.tsx` renders as "Couldn’t get a read"), and it must not be rethrown the
   // way an `AuthError` is (the panel would otherwise never re-render at all, or a host `guard()`
   // would show a sign-in prompt instead).
   it('a paused POST renders the honest paused reason — never `transport`, and is not rethrown', async () => {
