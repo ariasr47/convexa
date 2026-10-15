@@ -11,6 +11,7 @@
  */
 import { MONO, PANEL_SX } from '@/pages/research/ui';
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import { demoDeskUrl } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CloseIcon from '@mui/icons-material/Close';
@@ -209,6 +210,17 @@ export function WhatAReadSends({
         ))}
       </Box>
       <Para>Never: another ticker, your name or email, broker credentials, or an API key.</Para>
+      {/* Final Overlays DLG-03: the nothing-sent drawer links the demo, where the sample export
+          shows the same payload filled in. */}
+      <Link
+        href={demoDeskUrl(ticker)}
+        variant="body2"
+        underline="always"
+        data-testid="ai-sends-demo"
+        sx={{ ...linkSx, justifySelf: 'start', minHeight: 24, fontWeight: 600 }}
+      >
+        See it on the demo →
+      </Link>
       <Box sx={{ display: 'grid', gap: 1, pt: 2, borderTop: 1, borderColor: 'divider' }}>
         <Box component="h3" sx={{ m: 0, fontSize: 14, fontWeight: 600 }}>
           How a read works
