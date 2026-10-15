@@ -161,6 +161,7 @@ export const ROWS = [
       ],
       built: [
         { status: 'shipped', what: 'Canvas2D field on buildDemoField(), the WebGL2 twin and its renderer toggle, reduced motion, and a WebGL2 error panel (StructureFieldLab.tsx, StructureFieldWebGL.tsx).' },
+        { status: 'shipped', what: 'The design’s field in code: put wall 560, flip 568.5, call wall 580, spot 573.12 and SF_FIELD’s 21 strikes (structureFieldDemo.ts DEMO_LEVELS, 2026-10-14); the old field crossed zero at 512.9 against a 508.2 flip label.' },
         { status: 'shipped', what: 'Production Not live: LabInstrumentNotLive with “Would show”, “Off because” and “See it on the demo →”; no canvas, no request (pages/lab/LabNotLive.tsx, 62336421).' },
         { status: 'partial', what: '“Use live SPY structure” already reaches the demo transport on staging; designed: rename it “Demo SPY chain” and show it on staging only.' },
         { status: 'todo', what: 'The sample frame, Sample tag and scenario date (today: MUI chips “Lab”, “Synthetic field”, “Canvas2D”); labels in an HTML layer at 11px; the table twin; the static drawing when no canvas starts.' },

@@ -5,6 +5,7 @@
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { useEffect, useRef, useState } from 'react';
 import { LabShell } from '../LabShell';
+import { DEMO_LEVELS } from '../structureFieldDemo';
 import { LAB } from './labTokens';
 
 export function TapePulseLab() {
@@ -35,7 +36,7 @@ export function TapePulseLab() {
     const trail: { t: number; mid: number }[] = [];
     const prints: { t: number; px: number; dir: 1 | -1 }[] = [];
     let lastPrintT = 0;
-    const base = 512.4;
+    const base: number = DEMO_LEVELS.spot;
 
     const layout = () => {
       const w = Math.max(320, wrap.clientWidth);

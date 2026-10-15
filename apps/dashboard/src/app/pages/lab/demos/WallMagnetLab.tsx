@@ -5,6 +5,7 @@
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { useEffect, useRef } from 'react';
 import { LabShell } from '../LabShell';
+import { DEMO_LEVELS } from '../structureFieldDemo';
 import { LAB } from './labTokens';
 
 export function WallMagnetLab() {
@@ -30,10 +31,11 @@ export function WallMagnetLab() {
     let running = true;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const height = 280;
-    const put = 500;
-    const call = 530;
-    const flip = 508;
-    let spot = 512.4;
+    // The design's synthetic levels, shared with the Structure Field (structureFieldDemo.ts).
+    const put = DEMO_LEVELS.putWall;
+    const call = DEMO_LEVELS.callWall;
+    const flip = DEMO_LEVELS.gammaFlip;
+    let spot: number = DEMO_LEVELS.spot;
     let vel = 0;
 
     const layout = () => {
