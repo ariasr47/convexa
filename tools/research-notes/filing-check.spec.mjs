@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import {
   checkFigures,
   filingsFromCompanyFacts,
+  formatFiled,
   parseConceptCell,
   parseFigure,
   parsePeriod,
@@ -24,7 +25,10 @@ const FIXTURE = path.join(
   '../../apps/api/tests/fixtures/public_data/sec_companyfacts_nvda.json',
 );
 const facts = JSON.parse(readFileSync(FIXTURE, 'utf8'));
+// What the page reads (the API's two newest periodic filings), and a wider window for the rules that
+// need an older filing (a 10-K year, a Q3).
 const filings = filingsFromCompanyFacts(facts);
+const wide = filingsFromCompanyFacts(facts, { keep: 4 });
 
 const fig = (label, value, asOf, concept, why = null) => ({ label, value, asOf, concept, why });
 const one = (f, list = filings) => checkFigures([f], list)[0];
@@ -79,6 +83,7 @@ test('a concept cell names checked concepts, one operator at most, and an option
 });
 
 test('saved company facts become the filings the API sends: fiscal period and own-period values', () => {
+  assert.equal(filings.length, 2, 'the page reads the two newest periodic filings');
   const [q2, q1] = filings;
   assert.equal(q2.accession, '0001045810-26-000073');
   assert.deepEqual(
@@ -182,13 +187,19 @@ test('periods match by the filer’s tags or the period-end date, and say so whe
     'matches',
   );
   assert.equal(
-    one(fig('Revenue', '$130.5B', 'FY2026', 'us-gaap:Revenues')).status,
+    one(fig('Revenue', '$130.5B', 'FY2026', 'us-gaap:Revenues'), wide).status,
     'matches',
     'the 10-K year',
   );
-  assert.equal(one(fig('Revenue', '$35.1B', 'Q3 FY2026', 'us-gaap:Revenues')).status, 'matches');
+  assert.equal(
+    one(fig('Revenue', '$35.1B', 'Q3 FY2026', 'us-gaap:Revenues'), wide).status,
+    'matches',
+  );
   // The Q2 FY2026 10-Q is the fifth-newest filing: not read.
-  assert.equal(one(fig('Revenue', '$30.0B', 'Q2 FY2026', 'us-gaap:Revenues')).status, 'not_found');
+  assert.equal(
+    one(fig('Revenue', '$30.0B', 'Q2 FY2026', 'us-gaap:Revenues'), wide).status,
+    'not_found',
+  );
   // The filing is read but doesn't tag the concept.
   const missing = one(fig('Operating income', '$30B', 'Q2 FY2027', 'us-gaap:OperatingIncomeLoss'));
   assert.equal(missing.status, 'missing');
@@ -272,4 +283,123 @@ test('the research check lists every difference and fails only on one nobody exp
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+// ---- W1-32, W1-33, W1-35 --------------------------------------------------------------------------
+
+/** A minimal company-facts answer: one concept, a point per [form, accn, filed, fy, fp, start, end, val]. */
+const factsOf = (concept, unit, points) => {
+  const [taxonomy, name] = concept.split(':');
+  return {
+    facts: {
+      [taxonomy]: {
+        [name]: {
+          units: {
+            [unit]: points.map(([form, accn, filed, fy, fp, start, end, val]) => ({
+              form,
+              accn,
+              filed,
+              fy,
+              fp,
+              start,
+              end,
+              val,
+            })),
+          },
+        },
+      },
+    },
+  };
+};
+
+/** One filing read, with the given tagged values. */
+const filed = (tagged, over = {}) => ({
+  accession: 'A',
+  form: '10-Q',
+  filed: '2026-08-01',
+  period_end: '2026-06-30',
+  fiscal_year: 2026,
+  fiscal_period: 'Q2',
+  tagged,
+  ...over,
+});
+const fy25 = { form: '20-F', period_end: '2025-12-31', fiscal_year: 2025, fiscal_period: 'FY' };
+const tag = (concept, unit, value) => ({ concept, unit, value, start: null, end: '2025-12-31' });
+
+test('a dollar figure is checked against US dollars only, never another currency', () => {
+  const twd = filed([tag('ifrs-full:Revenue', 'TWD', 3_809_054e6)], fy25);
+  const r = one(fig('Revenue', '$118.6B', 'FY2025', 'ifrs-full:Revenue'), [twd]);
+  assert.equal(r.status, 'unit');
+  assert.equal(r.gap, null);
+  assert.match(r.detail, /\(TWD\)/);
+  // With the USD value tagged beside it, the dollar figure is compared with the dollars.
+  const both = filed(
+    [tag('ifrs-full:Revenue', 'TWD', 3_809_054e6), tag('ifrs-full:Revenue', 'USD', 118.6e9)],
+    fy25,
+  );
+  const usd = one(fig('Revenue', '$118.6B', 'FY2025', 'ifrs-full:Revenue'), [both]);
+  assert.equal(usd.status, 'matches');
+  assert.equal(usd.filed, 118.6e9);
+  // Per share: USD/shares fits, EUR/shares doesn't.
+  const dil = fig('EPS', '$4.31', 'FY2025', 'ifrs-full:DilutedEarningsLossPerShare');
+  const eps = (unit) => [filed([tag('ifrs-full:DilutedEarningsLossPerShare', unit, 4.31)], fy25)];
+  assert.equal(one(dil, eps('USD/shares')).status, 'matches');
+  assert.equal(one(dil, eps('EUR/shares')).status, 'unit');
+});
+
+test('the check reads the two newest periodic filings, exact forms, as the page does', () => {
+  const c = 'us-gaap:Revenues';
+  const read = filingsFromCompanyFacts(
+    factsOf(c, 'USD', [
+      ['10-K', 'K', '2026-02-05', 2025, 'FY', '2025-01-01', '2025-12-31', 700e9],
+      ['10-Q', 'Q1', '2026-05-01', 2026, 'Q1', '2026-01-01', '2026-03-31', 180e9],
+      ['10-Q', 'Q2', '2026-08-01', 2026, 'Q2', '2026-04-01', '2026-06-30', 200e9],
+    ]),
+  );
+  assert.deepEqual(
+    read.map((f) => f.accession),
+    ['Q2', 'Q1'],
+  );
+  // The 10-K is the third-newest: the page shows "not in a filing read yet", so the check can't pass it.
+  assert.equal(one(fig('Revenue', '$700B', 'FY2025', c), read).status, 'not_found');
+  assert.equal(one(fig('Revenue', '$200B', 'Q2 2026', c), read).status, 'matches');
+  // An amendment is not a periodic filing (edgar.rs PERIODIC_FORMS is matched exactly).
+  const amended = filingsFromCompanyFacts(
+    factsOf(c, 'USD', [
+      ['10-Q', 'Q1', '2026-05-01', 2026, 'Q1', '2026-01-01', '2026-03-31', 180e9],
+      ['10-Q', 'Q2', '2026-08-01', 2026, 'Q2', '2026-04-01', '2026-06-30', 200e9],
+      ['10-Q/A', 'Q2A', '2026-09-01', 2026, 'Q2', '2026-04-01', '2026-06-30', 201e9],
+    ]),
+  );
+  assert.deepEqual(
+    amended.map((f) => [f.accession, f.form]),
+    [
+      ['Q2', '10-Q'],
+      ['Q1', '10-Q'],
+    ],
+  );
+});
+
+test('a filed value prints one place finer than an M- or K-scale note, never whole millions', () => {
+  const at = (note, value) => formatFiled(value, parseFigure(note));
+  assert.equal(at('$512.3M', 512_460_000), '$512.46M');
+  assert.equal(at('1.23M', 1_236_000), '1.236M');
+  assert.equal(at('24,285M', 24_285_400_000), '24,285.4M');
+  assert.equal(at('$950K', 949_700), '$949.7K');
+  // B-scale notes keep whole millions, already finer than the note.
+  assert.equal(at('$96.2B', 96_221e6), '$96,221M');
+  assert.equal(at('$1.234B', 1_234_560_000), '$1,234.6M');
+  const r = one(fig('Revenue', '$512.3M', 'Q2 2026', 'us-gaap:Revenues'), [
+    filed([
+      {
+        concept: 'us-gaap:Revenues',
+        unit: 'USD',
+        value: 512_460_000,
+        start: null,
+        end: '2026-06-30',
+      },
+    ]),
+  ]);
+  assert.equal(r.status, 'differs');
+  assert.equal(r.detail, 'The note says $512.3M; the 10-Q tags $512.46M.');
 });
