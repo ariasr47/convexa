@@ -89,7 +89,7 @@ export const MARKETS_SPEC = {
     { status: 'partial', what: 'Charts are pre-v5: the curve title averages the change, 2s10s has no zero line and a band that is its own min–max, decomposition has no shared zero, the CFTC median tick is unexplained.' },
     { status: 'partial', what: 'Rates tag reads “Updated” even when only a stale copy shows (Markets doesn’t use publicDataWord).' },
     { status: 'shipped', what: 'On the chart frame (2026-10-14): the curve, decomposition (shared centre zero), 2s10s, note-rate drift as a dot chart with the ±0.25 band, and positioning (zero marked where a range crosses it), each with source, as-of, state tag and table twin.' },
-    { status: 'todo', what: 'Positioning as small multiples by trader group, the 10th–90th percentile band, and an FOMC lane on 2s10s: the API returns no weekly history or percentiles and no FOMC dates yet.' },
+    { status: 'shipped', what: 'Positioning by trader group as small multiples (10-year note, four groups, one scale), the 10th–90th percentile band on every range bar, and an FOMC lane on 2s10s (2026-10-14): the API now returns each group’s weekly 3-year history and percentiles, with dealers and other reportables; FOMC decision days come from the Fed’s calendar as a dated table (pages/research/fomc.ts, checked Oct 14).' },
   ],
   rulings: ['P-1', 'P-2', 'P-8', 'P-9', 'P-10', 'P-11', 'P-12', 'P-13', 'Env 2026-10-14'],
   code: [`${R}/MarketsPage.tsx`, `${R}/marketsMath.ts`, `${R}/publicData.ts`, 'apps/api/src/services/public_data/{treasury,cftc,mod}.rs', 'libs/api/src/lib/demo/public-data.ts:148-192', 'design/src/components/charts.mjs (curve, spreadPlot)'],

@@ -1847,17 +1847,54 @@
             "description": "CFTC contract market code.",
             "type": "string"
           },
+          "dealers": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PositionGroupWire",
+                "description": "Null unless every report in the window carries the group."
+              }
+            ]
+          },
           "exchange": {
             "type": "string"
+          },
+          "history": {
+            "description": "Every weekly report in the window, oldest first.",
+            "items": {
+              "$ref": "#/components/schemas/PositionWeekWire"
+            },
+            "type": "array"
           },
           "leveraged_funds": {
             "$ref": "#/components/schemas/PositionGroupWire"
           },
           "name": {
             "type": "string"
+          },
+          "other_reportables": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PositionGroupWire"
+              }
+            ]
           }
         },
-        "required": ["code", "name", "exchange", "asset_managers", "leveraged_funds"],
+        "required": [
+          "code",
+          "name",
+          "exchange",
+          "asset_managers",
+          "leveraged_funds",
+          "dealers",
+          "other_reportables",
+          "history"
+        ],
         "type": "object"
       },
       "FuturesWire": {
@@ -3813,6 +3850,15 @@
             "format": "int64",
             "type": "integer"
           },
+          "p10_3y": {
+            "description": "10th and 90th percentiles of the weekly nets in the window (linear interpolation).",
+            "format": "int64",
+            "type": "integer"
+          },
+          "p90_3y": {
+            "format": "int64",
+            "type": "integer"
+          },
           "position_in_range": {
             "format": "double",
             "type": "number"
@@ -3834,9 +3880,38 @@
           "min_3y",
           "max_3y",
           "median_3y",
+          "p10_3y",
+          "p90_3y",
           "position_in_range",
           "weeks"
         ],
+        "type": "object"
+      },
+      "PositionWeekWire": {
+        "description": "One weekly report's net positions, contracts; null where the report lacks that group.",
+        "properties": {
+          "asset_managers": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "date": {
+            "description": "YYYY-MM-DD, the Tuesday the positions are as of.",
+            "type": "string"
+          },
+          "dealers": {
+            "format": "int64",
+            "type": ["integer", "null"]
+          },
+          "leveraged_funds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "other_reportables": {
+            "format": "int64",
+            "type": ["integer", "null"]
+          }
+        },
+        "required": ["date", "asset_managers", "leveraged_funds", "dealers", "other_reportables"],
         "type": "object"
       },
       "PriceWire": {
@@ -5603,12 +5678,40 @@
         ],
         "type": "object"
       },
+      "ShortVolumeDayWire": {
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "ratio": {
+            "format": "double",
+            "type": "number"
+          },
+          "short_volume": {
+            "format": "double",
+            "type": "number"
+          },
+          "total_volume": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": ["date", "short_volume", "total_volume", "ratio"],
+        "type": "object"
+      },
       "ShortVolumeWire": {
         "description": "FINRA daily short-sale volume on the latest day found; `ratio` = short / total (0..1);\n`avg_ratio` = mean daily ratio over `days` (at most 20 trading days).",
         "properties": {
           "avg_ratio": {
             "format": "double",
             "type": "number"
+          },
+          "daily": {
+            "description": "Every day averaged, oldest first (the latest included).",
+            "items": {
+              "$ref": "#/components/schemas/ShortVolumeDayWire"
+            },
+            "type": "array"
           },
           "date": {
             "type": "string"
@@ -5631,7 +5734,7 @@
             "type": "number"
           }
         },
-        "required": ["date", "short_volume", "total_volume", "ratio", "avg_ratio", "days"],
+        "required": ["date", "short_volume", "total_volume", "ratio", "avg_ratio", "days", "daily"],
         "type": "object"
       },
       "SignupBody": {

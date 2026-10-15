@@ -51,8 +51,21 @@ pub struct PositionGroup {
     pub min_3y: i64,
     pub max_3y: i64,
     pub median_3y: i64,
+    /// The 10th and 90th percentiles of the weekly nets (linear interpolation between ranks).
+    pub p10_3y: i64,
+    pub p90_3y: i64,
     pub position_in_range: f64,
     pub weeks: u32,
+}
+
+/// One weekly report's net positions; `None` where the report lacks that group's columns.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PositionWeek {
+    pub date: NaiveDate,
+    pub asset_managers: i64,
+    pub leveraged_funds: i64,
+    pub dealers: Option<i64>,
+    pub other_reportables: Option<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -62,6 +75,11 @@ pub struct FuturesMarket {
     pub exchange: String,
     pub asset_managers: PositionGroup,
     pub leveraged_funds: PositionGroup,
+    /// Present when every report in the window carries the group's columns.
+    pub dealers: Option<PositionGroup>,
+    pub other_reportables: Option<PositionGroup>,
+    /// Every weekly report in the window, oldest first.
+    pub history: Vec<PositionWeek>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -142,6 +160,16 @@ pub struct ShortVolume {
     pub ratio: f64,
     pub avg_ratio: f64,
     pub days: u32,
+    /// Every day averaged, oldest first (the latest included).
+    pub daily: Vec<ShortVolumeDay>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ShortVolumeDay {
+    pub date: NaiveDate,
+    pub short_volume: f64,
+    pub total_volume: f64,
+    pub ratio: f64,
 }
 
 #[derive(Debug, Clone, PartialEq)]

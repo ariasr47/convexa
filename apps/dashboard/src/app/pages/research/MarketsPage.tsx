@@ -12,6 +12,7 @@ import Box from '@mui/material/Box';
 import { alpha } from '@mui/material/styles';
 import { useMemo } from 'react';
 import { researchIndex } from 'virtual:convexa-research';
+import { FOMC_CHECKED, FOMC_SOURCE, fomcInSeries } from './fomc';
 import { formatNoteDate, formatShortDate } from './format';
 import { DRIFT_FLAG_POINTS, noteRates, spread2s10s, type YieldPoint } from './marketsMath';
 import { ResearchColumn } from './NotesView';
@@ -164,7 +165,10 @@ export function MarketsPage() {
               />
             )}
             {data.futures ? (
-              <FuturesSection futures={data.futures} />
+              <>
+                <FuturesSection futures={data.futures} />
+                <PositioningGroups futures={data.futures} />
+              </>
             ) : (
               <SourceProblem
                 title="Futures positioning is unavailable right now."
@@ -592,11 +596,14 @@ function SpreadPanel({
 }) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const W = Math.max(280, width);
-  const H = 220;
-  const L = 36;
+  // The plot, then the FOMC lane under it, then the dates.
+  const H = 248;
+  const L = 44;
   const R = 52;
   const T = 20;
-  const B = 32;
+  const B = 60;
+  const LANE = H - B + 16;
+  const meetings = fomcInSeries(series.map((p) => p.date));
   const vMin = Math.min(0, Math.floor(lo.value * 5) / 5);
   const vMax = Math.ceil(hi.value * 5) / 5 + 0.2;
   const n = series.length;
@@ -613,7 +620,7 @@ function SpreadPanel({
     <ChartFrame
       finding={`2s10s has held between ${lo.value.toFixed(2)} and ${hi.value.toFixed(2)} points all year. It is ${last.value.toFixed(2)} now.`}
       metric="2s10s spread"
-      sub="10-year less 2-year Treasury par yield · percentage points · each business day for a year · band = the year's range"
+      sub="10-year less 2-year Treasury par yield · percentage points · each business day for a year · band = the year's range · FOMC = a Fed rate decision (◆ with projections)"
       height={H}
       {...treasuryFrame('U.S. Treasury · daily par yield curve', asOf, { state: 'computed' })}
       table={{
@@ -623,8 +630,27 @@ function SpreadPanel({
           ...monthly.map((p) => [formatNoteDate(p.date), pts(p.value)]),
           [`High · ${formatNoteDate(hi.date)}`, pts(hi.value)],
           [`Low · ${formatNoteDate(lo.date)}`, pts(lo.value)],
+          ...meetings.map((m) => [
+            `FOMC decision · ${formatNoteDate(m.date)}${m.sep ? ' · projections' : ''}`,
+            pts(series[m.index].value),
+          ]),
         ],
       }}
+      note={
+        <>
+          FOMC dates from the{' '}
+          <Box
+            component="a"
+            href={FOMC_SOURCE}
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{ color: 'inherit' }}
+          >
+            Federal Reserve’s meeting calendar
+          </Box>{' '}
+          (checked {formatNoteDate(FOMC_CHECKED)}), each on its decision day.
+        </>
+      }
       testId="chart-spread"
     >
       <Box ref={ref} sx={{ minWidth: 0 }}>
@@ -681,6 +707,34 @@ function SpreadPanel({
                 <text x={L - 6} y={y(v) + 4} textAnchor="end">
                   {v.toFixed(1)}
                 </text>
+              </g>
+            ))}
+            {/* The FOMC lane: a hairline through the plot at each decision, a mark in the lane
+                (a diamond when the Fed also published projections). */}
+            <text x={L - 6} y={LANE + 4} textAnchor="end">
+              FOMC
+            </text>
+            {meetings.map((m) => (
+              <g key={m.date}>
+                <Box
+                  component="line"
+                  x1={x(m.index)}
+                  x2={x(m.index)}
+                  y1={T}
+                  y2={LANE - 7}
+                  sx={(t) => ({ stroke: chartRoles(t).edge, strokeDasharray: '2 3' })}
+                />
+                {m.sep ? (
+                  <rect
+                    x={x(m.index) - 4}
+                    y={LANE - 4}
+                    width={8}
+                    height={8}
+                    transform={`rotate(45 ${x(m.index)} ${LANE})`}
+                  />
+                ) : (
+                  <circle cx={x(m.index)} cy={LANE} r={3.5} />
+                )}
               </g>
             ))}
             <text x={L} y={H - 10}>
@@ -945,10 +999,33 @@ function FeedsNotes({ daily, latest }: { daily: YieldPoint[]; latest: YieldPoint
   );
 }
 
+// "—" for a figure an older API doesn't send (the percentiles), never "NaN".
 const fmtK = (n: number) =>
-  `${n >= 0 ? '+' : '−'}${Math.round(Math.abs(n) / 1000).toLocaleString('en-US')}`;
+  Number.isFinite(n)
+    ? `${n >= 0 ? '+' : '−'}${Math.round(Math.abs(n) / 1000).toLocaleString('en-US')}`
+    : '—';
 
 const CFTC_URL = 'https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm';
+
+/** What every CFTC frame shares: provenance, state tag, source and the as-of (positions are as of
+ *  a Tuesday and published the Friday after). */
+function cftcFrame(futures: Futures) {
+  const published = new Date(`${futures.report_date}T12:00:00Z`);
+  published.setUTCDate(published.getUTCDate() + 3);
+  const demo = dataMode === 'demo';
+  return {
+    provenance: (demo ? 'sample' : 'primary') as Provenance,
+    tag: demo
+      ? { state: 'demo' as const }
+      : { state: 'delayed' as const, detail: `as of ${formatShortDate(futures.report_date)}` },
+    source: demo
+      ? { text: 'Demo · shaped like CFTC data' }
+      : { text: 'CFTC · Traders in Financial Futures', href: CFTC_URL },
+    asOf: demo
+      ? `Scenario · ${formatNoteDate(futures.report_date)}`
+      : `Positions ${formatNoteDate(futures.report_date)} · published ${formatShortDate(published.toISOString().slice(0, 10))}`,
+  };
+}
 
 function FuturesSection({ futures }: { futures: Futures }) {
   const groups = futures.markets.flatMap((m) => [
@@ -969,33 +1046,14 @@ function FuturesSection({ futures }: { futures: Futures }) {
   const finding = extreme
     ? `${extreme.who}' ${extreme.market.name} ${extreme.g.net >= 0 ? 'long' : 'short'} sits ${where(extreme.g.position_in_range)} its 3-year range.`
     : 'Futures positioning';
-  // Positions are as of a Tuesday and published the Friday after.
-  const published = new Date(`${futures.report_date}T12:00:00Z`);
-  published.setUTCDate(published.getUTCDate() + 3);
-  const demo = dataMode === 'demo';
   return (
     <ChartFrame
+      {...cftcFrame(futures)}
       finding={finding}
       metric="Futures positioning"
-      sub="Net futures positions · thousands of contracts · this week within its own 3-year range · tick = 3-year median · bar = this week · 0 marks the switch from net short to net long"
+      sub="Net futures positions · thousands of contracts · this week within its own 3-year range · band = 10th–90th percentile · tick = 3-year median · bar = this week · 0 marks the switch from net short to net long"
       headingLevel="h2"
       height={300}
-      provenance={demo ? 'sample' : 'primary'}
-      tag={
-        demo
-          ? { state: 'demo' }
-          : { state: 'delayed', detail: `as of ${formatShortDate(futures.report_date)}` }
-      }
-      source={
-        demo
-          ? { text: 'Demo · shaped like CFTC data' }
-          : { text: 'CFTC · Traders in Financial Futures', href: CFTC_URL }
-      }
-      asOf={
-        demo
-          ? `Scenario · ${formatNoteDate(futures.report_date)}`
-          : `Positions ${formatNoteDate(futures.report_date)} · published ${formatShortDate(published.toISOString().slice(0, 10))}`
-      }
       note="Reported as of Tuesday and published Friday, so this view is three days old when it updates. It describes who holds what, not what any of them will do."
       table={{
         caption: 'Net futures positions, thousands of contracts, and their 3-year range',
@@ -1004,7 +1062,9 @@ function FuturesSection({ futures }: { futures: Futures }) {
           'Net',
           'On the week',
           '3-yr low',
+          '10th pct',
           '3-yr median',
+          '90th pct',
           '3-yr high',
           'Of range',
         ],
@@ -1013,7 +1073,9 @@ function FuturesSection({ futures }: { futures: Futures }) {
           fmtK(g.net),
           fmtK(g.week_change),
           fmtK(g.min_3y),
+          fmtK(g.p10_3y),
           fmtK(g.median_3y),
+          fmtK(g.p90_3y),
           fmtK(g.max_3y),
           `${Math.round(g.position_in_range * 100)}%`,
         ]),
@@ -1086,7 +1148,7 @@ function RangeRow({ who, g }: { who: string; g: Futures['markets'][number]['asse
       </Box>
       <Box
         role="img"
-        aria-label={`${who} ${fmtK(g.net)} thousand contracts, net ${g.net >= 0 ? 'long' : 'short'}, ${Math.round(g.position_in_range * 100)}% of the way from the 3-year low of ${fmtK(g.min_3y)} to the high of ${fmtK(g.max_3y)}; 3-year median ${fmtK(g.median_3y)}`}
+        aria-label={`${who} ${fmtK(g.net)} thousand contracts, net ${g.net >= 0 ? 'long' : 'short'}, ${Math.round(g.position_in_range * 100)}% of the way from the 3-year low of ${fmtK(g.min_3y)} to the high of ${fmtK(g.max_3y)}; 3-year median ${fmtK(g.median_3y)}; 10th to 90th percentile ${fmtK(g.p10_3y)} to ${fmtK(g.p90_3y)}`}
         sx={{ position: 'relative', height: 22 }}
       >
         <Box
@@ -1100,6 +1162,24 @@ function RangeRow({ who, g }: { who: string; g: Futures['markets'][number]['asse
             bgcolor: chartRoles(t).grid,
           })}
         />
+        {/* The middle 80% of the three years' weeks: 10th to 90th percentile (absent from an API
+            that predates it, so drawn only when present). */}
+        {Number.isFinite(g.p10_3y) && Number.isFinite(g.p90_3y) && (
+          <Box
+            sx={(t) => ({
+              position: 'absolute',
+              left: `${at(g.p10_3y) * 100}%`,
+              width: `${Math.max(0.5, (at(g.p90_3y) - at(g.p10_3y)) * 100)}%`,
+              top: 5,
+              height: 12,
+              boxSizing: 'border-box',
+              borderRadius: '2px',
+              bgcolor: chartRoles(t).band,
+              borderLeft: `1px solid ${chartRoles(t).edge}`,
+              borderRight: `1px solid ${chartRoles(t).edge}`,
+            })}
+          />
+        )}
         {zero !== null && (
           <Box
             sx={(t) => ({
@@ -1162,6 +1242,216 @@ function RangeRow({ who, g }: { who: string; g: Futures['markets'][number]['asse
           sx={{ position: 'absolute', right: 0 }}
         >{`high ${fmtK(g.max_3y)}`}</Box>
       </Box>
+    </Box>
+  );
+}
+
+type GroupKey = 'dealers' | 'asset_managers' | 'leveraged_funds' | 'other_reportables';
+const GROUPS: { key: GroupKey; name: string }[] = [
+  { key: 'dealers', name: 'Dealers' },
+  { key: 'asset_managers', name: 'Asset managers' },
+  { key: 'leveraged_funds', name: 'Leveraged funds' },
+  { key: 'other_reportables', name: 'Other reportables' },
+];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthYear = (d: string) => `${MONTHS[Number(d.slice(5, 7)) - 1]} ${d.slice(0, 4)}`;
+
+/**
+ * The 10-year note's four trader groups as small multiples on one scale (design cftcMultiples):
+ * four panels, never four hues (P-9); above zero is net long, below net short (P-11). Drawn only
+ * when every week in the window carries all four groups.
+ */
+function PositioningGroups({ futures }: { futures: Futures }) {
+  const m = futures.markets.find((x) => x.code === '043602');
+  // `?? []`: an API from before the history existed (a deploy can briefly pair a new page with it)
+  // draws nothing here rather than failing the page.
+  const weeks = m?.history ?? [];
+  if (!m || weeks.length < 2 || !m.dealers || !m.other_reportables) return null;
+  const value = (w: (typeof weeks)[number], k: GroupKey) => w[k] ?? 0;
+  const all = weeks.flatMap((w) => GROUPS.map((g) => value(w, g.key)));
+  const lo = Math.min(0, ...all);
+  const hi = Math.max(0, ...all);
+  const am = m.asset_managers.net;
+  const lev = m.leveraged_funds.net;
+  const side = (n: number) => (n >= 0 ? 'long' : 'short');
+  const always = weeks.every((w) => Math.sign(w.asset_managers) !== Math.sign(w.leveraged_funds));
+  const finding =
+    Math.sign(am) !== Math.sign(lev)
+      ? `Asset managers are net ${side(am)} the ${m.name} and leveraged funds net ${side(lev)}${always ? ', as in every week of the last three years' : ''}`
+      : `Asset managers and leveraged funds are both net ${side(am)} the ${m.name}`;
+  const first = weeks[0].date;
+  const last = weeks[weeks.length - 1].date;
+  return (
+    <ChartFrame
+      {...cftcFrame(futures)}
+      finding={finding}
+      metric="Positioning by trader group"
+      sub={`Net futures positions, ${m.name}, by trader group · thousands of contracts · weekly, ${monthYear(first)} – ${monthYear(last)} · one scale in every panel · above zero is net long`}
+      headingLevel="h2"
+      height={280}
+      table={{
+        caption: `${m.name} net positions by trader group, thousands of contracts, newest week first`,
+        cols: ['Week of', ...GROUPS.map((g) => g.name)],
+        rows: [...weeks]
+          .reverse()
+          .map((w) => [w.date, ...GROUPS.map((g) => fmtK(value(w, g.key)))]),
+      }}
+      testId="chart-positioning-groups"
+    >
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))',
+          gap: 2,
+        }}
+      >
+        {GROUPS.map((g) => (
+          <GroupPanel
+            key={g.key}
+            name={g.name}
+            series={weeks.map((w) => value(w, g.key))}
+            lo={lo}
+            hi={hi}
+            first={first}
+            last={last}
+          />
+        ))}
+      </Box>
+    </ChartFrame>
+  );
+}
+
+function GroupPanel({
+  name,
+  series,
+  lo,
+  hi,
+  first,
+  last,
+}: {
+  name: string;
+  series: number[];
+  lo: number;
+  hi: number;
+  first: string;
+  last: string;
+}) {
+  const [ref, W] = useWidth<HTMLDivElement>();
+  const net = series[series.length - 1];
+  const PL = 48;
+  const PT = 6;
+  const PH = 76;
+  const H = PT + PH + 20;
+  const x = (i: number) => PL + (i / Math.max(1, series.length - 1)) * Math.max(0, W - PL - 4);
+  const y = (v: number) => PT + ((hi - v) / (hi - lo || 1)) * PH;
+  const ticks = [hi, 0, lo].filter((v, i, a) => a.indexOf(v) === i);
+  return (
+    <Box
+      component="article"
+      sx={(t) => ({
+        p: 1.5,
+        borderRadius: '10px',
+        border: `1px solid ${t.palette.divider}`,
+        display: 'grid',
+        gap: 0.75,
+        minWidth: 0,
+      })}
+    >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
+        <Box component="h3" sx={{ m: 0, fontSize: 14, fontWeight: 600 }}>
+          {name}
+        </Box>
+        <Box component="span" sx={{ ...MONO, fontSize: 12 }}>
+          {`${fmtK(net)}K net ${net >= 0 ? 'long' : 'short'}`}
+        </Box>
+      </Box>
+      <Box ref={ref} sx={{ height: H, minWidth: 0 }}>
+        {W > 0 && (
+          <svg
+            width={W}
+            height={H}
+            role="img"
+            aria-label={`${name}: net ${net >= 0 ? 'long' : 'short'} ${fmtK(net)} thousand contracts now; weekly from ${first} to ${last}`}
+            style={{ display: 'block' }}
+          >
+            <GroupAxes ticks={ticks} y={y} W={W} PL={PL} />
+            <GroupLine points={series.map((v, i) => `${x(i)},${y(v)}`).join(' ')} />
+            <GroupDates W={W} PL={PL} yBase={PT + PH + 15} first={first} last={last} />
+          </svg>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+function GroupAxes({
+  ticks,
+  y,
+  W,
+  PL,
+}: {
+  ticks: number[];
+  y: (v: number) => number;
+  W: number;
+  PL: number;
+}) {
+  return (
+    <Box
+      component="g"
+      sx={(t) => ({
+        '& line': { stroke: chartRoles(t).grid },
+        '& line.zero': { stroke: chartRoles(t).axis },
+        '& text': { fill: t.palette.text.secondary },
+      })}
+    >
+      {ticks.map((v) => (
+        <g key={v}>
+          <line className={v === 0 ? 'zero' : undefined} x1={PL} x2={W} y1={y(v)} y2={y(v)} />
+          <text x={PL - 6} y={y(v) + 4} textAnchor="end" fontSize={11} style={MONO}>
+            {v === 0 ? '0' : `${fmtK(v)}K`}
+          </text>
+        </g>
+      ))}
+    </Box>
+  );
+}
+
+function GroupLine({ points }: { points: string }) {
+  return (
+    <Box
+      component="polyline"
+      points={points}
+      sx={(t) => ({
+        fill: 'none',
+        stroke: chartRoles(t).emph,
+        strokeWidth: 1.5,
+        strokeLinejoin: 'round',
+      })}
+    />
+  );
+}
+
+function GroupDates({
+  W,
+  PL,
+  yBase,
+  first,
+  last,
+}: {
+  W: number;
+  PL: number;
+  yBase: number;
+  first: string;
+  last: string;
+}) {
+  return (
+    <Box component="g" sx={(t) => ({ '& text': { fill: t.palette.text.secondary } })}>
+      <text x={PL} y={yBase} fontSize={11} style={MONO}>
+        {monthYear(first)}
+      </text>
+      <text x={W} y={yBase} textAnchor="end" fontSize={11} style={MONO}>
+        {monthYear(last)}
+      </text>
     </Box>
   );
 }

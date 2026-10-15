@@ -37,6 +37,11 @@ const GENERATED_ROOT: &str = "libs/api/src/generated";
 // comments name `not_live`: additive schema growth, zero new operations, so
 // `precutover-operation-baseline.json` stays pinned to its prior hash and four artifacts move
 // (ledger `route-growth-repins-api-artifact-oracle`).
+//
+// Re-pinned for the API gaps (2026-10-14): `PositionGroupWire` gains `p10_3y`/`p90_3y`,
+// `FuturesMarketWire` gains `dealers`, `other_reportables` and a weekly `history`, and
+// `ShortVolumeWire` gains its `daily` series: additive schema growth, zero new operations, so the
+// precutover baseline stays pinned and four artifacts move.
 const API_ARTIFACTS: [(&str, &str); 5] = [
     (
         "apps/api/openapi/precutover-operation-baseline.json",
@@ -44,19 +49,19 @@ const API_ARTIFACTS: [(&str, &str); 5] = [
     ),
     (
         "apps/api/openapi/convexa.openapi.json",
-        "c5aefdbc24f7358c8ffd6c09c58918c214a29b4eda0d53b53d0687ca553e2d96",
+        "d82152ff6ef61ed4b5f5310333832448dcea13d578ee8fa0eab106919536755e",
     ),
     (
         "apps/api/openapi/parity-coverage.json",
-        "6045bfd1568cb426c0cc84ee883d475ba15a13603cbcf97013a5aa8706eba771",
+        "56ae4ac4541f2aaa7d421dd198490b12d08b6b996c4aaea70bdf618eeeb51bbb",
     ),
     (
         "apps/api/openapi/generated-artifacts.manifest.json",
-        "2b6d013518617f5e878c9c455b99c6b2f4740f4ccb7eaf9adc5d8b074277427b",
+        "e83b7cfe6cbec017a6a35f7fe28b10c8d331886f6cb228bd08cf290badef10d6",
     ),
     (
         "libs/api/src/generated/schema.ts",
-        "b78a3312fb63c35da7766cf9ece07de0f1afce29fdb26df846b0dfd52370abf3",
+        "2e64f060c4c8fef4e94f2d9b67ee034ea7cb9255748e1afe4cff339509df1c56",
     ),
 ];
 

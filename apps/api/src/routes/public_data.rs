@@ -129,9 +129,25 @@ pub struct PositionGroupWire {
     pub min_3y: i64,
     pub max_3y: i64,
     pub median_3y: i64,
+    /// 10th and 90th percentiles of the weekly nets in the window (linear interpolation).
+    pub p10_3y: i64,
+    pub p90_3y: i64,
     pub position_in_range: f64,
     /// Weekly reports in the three-year window.
     pub weeks: u32,
+}
+
+/// One weekly report's net positions, contracts; null where the report lacks that group.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct PositionWeekWire {
+    /// YYYY-MM-DD, the Tuesday the positions are as of.
+    pub date: String,
+    pub asset_managers: i64,
+    pub leveraged_funds: i64,
+    #[schema(required = true)]
+    pub dealers: Option<i64>,
+    #[schema(required = true)]
+    pub other_reportables: Option<i64>,
 }
 
 impl From<service::PositionGroup> for PositionGroupWire {
@@ -142,6 +158,8 @@ impl From<service::PositionGroup> for PositionGroupWire {
             min_3y: g.min_3y,
             max_3y: g.max_3y,
             median_3y: g.median_3y,
+            p10_3y: g.p10_3y,
+            p90_3y: g.p90_3y,
             position_in_range: g.position_in_range,
             weeks: g.weeks,
         }
@@ -156,6 +174,13 @@ pub struct FuturesMarketWire {
     pub exchange: String,
     pub asset_managers: PositionGroupWire,
     pub leveraged_funds: PositionGroupWire,
+    /// Null unless every report in the window carries the group.
+    #[schema(required = true)]
+    pub dealers: Option<PositionGroupWire>,
+    #[schema(required = true)]
+    pub other_reportables: Option<PositionGroupWire>,
+    /// Every weekly report in the window, oldest first.
+    pub history: Vec<PositionWeekWire>,
 }
 
 /// CFTC Traders in Financial Futures positioning for index and Treasury futures.
@@ -208,6 +233,19 @@ impl From<service::Markets> for PublicMarketsWire {
                         exchange: market.exchange.clone(),
                         asset_managers: market.asset_managers.into(),
                         leveraged_funds: market.leveraged_funds.into(),
+                        dealers: market.dealers.map(Into::into),
+                        other_reportables: market.other_reportables.map(Into::into),
+                        history: market
+                            .history
+                            .iter()
+                            .map(|w| PositionWeekWire {
+                                date: day(w.date),
+                                asset_managers: w.asset_managers,
+                                leveraged_funds: w.leveraged_funds,
+                                dealers: w.dealers,
+                                other_reportables: w.other_reportables,
+                            })
+                            .collect(),
                     })
                     .collect(),
             }),
@@ -320,6 +358,16 @@ pub struct ShortVolumeWire {
     pub ratio: f64,
     pub avg_ratio: f64,
     pub days: u32,
+    /// Every day averaged, oldest first (the latest included).
+    pub daily: Vec<ShortVolumeDayWire>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ShortVolumeDayWire {
+    pub date: String,
+    pub short_volume: f64,
+    pub total_volume: f64,
+    pub ratio: f64,
 }
 
 /// Form 4 open-market activity over the last `window_days`: `sales`/`buys` count transactions
@@ -440,6 +488,16 @@ impl From<service::TickerReport> for PublicTickerWire {
                 ratio: v.ratio,
                 avg_ratio: v.avg_ratio,
                 days: v.days,
+                daily: v
+                    .daily
+                    .iter()
+                    .map(|d| ShortVolumeDayWire {
+                        date: day(d.date),
+                        short_volume: d.short_volume,
+                        total_volume: d.total_volume,
+                        ratio: d.ratio,
+                    })
+                    .collect(),
             }),
             insiders: t.insiders.map(|i| InsidersWire {
                 state: i.state.into(),
@@ -595,6 +653,8 @@ fn representative_markets() -> PublicMarketsWire {
         min_3y: 2_531_384,
         max_3y: 2_828_139,
         median_3y: 2_598_143,
+        p10_3y: 2_552_592,
+        p90_3y: 2_792_013,
         position_in_range: 1.0,
         weeks: 156,
     };
@@ -618,7 +678,16 @@ fn representative_markets() -> PublicMarketsWire {
                 name: "10-year T-note".into(),
                 exchange: "CBOT".into(),
                 asset_managers: group.clone(),
-                leveraged_funds: group,
+                leveraged_funds: group.clone(),
+                dealers: Some(group.clone()),
+                other_reportables: None,
+                history: vec![PositionWeekWire {
+                    date: "2026-10-06".into(),
+                    asset_managers: 2_828_139,
+                    leveraged_funds: -2_139_785,
+                    dealers: Some(-98_000),
+                    other_reportables: None,
+                }],
             }],
         }),
     }
@@ -660,6 +729,12 @@ fn representative_ticker() -> PublicTickerWire {
             ratio: 0.48,
             avg_ratio: 0.5,
             days: 20,
+            daily: vec![ShortVolumeDayWire {
+                date: "2026-10-09".into(),
+                short_volume: 17_868_373.8,
+                total_volume: 37_049_004.2,
+                ratio: 0.48,
+            }],
         }),
         insiders: Some(InsidersWire {
             state: PublicDataState::NotConfigured,

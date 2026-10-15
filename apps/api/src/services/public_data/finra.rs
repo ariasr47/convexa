@@ -4,7 +4,7 @@
 //! - Consolidated short interest (twice-monthly settlements) through the FINRA data API, which
 //!   refuses to sort unless the settlement date is an equality filter, so rows are sorted here.
 
-use super::types::{SettlementPoint, ShortInterest, ShortVolume};
+use super::types::{SettlementPoint, ShortInterest, ShortVolume, ShortVolumeDay};
 use chrono::NaiveDate;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -102,6 +102,16 @@ pub(crate) fn summarize_daily(
         ratio: short / total,
         avg_ratio,
         days: days.len() as u32,
+        daily: days
+            .iter()
+            .rev()
+            .map(|&(date, short, total)| ShortVolumeDay {
+                date,
+                short_volume: short,
+                total_volume: total,
+                ratio: short / total,
+            })
+            .collect(),
     })
 }
 
@@ -243,6 +253,13 @@ mod tests {
             + 17_901_998.693935 / 34_776_416.325254)
             / 3.0;
         assert!((nvda.avg_ratio - expected_avg).abs() < 1e-12);
+        // The series behind the average, oldest first, ending on the latest day.
+        assert_eq!(nvda.daily.len(), 3);
+        assert!(nvda.daily.windows(2).all(|w| w[0].date < w[1].date));
+        assert_eq!(nvda.daily.last().map(|d| d.date), Some(nvda.date));
+        assert_eq!(nvda.daily.last().map(|d| d.ratio), Some(nvda.ratio));
+        let mean = nvda.daily.iter().map(|d| d.ratio).sum::<f64>() / 3.0;
+        assert!((mean - nvda.avg_ratio).abs() < 1e-12);
 
         // BRK/B is missing from the 10-07 file: two days, not three.
         let brk = summarize_daily(&files, &daily_symbol("BRK.B")).unwrap();

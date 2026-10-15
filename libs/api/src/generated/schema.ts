@@ -1502,9 +1502,13 @@ export interface components {
       asset_managers: components['schemas']['PositionGroupWire'];
       /** @description CFTC contract market code. */
       code: string;
+      dealers: null | components['schemas']['PositionGroupWire'];
       exchange: string;
+      /** @description Every weekly report in the window, oldest first. */
+      history: components['schemas']['PositionWeekWire'][];
       leveraged_funds: components['schemas']['PositionGroupWire'];
       name: string;
+      other_reportables: null | components['schemas']['PositionGroupWire'];
     };
     /** @description CFTC Traders in Financial Futures positioning for index and Treasury futures. */
     FuturesWire: {
@@ -2146,6 +2150,13 @@ export interface components {
       min_3y: number;
       /** Format: int64 */
       net: number;
+      /**
+       * Format: int64
+       * @description 10th and 90th percentiles of the weekly nets in the window (linear interpolation).
+       */
+      p10_3y: number;
+      /** Format: int64 */
+      p90_3y: number;
       /** Format: double */
       position_in_range: number;
       /** Format: int64 */
@@ -2155,6 +2166,19 @@ export interface components {
        * @description Weekly reports in the three-year window.
        */
       weeks: number;
+    };
+    /** @description One weekly report's net positions, contracts; null where the report lacks that group. */
+    PositionWeekWire: {
+      /** Format: int64 */
+      asset_managers: number;
+      /** @description YYYY-MM-DD, the Tuesday the positions are as of. */
+      date: string;
+      /** Format: int64 */
+      dealers: number | null;
+      /** Format: int64 */
+      leveraged_funds: number;
+      /** Format: int64 */
+      other_reportables: number | null;
     };
     PriceWire: {
       /** Format: double */
@@ -2682,6 +2706,15 @@ export interface components {
       /** Format: double */
       shares_short: number;
     };
+    ShortVolumeDayWire: {
+      date: string;
+      /** Format: double */
+      ratio: number;
+      /** Format: double */
+      short_volume: number;
+      /** Format: double */
+      total_volume: number;
+    };
     /**
      * @description FINRA daily short-sale volume on the latest day found; `ratio` = short / total (0..1);
      *     `avg_ratio` = mean daily ratio over `days` (at most 20 trading days).
@@ -2689,6 +2722,8 @@ export interface components {
     ShortVolumeWire: {
       /** Format: double */
       avg_ratio: number;
+      /** @description Every day averaged, oldest first (the latest included). */
+      daily: components['schemas']['ShortVolumeDayWire'][];
       date: string;
       /** Format: int32 */
       days: number;

@@ -2,9 +2,11 @@ import type {
   PublicFact,
   PublicFiling,
   PublicFilings,
+  PublicFuturesMarket,
   PublicMarkets,
   PublicPeriodicFiling,
   PublicPositionGroup,
+  PublicShortVolume,
   PublicTicker,
   PublicYieldPoint,
 } from '../convexa';
@@ -127,21 +129,88 @@ function demoYields(): PublicYieldPoint[] {
   return points;
 }
 
-function group(
-  net: number,
-  weekChange: number,
-  min: number,
-  max: number,
-  median: number,
-): PublicPositionGroup {
+/** Weekly Tuesdays, oldest first, ending on the demo's latest report (2026-10-06): three years. */
+const DEMO_WEEKS = 156;
+const demoWeekDates = (): string[] => {
+  const end = Date.parse('2026-10-06T00:00:00Z');
+  return Array.from({ length: DEMO_WEEKS }, (_, i) =>
+    isoDay(end - (DEMO_WEEKS - 1 - i) * 7 * DAY_MS),
+  );
+};
+
+/** A smooth authored weekly path between `lo` and `hi`, ending exactly at `end`. */
+function weeklyPath(end: number, lo: number, hi: number, seed: number): number[] {
+  const mid = (lo + hi) / 2;
+  const amp = (hi - lo) / 2;
+  const path = Array.from(
+    { length: DEMO_WEEKS },
+    (_, i) =>
+      Math.round(
+        (mid + amp * 0.9 * Math.sin(seed + i * 0.09) * Math.cos(seed / 2 + i * 0.031)) / 100,
+      ) * 100,
+  );
+  // Ease the last eight weeks into `end`, so the latest report is the authored net.
+  for (let k = 0; k < 8; k += 1) {
+    const i = DEMO_WEEKS - 8 + k;
+    const w = (k + 1) / 8;
+    path[i] = Math.round((path[i] * (1 - w) + end * w) / 100) * 100;
+  }
+  path[DEMO_WEEKS - 1] = end;
+  return path;
+}
+
+/** The quantile by linear interpolation between ranks, rounded (as the API computes it). */
+function quantile(sorted: number[], q: number): number {
+  const pos = q * (sorted.length - 1);
+  const lo = Math.floor(pos);
+  const hi = Math.ceil(pos);
+  return Math.round(sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo));
+}
+
+/** A group's summary computed from its own weekly series, the way the API does, so the demo's
+ *  figures and its history agree. */
+function group(series: number[]): PublicPositionGroup {
+  const net = series[series.length - 1];
+  const sorted = [...series].sort((a, b) => a - b);
+  const n = sorted.length;
+  const min = sorted[0];
+  const max = sorted[n - 1];
   return {
     net,
-    week_change: weekChange,
+    week_change: net - series[n - 2],
     min_3y: min,
     max_3y: max,
-    median_3y: median,
-    position_in_range: round((net - min) / (max - min), 3),
-    weeks: 156,
+    median_3y: n % 2 ? sorted[(n - 1) / 2] : Math.round((sorted[n / 2 - 1] + sorted[n / 2]) / 2),
+    p10_3y: quantile(sorted, 0.1),
+    p90_3y: quantile(sorted, 0.9),
+    position_in_range: max === min ? 0.5 : round((net - min) / (max - min), 3),
+    weeks: n,
+  };
+}
+
+/** One demo market: four groups' weekly paths, their summaries and the history rows. */
+function demoMarket(
+  code: string,
+  name: string,
+  exchange: string,
+  paths: { asset: number[]; lev: number[]; dealer: number[]; other: number[] },
+): PublicFuturesMarket {
+  const dates = demoWeekDates();
+  return {
+    code,
+    name,
+    exchange,
+    asset_managers: group(paths.asset),
+    leveraged_funds: group(paths.lev),
+    dealers: group(paths.dealer),
+    other_reportables: group(paths.other),
+    history: dates.map((date, i) => ({
+      date,
+      asset_managers: paths.asset[i],
+      leveraged_funds: paths.lev[i],
+      dealers: paths.dealer[i],
+      other_reportables: paths.other[i],
+    })),
   };
 }
 
@@ -165,29 +234,54 @@ export function demoPublicMarkets(): PublicMarkets {
       report_date: '2026-10-06',
       fetched_at: DEMO_TIME,
       markets: [
-        {
-          code: '043602',
-          name: '10-year T-note',
-          exchange: 'CBOT',
-          asset_managers: group(2_700_000, 48_000, 1_900_000, 2_800_000, 2_350_000),
-          leveraged_funds: group(-2_050_000, -61_000, -2_300_000, -1_100_000, -1_700_000),
-        },
-        {
-          code: '13874A',
-          name: 'E-mini S&P 500',
-          exchange: 'CME',
-          asset_managers: group(880_000, 9_000, 610_000, 990_000, 820_000),
-          leveraged_funds: group(-390_000, -22_000, -460_000, -120_000, -280_000),
-        },
-        {
-          code: '209742',
-          name: 'E-mini Nasdaq-100',
-          exchange: 'CME',
-          asset_managers: group(70_000, 3_100, 31_000, 82_000, 58_000),
-          leveraged_funds: group(-21_000, 4_700, -64_000, -4_000, -30_000),
-        },
+        demoMarket('043602', '10-year T-note', 'CBOT', {
+          asset: weeklyPath(2_700_000, 1_900_000, 2_800_000, 0.4),
+          lev: weeklyPath(-2_050_000, -2_300_000, -1_100_000, 1.7),
+          dealer: weeklyPath(-90_000, -260_000, 120_000, 2.9),
+          other: weeklyPath(-310_000, -520_000, -60_000, 4.1),
+        }),
+        demoMarket('13874A', 'E-mini S&P 500', 'CME', {
+          asset: weeklyPath(880_000, 610_000, 990_000, 0.9),
+          lev: weeklyPath(-390_000, -460_000, -120_000, 2.2),
+          dealer: weeklyPath(-180_000, -320_000, 40_000, 3.3),
+          other: weeklyPath(60_000, -40_000, 150_000, 5.0),
+        }),
+        demoMarket('209742', 'E-mini Nasdaq-100', 'CME', {
+          asset: weeklyPath(70_000, 31_000, 82_000, 1.3),
+          lev: weeklyPath(-21_000, -64_000, -4_000, 2.6),
+          dealer: weeklyPath(-28_000, -45_000, 6_000, 3.8),
+          other: weeklyPath(9_000, -6_000, 21_000, 4.6),
+        }),
       ],
     },
+  };
+}
+
+/** Twenty weekdays of short-sale volume ending on the demo's latest file (2026-10-06), on a small
+ *  authored wave around the profile's ratio; the average is the mean of those days, as the API
+ *  computes it, and the latest day is the profile's own ratio. */
+function demoShortVolume(totalVolume: number, ratio: number): PublicShortVolume {
+  const end = Date.parse('2026-10-06T00:00:00Z');
+  const dates: string[] = [];
+  for (let back = 0; dates.length < 20; back += 1) {
+    const ms = end - back * DAY_MS;
+    const weekday = new Date(ms).getUTCDay();
+    if (weekday !== 0 && weekday !== 6) dates.unshift(isoDay(ms));
+  }
+  const daily = dates.map((date, i) => {
+    const r = i === dates.length - 1 ? ratio : round(ratio - 0.02 + 0.035 * Math.sin(i * 0.9), 4);
+    const total = Math.round(totalVolume * (0.85 + (0.3 * ((i * 7) % 10)) / 10));
+    return { date, short_volume: Math.round(total * r), total_volume: total, ratio: r };
+  });
+  const last = daily[daily.length - 1];
+  return {
+    date: last.date,
+    short_volume: last.short_volume,
+    total_volume: last.total_volume,
+    ratio: last.ratio,
+    avg_ratio: round(daily.reduce((sum, d) => sum + d.ratio, 0) / daily.length, 4),
+    days: daily.length,
+    daily,
   };
 }
 
@@ -346,14 +440,7 @@ export function demoPublicTicker(ticker: string): PublicTicker {
       average_daily_volume: totalVolume,
       history,
     },
-    short_volume: {
-      date: '2026-10-06',
-      short_volume: Math.round(totalVolume * profile.shortRatio),
-      total_volume: totalVolume,
-      ratio: profile.shortRatio,
-      avg_ratio: round(profile.shortRatio - 0.02, 4),
-      days: 20,
-    },
+    short_volume: demoShortVolume(totalVolume, profile.shortRatio),
     insiders: company
       ? {
           state: 'live',

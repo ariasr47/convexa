@@ -15,7 +15,7 @@ import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { publicDataWord } from '@/shared/dataState/vocabulary';
 import { dataMode, type PublicTicker } from '@convexa/api';
 import Box from '@mui/material/Box';
-import { alpha } from '@mui/material/styles';
+import { alpha, useTheme } from '@mui/material/styles';
 import { useMemo } from 'react';
 import { localToday, upcoming } from 'virtual:convexa-research';
 import { standing } from './filings';
@@ -24,6 +24,7 @@ import type { Read } from './publicData';
 import { Caps, SourceProblem } from './publicUi';
 import type { Aging } from './types';
 import { DISPLAY, MONO, PANEL_SX } from './ui';
+import { useWidth } from './useWidth';
 
 const big = (n: number) =>
   n >= 1e9
@@ -342,6 +343,7 @@ function PartNote({ text }: { text: string | null }) {
 }
 
 const FINRA_SI_URL = 'https://www.finra.org/finra-data/browse-catalog/equity-short-interest';
+const FINRA_SV_URL = 'https://www.finra.org/finra-data/browse-catalog/short-sale-volume-data';
 
 /**
  * Short interest at each FINRA settlement (RP-01, canon P-8 to P-13): the frame's title states the
@@ -364,7 +366,13 @@ export function ShortInterestCard({ d }: { d: PublicTicker }) {
       <Missing label="Short interest" text="FINRA has no short-interest report for this symbol." />
     );
   const stale = !!d.short_interest_detail && !demo;
-  const share = d.shares_outstanding ? si.shares_short / d.shares_outstanding.value : null;
+  const out = d.shares_outstanding;
+  const share = out ? si.shares_short / out.value : null;
+  // Shares outstanding from the latest filing, one denominator for every settlement: the right-hand
+  // labels restate the same axis in % of shares outstanding (not the float, which SEC data here
+  // doesn't give). Shown only when SEC filings are set up.
+  const pctOut = (shares: number) =>
+    out ? `${((shares / out.value) * 100).toFixed(shares / out.value < 0.1 ? 1 : 0)}%` : '';
   const hist = si.history.some((h) => h.settlement_date === si.settlement_date)
     ? si.history
     : [...si.history, { settlement_date: si.settlement_date, shares_short: si.shares_short }];
@@ -383,7 +391,7 @@ export function ShortInterestCard({ d }: { d: PublicTicker }) {
     <ChartFrame
       finding={finding}
       metric="Short interest"
-      sub={`${d.ticker} short interest at each FINRA settlement · ${u === 'B' ? 'billions' : 'millions'} of shares${hist.length > 1 ? ` · ${formatShortDate(first.settlement_date)} – ${formatShortDate(si.settlement_date)}` : ''}`}
+      sub={`${d.ticker} short interest at each FINRA settlement · ${u === 'B' ? 'billions' : 'millions'} of shares${out ? ` · right: % of the ${formatShortDate(out.as_of)} shares outstanding (SEC)` : ''}${hist.length > 1 ? ` · ${formatShortDate(first.settlement_date)} – ${formatShortDate(si.settlement_date)}` : ''}`}
       height={PLOT + 28}
       provenance={demo ? 'sample' : 'primary'}
       tag={{
@@ -398,8 +406,14 @@ export function ShortInterestCard({ d }: { d: PublicTicker }) {
       asOf={`Settled ${formatNoteDate(si.settlement_date)} · published about a week later`}
       table={{
         caption: `${d.ticker} shares sold short by settlement date`,
-        cols: ['Settlement', 'Shares short'],
-        rows: hist.map((h) => [formatNoteDate(h.settlement_date), big(h.shares_short)]),
+        cols: out
+          ? ['Settlement', 'Shares short', `% of shares out (${formatShortDate(out.as_of)})`]
+          : ['Settlement', 'Shares short'],
+        rows: hist.map((h) =>
+          out
+            ? [formatNoteDate(h.settlement_date), big(h.shares_short), pctOut(h.shares_short)]
+            : [formatNoteDate(h.settlement_date), big(h.shares_short)],
+        ),
       }}
       testId="chart-short-interest"
     >
@@ -408,7 +422,14 @@ export function ShortInterestCard({ d }: { d: PublicTicker }) {
         <Box
           role="img"
           aria-label={`Shares short by settlement: ${hist.map((h) => `${formatShortDate(h.settlement_date)} ${big(h.shares_short)}`).join(', ')}`}
-          sx={{ position: 'relative', height: PLOT, ml: '40px', mr: '8px', mt: '14px', mb: '22px' }}
+          sx={{
+            position: 'relative',
+            height: PLOT,
+            ml: '40px',
+            mr: out ? '44px' : '8px',
+            mt: '14px',
+            mb: '22px',
+          }}
         >
           {[0, top / 2, top].map((v) => (
             <Box key={v}>
@@ -436,6 +457,23 @@ export function ShortInterestCard({ d }: { d: PublicTicker }) {
               >
                 {v === 0 ? '0' : `${trimNum(v)}${u}`}
               </Box>
+              {out && (
+                <Box
+                  component="span"
+                  sx={{
+                    position: 'absolute',
+                    left: 'calc(100% + 6px)',
+                    bottom: `${(v / top) * 100}%`,
+                    transform: 'translateY(50%)',
+                    ...MONO,
+                    fontSize: 11,
+                    color: 'text.secondary',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {pctOut(v * unit)}
+                </Box>
+              )}
             </Box>
           ))}
           {hist.map((h, k) => {
@@ -520,6 +558,12 @@ function niceTop(max: number): number {
 }
 const trimNum = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 1 });
 
+/**
+ * FINRA daily short-sale volume (RP-02): each trading day's share of volume marked short, as bars
+ * from zero, with the average of the same days as a dashed line. Twenty days, the window the API
+ * reads: each day's file lists every symbol in the market, and the API keeps the parsed files in
+ * memory, so a longer window would cost it several times the memory for one chart.
+ */
 export function ShortVolumeCard({ d }: { d: PublicTicker }) {
   const sv = d.short_volume;
   const demo = dataMode === 'demo';
@@ -535,26 +579,145 @@ export function ShortVolumeCard({ d }: { d: PublicTicker }) {
     return (
       <Missing label="Short-sale volume" text="FINRA's daily file has no volume for this symbol." />
     );
+  const pct = (r: number) => `${Math.round(r * 100)}%`;
+  // `?? []`: an API from before the daily series existed draws the figures without the bars.
+  const days = sv.daily ?? [];
+  const first = days[0];
   return (
-    <Card
-      label="Short-sale volume"
-      tag={
-        <DataStateTag
-          state={publicDataWord(d.short_volume_state, { demo })}
-          detail={demo ? null : formatShortDate(sv.date)}
-        />
+    <ChartFrame
+      finding={`${pct(sv.ratio)} of ${formatShortDate(sv.date)} volume was marked short; the ${sv.days}-day average is ${pct(sv.avg_ratio)}`}
+      metric="Short-sale volume"
+      sub={`${d.ticker} · share of each day’s reported volume marked short · ${sv.days} trading days${first ? `, ${formatShortDate(first.date)} – ${formatShortDate(sv.date)}` : ''} · dashed = their average`}
+      height={150}
+      provenance={demo ? 'sample' : 'primary'}
+      tag={{
+        state: publicDataWord(d.short_volume_state, { demo }),
+        detail: demo ? undefined : formatShortDate(sv.date),
+      }}
+      source={
+        demo
+          ? { text: 'Demo · shaped like FINRA Reg SHO daily files' }
+          : { text: 'FINRA · Reg SHO daily short-sale volume', href: FINRA_SV_URL }
       }
-      value={`${Math.round(sv.ratio * 100)}%`}
-      unit="of volume"
-      source={`Data owned and provided by FINRA (Reg SHO daily short-sale volume) · ${formatShortDate(sv.date)}`}
+      asOf={`Latest file ${formatNoteDate(sv.date)} · data owned and provided by FINRA`}
+      note="Counts every sale marked short, including market makers hedging customers’ buys. It is not short interest, and a high reading is normal."
+      table={{
+        caption: `${d.ticker} short-sale volume by day`,
+        cols: ['Day', 'Marked short', 'Total volume', 'Share'],
+        rows: [...days]
+          .reverse()
+          .map((x) => [
+            formatNoteDate(x.date),
+            big(x.short_volume),
+            big(x.total_volume),
+            pct(x.ratio),
+          ]),
+      }}
+      testId="chart-short-volume"
     >
       <PartNote text={d.short_volume_detail} />
-      <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary', textWrap: 'pretty' }}>
-        Counts every sale marked short, including market makers hedging customers&apos; buys. It is
-        not short interest, and a high reading is normal.
-      </Box>
-      <Facts rows={[[`${sv.days}-day average`, `${Math.round(sv.avg_ratio * 100)}%`]]} />
-    </Card>
+      {days.length > 1 && <ShortVolumeBars days={days} avg={sv.avg_ratio} />}
+    </ChartFrame>
+  );
+}
+
+function ShortVolumeBars({
+  days,
+  avg,
+}: {
+  days: NonNullable<PublicTicker['short_volume']>['daily'];
+  avg: number;
+}) {
+  const t = useTheme();
+  const roles = chartRoles(t);
+  const [ref, W] = useWidth<HTMLDivElement>();
+  const top = Math.min(1, Math.ceil(Math.max(avg, ...days.map((x) => x.ratio)) * 10) / 10);
+  const PL = 40;
+  const PR = 64;
+  const PT = 8;
+  const PH = 100;
+  const H = PT + PH + 20;
+  const slot = Math.max(0, W - PL - PR) / days.length;
+  const x = (i: number) => PL + slot * (i + 0.5);
+  const y = (r: number) => PT + (1 - r / top) * PH;
+  const bw = Math.max(2, Math.min(14, slot * 0.6));
+  const ticks = [0, top / 2, top];
+  return (
+    <Box ref={ref} sx={{ height: H, minWidth: 0 }}>
+      {W > 0 && (
+        <svg
+          width={W}
+          height={H}
+          role="img"
+          aria-label={`Share of volume marked short by day: ${days.map((x) => `${formatShortDate(x.date)} ${Math.round(x.ratio * 100)}%`).join(', ')}; average ${Math.round(avg * 100)}%`}
+          style={{ display: 'block' }}
+        >
+          {ticks.map((v) => (
+            <g key={v}>
+              <line
+                x1={PL}
+                x2={W - PR}
+                y1={y(v)}
+                y2={y(v)}
+                stroke={v === 0 ? roles.axis : roles.grid}
+              />
+              <text
+                x={PL - 6}
+                y={y(v) + 4}
+                textAnchor="end"
+                fontSize={11}
+                fill={t.palette.text.secondary}
+                style={MONO}
+              >
+                {`${Math.round(v * 100)}%`}
+              </text>
+            </g>
+          ))}
+          {days.map((day, i) => (
+            <rect
+              key={day.date}
+              x={x(i) - bw / 2}
+              y={y(day.ratio)}
+              width={bw}
+              height={Math.max(1, y(0) - y(day.ratio))}
+              rx={2}
+              fill={i === days.length - 1 ? roles.emph : roles.ctx}
+            />
+          ))}
+          <line
+            x1={PL}
+            x2={W - PR}
+            y1={y(avg)}
+            y2={y(avg)}
+            stroke={roles.emph}
+            strokeDasharray="4 3"
+            strokeWidth={1.5}
+          />
+          <text
+            x={W - PR + 6}
+            y={y(avg) + 4}
+            fontSize={11}
+            fill={t.palette.text.primary}
+            style={MONO}
+          >
+            {`avg ${Math.round(avg * 100)}%`}
+          </text>
+          <text x={PL} y={PT + PH + 16} fontSize={11} fill={t.palette.text.secondary} style={MONO}>
+            {formatShortDate(days[0].date)}
+          </text>
+          <text
+            x={W - PR}
+            y={PT + PH + 16}
+            textAnchor="end"
+            fontSize={11}
+            fill={t.palette.text.secondary}
+            style={MONO}
+          >
+            {formatShortDate(days[days.length - 1].date)}
+          </text>
+        </svg>
+      )}
+    </Box>
   );
 }
 
