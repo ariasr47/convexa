@@ -10,7 +10,7 @@
  * Only the API knows whether the copy it serves came from this cycle's fetch, so only its row can
  * say Last good copy. A server from before the rows existed is still read the old way. The legend
  * counts the same states the cards draw, and says how many are still being checked. FINRA's two
- * cards say Off with the reason while the owner keeps FINRA off (sources.ts FINRA_ON_PRODUCTION).
+ * cards say Off with the reason while the owner keeps FINRA off (shared/dataState/finraSwitch.ts).
  * The demo build makes no request: every card is dashed sample data, and TradingView is off. The
  * state decisions live in cardState.ts.
  *

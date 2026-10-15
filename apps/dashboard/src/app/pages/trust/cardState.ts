@@ -6,11 +6,12 @@
  *
  * Design: design/src/screens/final/trust-pages.mjs (sourceCard, legend, creditsStates).
  */
+import { FINRA_OFF_REASON, FINRA_ON_PRODUCTION } from '@/shared/dataState/finraSwitch';
 import type { DataStateKey } from '@/shared/dataState/vocabulary';
 import { publicDataWord, sourceStateWord } from '@/shared/dataState/vocabulary';
 import type { PublicDataState, PublicSource } from '@convexa/api';
 import { formatShortDate } from '../research/format';
-import { FINRA_OFF_REASON, FINRA_ON_PRODUCTION, type SourceId } from './sources';
+import type { SourceId } from './sources';
 
 /** One card's state: a tag (or a skeleton while checking) and the line under it. */
 export type CardState = { tag: DataStateKey | 'loading'; detail?: string; note: string };

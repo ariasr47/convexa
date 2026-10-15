@@ -1,7 +1,7 @@
+import { FINRA_ON_PRODUCTION } from '@/shared/dataState/finraSwitch';
 import type { PublicSource } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import { legendCounts, schedulesState, switchedOff, type CardState } from './cardState';
-import { FINRA_ON_PRODUCTION } from './sources';
 
 const row = (over: Partial<PublicSource>): PublicSource => ({
   id: 'bls',
