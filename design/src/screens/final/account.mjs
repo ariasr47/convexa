@@ -297,7 +297,7 @@ export const ROWS = [
       ],
       built: [
         { status: 'shipped', what: 'AuthDialog (login only, sign-ups closed), TradeEntryDialog (position and order variants, D8 disclosures), OrderDetailDialog, PersonaPicker / PersonaCustomizeForm, ViewEditorDialog, StateExportDrawer (sample header in demo).' },
-        { status: 'shipped', what: 'Production trade entry: with no options feed only Manual price is offered, with the reason on the fill control and “See it on the demo →” (FillModeToggle.tsx, 2026-10-15).' },
+        { status: 'partial', what: 'Production trade entry: with no options feed the dialog offers Manual price only, with the reason on the fill control and “See it on the demo →” (FillModeToggle.tsx, 2026-10-15). Not reachable yet: the entry picks expiry and strike from the ticker bundle, so on production Open simulated position stays disabled and the desk is the public desk. Left: manual contract entry without a chain.' },
         { status: 'todo', what: 'New-alert flow for the public-data kinds (Q-5).' },
         { status: 'partial', what: 'Demo links from production Not live overlays: order detail says Not evaluated and links the demo (2026-10-15). What’s sent: no production page reaches the drawer while the feed is off (the public desk replaces the full desk); its nothing-sent export is the AI read row’s item.' },
       ],
