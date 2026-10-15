@@ -265,7 +265,7 @@ export function MethodologyPage() {
             tabIndex={-1}
             data-testid="methodology-whats-live"
             data-form={demo ? 'staging' : 'production'}
-            sx={{ scrollMarginTop: SCROLL_CLEAR, '&:focus': { outline: 'none' } }}
+            sx={{ scrollMarginTop: SCROLL_CLEAR, '&:focus:not(:focus-visible)': { outline: 'none' } }}
           >
             <Typography
               component="h2"
@@ -284,7 +284,7 @@ export function MethodologyPage() {
               id={section.id}
               aria-labelledby={headingId(section)}
               tabIndex={-1}
-              sx={{ scrollMarginTop: SCROLL_CLEAR, '&:focus': { outline: 'none' } }}
+              sx={{ scrollMarginTop: SCROLL_CLEAR, '&:focus:not(:focus-visible)': { outline: 'none' } }}
             >
               <Typography
                 component="h2"
