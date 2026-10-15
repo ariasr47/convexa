@@ -47,6 +47,9 @@ const HOUR: Duration = Duration::from_secs(3600);
 /// live for hours, so serving them a little longer costs nothing.
 const RETRY_AFTER_FAILURE: Duration = Duration::from_secs(600);
 const SEC_SPACING: Duration = Duration::from_millis(200);
+/// The longest a ticker answer waits on SEC EDGAR (the cold 90-day card, the year's budgeted
+/// Form 4s and the company facts fit inside it at one request per 200 ms).
+const SEC_PART_BUDGET: Duration = Duration::from_secs(10);
 const FINRA_DAILY_CONCURRENCY: usize = 4;
 
 /// Uppercase and validate one ticker: 1–10 of `A–Z . -`, starting with a letter.
@@ -619,7 +622,7 @@ impl PublicDataService {
         let (interest, volume, sec) = tokio::join!(
             self.short_interest_part(ticker),
             self.short_volume_part(ticker),
-            self.sec_part(ticker),
+            self.sec_part_within(ticker, SEC_PART_BUDGET),
         );
         let answered = interest.answered || volume.answered || sec.answered;
         let part_state = |answered: bool| {
@@ -877,6 +880,29 @@ impl PublicDataService {
             .await
     }
 
+    /// The SEC part, but never held past `budget`: the FINRA parts it is joined with answer on
+    /// time. The read runs as its own task, so on a cold cache it keeps going after the answer and
+    /// the next request finds the filings, Form 4s and facts cached (W1-02).
+    async fn sec_part_within(&self, ticker: &str, budget: Duration) -> SecPart {
+        let this = self.clone();
+        let owned = ticker.to_string();
+        let task = tokio::spawn(async move { this.sec_part(&owned).await });
+        match tokio::time::timeout(budget, task).await {
+            Ok(Ok(part)) => part,
+            // Timed out (the task keeps reading in the background), or the task failed.
+            _ => {
+                let detail = format!(
+                    "{} is still answering for {ticker}; its filings fill in on the next read.",
+                    edgar::SOURCE
+                );
+                let mut row =
+                    sources::without_fetch(sources::SEC, SourceState::SourceDown, &detail);
+                row.failed_at = Some(Utc::now());
+                SecPart::without_data(DataState::Unavailable, detail, false, row)
+            }
+        }
+    }
+
     async fn sec_part(&self, ticker: &str) -> SecPart {
         let sec = match &self.inner.sec {
             SecAccess::Ready(http) => http,
@@ -938,11 +964,16 @@ impl PublicDataService {
         let mut summary = Form4Summary::default();
         let mut read = 0u32;
         let mut unread = 0u32;
+        let mut other_issuer = 0u32;
+        let mut latest = None;
         for row in form4.iter().take(edgar::FORM4_READ_LIMIT) {
             let document = edgar::raw_form4_document(&row.primary_document);
             let url = edgar::document_url(cik, &row.accession, document);
             match self.form4(sec, &row.accession, url).await.cached() {
+                // A Form 4 this company filed as an insider of another issuer (W1-12).
+                Some(copy) if !insider_trades::own_issuer(&copy.value, cik) => other_issuer += 1,
                 Some(copy) => {
+                    latest = latest.or(Some(row.filed));
                     read += 1;
                     let one = copy.value.summary;
                     summary.sales += one.sales;
@@ -951,10 +982,14 @@ impl PublicDataService {
                     summary.shares_bought += one.shares_bought;
                     summary.planned += one.planned;
                 }
-                None => unread += 1,
+                None => {
+                    latest = latest.or(Some(row.filed));
+                    unread += 1;
+                }
             }
         }
-        let total = form4.len() as u32;
+        // Form 4s about another issuer are not this company's insider trades and are not counted.
+        let total = form4.len() as u32 - other_issuer;
         let mut insider_notes = Vec::new();
         if total as usize > edgar::FORM4_READ_LIMIT {
             insider_notes.push(format!(
@@ -981,7 +1016,7 @@ impl PublicDataService {
             shares_sold: summary.shares_sold,
             shares_bought: summary.shares_bought,
             planned: summary.planned,
-            latest: form4.first().map(|row| row.filed),
+            latest: latest.or_else(|| form4.get(edgar::FORM4_READ_LIMIT).map(|row| row.filed)),
             history: self.insider_history(sec, cik, &rows.value, today).await,
         };
 

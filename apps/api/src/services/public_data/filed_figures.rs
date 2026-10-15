@@ -666,9 +666,16 @@ mod tests {
                 let facts = parse_company_facts(json).unwrap();
                 let years = annual_revenue(&facts);
                 assert_eq!(years.len(), 1);
-                assert_eq!((years[0].unit.as_str(), years[0].value), ("USD", 88_268_000_000.0));
-                let figure = &periodic_filings(std::slice::from_ref(&row), Some(&facts))[0].facts[0];
-                assert_eq!((figure.unit.as_str(), figure.value), ("USD", 88_268_000_000.0));
+                assert_eq!(
+                    (years[0].unit.as_str(), years[0].value),
+                    ("USD", 88_268_000_000.0)
+                );
+                let figure =
+                    &periodic_filings(std::slice::from_ref(&row), Some(&facts))[0].facts[0];
+                assert_eq!(
+                    (figure.unit.as_str(), figure.value),
+                    ("USD", 88_268_000_000.0)
+                );
             }
         }
     }
@@ -683,12 +690,17 @@ mod tests {
         ))
         .unwrap();
         for _ in 0..8 {
-            let years = annual_revenue(&parse_company_facts(include_bytes!(
-                "../../../tests/fixtures/public_data/sec_real_companyfacts_tsm.json"
-            ))
-            .unwrap());
+            let years = annual_revenue(
+                &parse_company_facts(include_bytes!(
+                    "../../../tests/fixtures/public_data/sec_real_companyfacts_tsm.json"
+                ))
+                .unwrap(),
+            );
             assert_eq!(years.len(), REVENUE_YEARS);
-            assert!(years.iter().all(|y| y.unit == "TWD"), "never a mix: {years:?}");
+            assert!(
+                years.iter().all(|y| y.unit == "TWD"),
+                "never a mix: {years:?}"
+            );
             let last = years.last().unwrap();
             assert_eq!(
                 (last.fiscal_year, last.period_end, last.value),
@@ -705,8 +717,15 @@ mod tests {
             description: None,
         };
         let filing = &periodic_filings(&[row], Some(&facts))[0];
-        let revenue = filing.facts.iter().find(|f| f.concept == "Revenue").unwrap();
-        assert_eq!((revenue.unit.as_str(), revenue.value), ("USD", 88_268_000_000.0));
+        let revenue = filing
+            .facts
+            .iter()
+            .find(|f| f.concept == "Revenue")
+            .unwrap();
+        assert_eq!(
+            (revenue.unit.as_str(), revenue.value),
+            ("USD", 88_268_000_000.0)
+        );
         assert_eq!(revenue.prior_value, Some(70_598_800_000.0));
         let eps = filing
             .facts
@@ -740,7 +759,11 @@ mod tests {
             (Some(2027), Some("Q2"))
         );
         let get = |c: &str| q2.tagged.iter().find(|t| t.concept == c).cloned().unwrap();
-        assert_eq!(get("us-gaap:Revenues").value, 96_221_000_000.0, "the quarter, not six months");
+        assert_eq!(
+            get("us-gaap:Revenues").value,
+            96_221_000_000.0,
+            "the quarter, not six months"
+        );
         assert_eq!(get("us-gaap:GrossProfit").value, 72_142_000_000.0);
         assert_eq!(get("us-gaap:OperatingIncomeLoss").value, 63_734_000_000.0);
         assert_eq!(get("us-gaap:EarningsPerShareDiluted").value, 2.46);

@@ -164,6 +164,21 @@ where
         slot
     }
 
+    /// The copy of `key` when one is cached and fresh, without fetching and without waiting on a
+    /// refresh in flight (a key being fetched reads as not cached).
+    pub fn peek(&self, key: &K) -> Option<Cached<V>> {
+        let slot = {
+            let slots = self
+                .slots
+                .lock()
+                .unwrap_or_else(|poison| poison.into_inner());
+            Arc::clone(&slots.get(key)?.0)
+        };
+        let guard = slot.try_lock().ok()?;
+        let (cached, at, ttl) = guard.cached.as_ref()?;
+        (at.elapsed() < *ttl).then(|| cached.clone())
+    }
+
     /// Serve `key` from cache when fresh; otherwise run `fetch` once (other readers of the same
     /// key wait for it) and fall back to the last good copy when it fails.
     pub async fn get<F, Fut>(&self, key: K, fetch: F) -> Lookup<V>
