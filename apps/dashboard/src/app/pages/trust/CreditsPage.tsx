@@ -9,13 +9,15 @@
  * Treasury, CFTC, the liquidity inputs and the release schedules; /tickers/SPY for FINRA and SEC).
  * Only the API knows whether the copy it serves came from this cycle's fetch, so only its row can
  * say Last good copy. A server from before the rows existed is still read the old way. The legend
- * counts the same states the cards draw. The demo build makes no request: every card is dashed
- * sample data, and TradingView is off.
+ * counts the same states the cards draw, and says how many are still being checked. FINRA's two
+ * cards say Off with the reason while the owner keeps FINRA off (sources.ts FINRA_ON_PRODUCTION).
+ * The demo build makes no request: every card is dashed sample data, and TradingView is off. The
+ * state decisions live in cardState.ts.
  *
  * Design: design/src/screens/final/trust.mjs (credits row), trust-pages.mjs (creditsArticle).
  */
 import { DataStateTag } from '@/shared/dataState/DataStateTag';
-import { publicDataWord, sourceStateWord, type DataStateKey } from '@/shared/dataState/vocabulary';
+import { publicDataWord } from '@/shared/dataState/vocabulary';
 import { isDemoBuild, STAGING_DEMO_URL } from '@/shared/lib/demoSite';
 import type { PublicDataState, PublicSource } from '@convexa/api';
 import Box from '@mui/material/Box';
@@ -26,6 +28,20 @@ import { Link as RouterLink } from 'react-router-dom';
 import { formatShortDate } from '../research/format';
 import { usePublicMarkets, usePublicTicker } from '../research/publicData';
 import { ProvenanceChip } from '../research/publicUi';
+import {
+  DOWN,
+  fromRow,
+  legendCounts,
+  liquidityLine,
+  longDate,
+  NOT_SET,
+  notLiveState,
+  schedulesState,
+  SEC_NOT_SET,
+  switchedOff,
+  utcTime,
+  type CardState,
+} from './cardState';
 import { DocPage, DocTable, FinraNotice, H2, Lead, linkSx, Para } from './DocPage';
 import { SOURCES, TYPEFACES, type Source, type SourceId } from './sources';
 
@@ -35,33 +51,6 @@ const TOC = [
   ['typefaces', 'Typefaces'],
   ['ours', 'What Convexa makes'],
 ] as const;
-
-/** One card's state: a tag (or a skeleton while checking) and the line under it. */
-type CardState = { tag: DataStateKey | 'loading'; detail?: string; note: string };
-
-const longDate = (iso: string) =>
-  new Date(`${iso.slice(0, 10)}T12:00:00Z`).toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
-const utcTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'UTC',
-  });
-
-const DOWN =
-  'The source didn’t answer and no earlier copy is kept. Convexa asks again on its next check.';
-const OFF = 'Public data is switched off on this site. Convexa isn’t contacting this source.';
-const NOT_SET = 'This source isn’t set up on this site.';
-const SEC_NOT_SET =
-  'This site hasn’t been given the contact line EDGAR asks for, so filings and insider trades don’t load yet.';
-const LAST_GOOD =
-  'The source didn’t answer on Convexa’s last check; this is the last copy it read.';
 
 /** Which read carries each card's state. TradingView and Massive have none: their state is fixed. */
 const FROM_MARKETS: readonly SourceId[] = [
@@ -75,113 +64,6 @@ const FROM_MARKETS: readonly SourceId[] = [
 const FROM_TICKER: readonly SourceId[] = ['finra-si', 'finra-shvol', 'sec'];
 /** The API's rows behind the one Release schedules card. */
 const SCHEDULE_ROWS = ['fed-fomc', 'bls', 'bea', 'treasury-qr'] as const;
-
-/** A public part's state when it isn't live: Off, Not set up or Source down, with its line. */
-function notLiveState(state: PublicDataState, notConfiguredNote: string): CardState | null {
-  if (state === 'live') return null;
-  const tag = publicDataWord(state);
-  return {
-    tag,
-    note: state === 'off' ? OFF : state === 'not_configured' ? notConfiguredNote : DOWN,
-  };
-}
-
-/** The line and tag detail for a source that answered on its schedule. */
-function answered(id: SourceId, row: PublicSource): { detail?: string; note: string } {
-  const asOf = row.as_of;
-  const checked = row.checked_at ? ` · checked ${utcTime(row.checked_at)} UTC` : '';
-  switch (id) {
-    case 'treasury':
-      return asOf
-        ? { detail: formatShortDate(asOf), note: `Rates for ${longDate(asOf)}${checked}.` }
-        : { note: `Treasury answered${checked}.` };
-    case 'cftc':
-      return asOf
-        ? {
-            detail: `as of ${formatShortDate(asOf)}`,
-            note: `Positions as of ${longDate(asOf)}. The CFTC publishes each week’s positions the Friday after.`,
-          }
-        : { note: `The CFTC answered${checked}.` };
-    case 'fed-h41':
-    case 'treasury-dts':
-    case 'nyfed-rrp':
-      return asOf
-        ? {
-            detail: `week to ${formatShortDate(asOf)}`,
-            note: `Netted for the week to Wednesday, ${longDate(asOf)}${checked}.`,
-          }
-        : { note: `Answered${checked}.` };
-    case 'finra-si':
-      return asOf
-        ? {
-            detail: `settled ${formatShortDate(asOf)}`,
-            note: `Settlement of ${longDate(asOf)}. FINRA publishes about a week after each settlement.`,
-          }
-        : { note: 'FINRA answered; it has no report for the ticker checked.' };
-    case 'finra-shvol':
-      return asOf
-        ? { detail: `${formatShortDate(asOf)} file`, note: `The file for ${longDate(asOf)}.` }
-        : { note: 'FINRA answered; it has no file for the ticker checked.' };
-    case 'sec':
-      return { note: 'Convexa checks filings every hour and company facts every 24 hours.' };
-    default:
-      return { note: `Answered${checked}.` };
-  }
-}
-
-/** One card's state from the API's own row for it (servers from 2026-10-15 on). */
-function fromRow(id: SourceId, row: PublicSource): CardState {
-  const tag = sourceStateWord(row.state);
-  switch (tag) {
-    case null:
-      return { tag: 'couldntLoad', note: 'This server reported a state this page doesn’t know.' };
-    case 'off':
-      return { tag, note: OFF };
-    case 'notSetUp':
-      return { tag, note: id === 'sec' ? SEC_NOT_SET : NOT_SET };
-    case 'sourceDown':
-      return { tag, note: DOWN };
-    case 'lastGood':
-      return {
-        tag,
-        detail: row.checked_at ? `read ${formatShortDate(row.checked_at.slice(0, 10))}` : undefined,
-        note: row.detail ?? LAST_GOOD,
-      };
-    default:
-      return { tag, ...answered(id, row) };
-  }
-}
-
-const RANK: Partial<Record<DataStateKey, number>> = {
-  sourceDown: 5,
-  lastGood: 4,
-  couldntLoad: 4,
-  notSetUp: 3,
-  off: 2,
-};
-
-/** The schedules card: the worst of its four rows, naming the ones that aren't current. */
-function schedulesState(rows: PublicSource[]): CardState {
-  const states = rows.map((row) => ({ row, card: fromRow('schedules', row) }));
-  const worst = states.reduce((a, b) =>
-    (RANK[b.card.tag as DataStateKey] ?? 0) > (RANK[a.card.tag as DataStateKey] ?? 0) ? b : a,
-  );
-  if (worst.card.tag === 'updated') {
-    const oldest = rows
-      .map((r) => r.checked_at)
-      .filter((t): t is string => !!t)
-      .sort()[0];
-    return {
-      tag: 'updated',
-      note: `All ${rows.length} schedules read${oldest ? ` · checked ${utcTime(oldest)} UTC` : ''}.`,
-    };
-  }
-  if (worst.card.tag === 'off' || worst.card.tag === 'notSetUp') return worst.card;
-  const behind = states
-    .filter((s) => s.card.tag !== 'updated')
-    .map((s) => s.row.detail ?? `${s.row.name}: ${s.card.note}`);
-  return { tag: worst.card.tag, detail: worst.card.detail, note: behind.join(' ') };
-}
 
 function useLiveStates(enabled: boolean): {
   states: Record<SourceId, CardState>;
@@ -222,16 +104,9 @@ function useLiveStates(enabled: boolean): {
             note: `Positions as of ${longDate(m.futures.report_date)}. The CFTC publishes each week’s positions the Friday after.`,
           }
         : { tag: 'sourceDown', note: DOWN }));
-  const liquidity: CardState = !m
+  const liquidity: CardState | null = !m
     ? couldnt
-    : (notLiveState(m.state, NOT_SET) ??
-      (m.liquidity
-        ? {
-            tag: 'updated',
-            detail: `week to ${formatShortDate(m.liquidity.as_of)}`,
-            note: `Netted for the week to Wednesday, ${longDate(m.liquidity.as_of)}.`,
-          }
-        : { tag: 'sourceDown', note: DOWN }));
+    : (notLiveState(m.state, NOT_SET) ?? (m.liquidity ? null : { tag: 'sourceDown', note: DOWN }));
   const tickerPart = (
     state: PublicDataState | undefined,
     live: () => CardState,
@@ -242,9 +117,9 @@ function useLiveStates(enabled: boolean): {
   const legacy: Record<SourceId, CardState> = {
     treasury,
     cftc,
-    'fed-h41': liquidity,
-    'treasury-dts': liquidity,
-    'nyfed-rrp': liquidity,
+    'fed-h41': liquidity ?? liquidityLine('fed-h41', m?.liquidity?.as_of ?? ''),
+    'treasury-dts': liquidity ?? liquidityLine('treasury-dts', m?.liquidity?.as_of ?? ''),
+    'nyfed-rrp': liquidity ?? liquidityLine('nyfed-rrp', m?.liquidity?.as_of ?? ''),
     schedules: {
       tag: 'notSetUp',
       note: 'This site’s server doesn’t read the release schedules yet.',
@@ -282,6 +157,8 @@ function useLiveStates(enabled: boolean): {
   };
 
   const stateOf = (id: SourceId): CardState => {
+    const off = switchedOff(id);
+    if (off) return off;
     const read = FROM_MARKETS.includes(id) ? markets : FROM_TICKER.includes(id) ? spy : null;
     if (!read) return legacy[id];
     if (read.loading) return checking;
@@ -497,12 +374,9 @@ export function CreditsPage() {
   const stateOf = (s: Source): CardState =>
     demo ? (s.id === 'tradingview' ? DEMO_TV : DEMO_STATE) : live.states[s.id];
 
-  // The legend counts the states the cards draw, from the same values.
-  const counts = new Map<DataStateKey, number>();
-  for (const s of SOURCES) {
-    const tag = stateOf(s).tag;
-    if (tag !== 'loading') counts.set(tag, (counts.get(tag) ?? 0) + 1);
-  }
+  // The legend counts the states the cards draw, from the same values, and says while some are
+  // still being checked.
+  const { counts, checking } = legendCounts(SOURCES.map(stateOf));
 
   return (
     <DocPage
@@ -560,13 +434,20 @@ export function CreditsPage() {
         >
           On this page
         </Box>
-        {[...counts].map(([tag, n]) => (
+        {counts.map(([tag, n]) => (
           <DataStateTag
             key={tag}
             state={tag}
             detail={`${tag === 'off' && demo ? 'on the demo · ' : ''}${n}`}
           />
         ))}
+        {checking > 0 && (
+          <Box component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>
+            {checking === SOURCES.length
+              ? 'Checking each source…'
+              : `${checking} more still checking…`}
+          </Box>
+        )}
         {!demo && live.failed && (
           <Button
             size="small"

@@ -35,6 +35,19 @@ export interface Source {
   operator?: string;
 }
 
+/**
+ * FINRA on the live site (owner, 2026-10-15, answer 4): Off until the owner confirms FINRA's display
+ * terms (Q-2; docs/public-data/FINRA-TERMS-2026-10-15.md). A code constant the owner flips, not a
+ * platform setting; the pages that list sources (/credits, /methodology#data) read it. The API's
+ * own switch stops the requests; this one keeps the site saying Off even before that API deploys.
+ * The demo shows sample data shaped like FINRA's either way.
+ */
+export const FINRA_ON_PRODUCTION = false;
+
+/** Why FINRA is off, said wherever the site lists it as off. */
+export const FINRA_OFF_REASON =
+  'Off on this site until FINRA’s terms for showing its data here are confirmed. The demo shows sample data shaped like it.';
+
 const FINRA_TERMS =
   'FINRA’s terms for its free equity data (§2.3) ask for this notice wherever the data, or anything worked out from it, appears:';
 
