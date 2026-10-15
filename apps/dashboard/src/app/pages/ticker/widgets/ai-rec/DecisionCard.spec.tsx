@@ -135,7 +135,7 @@ describe('DecisionCard observable contract', () => {
         actions: actions({ reviewTrade: false, createOrder: false }),
       }),
     );
-    expect(screen.getByText('No trade — sit this one out')).toBeInTheDocument();
+    expect(screen.getByText('No trade · sit this one out')).toBeInTheDocument();
     expect(screen.queryByTestId('decision-grid')).toBeNull();
   });
 });

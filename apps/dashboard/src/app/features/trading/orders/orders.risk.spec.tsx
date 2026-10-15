@@ -381,7 +381,7 @@ function seedOrder(over: Partial<SimOrder> = {}): SimOrder {
 
 async function settleTicker() {
   await screen.findByTestId('account-avatar'); // who-am-I resolved
-  await screen.findByText('AI recommendation · TSLA', undefined, { timeout: T }); // lazy route + bundle + panel mounted
+  await screen.findByText('AI read · TSLA', undefined, { timeout: T }); // lazy route + bundle + panel mounted
 }
 
 async function actIntoDialog(user: ReturnType<typeof userEvent.setup>) {

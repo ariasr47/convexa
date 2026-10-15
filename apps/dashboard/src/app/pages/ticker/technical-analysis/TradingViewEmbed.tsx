@@ -5,12 +5,13 @@
  * TradingView's own origin. The container is built imperatively inside a host React owns, so React
  * never reconciles nodes the loader replaced.
  *
- * States: the host holds its final height while the widget loads, so nothing shifts. If the loader
- * itself fails (a blocker, a network error, the CSP), `onFail` fires once. A symbol TradingView can't
- * show fails inside its iframe, where Convexa can't see it; TradingView says so in the frame.
+ * States: the host holds its final height while the widget loads, so nothing shifts. `onReady` fires
+ * once, when the loader has put its iframe in the slot. If the loader itself fails (a blocker, a
+ * network error, the CSP), `onFail` fires once; a loader that stalls is the caller's to time out. A
+ * symbol TradingView can't show fails inside its iframe, where Convexa can't see it; TradingView says
+ * so in the frame.
  */
 import Box from '@mui/material/Box';
-import { alpha } from '@mui/material/styles';
 import { useEffect, useRef } from 'react';
 import { LOADER_ORIGIN } from './tradingView';
 
@@ -23,6 +24,7 @@ export function TradingViewEmbed({
   height,
   title,
   onFail,
+  onReady,
 }: {
   /** The loader's name: `advanced-chart` → embed-widget-advanced-chart.js. */
   widget: 'advanced-chart' | 'technical-analysis';
@@ -32,12 +34,16 @@ export function TradingViewEmbed({
   /** What the frame shows, for assistive tech (TradingView's iframe carries no useful title). */
   title: string;
   onFail: () => void;
+  /** The loader's iframe is in place: the frame is TradingView's from here. */
+  onReady?: () => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const failRef = useRef(onFail);
+  const readyRef = useRef(onReady);
   useEffect(() => {
     failRef.current = onFail;
-  }, [onFail]);
+    readyRef.current = onReady;
+  }, [onFail, onReady]);
   const json = JSON.stringify(config);
 
   useEffect(() => {
@@ -80,10 +86,16 @@ export function TradingViewEmbed({
     container.append(slot, copyright, script);
     el.replaceChildren(container);
 
-    // Name the frame once the loader has inserted it.
+    // Name the frame once the loader has inserted it, and say it's there.
+    let ready = false;
     const observer = new MutationObserver(() => {
       const frame = el.querySelector('iframe');
-      if (frame && frame.title !== title) frame.title = title;
+      if (!frame) return;
+      if (frame.title !== title) frame.title = title;
+      if (!ready) {
+        ready = true;
+        readyRef.current?.();
+      }
     });
     observer.observe(el, { childList: true, subtree: true });
     return () => {
@@ -102,8 +114,8 @@ export function TradingViewEmbed({
         borderRadius: '10px',
         overflow: 'hidden',
         // A border, not a fill: it holds the final size while loading without tinting the band
-        // behind TradingView's attribution line.
-        border: `1px solid ${alpha(t.palette.text.secondary, 0.18)}`,
+        // behind TradingView's attribution line. The dotted fence around it is the provenance.
+        border: `1px solid ${t.palette.divider}`,
       })}
     />
   );

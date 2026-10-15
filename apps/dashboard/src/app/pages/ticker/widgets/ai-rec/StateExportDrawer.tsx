@@ -7,6 +7,7 @@
  * ticker — no key, no other ticker, no identity, no order data.
  */
 import { useSettings } from '@/features/auth/useSettings';
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { dataMode, fetchRecExport, RecExport, RiskInputs, scenarioProvenance } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
@@ -24,6 +25,7 @@ import { useEffect, useState } from 'react';
 import {
   COPY,
   DRAWER_NOT_SENT,
+  DRAWER_NOT_SENT_DEMO,
   DRAWER_RISK_AS_NEXT,
   DRAWER_RISK_AS_SENT,
   EXPORT_EGRESS_FALLBACK,
@@ -32,6 +34,9 @@ import {
   SUPERSEDED_STRIP_DRAWER,
 } from './copy';
 import { riskInputsSuperseded } from './literals';
+
+/** The scenario's clock, as the read panel prints it (demo/catalog/shared.ts AS_OF, 18:30 UTC). */
+const SCENARIO_AS_OF = 'Oct 7, 2026 · 2:30 PM ET';
 
 function sectionText(value: unknown): string {
   if (value == null) return '';
@@ -185,10 +190,11 @@ export function StateExportDrawer({
       }}
     >
       <Stack spacing={2}>
-        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography sx={{ fontWeight: 600, fontSize: 15, color: 'text.primary' }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: 15, color: 'text.primary', flex: 1 }}>
             {dataMode === 'demo' ? `Sample analysis export · ${ticker}` : EXPORT_HEADER(ticker)}
           </Typography>
+          {dataMode === 'demo' && <DataStateTag state="sample" />}
           <IconButton
             size="small"
             onClick={onClose}
@@ -214,6 +220,17 @@ export function StateExportDrawer({
         >
           {data?.egress_note ?? EXPORT_EGRESS_FALLBACK(ticker)}
         </Box>
+        {provenance && (
+          <Typography
+            sx={{
+              fontFamily: typographyTokens.monoFontFamily,
+              fontSize: 11,
+              color: 'text.secondary',
+            }}
+          >
+            {`Scenario · ${SCENARIO_AS_OF} · ${COPY.demo.provenance}`}
+          </Typography>
+        )}
 
         {state === 'loading' && (
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
@@ -303,6 +320,11 @@ export function StateExportDrawer({
 
             <ExportSection
               title="Persona prompt"
+              caption={
+                dataMode === 'demo'
+                  ? 'The demo builds no persona prompt; the sample read is authored.'
+                  : undefined
+              }
               text={sectionText(data.persona_prompt)}
               onCopy={copy}
             />
@@ -322,13 +344,14 @@ export function StateExportDrawer({
 }
 
 /** AC-92 — a category the wire marks `sent: false` renders this explicit line, never an omitted
- *  section: the reader must be able to tell "not applicable to this ticker" from "silently missing". */
+ *  section: the reader must be able to tell "not applicable to this ticker" from "silently missing".
+ *  On the demo nothing is sent because no model is called, so the line says that instead. */
 function NotSentSection({ title }: { title: string }) {
   return (
     <Box data-testid="export-not-sent">
       <Typography sx={{ fontWeight: 600, fontSize: 13, color: 'text.primary' }}>{title}</Typography>
       <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
-        {DRAWER_NOT_SENT}
+        {dataMode === 'demo' ? DRAWER_NOT_SENT_DEMO : DRAWER_NOT_SENT}
       </Typography>
     </Box>
   );

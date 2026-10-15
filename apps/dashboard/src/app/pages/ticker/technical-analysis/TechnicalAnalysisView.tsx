@@ -1,3 +1,16 @@
+/**
+ * The Technical tab on the demo: Convexa's own chart from the scenario's 60 sample daily bars (close,
+ * EMA 20, EMA 50, then RSI 14 in its own panel) in a dashed, hatched sample frame, and the five
+ * readings (EMA 20, EMA 50, RSI 14, ADX 14, ATR 14) for the bar the chart's probe is on. No request
+ * leaves the browser: the bars and the indicators come from the demo's scenario (libs/api demo).
+ *
+ * Design: design/src/screens/final/ticker-tech.mjs (techStagingBody, techStatesBody).
+ */
+import { Caps } from '@/pages/research/publicUi';
+import { DISPLAY, MONO } from '@/pages/research/ui';
+import { TickerTabs } from '@/pages/ticker/TickerTabs';
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import { STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
 import { extrasFor } from '@/shared/theme/tokens';
 import {
   loadSampleBars,
@@ -9,22 +22,21 @@ import {
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
+import Link from '@mui/material/Link';
 import Skeleton from '@mui/material/Skeleton';
-import Slider from '@mui/material/Slider';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { alpha } from '@mui/material/styles';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
+import { SampleTaChart, shortDate } from './SampleTaChart';
 
-const INDICATORS: { key: IndicatorName; label: string }[] = [
-  { key: 'ema20', label: 'EMA 20' },
-  { key: 'ema50', label: 'EMA 50' },
-  { key: 'rsi14', label: 'RSI 14' },
-  { key: 'adx14', label: 'ADX 14' },
-  { key: 'atr14', label: 'ATR 14' },
+const READINGS: { key: IndicatorName; label: string; sub: string; places: number }[] = [
+  { key: 'ema20', label: 'EMA 20', sub: 'USD · daily close', places: 2 },
+  { key: 'ema50', label: 'EMA 50', sub: 'USD · daily close', places: 2 },
+  { key: 'rsi14', label: 'RSI 14', sub: 'Wilder · 0–100', places: 1 },
+  { key: 'adx14', label: 'ADX 14', sub: 'Wilder · trend strength', places: 1 },
+  { key: 'atr14', label: 'ATR 14', sub: 'USD · mean true range', places: 2 },
 ];
+
 type ReadyState = {
   phase: 'ready';
   result: Extract<LocalOutcome<SampleBarsView>, { state: 'ready' }>;
@@ -32,12 +44,124 @@ type ReadyState = {
   refreshError?: string;
 };
 type RequestState =
-  { phase: 'loading' } | { phase: 'cold-error'; detail: string; title: string } | ReadyState;
+  | { phase: 'loading' }
+  | { phase: 'cold-error'; kind: 'unsupported' | 'error'; detail: string }
+  | ReadyState;
 
-const number = (point: IndicatorPoint, unit: string) =>
-  point.state === 'warmup' ? 'Unavailable' : `${point.value.toFixed(2)} ${unit}`;
+const linkSx = { color: (theme: Parameters<typeof extrasFor>[0]) => extrasFor(theme).textInfo };
+const linkBox = { ...linkSx, display: 'inline-flex', alignItems: 'center', minHeight: 44 };
+
+function Masthead({ symbol }: { symbol: string }) {
+  return (
+    <>
+      <Box
+        component="header"
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+          gap: '12px 32px',
+        }}
+      >
+        <Box
+          component="h1"
+          sx={{ ...DISPLAY, m: 0, fontWeight: 700, fontSize: { xs: 36, sm: 44 }, lineHeight: 1 }}
+        >
+          {symbol}
+        </Box>
+        <TickerTabs ticker={symbol} current="technical" />
+      </Box>
+      <Box sx={{ display: 'grid', gap: 1 }}>
+        <Caps>{`Technical analysis · ${symbol}`}</Caps>
+        <Box
+          component="p"
+          sx={{ m: 0, maxWidth: '72ch', fontSize: 14, lineHeight: 1.55, color: 'text.secondary' }}
+        >
+          Exponential 20- and 50-day averages, RSI 14, ADX 14 and ATR 14, computed from the demo’s
+          60 sample daily bars. They describe the trend; they are not calls to buy or sell.
+        </Box>
+      </Box>
+    </>
+  );
+}
+
+/** A panel of sample data: dashed, with the hatch stripe along its top (canon P-3, P-8). */
+function SamplePanel({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <Box
+      component="section"
+      aria-label={label}
+      sx={(t) => ({
+        position: 'relative',
+        display: 'grid',
+        gap: 1.5,
+        p: { xs: '16px 14px 14px', sm: '18px 20px 16px' },
+        borderRadius: '12px',
+        bgcolor: 'background.paper',
+        border: `1px dashed ${extrasFor(t).textTertiary}`,
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: 0,
+          height: 8,
+          borderRadius: '11px 11px 0 0',
+          pointerEvents: 'none',
+          background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(
+            t.palette.text.secondary,
+            0.28,
+          )} 6px 12px)`,
+        },
+      })}
+    >
+      {children}
+    </Box>
+  );
+}
+
+function Reading({
+  label,
+  sub,
+  point,
+  places,
+}: {
+  label: string;
+  sub: string;
+  point: IndicatorPoint;
+  places: number;
+}) {
+  return (
+    <Box
+      sx={{ bgcolor: 'background.paper', p: '10px 12px', display: 'grid', gap: 0.5, minWidth: 0 }}
+    >
+      <Caps>{label}</Caps>
+      {point.state === 'ready' ? (
+        <>
+          <Box component="span" sx={{ ...MONO, fontSize: 18, fontWeight: 500, lineHeight: 1.2 }}>
+            {point.value.toFixed(places)}
+          </Box>
+          <Box component="span" sx={{ fontSize: 11, lineHeight: 1.35, color: 'text.secondary' }}>
+            {sub}
+          </Box>
+        </>
+      ) : (
+        <>
+          <Box component="span" sx={{ fontSize: 14, lineHeight: 1.3, color: 'text.secondary' }}>
+            Insufficient history
+          </Box>
+          <Box component="span" sx={{ fontSize: 11, lineHeight: 1.35, color: 'text.secondary' }}>
+            {`${point.observedBars} of ${point.requiredBars} bars`}
+          </Box>
+        </>
+      )}
+    </Box>
+  );
+}
 
 export function TechnicalAnalysisView({ symbol }: { symbol: string }) {
+  const ticker = symbol.toUpperCase();
   const [state, setState] = useState<RequestState>({ phase: 'loading' });
   const stateRef = useRef(state);
   const requestRef = useRef(0);
@@ -60,23 +184,8 @@ export function TechnicalAnalysisView({ symbol }: { symbol: string }) {
         else if (retain && previous.phase === 'ready')
           setCurrent({ ...previous, refreshing: false, refreshError: result.detail });
         else if (result.state === 'unsupported')
-          setCurrent({
-            phase: 'cold-error',
-            title: 'No sample data for this symbol.',
-            detail: `No sample data for ${symbol}. Choose a supported symbol.`,
-          });
-        else if (result.state === 'unavailable')
-          setCurrent({
-            phase: 'cold-error',
-            title: 'Analysis unavailable.',
-            detail: 'Daily bars are not available from the live provider.',
-          });
-        else
-          setCurrent({
-            phase: 'cold-error',
-            title: 'Sample data could not load.',
-            detail: result.detail,
-          });
+          setCurrent({ phase: 'cold-error', kind: 'unsupported', detail: result.detail });
+        else setCurrent({ phase: 'cold-error', kind: 'error', detail: result.detail });
       } catch {
         if (requestId !== requestRef.current) return;
         if (retain && previous.phase === 'ready')
@@ -88,8 +197,8 @@ export function TechnicalAnalysisView({ symbol }: { symbol: string }) {
         else
           setCurrent({
             phase: 'cold-error',
-            title: 'Sample data could not load.',
-            detail: 'Sample data could not load.',
+            kind: 'error',
+            detail: 'The demo’s scenario file didn’t arrive.',
           });
       }
     },
@@ -100,278 +209,159 @@ export function TechnicalAnalysisView({ symbol }: { symbol: string }) {
     void fetchBars(false);
   }, [fetchBars]);
 
-  const view = state.phase === 'ready' ? state.result.value : undefined;
-  const bar = view?.bars[selected];
-  const series = useMemo<string>(() => {
-    if (!view) return '';
-    const values = view.bars.map((item) => item.close);
-    const min = Math.min(...values),
-      max = Math.max(...values),
-      span = max - min || 1;
-    return values
-      .map(
-        (value, index) =>
-          `${index * (700 / Math.max(1, values.length - 1))},${180 - ((value - min) / span) * 150}`,
-      )
-      .join(' ');
-  }, [view]);
-  const indicatorPath = useCallback(
-    (key: 'ema20' | 'ema50') => {
-      if (!view) return '';
-      const ready = view.indicators[key].flatMap((point, index) =>
-        point.state === 'ready' ? [[index * (700 / 59), point.value] as const] : [],
-      );
-      if (ready.length < 2) return '';
-      const closes = view.bars.map((item) => item.close);
-      const min = Math.min(...closes),
-        span = Math.max(...closes) - min || 1;
-      return ready.map(([x, value]) => `${x},${180 - ((value - min) / span) * 150}`).join(' ');
-    },
-    [view],
+  const path = `/ticker/${encodeURIComponent(ticker)}`;
+  const links = (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px 20px' }}>
+      <Link
+        component={RouterLink}
+        to={`${path}/research`}
+        variant="body2"
+        underline="always"
+        sx={linkBox}
+      >
+        Read {ticker} research →
+      </Link>
+      <Link component={RouterLink} to={path} variant="body2" underline="always" sx={linkBox}>
+        Back to the overview
+      </Link>
+    </Box>
+  );
+  const foot = (
+    <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary' }}>
+      Research and tools, not investment advice.
+    </Box>
   );
 
   if (state.phase === 'loading')
     return (
-      <Stack spacing={2} aria-label="Loading sample data">
-        <Typography component="h1" variant="overline" color="text.secondary">
-          Technical analysis · {symbol}
-        </Typography>
-        <Skeleton variant="rounded" height={280} />
-        <Skeleton variant="rounded" height={190} />
-        <Typography role="status">Loading sample data…</Typography>
-      </Stack>
+      <Box sx={{ display: 'grid', gap: 2.5, minWidth: 0 }} aria-busy="true">
+        <Masthead symbol={ticker} />
+        <Skeleton variant="rounded" height={420} />
+        <Skeleton variant="rounded" height={150} />
+        <Box component="p" role="status" sx={{ m: 0, fontSize: 13, color: 'text.secondary' }}>
+          Loading the sample bars…
+        </Box>
+      </Box>
     );
   if (state.phase === 'cold-error')
     return (
-      <Alert
-        severity="warning"
-        action={
-          <Button color="inherit" onClick={() => void fetchBars(false)}>
-            Retry demo
-          </Button>
-        }
-      >
-        <Typography component="h1" variant="inherit" sx={{ display: 'inline', fontWeight: 700 }}>
-          {state.title}
-        </Typography>{' '}
-        {state.detail}
-      </Alert>
-    );
-  if (!view || !bar) return null;
-  return (
-    <Stack spacing={2.5} sx={{ minWidth: 0 }}>
-      <Box sx={{ display: 'flex', gap: 2, alignItems: 'baseline', flexWrap: 'wrap' }}>
-        <Typography component="h1" variant="overline" color="text.secondary">
-          Technical analysis · {symbol}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          1d · USD · {view.bars.length} synthetic daily bars
-        </Typography>
-        <Box sx={{ flex: 1 }} />
-        <Button
-          component={Link}
-          to={`/ticker/${encodeURIComponent(symbol)}`}
-          size="small"
-          sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
-        >
-          Overview
-        </Button>
-        <Button
-          component={Link}
-          to={`/ticker/${encodeURIComponent(symbol)}/research`}
-          size="small"
-          sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
-        >
-          Research
-        </Button>
+      <Box sx={{ display: 'grid', gap: 2.5, minWidth: 0 }}>
+        <Masthead symbol={ticker} />
+        {state.kind === 'unsupported' ? (
+          <Box
+            role="status"
+            sx={{
+              display: 'grid',
+              gap: 0.5,
+              p: 2,
+              border: 1,
+              borderColor: 'divider',
+              borderRadius: '12px',
+            }}
+          >
+            <Box component="strong" sx={{ fontSize: 14 }}>
+              {`No sample data for ${ticker}.`}
+            </Box>
+            <Box component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>
+              {`The demo runs on ${STAGING_DEMO_SYMBOLS.slice(0, -1).join(', ')} and ${STAGING_DEMO_SYMBOLS.at(-1)}.`}
+            </Box>
+          </Box>
+        ) : (
+          <Alert
+            severity="warning"
+            action={
+              <Button color="inherit" onClick={() => void fetchBars(false)} sx={{ minHeight: 44 }}>
+                Retry demo
+              </Button>
+            }
+          >
+            <Box component="strong">The sample bars didn’t load.</Box> {state.detail}
+          </Alert>
+        )}
+        {foot}
       </Box>
+    );
+
+  const view = state.result.value;
+  const sel = Math.min(Math.max(selected, 0), view.bars.length - 1);
+  const bar = view.bars[sel];
+  const isLast = sel === view.bars.length - 1;
+  return (
+    <Box sx={{ display: 'grid', gap: 2.5, minWidth: 0 }}>
+      <Masthead symbol={ticker} />
       {state.refreshError && (
         <Alert severity="warning">
           Couldn’t update the sample view. Showing the last sample. {state.refreshError}
         </Alert>
       )}
-      <Card variant="outlined">
-        <CardContent>
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            sx={{ justifyContent: 'space-between', gap: 1 }}
-          >
-            <Typography component="h2" variant="subtitle1">
-              Sample series · not recorded market history
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Daily close · USD · synthetic scenario
-            </Typography>
-          </Stack>
-          <Box sx={{ mt: 1.5, width: '100%', overflow: 'hidden' }}>
-            <svg
-              viewBox="0 0 700 210"
-              role="img"
-              aria-label={`${symbol} synthetic daily closing prices across 60 authored sample bars`}
-              style={{ display: 'block', width: '100%', height: 'auto' }}
-            >
-              <path
-                d="M0 30H700M0 80H700M0 130H700M0 180H700"
-                stroke="var(--mui-palette-divider)"
-                strokeWidth="1"
-              />
-              <polyline
-                points={indicatorPath('ema50')}
-                fill="none"
-                stroke="var(--mui-palette-info-main)"
-                strokeWidth="2"
-                strokeDasharray="6 4"
-                strokeLinejoin="round"
-              />
-              <polyline
-                points={indicatorPath('ema20')}
-                fill="none"
-                stroke="var(--mui-palette-primary-main)"
-                strokeWidth="2"
-                strokeLinejoin="round"
-              />
-              <polyline
-                points={series}
-                fill="none"
-                stroke="var(--mui-palette-text-primary)"
-                strokeWidth="2.5"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
-              <circle
-                cx={selected * (700 / 59)}
-                cy={
-                  180 -
-                  ((bar.close - Math.min(...view.bars.map((x) => x.close))) /
-                    (Math.max(...view.bars.map((x) => x.close)) -
-                      Math.min(...view.bars.map((x) => x.close)) || 1)) *
-                    150
-                }
-                r="5"
-                fill="var(--mui-palette-primary-main)"
-              />
-            </svg>
+      <SampleTaChart symbol={ticker} view={view} selected={sel} onSelect={setSelected} />
+      <SamplePanel label="Readings, sample">
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 10px' }}>
+          <Box component="h2" sx={{ m: 0, flex: '1 1 auto', fontSize: 15, fontWeight: 600 }}>
+            {isLast
+              ? `Readings on the last bar · ${shortDate(bar.date)}`
+              : `Readings on ${shortDate(bar.date)} · bar ${sel + 1} of ${view.bars.length}`}
           </Box>
-          <Typography variant="caption" component="p" color="text.secondary">
-            Close ·{' '}
-            <Box component="span" sx={(theme) => ({ color: extrasFor(theme).textAmber })}>
-              EMA 20
-            </Box>{' '}
-            ·{' '}
-            <Box component="span" sx={{ color: 'info.main' }}>
-              EMA 50
-            </Box>
-          </Typography>
-          <Box sx={{ px: 1, py: 1 }}>
-            <Slider
-              aria-label="Selected sample bar"
-              min={0}
-              max={view.bars.length - 1}
-              step={1}
-              value={selected}
-              onChange={(_, value) => setSelected(value as number)}
-              valueLabelDisplay="auto"
-              valueLabelFormat={(index) => view.bars[index]?.date ?? ''}
-              sx={{
-                minHeight: 44,
-                '& .MuiSlider-thumb': { width: 44, height: 44 },
-                '& .MuiSlider-rail, & .MuiSlider-track': { height: 4 },
-              }}
-            />
-          </Box>
-          <Typography variant="body2" color="text.secondary">
-            Selected bar: {bar.date} · Open {bar.open.toFixed(2)} · High {bar.high.toFixed(2)} · Low{' '}
-            {bar.low.toFixed(2)} · Close {bar.close.toFixed(2)} · Volume{' '}
-            {bar.volume.toLocaleString()}
-          </Typography>
-        </CardContent>
-      </Card>
-      <Card variant="outlined">
-        <CardContent>
-          <Typography component="h2" variant="subtitle1" sx={{ mb: 1 }}>
-            Indicator readings · {bar.date}
-          </Typography>
-          <Box
-            component="table"
-            sx={{
-              borderCollapse: 'collapse',
-              width: '100%',
-              tableLayout: 'fixed',
-              '& th,& td': {
-                textAlign: 'left',
-                p: { xs: 0.75, sm: 1 },
-                borderBottom: 1,
-                borderColor: 'divider',
-                verticalAlign: 'top',
-                overflowWrap: 'anywhere',
-              },
-              '& th': {
-                color: 'text.secondary',
-                fontSize: 11,
-                letterSpacing: '.06em',
-                textTransform: 'uppercase',
-              },
-              '& code': { overflowWrap: 'anywhere' },
-            }}
-          >
-            <thead>
-              <tr>
-                <th>Reading</th>
-                <th>Value</th>
-                <th>Method · window · basis</th>
-                <th>Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {INDICATORS.map(({ key, label }) => {
-                const point = view.indicators[key][selected];
-                return (
-                  <tr key={key}>
-                    <th scope="row">{label}</th>
-                    <td>{number(point, point.state === 'ready' ? point.unit : '')}</td>
-                    <td>
-                      {point.state === 'warmup'
-                        ? `Insufficient history · ${point.observedBars}/${point.requiredBars} bars`
-                        : `${point.method} · ${point.window} bars · ${point.basis}`}
-                    </td>
-                    <td>
-                      {point.state === 'warmup' ? (
-                        'Not available yet'
-                      ) : (
-                        <code>{point.sourceBarId}</code>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </Box>
-          <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 1 }}>
-            Indicators are descriptive context, not a forecast or scored signal. Each value uses its
-            stated method and source bar.
-          </Typography>
-        </CardContent>
-      </Card>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 1,
-        }}
-      >
-        <Typography variant="caption" color="text.secondary">
-          Authored scenario · October 7, 2026 · no market feed connected
-        </Typography>
-        <Button
-          onClick={() => void fetchBars(true)}
-          disabled={state.refreshing}
-          sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
+          <DataStateTag state="sample" />
+        </Box>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: 'repeat(2, minmax(0, 1fr))',
+              md: 'repeat(5, minmax(0, 1fr))',
+            },
+            gap: '1px',
+            bgcolor: 'divider',
+            border: 1,
+            borderColor: 'divider',
+            borderRadius: '10px',
+            overflow: 'hidden',
+            // Five readings in two columns: the last one takes the whole row, not half of it.
+            '& > :last-child': { gridColumn: { xs: '1 / -1', md: 'auto' } },
+          }}
         >
-          {state.refreshing ? 'Refreshing…' : 'Refresh sample'}
-        </Button>
-      </Box>
-    </Stack>
+          {READINGS.map((r) => (
+            <Reading
+              key={r.key}
+              label={r.label}
+              sub={r.sub}
+              places={r.places}
+              point={view.indicators[r.key][sel]}
+            />
+          ))}
+        </Box>
+        <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary', textWrap: 'pretty' }}>
+          {`Computed in the browser from the ${view.bars.length} sample bars, each reading from the bar it names. A reading still warming up says “Insufficient history” and how many bars it has, never a zero.`}
+        </Box>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
+          <Box
+            component="span"
+            sx={(t) => ({
+              ...MONO,
+              fontSize: 11,
+              lineHeight: 1.35,
+              px: 1.25,
+              py: '4px',
+              borderRadius: '12px',
+              border: `1px dashed ${alpha(t.palette.text.secondary, 0.55)}`,
+              color: 'text.secondary',
+            })}
+          >
+            Sample · shaped like daily bars
+          </Box>
+          <Button
+            onClick={() => void fetchBars(true)}
+            disabled={state.refreshing}
+            size="small"
+            sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
+          >
+            {state.refreshing ? 'Refreshing…' : 'Refresh sample'}
+          </Button>
+        </Box>
+      </SamplePanel>
+      {links}
+      {foot}
+    </Box>
   );
 }

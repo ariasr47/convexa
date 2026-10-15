@@ -1,3 +1,4 @@
+import { TickerTabs } from '@/pages/ticker/TickerTabs';
 import { extrasFor } from '@/shared/theme/tokens';
 import { loadSampleResearch, type LocalOutcome, type SampleResearchCase } from '@convexa/api';
 import Alert from '@mui/material/Alert';
@@ -9,7 +10,7 @@ import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { DemoNoteSide } from './DemoNoteSide';
 
 type ReadyState = {
   phase: 'ready';
@@ -186,125 +187,130 @@ export function ResearchView({ symbol }: { symbol: string }) {
   const research = state.result.value;
   return (
     <Stack spacing={2.5} sx={{ minWidth: 0 }}>
-      <Box sx={{ display: 'flex', gap: 2, alignItems: 'baseline', flexWrap: 'wrap' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          gap: '8px 16px',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+        }}
+      >
         <Typography variant="overline" color="text.secondary">
           Sample research note · authored for this scenario
         </Typography>
-        <Box sx={{ flex: 1 }} />
-        <Button
-          component={Link}
-          to={`/ticker/${encodeURIComponent(symbol)}`}
-          size="small"
-          sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
-        >
-          Overview
-        </Button>
-        <Button
-          component={Link}
-          to={`/ticker/${encodeURIComponent(symbol)}/technical-analysis`}
-          size="small"
-          sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
-        >
-          Technical analysis
-        </Button>
+        <TickerTabs ticker={symbol.toUpperCase()} current="research" />
       </Box>
       {state.refreshError && (
         <Alert severity="warning">
           Couldn’t update the sample view. Showing the last sample. {state.refreshError}
         </Alert>
       )}
-      <Card variant="outlined" sx={{ borderTop: 2, borderTopColor: 'primary.main' }}>
-        <CardContent>
-          <Typography variant="h5" component="h1" sx={{ mb: 1 }}>
-            {research.title}
-          </Typography>
-          <Typography color="text.secondary">{research.thesis}</Typography>
-          <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 2 }}>
-            Authored scenario · {research.snapshotAsOf} · {research.scenarioId} · advisory context
-          </Typography>
-        </CardContent>
-      </Card>
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: 'minmax(0,1fr)', md: 'minmax(0,1.4fr) minmax(240px,1fr)' },
-          gap: 2,
+          gap: 2.5,
+          gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: 'minmax(0, 1fr) minmax(0, 340px)' },
+          alignItems: 'start',
         }}
       >
-        <Card variant="outlined">
-          <CardContent>
-            <Stack spacing={2.5}>
-              <FactList
-                title="Evidence"
-                facts={research.evidence}
-                symbol={symbol}
-                scenarioId={research.scenarioId}
-              />
-              <Box>
-                <Typography component="h2" variant="subtitle1" sx={{ mb: 1 }}>
-                  Risks
-                </Typography>
-                <Stack component="ul" spacing={1} sx={{ pl: 2, mt: 0 }}>
-                  {research.risks.map((risk) => (
-                    <Typography component="li" key={risk}>
-                      {risk}
+        <Stack spacing={2.5} sx={{ minWidth: 0 }}>
+          <Card variant="outlined" sx={{ borderTop: 2, borderTopColor: 'primary.main' }}>
+            <CardContent>
+              <Typography variant="h5" component="h1" sx={{ mb: 1 }}>
+                {research.title}
+              </Typography>
+              <Typography color="text.secondary">{research.thesis}</Typography>
+              <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 2 }}>
+                Authored scenario · {research.snapshotAsOf} · {research.scenarioId} · advisory
+                context
+              </Typography>
+            </CardContent>
+          </Card>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: 'minmax(0,1fr)', md: 'minmax(0,1.4fr) minmax(240px,1fr)' },
+              gap: 2,
+            }}
+          >
+            <Card variant="outlined">
+              <CardContent>
+                <Stack spacing={2.5}>
+                  <FactList
+                    title="Evidence"
+                    facts={research.evidence}
+                    symbol={symbol}
+                    scenarioId={research.scenarioId}
+                  />
+                  <Box>
+                    <Typography component="h2" variant="subtitle1" sx={{ mb: 1 }}>
+                      Risks
                     </Typography>
-                  ))}
-                </Stack>
-              </Box>
-              <Box>
-                <Typography component="h2" variant="subtitle1" sx={{ mb: 1 }}>
-                  Invalidation
-                </Typography>
-                <Typography color="text.secondary">{research.invalidation}</Typography>
-              </Box>
-            </Stack>
-          </CardContent>
-        </Card>
-        <Card variant="outlined">
-          <CardContent>
-            <Stack spacing={2.5}>
-              <FactList
-                title="Catalysts"
-                facts={research.catalysts}
-                symbol={symbol}
-                scenarioId={research.scenarioId}
-              />
-              <Box>
-                <Typography component="h2" variant="subtitle1" sx={{ mb: 1 }}>
-                  Assumptions
-                </Typography>
-                <Stack component="ul" spacing={1} sx={{ pl: 2, mt: 0 }}>
-                  {research.assumptions.map((assumption) => (
-                    <Typography component="li" key={assumption}>
-                      {assumption}
+                    <Stack component="ul" spacing={1} sx={{ pl: 2, mt: 0 }}>
+                      {research.risks.map((risk) => (
+                        <Typography component="li" key={risk}>
+                          {risk}
+                        </Typography>
+                      ))}
+                    </Stack>
+                  </Box>
+                  <Box>
+                    <Typography component="h2" variant="subtitle1" sx={{ mb: 1 }}>
+                      Invalidation
                     </Typography>
-                  ))}
+                    <Typography color="text.secondary">{research.invalidation}</Typography>
+                  </Box>
                 </Stack>
-              </Box>
-            </Stack>
-          </CardContent>
-        </Card>
-      </Box>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 1,
-        }}
-      >
-        <Typography variant="caption" color="text.secondary">
-          Same {symbol} scenario · no external news, AI or forecast citations
-        </Typography>
-        <Button
-          onClick={() => void fetchResearch(true)}
-          disabled={state.refreshing}
-          sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
-        >
-          {state.refreshing ? 'Refreshing…' : 'Refresh sample'}
-        </Button>
+              </CardContent>
+            </Card>
+            <Card variant="outlined">
+              <CardContent>
+                <Stack spacing={2.5}>
+                  <FactList
+                    title="Catalysts"
+                    facts={research.catalysts}
+                    symbol={symbol}
+                    scenarioId={research.scenarioId}
+                  />
+                  <Box>
+                    <Typography component="h2" variant="subtitle1" sx={{ mb: 1 }}>
+                      Assumptions
+                    </Typography>
+                    <Stack component="ul" spacing={1} sx={{ pl: 2, mt: 0 }}>
+                      {research.assumptions.map((assumption) => (
+                        <Typography component="li" key={assumption}>
+                          {assumption}
+                        </Typography>
+                      ))}
+                    </Stack>
+                  </Box>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Box>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 1,
+            }}
+          >
+            <Typography variant="caption" color="text.secondary">
+              Same {symbol} scenario · no external news, AI or forecast citations
+            </Typography>
+            <Button
+              onClick={() => void fetchResearch(true)}
+              disabled={state.refreshing}
+              sx={(theme) => ({ minHeight: 44, color: extrasFor(theme).textAmber })}
+            >
+              {state.refreshing ? 'Refreshing…' : 'Refresh sample'}
+            </Button>
+          </Box>
+        </Stack>
+        <DemoNoteSide symbol={symbol.toUpperCase()} />
       </Box>
     </Stack>
   );

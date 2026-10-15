@@ -77,7 +77,26 @@ export function NotePublicPanels({
     );
   }
   const d = read.data;
-  if (d.state === 'off') return null;
+  // PUBLIC_DATA=off on the API: one line where the panels were, never silence.
+  if (d.state === 'off')
+    return (
+      <ChartFrame
+        finding="Positioning and filings"
+        metric="Positioning and filings"
+        sub={`${ticker} · FINRA and SEC`}
+        provenance="primary"
+        status={{
+          kind: 'message',
+          tone: 'quiet',
+          text: 'Public-data panels are off on this server.',
+          cause: 'They return when the operator switches the public-data API on.',
+        }}
+        tag={{ state: 'off' }}
+        height={90}
+        headingLevel="h2"
+        testId="note-public-off"
+      />
+    );
   const newFilings = d.filings.filter((f) => standing(f, note) === 'new');
   const nextResults = upcoming(note.aging.events, today, 3650).find((u) =>
     /results|earnings/i.test(u.label),
@@ -349,8 +368,12 @@ const FINRA_SV_URL = 'https://www.finra.org/finra-data/browse-catalog/short-sale
  * Short interest at each FINRA settlement (RP-01, canon P-8 to P-13): the frame's title states the
  * year's change; the bars carry their settlement dates and their unit; the latest bar is the claim's
  * and is labelled; the table twin lists every settlement.
+ *
+ * `compact` is the desk's and the demo side column's form (Final · Ticker desk, siCompact): the days
+ * to cover move into the subtitle and the facts list under the bars is dropped; the table twin keeps
+ * every settlement.
  */
-export function ShortInterestCard({ d }: { d: PublicTicker }) {
+export function ShortInterestCard({ d, compact = false }: { d: PublicTicker; compact?: boolean }) {
   const si = d.short_interest;
   const demo = dataMode === 'demo';
   if (d.short_interest_state === 'unavailable' && !demo)
@@ -391,7 +414,7 @@ export function ShortInterestCard({ d }: { d: PublicTicker }) {
     <ChartFrame
       finding={finding}
       metric="Short interest"
-      sub={`${d.ticker} short interest at each FINRA settlement · ${u === 'B' ? 'billions' : 'millions'} of shares${out ? ` · right: % of the ${formatShortDate(out.as_of)} shares outstanding (SEC)` : ''}${hist.length > 1 ? ` · ${formatShortDate(first.settlement_date)} – ${formatShortDate(si.settlement_date)}` : ''}`}
+      sub={`${d.ticker} short interest at each FINRA settlement · ${u === 'B' ? 'billions' : 'millions'} of shares${out ? ` · right: % of the ${formatShortDate(out.as_of)} shares outstanding (SEC)` : ''}${hist.length > 1 ? (compact ? ` · last ${hist.length} settlements` : ` · ${formatShortDate(first.settlement_date)} – ${formatShortDate(si.settlement_date)}`) : ''}${compact && si.days_to_cover != null ? ` · ${si.days_to_cover.toFixed(2)} days to cover` : ''}`}
       height={PLOT + 28}
       provenance={demo ? 'sample' : 'primary'}
       tag={{
@@ -510,7 +533,8 @@ export function ShortInterestCard({ d }: { d: PublicTicker }) {
                     {big(h.shares_short)}
                   </Box>
                 )}
-                {(k % every === 0 || last) && (
+                {/* A regular label keeps a full step clear of the last one, so they never touch. */}
+                {((k % every === 0 && hist.length - 1 - k >= every) || last) && (
                   <Box
                     component="span"
                     sx={{
@@ -532,20 +556,22 @@ export function ShortInterestCard({ d }: { d: PublicTicker }) {
           })}
         </Box>
       )}
-      <Facts
-        rows={[
-          ...(share !== null
-            ? ([['Shares short', big(si.shares_short)]] as [string, string][])
-            : []),
-          ['Days to cover', si.days_to_cover == null ? '—' : si.days_to_cover.toFixed(1)],
-          [
-            'Since the last report',
-            si.change_percent == null
-              ? '—'
-              : `${si.change_percent >= 0 ? '+' : '−'}${Math.abs(si.change_percent).toFixed(1)}%`,
-          ],
-        ]}
-      />
+      {!compact && (
+        <Facts
+          rows={[
+            ...(share !== null
+              ? ([['Shares short', big(si.shares_short)]] as [string, string][])
+              : []),
+            ['Days to cover', si.days_to_cover == null ? '—' : si.days_to_cover.toFixed(1)],
+            [
+              'Since the last report',
+              si.change_percent == null
+                ? '—'
+                : `${si.change_percent >= 0 ? '+' : '−'}${Math.abs(si.change_percent).toFixed(1)}%`,
+            ],
+          ]}
+        />
+      )}
     </ChartFrame>
   );
 }

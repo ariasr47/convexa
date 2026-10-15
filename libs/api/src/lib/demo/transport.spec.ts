@@ -213,7 +213,12 @@ describe('demo HTTP projections', () => {
     );
     const exportBody = (await exportResponse.json()) as import('../convexa').RecExport;
     expect(exportBody.context.candidates.ticker).toBe('SPY');
-    expect(exportBody.glossary).toContain(scenario!.variants[EXPIRIES[2]].fingerprint);
+    expect(String(exportBody.context.market_state?.['sample_analysis'])).toContain(
+      scenario!.variants[EXPIRIES[2]].fingerprint,
+    );
+    expect(exportBody.context.market_state?.['call_wall']).toBe(
+      scenario!.variants[EXPIRIES[2]].wall,
+    );
     expect(exportBody.egress_categories).toHaveLength(6);
     expect(exportBody.egress_categories.every((item) => !item.sent)).toBe(true);
     expect('strategy' in exportBody).toBe(false);
@@ -224,12 +229,16 @@ describe('demo HTTP projections', () => {
       powering: { unavailable_reason: 'no_key' },
     });
     const projectedExport = await api.fetchRecExport('spy');
-    expect(projectedExport.glossary).toContain(scenario!.variants[EXPIRIES.join(',')].fingerprint);
+    const analysisOf = (e: import('../convexa').RecExport) =>
+      String(e.context.market_state?.['sample_analysis']);
+    expect(analysisOf(projectedExport)).toContain(
+      scenario!.variants[EXPIRIES.join(',')].fingerprint,
+    );
     const selectedExport = await api.fetchRecExport('spy', {
       sampleFingerprint: noncontiguousVariant.fingerprint,
     });
-    expect(selectedExport.glossary).toContain(noncontiguousVariant.fingerprint);
-    expect(selectedExport.glossary).not.toContain(
+    expect(analysisOf(selectedExport)).toContain(noncontiguousVariant.fingerprint);
+    expect(analysisOf(selectedExport)).not.toContain(
       scenario!.variants[EXPIRIES.join(',')].fingerprint,
     );
     const unknownExport = await demoFetch(

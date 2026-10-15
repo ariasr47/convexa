@@ -89,7 +89,7 @@ function renderApp() {
 const panel = () => screen.getByTestId('ai-rec-panel');
 async function settle() {
   await screen.findByText('Call wall');
-  await screen.findByText('AI recommendation · TSLA');
+  await screen.findByText('AI read · TSLA');
 }
 async function ask(user: ReturnType<typeof renderApp>) {
   await waitFor(() =>

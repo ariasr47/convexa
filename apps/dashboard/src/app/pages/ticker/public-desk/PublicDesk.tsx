@@ -20,7 +20,7 @@ import {
 import { filedSince } from '@/pages/research/filings';
 import { formatNoteDate, formatShortDate } from '@/pages/research/format';
 import { usePublicTicker } from '@/pages/research/publicData';
-import { Caps, ProvenanceChip, SourceProblem } from '@/pages/research/publicUi';
+import { Caps, SourceProblem } from '@/pages/research/publicUi';
 import { DISPLAY, FreshnessLine, MONO, PANEL_SX } from '@/pages/research/ui';
 import { recordVisit } from '@/pages/ticker/recentTickers/store';
 import { TradingViewDaily } from '@/pages/ticker/technical-analysis/TradingViewDaily';
@@ -41,6 +41,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import { freshness, localToday, researchIndex } from 'virtual:convexa-research';
+import { AiReadNotLive, WhatAReadSendsLink } from './AiReadNotLive';
 
 const linkSx = { color: (theme: Parameters<typeof extrasFor>[0]) => extrasFor(theme).textInfo };
 
@@ -320,20 +321,7 @@ function PublicZone({
           alignItems: 'start',
         }}
       >
-        <Box
-          component="article"
-          aria-labelledby="tv-head"
-          sx={{ display: 'grid', gap: 1.25, minWidth: 0 }}
-        >
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
-            <Box component="h3" id="tv-head" sx={{ m: 0, fontSize: 15, fontWeight: 600 }}>
-              {`${ticker} daily chart`}
-            </Box>
-            <ProvenanceChip text="Chart by TradingView · US prices delayed" kind="third-party" />
-            <DataStateTag state="thirdParty" />
-          </Box>
-          <TradingViewDaily ticker={ticker} height={520} phoneHeight={420} />
-        </Box>
+        <TradingViewDaily ticker={ticker} height={520} phoneHeight={420} />
         <Box sx={{ display: 'grid', gap: 2, minWidth: 0 }}>
           <NoteCard ticker={ticker} note={note} d={d} />
           {d && d.state !== 'off' && !read.error && <ShortVolumeCard d={d} />}
@@ -350,7 +338,7 @@ function PublicZone({
                 alignItems: 'start',
               }}
             >
-              <ShortInterestCard d={d} />
+              <ShortInterestCard d={d} compact />
               <Box sx={{ display: 'grid', gap: 2, minWidth: 0 }}>
                 <FilingsCard d={d} />
                 <InsidersCard d={d} />
@@ -562,7 +550,6 @@ type FeedPanel = {
   title: (t: string) => string;
   would: string;
   levels?: boolean;
-  note?: string;
 };
 
 /** The desk's panels that read the options chain or the intraday tape, in the desk's reading order. */
@@ -596,7 +583,6 @@ const FEED_PANELS: FeedPanel[] = [
     title: () => 'AI read',
     would:
       'a verdict-first brief on the dealer structure, risk before rationale, on your own provider key.',
-    note: 'It reads the structure above, so it can’t run without it.',
   },
   {
     key: 'tape',
@@ -695,6 +681,7 @@ function FeedZone({
           >
             See them on the demo →
           </Link>
+          <WhatAReadSendsLink ticker={ticker} />
         </Box>
       ) : (
         <Box
@@ -702,98 +689,99 @@ function FeedZone({
             display: 'grid',
             gap: 2,
             gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))',
+            // The AI read spans its row; the panels after it fill the cells before it.
+            gridAutoFlow: 'row dense',
           }}
         >
-          {FEED_PANELS.map((p) => (
-            <Box
-              component="article"
-              key={p.key}
-              aria-labelledby={`feed-${p.key}`}
-              sx={{ ...PANEL_SX, p: '18px 20px', display: 'grid', gap: 1, alignContent: 'start' }}
-            >
+          {FEED_PANELS.map((p) =>
+            p.key === 'ai' ? (
+              <AiReadNotLive key={p.key} ticker={ticker} feed={feed} demoUrl={demoUrl} />
+            ) : (
               <Box
-                sx={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '6px 10px',
-                }}
+                component="article"
+                key={p.key}
+                aria-labelledby={`feed-${p.key}`}
+                sx={{ ...PANEL_SX, p: '18px 20px', display: 'grid', gap: 1, alignContent: 'start' }}
               >
                 <Box
-                  component="h3"
-                  id={`feed-${p.key}`}
-                  sx={{ m: 0, fontSize: 15, fontWeight: 600 }}
-                >
-                  {p.title(ticker)}
-                </Box>
-                <DataStateTag state={tag} />
-              </Box>
-              {p.levels ? (
-                <Box
-                  component="dl"
                   sx={{
-                    m: 0,
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(0, 1fr) auto',
-                    gap: '6px 12px',
-                    fontSize: 13,
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '6px 10px',
                   }}
                 >
-                  {['Call wall', 'Max pain', 'Gamma flip', 'Put wall'].map((l) => (
-                    <Box key={l} sx={{ display: 'contents' }}>
-                      <Box component="dt" sx={{ color: 'text.secondary' }}>
-                        {l}
+                  <Box
+                    component="h3"
+                    id={`feed-${p.key}`}
+                    sx={{ m: 0, fontSize: 15, fontWeight: 600 }}
+                  >
+                    {p.title(ticker)}
+                  </Box>
+                  <DataStateTag state={tag} />
+                </Box>
+                {p.levels ? (
+                  <Box
+                    component="dl"
+                    sx={{
+                      m: 0,
+                      display: 'grid',
+                      gridTemplateColumns: 'minmax(0, 1fr) auto',
+                      gap: '6px 12px',
+                      fontSize: 13,
+                    }}
+                  >
+                    {['Call wall', 'Max pain', 'Gamma flip', 'Put wall'].map((l) => (
+                      <Box key={l} sx={{ display: 'contents' }}>
+                        <Box component="dt" sx={{ color: 'text.secondary' }}>
+                          {l}
+                        </Box>
+                        <Box
+                          component="dd"
+                          sx={{ ...MONO, m: 0, color: 'text.secondary' }}
+                          aria-label="No value"
+                        >
+                          —
+                        </Box>
                       </Box>
-                      <Box
-                        component="dd"
-                        sx={{ ...MONO, m: 0, color: 'text.secondary' }}
-                        aria-label="No value"
-                      >
-                        —
-                      </Box>
-                    </Box>
-                  ))}
+                    ))}
+                  </Box>
+                ) : null}
+                <Box
+                  component="p"
+                  sx={{ m: 0, fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}
+                >
+                  <Box component="strong" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                    Would show
+                  </Box>{' '}
+                  {p.would}
                 </Box>
-              ) : null}
-              <Box
-                component="p"
-                sx={{ m: 0, fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}
-              >
-                <Box component="strong" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                  Would show
-                </Box>{' '}
-                {p.would}
+                <Box
+                  component="p"
+                  sx={{ m: 0, fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}
+                >
+                  <Box component="strong" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                    Off because
+                  </Box>{' '}
+                  {OFF_BECAUSE[feed]}
+                </Box>
+                {p.levels && (
+                  <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary' }}>
+                    No level is shown as a number: a dash is not a price.
+                  </Box>
+                )}
+                <Link
+                  href={demoUrl}
+                  variant="body2"
+                  underline="always"
+                  sx={{ ...linkSx, justifySelf: 'start', mt: 0.5 }}
+                >
+                  See it on the demo →
+                </Link>
               </Box>
-              <Box
-                component="p"
-                sx={{ m: 0, fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}
-              >
-                <Box component="strong" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                  Off because
-                </Box>{' '}
-                {OFF_BECAUSE[feed]}
-              </Box>
-              {p.levels && (
-                <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary' }}>
-                  No level is shown as a number: a dash is not a price.
-                </Box>
-              )}
-              {p.note && (
-                <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary' }}>
-                  {p.note}
-                </Box>
-              )}
-              <Link
-                href={demoUrl}
-                variant="body2"
-                underline="always"
-                sx={{ ...linkSx, justifySelf: 'start', mt: 0.5 }}
-              >
-                See it on the demo →
-              </Link>
-            </Box>
-          ))}
+            ),
+          )}
         </Box>
       )}
     </Box>
