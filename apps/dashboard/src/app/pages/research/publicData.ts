@@ -58,9 +58,10 @@ export function usePublicMarkets(enabled = true): Read<PublicMarkets> {
   return useRead(getPublicMarkets, 'markets', enabled);
 }
 
-export function usePublicFilings(tickers: string[]): Read<PublicFilings> {
+/** `enabled: false` reads nothing (the demo's notes index has no production tickers to check). */
+export function usePublicFilings(tickers: string[], enabled = true): Read<PublicFilings> {
   const key = tickers.join(',');
-  return useRead(() => getPublicFilings(tickers), key);
+  return useRead(() => getPublicFilings(tickers), key, enabled);
 }
 
 /** An empty `ticker` reads nothing (for a view that only sometimes needs it). */

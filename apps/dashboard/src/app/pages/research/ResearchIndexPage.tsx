@@ -7,12 +7,15 @@
  * authored sample notes instead, so this page points at those.
  */
 import { chartRoles } from '@/shared/charts/frame';
-import { dataMode } from '@convexa/api';
+import { DataStateTag } from '@/shared/dataState/DataStateTag';
+import type { DataStateKey } from '@/shared/dataState/vocabulary';
+import { STAGING_DEMO_SYMBOLS } from '@/shared/lib/demoSite';
+import { dataMode, loadSampleBars, loadSampleResearch } from '@convexa/api';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import type { Theme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   freshness as freshnessOf,
@@ -24,31 +27,213 @@ import { filedSince } from './filings';
 import { formatNoteDate, STANCE_LABEL, UNCERTAINTY_LABEL } from './format';
 import { RESEARCH_DISCLAIMER, ResearchColumn } from './NotesView';
 import { usePublicFilings } from './publicData';
+import { ProvenanceChip } from './publicUi';
 import { ResearchTabs } from './ResearchTabs';
-import type { Freshness, NoteStance, ResearchTickerSummary } from './types';
-import { DISPLAY, Eyebrow, FreshnessLine, MONO, Panel, PANEL_SX, Pill, YourCall } from './ui';
+import type { ChartBlock, Freshness, NoteStance, ResearchTickerSummary } from './types';
+import {
+  DISPLAY,
+  Eyebrow,
+  FreshnessLine,
+  MONO,
+  Panel,
+  PANEL_SX,
+  Pill,
+  StateDot,
+  YourCall,
+} from './ui';
 
 const TICKERS = researchIndex.map((r) => r.ticker);
 
-const SAMPLE_SYMBOLS = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'NVDA', 'TSLA'];
+const DEMO = dataMode === 'demo';
 
-function DemoNotice() {
+/** The demo's sample symbols, by name (the scenario carries tickers only). */
+const SAMPLE_NAMES: Record<string, string> = {
+  AAPL: 'Apple',
+  MSFT: 'Microsoft',
+  NVDA: 'NVIDIA',
+  QQQ: 'Invesco QQQ Trust',
+  SPY: 'SPDR S&P 500 ETF',
+  TSLA: 'Tesla',
+};
+
+type SampleCard = { ticker: string; title: string; thesis: string; chart: ChartBlock | null };
+
+/** The six authored sample notes, each with its last ten sample sessions' close-to-close change. */
+function useSampleCards(): SampleCard[] | null | undefined {
+  const [cards, setCards] = useState<SampleCard[] | null | undefined>(undefined);
+  useEffect(() => {
+    if (!DEMO) return;
+    let alive = true;
+    const symbols = [...STAGING_DEMO_SYMBOLS].sort();
+    void Promise.all(
+      symbols.map(async (symbol): Promise<SampleCard | null> => {
+        const [research, bars] = await Promise.all([
+          loadSampleResearch(symbol),
+          loadSampleBars(symbol),
+        ]);
+        if (research.state !== 'ready') return null;
+        const closes = bars.state === 'ready' ? bars.value.bars.slice(-11) : [];
+        const changes = closes.slice(1).map((b, i) => ({
+          date: b.date,
+          // Sample sessions move by hundredths of a percent: shown to two places.
+          value: Math.round(((b.close - closes[i].close) / closes[i].close) * 10000) / 100,
+        }));
+        return {
+          ticker: symbol,
+          title: research.value.title,
+          thesis: research.value.thesis,
+          chart: changes.length
+            ? {
+                type: 'chart',
+                caption: 'Daily close change, % · last 10 sample sessions',
+                bars: changes.map((c) => ({
+                  label: formatNoteDate(c.date),
+                  value: c.value,
+                  kind: '',
+                  shown: `${c.value > 0 ? '▲ +' : c.value < 0 ? '▼ −' : '± '}${Math.abs(c.value).toFixed(2)}%`,
+                })),
+                latest: changes.length - 1,
+              }
+            : null,
+        };
+      }),
+    ).then(
+      (list) => {
+        if (alive) setCards(list.filter((c): c is SampleCard => c !== null));
+      },
+      () => {
+        if (alive) setCards(null);
+      },
+    );
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return cards;
+}
+
+/** A sample note's card: the same card as production's, dashed with the hatch stripe (canon P-3). */
+function SampleNoteCard({ card }: { card: SampleCard }) {
+  const href = `/ticker/${encodeURIComponent(card.ticker)}/research`;
   return (
-    <Panel sx={{ display: 'grid', gap: 1, p: 3 }}>
-      <Box component="h2" sx={{ m: 0, fontSize: 17, fontWeight: 600 }}>
-        Sample research in this demo
-      </Box>
-      <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
-        Each sample symbol has an authored research note that matches its demo scenario.
-      </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 2, rowGap: 0.5 }}>
-        {SAMPLE_SYMBOLS.map((symbol) => (
-          <Link component={RouterLink} key={symbol} to={`/ticker/${symbol}/research`}>
-            {symbol}
+    <Box
+      component="article"
+      aria-labelledby={`card-${card.ticker}`}
+      sx={(t) => ({
+        ...PANEL_SX,
+        position: 'relative',
+        borderRadius: '16px',
+        border: `1px dashed ${alpha(t.palette.text.secondary, 0.55)}`,
+        p: 2.5,
+        pt: 3,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1.75,
+        minWidth: 0,
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: 0,
+          height: 8,
+          borderRadius: '15px 15px 0 0',
+          pointerEvents: 'none',
+          background: `repeating-linear-gradient(135deg, transparent 0 6px, ${alpha(t.palette.text.secondary, 0.28)} 6px 12px)`,
+        },
+      })}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+        <Box sx={{ display: 'grid', gap: 0.25, minWidth: 0 }}>
+          <Link
+            component={RouterLink}
+            to={href}
+            id={`card-${card.ticker}`}
+            underline="hover"
+            sx={{ ...DISPLAY, fontWeight: 800, fontSize: 32, lineHeight: 1, color: 'text.primary' }}
+          >
+            {card.ticker}
           </Link>
-        ))}
+          <Box component="span" sx={{ fontSize: 13, color: 'text.secondary' }}>
+            {SAMPLE_NAMES[card.ticker] ?? card.ticker}
+          </Box>
+        </Box>
+        <Box sx={{ ml: 'auto', flexShrink: 0 }}>
+          <DataStateTag state="sample" />
+        </Box>
       </Box>
-    </Panel>
+      <Box
+        component="h2"
+        sx={{
+          ...DISPLAY,
+          m: 0,
+          fontWeight: 600,
+          fontSize: 19,
+          lineHeight: 1.25,
+          textWrap: 'balance',
+        }}
+      >
+        {card.title}
+      </Box>
+      <Box component="p" sx={{ m: 0, fontSize: 13, color: 'text.secondary', textWrap: 'pretty' }}>
+        {card.thesis}
+      </Box>
+      {card.chart && <MiniChart chart={card.chart} />}
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '6px 14px',
+          fontSize: 12,
+          color: 'text.secondary',
+          mt: 'auto',
+        }}
+      >
+        <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+          <StateDot state="current" />
+          <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>
+            Current
+          </Box>
+          <span>· scenario of Oct 7</span>
+        </Box>
+        <Link component={RouterLink} to={href} sx={{ ml: 'auto', fontWeight: 500 }}>
+          Open note →
+        </Link>
+      </Box>
+    </Box>
+  );
+}
+
+/** Why freshness falls back to the notes' own dates: filings aren't set up, are off, or failed. */
+function FilingsFallback({ state }: { state: 'not_configured' | 'off' | 'unavailable' | 'error' }) {
+  const [tag, detail, why]: [DataStateKey, string, string] =
+    state === 'not_configured'
+      ? ['notSetUp', 'filings', 'Filings aren’t checked on this site yet']
+      : state === 'off'
+        ? ['off', 'filings', 'Public data is switched off on this server']
+        : state === 'unavailable'
+          ? ['sourceDown', 'SEC EDGAR', 'SEC EDGAR didn’t answer and no earlier copy is cached']
+          : ['couldntLoad', 'filings', 'Convexa’s server didn’t answer the filings check'];
+  return (
+    <Box
+      component="p"
+      role="note"
+      sx={{
+        m: 0,
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: '6px 10px',
+        fontSize: 13,
+        color: 'text.secondary',
+      }}
+    >
+      <DataStateTag state={tag} detail={detail} />
+      <Box component="span" sx={{ minWidth: 0, flex: '1 1 320px', textWrap: 'pretty' }}>
+        {`Freshness here comes from each note’s dates. ${why}, so a new 10-Q won’t mark a note due until its own date passes.`}
+      </Box>
+    </Box>
   );
 }
 
@@ -57,7 +242,7 @@ type Row = ResearchTickerSummary & { f: Freshness };
 const HATCH = (t: Theme) =>
   `repeating-linear-gradient(135deg, ${alpha(t.palette.text.secondary, 0.7)} 0 3px, ${alpha(t.palette.text.secondary, 0.28)} 3px 6px)`;
 
-function MiniChart({ chart }: { chart: NonNullable<ResearchTickerSummary['latest']['chart']> }) {
+function MiniChart({ chart }: { chart: Omit<ChartBlock, 'type'> }) {
   // One scale that includes zero, so a loss goes below a zero line instead of reading as a 3px stub
   // that looks like zero (design/CHARTS-2026-10-13.md RN-13: HOOD's −90% margin, MU's loss).
   const lo = Math.min(0, ...chart.bars.map((b) => b.value));
@@ -284,8 +469,26 @@ export function ResearchIndexPage() {
   const [query, setQuery] = useState('');
   const [stance, setStance] = useState<StanceFilter>('all');
   const [fresh, setFresh] = useState<FreshFilter>('any');
-  // Filings since each note make it due too; without them (API off or down) dates alone decide.
-  const filings = usePublicFilings(TICKERS).data?.filings ?? null;
+  // Filings since each note make it due too; without them (API off or down) dates alone decide,
+  // and the page says so.
+  const filingsRead = usePublicFilings(TICKERS, !DEMO);
+  const filings = filingsRead.data?.state === 'live' ? filingsRead.data.filings : null;
+  const filingsFallback =
+    DEMO || filingsRead.loading
+      ? null
+      : filingsRead.error
+        ? ('error' as const)
+        : filingsRead.data && filingsRead.data.state !== 'live'
+          ? filingsRead.data.state
+          : null;
+  const samples = useSampleCards();
+  const sampleShown = (samples ?? []).filter(
+    (c) =>
+      !query ||
+      `${c.ticker} ${SAMPLE_NAMES[c.ticker] ?? ''}`
+        .toLowerCase()
+        .includes(query.trim().toLowerCase()),
+  );
   const rows: Row[] = useMemo(
     () =>
       researchIndex.map((r) => ({
@@ -366,12 +569,20 @@ export function ResearchIndexPage() {
               component="p"
               sx={{ m: 0, maxWidth: '62ch', color: 'text.secondary', fontSize: 16 }}
             >
-              Notes on the tickers being followed: what the price implies, the evidence, the debate,
-              a valuation with its assumptions shown, and what comes next. Each opens with a
-              30-second summary.
+              {DEMO
+                ? 'Sample research notes authored for the demo scenario, one per sample symbol. Each opens with its thesis, evidence and what would change it.'
+                : 'Notes on the tickers being followed: what the price implies, the evidence, the debate, a valuation with its assumptions shown, and what comes next. Each opens with a 30-second summary.'}
             </Box>
+            {DEMO && (
+              <Box>
+                <ProvenanceChip
+                  text="Demo · sample notes · scenario of Oct 7, 2026"
+                  kind="sample"
+                />
+              </Box>
+            )}
           </Box>
-          {dataMode !== 'demo' && rows.length > 0 && (
+          {(DEMO || rows.length > 0) && (
             <Box
               sx={{
                 flex: '1 1 240px',
@@ -417,8 +628,56 @@ export function ResearchIndexPage() {
           )}
         </Box>
 
-        {dataMode === 'demo' ? (
-          <DemoNotice />
+        {DEMO ? (
+          <>
+            <Box
+              component="section"
+              aria-labelledby="coming-up"
+              sx={(t) => ({
+                ...PANEL_SX,
+                border: `1px dashed ${alpha(t.palette.text.secondary, 0.55)}`,
+                p: { xs: 2, sm: 2.5 },
+                display: 'grid',
+                gap: 0.75,
+              })}
+            >
+              <Box
+                component="h2"
+                id="coming-up"
+                sx={{ ...DISPLAY, m: 0, fontWeight: 600, fontSize: 20 }}
+              >
+                Coming up · next 10 weeks
+              </Box>
+              <Box component="p" sx={{ m: 0, fontSize: 13, color: 'text.secondary' }}>
+                The demo’s sample notes carry no dated catalysts, so nothing comes due in this
+                scenario. In production this lists the next six events across every note.
+              </Box>
+            </Box>
+            <Box
+              component="section"
+              aria-label="Sample notes"
+              aria-busy={samples === undefined}
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
+                gap: 2,
+              }}
+            >
+              {sampleShown.map((card) => (
+                <SampleNoteCard key={card.ticker} card={card} />
+              ))}
+              {samples === null && (
+                <Box component="p" role="status" sx={{ m: 0, color: 'text.secondary' }}>
+                  The sample notes didn&apos;t load. Reload the page to try again.
+                </Box>
+              )}
+              {samples && sampleShown.length === 0 && (
+                <Box component="p" sx={{ m: 0, color: 'text.secondary' }}>
+                  No ticker matches this search.
+                </Box>
+              )}
+            </Box>
+          </>
         ) : rows.length === 0 ? (
           <Panel sx={{ p: 3, display: 'grid', gap: 0.5 }}>
             <Box component="h2" sx={{ m: 0, fontSize: 17, fontWeight: 600 }}>
@@ -469,6 +728,7 @@ export function ResearchIndexPage() {
                   </Box>
                 ))}
               </Box>
+              {filingsFallback && <FilingsFallback state={filingsFallback} />}
             </Box>
 
             {soon.length > 0 && (
@@ -597,7 +857,9 @@ export function ResearchIndexPage() {
         )}
 
         <Box component="p" sx={{ m: 0, fontSize: 12, color: 'text.secondary' }}>
-          {RESEARCH_DISCLAIMER}
+          {DEMO
+            ? 'Sample notes written for the demo; no news, filings or AI read is cited. Not financial advice.'
+            : RESEARCH_DISCLAIMER}
         </Box>
       </Box>
     </ResearchColumn>
