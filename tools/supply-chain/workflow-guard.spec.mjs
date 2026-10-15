@@ -17,7 +17,8 @@ const load = async () => ({
     'apps/api/Dockerfile': await fs.readFile('apps/api/Dockerfile', 'utf8'),
     'apps/dashboard/Dockerfile': await fs.readFile('apps/dashboard/Dockerfile', 'utf8'),
   },
-  dependabot: await fs.readFile('.github/dependabot.yml', 'utf8'),
+  // Absent since 2026-10-15 (Dependabot off to minimise cost); restore from git history to re-enable.
+  dependabot: await fs.readFile('.github/dependabot.yml', 'utf8').catch(() => null),
   pins: JSON.parse(await fs.readFile('.supply-chain/pins.json', 'utf8')),
 });
 
@@ -132,4 +133,16 @@ test('workflow_call must explicitly preserve the closed event revision and path'
     '.github/workflows/supply-chain.yml'
   ].replace("github.event_name == 'workflow_call' && inputs.contract_event", 'github.event_name');
   assert.match(auditAutomation(input).errors.join(','), /workflow-call-contract/);
+});
+test('a Dependabot config that auto-merges is rejected; no config at all passes', async () => {
+  const input = await load();
+  assert.deepEqual(auditAutomation({ ...input, dependabot: null }).errors, []);
+  assert.ok(
+    auditAutomation({ ...input, dependabot: 'version: 2\n# auto-merge\n' }).errors.includes(
+      'dependabot:unsafe',
+    ),
+  );
+  assert.ok(
+    auditAutomation({ ...input, dependabot: 'version: 1\n' }).errors.includes('dependabot:unsafe'),
+  );
 });

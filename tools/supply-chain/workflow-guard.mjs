@@ -90,7 +90,12 @@ export function auditAutomation({ workflows, dockerfiles, dependabot, pins }) {
     errors.push('supply-chain:aggregate-not-always');
   if (!/retention-days:\s*30/.test(supply) || !/aggregate-receipts\.mjs/.test(supply))
     errors.push('supply-chain:publication-contract');
-  if (!/version:\s*2/.test(dependabot) || /auto-merge|pull-requests:\s*write/.test(dependabot))
+  // No Dependabot config (removed 2026-10-15, owner: minimise cost) means no update jobs at all, which
+  // is safe. A config, when present, must be version 2 and must never auto-merge or write PRs.
+  if (
+    dependabot != null &&
+    (!/version:\s*2/.test(dependabot) || /auto-merge|pull-requests:\s*write/.test(dependabot))
+  )
     errors.push('dependabot:unsafe');
   return { state: errors.length ? 'fail' : 'pass', errors: [...new Set(errors)] };
 }
